@@ -28,6 +28,15 @@ class MyYarnCardSourceTest {
     }
 
     @Test
+    fun `my yarn list stays clear of the add button and has no decorative color dot`() {
+        val screen = ProjectSourceFiles.read(MY_YARN_SCREEN)
+
+        assertTrue(screen.contains("contentPadding = PaddingValues(bottom = ProjectListDimens.ListBottomPadding)"))
+        assertTrue(screen.contains("card.photoUri.takeIf(String::isNotBlank)"))
+        assertFalse(screen.contains("colorScheme.tertiary"))
+    }
+
+    @Test
     fun `not linked yarn summary is localized`() {
         val missing =
             ProjectSourceFiles.localizedStringFiles().filter { file ->
@@ -45,8 +54,9 @@ class MyYarnCardSourceTest {
 
         assertTrue(input.contains("data class ManualYarnCardInput("))
         assertTrue(screen.contains("onCreateYarnCard: (ManualYarnCardInput) -> Boolean"))
-        assertTrue(screen.contains("FloatingActionButton("))
-        assertTrue(screen.contains("contentDescription = stringResource(R.string.add_yarn_to_my_yarn)"))
+        assertTrue(screen.contains("LabeledCounterImageButton("))
+        assertTrue(screen.contains("val addLabel = stringResource(R.string.add_yarn_to_my_yarn)"))
+        assertFalse(screen.contains("FloatingActionButton("))
         assertTrue(screen.contains("ManualYarnCardSheet("))
         assertTrue(screen.contains("ProjectYarnTextField("))
         assertTrue(screen.contains("label = stringResource(R.string.project_yarn_name)"))
@@ -55,6 +65,19 @@ class MyYarnCardSourceTest {
         assertTrue(screen.contains("label = stringResource(R.string.color_number)"))
         assertTrue(screen.contains("label = stringResource(R.string.dye_lot)"))
         assertTrue(navGraph.contains("onCreateYarnCard = libraryViewModel::createManualYarnCard"))
+    }
+
+    @Test
+    fun `yarn color row uses short number and lot forms so it fits one line`() {
+        val screen = ProjectSourceFiles.read(MY_YARN_SCREEN)
+
+        assertTrue(screen.contains("stringResource(R.string.yarn_color_number_short, it)"))
+        assertTrue(screen.contains("stringResource(R.string.yarn_dye_lot_short, it)"))
+        ProjectSourceFiles.localizedStringFiles().forEach { file ->
+            val text = ProjectSourceFiles.read(file)
+            assertTrue(file.toString(), text.contains("""name="yarn_color_number_short""""))
+            assertTrue(file.toString(), text.contains("""name="yarn_dye_lot_short""""))
+        }
     }
 
     @Test
@@ -72,11 +95,14 @@ class MyYarnCardSourceTest {
     @Test
     fun `manual yarn sheet keeps all fields and actions reachable on small screens`() {
         val screen = ProjectSourceFiles.read(MY_YARN_SCREEN)
+        // Vieritys ja reunapehmusteet tulevat yhteisestä lisäyssheetistä.
+        val sheet = ProjectSourceFiles.read("app/src/main/java/com/finnvek/knittools/ui/components/FormSheet.kt")
 
-        assertTrue(screen.contains("rememberScrollState()"))
-        assertTrue(screen.contains(".verticalScroll("))
-        assertTrue(screen.contains(".navigationBarsPadding()"))
-        assertTrue(screen.contains(".imePadding()"))
+        assertTrue(screen.contains("FormSheet("))
+        assertTrue(sheet.contains("rememberScrollState()"))
+        assertTrue(sheet.contains(".verticalScroll("))
+        assertTrue(sheet.contains(".navigationBarsPadding()"))
+        assertTrue(sheet.contains(".imePadding()"))
     }
 
     @Test

@@ -1,7 +1,6 @@
 package com.finnvek.knittools.ui.screens.increase
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -10,10 +9,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
@@ -22,7 +19,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -38,13 +34,16 @@ import com.finnvek.knittools.domain.model.IncreaseDecreaseResult
 import com.finnvek.knittools.domain.model.KnittingStyle
 import com.finnvek.knittools.ui.components.AnimatedResultNumber
 import com.finnvek.knittools.ui.components.BadgePill
-import com.finnvek.knittools.ui.components.InfoTip
+import com.finnvek.knittools.ui.components.InfoTipText
+import com.finnvek.knittools.ui.components.LabelWithInfo
 import com.finnvek.knittools.ui.components.NumberInputField
 import com.finnvek.knittools.ui.components.NumberInputOptions
 import com.finnvek.knittools.ui.components.PasteInstructionButton
 import com.finnvek.knittools.ui.components.ResultCard
 import com.finnvek.knittools.ui.components.ResultNumberInset
+import com.finnvek.knittools.ui.components.ResultPlaceholder
 import com.finnvek.knittools.ui.components.SegmentedToggle
+import com.finnvek.knittools.ui.components.ToolInputCard
 import com.finnvek.knittools.ui.components.ToolScreenScaffold
 import com.finnvek.knittools.ui.components.rememberCurrentLocale
 import com.finnvek.knittools.ui.screens.home.HomeViewModel
@@ -101,63 +100,60 @@ fun IncreaseDecreaseScreen(
                         true
                     } ?: false
                 },
-                // CPD-OFF: Ruudun paikallinen Compose-rakenne pidetaan vastuun yhteydessa.
             )
 
-            Surface(
-                shape = RoundedCornerShape(18.dp),
-                color = MaterialTheme.colorScheme.surfaceVariant,
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    // CPD-ON
-                    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                        SegmentedToggle(
-                            options = modeOptions,
-                            selectedIndex = mode.ordinal,
-                            onSelect = { mode = IncreaseDecreaseMode.entries[it] },
-                        )
-                    }
+            ToolInputCard {
+                SegmentedToggle(
+                    options = modeOptions,
+                    selectedIndex = mode.ordinal,
+                    onSelect = { mode = IncreaseDecreaseMode.entries[it] },
+                )
+                // Info nimikkeen vieressä: valitsimen päässä se kavensi valitsinta toista kapeammaksi.
+                LabelWithInfo(
+                    label = stringResource(R.string.tip_flat_vs_circular_title),
+                    info =
+                        InfoTipText(
+                            stringResource(R.string.tip_flat_vs_circular_title),
+                            stringResource(R.string.tip_flat_vs_circular_desc),
+                        ),
+                )
+                SegmentedToggle(
+                    options = styleOptions,
+                    selectedIndex = style.ordinal,
+                    onSelect = { style = KnittingStyle.entries[it] },
+                )
 
-                    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                        SegmentedToggle(
-                            options = styleOptions,
-                            selectedIndex = style.ordinal,
-                            onSelect = { style = KnittingStyle.entries[it] },
-                        )
-                        Box(modifier = Modifier.align(Alignment.CenterEnd)) {
-                            InfoTip(
-                                title = stringResource(R.string.tip_flat_vs_circular_title),
-                                description = stringResource(R.string.tip_flat_vs_circular_desc),
-                            )
-                        }
-                    }
-
-                    NumberInputField(
-                        value = currentStitches,
-                        onValueChange = { currentStitches = it },
-                        label = stringResource(R.string.current_stitches),
-                        modifier = Modifier.fillMaxWidth(),
-                        options = NumberInputOptions(suffix = stringResource(R.string.unit_st)),
-                    )
-                    NumberInputField(
-                        value = changeBy,
-                        onValueChange = { changeBy = it },
-                        label = stringResource(mode.labelRes()),
-                        modifier = Modifier.fillMaxWidth(),
-                        options =
-                            NumberInputOptions(
-                                suffix = stringResource(R.string.unit_st),
-                                isLast = true,
-                            ),
-                    )
-                }
+                NumberInputField(
+                    value = currentStitches,
+                    onValueChange = { currentStitches = it },
+                    label = stringResource(R.string.current_stitches),
+                    modifier = Modifier.fillMaxWidth(),
+                    options =
+                        NumberInputOptions(
+                            suffix = stringResource(R.string.unit_st),
+                            placeholder = EXAMPLE_CURRENT_STITCHES,
+                        ),
+                )
+                NumberInputField(
+                    value = changeBy,
+                    onValueChange = { changeBy = it },
+                    label = stringResource(mode.labelRes()),
+                    modifier = Modifier.fillMaxWidth(),
+                    options =
+                        NumberInputOptions(
+                            suffix = stringResource(R.string.unit_st),
+                            isLast = true,
+                            placeholder = EXAMPLE_CHANGE_BY,
+                        ),
+                )
             }
 
-            result?.let { r -> IncreaseDecreaseResultSection(r) }
+            val currentResult = result
+            if (currentResult == null) {
+                ResultPlaceholder(text = stringResource(mode.resultPlaceholderRes()))
+            } else {
+                IncreaseDecreaseResultSection(currentResult)
+            }
         }
     }
 }
@@ -250,3 +246,13 @@ private fun IncreaseDecreaseMessage.localizedMessage(): String =
         IncreaseDecreaseMessage.IncreaseMoreThanCurrent ->
             stringResource(R.string.increase_decrease_warning_increase_more_than_current)
     }
+
+private fun IncreaseDecreaseMode.resultPlaceholderRes(): Int =
+    when (this) {
+        IncreaseDecreaseMode.INCREASE -> R.string.increase_result_placeholder
+        IncreaseDecreaseMode.DECREASE -> R.string.decrease_result_placeholder
+    }
+
+// Esimerkkiarvot tyhjiin kenttiin: tavallinen sukan tai hihan silmukkamäärä ja sen kahdeksasosa.
+private const val EXAMPLE_CURRENT_STITCHES = "96"
+private const val EXAMPLE_CHANGE_BY = "12"

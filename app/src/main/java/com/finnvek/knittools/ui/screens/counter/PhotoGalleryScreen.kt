@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
@@ -28,12 +27,10 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -68,13 +65,17 @@ import coil3.compose.AsyncImage
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.model.ProgressPhoto
 import com.finnvek.knittools.pro.ProStatus
+import com.finnvek.knittools.ui.components.CancelButton
+import com.finnvek.knittools.ui.components.LabeledCounterImageButton
 import com.finnvek.knittools.ui.components.ProBadge
 import com.finnvek.knittools.ui.components.ProPromptRequest
 import com.finnvek.knittools.ui.components.ProPromptSheet
 import com.finnvek.knittools.ui.components.ProPromptSource
-import com.finnvek.knittools.ui.components.highContainerTextFieldColors
+import com.finnvek.knittools.ui.components.dialogTextFieldColors
+import com.finnvek.knittools.ui.components.proBadgeDescription
 import com.finnvek.knittools.ui.components.rememberLocaleDateFormat
 import com.finnvek.knittools.ui.components.withExtraBottom
+import com.finnvek.knittools.ui.theme.ProjectListDimens
 import com.finnvek.knittools.ui.theme.knitToolsColors
 import java.util.Date
 
@@ -241,23 +242,18 @@ fun PhotoGalleryScreen(
             )
         },
         floatingActionButton = {
-            FloatingActionButton(
-                modifier = Modifier.onSizeChanged { actionHeight = with(density) { it.height.toDp() } },
+            // Sama lisäyspilleri kuin New Project, Add Yarn ja Add web pattern.
+            val photoLabel = stringResource(R.string.take_photo)
+            val proDescription = proBadgeDescription(proStatus)
+            LabeledCounterImageButton(
+                imageRes = R.drawable.counter_plus_button,
+                label = photoLabel,
+                visualSize = ProjectListDimens.CreateButtonVisualSize,
                 onClick = { launchCamera() },
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary,
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.CameraAlt,
-                        contentDescription = stringResource(R.string.take_photo),
-                    )
-                    ProBadge(status = proStatus)
-                }
-            }
+                modifier = Modifier.onSizeChanged { actionHeight = with(density) { it.height.toDp() } },
+                contentDescription = listOfNotNull(photoLabel, proDescription).joinToString(", "),
+                badge = proDescription?.let { { ProBadge(status = proStatus) } },
+            )
         },
     ) { padding ->
         PhotoGalleryContent(
@@ -449,7 +445,7 @@ private fun PhotoGridItem(
         shape = MaterialTheme.shapes.medium,
         colors =
             CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                containerColor = MaterialTheme.knitToolsColors.cardContainer,
             ),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
     ) {
@@ -507,7 +503,7 @@ private fun RenamePhotoDialog(
                 singleLine = true,
                 placeholder = { Text(stringResource(R.string.photo_name_hint)) },
                 shape = MaterialTheme.shapes.medium,
-                colors = highContainerTextFieldColors(),
+                colors = dialogTextFieldColors(),
                 modifier = Modifier.fillMaxWidth(),
             )
         },
@@ -517,9 +513,7 @@ private fun RenamePhotoDialog(
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.cancel))
-            }
+            CancelButton(onClick = onDismiss)
         },
     )
 }

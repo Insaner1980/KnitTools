@@ -1,8 +1,6 @@
 package com.finnvek.knittools.ui.screens.ravelry
 
 import android.net.Uri
-import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -21,20 +19,16 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -42,20 +36,14 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
-import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.selected
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -63,13 +51,11 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.finnvek.knittools.R
 import com.finnvek.knittools.auth.RavelryAuthState
-import com.finnvek.knittools.domain.model.SavedPattern
 import com.finnvek.knittools.ui.components.CollectWithLifecycleEffect
-import com.finnvek.knittools.ui.components.ConfirmationDialog
+import com.finnvek.knittools.ui.components.OverviewLinkRow
 import com.finnvek.knittools.ui.components.StatusMessage
 import com.finnvek.knittools.ui.components.StatusMessageType
-import com.finnvek.knittools.ui.screens.library.SelectModeDeleteBar
-import com.finnvek.knittools.ui.screens.library.SelectionIndicator
+import com.finnvek.knittools.ui.components.highContainerTextFieldColors
 
 data class RavelrySearchActions(
     val onPatternClick: (Int) -> Unit,
@@ -77,6 +63,7 @@ data class RavelrySearchActions(
     val onLaunchRavelryAuth: (Uri) -> Unit = {},
     val onBrowseRavelry: () -> Unit = {},
     val onSavedPatternDetail: (Long) -> Unit = {},
+    val onOpenSavedPatterns: () -> Unit = {},
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -95,16 +82,9 @@ fun RavelrySearchScreen(
     val searchError by viewModel.searchError.collectAsStateWithLifecycle()
     val savedPatterns by viewModel.savedPatterns.collectAsStateWithLifecycle()
     val authState by viewModel.authState.collectAsStateWithLifecycle()
-    val isSavedSelectMode by viewModel.isSavedSelectMode.collectAsStateWithLifecycle()
-    val selectedSavedIds by viewModel.selectedSavedIds.collectAsStateWithLifecycle()
     val importConfirmationState by viewModel.importConfirmationState.collectAsStateWithLifecycle()
 
-    var selectedTab by rememberSaveable { mutableIntStateOf(0) }
-    var showDeleteConfirmDialog by rememberSaveable { mutableStateOf(false) }
     val keyboardController = LocalSoftwareKeyboardController.current
-    BackHandler(enabled = isSavedSelectMode) {
-        viewModel.exitSavedSelectMode()
-    }
 
     LaunchedEffect(viewModel) {
         viewModel.refreshAuthStatus()
@@ -116,26 +96,6 @@ fun RavelrySearchScreen(
 
     LaunchedEffect(viewModel, importUrl) {
         importUrl?.let(viewModel::showImportConfirmationForUrl)
-    }
-
-    if (showDeleteConfirmDialog) {
-        ConfirmationDialog(
-            scrollableMessage = true,
-            title = stringResource(R.string.delete_pattern),
-            message =
-                pluralStringResource(
-                    R.plurals.delete_patterns_confirm,
-                    selectedSavedIds.size,
-                    selectedSavedIds.size,
-                ),
-            confirmText = stringResource(R.string.delete),
-            isDestructive = true,
-            onConfirm = {
-                viewModel.deleteSelectedSaved()
-                showDeleteConfirmDialog = false
-            },
-            onDismiss = { showDeleteConfirmDialog = false },
-        )
     }
 
     importConfirmationState?.let { state ->
@@ -153,135 +113,71 @@ fun RavelrySearchScreen(
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
-            if (isSavedSelectMode) {
-                TopAppBar(
-                    title = {
-                        Text(
-                            text = stringResource(R.string.n_selected, selectedSavedIds.size),
-                            style = MaterialTheme.typography.titleLarge,
-                        )
-                    },
-                    navigationIcon = {
-                        IconButton(onClick = { viewModel.exitSavedSelectMode() }) {
-                            Icon(
-                                imageVector = Icons.Filled.Close,
-                                contentDescription = stringResource(R.string.cancel),
-                            )
-                        }
-                    },
-                    actions = {
-                        // CPD-OFF: Ruudun paikallinen Compose-rakenne pidetaan vastuun yhteydessa.
-                        TextButton(onClick = { viewModel.selectAllSaved(savedPatterns.map { it.id }) }) {
-                            Text(stringResource(R.string.select_all))
-                        }
-                    },
-                    colors =
-                        TopAppBarDefaults.topAppBarColors(
-                            containerColor = Color.Transparent,
-                            scrolledContainerColor = Color.Transparent,
-                        ),
-                )
-            } else {
-                TopAppBar(
-                    title = {
-                        Text(
-                            text = stringResource(R.string.tool_ravelry),
-                            style = MaterialTheme.typography.titleLarge,
-                        )
-                    },
-                    navigationIcon = {
-                        IconButton(onClick = actions.onBack) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = stringResource(R.string.back),
-                                tint = MaterialTheme.colorScheme.outline,
-                            )
-                        }
-                    },
-                    colors =
-                        TopAppBarDefaults.topAppBarColors(
-                            containerColor = Color.Transparent,
-                            scrolledContainerColor = Color.Transparent,
-                        ),
-                )
-            }
-        },
-        bottomBar = {
-            SelectModeDeleteBar(
-                visible = isSavedSelectMode && selectedSavedIds.isNotEmpty(),
-                onDeleteClick = { showDeleteConfirmDialog = true },
-            )
-        },
-        // CPD-ON
-    ) { padding ->
-        Column(modifier = Modifier.fillMaxSize().padding(padding).imePadding()) {
-            val header: @Composable () -> Unit = {
-                if (!isSavedSelectMode) {
-                    RavelryAccountHeader(
-                        authState = authState,
-                        onSignIn = viewModel::startSignIn,
-                        onBrowseRavelry = actions.onBrowseRavelry,
-                        onDisconnect = viewModel::disconnectRavelry,
+            TopAppBar(
+                title = {
+                    Text(
+                        text = stringResource(R.string.tool_ravelry),
+                        style = MaterialTheme.typography.titleLarge,
                     )
-                    PrimaryTabRow(
-                        selectedTabIndex = selectedTab,
-                        containerColor = MaterialTheme.colorScheme.background,
-                        contentColor = MaterialTheme.colorScheme.primary,
-                    ) {
-                        Tab(
-                            selected = selectedTab == 0,
-                            onClick = { selectedTab = 0 },
-                            text = { Text(stringResource(R.string.ravelry_search)) },
-                        )
-                        Tab(
-                            selected = selectedTab == 1,
-                            onClick = { selectedTab = 1 },
-                            text = { Text(stringResource(R.string.ravelry_saved_patterns)) },
+                },
+                navigationIcon = {
+                    IconButton(onClick = actions.onBack) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.back),
+                            tint = MaterialTheme.colorScheme.outline,
                         )
                     }
-                }
+                },
+                colors =
+                    TopAppBarDefaults.topAppBarColors(
+                        containerColor = Color.Transparent,
+                        scrolledContainerColor = Color.Transparent,
+                    ),
+            )
+        },
+    ) { padding ->
+        Column(modifier = Modifier.fillMaxSize().padding(padding).imePadding()) {
+            // Tallennetut kaavat ovat vain Libraryssa: sama lista kahdessa paikassa eri näköisenä hämmensi.
+            val header: @Composable () -> Unit = {
+                RavelryAccountHeader(
+                    authState = authState,
+                    onSignIn = viewModel::startSignIn,
+                    onBrowseRavelry = actions.onBrowseRavelry,
+                    onDisconnect = viewModel::disconnectRavelry,
+                )
+                OverviewLinkRow(
+                    title = stringResource(R.string.ravelry_saved_patterns),
+                    subtitle = null,
+                    icon = null,
+                    onClick = actions.onOpenSavedPatterns,
+                )
             }
 
-            when (selectedTab) {
-                0 -> {
-                    SearchTab(
-                        header = header,
-                        state =
-                            SearchTabState(
-                                searchQuery = searchQuery,
-                                submittedQuery = submittedQuery,
-                                hasSubmittedSearch = hasSubmittedSearch,
-                                results = results,
-                                isLoading = isLoading,
-                                searchError = searchError,
-                                canSearch = authState is RavelryAuthState.Connected,
-                                savedRavelryPatternIds = savedPatterns.mapNotNull { it.ravelryPatternId }.toSet(),
-                            ),
-                        onQueryChange = viewModel::updateQuery,
-                        onSearch = {
-                            keyboardController?.hide()
-                            viewModel.search()
-                        },
-                        onPatternClick = actions.onPatternClick,
-                        onImportPattern = { patternId ->
-                            viewModel.showImportConfirmationForPattern(patternId)
-                        },
-                        onLoadMore = viewModel::loadMore,
-                    )
-                }
-
-                1 -> {
-                    SavedTab(
-                        header = header,
-                        patterns = savedPatterns,
-                        isSelectMode = isSavedSelectMode,
-                        selectedIds = selectedSavedIds,
-                        onSavedPatternDetail = actions.onSavedPatternDetail,
-                        onEnterSelectMode = viewModel::enterSavedSelectMode,
-                        onToggleSelection = viewModel::toggleSavedSelection,
-                    )
-                }
-            }
+            SearchTab(
+                header = header,
+                state =
+                    SearchTabState(
+                        searchQuery = searchQuery,
+                        submittedQuery = submittedQuery,
+                        hasSubmittedSearch = hasSubmittedSearch,
+                        results = results,
+                        isLoading = isLoading,
+                        searchError = searchError,
+                        canSearch = authState is RavelryAuthState.Connected,
+                        savedRavelryPatternIds = savedPatterns.mapNotNull { it.ravelryPatternId }.toSet(),
+                    ),
+                onQueryChange = viewModel::updateQuery,
+                onSearch = {
+                    keyboardController?.hide()
+                    viewModel.search()
+                },
+                onPatternClick = actions.onPatternClick,
+                onImportPattern = { patternId ->
+                    viewModel.showImportConfirmationForPattern(patternId)
+                },
+                onLoadMore = viewModel::loadMore,
+            )
         }
     }
 }
@@ -402,6 +298,8 @@ private fun SearchTab(
         modifier = Modifier.fillMaxSize(),
     ) {
         item { header() }
+        // Ilman kirjautumista kenttä näkyy käytöstä poistettuna; syyn ja kirjautumisen kertoo
+        // tilikortti, joten samaa viestiä ei toisteta kentän alla.
         item {
             RavelrySearchField(
                 query = state.searchQuery,
@@ -410,8 +308,6 @@ private fun SearchTab(
                 onSearch = onSearch,
             )
         }
-
-        ravelrySearchUnavailableItem(canSearch = state.canSearch)
         ravelrySearchResults(
             state = state,
             onPatternClick = onPatternClick,
@@ -465,26 +361,8 @@ private fun RavelrySearchField(
                 },
             ),
         colors =
-            TextFieldDefaults.colors(
-                focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                focusedIndicatorColor = Color.Transparent,
-                unfocusedIndicatorColor = Color.Transparent,
-            ),
+            highContainerTextFieldColors(),
     )
-}
-
-private fun LazyListScope.ravelrySearchUnavailableItem(canSearch: Boolean) {
-    if (canSearch) return
-
-    item {
-        Text(
-            text = stringResource(R.string.ravelry_search_requires_sign_in),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-        )
-    }
 }
 
 private fun LazyListScope.ravelrySearchResults(
@@ -629,111 +507,3 @@ private fun RavelrySearchError.messageRes(isLoadMoreError: Boolean): Int =
             R.string.ravelry_search_service_error
         }
     }
-
-@OptIn(ExperimentalFoundationApi::class)
-@Composable
-private fun SavedTab(
-    header: @Composable () -> Unit,
-    patterns: List<SavedPattern>,
-    isSelectMode: Boolean,
-    selectedIds: Set<Long>,
-    onSavedPatternDetail: (Long) -> Unit,
-    onEnterSelectMode: (Long) -> Unit,
-    onToggleSelection: (Long) -> Unit,
-) {
-    LazyColumn(
-        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-        modifier = Modifier.fillMaxSize(),
-    ) {
-        item { header() }
-        if (patterns.isEmpty()) {
-            item { SavedTabEmptyState() }
-        } else {
-            items(patterns, key = { it.id }) { pattern ->
-                SavedPatternItem(
-                    pattern = pattern,
-                    isSelectMode = isSelectMode,
-                    isSelected = pattern.id in selectedIds,
-                    onSavedPatternDetail = onSavedPatternDetail,
-                    onEnterSelectMode = onEnterSelectMode,
-                    onToggleSelection = onToggleSelection,
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun SavedTabEmptyState() {
-    Box(
-        modifier = Modifier.fillMaxSize().padding(32.dp),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(
-            text = stringResource(R.string.no_saved_patterns),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-        )
-    }
-}
-
-@Composable
-private fun SavedPatternItem(
-    pattern: SavedPattern,
-    isSelectMode: Boolean,
-    isSelected: Boolean,
-    onSavedPatternDetail: (Long) -> Unit,
-    onEnterSelectMode: (Long) -> Unit,
-    onToggleSelection: (Long) -> Unit,
-) {
-    val backgroundColor =
-        if (isSelected) {
-            MaterialTheme.colorScheme.primary.copy(alpha = 0.07f)
-        } else {
-            MaterialTheme.colorScheme.surfaceVariant
-        }
-    val itemModifier =
-        Modifier.padding(start = if (isSelectMode) 48.dp else 0.dp).then(
-            if (isSelectMode) Modifier.semantics { selected = isSelected } else Modifier,
-        )
-
-    Box(
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        PatternCard(
-            state =
-                PatternCardState(
-                    name = pattern.name,
-                    designerName = pattern.designerName,
-                    thumbnailUrl = pattern.thumbnailUrl,
-                    difficulty = pattern.difficulty,
-                    availability = pattern.availability,
-                ),
-            onClick = {
-                if (isSelectMode) {
-                    onToggleSelection(pattern.id)
-                } else {
-                    onSavedPatternDetail(pattern.id)
-                }
-                // CPD-OFF: Ruudun paikallinen Compose-rakenne pidetaan vastuun yhteydessa.
-            },
-            onLongClick =
-                if (isSelectMode) {
-                    null
-                } else {
-                    { onEnterSelectMode(pattern.id) }
-                },
-            containerColor = backgroundColor,
-            modifier = itemModifier,
-        )
-        if (isSelectMode) {
-            SelectionIndicator(
-                isSelected = isSelected,
-                modifier = Modifier.align(Alignment.CenterStart).padding(start = 8.dp),
-            )
-        }
-    }
-}
-// CPD-ON

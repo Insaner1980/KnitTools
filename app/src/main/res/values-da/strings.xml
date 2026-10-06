@@ -53,14 +53,13 @@
     <!-- Hub hero text -->
 
     <!-- Project List -->
-    <string name="project_list_title">Projekter</string>
     <string name="continue_knitting">Fortsæt med at strikke</string>
+    <string name="continue_crocheting">Fortsæt med at hækle</string>
     <string name="section_active">Aktive</string>
     <string name="section_completed">Afsluttede</string>
     <string name="new_project">Nyt projekt</string>
     <string name="new_project_name_format">Projekt %1$d</string>
     <string name="create_project">Opret projekt</string>
-    <string name="project_details">Projektdetaljer</string>
     <string name="project_details_title">Projektdetaljer</string>
     <string name="new_project_details_title">Nyt projekt</string>
     <string name="project_name_label">Projektnavn</string>
@@ -221,8 +220,6 @@
     <string name="saved_to_my_yarn_explanation">Denne projektpost forbliver separat. Noterne blev ikke kopieret til garnkortet i Mit garn.</string>
     <string name="yarn_count_format">%1$d garner</string>
     <string name="linked_project_label">Tilknyttet projekt</string>
-    <string name="link_to_project_label">Knyt til projekt</string>
-    <string name="change_project_link">Skift</string>
     <string name="remove_project_link">Fjern kobling</string>
     <string name="select_project">Vælg projekt</string>
     <string name="status_label">Status</string>
@@ -288,6 +285,11 @@
     <string name="current_stitches">Nuværende masker</string>
     <string name="increase_by">Øg med</string>
     <string name="decrease_by">Mindsk med</string>
+    <string name="increase_result_placeholder">Udfyld begge felter for at se, hvor du skal tage ud</string>
+    <string name="decrease_result_placeholder">Udfyld begge felter for at se, hvor du skal tage ind</string>
+    <string name="cast_on_result_placeholder">Udfyld bredde og strikkefasthed for at se, hvor mange masker du skal slå op</string>
+    <string name="yarn_result_placeholder">Udfyld felterne for at se, hvor mange nøgler du skal bruge</string>
+    <string name="tool_result_placeholder">Udfyld felterne for at se resultatet</string>
     <string name="invalid_input">Ugyldigt input</string>
     <string name="easy_to_remember">Let at huske</string>
     <string name="balanced">Balanceret</string>
@@ -339,7 +341,8 @@
     <string name="theme_system">System</string>
     <string name="theme_light">Lyst</string>
     <string name="theme_dark">Mørkt</string>
-    <string name="settings_section_settings">Indstillinger</string>
+    <string name="settings_section_general">Generelt</string>
+    <string name="settings_theme">Tema</string>
     <string name="settings_section_pro">PRO</string>
     <string name="settings_section_info">INFO</string>
     <string name="settings_language">App-sprog</string>
@@ -387,6 +390,8 @@
     <string name="color_name">Farvenavn</string>
     <string name="color_number">Farvenummer</string>
     <string name="dye_lot">Farveparti</string>
+    <string name="yarn_color_number_short">nr. %1$s</string>
+    <string name="yarn_dye_lot_short">Parti %1$s</string>
     <string name="weight_category">Tykkelseskategori</string>
     <string name="care_symbols">Pleje</string>
     <string name="no_saved_yarns">Ingen garnkort gemt endnu</string>
@@ -656,9 +661,7 @@
     <string name="ravelry_open_saved_pattern">Åbn</string>
     <string name="open_in_ravelry">Åbn i Ravelry</string>
     <string name="pattern_saved">Opskrift gemt</string>
-    <string name="no_saved_patterns">Ingen gemte opskrifter endnu</string>
-    <string name="search_hint">Søg efter strikkeopskrifter…</string>
-    <string name="ravelry_search_requires_sign_in">Log ind med Ravelry for at søge efter opskrifter.</string>
+    <string name="search_hint">Søg efter opskrifter…</string>
     <string name="ravelry_import_loading">Indlæser opskrift</string>
     <string name="ravelry_import_title">Gem denne opskrift?</string>
     <string name="ravelry_import_already_saved">Opskriften er allerede gemt</string>
@@ -731,9 +734,7 @@
     <string name="search_more_error">Kunne ikke indlæse flere opskrifter. Tjek din internetforbindelse.</string>
     <string name="pattern_detail_error">Kunne ikke indlæse opskriftsdetaljer. Tjek din internetforbindelse.</string>
     <string name="project_actions_title">Projekthandlinger</string>
-    <string name="project_actions_section_this_project">Dette projekt</string>
     <string name="project_actions_section_counter_tools">Tællerværktøjer</string>
-    <string name="project_actions_section_project_actions">Projekthandlinger</string>
     <string name="project_content_title">Projekt</string>
     <string name="project_content_yarn">Garn</string>
     <string name="project_content_notes">Noter</string>
@@ -1027,15 +1028,17 @@
     </plurals>
     <string name="web_pattern_add">Tilføj webmønster</string>
     <string name="web_pattern_label">Webmønster</string>
+    <string name="pattern_source_pdf">PDF</string>
     <string name="web_pattern_title_label">Mønstrets navn</string>
     <string name="web_pattern_designer_label">Designer</string>
     <string name="web_pattern_url_label">Webadresse</string>
     <string name="web_pattern_website_label">Websted</string>
     <string name="web_pattern_edit">Rediger webmønster</string>
+    <string name="web_pattern_edit_title">Rediger webmønster</string>
     <string name="web_pattern_delete">Slet webmønster</string>
     <string name="web_pattern_delete_confirm_title">Slet webmønsteret?</string>
     <string name="web_pattern_delete_confirm_message">Slet %1$s fra Gemte opskrifter i biblioteket?\n\nEventuelle PDF-annotationer oprettet i biblioteket til denne opskrift slettes også og vises ikke længere i projekter. PDF-filer, der allerede er vedhæftet projekter, og PDF-annotationer oprettet i projekterne bevares.</string>
-    <string name="web_pattern_attach">Tilknyt webmønster</string>
+    <string name="web_pattern_attach">Tilknyt til projekt</string>
     <string name="web_pattern_unlink">Fjern tilknytningen til mønsteroplysninger</string>
     <string name="web_pattern_replace_confirm_title">Erstat mønsteroplysningerne?</string>
     <string name="web_pattern_replace_confirm_message">Erstat de nuværende mønsteroplysninger med %1$s?</string>
@@ -1116,4 +1119,26 @@
     <string name="counter_history_changed">Tælleren blev ændret</string>
     <string name="counter_history_event_description">%1$s. Fra %2$s til %3$s. %4$s, %5$s.</string>
     <string name="counter_history_transition">%1$s → %2$s</string>
+    <string name="project_overview_add_photo">Tilføj projektfoto</string>
+    <string name="project_overview_edit">Rediger</string>
+    <string name="project_overview_add">Tilføj</string>
+    <string name="project_overview_see_all">Vis alle</string>
+    <string name="project_overview_section_pattern">Opskrift og dokumenter</string>
+    <string name="project_overview_section_sessions">Arbejdssessioner</string>
+    <string name="project_overview_total_time">Samlet tid</string>
+    <string name="project_overview_yarn_planned">Planlagt</string>
+    <string name="project_overview_yarn_allocated">Afsat</string>
+    <string name="project_overview_yarn_used">Brugt</string>
+    <string name="project_overview_yarn_remaining">Tilbage</string>
+    <string name="project_overview_yarn_empty">Intet garn tilføjet endnu</string>
+    <string name="project_overview_pattern_empty">Ingen opskrift tilføjet endnu</string>
+    <string name="project_overview_notes_empty">Ingen noter endnu</string>
+    <string name="project_overview_pdf_page_format">PDF-opskrift, side %1$d</string>
+    <string name="project_card_open_overview_action">Åbn projekt</string>
+    <string name="project_overview_edit_details">Rediger detaljer</string>
+    <string name="project_overview_open_photos">Åbn billeder</string>
+    <string name="project_overview_yarn_add_amounts">Tilføj mængder</string>
+    <string name="project_actions_overview_subtitle">Garn, opskrift, noter og detaljer</string>
+    <string name="project_actions_section_work_session">Arbejdssession</string>
+    <string name="project_overview_amount_unknown">Ukendt</string>
 </resources>

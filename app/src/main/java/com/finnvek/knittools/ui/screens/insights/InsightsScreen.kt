@@ -18,7 +18,6 @@ import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -54,7 +53,9 @@ import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.calculator.DurationDisplayFormatter
 import com.finnvek.knittools.domain.calculator.formatIntegerForDisplay
 import com.finnvek.knittools.domain.model.CounterProject
+import com.finnvek.knittools.ui.components.DropdownIndicator
 import com.finnvek.knittools.ui.components.HubListItem
+import com.finnvek.knittools.ui.components.ScreenTitleSelector
 import com.finnvek.knittools.ui.components.durationText
 import com.finnvek.knittools.ui.components.localizedDateTimePattern
 import com.finnvek.knittools.ui.components.rememberCurrentLocale
@@ -154,46 +155,24 @@ private fun InsightsRangeTitle(
     val selected = insightsRangeOptions.firstOrNull { it.range == uiState.timeRange }
 
     Box {
-        Row(
+        ScreenTitleSelector(
+            label = stringResource(selected?.labelResource ?: R.string.insights_all_time),
+            onClick = { expanded = !expanded },
             modifier =
-                Modifier
-                    .clip(InsightsDimens.FilterChipShape)
-                    .clickable(role = Role.DropdownList) { expanded = !expanded }
-                    .semantics {
-                        if (expanded) {
-                            collapse {
-                                expanded = false
-                                true
-                            }
-                        } else {
-                            expand {
-                                expanded = true
-                                true
-                            }
+                Modifier.semantics {
+                    if (expanded) {
+                        collapse {
+                            expanded = false
+                            true
                         }
-                    }.padding(
-                        horizontal = InsightsDimens.RangeTitleHorizontalPadding,
-                        vertical = InsightsDimens.RangeTitleVerticalPadding,
-                    ),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                text = stringResource(selected?.labelResource ?: R.string.insights_all_time),
-                style = MaterialTheme.typography.headlineMedium,
-                // CPD-OFF: Ruudun paikallinen Compose-rakenne pidetaan vastuun yhteydessa.
-                color = MaterialTheme.colorScheme.onSurface,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f, fill = false),
-            )
-            Icon(
-                imageVector = Icons.Filled.ArrowDropDown,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(InsightsDimens.RangeTitleIndicatorSize),
-                // CPD-ON
-            )
-        }
+                    } else {
+                        expand {
+                            expanded = true
+                            true
+                        }
+                    }
+                },
+        )
         DropdownMenu(
             expanded = expanded,
             onDismissRequest = { expanded = false },
@@ -580,7 +559,7 @@ private fun InsightsProjectFilter(
                     .clip(InsightsDimens.FilterChipShape)
                     // Täytetty pinta ääriviivan sijaan, jotta suodatin ja segmenttivalitsin
                     // ovat samaa pintakieltä eivätkä kahta eri levyistä ääriviivastadionia.
-                    .background(MaterialTheme.colorScheme.surfaceVariant)
+                    .background(MaterialTheme.knitToolsColors.cardContainer)
                     .clickable(role = Role.DropdownList) { showProjectPicker = !showProjectPicker }
                     .semantics {
                         if (showProjectPicker) {
@@ -620,10 +599,7 @@ private fun InsightsProjectFilter(
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.weight(1f, fill = false),
             )
-            Icon(
-                imageVector = Icons.Filled.ArrowDropDown,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            DropdownIndicator(
                 modifier =
                     Modifier
                         .padding(start = InsightsDimens.FilterChipIndicatorSpacing)

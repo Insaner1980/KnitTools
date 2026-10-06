@@ -33,16 +33,7 @@ fun ProBadge(
     status: ProStatus,
     modifier: Modifier = Modifier,
 ) {
-    val state = proBadgeState(status)
-    if (state == ProBadgeState.Hidden) return
-    val description =
-        stringResource(
-            if (state == ProBadgeState.Trial) {
-                R.string.pro_badge_trial_description
-            } else {
-                R.string.pro_badge_locked_description
-            },
-        )
+    val description = proBadgeDescription(status) ?: return
     Surface(
         modifier = modifier.semantics { contentDescription = description },
         shape = MaterialTheme.shapes.small,
@@ -56,3 +47,12 @@ fun ProBadge(
         )
     }
 }
+
+/** Ruudunlukijan kuvaus Pro-merkille, tai null kun merkki on piilossa. */
+@Composable
+fun proBadgeDescription(status: ProStatus): String? =
+    when (proBadgeState(status)) {
+        ProBadgeState.Hidden -> null
+        ProBadgeState.Trial -> stringResource(R.string.pro_badge_trial_description)
+        ProBadgeState.Locked -> stringResource(R.string.pro_badge_locked_description)
+    }

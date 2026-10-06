@@ -53,14 +53,13 @@
     <!-- Hub hero text -->
 
     <!-- Project List -->
-    <string name="project_list_title">Projets</string>
     <string name="continue_knitting">Continuer à tricoter</string>
+    <string name="continue_crocheting">Continuer le crochet</string>
     <string name="section_active">Actifs</string>
     <string name="section_completed">Terminés</string>
     <string name="new_project">Nouveau projet</string>
     <string name="new_project_name_format">Projet %1$d</string>
     <string name="create_project">Créer le projet</string>
-    <string name="project_details">Détails du projet</string>
     <string name="project_details_title">Détails du projet</string>
     <string name="new_project_details_title">Nouveau projet</string>
     <string name="project_name_label">Nom du projet</string>
@@ -226,8 +225,6 @@
     <string name="saved_to_my_yarn_explanation">Cette entrée du projet reste distincte. Ses notes n’ont pas été copiées dans la fiche de Mon fil.</string>
     <string name="yarn_count_format">%1$d fils</string>
     <string name="linked_project_label">Projet lié</string>
-    <string name="link_to_project_label">Lier au projet</string>
-    <string name="change_project_link">Modifier</string>
     <string name="remove_project_link">Supprimer le lien</string>
     <string name="select_project">Sélectionner un projet</string>
     <string name="status_label">Statut</string>
@@ -295,6 +292,11 @@
     <string name="current_stitches">Mailles actuelles</string>
     <string name="increase_by">Augmenter de</string>
     <string name="decrease_by">Diminuer de</string>
+    <string name="increase_result_placeholder">Remplissez les deux champs pour voir où augmenter</string>
+    <string name="decrease_result_placeholder">Remplissez les deux champs pour voir où diminuer</string>
+    <string name="cast_on_result_placeholder">Remplissez la largeur et l\'échantillon pour voir combien de mailles monter</string>
+    <string name="yarn_result_placeholder">Remplissez les champs pour voir combien de pelotes il vous faut</string>
+    <string name="tool_result_placeholder">Remplissez les champs pour voir le résultat</string>
     <string name="invalid_input">Saisie invalide</string>
     <string name="easy_to_remember">Facile à mémoriser</string>
     <string name="balanced">Équilibré</string>
@@ -347,7 +349,8 @@
     <string name="theme_system">Système</string>
     <string name="theme_light">Clair</string>
     <string name="theme_dark">Sombre</string>
-    <string name="settings_section_settings">Paramètres</string>
+    <string name="settings_section_general">Général</string>
+    <string name="settings_theme">Thème</string>
     <string name="settings_section_pro">PRO</string>
     <string name="settings_section_info">INFO</string>
     <string name="settings_language">Langue de l’app</string>
@@ -395,6 +398,8 @@
     <string name="color_name">Nom de la couleur</string>
     <string name="color_number">Numéro de couleur</string>
     <string name="dye_lot">Bain de teinture</string>
+    <string name="yarn_color_number_short">n° %1$s</string>
+    <string name="yarn_dye_lot_short">Bain %1$s</string>
     <string name="weight_category">Catégorie de grosseur</string>
     <string name="care_symbols">Entretien</string>
     <string name="no_saved_yarns">Aucune fiche de fil enregistrée pour le moment</string>
@@ -674,9 +679,7 @@
     <string name="ravelry_open_saved_pattern">Ouvrir</string>
     <string name="open_in_ravelry">Ouvrir dans Ravelry</string>
     <string name="pattern_saved">Modèle enregistré</string>
-    <string name="no_saved_patterns">Aucun modèle enregistré pour le moment</string>
-    <string name="search_hint">Rechercher des modèles de tricot…</string>
-    <string name="ravelry_search_requires_sign_in">Connectez-vous à Ravelry pour rechercher des modèles.</string>
+    <string name="search_hint">Rechercher des modèles…</string>
     <string name="ravelry_import_loading">Chargement du modèle</string>
     <string name="ravelry_import_title">Enregistrer ce modèle ?</string>
     <string name="ravelry_import_already_saved">Modèle déjà enregistré</string>
@@ -750,9 +753,7 @@
     <string name="search_more_error">Impossible de charger plus de modèles. Vérifiez votre connexion internet.</string>
     <string name="pattern_detail_error">Impossible de charger les détails du modèle. Vérifiez votre connexion internet.</string>
     <string name="project_actions_title">Actions du projet</string>
-    <string name="project_actions_section_this_project">Ce projet</string>
     <string name="project_actions_section_counter_tools">Outils de compteurs</string>
-    <string name="project_actions_section_project_actions">Actions du projet</string>
     <string name="project_content_title">Projet</string>
     <string name="project_content_yarn">Fil</string>
     <string name="project_content_notes">Notes</string>
@@ -1055,15 +1056,17 @@
     </plurals>
     <string name="web_pattern_add">Ajouter un modèle en ligne</string>
     <string name="web_pattern_label">Modèle en ligne</string>
+    <string name="pattern_source_pdf">PDF</string>
     <string name="web_pattern_title_label">Nom du modèle</string>
     <string name="web_pattern_designer_label">Créateur</string>
     <string name="web_pattern_url_label">Adresse du site web</string>
     <string name="web_pattern_website_label">Site web</string>
     <string name="web_pattern_edit">Modifier le modèle en ligne</string>
+    <string name="web_pattern_edit_title">Modifier le modèle en ligne</string>
     <string name="web_pattern_delete">Supprimer le modèle en ligne</string>
     <string name="web_pattern_delete_confirm_title">Supprimer le modèle en ligne ?</string>
     <string name="web_pattern_delete_confirm_message">Supprimer %1$s des modèles enregistrés dans la bibliothèque ?\n\nLes éventuelles annotations PDF créées dans la bibliothèque pour ce modèle seront aussi supprimées et ne seront plus visibles dans les projets. Les PDF déjà joints aux projets et les annotations PDF créées dans les projets seront conservés.</string>
-    <string name="web_pattern_attach">Associer le modèle en ligne</string>
+    <string name="web_pattern_attach">Associer à un projet</string>
     <string name="web_pattern_unlink">Dissocier les informations du modèle</string>
     <string name="web_pattern_replace_confirm_title">Remplacer les informations du modèle ?</string>
     <string name="web_pattern_replace_confirm_message">Remplacer les informations actuelles du modèle par %1$s ?</string>
@@ -1145,4 +1148,26 @@
     <string name="counter_history_changed">Compteur modifié</string>
     <string name="counter_history_event_description">%1$s. De %2$s à %3$s. %4$s, %5$s.</string>
     <string name="counter_history_transition">%1$s → %2$s</string>
+    <string name="project_overview_add_photo">Ajouter une photo du projet</string>
+    <string name="project_overview_edit">Modifier</string>
+    <string name="project_overview_add">Ajouter</string>
+    <string name="project_overview_see_all">Tout voir</string>
+    <string name="project_overview_section_pattern">Modèle et documents</string>
+    <string name="project_overview_section_sessions">Séances de travail</string>
+    <string name="project_overview_total_time">Temps total</string>
+    <string name="project_overview_yarn_planned">Prévu</string>
+    <string name="project_overview_yarn_allocated">Réservé</string>
+    <string name="project_overview_yarn_used">Utilisé</string>
+    <string name="project_overview_yarn_remaining">Restant</string>
+    <string name="project_overview_yarn_empty">Aucun fil ajouté pour le moment</string>
+    <string name="project_overview_pattern_empty">Aucun modèle ajouté pour le moment</string>
+    <string name="project_overview_notes_empty">Aucune note pour le moment</string>
+    <string name="project_overview_pdf_page_format">Modèle PDF, page %1$d</string>
+    <string name="project_card_open_overview_action">Ouvrir le projet</string>
+    <string name="project_overview_edit_details">Modifier les détails</string>
+    <string name="project_overview_open_photos">Ouvrir les photos</string>
+    <string name="project_overview_yarn_add_amounts">Ajouter les quantités</string>
+    <string name="project_actions_overview_subtitle">Fil, modèle, notes et détails</string>
+    <string name="project_actions_section_work_session">Séance de travail</string>
+    <string name="project_overview_amount_unknown">Inconnu</string>
 </resources>

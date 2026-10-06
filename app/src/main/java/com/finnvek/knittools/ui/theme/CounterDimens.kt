@@ -4,6 +4,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 object CounterDimens {
+    // Tekstillinen kolmiulotteinen nappi (uusi projekti): pilleri, jonka päässä on nappikuva.
+    val LabeledImageButtonElevation = 3.dp
+    val LabeledImageButtonTextStart = 20.dp
+    val LabeledImageButtonTextEnd = 6.dp
+
     val ScreenHorizontalPadding = 24.dp
     val ContentBottomPadding = 24.dp
     val WorkspaceSectionSpacing = 20.dp
@@ -58,7 +63,6 @@ object CounterDimens {
     val ProjectCardIconSize = 56.dp
     val ProjectCardCompactIconSize = 32.dp
     val ProjectCardIconTitleSpacing = 12.dp
-    val ProjectCardCornerRadius = 8.dp
     val ExtraCounterCardMinHeight = 88.dp
     val ExtraCounterCardCornerRadius = 16.dp
     val ExtraCounterCardHorizontalPadding = 22.dp
@@ -84,7 +88,6 @@ object CounterDimens {
     val StitchTrackerVerticalPadding = 6.dp
     val StitchTrackerContentSpacing = 12.dp
     val TopBarTitleEndPadding = 8.dp
-    val TopBarTextFieldCornerRadius = 12.dp
     val ProjectActionsHorizontalPadding = 22.dp
     val ProjectActionsRowVerticalPadding = 12.dp
     val ProjectActionsSectionTopPadding = 14.dp

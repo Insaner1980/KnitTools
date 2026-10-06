@@ -44,7 +44,13 @@ internal fun ScrollableFormDialog(
             contentColor = AlertDialogDefaults.textContentColor,
             tonalElevation = AlertDialogDefaults.TonalElevation,
         ) {
-            Column(Modifier.verticalScroll(rememberScrollState()).padding(24.dp)) {
+            // Alareunassa pienempi pehmuste: painikkeilla ja sirujen kosketusalueilla on jo oma sisäinen tilansa,
+            // ja 24 dp kaikkialla jätti viimeisen sirun ja painikkeiden ympärille näkyvän tyhjän kaistan.
+            Column(
+                Modifier
+                    .verticalScroll(rememberScrollState())
+                    .padding(start = 24.dp, top = 24.dp, end = 24.dp, bottom = 12.dp),
+            ) {
                 ProvideTextStyle(
                     MaterialTheme.typography.headlineSmall.copy(color = AlertDialogDefaults.titleContentColor),
                 ) {
@@ -52,7 +58,7 @@ internal fun ScrollableFormDialog(
                 }
                 Spacer(Modifier.height(16.dp))
                 ProvideTextStyle(MaterialTheme.typography.bodyMedium) { text() }
-                Spacer(Modifier.height(24.dp))
+                Spacer(Modifier.height(12.dp))
                 FlowRow(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),

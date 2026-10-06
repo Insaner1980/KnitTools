@@ -53,14 +53,13 @@
     <!-- Hub hero text -->
 
     <!-- Project List -->
-    <string name="project_list_title">Projekte</string>
     <string name="continue_knitting">Weiterstricken</string>
+    <string name="continue_crocheting">Weiterhäkeln</string>
     <string name="section_active">Aktiv</string>
     <string name="section_completed">Fertig</string>
     <string name="new_project">Neues Projekt</string>
     <string name="new_project_name_format">Projekt %1$d</string>
     <string name="create_project">Projekt erstellen</string>
-    <string name="project_details">Projektdetails</string>
     <string name="project_details_title">Projektdetails</string>
     <string name="new_project_details_title">Neues Projekt</string>
     <string name="project_name_label">Projektname</string>
@@ -221,8 +220,6 @@
     <string name="saved_to_my_yarn_explanation">Dieser Projekteintrag bleibt separat. Seine Notizen wurden nicht auf die Garnkarte unter Mein Garn kopiert.</string>
     <string name="yarn_count_format">%1$d Garne</string>
     <string name="linked_project_label">Verknüpftes Projekt</string>
-    <string name="link_to_project_label">Mit Projekt verknüpfen</string>
-    <string name="change_project_link">Ändern</string>
     <string name="remove_project_link">Verknüpfung entfernen</string>
     <string name="select_project">Projekt auswählen</string>
     <string name="status_label">Status</string>
@@ -288,6 +285,11 @@
     <string name="current_stitches">Aktuelle Maschenzahl</string>
     <string name="increase_by">Erhöhen um</string>
     <string name="decrease_by">Verringern um</string>
+    <string name="increase_result_placeholder">Fülle beide Felder aus, um zu sehen, wo du zunimmst</string>
+    <string name="decrease_result_placeholder">Fülle beide Felder aus, um zu sehen, wo du abnimmst</string>
+    <string name="cast_on_result_placeholder">Fülle Breite und Maschenprobe aus, um zu sehen, wie viele Maschen du anschlägst</string>
+    <string name="yarn_result_placeholder">Fülle die Felder aus, um zu sehen, wie viele Knäuel du brauchst</string>
+    <string name="tool_result_placeholder">Fülle die Felder aus, um das Ergebnis zu sehen</string>
     <string name="invalid_input">Ungültige Eingabe</string>
     <string name="easy_to_remember">Leicht zu merken</string>
     <string name="balanced">Ausgewogen</string>
@@ -339,7 +341,8 @@
     <string name="theme_system">System</string>
     <string name="theme_light">Hell</string>
     <string name="theme_dark">Dunkel</string>
-    <string name="settings_section_settings">Einstellungen</string>
+    <string name="settings_section_general">Allgemein</string>
+    <string name="settings_theme">Erscheinungsbild</string>
     <string name="settings_section_pro">PRO</string>
     <string name="settings_section_info">INFO</string>
     <string name="settings_language">App-Sprache</string>
@@ -387,6 +390,8 @@
     <string name="color_name">Farbname</string>
     <string name="color_number">Farbnummer</string>
     <string name="dye_lot">Farbpartie</string>
+    <string name="yarn_color_number_short">Nr. %1$s</string>
+    <string name="yarn_dye_lot_short">Partie %1$s</string>
     <string name="weight_category">Stärkenkategorie</string>
     <string name="care_symbols">Pflege</string>
     <string name="no_saved_yarns">Noch keine Garnkarten gespeichert</string>
@@ -656,9 +661,7 @@
     <string name="ravelry_open_saved_pattern">Öffnen</string>
     <string name="open_in_ravelry">In Ravelry öffnen</string>
     <string name="pattern_saved">Anleitung gespeichert</string>
-    <string name="no_saved_patterns">Noch keine Anleitungen gespeichert</string>
-    <string name="search_hint">Strickanleitungen suchen…</string>
-    <string name="ravelry_search_requires_sign_in">Melde dich bei Ravelry an, um Anleitungen zu suchen.</string>
+    <string name="search_hint">Anleitungen suchen…</string>
     <string name="ravelry_import_loading">Anleitung wird geladen</string>
     <string name="ravelry_import_title">Diese Anleitung speichern?</string>
     <string name="ravelry_import_already_saved">Anleitung bereits gespeichert</string>
@@ -731,9 +734,7 @@
     <string name="search_more_error">Weitere Muster konnten nicht geladen werden. Prüfe deine Internetverbindung.</string>
     <string name="pattern_detail_error">Musterdetails konnten nicht geladen werden. Prüfe deine Internetverbindung.</string>
     <string name="project_actions_title">Projektaktionen</string>
-    <string name="project_actions_section_this_project">Dieses Projekt</string>
     <string name="project_actions_section_counter_tools">Zählerwerkzeuge</string>
-    <string name="project_actions_section_project_actions">Projektaktionen</string>
     <string name="project_content_title">Projekt</string>
     <string name="project_content_yarn">Garn</string>
     <string name="project_content_notes">Notizen</string>
@@ -1027,15 +1028,17 @@
     </plurals>
     <string name="web_pattern_add">Webmuster hinzufügen</string>
     <string name="web_pattern_label">Webmuster</string>
+    <string name="pattern_source_pdf">PDF</string>
     <string name="web_pattern_title_label">Mustername</string>
     <string name="web_pattern_designer_label">Designer</string>
     <string name="web_pattern_url_label">Website-Adresse</string>
     <string name="web_pattern_website_label">Website</string>
     <string name="web_pattern_edit">Webmuster bearbeiten</string>
+    <string name="web_pattern_edit_title">Webmuster bearbeiten</string>
     <string name="web_pattern_delete">Webmuster löschen</string>
     <string name="web_pattern_delete_confirm_title">Webmuster löschen?</string>
     <string name="web_pattern_delete_confirm_message">%1$s aus den gespeicherten Anleitungen in der Bibliothek löschen?\n\nFalls für diese Anleitung PDF-Anmerkungen in der Bibliothek erstellt wurden, werden sie ebenfalls gelöscht und nicht mehr in Projekten angezeigt. Bereits an Projekte angehängte PDFs und innerhalb von Projekten erstellte PDF-Anmerkungen bleiben erhalten.</string>
-    <string name="web_pattern_attach">Webmuster verknüpfen</string>
+    <string name="web_pattern_attach">Mit Projekt verknüpfen</string>
     <string name="web_pattern_unlink">Musterinformationen entfernen</string>
     <string name="web_pattern_replace_confirm_title">Musterinformationen ersetzen?</string>
     <string name="web_pattern_replace_confirm_message">Die aktuellen Musterinformationen durch %1$s ersetzen?</string>
@@ -1116,4 +1119,26 @@
     <string name="counter_history_changed">Zähler geändert</string>
     <string name="counter_history_event_description">%1$s. Von %2$s auf %3$s. %4$s, %5$s.</string>
     <string name="counter_history_transition">%1$s → %2$s</string>
+    <string name="project_overview_add_photo">Projektfoto hinzufügen</string>
+    <string name="project_overview_edit">Bearbeiten</string>
+    <string name="project_overview_add">Hinzufügen</string>
+    <string name="project_overview_see_all">Alle anzeigen</string>
+    <string name="project_overview_section_pattern">Anleitung und Dokumente</string>
+    <string name="project_overview_section_sessions">Arbeitssitzungen</string>
+    <string name="project_overview_total_time">Gesamtzeit</string>
+    <string name="project_overview_yarn_planned">Geplant</string>
+    <string name="project_overview_yarn_allocated">Reserviert</string>
+    <string name="project_overview_yarn_used">Verbraucht</string>
+    <string name="project_overview_yarn_remaining">Übrig</string>
+    <string name="project_overview_yarn_empty">Noch kein Garn hinzugefügt</string>
+    <string name="project_overview_pattern_empty">Noch keine Anleitung hinzugefügt</string>
+    <string name="project_overview_notes_empty">Noch keine Notizen</string>
+    <string name="project_overview_pdf_page_format">PDF-Anleitung, Seite %1$d</string>
+    <string name="project_card_open_overview_action">Projekt öffnen</string>
+    <string name="project_overview_edit_details">Details bearbeiten</string>
+    <string name="project_overview_open_photos">Fotos öffnen</string>
+    <string name="project_overview_yarn_add_amounts">Mengen hinzufügen</string>
+    <string name="project_actions_overview_subtitle">Garn, Anleitung, Notizen und Details</string>
+    <string name="project_actions_section_work_session">Arbeitssitzung</string>
+    <string name="project_overview_amount_unknown">Unbekannt</string>
 </resources>

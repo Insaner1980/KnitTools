@@ -93,7 +93,6 @@ class RavelryLocalizationSourceTest {
                 "ravelry_open_saved_pattern",
                 "ravelry_save_pattern_explanation",
                 "saved_pattern_detail_no_pdf_explanation",
-                "ravelry_search_requires_sign_in",
                 "ravelry_import_loading",
                 "ravelry_import_title",
                 "ravelry_import_already_saved",

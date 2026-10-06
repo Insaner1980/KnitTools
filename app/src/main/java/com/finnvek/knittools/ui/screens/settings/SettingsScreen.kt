@@ -5,6 +5,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -17,6 +18,7 @@ import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -24,7 +26,6 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -43,7 +44,6 @@ import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
@@ -56,7 +56,9 @@ import com.finnvek.knittools.data.datastore.ThemeMode
 import com.finnvek.knittools.pro.ProStatus
 import com.finnvek.knittools.ui.components.CollectWithLifecycleEffect
 import com.finnvek.knittools.ui.components.InfoTip
-import com.finnvek.knittools.ui.components.localizedUppercase
+import com.finnvek.knittools.ui.components.LabelWithInfo
+import com.finnvek.knittools.ui.components.SectionLabel
+import com.finnvek.knittools.ui.components.SegmentedToggle
 import com.finnvek.knittools.ui.platform.ExternalWebLinkOpenResult
 import com.finnvek.knittools.ui.platform.openExternalWebLink
 import com.finnvek.knittools.ui.theme.knitToolsColors
@@ -105,7 +107,8 @@ fun SettingsScreen(
                     .padding(padding)
                     .verticalScroll(rememberScrollState()),
         ) {
-            SectionHeader(stringResource(R.string.settings_section_settings))
+            // "General": näytön otsikko on jo Settings, joten sama sana osio-otsikkona oli toistoa.
+            SettingsSectionLabel(stringResource(R.string.settings_section_general))
 
             SettingsSelectionRow(
                 label = stringResource(R.string.settings_language),
@@ -114,25 +117,14 @@ fun SettingsScreen(
                 onClick = { showLanguageSheet.value = true },
             )
 
-            HorizontalDivider()
+            SettingsDivider()
 
-            ThemeRow(
-                label = stringResource(R.string.theme_light),
-                selected = prefs.themeMode == ThemeMode.LIGHT,
-                onClick = { viewModel.setThemeMode(ThemeMode.LIGHT) },
-            )
-            ThemeRow(
-                label = stringResource(R.string.theme_dark),
-                selected = prefs.themeMode == ThemeMode.DARK,
-                onClick = { viewModel.setThemeMode(ThemeMode.DARK) },
-            )
-            ThemeRow(
-                label = stringResource(R.string.theme_system),
-                selected = prefs.themeMode == ThemeMode.SYSTEM,
-                onClick = { viewModel.setThemeMode(ThemeMode.SYSTEM) },
+            ThemeSelector(
+                selected = prefs.themeMode,
+                onSelect = viewModel::setThemeMode,
             )
 
-            HorizontalDivider()
+            SettingsDivider()
 
             SwitchRow(
                 label = stringResource(R.string.haptic_feedback),
@@ -151,8 +143,8 @@ fun SettingsScreen(
                 tipTitle = stringResource(R.string.tip_imperial_units_title),
                 tipDescription = stringResource(R.string.tip_imperial_units_desc),
             )
-            HorizontalDivider()
-            SectionHeader(stringResource(R.string.settings_section_pro))
+            SettingsDivider()
+            SettingsSectionLabel(stringResource(R.string.settings_section_pro))
 
             SettingsSelectionRow(
                 label = stringResource(R.string.knittools_pro),
@@ -161,7 +153,7 @@ fun SettingsScreen(
                 onClick = onUpgradeToPro,
             )
             if (proState.status != ProStatus.PRO_PURCHASED) {
-                HorizontalDivider()
+                SettingsDivider()
                 SettingsActionRow(
                     label =
                         stringResource(
@@ -173,17 +165,18 @@ fun SettingsScreen(
                         ),
                     onClick = viewModel::restorePurchases,
                     isInProgress = isRestoring,
+                    showChevron = false,
                 )
             }
 
-            HorizontalDivider()
-            SectionHeader(stringResource(R.string.settings_section_info))
+            SettingsDivider()
+            SettingsSectionLabel(stringResource(R.string.settings_section_info))
 
             SettingsActionRow(
                 label = stringResource(R.string.backup_title),
                 onClick = onBackup,
             )
-            HorizontalDivider()
+            SettingsDivider()
 
             SettingsActionRow(
                 label = stringResource(R.string.help_and_guide),
@@ -204,7 +197,7 @@ fun SettingsScreen(
                 },
             )
 
-            HorizontalDivider()
+            SettingsDivider()
             SettingsInfoText(
                 text = stringResource(R.string.privacy_summary),
             )
@@ -214,7 +207,7 @@ fun SettingsScreen(
                 onCheckedChange = viewModel::setUsageAnalyticsEnabled,
             )
             SettingsInfoText(text = stringResource(R.string.usage_analytics_description))
-            HorizontalDivider()
+            SettingsDivider()
             SettingsInfoText(
                 text = stringResource(R.string.version_format, BuildConfig.VERSION_NAME),
             )
@@ -258,16 +251,8 @@ private fun com.finnvek.knittools.pro.ProState.settingsStatusText(): String =
     }
 
 @Composable
-private fun SectionHeader(title: String) {
-    Text(
-        text = title.localizedUppercase(),
-        modifier =
-            Modifier
-                .padding(horizontal = 16.dp, vertical = 8.dp)
-                .semantics { heading() },
-        style = MaterialTheme.typography.labelSmall,
-        color = MaterialTheme.colorScheme.secondary,
-    )
+private fun SettingsSectionLabel(title: String) {
+    SectionLabel(text = title, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
 }
 
 @Composable
@@ -275,6 +260,7 @@ private fun SettingsActionRow(
     label: String,
     onClick: () -> Unit,
     isInProgress: Boolean = false,
+    showChevron: Boolean = true,
 ) {
     SettingsClickableRow(onClick = onClick, enabled = !isInProgress) {
         if (isInProgress) {
@@ -283,7 +269,49 @@ private fun SettingsActionRow(
         }
         Text(
             text = label,
-            modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+            modifier = Modifier.weight(1f).semantics { liveRegion = LiveRegionMode.Polite },
+        )
+        // Nuoli kertoo, että rivi avaa uuden näkymän; ilman sitä rivi näytti pelkältä tekstiltä.
+        if (showChevron) {
+            Icon(
+                Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+/** Sisennetty hiusviiva kuten projektinäkymässä; reunasta reunaan ulottuva viiva oli ainoa poikkeus. */
+@Composable
+private fun SettingsDivider() {
+    HorizontalDivider(
+        modifier = Modifier.padding(horizontal = 16.dp),
+        color = MaterialTheme.colorScheme.outlineVariant,
+    )
+}
+
+/** Teema samalla segmenttivalitsimella kuin muut valinnat, ei kolmella radiorivillä. */
+@Composable
+private fun ThemeSelector(
+    selected: ThemeMode,
+    onSelect: (ThemeMode) -> Unit,
+) {
+    val modes = listOf(ThemeMode.LIGHT, ThemeMode.DARK, ThemeMode.SYSTEM)
+    Column(
+        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        LabelWithInfo(label = stringResource(R.string.settings_theme), info = null)
+        SegmentedToggle(
+            options =
+                listOf(
+                    stringResource(R.string.theme_light),
+                    stringResource(R.string.theme_dark),
+                    stringResource(R.string.theme_system),
+                ),
+            selectedIndex = modes.indexOf(selected),
+            onSelect = { onSelect(modes[it]) },
         )
     }
 }
@@ -380,33 +408,11 @@ private fun SwitchRowWithTip(
                 ).padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(label, modifier = Modifier.weight(1f))
-        InfoTip(title = tipTitle, description = tipDescription)
-        Spacer(modifier = Modifier.width(12.dp))
-        Switch(checked = checked, onCheckedChange = null)
-    }
-}
-
-@Composable
-private fun ThemeRow(
-    label: String,
-    selected: Boolean,
-    onClick: () -> Unit,
-) {
-    Row(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .selectable(
-                    selected = selected,
-                    role = Role.RadioButton,
-                    onClick = onClick,
-                ).padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        RadioButton(selected = selected, onClick = null)
-        Spacer(modifier = Modifier.width(12.dp))
+        // Info nimikkeen vieressä, ei kytkimen vieressä.
         Text(label)
+        InfoTip(title = tipTitle, description = tipDescription)
+        Spacer(modifier = Modifier.weight(1f))
+        Switch(checked = checked, onCheckedChange = null)
     }
 }
 
@@ -414,7 +420,7 @@ private fun ThemeRow(
 private fun SettingsClickableRow(
     onClick: () -> Unit,
     enabled: Boolean = true,
-    content: @Composable () -> Unit,
+    content: @Composable RowScope.() -> Unit,
 ) {
     Row(
         modifier =

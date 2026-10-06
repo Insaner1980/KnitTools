@@ -267,7 +267,7 @@ class WebPatternEditorScreenTest {
             }
         }
 
-        composeRule.onNodeWithText(context.getString(R.string.web_pattern_edit)).assertIsDisplayed()
+        composeRule.onNodeWithText(context.getString(R.string.web_pattern_edit_title)).assertIsDisplayed()
         composeRule.onNodeWithTag(WEB_PATTERN_TITLE_FIELD_TAG).assertIsDisplayed()
         composeRule.onNodeWithText(context.getString(R.string.web_pattern_already_saved)).assertIsDisplayed()
     }

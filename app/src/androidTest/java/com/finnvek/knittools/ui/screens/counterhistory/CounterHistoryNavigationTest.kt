@@ -65,7 +65,7 @@ class CounterHistoryNavigationTest : HistoryNavigationTest("History test ", step
         openHistory()
         awaitAction(R.string.counter_history_increase)
         runBlocking(Dispatchers.IO) { repository.deleteProject(id) }
-        awaitText(label(R.string.project_list_title))
+        awaitText(label(R.string.all_projects))
         await("deleted project left the navigation stack") {
             find { hasText(it, label(R.string.counter_history_title)) } == null &&
                 find { it.contentDescription?.toString() == label(R.string.project_actions_title) } == null

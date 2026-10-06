@@ -23,7 +23,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.calculator.formatIntegerForDisplay
 import com.finnvek.knittools.ui.components.HubListItem
-import com.finnvek.knittools.ui.components.localizedUppercase
+import com.finnvek.knittools.ui.components.SectionLabel
 import com.finnvek.knittools.ui.components.rememberCurrentLocale
 import com.finnvek.knittools.ui.navigation.Screen
 import com.finnvek.knittools.ui.theme.knitToolsColors
@@ -64,10 +64,8 @@ fun LibraryScreen(
         ) {
             // MY COLLECTION -osio
             item {
-                Text(
-                    text = stringResource(R.string.library_my_collection).localizedUppercase(),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.knitToolsColors.brandWine,
+                SectionLabel(
+                    text = stringResource(R.string.library_my_collection),
                 )
             }
             item {
@@ -103,10 +101,8 @@ fun LibraryScreen(
             // REFERENCE -osio
             item {
                 Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = stringResource(R.string.library_reference).localizedUppercase(),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.knitToolsColors.brandWine,
+                SectionLabel(
+                    text = stringResource(R.string.library_reference),
                 )
             }
             item {

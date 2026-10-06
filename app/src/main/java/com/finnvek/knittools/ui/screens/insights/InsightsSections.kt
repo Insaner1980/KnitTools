@@ -38,7 +38,6 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
-import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
@@ -50,6 +49,7 @@ import com.finnvek.knittools.domain.calculator.MinutesPerRowDisplay
 import com.finnvek.knittools.domain.calculator.formatIntegerForDisplay
 import com.finnvek.knittools.domain.calculator.formatPercentForDisplay
 import com.finnvek.knittools.ui.components.DurationHero
+import com.finnvek.knittools.ui.components.SectionLabel
 import com.finnvek.knittools.ui.components.durationText
 import com.finnvek.knittools.ui.components.localizedUppercase
 import com.finnvek.knittools.ui.components.rememberCurrentLocale
@@ -352,7 +352,7 @@ private fun InsightsStat(
 }
 
 /**
- * Osion otsikko Libraryn ja Toolsin tapaan: pienet versaalit `brandWine`-värillä.
+ * Osion otsikko on yhteinen [SectionLabel] kuten Libraryssa ja Toolsissa.
  * Aiempi 20 sp lihavoitu otsikko oli yksi neljästä kilpailevasta äänenvoimakkuudesta
  * heron alla; kategoriamerkkinä se on hiljaisempi ja tunnistettavasti samaa sovellusta.
  */
@@ -369,14 +369,10 @@ internal fun InsightsSectionHeader(
                 .padding(
                     top = InsightsDimens.SectionTopPadding,
                     bottom = InsightsDimens.SectionHeaderBottomPadding,
-                ).semantics { heading() },
+                ),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        Text(
-            text = title.localizedUppercase(),
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.knitToolsColors.brandWine,
-        )
+        SectionLabel(text = title)
         if (meta != null) {
             Text(
                 text = meta,

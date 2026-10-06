@@ -1,13 +1,13 @@
 package com.finnvek.knittools.ui.screens.counter
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -18,14 +18,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.AddCircle
-import androidx.compose.material.icons.outlined.CheckCircle
-import androidx.compose.material.icons.outlined.DeleteOutline
-import androidx.compose.material.icons.outlined.Description
-import androidx.compose.material.icons.outlined.Edit
-import androidx.compose.material.icons.outlined.FolderOpen
 import androidx.compose.material.icons.outlined.FormatListNumbered
 import androidx.compose.material.icons.outlined.History
-import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.Numbers
 import androidx.compose.material.icons.outlined.PlayArrow
 import androidx.compose.material.icons.outlined.Restore
@@ -35,6 +29,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -49,37 +44,35 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.calculator.formatIntegerForDisplay
+import com.finnvek.knittools.domain.model.CraftType
 import com.finnvek.knittools.pro.ProStatus
 import com.finnvek.knittools.ui.components.ProBadge
-import com.finnvek.knittools.ui.components.localizedUppercase
+import com.finnvek.knittools.ui.components.ProjectThumbnail
+import com.finnvek.knittools.ui.components.SectionLabel
 import com.finnvek.knittools.ui.components.rememberCurrentLocale
 import com.finnvek.knittools.ui.theme.CounterDimens
-import com.finnvek.knittools.ui.theme.projectActionsSectionHeader
+import com.finnvek.knittools.ui.theme.ProjectOverviewDimens
+import com.finnvek.knittools.ui.theme.knitToolsColors
 
 data class ProjectActionsSheetCallbacks(
     val onDismiss: () -> Unit,
-    val onOpenReminders: () -> Unit,
-    val onOpenDocuments: () -> Unit,
+    val onOpenOverview: () -> Unit,
     val onOpenCountersList: () -> Unit,
     val onOpenAddCounter: () -> Unit,
     val onToggleStitchTracking: (Boolean) -> Unit,
     val onOpenStitchCount: () -> Unit,
-    val onOpenSessionHistory: () -> Unit,
     val onStartWorkSession: () -> Unit,
     val onStopWorkSession: () -> Unit,
-    val onOpenProjectDetails: () -> Unit,
-    val onStartRename: () -> Unit,
     val onShowResetDialog: () -> Unit,
-    val onShowCompleteDialog: () -> Unit,
-    val onReactivateProject: () -> Unit,
-    val onShowDeleteDialog: () -> Unit,
-    val onMoveToFolder: () -> Unit,
     val onMeasurements: () -> Unit = {},
     val onOpenCounterHistory: () -> Unit = {},
 )
 
 data class ProjectActionsSheetState(
-    val reminderCount: Int,
+    val projectId: Long,
+    val projectName: String,
+    val craftType: CraftType,
+    val photoUri: String?,
     val projectCounterCount: Int,
     val stitchTrackingEnabled: Boolean,
     val stitchCount: Int?,
@@ -102,38 +95,48 @@ fun ProjectActionsBottomSheet(
         shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
     ) {
         Column(modifier = Modifier.verticalScroll(rememberScrollState()).padding(bottom = 18.dp)) {
-            CurrentProjectActions(state, callbacks)
-            SectionDivider()
+            ProjectOverviewLink(state, callbacks)
             CounterToolActions(state, callbacks)
             SectionDivider()
-            ProjectManagementActions(state, callbacks)
+            if (!state.isCompleted) {
+                ProjectActionsSection(title = stringResource(R.string.project_actions_section_work_session)) {
+                    WorkSessionActionRow(state, callbacks)
+                }
+            }
         }
     }
 }
 
 @Composable
-private fun CurrentProjectActions(
+private fun ProjectOverviewLink(
     state: ProjectActionsSheetState,
     callbacks: ProjectActionsSheetCallbacks,
 ) {
-    ProjectActionsSection(title = stringResource(R.string.project_actions_section_this_project)) {
-        ActionRow(
-            icon = Icons.Outlined.Description,
-            label = stringResource(R.string.project_documents_title),
-            onClick = callbacks.onOpenDocuments,
-        )
-        ActionRow(
-            icon = Icons.Outlined.Notifications,
-            label = stringResource(R.string.reminders),
-            trailingCount = state.reminderCount.takeIf { it > 0 },
-            onClick = callbacks.onOpenReminders,
-        )
-        ActionRow(
-            icon = Icons.Outlined.FormatListNumbered,
-            label = stringResource(R.string.counters),
-            trailingCount = state.projectCounterCount + 1,
-            onClick = callbacks.onOpenCountersList,
-        )
+    Surface(
+        modifier = Modifier.padding(horizontal = CounterDimens.ProjectActionsHorizontalPadding).fillMaxWidth(),
+        shape = RoundedCornerShape(ProjectOverviewDimens.SheetCornerRadius),
+        color = MaterialTheme.knitToolsColors.actionContainer,
+    ) {
+        Row(
+            Modifier
+                .clickable(
+                    role = Role.Button,
+                    onClickLabel = stringResource(R.string.project_card_open_overview_action),
+                    onClick = callbacks.onOpenOverview,
+                ).padding(ProjectOverviewDimens.PillHorizontalPadding),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(ProjectOverviewDimens.PillHorizontalPadding),
+        ) {
+            ProjectThumbnail(state.projectId, state.craftType, state.photoUri, ProjectOverviewDimens.YarnSwatchSize)
+            Column(Modifier.weight(1f)) {
+                Text(state.projectName, style = MaterialTheme.typography.titleMedium)
+                Text(
+                    stringResource(R.string.project_actions_overview_subtitle),
+                    style = MaterialTheme.typography.bodySmall,
+                )
+            }
+            Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null)
+        }
     }
 }
 
@@ -145,13 +148,9 @@ private fun CounterToolActions(
     ProjectActionsSection(title = stringResource(R.string.project_actions_section_counter_tools)) {
         ActionRow(
             icon = Icons.Outlined.FormatListNumbered,
-            label = stringResource(R.string.measurement_title),
-            onClick = callbacks.onMeasurements,
-        )
-        ActionRow(
-            icon = Icons.Outlined.History,
-            label = stringResource(R.string.counter_history_title),
-            onClick = callbacks.onOpenCounterHistory,
+            label = stringResource(R.string.counters),
+            trailingCount = state.projectCounterCount + 1,
+            onClick = callbacks.onOpenCountersList,
         )
         if (!state.isCompleted) {
             ActionRow(
@@ -161,6 +160,13 @@ private fun CounterToolActions(
                 showChevron = false,
                 proStatus = state.proStatus,
             )
+        }
+        ActionRow(
+            icon = Icons.Outlined.History,
+            label = stringResource(R.string.counter_history_title),
+            onClick = callbacks.onOpenCounterHistory,
+        )
+        if (!state.isCompleted) {
             ActionRow(
                 icon = Icons.Outlined.Numbers,
                 label = stringResource(R.string.stitches_per_row),
@@ -174,68 +180,19 @@ private fun CounterToolActions(
                 onCheckedChange = callbacks.onToggleStitchTracking,
             )
         }
-    }
-}
-
-@Composable
-private fun ProjectManagementActions(
-    state: ProjectActionsSheetState,
-    callbacks: ProjectActionsSheetCallbacks,
-) {
-    ProjectActionsSection(title = stringResource(R.string.project_actions_section_project_actions)) {
         ActionRow(
-            icon = Icons.Outlined.FolderOpen,
-            label = stringResource(R.string.folder_move_to),
-            onClick = callbacks.onMoveToFolder,
+            icon = Icons.Outlined.FormatListNumbered,
+            label = stringResource(R.string.measurement_title),
+            onClick = callbacks.onMeasurements,
         )
         if (!state.isCompleted) {
-            WorkSessionActionRow(state, callbacks)
-        }
-        ActionRow(
-            icon = Icons.Outlined.History,
-            label = stringResource(R.string.session_history_title),
-            onClick = callbacks.onOpenSessionHistory,
-        )
-        ActionRow(
-            icon = Icons.Outlined.Edit,
-            label = stringResource(R.string.project_details),
-            onClick = callbacks.onOpenProjectDetails,
-        )
-        ActionRow(
-            icon = Icons.Outlined.Edit,
-            label = stringResource(R.string.rename_project),
-            onClick = callbacks.onStartRename,
-            showChevron = false,
-        )
-        if (state.isCompleted) {
-            ActionRow(
-                icon = Icons.Outlined.Restore,
-                label = stringResource(R.string.reactivate_project),
-                onClick = callbacks.onReactivateProject,
-                showChevron = false,
-            )
-        } else {
             ActionRow(
                 icon = Icons.Outlined.Restore,
                 label = stringResource(R.string.reset_counter),
                 onClick = callbacks.onShowResetDialog,
                 showChevron = false,
             )
-            ActionRow(
-                icon = Icons.Outlined.CheckCircle,
-                label = stringResource(R.string.complete_project),
-                onClick = callbacks.onShowCompleteDialog,
-                showChevron = false,
-            )
         }
-        Spacer(modifier = Modifier.height(8.dp))
-        ActionRow(
-            icon = Icons.Outlined.DeleteOutline,
-            label = stringResource(R.string.delete_project),
-            onClick = callbacks.onShowDeleteDialog,
-            showChevron = false,
-            isDanger = true,
-        )
     }
 }
 
@@ -274,10 +231,8 @@ private fun ProjectActionsSection(
     title: String,
     content: @Composable () -> Unit,
 ) {
-    Text(
-        text = title.localizedUppercase(),
-        style = MaterialTheme.typography.projectActionsSectionHeader,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    SectionLabel(
+        text = title,
         modifier =
             Modifier.padding(
                 start = CounterDimens.ProjectActionsHorizontalPadding,
@@ -419,7 +374,7 @@ private fun RowScope.ActionRowBody(
 private fun SectionDivider() {
     HorizontalDivider(
         thickness = 1.dp,
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
+        color = MaterialTheme.colorScheme.outlineVariant,
         modifier =
             Modifier.padding(
                 horizontal = CounterDimens.ProjectActionsHorizontalPadding,

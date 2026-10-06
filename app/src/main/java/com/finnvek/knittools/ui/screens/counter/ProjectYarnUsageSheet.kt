@@ -37,6 +37,7 @@ import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.calculator.MeasurementNumberError
 import com.finnvek.knittools.domain.model.YarnUsageUnit
 import com.finnvek.knittools.repository.YarnUsageResult
+import com.finnvek.knittools.ui.components.CancelButton
 import com.finnvek.knittools.ui.components.NumberInputField
 import com.finnvek.knittools.ui.components.NumberInputOptions
 import com.finnvek.knittools.ui.components.rememberCurrentLocale
@@ -174,11 +175,11 @@ fun ProjectYarnUsageSheet(
                     Text(stringResource(R.string.yarn_usage_delete))
                 }
             }
-            TextButton(
+            CancelButton(
                 onClick = actions.onDismiss,
                 enabled = !state.busy,
                 modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("yarn_usage_cancel"),
-            ) { Text(stringResource(R.string.cancel)) }
+            )
         }
     }
     if (confirmDelete) {
@@ -197,9 +198,9 @@ fun ProjectYarnUsageSheet(
                 ) { Text(stringResource(R.string.yarn_usage_delete)) }
             },
             dismissButton = {
-                TextButton(onClick = {
+                CancelButton(onClick = {
                     confirmDelete = false
-                }, modifier = Modifier.heightIn(min = 48.dp)) { Text(stringResource(R.string.cancel)) }
+                }, modifier = Modifier.heightIn(min = 48.dp))
             },
         )
     }

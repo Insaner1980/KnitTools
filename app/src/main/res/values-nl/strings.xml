@@ -53,14 +53,13 @@
     <!-- Hub hero text -->
 
     <!-- Project List -->
-    <string name="project_list_title">Projecten</string>
     <string name="continue_knitting">Verder breien</string>
+    <string name="continue_crocheting">Verder haken</string>
     <string name="section_active">Actief</string>
     <string name="section_completed">Voltooid</string>
     <string name="new_project">Nieuw project</string>
     <string name="new_project_name_format">Project %1$d</string>
     <string name="create_project">Project maken</string>
-    <string name="project_details">Projectdetails</string>
     <string name="project_details_title">Projectdetails</string>
     <string name="new_project_details_title">Nieuw project</string>
     <string name="project_name_label">Projectnaam</string>
@@ -221,8 +220,6 @@
     <string name="saved_to_my_yarn_explanation">Deze projectvermelding blijft apart bestaan. De notities zijn niet naar de garenkaart in Mijn garen gekopieerd.</string>
     <string name="yarn_count_format">%1$d garens</string>
     <string name="linked_project_label">Gekoppeld project</string>
-    <string name="link_to_project_label">Aan project koppelen</string>
-    <string name="change_project_link">Wijzigen</string>
     <string name="remove_project_link">Koppeling verwijderen</string>
     <string name="select_project">Project selecteren</string>
     <string name="status_label">Status</string>
@@ -288,6 +285,11 @@
     <string name="current_stitches">Huidige steken</string>
     <string name="increase_by">Meerderen met</string>
     <string name="decrease_by">Minderen met</string>
+    <string name="increase_result_placeholder">Vul beide velden in om te zien waar je meerdert</string>
+    <string name="decrease_result_placeholder">Vul beide velden in om te zien waar je mindert</string>
+    <string name="cast_on_result_placeholder">Vul breedte en stekenverhouding in om te zien hoeveel steken je opzet</string>
+    <string name="yarn_result_placeholder">Vul de velden in om te zien hoeveel bollen je nodig hebt</string>
+    <string name="tool_result_placeholder">Vul de velden in om het resultaat te zien</string>
     <string name="invalid_input">Ongeldige invoer</string>
     <string name="easy_to_remember">Makkelijk te onthouden</string>
     <string name="balanced">Gebalanceerd</string>
@@ -339,7 +341,8 @@
     <string name="theme_system">Systeem</string>
     <string name="theme_light">Licht</string>
     <string name="theme_dark">Donker</string>
-    <string name="settings_section_settings">Instellingen</string>
+    <string name="settings_section_general">Algemeen</string>
+    <string name="settings_theme">Thema</string>
     <string name="settings_section_pro">PRO</string>
     <string name="settings_section_info">INFO</string>
     <string name="settings_language">App-taal</string>
@@ -387,6 +390,8 @@
     <string name="color_name">Kleurnaam</string>
     <string name="color_number">Kleurnummer</string>
     <string name="dye_lot">Verfbad</string>
+    <string name="yarn_color_number_short">nr. %1$s</string>
+    <string name="yarn_dye_lot_short">Verfbad %1$s</string>
     <string name="weight_category">Garendikte</string>
     <string name="care_symbols">Onderhoud</string>
     <string name="no_saved_yarns">Nog geen garenkaarten opgeslagen</string>
@@ -656,9 +661,7 @@
     <string name="ravelry_open_saved_pattern">Openen</string>
     <string name="open_in_ravelry">Openen in Ravelry</string>
     <string name="pattern_saved">Patroon opgeslagen</string>
-    <string name="no_saved_patterns">Nog geen patronen opgeslagen</string>
-    <string name="search_hint">Zoek naar breipatronen…</string>
-    <string name="ravelry_search_requires_sign_in">Log in met Ravelry om patronen te zoeken.</string>
+    <string name="search_hint">Zoek naar patronen…</string>
     <string name="ravelry_import_loading">Patroon laden</string>
     <string name="ravelry_import_title">Dit patroon opslaan?</string>
     <string name="ravelry_import_already_saved">Patroon al opgeslagen</string>
@@ -731,9 +734,7 @@
     <string name="search_more_error">Kan niet meer patronen laden. Controleer je internetverbinding.</string>
     <string name="pattern_detail_error">Kan patroondetails niet laden. Controleer je internetverbinding.</string>
     <string name="project_actions_title">Projectacties</string>
-    <string name="project_actions_section_this_project">Dit project</string>
     <string name="project_actions_section_counter_tools">Tellerhulpmiddelen</string>
-    <string name="project_actions_section_project_actions">Projectacties</string>
     <string name="project_content_title">Project</string>
     <string name="project_content_yarn">Garen</string>
     <string name="project_content_notes">Notities</string>
@@ -1027,15 +1028,17 @@
     </plurals>
     <string name="web_pattern_add">Webpatroon toevoegen</string>
     <string name="web_pattern_label">Webpatroon</string>
+    <string name="pattern_source_pdf">PDF</string>
     <string name="web_pattern_title_label">Patroonnaam</string>
     <string name="web_pattern_designer_label">Ontwerper</string>
     <string name="web_pattern_url_label">Websiteadres</string>
     <string name="web_pattern_website_label">Website</string>
     <string name="web_pattern_edit">Webpatroon bewerken</string>
+    <string name="web_pattern_edit_title">Webpatroon bewerken</string>
     <string name="web_pattern_delete">Webpatroon verwijderen</string>
     <string name="web_pattern_delete_confirm_title">Webpatroon verwijderen?</string>
     <string name="web_pattern_delete_confirm_message">%1$s uit Opgeslagen patronen in de bibliotheek verwijderen?\n\nEventuele PDF-annotaties die in de bibliotheek voor dit patroon zijn gemaakt, worden ook verwijderd en zijn niet meer zichtbaar in projecten. PDF-bestanden die al aan projecten zijn gekoppeld en PDF-annotaties die binnen projecten zijn gemaakt, blijven behouden.</string>
-    <string name="web_pattern_attach">Webpatroon koppelen</string>
+    <string name="web_pattern_attach">Aan project koppelen</string>
     <string name="web_pattern_unlink">Patroongegevens ontkoppelen</string>
     <string name="web_pattern_replace_confirm_title">Patroongegevens vervangen?</string>
     <string name="web_pattern_replace_confirm_message">De huidige patroongegevens vervangen door %1$s?</string>
@@ -1116,4 +1119,26 @@
     <string name="counter_history_changed">Teller gewijzigd</string>
     <string name="counter_history_event_description">%1$s. Van %2$s naar %3$s. %4$s, %5$s.</string>
     <string name="counter_history_transition">%1$s → %2$s</string>
+    <string name="project_overview_add_photo">Projectfoto toevoegen</string>
+    <string name="project_overview_edit">Bewerken</string>
+    <string name="project_overview_add">Toevoegen</string>
+    <string name="project_overview_see_all">Alles bekijken</string>
+    <string name="project_overview_section_pattern">Patroon en documenten</string>
+    <string name="project_overview_section_sessions">Werksessies</string>
+    <string name="project_overview_total_time">Totale tijd</string>
+    <string name="project_overview_yarn_planned">Gepland</string>
+    <string name="project_overview_yarn_allocated">Gereserveerd</string>
+    <string name="project_overview_yarn_used">Gebruikt</string>
+    <string name="project_overview_yarn_remaining">Resterend</string>
+    <string name="project_overview_yarn_empty">Nog geen garen toegevoegd</string>
+    <string name="project_overview_pattern_empty">Nog geen patroon toegevoegd</string>
+    <string name="project_overview_notes_empty">Nog geen notities</string>
+    <string name="project_overview_pdf_page_format">PDF-patroon, pagina %1$d</string>
+    <string name="project_card_open_overview_action">Project openen</string>
+    <string name="project_overview_edit_details">Details bewerken</string>
+    <string name="project_overview_open_photos">Foto\'s openen</string>
+    <string name="project_overview_yarn_add_amounts">Hoeveelheden toevoegen</string>
+    <string name="project_actions_overview_subtitle">Garen, patroon, notities en details</string>
+    <string name="project_actions_section_work_session">Werksessie</string>
+    <string name="project_overview_amount_unknown">Onbekend</string>
 </resources>

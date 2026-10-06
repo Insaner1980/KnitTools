@@ -53,14 +53,13 @@
     <!-- Viiteosion hero-teksti -->
 
     <!-- Projektilista -->
-    <string name="project_list_title">Projektit</string>
     <string name="continue_knitting">Jatka neulomista</string>
+    <string name="continue_crocheting">Jatka virkkaamista</string>
     <string name="section_active">Aktiiviset</string>
     <string name="section_completed">Valmiit</string>
     <string name="new_project">Uusi projekti</string>
     <string name="new_project_name_format">Projekti %1$d</string>
     <string name="create_project">Luo projekti</string>
-    <string name="project_details">Projektin tiedot</string>
     <string name="project_details_title">Projektin tiedot</string>
     <string name="new_project_details_title">Uusi projekti</string>
     <string name="project_name_label">Projektin nimi</string>
@@ -221,8 +220,6 @@
     <string name="saved_to_my_yarn_explanation">Tämä projektin lankakirjaus säilyy erillisenä. Sen muistiinpanoja ei kopioitu Omat langat -lankakortille.</string>
     <string name="yarn_count_format">%1$d lankaa</string>
     <string name="linked_project_label">Liitetty projekti</string>
-    <string name="link_to_project_label">Liitä projektiin</string>
-    <string name="change_project_link">Vaihda</string>
     <string name="remove_project_link">Poista linkki</string>
     <string name="select_project">Valitse projekti</string>
     <string name="status_label">Tila</string>
@@ -288,6 +285,11 @@
     <string name="current_stitches">Nykyinen silmukkamäärä</string>
     <string name="increase_by">Lisää</string>
     <string name="decrease_by">Kavenna</string>
+    <string name="increase_result_placeholder">Täytä molemmat kentät, niin näet mihin lisäykset tehdään</string>
+    <string name="decrease_result_placeholder">Täytä molemmat kentät, niin näet mihin kavennukset tehdään</string>
+    <string name="cast_on_result_placeholder">Täytä leveys ja neuletiheys, niin näet montako silmukkaa luodaan</string>
+    <string name="yarn_result_placeholder">Täytä kentät, niin näet montako kerää tarvitset</string>
+    <string name="tool_result_placeholder">Täytä kentät, niin näet tuloksen</string>
     <string name="invalid_input">Virheellinen syöte</string>
     <string name="easy_to_remember">Helppo muistaa</string>
     <string name="balanced">Tasainen</string>
@@ -339,7 +341,8 @@
     <string name="theme_system">Järjestelmä</string>
     <string name="theme_light">Vaalea</string>
     <string name="theme_dark">Tumma</string>
-    <string name="settings_section_settings">Asetukset</string>
+    <string name="settings_section_general">Yleiset</string>
+    <string name="settings_theme">Teema</string>
     <string name="settings_section_pro">PRO</string>
     <string name="settings_section_info">TIETOA</string>
     <string name="settings_language">Sovelluksen kieli</string>
@@ -387,6 +390,8 @@
     <string name="color_name">Värin nimi</string>
     <string name="color_number">Värinumero</string>
     <string name="dye_lot">Värjäyserä</string>
+    <string name="yarn_color_number_short">nro %1$s</string>
+    <string name="yarn_dye_lot_short">Erä %1$s</string>
     <string name="weight_category">Paksuusluokka</string>
     <string name="care_symbols">Hoito</string>
     <string name="no_saved_yarns">Lankakortteja ei ole vielä tallennettu</string>
@@ -925,9 +930,7 @@
     <string name="ravelry_open_saved_pattern">Avaa</string>
     <string name="open_in_ravelry">Avaa Ravelryssä</string>
     <string name="pattern_saved">Ohje tallennettu</string>
-    <string name="no_saved_patterns">Ei tallennettuja ohjeita vielä</string>
-    <string name="search_hint">Etsi neuleohjeita…</string>
-    <string name="ravelry_search_requires_sign_in">Kirjaudu Ravelryyn hakeaksesi ohjeita.</string>
+    <string name="search_hint">Etsi ohjeita…</string>
     <string name="ravelry_import_loading">Ladataan ohjetta</string>
     <string name="ravelry_import_title">Tallennetaanko tämä ohje?</string>
     <string name="ravelry_import_already_saved">Ohje on jo tallennettu</string>
@@ -991,9 +994,7 @@
 
     <!-- Laskurinäytön redesign: bottom sheet -->
     <string name="project_actions_title">Projektin toiminnot</string>
-    <string name="project_actions_section_this_project">Tämä projekti</string>
     <string name="project_actions_section_counter_tools">Laskurityökalut</string>
-    <string name="project_actions_section_project_actions">Projektin toiminnot</string>
     <string name="project_content_title">Projekti</string>
     <string name="project_content_yarn">Lanka</string>
     <string name="project_content_notes">Muistiinpanot</string>
@@ -1321,15 +1322,17 @@
     </plurals>
     <string name="web_pattern_add">Lisää verkkokaava</string>
     <string name="web_pattern_label">Verkkokaava</string>
+    <string name="pattern_source_pdf">PDF</string>
     <string name="web_pattern_title_label">Kaavan nimi</string>
     <string name="web_pattern_designer_label">Suunnittelija</string>
     <string name="web_pattern_url_label">Verkkosivun osoite</string>
     <string name="web_pattern_website_label">Verkkosivu</string>
     <string name="web_pattern_edit">Muokkaa verkkokaavaa</string>
+    <string name="web_pattern_edit_title">Muokkaa verkkokaavaa</string>
     <string name="web_pattern_delete">Poista verkkokaava</string>
     <string name="web_pattern_delete_confirm_title">Poistetaanko verkkokaava?</string>
     <string name="web_pattern_delete_confirm_message">Poistetaanko %1$s kirjaston tallennetuista ohjeista?\n\nMyös tähän ohjeeseen kirjastossa mahdollisesti tehdyt PDF-merkinnät poistetaan, eivätkä ne enää näy projekteissa. Projekteihin jo liitetyt PDF:t ja projekteissa tehdyt PDF-merkinnät säilyvät.</string>
-    <string name="web_pattern_attach">Liitä verkkokaava</string>
+    <string name="web_pattern_attach">Liitä projektiin</string>
     <string name="web_pattern_unlink">Irrota kaavan tiedot</string>
     <string name="web_pattern_replace_confirm_title">Korvataanko kaavan tiedot?</string>
     <string name="web_pattern_replace_confirm_message">Korvataanko nykyiset kaavan tiedot kaavalla %1$s?</string>
@@ -1410,4 +1413,26 @@
     <string name="counter_history_changed">Laskuri muuttui</string>
     <string name="counter_history_event_description">%1$s. Arvosta %2$s arvoon %3$s. %4$s, %5$s.</string>
     <string name="counter_history_transition">%1$s → %2$s</string>
+    <string name="project_overview_add_photo">Lisää projektikuva</string>
+    <string name="project_overview_edit">Muokkaa</string>
+    <string name="project_overview_add">Lisää</string>
+    <string name="project_overview_see_all">Näytä kaikki</string>
+    <string name="project_overview_section_pattern">Kaava ja dokumentit</string>
+    <string name="project_overview_section_sessions">Työskentelyistunnot</string>
+    <string name="project_overview_total_time">Aikaa yhteensä</string>
+    <string name="project_overview_yarn_planned">Suunniteltu</string>
+    <string name="project_overview_yarn_allocated">Varattu</string>
+    <string name="project_overview_yarn_used">Käytetty</string>
+    <string name="project_overview_yarn_remaining">Jäljellä</string>
+    <string name="project_overview_yarn_empty">Lankaa ei ole vielä lisätty</string>
+    <string name="project_overview_pattern_empty">Kaavaa ei ole vielä lisätty</string>
+    <string name="project_overview_notes_empty">Ei vielä muistiinpanoja</string>
+    <string name="project_overview_pdf_page_format">PDF-kaava, sivu %1$d</string>
+    <string name="project_card_open_overview_action">Avaa projekti</string>
+    <string name="project_overview_edit_details">Muokkaa tietoja</string>
+    <string name="project_overview_open_photos">Avaa kuvat</string>
+    <string name="project_overview_yarn_add_amounts">Lisää määrät</string>
+    <string name="project_actions_overview_subtitle">Lanka, kaava, muistiinpanot ja tiedot</string>
+    <string name="project_actions_section_work_session">Työskentelyistunto</string>
+    <string name="project_overview_amount_unknown">Ei tiedossa</string>
 </resources>

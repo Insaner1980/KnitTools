@@ -34,6 +34,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.finnvek.knittools.R
 import com.finnvek.knittools.data.backup.BackupError
 import com.finnvek.knittools.data.backup.BackupFormat
+import com.finnvek.knittools.ui.components.CancelButton
 import com.finnvek.knittools.ui.components.ToolScreenScaffold
 import java.text.DateFormat
 import java.time.LocalDate
@@ -136,7 +137,7 @@ internal fun BackupContent(
                 Button({ confirm = true }, Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
                     Text(stringResource(R.string.backup_restore))
                 }
-                TextButton(onCancel, Modifier.heightIn(min = 48.dp)) { Text(stringResource(R.string.cancel)) }
+                CancelButton(onCancel, Modifier.heightIn(min = 48.dp))
             }
             if (state.phase == BackupPhase.EXPORTED || state.phase == BackupPhase.RESTORED) {
                 Text(
@@ -163,7 +164,7 @@ internal fun BackupContent(
                     onConfirm()
                 }) { Text(stringResource(R.string.backup_replace)) }
             },
-            dismissButton = { TextButton({ confirm = false }) { Text(stringResource(R.string.cancel)) } },
+            dismissButton = { CancelButton({ confirm = false }) },
         )
     }
 }
@@ -179,7 +180,7 @@ private fun BackupProgress(
         Modifier.semantics { liveRegion = LiveRegionMode.Polite },
     )
     if (phase != BackupPhase.RESTORING) {
-        TextButton(onCancel, Modifier.heightIn(min = 48.dp)) { Text(stringResource(R.string.cancel)) }
+        CancelButton(onCancel, Modifier.heightIn(min = 48.dp))
     }
 }
 

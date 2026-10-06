@@ -58,6 +58,7 @@ import com.finnvek.knittools.ui.components.CounterStepSymbol
 import com.finnvek.knittools.ui.components.MainCounterTargetStatus
 import com.finnvek.knittools.ui.components.ProBadge
 import com.finnvek.knittools.ui.components.RollingCounter
+import com.finnvek.knittools.ui.components.SectionLabel
 import com.finnvek.knittools.ui.components.StitchCounter
 import com.finnvek.knittools.ui.components.localizedUppercase
 import com.finnvek.knittools.ui.components.mainCounterCountText
@@ -69,11 +70,6 @@ import com.finnvek.knittools.ui.components.mainCounterTargetText
 import com.finnvek.knittools.ui.components.rememberCurrentLocale
 import com.finnvek.knittools.ui.theme.CounterDimens
 import java.util.Locale
-
-data class ProjectHeaderActions(
-    val onNameSave: (String) -> Unit,
-    val onEditingNameChange: (Boolean) -> Unit,
-)
 
 data class ProjectCountersSectionActions(
     val onAddCounter: () -> Unit,
@@ -750,11 +746,7 @@ private fun WorkspaceSectionTitle(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-            color = MaterialTheme.colorScheme.secondary,
-        )
+        SectionLabel(text = title)
         WorkspaceSectionAction(
             label = actionLabel,
             onClick = onAction,

@@ -43,8 +43,6 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.heading
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -53,9 +51,10 @@ import com.finnvek.knittools.domain.model.ProjectYarnNote
 import com.finnvek.knittools.domain.model.ProjectYarnUsageItem
 import com.finnvek.knittools.domain.model.YarnUsageSourceStatus
 import com.finnvek.knittools.pro.ProStatus
+import com.finnvek.knittools.ui.components.CancelButton
 import com.finnvek.knittools.ui.components.ProBadge
 import com.finnvek.knittools.ui.components.ProjectYarnTextField
-import com.finnvek.knittools.ui.components.localizedUppercase
+import com.finnvek.knittools.ui.components.SectionLabel
 import com.finnvek.knittools.ui.theme.knitToolsColors
 import com.finnvek.knittools.ui.theme.yarnColorForId
 
@@ -94,16 +93,13 @@ fun YarnManagementSheet(
                     .padding(bottom = 32.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Text(
-                text = stringResource(R.string.linked_yarn_title).localizedUppercase(),
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.secondary,
+            SectionLabel(
+                text = stringResource(R.string.linked_yarn_title),
                 modifier =
                     Modifier
                         .focusRequester(
                             headingFocus,
                         ).focusable()
-                        .semantics { heading() }
                         .testTag("yarn_management_heading"),
             )
 
@@ -189,7 +185,7 @@ private fun LinkedYarnRow(
             Modifier
                 .fillMaxWidth()
                 .background(
-                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    color = MaterialTheme.knitToolsColors.cardContainer,
                     shape = MaterialTheme.shapes.medium,
                 ).padding(horizontal = 14.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -232,10 +228,8 @@ private fun ProjectYarnNotesSection(
 ) {
     if (notes.isEmpty()) return
 
-    Text(
-        text = stringResource(R.string.project_yarn_notes_title).localizedUppercase(),
-        style = MaterialTheme.typography.labelSmall,
-        color = MaterialTheme.colorScheme.secondary,
+    SectionLabel(
+        text = stringResource(R.string.project_yarn_notes_title),
     )
     notes.forEach { note ->
         ProjectYarnNoteRow(
@@ -262,7 +256,7 @@ private fun ProjectYarnNoteRow(
             Modifier
                 .fillMaxWidth()
                 .background(
-                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    color = MaterialTheme.knitToolsColors.cardContainer,
                     shape = MaterialTheme.shapes.medium,
                 ).padding(horizontal = 14.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(6.dp),
@@ -348,7 +342,7 @@ private fun YarnOptionCard(
                 .fillMaxWidth()
                 .clickable(onClick = onClick),
         shape = MaterialTheme.shapes.medium,
-        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        color = MaterialTheme.knitToolsColors.cardContainer,
     ) {
         Column(
             modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
@@ -383,7 +377,7 @@ private fun ProjectYarnForm(
             Modifier
                 .fillMaxWidth()
                 .background(
-                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    color = MaterialTheme.knitToolsColors.cardContainer,
                     shape = MaterialTheme.shapes.medium,
                 ).padding(14.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
@@ -421,9 +415,7 @@ private fun ProjectYarnForm(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.End,
         ) {
-            TextButton(onClick = onCancel) {
-                Text(stringResource(R.string.cancel))
-            }
+            CancelButton(onClick = onCancel)
             TextButton(
                 onClick = {
                     onSave(

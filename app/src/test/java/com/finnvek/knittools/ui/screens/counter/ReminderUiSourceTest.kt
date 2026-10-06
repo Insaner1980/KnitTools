@@ -11,14 +11,15 @@ class ReminderUiSourceTest {
         val counterScreen = ProjectSourceFiles.read(COUNTER_SCREEN)
         val workspace = ProjectSourceFiles.read(COUNTER_WORKSPACE_SECTIONS)
         val reminderComponents = ProjectSourceFiles.read(REMINDER_COMPONENTS)
-        val projectActions = ProjectSourceFiles.read(PROJECT_ACTIONS_BOTTOM_SHEET)
+        val overviewSections = ProjectSourceFiles.read(PROJECT_OVERVIEW_SECTIONS)
 
         assertTrue(workspace.contains("ReminderAlertCard("))
         assertTrue(counterScreen.contains("RemindersSheet("))
         assertTrue(counterScreen.contains("viewModel.updateReminder("))
         assertTrue(counterScreen.contains("viewModel.deleteReminder("))
-        assertTrue(projectActions.contains("onOpenReminders"))
-        assertTrue(projectActions.contains("R.string.reminders"))
+        assertTrue(counterScreen.contains("onReminders = { openProjectContent { showRemindersSheet = true } }"))
+        assertTrue(overviewSections.contains("actions.onReminders"))
+        assertTrue(overviewSections.contains("R.string.reminders"))
         assertTrue(reminderComponents.contains("onEdit"))
         assertTrue(reminderComponents.contains("key = { it.id }"))
     }
@@ -61,7 +62,7 @@ class ReminderUiSourceTest {
             "app/src/main/java/com/finnvek/knittools/ui/screens/counter/CounterWorkspaceSections.kt"
         private const val REMINDER_COMPONENTS =
             "app/src/main/java/com/finnvek/knittools/ui/screens/counter/ReminderComponents.kt"
-        private const val PROJECT_ACTIONS_BOTTOM_SHEET =
-            "app/src/main/java/com/finnvek/knittools/ui/screens/counter/ProjectActionsBottomSheet.kt"
+        private const val PROJECT_OVERVIEW_SECTIONS =
+            "app/src/main/java/com/finnvek/knittools/ui/screens/project/ProjectOverviewSections.kt"
     }
 }

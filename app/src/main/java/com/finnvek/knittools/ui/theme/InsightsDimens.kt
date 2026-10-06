@@ -23,10 +23,6 @@ object InsightsDimens {
     val FiltersTopPadding = 4.dp
     val ContextRowGap = 12.dp
 
-    // Aikaväli otsikkona app barissa. Napautusalue tulee pehmusteesta, ei omasta korkeudesta.
-    val RangeTitleHorizontalPadding = 8.dp
-    val RangeTitleVerticalPadding = 6.dp
-    val RangeTitleIndicatorSize = 28.dp
     val FilterChipShape = RoundedCornerShape(percent = 50)
     val FilterChipHorizontalPadding = 12.dp
     val FilterChipVerticalPadding = 7.dp

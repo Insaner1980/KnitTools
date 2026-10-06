@@ -2,7 +2,6 @@ package com.finnvek.knittools.ui.screens.insights
 
 import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.pro.ProManager
-import com.finnvek.knittools.repository.CounterRepository
 import com.finnvek.knittools.repository.SessionInsightsFacts
 import io.mockk.every
 import io.mockk.mockk
@@ -27,12 +26,11 @@ import org.junit.Test
 @OptIn(ExperimentalCoroutinesApi::class)
 class InsightsQueryCancellationTest {
     private val testDispatcher = UnconfinedTestDispatcher()
-    private val repository = mockk<CounterRepository>()
+    private val repository = mockInsightsRepository()
     private val proManager = mockk<ProManager>()
 
     @Before fun setup() {
         Dispatchers.setMain(testDispatcher)
-        every { repository.observeCompletions() } returns flowOf(emptyList())
         every { proManager.hasFeature(any()) } returns false
         every { proManager.hasFeatureFlow(any()) } returns flowOf(false)
     }

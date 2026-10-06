@@ -11,13 +11,41 @@ class ThemeContrastTest {
     @Test
     fun `hiljennetty teksti täyttää normaalin tekstin kontrastirajan`() {
         assertMinimumContrast(TextMuted, listOf(Background, Surface, SurfaceHigh))
-        assertMinimumContrast(LightTextMuted, listOf(LightBackground, LightSurface, LightSurfaceHigh))
+        assertMinimumContrast(
+            LightTextMuted,
+            listOf(LightBackground, LightSurface, LightSurfaceHigh, LightCardContainer, LightInputField),
+        )
     }
 
     @Test
     fun `secondary labelit täyttävät normaalin tekstin kontrastirajan`() {
         assertMinimumContrast(Secondary, listOf(Background, Surface, SurfaceHigh))
-        assertMinimumContrast(LightSecondary, listOf(LightBackground, LightSurface, LightSurfaceHigh))
+        assertMinimumContrast(
+            LightSecondary,
+            listOf(LightBackground, LightSurface, LightSurfaceHigh, LightCardContainer),
+        )
+    }
+
+    @Test
+    fun `vaalean teeman syötekenttä on korttia vaaleampi eikä kortti ole raskas khaki`() {
+        // Korttia tummempi kenttä luki käytöstä poistettuna; raskas kortti kilpaili petroolin heron kanssa.
+        assertTrue(LightInputField.relativeLuminance() > LightCardContainer.relativeLuminance())
+        assertTrue(LightCardContainer.relativeLuminance() > LightSurfaceHigh.relativeLuminance())
+        assertTrue(LightCardContainer.relativeLuminance() < LightBackground.relativeLuminance())
+        assertMinimumContrast(LightTextSecondary, listOf(LightInputField))
+    }
+
+    @Test
+    fun `tyhjän tilan teksti on luettava mutta erottuu sisällöstä`() {
+        assertMinimumContrast(LightEmptyStateText, listOf(LightBackground))
+        assertMinimumContrast(TextMuted, listOf(Background))
+        assertTrue(LightEmptyStateText.relativeLuminance() > LightTextSecondary.relativeLuminance())
+    }
+
+    @Test
+    fun `kentän esimerkkiarvo on luettava kentän pohjalla`() {
+        assertMinimumContrast(LightEmptyStateText, listOf(LightInputField))
+        assertMinimumContrast(TextSecondary, listOf(SurfaceHighest))
     }
 
     @Test

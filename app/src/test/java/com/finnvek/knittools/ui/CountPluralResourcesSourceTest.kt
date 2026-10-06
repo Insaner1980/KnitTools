@@ -56,8 +56,6 @@ class CountPluralResourcesSourceTest {
                     "delete_photos_confirm",
                 "app/src/main/java/com/finnvek/knittools/ui/screens/library/SavedPatternsScreen.kt" to
                     "delete_patterns_confirm",
-                "app/src/main/java/com/finnvek/knittools/ui/screens/ravelry/RavelrySearchScreen.kt" to
-                    "delete_patterns_confirm",
                 "app/src/main/java/com/finnvek/knittools/ui/screens/project/ProjectListScreen.kt" to
                     "complete_n_projects",
                 "app/src/main/java/com/finnvek/knittools/ui/screens/project/ProjectListScreen.kt" to

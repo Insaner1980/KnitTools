@@ -50,6 +50,7 @@ abstract class ProjectListViewModelFixture {
             )
         yarnCardRepository = mockk(relaxed = true)
         photoRepository = mockk(relaxed = true)
+        every { photoRepository.observeLatestPhotoUris() } returns flowOf(emptyMap())
         savedPatternRepository = mockk(relaxed = true)
         projectDocumentRepository = mockk(relaxed = true)
         folderRepository = mockk()
@@ -71,7 +72,6 @@ abstract class ProjectListViewModelFixture {
         ProjectListViewModel(
             repository = repository,
             proManager = proManager,
-            yarnCardRepository = yarnCardRepository,
             photoRepository = photoRepository,
             savedPatternRepository = savedPatternRepository,
             projectDocumentRepository = projectDocumentRepository,

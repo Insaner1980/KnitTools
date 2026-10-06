@@ -8,33 +8,19 @@ import kotlin.math.pow
 class ProjectListContrastTest {
     @Test
     fun `progress fill clears the graphical contrast minimum against its track`() {
-        val alpha = ProjectListDimens.ProgressTrackAlpha
-        val dark = progressContrast(TextPrimary, Background, alpha)
-        val light = progressContrast(LightTextPrimary, LightBackground, alpha)
-
-        assertTrue("Dark progress contrast was $dark", dark >= MINIMUM_GRAPHICAL_CONTRAST)
-        assertTrue("Light progress contrast was $light", light >= MINIMUM_GRAPHICAL_CONTRAST)
+        assertTrue(contrastRatio(Primary, Background) >= MINIMUM_GRAPHICAL_CONTRAST)
+        assertTrue(contrastRatio(Primary, LightBackground) >= MINIMUM_GRAPHICAL_CONTRAST)
     }
 
-    private fun progressContrast(
-        trackForeground: Color,
-        background: Color,
-        trackAlpha: Float,
-    ): Double {
-        val track =
-            Color(
-                red = blend(trackForeground.red, background.red, trackAlpha),
-                green = blend(trackForeground.green, background.green, trackAlpha),
-                blue = blend(trackForeground.blue, background.blue, trackAlpha),
+    @Test
+    fun `readable accent supports small text on background and buttons`() {
+        listOf(Background, ActionContainer).forEach { assertTrue(contrastRatio(PrimaryReadable, it) >= 4.5) }
+        listOf(LightBackground, LightActionContainer).forEach {
+            assertTrue(
+                contrastRatio(LightPrimaryReadable, it) >= 4.5,
             )
-        return contrastRatio(Primary, track)
+        }
     }
-
-    private fun blend(
-        foreground: Float,
-        background: Float,
-        alpha: Float,
-    ): Float = foreground * alpha + background * (1f - alpha)
 
     private fun contrastRatio(
         first: Color,

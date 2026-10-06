@@ -30,6 +30,7 @@ import com.finnvek.knittools.domain.calculator.ChartSymbolData
 import com.finnvek.knittools.domain.model.ChartSymbol
 import com.finnvek.knittools.domain.model.ChartSymbolCategory
 import com.finnvek.knittools.ui.components.InfoNote
+import com.finnvek.knittools.ui.components.SectionLabel
 import com.finnvek.knittools.ui.components.ToolScreenScaffold
 
 @Composable
@@ -68,9 +69,8 @@ fun ChartSymbolScreen(onBack: () -> Unit) {
                 val symbols = grouped[category] ?: return@forEach
 
                 item {
-                    Text(
+                    SectionLabel(
                         text = categoryNames[category] ?: category.name,
-                        style = MaterialTheme.typography.titleMedium,
                         modifier = Modifier.padding(top = 16.dp, bottom = 4.dp),
                     )
                 }

@@ -33,13 +33,12 @@ class RavelryDetailFlowSourceTest {
         val detail = ProjectSourceFiles.read(SAVED_PATTERN_DETAIL_SCREEN)
         val availability =
             detail
-                .substringAfter("SavedPatternAvailability(pattern = pattern,")
-                .substringBefore("SavedPatternDetailActions(")
+                .substringAfter("private fun RavelrySourceSection(")
+                .substringBefore("private fun SavedPatternAvailabilityChip(")
         assertTrue(availability.contains("if (pattern.requiresRavelryAccess) {"))
-        val explanation =
-            availability.substringAfter("if (pattern.requiresRavelryAccess) {").substringBefore("\n                }")
+        val explanation = availability.substringAfterLast("if (pattern.requiresRavelryAccess) {").substringBefore("}")
 
-        assertTrue(explanation.contains("stringResource(R.string.saved_pattern_detail_no_pdf_explanation)"))
+        assertTrue(explanation.contains("OverviewEmptyText(R.string.saved_pattern_detail_no_pdf_explanation)"))
         assertFalse(explanation.contains("maxLines"))
         assertFalse(explanation.contains("TextOverflow"))
         val helpers =
@@ -51,8 +50,8 @@ class RavelryDetailFlowSourceTest {
         assertFalse(helpers.contains("isAvailableOffline"))
         val webContent =
             detail
-                .substringAfter("private fun WebPatternDetailContent(")
-                .substringBefore("private fun SavedPatternDetailHeader(")
+                .substringAfter("private fun WebPatternSourceSection(")
+                .substringBefore("private fun RavelrySourceSection(")
         assertTrue(webContent.contains("R.string.web_pattern_not_offline"))
         assertFalse(webContent.contains("R.string.saved_pattern_detail_no_pdf_explanation"))
     }

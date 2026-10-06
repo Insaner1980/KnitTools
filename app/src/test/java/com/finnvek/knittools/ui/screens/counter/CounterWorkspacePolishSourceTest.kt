@@ -36,8 +36,9 @@ class CounterWorkspacePolishSourceTest {
         val projectCards = ProjectSourceFiles.read(COUNTER_PROJECT_CONTENT_CARDS)
         val stitchCounter = ProjectSourceFiles.read(STITCH_COUNTER)
 
-        assertTrue(workspace.contains("color = MaterialTheme.colorScheme.secondary"))
-        assertTrue(projectCards.contains("color = MaterialTheme.colorScheme.secondary"))
+        // Osio-otsikot tulevat yhteisestä SectionLabelista eivätkä määrittele omaa väriään.
+        assertTrue(workspace.contains("SectionLabel("))
+        assertTrue(projectCards.contains("SectionLabel("))
         assertTrue(workspace.contains("WorkspaceSectionAction("))
         assertTrue(workspace.contains("Icons.Filled.Add"))
         assertTrue(workspace.contains("R.string.stitch_tracker_label"))

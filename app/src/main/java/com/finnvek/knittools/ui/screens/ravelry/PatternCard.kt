@@ -27,6 +27,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.model.PatternAvailability
+import com.finnvek.knittools.ui.components.BadgePill
 import com.finnvek.knittools.ui.components.RemotePatternImage
 import com.finnvek.knittools.ui.theme.knitToolsColors
 
@@ -36,6 +37,8 @@ data class PatternCardState(
     val thumbnailUrl: String?,
     val difficulty: Float?,
     val availability: PatternAvailability,
+    // Libraryssa kaavan lähde (Ravelry, PDF); Ravelry-haussa lähde on itsestään selvä.
+    val sourceLabel: String? = null,
 )
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -46,7 +49,7 @@ fun PatternCard(
     modifier: Modifier = Modifier,
     onLongClick: (() -> Unit)? = null,
     actionContent: (@Composable () -> Unit)? = null,
-    containerColor: Color = MaterialTheme.colorScheme.surfaceVariant,
+    containerColor: Color = MaterialTheme.knitToolsColors.cardContainer,
 ) {
     val interactionModifier =
         if (onLongClick == null) {
@@ -76,6 +79,7 @@ fun PatternCard(
                 designerName = state.designerName,
                 difficulty = state.difficulty,
                 availability = state.availability,
+                sourceLabel = state.sourceLabel,
                 modifier = Modifier.fillMaxWidth(),
             )
             PatternCardActionSlot(actionContent = actionContent)
@@ -101,6 +105,7 @@ private fun PatternDetails(
     designerName: String,
     difficulty: Float?,
     availability: PatternAvailability,
+    sourceLabel: String?,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier) {
@@ -115,7 +120,7 @@ private fun PatternDetails(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Spacer(modifier = Modifier.height(4.dp))
-        PatternBadgeRow(difficulty = difficulty, availability = availability)
+        PatternBadgeRow(difficulty = difficulty, availability = availability, sourceLabel = sourceLabel)
     }
 }
 
@@ -123,11 +128,13 @@ private fun PatternDetails(
 private fun PatternBadgeRow(
     difficulty: Float?,
     availability: PatternAvailability,
+    sourceLabel: String?,
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
+        sourceLabel?.let { BadgePill(text = it) }
         if (difficulty != null) {
             Text(
                 text = stringResource(R.string.difficulty_format, difficulty),
@@ -135,7 +142,11 @@ private fun PatternBadgeRow(
                 color = MaterialTheme.knitToolsColors.tealAccent,
             )
         }
-        PatternAvailabilityBadge(availability = availability)
+        // Listassa vain tiedossa oleva saatavuus: "Availability unknown" jokaisella rivillä oli kohinaa.
+        // Kaavan sivu näyttää tuntemattomankin, eikä tuntematonta koskaan esitetä maksullisena.
+        if (availability != PatternAvailability.Unknown) {
+            PatternAvailabilityBadge(availability = availability)
+        }
     }
 }
 

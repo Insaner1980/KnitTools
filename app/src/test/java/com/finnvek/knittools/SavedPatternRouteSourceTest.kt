@@ -14,7 +14,8 @@ class SavedPatternRouteSourceTest {
 
         assertTrue(librarySavedPatterns.contains("val onPatternClick: (Long) -> Unit"))
         assertTrue(librarySavedPatterns.contains("actions.onPatternClick(pattern.id)"))
-        assertTrue(ravelrySearch.contains("onSavedPatternDetail(pattern.id)"))
+        // Ravelry-haku avaa tallennetun kaavan vain tuontivahvistuksesta; lista on Libraryssa.
+        assertTrue(ravelrySearch.contains("onOpenSavedPattern = actions.onSavedPatternDetail"))
         assertTrue(navGraph.contains("Screen.SavedPatternDetail(savedPatternId).route"))
         assertFalse(librarySavedPatterns.contains("pattern.routeTarget()"))
         assertFalse(ravelrySearch.contains("pattern.routeTarget()"))

@@ -7,6 +7,7 @@ import com.finnvek.knittools.data.local.ProgressPhotoEntity
 import com.finnvek.knittools.data.local.ProjectPhotoCount
 import com.finnvek.knittools.data.storage.ProgressPhotoStorage
 import com.finnvek.knittools.domain.model.ProgressPhoto
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
@@ -33,6 +34,25 @@ class ProgressPhotoRepositoryDomainApiTest {
     fun setup() {
         context = mockk(relaxed = true)
     }
+
+    @Test
+    fun `thumbnail map excludes unavailable files`() =
+        runTest {
+            val dao = mockk<ProgressPhotoDao>(relaxed = true)
+            every { dao.observeLatestPhotosPerProject() } returns
+                flowOf(
+                    listOf(
+                        ProgressPhotoEntity(id = 1, projectId = 7, photoUri = "file:///available.jpg", rowNumber = 1),
+                        ProgressPhotoEntity(id = 2, projectId = 8, photoUri = "file:///missing.jpg", rowNumber = 2),
+                    ),
+                )
+            val storage = mockk<ProgressPhotoStorage>(relaxed = true)
+            every { storage.isPhotoAvailable(context, "file:///available.jpg") } returns true
+            every { storage.isPhotoAvailable(context, "file:///missing.jpg") } returns false
+            val repository = ProgressPhotoRepository(dao, storage, context, UnconfinedTestDispatcher(testScheduler))
+            assertEquals(mapOf(7L to "file:///available.jpg"), repository.observeLatestPhotoUris().first())
+            coVerify { dao.delete(2) }
+        }
 
     @Test
     fun `progress photo repository exposes domain models and deletes by domain photo`() =
@@ -240,6 +260,13 @@ class ProgressPhotoRepositoryDomainApiTest {
     private class FakeProgressPhotoDao(
         progressPhotos: List<ProgressPhotoEntity> = emptyList(),
     ) : ProgressPhotoDao {
+        override fun observeLatestPhotosPerProject(): Flow<List<ProgressPhotoEntity>> =
+            flowOf(
+                progressPhotos.groupBy { it.projectId }.values.map { photos ->
+                    photos.maxWith(compareBy(ProgressPhotoEntity::createdAt, ProgressPhotoEntity::id))
+                },
+            )
+
         private val progressPhotos = progressPhotos.toMutableList()
         var lastInserted: ProgressPhotoEntity? = null
         var insertCount: Int = 0

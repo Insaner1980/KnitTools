@@ -26,7 +26,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.flow.updateAndGet
 import kotlinx.coroutines.launch
 import java.io.IOException
 import javax.inject.Inject
@@ -408,64 +407,6 @@ class RavelryViewModel
                     if (requestId == importRequestId) {
                         isImportSaveInFlight = false
                     }
-                }
-            }
-        }
-
-        fun deleteSavedPattern(id: Long) {
-            viewModelScope.launch {
-                try {
-                    repository.deleteSavedPattern(id)
-                } catch (e: CancellationException) {
-                    throw e
-                } catch (_: Exception) {
-                    // Room pysyy totuuden lähteenä, joten rivi jää näkyviin poiston epäonnistuessa.
-                }
-            }
-        }
-
-        // === Multi-select (SavedTab) ===
-
-        private val _isSavedSelectMode = MutableStateFlow(false)
-        val isSavedSelectMode: StateFlow<Boolean> = _isSavedSelectMode.asStateFlow()
-
-        private val _selectedSavedIds = MutableStateFlow<Set<Long>>(emptySet())
-        val selectedSavedIds: StateFlow<Set<Long>> = _selectedSavedIds.asStateFlow()
-
-        fun enterSavedSelectMode(initialId: Long) {
-            _isSavedSelectMode.value = true
-            _selectedSavedIds.value = setOf(initialId)
-        }
-
-        fun exitSavedSelectMode() {
-            _isSavedSelectMode.value = false
-            _selectedSavedIds.value = emptySet()
-        }
-
-        fun toggleSavedSelection(id: Long) {
-            val next =
-                _selectedSavedIds.updateAndGet { current ->
-                    if (id in current) current - id else current + id
-                }
-            if (next.isEmpty()) _isSavedSelectMode.value = false
-        }
-
-        fun selectAllSaved(visibleIds: List<Long>) {
-            _selectedSavedIds.value = visibleIds.toSet()
-        }
-
-        fun deleteSelectedSaved() {
-            viewModelScope.launch {
-                try {
-                    val ids = _selectedSavedIds.value.toList()
-                    if (ids.isNotEmpty()) {
-                        repository.deleteSavedPatterns(ids)
-                    }
-                    exitSavedSelectMode()
-                } catch (e: CancellationException) {
-                    throw e
-                } catch (_: Exception) {
-                    // Valinta säilyy, jotta käyttäjä voi yrittää eräpoistoa uudelleen.
                 }
             }
         }

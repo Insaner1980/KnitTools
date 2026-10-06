@@ -25,7 +25,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.model.YarnCardStatus
-import com.finnvek.knittools.ui.components.localizedUppercase
+import com.finnvek.knittools.ui.components.SectionLabel
 import com.finnvek.knittools.ui.theme.knitToolsColors
 
 data class YarnStatusUi(
@@ -54,10 +54,8 @@ fun YarnStatusSheet(
                     .padding(bottom = 32.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Text(
-                text = stringResource(R.string.status_label).localizedUppercase(),
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.secondary,
+            SectionLabel(
+                text = stringResource(R.string.status_label),
             )
 
             yarnStatusOptions().forEach { option ->
@@ -103,8 +101,10 @@ fun yarnStatusUi(status: String): YarnStatusUi =
             YarnStatusUi(
                 key = status,
                 label = stringResource(R.string.status_in_use),
-                containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
-                contentColor = MaterialTheme.colorScheme.primary,
+                // Käytössä oleva lanka on aktiivinen tila kuten BadgePill: petrooli + oranssi, ei ruskeaksi
+                // sekoittuvaa oranssin läpikuultoa.
+                containerColor = MaterialTheme.knitToolsColors.actionContainer,
+                contentColor = MaterialTheme.knitToolsColors.primaryReadable,
             )
         }
 

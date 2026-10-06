@@ -61,7 +61,7 @@ class ProjectLocalizationSourceTest {
 
     private companion object {
         private const val PROJECT_LIST_ITEM =
-            "app/src/main/java/com/finnvek/knittools/ui/components/ProjectListItem.kt"
+            "app/src/main/java/com/finnvek/knittools/ui/components/ProjectCardText.kt"
         private const val DEFAULT_STRINGS = "app/src/main/res/values/strings.xml"
         private const val STRING_VALUE_REGEX = "<string name=\\\"%s\\\">([^<]*)</string>"
         private const val MIDDLE_DOT = '\u00b7'

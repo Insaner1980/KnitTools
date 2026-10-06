@@ -42,6 +42,7 @@ import androidx.compose.ui.unit.dp
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.model.PATTERN_BOOKMARK_NAME_MAX_LENGTH
 import com.finnvek.knittools.domain.model.PatternBookmark
+import com.finnvek.knittools.ui.components.CancelButton
 import com.finnvek.knittools.ui.components.ScrollableFormDialog
 
 internal data class PatternBookmarkSheetActions(
@@ -198,12 +199,10 @@ internal fun PatternBookmarkSheet(
                 }
             },
             dismissButton = {
-                TextButton(
+                CancelButton(
                     onClick = { deleteBookmarkId = null },
                     modifier = Modifier.heightIn(min = 48.dp),
-                ) {
-                    Text(stringResource(R.string.cancel))
-                }
+                )
             },
         )
     }
@@ -363,12 +362,10 @@ private fun PatternBookmarkNameDialog(
             }
         },
         dismissButton = {
-            TextButton(
+            CancelButton(
                 onClick = onDismiss,
                 modifier = Modifier.heightIn(min = 48.dp),
-            ) {
-                Text(stringResource(R.string.cancel))
-            }
+            )
         },
     )
 }

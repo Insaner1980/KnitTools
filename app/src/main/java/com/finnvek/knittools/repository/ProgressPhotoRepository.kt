@@ -31,6 +31,12 @@ class ProgressPhotoRepository
         @param:ApplicationContext private val context: Context,
         @param:IoDispatcher private val ioDispatcher: CoroutineDispatcher,
     ) {
+        fun observeLatestPhotoUris(): Flow<Map<Long, String>> =
+            dao
+                .observeLatestPhotosPerProject()
+                .map { photos -> availablePhotos(photos).associate { it.projectId to it.photoUri } }
+                .retryOnRepositoryReadFailure()
+
         fun getAllPhotos(): Flow<List<ProgressPhoto>> =
             dao
                 .getAllPhotos()

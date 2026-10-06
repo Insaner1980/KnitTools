@@ -14,18 +14,21 @@ class RavelrySearchTabSourceTest {
         assertTrue(searchScreen.contains("canSearch = authState is RavelryAuthState.Connected"))
         assertTrue(searchScreen.contains("val canSearch: Boolean,"))
         assertTrue(searchScreen.contains("enabled = canSearch"))
-        assertTrue(searchScreen.contains("R.string.ravelry_search_requires_sign_in"))
+        // Tilikortti kertoo kirjautumisesta; samaa viestiä ei toisteta kentän alla.
+        assertFalse(searchScreen.contains("ravelry_search_requires_sign_in"))
+        assertFalse(strings.contains("ravelry_search_requires_sign_in"))
+        // Käytöstä poistettu kenttä näyttää käytöstä poistetulta, ja vihje kattaa myös virkkauksen.
         assertTrue(
-            strings.contains(
-                "<string name=\"ravelry_search_requires_sign_in\">Sign in with Ravelry to search patterns.</string>",
-            ),
+            ProjectSourceFiles
+                .read("app/src/main/java/com/finnvek/knittools/ui/components/TextFieldColors.kt")
+                .contains("disabledContainerColor = container.copy(alpha = DISABLED_FIELD_CONTAINER_ALPHA)"),
         )
+        assertTrue(strings.contains("<string name=\"search_hint\">Search patterns…</string>"))
     }
 
     @Test
-    fun `search actions and pagination are gated while saved patterns tab stays available`() {
+    fun `search actions and pagination are gated and saved patterns live only in the Library`() {
         val searchScreen = ProjectSourceFiles.read(RAVELRY_SEARCH_SCREEN)
-        val tabRow = searchScreen.substringAfter("PrimaryTabRow(").substringBefore("when (selectedTab)")
 
         assertTrue(searchScreen.contains("internal fun shouldRequestRavelryLoadMore("))
         assertTrue(searchScreen.contains("shouldLoadMore &&\n        canSearch &&"))
@@ -42,9 +45,11 @@ class RavelrySearchTabSourceTest {
         assertTrue(searchScreen.contains("hasResults -> onLoadMore"))
         assertTrue(searchScreen.contains("else -> onSearch"))
 
-        assertTrue(tabRow.contains("R.string.ravelry_saved_patterns"))
-        assertFalse(tabRow.contains("enabled = false"))
-        assertFalse(tabRow.contains("authState is RavelryAuthState.Connected"))
+        // Tallennetut kaavat ovat vain Libraryssa; Ravelry-näkymä linkittää sinne ilman omaa välilehteä.
+        assertFalse(searchScreen.contains("PrimaryTabRow("))
+        assertFalse(searchScreen.contains("private fun SavedTab("))
+        assertTrue(searchScreen.contains("title = stringResource(R.string.ravelry_saved_patterns)"))
+        assertTrue(searchScreen.contains("onClick = actions.onOpenSavedPatterns"))
     }
 
     private companion object {

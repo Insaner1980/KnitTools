@@ -53,14 +53,13 @@
     <!-- Hub hero text -->
 
     <!-- Project List -->
-    <string name="project_list_title">Projekt</string>
     <string name="continue_knitting">Fortsätt sticka</string>
+    <string name="continue_crocheting">Fortsätt virka</string>
     <string name="section_active">Aktiva</string>
     <string name="section_completed">Färdiga</string>
     <string name="new_project">Nytt projekt</string>
     <string name="new_project_name_format">Projekt %1$d</string>
     <string name="create_project">Skapa projekt</string>
-    <string name="project_details">Projektdetaljer</string>
     <string name="project_details_title">Projektdetaljer</string>
     <string name="new_project_details_title">Nytt projekt</string>
     <string name="project_name_label">Projektnamn</string>
@@ -221,8 +220,6 @@
     <string name="saved_to_my_yarn_explanation">Den här projektposten förblir separat. Anteckningarna kopierades inte till garnkortet i Mitt garn.</string>
     <string name="yarn_count_format">%1$d garner</string>
     <string name="linked_project_label">Länkat projekt</string>
-    <string name="link_to_project_label">Länka till projekt</string>
-    <string name="change_project_link">Ändra</string>
     <string name="remove_project_link">Ta bort länk</string>
     <string name="select_project">Välj projekt</string>
     <string name="status_label">Status</string>
@@ -288,6 +285,11 @@
     <string name="current_stitches">Nuvarande maskantal</string>
     <string name="increase_by">Öka med</string>
     <string name="decrease_by">Minska med</string>
+    <string name="increase_result_placeholder">Fyll i båda fälten för att se var du ska öka</string>
+    <string name="decrease_result_placeholder">Fyll i båda fälten för att se var du ska minska</string>
+    <string name="cast_on_result_placeholder">Fyll i bredd och masktäthet för att se hur många maskor du ska lägga upp</string>
+    <string name="yarn_result_placeholder">Fyll i fälten för att se hur många nystan du behöver</string>
+    <string name="tool_result_placeholder">Fyll i fälten för att se resultatet</string>
     <string name="invalid_input">Ogiltig inmatning</string>
     <string name="easy_to_remember">Lätt att komma ihåg</string>
     <string name="balanced">Jämn</string>
@@ -339,7 +341,8 @@
     <string name="theme_system">System</string>
     <string name="theme_light">Ljust</string>
     <string name="theme_dark">Mörkt</string>
-    <string name="settings_section_settings">Inställningar</string>
+    <string name="settings_section_general">Allmänt</string>
+    <string name="settings_theme">Tema</string>
     <string name="settings_section_pro">PRO</string>
     <string name="settings_section_info">INFO</string>
     <string name="settings_language">Appspråk</string>
@@ -387,6 +390,8 @@
     <string name="color_name">Färgnamn</string>
     <string name="color_number">Färgnummer</string>
     <string name="dye_lot">Färgbad</string>
+    <string name="yarn_color_number_short">nr %1$s</string>
+    <string name="yarn_dye_lot_short">Färgbad %1$s</string>
     <string name="weight_category">Grovlekskategori</string>
     <string name="care_symbols">Skötsel</string>
     <string name="no_saved_yarns">Inga garnkort sparade ännu</string>
@@ -656,9 +661,7 @@
     <string name="ravelry_open_saved_pattern">Öppna</string>
     <string name="open_in_ravelry">Öppna i Ravelry</string>
     <string name="pattern_saved">Mönster sparat</string>
-    <string name="no_saved_patterns">Inga sparade mönster ännu</string>
-    <string name="search_hint">Sök stickmönster…</string>
-    <string name="ravelry_search_requires_sign_in">Logga in med Ravelry för att söka efter mönster.</string>
+    <string name="search_hint">Sök mönster…</string>
     <string name="ravelry_import_loading">Läser in mönster</string>
     <string name="ravelry_import_title">Spara det här mönstret?</string>
     <string name="ravelry_import_already_saved">Mönstret är redan sparat</string>
@@ -731,9 +734,7 @@
     <string name="search_more_error">Kunde inte läsa in fler mönster. Kontrollera internetanslutningen.</string>
     <string name="pattern_detail_error">Kunde inte läsa in mönsterdetaljer. Kontrollera internetanslutningen.</string>
     <string name="project_actions_title">Projektåtgärder</string>
-    <string name="project_actions_section_this_project">Detta projekt</string>
     <string name="project_actions_section_counter_tools">Räknarverktyg</string>
-    <string name="project_actions_section_project_actions">Projektåtgärder</string>
     <string name="project_content_title">Projekt</string>
     <string name="project_content_yarn">Garn</string>
     <string name="project_content_notes">Anteckningar</string>
@@ -1044,15 +1045,17 @@
     </plurals>
     <string name="web_pattern_add">Lägg till webbmönster</string>
     <string name="web_pattern_label">Webbmönster</string>
+    <string name="pattern_source_pdf">PDF</string>
     <string name="web_pattern_title_label">Mönstrets namn</string>
     <string name="web_pattern_designer_label">Designer</string>
     <string name="web_pattern_url_label">Webbadress</string>
     <string name="web_pattern_website_label">Webbplats</string>
     <string name="web_pattern_edit">Redigera webbmönster</string>
+    <string name="web_pattern_edit_title">Redigera webbmönster</string>
     <string name="web_pattern_delete">Ta bort webbmönster</string>
     <string name="web_pattern_delete_confirm_title">Ta bort webbmönstret?</string>
     <string name="web_pattern_delete_confirm_message">Ta bort %1$s från Sparade mönster i biblioteket?\n\nEventuella PDF-anteckningar som gjorts i biblioteket för det här mönstret tas också bort och visas inte längre i projekt. PDF-filer som redan är bifogade till projekt och PDF-anteckningar som gjorts i projekten behålls.</string>
-    <string name="web_pattern_attach">Koppla webbmönster</string>
+    <string name="web_pattern_attach">Koppla till projekt</string>
     <string name="web_pattern_unlink">Koppla bort mönsterinformation</string>
     <string name="web_pattern_replace_confirm_title">Ersätta mönsterinformationen?</string>
     <string name="web_pattern_replace_confirm_message">Ersätta den aktuella mönsterinformationen med %1$s?</string>
@@ -1133,4 +1136,26 @@
     <string name="counter_history_changed">Räknaren ändrades</string>
     <string name="counter_history_event_description">%1$s. Från %2$s till %3$s. %4$s, %5$s.</string>
     <string name="counter_history_transition">%1$s → %2$s</string>
+    <string name="project_overview_add_photo">Lägg till projektfoto</string>
+    <string name="project_overview_edit">Redigera</string>
+    <string name="project_overview_add">Lägg till</string>
+    <string name="project_overview_see_all">Visa alla</string>
+    <string name="project_overview_section_pattern">Mönster och dokument</string>
+    <string name="project_overview_section_sessions">Arbetspass</string>
+    <string name="project_overview_total_time">Total tid</string>
+    <string name="project_overview_yarn_planned">Planerat</string>
+    <string name="project_overview_yarn_allocated">Avsatt</string>
+    <string name="project_overview_yarn_used">Använt</string>
+    <string name="project_overview_yarn_remaining">Kvar</string>
+    <string name="project_overview_yarn_empty">Inget garn har lagts till än</string>
+    <string name="project_overview_pattern_empty">Inget mönster har lagts till än</string>
+    <string name="project_overview_notes_empty">Inga anteckningar än</string>
+    <string name="project_overview_pdf_page_format">PDF-mönster, sida %1$d</string>
+    <string name="project_card_open_overview_action">Öppna projekt</string>
+    <string name="project_overview_edit_details">Redigera detaljer</string>
+    <string name="project_overview_open_photos">Öppna foton</string>
+    <string name="project_overview_yarn_add_amounts">Lägg till mängder</string>
+    <string name="project_actions_overview_subtitle">Garn, mönster, anteckningar och detaljer</string>
+    <string name="project_actions_section_work_session">Arbetspass</string>
+    <string name="project_overview_amount_unknown">Okänt</string>
 </resources>

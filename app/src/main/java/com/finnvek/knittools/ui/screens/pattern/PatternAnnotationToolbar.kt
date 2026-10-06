@@ -50,6 +50,7 @@ import com.finnvek.knittools.domain.model.ChartRowDirection
 import com.finnvek.knittools.domain.model.ChartTrackingMode
 import com.finnvek.knittools.domain.model.PatternAnnotationLimits
 import com.finnvek.knittools.domain.model.PatternCalloutSymbol
+import com.finnvek.knittools.ui.components.CancelButton
 import com.finnvek.knittools.ui.components.ScrollableFormDialog
 import com.finnvek.knittools.ui.theme.PatternAnnotationTokens
 
@@ -278,7 +279,7 @@ private fun PatternTextEditorDialog(
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
+            CancelButton(onClick = onDismiss)
         },
     )
 }
@@ -316,7 +317,7 @@ private fun PatternCalloutEditorDialog(
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
+            CancelButton(onClick = onDismiss)
         },
     )
 }
@@ -439,7 +440,7 @@ private fun PatternChartTrackerDialog(
                 Text(stringResource(R.string.save))
             }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
+        dismissButton = { CancelButton(onClick = onDismiss) },
     )
 }
 

@@ -62,7 +62,19 @@ val LightBackgroundAlt = Color(0xFFDDD8C3) // Hieman tummempi, kontrastialue
 val LightSurface = Color(0xFFD2CDB5) // Korttien peruspinta
 val LightSurfaceHigh = Color(0xFFBBB59A) // Korotetut kortit, työkalu/referenssi-itemit
 val LightSurfaceMediumHigh = Color(0xFFC8C3A8) // Dialogit, popupit
-val LightSurfaceHighest = Color(0xFFA49D80) // Korkein korotus, syötekentät
+val LightSurfaceHighest = Color(0xFFA49D80) // Korkein korotus (Material-roolit, laskurin askelpainikkeet)
+
+// Kortit ja listarivit. Raskas khaki LightSurfaceHigh sai kortit näyttämään sameilta petroolin
+// heron vieressä; vaaleampana hero on ainoa voimakas pinta ja kaikki teksti erottuu kortilta paremmin.
+val LightCardContainer = Color(0xFFD6D0B8)
+
+// Syötekenttä kortissa, dialogissa ja sheetissä: vaaleassa teemassa aina pohjaansa vaaleampi.
+// Korttia tummempi kenttä (LightSurfaceHighest) luki käytöstä poistettuna.
+val LightInputField = Color(0xFFF3F0E3)
+
+// Tyhjän tilan teksti ("No yarn added yet"): himmeämpi kuin sisältö, jottei se lue oikeana sisältönä.
+// Taustalla 4,68:1; LightTextSecondary oli vain 1,5:1 erossa varsinaisesta tekstistä.
+val LightEmptyStateText = Color(0xFF6A6350)
 
 // === Light-teeman Secondary — Tummempi avokado (kontrasti vaalealla taustalla) ===
 val LightSecondary = Color(0xFF394B18)
@@ -82,6 +94,9 @@ val LightCounterMinusIcon = Color(0xFF211E16)
 
 // === Light-teeman aksentti ===
 val LightDustyRose = Color(0xFF9E706E) // Syvempi dusty rose
+
+// Osio-otsikoiden tummempi dusty rose: LightDustyRose jäi kermataustalla 3,3:1, pieni teksti vaatii 4,5:1.
+val LightSectionLabel = Color(0xFF7F5452)
 
 // === Light-teeman status ===
 val LightErrorContainer = Color(0xFFEAD0D0)
@@ -142,6 +157,15 @@ val ActivityCellEmpty = Color(0xFF464633) // Tyhjä päivä — hieman korttia v
 val LightActivityCellEmpty = Color(0xFFAFA98C) // Tyhjä päivä light-teemassa — hieman korttia tummempi
 val LightActivityLow = Color(0xFFB8C47A) // Vaalea avokado, rampin matalin taso light-teemassa
 
-// === Insights — oranssisävyinen metriikkakortin konttitausta ===
-val PrimaryTintContainer = Color(0xFF3A2513)
-val LightPrimaryTintContainer = Color(0xFFE6CFAC)
+// === Päätoiminnon konttitausta (jatka-kortti, New Project, tuloskortti, tilamerkki) ===
+// Petrooli on oranssin vastaväri, joten jatka-nappi ja oranssi lukema erottuvat siitä.
+// Sävyt pitävät PrimaryReadablen ≥ 4,5:1 ja ison Primary-lukeman ≥ 3:1 (ProjectListContrastTest).
+val ActionContainer = Color(0xFF1A2E2B)
+val LightActionContainer = Color(0xFFC4D9D0)
+
+val LightPrimaryReadable = Color(0xFF9A3F00)
+val PrimaryReadable = Color(0xFFE8823A)
+
+// Neutraali lankatilkku, kun langasta ei ole kuvaa: langan oikeaa väriä ei tiedetä, joten sävy on teeman oma.
+val LightYarnSwatchNeutral = Color(0xFFBDB69A)
+val YarnSwatchNeutral = Color(0xFF4A4A38)

@@ -52,7 +52,7 @@ class WorkSessionArchitectureSourceTest {
         val confirmationActions =
             screen.substring(
                 screen.indexOf("onCompleteConfirm = {"),
-                screen.indexOf("onRenameTextChange =", screen.indexOf("onCompleteConfirm = {")),
+                screen.indexOf("onStitchConfirm =", screen.indexOf("onCompleteConfirm = {")),
             )
 
         assertFalse(confirmationActions.contains("dependencies.onBack()"))

@@ -19,7 +19,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.outlined.OpenInFull
 import androidx.compose.material3.AlertDialog
@@ -35,7 +34,6 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -62,6 +60,7 @@ import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -69,7 +68,6 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -88,15 +86,18 @@ import com.finnvek.knittools.domain.model.isWebPatternCompatible
 import com.finnvek.knittools.domain.model.webPatternUrlOrNull
 import com.finnvek.knittools.repository.ProjectDocumentMutationResult
 import com.finnvek.knittools.repository.SavedPatternMetadataMutationResult
+import com.finnvek.knittools.ui.components.CancelButton
 import com.finnvek.knittools.ui.components.CollectWithLifecycleEffect
 import com.finnvek.knittools.ui.components.ConfirmationDialog
 import com.finnvek.knittools.ui.components.ProPromptRequest
 import com.finnvek.knittools.ui.components.ProPromptSheet
 import com.finnvek.knittools.ui.components.ProPromptSource
-import com.finnvek.knittools.ui.components.ProjectDetailsDialog
+import com.finnvek.knittools.ui.components.ProjectDetailsSheet
 import com.finnvek.knittools.ui.components.ProjectDetailsValues
-import com.finnvek.knittools.ui.components.RenameProjectDialog
 import com.finnvek.knittools.ui.components.ScrollableFormDialog
+import com.finnvek.knittools.ui.components.SectionLabel
+import com.finnvek.knittools.ui.components.cardTextFieldColors
+import com.finnvek.knittools.ui.components.dialogTextFieldColors
 import com.finnvek.knittools.ui.components.localizedUppercase
 import com.finnvek.knittools.ui.findActivity
 import com.finnvek.knittools.ui.platform.ExternalWebLinkOpenResult
@@ -107,7 +108,10 @@ import com.finnvek.knittools.ui.screens.pattern.ProjectDocumentError
 import com.finnvek.knittools.ui.screens.pattern.ProjectDocumentUiState
 import com.finnvek.knittools.ui.screens.pattern.ProjectDocumentsSheet
 import com.finnvek.knittools.ui.screens.project.MoveProjectToFolderSheet
+import com.finnvek.knittools.ui.screens.project.ProjectOverviewContentActions
+import com.finnvek.knittools.ui.screens.project.ProjectOverviewRouteContent
 import com.finnvek.knittools.ui.theme.CounterDimens
+import com.finnvek.knittools.ui.theme.knitToolsColors
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -153,6 +157,8 @@ private fun ProjectDocumentMutationResult.toProjectDocumentError(): ProjectDocum
 
 data class CounterScreenActions(
     val onBack: () -> Unit = {},
+    val onProjectOverview: (Long) -> Unit = {},
+    val onOpenCounter: () -> Unit = {},
     val onSessionHistory: (Long) -> Unit = {},
     val onCounterHistory: (Long) -> Unit = {},
     val onPhotoGallery: () -> Unit = {},
@@ -169,13 +175,13 @@ data class CounterScreenActions(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 @Suppress("kotlin:S3776") // Reitti kokoaa counterin tilat ja dialogit yhteen Compose-omistajaan.
-fun CounterScreen(
-    actions: CounterScreenActions = CounterScreenActions(),
-    viewModelProvider: @Composable () -> CounterViewModel = { hiltViewModel() },
+fun ProjectContentHost(
+    actions: CounterScreenActions,
+    viewModelProvider: @Composable () -> CounterViewModel,
+    overview: Boolean,
 ) {
     val viewModel = viewModelProvider()
     val onBack = actions.onBack
-    val onSessionHistory = actions.onSessionHistory
     val onPhotoGallery = actions.onPhotoGallery
     val onPatternViewer = actions.onPatternViewer
     val onSavedPatternDetail = actions.onSavedPatternDetail
@@ -200,10 +206,7 @@ fun CounterScreen(
     var showCountersListSheet by rememberSaveable { mutableStateOf(false) }
     var showCompleteDialog by rememberSaveable { mutableStateOf(false) }
     var showDeleteDialog by rememberSaveable { mutableStateOf(false) }
-    var showRenameDialog by rememberSaveable { mutableStateOf(false) }
-    var showProjectDetailsDialog by rememberSaveable { mutableStateOf(false) }
-    var renameText by rememberSaveable { mutableStateOf("") }
-    var isEditingName by rememberSaveable { mutableStateOf(false) }
+    var showProjectDetailsSheet by rememberSaveable { mutableStateOf(false) }
     var showNotesSheet by rememberSaveable { mutableStateOf(false) }
     var showYarnPicker by rememberSaveable { mutableStateOf(false) }
     var showYarnManagementSheet by rememberSaveable { mutableStateOf(false) }
@@ -233,10 +236,7 @@ fun CounterScreen(
         showCountersListSheet = false
         showCompleteDialog = false
         showDeleteDialog = false
-        showRenameDialog = false
-        showProjectDetailsDialog = false
-        renameText = ""
-        isEditingName = false
+        showProjectDetailsSheet = false
         showNotesSheet = false
         showYarnPicker = false
         showYarnManagementSheet = false
@@ -294,16 +294,18 @@ fun CounterScreen(
             }
         }
 
-    KeepScreenAwake(enabled = state.keepScreenAwake, projectId = state.projectId)
-    SessionPresentationTicker(
-        sessionToken = state.activeSession?.sessionToken,
-        onTick = viewModel::refreshSessionPresentationTime,
-    )
-    TriggerAlertHaptic(
-        alertId = state.activeAlert?.id,
-        hasActiveAlert = state.activeAlert != null,
-        performHaptic = performHaptic,
-    )
+    if (!overview) {
+        KeepScreenAwake(enabled = state.keepScreenAwake, projectId = state.projectId)
+        SessionPresentationTicker(
+            sessionToken = state.activeSession?.sessionToken,
+            onTick = viewModel::refreshSessionPresentationTime,
+        )
+        TriggerAlertHaptic(
+            alertId = state.activeAlert?.id,
+            hasActiveAlert = state.activeAlert != null,
+            performHaptic = performHaptic,
+        )
+    }
     val sheetActions =
         rememberCounterSheetActions(
             viewModelProvider = viewModelProvider,
@@ -380,8 +382,6 @@ fun CounterScreen(
         CounterDialogActionDependencies(
             projectId = projectActionTargetId,
             editingReminderId = editingReminderId,
-            renameText = renameText,
-            onRenameTextChange = { renameText = it },
             onBack = onBack,
             onHideAddReminder = {
                 showAddReminder = false
@@ -391,7 +391,6 @@ fun CounterScreen(
             onHideResetDialog = { showResetDialog = false },
             onHideCompleteDialog = { showCompleteDialog = false },
             onHideDeleteDialog = { showDeleteDialog = false },
-            onHideRenameDialog = { showRenameDialog = false },
             onHideStitchDialog = { showStitchDialog = false },
             onReminderProRequired = { pendingProAction = PendingCounterProAction.RetryReminder },
             onCounterProRequired = { pendingProAction = PendingCounterProAction.RetryCounter },
@@ -405,18 +404,10 @@ fun CounterScreen(
                     showProjectActionsSheet = true
                 }
             },
-        )
-    val startRename = {
-        renameText = state.projectName
-        showRenameDialog = true
-    }
-    val projectHeaderActionDependencies =
-        ProjectHeaderActionDependencies(
-            onEditingNameChange = { isEditingName = it },
+            onOpenOverview = { state.projectId?.let(actions.onProjectOverview) },
         )
     val dialogActions = rememberCounterDialogActions(dialogActionDependencies, viewModelProvider)
     val topBarActions = rememberCounterTopBarActions(topBarActionDependencies)
-    val projectHeaderActions = rememberProjectHeaderActions(projectHeaderActionDependencies, viewModelProvider)
     val mainContentActions =
         remember(
             viewModel,
@@ -505,10 +496,8 @@ fun CounterScreen(
                 showResetDialog = showResetDialog && projectActionTargetId == state.projectId,
                 showCompleteDialog = showCompleteDialog && projectActionTargetId == state.projectId,
                 showDeleteDialog = showDeleteDialog && projectActionTargetId == state.projectId,
-                showRenameDialog = showRenameDialog && projectActionTargetId == state.projectId,
                 showStitchDialog = showStitchDialog && projectActionTargetId == state.projectId,
                 projectName = state.projectName,
-                renameText = renameText,
                 currentStitchCount = state.stitchCount,
             ),
         actions = dialogActions,
@@ -528,8 +517,8 @@ fun CounterScreen(
         },
     )
 
-    if (showProjectDetailsDialog && projectActionTargetId == state.projectId) {
-        ProjectDetailsDialog(
+    if (showProjectDetailsSheet && projectActionTargetId == state.projectId) {
+        ProjectDetailsSheet(
             title = stringResource(R.string.project_details_title),
             confirmText = stringResource(R.string.save),
             initialValues =
@@ -548,9 +537,9 @@ fun CounterScreen(
                         values.mainCounterCustomLabel,
                     )
                 }
-                showProjectDetailsDialog = false
+                showProjectDetailsSheet = false
             },
-            onDismiss = { showProjectDetailsDialog = false },
+            onDismiss = { showProjectDetailsSheet = false },
         )
     }
 
@@ -681,7 +670,10 @@ fun CounterScreen(
         showSheet = showProjectActionsSheet && projectActionTargetId == state.projectId,
         state =
             ProjectActionsSheetState(
-                reminderCount = state.reminders.count { !it.isCompleted },
+                projectId = state.projectId ?: 0L,
+                projectName = state.projectName,
+                craftType = state.craftType,
+                photoUri = state.latestPhotos.firstOrNull()?.photoUri,
                 projectCounterCount = state.projectCounters.size,
                 stitchTrackingEnabled = state.stitchTrackingEnabled,
                 stitchCount = state.stitchCount,
@@ -691,6 +683,10 @@ fun CounterScreen(
             ),
         callbacks =
             ProjectActionsSheetCallbacks(
+                onOpenOverview = {
+                    showProjectActionsSheet = false
+                    state.projectId?.let(actions.onProjectOverview)
+                },
                 onDismiss = {
                     showProjectActionsSheet = false
                     projectActionTargetId = null
@@ -698,14 +694,6 @@ fun CounterScreen(
                 onMeasurements = {
                     showProjectActionsSheet = false
                     state.projectId?.let(actions.onMeasurements)
-                },
-                onOpenDocuments = {
-                    showProjectActionsSheet = false
-                    showDocumentsSheet = true
-                },
-                onOpenReminders = {
-                    showProjectActionsSheet = false
-                    requestRowReminders()
                 },
                 onOpenCountersList = {
                     showProjectActionsSheet = false
@@ -734,10 +722,6 @@ fun CounterScreen(
                     showProjectActionsSheet = false
                     state.projectId?.let(actions.onCounterHistory)
                 },
-                onOpenSessionHistory = {
-                    showProjectActionsSheet = false
-                    viewModel.openSessionHistory(onSessionHistory)
-                },
                 onStartWorkSession = {
                     showProjectActionsSheet = false
                     viewModel.startWorkSession()
@@ -746,33 +730,9 @@ fun CounterScreen(
                     showProjectActionsSheet = false
                     viewModel.stopWorkSession()
                 },
-                onOpenProjectDetails = {
-                    showProjectActionsSheet = false
-                    showProjectDetailsDialog = true
-                },
-                onStartRename = {
-                    showProjectActionsSheet = false
-                    startRename()
-                },
                 onShowResetDialog = {
                     showProjectActionsSheet = false
                     showResetDialog = true
-                },
-                onShowCompleteDialog = {
-                    showProjectActionsSheet = false
-                    showCompleteDialog = true
-                },
-                onReactivateProject = {
-                    showProjectActionsSheet = false
-                    viewModel.reactivateProject(projectActionTargetId, state.completedAt)
-                },
-                onShowDeleteDialog = {
-                    showProjectActionsSheet = false
-                    showDeleteDialog = true
-                },
-                onMoveToFolder = {
-                    showProjectActionsSheet = false
-                    showMoveFolderSheet = true
                 },
             ),
     )
@@ -971,24 +931,76 @@ fun CounterScreen(
         )
     }
 
-    Scaffold(
-        containerColor = MaterialTheme.colorScheme.background,
-        snackbarHost = { SnackbarHost(snackbarHostState) },
-        topBar = {
-            CounterTopBar(
-                state = state,
-                isEditingName = isEditingName,
-                projectHeaderActions = projectHeaderActions,
-                actions = topBarActions,
-            )
-        },
-    ) { scaffoldPadding ->
-        CounterWorkspace(
-            scaffoldPadding = scaffoldPadding,
+    if (overview) {
+        fun openProjectContent(open: () -> Unit) {
+            if (state.projectId == viewModel.uiState.value.projectId) {
+                projectActionTargetId = state.projectId
+                open()
+            }
+        }
+        ProjectOverviewRouteContent(
             state = state,
-            projectCountersActions = projectCountersActions,
-            actions = mainContentActions,
+            yarnCards = savedYarnCards,
+            actions = actions,
+            snackbarHostState = snackbarHostState,
+            contentActions =
+                ProjectOverviewContentActions(
+                    onEditDetails = { openProjectContent { showProjectDetailsSheet = true } },
+                    onMoveToFolder = { openProjectContent { showMoveFolderSheet = true } },
+                    onComplete = { openProjectContent { showCompleteDialog = true } },
+                    onReactivate = {
+                        openProjectContent {
+                            viewModel.reactivateProject(
+                                projectActionTargetId,
+                                state.completedAt,
+                            )
+                        }
+                    },
+                    onDelete = { openProjectContent { showDeleteDialog = true } },
+                    onYarn = { openProjectContent { showYarnManagementSheet = true } },
+                    onDocuments = { openProjectContent { showDocumentsSheet = true } },
+                    onAddPattern = {
+                        openProjectContent {
+                            patternPickerMode =
+                                if (state.projectDocuments.isEmpty()) {
+                                    PatternPickerMode.INITIAL_PROJECT_PATTERN
+                                } else {
+                                    PatternPickerMode.ADD_READABLE_PROJECT_DOCUMENT
+                                }
+                            showPatternPicker = true
+                        }
+                    },
+                    onReminders = { openProjectContent { showRemindersSheet = true } },
+                    onAddReminder = {
+                        openProjectContent {
+                            editingReminderId = null
+                            if (state.canUseRowReminders) {
+                                showAddReminder = true
+                            } else {
+                                pendingProAction = PendingCounterProAction.OpenReminder
+                            }
+                        }
+                    },
+                ),
         )
+    } else {
+        Scaffold(
+            containerColor = MaterialTheme.colorScheme.background,
+            snackbarHost = { SnackbarHost(snackbarHostState) },
+            topBar = {
+                CounterTopBar(
+                    state = state,
+                    actions = topBarActions,
+                )
+            },
+        ) { scaffoldPadding ->
+            CounterWorkspace(
+                scaffoldPadding = scaffoldPadding,
+                state = state,
+                projectCountersActions = projectCountersActions,
+                actions = mainContentActions,
+            )
+        }
     }
 }
 
@@ -1169,12 +1181,10 @@ internal fun SessionRecoveryDialog(
                 ) {
                     Text(stringResource(R.string.work_session_discard_pending))
                 }
-                TextButton(
+                CancelButton(
                     onClick = onDismiss,
                     modifier = Modifier.defaultMinSize(minHeight = 48.dp),
-                ) {
-                    Text(stringResource(R.string.cancel))
-                }
+                )
             }
         },
         dismissButton = {},
@@ -1209,9 +1219,7 @@ internal fun SessionStartConflictDialog(
                 TextButton(onClick = onDiscardAndStart, modifier = Modifier.defaultMinSize(minHeight = 48.dp)) {
                     Text(stringResource(R.string.work_session_discard_then_start))
                 }
-                TextButton(onClick = onCancel, modifier = Modifier.defaultMinSize(minHeight = 48.dp)) {
-                    Text(stringResource(R.string.cancel))
-                }
+                CancelButton(onClick = onCancel, modifier = Modifier.defaultMinSize(minHeight = 48.dp))
             }
         },
         dismissButton = {},
@@ -1241,9 +1249,7 @@ internal fun ActiveSessionCompletionDialog(
                 TextButton(onClick = onDiscard, modifier = Modifier.defaultMinSize(minHeight = 48.dp)) {
                     Text(stringResource(R.string.work_session_discard_and_complete))
                 }
-                TextButton(onClick = onCancel, modifier = Modifier.defaultMinSize(minHeight = 48.dp)) {
-                    Text(stringResource(R.string.cancel))
-                }
+                CancelButton(onClick = onCancel, modifier = Modifier.defaultMinSize(minHeight = 48.dp))
             }
         },
         dismissButton = {},
@@ -1268,9 +1274,7 @@ internal fun ActiveSessionDeletionDialog(
                 ) {
                     Text(stringResource(R.string.work_session_discard_and_delete))
                 }
-                TextButton(onClick = onCancel, modifier = Modifier.defaultMinSize(minHeight = 48.dp)) {
-                    Text(stringResource(R.string.cancel))
-                }
+                CancelButton(onClick = onCancel, modifier = Modifier.defaultMinSize(minHeight = 48.dp))
             }
         },
         dismissButton = {},
@@ -1304,9 +1308,7 @@ internal fun SessionStopSummaryDialog(
                 TextButton(onClick = onDiscard, modifier = Modifier.defaultMinSize(minHeight = 48.dp)) {
                     Text(stringResource(R.string.work_session_discard))
                 }
-                TextButton(onClick = onCancel, modifier = Modifier.defaultMinSize(minHeight = 48.dp)) {
-                    Text(stringResource(R.string.cancel))
-                }
+                CancelButton(onClick = onCancel, modifier = Modifier.defaultMinSize(minHeight = 48.dp))
             }
         },
         dismissButton = {},
@@ -1342,9 +1344,7 @@ internal fun WorkSessionErrorDialog(
         dismissButton =
             if (canRetry) {
                 {
-                    TextButton(onClick = onDismiss, modifier = Modifier.defaultMinSize(minHeight = 48.dp)) {
-                        Text(stringResource(R.string.cancel))
-                    }
+                    CancelButton(onClick = onDismiss, modifier = Modifier.defaultMinSize(minHeight = 48.dp))
                 }
             } else {
                 null
@@ -1428,10 +1428,8 @@ data class CounterDialogState(
     val showResetDialog: Boolean,
     val showCompleteDialog: Boolean,
     val showDeleteDialog: Boolean,
-    val showRenameDialog: Boolean,
     val showStitchDialog: Boolean,
     val projectName: String,
-    val renameText: String,
     val currentStitchCount: Int?,
 )
 
@@ -1446,9 +1444,6 @@ data class CounterDialogActions(
     val onCompleteDismiss: () -> Unit,
     val onDeleteConfirm: () -> Unit,
     val onDeleteDismiss: () -> Unit,
-    val onRenameTextChange: (String) -> Unit,
-    val onRenameConfirm: () -> Unit,
-    val onRenameDismiss: () -> Unit,
     val onStitchConfirm: (Int?) -> Unit,
     val onStitchDismiss: () -> Unit,
 )
@@ -1500,14 +1495,7 @@ private fun CounterScreenDialogs(
             onDismiss = actions.onDeleteDismiss,
         )
     }
-    if (state.showRenameDialog) {
-        RenameProjectDialog(
-            renameText = state.renameText,
-            onRenameTextChange = actions.onRenameTextChange,
-            onConfirm = actions.onRenameConfirm,
-            onDismiss = actions.onRenameDismiss,
-        )
-    }
+
     if (state.showStitchDialog) {
         StitchCountDialog(
             currentStitchCount = state.currentStitchCount,
@@ -1541,12 +1529,7 @@ private fun StitchCountDialog(
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 shape = MaterialTheme.shapes.large,
                 colors =
-                    TextFieldDefaults.colors(
-                        focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-                        unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-                        focusedIndicatorColor = Color.Transparent,
-                        unfocusedIndicatorColor = Color.Transparent,
-                    ),
+                    dialogTextFieldColors(),
             )
         },
         confirmButton = {
@@ -1570,9 +1553,7 @@ private fun StitchCountDialog(
                         Text(stringResource(R.string.delete))
                     }
                 }
-                TextButton(onClick = onDismiss) {
-                    Text(stringResource(R.string.cancel))
-                }
+                CancelButton(onClick = onDismiss)
             }
         },
     )
@@ -1677,22 +1658,20 @@ private fun CounterScreenSheets(
 data class CounterTopBarActions(
     val onBack: () -> Unit,
     val onShowProjectActions: () -> Unit,
+    val onOpenOverview: () -> Unit,
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CounterTopBar(
     state: CounterUiState,
-    isEditingName: Boolean,
-    projectHeaderActions: ProjectHeaderActions,
     actions: CounterTopBarActions,
 ) {
     TopAppBar(
         title = {
             CounterTopBarTitle(
                 state = state,
-                isEditingName = isEditingName,
-                actions = projectHeaderActions,
+                onOpenOverview = actions.onOpenOverview,
             )
         },
         navigationIcon = {
@@ -1721,87 +1700,44 @@ private fun CounterTopBar(
     )
 }
 
+// Otsikon napautus avaa projektinäkymän. Nimen muokkaus kuuluu projektinäkymän Edit details -dialogiin,
+// joten erillinen otsikon sisäinen muokkauskenttä poistettiin.
 @Composable
 private fun CounterTopBarTitle(
     state: CounterUiState,
-    isEditingName: Boolean,
-    actions: ProjectHeaderActions,
+    onOpenOverview: () -> Unit,
 ) {
-    var draftName by rememberSaveable(state.projectId) { mutableStateOf(state.projectName) }
-
-    LaunchedEffect(isEditingName, state.projectName) {
-        if (!isEditingName) {
-            draftName = state.projectName
-        }
-    }
-
-    if (isEditingName) {
-        TextField(
-            value = draftName,
-            onValueChange = { draftName = it },
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(end = CounterDimens.TopBarTitleEndPadding),
-            placeholder = { Text(stringResource(R.string.default_project_name)) },
-            singleLine = true,
-            shape = RoundedCornerShape(CounterDimens.TopBarTextFieldCornerRadius),
-            keyboardOptions = KeyboardOptions.Default,
-            colors =
-                TextFieldDefaults.colors(
-                    focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                    focusedIndicatorColor = Color.Transparent,
-                    unfocusedIndicatorColor = Color.Transparent,
+    Text(
+        text = state.projectName.ifEmpty { stringResource(R.string.default_project_name) }.localizedUppercase(),
+        style =
+            MaterialTheme.typography.titleLarge.copy(
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 0.sp,
+            ),
+        color = MaterialTheme.colorScheme.onSurface,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(end = CounterDimens.TopBarTitleEndPadding)
+                .clickable(
+                    role = Role.Button,
+                    onClickLabel = stringResource(R.string.project_card_open_overview_action),
+                    onClick = onOpenOverview,
                 ),
-            trailingIcon = {
-                IconButton(
-                    onClick = {
-                        actions.onNameSave(draftName.trim())
-                        actions.onEditingNameChange(false)
-                    },
-                    enabled = draftName.isNotBlank(),
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.Check,
-                        contentDescription = stringResource(R.string.save),
-                        tint = MaterialTheme.colorScheme.primary,
-                    )
-                }
-            },
-        )
-    } else {
-        Text(
-            text = state.projectName.ifEmpty { stringResource(R.string.default_project_name) }.localizedUppercase(),
-            style =
-                MaterialTheme.typography.titleLarge.copy(
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 0.sp,
-                ),
-            color = MaterialTheme.colorScheme.onSurface,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(end = CounterDimens.TopBarTitleEndPadding)
-                    .clickable(onClick = { actions.onEditingNameChange(true) }),
-        )
-    }
+    )
 }
 
 private data class CounterDialogActionDependencies(
     val projectId: Long?,
     val editingReminderId: Long?,
-    val renameText: String,
-    val onRenameTextChange: (String) -> Unit,
     val onBack: () -> Unit,
     val onHideAddReminder: () -> Unit,
     val onHideAddCounter: () -> Unit,
     val onHideResetDialog: () -> Unit,
     val onHideCompleteDialog: () -> Unit,
     val onHideDeleteDialog: () -> Unit,
-    val onHideRenameDialog: () -> Unit,
     val onHideStitchDialog: () -> Unit,
     val onReminderProRequired: () -> Unit,
     val onCounterProRequired: () -> Unit,
@@ -1810,10 +1746,7 @@ private data class CounterDialogActionDependencies(
 private data class CounterTopBarActionDependencies(
     val onBack: () -> Unit,
     val onShowProjectActions: () -> Unit,
-)
-
-private data class ProjectHeaderActionDependencies(
-    val onEditingNameChange: (Boolean) -> Unit,
+    val onOpenOverview: () -> Unit,
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -1884,10 +1817,8 @@ private fun YarnPickerSheet(
                     .padding(bottom = 32.dp),
         ) {
             // CPD-ON
-            Text(
-                text = stringResource(R.string.select_yarn_card).localizedUppercase(),
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.secondary,
+            SectionLabel(
+                text = stringResource(R.string.select_yarn_card),
                 modifier = Modifier.padding(bottom = 12.dp),
             )
             if (savedYarnCards.isEmpty()) {
@@ -1920,7 +1851,7 @@ private fun YarnPickerItem(
             Modifier
                 .fillMaxWidth()
                 .clip(MaterialTheme.shapes.medium)
-                .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                .background(MaterialTheme.knitToolsColors.cardContainer)
                 .clickable(onClick = onSelect)
                 .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -1969,10 +1900,8 @@ private fun NotesSheet(
                 modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text(
-                    text = stringResource(R.string.notes).localizedUppercase(),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.secondary,
+                SectionLabel(
+                    text = stringResource(R.string.notes),
                     modifier = Modifier.weight(1f),
                 )
                 IconButton(
@@ -1998,12 +1927,7 @@ private fun NotesSheet(
                 minLines = 6,
                 shape = MaterialTheme.shapes.large,
                 colors =
-                    TextFieldDefaults.colors(
-                        focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                        unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                        focusedIndicatorColor = Color.Transparent,
-                        unfocusedIndicatorColor = Color.Transparent,
-                    ),
+                    cardTextFieldColors(),
             )
         }
     }
@@ -2076,14 +2000,6 @@ private fun rememberCounterDialogActions(
                 dependencies.onHideDeleteDialog()
             },
             onDeleteDismiss = dependencies.onHideDeleteDialog,
-            onRenameTextChange = dependencies.onRenameTextChange,
-            onRenameConfirm = {
-                runForCurrentProject(dependencies, viewModel) {
-                    setProjectName(dependencies.renameText.trim())
-                }
-                dependencies.onHideRenameDialog()
-            },
-            onRenameDismiss = dependencies.onHideRenameDialog,
             onStitchConfirm = { stitchCount ->
                 runForCurrentProject(dependencies, viewModel) { setStitchCount(stitchCount) }
             },
@@ -2231,22 +2147,9 @@ private fun rememberCounterTopBarActions(dependencies: CounterTopBarActionDepend
         CounterTopBarActions(
             onBack = dependencies.onBack,
             onShowProjectActions = dependencies.onShowProjectActions,
+            onOpenOverview = dependencies.onOpenOverview,
         )
     }
-
-@Composable
-private fun rememberProjectHeaderActions(
-    dependencies: ProjectHeaderActionDependencies,
-    viewModelProvider: @Composable () -> CounterViewModel,
-): ProjectHeaderActions {
-    val viewModel = viewModelProvider()
-    return remember(dependencies, viewModel) {
-        ProjectHeaderActions(
-            onNameSave = viewModel::setProjectName,
-            onEditingNameChange = dependencies.onEditingNameChange,
-        )
-    }
-}
 
 @Composable
 private fun rememberProjectCountersSectionActions(

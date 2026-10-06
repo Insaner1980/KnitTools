@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import com.finnvek.knittools.R
 import com.finnvek.knittools.auth.RavelryAuthState
 import com.finnvek.knittools.ui.components.ConfirmationDialog
+import com.finnvek.knittools.ui.theme.knitToolsColors
 
 @Composable
 internal fun RavelryAccountHeader(
@@ -39,8 +40,9 @@ internal fun RavelryAccountHeader(
         modifier =
             modifier
                 .fillMaxWidth()
-                .padding(horizontal = headerHorizontalPadding, vertical = headerVerticalPadding),
-        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                // Ei omaa sivupehmustetta: lista antaa sen jo, ja kortti jäi hakukenttää kapeammaksi.
+                .padding(vertical = headerVerticalPadding),
+        color = MaterialTheme.knitToolsColors.cardContainer,
         shape = MaterialTheme.shapes.medium,
     ) {
         Column(
@@ -149,7 +151,6 @@ private fun RavelryAuthState.messageMaxLines(): Int =
         else -> 2
     }
 
-private val headerHorizontalPadding = 16.dp
 private val headerVerticalPadding = 6.dp
 private val headerContentPadding = 12.dp
 private val headerActionSpacing = 8.dp

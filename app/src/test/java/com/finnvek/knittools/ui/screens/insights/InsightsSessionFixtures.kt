@@ -5,8 +5,16 @@ import com.finnvek.knittools.domain.model.KnitSession
 import com.finnvek.knittools.repository.CounterRepository
 import com.finnvek.knittools.repository.SessionInsightsFacts
 import io.mockk.every
+import io.mockk.mockk
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+
+internal fun mockInsightsRepository(): CounterRepository {
+    val repository = mockk<CounterRepository>()
+    every { repository.observeCompletions() } returns flowOf(emptyList())
+    return repository
+}
 
 internal fun stubSessions(
     repository: CounterRepository,

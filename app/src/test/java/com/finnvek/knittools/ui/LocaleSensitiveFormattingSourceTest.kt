@@ -65,7 +65,7 @@ class LocaleSensitiveFormattingSourceTest {
 
         private val DATE_DISPLAY_FILES =
             listOf(
-                "app/src/main/java/com/finnvek/knittools/ui/components/ProjectListItem.kt",
+                "app/src/main/java/com/finnvek/knittools/ui/components/ProjectCardText.kt",
                 "app/src/main/java/com/finnvek/knittools/ui/components/SessionItem.kt",
                 "app/src/main/java/com/finnvek/knittools/ui/screens/counter/PhotoComponents.kt",
                 "app/src/main/java/com/finnvek/knittools/ui/screens/counter/PhotoGalleryScreen.kt",

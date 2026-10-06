@@ -146,9 +146,6 @@ val Typography.counterExtraName: TextStyle
 val Typography.counterExtraValue: TextStyle
     get() = headlineMedium.copy(fontWeight = FontWeight.Bold)
 
-val Typography.projectActionsSectionHeader: TextStyle
-    get() = labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 0.8.sp)
-
 val Typography.insightsKicker: TextStyle
     get() = labelMedium.copy(fontSize = InsightsDimens.KickerFontSize, fontWeight = FontWeight.Medium)
 
@@ -214,3 +211,11 @@ val Typography.insightsHeroPrimaryUnit: TextStyle
 
 val Typography.insightsHeroSecondaryUnit: TextStyle
     get() = titleLarge.copy(fontSize = InsightsDimens.HeroSecondaryUnitFontSize)
+
+val Typography.projectCardName: TextStyle
+    get() = titleLarge.copy(fontSize = 18.sp)
+
+// Jatka-kortin iso laskurilukema (hero ja projektinäkymä) on lihavoitu ja vähintään 22 sp, joten se lasketaan
+// suureksi tekstiksi ja voi käyttää samaa primary-oranssia kuin palkki ja painike (3:1 riittää).
+val Typography.projectHeroCount: TextStyle
+    get() = titleLarge.copy(fontWeight = FontWeight.Bold)

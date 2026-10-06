@@ -1,5 +1,6 @@
 package com.finnvek.knittools.ui.theme
 
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.unit.dp
 
 object ComponentDimens {
@@ -23,8 +24,27 @@ object ComponentDimens {
     val SegmentedItemMinHeight = 40.dp
 
     val ResultInsetPadding = 20.dp
-    val ResultCardCornerRadius = 18.dp
     val ResultCardBorderWidth = 1.5.dp
 
     val FlatElevation = 0.dp
+
+    // Näytön otsikko valitsimena (ScreenTitleSelector). Napautusalue tulee pehmusteesta.
+    val TitleSelectorHorizontalPadding = 8.dp
+    val TitleSelectorVerticalPadding = 6.dp
+    val TitleSelectorIndicatorSize = 28.dp
+    val TitleSelectorShape = RoundedCornerShape(percent = 50)
+
+    // Yhteinen lisäys- ja muokkaussheet (FormSheet).
+    val FormSheetHorizontalPadding = 20.dp
+    val FormSheetBottomPadding = 32.dp
+    val FormSheetItemSpacing = 12.dp
+    val FormSheetActionMinHeight = 48.dp
+
+    // Info-vihjeen ikoni nimikkeen vieressä (LabelWithInfo) ja IconButtonissa.
+    val InfoIconSize = 18.dp
+
+    // Tuloksen paikkamerkki (ResultPlaceholder): sama katkoviiva ja kulma kuin kuvan paikkamerkeissä.
+    val ResultPlaceholderStrokeWidth = 1.5.dp
+    val ResultPlaceholderDash = 6.dp
+    val ResultPlaceholderCornerRadius = 16.dp
 }

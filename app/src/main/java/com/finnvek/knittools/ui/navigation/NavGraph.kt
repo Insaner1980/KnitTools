@@ -20,6 +20,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavBackStackEntry
@@ -30,6 +31,7 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.dialog
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import androidx.navigation.navigation
@@ -37,6 +39,7 @@ import com.finnvek.knittools.domain.model.CraftType
 import com.finnvek.knittools.domain.model.SavedPattern
 import com.finnvek.knittools.domain.model.isWebPatternCompatible
 import com.finnvek.knittools.ui.components.CollectWithLifecycleEffect
+import com.finnvek.knittools.ui.components.FormSheetDialogHost
 import com.finnvek.knittools.ui.components.ProPromptRequest
 import com.finnvek.knittools.ui.components.ProPromptSheet
 import com.finnvek.knittools.ui.components.ProPromptSource
@@ -44,11 +47,11 @@ import com.finnvek.knittools.ui.screens.abbreviations.AbbreviationsScreen
 import com.finnvek.knittools.ui.screens.backup.BackupScreen
 import com.finnvek.knittools.ui.screens.caston.CastOnScreen
 import com.finnvek.knittools.ui.screens.chartsymbols.ChartSymbolScreen
-import com.finnvek.knittools.ui.screens.counter.CounterScreen
 import com.finnvek.knittools.ui.screens.counter.CounterScreenActions
 import com.finnvek.knittools.ui.screens.counter.CounterViewModel
 import com.finnvek.knittools.ui.screens.counter.PhotoGalleryActions
 import com.finnvek.knittools.ui.screens.counter.PhotoGalleryScreen
+import com.finnvek.knittools.ui.screens.counter.ProjectContentHost
 import com.finnvek.knittools.ui.screens.counter.shouldLeaveCounter
 import com.finnvek.knittools.ui.screens.counterhistory.CounterHistoryScreen
 import com.finnvek.knittools.ui.screens.gauge.GaugeScreen
@@ -241,8 +244,10 @@ fun KnitToolsNavHost(
                     onPurchase = actions.onPurchasePro,
                 )
             }
-            composable(
+            // Dialogikohde: editori on lisäyssheet, ja edellinen näkymä jää näkyviin sen taakse.
+            dialog(
                 route = Screen.WebPatternEditor.ROUTE,
+                dialogProperties = DialogProperties(usePlatformDefaultWidth = false),
                 arguments =
                     listOf(
                         navArgument(Screen.WebPatternEditor.ARG_ORIGIN) {
@@ -259,6 +264,7 @@ fun KnitToolsNavHost(
                         },
                     ),
             ) {
+                FormSheetDialogHost()
                 WebPatternEditorScreen(
                     request = requests.patternShareImport,
                     onRequestStored = actions.onPatternShareImportHandled,
@@ -318,33 +324,40 @@ private fun NavGraphBuilder.projectsGraph(
                 }
             val counterViewModel: CounterViewModel = hiltViewModel(parentEntry)
             ProjectListScreen(
-                onProjectClick = { projectId ->
+                onOpenOverview = { projectId ->
+                    navController.navigateSingleTopTo(Screen.ProjectOverview(projectId).route)
+                },
+                onOpenCounter = { projectId ->
                     counterViewModel.selectProjectByIdForLaunch(projectId) { loaded ->
                         if (loaded) {
                             navController.navigateSingleTopTo(Screen.Counter.route)
                         }
                     }
                 },
-                onNotesEditor = { projectId ->
-                    navController.navigateSingleTopTo(Screen.NotesEditor(projectId).route)
-                },
-                onPhotoGallery = { projectId ->
-                    counterViewModel.selectProjectByIdForLaunch(projectId) { loaded ->
-                        if (loaded) {
-                            navController.navigateSingleTopTo(Screen.PhotoGallery.route)
-                        }
-                    }
-                },
-                onPatternViewer = { projectId ->
-                    navController.navigateSingleTopTo(Screen.PatternViewer(projectId).route)
-                },
-                onYarnCard = { cardId ->
-                    navController.navigateToTopLevel(TopLevelDestination.Library)
-                    navController.navigateSingleTopTo(Screen.YarnCardDetail(cardId).route)
-                },
                 onUpgradeToPro = {
                     navController.navigateSingleTopTo(Screen.ProUpgrade.route)
                 },
+            )
+        }
+        projectDestination(navController, Screen.ProjectOverview.ROUTE) { backStackEntry, projectId ->
+            val parentEntry =
+                remember(backStackEntry) {
+                    navController.getBackStackEntry(TopLevelDestination.Projects.route)
+                }
+            val counterViewModel: CounterViewModel = hiltViewModel(parentEntry)
+            if (!rememberRouteProjectReady(
+                    projectId,
+                    { counterViewModel },
+                    { navController },
+                    backStackEntry.id,
+                )
+            ) {
+                return@projectDestination
+            }
+            ProjectContentHost(
+                overview = true,
+                actions = projectWorkspaceActions(navController, onImportFromRavelry),
+                viewModelProvider = { counterViewModel },
             )
         }
         composable(Screen.Counter.route) { backStackEntry ->
@@ -373,47 +386,10 @@ private fun NavGraphBuilder.projectsGraph(
                 RouteArgumentFallback({ navController }, TopLevelDestination.Projects)
                 return@composable
             }
-            CounterScreen(
+            ProjectContentHost(
+                overview = false,
                 actions =
-                    CounterScreenActions(
-                        onBack = { navController.popBackStack() },
-                        onCounterHistory = { projectId ->
-                            navController.navigateSingleTopTo(Screen.CounterHistory(projectId).route)
-                        },
-                        onSessionHistory = { projectId ->
-                            navController.navigateSingleTopTo(Screen.SessionHistory(projectId).route)
-                        },
-                        onPhotoGallery = {
-                            navController.navigateSingleTopTo(Screen.PhotoGallery.route)
-                        },
-                        onPatternViewer = { projectId, documentId ->
-                            navController.navigateSingleTopTo(Screen.PatternViewer(projectId, documentId).route)
-                        },
-                        onSavedPatternDetail = { savedPatternId ->
-                            navController.openSavedPatternDetail(savedPatternId)
-                        },
-                        onEditWebPattern = { savedPatternId ->
-                            navController.editWebPattern(savedPatternId)
-                        },
-                        onImportFromRavelry = onImportFromRavelry,
-                        onAddWebPattern = { projectId ->
-                            navController.navigateSingleTopTo(
-                                Screen.WebPatternEditor.createRoute(
-                                    origin = WebPatternEditorOrigin.Project,
-                                    projectId = projectId,
-                                ),
-                            )
-                        },
-                        onNotesEditor = { projectId ->
-                            navController.navigateSingleTopTo(Screen.NotesEditor(projectId).route)
-                        },
-                        onMeasurements = { projectId ->
-                            navController.navigateSingleTopTo(Screen.Gauge.createRoute(projectId))
-                        },
-                        onUpgradeToPro = {
-                            navController.navigateSingleTopTo(Screen.ProUpgrade.route)
-                        },
-                    ),
+                    projectWorkspaceActions(navController, onImportFromRavelry),
                 viewModelProvider = { counterViewModel },
             )
         }
@@ -470,22 +446,15 @@ private fun NavGraphBuilder.projectsGraph(
             val annotationViewModel: PatternAnnotationViewModel = hiltViewModel(backStackEntry)
             val patternViewerViewModel: PatternViewerViewModel = hiltViewModel(backStackEntry)
             val counterState by counterViewModel.uiState.collectAsStateWithLifecycle()
-            var routeProjectReady by remember(projectId) { mutableStateOf(false) }
-            LaunchedEffect(projectId, counterState.projectId) {
-                if (counterState.projectId != projectId) {
-                    routeProjectReady = false
-                    counterViewModel.selectProjectByIdForLaunch(projectId) { loaded ->
-                        if (!loaded) {
-                            navController.popBackStackOrNavigateToTopLevel(TopLevelDestination.Projects)
-                        } else {
-                            routeProjectReady = true
-                        }
-                    }
-                } else {
-                    routeProjectReady = true
-                }
+            if (!rememberRouteProjectReady(
+                    projectId,
+                    { counterViewModel },
+                    { navController },
+                    backStackEntry.id,
+                )
+            ) {
+                return@composable
             }
-            if (!routeProjectReady) return@composable
             PatternViewerScreen(
                 onBack = { navController.popBackStack() },
                 onOpenProjectNotes = {
@@ -521,19 +490,29 @@ private fun NavGraphBuilder.projectsGraph(
         }
         counterHistoryDestination(navController)
         gaugeDestination(navController)
-        composable(
-            Screen.NotesEditor.ROUTE,
-            arguments = listOf(navArgument(ARG_PROJECT_ID) { type = NavType.LongType }),
-        ) { backStackEntry ->
-            val projectId = backStackEntry.positiveLongArgument(ARG_PROJECT_ID)
-            if (projectId == null) {
-                RouteArgumentFallback({ navController }, TopLevelDestination.Projects)
-                return@composable
-            }
+        projectDestination(navController, Screen.NotesEditor.ROUTE) { _, _ ->
             NotesEditorScreen(
                 onBack = { navController.popBackStack() },
                 onSeePro = { navController.navigateSingleTopTo(Screen.ProUpgrade.route) },
             )
+        }
+    }
+}
+
+private fun NavGraphBuilder.projectDestination(
+    navController: NavHostController,
+    route: String,
+    content: @Composable (NavBackStackEntry, Long) -> Unit,
+) {
+    composable(
+        route,
+        arguments = listOf(navArgument(ARG_PROJECT_ID) { type = NavType.LongType }),
+    ) { backStackEntry ->
+        val projectId = backStackEntry.positiveLongArgument(ARG_PROJECT_ID)
+        if (projectId == null) {
+            RouteArgumentFallback({ navController }, TopLevelDestination.Projects)
+        } else {
+            content(backStackEntry, projectId)
         }
     }
 }
@@ -661,6 +640,11 @@ private fun RavelrySearchRoute(
                 onBrowseRavelry = onBrowseRavelry,
                 onSavedPatternDetail = { savedPatternId ->
                     navController.navigateSingleTopTo(Screen.SavedPatternDetail(savedPatternId).route)
+                },
+                // Tallennetut kaavat ovat vain Libraryssa.
+                onOpenSavedPatterns = {
+                    navController.navigateToTopLevel(TopLevelDestination.Library)
+                    navController.navigateSingleTopTo(Screen.SavedPatterns.route)
                 },
             ),
         importUrl = importUrl,
@@ -1220,4 +1204,99 @@ private fun RouteArgumentFallback(
 private fun NavHostController.popBackStackOrNavigateToTopLevel(destination: TopLevelDestination) {
     if (popBackStack()) return
     navigateToTopLevel(destination)
+}
+
+internal fun projectWorkspaceActions(
+    navController: NavHostController,
+    onImportFromRavelry: () -> Unit,
+): CounterScreenActions =
+    CounterScreenActions(
+        onBack = { navController.popBackStack() },
+        onOpenCounter = {
+            if (navController.previousBackStackEntry?.destination?.route == Screen.Counter.route) {
+                navController.popBackStack()
+            } else {
+                navController.navigateSingleTopTo(Screen.Counter.route)
+            }
+        },
+        onProjectOverview = { projectId ->
+            val previous = navController.previousBackStackEntry
+            if (previous?.destination?.route == Screen.ProjectOverview.ROUTE &&
+                previous.positiveLongArgument(ARG_PROJECT_ID) == projectId
+            ) {
+                navController.popBackStack()
+            } else {
+                navController.navigateSingleTopTo(Screen.ProjectOverview(projectId).route)
+            }
+        },
+        onCounterHistory = { projectId ->
+            navController.navigateSingleTopTo(Screen.CounterHistory(projectId).route)
+        },
+        onSessionHistory = { projectId ->
+            navController.navigateSingleTopTo(Screen.SessionHistory(projectId).route)
+        },
+        onPhotoGallery = {
+            navController.navigateSingleTopTo(Screen.PhotoGallery.route)
+        },
+        onPatternViewer = { projectId, documentId ->
+            navController.navigateSingleTopTo(Screen.PatternViewer(projectId, documentId).route)
+        },
+        onSavedPatternDetail = { savedPatternId ->
+            navController.openSavedPatternDetail(savedPatternId)
+        },
+        onEditWebPattern = { savedPatternId ->
+            navController.editWebPattern(savedPatternId)
+        },
+        onImportFromRavelry = onImportFromRavelry,
+        onAddWebPattern = { projectId ->
+            navController.navigateSingleTopTo(
+                Screen.WebPatternEditor.createRoute(
+                    origin = WebPatternEditorOrigin.Project,
+                    projectId = projectId,
+                ),
+            )
+        },
+        onNotesEditor = { projectId ->
+            navController.navigateSingleTopTo(Screen.NotesEditor(projectId).route)
+        },
+        onMeasurements = { projectId ->
+            navController.navigateSingleTopTo(Screen.Gauge.createRoute(projectId))
+        },
+        onUpgradeToPro = {
+            navController.navigateSingleTopTo(Screen.ProUpgrade.route)
+        },
+    )
+
+@Composable
+private fun rememberRouteProjectReady(
+    projectId: Long,
+    viewModelProvider: @Composable () -> CounterViewModel,
+    navControllerProvider: @Composable () -> NavHostController,
+    backStackEntryId: String,
+): Boolean {
+    val viewModel = viewModelProvider()
+    val navController = navControllerProvider()
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val currentEntry by navController.currentBackStackEntryAsState()
+    var ready by remember(projectId) { mutableStateOf(false) }
+    LaunchedEffect(projectId, state.projectId, currentEntry?.id) {
+        if (currentEntry?.id != backStackEntryId) return@LaunchedEffect
+        if (ready && state.projectId == null) {
+            navController.popBackStackOrNavigateToTopLevel(TopLevelDestination.Projects)
+        } else if (state.projectId == projectId) {
+            ready = true
+        } else {
+            ready = false
+            viewModel.selectProjectByIdForLaunch(projectId) { loaded ->
+                if (currentEntry?.id == backStackEntryId) {
+                    if (loaded) {
+                        ready = true
+                    } else {
+                        navController.popBackStackOrNavigateToTopLevel(TopLevelDestination.Projects)
+                    }
+                }
+            }
+        }
+    }
+    return ready && state.projectId == projectId
 }

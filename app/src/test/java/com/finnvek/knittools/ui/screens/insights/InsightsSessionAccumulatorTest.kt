@@ -86,7 +86,7 @@ class InsightsSessionAccumulatorTest {
             if (range == TimeRange.ALL_TIME) {
                 assertEquals(
                     buildInsightsProjectFabric(rows, today, zone, firstDay, order),
-                    buildInsightsProjectFabric(result.fabric.values, today, firstDay, order),
+                    buildInsightsProjectFabric(result.fabric.values, today, firstDay, order, result.firstDate),
                 )
                 assertEquals(12, axis.bucketStarts.size)
             }

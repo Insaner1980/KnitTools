@@ -7,6 +7,7 @@ import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
@@ -139,6 +140,8 @@ class SavedPatternDetailWebScreenTest {
         composeRule.onNodeWithText("example.com").assertIsDisplayed()
         composeRule.onNodeWithText("https://example.com/Pattern?Size=XL#Notes").assertIsDisplayed()
         composeRule.onNodeWithText(context.getString(R.string.web_pattern_open_website)).performClick()
+        // Muokkaus ja poisto ovat ylivuotovalikossa.
+        composeRule.onNodeWithContentDescription(context.getString(R.string.more_options)).performClick()
         composeRule.onNodeWithText(context.getString(R.string.web_pattern_edit)).performClick()
         composeRule.onNodeWithText(context.getString(R.string.web_pattern_attach)).performClick()
         composeRule.runOnIdle {
@@ -153,13 +156,16 @@ class SavedPatternDetailWebScreenTest {
             .onAllNodesWithText(context.getString(R.string.saved_pattern_detail_open_pattern))
             .assertCountEquals(0)
 
+        // Muokkaus ja poisto ovat ylivuotovalikossa.
+        composeRule.onNodeWithContentDescription(context.getString(R.string.more_options)).performClick()
         composeRule.onNodeWithText(context.getString(R.string.web_pattern_delete)).performClick()
         composeRule.onNodeWithText(context.getString(R.string.web_pattern_delete_confirm_title)).assertIsDisplayed()
         composeRule
             .onNodeWithText(context.getString(R.string.web_pattern_delete_confirm_message, "Cable cardigan"))
             .assertIsDisplayed()
         composeRule.runOnIdle { assertEquals(0, removed) }
-        composeRule.onAllNodesWithText(context.getString(R.string.web_pattern_delete))[1].performClick()
+        // Valikko sulkeutui, joten ainoa Delete-teksti on vahvistusdialogin painike.
+        composeRule.onNodeWithText(context.getString(R.string.web_pattern_delete)).performClick()
         composeRule.runOnIdle { assertEquals(1, removed) }
     }
 

@@ -30,7 +30,7 @@
 
     <!-- Home screen -->
     <string name="tool_increase_decrease">Increase / Decrease</string>
-    <string name="tool_gauge_converter">Measurements and gauge</string>
+    <string name="tool_gauge_converter">Measurements and Gauge</string>
     <string name="tool_cast_on_calculator">Cast On Calculator</string>
     <string name="tool_yarn_estimator">Yarn Estimator</string>
     <string name="tool_needle_sizes">Needle Sizes</string>
@@ -53,17 +53,16 @@
     <!-- Hub hero text -->
 
     <!-- Project List -->
-    <string name="project_list_title">Projects</string>
     <string name="continue_knitting">Continue knitting</string>
+    <string name="continue_crocheting">Continue crocheting</string>
     <string name="project_continue_content_description">Continue %1$s</string>
     <string name="section_active">Active</string>
     <string name="section_completed">Completed</string>
     <string name="new_project">New Project</string>
     <string name="new_project_name_format">Project %1$d</string>
     <string name="create_project">Create project</string>
-    <string name="project_details">Project details</string>
     <string name="project_details_title">Project details</string>
-    <string name="new_project_details_title">New project</string>
+    <string name="new_project_details_title">New Project</string>
     <string name="project_name_label">Project name</string>
     <string name="craft_type_label">Craft type</string>
     <string name="craft_type_knitting">Knitting</string>
@@ -232,8 +231,6 @@
     <string name="saved_to_my_yarn_explanation">This project entry stays separate. Its notes were not copied to the My Yarn card.</string>
     <string name="yarn_count_format" tools:ignore="PluralsCandidate,UnusedResources">%1$d yarns</string>
     <string name="linked_project_label">Linked project</string>
-    <string name="link_to_project_label">Link to project</string>
-    <string name="change_project_link">Change</string>
     <string name="remove_project_link">Remove link</string>
     <string name="select_project">Select project</string>
     <string name="status_label">Status</string>
@@ -251,7 +248,7 @@
     </plurals>
 
     <!-- Session History -->
-    <string name="session_history_title">Session history</string>
+    <string name="session_history_title">Session History</string>
     <string name="no_sessions">No sessions recorded yet. Start knitting to see your history here.</string>
     <string name="session_row_range">Rows %1$d \u2192 %2$d</string>
     <string name="session_row_single">Row %1$d</string>
@@ -300,6 +297,11 @@
     <string name="current_stitches">Current stitches</string>
     <string name="increase_by">Increase by</string>
     <string name="decrease_by">Decrease by</string>
+    <string name="increase_result_placeholder">Fill in both fields to see where to increase</string>
+    <string name="decrease_result_placeholder">Fill in both fields to see where to decrease</string>
+    <string name="cast_on_result_placeholder">Fill in width and gauge to see how many stitches to cast on</string>
+    <string name="yarn_result_placeholder">Fill in the fields to see how many skeins you need</string>
+    <string name="tool_result_placeholder">Fill in the fields to see the result</string>
     <string name="invalid_input">Invalid input</string>
     <string name="easy_to_remember">Easy to remember</string>
     <string name="balanced">Balanced</string>
@@ -351,7 +353,8 @@
     <string name="theme_system">System</string>
     <string name="theme_light">Light</string>
     <string name="theme_dark">Dark</string>
-    <string name="settings_section_settings">Settings</string>
+    <string name="settings_section_general">General</string>
+    <string name="settings_theme">Theme</string>
     <string name="settings_section_pro">PRO</string>
     <string name="settings_section_info">INFO</string>
     <string name="settings_language">App language</string>
@@ -400,6 +403,8 @@
     <string name="color_name">Color name</string>
     <string name="color_number">Color number</string>
     <string name="dye_lot">Dye lot</string>
+    <string name="yarn_color_number_short">#%1$s</string>
+    <string name="yarn_dye_lot_short">Lot %1$s</string>
     <string name="weight_category">Weight category</string>
     <string name="care_symbols">Care</string>
     <string name="no_saved_yarns">No saved yarn cards yet</string>
@@ -943,9 +948,7 @@
     <string name="ravelry_open_saved_pattern">Open</string>
     <string name="open_in_ravelry">Open in Ravelry</string>
     <string name="pattern_saved">Pattern saved</string>
-    <string name="no_saved_patterns">No saved patterns yet</string>
-    <string name="search_hint">Search knitting patterns…</string>
-    <string name="ravelry_search_requires_sign_in">Sign in with Ravelry to search patterns.</string>
+    <string name="search_hint">Search patterns…</string>
     <string name="ravelry_import_loading">Loading pattern</string>
     <string name="ravelry_import_title">Save this pattern?</string>
     <string name="ravelry_import_already_saved">Pattern already saved</string>
@@ -1011,9 +1014,7 @@
 
     <!-- Counter screen redesign: bottom sheet -->
     <string name="project_actions_title">Project actions</string>
-    <string name="project_actions_section_this_project">This project</string>
     <string name="project_actions_section_counter_tools">Counter tools</string>
-    <string name="project_actions_section_project_actions">Project actions</string>
     <string name="project_content_title">Project</string>
     <string name="project_content_yarn">Yarn</string>
     <string name="project_content_notes">Notes</string>
@@ -1293,7 +1294,7 @@
         <item quantity="other">Could not move %d projects.</item>
     </plurals>
 
-    <string name="measurement_title">Measurements and gauge</string>
+    <string name="measurement_title">Measurements and Gauge</string>
     <string name="measurement_task">Task</string>
     <string name="measurement_convert">Convert measurements</string>
     <string name="measurement_measure_gauge">Measure gauge</string>
@@ -1399,17 +1400,19 @@
         <item quantity="one">%1$s skein</item>
         <item quantity="other">%1$s skeins</item>
     </plurals>
-    <string name="web_pattern_add">Add web pattern</string>
+    <string name="web_pattern_add">Add Web Pattern</string>
     <string name="web_pattern_label">Web pattern</string>
+    <string name="pattern_source_pdf">PDF</string>
     <string name="web_pattern_title_label">Pattern name</string>
     <string name="web_pattern_designer_label">Designer</string>
     <string name="web_pattern_url_label">Website address</string>
     <string name="web_pattern_website_label">Website</string>
     <string name="web_pattern_edit">Edit web pattern</string>
+    <string name="web_pattern_edit_title">Edit Web Pattern</string>
     <string name="web_pattern_delete">Delete web pattern</string>
     <string name="web_pattern_delete_confirm_title">Delete web pattern?</string>
     <string name="web_pattern_delete_confirm_message">Delete %1$s from Saved Patterns in the Library?\n\nAny PDF annotations made in the Library for this pattern will also be deleted and will no longer appear in projects. PDFs already attached to projects and PDF annotations made within projects will be kept.</string>
-    <string name="web_pattern_attach">Attach web pattern</string>
+    <string name="web_pattern_attach">Attach to project</string>
     <string name="web_pattern_unlink">Unlink pattern information</string>
     <string name="web_pattern_replace_confirm_title">Replace pattern information?</string>
     <string name="web_pattern_replace_confirm_message">Replace the current pattern information with %1$s?</string>
@@ -1453,7 +1456,7 @@
         <item quantity="other">%d completions</item>
     </plurals>
 
-    <string name="backup_title">Backup &amp; restore</string>
+    <string name="backup_title">Backup &amp; Restore</string>
     <string name="backup_description">Save your projects, notes, patterns and local photos in one backup file.</string>
     <string name="backup_privacy">The backup is not encrypted. It may contain private notes, photos and pattern PDFs. Save it somewhere you trust.</string>
     <string name="backup_exclusions">Device settings and language stay unchanged. Trials, purchases, logins and widgets are not transferred. An active work session will require review after restore.</string>
@@ -1491,4 +1494,26 @@
     <string name="counter_history_changed">Counter changed</string>
     <string name="counter_history_event_description">%1$s. From %2$s to %3$s. %4$s, %5$s.</string>
     <string name="counter_history_transition">%1$s → %2$s</string>
+    <string name="project_overview_add_photo">Add project photo</string>
+    <string name="project_overview_edit">Edit</string>
+    <string name="project_overview_add">Add</string>
+    <string name="project_overview_see_all">See all</string>
+    <string name="project_overview_section_pattern">Pattern and documents</string>
+    <string name="project_overview_section_sessions">Work sessions</string>
+    <string name="project_overview_total_time">Total time</string>
+    <string name="project_overview_yarn_planned">Planned</string>
+    <string name="project_overview_yarn_allocated">Allocated</string>
+    <string name="project_overview_yarn_used">Used</string>
+    <string name="project_overview_yarn_remaining">Remaining</string>
+    <string name="project_overview_yarn_empty">No yarn added yet</string>
+    <string name="project_overview_pattern_empty">No pattern added yet</string>
+    <string name="project_overview_notes_empty">No notes yet</string>
+    <string name="project_overview_pdf_page_format">PDF pattern, page %1$d</string>
+    <string name="project_card_open_overview_action">Open project</string>
+    <string name="project_overview_edit_details">Edit details</string>
+    <string name="project_overview_open_photos">Open photos</string>
+    <string name="project_overview_yarn_add_amounts">Add amounts</string>
+    <string name="project_actions_overview_subtitle">Yarn, pattern, notes and details</string>
+    <string name="project_actions_section_work_session">Work session</string>
+    <string name="project_overview_amount_unknown">Unknown</string>
 </resources>

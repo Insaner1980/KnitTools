@@ -289,7 +289,13 @@ class InsightsViewModel
             val projectOrder = timePerProject.map { it.projectId }
             val projectFabric =
                 if (params.timeRange == TimeRange.ALL_TIME && featureGates.canUseCharts) {
-                    buildInsightsProjectFabric(sessions.fabric.values, today, firstDayOfWeek, projectOrder)
+                    buildInsightsProjectFabric(
+                        sessions.fabric.values,
+                        today,
+                        firstDayOfWeek,
+                        projectOrder,
+                        firstSessionDate,
+                    )
                 } else {
                     null
                 }

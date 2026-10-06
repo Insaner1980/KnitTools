@@ -1863,25 +1863,6 @@ class CounterViewModel
             }
         }
 
-        fun setProjectName(name: String) {
-            val projectName = name.trim()
-            if (projectName.isEmpty()) return
-            val id = _uiState.value.projectId ?: return
-            viewModelScope.launch {
-                val savedName = repository.updateProjectName(id, projectName) ?: return@launch
-                _uiState.update { state ->
-                    if (state.projectId == id) {
-                        state.copy(projectName = savedName)
-                    } else {
-                        state
-                    }
-                }
-                if (_uiState.value.projectId == id) {
-                    syncWidget(projectId = id, projectName = savedName)
-                }
-            }
-        }
-
         fun setProjectDetails(
             name: String,
             craftType: CraftType,

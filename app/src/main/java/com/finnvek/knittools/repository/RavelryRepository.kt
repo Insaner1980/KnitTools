@@ -41,10 +41,6 @@ class RavelryRepository
                 includeTitleDesigner = false,
             )
 
-        suspend fun deleteSavedPattern(id: Long) = savedPatternRepository.deleteById(id)
-
-        suspend fun deleteSavedPatterns(ids: List<Long>) = savedPatternRepository.deleteByIds(ids)
-
         suspend fun getActiveProjectCount(): Int = counterRepository.getActiveProjectCount()
 
         fun observeActiveProjectCount(): Flow<Int> = counterRepository.getActiveProjects().map { it.size }

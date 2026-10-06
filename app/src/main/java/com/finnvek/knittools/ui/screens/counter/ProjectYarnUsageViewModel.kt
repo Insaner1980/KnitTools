@@ -12,8 +12,11 @@ import com.finnvek.knittools.repository.YarnUsageResult
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.util.Locale
@@ -35,6 +38,11 @@ class ProjectYarnUsageViewModel
         private val preferencesManager: PreferencesManager,
         private val savedStateHandle: SavedStateHandle,
     ) : ViewModel() {
+        val displayUnit =
+            preferencesManager.preferences
+                .map { preferredYarnUsageUnit(it.useImperial) }
+                .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), YarnUsageUnit.METERS)
+
         private val mutableEditor = MutableStateFlow(YarnUsageEditorState(draft = savedStateHandle.restoreYarnUsage()))
         val editor = mutableEditor.asStateFlow()
         private val mutableItems = MutableStateFlow<List<ProjectYarnUsageItem>?>(null)
@@ -67,7 +75,7 @@ class ProjectYarnUsageViewModel
             if (editor.value.busy) return
             val project = projectId ?: return
             val unit =
-                if (preferencesManager.preferences.first().useImperial) YarnUsageUnit.YARDS else YarnUsageUnit.METERS
+                preferredYarnUsageUnit(preferencesManager.preferences.first().useImperial)
             val current = items.value?.firstOrNull { it.key == item.key } ?: item
             val amounts = current.usage?.amounts
 
@@ -160,3 +168,6 @@ class ProjectYarnUsageViewModel
             savedStateHandle.saveYarnUsage(editor.value.draft)
         }
     }
+
+internal fun preferredYarnUsageUnit(useImperial: Boolean): YarnUsageUnit =
+    if (useImperial) YarnUsageUnit.YARDS else YarnUsageUnit.METERS

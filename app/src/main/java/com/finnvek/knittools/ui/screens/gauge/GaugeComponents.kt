@@ -31,7 +31,6 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
@@ -40,6 +39,9 @@ import androidx.compose.ui.unit.dp
 import com.finnvek.knittools.R
 import com.finnvek.knittools.ui.components.NumberInputField
 import com.finnvek.knittools.ui.components.NumberInputOptions
+import com.finnvek.knittools.ui.components.ResultPlaceholder
+import com.finnvek.knittools.ui.components.SectionLabel
+import com.finnvek.knittools.ui.theme.knitToolsColors
 import java.util.Locale
 
 @Composable
@@ -71,7 +73,7 @@ internal fun <T> GaugeSelector(
                         stateDescription = selectedLabel
                     },
             shape = MaterialTheme.shapes.medium,
-            color = MaterialTheme.colorScheme.surfaceContainerHigh,
+            color = MaterialTheme.knitToolsColors.cardContainer,
         ) {
             Row(
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
@@ -93,7 +95,7 @@ internal fun <T> GaugeSelector(
             expanded = expanded,
             onDismissRequest = { expanded = false },
             modifier = Modifier.width(menuWidth),
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+            containerColor = MaterialTheme.colorScheme.surface,
             shape = MaterialTheme.shapes.medium,
         ) {
             choices.forEachIndexed { index, (value, text) ->
@@ -165,37 +167,27 @@ internal fun GaugeNumericField(
 }
 
 @Composable
-internal fun GaugeHeading(
-    text: String,
-    modifier: Modifier = Modifier,
-) {
-    Text(
-        text = text,
-        modifier = modifier.semantics { heading() },
-        style = MaterialTheme.typography.titleMedium,
-        color = MaterialTheme.colorScheme.onBackground,
-    )
-}
-
-@Composable
 internal fun GaugeResults(
     presentation: GaugePresentation,
     onCopy: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    if (presentation.sections.isEmpty()) return
+    if (presentation.sections.isEmpty()) {
+        ResultPlaceholder(text = stringResource(R.string.tool_result_placeholder), modifier = modifier)
+        return
+    }
     val focusManager = LocalFocusManager.current
     Column(
         modifier = modifier.fillMaxWidth().testTag("measurement_results"),
         verticalArrangement = Arrangement.spacedBy(24.dp),
     ) {
-        GaugeHeading(stringResource(R.string.measurement_result))
+        SectionLabel(text = stringResource(R.string.measurement_result))
         presentation.sections.forEach { section ->
             Column(
                 modifier = Modifier.fillMaxWidth().testTag("measurement_result_" + section.id),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
-                if (section.id != "conversion") GaugeHeading(section.title)
+                if (section.id != "conversion") SectionLabel(text = section.title)
                 (section.inputs + section.results).forEach { line ->
                     GaugeResultValue(section.id, line)
                 }

@@ -39,6 +39,7 @@ import androidx.compose.ui.unit.dp
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.calculator.MeasurementNumberError
 import com.finnvek.knittools.domain.calculator.MeasurementNumberParser
+import com.finnvek.knittools.ui.theme.knitToolsColors
 import java.text.DecimalFormatSymbols
 import java.util.Locale
 
@@ -49,6 +50,8 @@ data class NumberInputOptions(
     val isLast: Boolean = false,
     val preserveRawInput: Boolean = false,
     val allowZero: Boolean = true,
+    // Esimerkkiarvo tyhjään kenttään: kertoo millaista lukua kysytään ilman erillistä ohjetekstiä.
+    val placeholder: String? = null,
 )
 
 @Composable
@@ -63,6 +66,7 @@ fun NumberInputField(
     semanticLabel: String? = null,
     onFocusLost: () -> Unit = {},
     inputModifier: Modifier = Modifier,
+    info: InfoTipText? = null,
 ) {
     val focusManager = LocalFocusManager.current
     val interactionSource = remember { MutableInteractionSource() }
@@ -108,11 +112,7 @@ fun NumberInputField(
         }
 
     Column(modifier = modifier) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+        LabelWithInfo(label = label, info = info)
         Spacer(modifier = Modifier.height(8.dp))
         TextField(
             value = value,
@@ -163,6 +163,10 @@ fun NumberInputField(
                     },
             isError = displayedError != null,
             supportingText = displayedError?.let { message -> { Text(message) } },
+            placeholder =
+                options.placeholder?.let { example ->
+                    { Text(example, color = MaterialTheme.knitToolsColors.fieldPlaceholderText) }
+                },
             textStyle = MaterialTheme.typography.titleSmall,
             keyboardOptions =
                 KeyboardOptions(
@@ -189,8 +193,8 @@ fun NumberInputField(
             shape = inputFieldShape,
             colors =
                 TextFieldDefaults.colors(
-                    focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                    focusedContainerColor = MaterialTheme.knitToolsColors.inputFieldContainer,
+                    unfocusedContainerColor = MaterialTheme.knitToolsColors.inputFieldContainer,
                     focusedIndicatorColor = Color.Transparent,
                     unfocusedIndicatorColor = Color.Transparent,
                     disabledIndicatorColor = Color.Transparent,

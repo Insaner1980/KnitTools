@@ -413,7 +413,6 @@ class ProjectFoldersViewModelTest {
             ProjectListViewModel(
                 repository = repository,
                 proManager = proManager,
-                yarnCardRepository = mockk(relaxed = true),
                 photoRepository = mockk(relaxed = true),
                 savedPatternRepository = mockk(relaxed = true),
                 projectDocumentRepository = documents,

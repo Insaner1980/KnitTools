@@ -186,7 +186,11 @@ internal fun ProjectOverviewPattern(
             },
             Icons.Outlined.Description,
             onClick = {
-                if (available) state.projectId?.let { actions.onPatternViewer(it, primary.id) } else content.onDocuments()
+                if (available) {
+                    state.projectId?.let { actions.onPatternViewer(it, primary.id) }
+                } else {
+                    content.onDocuments()
+                }
             },
         )
         // Dokumenttivalikko tarjoaa myös yksittäisen PDF:n nimeämisen, ensisijaisuuden ja poiston.

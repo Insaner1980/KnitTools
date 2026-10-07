@@ -152,7 +152,7 @@ internal fun ProjectOverviewScreen(
                     OverviewLinkRow(
                         title = stringResource(R.string.counter_history_title),
                         subtitle = null,
-                        icon = null,
+                        glyph = null,
                         onClick = { actions.onCounterHistory(projectId) },
                     )
                 }

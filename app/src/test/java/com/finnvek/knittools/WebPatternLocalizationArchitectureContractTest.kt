@@ -321,7 +321,6 @@ class WebPatternLocalizationArchitectureContractTest {
                 "web_pattern_open_website",
                 "web_pattern_open_website_description",
                 "web_pattern_edit_description",
-                "web_pattern_delete_description",
                 "web_pattern_attach_description",
                 "web_pattern_unlink_description",
                 "web_pattern_shared_link",

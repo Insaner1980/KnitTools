@@ -394,7 +394,6 @@
     <string name="billing_already_owned_restore_failed">Google Play says you already own this purchase, but it could not be restored. Try Restore purchases.</string>
 
     <!-- Yarn Card -->
-    <string name="saved_yarns">Saved yarns</string>
     <string name="fiber_content">Fiber content</string>
     <string name="weight_grams">Weight (g)</string>
     <string name="length_meters">Length (m)</string>
@@ -940,7 +939,6 @@
     <!-- Ravelry -->
     <string name="tool_ravelry">Ravelry</string>
     <string name="desc_ravelry">Search patterns and save favorites</string>
-    <string name="ravelry_search">Search</string>
     <string name="ravelry_saved_patterns">Saved Patterns</string>
     <string name="start_project">Start Project</string>
     <string name="save_pattern">Save Pattern</string>
@@ -1419,7 +1417,6 @@
     <string name="web_pattern_open_website">Open website</string>
     <string name="web_pattern_open_website_description">Open the website for %1$s at %2$s</string>
     <string name="web_pattern_edit_description">Edit web pattern %1$s</string>
-    <string name="web_pattern_delete_description">Delete web pattern %1$s</string>
     <string name="web_pattern_attach_description">Attach web pattern %1$s</string>
     <string name="web_pattern_unlink_description">Unlink pattern information for %1$s</string>
     <string name="web_pattern_shared_link">Shared link</string>

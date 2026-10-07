@@ -381,7 +381,6 @@
     <string name="billing_already_owned_restore_failed">Volgens Google Play bezit je deze aankoop al, maar deze kon niet worden hersteld. Probeer Aankopen herstellen.</string>
 
     <!-- Yarn Card -->
-    <string name="saved_yarns">Opgeslagen garens</string>
     <string name="fiber_content">Samenstelling</string>
     <string name="weight_grams">Gewicht (g)</string>
     <string name="length_meters">Lengte (m)</string>
@@ -653,7 +652,6 @@
     <!-- Ravelry -->
     <string name="tool_ravelry">Ravelry</string>
     <string name="desc_ravelry">Zoek patronen en sla favorieten op</string>
-    <string name="ravelry_search">Zoeken</string>
     <string name="ravelry_saved_patterns">Opgeslagen patronen</string>
     <string name="start_project">Project starten</string>
     <string name="save_pattern">Patroon opslaan</string>
@@ -1045,7 +1043,6 @@
     <string name="web_pattern_open_website">Website openen</string>
     <string name="web_pattern_open_website_description">De website voor %1$s openen op %2$s</string>
     <string name="web_pattern_edit_description">Webpatroon %1$s bewerken</string>
-    <string name="web_pattern_delete_description">Webpatroon %1$s verwijderen</string>
     <string name="web_pattern_attach_description">Webpatroon %1$s koppelen</string>
     <string name="web_pattern_unlink_description">Patroongegevens voor %1$s ontkoppelen</string>
     <string name="web_pattern_shared_link">Gedeelde link</string>

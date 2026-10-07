@@ -13,9 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Inventory2
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -43,6 +41,7 @@ import com.finnvek.knittools.ui.components.BadgePill
 import com.finnvek.knittools.ui.components.InfoNote
 import com.finnvek.knittools.ui.components.NumberInputField
 import com.finnvek.knittools.ui.components.NumberInputOptions
+import com.finnvek.knittools.ui.components.OverviewTextAction
 import com.finnvek.knittools.ui.components.ResultCard
 import com.finnvek.knittools.ui.components.ResultPlaceholder
 import com.finnvek.knittools.ui.components.ToolInputCard
@@ -125,19 +124,18 @@ private fun YarnEstimatorContent(
     }
 }
 
+// Tekstitoiminto laatikkoikonin tilalla: ikonista ei voinut arvata, että se hakee langan My Yarnista.
 @Composable
 private fun SavedYarnActionBar(onSavedYarns: () -> Unit) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.End,
     ) {
-        IconButton(onClick = onSavedYarns) {
-            Icon(
-                Icons.Filled.Inventory2,
-                contentDescription = stringResource(R.string.saved_yarns),
-                tint = MaterialTheme.colorScheme.primary,
-            )
-        }
+        OverviewTextAction(
+            label = stringResource(R.string.choose_from_my_yarn),
+            onClick = onSavedYarns,
+            trailingIcon = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+        )
     }
 }
 

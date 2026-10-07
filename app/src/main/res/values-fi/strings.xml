@@ -381,7 +381,6 @@
     <string name="billing_already_owned_restore_failed">Google Playn mukaan omistat jo tämän oston, mutta sitä ei voitu palauttaa. Kokeile Palauta ostot -toimintoa.</string>
 
     <!-- Lankakortti -->
-    <string name="saved_yarns">Tallennetut langat</string>
     <string name="fiber_content">Koostumus</string>
     <string name="weight_grams">Paino (g)</string>
     <string name="length_meters">Pituus (m)</string>
@@ -922,7 +921,6 @@
     <!-- Ravelry -->
     <string name="tool_ravelry">Ravelry</string>
     <string name="desc_ravelry">Etsi ohjeita ja tallenna suosikkeja</string>
-    <string name="ravelry_search">Haku</string>
     <string name="ravelry_saved_patterns">Tallennetut ohjeet</string>
     <string name="start_project">Aloita projekti</string>
     <string name="save_pattern">Tallenna ohje</string>
@@ -1339,7 +1337,6 @@
     <string name="web_pattern_open_website">Avaa verkkosivu</string>
     <string name="web_pattern_open_website_description">Avaa kaavan %1$s verkkosivu osoitteessa %2$s</string>
     <string name="web_pattern_edit_description">Muokkaa verkkokaavaa %1$s</string>
-    <string name="web_pattern_delete_description">Poista verkkokaava %1$s</string>
     <string name="web_pattern_attach_description">Liitä verkkokaava %1$s</string>
     <string name="web_pattern_unlink_description">Irrota kaavan %1$s tiedot</string>
     <string name="web_pattern_shared_link">Jaettu linkki</string>

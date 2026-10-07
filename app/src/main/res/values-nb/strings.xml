@@ -381,7 +381,6 @@
     <string name="billing_already_owned_restore_failed">Google Play sier at du allerede eier dette kjøpet, men det kunne ikke gjenopprettes. Prøv Gjenopprett kjøp.</string>
 
     <!-- Yarn Card -->
-    <string name="saved_yarns">Lagret garn</string>
     <string name="fiber_content">Fiberinnhold</string>
     <string name="weight_grams">Vekt (g)</string>
     <string name="length_meters">Lengde (m)</string>
@@ -653,7 +652,6 @@
     <!-- Ravelry -->
     <string name="tool_ravelry">Ravelry</string>
     <string name="desc_ravelry">Søk etter oppskrifter og lagre favoritter</string>
-    <string name="ravelry_search">Søk</string>
     <string name="ravelry_saved_patterns">Lagrede oppskrifter</string>
     <string name="start_project">Start prosjekt</string>
     <string name="save_pattern">Lagre oppskrift</string>
@@ -1045,7 +1043,6 @@
     <string name="web_pattern_open_website">Åpne nettsted</string>
     <string name="web_pattern_open_website_description">Åpne nettstedet for %1$s på %2$s</string>
     <string name="web_pattern_edit_description">Rediger nettmønsteret %1$s</string>
-    <string name="web_pattern_delete_description">Slett nettmønsteret %1$s</string>
     <string name="web_pattern_attach_description">Koble til nettmønsteret %1$s</string>
     <string name="web_pattern_unlink_description">Koble fra mønsterinformasjonen for %1$s</string>
     <string name="web_pattern_shared_link">Delt lenke</string>

@@ -389,7 +389,6 @@
     <string name="billing_already_owned_restore_failed">Google Play indica que ya tienes esta compra, pero no se pudo restaurar. Usa Restaurar compras.</string>
 
     <!-- Yarn Card -->
-    <string name="saved_yarns">Hilos guardados</string>
     <string name="fiber_content">Composición</string>
     <string name="weight_grams">Peso (g)</string>
     <string name="length_meters">Longitud (m)</string>
@@ -671,7 +670,6 @@
     <!-- Ravelry -->
     <string name="tool_ravelry">Ravelry</string>
     <string name="desc_ravelry">Busca patrones y guarda favoritos</string>
-    <string name="ravelry_search">Buscar</string>
     <string name="ravelry_saved_patterns">Patrones guardados</string>
     <string name="start_project">Empezar proyecto</string>
     <string name="save_pattern">Guardar patrón</string>
@@ -1073,7 +1071,6 @@
     <string name="web_pattern_open_website">Abrir sitio web</string>
     <string name="web_pattern_open_website_description">Abrir el sitio web de %1$s en %2$s</string>
     <string name="web_pattern_edit_description">Editar el patrón web %1$s</string>
-    <string name="web_pattern_delete_description">Eliminar el patrón web %1$s</string>
     <string name="web_pattern_attach_description">Vincular el patrón web %1$s</string>
     <string name="web_pattern_unlink_description">Desvincular la información del patrón %1$s</string>
     <string name="web_pattern_shared_link">Enlace compartido</string>

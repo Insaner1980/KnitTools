@@ -153,6 +153,7 @@ data class CounterUiState(
     val linkedYarns: List<Pair<Long, String>> = emptyList(),
     val projectYarnNotes: List<ProjectYarnNote> = emptyList(),
     val totalSessionMinutes: Int = 0,
+    val hasSessions: Boolean = false,
     val reminders: List<RowReminder> = emptyList(),
     val activeAlert: RowReminder? = null,
     val dismissedReminderTrigger: DismissedReminderTrigger? = null,
@@ -461,6 +462,17 @@ class CounterViewModel
             selectedProjectJob?.cancel()
             selectedProjectJob =
                 viewModelScope.launch {
+                    launch {
+                        repository.observeHasSessionsForProject(projectId).collect { hasSessions ->
+                            _uiState.update { state ->
+                                if (state.projectId == projectId && selectionVersion == projectSelectionVersion) {
+                                    state.copy(hasSessions = hasSessions)
+                                } else {
+                                    state
+                                }
+                            }
+                        }
+                    }
                     var previousObservedProject: CounterProject? = null
                     combine(
                         repository.observeProject(projectId),
@@ -641,7 +653,11 @@ class CounterViewModel
         private suspend fun loadTotalSessionMinutes(projectId: Long) {
             val minutes = repository.getTotalMinutesForProject(projectId)
             _uiState.update { state ->
-                if (state.projectId == projectId) state.copy(totalSessionMinutes = minutes) else state
+                if (state.projectId == projectId) {
+                    state.copy(totalSessionMinutes = minutes)
+                } else {
+                    state
+                }
             }
         }
 

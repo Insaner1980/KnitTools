@@ -35,6 +35,16 @@ class ProjectOverviewSourceTest {
     }
 
     @Test
+    fun `completed projects keep their counter history reachable`() {
+        val screen = ProjectSourceFiles.read(SCREEN)
+
+        // Valmistuneella projektilla ei ole jatka-korttia, joten laskurin historia on näkymässä.
+        assertTrue(screen.contains("if (state.isCompleted) {"))
+        assertTrue(screen.contains("item(key = \"counter-history\")"))
+        assertTrue(screen.contains("onClick = { actions.onCounterHistory(projectId) }"))
+    }
+
+    @Test
     fun `route is gated by selected project and reciprocal navigation reuses previous screen`() {
         val nav = ProjectSourceFiles.read("app/src/main/java/com/finnvek/knittools/ui/navigation/NavGraph.kt")
         assertTrue(nav.contains("return ready && state.projectId == projectId"))

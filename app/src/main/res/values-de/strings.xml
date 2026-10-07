@@ -381,7 +381,6 @@
     <string name="billing_already_owned_restore_failed">Laut Google Play besitzt du diesen Kauf bereits, er konnte aber nicht wiederhergestellt werden. Versuche Käufe wiederherstellen.</string>
 
     <!-- Yarn Card -->
-    <string name="saved_yarns">Gespeicherte Garne</string>
     <string name="fiber_content">Fasergehalt</string>
     <string name="weight_grams">Gewicht (g)</string>
     <string name="length_meters">Länge (m)</string>
@@ -653,7 +652,6 @@
     <!-- Ravelry -->
     <string name="tool_ravelry">Ravelry</string>
     <string name="desc_ravelry">Anleitungen suchen und Favoriten speichern</string>
-    <string name="ravelry_search">Suchen</string>
     <string name="ravelry_saved_patterns">Gespeicherte Anleitungen</string>
     <string name="start_project">Projekt starten</string>
     <string name="save_pattern">Anleitung speichern</string>
@@ -1045,7 +1043,6 @@
     <string name="web_pattern_open_website">Website öffnen</string>
     <string name="web_pattern_open_website_description">Website für %1$s unter %2$s öffnen</string>
     <string name="web_pattern_edit_description">Webmuster %1$s bearbeiten</string>
-    <string name="web_pattern_delete_description">Webmuster %1$s löschen</string>
     <string name="web_pattern_attach_description">Webmuster %1$s verknüpfen</string>
     <string name="web_pattern_unlink_description">Musterinformationen für %1$s entfernen</string>
     <string name="web_pattern_shared_link">Geteilter Link</string>

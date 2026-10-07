@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.platform.LocalDensity
@@ -19,6 +20,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.test.platform.app.InstrumentationRegistry
 import com.finnvek.knittools.R
@@ -147,6 +149,55 @@ class ProjectOverviewScreenTest {
 
     @Test
     fun darkOverviewScreenshot() = screenshotOverview(true)
+
+    @Test
+    fun zeroMinuteSessionHistory() = assertZeroMinuteSessionHistory(360.dp, 1f)
+
+    @Test
+    fun zeroMinuteSessionHistoryAt320Dp() = assertZeroMinuteSessionHistory(320.dp, 1f)
+
+    @Test
+    fun zeroMinuteSessionHistoryAt200PercentFont() = assertZeroMinuteSessionHistory(360.dp, 2f)
+
+    @Test
+    fun zeroMinuteSessionHistoryAt320DpAnd200PercentFont() = assertZeroMinuteSessionHistory(320.dp, 2f)
+
+    private fun assertZeroMinuteSessionHistory(
+        width: Dp,
+        fontScale: Float,
+    ) {
+        val state = mutableStateOf(CounterUiState(projectId = 8, projectName = "Linen Market Bag"))
+        var openedProject: Long? = null
+        rule.setContent {
+            val density = LocalDensity.current
+            CompositionLocalProvider(LocalDensity provides Density(density.density, fontScale)) {
+                KnitToolsTheme {
+                    Box(Modifier.width(width)) {
+                        ProjectOverviewScreen(
+                            state.value,
+                            CounterScreenActions(onSessionHistory = { openedProject = it }),
+                            contentActions(),
+                            SnackbarHostState(),
+                            emptyList(),
+                            YarnUsageUnit.METERS,
+                        )
+                    }
+                }
+            }
+        }
+        val history = text(R.string.session_history_title)
+        rule.onNodeWithText(history).assertDoesNotExist()
+        rule.runOnIdle { state.value = state.value.copy(hasSessions = true, totalSessionMinutes = 0) }
+        rule.onNode(hasScrollAction()).performScrollToNode(hasText(history))
+        rule
+            .onNodeWithText(history)
+            .assertIsDisplayed()
+            .performClick()
+        assertEquals(8L, openedProject)
+        rule.onNodeWithText(text(R.string.project_overview_total_time)).assertDoesNotExist()
+        rule.runOnIdle { state.value = state.value.copy(hasSessions = false) }
+        rule.onNodeWithText(history).assertDoesNotExist()
+    }
 
     private fun screenshotOverview(dark: Boolean) {
         rule.setContent {

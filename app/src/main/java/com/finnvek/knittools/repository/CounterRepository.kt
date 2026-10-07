@@ -1660,6 +1660,13 @@ class CounterRepository
 
         suspend fun getTotalMinutesForProject(projectId: Long): Int = sessionDao.getTotalMinutes(projectId)
 
+        fun observeHasSessionsForProject(projectId: Long): Flow<Boolean> =
+            sessionDao
+                .observeSessionChanges()
+                .map { sessionDao.hasSessions(projectId) }
+                .retryOnRepositoryReadFailure()
+                .flowOn(ioDispatcher)
+
         suspend fun getLatestSession(projectId: Long): KnitSession? = sessionDao.getLatestSession(projectId)?.toDomain()
 
         private suspend fun synchronizeActiveSession(

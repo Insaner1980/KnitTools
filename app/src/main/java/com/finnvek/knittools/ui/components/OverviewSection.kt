@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -30,6 +31,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import coil3.compose.AsyncImage
+import com.finnvek.knittools.ui.theme.CrossStitchDimens
 import com.finnvek.knittools.ui.theme.ProjectOverviewDimens
 import com.finnvek.knittools.ui.theme.knitToolsColors
 
@@ -99,7 +101,7 @@ internal fun OverviewEmptyText(resource: Int) {
 internal fun OverviewLinkRow(
     title: String,
     subtitle: String?,
-    icon: ImageVector?,
+    glyph: CrossStitchGlyph?,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -112,7 +114,8 @@ internal fun OverviewLinkRow(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(ProjectOverviewDimens.ContentGap),
     ) {
-        icon?.let { Icon(it, null, tint = MaterialTheme.colorScheme.onSurfaceVariant) }
+        // Sama ristipistokuvake ja korostusväri kuin laskurin sisältölaatassa.
+        glyph?.let { CrossStitchIcon(it, Modifier.size(CrossStitchDimens.RowGlyphSize)) }
         Column(Modifier.weight(1f).padding(vertical = ProjectOverviewDimens.ContentGap)) {
             Text(title, style = MaterialTheme.typography.titleMedium)
             subtitle?.let {

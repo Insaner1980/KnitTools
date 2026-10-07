@@ -1131,7 +1131,7 @@ The visual direction is a warm 1970s craft palette: olive, burnt orange, avocado
 | `NavActive` | `#C45100` | Active navigation |
 | `NavActiveBg` | `#3A2010` | Active navigation indicator |
 | `RavelryTeal` | `#5F8A8B` | Ravelry accent |
-| `PrimaryTintContainer` | `#3A2513` | Insights primary tint |
+| `ActionContainer` | `#1A2E2B` | Primary action container (petrol) |
 | `ActivityCellEmpty` | `#464633` | Empty fabric cell |
 
 Dark Insights activity ramp: `#6B8A35`, `#93AE4F`, `#C9A435`, `#D4722A`.
@@ -1162,7 +1162,7 @@ Dark Insights activity ramp: `#6B8A35`, `#93AE4F`, `#C9A435`, `#D4722A`.
 | `LightNavText` | `#5A5440` | Inactive navigation |
 | `LightNavActiveBg` | `#EAD0B5` | Active navigation indicator |
 | `LightDivider` | `#C5C0A8` | Divider |
-| `LightPrimaryTintContainer` | `#E6CFAC` | Insights tint |
+| `LightActionContainer` | `#C4D9D0` | Primary action container (petrol) |
 | `LightActivityCellEmpty` | `#AFA98C` | Empty fabric cell |
 | `LightCounterMinusIcon` | `#211E16` | Minus button icon |
 | `LightRavelryTeal` | `#4A7172` | Extended light teal accent |

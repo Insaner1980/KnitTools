@@ -310,6 +310,7 @@ class WebPatternLocalizationArchitectureContractTest {
                 "web_pattern_url_label",
                 "web_pattern_website_label",
                 "web_pattern_edit",
+                "web_pattern_edit_title",
                 "web_pattern_delete",
                 "web_pattern_delete_confirm_title",
                 "web_pattern_delete_confirm_message",

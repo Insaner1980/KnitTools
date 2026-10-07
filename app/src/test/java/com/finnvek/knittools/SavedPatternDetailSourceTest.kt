@@ -24,7 +24,6 @@ class SavedPatternDetailSourceTest {
         listOf(
             SAVED_PATTERN_DETAIL_SCREEN,
             "app/src/main/java/com/finnvek/knittools/ui/screens/library/SavedPatternsScreen.kt",
-            "app/src/main/java/com/finnvek/knittools/ui/screens/ravelry/RavelrySearchScreen.kt",
         ).forEach { path ->
             assertTrue(
                 "$path must allow the complete deletion warning to be read",

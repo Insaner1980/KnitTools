@@ -117,9 +117,9 @@ class InsightsRedesignSourceTest {
     fun `the screen keeps one loud level and one shared section style`() {
         val sections = ProjectSourceFiles.read(INSIGHTS_SECTIONS)
 
-        // Osio-otsikko on kategoriamerkki kuten Libraryssa, ei neljäs otsikkokoko.
-        assertTrue(sections.contains("MaterialTheme.typography.labelSmall"))
-        assertTrue(sections.contains("knitToolsColors.brandWine"))
+        // Osio-otsikko on sama kategoriamerkki kuin Libraryssa (SectionLabel), ei neljäs otsikkokoko.
+        assertTrue(sections.contains("SectionLabel("))
+        assertFalse(sections.contains("knitToolsColors.brandWine"))
     }
 
     @Test

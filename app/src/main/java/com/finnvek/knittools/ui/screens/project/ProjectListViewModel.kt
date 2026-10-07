@@ -16,8 +16,6 @@ import com.finnvek.knittools.domain.model.ProjectDocument
 import com.finnvek.knittools.domain.model.ProjectFolderFilter
 import com.finnvek.knittools.domain.model.ProjectFolderMoveDirection
 import com.finnvek.knittools.domain.model.ProjectSortOrder
-import com.finnvek.knittools.domain.model.displayName
-import com.finnvek.knittools.domain.model.parseYarnCardIds
 import com.finnvek.knittools.pro.ProFeature
 import com.finnvek.knittools.pro.ProManager
 import com.finnvek.knittools.repository.ActiveSessionCompletionChoice
@@ -29,7 +27,6 @@ import com.finnvek.knittools.repository.ProjectDocumentRepository
 import com.finnvek.knittools.repository.ProjectFolderMutationResult
 import com.finnvek.knittools.repository.ProjectFolderRepository
 import com.finnvek.knittools.repository.SavedPatternRepository
-import com.finnvek.knittools.repository.YarnCardRepository
 import com.finnvek.knittools.repository.isSuccess
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -74,7 +71,6 @@ class ProjectListViewModel
     constructor(
         private val repository: CounterRepository,
         private val proManager: ProManager,
-        private val yarnCardRepository: YarnCardRepository,
         private val photoRepository: ProgressPhotoRepository,
         private val savedPatternRepository: SavedPatternRepository,
         private val projectDocumentRepository: ProjectDocumentRepository,
@@ -147,6 +143,11 @@ class ProjectListViewModel
 
         val isPro: Boolean get() = proManager.hasFeature(ProFeature.UNLIMITED_PROJECTS)
 
+        val projectLatestPhotoUris: StateFlow<Map<Long, String>> =
+            photoRepository
+                .observeLatestPhotoUris()
+                .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
+
         // === Multi-select ===
 
         private val _isMultiSelectMode = MutableStateFlow(false)
@@ -168,35 +169,11 @@ class ProjectListViewModel
         private val _continueKnittingProject = MutableStateFlow<ContinueKnittingProject?>(null)
         val continueKnittingProject: StateFlow<ContinueKnittingProject?> = _continueKnittingProject.asStateFlow()
 
-        private val _projectYarnNames = MutableStateFlow<Map<Long, String>>(emptyMap())
-        val projectYarnNames: StateFlow<Map<Long, String>> = _projectYarnNames.asStateFlow()
-
-        private val _projectYarnCardIds = MutableStateFlow<Map<Long, Long>>(emptyMap())
-        val projectYarnCardIds: StateFlow<Map<Long, Long>> = _projectYarnCardIds.asStateFlow()
-
-        private val _projectPhotoCounts = MutableStateFlow<Map<Long, Int>>(emptyMap())
-        val projectPhotoCounts: StateFlow<Map<Long, Int>> = _projectPhotoCounts.asStateFlow()
-
         private val _projectPatternNames = MutableStateFlow<Map<Long, String>>(emptyMap())
         val projectPatternNames: StateFlow<Map<Long, String>> = _projectPatternNames.asStateFlow()
 
-        private val _projectIdsWithDocuments = MutableStateFlow<Set<Long>>(emptySet())
-        val projectIdsWithDocuments: StateFlow<Set<Long>> = _projectIdsWithDocuments.asStateFlow()
-
-        private val _projectIdsWithAvailablePrimary = MutableStateFlow<Set<Long>>(emptySet())
-        val projectIdsWithAvailablePrimary: StateFlow<Set<Long>> = _projectIdsWithAvailablePrimary.asStateFlow()
-
-        private val _projectHasNotes = MutableStateFlow<Set<Long>>(emptySet())
-        val projectHasNotes: StateFlow<Set<Long>> = _projectHasNotes.asStateFlow()
-
         private val navigateToProjectChannel = Channel<Long>(Channel.BUFFERED)
         val navigateToProject = navigateToProjectChannel.receiveAsFlow()
-
-        private val navigateToNotesEditorChannel = Channel<Long>(Channel.BUFFERED)
-        val navigateToNotesEditor = navigateToNotesEditorChannel.receiveAsFlow()
-
-        private val navigateToPhotoGalleryChannel = Channel<Long>(Channel.BUFFERED)
-        val navigateToPhotoGallery = navigateToPhotoGalleryChannel.receiveAsFlow()
 
         private val creationActions =
             ProjectCreationActions(
@@ -223,10 +200,7 @@ class ProjectListViewModel
                             .map { documents -> projects to documents }
                     }.collect { (projects, documentsByProject) ->
                         updateContinueKnitting(projects)
-                        updateYarnNames(projects)
-                        updatePhotoCounts(projects)
                         updatePatternNames(projects, documentsByProject)
-                        updateHasNotes(projects)
                     }
             }
         }
@@ -328,50 +302,11 @@ class ProjectListViewModel
                 }
         }
 
-        private suspend fun updateYarnNames(projects: List<CounterProject>) {
-            val yarnNameMap = mutableMapOf<Long, String>()
-            val yarnCardIdMap = mutableMapOf<Long, Long>()
-            val allYarnIds =
-                projects
-                    .flatMap { p ->
-                        parseYarnCardIds(p.yarnCardIds)
-                    }.distinct()
-            if (allYarnIds.isNotEmpty()) {
-                val cards = yarnCardRepository.getCards(allYarnIds).associateBy { it.id }
-                projects.forEach { p ->
-                    val ids = parseYarnCardIds(p.yarnCardIds)
-                    val firstCard = ids.firstNotNullOfOrNull { cards[it] }
-                    if (firstCard != null) {
-                        yarnNameMap[p.id] = firstCard.displayName(::fallbackYarnCardName)
-                        yarnCardIdMap[p.id] = firstCard.id
-                    }
-                }
-            }
-            _projectYarnNames.value = yarnNameMap
-            _projectYarnCardIds.value = yarnCardIdMap
-        }
-
-        private fun fallbackYarnCardName(id: Long): String = context.getString(R.string.yarn_card_number_fallback, id)
-
-        private suspend fun updatePhotoCounts(projects: List<CounterProject>) {
-            _projectPhotoCounts.value =
-                photoRepository
-                    .getPhotoCountsByProjectIds(projects.map { it.id })
-                    .filterValues { it > 0 }
-        }
-
         private suspend fun updatePatternNames(
             projects: List<CounterProject>,
             documentsByProject: Map<Long, List<ProjectDocument>>,
         ) {
             val nameMap = mutableMapOf<Long, String>()
-            _projectIdsWithDocuments.value = documentsByProject.filterValues { it.isNotEmpty() }.keys
-            _projectIdsWithAvailablePrimary.value =
-                documentsByProject
-                    .mapNotNull { (projectId, documents) ->
-                        val primary = documents.firstOrNull(ProjectDocument::isPrimary) ?: return@mapNotNull null
-                        projectId.takeIf { projectDocumentRepository.isAvailable(primary) }
-                    }.toSet()
             val linkedPatternIds =
                 projects
                     .filter { project ->
@@ -400,10 +335,6 @@ class ProjectListViewModel
                 patternsById[patternId]?.let { nameMap[p.id] = it.name }
             }
             _projectPatternNames.value = nameMap
-        }
-
-        private fun updateHasNotes(projects: List<CounterProject>) {
-            _projectHasNotes.value = projects.filter { it.notesCreated }.map { it.id }.toSet()
         }
 
         fun requestProjectCreation() = creationActions.requestProjectCreation()
@@ -584,18 +515,6 @@ class ProjectListViewModel
             viewModelScope.launch {
                 val project = repository.getProject(id) ?: return@launch
                 repository.reactivateProject(id, project.completedAt, isPro)
-            }
-        }
-
-        fun openNotesEditor(projectId: Long) {
-            viewModelScope.launch {
-                navigateToNotesEditorChannel.send(projectId)
-            }
-        }
-
-        fun openPhotoGallery(projectId: Long) {
-            viewModelScope.launch {
-                navigateToPhotoGalleryChannel.send(projectId)
             }
         }
 

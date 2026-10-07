@@ -869,22 +869,6 @@ class RavelryRepositoryTransactionBoundaryTest {
     // CPD-ON
 
     @Test
-    fun `ravelry saved pattern multi delete delegates batch ids`() =
-        runTest {
-            val savedPatternRepository = mockk<SavedPatternRepository>(relaxed = true)
-            val repository =
-                RavelryRepository(
-                    api = mockk(relaxed = true),
-                    savedPatternRepository = savedPatternRepository,
-                    counterRepository = mockk(relaxed = true),
-                )
-
-            repository.deleteSavedPatterns(listOf(4L, 5L))
-
-            coVerify(exactly = 1) { savedPatternRepository.deleteByIds(listOf(4L, 5L)) }
-        }
-
-    @Test
     fun `ravelry project creation preserves the backend urls for the atomic writer`() =
         runTest {
             val savedPatternRepository = mockk<SavedPatternRepository>(relaxed = true)

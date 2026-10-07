@@ -21,14 +21,12 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.outlined.Circle
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -58,12 +56,18 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.model.SavedPattern
+import com.finnvek.knittools.domain.model.SavedPatternSource
 import com.finnvek.knittools.domain.model.isWebPatternCompatible
 import com.finnvek.knittools.domain.model.webPatternUrlOrNull
+import com.finnvek.knittools.ui.components.BadgePill
 import com.finnvek.knittools.ui.components.ConfirmationDialog
+import com.finnvek.knittools.ui.components.LabeledCounterImageButton
+import com.finnvek.knittools.ui.components.cardContainerColor
 import com.finnvek.knittools.ui.components.withExtraBottom
 import com.finnvek.knittools.ui.screens.ravelry.PatternCard
 import com.finnvek.knittools.ui.screens.ravelry.PatternCardState
+import com.finnvek.knittools.ui.theme.ProjectListDimens
+import com.finnvek.knittools.ui.theme.knitToolsColors
 
 // Data-luokat SavedPatternsScreen-parametrien ryhmittelyyn (S107)
 data class SavedPatternsState(
@@ -132,11 +136,13 @@ fun SavedPatternsScreen(
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         floatingActionButton = {
             if (!state.isSelectMode && state.patterns.isNotEmpty()) {
-                ExtendedFloatingActionButton(
-                    modifier = Modifier.onSizeChanged { actionHeight = with(density) { it.height.toDp() } },
+                // Sama pilleri kuin New Project ja Add Yarn: teksti + kolmiulotteinen plus.
+                LabeledCounterImageButton(
+                    imageRes = R.drawable.counter_plus_button,
+                    label = stringResource(R.string.web_pattern_add),
+                    visualSize = ProjectListDimens.CreateButtonVisualSize,
                     onClick = actions.onAddWebPattern,
-                    icon = { Icon(Icons.Filled.Add, contentDescription = null) },
-                    text = { Text(stringResource(R.string.web_pattern_add)) },
+                    modifier = Modifier.onSizeChanged { actionHeight = with(density) { it.height.toDp() } },
                 )
             }
         },
@@ -160,11 +166,12 @@ fun SavedPatternsScreen(
                     textAlign = TextAlign.Center,
                 )
                 Spacer(modifier = Modifier.height(16.dp))
-                Button(onClick = actions.onAddWebPattern) {
-                    Icon(Icons.Filled.Add, contentDescription = null)
-                    Spacer(modifier = Modifier.size(8.dp))
-                    Text(stringResource(R.string.web_pattern_add))
-                }
+                LabeledCounterImageButton(
+                    imageRes = R.drawable.counter_plus_button,
+                    label = stringResource(R.string.web_pattern_add),
+                    visualSize = ProjectListDimens.CreateButtonVisualSize,
+                    onClick = actions.onAddWebPattern,
+                )
             }
         } else {
             SavedPatternsList(
@@ -259,7 +266,7 @@ internal fun SelectModeDeleteBar(
         enter = slideInVertically(initialOffsetY = { it }),
         exit = slideOutVertically(targetOffsetY = { it }),
     ) {
-        Surface(color = MaterialTheme.colorScheme.surfaceVariant) {
+        Surface(color = MaterialTheme.knitToolsColors.cardContainer) {
             Row(
                 modifier =
                     Modifier
@@ -332,12 +339,7 @@ private fun SavedPatternItem(
     onClick: () -> Unit,
     onLongClick: () -> Unit,
 ) {
-    val backgroundColor =
-        if (isSelected) {
-            MaterialTheme.colorScheme.primary.copy(alpha = 0.07f)
-        } else {
-            MaterialTheme.colorScheme.surfaceVariant
-        }
+    val backgroundColor = cardContainerColor(selected = isSelected)
 
     Box(modifier = Modifier.fillMaxWidth()) {
         if (pattern.isWebPatternCompatible) {
@@ -357,6 +359,7 @@ private fun SavedPatternItem(
                         thumbnailUrl = pattern.thumbnailUrl,
                         difficulty = pattern.difficulty,
                         availability = pattern.availability,
+                        sourceLabel = savedPatternSourceLabel(pattern.source),
                     ),
                 onClick = onClick,
                 onLongClick = onLongClick,
@@ -423,11 +426,8 @@ private fun WebPatternCard(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            Text(
-                text = stringResource(R.string.web_pattern_label),
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            // Lähde samalla merkillä kuin Ravelry- ja PDF-kaavoilla.
+            BadgePill(text = stringResource(R.string.web_pattern_label))
             if (host.isNotBlank()) {
                 Text(
                     text = host,
@@ -438,3 +438,15 @@ private fun WebPatternCard(
         }
     }
 }
+
+/** Kaavan lähde merkkinä: tallennetut kaavat ovat vain Libraryssa, joten lähde kerrotaan listassa. */
+@Composable
+private fun savedPatternSourceLabel(source: SavedPatternSource): String? =
+    when (source) {
+        SavedPatternSource.Ravelry -> stringResource(R.string.tool_ravelry)
+        SavedPatternSource.LocalFile -> stringResource(R.string.pattern_source_pdf)
+        SavedPatternSource.WebLink,
+        SavedPatternSource.Other,
+        SavedPatternSource.Unknown,
+        -> null
+    }

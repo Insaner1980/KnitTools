@@ -7,31 +7,36 @@ import org.junit.Test
 
 class ProjectActionsBottomSheetSourceTest {
     @Test
-    fun `manage sheet separates project actions from counter tools`() {
+    fun `sheet links to overview and keeps counter tools in order`() {
         val source = ProjectSourceFiles.read(PROJECT_ACTIONS_BOTTOM_SHEET)
-
-        val thisProjectSection = source.indexOf("R.string.project_actions_section_this_project")
-        val remindersAction = source.indexOf("R.string.reminders")
-        val countersAction = source.indexOf("R.string.counters")
-        val counterToolsSection = source.indexOf("R.string.project_actions_section_counter_tools")
-        val addCounterAction = source.indexOf("R.string.add_counter")
-        val stitchesAction = source.indexOf("R.string.stitches_per_row")
-        val trackStitchesAction = source.indexOf("R.string.track_stitches")
-        val projectActionsSection = source.indexOf("R.string.project_actions_section_project_actions")
-        val historyAction = source.indexOf("R.string.session_history_title")
-
-        assertTrue(thisProjectSection >= 0)
-        assertTrue(thisProjectSection < remindersAction)
-        assertTrue(remindersAction < countersAction)
-        assertTrue(countersAction < counterToolsSection)
-        assertTrue(counterToolsSection < addCounterAction)
-        assertTrue(addCounterAction < stitchesAction)
-        assertTrue(stitchesAction < trackStitchesAction)
-        assertTrue(trackStitchesAction < projectActionsSection)
-        assertTrue(projectActionsSection < historyAction)
-        assertFalse(source.contains("R.string.counter_undo_last_change"))
-        assertFalse(source.contains("Icons.AutoMirrored.Outlined.Undo"))
-        assertFalse(source.contains("onUndo: () -> Unit"))
+        val tools = source.substringAfter("private fun CounterToolActions")
+        val positions =
+            listOf(
+                "R.string.counters",
+                "R.string.add_counter",
+                "R.string.counter_history_title",
+                "R.string.stitches_per_row",
+                "R.string.track_stitches",
+                "R.string.measurement_title",
+                "R.string.reset_counter",
+            ).map(tools::indexOf)
+        assertTrue(positions.all { it >= 0 })
+        assertTrue(positions.zipWithNext().all { (first, second) -> first < second })
+        assertTrue(source.contains("onClick = callbacks.onOpenOverview"))
+        assertTrue(source.contains("R.string.project_actions_section_work_session"))
+        listOf(
+            "project_documents_title",
+            "reminders",
+            "folder_move_to",
+            "project_details",
+            "rename_project",
+            "complete_project",
+            "delete_project",
+            "session_history_title",
+            "reactivate_project",
+        ).forEach {
+            assertFalse(it, source.contains("R.string.$it"))
+        }
     }
 
     @Test
@@ -59,14 +64,22 @@ class ProjectActionsBottomSheetSourceTest {
     }
 
     @Test
-    fun `completed project replaces active mutations with reactivation`() {
-        val source = ProjectSourceFiles.read(PROJECT_ACTIONS_BOTTOM_SHEET)
-
-        assertTrue(source.contains("val isCompleted: Boolean"))
-        assertTrue(source.contains("if (!state.isCompleted)"))
-        assertTrue(source.contains("if (state.isCompleted)"))
-        assertTrue(source.contains("R.string.reactivate_project"))
-        assertTrue(source.contains("onClick = callbacks.onReactivateProject"))
+    fun `completed project management and reactivation live in overview`() {
+        val source =
+            ProjectSourceFiles.read(
+                "app/src/main/java/com/finnvek/knittools/ui/screens/project/ProjectOverviewScreen.kt",
+            )
+        val completionAction =
+            source
+                .substringAfter(
+                    "if (state.isCompleted) {",
+                ).substringBefore("R.string.delete_project")
+        assertTrue(completionAction.contains("R.string.reactivate_project to actions.onReactivate"))
+        assertTrue(completionAction.contains("} else {"))
+        assertTrue(completionAction.contains("R.string.complete_project to actions.onComplete"))
+        // Valmistuneella projektilla jatka-kortissa ei ole laskuriin vievää toimintoa.
+        assertTrue(source.contains("onOpenCounter = onOpenCounter.takeUnless { state.isCompleted }"))
+        assertTrue(source.contains("R.string.complete_project to actions.onComplete"))
     }
 
     @Test

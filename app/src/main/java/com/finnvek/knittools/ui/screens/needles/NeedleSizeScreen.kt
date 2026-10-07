@@ -34,6 +34,7 @@ import com.finnvek.knittools.ui.components.InfoTip
 import com.finnvek.knittools.ui.components.SearchTextField
 import com.finnvek.knittools.ui.components.ToolScreenScaffold
 import com.finnvek.knittools.ui.components.rememberCurrentLocale
+import com.finnvek.knittools.ui.theme.knitToolsColors
 
 @Composable
 fun NeedleSizeScreen(onBack: () -> Unit) {
@@ -106,7 +107,7 @@ private fun HeaderRow() {
         modifier =
             Modifier
                 .fillMaxWidth()
-                .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+                .background(MaterialTheme.knitToolsColors.tableHeaderContainer)
                 .padding(vertical = 8.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
@@ -135,7 +136,7 @@ private fun NeedleRow(
     val locale = rememberCurrentLocale()
     val bgColor =
         if (isSelected) {
-            MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+            MaterialTheme.knitToolsColors.selectedCardContainer
         } else {
             Color.Transparent
         }

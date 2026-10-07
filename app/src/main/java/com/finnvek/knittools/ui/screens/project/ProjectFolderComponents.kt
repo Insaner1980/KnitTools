@@ -27,7 +27,6 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -62,6 +61,9 @@ import com.finnvek.knittools.domain.model.ProjectFolder
 import com.finnvek.knittools.domain.model.ProjectFolderFilter
 import com.finnvek.knittools.domain.model.ProjectFolderNameValidationResult
 import com.finnvek.knittools.domain.model.validateProjectFolderName
+import com.finnvek.knittools.ui.components.CancelButton
+import com.finnvek.knittools.ui.components.ScreenTitleSelector
+import com.finnvek.knittools.ui.components.dialogTextFieldColors
 import com.finnvek.knittools.ui.theme.ProjectListDimens
 
 private val FolderActionMinHeight = ProjectListDimens.FooterActionTouchSize
@@ -75,9 +77,10 @@ fun ProjectFolderSelector(
     enabled: Boolean = true,
     focusRequester: FocusRequester? = null,
 ) {
-    val label = selectedFolderLabel(selectedFilter, folders)
     val description = selectedFilterDescription(selectedFilter, folders, selected = true)
-    TextButton(
+    // Valittu kansio on Projects-näytön otsikko samalla tavalla kuin Insightsin aikaväli.
+    ScreenTitleSelector(
+        label = selectedFolderLabel(selectedFilter, folders),
         onClick = onClick,
         enabled = enabled,
         modifier =
@@ -92,13 +95,8 @@ fun ProjectFolderSelector(
                 .semantics {
                     contentDescription = description
                     selected = true
-                    role = Role.Button
                 },
-    ) {
-        Text(
-            text = label,
-        )
-    }
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -262,7 +260,7 @@ fun ProjectFolderNameDialog(
                             onDone = { validName?.takeIf { canConfirm }?.let(onConfirm) },
                         ),
                     shape = MaterialTheme.shapes.large,
-                    colors = folderTextFieldColors(),
+                    colors = dialogTextFieldColors(),
                     modifier = Modifier.fillMaxWidth(),
                 )
             }
@@ -277,13 +275,11 @@ fun ProjectFolderNameDialog(
             }
         },
         dismissButton = {
-            TextButton(
+            CancelButton(
                 onClick = onDismiss,
                 enabled = !isSaving,
                 modifier = Modifier.heightIn(min = FolderActionMinHeight),
-            ) {
-                Text(stringResource(R.string.cancel))
-            }
+            )
         },
     )
 }
@@ -335,13 +331,11 @@ fun DeleteProjectFolderDialog(
             }
         },
         dismissButton = {
-            TextButton(
+            CancelButton(
                 onClick = onDismiss,
                 enabled = !isDeleting,
                 modifier = Modifier.heightIn(min = FolderActionMinHeight),
-            ) {
-                Text(stringResource(R.string.cancel))
-            }
+            )
         },
     )
 }
@@ -756,11 +750,3 @@ private fun validationErrorMessage(validation: ProjectFolderNameValidationResult
             }
         }
     }
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun folderTextFieldColors() =
-    TextFieldDefaults.colors(
-        focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-        unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-    )

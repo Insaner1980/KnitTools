@@ -2,18 +2,14 @@ package com.finnvek.knittools.ui.screens.caston
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
@@ -22,7 +18,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -36,10 +31,12 @@ import com.finnvek.knittools.domain.calculator.formatDecimalForDisplay
 import com.finnvek.knittools.domain.model.CastOnResult
 import com.finnvek.knittools.ui.components.AnimatedResultNumber
 import com.finnvek.knittools.ui.components.InfoNote
-import com.finnvek.knittools.ui.components.InfoTip
+import com.finnvek.knittools.ui.components.InfoTipText
 import com.finnvek.knittools.ui.components.NumberInputField
 import com.finnvek.knittools.ui.components.NumberInputOptions
 import com.finnvek.knittools.ui.components.ResultCard
+import com.finnvek.knittools.ui.components.ResultPlaceholder
+import com.finnvek.knittools.ui.components.ToolInputCard
 import com.finnvek.knittools.ui.components.ToolScreenScaffold
 import com.finnvek.knittools.ui.components.rememberCurrentLocale
 import com.finnvek.knittools.ui.screens.home.HomeViewModel
@@ -85,7 +82,6 @@ fun CastOnScreen(
         }
     }
 
-    // CPD-OFF: Laskurin lomakerakenne pidetaan ruutukohtaisena kokonaisuutena.
     ToolScreenScaffold(
         title = stringResource(R.string.tool_cast_on_calculator),
         onBack = onBack,
@@ -107,65 +103,61 @@ fun CastOnScreen(
                     stringResource(R.string.unit_st_per_10cm)
                 }
 
-            Surface(
-                shape = RoundedCornerShape(18.dp),
-                color = MaterialTheme.colorScheme.surfaceVariant,
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    // CPD-ON
-                    NumberInputField(
-                        value = width,
-                        onValueChange = { width = it },
-                        label = stringResource(R.string.desired_width),
-                        modifier = Modifier.fillMaxWidth(),
-                        options = NumberInputOptions(isDecimal = true, suffix = unit, allowZero = false),
-                    )
-                    NumberInputField(
-                        value = gauge,
-                        onValueChange = { gauge = it },
-                        label = stringResource(R.string.stitch_gauge),
-                        modifier = Modifier.fillMaxWidth(),
-                        options = NumberInputOptions(isDecimal = true, suffix = gaugeUnit, allowZero = false),
-                    )
-                    Row(verticalAlignment = Alignment.Bottom) {
-                        NumberInputField(
-                            value = patternRepeat,
-                            onValueChange = { patternRepeat = it },
-                            label = stringResource(R.string.pattern_repeat_optional),
-                            modifier = Modifier.weight(1f),
-                            options = NumberInputOptions(suffix = stringResource(R.string.unit_st), allowZero = false),
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        InfoTip(
-                            title = stringResource(R.string.tip_pattern_repeat_title),
-                            description = stringResource(R.string.tip_pattern_repeat_desc),
-                            modifier = Modifier.padding(bottom = 16.dp),
-                        )
-                    }
-                    Row(verticalAlignment = Alignment.Bottom) {
-                        NumberInputField(
-                            value = edgeStitches,
-                            onValueChange = { edgeStitches = it },
-                            label = stringResource(R.string.edge_stitches_optional),
-                            modifier = Modifier.weight(1f),
-                            options =
-                                NumberInputOptions(
-                                    suffix = stringResource(R.string.unit_st),
-                                    isLast = true,
-                                ),
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        InfoTip(
-                            title = stringResource(R.string.tip_edge_stitches_title),
-                            description = stringResource(R.string.tip_edge_stitches_desc),
-                            modifier = Modifier.padding(bottom = 16.dp),
-                        )
-                    }
-                }
+            ToolInputCard {
+                NumberInputField(
+                    value = width,
+                    onValueChange = { width = it },
+                    label = stringResource(R.string.desired_width),
+                    modifier = Modifier.fillMaxWidth(),
+                    options =
+                        NumberInputOptions(
+                            isDecimal = true,
+                            suffix = unit,
+                            allowZero = false,
+                            placeholder = if (useImperial) EXAMPLE_WIDTH_INCHES else EXAMPLE_WIDTH_CM,
+                        ),
+                )
+                NumberInputField(
+                    value = gauge,
+                    onValueChange = { gauge = it },
+                    label = stringResource(R.string.stitch_gauge),
+                    modifier = Modifier.fillMaxWidth(),
+                    options =
+                        NumberInputOptions(
+                            isDecimal = true,
+                            suffix = gaugeUnit,
+                            allowZero = false,
+                            placeholder = EXAMPLE_STITCH_GAUGE,
+                        ),
+                )
+                NumberInputField(
+                    value = patternRepeat,
+                    onValueChange = { patternRepeat = it },
+                    label = stringResource(R.string.pattern_repeat_optional),
+                    modifier = Modifier.fillMaxWidth(),
+                    options = NumberInputOptions(suffix = stringResource(R.string.unit_st), allowZero = false),
+                    info =
+                        InfoTipText(
+                            stringResource(R.string.tip_pattern_repeat_title),
+                            stringResource(R.string.tip_pattern_repeat_desc),
+                        ),
+                )
+                NumberInputField(
+                    value = edgeStitches,
+                    onValueChange = { edgeStitches = it },
+                    label = stringResource(R.string.edge_stitches_optional),
+                    modifier = Modifier.fillMaxWidth(),
+                    options =
+                        NumberInputOptions(
+                            suffix = stringResource(R.string.unit_st),
+                            isLast = true,
+                        ),
+                    info =
+                        InfoTipText(
+                            stringResource(R.string.tip_edge_stitches_title),
+                            stringResource(R.string.tip_edge_stitches_desc),
+                        ),
+                )
             }
 
             result?.let { r ->
@@ -188,6 +180,8 @@ fun CastOnScreen(
                     MeasurementNumberParser.parse(edgeStitches, locale, integer = true, allowZero = true).value != null
             if (result == null && dimensionsValid && repeatValid && edgesValid) {
                 Text(stringResource(R.string.measurement_too_large), color = MaterialTheme.colorScheme.error)
+            } else if (result == null) {
+                ResultPlaceholder(text = stringResource(R.string.cast_on_result_placeholder))
             }
         }
     }
@@ -253,3 +247,8 @@ private fun CastOnResultSection(
         InfoNote(text = stringResource(R.string.edge_stitches_total_format, edgeCount))
     }
 }
+
+// Esimerkkiarvot tyhjiin kenttiin: aikuisen villapuseron leveys ja tavallinen DK-langan tiheys.
+private const val EXAMPLE_WIDTH_CM = "50"
+private const val EXAMPLE_WIDTH_INCHES = "20"
+private const val EXAMPLE_STITCH_GAUGE = "22"

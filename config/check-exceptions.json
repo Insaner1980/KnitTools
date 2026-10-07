@@ -720,6 +720,66 @@
       ]
     },
     {
+      "id": "knittools-mobsf-hardcoded-project-overview-keys",
+      "tool": "mobsfscan",
+      "rule": "android_kotlin_hardcoded",
+      "scope": "Compose list and ViewModel keys in ProjectOverviewScreen.kt",
+      "reason": "The exact MobSF matches are stable Compose item and ViewModel identities, not credentials or secrets.",
+      "owner": "project-maintainers",
+      "added": "2026-10-06",
+      "expires": "2026-10-31",
+      "tracking": "local-review:knittools-mobsf-hardcoded-project-overview-keys",
+      "sourcePath": "app/src/main/java/com/finnvek/knittools/ui/screens/project/ProjectOverviewScreen.kt",
+      "selector": "key = \"overview-yarn\"",
+      "findingPath": "app/src/main/java/com/finnvek/knittools/ui/screens/project/ProjectOverviewScreen.kt",
+      "findingSelectors": [
+        "key = \"overview-yarn\"",
+        "key = \"photo\"",
+        "key = \"name\"",
+        "key = \"progress\"",
+        "key = \"yarn\"",
+        "key = \"pattern\"",
+        "key = \"notes\"",
+        "key = \"photos\"",
+        "key = \"reminders\"",
+        "key = \"sessions\""
+      ]
+    },
+    {
+      "id": "knittools-mobsf-hardcoded-saved-pattern-attachment-key",
+      "tool": "mobsfscan",
+      "rule": "android_kotlin_hardcoded",
+      "scope": "ViewModel key in SavedPatternDetailScreen.kt",
+      "reason": "The exact MobSF match is a ViewModel identity scoped to a saved pattern, not a credential or secret.",
+      "owner": "project-maintainers",
+      "added": "2026-10-06",
+      "expires": "2026-10-31",
+      "tracking": "local-review:knittools-mobsf-hardcoded-saved-pattern-attachment-key",
+      "sourcePath": "app/src/main/java/com/finnvek/knittools/ui/screens/library/SavedPatternDetailScreen.kt",
+      "selector": "key = \"web-attachment-${pattern.id}\"",
+      "findingPath": "app/src/main/java/com/finnvek/knittools/ui/screens/library/SavedPatternDetailScreen.kt",
+      "findingSelectors": [
+        "key = \"web-attachment-${pattern.id}\""
+      ]
+    },
+    {
+      "id": "knittools-mobsf-hardcoded-pattern-bookmark-draft-test",
+      "tool": "mobsfscan",
+      "rule": "android_kotlin_hardcoded",
+      "scope": "Pattern document key fixture in PatternBookmarkDraftTest.kt",
+      "reason": "The exact MobSF match is a test document identifier, not a credential or secret.",
+      "owner": "project-maintainers",
+      "added": "2026-10-06",
+      "expires": "2026-10-31",
+      "tracking": "local-review:knittools-mobsf-hardcoded-pattern-bookmark-draft-test",
+      "sourcePath": "app/src/androidTest/java/com/finnvek/knittools/ui/screens/pattern/PatternBookmarkDraftTest.kt",
+      "selector": "documentKey = \"document\"",
+      "findingPath": "app/src/androidTest/java/com/finnvek/knittools/ui/screens/pattern/PatternBookmarkDraftTest.kt",
+      "findingSelectors": [
+        "key = \"document\""
+      ]
+    },
+    {
       "id": "knittools-owasp-false-cpe-groups",
       "tool": "owasp-dependency-check",
       "rule": "false CPE and CVE mappings",

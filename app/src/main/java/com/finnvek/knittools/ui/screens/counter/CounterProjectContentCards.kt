@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material.icons.Icons
@@ -24,7 +23,6 @@ import androidx.compose.material.icons.outlined.PhotoLibrary
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -37,6 +35,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.TextUnit
 import com.finnvek.knittools.R
+import com.finnvek.knittools.ui.components.SectionLabel
 import com.finnvek.knittools.ui.theme.CounterDimens
 import com.finnvek.knittools.ui.theme.knitToolsColors
 
@@ -92,11 +91,7 @@ fun ProjectContentCards(
         modifier = modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(CounterDimens.ProjectCardGridSpacing),
     ) {
-        Text(
-            text = stringResource(R.string.project_content_title),
-            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-            color = MaterialTheme.colorScheme.secondary,
-        )
+        SectionLabel(text = stringResource(R.string.project_content_title))
         cards.take(4).chunked(2).forEach { rowCards ->
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -146,8 +141,8 @@ private fun ProjectContentCardView(
                     role = Role.Button,
                     onClick = onClick,
                 ),
-        shape = RoundedCornerShape(CounterDimens.ProjectCardCornerRadius),
-        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        shape = MaterialTheme.shapes.medium,
+        color = MaterialTheme.knitToolsColors.cardContainer,
     ) {
         Column(
             modifier =

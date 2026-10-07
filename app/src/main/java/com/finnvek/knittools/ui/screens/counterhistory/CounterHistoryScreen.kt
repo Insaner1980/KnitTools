@@ -22,12 +22,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.heading
-import androidx.compose.ui.semantics.semantics
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.model.CounterHistoryAction
+import com.finnvek.knittools.ui.components.SectionLabel
 import com.finnvek.knittools.ui.components.ToolScreenScaffold
 import com.finnvek.knittools.ui.components.localizedDateTimePattern
 import com.finnvek.knittools.ui.components.rememberCurrentLocale
@@ -95,12 +94,7 @@ internal fun CounterHistoryContent(
                     }
                     state.days.forEach { day ->
                         item(key = "date:${day.key}", contentType = "date") {
-                            Text(
-                                day.date,
-                                modifier = Modifier.semantics { heading() },
-                                style = MaterialTheme.typography.titleSmall,
-                                color = MaterialTheme.knitToolsColors.brandWine,
-                            )
+                            SectionLabel(text = day.date)
                         }
                         items(day.rows, key = { it.event.id }, contentType = { "event" }) { row ->
                             CounterHistoryEvent(row)

@@ -36,7 +36,7 @@ class SonarMaintainabilitySourceTest {
         assertTrue(navGraph.contains("data class KnitToolsNavRequests("))
         assertTrue(navGraph.contains("requests: KnitToolsNavRequests = KnitToolsNavRequests()"))
         assertTrue(counterScreen.contains("data class CounterScreenActions("))
-        assertTrue(counterScreen.contains("actions: CounterScreenActions = CounterScreenActions()"))
+        assertTrue(counterScreen.contains("actions: CounterScreenActions,"))
         assertTrue(patternCard.contains("data class PatternCardState("))
         assertTrue(patternCard.contains("state: PatternCardState,"))
         assertTrue(searchScreen.contains("data class RavelrySearchActions("))

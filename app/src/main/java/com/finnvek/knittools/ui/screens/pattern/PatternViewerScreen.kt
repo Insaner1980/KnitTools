@@ -52,7 +52,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.minimumInteractiveComponentSize
@@ -120,12 +119,21 @@ import com.finnvek.knittools.domain.model.sanitizeReadingLineYFraction
 import com.finnvek.knittools.domain.model.webPatternUrlOrNull
 import com.finnvek.knittools.repository.ProjectDocumentMutationResult
 import com.finnvek.knittools.repository.SavedPatternMetadataMutationResult
+import com.finnvek.knittools.ui.components.CancelButton
 import com.finnvek.knittools.ui.components.CollectWithLifecycleEffect
+import com.finnvek.knittools.ui.components.OverviewEmptyText
+import com.finnvek.knittools.ui.components.OverviewLinkRow
+import com.finnvek.knittools.ui.components.OverviewTextAction
 import com.finnvek.knittools.ui.components.ScrollableFormDialog
+import com.finnvek.knittools.ui.components.SectionLabel
+import com.finnvek.knittools.ui.components.SheetTitle
+import com.finnvek.knittools.ui.components.cardTextFieldColors
+import com.finnvek.knittools.ui.components.dialogTextFieldColors
 import com.finnvek.knittools.ui.platform.ExternalWebLinkOpenResult
 import com.finnvek.knittools.ui.platform.openExternalWebLink
 import com.finnvek.knittools.ui.screens.counter.CounterViewModel
 import com.finnvek.knittools.ui.screens.counter.CounterViewerEvent
+import com.finnvek.knittools.ui.theme.knitToolsColors
 import com.finnvek.knittools.ui.theme.rememberPatternAnnotationRenderStyle
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
@@ -683,11 +691,10 @@ internal fun ProjectDocumentsSheet(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
-                Text(
-                    text = stringResource(R.string.project_documents_title),
-                    style = MaterialTheme.typography.titleLarge,
-                )
-                TextButton(
+                // Sama otsikko ja oikean reunan tekstitoiminto kuin muissa sheeteissä ja projektinäkymässä.
+                SheetTitle(text = stringResource(R.string.project_documents_title), modifier = Modifier.weight(1f))
+                OverviewTextAction(
+                    label = stringResource(R.string.project_documents_add),
                     onClick = {
                         coroutineScope.launch {
                             sheetState.hide()
@@ -695,11 +702,7 @@ internal fun ProjectDocumentsSheet(
                         }
                     },
                     enabled = !state.isMutating,
-                ) {
-                    Icon(Icons.Default.Add, contentDescription = null)
-                    Spacer(Modifier.width(4.dp))
-                    Text(stringResource(R.string.project_documents_add))
-                }
+                )
             }
             state.error?.let { error ->
                 Text(
@@ -716,10 +719,7 @@ internal fun ProjectDocumentsSheet(
             val patternName = metadataPattern?.name ?: metadataPatternName
             patternName?.let {
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text(
-                        text = stringResource(R.string.project_documents_pattern_information),
-                        style = MaterialTheme.typography.titleMedium,
-                    )
+                    SectionLabel(text = stringResource(R.string.project_documents_pattern_information))
                     Text(it, style = MaterialTheme.typography.bodyLarge)
                     val webPattern = metadataPattern?.takeIf(SavedPattern::isWebPatternCompatible)
                     if (webPattern != null) {
@@ -751,34 +751,41 @@ internal fun ProjectDocumentsSheet(
                             )
                         val editDescription = stringResource(R.string.web_pattern_edit_description, webPattern.name)
                         val unlinkDescription = stringResource(R.string.web_pattern_unlink_description, webPattern.name)
-                        TextButton(
+                        // Linkkirivit kuten projektinäkymässä; pinotut tekstipainikkeet lukivat irrallisina.
+                        OverviewLinkRow(
+                            title = stringResource(R.string.web_pattern_open_website),
+                            subtitle = null,
+                            icon = null,
                             onClick = {
                                 coroutineScope.launch {
                                     sheetState.hide()
                                     onOpenPatternWebsite()
                                 }
                             },
-                            modifier = Modifier.semantics { contentDescription = openDescription },
-                        ) {
-                            Text(stringResource(R.string.web_pattern_open_website))
-                        }
-                        TextButton(
+                            modifier =
+                                Modifier.semantics(mergeDescendants = true) { contentDescription = openDescription },
+                        )
+                        OverviewLinkRow(
+                            title = stringResource(R.string.web_pattern_edit),
+                            subtitle = null,
+                            icon = null,
                             onClick = {
                                 coroutineScope.launch {
                                     sheetState.hide()
                                     onEditPatternInformation()
                                 }
                             },
-                            modifier = Modifier.semantics { contentDescription = editDescription },
-                        ) {
-                            Text(stringResource(R.string.web_pattern_edit))
-                        }
-                        TextButton(
+                            modifier =
+                                Modifier.semantics(mergeDescendants = true) { contentDescription = editDescription },
+                        )
+                        OverviewLinkRow(
+                            title = stringResource(R.string.web_pattern_unlink),
+                            subtitle = null,
+                            icon = null,
                             onClick = { showUnlinkConfirmation = true },
-                            modifier = Modifier.semantics { contentDescription = unlinkDescription },
-                        ) {
-                            Text(stringResource(R.string.web_pattern_unlink))
-                        }
+                            modifier =
+                                Modifier.semantics(mergeDescendants = true) { contentDescription = unlinkDescription },
+                        )
                     } else {
                         Text(
                             text = stringResource(R.string.project_documents_metadata_only),
@@ -804,12 +811,7 @@ internal fun ProjectDocumentsSheet(
                 }
 
                 state.documents.isEmpty() -> {
-                    Text(
-                        text = stringResource(R.string.project_documents_empty),
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(vertical = 24.dp),
-                    )
+                    OverviewEmptyText(R.string.project_documents_empty)
                 }
 
                 else -> {
@@ -863,9 +865,7 @@ internal fun ProjectDocumentsSheet(
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showUnlinkConfirmation = false }) {
-                    Text(stringResource(R.string.cancel))
-                }
+                CancelButton(onClick = { showUnlinkConfirmation = false })
             },
         )
     }
@@ -894,9 +894,7 @@ internal fun ProjectDocumentsSheet(
                 }
             },
             dismissButton = {
-                TextButton(onClick = { renameDocument = null }) {
-                    Text(stringResource(R.string.cancel))
-                }
+                CancelButton(onClick = { renameDocument = null })
             },
         )
     }
@@ -928,9 +926,7 @@ internal fun ProjectDocumentsSheet(
                 }
             },
             dismissButton = {
-                TextButton(onClick = { removeDocument = null }) {
-                    Text(stringResource(R.string.cancel))
-                }
+                CancelButton(onClick = { removeDocument = null })
             },
         )
     }
@@ -1170,7 +1166,7 @@ private fun RowCalibrationPanel(
     onCancel: () -> Unit,
 ) {
     Surface(
-        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        color = MaterialTheme.knitToolsColors.cardContainer,
         tonalElevation = 2.dp,
     ) {
         Column(
@@ -1196,10 +1192,7 @@ private fun RowCalibrationPanel(
                 supportingText = rowCalibrationSupportingText(state.showInvalidRowError),
                 shape = MaterialTheme.shapes.medium,
                 colors =
-                    TextFieldDefaults.colors(
-                        focusedContainerColor = MaterialTheme.colorScheme.surface,
-                        unfocusedContainerColor = MaterialTheme.colorScheme.surface,
-                    ),
+                    cardTextFieldColors(),
                 modifier = Modifier.fillMaxWidth(),
             )
             Row(
@@ -1786,10 +1779,7 @@ private fun PatternPageJumpDialog(
                 },
                 shape = MaterialTheme.shapes.medium,
                 colors =
-                    TextFieldDefaults.colors(
-                        focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                        unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                    ),
+                    dialogTextFieldColors(),
             )
         },
         confirmButton = {
@@ -1801,9 +1791,7 @@ private fun PatternPageJumpDialog(
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.cancel))
-            }
+            CancelButton(onClick = onDismiss)
         },
     )
 }
@@ -1815,7 +1803,7 @@ private fun LibraryPatternViewerBottomBar(
     onPreviousPage: () -> Unit,
     onNextPage: () -> Unit,
 ) {
-    Surface(color = MaterialTheme.colorScheme.surfaceVariant) {
+    Surface(color = MaterialTheme.knitToolsColors.cardContainer) {
         Row(
             modifier =
                 Modifier

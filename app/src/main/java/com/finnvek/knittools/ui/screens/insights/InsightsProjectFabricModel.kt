@@ -2,6 +2,7 @@ package com.finnvek.knittools.ui.screens.insights
 
 import com.finnvek.knittools.domain.model.KnitSession
 import java.time.DayOfWeek
+import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.temporal.TemporalAdjusters
@@ -42,7 +43,12 @@ internal fun buildInsightsProjectFabric(
             firstDayOfWeek,
         )
     sessions.forEach(buckets::add)
-    return buildInsightsProjectFabric(buckets.values, today, firstDayOfWeek, projectOrder)
+    val firstSessionDate =
+        sessions.minOfOrNull { session ->
+            val sessionZone = session.zoneId?.let(ZoneId::of) ?: zone
+            Instant.ofEpochMilli(session.startedAt).atZone(sessionZone).toLocalDate()
+        }
+    return buildInsightsProjectFabric(buckets.values, today, firstDayOfWeek, projectOrder, firstSessionDate)
 }
 
 internal fun buildInsightsProjectFabric(
@@ -50,11 +56,16 @@ internal fun buildInsightsProjectFabric(
     today: LocalDate,
     firstDayOfWeek: DayOfWeek,
     projectOrder: List<Long>,
+    firstSessionDate: LocalDate?,
 ): InsightsProjectFabricModel? {
-    val startDate =
+    val windowStart =
         today
             .with(TemporalAdjusters.previousOrSame(firstDayOfWeek))
             .minusWeeks((PROJECT_FABRIC_WEEK_COUNT - 1).toLong())
+    // Ruudukko alkaa ensimmäisen istunnon viikosta, kun historia on ikkunaa lyhyempi: kiinteä
+    // puolen vuoden ikkuna näytti otsikon aikaväliä pidemmän jakson ja kuukausia tyhjiä soluja.
+    val firstSessionWeek = firstSessionDate?.with(TemporalAdjusters.previousOrSame(firstDayOfWeek))
+    val startDate = maxOf(windowStart, firstSessionWeek ?: windowStart)
     val projectRank = projectOrder.withIndex().associate { (index, projectId) -> projectId to index }
     val orderedProjectIds =
         bucketsByProject.keys.sortedWith(

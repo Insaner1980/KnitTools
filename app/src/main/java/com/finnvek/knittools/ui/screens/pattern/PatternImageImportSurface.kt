@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -40,6 +39,8 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.finnvek.knittools.R
+import com.finnvek.knittools.ui.components.CancelButton
+import com.finnvek.knittools.ui.theme.knitToolsColors
 import java.io.File
 
 @Composable
@@ -176,9 +177,7 @@ internal fun PatternImageImportSurface(
                 }
             },
             dismissButton = {
-                TextButton(onClick = onCancel) {
-                    Text(stringResource(R.string.cancel))
-                }
+                CancelButton(onClick = onCancel)
             },
         )
     }
@@ -200,7 +199,7 @@ private fun PatternImagePageRow(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .background(MaterialTheme.colorScheme.surfaceContainerHigh, RoundedCornerShape(12.dp))
+                .background(MaterialTheme.knitToolsColors.cardContainer, MaterialTheme.shapes.medium)
                 .padding(12.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {

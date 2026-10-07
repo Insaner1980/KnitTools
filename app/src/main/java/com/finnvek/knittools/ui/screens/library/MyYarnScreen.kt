@@ -3,7 +3,6 @@ package com.finnvek.knittools.ui.screens.library
 import androidx.activity.compose.BackHandler
 import androidx.annotation.StringRes
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -14,31 +13,21 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -61,20 +50,26 @@ import com.finnvek.knittools.domain.model.YarnCard
 import com.finnvek.knittools.domain.model.displayName
 import com.finnvek.knittools.pro.ProStatus
 import com.finnvek.knittools.ui.components.ConfirmationDialog
+import com.finnvek.knittools.ui.components.FormSheet
+import com.finnvek.knittools.ui.components.FormSheetConfirm
+import com.finnvek.knittools.ui.components.LabeledCounterImageButton
 import com.finnvek.knittools.ui.components.ProBadge
 import com.finnvek.knittools.ui.components.ProPromptRequest
 import com.finnvek.knittools.ui.components.ProPromptSheet
 import com.finnvek.knittools.ui.components.ProPromptSource
 import com.finnvek.knittools.ui.components.ProjectYarnTextField
+import com.finnvek.knittools.ui.components.YarnThumbnail
+import com.finnvek.knittools.ui.components.cardContainerColor
+import com.finnvek.knittools.ui.components.proBadgeDescription
 import com.finnvek.knittools.ui.components.skeinCountText
 import com.finnvek.knittools.ui.screens.yarncard.ManualYarnCardInput
 import com.finnvek.knittools.ui.screens.yarncard.parseManualYarnQuantity
+import com.finnvek.knittools.ui.theme.ProjectListDimens
 import com.finnvek.knittools.ui.theme.knitToolsColors
 
 private const val YARN_CARD_SUMMARY_SEPARATOR = ", "
 private val yarnCardContentPadding = 14.dp
 private val yarnCardLineSpacing = 6.dp
-private val yarnCardColorDotSize = 8.dp
 
 // Data-luokat MyYarnScreen-parametrien ryhmittelyyn (S107)
 data class MyYarnState(
@@ -220,22 +215,17 @@ fun MyYarnScreen(
         },
         floatingActionButton = {
             if (!state.isSelectMode && state.cards.isNotEmpty()) {
-                FloatingActionButton(
+                // Sama pilleri kuin Projects-näytön New Project: teksti + kolmiulotteinen plus.
+                val addLabel = stringResource(R.string.add_yarn_to_my_yarn)
+                val proDescription = proBadgeDescription(state.proStatus)
+                LabeledCounterImageButton(
+                    imageRes = R.drawable.counter_plus_button,
+                    label = addLabel,
+                    visualSize = ProjectListDimens.CreateButtonVisualSize,
                     onClick = requestAddYarn,
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary,
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.Add,
-                            contentDescription = stringResource(R.string.add_yarn_to_my_yarn),
-                        )
-                        ProBadge(status = state.proStatus)
-                    }
-                }
+                    contentDescription = listOfNotNull(addLabel, proDescription).joinToString(", "),
+                    badge = proDescription?.let { { ProBadge(status = state.proStatus) } },
+                )
             }
         },
     ) { padding ->
@@ -272,104 +262,77 @@ internal fun ManualYarnCardSheet(
     var colorNumber by rememberSaveable { mutableStateOf(initialInput.colorNumber) }
     var dyeLot by rememberSaveable { mutableStateOf(initialInput.dyeLot) }
 
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        containerColor = MaterialTheme.colorScheme.surface,
-    ) {
-        Column(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .verticalScroll(rememberScrollState())
-                    .navigationBarsPadding()
-                    .imePadding()
-                    .padding(horizontal = 20.dp)
-                    .padding(bottom = 32.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            Text(
-                text = stringResource(titleRes),
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.secondary,
-            )
-            Text(
-                text = stringResource(bodyRes),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            ProjectYarnTextField(
-                value = yarnName,
-                onValueChange = { yarnName = it },
-                label = stringResource(R.string.project_yarn_name),
-                singleLine = true,
-            )
-            ProjectYarnTextField(
-                value = brand,
-                onValueChange = { brand = it },
-                // CPD-OFF: Ruudun paikallinen Compose-rakenne pidetaan vastuun yhteydessa.
-                label = stringResource(R.string.brand_label),
-                singleLine = true,
-            )
-            ProjectYarnTextField(
-                value = quantity,
-                onValueChange = { quantity = it.filter(Char::isDigit) },
-                label = stringResource(R.string.quantity_label),
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            )
-            ProjectYarnTextField(
-                value = weightCategory,
-                // CPD-ON
-                onValueChange = { weightCategory = it },
-                label = stringResource(R.string.weight_category),
-                singleLine = true,
-            )
-            ProjectYarnTextField(
-                value = colorName,
-                onValueChange = { colorName = it },
-                label = stringResource(R.string.color_name),
-                singleLine = true,
-            )
-            ProjectYarnTextField(
-                value = colorNumber,
-                onValueChange = { colorNumber = it },
-                label = stringResource(R.string.color_number),
-                singleLine = true,
-            )
-            ProjectYarnTextField(
-                value = dyeLot,
-                onValueChange = { dyeLot = it },
-                label = stringResource(R.string.dye_lot),
-                singleLine = true,
-            )
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End,
-            ) {
-                TextButton(onClick = onDismiss) {
-                    Text(stringResource(R.string.cancel))
-                }
-                TextButton(
-                    onClick = {
-                        val validQuantity = parseManualYarnQuantity(quantity) ?: return@TextButton
+    val validQuantity = parseManualYarnQuantity(quantity)
+    FormSheet(
+        title = stringResource(titleRes),
+        description = stringResource(bodyRes),
+        onDismiss = onDismiss,
+        confirm =
+            FormSheetConfirm(
+                text = stringResource(R.string.save),
+                enabled = yarnName.isNotBlank() && validQuantity != null,
+                onClick = {
+                    validQuantity?.let {
                         onSave(
                             ManualYarnCardInput(
                                 yarnName = yarnName,
                                 brand = brand,
-                                quantity = validQuantity,
+                                quantity = it,
                                 weightCategory = weightCategory,
                                 colorName = colorName,
                                 colorNumber = colorNumber,
                                 dyeLot = dyeLot,
                             ),
                         )
-                    },
-                    enabled = yarnName.isNotBlank() && parseManualYarnQuantity(quantity) != null,
-                ) {
-                    Text(stringResource(R.string.save))
-                }
-            }
-        }
+                    }
+                },
+            ),
+    ) {
+        ProjectYarnTextField(
+            value = yarnName,
+            onValueChange = { yarnName = it },
+            label = stringResource(R.string.project_yarn_name),
+            singleLine = true,
+        )
+        ProjectYarnTextField(
+            value = brand,
+            onValueChange = { brand = it },
+            // CPD-OFF: Ruudun paikallinen Compose-rakenne pidetaan vastuun yhteydessa.
+            label = stringResource(R.string.brand_label),
+            singleLine = true,
+        )
+        ProjectYarnTextField(
+            value = quantity,
+            onValueChange = { quantity = it.filter(Char::isDigit) },
+            label = stringResource(R.string.quantity_label),
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+        )
+        ProjectYarnTextField(
+            value = weightCategory,
+            // CPD-ON
+            onValueChange = { weightCategory = it },
+            label = stringResource(R.string.weight_category),
+            singleLine = true,
+        )
+        ProjectYarnTextField(
+            value = colorName,
+            onValueChange = { colorName = it },
+            label = stringResource(R.string.color_name),
+            singleLine = true,
+        )
+        ProjectYarnTextField(
+            value = colorNumber,
+            onValueChange = { colorNumber = it },
+            label = stringResource(R.string.color_number),
+            singleLine = true,
+        )
+        ProjectYarnTextField(
+            value = dyeLot,
+            onValueChange = { dyeLot = it },
+            label = stringResource(R.string.dye_lot),
+            singleLine = true,
+        )
     }
 }
 
@@ -425,17 +388,16 @@ private fun MyYarnEmptyState(
             textAlign = TextAlign.Center,
         )
         Spacer(modifier = Modifier.height(16.dp))
-        Button(onClick = onAddYarn) {
-            Icon(
-                imageVector = Icons.Filled.Add,
-                contentDescription = null,
-                modifier = Modifier.size(18.dp),
-            )
-            Spacer(modifier = Modifier.size(8.dp))
-            Text(stringResource(R.string.add_yarn_to_my_yarn))
-            Spacer(modifier = Modifier.size(8.dp))
-            ProBadge(status = proStatus)
-        }
+        val addLabel = stringResource(R.string.add_yarn_to_my_yarn)
+        val proDescription = proBadgeDescription(proStatus)
+        LabeledCounterImageButton(
+            imageRes = R.drawable.counter_plus_button,
+            label = addLabel,
+            visualSize = ProjectListDimens.CreateButtonVisualSize,
+            onClick = onAddYarn,
+            contentDescription = listOfNotNull(addLabel, proDescription).joinToString(", "),
+            badge = proDescription?.let { { ProBadge(status = proStatus) } },
+        )
     }
 }
 
@@ -449,6 +411,8 @@ private fun MyYarnList(
     LazyColumn(
         modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
+        // Alareunan tila pitää viimeisen kortin lisäyspainikkeen yläpuolella.
+        contentPadding = PaddingValues(bottom = ProjectListDimens.ListBottomPadding),
     ) {
         item { Spacer(modifier = Modifier.height(4.dp)) }
         items(state.cards, key = { it.id }) { card ->
@@ -472,7 +436,6 @@ private fun MyYarnList(
                 },
             )
         }
-        item { Spacer(modifier = Modifier.height(8.dp)) }
     }
 }
 
@@ -487,12 +450,7 @@ private fun YarnStashCardItem(
     onClick: () -> Unit,
     onLongClick: () -> Unit,
 ) {
-    val backgroundColor =
-        if (isSelected) {
-            MaterialTheme.colorScheme.primary.copy(alpha = 0.07f)
-        } else {
-            MaterialTheme.colorScheme.surfaceVariant
-        }
+    val backgroundColor = cardContainerColor(selected = isSelected)
 
     Box(
         modifier =
@@ -547,6 +505,14 @@ private fun YarnCardContent(
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        // Kuva vain kun sellainen on: neutraali laatta ei kertoisi langasta mitään (kuten projektinäkymässä).
+        card.photoUri.takeIf(String::isNotBlank)?.let { photoUri ->
+            YarnThumbnail(
+                photoUri = photoUri,
+                size = ProjectListDimens.ThumbnailSizeCompact,
+                modifier = Modifier.align(Alignment.Top),
+            )
+        }
         Column(
             modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.spacedBy(yarnCardLineSpacing),
@@ -596,43 +562,21 @@ private fun YarnCardMetaLine(
 
 @Composable
 private fun YarnManualColorRow(card: YarnCard) {
+    // Lyhyet muodot ("#101", "Lot D24-11"): täydet nimikkeet rivittivät rivin kahdelle riville.
+    val colorNumber =
+        card.colorNumber.takeIf { it.isNotBlank() }?.let {
+            stringResource(R.string.yarn_color_number_short, it)
+        }
+    val dyeLot = card.dyeLot.takeIf { it.isNotBlank() }?.let { stringResource(R.string.yarn_dye_lot_short, it) }
     val colorSummary =
-        yarnColorSummary(
-            card = card,
-            colorNumberLabel = stringResource(R.string.color_number),
-            dyeLotLabel = stringResource(R.string.dye_lot),
-        ) ?: return
+        listOfNotNull(card.colorName.takeIf { it.isNotBlank() }, colorNumber, dyeLot)
+            .joinToString(YARN_CARD_SUMMARY_SEPARATOR)
+            .takeIf { it.isNotBlank() } ?: return
 
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(yarnCardLineSpacing),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Box(
-            modifier =
-                Modifier
-                    .size(yarnCardColorDotSize)
-                    .background(
-                        color = MaterialTheme.colorScheme.tertiary,
-                        shape = CircleShape,
-                    ),
-        )
-        Text(
-            text = colorSummary,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.knitToolsColors.onSurfaceMuted,
-        )
-    }
+    // Ei väripistettä: sen sävy ei ollut langan väri, joten se johti harhaan.
+    Text(
+        text = colorSummary,
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.knitToolsColors.onSurfaceMuted,
+    )
 }
-
-private fun yarnColorSummary(
-    card: YarnCard,
-    colorNumberLabel: String,
-    dyeLotLabel: String,
-): String? =
-    listOfNotNull(
-        card.colorName.takeIf { it.isNotBlank() },
-        card.colorNumber.takeIf { it.isNotBlank() }?.let { "$colorNumberLabel $it" },
-        card.dyeLot.takeIf { it.isNotBlank() }?.let { "$dyeLotLabel $it" },
-    ).joinToString(YARN_CARD_SUMMARY_SEPARATOR)
-        .takeIf { it.isNotBlank() }

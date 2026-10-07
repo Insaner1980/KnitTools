@@ -23,10 +23,9 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.finnvek.knittools.R
 import com.finnvek.knittools.ui.components.ConfirmationDialog
+import com.finnvek.knittools.ui.components.SectionLabel
 import com.finnvek.knittools.ui.components.SessionItem
 import com.finnvek.knittools.ui.components.ToolScreenScaffold
-import com.finnvek.knittools.ui.components.localizedUppercase
-import com.finnvek.knittools.ui.theme.knitToolsColors
 
 @Composable
 fun SessionHistoryScreen(onBack: () -> Unit) {
@@ -68,10 +67,8 @@ fun SessionHistoryScreen(onBack: () -> Unit) {
         ) {
             if (sessions.isEmpty()) {
                 projectName?.let { name ->
-                    Text(
-                        text = name.localizedUppercase(),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.knitToolsColors.brandWine,
+                    SectionLabel(
+                        text = name,
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                     )
                 }
@@ -92,16 +89,13 @@ fun SessionHistoryScreen(onBack: () -> Unit) {
             } else {
                 LazyColumn(
                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     // Insightsista tullessa otsikko on pelkkä "History", joten projekti
                     // pitää lukea ruudulta. Sama osiomerkki kuin Libraryssa.
                     projectName?.let { name ->
                         item {
-                            Text(
-                                text = name.localizedUppercase(),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.knitToolsColors.brandWine,
+                            SectionLabel(
+                                text = name,
                                 modifier = Modifier.padding(bottom = 4.dp),
                             )
                         }

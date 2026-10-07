@@ -53,14 +53,13 @@
     <!-- Hub hero text -->
 
     <!-- Project List -->
-    <string name="project_list_title">Prosjekter</string>
     <string name="continue_knitting">Fortsett å strikke</string>
+    <string name="continue_crocheting">Fortsett å hekle</string>
     <string name="section_active">Aktive</string>
     <string name="section_completed">Fullførte</string>
     <string name="new_project">Nytt prosjekt</string>
     <string name="new_project_name_format">Prosjekt %1$d</string>
     <string name="create_project">Opprett prosjekt</string>
-    <string name="project_details">Prosjektdetaljer</string>
     <string name="project_details_title">Prosjektdetaljer</string>
     <string name="new_project_details_title">Nytt prosjekt</string>
     <string name="project_name_label">Prosjektnavn</string>
@@ -221,8 +220,6 @@
     <string name="saved_to_my_yarn_explanation">Denne prosjektoppføringen forblir separat. Notatene ble ikke kopiert til garnkortet i Mitt garn.</string>
     <string name="yarn_count_format">%1$d garn</string>
     <string name="linked_project_label">Koblet prosjekt</string>
-    <string name="link_to_project_label">Koble til prosjekt</string>
-    <string name="change_project_link">Endre</string>
     <string name="remove_project_link">Fjern kobling</string>
     <string name="select_project">Velg prosjekt</string>
     <string name="status_label">Status</string>
@@ -288,6 +285,11 @@
     <string name="current_stitches">Nåværende masker</string>
     <string name="increase_by">Øk med</string>
     <string name="decrease_by">Fell med</string>
+    <string name="increase_result_placeholder">Fyll inn begge feltene for å se hvor du skal øke</string>
+    <string name="decrease_result_placeholder">Fyll inn begge feltene for å se hvor du skal felle</string>
+    <string name="cast_on_result_placeholder">Fyll inn bredde og strikkefasthet for å se hvor mange masker du skal legge opp</string>
+    <string name="yarn_result_placeholder">Fyll inn feltene for å se hvor mange nøster du trenger</string>
+    <string name="tool_result_placeholder">Fyll inn feltene for å se resultatet</string>
     <string name="invalid_input">Ugyldig input</string>
     <string name="easy_to_remember">Lett å huske</string>
     <string name="balanced">Balansert</string>
@@ -339,7 +341,8 @@
     <string name="theme_system">System</string>
     <string name="theme_light">Lyst</string>
     <string name="theme_dark">Mørkt</string>
-    <string name="settings_section_settings">Innstillinger</string>
+    <string name="settings_section_general">Generelt</string>
+    <string name="settings_theme">Tema</string>
     <string name="settings_section_pro">PRO</string>
     <string name="settings_section_info">INFO</string>
     <string name="settings_language">Appspråk</string>
@@ -387,6 +390,8 @@
     <string name="color_name">Fargenavn</string>
     <string name="color_number">Fargenummer</string>
     <string name="dye_lot">Innfargingsparti</string>
+    <string name="yarn_color_number_short">nr. %1$s</string>
+    <string name="yarn_dye_lot_short">Parti %1$s</string>
     <string name="weight_category">Tykkelseskategori</string>
     <string name="care_symbols">Vedlikehold</string>
     <string name="no_saved_yarns">Ingen garnkort lagret ennå</string>
@@ -656,9 +661,7 @@
     <string name="ravelry_open_saved_pattern">Åpne</string>
     <string name="open_in_ravelry">Åpne i Ravelry</string>
     <string name="pattern_saved">Oppskrift lagret</string>
-    <string name="no_saved_patterns">Ingen lagrede oppskrifter ennå</string>
-    <string name="search_hint">Søk etter strikkeoppskrifter…</string>
-    <string name="ravelry_search_requires_sign_in">Logg inn med Ravelry for å søke etter oppskrifter.</string>
+    <string name="search_hint">Søk etter oppskrifter…</string>
     <string name="ravelry_import_loading">Laster oppskrift</string>
     <string name="ravelry_import_title">Lagre denne oppskriften?</string>
     <string name="ravelry_import_already_saved">Oppskriften er allerede lagret</string>
@@ -731,9 +734,7 @@
     <string name="search_more_error">Kunne ikke laste flere oppskrifter. Sjekk internettforbindelsen.</string>
     <string name="pattern_detail_error">Kunne ikke laste oppskriftsdetaljer. Sjekk internettforbindelsen.</string>
     <string name="project_actions_title">Prosjekthandlinger</string>
-    <string name="project_actions_section_this_project">Dette prosjektet</string>
     <string name="project_actions_section_counter_tools">Telleverktøy</string>
-    <string name="project_actions_section_project_actions">Prosjekthandlinger</string>
     <string name="project_content_title">Prosjekt</string>
     <string name="project_content_yarn">Garn</string>
     <string name="project_content_notes">Notater</string>
@@ -1027,15 +1028,17 @@
     </plurals>
     <string name="web_pattern_add">Legg til nettmønster</string>
     <string name="web_pattern_label">Nettmønster</string>
+    <string name="pattern_source_pdf">PDF</string>
     <string name="web_pattern_title_label">Mønsternavn</string>
     <string name="web_pattern_designer_label">Designer</string>
     <string name="web_pattern_url_label">Nettadresse</string>
     <string name="web_pattern_website_label">Nettsted</string>
     <string name="web_pattern_edit">Rediger nettmønster</string>
+    <string name="web_pattern_edit_title">Rediger nettmønster</string>
     <string name="web_pattern_delete">Slett nettmønster</string>
     <string name="web_pattern_delete_confirm_title">Slette nettmønsteret?</string>
     <string name="web_pattern_delete_confirm_message">Slette %1$s fra Lagrede oppskrifter i biblioteket?\n\nEventuelle PDF-merknader som er laget i biblioteket for denne oppskriften, slettes også og vises ikke lenger i prosjekter. PDF-er som allerede er vedlagt prosjekter, og PDF-merknader som er laget i prosjektene, beholdes.</string>
-    <string name="web_pattern_attach">Koble til nettmønster</string>
+    <string name="web_pattern_attach">Koble til prosjekt</string>
     <string name="web_pattern_unlink">Koble fra mønsterinformasjonen</string>
     <string name="web_pattern_replace_confirm_title">Erstatte mønsterinformasjonen?</string>
     <string name="web_pattern_replace_confirm_message">Erstatte gjeldende mønsterinformasjon med %1$s?</string>
@@ -1116,4 +1119,26 @@
     <string name="counter_history_changed">Telleren ble endret</string>
     <string name="counter_history_event_description">%1$s. Fra %2$s til %3$s. %4$s, %5$s.</string>
     <string name="counter_history_transition">%1$s → %2$s</string>
+    <string name="project_overview_add_photo">Legg til prosjektbilde</string>
+    <string name="project_overview_edit">Rediger</string>
+    <string name="project_overview_add">Legg til</string>
+    <string name="project_overview_see_all">Vis alle</string>
+    <string name="project_overview_section_pattern">Oppskrift og dokumenter</string>
+    <string name="project_overview_section_sessions">Arbeidsøkter</string>
+    <string name="project_overview_total_time">Total tid</string>
+    <string name="project_overview_yarn_planned">Planlagt</string>
+    <string name="project_overview_yarn_allocated">Avsatt</string>
+    <string name="project_overview_yarn_used">Brukt</string>
+    <string name="project_overview_yarn_remaining">Gjenstår</string>
+    <string name="project_overview_yarn_empty">Ingen garn lagt til ennå</string>
+    <string name="project_overview_pattern_empty">Ingen oppskrift lagt til ennå</string>
+    <string name="project_overview_notes_empty">Ingen notater ennå</string>
+    <string name="project_overview_pdf_page_format">PDF-oppskrift, side %1$d</string>
+    <string name="project_card_open_overview_action">Åpne prosjekt</string>
+    <string name="project_overview_edit_details">Rediger detaljer</string>
+    <string name="project_overview_open_photos">Åpne bilder</string>
+    <string name="project_overview_yarn_add_amounts">Legg til mengder</string>
+    <string name="project_actions_overview_subtitle">Garn, oppskrift, notater og detaljer</string>
+    <string name="project_actions_section_work_session">Arbeidsøkt</string>
+    <string name="project_overview_amount_unknown">Ukjent</string>
 </resources>

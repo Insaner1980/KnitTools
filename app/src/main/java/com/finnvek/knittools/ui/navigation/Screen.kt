@@ -87,6 +87,14 @@ sealed class Screen(
 
     data object PhotoGallery : Screen("photo_gallery")
 
+    data class ProjectOverview(
+        val projectId: Long,
+    ) : Screen("project_overview/$projectId") {
+        companion object {
+            const val ROUTE = "project_overview/{projectId}"
+        }
+    }
+
     data class PatternViewer(
         val projectId: Long,
         val selectedProjectDocumentId: Long? = null,

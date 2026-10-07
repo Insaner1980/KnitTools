@@ -1,3 +1,13 @@
+buildscript {
+    configurations.configureEach {
+        resolutionStrategy.force(
+            "com.fasterxml.jackson.core:jackson-core:2.22.3",
+            "com.fasterxml.jackson.core:jackson-databind:2.22.3",
+            "org.jsoup:jsoup:1.23.2",
+        )
+    }
+}
+
 plugins {
     alias(libs.plugins.android.application) apply false
     alias(libs.plugins.android.test) apply false

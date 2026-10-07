@@ -112,6 +112,9 @@ rules:
       - kotlin
     severity: WARNING
     message: Lokitus sisältää käyttäjän projektin tai laskurin tilaa. Jätä tämä vain väliaikaiseksi debug-lokitukseksi.
+    paths:
+      exclude:
+        - tools/testdata/semgrep/**
     patterns:
       - pattern-either:
           - pattern: Log.v($TAG, $MSG, ...)

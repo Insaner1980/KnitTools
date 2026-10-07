@@ -17,9 +17,25 @@ class InsightsProjectFabricModelTest {
     fun `window starts at the current week minus twenty five weeks`() {
         val today = LocalDate.of(2026, 8, 19)
 
-        val model = buildModel(today = today, firstDayOfWeek = DayOfWeek.MONDAY)
+        val model = buildModel(today = today, firstDayOfWeek = DayOfWeek.MONDAY, sessions = longHistory(today))
 
         assertEquals(LocalDate.of(2026, 2, 23), model.startDate)
+        assertEquals(today, model.endDate)
+    }
+
+    @Test
+    fun `window starts at the week of the first session when history is shorter`() {
+        val today = LocalDate.of(2026, 10, 6)
+        val firstSession = LocalDate.of(2026, 9, 16)
+
+        val model =
+            buildModel(
+                today = today,
+                firstDayOfWeek = DayOfWeek.MONDAY,
+                sessions = listOf(session(1L, firstSession, 9), session(1L, today, 9)),
+            )
+
+        assertEquals(LocalDate.of(2026, 9, 14), model.startDate)
         assertEquals(today, model.endDate)
     }
 
@@ -27,8 +43,8 @@ class InsightsProjectFabricModelTest {
     fun `window follows the locale first day of week`() {
         val today = LocalDate.of(2026, 8, 19)
 
-        val mondayModel = buildModel(today = today, firstDayOfWeek = DayOfWeek.MONDAY)
-        val sundayModel = buildModel(today = today, firstDayOfWeek = DayOfWeek.SUNDAY)
+        val mondayModel = buildModel(today = today, firstDayOfWeek = DayOfWeek.MONDAY, sessions = longHistory(today))
+        val sundayModel = buildModel(today = today, firstDayOfWeek = DayOfWeek.SUNDAY, sessions = longHistory(today))
 
         assertEquals(DayOfWeek.MONDAY, mondayModel.startDate.dayOfWeek)
         assertEquals(DayOfWeek.SUNDAY, sundayModel.startDate.dayOfWeek)
@@ -196,6 +212,10 @@ class InsightsProjectFabricModelTest {
                 projectOrder = projectOrder,
             ),
         )
+
+    // Istunto yli puoli vuotta sitten ja tänään: täysi 26 viikon ikkuna.
+    private fun longHistory(today: LocalDate): List<KnitSession> =
+        listOf(session(1L, today.minusWeeks(40), 9), session(1L, today, 9))
 
     private fun session(
         projectId: Long,

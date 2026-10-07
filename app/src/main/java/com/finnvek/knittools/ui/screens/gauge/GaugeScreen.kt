@@ -36,6 +36,7 @@ import com.finnvek.knittools.domain.model.GaugeBasis
 import com.finnvek.knittools.domain.model.MeasurementUnit
 import com.finnvek.knittools.ui.components.CollectWithLifecycleEffect
 import com.finnvek.knittools.ui.components.PasteInstructionButton
+import com.finnvek.knittools.ui.components.ToolInputCard
 import com.finnvek.knittools.ui.components.ToolScreenScaffold
 import com.finnvek.knittools.ui.components.rememberCurrentLocale
 
@@ -188,7 +189,7 @@ private fun ConversionFields(
         onSelect = { onAction(GaugeAction.ToUnit(it)) },
         tag = "measurement_to",
     )
-    GaugeNumericField(state, GaugeField.CONVERSION, onAction)
+    ToolInputCard { GaugeNumericField(state, GaugeField.CONVERSION, onAction) }
 }
 
 @Composable
@@ -211,15 +212,18 @@ private fun SwatchFields(
     onAction: (GaugeAction) -> Unit,
     axis: GaugeAxis? = null,
 ) {
+    // Kentät ovat aina kortissa: kermataustalla vaalea kenttä ei erottunut lainkaan.
     if (axis != GaugeAxis.ROWS) {
-        GaugeHeading(stringResource(R.string.measurement_stitches_width))
-        GaugeNumericField(state, GaugeField.SWATCH_WIDTH, onAction)
-        GaugeNumericField(state, GaugeField.SWATCH_STITCHES, onAction)
+        ToolInputCard(title = stringResource(R.string.measurement_stitches_width)) {
+            GaugeNumericField(state, GaugeField.SWATCH_WIDTH, onAction)
+            GaugeNumericField(state, GaugeField.SWATCH_STITCHES, onAction)
+        }
     }
     if (axis != GaugeAxis.STITCHES) {
-        GaugeHeading(stringResource(R.string.measurement_rows_height))
-        GaugeNumericField(state, GaugeField.SWATCH_HEIGHT, onAction)
-        GaugeNumericField(state, GaugeField.SWATCH_ROWS, onAction)
+        ToolInputCard(title = stringResource(R.string.measurement_rows_height)) {
+            GaugeNumericField(state, GaugeField.SWATCH_HEIGHT, onAction)
+            GaugeNumericField(state, GaugeField.SWATCH_ROWS, onAction)
+        }
     }
 }
 
@@ -243,8 +247,10 @@ private fun ActualGaugeFields(
     if (state.useSwatch) {
         SwatchFields(state, onAction, axis)
     } else {
-        if (axis != GaugeAxis.ROWS) GaugeNumericField(state, GaugeField.ACTUAL_STITCHES, onAction)
-        if (axis != GaugeAxis.STITCHES) GaugeNumericField(state, GaugeField.ACTUAL_ROWS, onAction)
+        ToolInputCard {
+            if (axis != GaugeAxis.ROWS) GaugeNumericField(state, GaugeField.ACTUAL_STITCHES, onAction)
+            if (axis != GaugeAxis.STITCHES) GaugeNumericField(state, GaugeField.ACTUAL_ROWS, onAction)
+        }
     }
 }
 
@@ -281,7 +287,7 @@ private fun CalculateFields(
             state.axis == GaugeAxis.STITCHES -> GaugeField.TARGET_WIDTH
             else -> GaugeField.TARGET_HEIGHT
         }
-    GaugeNumericField(state, field, onAction)
+    ToolInputCard { GaugeNumericField(state, field, onAction) }
 }
 
 @Composable
@@ -302,10 +308,12 @@ private fun AdjustmentFields(
         },
     )
     ActualGaugeFields(state, onAction)
-    GaugeHeading(stringResource(R.string.pattern_gauge))
-    GaugeNumericField(state, GaugeField.PATTERN_STITCHES, onAction)
-    GaugeNumericField(state, GaugeField.PATTERN_ROWS, onAction)
-    GaugeHeading(stringResource(R.string.pattern_instructions))
-    GaugeNumericField(state, GaugeField.PATTERN_STITCH_COUNT, onAction)
-    GaugeNumericField(state, GaugeField.PATTERN_ROW_COUNT, onAction)
+    ToolInputCard(title = stringResource(R.string.pattern_gauge)) {
+        GaugeNumericField(state, GaugeField.PATTERN_STITCHES, onAction)
+        GaugeNumericField(state, GaugeField.PATTERN_ROWS, onAction)
+    }
+    ToolInputCard(title = stringResource(R.string.pattern_instructions)) {
+        GaugeNumericField(state, GaugeField.PATTERN_STITCH_COUNT, onAction)
+        GaugeNumericField(state, GaugeField.PATTERN_ROW_COUNT, onAction)
+    }
 }

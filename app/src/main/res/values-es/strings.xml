@@ -53,14 +53,13 @@
     <!-- Hub hero text -->
 
     <!-- Project List -->
-    <string name="project_list_title">Proyectos</string>
     <string name="continue_knitting">Seguir tejiendo</string>
+    <string name="continue_crocheting">Seguir con el ganchillo</string>
     <string name="section_active">Activos</string>
     <string name="section_completed">Terminados</string>
     <string name="new_project">Nuevo proyecto</string>
     <string name="new_project_name_format">Proyecto %1$d</string>
     <string name="create_project">Crear proyecto</string>
-    <string name="project_details">Detalles del proyecto</string>
     <string name="project_details_title">Detalles del proyecto</string>
     <string name="new_project_details_title">Nuevo proyecto</string>
     <string name="project_name_label">Nombre del proyecto</string>
@@ -226,8 +225,6 @@
     <string name="saved_to_my_yarn_explanation">Esta entrada del proyecto permanece separada. Sus notas no se copiaron a la ficha de Mi hilo.</string>
     <string name="yarn_count_format">%1$d hilos</string>
     <string name="linked_project_label">Proyecto vinculado</string>
-    <string name="link_to_project_label">Vincular al proyecto</string>
-    <string name="change_project_link">Cambiar</string>
     <string name="remove_project_link">Quitar vínculo</string>
     <string name="select_project">Seleccionar proyecto</string>
     <string name="status_label">Estado</string>
@@ -295,6 +292,11 @@
     <string name="current_stitches">Puntos actuales</string>
     <string name="increase_by">Aumentar en</string>
     <string name="decrease_by">Disminuir en</string>
+    <string name="increase_result_placeholder">Rellena ambos campos para ver dónde aumentar</string>
+    <string name="decrease_result_placeholder">Rellena ambos campos para ver dónde disminuir</string>
+    <string name="cast_on_result_placeholder">Rellena el ancho y la muestra para ver cuántos puntos montar</string>
+    <string name="yarn_result_placeholder">Rellena los campos para ver cuántos ovillos necesitas</string>
+    <string name="tool_result_placeholder">Rellena los campos para ver el resultado</string>
     <string name="invalid_input">Entrada no válida</string>
     <string name="easy_to_remember">Fácil de recordar</string>
     <string name="balanced">Equilibrado</string>
@@ -347,7 +349,8 @@
     <string name="theme_system">Sistema</string>
     <string name="theme_light">Claro</string>
     <string name="theme_dark">Oscuro</string>
-    <string name="settings_section_settings">Ajustes</string>
+    <string name="settings_section_general">General</string>
+    <string name="settings_theme">Tema</string>
     <string name="settings_section_pro">PRO</string>
     <string name="settings_section_info">INFO</string>
     <string name="settings_language">Idioma de la app</string>
@@ -395,6 +398,8 @@
     <string name="color_name">Nombre del color</string>
     <string name="color_number">Número de color</string>
     <string name="dye_lot">Lote de tinte</string>
+    <string name="yarn_color_number_short">n.º %1$s</string>
+    <string name="yarn_dye_lot_short">Lote %1$s</string>
     <string name="weight_category">Categoría de grosor</string>
     <string name="care_symbols">Cuidados</string>
     <string name="no_saved_yarns">Aún no hay fichas de hilo guardadas</string>
@@ -674,9 +679,7 @@
     <string name="ravelry_open_saved_pattern">Abrir</string>
     <string name="open_in_ravelry">Abrir en Ravelry</string>
     <string name="pattern_saved">Patrón guardado</string>
-    <string name="no_saved_patterns">Aún no hay patrones guardados</string>
-    <string name="search_hint">Buscar patrones de punto…</string>
-    <string name="ravelry_search_requires_sign_in">Inicia sesión en Ravelry para buscar patrones.</string>
+    <string name="search_hint">Buscar patrones…</string>
     <string name="ravelry_import_loading">Cargando patrón</string>
     <string name="ravelry_import_title">¿Guardar este patrón?</string>
     <string name="ravelry_import_already_saved">Patrón ya guardado</string>
@@ -750,9 +753,7 @@
     <string name="search_more_error">No se pudieron cargar más patrones. Comprueba tu conexión a internet.</string>
     <string name="pattern_detail_error">No se pudieron cargar los detalles del patrón. Comprueba tu conexión a internet.</string>
     <string name="project_actions_title">Acciones del proyecto</string>
-    <string name="project_actions_section_this_project">Este proyecto</string>
     <string name="project_actions_section_counter_tools">Herramientas de contadores</string>
-    <string name="project_actions_section_project_actions">Acciones del proyecto</string>
     <string name="project_content_title">Proyecto</string>
     <string name="project_content_yarn">Hilo</string>
     <string name="project_content_notes">Notas</string>
@@ -1055,15 +1056,17 @@
     </plurals>
     <string name="web_pattern_add">Añadir patrón web</string>
     <string name="web_pattern_label">Patrón web</string>
+    <string name="pattern_source_pdf">PDF</string>
     <string name="web_pattern_title_label">Nombre del patrón</string>
     <string name="web_pattern_designer_label">Diseñador</string>
     <string name="web_pattern_url_label">Dirección del sitio web</string>
     <string name="web_pattern_website_label">Sitio web</string>
     <string name="web_pattern_edit">Editar patrón web</string>
+    <string name="web_pattern_edit_title">Editar patrón web</string>
     <string name="web_pattern_delete">Eliminar patrón web</string>
     <string name="web_pattern_delete_confirm_title">¿Eliminar el patrón web?</string>
     <string name="web_pattern_delete_confirm_message">¿Eliminar %1$s de Patrones guardados en la biblioteca?\n\nSi hay anotaciones PDF creadas en la biblioteca para este patrón, también se eliminarán y dejarán de aparecer en los proyectos. Se conservarán los PDF ya adjuntos a los proyectos y las anotaciones PDF creadas dentro de los proyectos.</string>
-    <string name="web_pattern_attach">Vincular patrón web</string>
+    <string name="web_pattern_attach">Vincular a un proyecto</string>
     <string name="web_pattern_unlink">Desvincular la información del patrón</string>
     <string name="web_pattern_replace_confirm_title">¿Sustituir la información del patrón?</string>
     <string name="web_pattern_replace_confirm_message">¿Sustituir la información actual del patrón por %1$s?</string>
@@ -1145,4 +1148,26 @@
     <string name="counter_history_changed">Contador modificado</string>
     <string name="counter_history_event_description">%1$s. De %2$s a %3$s. %4$s, %5$s.</string>
     <string name="counter_history_transition">%1$s → %2$s</string>
+    <string name="project_overview_add_photo">Añadir foto del proyecto</string>
+    <string name="project_overview_edit">Editar</string>
+    <string name="project_overview_add">Añadir</string>
+    <string name="project_overview_see_all">Ver todo</string>
+    <string name="project_overview_section_pattern">Patrón y documentos</string>
+    <string name="project_overview_section_sessions">Sesiones de trabajo</string>
+    <string name="project_overview_total_time">Tiempo total</string>
+    <string name="project_overview_yarn_planned">Previsto</string>
+    <string name="project_overview_yarn_allocated">Reservado</string>
+    <string name="project_overview_yarn_used">Usado</string>
+    <string name="project_overview_yarn_remaining">Restante</string>
+    <string name="project_overview_yarn_empty">Aún no has añadido hilo</string>
+    <string name="project_overview_pattern_empty">Aún no has añadido un patrón</string>
+    <string name="project_overview_notes_empty">Aún no hay notas</string>
+    <string name="project_overview_pdf_page_format">Patrón PDF, página %1$d</string>
+    <string name="project_card_open_overview_action">Abrir proyecto</string>
+    <string name="project_overview_edit_details">Editar detalles</string>
+    <string name="project_overview_open_photos">Abrir fotos</string>
+    <string name="project_overview_yarn_add_amounts">Añadir cantidades</string>
+    <string name="project_actions_overview_subtitle">Hilo, patrón, notas y detalles</string>
+    <string name="project_actions_section_work_session">Sesión de trabajo</string>
+    <string name="project_overview_amount_unknown">Desconocido</string>
 </resources>

@@ -210,7 +210,7 @@ class GaugeNavigationRuntimeTest {
 
     private fun openProjectCalculator() {
         clickContentDescription(text(R.string.project_actions_title))
-        waitForText(text(R.string.project_actions_section_this_project))
+        waitForText(text(R.string.project_actions_section_counter_tools))
         scrollToText(text(R.string.measurement_title))
         clickText(text(R.string.measurement_title))
         waitForText(text(R.string.measurement_task))
@@ -232,7 +232,8 @@ class GaugeNavigationRuntimeTest {
         scrollToText(text(R.string.measurement_value_unit_format, "50", text(R.string.unit_cm)))
         scrollToText(text(R.string.measurement_rounded_size))
         scrollToText(text(R.string.measurement_value_unit_format, "50", text(R.string.unit_cm)))
-        assertTextAbsent(text(R.string.measurement_rows_height))
+        // Osio-otsikko on SectionLabel, joka näytetään versaalina.
+        assertTextAbsent(text(R.string.measurement_rows_height).uppercase())
     }
 
     private fun copyAndCheckOwnResult() {

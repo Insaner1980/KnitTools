@@ -27,7 +27,7 @@ fun RenameProjectDialog(
                 onValueChange = onRenameTextChange,
                 singleLine = true,
                 shape = MaterialTheme.shapes.medium,
-                colors = highContainerTextFieldColors(),
+                colors = dialogTextFieldColors(),
                 modifier = Modifier.fillMaxWidth(),
             )
         },
@@ -37,9 +37,7 @@ fun RenameProjectDialog(
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.cancel))
-            }
+            CancelButton(onClick = onDismiss)
         },
     )
 }

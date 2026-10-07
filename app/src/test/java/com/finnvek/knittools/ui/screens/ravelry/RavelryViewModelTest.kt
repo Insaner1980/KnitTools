@@ -27,7 +27,6 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
-import org.junit.Assert.assertTrue
 import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -563,41 +562,6 @@ class RavelryViewModelTest : RavelryViewModelFixture() {
             advanceUntilIdle()
 
             assertNull(vm.importConfirmationState.value)
-        }
-
-    @Test
-    fun `delete selected saved patterns delegates one batch delete`() =
-        runTest(testDispatcher) {
-            val vm = createViewModel(isPro = true)
-
-            vm.enterSavedSelectMode(1L)
-            vm.toggleSavedSelection(2L)
-            vm.deleteSelectedSaved()
-            advanceUntilIdle()
-
-            coVerify(exactly = 1) {
-                repository.deleteSavedPatterns(
-                    match { ids -> ids.size == 2 && ids.toSet() == setOf(1L, 2L) },
-                )
-            }
-            coVerify(exactly = 0) { repository.deleteSavedPattern(any()) }
-            assertFalse(vm.isSavedSelectMode.value)
-            assertEquals(emptySet<Long>(), vm.selectedSavedIds.value)
-        }
-
-    @Test
-    fun `failed saved pattern batch delete keeps selection available for retry`() =
-        runTest(testDispatcher) {
-            coEvery { repository.deleteSavedPatterns(any()) } throws
-                IllegalStateException("database unavailable")
-            val vm = createViewModel(isPro = true)
-
-            vm.enterSavedSelectMode(1L)
-            vm.deleteSelectedSaved()
-            advanceUntilIdle()
-
-            assertTrue(vm.isSavedSelectMode.value)
-            assertEquals(setOf(1L), vm.selectedSavedIds.value)
         }
 
     private fun searchResponse(

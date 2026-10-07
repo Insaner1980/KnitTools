@@ -18,7 +18,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -46,11 +45,15 @@ import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.model.SavedPattern
 import com.finnvek.knittools.domain.model.isWebPatternCompatible
 import com.finnvek.knittools.pro.ProStatus
+import com.finnvek.knittools.ui.components.CancelButton
 import com.finnvek.knittools.ui.components.ProBadge
 import com.finnvek.knittools.ui.components.ProPromptRequest
 import com.finnvek.knittools.ui.components.ProPromptSheet
 import com.finnvek.knittools.ui.components.ProPromptSource
+import com.finnvek.knittools.ui.components.SectionLabel
+import com.finnvek.knittools.ui.components.SheetTitle
 import com.finnvek.knittools.ui.findActivity
+import com.finnvek.knittools.ui.theme.knitToolsColors
 import kotlinx.coroutines.launch
 import java.io.File
 
@@ -227,9 +230,7 @@ fun PatternPickerSheet(
                 }
             },
             dismissButton = {
-                TextButton(onClick = keepSelectedImages) {
-                    Text(stringResource(R.string.cancel))
-                }
+                CancelButton(onClick = keepSelectedImages)
             },
         )
     }
@@ -411,7 +412,7 @@ private fun PatternPickerSheetContent(
                 .padding(bottom = 32.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        Text(
+        SheetTitle(
             text =
                 stringResource(
                     if (mode == PatternPickerMode.ADD_READABLE_PROJECT_DOCUMENT) {
@@ -420,16 +421,10 @@ private fun PatternPickerSheetContent(
                         R.string.attach_pattern
                     },
                 ),
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onSurface,
         )
 
         if (savedPatterns.isNotEmpty()) {
-            Text(
-                text = stringResource(R.string.pattern_picker_saved_patterns),
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.secondary,
-            )
+            SectionLabel(text = stringResource(R.string.pattern_picker_saved_patterns))
             PatternPickerSavedPatterns(
                 savedPatterns = savedPatterns,
                 onSavedPatternSelected = onSavedPatternSelected,
@@ -437,64 +432,48 @@ private fun PatternPickerSheetContent(
         }
 
         if (shouldShowWebPatternEntry(mode)) {
-            OutlinedButton(
-                onClick = actions.openWebPatternEditor,
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Text(stringResource(R.string.web_pattern_add))
-            }
-            OutlinedButton(
-                onClick = actions.openRavelryImport,
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Text(stringResource(R.string.pattern_picker_import_from_ravelry))
-            }
+            PickerAction(stringResource(R.string.web_pattern_add), actions.openWebPatternEditor)
+            PickerAction(stringResource(R.string.pattern_picker_import_from_ravelry), actions.openRavelryImport)
         }
-
-        OutlinedButton(
-            onClick = actions.openDeviceFiles,
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Text(stringResource(R.string.pattern_picker_import_pdf))
-        }
-
-        OutlinedButton(
-            onClick = actions.openCloudProviderFiles,
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Text(stringResource(R.string.pattern_picker_import_cloud_pdf))
-        }
-
-        Button(
+        PickerAction(stringResource(R.string.pattern_picker_import_pdf), actions.openDeviceFiles)
+        PickerAction(stringResource(R.string.pattern_picker_import_cloud_pdf), actions.openCloudProviderFiles)
+        // Pro-toiminnot samalla painiketyylillä kuin muut: täytettyinä maksulliset vaihtoehdot näyttivät
+        // päätoiminnolta. PRO-merkki on aina oikeassa reunassa.
+        PickerAction(
+            label = stringResource(R.string.pattern_picker_choose_images),
             onClick = actions.chooseImages,
             enabled = projectId != null,
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(stringResource(R.string.pattern_picker_choose_images))
-                ProBadge(status = proStatus)
-            }
-        }
-
-        Button(
+            badge = { ProBadge(status = proStatus) },
+        )
+        PickerAction(
+            label = stringResource(R.string.pattern_picker_camera_scan),
             onClick = actions.startCameraScan,
             enabled = projectId != null,
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(stringResource(R.string.pattern_picker_camera_scan), modifier = Modifier.weight(1f))
-                ProBadge(status = proStatus)
-            }
-        }
-
+            badge = { ProBadge(status = proStatus) },
+        )
         if (mode == PatternPickerMode.INITIAL_PROJECT_PATTERN) {
-            OutlinedButton(
+            PickerAction(
+                label = stringResource(R.string.pattern_picker_continue_without_pattern),
                 onClick = actions.continueWithoutPattern,
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Text(stringResource(R.string.pattern_picker_continue_without_pattern))
-            }
+            )
         }
+    }
+}
+
+@Composable
+private fun PickerAction(
+    label: String,
+    onClick: () -> Unit,
+    enabled: Boolean = true,
+    badge: (@Composable () -> Unit)? = null,
+) {
+    OutlinedButton(
+        onClick = onClick,
+        enabled = enabled,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Text(label, modifier = Modifier.weight(1f))
+        badge?.invoke()
     }
 }
 
@@ -510,7 +489,7 @@ private fun PatternPickerSavedPatterns(
                     Modifier
                         .fillMaxWidth()
                         .background(
-                            color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                            color = MaterialTheme.knitToolsColors.cardContainer,
                             shape = RoundedCornerShape(16.dp),
                         ).clickable { onSavedPatternSelected(pattern) }
                         .padding(16.dp),

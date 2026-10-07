@@ -5,10 +5,8 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import com.finnvek.knittools.ui.theme.knitToolsColors
 
 @Composable
 internal fun ProjectYarnTextField(
@@ -28,11 +26,6 @@ internal fun ProjectYarnTextField(
         keyboardOptions = keyboardOptions,
         shape = MaterialTheme.shapes.medium,
         colors =
-            TextFieldDefaults.colors(
-                focusedContainerColor = MaterialTheme.colorScheme.surface,
-                unfocusedContainerColor = MaterialTheme.colorScheme.surface,
-                focusedIndicatorColor = MaterialTheme.knitToolsColors.transparentIndicator,
-                unfocusedIndicatorColor = MaterialTheme.knitToolsColors.transparentIndicator,
-            ),
+            cardTextFieldColors(),
     )
 }

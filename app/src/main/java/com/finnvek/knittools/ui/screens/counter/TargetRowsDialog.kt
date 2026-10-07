@@ -19,6 +19,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.finnvek.knittools.R
+import com.finnvek.knittools.ui.components.CancelButton
 
 @Composable
 fun TargetRowsDialog(
@@ -60,9 +61,7 @@ fun TargetRowsDialog(
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(stringResource(android.R.string.cancel))
-            }
+            CancelButton(onClick = onDismiss)
         },
     )
 }

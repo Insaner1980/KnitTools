@@ -8,7 +8,6 @@ import com.finnvek.knittools.domain.model.ProjectDocument
 import com.finnvek.knittools.domain.model.ProjectSortOrder
 import com.finnvek.knittools.domain.model.SavedPattern
 import com.finnvek.knittools.domain.model.SavedPatternSource
-import com.finnvek.knittools.domain.model.YarnCard
 import com.finnvek.knittools.pro.ProFeature
 import com.finnvek.knittools.repository.ProjectCompletionResult
 import com.finnvek.knittools.repository.ProjectCreationResult
@@ -303,23 +302,20 @@ class ProjectListViewModelTest : ProjectListViewModelFixture() {
         }
 
     @Test
-    fun `project photo badges use one bulk count query`() =
+    fun `latest project thumbnails update from repository observation`() =
         runTest {
             every { preferencesManager.preferences } returns flowOf(AppPreferences())
-            every { repository.getActiveProjects(ProjectSortOrder.UPDATED) } returns
-                flowOf(
-                    listOf(
-                        CounterProject(id = 1L, name = "Sukat"),
-                        CounterProject(id = 2L, name = "Pipo"),
-                    ),
-                )
-            coEvery { photoRepository.getPhotoCountsByProjectIds(listOf(1L, 2L)) } returns mapOf(1L to 2)
-
+            val photos = MutableStateFlow(mapOf(1L to "file:///first.jpg", 9L to "file:///completed.jpg"))
+            every { photoRepository.observeLatestPhotoUris() } returns photos
             val vm = createViewModel()
-
-            assertEquals(mapOf(1L to 2), vm.projectPhotoCounts.value)
-            coVerify(exactly = 1) { photoRepository.getPhotoCountsByProjectIds(listOf(1L, 2L)) }
-            verify(exactly = 0) { photoRepository.getPhotoCount(any()) }
+            val job =
+                backgroundScope.launch(
+                    UnconfinedTestDispatcher(testScheduler),
+                ) { vm.projectLatestPhotoUris.collect {} }
+            assertEquals(photos.value, vm.projectLatestPhotoUris.value)
+            photos.value = mapOf(1L to "file:///new.jpg")
+            assertEquals(photos.value, vm.projectLatestPhotoUris.value)
+            job.cancel()
         }
 
     @Test
@@ -353,26 +349,6 @@ class ProjectListViewModelTest : ProjectListViewModelFixture() {
                 vm.continueKnittingProject.value,
             )
             coVerify(exactly = 0) { repository.getTotalMinutesForProject(any()) }
-        }
-
-    @Test
-    fun `project yarn card navigation skips stale csv ids`() =
-        runTest {
-            every { preferencesManager.preferences } returns flowOf(AppPreferences())
-            every { repository.getActiveProjects(ProjectSortOrder.UPDATED) } returns
-                flowOf(
-                    listOf(
-                        CounterProject(id = 1L, name = "Sukat", yarnCardIds = "404,not-id,7"),
-                    ),
-                )
-            coEvery { yarnCardRepository.getCards(listOf(404L, 7L)) } returns
-                listOf(YarnCard(id = 7L, yarnName = "Nalle"))
-            coEvery { photoRepository.getPhotoCountsByProjectIds(listOf(1L)) } returns emptyMap()
-
-            val vm = createViewModel()
-
-            assertEquals(mapOf(1L to "Nalle"), vm.projectYarnNames.value)
-            assertEquals(mapOf(1L to 7L), vm.projectYarnCardIds.value)
         }
 
     @Test
@@ -417,8 +393,6 @@ class ProjectListViewModelTest : ProjectListViewModelFixture() {
             val vm = createViewModel()
 
             assertEquals(mapOf(1L to "Chart"), vm.projectPatternNames.value)
-            assertEquals(setOf(1L), vm.projectIdsWithDocuments.value)
-            assertEquals(setOf(1L), vm.projectIdsWithAvailablePrimary.value)
             coVerify(exactly = 0) { savedPatternRepository.getByIds(any()) }
         }
 

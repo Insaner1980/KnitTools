@@ -6,7 +6,6 @@ import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.domain.model.KnitSession
 import com.finnvek.knittools.pro.ProFeature
 import com.finnvek.knittools.pro.ProManager
-import com.finnvek.knittools.repository.CounterRepository
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
@@ -28,13 +27,12 @@ import java.util.Locale
 @OptIn(ExperimentalCoroutinesApi::class)
 class InsightsRowTotalsViewModelTest {
     private val testDispatcher = UnconfinedTestDispatcher()
-    private val repository = mockk<CounterRepository>()
+    private val repository = mockInsightsRepository()
     private val proManager = mockk<ProManager>()
 
     @Before
     fun setup() {
         Dispatchers.setMain(testDispatcher)
-        every { repository.observeCompletions() } returns flowOf(emptyList())
         every { proManager.hasFeature(ProFeature.INSIGHTS_CHARTS) } returns true
         every { proManager.hasFeatureFlow(ProFeature.INSIGHTS_CHARTS) } returns flowOf(true)
         every { proManager.hasFeature(ProFeature.STREAK) } returns false

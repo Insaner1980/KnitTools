@@ -56,15 +56,17 @@ class ProFeatureGateSourceTest {
     @Test
     fun `existing notes and photos routes stay open without feature gates`() {
         val navGraph = ProjectSourceFiles.read(NAV_GRAPH)
-        val projectListViewModel = ProjectSourceFiles.read(PROJECT_LIST_VIEW_MODEL)
+        val overview = ProjectSourceFiles.read(PROJECT_OVERVIEW)
         val libraryViewModel = ProjectSourceFiles.read(LIBRARY_VIEW_MODEL)
         val libraryScreen = ProjectSourceFiles.read(LIBRARY_SCREEN)
         val notesEditorViewModel = ProjectSourceFiles.read(NOTES_EDITOR_VIEW_MODEL)
 
-        assertTrue(projectListViewModel.contains("fun openPhotoGallery(projectId: Long)"))
-        assertTrue(projectListViewModel.contains("fun openNotesEditor(projectId: Long)"))
-        assertFalse(projectListViewModel.contains("if (!proManager.hasFeature(ProFeature.PROGRESS_PHOTOS))"))
-        assertFalse(projectListViewModel.contains("if (!proManager.hasFeature(ProFeature.NOTES))"))
+        assertTrue(overview.contains("ProjectOverviewPhoto(state, projectId, actions.onPhotoGallery)"))
+        assertTrue(overview.contains("ProjectOverviewNotes(state) { actions.onNotesEditor(projectId) }"))
+        assertFalse(overview.contains("canUseProgressPhotos"))
+        assertFalse(overview.contains("canUseNotes"))
+        assertTrue(navGraph.contains("navController.navigateSingleTopTo(Screen.PhotoGallery.route)"))
+        assertTrue(navGraph.contains("navController.navigateSingleTopTo(Screen.NotesEditor(projectId).route)"))
         assertFalse(navGraph.contains("if (!state.canUseProgressPhotos)"))
         assertFalse(navGraph.contains("if (!state.canUseNotes)"))
         assertFalse(libraryViewModel.contains("hasFeatureFlow(ProFeature.PROGRESS_PHOTOS)"))
@@ -204,8 +206,8 @@ class ProFeatureGateSourceTest {
             "app/src/main/java/com/finnvek/knittools/ui/screens/library/LibraryScreen.kt"
         const val MY_YARN_SCREEN =
             "app/src/main/java/com/finnvek/knittools/ui/screens/library/MyYarnScreen.kt"
-        const val PROJECT_LIST_VIEW_MODEL =
-            "app/src/main/java/com/finnvek/knittools/ui/screens/project/ProjectListViewModel.kt"
+        const val PROJECT_OVERVIEW =
+            "app/src/main/java/com/finnvek/knittools/ui/screens/project/ProjectOverviewScreen.kt"
         const val NOTES_EDITOR_VIEW_MODEL =
             "app/src/main/java/com/finnvek/knittools/ui/screens/notes/NotesEditorViewModel.kt"
         const val NAV_GRAPH =

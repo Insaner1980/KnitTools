@@ -28,7 +28,6 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -54,16 +53,19 @@ import com.finnvek.knittools.domain.calculator.formatIntegerForDisplay
 import com.finnvek.knittools.domain.model.ProjectCounter
 import com.finnvek.knittools.domain.model.ProjectCounterDraft
 import com.finnvek.knittools.domain.model.ProjectCounterType
+import com.finnvek.knittools.ui.components.CancelButton
 import com.finnvek.knittools.ui.components.ConfirmationDialog
 import com.finnvek.knittools.ui.components.CounterStepSymbol
 import com.finnvek.knittools.ui.components.CounterStepperButton
 import com.finnvek.knittools.ui.components.NumberInputField
 import com.finnvek.knittools.ui.components.NumberInputOptions
 import com.finnvek.knittools.ui.components.SegmentedToggle
+import com.finnvek.knittools.ui.components.dialogTextFieldColors
 import com.finnvek.knittools.ui.components.rememberCurrentLocale
 import com.finnvek.knittools.ui.theme.CounterDimens
 import com.finnvek.knittools.ui.theme.counterExtraName
 import com.finnvek.knittools.ui.theme.counterExtraValue
+import com.finnvek.knittools.ui.theme.knitToolsColors
 import java.util.Locale
 
 private const val DISABLED_CONTENT_ALPHA = 0.38f
@@ -102,7 +104,7 @@ fun CounterListItem(
                 .fillMaxWidth()
                 .heightIn(min = CounterDimens.ExtraCounterCardMinHeight)
                 .clip(RoundedCornerShape(CounterDimens.ExtraCounterCardCornerRadius))
-                .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                .background(MaterialTheme.knitToolsColors.cardContainer)
                 .combinedClickable(
                     onClick = { showContextMenu = true },
                     onLongClick = { showContextMenu = true },
@@ -328,10 +330,7 @@ private fun RenameCounterDialog(
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
                 colors =
-                    TextFieldDefaults.colors(
-                        focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                        unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                    ),
+                    dialogTextFieldColors(),
             )
         },
         confirmButton = {
@@ -343,9 +342,7 @@ private fun RenameCounterDialog(
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.cancel))
-            }
+            CancelButton(onClick = onDismiss)
         },
     )
 }
@@ -461,9 +458,7 @@ fun AddCounterDialog(
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.cancel))
-            }
+            CancelButton(onClick = onDismiss)
         },
     )
 }
@@ -611,10 +606,7 @@ private fun AddCounterDialogContent(
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
             colors =
-                TextFieldDefaults.colors(
-                    focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                ),
+                dialogTextFieldColors(),
         )
         SegmentedToggle(
             options =
@@ -803,7 +795,7 @@ fun RepeatSectionItem(
                 .combinedClickable(
                     onClick = { showContextMenu = true },
                     onLongClick = { showContextMenu = true },
-                ).background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                ).background(MaterialTheme.knitToolsColors.cardContainer)
                 .padding(
                     horizontal = CounterDimens.ExtraCounterCardHorizontalPadding,
                     vertical = CounterDimens.ExtraCounterCardVerticalPadding,

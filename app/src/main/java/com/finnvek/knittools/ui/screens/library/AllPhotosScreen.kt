@@ -61,6 +61,7 @@ import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.domain.model.ProgressPhoto
 import com.finnvek.knittools.ui.components.ConfirmationDialog
+import com.finnvek.knittools.ui.components.cardContainerColor
 import com.finnvek.knittools.ui.components.rememberLocaleDateFormat
 import com.finnvek.knittools.ui.screens.counter.PhotoViewer
 import java.util.Date
@@ -407,13 +408,7 @@ private fun PhotoGridItem(
 ) {
     val dateFormat = rememberLocaleDateFormat("MMMd")
 
-    // Valittu kortti saa kevyen primäärivärisen taustan
-    val backgroundColor =
-        if (isSelected) {
-            MaterialTheme.colorScheme.primary.copy(alpha = 0.07f)
-        } else {
-            MaterialTheme.colorScheme.surfaceVariant
-        }
+    val backgroundColor = cardContainerColor(selected = isSelected)
 
     Surface(
         modifier =

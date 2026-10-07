@@ -1,6 +1,7 @@
 package com.finnvek.knittools.ui.screens.project
 
 import com.finnvek.knittools.ProjectSourceFiles
+import com.finnvek.knittools.ui.components.normalizedContinueKnittingSectionName
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -21,32 +22,46 @@ class ProjectListWorkspaceSourceTest {
     }
 
     @Test
-    fun `continue knitting hero uses target progress and image action without time or border`() {
+    fun `continue card is shared by the hero and the overview with one physical continue button`() {
+        val card = ProjectSourceFiles.read(CONTINUE_CARD)
         val screen = ProjectSourceFiles.read(PROJECT_LIST_SCREEN)
-        val hero =
-            sourceBetween(
-                screen,
-                "private fun ContinueKnittingCard(",
-                "internal fun normalizedContinueKnittingSectionName(",
-            )
-        val continueAction = sourceFrom(hero, "CounterImageButton(")
+        val overview = ProjectSourceFiles.read(PROJECT_OVERVIEW_SCREEN)
+        val continueAction = sourceFrom(card, "CounterImageButton(")
 
-        assertTrue(hero.contains("mainCounterTargetStatus(mainCounterDisplay.targetLine)"))
-        assertTrue(hero.contains("mainCounterTargetFraction(mainCounterDisplay.targetLine)"))
-        assertTrue(hero.contains("if (progressFraction != null)"))
-        assertTrue(hero.contains(".height(ProjectListDimens.ProgressTrackHeight)"))
-        assertTrue(hero.contains(".fillMaxWidth(progressFraction)"))
+        assertTrue(card.contains("mainCounterTargetStatus(display.targetLine)"))
+        assertTrue(card.contains("mainCounterTargetFraction(display.targetLine)"))
+        assertTrue(card.contains("if (progressFraction != null)"))
+        assertTrue(card.contains("ProjectProgressBar(progressFraction)"))
+        assertTrue(card.contains("MaterialTheme.knitToolsColors.primaryReadable"))
+        // Ylärivi seuraa käsityötyyppiä, eikä virkkausprojektille sanota "Continue knitting".
+        assertTrue(card.contains("project.craftType == CraftType.CROCHET -> R.string.continue_crocheting"))
         assertTokensInOrder(
             continueAction,
             "imageRes = R.drawable.counter_continue_button",
-            "contentDescription =",
-            "R.string.project_continue_content_description",
-            "state.projectName",
+            "contentDescription = stringResource(R.string.project_continue_content_description, project.name)",
             "visualSize = ProjectListDimens.HeroActionVisualSize",
-            "onClick = onClick",
-            "modifier =",
-            "ProjectListDimens.HeroActionTouchSize",
+            "onClick = it",
+            "modifier = Modifier.size(ProjectListDimens.HeroActionTouchSize)",
         )
+        // Iso lukema on samaa primary-oranssia kuin palkki ja painike.
+        assertTrue(card.contains("style = MaterialTheme.typography.projectHeroCount"))
+        assertTrue(card.contains("color = MaterialTheme.colorScheme.primary"))
+        // Listalla heron runko avaa projektinäkymän ja nappi laskurin; projektinäkymässä molemmat laskurin.
+        assertTokensInOrder(
+            screen,
+            "ContinueProjectCard(",
+            "onClick = { actions.onOpenOverview(ck.projectId) }",
+            "onClickLabel = stringResource(R.string.project_card_open_overview_action)",
+            "onOpenCounter = { actions.onOpenCounter(ck.projectId) }",
+        )
+        assertTokensInOrder(
+            overview,
+            "ContinueProjectCard(",
+            "onClick = onOpenCounter.takeUnless { state.isCompleted }",
+            "onOpenCounter = onOpenCounter.takeUnless { state.isCompleted }",
+            "showName = false",
+        )
+        assertFalse(overview.contains("R.string.project_overview_open_counter"))
         assertTrue(
             "counter_continue_button.webp is missing",
             Files.exists(ProjectSourceFiles.file(COUNTER_CONTINUE_BUTTON_ASSET)),
@@ -70,14 +85,17 @@ class ProjectListWorkspaceSourceTest {
                 "private fun ProjectListContent(",
                 "data class ActiveProjectItemState(",
             )
-        val createAction = sourceFrom(screenFunction, "CounterImageButton(")
+        val createAction = sourceFrom(screenFunction, "LabeledCounterImageButton(")
         val dimens = ProjectSourceFiles.read(PROJECT_LIST_DIMENS)
 
-        assertTrue(normalizeWhitespace(screenFunction).contains("if (!isMultiSelectMode) { CounterImageButton("))
+        // Plus-napin vieressä on teksti: sama plus tarkoittaa laskurissa rivin lisäämistä.
+        assertTrue(
+            normalizeWhitespace(screenFunction).contains("if (!isMultiSelectMode) { LabeledCounterImageButton("),
+        )
         assertTokensInOrder(
             createAction,
             "imageRes = R.drawable.counter_plus_button",
-            "contentDescription = stringResource(R.string.new_project)",
+            "label = stringResource(R.string.new_project)",
             "visualSize = ProjectListDimens.CreateButtonVisualSize",
             "onClick = {",
             "creationFolderId = (selectedFolderFilter as? ProjectFolderFilter.Folder)?.folderId",
@@ -85,8 +103,7 @@ class ProjectListWorkspaceSourceTest {
             "viewModel.requestProjectCreation()",
             "modifier =",
             ".align(Alignment.BottomEnd)",
-            ".padding(16.dp)",
-            ".size(ProjectListDimens.CreateButtonTouchSize)",
+            ".padding(ProjectListDimens.CreateButtonMargin)",
         )
         assertTokensInOrder(
             content,
@@ -98,7 +115,7 @@ class ProjectListWorkspaceSourceTest {
             "end = ProjectListDimens.ScreenHorizontalPadding",
             "bottom = ProjectListDimens.ListBottomPadding",
         )
-        assertTrue(dimens.contains("val CreateButtonTouchSize = 72.dp"))
+        assertTrue(dimens.contains("val CreateButtonVisualSize = 64.dp"))
         assertTrue(dimens.contains("val ListBottomPadding = 112.dp"))
         assertTrue(
             "counter_plus_button.webp is missing",
@@ -117,74 +134,19 @@ class ProjectListWorkspaceSourceTest {
     }
 
     @Test
-    fun `project list items open project photos from their photo action`() {
+    fun `cards open overview and only the continue hero opens counter`() {
         val screen = ProjectSourceFiles.read(PROJECT_LIST_SCREEN)
-        val navGraph = ProjectSourceFiles.read(NAV_GRAPH)
-
-        assertTrue(screen.contains("onPhotoGallery: (Long) -> Unit = {}"))
-        assertTrue(screen.contains("CollectWithLifecycleEffect({ viewModel.navigateToPhotoGallery }) { projectId ->"))
-        assertTrue(screen.contains("onPhotoGallery(projectId)"))
-        assertTrue(screen.contains("onPhotoGallery = viewModel::openPhotoGallery"))
-        assertTrue(screen.contains("onPhotosClick = { actions.onPhotoGallery(project.id) }"))
-        assertTrue(navGraph.contains("onPhotoGallery = { projectId ->"))
-        assertTrue(navGraph.contains("counterViewModel.selectProjectByIdForLaunch(projectId) { loaded ->"))
-        assertTrue(navGraph.contains("if (loaded) {"))
-        assertTrue(navGraph.contains("navController.navigateSingleTopTo(Screen.PhotoGallery.route)"))
-        assertTrue(navGraph.contains("navController.navigateSingleTopTo(Screen.Counter.route)"))
-    }
-
-    @Test
-    fun `project list items open only attached local patterns from their pattern action`() {
-        val screen = ProjectSourceFiles.read(PROJECT_LIST_SCREEN)
-        val navGraph = ProjectSourceFiles.read(NAV_GRAPH)
-
-        assertTrue(screen.contains("onPatternViewer: (Long) -> Unit = {}"))
-        assertTrue(screen.contains("onPatternViewer = onPatternViewer"))
-        assertTrue(screen.contains("hasPatternAttachment = project.id in state.projectIdsWithAvailablePrimary"))
-        assertTrue(screen.contains("onPatternClick = { actions.onPatternViewer(project.id) }"))
-        assertTrue(navGraph.contains("onPatternViewer = { projectId ->"))
-        assertTrue(navGraph.contains("navController.navigateSingleTopTo(Screen.PatternViewer(projectId).route)"))
-    }
-
-    @Test
-    fun `project list items open first linked yarn card from their yarn row`() {
-        val screen = ProjectSourceFiles.read(PROJECT_LIST_SCREEN)
-        val navGraph = ProjectSourceFiles.read(NAV_GRAPH)
-
-        assertTrue(screen.contains("onYarnCard: (Long) -> Unit = {}"))
-        assertTrue(screen.contains("onYarnCard = onYarnCard"))
-        assertTrue(screen.contains("val yarnCardIds: Map<Long, Long>"))
-        assertTrue(screen.contains("firstYarnCardId = state.yarnCardIds[project.id]"))
-        assertTrue(screen.contains("onYarnClick ="))
-        assertTrue(screen.contains("state.firstYarnCardId?.let { yarnCardId ->"))
-        assertTrue(screen.contains("{ actions.onYarnCard(yarnCardId) }"))
-        assertFalse(screen.contains("parseYarnCardIds(project.yarnCardIds).firstOrNull()"))
-        assertTrue(navGraph.contains("onYarnCard = { cardId ->"))
-        assertTrue(navGraph.contains("navController.navigateToTopLevel(TopLevelDestination.Library)"))
-        assertTrue(navGraph.contains("navController.navigateSingleTopTo(Screen.YarnCardDetail(cardId).route)"))
-    }
-
-    @Test
-    fun `project list items do not derive a display color from linked yarn ids`() {
-        val screen = ProjectSourceFiles.read(PROJECT_LIST_SCREEN)
-        val item = ProjectSourceFiles.read(PROJECT_LIST_ITEM)
-
-        assertFalse(screen.contains("yarnColorSeed"))
-        assertFalse(item.contains("YarnColors"))
-        assertTrue(item.contains("text = yarnName"))
-    }
-
-    @Test
-    fun `active and completed rows use cardless list items with dividers only between rows`() {
-        val screen = ProjectSourceFiles.read(PROJECT_LIST_SCREEN)
-
-        assertEquals(2, "ProjectListItem\\(".toRegex().findAll(screen).count())
-        assertTrue(screen.contains("if (index < visibleActiveProjects.lastIndex)"))
-        assertTrue(screen.contains("if (index < state.completed.lastIndex)"))
-        assertTrue(screen.contains("HorizontalDivider("))
-        assertTrue(screen.contains("thickness = ProjectListDimens.DividerThickness"))
-        assertTrue(screen.contains("copy(alpha = ProjectListDimens.DividerAlpha)"))
-        assertFalse(screen.contains('\u00b7'))
+        val nav = ProjectSourceFiles.read(NAV_GRAPH)
+        // ContinueProjectCard ei kuulu laskuun: haetaan vain itsenäinen ProjectCard-kutsu.
+        assertEquals(2, "(?<![A-Za-z])ProjectCard\\(".toRegex().findAll(screen).count())
+        assertTrue(screen.contains("actions.onOpenOverview(project.id)"))
+        assertFalse(screen.contains("actions.onOpenCounter(project.id)"))
+        assertTrue(screen.contains("actions.onOpenCounter(ck.projectId)"))
+        assertTrue(screen.contains("actions.onOpenOverview(ck.projectId)"))
+        assertTrue(screen.contains("onOpenCounter(projectId)"))
+        assertTrue(nav.contains("Screen.ProjectOverview(projectId).route"))
+        assertTrue(nav.contains("counterViewModel.selectProjectByIdForLaunch(projectId)"))
+        assertTrue(screen.contains("ProjectListDimens.CardSpacing"))
     }
 
     @Test
@@ -197,7 +159,7 @@ class ProjectListWorkspaceSourceTest {
                 "data class ActiveProjectItemState(",
             )
         val sectionLabel =
-            sourceBetween(screen, "private fun SectionLabel(", "private fun ProjectListDivider(")
+            sourceBetween(screen, "private fun ProjectSectionLabel(", "private fun DeleteProjectDialog(")
         val visibleActiveFilter = sourceBetween(content, "val visibleActiveProjects =", "LazyColumn(")
         val normalizedContent = normalizeWhitespace(content)
 
@@ -212,7 +174,9 @@ class ProjectListWorkspaceSourceTest {
         )
         assertTrue(normalizedContent.contains("if (!state.isMultiSelectMode) { state.continueKnitting?.let"))
         assertTrue(content.contains("if (visibleActiveProjects.isNotEmpty() || !isHeroVisible)"))
-        assertTrue(content.contains("count = visibleActiveProjects.size"))
+        // Aktiivisten määrä sisältää heron projektin, vaikka sille ei piirretä omaa korttia.
+        assertTrue(content.contains("count = state.active.size"))
+        assertFalse(content.contains("count = visibleActiveProjects.size"))
         assertTrue(content.contains("items = visibleActiveProjects"))
         assertTrue(content.contains("if (visibleActiveProjects.isEmpty())"))
         assertTrue(content.contains("text = stringResource(R.string.no_active_projects)"))
@@ -220,8 +184,9 @@ class ProjectListWorkspaceSourceTest {
         assertTrue(content.contains("count = state.completed.size"))
         assertTokensInOrder(
             sectionLabel,
+            "SectionLabel(",
             "R.string.project_section_count_format",
-            "text.localizedUppercase()",
+            "text",
             "count",
         )
     }
@@ -237,7 +202,7 @@ class ProjectListWorkspaceSourceTest {
             )
 
         assertTrue(content.contains("project = project.copy(count = project.totalRows ?: project.count)"))
-        assertTrue(content.contains("lastUpdated = project.completedAt ?: project.updatedAt"))
+        assertTrue(content.contains("photoUri = state.latestPhotoUris[project.id]"))
         assertTrue(content.contains("patternName = project.patternName"))
         assertFalse(content.contains("completedYarn"))
         assertFalse(content.contains("completedAttachment"))
@@ -293,8 +258,12 @@ class ProjectListWorkspaceSourceTest {
             "app/src/main/java/com/finnvek/knittools/ui/screens/project/ProjectListViewModel.kt"
         private const val PROJECT_LIST_SCREEN =
             "app/src/main/java/com/finnvek/knittools/ui/screens/project/ProjectListScreen.kt"
+        private const val CONTINUE_CARD =
+            "app/src/main/java/com/finnvek/knittools/ui/components/ContinueProjectCard.kt"
+        private const val PROJECT_OVERVIEW_SCREEN =
+            "app/src/main/java/com/finnvek/knittools/ui/screens/project/ProjectOverviewScreen.kt"
         private const val PROJECT_LIST_ITEM =
-            "app/src/main/java/com/finnvek/knittools/ui/components/ProjectListItem.kt"
+            "app/src/main/java/com/finnvek/knittools/ui/components/ProjectCard.kt"
         private const val PROJECT_LIST_DIMENS =
             "app/src/main/java/com/finnvek/knittools/ui/theme/ProjectListDimens.kt"
         private const val NAV_GRAPH =

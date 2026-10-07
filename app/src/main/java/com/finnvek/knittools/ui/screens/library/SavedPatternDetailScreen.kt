@@ -2,33 +2,29 @@ package com.finnvek.knittools.ui.screens.library
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AutoStories
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.outlined.FolderOpen
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -45,7 +41,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -56,13 +51,19 @@ import com.finnvek.knittools.domain.model.isWebPatternCompatible
 import com.finnvek.knittools.domain.model.webPatternUrlOrNull
 import com.finnvek.knittools.repository.SavedPatternMetadataMutationResult
 import com.finnvek.knittools.ui.components.ConfirmationDialog
+import com.finnvek.knittools.ui.components.OverviewEmptyText
+import com.finnvek.knittools.ui.components.OverviewLinkRow
+import com.finnvek.knittools.ui.components.OverviewSectionHeader
 import com.finnvek.knittools.ui.components.RemotePatternImage
 import com.finnvek.knittools.ui.components.ToolScreenScaffold
+import com.finnvek.knittools.ui.components.rememberScrollTitleState
 import com.finnvek.knittools.ui.platform.ExternalWebLinkOpenResult
 import com.finnvek.knittools.ui.platform.openExternalWebLink
 import com.finnvek.knittools.ui.screens.ravelry.PatternAvailabilityBadge
 import com.finnvek.knittools.ui.screens.ravelry.openRavelryUrl
 import com.finnvek.knittools.ui.screens.ravelry.ravelryExternalUrlOrNull
+import com.finnvek.knittools.ui.theme.ProjectOverviewDimens
+import com.finnvek.knittools.ui.theme.knitToolsColors
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -184,71 +185,97 @@ fun SavedPatternDetailScreen(
         )
     }
 
+    // Nimi on sisällön otsikkona; yläpalkki näyttää sen vasta kun nimi on vieritetty pois.
+    val scrollTitle = rememberScrollTitleState()
+    val openWebsite: () -> Unit = {
+        webUrl?.let { url ->
+            val result = onOpenWebsite?.invoke(url.originalUrl) ?: openExternalWebLink(context, url.originalUrl)
+            val message =
+                when (result) {
+                    ExternalWebLinkOpenResult.NoBrowser -> noBrowserMessage
+
+                    ExternalWebLinkOpenResult.InvalidUrl,
+                    ExternalWebLinkOpenResult.Failed,
+                    -> webOpenFailedMessage
+
+                    ExternalWebLinkOpenResult.Opened -> null
+                }
+            message?.let { coroutineScope.launch { snackbarHostState.showSnackbar(it) } }
+        }
+    }
+    val openRavelry: () -> Unit = {
+        ravelryUrl?.let { url -> openRavelryUrl(context = context, url = url, failureMessage = openFailedMessage) }
+    }
     ToolScreenScaffold(
         title = pattern.name,
         onBack = onBack,
         modifier = modifier,
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
+        showTitle = scrollTitle.showTitle,
+        actions = {
+            SavedPatternDetailMenu(
+                onEdit = onEditWebPattern.takeIf { isWebPattern },
+                deleteLabel =
+                    stringResource(if (isWebPattern) R.string.web_pattern_delete else R.string.remove_pattern),
+                onDelete = { showRemoveConfirmDialog = true },
+            )
+        },
     ) {
+        // Sama rakenne kuin projektinäkymässä ja langan sivulla: nimi, yksi päätoiminto ja
+        // hiusviivaosiot. Muokkaus ja poisto ovat ylivuotovalikossa eivätkä painikepinossa.
         Column(
             modifier =
                 Modifier
                     .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+                    .verticalScroll(scrollTitle.scrollState)
+                    .padding(
+                        start = ProjectOverviewDimens.ScreenHorizontalPadding,
+                        top = ProjectOverviewDimens.TopContentGap,
+                        end = ProjectOverviewDimens.ScreenHorizontalPadding,
+                        bottom = ProjectOverviewDimens.ContentBottomPadding,
+                    ),
         ) {
-            if (webUrl != null && pattern.isWebPatternCompatible) {
-                WebPatternDetailContent(
-                    pattern = pattern,
-                    url = webUrl,
-                    onOpenWebsite = {
-                        val result =
-                            onOpenWebsite?.invoke(webUrl.originalUrl)
-                                ?: openExternalWebLink(context, webUrl.originalUrl)
-                        val message =
-                            when (result) {
-                                ExternalWebLinkOpenResult.NoBrowser -> noBrowserMessage
-
-                                ExternalWebLinkOpenResult.InvalidUrl,
-                                ExternalWebLinkOpenResult.Failed,
-                                -> webOpenFailedMessage
-
-                                ExternalWebLinkOpenResult.Opened -> null
-                            }
-                        message?.let { coroutineScope.launch { snackbarHostState.showSnackbar(it) } }
-                    },
-                    onEdit = onEditWebPattern,
-                    onAttach = {
-                        attachmentViewModel.attach(null, onAttachWebPattern)
-                    },
-                    onDelete = { showRemoveConfirmDialog = true },
+            SavedPatternDetailHeader(
+                pattern = pattern,
+                showImage = !isWebPattern,
+                modifier = scrollTitle.headerModifier,
+            )
+            if (webUrl != null && isWebPattern) {
+                SavedPatternPrimaryAction(
+                    label = stringResource(R.string.web_pattern_open_website),
+                    onClick = openWebsite,
+                    description =
+                        stringResource(R.string.web_pattern_open_website_description, pattern.name, webUrl.host),
+                )
+                WebPatternSourceSection(url = webUrl)
+                SavedPatternProjectSection(
+                    label = stringResource(R.string.web_pattern_attach),
+                    description = stringResource(R.string.web_pattern_attach_description, pattern.name),
+                    onAttach = { attachmentViewModel.attach(null, onAttachWebPattern) },
                 )
             } else {
-                SavedPatternDetailHeader(pattern = pattern)
-                SavedPatternAvailability(pattern = pattern, canOpenRavelry = ravelryUrl != null)
-                if (pattern.requiresRavelryAccess) {
-                    Text(
-                        text = stringResource(R.string.saved_pattern_detail_no_pdf_explanation),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+                when {
+                    pattern.hasAttachedPdf -> {
+                        SavedPatternPrimaryAction(
+                            label = stringResource(R.string.saved_pattern_detail_open_pattern),
+                            onClick = onOpenPattern,
+                        )
+                    }
+
+                    ravelryUrl != null -> {
+                        SavedPatternPrimaryAction(stringResource(R.string.open_in_ravelry), openRavelry)
+                    }
                 }
-                SavedPatternDetailActions(
-                    canOpenPattern = pattern.hasAttachedPdf,
+                RavelrySourceSection(
+                    pattern = pattern,
                     canOpenRavelry = ravelryUrl != null,
-                    onOpenPattern = onOpenPattern,
-                    onOpenRavelry = {
-                        ravelryUrl?.let { url ->
-                            openRavelryUrl(
-                                context = context,
-                                url = url,
-                                failureMessage = openFailedMessage,
-                            )
-                        }
-                    },
-                    onAttachToProject = onAttachToProject,
-                    onRemove = { showRemoveConfirmDialog = true },
+                    // Ravelry-linkki rivinä vain kun päätoiminto on PDF; muuten se on jo painike.
+                    onOpenRavelry = openRavelry.takeIf { pattern.hasAttachedPdf && ravelryUrl != null },
+                )
+                SavedPatternProjectSection(
+                    label = stringResource(R.string.saved_pattern_detail_attach_to_project),
+                    description = null,
+                    onAttach = onAttachToProject,
                 )
             }
         }
@@ -256,20 +283,58 @@ fun SavedPatternDetailScreen(
 }
 
 @Composable
-private fun WebPatternDetailContent(
-    pattern: SavedPattern,
-    url: com.finnvek.knittools.domain.model.WebPatternUrl,
-    onOpenWebsite: () -> Unit,
-    onEdit: () -> Unit,
-    onAttach: () -> Unit,
+private fun SavedPatternDetailMenu(
+    onEdit: (() -> Unit)?,
+    deleteLabel: String,
     onDelete: () -> Unit,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    var expanded by remember { mutableStateOf(false) }
+    IconButton(onClick = { expanded = true }) {
+        Icon(Icons.Default.MoreVert, contentDescription = stringResource(R.string.more_options))
+    }
+    DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+        onEdit?.let { edit ->
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.web_pattern_edit)) },
+                onClick = {
+                    expanded = false
+                    edit()
+                },
+            )
+        }
+        DropdownMenuItem(
+            text = { Text(deleteLabel) },
+            onClick = {
+                expanded = false
+                onDelete()
+            },
+        )
+    }
+}
+
+/** Nimi ja suunnittelija (Ravelry-kaavalla myös kuva); yläpalkin otsikko näkyy kun lohko on vieritetty pois. */
+@Composable
+private fun SavedPatternDetailHeader(
+    pattern: SavedPattern,
+    showImage: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(ProjectOverviewDimens.ContentGap)) {
+        if (showImage) {
+            RemotePatternImage(
+                imageUrl = pattern.thumbnailUrl,
+                contentScale = ContentScale.Crop,
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .height(ProjectOverviewDimens.HeroPhotoHeight)
+                        .clip(RoundedCornerShape(ProjectOverviewDimens.HeroPhotoCornerRadius)),
+            )
+        }
         Text(
             text = pattern.name,
-            style = MaterialTheme.typography.headlineSmall,
+            style = MaterialTheme.typography.headlineMedium,
             color = MaterialTheme.colorScheme.onBackground,
-            fontWeight = FontWeight.SemiBold,
         )
         pattern.designerName.takeIf { it.isNotBlank() }?.let { designer ->
             Text(
@@ -278,11 +343,33 @@ private fun WebPatternDetailContent(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-        Text(
-            text = stringResource(R.string.web_pattern_label),
-            style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+    }
+}
+
+/** Kaavan ainoa täytetty painike: sivulla on yksi päätoiminto, kuten projektinäkymän jatka-kortti. */
+@Composable
+private fun SavedPatternPrimaryAction(
+    label: String,
+    onClick: () -> Unit,
+    description: String? = null,
+) {
+    Button(
+        onClick = onClick,
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(top = ProjectOverviewDimens.HeaderTopGap)
+                .heightIn(min = ProjectOverviewDimens.ActionTouchSize)
+                .semantics { description?.let { contentDescription = it } },
+    ) {
+        Text(label)
+    }
+}
+
+@Composable
+private fun WebPatternSourceSection(url: com.finnvek.knittools.domain.model.WebPatternUrl) {
+    OverviewSectionHeader(R.string.web_pattern_website_label)
+    Column(verticalArrangement = Arrangement.spacedBy(ProjectOverviewDimens.ContentGap)) {
         Text(text = url.host, style = MaterialTheme.typography.titleMedium)
         SelectionContainer {
             Text(
@@ -298,84 +385,25 @@ private fun WebPatternDetailContent(
                 color = MaterialTheme.colorScheme.error,
             )
         }
-        Text(stringResource(R.string.web_pattern_opens_original), style = MaterialTheme.typography.bodyMedium)
-        Text(stringResource(R.string.web_pattern_not_offline), style = MaterialTheme.typography.bodyMedium)
-        Text(stringResource(R.string.web_pattern_source_controlled), style = MaterialTheme.typography.bodyMedium)
-    }
-
-    val openDescription = stringResource(R.string.web_pattern_open_website_description, pattern.name, url.host)
-    val editDescription = stringResource(R.string.web_pattern_edit_description, pattern.name)
-    val attachDescription = stringResource(R.string.web_pattern_attach_description, pattern.name)
-    val deleteDescription = stringResource(R.string.web_pattern_delete_description, pattern.name)
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Button(
-            onClick = onOpenWebsite,
-            modifier = Modifier.fillMaxWidth().semantics { contentDescription = openDescription },
-        ) {
-            Text(stringResource(R.string.web_pattern_open_website))
-        }
-        OutlinedButton(
-            onClick = onEdit,
-            modifier = Modifier.fillMaxWidth().semantics { contentDescription = editDescription },
-        ) {
-            Text(stringResource(R.string.web_pattern_edit))
-        }
-        OutlinedButton(
-            onClick = onAttach,
-            modifier = Modifier.fillMaxWidth().semantics { contentDescription = attachDescription },
-        ) {
-            Text(stringResource(R.string.web_pattern_attach))
-        }
-        TextButton(
-            onClick = onDelete,
-            modifier = Modifier.fillMaxWidth().semantics { contentDescription = deleteDescription },
-            colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
-        ) {
-            Icon(Icons.Filled.Delete, contentDescription = null, modifier = Modifier.size(18.dp))
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(stringResource(R.string.web_pattern_delete))
-        }
+        listOf(
+            R.string.web_pattern_opens_original,
+            R.string.web_pattern_not_offline,
+            R.string.web_pattern_source_controlled,
+        ).forEach { OverviewEmptyText(it) }
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun SavedPatternDetailHeader(pattern: SavedPattern) {
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        RemotePatternImage(
-            imageUrl = pattern.thumbnailUrl,
-            contentScale = ContentScale.Crop,
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .aspectRatio(1.4f)
-                    .clip(RoundedCornerShape(12.dp)),
-        )
-
-        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text(
-                text = pattern.name,
-                style = MaterialTheme.typography.headlineSmall,
-                color = MaterialTheme.colorScheme.onBackground,
-                fontWeight = FontWeight.SemiBold,
-            )
-            Text(
-                text = pattern.designerName,
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun SavedPatternAvailability(
+private fun RavelrySourceSection(
     pattern: SavedPattern,
     canOpenRavelry: Boolean,
+    onOpenRavelry: (() -> Unit)?,
 ) {
+    OverviewSectionHeader(R.string.tool_ravelry)
     FlowRow(
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(ProjectOverviewDimens.ContentGap),
+        verticalArrangement = Arrangement.spacedBy(ProjectOverviewDimens.ContentGap),
     ) {
         PatternAvailabilityBadge(availability = pattern.availability)
         if (pattern.hasAttachedPdf) {
@@ -391,12 +419,16 @@ private fun SavedPatternAvailability(
             SavedPatternAvailabilityChip(text = stringResource(R.string.saved_pattern_detail_requires_ravelry))
         }
     }
+    if (pattern.requiresRavelryAccess) {
+        OverviewEmptyText(R.string.saved_pattern_detail_no_pdf_explanation)
+    }
+    onOpenRavelry?.let { OverviewLinkRow(stringResource(R.string.open_in_ravelry), null, null, onClick = it) }
 }
 
 @Composable
 private fun SavedPatternAvailabilityChip(text: String) {
     Surface(
-        color = MaterialTheme.colorScheme.surfaceContainerHighest,
+        color = MaterialTheme.knitToolsColors.cardContainer,
         shape = MaterialTheme.shapes.small,
     ) {
         Text(
@@ -409,55 +441,22 @@ private fun SavedPatternAvailabilityChip(text: String) {
 }
 
 @Composable
-private fun SavedPatternDetailActions(
-    canOpenPattern: Boolean,
-    canOpenRavelry: Boolean,
-    onOpenPattern: () -> Unit,
-    onOpenRavelry: () -> Unit,
-    onAttachToProject: () -> Unit,
-    onRemove: () -> Unit,
+private fun SavedPatternProjectSection(
+    label: String,
+    description: String?,
+    onAttach: () -> Unit,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Button(
-            onClick = onOpenPattern,
-            enabled = canOpenPattern,
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Icon(imageVector = Icons.Filled.AutoStories, contentDescription = null)
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(stringResource(R.string.saved_pattern_detail_open_pattern))
-        }
-        OutlinedButton(
-            onClick = onOpenRavelry,
-            enabled = canOpenRavelry,
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Icon(imageVector = Icons.Filled.AutoStories, contentDescription = null)
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(stringResource(R.string.open_in_ravelry))
-        }
-        OutlinedButton(
-            onClick = onAttachToProject,
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Icon(imageVector = Icons.Outlined.FolderOpen, contentDescription = null)
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(stringResource(R.string.saved_pattern_detail_attach_to_project))
-        }
-        TextButton(
-            onClick = onRemove,
-            modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
-        ) {
-            Icon(
-                imageVector = Icons.Filled.Delete,
-                contentDescription = null,
-                modifier = Modifier.size(18.dp),
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(stringResource(R.string.remove_pattern))
-        }
-    }
+    OverviewSectionHeader(R.string.project_content_title)
+    OverviewLinkRow(
+        title = label,
+        subtitle = null,
+        icon = null,
+        onClick = onAttach,
+        modifier =
+            Modifier.semantics(mergeDescendants = true) {
+                description?.let { contentDescription = it }
+            },
+    )
 }
 
 private val SavedPattern.hasAttachedPdf: Boolean

@@ -31,7 +31,6 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -52,12 +51,15 @@ import com.finnvek.knittools.domain.calculator.MeasurementNumberParser
 import com.finnvek.knittools.domain.calculator.ReminderLogic
 import com.finnvek.knittools.domain.model.RowReminder
 import com.finnvek.knittools.pro.ProStatus
+import com.finnvek.knittools.ui.components.CancelButton
 import com.finnvek.knittools.ui.components.ConfirmationDialog
 import com.finnvek.knittools.ui.components.NumberInputField
 import com.finnvek.knittools.ui.components.NumberInputOptions
 import com.finnvek.knittools.ui.components.ProBadge
 import com.finnvek.knittools.ui.components.ScrollableFormDialog
 import com.finnvek.knittools.ui.components.SegmentedToggle
+import com.finnvek.knittools.ui.components.dialogTextFieldColors
+import com.finnvek.knittools.ui.theme.knitToolsColors
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -137,7 +139,7 @@ fun ReminderAlertCard(
             modifier
                 .fillMaxWidth()
                 .clip(MaterialTheme.shapes.medium)
-                .background(MaterialTheme.colorScheme.surfaceVariant)
+                .background(MaterialTheme.knitToolsColors.cardContainer)
                 .padding(start = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -417,10 +419,7 @@ private fun ReminderDialogFields(
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
             colors =
-                TextFieldDefaults.colors(
-                    focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                ),
+                dialogTextFieldColors(),
         )
     }
 }
@@ -446,9 +445,7 @@ private fun ReminderDialogConfirmButton(
 
 @Composable
 private fun ReminderDialogDismissButton(onDismiss: () -> Unit) {
-    TextButton(onClick = onDismiss) {
-        Text(stringResource(R.string.cancel))
-    }
+    CancelButton(onClick = onDismiss)
 }
 
 private fun limitReminderMessage(

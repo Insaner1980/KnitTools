@@ -10,6 +10,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
+import com.finnvek.knittools.ui.theme.knitToolsColors
 
 @Composable
 fun BadgePill(
@@ -20,13 +21,13 @@ fun BadgePill(
         modifier =
             modifier
                 .clip(RoundedCornerShape(50))
-                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f))
+                .background(MaterialTheme.knitToolsColors.actionContainer)
                 .padding(horizontal = 8.dp, vertical = 4.dp),
     ) {
         Text(
             text = text.localizedUppercase(),
             style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.primary,
+            color = MaterialTheme.knitToolsColors.primaryReadable,
         )
     }
 }

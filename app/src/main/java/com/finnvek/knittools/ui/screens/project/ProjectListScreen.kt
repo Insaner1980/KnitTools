@@ -6,7 +6,6 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,7 +19,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
@@ -32,12 +30,9 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -73,8 +68,6 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.finnvek.knittools.R
-import com.finnvek.knittools.domain.calculator.CounterValueFormatter
-import com.finnvek.knittools.domain.calculator.formatIntegerForDisplay
 import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.domain.model.CraftType
 import com.finnvek.knittools.domain.model.MainCounterLabelType
@@ -84,36 +77,31 @@ import com.finnvek.knittools.domain.model.ProjectFolderMoveDirection
 import com.finnvek.knittools.domain.model.ProjectSortOrder
 import com.finnvek.knittools.repository.ProjectCreationResult
 import com.finnvek.knittools.repository.ProjectFolderMutationResult
+import com.finnvek.knittools.ui.components.CancelButton
 import com.finnvek.knittools.ui.components.CollectWithLifecycleEffect
 import com.finnvek.knittools.ui.components.ConfirmationDialog
-import com.finnvek.knittools.ui.components.CounterImageButton
-import com.finnvek.knittools.ui.components.MainCounterTargetStatus
+import com.finnvek.knittools.ui.components.ContinueProjectCard
+import com.finnvek.knittools.ui.components.LabeledCounterImageButton
 import com.finnvek.knittools.ui.components.ProPromptRequest
 import com.finnvek.knittools.ui.components.ProPromptSheet
 import com.finnvek.knittools.ui.components.ProPromptSource
-import com.finnvek.knittools.ui.components.ProjectDetailsDialog
+import com.finnvek.knittools.ui.components.ProjectCard
+import com.finnvek.knittools.ui.components.ProjectDetailsSheet
 import com.finnvek.knittools.ui.components.ProjectDetailsValues
-import com.finnvek.knittools.ui.components.ProjectListItem
 import com.finnvek.knittools.ui.components.RenameProjectDialog
 import com.finnvek.knittools.ui.components.ScrollableFormDialog
-import com.finnvek.knittools.ui.components.localizedUppercase
-import com.finnvek.knittools.ui.components.mainCounterCountText
-import com.finnvek.knittools.ui.components.mainCounterTargetFraction
-import com.finnvek.knittools.ui.components.mainCounterTargetStatus
-import com.finnvek.knittools.ui.components.mainCounterTargetText
-import com.finnvek.knittools.ui.components.rememberCurrentLocale
+import com.finnvek.knittools.ui.components.SectionLabel
+import com.finnvek.knittools.ui.components.workSessionStatusText
 import com.finnvek.knittools.ui.theme.ProjectListDimens
+import com.finnvek.knittools.ui.theme.knitToolsColors
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 @Suppress("kotlin:S3776") // Reitti omistaa listan sheetit, valinnat ja navigointipyynnöt.
 fun ProjectListScreen(
-    onProjectClick: (Long) -> Unit,
-    onNotesEditor: (Long) -> Unit = {},
-    onPhotoGallery: (Long) -> Unit = {},
-    onPatternViewer: (Long) -> Unit = {},
-    onYarnCard: (Long) -> Unit = {},
+    onOpenCounter: (Long) -> Unit,
+    onOpenOverview: (Long) -> Unit,
     onUpgradeToPro: () -> Unit = {},
     viewModelProvider: @Composable () -> ProjectListViewModel = { hiltViewModel() },
 ) {
@@ -124,13 +112,8 @@ fun ProjectListScreen(
     val pendingCompletionSessionAction by viewModel.pendingCompletionSessionAction.collectAsStateWithLifecycle()
     val pendingDeletionSessionAction by viewModel.pendingDeletionSessionAction.collectAsStateWithLifecycle()
     val continueKnitting by viewModel.continueKnittingProject.collectAsStateWithLifecycle()
-    val yarnNames by viewModel.projectYarnNames.collectAsStateWithLifecycle()
-    val yarnCardIds by viewModel.projectYarnCardIds.collectAsStateWithLifecycle()
-    val photoCounts by viewModel.projectPhotoCounts.collectAsStateWithLifecycle()
+    val latestPhotoUris by viewModel.projectLatestPhotoUris.collectAsStateWithLifecycle()
     val patternNames by viewModel.projectPatternNames.collectAsStateWithLifecycle()
-    val projectIdsWithDocuments by viewModel.projectIdsWithDocuments.collectAsStateWithLifecycle()
-    val projectIdsWithAvailablePrimary by viewModel.projectIdsWithAvailablePrimary.collectAsStateWithLifecycle()
-    val hasNotes by viewModel.projectHasNotes.collectAsStateWithLifecycle()
     val showCompleted by viewModel.showCompleted.collectAsStateWithLifecycle()
     val isMultiSelectMode by viewModel.isMultiSelectMode.collectAsStateWithLifecycle()
     val selectedProjectIds by viewModel.selectedProjectIds.collectAsStateWithLifecycle()
@@ -159,8 +142,9 @@ fun ProjectListScreen(
     var creationFolderName by rememberSaveable { mutableStateOf<String?>(null) }
     var showCreateProjectDialog by rememberSaveable { mutableStateOf(false) }
     val projectPromptCount by viewModel.projectCreationPromptCount.collectAsStateWithLifecycle()
-    LaunchedEffect(restoreSelectorFocus, showMoveSheet, showFoldersSheet) {
-        if (restoreSelectorFocus && !showMoveSheet && !showFoldersSheet) {
+    // Kansiovalitsin on yläpalkin otsikko, jota monivalinnassa ei näytetä: fokus palautetaan vasta sen jälkeen.
+    LaunchedEffect(restoreSelectorFocus, showMoveSheet, showFoldersSheet, isMultiSelectMode) {
+        if (restoreSelectorFocus && !showMoveSheet && !showFoldersSheet && !isMultiSelectMode) {
             withFrameNanos { }
             folderSelectorFocus.requestFocus()
             restoreSelectorFocus = false
@@ -211,15 +195,7 @@ fun ProjectListScreen(
     // Luonnin jälkeen navigoi uuteen projektiin
     CollectWithLifecycleEffect({ viewModel.navigateToProject }) { projectId ->
         showCreateProjectDialog = false
-        onProjectClick(projectId)
-    }
-
-    CollectWithLifecycleEffect({ viewModel.navigateToNotesEditor }) { projectId ->
-        onNotesEditor(projectId)
-    }
-
-    CollectWithLifecycleEffect({ viewModel.navigateToPhotoGallery }) { projectId ->
-        onPhotoGallery(projectId)
+        onOpenCounter(projectId)
     }
 
     CollectWithLifecycleEffect({ viewModel.showCreateProjectDialog }) {
@@ -312,7 +288,7 @@ fun ProjectListScreen(
     }
 
     if (showCreateProjectDialog) {
-        ProjectDetailsDialog(
+        ProjectDetailsSheet(
             title = stringResource(R.string.new_project_details_title),
             confirmText = stringResource(R.string.create_project),
             initialValues =
@@ -486,53 +462,54 @@ fun ProjectListScreen(
         containerColor = MaterialTheme.colorScheme.background,
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
-            Column {
-                ProjectListTopBar(
-                    state =
-                        ProjectListTopBarState(
-                            isMultiSelectMode = isMultiSelectMode,
-                            selectedCount = selectedProjectIds.size,
-                            showCompleted = showCompleted,
-                            sortOrder = sortOrder,
-                            showOverflowMenu = showOverflowMenu,
-                            showSortMenu = showSortMenu,
-                        ),
-                    actions =
-                        ProjectListTopBarActions(
-                            onExitMultiSelect = { viewModel.exitMultiSelectMode() },
-                            onSelectAll = { viewModel.selectAllProjects() },
-                            onShowOverflowMenu = { showOverflowMenu = true },
-                            onDismissOverflowMenu = { showOverflowMenu = false },
-                            onEnterMultiSelect = {
-                                showOverflowMenu = false
-                                viewModel.enterMultiSelectMode()
-                            },
-                            onShowSortMenu = {
-                                showOverflowMenu = false
-                                showSortMenu = true
-                            },
-                            onDismissSortMenu = { showSortMenu = false },
-                            onToggleShowCompleted = { viewModel.toggleShowCompleted() },
-                            onSortOrderChange = { order ->
-                                viewModel.setSortOrder(order)
-                                showSortMenu = false
-                            },
-                        ),
-                )
-                ProjectFolderSelector(
-                    selectedFilter = selectedFolderFilter,
-                    folders = folders,
-                    onClick = {
-                        viewModel.clearFolderError()
-                        focusFolderId = null
-                        focusCreateFolder = false
-                        showFoldersSheet = true
-                    },
-                    enabled = !folderState.isMutating,
-                    modifier = Modifier.padding(horizontal = ProjectListDimens.ScreenHorizontalPadding),
-                    focusRequester = folderSelectorFocus,
-                )
-            }
+            ProjectListTopBar(
+                state =
+                    ProjectListTopBarState(
+                        isMultiSelectMode = isMultiSelectMode,
+                        selectedCount = selectedProjectIds.size,
+                        showCompleted = showCompleted,
+                        sortOrder = sortOrder,
+                        showOverflowMenu = showOverflowMenu,
+                        showSortMenu = showSortMenu,
+                    ),
+                actions =
+                    ProjectListTopBarActions(
+                        onExitMultiSelect = { viewModel.exitMultiSelectMode() },
+                        onSelectAll = { viewModel.selectAllProjects() },
+                        onShowOverflowMenu = { showOverflowMenu = true },
+                        onDismissOverflowMenu = { showOverflowMenu = false },
+                        onEnterMultiSelect = {
+                            showOverflowMenu = false
+                            viewModel.enterMultiSelectMode()
+                        },
+                        onShowSortMenu = {
+                            showOverflowMenu = false
+                            showSortMenu = true
+                        },
+                        onDismissSortMenu = { showSortMenu = false },
+                        onToggleShowCompleted = { viewModel.toggleShowCompleted() },
+                        onSortOrderChange = { order ->
+                            viewModel.setSortOrder(order)
+                            showSortMenu = false
+                        },
+                    ),
+                // Valittu kansio on näytön otsikko kuten Insightsin aikaväli: alanavigaatio kertoo jo
+                // että ollaan Projectsissa, ja erillinen linkki otsikon alla kellui irrallaan.
+                folderTitle = {
+                    ProjectFolderSelector(
+                        selectedFilter = selectedFolderFilter,
+                        folders = folders,
+                        onClick = {
+                            viewModel.clearFolderError()
+                            focusFolderId = null
+                            focusCreateFolder = false
+                            showFoldersSheet = true
+                        },
+                        enabled = !folderState.isMutating,
+                        focusRequester = folderSelectorFocus,
+                    )
+                },
+            )
         },
         bottomBar = {
             MultiSelectBottomBar(
@@ -560,13 +537,8 @@ fun ProjectListScreen(
                         active = active,
                         completed = completed,
                         continueKnitting = continueKnitting,
-                        yarnNames = yarnNames,
-                        yarnCardIds = yarnCardIds,
-                        photoCounts = photoCounts,
+                        latestPhotoUris = latestPhotoUris,
                         patternNames = patternNames,
-                        projectIdsWithDocuments = projectIdsWithDocuments,
-                        projectIdsWithAvailablePrimary = projectIdsWithAvailablePrimary,
-                        hasNotes = hasNotes,
                         showCompleted = showCompleted,
                         isMultiSelectMode = isMultiSelectMode,
                         selectedProjectIds = selectedProjectIds,
@@ -579,14 +551,10 @@ fun ProjectListScreen(
                     ),
                 actions =
                     ProjectListContentActions(
-                        onProjectClick = onProjectClick,
-                        onNotesClick = viewModel::openNotesEditor,
-                        onPhotoGallery = viewModel::openPhotoGallery,
-                        onPatternViewer = onPatternViewer,
-                        onYarnCard = onYarnCard,
+                        onOpenCounter = onOpenCounter,
+                        onOpenOverview = onOpenOverview,
                         onToggleSelection = { viewModel.toggleProjectSelection(it) },
                         onEnterMultiSelect = { viewModel.enterMultiSelectMode(it) },
-                        onArchive = { viewModel.archiveProject(it) },
                         onShowCompleted = viewModel::toggleShowCompleted,
                         onDeleteSwipe = { id, name ->
                             menuProjectId = id
@@ -596,11 +564,12 @@ fun ProjectListScreen(
                     ),
             )
 
-            // Luontipainike ei näy multi-select-tilassa.
+            // Luontipainike ei näy multi-select-tilassa. Teksti kertoo heti, mitä nappi tekee:
+            // sama plus-nappi tarkoittaa laskurissa rivin lisäämistä.
             if (!isMultiSelectMode) {
-                CounterImageButton(
+                LabeledCounterImageButton(
                     imageRes = R.drawable.counter_plus_button,
-                    contentDescription = stringResource(R.string.new_project),
+                    label = stringResource(R.string.new_project),
                     visualSize = ProjectListDimens.CreateButtonVisualSize,
                     onClick = {
                         creationFolderId = (selectedFolderFilter as? ProjectFolderFilter.Folder)?.folderId
@@ -611,8 +580,7 @@ fun ProjectListScreen(
                     modifier =
                         Modifier
                             .align(Alignment.BottomEnd)
-                            .padding(16.dp)
-                            .size(ProjectListDimens.CreateButtonTouchSize),
+                            .padding(ProjectListDimens.CreateButtonMargin),
                 )
             }
         }
@@ -709,9 +677,7 @@ private fun ProjectListActiveSessionCompletionDialog(
             }
         },
         dismissButton = {
-            TextButton(onClick = onCancel, modifier = Modifier.defaultMinSize(minHeight = 48.dp)) {
-                Text(stringResource(R.string.cancel))
-            }
+            CancelButton(onClick = onCancel, modifier = Modifier.defaultMinSize(minHeight = 48.dp))
         },
     )
 }
@@ -735,9 +701,7 @@ private fun ProjectListActiveSessionDeletionDialog(
             }
         },
         dismissButton = {
-            TextButton(onClick = onCancel, modifier = Modifier.defaultMinSize(minHeight = 48.dp)) {
-                Text(stringResource(R.string.cancel))
-            }
+            CancelButton(onClick = onCancel, modifier = Modifier.defaultMinSize(minHeight = 48.dp))
         },
     )
 }
@@ -759,9 +723,7 @@ private fun MultiCompleteDialog(
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.cancel))
-            }
+            CancelButton(onClick = onDismiss)
         },
     )
 }
@@ -811,6 +773,7 @@ data class ProjectListTopBarActions(
 private fun ProjectListTopBar(
     state: ProjectListTopBarState,
     actions: ProjectListTopBarActions,
+    folderTitle: @Composable () -> Unit,
 ) {
     TopAppBar(
         title = {
@@ -829,10 +792,7 @@ private fun ProjectListTopBar(
                     }
                 }
             } else {
-                Text(
-                    text = stringResource(R.string.project_list_title),
-                    style = MaterialTheme.typography.headlineMedium,
-                )
+                folderTitle()
             }
         },
         navigationIcon = {
@@ -1013,7 +973,7 @@ private fun MultiSelectBottomBar(
         enter = slideInVertically(initialOffsetY = { it }),
         exit = slideOutVertically(targetOffsetY = { it }),
     ) {
-        Surface(color = MaterialTheme.colorScheme.surfaceVariant) {
+        Surface(color = MaterialTheme.knitToolsColors.cardContainer) {
             Column(
                 modifier =
                     Modifier
@@ -1064,13 +1024,8 @@ data class ProjectListContentState(
     val active: List<CounterProject>,
     val completed: List<CounterProject>,
     val continueKnitting: ContinueKnittingProject?,
-    val yarnNames: Map<Long, String>,
-    val yarnCardIds: Map<Long, Long>,
-    val photoCounts: Map<Long, Int>,
+    val latestPhotoUris: Map<Long, String>,
     val patternNames: Map<Long, String>,
-    val projectIdsWithDocuments: Set<Long>,
-    val projectIdsWithAvailablePrimary: Set<Long>,
-    val hasNotes: Set<Long>,
     val showCompleted: Boolean,
     val isMultiSelectMode: Boolean,
     val selectedProjectIds: Set<Long>,
@@ -1084,14 +1039,10 @@ data class ProjectListContentState(
 
 // CPD-OFF: Ruudun paikallinen Compose-rakenne pidetaan vastuun yhteydessa.
 data class ProjectListContentActions(
-    val onProjectClick: (Long) -> Unit,
-    val onNotesClick: (Long) -> Unit,
-    val onPhotoGallery: (Long) -> Unit,
-    val onPatternViewer: (Long) -> Unit,
-    val onYarnCard: (Long) -> Unit,
+    val onOpenCounter: (Long) -> Unit,
+    val onOpenOverview: (Long) -> Unit,
     val onToggleSelection: (Long) -> Unit,
     val onEnterMultiSelect: (Long) -> Unit,
-    val onArchive: (Long) -> Unit,
     // CPD-ON
     val onDeleteSwipe: (Long, String) -> Unit,
     val onShowCompleted: () -> Unit = {},
@@ -1144,21 +1095,25 @@ private fun ProjectListContent(
         if (!state.isMultiSelectMode) {
             state.continueKnitting?.let { ck ->
                 item {
-                    ContinueKnittingCard(
-                        state =
-                            ContinueKnittingCardState(
-                                projectName = ck.name,
-                                rowCount = ck.count,
+                    val hasSession = ck.projectId == state.activeSessionProjectId
+                    ContinueProjectCard(
+                        project =
+                            CounterProject(
+                                id = ck.projectId,
+                                name = ck.name,
+                                count = ck.count,
                                 sectionName = ck.sectionName,
                                 targetRows = ck.targetRows,
                                 craftType = ck.craftType,
                                 mainCounterLabelType = ck.mainCounterLabelType,
                                 mainCounterCustomLabel = ck.mainCounterCustomLabel,
-                                hasActiveSession = ck.projectId == state.activeSessionProjectId,
-                                sessionNeedsReview =
-                                    ck.projectId == state.activeSessionProjectId && state.activeSessionNeedsReview,
                             ),
-                        onClick = { actions.onProjectClick(ck.projectId) },
+                        sessionStatus =
+                            workSessionStatusText(hasSession, hasSession && state.activeSessionNeedsReview),
+                        // Heron runko avaa projektinäkymän kuten projektikortit; jatka-nappi avaa laskurin.
+                        onClick = { actions.onOpenOverview(ck.projectId) },
+                        onClickLabel = stringResource(R.string.project_card_open_overview_action),
+                        onOpenCounter = { actions.onOpenCounter(ck.projectId) },
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                 }
@@ -1167,9 +1122,10 @@ private fun ProjectListContent(
 
         if (visibleActiveProjects.isNotEmpty() || !isHeroVisible) {
             item {
-                SectionLabel(
+                // Lukumäärä sisältää myös heron projektin: se on aktiivinen, vaikka sillä ei ole omaa korttia.
+                ProjectSectionLabel(
                     text = stringResource(R.string.section_active),
-                    count = visibleActiveProjects.size,
+                    count = state.active.size,
                 )
             }
 
@@ -1193,30 +1149,21 @@ private fun ProjectListContent(
                             ActiveProjectItemState(
                                 isMultiSelectMode = state.isMultiSelectMode,
                                 isSelected = project.id in state.selectedProjectIds,
-                                yarnName = state.yarnNames[project.id],
-                                firstYarnCardId = state.yarnCardIds[project.id],
-                                photoCount = state.photoCounts[project.id] ?: 0,
+                                photoUri = state.latestPhotoUris[project.id],
                                 patternName = state.patternNames[project.id],
-                                hasPatternAttachment = project.id in state.projectIdsWithAvailablePrimary,
-                                hasNotes = project.id in state.hasNotes,
                                 hasActiveSession = project.id == state.activeSessionProjectId,
                                 sessionNeedsReview =
                                     project.id == state.activeSessionProjectId && state.activeSessionNeedsReview,
                             ),
                         actions =
                             ActiveProjectItemActions(
-                                onProjectClick = actions.onProjectClick,
-                                onNotesClick = actions.onNotesClick,
-                                onPhotoGallery = actions.onPhotoGallery,
-                                onPatternViewer = actions.onPatternViewer,
-                                onYarnCard = actions.onYarnCard,
+                                onOpenOverview = actions.onOpenOverview,
                                 onToggleSelection = actions.onToggleSelection,
                                 onEnterMultiSelect = actions.onEnterMultiSelect,
-                                onArchive = actions.onArchive,
                             ),
                     )
                     if (index < visibleActiveProjects.lastIndex) {
-                        ProjectListDivider()
+                        Spacer(modifier = Modifier.height(ProjectListDimens.CardSpacing))
                     }
                 }
             }
@@ -1225,7 +1172,7 @@ private fun ProjectListContent(
         // Completed-osio (näytetään vain kun toggle päällä)
         if (state.showCompleted) {
             item {
-                SectionLabel(
+                ProjectSectionLabel(
                     text = stringResource(R.string.section_completed),
                     count = state.completed.size,
                 )
@@ -1246,16 +1193,16 @@ private fun ProjectListContent(
                     key = { _, project -> project.id },
                 ) { index, project ->
                     val completedDescription = stringResource(R.string.section_completed)
-                    ProjectListItem(
+                    ProjectCard(
                         project = project.copy(count = project.totalRows ?: project.count),
-                        lastUpdated = project.completedAt ?: project.updatedAt,
+                        photoUri = state.latestPhotoUris[project.id],
                         onClick = {
                             if (state.isMultiSelectMode) {
                                 actions.onToggleSelection(
                                     project.id,
                                 )
                             } else {
-                                actions.onProjectClick(project.id)
+                                actions.onOpenOverview(project.id)
                             }
                         },
                         onLongClick =
@@ -1270,7 +1217,7 @@ private fun ProjectListContent(
                         modifier = Modifier.semantics { stateDescription = completedDescription },
                     )
                     if (index < state.completed.lastIndex) {
-                        ProjectListDivider()
+                        Spacer(modifier = Modifier.height(ProjectListDimens.CardSpacing))
                     }
                 }
             }
@@ -1282,25 +1229,16 @@ private fun ProjectListContent(
 data class ActiveProjectItemState(
     val isMultiSelectMode: Boolean,
     val isSelected: Boolean,
-    val yarnName: String?,
-    val firstYarnCardId: Long?,
-    val photoCount: Int,
+    val photoUri: String?,
     val patternName: String?,
-    val hasPatternAttachment: Boolean,
-    val hasNotes: Boolean = false,
     val hasActiveSession: Boolean = false,
     val sessionNeedsReview: Boolean = false,
 )
 
 data class ActiveProjectItemActions(
-    val onProjectClick: (Long) -> Unit,
-    val onNotesClick: (Long) -> Unit,
-    val onPhotoGallery: (Long) -> Unit,
-    val onPatternViewer: (Long) -> Unit,
-    val onYarnCard: (Long) -> Unit,
+    val onOpenOverview: (Long) -> Unit,
     val onToggleSelection: (Long) -> Unit,
     val onEnterMultiSelect: (Long) -> Unit,
-    val onArchive: (Long) -> Unit,
 )
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -1310,14 +1248,14 @@ private fun ActiveProjectItem(
     state: ActiveProjectItemState,
     actions: ActiveProjectItemActions,
 ) {
-    ProjectListItem(
+    ProjectCard(
         project = project,
-        lastUpdated = project.updatedAt,
+        photoUri = state.photoUri,
         onClick = {
             if (state.isMultiSelectMode) {
                 actions.onToggleSelection(project.id)
             } else {
-                actions.onProjectClick(project.id)
+                actions.onOpenOverview(project.id)
             }
         },
         onLongClick =
@@ -1326,229 +1264,25 @@ private fun ActiveProjectItem(
             } else {
                 { actions.onEnterMultiSelect(project.id) }
             },
-        yarnName = state.yarnName,
-        photoCount = state.photoCount,
         patternName = state.patternName,
-        hasPatternAttachment = state.hasPatternAttachment,
-        hasNotes = state.hasNotes,
-        onPatternClick = { actions.onPatternViewer(project.id) },
-        onNotesClick = { actions.onNotesClick(project.id) },
-        onPhotosClick = { actions.onPhotoGallery(project.id) },
-        onYarnClick =
-            state.firstYarnCardId?.let { yarnCardId ->
-                { actions.onYarnCard(yarnCardId) }
-            },
         selected = state.isSelected.takeIf { state.isMultiSelectMode },
         onToggleSelection = { actions.onToggleSelection(project.id) },
-        statusText =
-            if (state.hasActiveSession) {
-                stringResource(
-                    if (state.sessionNeedsReview) {
-                        R.string.work_session_recovery_needed
-                    } else {
-                        R.string.work_session_active
-                    },
-                )
-            } else {
-                null
-            },
+        statusText = workSessionStatusText(state.hasActiveSession, state.sessionNeedsReview),
     )
 }
 
-private data class ContinueKnittingCardState(
-    val projectName: String,
-    val rowCount: Int,
-    val sectionName: String?,
-    val targetRows: Int?,
-    val craftType: CraftType,
-    val mainCounterLabelType: MainCounterLabelType,
-    val mainCounterCustomLabel: String?,
-    val hasActiveSession: Boolean,
-    val sessionNeedsReview: Boolean,
-)
-
 @Composable
-private fun ContinueKnittingCard(
-    state: ContinueKnittingCardState,
-    onClick: () -> Unit,
-) {
-    val mainCounterDisplay =
-        CounterValueFormatter.forMainCounter(
-            CounterProject(
-                name = state.projectName,
-                count = state.rowCount,
-                targetRows = state.targetRows,
-                craftType = state.craftType,
-                mainCounterLabelType = state.mainCounterLabelType,
-                mainCounterCustomLabel = state.mainCounterCustomLabel,
-            ),
-        )
-    val targetStatus = mainCounterTargetStatus(mainCounterDisplay.targetLine)
-    val progressFraction = mainCounterTargetFraction(mainCounterDisplay.targetLine)
-    val countText =
-        mainCounterDisplay.targetLine?.let { mainCounterTargetText(it) }
-            ?: mainCounterCountText(mainCounterDisplay.projectCardCount)
-    val sectionName = normalizedContinueKnittingSectionName(state.sectionName)
-
-    Card(
-        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
-        shape = MaterialTheme.shapes.large,
-        colors =
-            CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.10f),
-            ),
-    ) {
-        Row(
-            modifier = Modifier.padding(ProjectListDimens.HeroPadding),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = stringResource(R.string.continue_knitting).localizedUppercase(),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.primary,
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = state.projectName,
-                    style = MaterialTheme.typography.titleLarge,
-                )
-                if (state.hasActiveSession) {
-                    Text(
-                        text =
-                            stringResource(
-                                if (state.sessionNeedsReview) {
-                                    R.string.work_session_recovery_needed
-                                } else {
-                                    R.string.work_session_active
-                                },
-                            ),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-                sectionName?.let {
-                    Spacer(modifier = Modifier.height(ProjectListDimens.ItemLineGap))
-                    Text(
-                        text = it,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-                Spacer(modifier = Modifier.height(ProjectListDimens.ProgressGroupTopGap))
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    Text(
-                        text = countText,
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.weight(1f),
-                    )
-                    targetStatus?.let {
-                        Text(
-                            text = continueKnittingTargetStatusText { it },
-                            style = MaterialTheme.typography.labelLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                }
-                // CPD-OFF: Hero sailyttaa oman valmiiksi rajatun etenemisrakenteensa.
-                if (progressFraction != null) {
-                    Spacer(modifier = Modifier.height(ProjectListDimens.ItemLineGap))
-                    Box(
-                        modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = ProjectListDimens.ProgressTrackInset)
-                                .height(ProjectListDimens.ProgressTrackHeight)
-                                .background(
-                                    MaterialTheme.colorScheme.onSurface.copy(
-                                        alpha = ProjectListDimens.ProgressTrackAlpha,
-                                    ),
-                                ),
-                    ) {
-                        Box(
-                            modifier =
-                                Modifier
-                                    .fillMaxWidth(progressFraction)
-                                    .height(ProjectListDimens.ProgressTrackHeight)
-                                    .background(MaterialTheme.colorScheme.primary),
-                        )
-                    }
-                }
-                // CPD-ON
-            }
-            Spacer(modifier = Modifier.width(12.dp))
-            CounterImageButton(
-                imageRes = R.drawable.counter_continue_button,
-                contentDescription =
-                    stringResource(R.string.project_continue_content_description, state.projectName),
-                visualSize = ProjectListDimens.HeroActionVisualSize,
-                onClick = onClick,
-                modifier = Modifier.size(ProjectListDimens.HeroActionTouchSize),
-            )
-        }
-    }
-}
-
-internal fun normalizedContinueKnittingSectionName(sectionName: String?): String? =
-    sectionName?.trim()?.takeIf(String::isNotEmpty)
-
-// CPD-OFF: Hero muotoilee tavoitetilan omassa Compose-kontekstissaan.
-@Composable
-private fun continueKnittingTargetStatusText(statusProvider: @Composable () -> MainCounterTargetStatus): String {
-    val status = statusProvider()
-    return when (status) {
-        is MainCounterTargetStatus.Remaining -> {
-            stringResource(
-                R.string.counter_target_remaining_format,
-                formatIntegerForDisplay(status.countSlot.count.toLong(), rememberCurrentLocale()),
-            )
-        }
-
-        MainCounterTargetStatus.Reached -> {
-            stringResource(R.string.counter_target_reached)
-        }
-
-        is MainCounterTargetStatus.Past -> {
-            stringResource(
-                R.string.counter_target_past_format,
-                formatIntegerForDisplay(status.countSlot.count.toLong(), rememberCurrentLocale()),
-            )
-        }
-    }
-}
-// CPD-ON
-
-@Composable
-private fun SectionLabel(
+private fun ProjectSectionLabel(
     text: String,
     count: Int,
 ) {
-    Text(
-        text =
-            stringResource(
-                R.string.project_section_count_format,
-                text.localizedUppercase(),
-                count,
-            ),
-        style = MaterialTheme.typography.labelSmall,
-        color = MaterialTheme.colorScheme.secondary,
+    SectionLabel(
+        text = stringResource(R.string.project_section_count_format, text, count),
         modifier =
             Modifier.padding(
                 top = ProjectListDimens.SectionTopSpacing,
                 bottom = ProjectListDimens.SectionBottomSpacing,
             ),
-    )
-}
-
-@Composable
-private fun ProjectListDivider() {
-    HorizontalDivider(
-        thickness = ProjectListDimens.DividerThickness,
-        color = MaterialTheme.colorScheme.onSurface.copy(alpha = ProjectListDimens.DividerAlpha),
     )
 }
 

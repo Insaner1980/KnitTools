@@ -18,7 +18,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.Role
@@ -37,7 +36,6 @@ fun SegmentedToggle(
     selectedIndex: Int,
     onSelect: (Int) -> Unit,
     modifier: Modifier = Modifier,
-    fraction: Float = 0.7f,
 ) {
     val isGrid = options.size > 3
     val expandedLabels = LocalDensity.current.fontScale >= 1.5f
@@ -47,7 +45,8 @@ fun SegmentedToggle(
     Box(
         modifier =
             modifier
-                .fillMaxWidth(if (isGrid || expandedLabels) 1f else fraction)
+                // Täysleveä: keskitetty 70 %:n valitsin ei linjautunut kenttien reunoihin.
+                .fillMaxWidth()
                 .clip(containerShape)
                 .background(MaterialTheme.colorScheme.surfaceVariant)
                 .selectableGroup()
@@ -156,15 +155,9 @@ private fun SegmentedToggleItem(
                 .heightIn(min = ComponentDimens.SegmentedItemMinHeight)
                 .clip(shape)
                 .then(
+                    // Tasainen kuten muut oranssit painikkeet: liukuväri teki valinnasta eri näköisen.
                     if (isSelected) {
-                        Modifier.background(
-                            Brush.linearGradient(
-                                listOf(
-                                    MaterialTheme.colorScheme.primary,
-                                    MaterialTheme.colorScheme.primaryContainer,
-                                ),
-                            ),
-                        )
+                        Modifier.background(MaterialTheme.colorScheme.primary)
                     } else {
                         Modifier
                     },

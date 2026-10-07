@@ -184,7 +184,6 @@ class ProjectFoldersScreenTest {
             .onNodeWithContentDescription(
                 "Personal. Project organization folder. Selected.",
             ).assertIsDisplayed()
-        composeRule.onNodeWithContentDescription("Continue Personal WIP").assertIsDisplayed()
         composeRule.onNodeWithText("Personal WIP").assertIsDisplayed()
         composeRule.onNodeWithText("Unfiled project").assertDoesNotExist()
         captureScreenshot("project-folders-selected")
@@ -204,7 +203,7 @@ class ProjectFoldersScreenTest {
             viewModel.sortOrder.value == ProjectSortOrder.UPDATED &&
                 viewModel.activeProjects.value.map { it.id } == listOf(giftsZebraId, giftsAlphaId)
         }
-        composeRule.onNodeWithContentDescription("Continue Gifts Zebra").assertIsDisplayed()
+        composeRule.onNodeWithText("Gifts Zebra").assertIsDisplayed()
         composeRule.onNodeWithContentDescription("More options").performClick()
         composeRule.onNodeWithText("Sort by").performClick()
         composeRule.onNodeWithText("Name").performClick()
@@ -212,7 +211,6 @@ class ProjectFoldersScreenTest {
             viewModel.sortOrder.value == ProjectSortOrder.NAME &&
                 viewModel.activeProjects.value.map { it.id } == listOf(giftsAlphaId, giftsZebraId)
         }
-        composeRule.onNodeWithContentDescription("Continue Gifts Alpha").assertIsDisplayed()
         composeRule.onNodeWithText("Gifts Alpha").assertIsDisplayed()
         composeRule.onNodeWithText("Gifts Zebra").assertIsDisplayed()
 
@@ -229,7 +227,7 @@ class ProjectFoldersScreenTest {
             !viewModel.showCompleted.value && viewModel.hasHiddenCompletedProjects.value
         }
         composeRule.onNodeWithText("Gifts complete").assertDoesNotExist()
-        composeRule.onNodeWithContentDescription("Continue Gifts Alpha").assertIsDisplayed()
+        composeRule.onNodeWithText("Gifts Alpha").assertIsDisplayed()
         assign(giftsZebraId, personalFolder.id)
         assign(giftsAlphaId, personalFolder.id)
         composeRule.waitUntil(timeoutMillis = 5_000) {
@@ -314,7 +312,6 @@ class ProjectFoldersScreenTest {
         composeRule.onNodeWithText("Move source has no projects.").assertIsDisplayed()
         composeRule.onNodeWithText("Active move").assertDoesNotExist()
         composeRule.onNodeWithText("Completed move").assertDoesNotExist()
-        composeRule.onNodeWithText("Projects").assertIsDisplayed()
         composeRule
             .onNodeWithContentDescription("Move source. Project organization folder. Selected.")
             .assertIsFocused()
@@ -470,7 +467,7 @@ class ProjectFoldersScreenTest {
         viewModelStore.put("project-folders-restoration", viewModel)
         composeRule.setContent {
             KnitToolsTheme(isDarkTheme = isDarkTheme) {
-                ProjectListScreen(onProjectClick = {}, viewModelProvider = { viewModel })
+                ProjectListScreen(onOpenCounter = {}, onOpenOverview = {}, viewModelProvider = { viewModel })
             }
         }
         awaitFolderState(viewModel)
@@ -493,7 +490,11 @@ class ProjectFoldersScreenTest {
         composeRule.runOnUiThread {
             composeRule.activity.setContent {
                 KnitToolsTheme(isDarkTheme = isDarkTheme) {
-                    ProjectListScreen(onProjectClick = {}, viewModelProvider = { recreatedViewModel })
+                    ProjectListScreen(
+                        onOpenCounter = {},
+                        onOpenOverview = {},
+                        viewModelProvider = { recreatedViewModel },
+                    )
                 }
             }
         }
@@ -511,7 +512,7 @@ class ProjectFoldersScreenTest {
         viewModelStore.put("project-folders", viewModel)
         composeRule.setContent {
             KnitToolsTheme(isDarkTheme = isDarkTheme) {
-                ProjectListScreen(onProjectClick = {}, viewModelProvider = { viewModel })
+                ProjectListScreen(onOpenCounter = {}, onOpenOverview = {}, viewModelProvider = { viewModel })
             }
         }
         return viewModel
@@ -524,7 +525,6 @@ class ProjectFoldersScreenTest {
         return ProjectListViewModel(
             repository = fixture.counterRepository(),
             proManager = ProManager(TrialManager(context, Dispatchers.IO), BillingManager(context)),
-            yarnCardRepository = fixture.yarnCardRepository,
             photoRepository =
                 ProgressPhotoRepository(
                     dao = database.progressPhotoDao(),
@@ -607,7 +607,7 @@ class ProjectFoldersScreenTest {
         screenshotName: String? = null,
     ) {
         composeRule.onNodeWithContentDescription("New Project").performClick()
-        composeRule.onNodeWithText("New project").assertIsDisplayed()
+        composeRule.onNodeWithText("New Project").assertIsDisplayed()
         screenshotName?.let(::captureScreenshot)
         composeRule.onNode(hasSetTextAction()).performTextInput(name)
         composeRule.onNodeWithText("Create project").performClick()

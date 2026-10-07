@@ -319,16 +319,19 @@ internal fun ProjectOverviewSessions(
     // Kokonaisaika on titleLarge, jottei se kilpaile laskurin lukeman kanssa.
     OverviewSectionHeader(R.string.project_overview_section_sessions)
     Row(verticalAlignment = Alignment.Bottom) {
+        // Nollakestoisilla istunnoilla ei näytetä "0 min" -kokonaisaikaa, vain historian linkki.
         Column(Modifier.weight(1f)) {
-            Text(
-                stringResource(R.string.project_overview_total_time),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Text(
-                durationText(DurationDisplayFormatter.fromMinutes(state.totalSessionMinutes)),
-                style = MaterialTheme.typography.titleLarge,
-            )
+            if (state.totalSessionMinutes > 0) {
+                Text(
+                    stringResource(R.string.project_overview_total_time),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Text(
+                    durationText(DurationDisplayFormatter.fromMinutes(state.totalSessionMinutes)),
+                    style = MaterialTheme.typography.titleLarge,
+                )
+            }
         }
         OverviewTextAction(
             stringResource(R.string.session_history_title),

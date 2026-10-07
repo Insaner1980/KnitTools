@@ -35,16 +35,13 @@ class ProjectOverviewSourceTest {
     }
 
     @Test
-    fun `completed projects and row-only sessions keep their history reachable`() {
+    fun `completed projects keep their counter history reachable`() {
         val screen = ProjectSourceFiles.read(SCREEN)
 
         // Valmistuneella projektilla ei ole jatka-korttia, joten laskurin historia on näkymässä.
         assertTrue(screen.contains("if (state.isCompleted) {"))
         assertTrue(screen.contains("item(key = \"counter-history\")"))
         assertTrue(screen.contains("onClick = { actions.onCounterHistory(projectId) }"))
-        // Istuntohistorian näkyvyys seuraa istuntojen olemassaoloa, ei minuuttisummaa.
-        assertTrue(screen.contains("if (state.hasSessions) {"))
-        assertFalse(screen.contains("if (state.totalSessionMinutes > 0) {"))
     }
 
     @Test

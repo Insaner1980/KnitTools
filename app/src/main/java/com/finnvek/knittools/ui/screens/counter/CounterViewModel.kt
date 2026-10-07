@@ -462,6 +462,17 @@ class CounterViewModel
             selectedProjectJob?.cancel()
             selectedProjectJob =
                 viewModelScope.launch {
+                    launch {
+                        repository.observeHasSessionsForProject(projectId).collect { hasSessions ->
+                            _uiState.update { state ->
+                                if (state.projectId == projectId && selectionVersion == projectSelectionVersion) {
+                                    state.copy(hasSessions = hasSessions)
+                                } else {
+                                    state
+                                }
+                            }
+                        }
+                    }
                     var previousObservedProject: CounterProject? = null
                     combine(
                         repository.observeProject(projectId),
@@ -641,10 +652,9 @@ class CounterViewModel
 
         private suspend fun loadTotalSessionMinutes(projectId: Long) {
             val minutes = repository.getTotalMinutesForProject(projectId)
-            val hasSessions = minutes > 0 || repository.hasSessionsForProject(projectId)
             _uiState.update { state ->
                 if (state.projectId == projectId) {
-                    state.copy(totalSessionMinutes = minutes, hasSessions = hasSessions)
+                    state.copy(totalSessionMinutes = minutes)
                 } else {
                     state
                 }

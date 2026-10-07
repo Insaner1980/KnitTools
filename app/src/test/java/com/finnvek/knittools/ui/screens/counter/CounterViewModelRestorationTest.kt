@@ -73,6 +73,7 @@ class CounterViewModelRestorationTest {
         coEvery { repository.getProject(7L) } returns completed
         coEvery { repository.getProject(8L) } returns active
         every { repository.observeActiveSession() } returns flowOf(null)
+        every { repository.observeHasSessionsForProject(any()) } returns flowOf(true)
         coEvery { repository.refreshActiveSession() } returns null
         coEvery { repository.getTotalMinutesForProject(any()) } answers { firstArg<Long>().toInt() * 10 }
         every { counters.getCountersForProject(any()) } returns flowOf(emptyList())
@@ -104,16 +105,44 @@ class CounterViewModelRestorationTest {
         }
 
     @Test
-    fun `row-only sessions keep session history reachable when total minutes are zero`() =
+    fun `row-only session history tracks insertion and last deletion at zero total minutes`() =
         runTest {
-            // Pelkkiä rivejä sisältävä istunto tallennetaan nollakestolla.
+            val sessions = MutableStateFlow(false)
             coEvery { repository.getTotalMinutesForProject(7L) } returns 0
-            coEvery { repository.hasSessionsForProject(7L) } returns true
+            every { repository.observeHasSessionsForProject(7L) } returns sessions
             val vm = viewModel(completedSelectionSnapshot())
             runCurrent()
 
             assertEquals(0, vm.uiState.value.totalSessionMinutes)
+            assertFalse(vm.uiState.value.hasSessions)
+            sessions.value = true
+            runCurrent()
             assertTrue(vm.uiState.value.hasSessions)
+            sessions.value = false
+            runCurrent()
+            assertFalse(vm.uiState.value.hasSessions)
+            assertEquals(0, vm.uiState.value.totalSessionMinutes)
+        }
+
+    @Test
+    fun `switching projects cancels the previous session observation`() =
+        runTest {
+            val sessions = MutableStateFlow(true)
+            every { repository.observeHasSessionsForProject(7L) } returns sessions
+            every { repository.observeHasSessionsForProject(8L) } returns flowOf(false)
+            val vm = viewModel(completedSelectionSnapshot())
+            runCurrent()
+            assertTrue(vm.uiState.value.hasSessions)
+
+            vm.selectProject(active)
+            runCurrent()
+            assertEquals(8L, vm.uiState.value.projectId)
+            assertFalse(vm.uiState.value.hasSessions)
+            assertEquals(0, sessions.subscriptionCount.value)
+            sessions.value = false
+            sessions.value = true
+            runCurrent()
+            assertFalse(vm.uiState.value.hasSessions)
         }
 
     @Test
@@ -562,6 +591,7 @@ class CounterViewModelRestorationTest {
             repository.getActiveProjects()
             repository.observeProject(any())
             repository.observeActiveSession()
+            repository.observeHasSessionsForProject(any())
             repository.refreshActiveSession()
             repository.getTotalMinutesForProject(any())
         }

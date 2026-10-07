@@ -157,6 +157,8 @@ private class StubSessionDao : SessionDao {
 
     override suspend fun getTotalMinutes(projectId: Long): Int = 0
 
+    override suspend fun hasSessions(projectId: Long): Boolean = false
+
     override fun getAllSessions(projectId: Long?): Flow<List<SessionEntity>> = flowOf(emptyList())
 
     override suspend fun getFirstSessionStart(projectId: Long?): Long? = null

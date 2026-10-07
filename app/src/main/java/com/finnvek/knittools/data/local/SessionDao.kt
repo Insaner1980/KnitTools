@@ -54,6 +54,10 @@ interface SessionDao {
     )
     suspend fun getTotalMinutes(projectId: Long): Int
 
+    // Pelkkiä rivejä sisältävä istunto tallennetaan nollakestolla, joten olemassaolo ei näy minuuttisummasta.
+    @Query("SELECT EXISTS(SELECT 1 FROM sessions WHERE projectId = :projectId)")
+    suspend fun hasSessions(projectId: Long): Boolean
+
     @Query("SELECT * FROM sessions WHERE (:projectId IS NULL OR projectId = :projectId) ORDER BY startedAt, id")
     fun getAllSessions(projectId: Long?): Flow<List<SessionEntity>>
 

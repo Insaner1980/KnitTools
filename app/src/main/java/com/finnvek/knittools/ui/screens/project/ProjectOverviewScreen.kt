@@ -49,6 +49,7 @@ import com.finnvek.knittools.ui.components.ContinueProjectCard
 import com.finnvek.knittools.ui.components.FabricKind
 import com.finnvek.knittools.ui.components.FabricPhotoPlaceholder
 import com.finnvek.knittools.ui.components.OverviewHeroPhoto
+import com.finnvek.knittools.ui.components.OverviewLinkRow
 import com.finnvek.knittools.ui.components.craftTypeLabel
 import com.finnvek.knittools.ui.components.workSessionStatusText
 import com.finnvek.knittools.ui.screens.counter.CounterScreenActions
@@ -145,6 +146,17 @@ internal fun ProjectOverviewScreen(
             item(key = "photo") { ProjectOverviewPhoto(state, projectId, actions.onPhotoGallery) }
             item(key = "name") { ProjectOverviewName(state) }
             item(key = "progress") { ProjectOverviewProgress(state, actions.onOpenCounter) }
+            // Valmistuneella projektilla ei ole jatka-korttia, joten laskurin historia avataan täältä.
+            if (state.isCompleted) {
+                item(key = "counter-history") {
+                    OverviewLinkRow(
+                        title = stringResource(R.string.counter_history_title),
+                        subtitle = null,
+                        icon = null,
+                        onClick = { actions.onCounterHistory(projectId) },
+                    )
+                }
+            }
             item(key = "yarn") {
                 ProjectOverviewYarn(yarnItems, yarnUnit, yarnCards, state.projectYarnNotes, contentActions.onYarn)
             }
@@ -154,7 +166,8 @@ internal fun ProjectOverviewScreen(
                 item(key = "photos") { ProjectOverviewPhotos(state, actions.onPhotoGallery) }
             }
             item(key = "reminders") { ProjectOverviewReminders(state, contentActions) }
-            if (state.totalSessionMinutes > 0) {
+            // Pelkkiä rivejä sisältävät istunnot ovat nollakestoisia, joten näkyvyys seuraa olemassaoloa.
+            if (state.hasSessions) {
                 item(key = "sessions") { ProjectOverviewSessions(state) { actions.onSessionHistory(projectId) } }
             }
         }

@@ -153,6 +153,7 @@ data class CounterUiState(
     val linkedYarns: List<Pair<Long, String>> = emptyList(),
     val projectYarnNotes: List<ProjectYarnNote> = emptyList(),
     val totalSessionMinutes: Int = 0,
+    val hasSessions: Boolean = false,
     val reminders: List<RowReminder> = emptyList(),
     val activeAlert: RowReminder? = null,
     val dismissedReminderTrigger: DismissedReminderTrigger? = null,
@@ -640,8 +641,13 @@ class CounterViewModel
 
         private suspend fun loadTotalSessionMinutes(projectId: Long) {
             val minutes = repository.getTotalMinutesForProject(projectId)
+            val hasSessions = minutes > 0 || repository.hasSessionsForProject(projectId)
             _uiState.update { state ->
-                if (state.projectId == projectId) state.copy(totalSessionMinutes = minutes) else state
+                if (state.projectId == projectId) {
+                    state.copy(totalSessionMinutes = minutes, hasSessions = hasSessions)
+                } else {
+                    state
+                }
             }
         }
 

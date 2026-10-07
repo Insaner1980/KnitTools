@@ -104,6 +104,19 @@ class CounterViewModelRestorationTest {
         }
 
     @Test
+    fun `row-only sessions keep session history reachable when total minutes are zero`() =
+        runTest {
+            // Pelkkiä rivejä sisältävä istunto tallennetaan nollakestolla.
+            coEvery { repository.getTotalMinutesForProject(7L) } returns 0
+            coEvery { repository.hasSessionsForProject(7L) } returns true
+            val vm = viewModel(completedSelectionSnapshot())
+            runCurrent()
+
+            assertEquals(0, vm.uiState.value.totalSessionMinutes)
+            assertTrue(vm.uiState.value.hasSessions)
+        }
+
+    @Test
     fun `fresh view model restores completed project with no active projects`() =
         runTest {
             val restored = completedSelectionSnapshot()

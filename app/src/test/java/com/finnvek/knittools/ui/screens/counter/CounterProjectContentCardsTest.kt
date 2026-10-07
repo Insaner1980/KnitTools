@@ -41,15 +41,16 @@ class CounterProjectContentCardsTest {
     fun `project content card source centers reminder tile and maps accents to theme tokens`() {
         val source = ProjectSourceFiles.read(COUNTER_PROJECT_CONTENT_CARDS)
         val dimens = ProjectSourceFiles.read(COUNTER_DIMENS)
+        val glyphs = ProjectSourceFiles.read(CROSS_STITCH_ICON)
 
         assertTrue(source.contains("take(4).chunked(2)"))
         assertFalse(source.contains("ProjectContentIconWell("))
         assertTrue(source.contains("titleRes = patternContentTitleRes(hasPattern)"))
-        assertTrue(source.contains("ProjectContentCardKind.PATTERN -> MaterialTheme.colorScheme.primary"))
-        assertTrue(source.contains("ProjectContentCardKind.YARN -> MaterialTheme.colorScheme.secondary"))
-        assertTrue(source.contains("ProjectContentCardKind.NOTES -> MaterialTheme.knitToolsColors.brandWine"))
-        assertTrue(source.contains("ProjectContentCardKind.PHOTOS -> MaterialTheme.colorScheme.tertiary"))
-        assertTrue(source.contains("ProjectContentCardKind.REMINDER -> MaterialTheme.knitToolsColors.tealAccent"))
+        assertTrue(glyphs.contains("CrossStitchGlyph.PATTERN -> MaterialTheme.colorScheme.primary"))
+        assertTrue(glyphs.contains("CrossStitchGlyph.YARN -> MaterialTheme.colorScheme.secondary"))
+        assertTrue(glyphs.contains("CrossStitchGlyph.NOTES -> MaterialTheme.knitToolsColors.brandWine"))
+        assertTrue(glyphs.contains("CrossStitchGlyph.PHOTOS -> MaterialTheme.colorScheme.tertiary"))
+        assertTrue(glyphs.contains("CrossStitchGlyph.REMINDER -> MaterialTheme.knitToolsColors.tealAccent"))
         assertTrue(source.contains("horizontalArrangement = Arrangement.Center"))
         assertTrue(source.contains("ProjectCardIconTitleSpacing"))
         assertTrue(dimens.contains("ProjectCardIconSize = 56.dp"))
@@ -61,5 +62,7 @@ class CounterProjectContentCardsTest {
             "app/src/main/java/com/finnvek/knittools/ui/screens/counter/CounterProjectContentCards.kt"
         const val COUNTER_DIMENS =
             "app/src/main/java/com/finnvek/knittools/ui/theme/CounterDimens.kt"
+        const val CROSS_STITCH_ICON =
+            "app/src/main/java/com/finnvek/knittools/ui/components/CrossStitchIcon.kt"
     }
 }

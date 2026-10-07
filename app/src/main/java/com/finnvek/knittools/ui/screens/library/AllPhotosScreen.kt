@@ -2,7 +2,6 @@ package com.finnvek.knittools.ui.screens.library
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -14,7 +13,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -49,18 +47,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.domain.model.ProgressPhoto
 import com.finnvek.knittools.ui.components.ConfirmationDialog
+import com.finnvek.knittools.ui.components.CrossStitchEmptyState
+import com.finnvek.knittools.ui.components.CrossStitchGlyph
 import com.finnvek.knittools.ui.components.cardContainerColor
 import com.finnvek.knittools.ui.components.rememberLocaleDateFormat
 import com.finnvek.knittools.ui.screens.counter.PhotoViewer
@@ -173,27 +171,11 @@ fun AllPhotosScreen(
         },
     ) { padding ->
         if (state.photos.isEmpty()) {
-            Column(
-                modifier = Modifier.fillMaxSize().padding(padding).padding(32.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center,
-            ) {
-                // CPD-OFF: Ruudun paikallinen Compose-rakenne pidetaan vastuun yhteydessa.
-                Image(
-                    painter = painterResource(R.drawable.camera_icon),
-                    contentDescription = null,
-                    modifier = Modifier.size(240.dp),
-                    contentScale = ContentScale.Fit,
-                )
-                Spacer(modifier = Modifier.height(24.dp))
-                Text(
-                    text = stringResource(R.string.empty_all_photos),
-                    // CPD-ON
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center,
-                )
-            }
+            CrossStitchEmptyState(
+                glyph = CrossStitchGlyph.PHOTOS,
+                message = stringResource(R.string.empty_all_photos),
+                modifier = Modifier.padding(padding),
+            )
         } else {
             AllPhotosContent(
                 state = state,

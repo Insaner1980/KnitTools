@@ -389,7 +389,6 @@
     <string name="billing_already_owned_restore_failed">Google Play indique que vous possédez déjà cet achat, mais il n’a pas pu être restauré. Utilisez Restaurer les achats.</string>
 
     <!-- Yarn Card -->
-    <string name="saved_yarns">Fils enregistrés</string>
     <string name="fiber_content">Composition</string>
     <string name="weight_grams">Poids (g)</string>
     <string name="length_meters">Longueur (m)</string>
@@ -671,7 +670,6 @@
     <!-- Ravelry -->
     <string name="tool_ravelry">Ravelry</string>
     <string name="desc_ravelry">Rechercher des modèles et enregistrer des favoris</string>
-    <string name="ravelry_search">Rechercher</string>
     <string name="ravelry_saved_patterns">Modèles enregistrés</string>
     <string name="start_project">Commencer un projet</string>
     <string name="save_pattern">Enregistrer le modèle</string>
@@ -1073,7 +1071,6 @@
     <string name="web_pattern_open_website">Ouvrir le site web</string>
     <string name="web_pattern_open_website_description">Ouvrir le site de %1$s sur %2$s</string>
     <string name="web_pattern_edit_description">Modifier le modèle en ligne %1$s</string>
-    <string name="web_pattern_delete_description">Supprimer le modèle en ligne %1$s</string>
     <string name="web_pattern_attach_description">Associer le modèle en ligne %1$s</string>
     <string name="web_pattern_unlink_description">Dissocier les informations du modèle %1$s</string>
     <string name="web_pattern_shared_link">Lien partagé</string>

@@ -13,8 +13,6 @@ import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.outlined.Description
-import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -38,6 +36,7 @@ import com.finnvek.knittools.domain.model.YarnCard
 import com.finnvek.knittools.domain.model.YarnUsageAmounts
 import com.finnvek.knittools.domain.model.YarnUsageUnit
 import com.finnvek.knittools.domain.model.isWebPatternCompatible
+import com.finnvek.knittools.ui.components.CrossStitchGlyph
 import com.finnvek.knittools.ui.components.OverviewEmptyText
 import com.finnvek.knittools.ui.components.OverviewLinkRow
 import com.finnvek.knittools.ui.components.OverviewSectionHeader
@@ -184,7 +183,7 @@ internal fun ProjectOverviewPattern(
             } else {
                 stringResource(R.string.project_documents_unavailable)
             },
-            Icons.Outlined.Description,
+            CrossStitchGlyph.PATTERN,
             onClick = {
                 if (available) {
                     state.projectId?.let { actions.onPatternViewer(it, primary.id) }
@@ -197,7 +196,7 @@ internal fun ProjectOverviewPattern(
         OverviewLinkRow(
             stringResource(R.string.project_documents_title),
             null,
-            Icons.Outlined.Description,
+            CrossStitchGlyph.PATTERN,
             content.onDocuments,
         )
     }
@@ -218,7 +217,7 @@ internal fun ProjectOverviewPattern(
                     R.string.project_documents_pattern_information
                 },
             ),
-            Icons.Outlined.Description,
+            CrossStitchGlyph.PATTERN,
             content.onDocuments,
         )
     }
@@ -301,12 +300,12 @@ internal fun ProjectOverviewReminders(
             mainCounterCountText(
                 MainCounterCountSlot(next.targetRow, state.mainCounterLabelType, state.mainCounterCustomLabel),
             ),
-            Icons.Outlined.Notifications,
+            CrossStitchGlyph.REMINDER,
             actions.onReminders,
         )
     }
     if (state.reminders.size > 1 || (next == null && state.reminders.isNotEmpty())) {
-        OverviewLinkRow(stringResource(R.string.reminders), null, Icons.Outlined.Notifications, actions.onReminders)
+        OverviewLinkRow(stringResource(R.string.reminders), null, CrossStitchGlyph.REMINDER, actions.onReminders)
     }
 }
 

@@ -14,20 +14,11 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.text.TextAutoSize
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Description
-import androidx.compose.material.icons.outlined.EditNote
-import androidx.compose.material.icons.outlined.Inventory2
-import androidx.compose.material.icons.outlined.Notifications
-import androidx.compose.material.icons.outlined.PhotoLibrary
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -35,16 +26,20 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.TextUnit
 import com.finnvek.knittools.R
+import com.finnvek.knittools.ui.components.CrossStitchGlyph
+import com.finnvek.knittools.ui.components.CrossStitchIcon
 import com.finnvek.knittools.ui.components.SectionLabel
 import com.finnvek.knittools.ui.theme.CounterDimens
 import com.finnvek.knittools.ui.theme.knitToolsColors
 
-enum class ProjectContentCardKind {
-    PATTERN,
-    YARN,
-    NOTES,
-    PHOTOS,
-    REMINDER,
+enum class ProjectContentCardKind(
+    val glyph: CrossStitchGlyph,
+) {
+    PATTERN(CrossStitchGlyph.PATTERN),
+    YARN(CrossStitchGlyph.YARN),
+    NOTES(CrossStitchGlyph.NOTES),
+    PHOTOS(CrossStitchGlyph.PHOTOS),
+    REMINDER(CrossStitchGlyph.REMINDER),
 }
 
 data class ProjectContentCard(
@@ -131,7 +126,6 @@ private fun ProjectContentCardView(
     modifier: Modifier = Modifier,
 ) {
     val title = stringResource(card.titleRes)
-    val accent = card.kind.accentColor()
     Surface(
         modifier =
             modifier
@@ -156,9 +150,8 @@ private fun ProjectContentCardView(
                     alignment = Alignment.CenterVertically,
                 ),
         ) {
-            Icon(
-                imageVector = card.kind.icon(),
-                contentDescription = null,
+            CrossStitchIcon(
+                glyph = card.kind.glyph,
                 modifier =
                     Modifier.size(
                         if (LocalDensity.current.fontScale >=
@@ -169,7 +162,6 @@ private fun ProjectContentCardView(
                             CounterDimens.ProjectCardIconSize
                         },
                     ),
-                tint = accent,
             )
             BasicText(
                 text = title,
@@ -190,22 +182,3 @@ private fun ProjectContentCardView(
         }
     }
 }
-
-@Composable
-private fun ProjectContentCardKind.accentColor(): Color =
-    when (this) {
-        ProjectContentCardKind.PATTERN -> MaterialTheme.colorScheme.primary
-        ProjectContentCardKind.YARN -> MaterialTheme.colorScheme.secondary
-        ProjectContentCardKind.NOTES -> MaterialTheme.knitToolsColors.brandWine
-        ProjectContentCardKind.PHOTOS -> MaterialTheme.colorScheme.tertiary
-        ProjectContentCardKind.REMINDER -> MaterialTheme.knitToolsColors.tealAccent
-    }
-
-private fun ProjectContentCardKind.icon(): ImageVector =
-    when (this) {
-        ProjectContentCardKind.PATTERN -> Icons.Outlined.Description
-        ProjectContentCardKind.YARN -> Icons.Outlined.Inventory2
-        ProjectContentCardKind.NOTES -> Icons.Outlined.EditNote
-        ProjectContentCardKind.PHOTOS -> Icons.Outlined.PhotoLibrary
-        ProjectContentCardKind.REMINDER -> Icons.Outlined.Notifications
-    }

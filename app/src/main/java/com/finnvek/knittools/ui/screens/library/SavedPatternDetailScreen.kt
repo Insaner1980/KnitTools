@@ -12,14 +12,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -51,6 +47,7 @@ import com.finnvek.knittools.domain.model.isWebPatternCompatible
 import com.finnvek.knittools.domain.model.webPatternUrlOrNull
 import com.finnvek.knittools.repository.SavedPatternMetadataMutationResult
 import com.finnvek.knittools.ui.components.ConfirmationDialog
+import com.finnvek.knittools.ui.components.MoreOptionsIconButton
 import com.finnvek.knittools.ui.components.OverviewEmptyText
 import com.finnvek.knittools.ui.components.OverviewLinkRow
 import com.finnvek.knittools.ui.components.OverviewSectionHeader
@@ -289,9 +286,7 @@ private fun SavedPatternDetailMenu(
     onDelete: () -> Unit,
 ) {
     var expanded by remember { mutableStateOf(false) }
-    IconButton(onClick = { expanded = true }) {
-        Icon(Icons.Default.MoreVert, contentDescription = stringResource(R.string.more_options))
-    }
+    MoreOptionsIconButton(onClick = { expanded = true })
     DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
         onEdit?.let { edit ->
             DropdownMenuItem(
@@ -450,7 +445,7 @@ private fun SavedPatternProjectSection(
     OverviewLinkRow(
         title = label,
         subtitle = null,
-        icon = null,
+        glyph = null,
         onClick = onAttach,
         modifier =
             Modifier.semantics(mergeDescendants = true) {

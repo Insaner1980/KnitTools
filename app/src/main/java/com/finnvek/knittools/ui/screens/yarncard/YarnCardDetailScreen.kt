@@ -20,12 +20,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SnackbarHost
@@ -52,6 +48,7 @@ import com.finnvek.knittools.ui.components.ConfirmationDialog
 import com.finnvek.knittools.ui.components.CounterImageButton
 import com.finnvek.knittools.ui.components.FabricKind
 import com.finnvek.knittools.ui.components.FabricPhotoPlaceholder
+import com.finnvek.knittools.ui.components.MoreOptionsIconButton
 import com.finnvek.knittools.ui.components.OverviewEmptyText
 import com.finnvek.knittools.ui.components.OverviewHeroPhoto
 import com.finnvek.knittools.ui.components.OverviewLinkRow
@@ -229,9 +226,7 @@ private class YarnDetailContentActions(
 @Composable
 private fun YarnDetailMenu(onDelete: () -> Unit) {
     var expanded by rememberSaveable { mutableStateOf(false) }
-    IconButton(onClick = { expanded = true }) {
-        Icon(Icons.Default.MoreVert, contentDescription = stringResource(R.string.more_options))
-    }
+    MoreOptionsIconButton(onClick = { expanded = true })
     DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
         DropdownMenuItem(
             text = { Text(stringResource(R.string.delete_yarn_card)) },

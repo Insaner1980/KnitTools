@@ -119,6 +119,7 @@ import com.finnvek.knittools.domain.model.sanitizeReadingLineYFraction
 import com.finnvek.knittools.domain.model.webPatternUrlOrNull
 import com.finnvek.knittools.repository.ProjectDocumentMutationResult
 import com.finnvek.knittools.repository.SavedPatternMetadataMutationResult
+import com.finnvek.knittools.ui.components.BackIconButton
 import com.finnvek.knittools.ui.components.CancelButton
 import com.finnvek.knittools.ui.components.CollectWithLifecycleEffect
 import com.finnvek.knittools.ui.components.OverviewEmptyText
@@ -755,7 +756,7 @@ internal fun ProjectDocumentsSheet(
                         OverviewLinkRow(
                             title = stringResource(R.string.web_pattern_open_website),
                             subtitle = null,
-                            icon = null,
+                            glyph = null,
                             onClick = {
                                 coroutineScope.launch {
                                     sheetState.hide()
@@ -768,7 +769,7 @@ internal fun ProjectDocumentsSheet(
                         OverviewLinkRow(
                             title = stringResource(R.string.web_pattern_edit),
                             subtitle = null,
-                            icon = null,
+                            glyph = null,
                             onClick = {
                                 coroutineScope.launch {
                                     sheetState.hide()
@@ -781,7 +782,7 @@ internal fun ProjectDocumentsSheet(
                         OverviewLinkRow(
                             title = stringResource(R.string.web_pattern_unlink),
                             subtitle = null,
-                            icon = null,
+                            glyph = null,
                             onClick = { showUnlinkConfirmation = true },
                             modifier =
                                 Modifier.semantics(mergeDescendants = true) { contentDescription = unlinkDescription },
@@ -1493,13 +1494,7 @@ internal fun PatternViewerTopBar(
             )
         },
         navigationIcon = {
-            IconButton(onClick = actions.onBack) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = stringResource(R.string.back),
-                    tint = MaterialTheme.colorScheme.outline,
-                )
-            }
+            BackIconButton(onClick = actions.onBack)
         },
         actions = {
             Box {

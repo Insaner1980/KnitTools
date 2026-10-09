@@ -8,6 +8,7 @@ import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -24,12 +25,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.viewinterop.AndroidView
 import com.finnvek.knittools.BuildConfig
 import com.finnvek.knittools.R
 import com.finnvek.knittools.data.remote.WebPdfDownload
 import com.finnvek.knittools.ui.components.ToolScreenScaffold
+import com.finnvek.knittools.ui.platform.ExternalWebLinkOpenResult
+import com.finnvek.knittools.ui.platform.openExternalWebLink
 import com.finnvek.knittools.ui.theme.ComponentDimens
 
 /**
@@ -49,6 +53,13 @@ fun RavelryBrowserScreen(
     var progress by remember { mutableIntStateOf(0) }
     var canGoBack by remember { mutableStateOf(false) }
     val currentOnPdfDownload by rememberUpdatedState(onPdfDownload)
+    val context = LocalContext.current
+    val purchaseMessage = stringResource(R.string.ravelry_purchase_in_browser)
+    val noBrowserMessage = stringResource(R.string.web_pattern_no_browser)
+    val openPurchase by rememberUpdatedState<(String) -> Unit> { url ->
+        val opened = openExternalWebLink(context, url) == ExternalWebLinkOpenResult.Opened
+        Toast.makeText(context, if (opened) purchaseMessage else noBrowserMessage, Toast.LENGTH_LONG).show()
+    }
 
     // Järjestelmän takaisin-ele selaa ensin Ravelryn sivuhistoriaa.
     BackHandler(enabled = canGoBack) { webView?.goBack() }
@@ -93,10 +104,17 @@ fun RavelryBrowserScreen(
                         webViewClient =
                             object : WebViewClient() {
                                 // Vain HTTPS-sivut; muut osoitteet (http, intent, tiedostot) estetään.
+                                // Kassa ja maksu avataan käyttäjän selaimessa (ks. isRavelryPurchaseUrl).
                                 override fun shouldOverrideUrlLoading(
                                     view: WebView,
                                     request: WebResourceRequest,
-                                ): Boolean = request.url.scheme != HTTPS
+                                ): Boolean {
+                                    val url = request.url
+                                    if (url.scheme != HTTPS) return true
+                                    if (!isRavelryPurchaseUrl(url.host, url.path)) return false
+                                    openPurchase(url.toString())
+                                    return true
+                                }
 
                                 override fun onPageStarted(
                                     view: WebView,

@@ -1034,6 +1034,7 @@
     <string name="incoming_pdf_open_failed">No se pudo abrir el PDF</string>
     <string name="incoming_pdf_save_failed">No se pudo guardar el patrón</string>
     <string name="ravelry_browser_hint">Abre un patrón y toca Download PDF para guardarlo en KnitTools.</string>
+    <string name="ravelry_purchase_in_browser">El pago se abre en tu navegador. Después de comprar, descarga el patrón aquí desde tu biblioteca de Ravelry.</string>
     <string name="incoming_pdf_downloading">Descargando patrón…</string>
     <string name="incoming_pdf_not_pdf">Solo se pueden guardar patrones PDF</string>
     <string name="web_pattern_unlink">Desvincular la información del patrón</string>

@@ -1379,6 +1379,7 @@
     <string name="incoming_pdf_open_failed">Couldn\'t open the PDF</string>
     <string name="incoming_pdf_save_failed">Couldn\'t save the pattern</string>
     <string name="ravelry_browser_hint">Open a pattern and tap Download PDF to save it in KnitTools.</string>
+    <string name="ravelry_purchase_in_browser">Checkout opens in your browser. After buying, download the pattern here from your Ravelry library.</string>
     <string name="incoming_pdf_downloading">Downloading pattern…</string>
     <string name="incoming_pdf_not_pdf">Only PDF patterns can be saved</string>
     <string name="web_pattern_unlink">Unlink pattern information</string>

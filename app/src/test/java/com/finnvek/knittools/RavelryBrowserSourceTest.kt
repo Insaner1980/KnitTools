@@ -17,9 +17,12 @@ class RavelryBrowserSourceTest {
         val mainActivity = ProjectSourceFiles.read(MAIN_ACTIVITY)
 
         assertTrue(browser.contains("setDownloadListener"))
-        assertTrue(browser.contains("request.url.scheme != HTTPS"))
+        assertTrue(browser.contains("if (url.scheme != HTTPS) return true"))
         assertTrue(browser.contains("settings.allowFileAccess = false"))
         assertTrue(browser.contains("loadUrl(startUrl?.let(::ravelryPageUrlOrNull) ?: RAVELRY_PATTERN_SEARCH_URL)"))
+        // Kassa ja maksu avautuvat käyttäjän selaimessa, ei sovelluksen sisällä.
+        assertTrue(browser.contains("if (!isRavelryPurchaseUrl(url.host, url.path)) return false"))
+        assertTrue(browser.contains("openExternalWebLink(context, url)"))
         assertTrue(navGraph.contains("Screen.RavelryBrowser.ROUTE,"))
         assertTrue(navGraph.contains("startUrl = backStackEntry.arguments?.getString(Screen.RavelryBrowser.ARG_URL)"))
         assertTrue(mainActivity.contains("onWebPdfDownload = incomingPdfViewModel::receiveDownload"))

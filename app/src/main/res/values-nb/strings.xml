@@ -1007,6 +1007,7 @@
     <string name="incoming_pdf_open_failed">Kunne ikke åpne PDF-filen</string>
     <string name="incoming_pdf_save_failed">Kunne ikke lagre mønsteret</string>
     <string name="ravelry_browser_hint">Åpne et mønster og trykk på Download PDF for å lagre det i KnitTools.</string>
+    <string name="ravelry_purchase_in_browser">Betalingen åpnes i nettleseren. Etter kjøpet laster du ned oppskriften her fra Ravelry-biblioteket ditt.</string>
     <string name="incoming_pdf_downloading">Laster ned mønsteret…</string>
     <string name="incoming_pdf_not_pdf">Bare PDF-mønstre kan lagres</string>
     <string name="web_pattern_unlink">Koble fra mønsterinformasjonen</string>

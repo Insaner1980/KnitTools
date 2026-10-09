@@ -1007,6 +1007,7 @@
     <string name="incoming_pdf_open_failed">PDF-filen kunne ikke åbnes</string>
     <string name="incoming_pdf_save_failed">Mønsteret kunne ikke gemmes</string>
     <string name="ravelry_browser_hint">Åbn et mønster, og tryk på Download PDF for at gemme det i KnitTools.</string>
+    <string name="ravelry_purchase_in_browser">Betalingen åbnes i din browser. Når du har købt, kan du downloade opskriften her fra dit Ravelry-bibliotek.</string>
     <string name="incoming_pdf_downloading">Henter mønsteret…</string>
     <string name="incoming_pdf_not_pdf">Kun PDF-mønstre kan gemmes</string>
     <string name="web_pattern_unlink">Fjern tilknytningen til mønsteroplysninger</string>

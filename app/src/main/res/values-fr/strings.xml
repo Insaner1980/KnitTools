@@ -1034,6 +1034,7 @@
     <string name="incoming_pdf_open_failed">Impossible d’ouvrir le PDF</string>
     <string name="incoming_pdf_save_failed">Impossible d’enregistrer le modèle</string>
     <string name="ravelry_browser_hint">Ouvrez un modèle et touchez Download PDF pour l’enregistrer dans KnitTools.</string>
+    <string name="ravelry_purchase_in_browser">Le paiement s\'ouvre dans votre navigateur. Après l\'achat, téléchargez le modèle ici depuis votre bibliothèque Ravelry.</string>
     <string name="incoming_pdf_downloading">Téléchargement du modèle…</string>
     <string name="incoming_pdf_not_pdf">Seuls les modèles PDF peuvent être enregistrés</string>
     <string name="web_pattern_unlink">Dissocier les informations du modèle</string>

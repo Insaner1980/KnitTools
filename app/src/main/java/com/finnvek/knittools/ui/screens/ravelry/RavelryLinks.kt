@@ -16,3 +16,23 @@ internal fun ravelryPageUrlOrNull(url: String): String? {
 
     return parsedUri.toString()
 }
+
+private val PAYMENT_HOSTS = listOf("paypal.com", "stripe.com", "braintreegateway.com", "braintree-api.com")
+
+/**
+ * Ravelryn kassa ja maksupalvelut avataan käyttäjän omassa selaimessa, jotta ohjetta ei osteta
+ * sovelluksen sisällä Google Playn maksujärjestelmän ohi. Ostettu ohje ladataan sen jälkeen täällä.
+ */
+internal fun isRavelryPurchaseUrl(
+    host: String?,
+    path: String?,
+): Boolean {
+    val normalizedHost = host?.lowercase(Locale.US) ?: return false
+    if (PAYMENT_HOSTS.any { normalizedHost == it || normalizedHost.endsWith(".$it") }) return true
+    val isRavelry = normalizedHost == "ravelry.com" || normalizedHost.endsWith(".ravelry.com")
+    return isRavelry &&
+        (
+            normalizedHost.startsWith("checkout.") ||
+                path.orEmpty().split('/').any { it.equals("checkout", ignoreCase = true) }
+        )
+}

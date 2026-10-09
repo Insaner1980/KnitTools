@@ -1,7 +1,9 @@
 package com.finnvek.knittools.ui.screens.ravelry
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class RavelryLinksTest {
@@ -27,5 +29,24 @@ class RavelryLinksTest {
     @Test
     fun `ravelry page URL rejects malformed input`() {
         assertNull(ravelryPageUrlOrNull("not a url"))
+    }
+
+    @Test
+    fun `ravelry checkout and payment providers open outside the app`() {
+        assertTrue(isRavelryPurchaseUrl("www.ravelry.com", "/stores/dreareneeknits/products/450988/checkout"))
+        assertTrue(isRavelryPurchaseUrl("www.ravelry.com", "/carts/123/checkout"))
+        assertTrue(isRavelryPurchaseUrl("checkout.ravelry.com", "/"))
+        assertTrue(isRavelryPurchaseUrl("www.paypal.com", "/checkoutnow"))
+        assertTrue(isRavelryPurchaseUrl("checkout.stripe.com", "/pay/cs_test"))
+    }
+
+    @Test
+    fun `browsing and downloads stay in the app`() {
+        assertFalse(isRavelryPurchaseUrl("www.ravelry.com", "/patterns/library/the-shift"))
+        assertFalse(isRavelryPurchaseUrl("www.ravelry.com", "/patterns/library/819716/buy"))
+        assertFalse(isRavelryPurchaseUrl("www.ravelry.com", "/carts"))
+        assertFalse(isRavelryPurchaseUrl("www.ravelry.com", "/patterns/library/checkout-cowl"))
+        assertFalse(isRavelryPurchaseUrl("notpaypal.com.evil.example", "/"))
+        assertFalse(isRavelryPurchaseUrl(null, "/checkout"))
     }
 }

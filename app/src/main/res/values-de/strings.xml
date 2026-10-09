@@ -1007,6 +1007,7 @@
     <string name="incoming_pdf_open_failed">PDF konnte nicht geöffnet werden</string>
     <string name="incoming_pdf_save_failed">Anleitung konnte nicht gespeichert werden</string>
     <string name="ravelry_browser_hint">Öffne eine Anleitung und tippe auf Download PDF, um sie in KnitTools zu speichern.</string>
+    <string name="ravelry_purchase_in_browser">Die Kasse öffnet sich in deinem Browser. Lade die Anleitung nach dem Kauf hier aus deiner Ravelry-Bibliothek herunter.</string>
     <string name="incoming_pdf_downloading">Anleitung wird geladen…</string>
     <string name="incoming_pdf_not_pdf">Nur PDF-Anleitungen können gespeichert werden</string>
     <string name="web_pattern_unlink">Musterinformationen entfernen</string>

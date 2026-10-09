@@ -1007,6 +1007,7 @@
     <string name="incoming_pdf_open_failed">Kan de pdf niet openen</string>
     <string name="incoming_pdf_save_failed">Kan het patroon niet opslaan</string>
     <string name="ravelry_browser_hint">Open een patroon en tik op Download PDF om het in KnitTools op te slaan.</string>
+    <string name="ravelry_purchase_in_browser">Afrekenen opent in je browser. Download het patroon na de aankoop hier uit je Ravelry-bibliotheek.</string>
     <string name="incoming_pdf_downloading">Patroon downloaden…</string>
     <string name="incoming_pdf_not_pdf">Alleen pdf-patronen kunnen worden opgeslagen</string>
     <string name="web_pattern_unlink">Patroongegevens ontkoppelen</string>

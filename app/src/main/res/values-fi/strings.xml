@@ -1300,6 +1300,7 @@
     <string name="incoming_pdf_open_failed">PDF:n avaaminen epäonnistui</string>
     <string name="incoming_pdf_save_failed">Ohjeen tallentaminen epäonnistui</string>
     <string name="ravelry_browser_hint">Avaa ohje ja paina Download PDF, niin ohje tallentuu KnitToolsiin.</string>
+    <string name="ravelry_purchase_in_browser">Kassa avautuu selaimessa. Oston jälkeen lataa ohje täällä Ravelry-kirjastostasi.</string>
     <string name="incoming_pdf_downloading">Ladataan ohjetta…</string>
     <string name="incoming_pdf_not_pdf">Vain PDF-ohjeet voi tallentaa</string>
     <string name="web_pattern_unlink">Irrota ohjeen tiedot</string>

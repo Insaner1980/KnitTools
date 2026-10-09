@@ -1024,6 +1024,7 @@
     <string name="incoming_pdf_open_failed">Det gick inte att öppna PDF-filen</string>
     <string name="incoming_pdf_save_failed">Det gick inte att spara mönstret</string>
     <string name="ravelry_browser_hint">Öppna ett mönster och tryck på Download PDF för att spara det i KnitTools.</string>
+    <string name="ravelry_purchase_in_browser">Kassan öppnas i webbläsaren. Ladda ner mönstret här från ditt Ravelry-bibliotek efter köpet.</string>
     <string name="incoming_pdf_downloading">Hämtar mönstret…</string>
     <string name="incoming_pdf_not_pdf">Bara PDF-mönster kan sparas</string>
     <string name="web_pattern_unlink">Koppla bort mönsterinformation</string>

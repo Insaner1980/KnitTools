@@ -36,32 +36,17 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
 internal fun LazyListScope.completionSection(state: InsightsUiState) {
+    // Osio jätetään kokonaan pois ilman valmistumisia, kuten Insightsin muutkin tyhjät osiot:
+    // pelkkä "ei valmistumisia" -lause oli kohinaa jokaisella aikavälillä.
+    if (state.completions.events.isEmpty()) return
     item(key = "completion_heading") {
         InsightsSectionHeader(title = stringResource(R.string.insights_completions_title))
         Text(completionCount(state.completions.events.size), style = MaterialTheme.typography.titleMedium)
     }
-    if (state.completions.events.isEmpty()) {
-        item(key = "completion_empty") {
-            Text(
-                stringResource(
-                    if (state.selectedProjectId ==
-                        null
-                    ) {
-                        R.string.insights_completions_empty
-                    } else {
-                        R.string.insights_completions_project_empty
-                    },
-                ),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-    } else {
-        if (state.completions.buckets.isNotEmpty()) {
-            item(key = "completion_timeline") { CompletionTimeline(state.completions.buckets) }
-        }
-        item(key = "completion_events") { CompletionHistory(state) }
+    if (state.completions.buckets.isNotEmpty()) {
+        item(key = "completion_timeline") { CompletionTimeline(state.completions.buckets) }
     }
+    item(key = "completion_events") { CompletionHistory(state) }
 }
 
 private const val COMPLETION_PREVIEW_LIMIT = 3

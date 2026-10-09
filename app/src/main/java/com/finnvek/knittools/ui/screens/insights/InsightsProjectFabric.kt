@@ -75,9 +75,18 @@ internal fun InsightsProjectFabric(
 
     BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
         val gap = InsightsDimens.ProjectFabricCellGap
-        val cellSize = (maxWidth - gap * (PROJECT_FABRIC_WEEK_COUNT - 1)) / PROJECT_FABRIC_WEEK_COUNT
-        val cellSizePx = with(density) { cellSize.toPx() }
         val gapPx = with(density) { gap.toPx() }
+        val maxCellPx = with(density) { InsightsDimens.ProjectFabricMaxCellSize.toPx() }
+        // Solut mitoitetaan näytettävien viikkojen mukaan: enimmäisviikkomäärällä muutaman viikon ruudukko
+        // jäi pieneksi vasempaan reunaan ja kuukausinimet porrastuivat päällekkäin.
+        val cellSizePx =
+            projectFabricCellSize(
+                availableWidth = with(density) { maxWidth.toPx() },
+                gap = gapPx,
+                columns = projectFabricColumnCount(model),
+                maxCellSize = maxCellPx,
+            )
+        val cellSize = with(density) { cellSizePx.toDp() }
         val monthLayouts =
             monthLabels.map {
                 textMeasurer.measure(
@@ -121,7 +130,7 @@ internal fun InsightsProjectFabric(
                 Modifier
                     .fillMaxWidth()
                     .height(canvasHeight)
-                    .pointerInput(model, monthLabelHeightPx, gapPx) {
+                    .pointerInput(model, monthLabelHeightPx, gapPx, maxCellPx) {
                         detectTapGestures { position ->
                             projectFabricDateAt(
                                 x = position.x,
@@ -130,6 +139,7 @@ internal fun InsightsProjectFabric(
                                 monthLabelHeight = monthLabelHeightPx,
                                 gap = gapPx,
                                 model = model,
+                                maxCellSize = maxCellPx,
                             )?.let(currentOnSelectDay)
                         }
                     }.clearAndSetSemantics {
@@ -293,15 +303,17 @@ internal fun projectFabricDateAt(
     monthLabelHeight: Float,
     gap: Float,
     model: InsightsProjectFabricModel,
+    maxCellSize: Float = Float.MAX_VALUE,
 ): LocalDate? {
     if (x < 0f || y < monthLabelHeight || availableWidth <= 0f || gap < 0f) return null
-    val cellSize = (availableWidth - (PROJECT_FABRIC_WEEK_COUNT - 1) * gap) / PROJECT_FABRIC_WEEK_COUNT
+    val columns = projectFabricColumnCount(model)
+    val cellSize = projectFabricCellSize(availableWidth, gap, columns, maxCellSize)
     if (cellSize <= 0f) return null
     val pitch = cellSize + gap
     val column = floor(x / pitch).toInt()
     val gridY = y - monthLabelHeight
     val row = floor(gridY / pitch).toInt()
-    if (column !in 0 until PROJECT_FABRIC_WEEK_COUNT || row !in 0 until DAYS_PER_WEEK) return null
+    if (column !in 0 until columns || row !in 0 until DAYS_PER_WEEK) return null
     if (x - column * pitch >= cellSize || gridY - row * pitch >= cellSize) return null
 
     val date = model.startDate.plusDays((column * DAYS_PER_WEEK + row).toLong())
@@ -309,6 +321,19 @@ internal fun projectFabricDateAt(
 }
 
 private const val DAYS_PER_WEEK = 7
+
+/** Näytettävien viikkosarakkeiden määrä: ruudukko alkaa ensimmäisen istunnon viikosta. */
+internal fun projectFabricColumnCount(model: InsightsProjectFabricModel): Int =
+    (ChronoUnit.DAYS.between(model.startDate, model.endDate).toInt() / DAYS_PER_WEEK + 1)
+        .coerceIn(1, PROJECT_FABRIC_WEEK_COUNT)
+
+/** Solun koko jaetaan sarakkeiden kesken, mutta lyhyellä jaksolla se ei kasva yli [maxCellSize]:n. */
+internal fun projectFabricCellSize(
+    availableWidth: Float,
+    gap: Float,
+    columns: Int,
+    maxCellSize: Float,
+): Float = ((availableWidth - (columns - 1) * gap) / columns).coerceAtMost(maxCellSize)
 
 internal fun projectFabricMonthLabelPositions(
     starts: List<Float>,

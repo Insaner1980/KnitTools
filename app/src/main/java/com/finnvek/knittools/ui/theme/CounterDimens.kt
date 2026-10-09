@@ -25,7 +25,6 @@ object CounterDimens {
 
     val HeroButtonSpacing = 64.dp
     val HeroButtonCompactSpacing = 8.dp
-    val CounterRowLabelFontSize = 25.sp
     val CounterMainNumberFontSize = 115.sp
     val CounterMainNumberMinimumFontSize = 48.sp
 

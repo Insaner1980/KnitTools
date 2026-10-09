@@ -159,7 +159,7 @@ class LayoutDetailsSourceTest {
         assertFalse(session.contains("Surface("))
         // Poisto rivin valikossa, ei punaisena roskakorina jokaisella rivillä.
         assertFalse(session.contains("colorScheme.error"))
-        assertTrue(session.contains("private fun SessionItemMenu("))
+        assertTrue(session.contains("RowOverflowMenu("))
     }
 
     @Test

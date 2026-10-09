@@ -1,49 +1,38 @@
 package com.finnvek.knittools.ui.screens.gauge
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material3.Button
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.role
-import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.dp
 import com.finnvek.knittools.R
+import com.finnvek.knittools.domain.model.MeasurementUnit
+import com.finnvek.knittools.ui.components.LabelWithInfo
 import com.finnvek.knittools.ui.components.NumberInputField
 import com.finnvek.knittools.ui.components.NumberInputOptions
 import com.finnvek.knittools.ui.components.ResultPlaceholder
 import com.finnvek.knittools.ui.components.SectionLabel
-import com.finnvek.knittools.ui.theme.knitToolsColors
+import com.finnvek.knittools.ui.components.SegmentedToggle
+import com.finnvek.knittools.ui.theme.ComponentDimens
 import java.util.Locale
 
+/**
+ * Gaugen valinnat ovat segmenttivalitsimia kuten muualla sovelluksessa: pudotusvalikko piilotti
+ * vaihtoehdot ja vaati kaksi napautusta. Testitunnisteet säilyvät muodossa "tag_option_n".
+ */
 @Composable
 internal fun <T> GaugeSelector(
     label: String,
@@ -53,71 +42,48 @@ internal fun <T> GaugeSelector(
     tag: String,
     modifier: Modifier = Modifier,
 ) {
-    var expanded by remember { mutableStateOf(false) }
     val focusManager = LocalFocusManager.current
-    val selectedLabel = choices.first { it.first == selectedValue }.second
-    BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
-        val menuWidth = maxWidth
-        Surface(
-            onClick = {
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(ComponentDimens.StandardSpacing),
+    ) {
+        LabelWithInfo(label = label, info = null)
+        SegmentedToggle(
+            options = choices.map { it.second },
+            selectedIndex = choices.indexOfFirst { it.first == selectedValue },
+            onSelect = { index ->
                 focusManager.clearFocus()
-                expanded = !expanded
+                onSelect(choices[index].first)
             },
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .heightIn(min = 48.dp)
-                    .testTag(tag)
-                    .semantics {
-                        role = Role.Button
-                        stateDescription = selectedLabel
-                    },
-            shape = MaterialTheme.shapes.medium,
-            color = MaterialTheme.knitToolsColors.cardContainer,
-        ) {
-            Row(
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text(
-                        label,
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Text(selectedLabel, style = MaterialTheme.typography.bodyLarge)
-                }
-                Icon(Icons.Default.KeyboardArrowDown, contentDescription = null)
-            }
-        }
-        DropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false },
-            modifier = Modifier.width(menuWidth),
-            containerColor = MaterialTheme.colorScheme.surface,
-            shape = MaterialTheme.shapes.medium,
-        ) {
-            choices.forEachIndexed { index, (value, text) ->
-                DropdownMenuItem(
-                    text = { Text(text, style = MaterialTheme.typography.bodyLarge) },
-                    onClick = {
-                        expanded = false
-                        onSelect(value)
-                    },
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .heightIn(min = 48.dp)
-                            .testTag(tag + "_option_" + index)
-                            .semantics { selected = value == selectedValue },
-                    trailingIcon = {
-                        if (value == selectedValue) Icon(Icons.Default.Check, contentDescription = null)
-                    },
-                )
-            }
-        }
+            modifier = Modifier.testTag(tag),
+            itemTestTagPrefix = tag,
+        )
     }
+}
+
+/**
+ * Esimerkkiarvo tyhjään kenttään kuten muissa laskimissa. Kokonaisluvut, jotta esimerkki ei
+ * riipu desimaalierottimesta; pituudet tuumina, kun kenttä on tuumissa.
+ */
+internal fun gaugeFieldExample(
+    field: GaugeField,
+    unit: MeasurementUnit?,
+): String {
+    val inches = unit == MeasurementUnit.INCH
+    val example =
+        when (field) {
+            GaugeField.CONVERSION -> 10
+            GaugeField.SWATCH_WIDTH, GaugeField.SWATCH_HEIGHT -> if (inches) 4 else 10
+            GaugeField.SWATCH_STITCHES, GaugeField.ACTUAL_STITCHES, GaugeField.PATTERN_STITCHES -> 22
+            GaugeField.SWATCH_ROWS, GaugeField.ACTUAL_ROWS, GaugeField.PATTERN_ROWS -> 30
+            GaugeField.PATTERN_STITCH_COUNT -> 96
+            GaugeField.PATTERN_ROW_COUNT -> 120
+            GaugeField.TARGET_WIDTH -> if (inches) 20 else 50
+            GaugeField.TARGET_HEIGHT -> if (inches) 24 else 60
+            GaugeField.STITCH_COUNT -> 110
+            GaugeField.ROW_COUNT -> 140
+        }
+    return example.toString()
 }
 
 @Composable
@@ -157,6 +123,7 @@ internal fun GaugeNumericField(
                     isLast = field in lastFields,
                     preserveRawInput = true,
                     allowZero = field == GaugeField.CONVERSION,
+                    placeholder = gaugeFieldExample(field, unit),
                 ),
             errorMessage = error,
             semanticLabel = spokenLabel,

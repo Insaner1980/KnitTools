@@ -48,7 +48,7 @@
     <string name="library_title">Bibliotek</string>
     <string name="saved_patterns_title">Sparade mönster</string>
     <string name="my_yarn_title">Mitt garn</string>
-    <string name="all_photos_title">Bilder</string>
+    <string name="all_photos_title">Framstegsbilder</string>
 
     <!-- Hub hero text -->
 
@@ -200,7 +200,7 @@
     <string name="select_yarn_card">Välj garnkort</string>
     <string name="linked_yarn_title">Länkat garn</string>
     <string name="no_linked_yarn">Inget garn länkat ännu</string>
-    <string name="choose_from_my_yarn">Välj från My Yarn</string>
+    <string name="choose_from_my_yarn">Välj från Mitt garn</string>
     <string name="choose_from_my_yarn_body">Välj ett sparat garn</string>
     <string name="add_yarn_to_project">Lägg till garn i detta projekt</string>
     <string name="add_yarn_to_project_body">Spara en snabb garnanteckning bara för detta projekt</string>
@@ -214,20 +214,20 @@
     <string name="change_yarn_photo">Byt garnfoto</string>
     <string name="manual_yarn_optional_details">Börja med ett namn. Märke, grovlek, färg och färgbad är valfria.</string>
     <string name="project_yarn_quantity_format">Antal: %d</string>
-    <string name="save_to_my_yarn">Spara i My Yarn</string>
-    <string name="saved_to_my_yarn">Sparat i My Yarn</string>
+    <string name="save_to_my_yarn">Spara i Mitt garn</string>
+    <string name="saved_to_my_yarn">Sparat i Mitt garn</string>
     <string name="save_to_my_yarn_explanation">Kopierar garnets namn, beskrivning och antal till ett garnkort i Mitt garn som länkas till det här projektet. Den här posten finns kvar här; anteckningarna kopieras inte.</string>
     <string name="saved_to_my_yarn_explanation">Den här projektposten förblir separat. Anteckningarna kopierades inte till garnkortet i Mitt garn.</string>
     <string name="yarn_count_format">%1$d garner</string>
     <string name="linked_project_label">Länkat projekt</string>
     <string name="remove_project_link">Ta bort länk</string>
     <string name="select_project">Välj projekt</string>
-    <string name="status_label">Status</string>
     <string name="quantity_label">Antal</string>
     <string name="status_in_stash">I lager</string>
     <string name="status_in_use">Används</string>
     <string name="status_finished">Slut</string>
     <string name="yarn_not_linked">Inte länkad</string>
+    <string name="yarn_card_project_format">Projekt: %1$s</string>
     <string name="yarn_details_title">Detaljer</string>
     <string name="yarn_details_empty_body">Märke, grovlek, färg och färgbad är valfria. Lägg bara till det som hjälper projektet.</string>
     <string name="delete_yarn_card_message">Ta bort detta garnkort? Detta kan inte ångras.</string>
@@ -252,7 +252,6 @@
     <string name="pattern_repeat">Mönsterrapport</string>
     <string name="notes">Anteckningar</string>
     <string name="add_note">Lägg till anteckning…</string>
-    <string name="notes_editor_title">Anteckningar — %1$s</string>
     <string name="write_your_notes_here">Skriv dina anteckningar här…</string>
 
 
@@ -268,6 +267,7 @@
     <string name="counter_decrease_row">Dra bort varv</string>
     <string name="counter_undo_last_change">Ångra senaste ändringen</string>
     <string name="counter_target_remaining_format">%1$s kvar</string>
+    <string name="counter_target_of_format">av %1$d</string>
     <string name="counter_target_reached">Mål uppnått</string>
     <string name="counter_target_past_format">%1$s över målet</string>
     <string name="project_content_add_pattern">Lägg till mönster</string>
@@ -323,7 +323,7 @@
 
     <!-- Yarn Estimator -->
     <string name="total_yarn_needed">Total garnåtgång</string>
-    <string name="yarn_per_skein">%s per nystan</string>
+    <string name="length_per_skein">Längd per nystan</string>
     <string name="weight_per_skein">Vikt per nystan</string>
     <string name="total_weight">Total vikt: %s g</string>
     <string name="estimated_skeins">Uppskattat: cirka %s nystan</string>
@@ -344,6 +344,7 @@
     <string name="settings_section_general">Allmänt</string>
     <string name="settings_theme">Tema</string>
     <string name="settings_section_pro">PRO</string>
+    <string name="settings_section_data">DATA</string>
     <string name="settings_section_info">INFO</string>
     <string name="settings_language">Appspråk</string>
     <string name="settings_language_change_hint">Ändringen gäller direkt</string>
@@ -382,8 +383,6 @@
 
     <!-- Yarn Card -->
     <string name="fiber_content">Fiberinnehåll</string>
-    <string name="weight_grams">Vikt (g)</string>
-    <string name="length_meters">Längd (m)</string>
     <string name="needle_size_label">Stickstorlek</string>
     <string name="gauge_label">Stickfasthet</string>
     <string name="color_name">Färgnamn</string>
@@ -392,6 +391,8 @@
     <string name="yarn_color_number_short">nr %1$s</string>
     <string name="yarn_dye_lot_short">Färgbad %1$s</string>
     <string name="weight_category">Grovlekskategori</string>
+    <string name="yarn_weight_other">Annan</string>
+    <string name="yarn_weight_ply_format">%1$s-trådig</string>
     <string name="care_symbols">Skötsel</string>
     <string name="no_saved_yarns">Inga garnkort sparade ännu</string>
 
@@ -461,8 +462,7 @@
     <string name="desc_all_photos">Framstegsbilder från alla dina projekt</string>
     <string name="empty_saved_patterns">Inga sparade mönster ännu.\nLägg till ett webbmönster eller importera en PDF.</string>
     <string name="empty_my_yarn">Inga garnanteckningar sparade ännu.</string>
-    <string name="empty_all_photos">Inga framstegsbilder ännu.</string>
-    <string name="filter_all">Alla</string>
+    <string name="empty_all_photos">Bilder du tar i dina projekt samlas här.</string>
 
     <!-- Insights -->
     <!-- Insights: kestot, hero ja kaavio -->
@@ -513,8 +513,8 @@
     <string name="insights_project_fabric_next_active_day">Nästa aktiva dag</string>
     <string name="insights_last_worked_format">Senast %1$s</string>
     <plurals name="insights_days_meta_format">
-        <item quantity="one">%1$d av %2$d dag</item>
-        <item quantity="other">%1$d av %2$d dagar</item>
+        <item quantity="one">Aktiv %1$d av %2$d dag</item>
+        <item quantity="other">Aktiv %1$d av %2$d dagar</item>
     </plurals>
     <string name="insights_chart_axis_today">idag</string>
     <string name="insights_chart_a11y_daily">Daglig tid för %1$s, %2$s, %3$s, längst %4$s</string>
@@ -645,7 +645,8 @@
         <item quantity="other">Ta bort %d garnkort?</item>
     </plurals>
     <string name="delete_yarn_card">Ta bort garnkort</string>
-    <string name="no_photos">Inga bilder ännu</string>
+    <string name="no_photos">Inga framstegsbilder ännu</string>
+    <string name="photo_gallery_empty_body">Bilder du tar av det här projektet visas här.</string>
     <string name="rename_photo">Byt namn på foto</string>
     <string name="photo_name_hint">t.ex. Ärm klar</string>
 
@@ -784,7 +785,7 @@
     <string name="pro_prompt_widget_title">Använd startskärmswidgeten med Pro</string>
     <string name="pro_prompt_widget_body">Startskärmswidgeten är en avancerad Pro-vy. Dina projekt- och räknardata finns kvar i KnitTools.</string>
     <string name="pro_badge">PRO</string><string name="pro_badge_locked_description">Pro-funktion</string><string name="pro_badge_trial_description">Pro-funktion, tillgänglig under provperioden</string>
-    <string name="knittools_pro">KnitTools Pro</string><string name="pro_content_stays_available">Allt du skapar finns kvar.</string><string name="pro_status_not_started">Inte startad</string>
+    <string name="knittools_pro">KnitTools Pro</string><string name="pro_content_stays_available">Allt du skapar finns kvar.</string>
     <plurals name="pro_status_trial_days"><item quantity="one">Provperiod, %1$d dag kvar</item><item quantity="other">Provperiod, %1$d dagar kvar</item></plurals>
     <string name="pro_status_trial_ended">Provperioden är slut</string><string name="pro_status_purchased">Köpt</string>
     <string name="pro_trial_ended_title">Din Pro-provperiod är slut</string><string name="pro_trial_ended_body">Allt du har skapat finns fortfarande kvar. Du kan fortsätta använda och redigera det. Pro krävs bara för nya Pro-objekt och avancerade vyer.</string><string name="pro_continue_free">Fortsätt gratis</string>
@@ -884,7 +885,8 @@
     <string name="folder_move_later">Flytta senare</string>
     <string name="folder_move_to">Flytta till mapp</string>
     <string name="folder_remove_from">Ta bort från mapp</string>
-    <string name="folder_move_selected_projects">Flytta valda projekt</string>
+    <string name="selection_action_move">Flytta</string>
+    <string name="selection_action_complete">Klar</string>
     <string name="folder_no_folders">Inga mappar</string>
     <string name="folder_empty">%1$s har inga projekt.</string>
     <string name="folder_no_unfiled">Inga projekt utan mapp</string>
@@ -947,7 +949,7 @@
     <string name="measurement_axis">Riktning</string>
     <string name="measurement_stitches_width">Maskor och bredd</string>
     <string name="measurement_rows_height">Varv och höjd</string>
-    <string name="measurement_units">Måttenheter</string>
+    <string name="gauge_stated_per">Masktäthet anges</string>
     <string name="measurement_from_unit">Från enhet</string>
     <string name="measurement_to_unit">Till enhet</string>
     <string name="measurement_value">Värde</string>
@@ -985,6 +987,7 @@
     <string name="measurement_project_context">Projekt: %1$s</string>
     <string name="measurement_estimate">Uppskattning utifrån angiven stickfasthet.</string>
     <string name="measurement_adjust_warning">Matematisk uppskattning utifrån angiven stickfasthet. Formning och konstruktion skrivs inte om. Rörelsevidd, mönsterrapporter, kanter, ärmhål, halsringning och ärmar kan behöva anpassas separat. Mät en tvättad eller blockad provlapp för en mer användbar uppskattning.</string>
+    <string name="measurement_adjust_warning_short">En uppskattning utifrån din masktäthet. Formningar kan behöva justeras separat.</string>
     <string name="measurement_swatch_hint">Mät provlappen efter tvätt eller blockning för en mer användbar uppskattning.</string>
     <string name="measurement_result">Resultat</string>
     <string name="measurement_value_unit_format">%1$s %2$s</string>
@@ -1087,8 +1090,6 @@
     <string name="web_pattern_project_unavailable">Projektet är inte längre tillgängligt</string>
     <string name="pattern_open_project_notes">Öppna projektanteckningar</string>
     <string name="insights_completions_title">Projektavslut</string>
-    <string name="insights_completions_empty">Inga avslut under perioden.</string>
-    <string name="insights_completions_project_empty">Inget avslut registrerat för detta projekt under perioden.</string>
     <string name="insights_completions_period">%1$s – %2$s</string>
     <plurals name="insights_completion_count">
         <item quantity="one">%d avslut</item>

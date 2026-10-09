@@ -48,7 +48,7 @@
     <string name="library_title">Bibliotek</string>
     <string name="saved_patterns_title">Gemte opskrifter</string>
     <string name="my_yarn_title">Mit garn</string>
-    <string name="all_photos_title">Billeder</string>
+    <string name="all_photos_title">Fremdriftsbilleder</string>
 
     <!-- Hub hero text -->
 
@@ -200,7 +200,7 @@
     <string name="select_yarn_card">Vælg garnkort</string>
     <string name="linked_yarn_title">Tilknyttet garn</string>
     <string name="no_linked_yarn">Intet garn tilknyttet endnu</string>
-    <string name="choose_from_my_yarn">Vælg fra My Yarn</string>
+    <string name="choose_from_my_yarn">Vælg fra Mit garn</string>
     <string name="choose_from_my_yarn_body">Vælg et allerede gemt garn</string>
     <string name="add_yarn_to_project">Tilføj garn til dette projekt</string>
     <string name="add_yarn_to_project_body">Gem en hurtig garnnote kun for dette projekt</string>
@@ -214,20 +214,20 @@
     <string name="change_yarn_photo">Skift garnfoto</string>
     <string name="manual_yarn_optional_details">Start med et navn. Mærke, tykkelse, farve og indfarvningsparti er valgfrie.</string>
     <string name="project_yarn_quantity_format">Antal: %d</string>
-    <string name="save_to_my_yarn">Gem i My Yarn</string>
-    <string name="saved_to_my_yarn">Gemt i My Yarn</string>
+    <string name="save_to_my_yarn">Gem i Mit garn</string>
+    <string name="saved_to_my_yarn">Gemt i Mit garn</string>
     <string name="save_to_my_yarn_explanation">Kopierer garnnavn, beskrivelse og antal til et garnkort i Mit garn, som knyttes til dette projekt. Denne post bliver her; noterne kopieres ikke.</string>
     <string name="saved_to_my_yarn_explanation">Denne projektpost forbliver separat. Noterne blev ikke kopieret til garnkortet i Mit garn.</string>
     <string name="yarn_count_format">%1$d garner</string>
     <string name="linked_project_label">Tilknyttet projekt</string>
     <string name="remove_project_link">Fjern kobling</string>
     <string name="select_project">Vælg projekt</string>
-    <string name="status_label">Status</string>
     <string name="quantity_label">Antal</string>
     <string name="status_in_stash">På lager</string>
     <string name="status_in_use">I brug</string>
     <string name="status_finished">Færdig</string>
     <string name="yarn_not_linked">Ikke knyttet</string>
+    <string name="yarn_card_project_format">Projekt: %1$s</string>
     <string name="yarn_details_title">Detaljer</string>
     <string name="yarn_details_empty_body">Mærke, tykkelse, farve og indfarvningsparti er valgfrie. Tilføj kun det, der hjælper dette projekt.</string>
     <string name="delete_yarn_card_message">Slette dette garnkort? Dette kan ikke fortrydes.</string>
@@ -252,7 +252,6 @@
     <string name="pattern_repeat">Mønsterrapport</string>
     <string name="notes">Noter</string>
     <string name="add_note">Tilføj note…</string>
-    <string name="notes_editor_title">Noter — %1$s</string>
     <string name="write_your_notes_here">Skriv dine noter her…</string>
 
 
@@ -268,6 +267,7 @@
     <string name="counter_decrease_row">Træk pind fra</string>
     <string name="counter_undo_last_change">Fortryd sidste ændring</string>
     <string name="counter_target_remaining_format">%1$s tilbage</string>
+    <string name="counter_target_of_format">af %1$d</string>
     <string name="counter_target_reached">Mål nået</string>
     <string name="counter_target_past_format">%1$s over målet</string>
     <string name="project_content_add_pattern">Tilføj opskrift</string>
@@ -323,7 +323,7 @@
 
     <!-- Yarn Estimator -->
     <string name="total_yarn_needed">Samlet garnbehov</string>
-    <string name="yarn_per_skein">%s pr. nøgle</string>
+    <string name="length_per_skein">Længde pr. nøgle</string>
     <string name="weight_per_skein">Vægt pr. nøgle</string>
     <string name="total_weight">Samlet vægt: %s g</string>
     <string name="estimated_skeins">Estimat: ca. %s nøgler</string>
@@ -344,6 +344,7 @@
     <string name="settings_section_general">Generelt</string>
     <string name="settings_theme">Tema</string>
     <string name="settings_section_pro">PRO</string>
+    <string name="settings_section_data">DATA</string>
     <string name="settings_section_info">INFO</string>
     <string name="settings_language">App-sprog</string>
     <string name="settings_language_change_hint">Ændringen gælder med det samme</string>
@@ -382,8 +383,6 @@
 
     <!-- Yarn Card -->
     <string name="fiber_content">Fiberindhold</string>
-    <string name="weight_grams">Vægt (g)</string>
-    <string name="length_meters">Længde (m)</string>
     <string name="needle_size_label">Pindestørrelse</string>
     <string name="gauge_label">Strikkefasthed</string>
     <string name="color_name">Farvenavn</string>
@@ -392,6 +391,8 @@
     <string name="yarn_color_number_short">nr. %1$s</string>
     <string name="yarn_dye_lot_short">Parti %1$s</string>
     <string name="weight_category">Tykkelseskategori</string>
+    <string name="yarn_weight_other">Anden</string>
+    <string name="yarn_weight_ply_format">%1$s-trådet</string>
     <string name="care_symbols">Pleje</string>
     <string name="no_saved_yarns">Ingen garnkort gemt endnu</string>
 
@@ -461,8 +462,7 @@
     <string name="desc_all_photos">Fremdriftsbilleder fra alle dine projekter</string>
     <string name="empty_saved_patterns">Ingen gemte opskrifter endnu.\nTilføj en webopskrift, eller importér en PDF.</string>
     <string name="empty_my_yarn">Ingen garnnoter gemt endnu.</string>
-    <string name="empty_all_photos">Ingen fremdriftsbilleder endnu.</string>
-    <string name="filter_all">Alle</string>
+    <string name="empty_all_photos">Billeder, du tager i dine projekter, samles her.</string>
 
     <!-- Insights -->
     <!-- Insights: kestot, hero ja kaavio -->
@@ -513,8 +513,8 @@
     <string name="insights_project_fabric_next_active_day">Næste aktive dag</string>
     <string name="insights_last_worked_format">Sidst arbejdet %1$s</string>
     <plurals name="insights_days_meta_format">
-        <item quantity="one">%1$d af %2$d dag</item>
-        <item quantity="other">%1$d af %2$d dage</item>
+        <item quantity="one">Aktiv %1$d af %2$d dag</item>
+        <item quantity="other">Aktiv %1$d af %2$d dage</item>
     </plurals>
     <string name="insights_chart_axis_today">i dag</string>
     <string name="insights_chart_a11y_daily">Daglig tid til %1$s, %2$s, %3$s, længst %4$s</string>
@@ -645,7 +645,8 @@
         <item quantity="other">Slette %d garnkort?</item>
     </plurals>
     <string name="delete_yarn_card">Slet garnkort</string>
-    <string name="no_photos">Ingen billeder endnu</string>
+    <string name="no_photos">Ingen fremdriftsbilleder endnu</string>
+    <string name="photo_gallery_empty_body">Billeder, du tager af dette projekt, vises her.</string>
     <string name="rename_photo">Omdøb billede</string>
     <string name="photo_name_hint">f.eks. Ærmet færdigt</string>
 
@@ -771,7 +772,7 @@
     <string name="pro_prompt_reminders_title">Tilføj en rækkepåmindelse med Pro</string><string name="pro_prompt_reminders_body">En ny rækkepåmindelse kræver Pro. Dine eksisterende påmindelser fungerer fortsat og kan redigeres.</string>
     <string name="pro_prompt_pattern_camera_title">Lav PDF af mønsterbilleder med Pro</string><string name="pro_prompt_pattern_camera_body">En ny PDF fra mønsterbilleder kræver Pro. Dine eksisterende mønstre og PDF-filer er fortsat tilgængelige.</string>
     <string name="pro_prompt_widget_title">Brug startskærmswidgetten med Pro</string><string name="pro_prompt_widget_body">Startskærmswidgetten er en avanceret Pro-visning. Dine projekt- og tællerdata er fortsat tilgængelige i KnitTools.</string>
-    <string name="pro_badge">PRO</string><string name="pro_badge_locked_description">Pro-funktion</string><string name="pro_badge_trial_description">Pro-funktion, tilgængelig i prøveperioden</string><string name="knittools_pro">KnitTools Pro</string><string name="pro_content_stays_available">Alt, du opretter, er fortsat tilgængeligt.</string><string name="pro_status_not_started">Ikke startet</string>
+    <string name="pro_badge">PRO</string><string name="pro_badge_locked_description">Pro-funktion</string><string name="pro_badge_trial_description">Pro-funktion, tilgængelig i prøveperioden</string><string name="knittools_pro">KnitTools Pro</string><string name="pro_content_stays_available">Alt, du opretter, er fortsat tilgængeligt.</string>
     <plurals name="pro_status_trial_days"><item quantity="one">Prøveperiode, %1$d dag tilbage</item><item quantity="other">Prøveperiode, %1$d dage tilbage</item></plurals>
     <string name="pro_status_trial_ended">Prøveperioden er slut</string><string name="pro_status_purchased">Købt</string><string name="pro_trial_ended_title">Din Pro-prøveperiode er slut</string><string name="pro_trial_ended_body">Alt, du har oprettet, er stadig tilgængeligt. Du kan fortsætte med at bruge og redigere det. Pro kræves kun til nye Pro-elementer og avancerede visninger.</string><string name="pro_continue_free">Fortsæt gratis</string>
     <string name="pro_page_intro">Giv hvert projekt mere plads, og hold din arbejdsgang samlet.</string><string name="pro_page_trust">Alt, du opretter, er fortsat tilgængeligt, selv når prøveperioden slutter.</string><string name="pro_group_projects_title">Projekter og materialer</string><string name="pro_group_projects_body">Arbejd på flere aktive projekter og opret den første projektnote, fremskridtsbilleder og garnkort.</string><string name="pro_group_workflow_title">Tælling og arbejdsgang</string><string name="pro_group_workflow_body">Brug den kompakte gentagelsestæller, ekstra-, gentagelses-, formnings- og sektionstællere, rækkepåmindelser, mønsterbilleder som PDF og startskærmswidgetten.</string><string name="pro_group_insights_title">Indsigt</string><string name="pro_group_insights_body">Se daglige, ugentlige og månedlige aktivitetsdiagrammer og din aktivitetsrække.</string>
@@ -867,7 +868,8 @@
     <string name="folder_move_later">Flyt senere</string>
     <string name="folder_move_to">Flyt til mappe</string>
     <string name="folder_remove_from">Fjern fra mappe</string>
-    <string name="folder_move_selected_projects">Flyt valgte projekter</string>
+    <string name="selection_action_move">Flyt</string>
+    <string name="selection_action_complete">Færdig</string>
     <string name="folder_no_folders">Ingen mapper</string>
     <string name="folder_empty">%1$s har ingen projekter.</string>
     <string name="folder_no_unfiled">Ingen projekter uden mappe</string>
@@ -930,7 +932,7 @@
     <string name="measurement_axis">Retning</string>
     <string name="measurement_stitches_width">Masker og bredde</string>
     <string name="measurement_rows_height">Pinde og højde</string>
-    <string name="measurement_units">Måleenheder</string>
+    <string name="gauge_stated_per">Strikkefasthed angivet</string>
     <string name="measurement_from_unit">Fra enhed</string>
     <string name="measurement_to_unit">Til enhed</string>
     <string name="measurement_value">Værdi</string>
@@ -968,6 +970,7 @@
     <string name="measurement_project_context">Projekt: %1$s</string>
     <string name="measurement_estimate">Estimat baseret på den indtastede strikkefasthed.</string>
     <string name="measurement_adjust_warning">Matematisk estimat baseret på den indtastede strikkefasthed. Formgivning og konstruktion omskrives ikke. Bevægelsesvidde, mønsterrapporter, kanter, ærmegab, halsudskæringer og ærmer kan kræve særskilt tilpasning. Mål en vasket eller blokket strikkeprøve for et mere brugbart estimat.</string>
+    <string name="measurement_adjust_warning_short">Et skøn ud fra din strikkefasthed. Formgivning kan kræve separat tilpasning.</string>
     <string name="measurement_swatch_hint">Mål strikkeprøven efter vask eller blokning for et mere brugbart estimat.</string>
     <string name="measurement_result">Resultat</string>
     <string name="measurement_value_unit_format">%1$s %2$s</string>
@@ -1070,8 +1073,6 @@
     <string name="web_pattern_project_unavailable">Projektet er ikke længere tilgængeligt</string>
     <string name="pattern_open_project_notes">Åbn projektnoter</string>
     <string name="insights_completions_title">Projektafslutninger</string>
-    <string name="insights_completions_empty">Ingen afslutninger i denne periode.</string>
-    <string name="insights_completions_project_empty">Ingen afslutning registreret for dette projekt i denne periode.</string>
     <string name="insights_completions_period">%1$s – %2$s</string>
     <plurals name="insights_completion_count">
         <item quantity="one">%d afslutning</item>

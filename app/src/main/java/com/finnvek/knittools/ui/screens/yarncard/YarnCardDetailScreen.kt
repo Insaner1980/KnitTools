@@ -3,25 +3,24 @@ package com.finnvek.knittools.ui.screens.yarncard
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SnackbarHost
@@ -39,7 +38,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.finnvek.knittools.R
@@ -53,16 +53,17 @@ import com.finnvek.knittools.ui.components.OverviewEmptyText
 import com.finnvek.knittools.ui.components.OverviewHeroPhoto
 import com.finnvek.knittools.ui.components.OverviewLinkRow
 import com.finnvek.knittools.ui.components.OverviewSectionHeader
-import com.finnvek.knittools.ui.components.SectionLabel
+import com.finnvek.knittools.ui.components.SegmentedToggle
+import com.finnvek.knittools.ui.components.SheetOptionRow
+import com.finnvek.knittools.ui.components.SheetTitle
 import com.finnvek.knittools.ui.components.ToolScreenScaffold
-import com.finnvek.knittools.ui.components.cardContainerColor
 import com.finnvek.knittools.ui.components.care.CareSymbol
 import com.finnvek.knittools.ui.components.care.CareSymbolIcon
 import com.finnvek.knittools.ui.components.care.hasCareSymbol
 import com.finnvek.knittools.ui.components.rememberScrollTitleState
 import com.finnvek.knittools.ui.components.skeinCountText
 import com.finnvek.knittools.ui.screens.library.ManualYarnCardSheet
-import com.finnvek.knittools.ui.screens.library.YarnStatusSheet
+import com.finnvek.knittools.ui.screens.library.yarnStatusOptions
 import com.finnvek.knittools.ui.screens.library.yarnStatusUi
 import com.finnvek.knittools.ui.theme.ProjectOverviewDimens
 import com.finnvek.knittools.ui.theme.knitToolsColors
@@ -85,7 +86,6 @@ fun YarnCardDetailScreen(
     val form by viewModel.formState.collectAsStateWithLifecycle()
     val linkedProjectName by viewModel.linkedProjectName.collectAsStateWithLifecycle()
     val availableProjects by viewModel.availableProjects.collectAsStateWithLifecycle()
-    var showStatusSheet by rememberSaveable { mutableStateOf(false) }
     var showProjectSheet by rememberSaveable { mutableStateOf(false) }
     var showDeleteDialog by rememberSaveable { mutableStateOf(false) }
     var showManualDetailsSheet by rememberSaveable { mutableStateOf(false) }
@@ -100,17 +100,6 @@ fun YarnCardDetailScreen(
                 }
             }
         }
-
-    if (showStatusSheet) {
-        YarnStatusSheet(
-            selectedStatus = form.status,
-            onSelect = {
-                viewModel.updateStatus(it)
-                showStatusSheet = false
-            },
-            onDismiss = { showStatusSheet = false },
-        )
-    }
 
     if (showProjectSheet) {
         LinkedProjectSheet(
@@ -132,6 +121,7 @@ fun YarnCardDetailScreen(
         ManualYarnCardSheet(
             initialInput = form.toManualYarnCardInput(),
             titleRes = R.string.edit_yarn_details,
+            bodyRes = null,
             onSave = { input ->
                 viewModel.updateManualDetails(input)
                 showManualDetailsSheet = false
@@ -173,7 +163,7 @@ fun YarnCardDetailScreen(
             onPickPhoto = {
                 yarnPhotoPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
             },
-            onStatusClick = { showStatusSheet = true },
+            onStatusChange = viewModel::updateStatus,
             onQuantityChange = viewModel::updateQuantity,
             onLinkedProjectClick = {
                 val projectId = form.linkedProjectId
@@ -215,7 +205,7 @@ fun YarnCardDetailScreen(
 
 private class YarnDetailContentActions(
     val onPickPhoto: () -> Unit,
-    val onStatusClick: () -> Unit,
+    val onStatusChange: (String) -> Unit,
     val onQuantityChange: (Int) -> Unit,
     val onLinkedProjectClick: () -> Unit,
     val onChangeProjectClick: () -> Unit,
@@ -255,7 +245,7 @@ private fun YarnCardDetailContent(
             YarnPhoto(photoUri = form.photoUri, onPickPhoto = actions.onPickPhoto)
             YarnIdentity(form = form)
         }
-        YarnStatusSection(status = form.status, onStatusClick = actions.onStatusClick)
+        YarnStatusToggle(status = form.status, onStatusChange = actions.onStatusChange)
         YarnQuantitySection(quantity = form.quantityInStash, onQuantityChange = actions.onQuantityChange)
         YarnLinkedProjectSection(
             linkedProjectName = linkedProjectName,
@@ -307,34 +297,23 @@ private fun YarnIdentity(form: YarnCardFormState) {
     }
 }
 
+/**
+ * Tila on nimen alla segmenttivalitsimena: omana osionaan otsikko ja pilleri veivät tilaa yhden arvon
+ * takia, ja sheetin kautta vaihto vaati kaksi napautusta.
+ */
 @Composable
-private fun YarnStatusSection(
+private fun YarnStatusToggle(
     status: String,
-    onStatusClick: () -> Unit,
+    onStatusChange: (String) -> Unit,
 ) {
-    OverviewSectionHeader(R.string.status_label, R.string.project_overview_edit, onStatusClick)
-    val statusUi = yarnStatusUi(status)
-    Box(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .heightIn(min = ProjectOverviewDimens.ActionTouchSize)
-                .clickable(role = Role.Button, onClick = onStatusClick),
-        contentAlignment = Alignment.CenterStart,
-    ) {
-        Text(
-            text = statusUi.label,
-            style = MaterialTheme.typography.labelMedium,
-            color = statusUi.contentColor,
-            modifier =
-                Modifier
-                    .background(statusUi.containerColor, CircleShape)
-                    .padding(
-                        horizontal = ProjectOverviewDimens.PillHorizontalPadding,
-                        vertical = ProjectOverviewDimens.ContentGap,
-                    ),
-        )
-    }
+    val options = yarnStatusOptions()
+    val selectedKey = yarnStatusUi(status).key
+    SegmentedToggle(
+        options = options.map { it.label },
+        selectedIndex = options.indexOfFirst { it.key == selectedKey }.coerceAtLeast(0),
+        onSelect = { index -> onStatusChange(options[index].key) },
+        modifier = Modifier.padding(top = ProjectOverviewDimens.HeaderTopGap),
+    )
 }
 
 /** Määrä on sivun ainoa usein muutettava arvo, joten se saa ison luvun ja laskurin 3D-napit. */
@@ -400,12 +379,13 @@ private fun YarnDetailsSection(
         listOf(
             stringResource(R.string.fiber_content) to form.fiberContent,
             stringResource(R.string.weight_category) to form.weightCategory,
-            stringResource(R.string.weight_grams) to
+            // Nimikkeessä ei toisteta yksikköä: arvo kertoo sen jo ("50 g").
+            stringResource(R.string.weight_per_skein) to
                 form.weightGrams
                     .takeIf { it.isNotBlank() }
                     ?.let { formatYarnMeasurement(it, "g") }
                     .orEmpty(),
-            stringResource(R.string.length_meters) to
+            stringResource(R.string.length_per_skein) to
                 form.lengthMeters
                     .takeIf { it.isNotBlank() }
                     ?.let { formatYarnMeasurement(it, "m") }
@@ -534,34 +514,35 @@ private fun LinkedProjectSheet(
             // CPD-ON
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            SectionLabel(text = stringResource(R.string.select_project))
+            SheetTitle(text = stringResource(R.string.select_project))
 
             projects.forEach { project ->
                 val isSelected = project.id == linkedProjectId
-                Row(
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .background(
-                                color = cardContainerColor(selected = isSelected),
-                                shape = MaterialTheme.shapes.medium,
-                            ).clickable { onSelectProject(project.id) }
-                            .padding(horizontal = 14.dp, vertical = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(
-                        text = project.name,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.weight(1f),
-                    )
-                }
+                // Valinta näkyy myös merkkinä: pelkkä sävyero ei erottunut tummassa teemassa.
+                SheetOptionRow(
+                    title = project.name,
+                    onClick = { onSelectProject(project.id) },
+                    modifier = Modifier.semantics { selected = isSelected },
+                    badge =
+                        if (isSelected) {
+                            {
+                                Icon(
+                                    imageVector = Icons.Filled.Check,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                )
+                            }
+                        } else {
+                            null
+                        },
+                )
             }
 
             if (linkedProjectId != null) {
                 TextButton(
                     onClick = onRemoveLink,
                     modifier = Modifier.align(Alignment.Start),
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
                 ) {
                     Text(stringResource(R.string.remove_project_link))
                 }

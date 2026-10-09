@@ -96,22 +96,30 @@ fun SheetTitle(
     )
 }
 
+/**
+ * Lomakkeen painikerivi: neutraali Cancel ja täytetty päätoiminto oikeassa reunassa. Jaettu myös
+ * sheeteille, jotka tarvitsevat oman runkonsa (esim. langan käytön editori), jotta painikkeet ovat
+ * kaikkialla samassa järjestyksessä eivätkä allekkain.
+ */
 @Composable
-private fun FormSheetActions(
+internal fun FormSheetActions(
     confirm: FormSheetConfirm,
     onCancel: () -> Unit,
-    cancelEnabled: Boolean,
+    modifier: Modifier = Modifier,
+    cancelEnabled: Boolean = true,
+    confirmModifier: Modifier = Modifier,
+    cancelModifier: Modifier = Modifier,
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(ComponentDimens.StandardSpacing, Alignment.End),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        CancelButton(onClick = onCancel, enabled = cancelEnabled)
+        CancelButton(onClick = onCancel, enabled = cancelEnabled, modifier = cancelModifier)
         Button(
             onClick = confirm.onClick,
             enabled = confirm.enabled && !confirm.busy,
-            modifier = Modifier.heightIn(min = ComponentDimens.FormSheetActionMinHeight),
+            modifier = confirmModifier.heightIn(min = ComponentDimens.FormSheetActionMinHeight),
         ) {
             if (confirm.busy) {
                 CircularProgressIndicator(modifier = Modifier.size(ComponentDimens.InfoIconSize))

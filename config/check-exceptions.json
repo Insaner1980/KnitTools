@@ -737,6 +737,7 @@
         "key = \"photo\"",
         "key = \"name\"",
         "key = \"progress\"",
+        "key = \"counter-history\"",
         "key = \"yarn\"",
         "key = \"pattern\"",
         "key = \"notes\"",

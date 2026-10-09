@@ -59,6 +59,7 @@ import com.finnvek.knittools.ui.components.InfoTip
 import com.finnvek.knittools.ui.components.LabelWithInfo
 import com.finnvek.knittools.ui.components.SectionLabel
 import com.finnvek.knittools.ui.components.SegmentedToggle
+import com.finnvek.knittools.ui.components.SheetTitle
 import com.finnvek.knittools.ui.platform.ExternalWebLinkOpenResult
 import com.finnvek.knittools.ui.platform.openExternalWebLink
 import com.finnvek.knittools.ui.theme.knitToolsColors
@@ -169,14 +170,17 @@ fun SettingsScreen(
                 )
             }
 
+            // Varmuuskopio on omien tietojen hallintaa, ei tietoa sovelluksesta.
             SettingsDivider()
-            SettingsSectionLabel(stringResource(R.string.settings_section_info))
+            SettingsSectionLabel(stringResource(R.string.settings_section_data))
 
             SettingsActionRow(
                 label = stringResource(R.string.backup_title),
                 onClick = onBackup,
             )
+
             SettingsDivider()
+            SettingsSectionLabel(stringResource(R.string.settings_section_info))
 
             SettingsActionRow(
                 label = stringResource(R.string.help_and_guide),
@@ -229,8 +233,9 @@ fun SettingsScreen(
 @Composable
 private fun com.finnvek.knittools.pro.ProState.settingsStatusText(): String =
     when (status) {
+        // Aloittamaton kokeilu kerrotaan toimintona: "Not started" luki oranssina virheenä tai rikkinäisenä linkkinä.
         ProStatus.TRIAL_NOT_STARTED -> {
-            stringResource(R.string.pro_status_not_started)
+            stringResource(R.string.pro_start_14_day_trial)
         }
 
         ProStatus.TRIAL_ACTIVE -> {
@@ -458,11 +463,7 @@ private fun LanguagePickerBottomSheet(
                     .verticalScroll(rememberScrollState())
                     .padding(bottom = 24.dp),
         ) {
-            Text(
-                text = stringResource(R.string.settings_language),
-                style = MaterialTheme.typography.titleLarge,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
+            SheetTitle(text = stringResource(R.string.settings_language))
             Spacer(modifier = Modifier.height(6.dp))
             Text(
                 text = stringResource(R.string.settings_language_change_hint),

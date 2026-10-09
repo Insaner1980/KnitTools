@@ -505,7 +505,7 @@ Settings owns app language, light/dark/system theme, haptic feedback, keep-scree
 | Pattern annotations | `PatternAnnotationViewModel.kt`, `PatternAnnotationToolbar.kt`, `PatternAnnotationOverlay.kt`, `PatternAnnotationLayerPanel.kt` |
 | Library hub | `ui/screens/library/LibraryScreen.kt`, `LibraryViewModel.kt`, `LibraryTopBar.kt` |
 | Saved patterns | `SavedPatternsScreen.kt`, `SavedPatternDetailScreen.kt`, `WebPatternEditorScreen.kt`, `WebPatternEditorViewModel.kt`, `ui/screens/pattern/PatternPickerSheet.kt`, `PatternImageImportViewModel.kt`, `PatternImageImportSurface.kt`, `ui/navigation/PatternShareCoordinatorViewModel.kt`, `ui/platform/ExternalWebLinkOpener.kt` |
-| Yarn inventory | `ui/screens/library/MyYarnScreen.kt`, `YarnStatusSheet.kt` |
+| Yarn inventory | `ui/screens/library/MyYarnScreen.kt`, `YarnStatusUi.kt` |
 | Yarn detail | `ui/screens/yarncard/YarnCardDetailScreen.kt` and its ViewModel |
 | All photos | `ui/screens/library/AllPhotosScreen.kt` |
 | Ravelry | `ui/screens/ravelry/RavelrySearchScreen.kt`, `RavelryDetailScreen.kt`, `RavelryViewModel.kt` |
@@ -1190,7 +1190,7 @@ Light palette preserves the same ID order but uses `#C45100`, `#70843C`, `#95792
 
 ### Typography
 
-The app uses the Outfit variable font with platform sans-serif fallback. The font family exposes Normal, Medium, SemiBold, Bold, and ExtraBold through font-variation settings.
+The app uses Barlow Semi Condensed (SIL OFL; license text in `assets/licenses/barlow_semi_condensed_ofl.txt`) as `KnitToolsFontFamily` with platform sans-serif fallback. Static Regular, Medium, SemiBold, Bold, and ExtraBold files back the Normal–ExtraBold weights. It replaced the wider Outfit so project names fit on one line.
 
 | Material role | Weight | Size | Letter spacing |
 |---|---:|---:|---:|

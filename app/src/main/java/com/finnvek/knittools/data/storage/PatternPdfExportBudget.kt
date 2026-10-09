@@ -8,6 +8,7 @@ import com.finnvek.knittools.domain.model.FreehandPayload
 import com.finnvek.knittools.domain.model.PatternAnnotation
 import com.finnvek.knittools.domain.model.ShapePayload
 import com.finnvek.knittools.domain.model.TextBoxPayload
+import java.io.FilterOutputStream
 import java.io.IOException
 import java.io.OutputStream
 
@@ -153,7 +154,7 @@ internal class PatternPdfExportBoundedOutputStream(
     private val output: OutputStream,
     private val maxBytes: Long,
     private val checkCancelled: () -> Unit = {},
-) : OutputStream() {
+) : FilterOutputStream(output) {
     private var writtenBytes = 0L
     private var limitExceeded = false
 
@@ -180,7 +181,7 @@ internal class PatternPdfExportBoundedOutputStream(
         writtenBytes += length.toLong()
     }
 
-    override fun flush() = output.flush()
+    override fun close() = Unit
 
     fun throwIfLimitExceeded() {
         if (limitExceeded) fail(PatternPdfExportLimitReason.OUTPUT_BYTES)

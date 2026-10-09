@@ -20,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -36,6 +37,7 @@ fun SegmentedToggle(
     selectedIndex: Int,
     onSelect: (Int) -> Unit,
     modifier: Modifier = Modifier,
+    itemTestTagPrefix: String? = null,
 ) {
     val isGrid = options.size > 3
     val expandedLabels = LocalDensity.current.fontScale >= 1.5f
@@ -58,6 +60,7 @@ fun SegmentedToggle(
                 selectedIndex = selectedIndex,
                 onSelect = onSelect,
                 itemShape = itemShape,
+                itemTestTagPrefix = itemTestTagPrefix,
             )
         } else {
             SegmentedTogglePill(
@@ -65,6 +68,7 @@ fun SegmentedToggle(
                 selectedIndex = selectedIndex,
                 onSelect = onSelect,
                 itemShape = itemShape,
+                itemTestTagPrefix = itemTestTagPrefix,
             )
         }
     }
@@ -76,6 +80,7 @@ private fun SegmentedToggleGrid(
     selectedIndex: Int,
     onSelect: (Int) -> Unit,
     itemShape: Shape,
+    itemTestTagPrefix: String?,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(ComponentDimens.CompactSpacing)) {
         for (rowStart in options.indices step 2) {
@@ -85,6 +90,7 @@ private fun SegmentedToggleGrid(
                 selectedIndex = selectedIndex,
                 onSelect = onSelect,
                 itemShape = itemShape,
+                itemTestTagPrefix = itemTestTagPrefix,
             )
         }
     }
@@ -97,6 +103,7 @@ private fun SegmentedToggleGridRow(
     selectedIndex: Int,
     onSelect: (Int) -> Unit,
     itemShape: Shape,
+    itemTestTagPrefix: String?,
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -107,7 +114,7 @@ private fun SegmentedToggleGridRow(
             isSelected = rowStart == selectedIndex,
             onClick = { onSelect(rowStart) },
             shape = itemShape,
-            modifier = Modifier.weight(1f),
+            modifier = Modifier.weight(1f).itemTestTag(itemTestTagPrefix, rowStart),
         )
         if (rowStart + 1 < options.size) {
             SegmentedToggleItem(
@@ -115,7 +122,7 @@ private fun SegmentedToggleGridRow(
                 isSelected = rowStart + 1 == selectedIndex,
                 onClick = { onSelect(rowStart + 1) },
                 shape = itemShape,
-                modifier = Modifier.weight(1f),
+                modifier = Modifier.weight(1f).itemTestTag(itemTestTagPrefix, rowStart + 1),
             )
         }
     }
@@ -127,6 +134,7 @@ private fun SegmentedTogglePill(
     selectedIndex: Int,
     onSelect: (Int) -> Unit,
     itemShape: Shape,
+    itemTestTagPrefix: String?,
 ) {
     Row(modifier = Modifier.fillMaxWidth()) {
         options.forEachIndexed { index, label ->
@@ -135,7 +143,7 @@ private fun SegmentedTogglePill(
                 isSelected = index == selectedIndex,
                 onClick = { onSelect(index) },
                 shape = itemShape,
-                modifier = Modifier.weight(1f),
+                modifier = Modifier.weight(1f).itemTestTag(itemTestTagPrefix, index),
             )
         }
     }
@@ -201,3 +209,9 @@ private fun SegmentedToggleItem(
         )
     }
 }
+
+// Laitetestien tunniste vaihtoehdolle: sama "_option_n"-muoto kuin aiemmissa pudotusvalikoissa.
+private fun Modifier.itemTestTag(
+    prefix: String?,
+    index: Int,
+): Modifier = if (prefix == null) this else testTag("${prefix}_option_$index")

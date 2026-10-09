@@ -132,17 +132,24 @@ class BackupRepository
                         }
                     }
                 } finally {
-                    withContext(NonCancellable) {
-                        operation.withLock {
-                            activeDirectories -= directory
-                            if (pending != directory) {
-                                if (latestSelectionId == selectionId) latestSelectionId = null
-                                directory.deleteRecursively()
-                            }
-                        }
+                    releasePreparation(directory, selectionId)
+                }
+            }
+
+        private suspend fun releasePreparation(
+            directory: File,
+            selectionId: UUID,
+        ) {
+            withContext(NonCancellable) {
+                operation.withLock {
+                    activeDirectories -= directory
+                    if (pending != directory) {
+                        if (latestSelectionId == selectionId) latestSelectionId = null
+                        directory.deleteRecursively()
                     }
                 }
             }
+        }
 
         suspend fun restore(selectionId: UUID) =
             withContext(ioDispatcher) {

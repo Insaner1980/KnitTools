@@ -14,20 +14,14 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -47,7 +41,9 @@ import com.finnvek.knittools.pro.ProState
 import com.finnvek.knittools.pro.ProStatus
 import com.finnvek.knittools.ui.components.StatusMessage
 import com.finnvek.knittools.ui.components.StatusMessageType
+import com.finnvek.knittools.ui.components.ToolScreenScaffold
 import com.finnvek.knittools.ui.findActivity
+import com.finnvek.knittools.ui.theme.ComponentDimens
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -67,21 +63,10 @@ fun ProUpgradeScreen(
     val isRestoring by viewModel.isRestoring.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
-    Scaffold(
-        containerColor = MaterialTheme.colorScheme.background,
-        topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.knittools_pro)) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(R.string.back),
-                        )
-                    }
-                },
-            )
-        },
+    // Sama läpinäkyvä yläpalkki kuin muissa näytöissä; oma TopAppBar sai vierittäessä sävytetyn pohjan.
+    ToolScreenScaffold(
+        title = stringResource(R.string.knittools_pro),
+        onBack = onBack,
     ) { padding ->
         Column(
             modifier =
@@ -267,7 +252,7 @@ private fun ProPurchaseSection(
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
-                    TextButton(onClick = onRetry) {
+                    TextButton(onClick = onRetry, contentPadding = ComponentDimens.FlushTextButtonPadding) {
                         Text(stringResource(R.string.retry))
                     }
                 }
@@ -300,6 +285,7 @@ private fun ProRestoreButton(
         onClick = onRestore,
         modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
         enabled = !isRestoring,
+        contentPadding = ComponentDimens.FlushTextButtonPadding,
     ) {
         if (isRestoring) {
             CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)

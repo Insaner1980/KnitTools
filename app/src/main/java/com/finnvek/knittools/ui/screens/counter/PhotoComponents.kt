@@ -111,7 +111,8 @@ fun PhotoViewer(
             modifier =
                 Modifier
                     .fillMaxSize()
-                    .background(MaterialTheme.colorScheme.scrim.copy(alpha = 0.9f)),
+                    // Täysin peittävä: 90 %:n peitolla alla näkyivät otsikko, alanavigaatio ja Ota kuva -pilleri.
+                    .background(MaterialTheme.colorScheme.scrim),
         ) {
             AsyncImage(
                 model = photo.photoUri.toUri(),

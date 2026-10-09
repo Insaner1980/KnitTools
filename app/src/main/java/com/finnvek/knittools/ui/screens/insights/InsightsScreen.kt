@@ -1,7 +1,6 @@
 package com.finnvek.knittools.ui.screens.insights
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -9,26 +8,18 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -37,31 +28,26 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.collapse
 import androidx.compose.ui.semantics.expand
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.calculator.DurationDisplayFormatter
 import com.finnvek.knittools.domain.calculator.formatIntegerForDisplay
 import com.finnvek.knittools.domain.model.CounterProject
-import com.finnvek.knittools.ui.components.DropdownIndicator
+import com.finnvek.knittools.ui.components.FilterMenuItem
 import com.finnvek.knittools.ui.components.HubListItem
+import com.finnvek.knittools.ui.components.ProjectFilterOption
+import com.finnvek.knittools.ui.components.ProjectFilterPill
 import com.finnvek.knittools.ui.components.ScreenTitleSelector
 import com.finnvek.knittools.ui.components.durationText
 import com.finnvek.knittools.ui.components.localizedDateTimePattern
 import com.finnvek.knittools.ui.components.rememberCurrentLocale
 import com.finnvek.knittools.ui.theme.InsightsDimens
-import com.finnvek.knittools.ui.theme.knitToolsColors
-import com.finnvek.knittools.ui.theme.yarnColorForId
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
@@ -182,7 +168,7 @@ private fun InsightsRangeTitle(
             containerColor = MaterialTheme.colorScheme.surface,
         ) {
             insightsRangeOptions.forEach { option ->
-                InsightsMenuItem(
+                FilterMenuItem(
                     label = stringResource(option.labelResource),
                     selected = option.range == uiState.timeRange,
                     onClick = {
@@ -218,9 +204,12 @@ private fun LazyListScope.insightsContent(
             onSelectProject = onSelectProject,
         )
     }
-    item { InsightsHero(state = uiState) }
-    item { InsightsStatsRow(state = uiState) }
-    item { InsightsTrendLine(state = uiState) }
+    // Tyhjällä aikavälillä iso "0 min" kertoi saman kuin tyhjän tilan lause alempana.
+    if (uiState.totalMinutes > 0) {
+        item { InsightsHero(state = uiState) }
+        item { InsightsStatsRow(state = uiState) }
+        item { InsightsTrendLine(state = uiState) }
+    }
 
     chartSection(
         uiState = uiState,
@@ -509,13 +498,21 @@ private fun InsightsContextRow(
                 modifier = Modifier.weight(1f, fill = false),
             )
             Spacer(modifier = Modifier.width(InsightsDimens.ContextRowGap))
-            InsightsProjectFilter(uiState = uiState, onSelectProject = onSelectProject)
+            ProjectFilterPill(
+                projects = uiState.projects.map { ProjectFilterOption(it.id, it.name) },
+                selectedProjectId = uiState.selectedProjectId,
+                onSelectProject = onSelectProject,
+            )
         }
     } else {
         // Yksin vasemmalla täytetty pilleri luki toisena otsikkona. Oikea yläkulma on
         // paikka jossa kontrollit asuvat, joten se lukee siellä suodattimena.
         Box(modifier = rowModifier, contentAlignment = Alignment.CenterEnd) {
-            InsightsProjectFilter(uiState = uiState, onSelectProject = onSelectProject)
+            ProjectFilterPill(
+                projects = uiState.projects.map { ProjectFilterOption(it.id, it.name) },
+                selectedProjectId = uiState.selectedProjectId,
+                onSelectProject = onSelectProject,
+            )
         }
     }
 }
@@ -532,178 +529,6 @@ private val insightsRangeOptions =
         InsightsRangeOption(TimeRange.THIS_MONTH, R.string.insights_this_month),
         InsightsRangeOption(TimeRange.ALL_TIME, R.string.insights_all_time),
     )
-
-/**
- * Projektisuodatin ei ole neljäs aikaväli, joten se ei koskaan saa täytettyä
- * primary-tyyliä: valittu projekti tunnistetaan omasta väripisteestään, joka on
- * sama väri kuin kaaviossa ja listassa.
- */
-@Composable
-private fun InsightsProjectFilter(
-    uiState: InsightsUiState,
-    onSelectProject: (Long?) -> Unit,
-) {
-    var showProjectPicker by remember { mutableStateOf(false) }
-    val allProjectsLabel = stringResource(R.string.all_projects)
-    val selectedId = uiState.selectedProjectId
-
-    Box {
-        Row(
-            modifier =
-                Modifier
-                    // Kosketuskohde tulee Composen omasta laajennuksesta, joten pilleri saa
-                    // olla visuaalisesti matalampi kuin 48 dp minimi. Täytetty 48 dp lohko
-                    // oli heron jälkeen näytön äänekkäin elementti.
-                    .minimumInteractiveComponentSize()
-                    .heightIn(min = InsightsDimens.FilterPillHeight)
-                    .clip(InsightsDimens.FilterChipShape)
-                    // Täytetty pinta ääriviivan sijaan, jotta suodatin ja segmenttivalitsin
-                    // ovat samaa pintakieltä eivätkä kahta eri levyistä ääriviivastadionia.
-                    .background(MaterialTheme.knitToolsColors.cardContainer)
-                    .clickable(role = Role.DropdownList) { showProjectPicker = !showProjectPicker }
-                    .semantics {
-                        if (showProjectPicker) {
-                            collapse {
-                                showProjectPicker = false
-                                true
-                            }
-                        } else {
-                            expand {
-                                showProjectPicker = true
-                                true
-                            }
-                        }
-                    }.padding(
-                        horizontal = InsightsDimens.FilterChipHorizontalPadding,
-                        vertical = InsightsDimens.FilterChipVerticalPadding,
-                    ),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            if (selectedId != null) {
-                Box(
-                    modifier =
-                        Modifier
-                            .size(InsightsDimens.FilterChipDotSize)
-                            .background(
-                                yarnColorForId(selectedId, MaterialTheme.knitToolsColors.yarnPalette),
-                                CircleShape,
-                            ),
-                )
-                Spacer(modifier = Modifier.width(InsightsDimens.FilterChipDotSpacing))
-            }
-            Text(
-                text = uiState.selectedProjectName ?: allProjectsLabel,
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f, fill = false),
-            )
-            DropdownIndicator(
-                modifier =
-                    Modifier
-                        .padding(start = InsightsDimens.FilterChipIndicatorSpacing)
-                        .size(InsightsDimens.FilterChipIndicatorSize),
-            )
-        }
-        DropdownMenu(
-            expanded = showProjectPicker,
-            onDismissRequest = { showProjectPicker = false },
-            // Vakio-Material-pinta oli näytön ainoa tyylittelemätön kohta.
-            shape = MaterialTheme.shapes.large,
-            containerColor = MaterialTheme.colorScheme.surface,
-        ) {
-            InsightsMenuItem(
-                label = allProjectsLabel,
-                selected = selectedId == null,
-                onClick = {
-                    onSelectProject(null)
-                    showProjectPicker = false
-                },
-                dotColor = null,
-                showsDot = true,
-            )
-            uiState.projects.forEach { project ->
-                InsightsMenuItem(
-                    label = project.name,
-                    selected = selectedId == project.id,
-                    onClick = {
-                        onSelectProject(project.id)
-                        showProjectPicker = false
-                    },
-                    dotColor = yarnColorForId(project.id, MaterialTheme.knitToolsColors.yarnPalette),
-                    showsDot = true,
-                )
-            }
-        }
-    }
-}
-
-/**
- * Valikkorivi. Valittu merkitään lihavoinnilla ja checkillä — ilman merkintää valikosta
- * ei nähnyt mikä on päällä.
- *
- * Teksti on `bodyMedium` eikä `bodyLarge`: isommalla koolla check söi leveyttä juuri
- * valitulta riviltä, jolloin ainoa katkeava nimi oli se jota eniten halusi lukea.
- */
-@Composable
-private fun InsightsMenuItem(
-    label: String,
-    selected: Boolean,
-    onClick: () -> Unit,
-    dotColor: Color? = null,
-    showsDot: Boolean = false,
-) {
-    DropdownMenuItem(
-        text = {
-            Text(
-                text = label,
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
-        },
-        leadingIcon =
-            if (showsDot) {
-                {
-                    Box(
-                        modifier = Modifier.size(InsightsDimens.FilterChipDotSize),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        // "Kaikki projektit" saa vaimean pienemmän pisteen: täysi
-                        // onSurfaceMuted luki kermalla yhtenä lankaväreistä.
-                        Box(
-                            modifier =
-                                Modifier
-                                    .size(
-                                        if (dotColor == null) {
-                                            InsightsDimens.MenuNeutralDotSize
-                                        } else {
-                                            InsightsDimens.FilterChipDotSize
-                                        },
-                                    ).background(
-                                        dotColor ?: MaterialTheme.colorScheme.outlineVariant,
-                                        CircleShape,
-                                    ),
-                        )
-                    }
-                }
-            } else {
-                null
-            },
-        trailingIcon = {
-            if (selected) {
-                Icon(
-                    imageVector = Icons.Filled.Check,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(InsightsDimens.FilterChipIndicatorSize),
-                )
-            }
-        },
-        onClick = onClick,
-    )
-}
 
 /**
  * Kaavio luetaan ruudunlukijalle yhtenä elementtinä: 31 nimeämätöntä pylvästä ei

@@ -12,6 +12,9 @@ object ProjectOverviewDimens {
     // Paikkamerkin neulepinta on taustaa: täydellä peitolla se kilpaili lisäyspillerin kanssa.
     const val PLACEHOLDER_FABRIC_ALPHA = 0.55f
 
+    // Kerratun langan säikeet ovat paikkamerkissä isoja, ja samalla peitolla ne lukivat renkaina.
+    const val PLACEHOLDER_YARN_FABRIC_ALPHA = 0.3f
+
     // Langan määrän 3D-napit: pienennetty laskurin nappi, kosketusalue pysyy 48 dp:nä.
     val StepperVisualSize = 44.dp
     val StepperTouchSize = 48.dp

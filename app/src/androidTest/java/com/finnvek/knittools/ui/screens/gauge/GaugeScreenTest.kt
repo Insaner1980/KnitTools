@@ -592,7 +592,7 @@ class GaugeScreenTest {
         tag: String,
         index: Int,
     ) {
-        composeRule.onNodeWithTag(tag).performScrollTo().performClick()
+        // Segmenttivalitsimen vaihtoehdot näkyvät suoraan, joten valikkoa ei avata ensin.
         composeRule.onNodeWithTag(tag + "_option_" + index).performScrollTo().performClick()
     }
 

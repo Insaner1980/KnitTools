@@ -4,7 +4,6 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -15,22 +14,15 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.outlined.AddCircle
-import androidx.compose.material.icons.outlined.DeleteOutline
-import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TextField
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -53,12 +45,17 @@ import com.finnvek.knittools.domain.model.RowReminder
 import com.finnvek.knittools.pro.ProStatus
 import com.finnvek.knittools.ui.components.CancelButton
 import com.finnvek.knittools.ui.components.ConfirmationDialog
+import com.finnvek.knittools.ui.components.LabeledTextField
 import com.finnvek.knittools.ui.components.NumberInputField
 import com.finnvek.knittools.ui.components.NumberInputOptions
+import com.finnvek.knittools.ui.components.OverviewTextAction
 import com.finnvek.knittools.ui.components.ProBadge
+import com.finnvek.knittools.ui.components.RowMenuAction
+import com.finnvek.knittools.ui.components.RowOverflowMenu
 import com.finnvek.knittools.ui.components.ScrollableFormDialog
 import com.finnvek.knittools.ui.components.SegmentedToggle
-import com.finnvek.knittools.ui.components.dialogTextFieldColors
+import com.finnvek.knittools.ui.components.SheetTitle
+import com.finnvek.knittools.ui.theme.ComponentDimens
 import com.finnvek.knittools.ui.theme.knitToolsColors
 import java.util.Locale
 
@@ -77,43 +74,27 @@ fun RemindersSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        containerColor = MaterialTheme.colorScheme.background,
-        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+        containerColor = MaterialTheme.colorScheme.surface,
     ) {
         Column(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .padding(start = 24.dp, end = 24.dp, bottom = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+                    .padding(horizontal = ComponentDimens.FormSheetHorizontalPadding)
+                    .padding(bottom = ComponentDimens.FormSheetBottomPadding),
+            verticalArrangement = Arrangement.spacedBy(ComponentDimens.FormSheetItemSpacing),
         ) {
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                Text(
-                    text = stringResource(R.string.reminders),
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
-                TextButton(onClick = onAdd) {
-                    Icon(
-                        imageVector = Icons.Outlined.AddCircle,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp),
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(stringResource(R.string.add_reminder), modifier = Modifier.weight(1f))
-                    Spacer(modifier = Modifier.width(6.dp))
-                    ProBadge(status = proStatus)
-                }
+            // Sama otsikko ja oikean reunan lisäystoiminto kuin muissa sheeteissä ja projektinäkymän osioissa.
+            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                SheetTitle(text = stringResource(R.string.reminders), modifier = Modifier.weight(1f))
+                ProBadge(status = proStatus)
+                OverviewTextAction(label = stringResource(R.string.project_overview_add), onClick = onAdd)
             }
             if (reminders.isEmpty()) {
                 Text(
                     text = stringResource(R.string.no_reminders),
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(vertical = 12.dp),
+                    color = MaterialTheme.knitToolsColors.emptyStateText,
                 )
             } else {
                 ReminderList(
@@ -214,6 +195,11 @@ fun ReminderList(
     }
 }
 
+/**
+ * Hiusviivarivi kuten istuntohistoriassa: viesti otsikkona, rivi ja toisto sen alla, muokkaus ja poisto
+ * ⋮-valikossa. Harmaa laatikko, toisto- ja pistekuvake sekä kynä ja roskakori jokaisella rivillä erosivat
+ * muista listoista.
+ */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun ReminderListItem(
@@ -223,73 +209,49 @@ private fun ReminderListItem(
     onClick: () -> Unit = {},
     onDeleteClick: () -> Unit = {},
 ) {
-    val isUpcoming = !reminder.isCompleted && reminder.targetRow <= currentRow + 5
-    val dotColor =
-        if (isUpcoming) {
-            MaterialTheme.colorScheme.primary
-        } else {
-            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
-        }
+    // Lähestyvä muistutus erottuu tekstin värillä eikä erillisellä pisteellä.
+    val isUpcoming = !reminder.isCompleted && reminder.targetRow <= currentRow + UPCOMING_ROW_WINDOW
+    val detail =
+        listOfNotNull(
+            stringResource(R.string.row_label_format, reminder.targetRow),
+            CounterValueFormatter.forReminderRepeat(reminder, currentRow)?.asText(),
+        ).joinToString(", ")
 
-    Row(
-        modifier =
-            modifier
-                .fillMaxWidth()
-                .combinedClickable(
-                    onClick = onClick,
-                    onLongClick = onDeleteClick,
-                ).background(MaterialTheme.colorScheme.surface)
-                .padding(horizontal = 4.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        if (reminder.repeatInterval != null) {
-            Icon(
-                imageVector = Icons.Filled.Refresh,
-                contentDescription = stringResource(R.string.repeating),
-                modifier = Modifier.size(16.dp),
-                tint = MaterialTheme.colorScheme.primary,
-            )
-        } else {
-            Box(
-                modifier =
-                    Modifier
-                        .size(10.dp)
-                        .clip(CircleShape)
-                        .background(dotColor),
-            )
-        }
-        Spacer(modifier = Modifier.width(12.dp))
-        Text(
-            text = stringResource(R.string.row_label_format, reminder.targetRow),
-            style = MaterialTheme.typography.bodySmall,
-            fontWeight = FontWeight.Medium,
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.width(56.dp),
-        )
-        Text(
-            text = reminder.message,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.weight(1f),
-        )
-        IconButton(onClick = onClick) {
-            Icon(
-                imageVector = Icons.Outlined.Edit,
-                contentDescription = stringResource(R.string.edit_reminder),
-                modifier = Modifier.size(18.dp),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+    Column(modifier = modifier.fillMaxWidth()) {
+        Row(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .combinedClickable(onClick = onClick, onLongClick = onDeleteClick)
+                    .padding(vertical = ComponentDimens.StandardSpacing),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(ComponentDimens.CompactSpacing),
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(text = reminder.message, style = MaterialTheme.typography.titleMedium)
+                Text(
+                    text = detail,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color =
+                        if (isUpcoming) {
+                            MaterialTheme.knitToolsColors.primaryReadable
+                        } else {
+                            MaterialTheme.knitToolsColors.onSurfaceMuted
+                        },
+                )
+            }
+            RowOverflowMenu(
+                listOf(
+                    RowMenuAction(stringResource(R.string.edit_reminder), onClick),
+                    RowMenuAction(stringResource(R.string.delete), onDeleteClick),
+                ),
             )
         }
-        IconButton(onClick = onDeleteClick) {
-            Icon(
-                imageVector = Icons.Outlined.DeleteOutline,
-                contentDescription = stringResource(R.string.delete),
-                modifier = Modifier.size(18.dp),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
+        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
     }
 }
+
+private const val UPCOMING_ROW_WINDOW = 5
 
 @Composable
 fun AddReminderDialog(
@@ -411,15 +373,12 @@ private fun ReminderDialogFields(
                 options = NumberInputOptions(suffix = stringResource(R.string.repeat_every_rows)),
             )
         }
-        TextField(
+        // Sama kehys kuin kerrosnumerolla: tumma dialogikenttä ja kentän sisäinen nimike näyttivät eri lomakkeelta.
+        LabeledTextField(
             value = form.message,
             onValueChange = onMessageChange,
-            label = { Text(stringResource(R.string.reminder_message)) },
-            placeholder = { Text(stringResource(R.string.reminder_message_hint)) },
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth(),
-            colors =
-                dialogTextFieldColors(),
+            label = stringResource(R.string.reminder_message),
+            placeholder = stringResource(R.string.reminder_message_hint),
         )
     }
 }

@@ -28,11 +28,11 @@ class UiConsistencySourceTest {
 
     @Test
     fun `screens use SectionLabel instead of private uppercase headers`() {
-        // Sallitut: laskurin projektinimi, toistolaskurin nimike ja Insightsin tilastosarakkeen nimike.
+        // Sallitut: toistolaskurin nimike ja Insightsin tilastosarakkeen nimike. Projektin nimeä ei muuteta
+        // versaaleiksi missään, myös laskurin yläpalkki näyttää sen kuten projektinäkymä.
         assertOnlyAllowed(
             Regex("""\.localizedUppercase\(\)"""),
             mapOf(
-                "counter/CounterScreen.kt" to 1,
                 "counter/CounterWorkspaceSections.kt" to 1,
                 "insights/InsightsSections.kt" to 1,
             ),

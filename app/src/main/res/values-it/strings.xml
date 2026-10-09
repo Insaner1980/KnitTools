@@ -48,7 +48,7 @@
     <string name="library_title">Libreria</string>
     <string name="saved_patterns_title">Modelli salvati</string>
     <string name="my_yarn_title">Il mio filato</string>
-    <string name="all_photos_title">Foto</string>
+    <string name="all_photos_title">Foto di avanzamento</string>
 
     <!-- Hub hero text -->
 
@@ -205,7 +205,7 @@
     <string name="select_yarn_card">Seleziona scheda filato</string>
     <string name="linked_yarn_title">Filato collegato</string>
     <string name="no_linked_yarn">Nessun filato collegato per ora</string>
-    <string name="choose_from_my_yarn">Scegli da My Yarn</string>
+    <string name="choose_from_my_yarn">Scegli dai miei filati</string>
     <string name="choose_from_my_yarn_body">Scegli un filato salvato</string>
     <string name="add_yarn_to_project">Aggiungi filato a questo progetto</string>
     <string name="add_yarn_to_project_body">Salva una nota rapida sul filato solo per questo progetto</string>
@@ -219,20 +219,20 @@
     <string name="change_yarn_photo">Cambia foto del filato</string>
     <string name="manual_yarn_optional_details">Inizia con un nome. Marca, spessore, colore e bagno sono facoltativi.</string>
     <string name="project_yarn_quantity_format">Quantità: %d</string>
-    <string name="save_to_my_yarn">Salva in My Yarn</string>
-    <string name="saved_to_my_yarn">Salvato in My Yarn</string>
+    <string name="save_to_my_yarn">Salva nei miei filati</string>
+    <string name="saved_to_my_yarn">Salvato nei miei filati</string>
     <string name="save_to_my_yarn_explanation">Copia il nome del filato, la descrizione e la quantità in una scheda nella sezione Il mio filato, collegata a questo progetto. Questa voce rimane qui; le note non vengono copiate.</string>
     <string name="saved_to_my_yarn_explanation">Questa voce del progetto rimane separata. Le note non sono state copiate nella scheda della sezione Il mio filato.</string>
     <string name="yarn_count_format">%1$d filati</string>
     <string name="linked_project_label">Progetto collegato</string>
     <string name="remove_project_link">Rimuovi collegamento</string>
     <string name="select_project">Seleziona progetto</string>
-    <string name="status_label">Stato</string>
     <string name="quantity_label">Quantità</string>
     <string name="status_in_stash">In scorta</string>
     <string name="status_in_use">In uso</string>
     <string name="status_finished">Terminato</string>
     <string name="yarn_not_linked">Non collegato</string>
+    <string name="yarn_card_project_format">Progetto: %1$s</string>
     <string name="yarn_details_title">Dettagli</string>
     <string name="yarn_details_empty_body">Marca, spessore, colore e bagno sono facoltativi. Aggiungi solo ciò che aiuta questo progetto.</string>
     <string name="delete_yarn_card_message">Eliminare questa scheda filato? Questa azione non può essere annullata.</string>
@@ -258,7 +258,6 @@
     <string name="pattern_repeat">Ripetizione del motivo</string>
     <string name="notes">Note</string>
     <string name="add_note">Aggiungi nota…</string>
-    <string name="notes_editor_title">Note — %1$s</string>
     <string name="write_your_notes_here">Scrivi qui le tue note…</string>
 
 
@@ -274,6 +273,7 @@
     <string name="counter_decrease_row">Togli ferro</string>
     <string name="counter_undo_last_change">Annulla l’ultima modifica</string>
     <string name="counter_target_remaining_format">Rimanenti: %1$s</string>
+    <string name="counter_target_of_format">su %1$d</string>
     <string name="counter_target_reached">Obiettivo raggiunto</string>
     <string name="counter_target_past_format">Oltre l’obiettivo: %1$s</string>
     <string name="project_content_add_pattern">Aggiungi modello</string>
@@ -331,7 +331,7 @@
 
     <!-- Yarn Estimator -->
     <string name="total_yarn_needed">Filato totale necessario</string>
-    <string name="yarn_per_skein">%s per gomitolo</string>
+    <string name="length_per_skein">Lunghezza per gomitolo</string>
     <string name="weight_per_skein">Peso per gomitolo</string>
     <string name="total_weight">Peso totale: %s g</string>
     <string name="estimated_skeins">Stima: circa %s gomitoli</string>
@@ -352,6 +352,7 @@
     <string name="settings_section_general">Generali</string>
     <string name="settings_theme">Tema</string>
     <string name="settings_section_pro">PRO</string>
+    <string name="settings_section_data">DATI</string>
     <string name="settings_section_info">INFO</string>
     <string name="settings_language">Lingua dell’app</string>
     <string name="settings_language_change_hint">La modifica si applica subito</string>
@@ -390,8 +391,6 @@
 
     <!-- Yarn Card -->
     <string name="fiber_content">Composizione</string>
-    <string name="weight_grams">Peso (g)</string>
-    <string name="length_meters">Lunghezza (m)</string>
     <string name="needle_size_label">Misura ferri</string>
     <string name="gauge_label">Campione</string>
     <string name="color_name">Nome colore</string>
@@ -400,6 +399,8 @@
     <string name="yarn_color_number_short">n. %1$s</string>
     <string name="yarn_dye_lot_short">Bagno %1$s</string>
     <string name="weight_category">Categoria spessore</string>
+    <string name="yarn_weight_other">Altro</string>
+    <string name="yarn_weight_ply_format">%1$s capi</string>
     <string name="care_symbols">Cura</string>
     <string name="no_saved_yarns">Nessuna scheda filato salvata per ora</string>
 
@@ -469,8 +470,7 @@
     <string name="desc_all_photos">Foto di avanzamento di tutti i tuoi progetti</string>
     <string name="empty_saved_patterns">Non ci sono ancora modelli salvati.\nAggiungi un modello web o importa un file PDF.</string>
     <string name="empty_my_yarn">Nessuna nota sul filato salvata per ora.</string>
-    <string name="empty_all_photos">Nessuna foto di avanzamento per ora.</string>
-    <string name="filter_all">Tutti</string>
+    <string name="empty_all_photos">Le foto scattate nei tuoi progetti compaiono qui.</string>
 
     <!-- Insights -->
     <!-- Insights: kestot, hero ja kaavio -->
@@ -526,9 +526,9 @@
     <string name="insights_project_fabric_next_active_day">Giorno attivo successivo</string>
     <string name="insights_last_worked_format">Ultima volta %1$s</string>
     <plurals name="insights_days_meta_format">
-        <item quantity="one">%1$d su %2$d giorno</item>
-        <item quantity="many">%1$d su %2$d giorni</item>
-        <item quantity="other">%1$d su %2$d giorni</item>
+        <item quantity="one">Attivo %1$d su %2$d giorno</item>
+        <item quantity="many">Attivo %1$d su %2$d giorni</item>
+        <item quantity="other">Attivo %1$d su %2$d giorni</item>
     </plurals>
     <string name="insights_chart_axis_today">oggi</string>
     <string name="insights_chart_a11y_daily">Tempo giornaliero per %1$s, %2$s, %3$s, il più lungo %4$s</string>
@@ -663,7 +663,8 @@
         <item quantity="other">Eliminare %d schede filato?</item>
     </plurals>
     <string name="delete_yarn_card">Elimina scheda filato</string>
-    <string name="no_photos">Nessuna foto per ora</string>
+    <string name="no_photos">Nessuna foto di avanzamento per ora</string>
+    <string name="photo_gallery_empty_body">Le foto che scatti di questo progetto compaiono qui.</string>
     <string name="rename_photo">Rinomina foto</string>
     <string name="photo_name_hint">es. Manica finita</string>
 
@@ -792,7 +793,7 @@
     <string name="pro_prompt_reminders_title">Aggiungi un promemoria di riga con Pro</string><string name="pro_prompt_reminders_body">Per creare un nuovo promemoria di riga è necessario Pro. I promemoria esistenti continuano a funzionare e rimangono modificabili.</string>
     <string name="pro_prompt_pattern_camera_title">Trasforma le foto del modello in PDF con Pro</string><string name="pro_prompt_pattern_camera_body">Per creare un nuovo PDF dalle foto del modello è necessario Pro. I modelli e i PDF esistenti rimangono disponibili.</string>
     <string name="pro_prompt_widget_title">Usa il widget della schermata Home con Pro</string><string name="pro_prompt_widget_body">Il widget della schermata Home è una vista Pro avanzata. I dati di progetti e contatori rimangono disponibili in KnitTools.</string>
-    <string name="pro_badge">PRO</string><string name="pro_badge_locked_description">Funzione Pro</string><string name="pro_badge_trial_description">Funzione Pro, disponibile durante la prova</string><string name="knittools_pro">KnitTools Pro</string><string name="pro_content_stays_available">Tutto ciò che crei rimane disponibile.</string><string name="pro_status_not_started">Non iniziata</string>
+    <string name="pro_badge">PRO</string><string name="pro_badge_locked_description">Funzione Pro</string><string name="pro_badge_trial_description">Funzione Pro, disponibile durante la prova</string><string name="knittools_pro">KnitTools Pro</string><string name="pro_content_stays_available">Tutto ciò che crei rimane disponibile.</string>
     <plurals name="pro_status_trial_days"><item quantity="one">Prova, %1$d giorno rimasto</item><item quantity="many">Prova, %1$d giorni rimasti</item><item quantity="other">Prova, %1$d giorni rimasti</item></plurals>
     <string name="pro_status_trial_ended">Prova terminata</string><string name="pro_status_purchased">Acquistato</string><string name="pro_trial_ended_title">La tua prova di Pro è terminata</string><string name="pro_trial_ended_body">Tutto ciò che hai creato è ancora disponibile. Puoi continuare a usarlo e modificarlo. Pro è richiesto solo per nuovi elementi Pro e viste avanzate.</string><string name="pro_continue_free">Continua gratuitamente</string>
     <string name="pro_page_intro">Dai più spazio a ogni progetto e mantieni unito il tuo flusso di lavoro.</string><string name="pro_page_trust">Tutto ciò che crei rimane disponibile anche al termine della prova.</string><string name="pro_group_projects_title">Progetti e materiali</string><string name="pro_group_projects_body">Lavora a più progetti attivi e crea la prima nota del progetto, foto dei progressi e schede filato.</string><string name="pro_group_workflow_title">Conteggio e flusso di lavoro</string><string name="pro_group_workflow_body">Usa il contatore compatto di ripetizioni, i contatori aggiuntivi, di ripetizione, sagomatura e sezione, i promemoria di riga, le foto del modello come PDF e il widget della schermata Home.</string><string name="pro_group_insights_title">Statistiche</string><string name="pro_group_insights_body">Consulta i grafici di attività giornalieri, settimanali e mensili e la tua serie di attività.</string>
@@ -888,7 +889,8 @@
     <string name="folder_move_later">Sposta dopo</string>
     <string name="folder_move_to">Sposta nella cartella</string>
     <string name="folder_remove_from">Rimuovi dalla cartella</string>
-    <string name="folder_move_selected_projects">Sposta progetti selezionati</string>
+    <string name="selection_action_move">Sposta</string>
+    <string name="selection_action_complete">Completa</string>
     <string name="folder_no_folders">Nessuna cartella</string>
     <string name="folder_empty">%1$s non contiene progetti.</string>
     <string name="folder_no_unfiled">Nessun progetto senza cartella</string>
@@ -955,7 +957,7 @@
     <string name="measurement_axis">Direzione</string>
     <string name="measurement_stitches_width">Maglie e larghezza</string>
     <string name="measurement_rows_height">Ferri e altezza</string>
-    <string name="measurement_units">Unità di misura</string>
+    <string name="gauge_stated_per">Campione indicato</string>
     <string name="measurement_from_unit">Unità di partenza</string>
     <string name="measurement_to_unit">Unità di arrivo</string>
     <string name="measurement_value">Valore</string>
@@ -993,6 +995,7 @@
     <string name="measurement_project_context">Progetto: %1$s</string>
     <string name="measurement_estimate">Stima basata sulla tensione inserita.</string>
     <string name="measurement_adjust_warning">Stima matematica basata sulla tensione inserita. La sagomatura e la costruzione non vengono riscritte. Agio, ripetizioni del motivo, bordi, giromanica, scolli e maniche possono richiedere adattamenti separati. Misura un campione lavato o bloccato per una stima più utile.</string>
+    <string name="measurement_adjust_warning_short">Una stima basata sul tuo campione. Le sagomature potrebbero richiedere un adattamento separato.</string>
     <string name="measurement_swatch_hint">Per una stima più utile, misura il campione dopo averlo lavato o bloccato.</string>
     <string name="measurement_result">Risultato</string>
     <string name="measurement_value_unit_format">%1$s %2$s</string>
@@ -1098,8 +1101,6 @@
     <string name="web_pattern_project_unavailable">Il progetto non è più disponibile</string>
     <string name="pattern_open_project_notes">Apri le note del progetto</string>
     <string name="insights_completions_title">Completamenti dei progetti</string>
-    <string name="insights_completions_empty">Nessun completamento in questo periodo.</string>
-    <string name="insights_completions_project_empty">Nessun completamento registrato per questo progetto in questo periodo.</string>
     <string name="insights_completions_period">%1$s – %2$s</string>
     <plurals name="insights_completion_count">
         <item quantity="one">%d completamento</item>

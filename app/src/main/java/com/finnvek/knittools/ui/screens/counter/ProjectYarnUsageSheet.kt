@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -38,10 +37,15 @@ import com.finnvek.knittools.domain.calculator.MeasurementNumberError
 import com.finnvek.knittools.domain.model.YarnUsageUnit
 import com.finnvek.knittools.repository.YarnUsageResult
 import com.finnvek.knittools.ui.components.CancelButton
+import com.finnvek.knittools.ui.components.FormSheetActions
+import com.finnvek.knittools.ui.components.FormSheetConfirm
+import com.finnvek.knittools.ui.components.LabelWithInfo
 import com.finnvek.knittools.ui.components.NumberInputField
 import com.finnvek.knittools.ui.components.NumberInputOptions
+import com.finnvek.knittools.ui.components.SegmentedToggle
+import com.finnvek.knittools.ui.components.SheetTitle
 import com.finnvek.knittools.ui.components.rememberCurrentLocale
-import com.finnvek.knittools.ui.screens.gauge.GaugeSelector
+import com.finnvek.knittools.ui.theme.ComponentDimens
 import java.util.Locale
 
 data class YarnUsageEditorActions(
@@ -79,14 +83,15 @@ fun ProjectYarnUsageSheet(
                     .fillMaxWidth()
                     .verticalScroll(rememberScrollState())
                     .imePadding()
-                    .padding(horizontal = 20.dp)
-                    .padding(bottom = 32.dp)
+                    .padding(horizontal = ComponentDimens.FormSheetHorizontalPadding)
+                    .padding(bottom = ComponentDimens.FormSheetBottomPadding)
                     .testTag("yarn_usage_editor"),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(ComponentDimens.FormSheetItemSpacing),
         ) {
-            Text(
-                stringResource(R.string.yarn_usage_title),
-                style = MaterialTheme.typography.titleLarge,
+            // Sama otsikko ja painikerivi kuin jaetussa FormSheetissä; oma runko vain otsikon kohdistuksen,
+            // ulkoisen sheet-tilan ja poistotoiminnon vuoksi.
+            SheetTitle(
+                text = stringResource(R.string.yarn_usage_title),
                 modifier =
                     Modifier
                         .focusRequester(
@@ -97,12 +102,15 @@ fun ProjectYarnUsageSheet(
             )
             Text(draft.name, style = MaterialTheme.typography.bodyLarge)
             Text(stringResource(R.string.yarn_usage_scope), style = MaterialTheme.typography.bodySmall)
-            GaugeSelector(
-                label = stringResource(R.string.yarn_usage_unit),
-                selectedValue = draft.unit,
-                choices = YarnUsageUnit.entries.map { it to stringResource(it.titleResource()) },
-                onSelect = actions.onUnit,
-                tag = "yarn_usage_unit",
+            // Valinta on segmenttivalitsin kuten muissa lomakkeissa, ei pudotusvalikko.
+            LabelWithInfo(label = stringResource(R.string.yarn_usage_unit), info = null)
+            val units = YarnUsageUnit.entries
+            SegmentedToggle(
+                options = units.map { stringResource(it.titleResource()) },
+                selectedIndex = units.indexOf(draft.unit),
+                onSelect = { actions.onUnit(units[it]) },
+                modifier = Modifier.testTag("yarn_usage_unit"),
+                itemTestTagPrefix = "yarn_usage_unit",
             )
             if (!draft.canSwitch) {
                 Text(
@@ -154,13 +162,6 @@ fun ProjectYarnUsageSheet(
                     color = MaterialTheme.colorScheme.error,
                 )
             }
-            Button(
-                onClick = actions.onSave,
-                enabled = draft.canSave && !state.busy && !state.completed,
-                modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("yarn_usage_save"),
-            ) {
-                Text(stringResource(R.string.save))
-            }
             if (draft.usageId != null) {
                 val description = stringResource(R.string.yarn_usage_delete_named, draft.name)
                 TextButton(
@@ -175,10 +176,18 @@ fun ProjectYarnUsageSheet(
                     Text(stringResource(R.string.yarn_usage_delete))
                 }
             }
-            CancelButton(
-                onClick = actions.onDismiss,
-                enabled = !state.busy,
-                modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("yarn_usage_cancel"),
+            FormSheetActions(
+                confirm =
+                    FormSheetConfirm(
+                        text = stringResource(R.string.save),
+                        onClick = actions.onSave,
+                        enabled = draft.canSave && !state.completed,
+                        busy = state.busy,
+                    ),
+                onCancel = actions.onDismiss,
+                cancelEnabled = !state.busy,
+                confirmModifier = Modifier.testTag("yarn_usage_save"),
+                cancelModifier = Modifier.heightIn(min = 48.dp).testTag("yarn_usage_cancel"),
             )
         }
     }

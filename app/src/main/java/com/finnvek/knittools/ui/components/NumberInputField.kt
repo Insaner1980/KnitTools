@@ -71,7 +71,6 @@ fun NumberInputField(
     val focusManager = LocalFocusManager.current
     val interactionSource = remember { MutableInteractionSource() }
     val isFocused by interactionSource.collectIsFocusedAsState()
-    val inputFieldShape = RoundedCornerShape(14.dp)
     val locale = rememberCurrentLocale()
     var hasFocused by remember { mutableStateOf(false) }
     var hasBlurred by remember { mutableStateOf(false) }
@@ -135,21 +134,7 @@ fun NumberInputField(
                     .fillMaxWidth()
                     .heightIn(min = 48.dp)
                     .then(
-                        if (options.preserveRawInput) {
-                            Modifier
-                        } else {
-                            Modifier.border(
-                                1.dp,
-                                MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
-                                inputFieldShape,
-                            )
-                        },
-                    ).then(
-                        if (isFocused && !options.preserveRawInput) {
-                            Modifier.border(2.dp, MaterialTheme.colorScheme.primaryContainer, inputFieldShape)
-                        } else {
-                            Modifier
-                        },
+                        if (options.preserveRawInput) Modifier else Modifier.inputFieldBorder(isFocused),
                     ).semantics {
                         contentDescription = semanticLabel ?: label
                         displayedError?.let { error(it) }
@@ -190,19 +175,74 @@ fun NumberInputField(
                         )
                     }
                 },
-            shape = inputFieldShape,
-            colors =
-                TextFieldDefaults.colors(
-                    focusedContainerColor = MaterialTheme.knitToolsColors.inputFieldContainer,
-                    unfocusedContainerColor = MaterialTheme.knitToolsColors.inputFieldContainer,
-                    focusedIndicatorColor = Color.Transparent,
-                    unfocusedIndicatorColor = Color.Transparent,
-                    disabledIndicatorColor = Color.Transparent,
-                ),
+            shape = InputFieldShape,
+            colors = inputFieldColors(),
             interactionSource = interactionSource,
         )
     }
 }
+
+/**
+ * Tekstikenttä samassa kehyksessä kuin [NumberInputField]: nimike kentän yläpuolella, sama pinta,
+ * reunus ja muoto. Samassa lomakkeessa olevat teksti- ja numerokentät näyttävät näin samalta.
+ */
+@Composable
+fun LabeledTextField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    label: String,
+    modifier: Modifier = Modifier,
+    placeholder: String? = null,
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isFocused by interactionSource.collectIsFocusedAsState()
+    Column(modifier = modifier) {
+        LabelWithInfo(label = label, info = null)
+        Spacer(modifier = Modifier.height(8.dp))
+        TextField(
+            value = value,
+            onValueChange = onValueChange,
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 48.dp)
+                    .inputFieldBorder(isFocused)
+                    .semantics { contentDescription = label },
+            placeholder =
+                placeholder?.let { example ->
+                    { Text(example, color = MaterialTheme.knitToolsColors.fieldPlaceholderText) }
+                },
+            textStyle = MaterialTheme.typography.titleSmall,
+            singleLine = true,
+            shape = InputFieldShape,
+            colors = inputFieldColors(),
+            interactionSource = interactionSource,
+        )
+    }
+}
+
+private val InputFieldShape = RoundedCornerShape(14.dp)
+
+@Composable
+private fun Modifier.inputFieldBorder(isFocused: Boolean): Modifier =
+    border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f), InputFieldShape)
+        .then(
+            if (isFocused) {
+                Modifier.border(2.dp, MaterialTheme.colorScheme.primaryContainer, InputFieldShape)
+            } else {
+                Modifier
+            },
+        )
+
+@Composable
+private fun inputFieldColors() =
+    TextFieldDefaults.colors(
+        focusedContainerColor = MaterialTheme.knitToolsColors.inputFieldContainer,
+        unfocusedContainerColor = MaterialTheme.knitToolsColors.inputFieldContainer,
+        focusedIndicatorColor = Color.Transparent,
+        unfocusedIndicatorColor = Color.Transparent,
+        disabledIndicatorColor = Color.Transparent,
+    )
 
 internal fun localizeDecimalSeparatorForDisplay(
     value: String,

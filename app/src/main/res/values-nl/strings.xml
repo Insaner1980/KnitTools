@@ -48,7 +48,7 @@
     <string name="library_title">Bibliotheek</string>
     <string name="saved_patterns_title">Opgeslagen patronen</string>
     <string name="my_yarn_title">Mijn garen</string>
-    <string name="all_photos_title">Foto\'s</string>
+    <string name="all_photos_title">Voortgangsfoto\'s</string>
 
     <!-- Hub hero text -->
 
@@ -200,7 +200,7 @@
     <string name="select_yarn_card">Garenkaart selecteren</string>
     <string name="linked_yarn_title">Gekoppeld garen</string>
     <string name="no_linked_yarn">Nog geen garen gekoppeld</string>
-    <string name="choose_from_my_yarn">Kiezen uit My Yarn</string>
+    <string name="choose_from_my_yarn">Kiezen uit Mijn garen</string>
     <string name="choose_from_my_yarn_body">Kies een opgeslagen garen</string>
     <string name="add_yarn_to_project">Garen aan dit project toevoegen</string>
     <string name="add_yarn_to_project_body">Sla een snelle garennotitie alleen voor dit project op</string>
@@ -214,20 +214,20 @@
     <string name="change_yarn_photo">Garenfoto wijzigen</string>
     <string name="manual_yarn_optional_details">Begin met een naam. Merk, garendikte, kleur en verfbad zijn optioneel.</string>
     <string name="project_yarn_quantity_format">Aantal: %d</string>
-    <string name="save_to_my_yarn">Opslaan in My Yarn</string>
-    <string name="saved_to_my_yarn">Opgeslagen in My Yarn</string>
+    <string name="save_to_my_yarn">Opslaan in Mijn garen</string>
+    <string name="saved_to_my_yarn">Opgeslagen in Mijn garen</string>
     <string name="save_to_my_yarn_explanation">Kopieert de garennaam, beschrijving en hoeveelheid naar een garenkaart in Mijn garen die aan dit project is gekoppeld. Deze vermelding blijft hier; de notities worden niet gekopieerd.</string>
     <string name="saved_to_my_yarn_explanation">Deze projectvermelding blijft apart bestaan. De notities zijn niet naar de garenkaart in Mijn garen gekopieerd.</string>
     <string name="yarn_count_format">%1$d garens</string>
     <string name="linked_project_label">Gekoppeld project</string>
     <string name="remove_project_link">Koppeling verwijderen</string>
     <string name="select_project">Project selecteren</string>
-    <string name="status_label">Status</string>
     <string name="quantity_label">Aantal</string>
     <string name="status_in_stash">In voorraad</string>
     <string name="status_in_use">In gebruik</string>
     <string name="status_finished">Op</string>
     <string name="yarn_not_linked">Niet gekoppeld</string>
+    <string name="yarn_card_project_format">Project: %1$s</string>
     <string name="yarn_details_title">Details</string>
     <string name="yarn_details_empty_body">Merk, garendikte, kleur en verfbad zijn optioneel. Voeg alleen toe wat dit project helpt.</string>
     <string name="delete_yarn_card_message">Deze garenkaart verwijderen? Dit kan niet ongedaan worden gemaakt.</string>
@@ -252,7 +252,6 @@
     <string name="pattern_repeat">Patroonherhaling</string>
     <string name="notes">Notities</string>
     <string name="add_note">Notitie toevoegen…</string>
-    <string name="notes_editor_title">Notities — %1$s</string>
     <string name="write_your_notes_here">Schrijf hier je notities…</string>
 
 
@@ -268,6 +267,7 @@
     <string name="counter_decrease_row">Toer aftrekken</string>
     <string name="counter_undo_last_change">Laatste wijziging ongedaan maken</string>
     <string name="counter_target_remaining_format">Nog %1$s</string>
+    <string name="counter_target_of_format">van %1$d</string>
     <string name="counter_target_reached">Doel bereikt</string>
     <string name="counter_target_past_format">%1$s voorbij doel</string>
     <string name="project_content_add_pattern">Patroon toevoegen</string>
@@ -323,7 +323,7 @@
 
     <!-- Yarn Estimator -->
     <string name="total_yarn_needed">Totaal benodigd garen</string>
-    <string name="yarn_per_skein">%s per streng</string>
+    <string name="length_per_skein">Lengte per streng</string>
     <string name="weight_per_skein">Gewicht per streng</string>
     <string name="total_weight">Totaal gewicht: %s g</string>
     <string name="estimated_skeins">Schatting: ongeveer %s strengen</string>
@@ -344,6 +344,7 @@
     <string name="settings_section_general">Algemeen</string>
     <string name="settings_theme">Thema</string>
     <string name="settings_section_pro">PRO</string>
+    <string name="settings_section_data">GEGEVENS</string>
     <string name="settings_section_info">INFO</string>
     <string name="settings_language">App-taal</string>
     <string name="settings_language_change_hint">De wijziging geldt meteen</string>
@@ -382,8 +383,6 @@
 
     <!-- Yarn Card -->
     <string name="fiber_content">Samenstelling</string>
-    <string name="weight_grams">Gewicht (g)</string>
-    <string name="length_meters">Lengte (m)</string>
     <string name="needle_size_label">Naaldmaat</string>
     <string name="gauge_label">Stekenproef</string>
     <string name="color_name">Kleurnaam</string>
@@ -392,6 +391,8 @@
     <string name="yarn_color_number_short">nr. %1$s</string>
     <string name="yarn_dye_lot_short">Verfbad %1$s</string>
     <string name="weight_category">Garendikte</string>
+    <string name="yarn_weight_other">Anders</string>
+    <string name="yarn_weight_ply_format">%1$s-draads</string>
     <string name="care_symbols">Onderhoud</string>
     <string name="no_saved_yarns">Nog geen garenkaarten opgeslagen</string>
 
@@ -461,8 +462,7 @@
     <string name="desc_all_photos">Voortgangsfoto\'s van al je projecten</string>
     <string name="empty_saved_patterns">Nog geen patronen opgeslagen.\nVoeg een webpatroon toe of importeer een PDF-bestand.</string>
     <string name="empty_my_yarn">Nog geen garennotities opgeslagen.</string>
-    <string name="empty_all_photos">Nog geen voortgangsfoto\'s.</string>
-    <string name="filter_all">Alles</string>
+    <string name="empty_all_photos">Foto\'s die je in je projecten maakt, verschijnen hier.</string>
 
     <!-- Insights -->
     <!-- Insights: kestot, hero ja kaavio -->
@@ -513,8 +513,8 @@
     <string name="insights_project_fabric_next_active_day">Volgende actieve dag</string>
     <string name="insights_last_worked_format">Laatst gewerkt %1$s</string>
     <plurals name="insights_days_meta_format">
-        <item quantity="one">%1$d van %2$d dag</item>
-        <item quantity="other">%1$d van %2$d dagen</item>
+        <item quantity="one">Actief op %1$d van %2$d dag</item>
+        <item quantity="other">Actief op %1$d van %2$d dagen</item>
     </plurals>
     <string name="insights_chart_axis_today">vandaag</string>
     <string name="insights_chart_a11y_daily">Dagelijkse tijd voor %1$s, %2$s, %3$s, langst %4$s</string>
@@ -645,7 +645,8 @@
         <item quantity="other">%d garenkaarten verwijderen?</item>
     </plurals>
     <string name="delete_yarn_card">Garenkaart verwijderen</string>
-    <string name="no_photos">Nog geen foto\'s</string>
+    <string name="no_photos">Nog geen voortgangsfoto\'s</string>
+    <string name="photo_gallery_empty_body">Foto\'s die je van dit project maakt, verschijnen hier.</string>
     <string name="rename_photo">Foto hernoemen</string>
     <string name="photo_name_hint">bijv. Mouw klaar</string>
 
@@ -771,7 +772,7 @@
     <string name="pro_prompt_reminders_title">Een rijherinnering toevoegen met Pro</string><string name="pro_prompt_reminders_body">Een nieuwe rijherinnering vereist Pro. Je bestaande herinneringen blijven werken en bewerkbaar.</string>
     <string name="pro_prompt_pattern_camera_title">Patroonfoto\'s omzetten in PDF met Pro</string><string name="pro_prompt_pattern_camera_body">Een nieuwe PDF maken van patroonfoto\'s vereist Pro. Je bestaande patronen en PDF\'s blijven beschikbaar.</string>
     <string name="pro_prompt_widget_title">De startschermwidget gebruiken met Pro</string><string name="pro_prompt_widget_body">De startschermwidget is een geavanceerde Pro-weergave. Je project- en tellergegevens blijven beschikbaar in KnitTools.</string>
-    <string name="pro_badge">PRO</string><string name="pro_badge_locked_description">Pro-functie</string><string name="pro_badge_trial_description">Pro-functie, beschikbaar tijdens de proefperiode</string><string name="knittools_pro">KnitTools Pro</string><string name="pro_content_stays_available">Alles wat je maakt, blijft beschikbaar.</string><string name="pro_status_not_started">Niet gestart</string>
+    <string name="pro_badge">PRO</string><string name="pro_badge_locked_description">Pro-functie</string><string name="pro_badge_trial_description">Pro-functie, beschikbaar tijdens de proefperiode</string><string name="knittools_pro">KnitTools Pro</string><string name="pro_content_stays_available">Alles wat je maakt, blijft beschikbaar.</string>
     <plurals name="pro_status_trial_days"><item quantity="one">Proefperiode, nog %1$d dag</item><item quantity="other">Proefperiode, nog %1$d dagen</item></plurals>
     <string name="pro_status_trial_ended">Proefperiode beëindigd</string><string name="pro_status_purchased">Gekocht</string><string name="pro_trial_ended_title">Je Pro-proefperiode is beëindigd</string><string name="pro_trial_ended_body">Alles wat je hebt gemaakt, blijft beschikbaar. Je kunt het blijven gebruiken en bewerken. Pro is alleen vereist voor nieuwe Pro-items en geavanceerde weergaven.</string><string name="pro_continue_free">Gratis doorgaan</string>
     <string name="pro_page_intro">Maak meer ruimte voor elk project en houd je werkproces bij elkaar.</string><string name="pro_page_trust">Alles wat je maakt, blijft beschikbaar, ook als je proefperiode eindigt.</string><string name="pro_group_projects_title">Projecten en materialen</string><string name="pro_group_projects_body">Werk aan meerdere actieve projecten en maak de eerste projectnotitie, voortgangsfoto\'s en garenkaarten.</string><string name="pro_group_workflow_title">Tellen en werkproces</string><string name="pro_group_workflow_body">Gebruik de compacte herhalingsteller, extra, herhalings-, vorm- en sectietellers, rijherinneringen, patroonfoto\'s als PDF en de startschermwidget.</string><string name="pro_group_insights_title">Inzichten</string><string name="pro_group_insights_body">Bekijk dagelijkse, wekelijkse en maandelijkse activiteitengrafieken en je activiteitenreeks.</string>
@@ -867,7 +868,8 @@
     <string name="folder_move_later">Later verplaatsen</string>
     <string name="folder_move_to">Naar map verplaatsen</string>
     <string name="folder_remove_from">Uit map verwijderen</string>
-    <string name="folder_move_selected_projects">Geselecteerde projecten verplaatsen</string>
+    <string name="selection_action_move">Verplaatsen</string>
+    <string name="selection_action_complete">Voltooien</string>
     <string name="folder_no_folders">Geen mappen</string>
     <string name="folder_empty">%1$s heeft geen projecten.</string>
     <string name="folder_no_unfiled">Geen projecten zonder map</string>
@@ -930,7 +932,7 @@
     <string name="measurement_axis">Richting</string>
     <string name="measurement_stitches_width">Steken en breedte</string>
     <string name="measurement_rows_height">Toeren en hoogte</string>
-    <string name="measurement_units">Maateenheden</string>
+    <string name="gauge_stated_per">Stekenverhouding opgegeven</string>
     <string name="measurement_from_unit">Van eenheid</string>
     <string name="measurement_to_unit">Naar eenheid</string>
     <string name="measurement_value">Waarde</string>
@@ -968,6 +970,7 @@
     <string name="measurement_project_context">Project: %1$s</string>
     <string name="measurement_estimate">Schatting op basis van de ingevoerde stekenproef.</string>
     <string name="measurement_adjust_warning">Wiskundige schatting op basis van de ingevoerde stekenproef. De vormgeving en constructie worden niet herschreven. Bewegingsruimte, patroonherhalingen, randen, armsgaten, halslijnen en mouwen moeten mogelijk apart worden aangepast. Meet een gewassen of geblokt proeflapje voor een bruikbaardere schatting.</string>
+    <string name="measurement_adjust_warning_short">Een schatting op basis van je stekenverhouding. Vormgeving moet mogelijk apart worden aangepast.</string>
     <string name="measurement_swatch_hint">Meet het proeflapje na het wassen of blokken voor een bruikbaardere schatting.</string>
     <string name="measurement_result">Resultaat</string>
     <string name="measurement_value_unit_format">%1$s %2$s</string>
@@ -1070,8 +1073,6 @@
     <string name="web_pattern_project_unavailable">Het project is niet meer beschikbaar</string>
     <string name="pattern_open_project_notes">Projectnotities openen</string>
     <string name="insights_completions_title">Projectafrondingen</string>
-    <string name="insights_completions_empty">Geen afrondingen in deze periode.</string>
-    <string name="insights_completions_project_empty">Geen afronding vastgelegd voor dit project in deze periode.</string>
     <string name="insights_completions_period">%1$s – %2$s</string>
     <plurals name="insights_completion_count">
         <item quantity="one">%d afronding</item>

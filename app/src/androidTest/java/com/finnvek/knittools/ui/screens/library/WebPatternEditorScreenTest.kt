@@ -11,13 +11,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.test.assertHeightIsAtLeast
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsFocused
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performImeAction
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
@@ -41,16 +44,19 @@ class WebPatternEditorScreenTest {
     private val context = InstrumentationRegistry.getInstrumentation().targetContext
 
     // CPD-OFF: Compose-testien skenaariokohtainen asetelma pidetaan testien yhteydessa.
+    // Tallenna on harmaa kunnes nimi ja osoite on annettu, kuten muissa lisäyslomakkeissa.
     @Test
-    fun saveAttemptShowsPersistentErrorsAndFocusesFirstInvalidField() {
+    fun saveIsDisabledUntilRequiredFieldsAreFilled() {
+        val state =
+            mutableStateOf(WebPatternEditorUiState(route = WebPatternEditorRoute(WebPatternEditorOrigin.Manual)))
         composeRule.setContent {
             KnitToolsTheme(isDarkTheme = false) {
                 WebPatternEditorContent(
-                    state = WebPatternEditorUiState(route = WebPatternEditorRoute(WebPatternEditorOrigin.Manual)),
+                    state = state.value,
                     onBack = {},
-                    onTitleChange = {},
+                    onTitleChange = { state.value = state.value.copy(title = it) },
                     onDesignerChange = {},
-                    onUrlChange = {},
+                    onUrlChange = { state.value = state.value.copy(url = it) },
                     onSave = {},
                     onKeepDraft = {},
                     onUseSharedLink = {},
@@ -63,16 +69,23 @@ class WebPatternEditorScreenTest {
         composeRule.onNodeWithText(context.getString(R.string.web_pattern_title_label)).assertIsDisplayed()
         composeRule.onNodeWithText(context.getString(R.string.web_pattern_url_label)).assertIsDisplayed()
         composeRule.onNodeWithText(context.getString(R.string.web_pattern_designer_label)).assertIsDisplayed()
-        composeRule.onNodeWithText(context.getString(R.string.save)).performClick()
-        composeRule.onNodeWithText(context.getString(R.string.web_pattern_error_title_required)).assertIsDisplayed()
-        composeRule.onNodeWithText(context.getString(R.string.web_pattern_error_url_required)).assertIsDisplayed()
-        composeRule.onNodeWithTag(WEB_PATTERN_TITLE_FIELD_TAG).assertIsFocused()
+        composeRule.onNodeWithText(context.getString(R.string.save)).assertIsNotEnabled()
+        composeRule.onNodeWithTag(WEB_PATTERN_TITLE_FIELD_TAG).performTextInput("Cable cardigan")
+        composeRule.onNodeWithText(context.getString(R.string.save)).assertIsNotEnabled()
+        composeRule.onNodeWithTag(WEB_PATTERN_URL_FIELD_TAG).performTextInput("https://example.com/pattern")
+        composeRule.onNodeWithText(context.getString(R.string.save)).assertIsEnabled()
     }
 
     @Test
     fun correctingValidationKeepsFocusUntilAnotherSaveAttempt() {
         val state =
-            mutableStateOf(WebPatternEditorUiState(route = WebPatternEditorRoute(WebPatternEditorOrigin.Manual)))
+            mutableStateOf(
+                WebPatternEditorUiState(
+                    route = WebPatternEditorRoute(WebPatternEditorOrigin.Manual),
+                    title = "Cable cardigan",
+                    url = "ftp://example.com/pattern",
+                ),
+            )
         var saves = 0
         composeRule.setContent {
             KnitToolsTheme(isDarkTheme = false) {
@@ -90,22 +103,18 @@ class WebPatternEditorScreenTest {
                 )
             }
         }
+        // Virheellinen osoite tarkistetaan tallennusyrityksellä: virhe näkyy ja fokus siirtyy osoitteeseen.
         composeRule.onNodeWithText(context.getString(R.string.save)).performClick()
-        for (part in listOf("C", "able ", "cardigan")) {
-            composeRule.onNodeWithTag(WEB_PATTERN_TITLE_FIELD_TAG).assertIsFocused().performTextInput(part)
-            composeRule.onNodeWithTag(WEB_PATTERN_TITLE_FIELD_TAG).assertIsFocused()
+        composeRule.onNodeWithText(context.getString(R.string.web_pattern_error_url_web_only)).assertIsDisplayed()
+        composeRule.onNodeWithTag(WEB_PATTERN_URL_FIELD_TAG).assertIsFocused().performTextClearance()
+        for (part in listOf("https://", "example.com", "/pattern")) {
+            composeRule.onNodeWithTag(WEB_PATTERN_URL_FIELD_TAG).assertIsFocused().performTextInput(part)
+            composeRule.onNodeWithTag(WEB_PATTERN_URL_FIELD_TAG).assertIsFocused()
         }
         composeRule.runOnIdle {
-            assertEquals("Cable cardigan", state.value.title)
-            assertEquals("", state.value.url)
+            assertEquals("https://example.com/pattern", state.value.url)
             assertEquals(0, saves)
         }
-        composeRule.onNodeWithText(context.getString(R.string.save)).performScrollTo().performClick()
-        composeRule
-            .onNodeWithTag(
-                WEB_PATTERN_URL_FIELD_TAG,
-            ).assertIsFocused()
-            .performTextInput("https://example.com/pattern")
         composeRule.onNodeWithTag(WEB_PATTERN_URL_FIELD_TAG).assertIsFocused().performImeAction()
         composeRule.onNodeWithTag(WEB_PATTERN_DESIGNER_FIELD_TAG).assertIsFocused().performImeAction()
         composeRule.runOnIdle { assertEquals(1, saves) }

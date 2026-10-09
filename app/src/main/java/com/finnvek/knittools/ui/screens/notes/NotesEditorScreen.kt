@@ -46,6 +46,7 @@ import com.finnvek.knittools.ui.components.ProBadge
 import com.finnvek.knittools.ui.components.ProPromptRequest
 import com.finnvek.knittools.ui.components.ProPromptSheet
 import com.finnvek.knittools.ui.components.ProPromptSource
+import com.finnvek.knittools.ui.components.SectionLabel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -82,8 +83,10 @@ fun NotesEditorScreen(
         topBar = {
             TopAppBar(
                 title = {
+                    // Projektin nimi on osiomerkkinä sisällössä kuten historioissa; ajatusviivalla
+                    // yhdistetty otsikko katkesi pitkillä nimillä.
                     Text(
-                        text = stringResource(R.string.notes_editor_title, state.projectName),
+                        text = stringResource(R.string.notes),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
@@ -106,6 +109,10 @@ fun NotesEditorScreen(
         Box(modifier = Modifier.fillMaxSize().padding(padding).imePadding()) {
             if (state.canEditNotes) {
                 Column {
+                    SectionLabel(
+                        text = state.projectName,
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                    )
                     if (state.saveFailed) {
                         Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
                             Text(

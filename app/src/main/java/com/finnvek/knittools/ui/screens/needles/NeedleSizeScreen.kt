@@ -35,6 +35,8 @@ import com.finnvek.knittools.ui.components.SearchTextField
 import com.finnvek.knittools.ui.components.ToolScreenScaffold
 import com.finnvek.knittools.ui.components.rememberCurrentLocale
 import com.finnvek.knittools.ui.theme.knitToolsColors
+import java.text.DecimalFormatSymbols
+import java.util.Locale
 
 @Composable
 fun NeedleSizeScreen(onBack: () -> Unit) {
@@ -156,9 +158,9 @@ private fun NeedleRow(
     ) {
         listOf(
             formatDecimalForDisplay(needle.metricMm, locale, 0, 2),
-            needle.us,
-            needle.ukCanadian,
-            needle.japanese,
+            localizedSizeLabel(needle.us, locale),
+            localizedSizeLabel(needle.ukCanadian, locale),
+            localizedSizeLabel(needle.japanese, locale),
         ).forEach { value ->
             Text(
                 text = value,
@@ -169,3 +171,19 @@ private fun NeedleRow(
         }
     }
 }
+
+/**
+ * Taulukon kokonimet ovat tekstiä ("1.5", "000"), joten desimaalikoko saa kielen erottimen samaan tapaan kuin
+ * mm-sarake: suomeksi samassa taulukossa näkyi "2,5" ja "1.5". Muut nimet jäävät ennalleen.
+ */
+internal fun localizedSizeLabel(
+    label: String,
+    locale: Locale,
+): String =
+    if (DECIMAL_SIZE_LABEL.matches(label)) {
+        label.replace('.', DecimalFormatSymbols.getInstance(locale).decimalSeparator)
+    } else {
+        label
+    }
+
+private val DECIMAL_SIZE_LABEL = Regex("""\d+\.\d+""")

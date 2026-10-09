@@ -25,6 +25,20 @@ import java.util.concurrent.atomic.AtomicInteger
 class BackupProviderIoTest {
     @get:Rule val temporary = TemporaryFolder()
 
+    @Test fun missingDescriptorFailsWithoutWritingData() =
+        runBlocking {
+            val target = temporary.newFile()
+
+            val failure =
+                runCatching {
+                    providerIo(TestRequest(open = { null })).read(mockk(), target, 1024)
+                }.exceptionOrNull()
+
+            assertTrue(failure is IOException)
+            assertEquals("Provider returned no descriptor", failure?.message)
+            assertArrayEquals(byteArrayOf(), target.readBytes())
+        }
+
     @Test fun stalledOpenIsCancelledAtTheNoProgressDeadline() =
         runBlocking {
             val released = CountDownLatch(1)

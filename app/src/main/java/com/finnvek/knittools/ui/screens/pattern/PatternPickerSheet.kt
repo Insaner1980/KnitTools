@@ -21,7 +21,6 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -51,6 +50,7 @@ import com.finnvek.knittools.ui.components.ProPromptRequest
 import com.finnvek.knittools.ui.components.ProPromptSheet
 import com.finnvek.knittools.ui.components.ProPromptSource
 import com.finnvek.knittools.ui.components.SectionLabel
+import com.finnvek.knittools.ui.components.SheetOptionRow
 import com.finnvek.knittools.ui.components.SheetTitle
 import com.finnvek.knittools.ui.findActivity
 import com.finnvek.knittools.ui.theme.knitToolsColors
@@ -412,11 +412,12 @@ private fun PatternPickerSheetContent(
                 .padding(bottom = 32.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
+        // Dokumentin lisäyksessä otsikko kertoo mitä lisätään: pelkkä "Add" ei sanonut mitään.
         SheetTitle(
             text =
                 stringResource(
                     if (mode == PatternPickerMode.ADD_READABLE_PROJECT_DOCUMENT) {
-                        R.string.project_documents_add
+                        R.string.project_content_add_pattern
                     } else {
                         R.string.attach_pattern
                     },
@@ -460,6 +461,7 @@ private fun PatternPickerSheetContent(
     }
 }
 
+// Sama vaihtoehtorivi kuin langan valinnassa; ääriviivapillerit näyttivät eri listalta.
 @Composable
 private fun PickerAction(
     label: String,
@@ -467,14 +469,7 @@ private fun PickerAction(
     enabled: Boolean = true,
     badge: (@Composable () -> Unit)? = null,
 ) {
-    OutlinedButton(
-        onClick = onClick,
-        enabled = enabled,
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        Text(label, modifier = Modifier.weight(1f))
-        badge?.invoke()
-    }
+    SheetOptionRow(title = label, onClick = onClick, enabled = enabled, badge = badge)
 }
 
 @Composable

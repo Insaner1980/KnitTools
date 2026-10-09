@@ -143,6 +143,9 @@ object InsightsDimens {
     val ProjectFabricMonthLabelHeight = 20.dp
     val ProjectFabricSelectionStroke = 1.dp
 
+    // Lyhyen jakson solut kasvavat tähän asti; muuten muutaman viikon ruudukko venyisi metrin korkuiseksi.
+    val ProjectFabricMaxCellSize = 32.dp
+
     @Suppress("MayBeConstant")
     val ProjectFabricEmptyCellAlpha = 0.6f
 

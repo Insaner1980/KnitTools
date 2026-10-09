@@ -176,11 +176,20 @@ class CounterWorkspaceSourceTest {
     }
 
     @Test
-    fun `counter hero omits target progress line and lifts primary buttons`() {
+    fun `counter hero shows the count once and target progress with the shared bar`() {
         val workspace = ProjectSourceFiles.read(COUNTER_WORKSPACE_SECTIONS)
         val dimens = ProjectSourceFiles.read(COUNTER_DIMENS)
+        // Luvun yllä vain yksikkö: "Row 34 / 72" toisti ison luvun.
+        assertTrue(
+            workspace.contains(
+                "text = mainCounterLabelText(display.heroTitle.labelType, display.heroTitle.customLabel)",
+            ),
+        )
+        // Tavoite samalla palkilla kuin jatka-kortissa, ei omaa palkkikomponenttia.
+        assertTrue(workspace.contains("CounterTargetProgress(targetLine = targetLine"))
+        assertTrue(workspace.contains("ProjectProgressBar(fraction)"))
+        assertTrue(workspace.contains("R.string.counter_target_of_format"))
         assertFalse(workspace.contains("CounterTargetProgressBar("))
-        assertTrue(workspace.contains("CounterTargetHelperLabel("))
         assertFalse(workspace.contains("CounterProgressHeight"))
         assertFalse(workspace.contains("CounterProgressCornerRadius"))
         assertTrue(dimens.contains("HeroButtonSpacing = 64.dp"))

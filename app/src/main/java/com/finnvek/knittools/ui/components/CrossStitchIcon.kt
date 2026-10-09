@@ -20,6 +20,10 @@ import androidx.compose.ui.text.style.TextAlign
 import com.finnvek.knittools.ui.theme.CrossStitchDimens
 import com.finnvek.knittools.ui.theme.knitToolsColors
 
+private const val EMPTY_WIDE_ROW = "X.......X"
+private const val EMPTY_NARROW_ROW = "X.....X"
+private const val REMINDER_SIDE_ROW = ".X.....X."
+
 /**
  * Projektin sisällön kuvakkeet ristipistoina. X on ääriviivan pisto, o himmeämpi täytepisto ja
  * piste tyhjä ruutu. Sama kuvake on laskurin laatassa ja projektinäkymän rivillä.
@@ -37,7 +41,7 @@ enum class CrossStitchGlyph(
             "X...o...X",
             "X..ooo..X",
             "X...o...X",
-            "X.......X",
+            EMPTY_WIDE_ROW,
             "XXXXXXXXX",
         ),
     ),
@@ -59,11 +63,11 @@ enum class CrossStitchGlyph(
     NOTES(
         listOf(
             "XXXXXXX",
-            "X.....X",
+            EMPTY_NARROW_ROW,
             "X.ooo.X",
-            "X.....X",
+            EMPTY_NARROW_ROW,
             "X.ooo.X",
-            "X.....X",
+            EMPTY_NARROW_ROW,
             "X.oo..X",
             "XXXXXXX",
         ),
@@ -71,9 +75,9 @@ enum class CrossStitchGlyph(
     PHOTOS(
         listOf(
             "XXXXXXXXX",
-            "X.......X",
+            EMPTY_WIDE_ROW,
             "X.....o.X",
-            "X.......X",
+            EMPTY_WIDE_ROW,
             "X..o....X",
             "X.ooo.o.X",
             "XoooooooX",
@@ -86,10 +90,10 @@ enum class CrossStitchGlyph(
         listOf(
             "....X....",
             "..XXXXX..",
-            ".X.....X.",
-            ".X.....X.",
-            ".X.....X.",
-            "X.......X",
+            REMINDER_SIDE_ROW,
+            REMINDER_SIDE_ROW,
+            REMINDER_SIDE_ROW,
+            EMPTY_WIDE_ROW,
             "XXXXXXXXX",
             ".........",
             "...XXX...",

@@ -6,31 +6,28 @@ import androidx.compose.ui.text.font.DeviceFontFamilyName
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontLoadingStrategy
-import androidx.compose.ui.text.font.FontVariation
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import com.finnvek.knittools.R
 
-@OptIn(androidx.compose.ui.text.ExperimentalTextApi::class)
-private fun outfitFont(weight: FontWeight) =
-    Font(
-        resId = R.font.outfit,
-        weight = weight,
-        loadingStrategy = FontLoadingStrategy.OptionalLocal,
-        variationSettings = FontVariation.Settings(FontVariation.weight(weight.weight)),
+/*
+ * Barlow Semi Condensed (SIL OFL, lisenssi assets/licenses-kansiossa): kapea mutta selkeä, joten projektin
+ * nimet mahtuvat riville. Leveä geometrinen Outfit katkaisi nimiä otsikoissa ja korteissa.
+ */
+private val KnitToolsFontFiles =
+    listOf(
+        FontWeight.Normal to R.font.barlow_semi_condensed_regular,
+        FontWeight.Medium to R.font.barlow_semi_condensed_medium,
+        FontWeight.SemiBold to R.font.barlow_semi_condensed_semibold,
+        FontWeight.Bold to R.font.barlow_semi_condensed_bold,
+        FontWeight.ExtraBold to R.font.barlow_semi_condensed_extrabold,
     )
 
-val OutfitFontFamily =
+val KnitToolsFontFamily =
     FontFamily(
-        listOf(
-            FontWeight.Normal,
-            FontWeight.Medium,
-            FontWeight.SemiBold,
-            FontWeight.Bold,
-            FontWeight.ExtraBold,
-        ).flatMap { weight ->
+        KnitToolsFontFiles.flatMap { (weight, resId) ->
             listOf(
-                outfitFont(weight),
+                Font(resId = resId, weight = weight, loadingStrategy = FontLoadingStrategy.OptionalLocal),
                 Font(DeviceFontFamilyName("sans-serif"), weight = weight),
             )
         },
@@ -40,92 +37,92 @@ val AppTypography =
     Typography(
         displayLarge =
             TextStyle(
-                fontFamily = OutfitFontFamily,
+                fontFamily = KnitToolsFontFamily,
                 fontWeight = FontWeight.Bold,
                 fontSize = 57.sp,
                 letterSpacing = (-0.25).sp,
             ),
         displayMedium =
             TextStyle(
-                fontFamily = OutfitFontFamily,
+                fontFamily = KnitToolsFontFamily,
                 fontWeight = FontWeight.Bold,
                 fontSize = 45.sp,
             ),
         displaySmall =
             TextStyle(
-                fontFamily = OutfitFontFamily,
+                fontFamily = KnitToolsFontFamily,
                 fontWeight = FontWeight.SemiBold,
                 fontSize = 36.sp,
             ),
         headlineLarge =
             TextStyle(
-                fontFamily = OutfitFontFamily,
+                fontFamily = KnitToolsFontFamily,
                 fontWeight = FontWeight.Bold,
                 fontSize = 32.sp,
             ),
         headlineMedium =
             TextStyle(
-                fontFamily = OutfitFontFamily,
+                fontFamily = KnitToolsFontFamily,
                 fontWeight = FontWeight.SemiBold,
                 fontSize = 28.sp,
             ),
         headlineSmall =
             TextStyle(
-                fontFamily = OutfitFontFamily,
+                fontFamily = KnitToolsFontFamily,
                 fontWeight = FontWeight.SemiBold,
                 fontSize = 24.sp,
             ),
         titleLarge =
             TextStyle(
-                fontFamily = OutfitFontFamily,
+                fontFamily = KnitToolsFontFamily,
                 fontWeight = FontWeight.SemiBold,
                 fontSize = 22.sp,
             ),
         titleMedium =
             TextStyle(
-                fontFamily = OutfitFontFamily,
+                fontFamily = KnitToolsFontFamily,
                 fontWeight = FontWeight.SemiBold,
                 fontSize = 16.sp,
                 letterSpacing = 0.15.sp,
             ),
         titleSmall =
             TextStyle(
-                fontFamily = OutfitFontFamily,
+                fontFamily = KnitToolsFontFamily,
                 fontWeight = FontWeight.Medium,
                 fontSize = 14.sp,
                 letterSpacing = 0.1.sp,
             ),
         bodyLarge =
             TextStyle(
-                fontFamily = OutfitFontFamily,
+                fontFamily = KnitToolsFontFamily,
                 fontWeight = FontWeight.Normal,
                 fontSize = 16.sp,
                 letterSpacing = 0.5.sp,
             ),
         bodyMedium =
             TextStyle(
-                fontFamily = OutfitFontFamily,
+                fontFamily = KnitToolsFontFamily,
                 fontWeight = FontWeight.Normal,
                 fontSize = 14.sp,
                 letterSpacing = 0.25.sp,
             ),
         bodySmall =
             TextStyle(
-                fontFamily = OutfitFontFamily,
+                fontFamily = KnitToolsFontFamily,
                 fontWeight = FontWeight.Normal,
                 fontSize = 12.sp,
                 letterSpacing = 0.4.sp,
             ),
         labelLarge =
             TextStyle(
-                fontFamily = OutfitFontFamily,
+                fontFamily = KnitToolsFontFamily,
                 fontWeight = FontWeight.SemiBold,
                 fontSize = 14.sp,
                 letterSpacing = 0.1.sp,
             ),
         labelMedium =
             TextStyle(
-                fontFamily = OutfitFontFamily,
+                fontFamily = KnitToolsFontFamily,
                 fontWeight = FontWeight.SemiBold,
                 fontSize = 12.sp,
                 letterSpacing = 0.5.sp,
@@ -133,7 +130,7 @@ val AppTypography =
         // All-caps labelit (CURRENT ROW, nav-labelit)
         labelSmall =
             TextStyle(
-                fontFamily = OutfitFontFamily,
+                fontFamily = KnitToolsFontFamily,
                 fontWeight = FontWeight.SemiBold,
                 fontSize = 11.sp,
                 letterSpacing = 1.5.sp,

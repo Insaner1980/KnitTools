@@ -23,6 +23,8 @@ class ProjectActionsBottomSheetSourceTest {
         assertTrue(positions.all { it >= 0 })
         assertTrue(positions.zipWithNext().all { (first, second) -> first < second })
         assertTrue(source.contains("onClick = callbacks.onOpenOverview"))
+        // Toimintorivit ovat tekstiä kuten asetuksissa, ei yleisiä Material-ikoneita.
+        assertFalse(source.contains("Icons.Outlined."))
         assertTrue(source.contains("R.string.project_actions_section_work_session"))
         listOf(
             "project_documents_title",

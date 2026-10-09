@@ -71,4 +71,11 @@ class RavelryLinksTest {
         assertEquals(RavelryNavigation.Blocked, nav("www.ravelry.com", scheme = "http"))
         assertEquals(RavelryNavigation.Blocked, nav("www.ravelry.com", scheme = "intent"))
     }
+
+    @Test
+    fun `shared checkout link is recognised before the browser loads it`() {
+        assertTrue(isRavelryPurchasePage("https://www.ravelry.com/stores/shop/products/1/checkout"))
+        assertFalse(isRavelryPurchasePage("https://www.ravelry.com/patterns/library/the-shift"))
+        assertFalse(isRavelryPurchasePage("not a url"))
+    }
 }

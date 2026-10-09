@@ -152,7 +152,10 @@ private data class PatternRenderState(
     val renderer: PdfPageRenderer?,
     val rendererError: String?,
     val renderedBitmap: Bitmap?,
-)
+) {
+    /** Merkitse näytetään vasta kun sivu on piirretty; latauksen aikana ei ole mitä merkitä. */
+    val canAnnotate: Boolean get() = rendererError == null && renderedBitmap != null
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -291,7 +294,7 @@ fun PatternViewerScreen(
                         canManageBookmarks = true,
                         hasCurrentRowMarker = hasCurrentRowMarker,
                         hasPageRowMarkers = hasPageRowMarkers,
-                        canAnnotate = patternUri != null && renderState.rendererError == null,
+                        canAnnotate = patternUri != null && renderState.canAnnotate,
                         annotationMode = annotationMode.active,
                         annotationExportEnabled = !annotationState.isExporting,
                     ),
@@ -1292,7 +1295,7 @@ fun LibraryPatternViewerScreen(
                         canManageBookmarks = false,
                         hasCurrentRowMarker = false,
                         hasPageRowMarkers = false,
-                        canAnnotate = patternUri != null && renderState.rendererError == null,
+                        canAnnotate = patternUri != null && renderState.canAnnotate,
                         annotationMode = annotationMode.active,
                         annotationExportEnabled = !annotationState.isExporting,
                     ),

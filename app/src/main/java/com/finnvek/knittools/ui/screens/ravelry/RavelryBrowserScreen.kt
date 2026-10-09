@@ -162,7 +162,14 @@ fun RavelryBrowserScreen(
                                 ),
                             )
                         }
-                        loadUrl(startUrl?.let(::ravelryPageUrlOrNull) ?: RAVELRY_PATTERN_SEARCH_URL)
+                        // loadUrl ohittaa shouldOverrideUrlLoadingin, joten kassalinkki tarkistetaan tässä.
+                        val startPage = startUrl?.let(::ravelryPageUrlOrNull)
+                        if (startPage != null && isRavelryPurchasePage(startPage)) {
+                            openOutside(startPage, purchaseMessage)
+                            loadUrl(RAVELRY_PATTERN_SEARCH_URL)
+                        } else {
+                            loadUrl(startPage ?: RAVELRY_PATTERN_SEARCH_URL)
+                        }
                         webView = this
                     }
                 },

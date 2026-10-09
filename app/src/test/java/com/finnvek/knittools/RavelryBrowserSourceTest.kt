@@ -18,7 +18,9 @@ class RavelryBrowserSourceTest {
 
         assertTrue(browser.contains("setDownloadListener"))
         assertTrue(browser.contains("settings.allowFileAccess = false"))
-        assertTrue(browser.contains("loadUrl(startUrl?.let(::ravelryPageUrlOrNull) ?: RAVELRY_PATTERN_SEARCH_URL)"))
+        assertTrue(browser.contains("val startPage = startUrl?.let(::ravelryPageUrlOrNull)"))
+        assertTrue(browser.contains("if (startPage != null && isRavelryPurchasePage(startPage))"))
+        assertTrue(browser.contains("loadUrl(startPage ?: RAVELRY_PATTERN_SEARCH_URL)"))
         // Kassa ja maksu avautuvat käyttäjän selaimessa, ei sovelluksen sisällä.
         assertTrue(browser.contains("ravelryNavigation("))
         assertTrue(browser.contains("return navigation != RavelryNavigation.InApp"))

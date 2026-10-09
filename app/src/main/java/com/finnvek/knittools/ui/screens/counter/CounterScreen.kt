@@ -219,6 +219,8 @@ fun ProjectContentHost(
     var pendingWebPatternId by rememberSaveable { mutableStateOf<Long?>(null) }
     var pendingWebPatternName by rememberSaveable { mutableStateOf<String?>(null) }
     var pendingExistingWebPatternId by rememberSaveable { mutableStateOf<Long?>(null) }
+    // Korvausvahvistus koskee projektia, jossa ohjetta liitettiin, ei vahvistushetken projektia.
+    var pendingWebPatternProjectId by rememberSaveable { mutableStateOf<Long?>(null) }
     var showDocumentsSheet by rememberSaveable { mutableStateOf(false) }
     var projectDocumentError by remember { mutableStateOf<ProjectDocumentError?>(null) }
     var showTargetDialog by rememberSaveable { mutableStateOf(false) }
@@ -249,6 +251,7 @@ fun ProjectContentHost(
         pendingWebPatternId = null
         pendingWebPatternName = null
         pendingExistingWebPatternId = null
+        pendingWebPatternProjectId = null
         showDocumentsSheet = false
         projectDocumentError = null
         showTargetDialog = false
@@ -319,6 +322,7 @@ fun ProjectContentHost(
                 pendingWebPatternId = pattern.id
                 pendingWebPatternName = pattern.name
                 pendingExistingWebPatternId = existingPatternId
+                pendingWebPatternProjectId = state.projectId
             },
             onPatternMetadataAttachFailed = {
                 coroutineScope.launch {
@@ -337,7 +341,8 @@ fun ProjectContentHost(
 
     val replacementPatternId = pendingWebPatternId
     val expectedExistingPatternId = pendingExistingWebPatternId
-    if (replacementPatternId != null && expectedExistingPatternId != null) {
+    val replacementProjectId = pendingWebPatternProjectId
+    if (replacementPatternId != null && expectedExistingPatternId != null && replacementProjectId != null) {
         ConfirmationDialog(
             title = stringResource(R.string.web_pattern_replace_confirm_title),
             message =
@@ -350,10 +355,12 @@ fun ProjectContentHost(
                 viewModel.attachSavedPatternMetadata(
                     savedPatternId = replacementPatternId,
                     expectedExistingSavedPatternId = expectedExistingPatternId,
+                    projectId = replacementProjectId,
                 ) { result ->
                     pendingWebPatternId = null
                     pendingWebPatternName = null
                     pendingExistingWebPatternId = null
+                    pendingWebPatternProjectId = null
                     if (
                         result != SavedPatternMetadataMutationResult.Attached(replacementPatternId) &&
                         result != SavedPatternMetadataMutationResult.AlreadyAttached(replacementPatternId)
@@ -368,6 +375,7 @@ fun ProjectContentHost(
                 pendingWebPatternId = null
                 pendingWebPatternName = null
                 pendingExistingWebPatternId = null
+                pendingWebPatternProjectId = null
             },
         )
     }

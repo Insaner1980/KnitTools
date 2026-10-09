@@ -39,6 +39,14 @@ class PatternReaderModeSourceTest {
         assertTrue(viewer.contains("onClick = actions.onOpenBookmarks"))
     }
 
+    @Test
+    fun `mark up is offered only after the page has been rendered`() {
+        val viewer = ProjectSourceFiles.read(PATTERN_VIEWER)
+
+        assertTrue(viewer.contains("val canAnnotate: Boolean get() = rendererError == null && renderedBitmap != null"))
+        assertFalse(viewer.contains("canAnnotate = patternUri != null && renderState.rendererError == null"))
+    }
+
     private companion object {
         const val MANIFEST = "app/src/main/AndroidManifest.xml"
         const val PATTERN_VIEWER =

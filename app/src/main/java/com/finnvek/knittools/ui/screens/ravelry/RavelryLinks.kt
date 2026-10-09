@@ -36,6 +36,12 @@ internal fun isRavelryPurchaseUrl(
         )
 }
 
+/** Jaettu tai tallennettu kassalinkki: aloitusosoite ei kulje navigointisuodattimen kautta. */
+internal fun isRavelryPurchasePage(url: String): Boolean {
+    val uri = runCatching { URI(url.trim()) }.getOrNull() ?: return false
+    return isRavelryPurchaseUrl(uri.host, uri.path)
+}
+
 private const val RAVELRY_DOMAIN = "ravelry.com"
 
 internal fun isRavelryHost(host: String?): Boolean {

@@ -41,7 +41,7 @@ class ProjectListViewModelTest : ProjectListViewModelFixture() {
             every { proManager.hasFeature(ProFeature.UNLIMITED_PROJECTS) } returns false
             coEvery { repository.getActiveProjectCount() } returns 0
             coEvery { repository.getProjectCount() } returns 5
-            coEvery { repository.createProject(any(), any(), any(), any(), any(), any(), any()) } returns
+            coEvery { repository.createProject(any(), any(), any(), any(), any(), any()) } returns
                 ProjectCreationResult.Created(7L)
             val vm = createViewModel()
             var dialogs = 0

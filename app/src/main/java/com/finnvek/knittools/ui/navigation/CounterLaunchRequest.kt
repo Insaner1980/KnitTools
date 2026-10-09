@@ -11,7 +11,6 @@ data class CounterLaunchRequest(
             intentData: CounterLaunchIntentData,
             consumedRequestId: String?,
         ): CounterLaunchRequest? {
-            if (intentData.isOAuthCallback) return null
             if (!intentData.shouldOpenCounter) return null
             if (!intentData.isTrustedCounterLaunch) return null
             val requestId = intentData.launchId ?: legacyRequestId(intentData.projectId)
@@ -31,7 +30,6 @@ data class CounterLaunchIntentData(
     val projectId: Long?,
     val launchId: String?,
     val isTrustedCounterLaunch: Boolean = false,
-    val isOAuthCallback: Boolean = false,
 )
 
 internal fun CounterLaunchIntentData.withValidatedCounterLaunchTrust(
@@ -40,6 +38,5 @@ internal fun CounterLaunchIntentData.withValidatedCounterLaunchTrust(
     copy(
         isTrustedCounterLaunch =
             shouldOpenCounter &&
-                !isOAuthCallback &&
                 consumeLaunchId(launchId),
     )

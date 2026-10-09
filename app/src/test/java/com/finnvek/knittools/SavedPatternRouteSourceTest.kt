@@ -9,16 +9,12 @@ class SavedPatternRouteSourceTest {
     @Test
     fun `saved pattern lists open one detail route for every saved pattern`() {
         val librarySavedPatterns = ProjectSourceFiles.read(SAVED_PATTERNS_SCREEN)
-        val ravelrySearch = ProjectSourceFiles.read(RAVELRY_SEARCH_SCREEN)
         val navGraph = ProjectSourceFiles.read(NAV_GRAPH)
 
         assertTrue(librarySavedPatterns.contains("val onPatternClick: (Long) -> Unit"))
         assertTrue(librarySavedPatterns.contains("actions.onPatternClick(pattern.id)"))
-        // Ravelry-haku avaa tallennetun kaavan vain tuontivahvistuksesta; lista on Libraryssa.
-        assertTrue(ravelrySearch.contains("onOpenSavedPattern = actions.onSavedPatternDetail"))
         assertTrue(navGraph.contains("Screen.SavedPatternDetail(savedPatternId).route"))
         assertFalse(librarySavedPatterns.contains("pattern.routeTarget()"))
-        assertFalse(ravelrySearch.contains("pattern.routeTarget()"))
         assertFalse(Files.exists(ProjectSourceFiles.file(SAVED_PATTERN_ROUTE_TARGET)))
     }
 
@@ -36,8 +32,6 @@ class SavedPatternRouteSourceTest {
             "app/src/main/java/com/finnvek/knittools/ui/screens/library/SavedPatternRouteTarget.kt"
         private const val SAVED_PATTERNS_SCREEN =
             "app/src/main/java/com/finnvek/knittools/ui/screens/library/SavedPatternsScreen.kt"
-        private const val RAVELRY_SEARCH_SCREEN =
-            "app/src/main/java/com/finnvek/knittools/ui/screens/ravelry/RavelrySearchScreen.kt"
         private const val NAV_GRAPH =
             "app/src/main/java/com/finnvek/knittools/ui/navigation/NavGraph.kt"
         private const val PATTERN_PICKER_SHEET =

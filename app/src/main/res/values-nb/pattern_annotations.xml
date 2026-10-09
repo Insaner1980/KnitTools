@@ -6,7 +6,6 @@
     <string name="pattern_annotations_project">Prosjektnotater</string>
     <string name="pattern_annotations_read_only">Skrivebeskyttet</string>
     <string name="pattern_annotations_count">%1$s (%2$d)</string>
-    <string name="pattern_annotation_tool_browse">Bla gjennom</string>
     <string name="pattern_annotation_tool_pen">Penn</string>
     <string name="pattern_annotation_tool_highlighter">Markeringstusj</string>
     <string name="pattern_annotation_tool_eraser">Viskelær</string>

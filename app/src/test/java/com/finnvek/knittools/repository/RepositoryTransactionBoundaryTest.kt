@@ -12,11 +12,9 @@ import com.finnvek.knittools.data.local.SavedPatternEntity
 import com.finnvek.knittools.data.local.SessionDao
 import com.finnvek.knittools.data.local.YarnCardDao
 import com.finnvek.knittools.data.local.YarnCardEntity
-import com.finnvek.knittools.data.remote.PatternDetail
 import com.finnvek.knittools.data.storage.PatternDocumentStorage
 import com.finnvek.knittools.data.storage.ProgressPhotoStorage
 import com.finnvek.knittools.data.storage.YarnPhotoStorage
-import com.finnvek.knittools.domain.model.PatternAvailability
 import com.finnvek.knittools.domain.model.ProgressPhoto
 import com.finnvek.knittools.domain.model.ProjectDocument
 import com.finnvek.knittools.domain.model.SavedPattern
@@ -756,154 +754,6 @@ class RepositoryTransactionBoundaryTest {
                 verify { storage.deletePhoto(context, 7L, "file:///photo.jpg") }
             } finally {
                 unmockkStatic(Uri::class)
-            }
-        }
-}
-
-@OptIn(ExperimentalCoroutinesApi::class)
-class RavelryRepositoryTransactionBoundaryTest {
-    @Test
-    fun `ravelry project creation delegates to the atomic project writer`() =
-        runTest {
-            val savedPatternRepository = mockk<SavedPatternRepository>(relaxed = true)
-            val counterRepository = mockk<CounterRepository>()
-            coEvery {
-                counterRepository.createProject(
-                    name = "Cardigan",
-                    canCreateAdditionalProjects = false,
-                    linkedPattern = any(),
-                )
-            } returns ProjectCreationResult.Created(7L)
-            val repository =
-                RavelryRepository(
-                    api = mockk(relaxed = true),
-                    savedPatternRepository = savedPatternRepository,
-                    counterRepository = counterRepository,
-                )
-
-            val result =
-                repository.createProjectFromPattern(
-                    detail = PatternDetail(id = 99, name = "Cardigan", permalink = "cardigan"),
-                    canCreateAdditionalProjects = false,
-                )
-
-            assertEquals(ProjectCreationResult.Created(7L), result)
-            coVerify(exactly = 1) {
-                counterRepository.createProject(
-                    name = "Cardigan",
-                    canCreateAdditionalProjects = false,
-                    linkedPattern = match { it.ravelryPatternId == 99 && it.name == "Cardigan" },
-                )
-            }
-        }
-
-    // CPD-OFF: Ravelry-tallennustestien skenaariokohtainen asetelma pidetaan testien yhteydessa.
-    @Test
-    fun `ravelry save preserves backend canonical and original urls`() =
-        runTest {
-            val savedPatternRepository = mockk<SavedPatternRepository>(relaxed = true)
-            coEvery { savedPatternRepository.saveRavelryPatternIfMissing(any()) } returns 12L
-            val repository =
-                RavelryRepository(
-                    api = mockk(relaxed = true),
-                    savedPatternRepository = savedPatternRepository,
-                    counterRepository = mockk(relaxed = true),
-                )
-
-            repository.savePattern(
-                PatternDetail(
-                    id = 99,
-                    name = "Cardigan",
-                    permalink = "cardigan",
-                    availability = PatternAvailability.Paid,
-                    canonicalUrl = "https://www.ravelry.com/patterns/library/cardigan",
-                    originalUrl = "https://www.ravelry.com/patterns/library/cardigan?utm_source=share",
-                ),
-            )
-
-            coVerify {
-                savedPatternRepository.saveRavelryPatternIfMissing(
-                    match {
-                        it.ravelryPatternId == 99 &&
-                            it.localPdfUri == null &&
-                            !it.isAvailableOffline &&
-                            it.availability == PatternAvailability.Paid &&
-                            it.canonicalUrl == "https://www.ravelry.com/patterns/library/cardigan" &&
-                            it.originalUrl == "https://www.ravelry.com/patterns/library/cardigan?utm_source=share"
-                    },
-                )
-            }
-        }
-
-    @Test
-    fun `ravelry save preserves every backend availability state`() =
-        runTest {
-            val savedPatternRepository = mockk<SavedPatternRepository>(relaxed = true)
-            coEvery { savedPatternRepository.saveRavelryPatternIfMissing(any()) } returns 12L
-            val repository =
-                RavelryRepository(
-                    api = mockk(relaxed = true),
-                    savedPatternRepository = savedPatternRepository,
-                    counterRepository = mockk(relaxed = true),
-                )
-
-            PatternAvailability.entries.forEachIndexed { index, availability ->
-                repository.savePattern(
-                    PatternDetail(
-                        id = index + 1,
-                        name = availability.persistedValue,
-                        availability = availability,
-                    ),
-                )
-            }
-
-            PatternAvailability.entries.forEach { availability ->
-                coVerify(exactly = 1) {
-                    savedPatternRepository.saveRavelryPatternIfMissing(
-                        match { it.availability == availability },
-                    )
-                }
-            }
-        }
-
-    // CPD-ON
-
-    @Test
-    fun `ravelry project creation preserves the backend urls for the atomic writer`() =
-        runTest {
-            val savedPatternRepository = mockk<SavedPatternRepository>(relaxed = true)
-            val counterRepository = mockk<CounterRepository>(relaxed = true)
-            val repository =
-                RavelryRepository(
-                    api = mockk(relaxed = true),
-                    savedPatternRepository = savedPatternRepository,
-                    counterRepository = counterRepository,
-                )
-
-            repository.createProjectFromPattern(
-                detail =
-                    PatternDetail(
-                        id = 99,
-                        name = "Cardigan",
-                        permalink = "cardigan",
-                        availability = PatternAvailability.Unknown,
-                        canonicalUrl = "https://www.ravelry.com/patterns/library/cardigan",
-                        originalUrl = "https://example.com/cardigan",
-                    ),
-                canCreateAdditionalProjects = true,
-            )
-
-            coVerify {
-                counterRepository.createProject(
-                    name = "Cardigan",
-                    canCreateAdditionalProjects = true,
-                    linkedPattern =
-                        match {
-                            it.canonicalUrl == "https://www.ravelry.com/patterns/library/cardigan" &&
-                                it.originalUrl == "https://example.com/cardigan" &&
-                                it.availability == PatternAvailability.Unknown
-                        },
-                )
             }
         }
 }

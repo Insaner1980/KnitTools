@@ -73,7 +73,7 @@ class RavelryLocalizationSourceTest {
 
     private companion object {
         private val PDF_EXPLANATION_STRINGS =
-            setOf("ravelry_save_pattern_explanation", "saved_pattern_detail_no_pdf_explanation")
+            setOf("saved_pattern_detail_no_pdf_explanation")
         private const val DEFAULT_STRINGS = "app/src/main/res/values/strings.xml"
         private val LOCALE_STRINGS =
             listOf(
@@ -90,15 +90,9 @@ class RavelryLocalizationSourceTest {
             )
         private val RAVELRY_COPY_STRINGS =
             listOf(
-                "ravelry_open_saved_pattern",
-                "ravelry_save_pattern_explanation",
                 "saved_pattern_detail_no_pdf_explanation",
-                "ravelry_import_loading",
-                "ravelry_import_title",
-                "ravelry_import_already_saved",
-                "ravelry_import_needs_sign_in",
                 "ravelry_import_could_not_import",
-                "ravelry_import_backend_unavailable",
+                "ravelry_browser_hint",
                 "saved_pattern_detail_pdf_attached",
                 "saved_pattern_detail_available_offline",
                 "saved_pattern_detail_open_on_ravelry",
@@ -106,18 +100,6 @@ class RavelryLocalizationSourceTest {
                 "saved_pattern_detail_open_pattern",
                 "saved_pattern_detail_attach_to_project",
                 "saved_pattern_detail_remove_confirm",
-                "ravelry_browse",
-                "ravelry_disconnect",
-                "ravelry_disconnect_confirm",
-                "ravelry_not_connected",
-                "ravelry_connecting",
-                "ravelry_auth_pending",
-                "ravelry_connected",
-                "ravelry_connected_as",
-                "ravelry_auth_cancelled",
-                "ravelry_auth_expired",
-                "ravelry_backend_unavailable",
-                "ravelry_disconnecting",
                 "privacy_summary",
             )
     }

@@ -30,6 +30,7 @@ import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.calculator.DurationDisplayFormatter
 import com.finnvek.knittools.domain.calculator.MainCounterCountSlot
 import com.finnvek.knittools.domain.calculator.YarnUsageCalculator
+import com.finnvek.knittools.domain.model.PatternDisplayNames
 import com.finnvek.knittools.domain.model.ProjectYarnNote
 import com.finnvek.knittools.domain.model.ProjectYarnUsageItem
 import com.finnvek.knittools.domain.model.YarnCard
@@ -174,7 +175,7 @@ internal fun ProjectOverviewPattern(
     if (primary != null) {
         val available = state.projectDocumentAvailability[primary.id] == true
         OverviewLinkRow(
-            primary.label,
+            PatternDisplayNames.forDisplay(primary.label),
             if (available) {
                 stringResource(
                     R.string.project_overview_pdf_page_format,

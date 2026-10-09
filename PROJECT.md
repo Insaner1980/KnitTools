@@ -328,7 +328,7 @@ Yarn-photo pruning, stale pattern-capture pruning, and entitlement-driven widget
 `MainActivity` is the single-activity Compose host. It installs the splash screen before `super.onCreate`, uses an animated exit only when system animators are enabled, resolves the stored theme before composing edge-to-edge content, and installs `PreferenceAwareHapticFeedback` above navigation. It also owns:
 
 - billing, Pro, in-app review, and in-app update startup;
-- counter-launch, OAuth-callback, and shared-Ravelry-import intent routing;
+- counter-launch, shared-text, and incoming-PDF intent routing;
 - the passive one-time trial-ended notice;
 - flexible-update completion UI;
 - per-app locale synchronization on resume.
@@ -356,12 +356,11 @@ Production Kotlin lives under `app/src/main/java/com/finnvek/knittools`.
 | Package | Ownership |
 |---|---|
 | `analytics/` | Consent, lifecycle, event/route allowlists and PostHog adapter |
-| `auth/` | Firebase anonymous-auth gateway and Ravelry authentication seams |
 | `billing/` | Play Billing connection, product details, purchase, acknowledgement, and restore |
 | `data/datastore/` | App preferences, language mirror and preference I/O handling |
 | `data/backup/` | Archive budgets/validation, identity rebasing, file journals and provider I/O |
 | `data/local/` | Room database, entities, DAOs, migrations, transactions, debug seeding |
-| `data/remote/` | Firebase callable client, sanitized Ravelry transport models, backend error mapping |
+| `data/remote/` | `WebPdfDownloader` for PDFs downloaded in the in-app Ravelry browser |
 | `data/storage/` | App-owned files, launch-token store, SAF copy, PDF rendering/export, progress and yarn photos |
 | `di/` | Hilt bindings, database construction, dispatchers, and application scope |
 | `domain/calculator/` | Pure calculations, formatting, parsing, row mapping, annotation geometry |
@@ -427,7 +426,6 @@ Top-level navigation saves and restores state and avoids duplicate destinations.
 | `my_yarn` | Yarn inventory |
 | `yarn_card_detail/{cardId}` | Yarn-card detail |
 | `all_photos` | Cross-project progress-photo library |
-| `library_ravelry_detail/{patternId}` | Ravelry metadata from Library |
 | `tools` | Tools landing screen |
 | `gauge?projectId={projectId}` | Measurements and Gauge; optional project context, with bare `gauge` still valid |
 | `increase_decrease` | Increase/decrease calculator |
@@ -437,15 +435,13 @@ Top-level navigation saves and restores state and avoids duplicate destinations.
 | `size_charts` | Size charts |
 | `abbreviations?craftType={craftType}` | Abbreviation reference |
 | `chart_symbols` | Chart-symbol reference |
-| `ravelry` | Ravelry account and search |
-| `ravelry_import/{importUrl}` | Shared Ravelry URL confirmation/import |
-| `ravelry_detail/{patternId}` | Ravelry result detail |
 | `insights` | Insights dashboard |
 | `settings` | Settings |
 | `backup` | Manual export, validation preview and replacement restore |
 | `pro_upgrade` | Global Pro upgrade |
+| `ravelry_browser?url={url}` | Global in-app Ravelry browser; optional start URL from a shared or saved Ravelry link |
 
-`RavelryImport.createRoute` URI-encodes the URL. A raw URL must never be concatenated into a route segment.
+`RavelryBrowser.createRoute` URI-encodes the URL. A raw URL must never be concatenated into a route.
 
 ### Graph ownership and back behavior
 
@@ -456,7 +452,7 @@ Top-level navigation saves and restores state and avoids duplicate destinations.
 - `gauge?projectId={projectId}` is registered from Tools and Projects, with a `GaugeViewModel` owned by each route entry. The optional project ID supplies display context only; invalid, unavailable, or absent context does not disable the calculator.
 - Invalid required arguments use `RouteArgumentFallback` and return to the owning top-level destination.
 - Global `pro_upgrade` is outside the individual top-level graphs.
-- `KnitToolsNavActions`, `CounterScreenActions`, and `RavelrySearchActions` group route actions.
+- `KnitToolsNavActions` and `CounterScreenActions` group route actions.
 
 The bottom bar is hidden for `pro_upgrade`, both pattern viewer routes, `notes_editor/{projectId}`, the web-pattern editor and `backup`. It remains visible on the counter and most detail screens. `NavHost` consumes outer scaffold padding; nested scaffolds must not add duplicate insets.
 
@@ -508,8 +504,8 @@ Settings owns app language, light/dark/system theme, haptic feedback, keep-scree
 | Yarn inventory | `ui/screens/library/MyYarnScreen.kt`, `YarnStatusUi.kt` |
 | Yarn detail | `ui/screens/yarncard/YarnCardDetailScreen.kt` and its ViewModel |
 | All photos | `ui/screens/library/AllPhotosScreen.kt` |
-| Ravelry | `ui/screens/ravelry/RavelrySearchScreen.kt`, `RavelryDetailScreen.kt`, `RavelryViewModel.kt` |
-| Shared URL import | `ui/screens/ravelry/RavelryImportConfirmationSheet.kt` |
+| Ravelry | `ui/screens/ravelry/RavelryBrowserScreen.kt`, `RavelryLinks.kt`, `data/remote/WebPdfDownloader.kt` |
+| Incoming PDF | `ui/navigation/IncomingPdfViewModel.kt`, `IncomingPdfHost.kt`, `ui/screens/library/IncomingPdfSheet.kt` |
 | Insights | `ui/screens/insights/InsightsScreen.kt`, `InsightsViewModel.kt`, `InsightsSections.kt` |
 | Insights chart/fabric | `InsightsChart.kt`, `InsightsChartModel.kt`, `InsightsProjectFabric.kt`, `InsightsProjectFabricModel.kt` |
 | Session history | `ui/screens/session/SessionHistoryScreen.kt`, `SessionHistoryViewModel.kt` |
@@ -912,33 +908,21 @@ Manifest RTL support and automatic mirroring/Compose semantics are configuration
 
 ## Ravelry integration
 
+### In-app browser (current Android flow)
+
+Since 2026-10-09 Ravelry exists in Android only as the in-app browser `RavelryBrowserScreen` (WebView, global route `ravelry_browser?url={url}`). Tools → Ravelry, Import from Ravelry, a shared Ravelry link (`ACTION_SEND text/plain`), the web pattern editor's Ravelry link, and saved patterns' Open in Ravelry all open it. A start URL is used only when `ravelryPageUrlOrNull` accepts an HTTPS `ravelry.com`/`www.ravelry.com` page; anything else opens the Ravelry pattern search. The user signs in once, on Ravelry's own login page; KnitTools never sees the password.
+
+The WebView loads only HTTPS pages and disables file and content access. Download PDF goes through `WebPdfDownloader` (manual HTTPS-only redirects, per-URL cookies, 100 MB cap) into the same Save pattern sheet (`IncomingPdfSheet`) used for PDFs opened or shared from other apps.
+
 ### Trust boundary
 
-Android never owns Ravelry client secrets, performs Basic Auth fallback, exchanges authorization codes, stores access or refresh tokens, or calls protected Ravelry APIs directly. The Android app uses Firebase anonymous authentication and Firebase Functions callables in `europe-west1`.
+Android has no Ravelry API client, OAuth callback, Ravelry client secret, access token, or refresh token, and no Firebase Auth or Functions dependency. `RavelryAuthManager`, `RavelryBackendClient`, `RavelryRepository`, the in-app search, detail, and import screens, and the `knittools://ravelry-auth-complete` deep link were removed. Ravelry credentials must not appear in `BuildConfig`, resources, `local.properties`, `debug.credentials.properties`, source, tests, APKs, or AABs.
 
-Ravelry credentials are Secret Manager secrets used only by Functions. They must not appear in `BuildConfig`, resources, `local.properties`, `debug.credentials.properties`, source, tests, APKs, or AABs.
-
-### Android flow
-
-`RavelryAuthManager` owns backend connection status, start, disconnect, callback completion, and current-user state. Start, accepted status refresh, disconnect and callback completion capture monotonically increasing in-memory operation IDs; suspended results publish only while their operation is current. Callback completion rechecks ownership after `completeAuth` and refreshes status under the same ID. `activeAuthOperationId` suppresses passive refresh during active start/disconnect/completion and releases only its own claim in `finally`. Explicit auth changes invalidate older pending/recovered callbacks; browser cancellation also invalidates a pending operation. The authentication browser uses Auth Tab when available with a Custom Tabs fallback; if neither activity exists, the manager records cancellation rather than crashing. Android handles only the token-free deep link `knittools://ravelry-auth-complete`. Anonymous Firebase authentication uses `kotlinx.coroutines.tasks.await`; the shared in-flight sign-in task is cleared in a `NonCancellable` section so cancellation of a waiting coroutine cannot strand a completed/stale task for later callers.
-
-The accepted Android callback shape is exact: scheme `knittools`, host and encoded authority `ravelry-auth-complete`, no path, no fragment, and either one nonblank `state` plus one nonblank `proof`, or one nonblank `state` plus one nonblank `error`. Duplicate parameters, extra names, blank values, and the former `status` fallback are rejected before auth-state handling. A pending or activated state, when present, must match. Concurrent duplicate success callbacks do not repeat activation/status work; consumed callbacks cannot start a new operation. If cancellation interrupts status after successful activation, `activatedCallbackState` permits a matching callback to retry status without activating again. A cancelled completion can release its claim for a matching retry. Tokens are never carried in the intent.
-
-A newly created manager still accepts a valid callback without in-memory pending state, including after passive status refresh. `acceptsRecoveredCallback` distinguishes that recovery path from missing state after an explicit start, disconnect or cancellation. These flags and operation IDs are not durable across process death: backend UID/proof, expiry and connection-generation checks remain authoritative, and a delivered callback is still required for completion recovery. JVM fake-backend ordering tests do not prove real process-death delivery, browser/Firebase interaction or activation interrupted across a process restart.
-
-The connected Browse Ravelry action opens Custom Tabs with sharing enabled. Android `ACTION_SEND text/plain` accepts a validated Ravelry pattern URL, but the app shows a local confirmation surface before requesting an import preview.
-
-`RavelryBackendClient` requires every callable result to be a map; a null or differently shaped payload is a typed HTTP-style 500 failure rather than an empty success. Firebase `RESOURCE_EXHAUSTED`, `UNAVAILABLE`, `DEADLINE_EXCEEDED`, and `INTERNAL` map to retryable `TransientRavelryException` values with HTTP-like status 429, 503, 504, and 500. `INVALID_ARGUMENT`, `UNAUTHENTICATED`, `NOT_FOUND`, and `FAILED_PRECONDITION` map to non-transient `RavelryHttpException` values 400, 401, 404, and 412; an unknown code maps to non-transient 500. Response mapping preserves sanitized availability from transport through Room and presentation as `free`, `paid`, or `unknown` through the domain-owned `PatternAvailability`. Unknown must not be displayed as paid. A detail response without a positive `ravelryPatternId` is rejected as a typed 500 failure rather than saved as ID 0.
-
-`RavelryViewModel` records the last consumed shared import URL in `SavedStateHandle` under `ravelryConsumedImportUrl`; the same URL is not presented again after activity recreation. Import confirmation still precedes backend preview. Failed single or batch deletion retains the affected row/selection and exposes an error instead of optimistically hiding state. Project creation failure clears its in-flight guard without navigation, so the same selected pattern can be retried. `MainActivity` treats a busy share-offer coordinator as a handled failure: it shows feedback and clears the share intent so recreation cannot replay it indefinitely.
-
-Ravelry search, import confirmation, saved-pattern lists, Ravelry detail, and saved-pattern detail share one thumbnail field and the `RemotePatternImage` component. Only trimmed HTTPS URLs with a host are eligible. Loading uses a quiet themed footprint without a spinner; missing, malformed, non-HTTPS, and failed images remove their slot while adjacent text and actions remain usable. This path uses Coil's cache only and does not copy thumbnails into project, PDF, progress-photo, yarn-photo, capture, or Firebase Storage.
-
-Ravelry results and saved-pattern metadata are not attached PDF documents. Project PDF viewing requires a local `patternUri`. Metadata detail opens `SavedPatternDetailScreen`; a local PDF opens the appropriate viewer.
-
-`RavelryDetailScreen` explains beside the unsaved Save Pattern action that saving details does not download a PDF. Saved Pattern detail shows the persistent no-PDF explanation only for a Ravelry record whose `localPdfUri` is null or blank, using `requiresRavelryAccess`. An existing nonblank attachment suppresses that explanation regardless of the offline flag; this is not a file-readability check.
+Saved Ravelry rows remain readable metadata. They are not attached PDF documents: project PDF viewing requires a local `patternUri`. Saved Pattern detail shows the persistent no-PDF explanation only for a Ravelry record whose `localPdfUri` is null or blank, using `requiresRavelryAccess`. Saved-pattern lists and detail use the shared HTTPS-only `RemotePatternImage` thumbnail.
 
 ### Backend functions and OAuth completion protocol
+
+The Android app does not call these functions since 2026-10-09. The section documents the code that remains in `functions/`.
 
 `functions/src/index.ts` exports nine Functions v2 handlers. Callables require a Firebase UID and use `europe-west1`; `ravelryCallback` is the public HTTP route. `functions/src/config.ts` defines Node-side client secrets, a configurable `RAVELRY_CALLBACK_URL`, and a 10-minute OAuth-state lifetime.
 
@@ -1581,7 +1565,7 @@ Application security and platform settings:
 
 | Component | Exported | Boundary |
 |---|---:|---|
-| `MainActivity` | Yes | Launcher, Ravelry completion deep link, text sharing |
+| `MainActivity` | Yes | Launcher, text sharing, incoming PDFs |
 | `CounterWidgetReceiver` | Yes | Requires `android.permission.BIND_APPWIDGET` |
 | `CounterWidgetActions` | No | App-local increment/decrement broadcasts |
 | AndroidX `FileProvider` | No | Grants temporary URI permissions only |
@@ -1589,16 +1573,16 @@ Application security and platform settings:
 `MainActivity` accepts:
 
 - launcher `MAIN`;
-- browsable `knittools://ravelry-auth-complete`;
-- `ACTION_SEND` with `text/plain`.
+- `ACTION_SEND` with `text/plain`;
+- `ACTION_VIEW` and `ACTION_SEND` with `application/pdf`.
 
-Every exported input is untrusted. Shared text is classified locally as a Ravelry import or one unambiguous validated web URL; it never persists automatically. Ravelry URLs, generic web URLs, deep-link shape, extras, project IDs, and widget launch IDs are validated against app-owned rules/state before use.
+Every exported input is untrusted. Shared text is classified locally as a Ravelry link (opened in the in-app browser) or one unambiguous validated web URL; it never persists automatically. An incoming PDF is copied into app storage before the Save pattern sheet. Ravelry URLs, generic web URLs, extras, project IDs, and widget launch IDs are validated against app-owned rules/state before use.
 
 ## Security and privacy boundaries
 
 ### Network, Firebase and secrets
 
-Cleartext traffic is disabled. Ravelry secrets/token exchange remain server-side; Android Firebase configuration is local/generated and must not be tracked. Release signing is environment-driven. Firebase Anonymous Auth/Functions/Google Services serve Ravelry; Crashlytics is separately approved for release crash reporting. No Firebase AI, ML Kit, Gemini, App Check or model parser path is implemented.
+Cleartext traffic is disabled. Android has no Ravelry secrets, tokens, or API client; Android Firebase configuration is local/generated and must not be tracked. Release signing is environment-driven. Google Services serves only Crashlytics, which is approved for release crash reporting; Firebase Auth/Functions are not Android dependencies. No Firebase AI, ML Kit, Gemini, App Check or model parser path is implemented.
 
 `app/build.gradle.kts` applies Google Services and Crashlytics plugins, enables Crashlytics collection and R8 mapping upload only for the exact release variant, and declares the Crashlytics runtime dependency. Debug/benchmark variants disable collection/uploads. Source does not add user IDs, custom logs or project content to reports. Automatic release crashes and mapping upload are distinct from user-consented usage analytics. Their configured presence does not prove a successful release upload or server collection.
 

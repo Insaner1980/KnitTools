@@ -207,7 +207,6 @@ class CounterRepository
             mainCounterLabelType: MainCounterLabelType = craftType.defaultMainCounterLabelType(),
             mainCounterCustomLabel: String? = null,
             canCreateAdditionalProjects: Boolean,
-            linkedPattern: SavedPattern? = null,
             targetFolderId: Long? = null,
         ): ProjectCreationResult =
             try {
@@ -225,10 +224,6 @@ class CounterRepository
                     if (targetFolderId != null && projectFolderDao.getById(targetFolderId) == null) {
                         return@run ProjectCreationResult.FolderMissing
                     }
-                    val linkedPatternId =
-                        linkedPattern?.let { pattern ->
-                            savedPatternRepository.saveRavelryPatternIfMissingInCurrentTransaction(pattern)
-                        }
                     val now = System.currentTimeMillis()
                     val projectId =
                         dao.insert(
@@ -239,7 +234,6 @@ class CounterRepository
                                 mainCounterCustomLabel = sanitizeMainCounterCustomLabel(mainCounterCustomLabel),
                                 createdAt = now,
                                 updatedAt = now,
-                                linkedPatternId = linkedPatternId,
                             ).toEntity(),
                         )
                     if (targetFolderId != null) {

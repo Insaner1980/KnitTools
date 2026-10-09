@@ -294,7 +294,9 @@ class PatternNotesNavigationRuntimeTest {
         physicalPageChange(next = true, expectedPage = 3)
         // Sivunvaihdot päivittävät dokumentin aikaleiman normaalisti.
         assertPreserved(before, pageControlsUsed = true)
-        scrollToText(text(R.string.pattern_annotation_export_pdf))
+        // Työkalut näkyvät vain merkintätilassa, joka avataan yläpalkin Merkitse-toiminnosta.
+        clickText(text(R.string.pattern_mark_up))
+        scrollToText(text(R.string.pattern_annotation_tool_pen))
         assertReadablePdf()
         recordReaderLayout("project-tools-scrolled")
     }

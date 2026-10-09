@@ -99,6 +99,7 @@
     <string name="counter_decrease_repeat">Subtract repeat</string>
     <string name="counter_add_custom">Add %1$s</string>
     <string name="counter_decrease_custom">Subtract %1$s</string>
+    <string name="project_picker_empty">No projects yet. Create one in Projects.</string>
     <string name="no_active_projects">No active projects</string>
     <string name="no_completed_projects">No completed projects yet</string>
     <string name="delete_project">Delete</string>
@@ -939,21 +940,9 @@
 
     <!-- Ravelry -->
     <string name="tool_ravelry">Ravelry</string>
-    <string name="desc_ravelry">Search patterns and save favorites</string>
-    <string name="ravelry_saved_patterns">Saved Patterns</string>
-    <string name="start_project">Start Project</string>
-    <string name="save_pattern">Save Pattern</string>
-    <string name="ravelry_save_pattern_explanation">Saves the pattern details to your Library. This does not download a PDF.</string>
-    <string name="ravelry_open_saved_pattern">Open</string>
+    <string name="desc_ravelry">Browse patterns and save PDFs to KnitTools</string>
     <string name="open_in_ravelry">Open in Ravelry</string>
-    <string name="pattern_saved">Pattern saved</string>
-    <string name="search_hint">Search patterns…</string>
-    <string name="ravelry_import_loading">Loading pattern</string>
-    <string name="ravelry_import_title">Save this pattern?</string>
-    <string name="ravelry_import_already_saved">Pattern already saved</string>
-    <string name="ravelry_import_needs_sign_in">Sign in with Ravelry to save this pattern.</string>
     <string name="ravelry_import_could_not_import">Could not import this pattern.</string>
-    <string name="ravelry_import_backend_unavailable">Ravelry import is temporarily unavailable.</string>
     <string name="saved_pattern_detail_pdf_attached">PDF attached</string>
     <string name="saved_pattern_detail_available_offline">Available offline</string>
     <string name="saved_pattern_detail_open_on_ravelry">Open on Ravelry</string>
@@ -962,42 +951,11 @@
     <string name="saved_pattern_detail_open_pattern">Open Pattern</string>
     <string name="saved_pattern_detail_attach_to_project">Attach to Project</string>
     <string name="saved_pattern_detail_remove_confirm">Remove this saved pattern from the Library?\n\nAny PDF annotations made in the Library for this pattern will also be deleted and will no longer appear in projects. PDFs already attached to projects and PDF annotations made within projects will be kept.</string>
-    <string name="filter_weight">Weight</string>
-    <string name="filter_difficulty">Difficulty</string>
     <string name="free">Free</string>
     <string name="paid">Paid</string>
     <string name="availability_unknown">Availability unknown</string>
-    <string name="no_results">No patterns found</string>
-    <string name="search_error">Could not load patterns. Check your internet connection.</string>
-    <string name="search_more_error">Could not load more patterns. Check your internet connection.</string>
-    <string name="ravelry_search_rate_limited">Ravelry is limiting searches. Try again later.</string>
-    <string name="ravelry_search_auth_error">Ravelry sign-in could not be used. Sign in again and retry.</string>
-    <string name="ravelry_search_service_error">Ravelry is temporarily unavailable. Try again later.</string>
-    <string name="pattern_detail_error">Could not load pattern details. Check your internet connection.</string>
-    <string name="ravelry_sign_in">Sign in with Ravelry</string>
-    <string name="ravelry_browse">Browse Ravelry</string>
-    <string name="ravelry_disconnect">Disconnect Ravelry</string>
-    <string name="ravelry_disconnect_confirm">Disconnect Ravelry? You will need to sign in again to use Ravelry features.</string>
-    <string name="ravelry_not_connected">Sign in to search Ravelry patterns from KnitTools.</string>
-    <string name="ravelry_connecting">Connecting to Ravelry…</string>
-    <string name="ravelry_auth_pending">Finish signing in with Ravelry in the browser.</string>
-    <string name="ravelry_connected">Connected to Ravelry</string>
-    <string name="ravelry_connected_as">Connected as %1$s</string>
-    <string name="ravelry_auth_cancelled">Ravelry sign-in was cancelled.</string>
-    <string name="ravelry_auth_expired">Ravelry sign-in expired. Sign in again.</string>
-    <string name="ravelry_backend_unavailable">Ravelry connection is temporarily unavailable.</string>
-    <string name="ravelry_disconnecting">Disconnecting Ravelry…</string>
     <string name="difficulty_format">%.1f / 5</string>
-    <plurals name="yardage_format">
-        <item quantity="one">%d yard</item>
-        <item quantity="other">%d yards</item>
-    </plurals>
-    <string name="pattern_detail_needles">Needles</string>
-    <string name="pattern_detail_yardage">Yardage</string>
-    <string name="pattern_detail_sizes">Sizes</string>
-    <string name="pattern_saved_to_library">Saved to Library</string>
     <string name="show_more">Show more</string>
-    <string name="show_less">Show less</string>
 
     <!-- Info tips -->
     <string name="tip_pattern_repeat_title">Pattern repeat</string>
@@ -1026,7 +984,6 @@
     <string name="pattern_annotations_project">Project notes</string>
     <string name="pattern_annotations_read_only">Read only</string>
     <string name="pattern_annotations_count">%1$s (%2$d)</string>
-    <string name="pattern_annotation_tool_browse">Browse</string>
     <string name="pattern_annotation_tool_pen">Pen</string>
     <string name="pattern_annotation_tool_highlighter">Highlighter</string>
     <string name="pattern_annotation_tool_eraser">Eraser</string>
@@ -1413,6 +1370,17 @@
     <string name="web_pattern_delete_confirm_title">Delete web pattern?</string>
     <string name="web_pattern_delete_confirm_message">Delete %1$s from Saved Patterns in the Library?\n\nAny PDF annotations made in the Library for this pattern will also be deleted and will no longer appear in projects. PDFs already attached to projects and PDF annotations made within projects will be kept.</string>
     <string name="web_pattern_attach">Attach to project</string>
+    <string name="pattern_mark_up">Mark up</string>
+    <string name="pattern_mark_up_done">Done</string>
+    <string name="incoming_pdf_title">Save pattern</string>
+    <string name="incoming_pdf_other_section">Or</string>
+    <string name="incoming_pdf_new_project">Start a new project</string>
+    <string name="incoming_pdf_library_only">Save to Library only</string>
+    <string name="incoming_pdf_open_failed">Couldn\'t open the PDF</string>
+    <string name="incoming_pdf_save_failed">Couldn\'t save the pattern</string>
+    <string name="ravelry_browser_hint">Open a pattern and tap Download PDF to save it in KnitTools.</string>
+    <string name="incoming_pdf_downloading">Downloading pattern…</string>
+    <string name="incoming_pdf_not_pdf">Only PDF patterns can be saved</string>
     <string name="web_pattern_unlink">Unlink pattern information</string>
     <string name="web_pattern_replace_confirm_title">Replace pattern information?</string>
     <string name="web_pattern_replace_confirm_message">Replace the current pattern information with %1$s?</string>

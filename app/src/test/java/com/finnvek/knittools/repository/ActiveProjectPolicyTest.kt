@@ -5,7 +5,6 @@ import com.finnvek.knittools.data.local.CounterProjectEntity
 import com.finnvek.knittools.data.local.DatabaseTransactionRunner
 import com.finnvek.knittools.data.local.ImmediateDatabaseTransactionRunner
 import com.finnvek.knittools.data.local.toDomain
-import com.finnvek.knittools.data.remote.PatternDetail
 import com.finnvek.knittools.pro.ProManager
 import com.finnvek.knittools.pro.ProState
 import com.finnvek.knittools.pro.ProStatus
@@ -189,26 +188,5 @@ class ActiveProjectPolicyTest {
                 ) { dao.update(match { it.id == id && !it.isCompleted && it.name == "Edited $id" }) }
             }
             coVerify(exactly = 0) { dao.getActiveProjectCount() }
-        }
-
-    @Test
-    fun `Ravelry shares the gate and does not persist a pattern when blocked`() =
-        runTest {
-            val ravelry = RavelryRepository(mockk(), patterns, repository())
-            val detail = PatternDetail(id = 42, name = "Original", permalink = "original")
-            coEvery { dao.getActiveProjectCount() } returns 1
-            assertEquals(ProjectCreationResult.LimitReached, ravelry.createProjectFromPattern(detail, false))
-            coVerify(exactly = 0) { patterns.saveRavelryPatternIfMissingInCurrentTransaction(any()) }
-            coVerify(exactly = 0) { dao.insert(any()) }
-            coEvery { dao.getActiveProjectCount() } returns 0
-            assertEquals(ProjectCreationResult.Created(8L), ravelry.createProjectFromPattern(detail, false))
-            coVerify(exactly = 1) {
-                patterns.saveRavelryPatternIfMissingInCurrentTransaction(
-                    match {
-                        it.ravelryPatternId ==
-                            42
-                    },
-                )
-            }
         }
 }

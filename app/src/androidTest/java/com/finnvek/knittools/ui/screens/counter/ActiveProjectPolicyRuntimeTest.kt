@@ -110,45 +110,6 @@ class ActiveProjectPolicyRuntimeTest {
     }
 
     @Test
-    fun ravelryPendingCreationUsesFreedSlotAfterDismissedRequestStaysCancelled() {
-        val active = seed("Active project")
-        launch()
-        click(R.string.tab_tools)
-        scrollTo(R.string.tool_ravelry)
-        click(R.string.tool_ravelry)
-        waitFor { findNode { it.isEditable && it.isEnabled } != null }
-        typeName("cardigan")
-        val editor = requireNotNull(findNode { it.isEditable })
-        assertTrue(editor.performAction(AccessibilityNodeInfo.AccessibilityAction.ACTION_IME_ENTER.id))
-        open("Synthetic long winter cardigan pattern with cables and a matching hat 1")
-        scrollTo(R.string.start_project)
-        click(R.string.start_project)
-        waitText(text(R.string.pro_prompt_projects_title))
-        click(R.string.pro_prompt_not_now)
-        runBlocking { repository.archiveProject(active, 200L) }
-        idle()
-        assertEquals(1, runBlocking { repository.getProjectCount() })
-        val next = seed("Another active")
-        click(R.string.start_project)
-        waitText(text(R.string.pro_prompt_projects_title))
-        runBlocking { repository.deleteProject(next) }
-        waitFor { runBlocking { repository.getActiveProjectCount() == 1 } }
-        assertEquals(2, runBlocking { repository.getProjectCount() })
-        val created = runBlocking { repository.getActiveProjects().first().single() }
-        assertEquals("Synthetic long winter cardigan pattern with cables and a matching hat", created.name)
-        assertTrue(created.linkedPatternId != null)
-    }
-
-    private fun scrollTo(label: Int) {
-        repeat(8) {
-            if (findText(text(label))?.isVisibleToUser == true) return
-            findNode { it.isScrollable }?.performAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD)
-            idle()
-        }
-        waitText(text(label))
-    }
-
-    @Test
     fun pendingCreationOpensWhenLastActiveProjectIsCompleted() {
         val active = seed("Active project")
         launch()

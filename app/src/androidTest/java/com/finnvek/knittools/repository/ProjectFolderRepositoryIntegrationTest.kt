@@ -17,8 +17,6 @@ import com.finnvek.knittools.data.local.ProjectDocumentSchemaConstraints
 import com.finnvek.knittools.data.local.RoomDatabaseTransactionRunner
 import com.finnvek.knittools.data.storage.PatternDocumentStorage
 import com.finnvek.knittools.data.storage.ProgressPhotoStorage
-import com.finnvek.knittools.domain.model.SavedPattern
-import com.finnvek.knittools.domain.model.SavedPatternSource
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.runTest
@@ -176,27 +174,24 @@ class ProjectFolderRepositoryIntegrationTest {
         }
 
     @Test
-    fun createProjectWithMissingFolderLeavesProjectsAssignmentsAndLinkedPatternUntouched() =
+    fun createProjectWithMissingFolderLeavesProjectsAndAssignmentsUntouched() =
         runTest {
             val projectsBefore = scalarLong("SELECT COUNT(*) FROM counter_projects")
-            val patternsBefore = scalarLong("SELECT COUNT(*) FROM saved_patterns")
 
             val result =
                 counterRepository.createProject(
                     name = "Missing destination",
                     canCreateAdditionalProjects = true,
-                    linkedPattern = linkedPattern("Missing destination pattern"),
                     targetFolderId = 404L,
                 )
 
             assertEquals(ProjectCreationResult.FolderMissing, result)
             assertEquals(projectsBefore, scalarLong("SELECT COUNT(*) FROM counter_projects"))
-            assertEquals(patternsBefore, scalarLong("SELECT COUNT(*) FROM saved_patterns"))
             assertEquals(0L, assignmentCount())
         }
 
     @Test
-    fun assignmentFailureRollsBackProjectAndLinkedPatternCreation() =
+    fun assignmentFailureRollsBackProjectCreation() =
         runTest {
             val folder = (repository.createFolder("Failure target") as ProjectFolderMutationResult.Created).folder
             sql.execSQL(
@@ -206,13 +201,11 @@ class ProjectFolderRepositoryIntegrationTest {
                     "BEGIN SELECT RAISE(ABORT, 'assignment rejected'); END",
             )
             val projectsBefore = scalarLong("SELECT COUNT(*) FROM counter_projects")
-            val patternsBefore = scalarLong("SELECT COUNT(*) FROM saved_patterns")
 
             try {
                 counterRepository.createProject(
                     name = "Rolled back project",
                     canCreateAdditionalProjects = true,
-                    linkedPattern = linkedPattern("Rolled back pattern"),
                     targetFolderId = folder.id,
                 )
                 throw AssertionError("SQLite constraint failure expected")
@@ -221,7 +214,6 @@ class ProjectFolderRepositoryIntegrationTest {
             }
 
             assertEquals(projectsBefore, scalarLong("SELECT COUNT(*) FROM counter_projects"))
-            assertEquals(patternsBefore, scalarLong("SELECT COUNT(*) FROM saved_patterns"))
             assertEquals(0L, assignmentCount(folder.id))
         }
 
@@ -279,13 +271,6 @@ class ProjectFolderRepositoryIntegrationTest {
         )
     }
     // CPD-ON
-
-    private fun linkedPattern(name: String): SavedPattern =
-        SavedPattern(
-            source = SavedPatternSource.Other,
-            name = name,
-            designerName = "Designer",
-        )
 
     private suspend fun createProject(
         name: String,

@@ -95,6 +95,7 @@
     <string name="counter_decrease_repeat">Vähennä toisto</string>
     <string name="counter_add_custom">Lisää %1$s</string>
     <string name="counter_decrease_custom">Vähennä %1$s</string>
+    <string name="project_picker_empty">Ei vielä projekteja. Luo projekti Projektit-välilehdellä.</string>
     <string name="no_active_projects">Ei aktiivisia projekteja</string>
     <string name="no_completed_projects">Ei valmiita projekteja vielä</string>
     <string name="delete_project">Poista</string>
@@ -921,21 +922,9 @@
 
     <!-- Ravelry -->
     <string name="tool_ravelry">Ravelry</string>
-    <string name="desc_ravelry">Etsi ohjeita ja tallenna suosikkeja</string>
-    <string name="ravelry_saved_patterns">Tallennetut ohjeet</string>
-    <string name="start_project">Aloita projekti</string>
-    <string name="save_pattern">Tallenna ohje</string>
-    <string name="ravelry_save_pattern_explanation">Tallentaa ohjeen tiedot Kirjastoon. Tämä ei lataa PDF-tiedostoa.</string>
-    <string name="ravelry_open_saved_pattern">Avaa</string>
+    <string name="desc_ravelry">Selaa ohjeita ja tallenna PDF:t KnitToolsiin</string>
     <string name="open_in_ravelry">Avaa Ravelryssä</string>
-    <string name="pattern_saved">Ohje tallennettu</string>
-    <string name="search_hint">Etsi ohjeita…</string>
-    <string name="ravelry_import_loading">Ladataan ohjetta</string>
-    <string name="ravelry_import_title">Tallennetaanko tämä ohje?</string>
-    <string name="ravelry_import_already_saved">Ohje on jo tallennettu</string>
-    <string name="ravelry_import_needs_sign_in">Kirjaudu Ravelryyn tallentaaksesi tämän ohjeen.</string>
     <string name="ravelry_import_could_not_import">Tätä ohjetta ei voitu tuoda.</string>
-    <string name="ravelry_import_backend_unavailable">Ravelry-tuonti ei ole juuri nyt käytettävissä.</string>
     <string name="saved_pattern_detail_pdf_attached">PDF liitetty</string>
     <string name="saved_pattern_detail_available_offline">Saatavilla offline-tilassa</string>
     <string name="saved_pattern_detail_open_on_ravelry">Avaa Ravelryssä</string>
@@ -944,40 +933,11 @@
     <string name="saved_pattern_detail_open_pattern">Avaa ohje</string>
     <string name="saved_pattern_detail_attach_to_project">Liitä projektiin</string>
     <string name="saved_pattern_detail_remove_confirm">Poistetaanko tämä tallennettu ohje kirjastosta?\n\nMyös tähän ohjeeseen kirjastossa mahdollisesti tehdyt PDF-merkinnät poistetaan, eivätkä ne enää näy projekteissa. Projekteihin jo liitetyt PDF:t ja projekteissa tehdyt PDF-merkinnät säilyvät.</string>
-    <string name="filter_weight">Paksuus</string>
-    <string name="filter_difficulty">Vaikeus</string>
     <string name="free">Ilmainen</string>
     <string name="paid">Maksullinen</string>
     <string name="availability_unknown">Saatavuus tuntematon</string>
-    <string name="no_results">Ohjeita ei löytynyt</string>
-    <string name="search_error">Ohjeita ei voitu ladata. Tarkista internetyhteytesi.</string>
-    <string name="ravelry_search_rate_limited">Ravelry rajoittaa hakuja. Yritä myöhemmin uudelleen.</string>
-    <string name="ravelry_search_auth_error">Ravelry-kirjautumista ei voitu käyttää. Kirjaudu uudelleen ja yritä uudelleen.</string>
-    <string name="ravelry_search_service_error">Ravelry ei ole juuri nyt käytettävissä. Yritä myöhemmin uudelleen.</string>
-    <string name="ravelry_sign_in">Kirjaudu Ravelryyn</string>
-    <string name="ravelry_browse">Selaa Ravelryä</string>
-    <string name="ravelry_disconnect">Katkaise Ravelry-yhteys</string>
-    <string name="ravelry_disconnect_confirm">Katkaistaanko Ravelry-yhteys? Ravelry-toimintojen käyttö edellyttää uutta kirjautumista.</string>
-    <string name="ravelry_not_connected">Kirjaudu sisään hakeaksesi Ravelry-ohjeita KnitToolsissa.</string>
-    <string name="ravelry_connecting">Yhdistetään Ravelryyn…</string>
-    <string name="ravelry_auth_pending">Viimeistele Ravelry-kirjautuminen selaimessa.</string>
-    <string name="ravelry_connected">Yhdistetty Ravelryyn</string>
-    <string name="ravelry_connected_as">Yhdistetty käyttäjänä %1$s</string>
-    <string name="ravelry_auth_cancelled">Ravelry-kirjautuminen peruttiin.</string>
-    <string name="ravelry_auth_expired">Ravelry-kirjautuminen vanheni. Kirjaudu uudelleen.</string>
-    <string name="ravelry_backend_unavailable">Ravelry-yhteys ei ole juuri nyt käytettävissä.</string>
-    <string name="ravelry_disconnecting">Katkaistaan Ravelry-yhteyttä…</string>
     <string name="difficulty_format">%.1f / 5</string>
-    <plurals name="yardage_format">
-        <item quantity="one">%d jaardi</item>
-        <item quantity="other">%d jaardia</item>
-    </plurals>
-    <string name="pattern_detail_needles">Puikot</string>
-    <string name="pattern_detail_yardage">Lankamäärä</string>
-    <string name="pattern_detail_sizes">Koot</string>
-    <string name="pattern_saved_to_library">Tallennettu kirjastoon</string>
     <string name="show_more">Näytä lisää</string>
-    <string name="show_less">Näytä vähemmän</string>
 
     <!-- Infovinkit -->
     <string name="tip_pattern_repeat_title">Mallikerta</string>
@@ -1007,8 +967,6 @@
     <string name="retry">Yritä uudelleen</string>
     <string name="widget_rows_remaining_format">%d riviä jäljellä</string>
     <string name="widget_target_reached">Tavoite saavutettu</string>
-    <string name="search_more_error">Lisää ohjeita ei voitu ladata. Tarkista internet-yhteys.</string>
-    <string name="pattern_detail_error">Ohjeen tietoja ei voitu ladata. Tarkista internet-yhteys.</string>
     <string name="yarn_card_number_fallback">Lanka #%1$d</string>
     <string name="pro_start_free_trial">Aloita ilmainen kokeilu</string>
     <string name="pro_start_14_day_trial">Aloita 14 päivän ilmainen kokeilu</string>
@@ -1333,6 +1291,17 @@
     <string name="web_pattern_delete_confirm_title">Poistetaanko verkko-ohje?</string>
     <string name="web_pattern_delete_confirm_message">Poistetaanko %1$s kirjaston tallennetuista ohjeista?\n\nMyös tähän ohjeeseen kirjastossa mahdollisesti tehdyt PDF-merkinnät poistetaan, eivätkä ne enää näy projekteissa. Projekteihin jo liitetyt PDF:t ja projekteissa tehdyt PDF-merkinnät säilyvät.</string>
     <string name="web_pattern_attach">Liitä projektiin</string>
+    <string name="pattern_mark_up">Merkitse</string>
+    <string name="pattern_mark_up_done">Valmis</string>
+    <string name="incoming_pdf_title">Tallenna ohje</string>
+    <string name="incoming_pdf_other_section">Tai</string>
+    <string name="incoming_pdf_new_project">Aloita uusi projekti</string>
+    <string name="incoming_pdf_library_only">Tallenna vain Kirjastoon</string>
+    <string name="incoming_pdf_open_failed">PDF:n avaaminen epäonnistui</string>
+    <string name="incoming_pdf_save_failed">Ohjeen tallentaminen epäonnistui</string>
+    <string name="ravelry_browser_hint">Avaa ohje ja paina Download PDF, niin ohje tallentuu KnitToolsiin.</string>
+    <string name="incoming_pdf_downloading">Ladataan ohjetta…</string>
+    <string name="incoming_pdf_not_pdf">Vain PDF-ohjeet voi tallentaa</string>
     <string name="web_pattern_unlink">Irrota ohjeen tiedot</string>
     <string name="web_pattern_replace_confirm_title">Korvataanko ohjeen tiedot?</string>
     <string name="web_pattern_replace_confirm_message">Korvataanko nykyiset ohjeen tiedot ohjeella %1$s?</string>

@@ -97,6 +97,7 @@
     <string name="counter_decrease_repeat">Subtrair repetição</string>
     <string name="counter_add_custom">Adicionar %1$s</string>
     <string name="counter_decrease_custom">Subtrair %1$s</string>
+    <string name="project_picker_empty">Ainda não há projetos. Crie um em Projetos.</string>
     <string name="no_active_projects">Sem projetos ativos</string>
     <string name="no_completed_projects">Ainda não há projetos concluídos</string>
     <string name="delete_project">Eliminar</string>
@@ -670,21 +671,9 @@
 
     <!-- Ravelry -->
     <string name="tool_ravelry">Ravelry</string>
-    <string name="desc_ravelry">Procure receitas e guarde favoritas</string>
-    <string name="ravelry_saved_patterns">Receitas guardadas</string>
-    <string name="start_project">Iniciar projeto</string>
-    <string name="save_pattern">Guardar receita</string>
-    <string name="ravelry_save_pattern_explanation">Guarda os detalhes do modelo na sua Biblioteca. Não descarrega nenhum PDF.</string>
-    <string name="ravelry_open_saved_pattern">Abrir</string>
+    <string name="desc_ravelry">Explore receitas e guarde os PDF no KnitTools</string>
     <string name="open_in_ravelry">Abrir no Ravelry</string>
-    <string name="pattern_saved">Receita guardada</string>
-    <string name="search_hint">Pesquisar receitas…</string>
-    <string name="ravelry_import_loading">A carregar receita</string>
-    <string name="ravelry_import_title">Guardar esta receita?</string>
-    <string name="ravelry_import_already_saved">Receita já guardada</string>
-    <string name="ravelry_import_needs_sign_in">Inicie sessão no Ravelry para guardar esta receita.</string>
     <string name="ravelry_import_could_not_import">Não foi possível importar esta receita.</string>
-    <string name="ravelry_import_backend_unavailable">A importação do Ravelry está temporariamente indisponível.</string>
     <string name="saved_pattern_detail_pdf_attached">PDF anexado</string>
     <string name="saved_pattern_detail_available_offline">Disponível offline</string>
     <string name="saved_pattern_detail_open_on_ravelry">Abrir no Ravelry</string>
@@ -693,35 +682,10 @@
     <string name="saved_pattern_detail_open_pattern">Abrir receita</string>
     <string name="saved_pattern_detail_attach_to_project">Anexar ao projeto</string>
     <string name="saved_pattern_detail_remove_confirm">Remover esta receita guardada da biblioteca?\n\nSe existirem anotações em PDF criadas na biblioteca para esta receita, também serão eliminadas e deixarão de aparecer nos projetos. Os PDF já anexados aos projetos e as anotações em PDF criadas nos projetos serão mantidos.</string>
-    <string name="filter_weight">Espessura</string>
-    <string name="filter_difficulty">Dificuldade</string>
     <string name="free">Grátis</string>
     <string name="paid">Pago</string>
     <string name="availability_unknown">Disponibilidade desconhecida</string>
-    <string name="no_results">Nenhuma receita encontrada</string>
-    <string name="search_error">Não foi possível carregar as receitas. Verifique a sua ligação à Internet.</string>
-    <string name="ravelry_search_rate_limited">O Ravelry está a limitar as pesquisas. Tente novamente mais tarde.</string>
-    <string name="ravelry_search_auth_error">Não foi possível usar o início de sessão no Ravelry. Inicie sessão novamente e tente outra vez.</string>
-    <string name="ravelry_search_service_error">O Ravelry está temporariamente indisponível. Tente novamente mais tarde.</string>
-    <string name="ravelry_sign_in">Iniciar sessão com o Ravelry</string>
-    <string name="ravelry_browse">Explorar Ravelry</string>
-    <string name="ravelry_disconnect">Desligar Ravelry</string>
-    <string name="ravelry_disconnect_confirm">Desligar o Ravelry? Terá de iniciar sessão novamente para usar as funcionalidades do Ravelry.</string>
-    <string name="ravelry_not_connected">Inicie sessão para procurar receitas do Ravelry no KnitTools.</string>
-    <string name="ravelry_connecting">A ligar ao Ravelry…</string>
-    <string name="ravelry_auth_pending">Termine o início de sessão no Ravelry no navegador.</string>
-    <string name="ravelry_connected">Ligado ao Ravelry</string>
-    <string name="ravelry_connected_as">Ligado como %1$s</string>
-    <string name="ravelry_auth_cancelled">O início de sessão no Ravelry foi cancelado.</string>
-    <string name="ravelry_auth_expired">O início de sessão no Ravelry expirou. Inicie sessão novamente.</string>
-    <string name="ravelry_backend_unavailable">A ligação ao Ravelry está temporariamente indisponível.</string>
-    <string name="ravelry_disconnecting">A desligar Ravelry…</string>
     <string name="difficulty_format">%.1f / 5</string>
-    <plurals name="yardage_format">
-        <item quantity="one">%d jarda</item>
-        <item quantity="many">%d jardas</item>
-        <item quantity="other">%d jardas</item>
-    </plurals>
 
     <!-- Info tips -->
     <string name="tip_pattern_repeat_title">Repetição do motivo</string>
@@ -749,8 +713,6 @@
     <string name="row_label_with_target">%1$d / %2$d</string>
     <string name="widget_undo_action">Anular</string>
     <string name="widget_undo_content_description">Anular última alteração</string>
-    <string name="search_more_error">Não foi possível carregar mais modelos. Verifique a ligação à internet.</string>
-    <string name="pattern_detail_error">Não foi possível carregar os detalhes do modelo. Verifique a ligação à internet.</string>
     <string name="project_actions_title">Ações do projeto</string>
     <string name="project_actions_section_counter_tools">Ferramentas de contadores</string>
     <string name="project_content_title">Projeto</string>
@@ -763,12 +725,7 @@
 
     <!-- Täydennetyt lokalisoidut käyttöliittymätekstit -->
     <string name="yarn_card_number_fallback">Fio #%1$d</string>
-    <string name="pattern_detail_needles">Agulhas</string>
-    <string name="pattern_detail_yardage">Metragem</string>
-    <string name="pattern_detail_sizes">Tamanhos</string>
-    <string name="pattern_saved_to_library">Guardado na biblioteca</string>
     <string name="show_more">Mostrar mais</string>
-    <string name="show_less">Mostrar menos</string>
     <string name="pro_start_free_trial">Iniciar avaliação gratuita</string><string name="pro_start_14_day_trial">Iniciar avaliação gratuita de 14 dias</string><string name="pro_trial_start_failed">Não foi possível iniciar a avaliação. Tente novamente.</string>
     <string name="pro_prompt_not_now">Agora não</string><string name="pro_prompt_see_pro">Ver Pro</string><string name="pro_prompt_trial_body">Inicie a sua avaliação gratuita de 14 dias do Pro. Não é necessário um método de pagamento. Tudo o que criar continuará disponível após a avaliação.</string>
     <string name="pro_prompt_reactivation_title">Reative este projeto com o Pro</string>
@@ -1068,6 +1025,17 @@
     <string name="web_pattern_delete_confirm_title">Eliminar o modelo online?</string>
     <string name="web_pattern_delete_confirm_message">Eliminar %1$s das Receitas guardadas na biblioteca?\n\nSe existirem anotações em PDF criadas na biblioteca para esta receita, também serão eliminadas e deixarão de aparecer nos projetos. Os PDF já anexados aos projetos e as anotações em PDF criadas nos projetos serão mantidos.</string>
     <string name="web_pattern_attach">Associar a um projeto</string>
+    <string name="pattern_mark_up">Anotar</string>
+    <string name="pattern_mark_up_done">Concluído</string>
+    <string name="incoming_pdf_title">Guardar modelo</string>
+    <string name="incoming_pdf_other_section">Ou</string>
+    <string name="incoming_pdf_new_project">Começar um novo projeto</string>
+    <string name="incoming_pdf_library_only">Guardar apenas na Biblioteca</string>
+    <string name="incoming_pdf_open_failed">Não foi possível abrir o PDF</string>
+    <string name="incoming_pdf_save_failed">Não foi possível guardar o modelo</string>
+    <string name="ravelry_browser_hint">Abra um modelo e toque em Download PDF para o guardar no KnitTools.</string>
+    <string name="incoming_pdf_downloading">A transferir o modelo…</string>
+    <string name="incoming_pdf_not_pdf">Só é possível guardar modelos PDF</string>
     <string name="web_pattern_unlink">Desassociar as informações do modelo</string>
     <string name="web_pattern_replace_confirm_title">Substituir as informações do modelo?</string>
     <string name="web_pattern_replace_confirm_message">Substituir as informações atuais do modelo por %1$s?</string>

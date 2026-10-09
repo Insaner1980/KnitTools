@@ -801,19 +801,12 @@ dependencies {
     implementation(libs.coil.compose)
     implementation(libs.coil.network.ktor3)
 
-    // Ktor (HTTP client)
+    // Ktor (Coilin HTTP-moottori etäkuville)
     implementation(libs.ktor.client.core)
     implementation(libs.ktor.client.okhttp)
-    implementation(libs.ktor.client.content.negotiation)
-    implementation(libs.ktor.serialization.kotlinx.json)
 
-    // Browser (Custom Chrome Tabs)
-    implementation(libs.browser)
-
-    // Firebase backend integration
+    // Firebase Crashlytics
     implementation(platform(libs.firebase.bom))
-    implementation(libs.firebase.auth)
-    implementation(libs.firebase.functions)
     implementation(libs.firebase.crashlytics)
     implementation(libs.posthog.android)
 

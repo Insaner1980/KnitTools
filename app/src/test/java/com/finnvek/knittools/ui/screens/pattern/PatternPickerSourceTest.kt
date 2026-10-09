@@ -40,8 +40,8 @@ class PatternPickerSourceTest {
         assertTrue(picker.contains("onImportFromRavelry: () -> Unit"))
         assertTrue(picker.contains("R.string.pattern_picker_import_from_ravelry"))
         assertTrue(counterScreen.contains("onImportFromRavelry = actions.onImportFromRavelry"))
-        assertTrue(navGraph.contains("navController.navigateToTopLevel(TopLevelDestination.Tools)"))
-        assertTrue(navGraph.contains("navController.navigateSingleTopTo(Screen.Ravelry.route)"))
+        // Tuo Ravelrysta avaa Ravelryn sovelluksen sisällä, jotta Download PDF tallentuu suoraan.
+        assertTrue(navGraph.contains("navController.navigateSingleTopTo(Screen.RavelryBrowser.route)"))
         assertTrue(strings.contains("""<string name="pattern_picker_import_from_ravelry">"""))
     }
 

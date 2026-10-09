@@ -95,6 +95,7 @@
     <string name="counter_decrease_repeat">Dra av upprepning</string>
     <string name="counter_add_custom">Lägg till %1$s</string>
     <string name="counter_decrease_custom">Dra av %1$s</string>
+    <string name="project_picker_empty">Inga projekt än. Skapa ett under Projekt.</string>
     <string name="no_active_projects">Inga aktiva projekt</string>
     <string name="no_completed_projects">Inga färdiga projekt ännu</string>
     <string name="delete_project">Ta bort</string>
@@ -652,21 +653,9 @@
 
     <!-- Ravelry -->
     <string name="tool_ravelry">Ravelry</string>
-    <string name="desc_ravelry">Sök mönster och spara favoriter</string>
-    <string name="ravelry_saved_patterns">Sparade mönster</string>
-    <string name="start_project">Starta projekt</string>
-    <string name="save_pattern">Spara mönster</string>
-    <string name="ravelry_save_pattern_explanation">Sparar mönstrets uppgifter i ditt Bibliotek. Ingen PDF laddas ner.</string>
-    <string name="ravelry_open_saved_pattern">Öppna</string>
+    <string name="desc_ravelry">Bläddra bland mönster och spara PDF:er i KnitTools</string>
     <string name="open_in_ravelry">Öppna i Ravelry</string>
-    <string name="pattern_saved">Mönster sparat</string>
-    <string name="search_hint">Sök mönster…</string>
-    <string name="ravelry_import_loading">Läser in mönster</string>
-    <string name="ravelry_import_title">Spara det här mönstret?</string>
-    <string name="ravelry_import_already_saved">Mönstret är redan sparat</string>
-    <string name="ravelry_import_needs_sign_in">Logga in med Ravelry för att spara det här mönstret.</string>
     <string name="ravelry_import_could_not_import">Det gick inte att importera det här mönstret.</string>
-    <string name="ravelry_import_backend_unavailable">Ravelry-import är tillfälligt otillgänglig.</string>
     <string name="saved_pattern_detail_pdf_attached">PDF bifogad</string>
     <string name="saved_pattern_detail_available_offline">Tillgängligt offline</string>
     <string name="saved_pattern_detail_open_on_ravelry">Öppna i Ravelry</string>
@@ -675,34 +664,10 @@
     <string name="saved_pattern_detail_open_pattern">Öppna mönster</string>
     <string name="saved_pattern_detail_attach_to_project">Koppla till projekt</string>
     <string name="saved_pattern_detail_remove_confirm">Ta bort det här sparade mönstret från biblioteket?\n\nEventuella PDF-anteckningar som gjorts i biblioteket för det här mönstret tas också bort och visas inte längre i projekt. PDF-filer som redan är bifogade till projekt och PDF-anteckningar som gjorts i projekten behålls.</string>
-    <string name="filter_weight">Grovlek</string>
-    <string name="filter_difficulty">Svårighet</string>
     <string name="free">Gratis</string>
     <string name="paid">Betald</string>
     <string name="availability_unknown">Tillgänglighet okänd</string>
-    <string name="no_results">Inga mönster hittades</string>
-    <string name="search_error">Kunde inte ladda mönster. Kontrollera internetanslutningen.</string>
-    <string name="ravelry_search_rate_limited">Ravelry begränsar sökningar. Försök igen senare.</string>
-    <string name="ravelry_search_auth_error">Ravelry-inloggningen kunde inte användas. Logga in igen och försök igen.</string>
-    <string name="ravelry_search_service_error">Ravelry är tillfälligt otillgängligt. Försök igen senare.</string>
-    <string name="ravelry_sign_in">Logga in med Ravelry</string>
-    <string name="ravelry_browse">Bläddra i Ravelry</string>
-    <string name="ravelry_disconnect">Koppla från Ravelry</string>
-    <string name="ravelry_disconnect_confirm">Koppla från Ravelry? Du måste logga in igen för att använda Ravelry-funktionerna.</string>
-    <string name="ravelry_not_connected">Logga in för att söka efter Ravelry-mönster från KnitTools.</string>
-    <string name="ravelry_connecting">Ansluter till Ravelry…</string>
-    <string name="ravelry_auth_pending">Slutför Ravelry-inloggningen i webbläsaren.</string>
-    <string name="ravelry_connected">Ansluten till Ravelry</string>
-    <string name="ravelry_connected_as">Ansluten som %1$s</string>
-    <string name="ravelry_auth_cancelled">Ravelry-inloggningen avbröts.</string>
-    <string name="ravelry_auth_expired">Ravelry-inloggningen har gått ut. Logga in igen.</string>
-    <string name="ravelry_backend_unavailable">Ravelry-anslutningen är tillfälligt otillgänglig.</string>
-    <string name="ravelry_disconnecting">Kopplar från Ravelry…</string>
     <string name="difficulty_format">%.1f / 5</string>
-    <plurals name="yardage_format">
-        <item quantity="one">%d yard</item>
-        <item quantity="other">%d yard</item>
-    </plurals>
 
     <!-- Info tips -->
     <string name="tip_pattern_repeat_title">Mönsterrapport</string>
@@ -730,8 +695,6 @@
     <string name="row_label_with_target">Varv %1$d / %2$d</string>
     <string name="widget_undo_action">Ångra</string>
     <string name="widget_undo_content_description">Ångra senaste ändringen</string>
-    <string name="search_more_error">Kunde inte läsa in fler mönster. Kontrollera internetanslutningen.</string>
-    <string name="pattern_detail_error">Kunde inte läsa in mönsterdetaljer. Kontrollera internetanslutningen.</string>
     <string name="project_actions_title">Projektåtgärder</string>
     <string name="project_actions_section_counter_tools">Räknarverktyg</string>
     <string name="project_content_title">Projekt</string>
@@ -744,12 +707,7 @@
 
     <!-- Täydennetyt lokalisoidut käyttöliittymätekstit -->
     <string name="yarn_card_number_fallback">Garn #%1$d</string>
-    <string name="pattern_detail_needles">Nålar</string>
-    <string name="pattern_detail_yardage">Löplängd</string>
-    <string name="pattern_detail_sizes">Storlekar</string>
-    <string name="pattern_saved_to_library">Sparad i biblioteket</string>
     <string name="show_more">Visa mer</string>
-    <string name="show_less">Visa mindre</string>
     <string name="pro_start_free_trial">Starta gratis provperiod</string>
     <string name="pro_start_14_day_trial">Starta 14 dagars gratis provperiod</string>
     <string name="pro_trial_start_failed">Provperioden kunde inte startas. Försök igen.</string>
@@ -1057,6 +1015,17 @@
     <string name="web_pattern_delete_confirm_title">Ta bort webbmönstret?</string>
     <string name="web_pattern_delete_confirm_message">Ta bort %1$s från Sparade mönster i biblioteket?\n\nEventuella PDF-anteckningar som gjorts i biblioteket för det här mönstret tas också bort och visas inte längre i projekt. PDF-filer som redan är bifogade till projekt och PDF-anteckningar som gjorts i projekten behålls.</string>
     <string name="web_pattern_attach">Koppla till projekt</string>
+    <string name="pattern_mark_up">Markera</string>
+    <string name="pattern_mark_up_done">Klar</string>
+    <string name="incoming_pdf_title">Spara mönster</string>
+    <string name="incoming_pdf_other_section">Eller</string>
+    <string name="incoming_pdf_new_project">Starta ett nytt projekt</string>
+    <string name="incoming_pdf_library_only">Spara bara i Biblioteket</string>
+    <string name="incoming_pdf_open_failed">Det gick inte att öppna PDF-filen</string>
+    <string name="incoming_pdf_save_failed">Det gick inte att spara mönstret</string>
+    <string name="ravelry_browser_hint">Öppna ett mönster och tryck på Download PDF för att spara det i KnitTools.</string>
+    <string name="incoming_pdf_downloading">Hämtar mönstret…</string>
+    <string name="incoming_pdf_not_pdf">Bara PDF-mönster kan sparas</string>
     <string name="web_pattern_unlink">Koppla bort mönsterinformation</string>
     <string name="web_pattern_replace_confirm_title">Ersätta mönsterinformationen?</string>
     <string name="web_pattern_replace_confirm_message">Ersätta den aktuella mönsterinformationen med %1$s?</string>

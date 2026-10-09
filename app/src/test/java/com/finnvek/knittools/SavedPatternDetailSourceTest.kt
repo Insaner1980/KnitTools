@@ -45,8 +45,8 @@ class SavedPatternDetailSourceTest {
         assertTrue(navGraph.contains("SavedPatternDetailScreen("))
         assertTrue(navGraph.contains("libraryViewModel.loadSavedPattern(savedPatternId)"))
         assertTrue(navGraph.contains("Screen.LibraryPatternViewer(savedPatternId).route"))
-        assertTrue(navGraph.contains("counterViewModel.attachSavedPattern(pattern)"))
-        assertTrue(navGraph.contains("navController.navigateSingleTopTo(Screen.Counter.route)"))
+        assertTrue(navGraph.contains("counterViewModel.attachSavedPatternToProject(projectId, pattern.id)"))
+        assertTrue(navGraph.contains("navController.openProjectOverview(projectId)"))
         assertTrue(navGraph.contains("libraryViewModel.deleteSavedPattern(savedPatternId)"))
         val detailRoute =
             navGraph
@@ -92,9 +92,14 @@ class SavedPatternDetailSourceTest {
         assertTrue(detail.contains("pattern.hasAttachedPdf"))
         assertTrue(detail.contains("pattern.isAvailableOffline"))
         assertTrue(detail.contains("pattern.requiresRavelryAccess"))
-        assertTrue(detail.contains("openRavelryUrl("))
+        assertTrue(detail.contains("ravelryUrl?.let(onOpenRavelry)"))
         assertTrue(detail.contains("onOpenPattern"))
         assertTrue(detail.contains("onAttachToProject"))
+        // Liitä projektiin kysyy projektin eikä käytä laskurissa valittuna olevaa projektia.
+        assertTrue(detail.contains("ProjectPickerSheet("))
+        // Tuodulla PDF:llä ei ole Ravelry-osiota eikä tuntematonta saatavuutta.
+        assertTrue(detail.contains("if (pattern.source == SavedPatternSource.Ravelry || ravelryUrl != null)"))
+        assertEquals(2, detail.split("onAttach = { showProjectPicker = true }").size - 1)
         assertTrue(detail.contains("onRemove"))
         val detailSignature =
             detail

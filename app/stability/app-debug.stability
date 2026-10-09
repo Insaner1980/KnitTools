@@ -540,6 +540,25 @@ public fun com.finnvek.knittools.ui.components.ProjectNameLabel(name: kotlin.Str
     - modifier: STABLE (marked @Stable or @Immutable)
 
 @Composable
+public fun com.finnvek.knittools.ui.components.ProjectOptionRows(projects: kotlin.collections.List<com.finnvek.knittools.domain.model.CounterProject>, onSelect: kotlin.Function1<@[ParameterName(name = \, enabled: kotlin.Boolean): kotlin.Unit
+  skippable: false
+  restartable: true
+  params:
+    - projects: RUNTIME (requires runtime check)
+    - onSelect: STABLE (function type)
+    - enabled: STABLE (primitive type)
+
+@Composable
+public fun com.finnvek.knittools.ui.components.ProjectPickerSheet(title: kotlin.String, projects: kotlin.collections.List<com.finnvek.knittools.domain.model.CounterProject>, onSelect: kotlin.Function1<@[ParameterName(name = \, onDismiss: kotlin.Function0<kotlin.Unit>): kotlin.Unit
+  skippable: false
+  restartable: true
+  params:
+    - title: STABLE (String is immutable)
+    - projects: RUNTIME (requires runtime check)
+    - onSelect: STABLE (function type)
+    - onDismiss: STABLE (function type)
+
+@Composable
 public fun com.finnvek.knittools.ui.components.ProjectProgressBar(fraction: kotlin.Float, modifier: androidx.compose.ui.Modifier, height: androidx.compose.ui.unit.Dp): kotlin.Unit
   skippable: true
   restartable: true
@@ -1100,6 +1119,14 @@ private fun com.finnvek.knittools.ui.navigation.ClearSelectionWhenLeavingRoute(n
     - clearSelection: STABLE (function type)
 
 @Composable
+public fun com.finnvek.knittools.ui.navigation.IncomingPdfHost(viewModelProvider: @[Composable] androidx.compose.runtime.internal.ComposableFunction0<com.finnvek.knittools.ui.navigation.IncomingPdfViewModel>, onNavigate: kotlin.Function1<com.finnvek.knittools.ui.navigation.IncomingPdfOutcome, kotlin.Unit>): kotlin.Unit
+  skippable: true
+  restartable: true
+  params:
+    - viewModelProvider: STABLE (composable function type)
+    - onNavigate: STABLE (function type)
+
+@Composable
 public fun com.finnvek.knittools.ui.navigation.KnitToolsBottomBar(navControllerProvider: @[Composable] androidx.compose.runtime.internal.ComposableFunction0<androidx.navigation.NavController>): kotlin.Unit
   skippable: true
   restartable: true
@@ -1107,7 +1134,7 @@ public fun com.finnvek.knittools.ui.navigation.KnitToolsBottomBar(navControllerP
     - navControllerProvider: STABLE (composable function type)
 
 @Composable
-public fun com.finnvek.knittools.ui.navigation.KnitToolsNavHost(modifier: androidx.compose.ui.Modifier, startDestination: kotlin.String, requests: com.finnvek.knittools.ui.navigation.KnitToolsNavRequests, snackbarHostState: androidx.compose.material3.SnackbarHostState?, actions: com.finnvek.knittools.ui.navigation.KnitToolsNavActions, onScreenViewed: kotlin.Function1<kotlin.String?, kotlin.Unit>): kotlin.Unit
+public fun com.finnvek.knittools.ui.navigation.KnitToolsNavHost(modifier: androidx.compose.ui.Modifier, startDestination: kotlin.String, requests: com.finnvek.knittools.ui.navigation.KnitToolsNavRequests, snackbarHostState: androidx.compose.material3.SnackbarHostState?, actions: com.finnvek.knittools.ui.navigation.KnitToolsNavActions, onScreenViewed: kotlin.Function1<kotlin.String?, kotlin.Unit>, incomingPdfHost: @[Composable] androidx.compose.runtime.internal.ComposableFunction1<@[ParameterName(name = \): kotlin.Unit
   skippable: true
   restartable: true
   params:
@@ -1117,16 +1144,7 @@ public fun com.finnvek.knittools.ui.navigation.KnitToolsNavHost(modifier: androi
     - snackbarHostState: STABLE (marked @Stable or @Immutable)
     - actions: STABLE (class with no mutable properties)
     - onScreenViewed: STABLE (function type)
-
-@Composable
-private fun com.finnvek.knittools.ui.navigation.RavelrySearchRoute(navControllerProvider: @[Composable] androidx.compose.runtime.internal.ComposableFunction0<androidx.navigation.NavHostController>, onLaunchRavelryAuth: kotlin.Function1<android.net.Uri, kotlin.Unit>, onBrowseRavelry: kotlin.Function0<kotlin.Unit>, importUrl: kotlin.String?): kotlin.Unit
-  skippable: true
-  restartable: true
-  params:
-    - navControllerProvider: STABLE (composable function type)
-    - onLaunchRavelryAuth: STABLE (function type)
-    - onBrowseRavelry: STABLE (function type)
-    - importUrl: STABLE (class with no mutable properties)
+    - incomingPdfHost: STABLE (composable function type)
 
 @Composable
 private fun com.finnvek.knittools.ui.navigation.RouteArgumentFallback(navControllerProvider: @[Composable] androidx.compose.runtime.internal.ComposableFunction0<androidx.navigation.NavHostController>, destination: com.finnvek.knittools.ui.navigation.TopLevelDestination): kotlin.Unit
@@ -2724,6 +2742,18 @@ private fun com.finnvek.knittools.ui.screens.library.AllPhotosTopBar(state: com.
     - onBack: STABLE (function type)
 
 @Composable
+public fun com.finnvek.knittools.ui.screens.library.IncomingPdfSheet(pdf: com.finnvek.knittools.ui.navigation.IncomingPdf, projects: kotlin.collections.List<com.finnvek.knittools.domain.model.CounterProject>, canStartProject: kotlin.Boolean, proStatus: com.finnvek.knittools.pro.ProStatus, busy: kotlin.Boolean, actions: com.finnvek.knittools.ui.screens.library.IncomingPdfSheetActions): kotlin.Unit
+  skippable: false
+  restartable: true
+  params:
+    - pdf: STABLE (class with no mutable properties)
+    - projects: RUNTIME (requires runtime check)
+    - canStartProject: STABLE (primitive type)
+    - proStatus: STABLE (class with no mutable properties)
+    - busy: STABLE (primitive type)
+    - actions: STABLE (class with no mutable properties)
+
+@Composable
 public fun com.finnvek.knittools.ui.screens.library.LibraryScreen(onNavigate: kotlin.Function1<com.finnvek.knittools.ui.navigation.Screen, kotlin.Unit>, viewModelProvider: @[Composable] androidx.compose.runtime.internal.ComposableFunction0<com.finnvek.knittools.ui.screens.library.LibraryViewModel>): kotlin.Unit
   skippable: true
   restartable: true
@@ -2857,8 +2887,8 @@ private fun com.finnvek.knittools.ui.screens.library.SavedPatternDetailMenu(onEd
     - onDelete: STABLE (function type)
 
 @Composable
-public fun com.finnvek.knittools.ui.screens.library.SavedPatternDetailScreen(pattern: com.finnvek.knittools.domain.model.SavedPattern, onBack: kotlin.Function0<kotlin.Unit>, onOpenPattern: kotlin.Function0<kotlin.Unit>, onAttachToProject: kotlin.Function0<kotlin.Unit>, onRemove: kotlin.Function0<kotlin.Unit>, modifier: androidx.compose.ui.Modifier, onOpenWebsite: kotlin.Function1<kotlin.String, com.finnvek.knittools.ui.platform.ExternalWebLinkOpenResult>?, onEditWebPattern: kotlin.Function0<kotlin.Unit>, onAttachWebPattern: kotlin.Function2<kotlin.Long?, kotlin.Function1<com.finnvek.knittools.repository.SavedPatternMetadataMutationResult, kotlin.Unit>, kotlin.Unit>, deleteErrorId: kotlin.Long): kotlin.Unit
-  skippable: true
+public fun com.finnvek.knittools.ui.screens.library.SavedPatternDetailScreen(pattern: com.finnvek.knittools.domain.model.SavedPattern, onBack: kotlin.Function0<kotlin.Unit>, onOpenPattern: kotlin.Function0<kotlin.Unit>, onAttachToProject: kotlin.Function1<@[ParameterName(name = \, onRemove: kotlin.Function0<kotlin.Unit>, modifier: androidx.compose.ui.Modifier, onOpenWebsite: kotlin.Function1<kotlin.String, com.finnvek.knittools.ui.platform.ExternalWebLinkOpenResult>?, onOpenRavelry: kotlin.Function1<kotlin.String, kotlin.Unit>, onEditWebPattern: kotlin.Function0<kotlin.Unit>, projects: kotlin.collections.List<com.finnvek.knittools.domain.model.CounterProject>, onAttachWebPattern: kotlin.Function3<kotlin.Long, kotlin.Long?, kotlin.Function1<com.finnvek.knittools.repository.SavedPatternMetadataMutationResult, kotlin.Unit>, kotlin.Unit>, onOpenProject: kotlin.Function1<@[ParameterName(name = \, deleteErrorId: kotlin.Long): kotlin.Unit
+  skippable: false
   restartable: true
   params:
     - pattern: STABLE (class with no mutable properties)
@@ -2868,8 +2898,11 @@ public fun com.finnvek.knittools.ui.screens.library.SavedPatternDetailScreen(pat
     - onRemove: STABLE (function type)
     - modifier: STABLE (marked @Stable or @Immutable)
     - onOpenWebsite: STABLE (function type)
+    - onOpenRavelry: STABLE (function type)
     - onEditWebPattern: STABLE (function type)
+    - projects: RUNTIME (requires runtime check)
     - onAttachWebPattern: STABLE (function type)
+    - onOpenProject: STABLE (function type)
     - deleteErrorId: STABLE (primitive type)
 
 @Composable
@@ -3207,7 +3240,7 @@ internal fun com.finnvek.knittools.ui.screens.pattern.PatternAnnotationInputOver
     - modifier: STABLE (marked @Stable or @Immutable)
 
 @Composable
-internal fun com.finnvek.knittools.ui.screens.pattern.PatternAnnotationLayerPanel(state: com.finnvek.knittools.ui.screens.pattern.PatternAnnotationUiState, onMasterVisibilityChange: kotlin.Function1<kotlin.Boolean, kotlin.Unit>, onProjectVisibilityChange: kotlin.Function1<kotlin.Boolean, kotlin.Unit>, modifier: androidx.compose.ui.Modifier): kotlin.Unit
+internal fun com.finnvek.knittools.ui.screens.pattern.PatternAnnotationLayerPanel(state: com.finnvek.knittools.ui.screens.pattern.PatternAnnotationUiState, onMasterVisibilityChange: kotlin.Function1<kotlin.Boolean, kotlin.Unit>, onProjectVisibilityChange: kotlin.Function1<kotlin.Boolean, kotlin.Unit>, modifier: androidx.compose.ui.Modifier, showTitle: kotlin.Boolean): kotlin.Unit
   skippable: false
   restartable: true
   params:
@@ -3215,6 +3248,7 @@ internal fun com.finnvek.knittools.ui.screens.pattern.PatternAnnotationLayerPane
     - onMasterVisibilityChange: STABLE (function type)
     - onProjectVisibilityChange: STABLE (function type)
     - modifier: STABLE (marked @Stable or @Immutable)
+    - showTitle: STABLE (primitive type)
 
 @Composable
 private fun com.finnvek.knittools.ui.screens.pattern.PatternAnnotationLayerRow(title: kotlin.String, annotationCount: kotlin.Int, visible: kotlin.Boolean, readOnly: kotlin.Boolean, onVisibilityChange: kotlin.Function1<kotlin.Boolean, kotlin.Unit>): kotlin.Unit
@@ -3226,6 +3260,16 @@ private fun com.finnvek.knittools.ui.screens.pattern.PatternAnnotationLayerRow(t
     - visible: STABLE (primitive type)
     - readOnly: STABLE (primitive type)
     - onVisibilityChange: STABLE (function type)
+
+@Composable
+internal fun com.finnvek.knittools.ui.screens.pattern.PatternAnnotationLayersSheet(state: com.finnvek.knittools.ui.screens.pattern.PatternAnnotationUiState, onMasterVisibilityChange: kotlin.Function1<kotlin.Boolean, kotlin.Unit>, onProjectVisibilityChange: kotlin.Function1<kotlin.Boolean, kotlin.Unit>, onDismiss: kotlin.Function0<kotlin.Unit>): kotlin.Unit
+  skippable: false
+  restartable: true
+  params:
+    - state: RUNTIME (requires runtime check)
+    - onMasterVisibilityChange: STABLE (function type)
+    - onProjectVisibilityChange: STABLE (function type)
+    - onDismiss: STABLE (function type)
 
 @Composable
 internal fun com.finnvek.knittools.ui.screens.pattern.PatternAnnotationOverlay(masterAnnotations: kotlin.collections.List<com.finnvek.knittools.domain.model.PatternAnnotation>, projectAnnotations: kotlin.collections.List<com.finnvek.knittools.domain.model.PatternAnnotation>, masterVisible: kotlin.Boolean, projectVisible: kotlin.Boolean, inProgressAnnotation: com.finnvek.knittools.domain.model.PatternAnnotation?, inProgressVisible: kotlin.Boolean, selectedAnnotationId: kotlin.Long?, trackerHighlights: kotlin.collections.Map<kotlin.Long, com.finnvek.knittools.domain.calculator.ChartTrackerHighlight>, modifier: androidx.compose.ui.Modifier): kotlin.Unit
@@ -3596,6 +3640,15 @@ internal fun com.finnvek.knittools.ui.screens.pattern.VerticalReadingGuideOverla
     - scale: STABLE (primitive type)
     - actions: STABLE (class with no mutable properties)
     - modifier: STABLE (marked @Stable or @Immutable)
+
+@Composable
+internal fun com.finnvek.knittools.ui.screens.pattern.rememberAnnotationModeControls(patternUri: kotlin.String?, activeTool: com.finnvek.knittools.ui.screens.pattern.PatternAnnotationTool, onToolSelected: kotlin.Function1<com.finnvek.knittools.ui.screens.pattern.PatternAnnotationTool, kotlin.Unit>): com.finnvek.knittools.ui.screens.pattern.AnnotationModeControls
+  skippable: false
+  restartable: false
+  params:
+    - patternUri: STABLE (class with no mutable properties)
+    - activeTool: STABLE (class with no mutable properties)
+    - onToolSelected: STABLE (function type)
 
 @Composable
 private fun com.finnvek.knittools.ui.screens.pattern.rememberPatternPickerActions(projectId: kotlin.Long?, canUseCameraScan: kotlin.Boolean, imageImportViewModelProvider: @[Composable] androidx.compose.runtime.internal.ComposableFunction0<com.finnvek.knittools.ui.screens.pattern.PatternImageImportViewModel>, onDocumentSelected: kotlin.Function2<kotlin.String, kotlin.String, kotlin.Unit>, onImportFromRavelry: kotlin.Function0<kotlin.Unit>, onAddWebPattern: kotlin.Function0<kotlin.Unit>, onLockedGalleryImport: kotlin.Function0<kotlin.Unit>, onLockedCameraScan: kotlin.Function0<kotlin.Unit>, onDismiss: kotlin.Function0<kotlin.Unit>): com.finnvek.knittools.ui.screens.pattern.PatternPickerActions
@@ -4107,56 +4160,6 @@ private fun com.finnvek.knittools.ui.screens.project.validationErrorMessage(vali
     - validation: STABLE (class with no mutable properties)
 
 @Composable
-private fun com.finnvek.knittools.ui.screens.ravelry.AlreadySavedImportContent(state: com.finnvek.knittools.ui.screens.ravelry.RavelryImportConfirmationState, onOpenSavedPattern: kotlin.Function0<kotlin.Unit>): kotlin.Unit
-  skippable: false
-  restartable: true
-  params:
-    - state: RUNTIME (requires runtime check)
-    - onOpenSavedPattern: STABLE (function type)
-
-@Composable
-private fun com.finnvek.knittools.ui.screens.ravelry.DetailRow(label: kotlin.String, value: kotlin.String): kotlin.Unit
-  skippable: true
-  restartable: true
-  params:
-    - label: STABLE (String is immutable)
-    - value: STABLE (String is immutable)
-
-@Composable
-private fun com.finnvek.knittools.ui.screens.ravelry.ImportMessageContent(message: kotlin.String, actionText: kotlin.String, onAction: kotlin.Function0<kotlin.Unit>, type: com.finnvek.knittools.ui.components.StatusMessageType): kotlin.Unit
-  skippable: true
-  restartable: true
-  params:
-    - message: STABLE (String is immutable)
-    - actionText: STABLE (String is immutable)
-    - onAction: STABLE (function type)
-    - type: STABLE (class with no mutable properties)
-
-@Composable
-private fun com.finnvek.knittools.ui.screens.ravelry.ImportPatternHeader(title: kotlin.String, pattern: com.finnvek.knittools.data.remote.PatternDetail): kotlin.Unit
-  skippable: false
-  restartable: true
-  params:
-    - title: STABLE (String is immutable)
-    - pattern: RUNTIME (requires runtime check)
-
-@Composable
-private fun com.finnvek.knittools.ui.screens.ravelry.LoadingImportContent(): kotlin.Unit
-  skippable: true
-  restartable: true
-  params:
-
-@Composable
-private fun com.finnvek.knittools.ui.screens.ravelry.PatternActions(isSaved: kotlin.Boolean, onStartProject: kotlin.Function0<kotlin.Unit>, onSave: kotlin.Function0<kotlin.Unit>, onOpenInRavelry: kotlin.Function0<kotlin.Unit>): kotlin.Unit
-  skippable: true
-  restartable: true
-  params:
-    - isSaved: STABLE (primitive type)
-    - onStartProject: STABLE (function type)
-    - onSave: STABLE (function type)
-    - onOpenInRavelry: STABLE (function type)
-
-@Composable
 internal fun com.finnvek.knittools.ui.screens.ravelry.PatternAvailabilityBadge(availability: com.finnvek.knittools.domain.model.PatternAvailability): kotlin.Unit
   skippable: true
   restartable: true
@@ -4192,37 +4195,6 @@ private fun com.finnvek.knittools.ui.screens.ravelry.PatternCardActionSlot(actio
     - actionContent: STABLE (composable function type)
 
 @Composable
-private fun com.finnvek.knittools.ui.screens.ravelry.PatternDetailBody(detail: com.finnvek.knittools.data.remote.PatternDetail?, detailError: com.finnvek.knittools.ui.screens.ravelry.RavelrySearchError?, isLoading: kotlin.Boolean, isSaved: kotlin.Boolean, modifier: androidx.compose.ui.Modifier, actions: com.finnvek.knittools.ui.screens.ravelry.PatternDetailActions): kotlin.Unit
-  skippable: false
-  restartable: true
-  params:
-    - detail: RUNTIME (requires runtime check)
-    - detailError: STABLE (class with no mutable properties)
-    - isLoading: STABLE (primitive type)
-    - isSaved: STABLE (primitive type)
-    - modifier: STABLE (marked @Stable or @Immutable)
-    - actions: STABLE (class with no mutable properties)
-
-@Composable
-private fun com.finnvek.knittools.ui.screens.ravelry.PatternDetailContent(pattern: com.finnvek.knittools.data.remote.PatternDetail, isSaved: kotlin.Boolean, onStartProject: kotlin.Function0<kotlin.Unit>, onSave: kotlin.Function0<kotlin.Unit>, onOpenInRavelry: kotlin.Function0<kotlin.Unit>, modifier: androidx.compose.ui.Modifier): kotlin.Unit
-  skippable: false
-  restartable: true
-  params:
-    - pattern: RUNTIME (requires runtime check)
-    - isSaved: STABLE (primitive type)
-    - onStartProject: STABLE (function type)
-    - onSave: STABLE (function type)
-    - onOpenInRavelry: STABLE (function type)
-    - modifier: STABLE (marked @Stable or @Immutable)
-
-@Composable
-private fun com.finnvek.knittools.ui.screens.ravelry.PatternDetailRows(pattern: com.finnvek.knittools.data.remote.PatternDetail): kotlin.Unit
-  skippable: false
-  restartable: true
-  params:
-    - pattern: RUNTIME (requires runtime check)
-
-@Composable
 private fun com.finnvek.knittools.ui.screens.ravelry.PatternDetails(name: kotlin.String, designerName: kotlin.String, difficulty: kotlin.Float?, availability: com.finnvek.knittools.domain.model.PatternAvailability, sourceLabel: kotlin.String?, modifier: androidx.compose.ui.Modifier): kotlin.Unit
   skippable: true
   restartable: true
@@ -4235,134 +4207,13 @@ private fun com.finnvek.knittools.ui.screens.ravelry.PatternDetails(name: kotlin
     - modifier: STABLE (marked @Stable or @Immutable)
 
 @Composable
-private fun com.finnvek.knittools.ui.screens.ravelry.PatternHeader(name: kotlin.String, designerName: kotlin.String?): kotlin.Unit
+public fun com.finnvek.knittools.ui.screens.ravelry.RavelryBrowserScreen(startUrl: kotlin.String?, onBack: kotlin.Function0<kotlin.Unit>, onPdfDownload: kotlin.Function1<com.finnvek.knittools.data.remote.WebPdfDownload, kotlin.Unit>): kotlin.Unit
   skippable: true
   restartable: true
   params:
-    - name: STABLE (String is immutable)
-    - designerName: STABLE (class with no mutable properties)
-
-@Composable
-private fun com.finnvek.knittools.ui.screens.ravelry.PatternHeroImage(photoUrl: kotlin.String?): kotlin.Unit
-  skippable: true
-  restartable: true
-  params:
-    - photoUrl: STABLE (class with no mutable properties)
-
-@Composable
-private fun com.finnvek.knittools.ui.screens.ravelry.PatternNotes(notes: kotlin.String?): kotlin.Unit
-  skippable: true
-  restartable: true
-  params:
-    - notes: STABLE (class with no mutable properties)
-
-@Composable
-private fun com.finnvek.knittools.ui.screens.ravelry.RavelryAccountActions(authState: com.finnvek.knittools.auth.RavelryAuthState, onSignIn: kotlin.Function0<kotlin.Unit>, onBrowseRavelry: kotlin.Function0<kotlin.Unit>): kotlin.Unit
-  skippable: true
-  restartable: true
-  params:
-    - authState: STABLE (class with no mutable properties)
-    - onSignIn: STABLE (function type)
-    - onBrowseRavelry: STABLE (function type)
-
-@Composable
-internal fun com.finnvek.knittools.ui.screens.ravelry.RavelryAccountHeader(authState: com.finnvek.knittools.auth.RavelryAuthState, onSignIn: kotlin.Function0<kotlin.Unit>, onBrowseRavelry: kotlin.Function0<kotlin.Unit>, onDisconnect: kotlin.Function0<kotlin.Unit>, modifier: androidx.compose.ui.Modifier): kotlin.Unit
-  skippable: true
-  restartable: true
-  params:
-    - authState: STABLE (class with no mutable properties)
-    - onSignIn: STABLE (function type)
-    - onBrowseRavelry: STABLE (function type)
-    - onDisconnect: STABLE (function type)
-    - modifier: STABLE (marked @Stable or @Immutable)
-
-@Composable
-private fun com.finnvek.knittools.ui.screens.ravelry.RavelryAccountMenu(onDisconnect: kotlin.Function0<kotlin.Unit>): kotlin.Unit
-  skippable: true
-  restartable: true
-  params:
-    - onDisconnect: STABLE (function type)
-
-@Composable
-public fun com.finnvek.knittools.ui.screens.ravelry.RavelryDetailScreen(patternId: kotlin.Int, onBack: kotlin.Function0<kotlin.Unit>, onStartProject: kotlin.Function1<kotlin.Long, kotlin.Unit>, onUpgradeToPro: kotlin.Function0<kotlin.Unit>, onLaunchRavelryAuth: kotlin.Function1<android.net.Uri, kotlin.Unit>, onBrowseRavelry: kotlin.Function0<kotlin.Unit>, viewModelProvider: @[Composable] androidx.compose.runtime.internal.ComposableFunction0<com.finnvek.knittools.ui.screens.ravelry.RavelryViewModel>): kotlin.Unit
-  skippable: true
-  restartable: true
-  params:
-    - patternId: STABLE (primitive type)
+    - startUrl: STABLE (class with no mutable properties)
     - onBack: STABLE (function type)
-    - onStartProject: STABLE (function type)
-    - onUpgradeToPro: STABLE (function type)
-    - onLaunchRavelryAuth: STABLE (function type)
-    - onBrowseRavelry: STABLE (function type)
-    - viewModelProvider: STABLE (composable function type)
-
-@Composable
-public fun com.finnvek.knittools.ui.screens.ravelry.RavelryImportConfirmationSheet(state: com.finnvek.knittools.ui.screens.ravelry.RavelryImportConfirmationState, onConfirmImport: kotlin.Function0<kotlin.Unit>, onSave: kotlin.Function0<kotlin.Unit>, onSignIn: kotlin.Function0<kotlin.Unit>, onRetry: kotlin.Function0<kotlin.Unit>, onOpenSavedPattern: kotlin.Function1<kotlin.Long, kotlin.Unit>, onDismiss: kotlin.Function0<kotlin.Unit>): kotlin.Unit
-  skippable: false
-  restartable: true
-  params:
-    - state: RUNTIME (requires runtime check)
-    - onConfirmImport: STABLE (function type)
-    - onSave: STABLE (function type)
-    - onSignIn: STABLE (function type)
-    - onRetry: STABLE (function type)
-    - onOpenSavedPattern: STABLE (function type)
-    - onDismiss: STABLE (function type)
-
-@Composable
-private fun com.finnvek.knittools.ui.screens.ravelry.RavelrySearchField(query: kotlin.String, canSearch: kotlin.Boolean, onQueryChange: kotlin.Function1<kotlin.String, kotlin.Unit>, onSearch: kotlin.Function0<kotlin.Unit>): kotlin.Unit
-  skippable: true
-  restartable: true
-  params:
-    - query: STABLE (String is immutable)
-    - canSearch: STABLE (primitive type)
-    - onQueryChange: STABLE (function type)
-    - onSearch: STABLE (function type)
-
-@Composable
-private fun com.finnvek.knittools.ui.screens.ravelry.RavelrySearchResultActionContent(action: com.finnvek.knittools.ui.screens.ravelry.RavelrySearchResultCardAction, onOpen: kotlin.Function0<kotlin.Unit>, onSave: kotlin.Function0<kotlin.Unit>): kotlin.Unit
-  skippable: true
-  restartable: true
-  params:
-    - action: STABLE (class with no mutable properties)
-    - onOpen: STABLE (function type)
-    - onSave: STABLE (function type)
-
-@Composable
-public fun com.finnvek.knittools.ui.screens.ravelry.RavelrySearchScreen(actions: com.finnvek.knittools.ui.screens.ravelry.RavelrySearchActions, importUrl: kotlin.String?, viewModelProvider: @[Composable] androidx.compose.runtime.internal.ComposableFunction0<com.finnvek.knittools.ui.screens.ravelry.RavelryViewModel>): kotlin.Unit
-  skippable: true
-  restartable: true
-  params:
-    - actions: STABLE (class with no mutable properties)
-    - importUrl: STABLE (class with no mutable properties)
-    - viewModelProvider: STABLE (composable function type)
-
-@Composable
-private fun com.finnvek.knittools.ui.screens.ravelry.ReadyImportContent(state: com.finnvek.knittools.ui.screens.ravelry.RavelryImportConfirmationState, onSave: kotlin.Function0<kotlin.Unit>): kotlin.Unit
-  skippable: false
-  restartable: true
-  params:
-    - state: RUNTIME (requires runtime check)
-    - onSave: STABLE (function type)
-
-@Composable
-private fun com.finnvek.knittools.ui.screens.ravelry.SearchTab(header: @[Composable] androidx.compose.runtime.internal.ComposableFunction0<kotlin.Unit>, state: com.finnvek.knittools.ui.screens.ravelry.SearchTabState, onQueryChange: kotlin.Function1<kotlin.String, kotlin.Unit>, onSearch: kotlin.Function0<kotlin.Unit>, onPatternClick: kotlin.Function1<kotlin.Int, kotlin.Unit>, onImportPattern: kotlin.Function1<kotlin.Int, kotlin.Unit>, onLoadMore: kotlin.Function0<kotlin.Unit>): kotlin.Unit
-  skippable: true
-  restartable: true
-  params:
-    - header: STABLE (composable function type)
-    - state: STABLE (marked @Stable or @Immutable)
-    - onQueryChange: STABLE (function type)
-    - onSearch: STABLE (function type)
-    - onPatternClick: STABLE (function type)
-    - onImportPattern: STABLE (function type)
-    - onLoadMore: STABLE (function type)
-
-@Composable
-private fun com.finnvek.knittools.ui.screens.ravelry.messageText(): kotlin.String
-  skippable: false
-  restartable: false
-  params:
+    - onPdfDownload: STABLE (function type)
 
 @Composable
 public fun com.finnvek.knittools.ui.screens.session.SessionHistoryScreen(onBack: kotlin.Function0<kotlin.Unit>): kotlin.Unit
@@ -4769,3 +4620,4 @@ private fun com.finnvek.knittools.widget.WidgetTargetLabel(data: com.finnvek.kni
   params:
     - data: STABLE (class with no mutable properties)
     - fontSize: STABLE (marked @Stable or @Immutable)
+

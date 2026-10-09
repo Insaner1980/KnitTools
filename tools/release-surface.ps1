@@ -24,7 +24,7 @@ Odotetut sopimusarvot, varmistettu nykyisista lahdetiedostoista:
 - FileProvider rootit: files-path progress_photos -> progress_photos/ ja files-path pattern_captures -> pattern_captures/.
   yarn_photos, pattern_pdfs, broad files/cache/external roots ja external storage roots eivat kuulu jaettuun pintaan.
 - Release signing gate riippuu KNITTOOLS_* signing -ymparistomuuttujista.
-- Firebase Auth/Functions ja Google Services ovat sallittuja vain Ravelry-backendia varten.
+- Google Services -konfiguraatio on sallittu vain Firebase Crashlyticsia varten; Firebase Auth/Functions eivat kuulu Androidiin.
   Firebase Crashlytics SDK ja Gradle-plugin ovat sallittuja julkaisuversion kaatumisraportointiin.
   app/google-services.json saa olla paikallinen ignoroitu tiedosto, ja debug-build voi luoda
   app/src/debug/google-services.json -placeholderin, mutta kumpikaan ei saa olla git-indexissa.
@@ -551,10 +551,8 @@ function Test-FirebaseBoundary {
         $requiredAnchors = @(
             [pscustomobject]@{ Path = "app/build.gradle.kts"; Text = $appGradle; Anchor = 'apply(plugin = "com.google.gms.google-services")' },
             [pscustomobject]@{ Path = "app/build.gradle.kts"; Text = $appGradle; Anchor = "implementation(platform(libs.firebase.bom))" },
-            [pscustomobject]@{ Path = "app/build.gradle.kts"; Text = $appGradle; Anchor = "implementation(libs.firebase.auth)" },
-            [pscustomobject]@{ Path = "app/build.gradle.kts"; Text = $appGradle; Anchor = "implementation(libs.firebase.functions)" },
-            [pscustomobject]@{ Path = "gradle/libs.versions.toml"; Text = $catalog; Anchor = 'firebase-auth = { group = "com.google.firebase", name = "firebase-auth" }' },
-            [pscustomobject]@{ Path = "gradle/libs.versions.toml"; Text = $catalog; Anchor = 'firebase-functions = { group = "com.google.firebase", name = "firebase-functions" }' },
+            [pscustomobject]@{ Path = "app/build.gradle.kts"; Text = $appGradle; Anchor = "implementation(libs.firebase.crashlytics)" },
+            [pscustomobject]@{ Path = "gradle/libs.versions.toml"; Text = $catalog; Anchor = 'firebase-crashlytics = { group = "com.google.firebase", name = "firebase-crashlytics" }' },
             [pscustomobject]@{ Path = "gradle/libs.versions.toml"; Text = $catalog; Anchor = 'google-services = { id = "com.google.gms.google-services"' }
         )
 
@@ -571,7 +569,7 @@ function Test-FirebaseBoundary {
         if ($problems.Count -gt 0) {
             Add-Fail -Check $check -Message ($problems -join "; ") -RelativePath $firstPath -Line $firstLine
         } else {
-            Add-Pass -Check $check -Message "Firebase Auth/Functions and ignored Google Services config match contract"
+            Add-Pass -Check $check -Message "Firebase Crashlytics and ignored Google Services config match contract"
         }
     } catch {
         Add-Fail -Check $check -Message $_.Exception.Message -RelativePath $firstPath -Line $firstLine
@@ -708,7 +706,7 @@ function Test-ForbiddenDependencies {
 
                 if ($line.Text -match '^\s*(implementation|api|runtimeOnly|compileOnly|debugImplementation|releaseImplementation|testImplementation|androidTestImplementation)\s*\(\s*libs\.firebase\.([A-Za-z0-9_.-]+)') {
                     $alias = $Matches[2]
-                    if ($alias -notin @("bom", "auth", "functions", "crashlytics")) {
+                    if ($alias -notin @("bom", "crashlytics")) {
                         $problems += "unapproved Firebase dependency alias '$alias' found in $file"
                         if ($null -eq $firstLine) {
                             $firstPath = $file
@@ -719,7 +717,7 @@ function Test-ForbiddenDependencies {
 
                 if ($file -eq "gradle/libs.versions.toml" -and $line.Text -match '^\s*(firebase[-A-Za-z0-9_.]*)\s*=') {
                     $key = $Matches[1]
-                    if ($key -notin @("firebaseBom", "firebase-bom", "firebase-auth", "firebase-functions", "firebase-crashlytics")) {
+                    if ($key -notin @("firebaseBom", "firebase-bom", "firebase-crashlytics")) {
                         $problems += "unapproved Firebase catalog entry '$key' found in $file"
                         if ($null -eq $firstLine) {
                             $firstPath = $file

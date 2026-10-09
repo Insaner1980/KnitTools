@@ -4,7 +4,6 @@ import android.content.ContentResolver
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
-import android.provider.OpenableColumns
 import androidx.annotation.MainThread
 import androidx.core.net.toUri
 import androidx.lifecycle.DefaultLifecycleObserver
@@ -19,6 +18,7 @@ import com.finnvek.knittools.analytics.UsageEvent
 import com.finnvek.knittools.data.datastore.PreferencesManager
 import com.finnvek.knittools.data.storage.AppFileStorage
 import com.finnvek.knittools.data.storage.PatternDocumentStorage
+import com.finnvek.knittools.data.storage.displayNameOrNull
 import com.finnvek.knittools.di.ApplicationScope
 import com.finnvek.knittools.di.IoDispatcher
 import com.finnvek.knittools.domain.calculator.CounterLogic
@@ -35,6 +35,7 @@ import com.finnvek.knittools.domain.model.DEFAULT_READING_GUIDE_FRACTION
 import com.finnvek.knittools.domain.model.DEFAULT_READING_LINE_Y_FRACTION
 import com.finnvek.knittools.domain.model.MainCounterChange
 import com.finnvek.knittools.domain.model.MainCounterLabelType
+import com.finnvek.knittools.domain.model.PatternDisplayNames
 import com.finnvek.knittools.domain.model.ProgressPhoto
 import com.finnvek.knittools.domain.model.ProjectCounter
 import com.finnvek.knittools.domain.model.ProjectCounterDraft
@@ -1955,7 +1956,8 @@ class CounterViewModel
                 val result =
                     persistPatternAttachment(
                         projectId = projectId,
-                        patternName = sanitizedName,
+                        // Tiedosto säilyttää alkuperäisen nimensä, nimikkeeksi luettava ohjeen nimi.
+                        patternName = PatternDisplayNames.fromFileName(sanitizedName),
                         attachment = attachment,
                     )
                 analytics.track(
@@ -1982,15 +1984,9 @@ class CounterViewModel
             providedName: String,
         ): String {
             if (providedName.isNotBlank()) return providedName
-            context.contentResolver
-                .query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)
-                ?.use { cursor ->
-                    val columnIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
-                    if (columnIndex >= 0 && cursor.moveToFirst()) {
-                        cursor.getString(columnIndex)?.takeIf(String::isNotBlank)?.let { return it }
-                    }
-                }
-            return uri.lastPathSegment ?: context.getString(R.string.pattern_pdf_fallback_name)
+            return context.contentResolver.displayNameOrNull(uri)
+                ?: uri.lastPathSegment
+                ?: context.getString(R.string.pattern_pdf_fallback_name)
         }
 
         fun attachSavedPattern(pattern: SavedPattern) {
@@ -2013,12 +2009,23 @@ class CounterViewModel
             }
         }
 
+        /** Kirjaston Liitä projektiin: käyttäjä valitsi projektin, joten laskurin valintaa ei käytetä. */
+        fun attachSavedPatternToProject(
+            projectId: Long,
+            savedPatternId: Long,
+        ) {
+            if (projectId <= 0L || savedPatternId <= 0L) return
+            viewModelScope.launch {
+                repository.attachSavedPattern(projectId = projectId, savedPatternId = savedPatternId)
+            }
+        }
+
         fun attachSavedPatternMetadata(
             savedPatternId: Long,
             expectedExistingSavedPatternId: Long? = null,
+            projectId: Long? = _uiState.value.projectId,
             onResult: (SavedPatternMetadataMutationResult) -> Unit = {},
         ) {
-            val projectId = _uiState.value.projectId
             if (projectId == null || savedPatternId <= 0L) {
                 onResult(SavedPatternMetadataMutationResult.ProjectMissing)
                 return

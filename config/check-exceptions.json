@@ -89,40 +89,6 @@
       ]
     },
     {
-      "id": "knittools-mobsf-hardcoded-ravelry-project-state",
-      "tool": "mobsfscan",
-      "rule": "android_kotlin_hardcoded",
-      "scope": "Exact MobSF matches in RavelryProjectCreationActions.kt",
-      "reason": "SavedStateHandle lookup key for pending pattern metadata, not a credential or secret.",
-      "owner": "project-maintainers",
-      "added": "2026-09-14",
-      "expires": "2026-10-31",
-      "tracking": "local-review:knittools-mobsf-hardcoded-ravelry-project-state",
-      "sourcePath": "app/src/main/java/com/finnvek/knittools/ui/screens/ravelry/RavelryProjectCreationActions.kt",
-      "selector": "private const val PENDING_PROJECT_PATTERN_KEY",
-      "findingPath": "app/src/main/java/com/finnvek/knittools/ui/screens/ravelry/RavelryProjectCreationActions.kt",
-      "findingSelectors": [
-        "key = \"ravelrypendingprojectpattern\""
-      ]
-    },
-    {
-      "id": "knittools-mobsf-hardcoded-ravelry-import-state",
-      "tool": "mobsfscan",
-      "rule": "android_kotlin_hardcoded",
-      "scope": "Exact MobSF matches in RavelryViewModel.kt",
-      "reason": "SavedStateHandle lookup key for the consumed import URL, not a credential or secret.",
-      "owner": "project-maintainers",
-      "added": "2026-09-14",
-      "expires": "2026-10-31",
-      "tracking": "local-review:knittools-mobsf-hardcoded-ravelry-import-state",
-      "sourcePath": "app/src/main/java/com/finnvek/knittools/ui/screens/ravelry/RavelryViewModel.kt",
-      "selector": "private const val CONSUMED_IMPORT_URL_KEY",
-      "findingPath": "app/src/main/java/com/finnvek/knittools/ui/screens/ravelry/RavelryViewModel.kt",
-      "findingSelectors": [
-        "key = \"ravelryconsumedimporturl\""
-      ]
-    },
-    {
       "id": "knittools-mobsf-fixed-active-session-migration-sql-test",
       "tool": "mobsfscan",
       "rule": "android_kotlin_sql_raw_query",

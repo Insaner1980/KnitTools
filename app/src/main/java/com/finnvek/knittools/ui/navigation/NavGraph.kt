@@ -1,7 +1,6 @@
 package com.finnvek.knittools.ui.navigation
 
 import android.app.Activity
-import android.net.Uri
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -35,9 +34,9 @@ import androidx.navigation.compose.dialog
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import androidx.navigation.navigation
+import com.finnvek.knittools.data.remote.WebPdfDownload
 import com.finnvek.knittools.domain.model.CraftType
 import com.finnvek.knittools.domain.model.SavedPattern
-import com.finnvek.knittools.domain.model.isWebPatternCompatible
 import com.finnvek.knittools.ui.components.CollectWithLifecycleEffect
 import com.finnvek.knittools.ui.components.FormSheetDialogHost
 import com.finnvek.knittools.ui.components.ProPromptRequest
@@ -79,9 +78,7 @@ import com.finnvek.knittools.ui.screens.pattern.PatternViewerScreen
 import com.finnvek.knittools.ui.screens.pattern.PatternViewerViewModel
 import com.finnvek.knittools.ui.screens.pro.ProUpgradeScreen
 import com.finnvek.knittools.ui.screens.project.ProjectListScreen
-import com.finnvek.knittools.ui.screens.ravelry.RavelryDetailScreen
-import com.finnvek.knittools.ui.screens.ravelry.RavelrySearchActions
-import com.finnvek.knittools.ui.screens.ravelry.RavelrySearchScreen
+import com.finnvek.knittools.ui.screens.ravelry.RavelryBrowserScreen
 import com.finnvek.knittools.ui.screens.session.SessionHistoryScreen
 import com.finnvek.knittools.ui.screens.settings.SettingsScreen
 import com.finnvek.knittools.ui.screens.sizecharts.SizeChartScreen
@@ -95,6 +92,7 @@ import com.finnvek.knittools.ui.screens.yarncard.YarnCardViewModel
 private val HIDE_BOTTOM_BAR_ROUTES =
     setOf(
         Screen.ProUpgrade.route,
+        Screen.RavelryBrowser.ROUTE,
         Screen.PatternViewer.ROUTE,
         Screen.LibraryPatternViewer.ROUTE,
         Screen.NotesEditor.ROUTE,
@@ -102,14 +100,12 @@ private val HIDE_BOTTOM_BAR_ROUTES =
     )
 
 private const val ARG_PROJECT_ID = "projectId"
-private const val ARG_PATTERN_ID = "patternId"
 private const val ARG_SAVED_PATTERN_ID = "savedPatternId"
 private const val ARG_CARD_ID = "cardId"
 
 data class KnitToolsNavActions(
     val onPurchasePro: (Activity) -> Unit = {},
-    val onLaunchRavelryAuth: (Uri) -> Unit = {},
-    val onBrowseRavelry: () -> Unit = {},
+    val onWebPdfDownload: (WebPdfDownload) -> Unit = {},
     val onCounterLaunchHandled: () -> Unit = {},
     val onProUpgradeLaunchHandled: () -> Unit = {},
     val onWidgetProPromptLaunchHandled: () -> Unit = {},
@@ -131,6 +127,8 @@ fun KnitToolsNavHost(
     snackbarHostState: SnackbarHostState? = null,
     actions: KnitToolsNavActions = KnitToolsNavActions(),
     onScreenViewed: (String?) -> Unit = {},
+    // Toisesta sovelluksesta avattu PDF-ohje: isäntä näyttää sheetin ja pyytää navigoinnin tallennuksen jälkeen.
+    incomingPdfHost: @Composable (onNavigate: (IncomingPdfOutcome) -> Unit) -> Unit = {},
 ) {
     val navController = rememberNavController()
     // Ravelry "Start Project" käyttää samaa mekanismia kuin widget-launch
@@ -165,8 +163,7 @@ fun KnitToolsNavHost(
         val request = requests.patternShareImport ?: return@LaunchedEffect
         when (val payload = request.payload) {
             is PatternSharePayload.Ravelry -> {
-                navController.navigateToTopLevel(TopLevelDestination.Tools)
-                navController.navigateSingleTopTo(Screen.RavelryImport(payload.url).route)
+                navController.navigateSingleTopTo(Screen.RavelryBrowser.createRoute(payload.url))
                 actions.onPatternShareImportHandled(request.requestId)
             }
 
@@ -210,9 +207,9 @@ fun KnitToolsNavHost(
                     actions.onCounterLaunchHandled()
                     internalCounterLaunch = null
                 },
+                // Tuo Ravelrysta avaa Ravelryn sovelluksen sisällä, jotta PDF tallentuu suoraan.
                 onImportFromRavelry = {
-                    navController.navigateToTopLevel(TopLevelDestination.Tools)
-                    navController.navigateSingleTopTo(Screen.Ravelry.route)
+                    navController.navigateSingleTopTo(Screen.RavelryBrowser.route)
                 },
             )
             libraryGraph(
@@ -221,14 +218,7 @@ fun KnitToolsNavHost(
                     internalCounterLaunch = CounterLaunchRequest(projectId = projectId)
                 },
             )
-            toolsGraph(
-                navController = navController,
-                onLaunchRavelryAuth = actions.onLaunchRavelryAuth,
-                onBrowseRavelry = actions.onBrowseRavelry,
-                onLaunchCounter = { projectId ->
-                    internalCounterLaunch = CounterLaunchRequest(projectId = projectId)
-                },
-            )
+            toolsGraph(navController)
             insightsGraph(
                 navController = navController,
                 onLaunchCounter = { projectId ->
@@ -238,6 +228,23 @@ fun KnitToolsNavHost(
             settingsGraph(navController)
 
             // Globaalit reitit (ei välilehdissä)
+            composable(
+                Screen.RavelryBrowser.ROUTE,
+                arguments =
+                    listOf(
+                        navArgument(Screen.RavelryBrowser.ARG_URL) {
+                            type = NavType.StringType
+                            nullable = true
+                            defaultValue = null
+                        },
+                    ),
+            ) { backStackEntry ->
+                RavelryBrowserScreen(
+                    startUrl = backStackEntry.arguments?.getString(Screen.RavelryBrowser.ARG_URL),
+                    onBack = { navController.popBackStack() },
+                    onPdfDownload = actions.onWebPdfDownload,
+                )
+            }
             composable(Screen.ProUpgrade.route) {
                 ProUpgradeScreen(
                     onBack = { navController.popBackStack() },
@@ -279,11 +286,27 @@ fun KnitToolsNavHost(
                         navController.navigateSingleTopTo(Screen.Counter.route)
                     },
                     onOpenRavelry = { url ->
-                        navController.navigateToTopLevel(TopLevelDestination.Tools)
-                        navController.navigateSingleTopTo(Screen.RavelryImport(url).route)
+                        navController.navigateSingleTopTo(Screen.RavelryBrowser.createRoute(url))
                     },
                 )
             }
+        }
+    }
+
+    incomingPdfHost { outcome ->
+        when (outcome) {
+            is IncomingPdfOutcome.OpenProject -> navController.openProjectOverview(outcome.projectId)
+
+            is IncomingPdfOutcome.OpenSavedPattern -> {
+                navController.navigateToTopLevel(TopLevelDestination.Library)
+                navController.navigateSingleTopTo(Screen.SavedPatternDetail(outcome.savedPatternId).route)
+            }
+
+            IncomingPdfOutcome.OpenFailed,
+            IncomingPdfOutcome.SaveFailed,
+            IncomingPdfOutcome.Downloading,
+            IncomingPdfOutcome.NotPdf,
+            -> Unit
         }
     }
 
@@ -516,13 +539,7 @@ private fun NavGraphBuilder.projectDestination(
     }
 }
 
-@Suppress("kotlin:S3776") // Navigaation route-rekisteri kokoaa tarkoituksella useita haaroja yhteen paikkaan
-private fun NavGraphBuilder.toolsGraph(
-    navController: NavHostController,
-    onLaunchRavelryAuth: (Uri) -> Unit,
-    onBrowseRavelry: () -> Unit,
-    onLaunchCounter: (Long) -> Unit,
-) {
+private fun NavGraphBuilder.toolsGraph(navController: NavHostController) {
     navigation(
         startDestination = Screen.Tools.route,
         route = TopLevelDestination.Tools.route,
@@ -545,63 +562,7 @@ private fun NavGraphBuilder.toolsGraph(
                 onSavedYarns = { navController.navigateSingleTopTo(Screen.MyYarn.route) },
             )
         }
-        // Ravelry
-        composable(Screen.Ravelry.route) {
-            RavelrySearchRoute(
-                navControllerProvider = { navController },
-                onLaunchRavelryAuth = onLaunchRavelryAuth,
-                onBrowseRavelry = onBrowseRavelry,
-            )
-        }
-        composable(
-            Screen.RavelryImport.ROUTE,
-            arguments =
-                listOf(
-                    navArgument(Screen.RavelryImport.ARG_IMPORT_URL) {
-                        type = NavType.StringType
-                    },
-                ),
-        ) { backStackEntry ->
-            val importUrl =
-                Screen.RavelryImport.importUrl(
-                    backStackEntry.arguments?.getString(Screen.RavelryImport.ARG_IMPORT_URL),
-                )
-            if (importUrl == null) {
-                RouteArgumentFallback({ navController }, TopLevelDestination.Tools)
-                return@composable
-            }
-            RavelrySearchRoute(
-                navControllerProvider = { navController },
-                onLaunchRavelryAuth = onLaunchRavelryAuth,
-                onBrowseRavelry = onBrowseRavelry,
-                importUrl = importUrl,
-            )
-        }
-        composable(
-            Screen.RavelryDetail.ROUTE,
-            arguments = listOf(navArgument(ARG_PATTERN_ID) { type = NavType.IntType }),
-        ) { backStackEntry ->
-            val patternId = backStackEntry.positiveIntArgument(ARG_PATTERN_ID)
-            if (patternId == null) {
-                // CPD-OFF: Reittikohtainen argumenttien kasittely pidetaan reitin yhteydessa.
-                RouteArgumentFallback({ navController }, TopLevelDestination.Tools)
-                return@composable
-            }
-            RavelryDetailScreen(
-                patternId = patternId,
-                onBack = { navController.popBackStack() },
-                onStartProject = { projectId ->
-                    onLaunchCounter(projectId)
-                },
-                onUpgradeToPro = {
-                    navController.navigateSingleTopTo(Screen.ProUpgrade.route)
-                },
-                onLaunchRavelryAuth = onLaunchRavelryAuth,
-                onBrowseRavelry = onBrowseRavelry,
-            )
-        }
     }
-    // CPD-ON
 }
 
 private fun NavGraphBuilder.gaugeDestination(navController: NavHostController) {
@@ -618,36 +579,6 @@ private fun NavGraphBuilder.gaugeDestination(navController: NavHostController) {
     ) {
         GaugeScreen(onBack = { navController.popBackStack() })
     }
-}
-
-@Composable
-private fun RavelrySearchRoute(
-    navControllerProvider: @Composable () -> NavHostController,
-    onLaunchRavelryAuth: (Uri) -> Unit,
-    onBrowseRavelry: () -> Unit,
-    importUrl: String? = null,
-) {
-    val navController = navControllerProvider()
-    RavelrySearchScreen(
-        actions =
-            RavelrySearchActions(
-                onPatternClick = { id ->
-                    navController.navigateSingleTopTo(Screen.RavelryDetail(id).route)
-                },
-                onBack = { navController.popBackStack() },
-                onLaunchRavelryAuth = onLaunchRavelryAuth,
-                onBrowseRavelry = onBrowseRavelry,
-                onSavedPatternDetail = { savedPatternId ->
-                    navController.navigateSingleTopTo(Screen.SavedPatternDetail(savedPatternId).route)
-                },
-                // Tallennetut kaavat ovat vain Libraryssa.
-                onOpenSavedPatterns = {
-                    navController.navigateToTopLevel(TopLevelDestination.Library)
-                    navController.navigateSingleTopTo(Screen.SavedPatterns.route)
-                },
-            ),
-        importUrl = importUrl,
-    )
 }
 
 private fun NavGraphBuilder.libraryGraph(
@@ -776,6 +707,7 @@ private fun NavGraphBuilder.savedPatternDetailRoute(navController: NavHostContro
             }
         val counterViewModel: CounterViewModel = hiltViewModel(projectsEntry)
         val patternDeleteErrorId by libraryViewModel.patternDeleteErrorId.collectAsStateWithLifecycle()
+        val projects by libraryViewModel.allProjects.collectAsStateWithLifecycle(initialValue = emptyList())
         var patternRouteState by remember(savedPatternId) { mutableStateOf<SavedPattern?>(null) }
         var patternRouteLoaded by remember(savedPatternId) { mutableStateOf(false) }
         LaunchedEffect(savedPatternId) {
@@ -803,20 +735,20 @@ private fun NavGraphBuilder.savedPatternDetailRoute(navController: NavHostContro
             onOpenPattern = {
                 navController.navigateSingleTopTo(Screen.LibraryPatternViewer(savedPatternId).route)
             },
-            onAttachToProject = {
-                if (!pattern.isWebPatternCompatible) {
-                    counterViewModel.attachSavedPattern(pattern)
-                }
-                navController.navigateToTopLevel(TopLevelDestination.Projects)
-                navController.navigateSingleTopTo(Screen.Counter.route)
+            projects = projects,
+            onAttachToProject = { projectId ->
+                counterViewModel.attachSavedPatternToProject(projectId, pattern.id)
+                navController.openProjectOverview(projectId)
             },
-            onAttachWebPattern = { expectedExistingId, onResult ->
+            onAttachWebPattern = { projectId, expectedExistingId, onResult ->
                 counterViewModel.attachSavedPatternMetadata(
                     savedPatternId = pattern.id,
                     expectedExistingSavedPatternId = expectedExistingId,
+                    projectId = projectId,
                     onResult = onResult,
                 )
             },
+            onOpenProject = navController::openProjectOverview,
             onEditWebPattern = {
                 navController.navigateSingleTopTo(
                     Screen.WebPatternEditor.createRoute(
@@ -829,6 +761,9 @@ private fun NavGraphBuilder.savedPatternDetailRoute(navController: NavHostContro
                 libraryViewModel.deleteSavedPattern(savedPatternId) {
                     navController.popBackStackOrNavigateToTopLevel(TopLevelDestination.Library)
                 }
+            },
+            onOpenRavelry = { url ->
+                navController.navigateSingleTopTo(Screen.RavelryBrowser.createRoute(url))
             },
             deleteErrorId = patternDeleteErrorId,
         )
@@ -1160,11 +1095,14 @@ private fun ClearSelectionWhenLeavingRoute(
     }
 }
 
+/** Liitetty ohje näytetään valitun projektin näkymässä. */
+private fun NavHostController.openProjectOverview(projectId: Long) {
+    navigateToTopLevel(TopLevelDestination.Projects)
+    navigateSingleTopTo(Screen.ProjectOverview(projectId).route)
+}
+
 private fun NavBackStackEntry.positiveLongArgument(name: String): Long? =
     arguments?.getLong(name)?.toPositiveRouteIdOrNull()
-
-private fun NavBackStackEntry.positiveIntArgument(name: String): Int? =
-    arguments?.getInt(name)?.toPositiveRouteIdOrNull()
 
 private fun NavGraphBuilder.counterHistoryDestination(navController: NavHostController) {
     composable(

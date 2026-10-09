@@ -24,35 +24,26 @@ class RavelryShareTargetSourceTest {
         assertTrue(mainActivity.contains("Intent.ACTION_SEND"))
         assertTrue(mainActivity.contains("Intent.EXTRA_TEXT"))
         assertTrue(mainActivity.contains("parseWebPatternSharedText("))
-        assertTrue(mainActivity.contains("if (isOAuthCallback || isShareImport)"))
+        assertTrue(mainActivity.contains("if (isShareImport)"))
         assertTrue(mainActivity.contains("onPatternShareImportHandled"))
     }
 
     @Test
-    fun `share import request navigates to tools ravelry import route`() {
+    fun `shared ravelry link opens in the in-app ravelry browser`() {
         val navGraph = ProjectSourceFiles.read(NAV_GRAPH)
         val screen = ProjectSourceFiles.read(SCREEN)
 
-        assertTrue(screen.contains("data class RavelryImport"))
-        assertTrue(screen.contains("const val ARG_IMPORT_URL"))
-        assertTrue(screen.contains("const val ROUTE = \"ravelry_import/{\$ARG_IMPORT_URL}\""))
+        assertTrue(screen.contains("const val ROUTE = \"ravelry_browser?url={\$ARG_URL}\""))
+        assertTrue(screen.contains("Uri.encode(it)"))
+        assertFalse(screen.contains("Uri.decode"))
+        assertFalse(screen.contains("RavelryImport"))
 
-        assertTrue(navGraph.contains("patternShareImport: PatternShareImportRequest? = null"))
         assertTrue(navGraph.contains("LaunchedEffect(requests.patternShareImport?.requestId)"))
         assertTrue(navGraph.contains("is PatternSharePayload.Ravelry"))
-        assertTrue(navGraph.contains("navController.navigateToTopLevel(TopLevelDestination.Tools)"))
-        assertTrue(navGraph.contains("navController.navigateSingleTopTo(Screen.RavelryImport(payload.url).route)"))
+        assertTrue(
+            navGraph.contains("navController.navigateSingleTopTo(Screen.RavelryBrowser.createRoute(payload.url))"),
+        )
         assertTrue(navGraph.contains("onPatternShareImportHandled(request.requestId)"))
-        assertTrue(navGraph.contains("importUrl = importUrl"))
-    }
-
-    @Test
-    fun `ravelry import argument is not decoded twice after navigation argument parsing`() {
-        val screen = ProjectSourceFiles.read(SCREEN)
-
-        assertTrue(screen.contains("Screen(\"ravelry_import/${'$'}{Uri.encode(url)}\")"))
-        assertFalse(screen.contains("Uri::decode"))
-        assertFalse(screen.contains("Uri.decode(routeArgument"))
     }
 
     private companion object {

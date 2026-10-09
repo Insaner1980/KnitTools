@@ -566,7 +566,6 @@ private data class AxisItem(
 
 private val TOOL_ITEMS =
     listOf(
-        ToolItem(PatternAnnotationTool.BROWSE, R.string.pattern_annotation_tool_browse),
         ToolItem(PatternAnnotationTool.PEN, R.string.pattern_annotation_tool_pen),
         ToolItem(PatternAnnotationTool.HIGHLIGHTER, R.string.pattern_annotation_tool_highlighter),
         ToolItem(PatternAnnotationTool.ERASER, R.string.pattern_annotation_tool_eraser),

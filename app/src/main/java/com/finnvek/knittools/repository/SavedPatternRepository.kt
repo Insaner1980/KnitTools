@@ -34,8 +34,6 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.InputStream
-import java.net.URI
-import java.util.Locale
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -78,9 +76,6 @@ class SavedPatternRepository
             }
             return pattern.toDomain()
         }
-
-        suspend fun getByRavelryPatternId(ravelryPatternId: Int): SavedPattern? =
-            dao.getByRavelryPatternId(ravelryPatternId)?.toDomain()
 
         suspend fun pruneMissingLocalPattern(patternUrl: String): Boolean {
             if (!patternUrl.isAppOwnedMissingFile()) return false
@@ -168,52 +163,6 @@ class SavedPatternRepository
                         WebPatternMutationResult.Updated(patternId)
                     }
                 }
-            }
-        }
-
-        suspend fun saveRavelryPatternIfMissing(pattern: SavedPattern): Long {
-            if (pattern.ravelryPatternId == null && pattern.canonicalUrl.isBlank() && pattern.originalUrl.isBlank()) {
-                return save(pattern)
-            }
-            return saveMutex.withLock {
-                transactionRunner.run { saveRavelryPatternIfMissingInCurrentTransaction(pattern) }
-            }
-        }
-
-        internal suspend fun saveRavelryPatternIfMissingInCurrentTransaction(pattern: SavedPattern): Long =
-            findDuplicateCandidate(pattern, includeTitleDesigner = false)?.id ?: dao.insert(pattern.toEntity())
-
-        suspend fun findDuplicateCandidate(
-            pattern: SavedPattern,
-            includeTitleDesigner: Boolean,
-        ): SavedPattern? {
-            pattern.ravelryPatternId?.let { ravelryPatternId ->
-                if (ravelryPatternId > 0) {
-                    dao.getByRavelryPatternId(ravelryPatternId)?.toDomain()?.let { return it }
-                }
-            }
-
-            pattern.canonicalUrl.takeIf { it.isNotBlank() }?.let { canonicalUrl ->
-                dao.getByCanonicalUrl(canonicalUrl)?.toDomain()?.let { return it }
-            }
-
-            pattern.originalUrl.takeIf { it.isNotBlank() }?.let { originalUrl ->
-                dao.getByOriginalUrl(originalUrl)?.toDomain()?.let { return it }
-            }
-
-            val normalizedOriginalUrl = pattern.originalUrl.normalizedOriginalUrl()
-            if (normalizedOriginalUrl.isNotBlank()) {
-                val originalUrlMatch =
-                    dao.getAllOnce().firstOrNull { candidate ->
-                        candidate.originalUrl.normalizedOriginalUrl() == normalizedOriginalUrl
-                    }
-                if (originalUrlMatch != null) return originalUrlMatch.toDomain()
-            }
-
-            return if (includeTitleDesigner && pattern.name.isNotBlank() && pattern.designerName.isNotBlank()) {
-                dao.getByTitleAndDesignerName(pattern.name, pattern.designerName)?.toDomain()
-            } else {
-                null
             }
         }
 
@@ -438,31 +387,6 @@ class SavedPatternRepository
             }
         }
 
-        private fun String.normalizedOriginalUrl(): String =
-            normalizedRavelryPatternUrl()
-                ?: trim()
-                    .removeSuffix("/")
-                    .lowercase(Locale.US)
-
-        private fun String.normalizedRavelryPatternUrl(): String? {
-            val uri = runCatching { URI(trim()) }.getOrNull() ?: return null
-            val host = uri.host?.lowercase(Locale.US) ?: return null
-            if (host !in RAVELRY_PATTERN_HOSTS) return null
-
-            val segments =
-                uri.path
-                    ?.split("/")
-                    ?.filter { it.isNotBlank() }
-                    ?: return null
-            if (segments.size < 3 || segments[0] != "patterns" || segments[1] != "library") return null
-
-            return segments[2]
-                .trim()
-                .takeIf { it.isNotBlank() }
-                ?.lowercase(Locale.US)
-                ?.let { patternSlug -> "$RAVELRY_PATTERN_KEY_PREFIX$patternSlug" }
-        }
-
         private fun filesHaveSameContent(
             first: File,
             second: File,
@@ -498,16 +422,6 @@ class SavedPatternRepository
             (0 until byteCount).all { index ->
                 first[index] == second[index]
             }
-
-        private companion object {
-            const val RAVELRY_PATTERN_KEY_PREFIX = "ravelry:"
-            val RAVELRY_PATTERN_HOSTS =
-                setOf(
-                    "ravelry.com",
-                    "www.ravelry.com",
-                    "carts.ravelry.com",
-                )
-        }
     }
 
 private data class ValidatedWebPatternInput(

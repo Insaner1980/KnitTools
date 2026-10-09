@@ -18,12 +18,6 @@ interface SavedPatternDao {
     @Query("SELECT * FROM saved_patterns WHERE id IN (:ids)")
     suspend fun getByIds(ids: List<Long>): List<SavedPatternEntity>
 
-    @Query(
-        "SELECT * FROM saved_patterns WHERE ravelryPatternId = :ravelryPatternId " +
-            "ORDER BY savedAt DESC, id DESC LIMIT 1",
-    )
-    suspend fun getByRavelryPatternId(ravelryPatternId: Int): SavedPatternEntity?
-
     @Query("SELECT * FROM saved_patterns WHERE canonicalUrl = :canonicalUrl ORDER BY savedAt DESC, id DESC LIMIT 1")
     suspend fun getByCanonicalUrl(canonicalUrl: String): SavedPatternEntity?
 
@@ -36,20 +30,8 @@ interface SavedPatternDao {
         excludedId: Long,
     ): SavedPatternEntity?
 
-    @Query("SELECT * FROM saved_patterns WHERE originalUrl = :originalUrl ORDER BY savedAt DESC, id DESC LIMIT 1")
-    suspend fun getByOriginalUrl(originalUrl: String): SavedPatternEntity?
-
     @Query("SELECT * FROM saved_patterns WHERE localPdfUri = :localPdfUri ORDER BY savedAt DESC, id DESC LIMIT 1")
     suspend fun getByLocalPdfUri(localPdfUri: String): SavedPatternEntity?
-
-    @Query(
-        "SELECT * FROM saved_patterns WHERE name = :name AND designerName = :designerName " +
-            "ORDER BY savedAt DESC, id DESC LIMIT 1",
-    )
-    suspend fun getByTitleAndDesignerName(
-        name: String,
-        designerName: String,
-    ): SavedPatternEntity?
 
     @Query("SELECT * FROM saved_patterns")
     suspend fun getAllOnce(): List<SavedPatternEntity>

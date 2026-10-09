@@ -97,6 +97,7 @@
     <string name="counter_decrease_repeat">Restar repetición</string>
     <string name="counter_add_custom">Añadir %1$s</string>
     <string name="counter_decrease_custom">Restar %1$s</string>
+    <string name="project_picker_empty">Aún no hay proyectos. Crea uno en Proyectos.</string>
     <string name="no_active_projects">No hay proyectos activos</string>
     <string name="no_completed_projects">Aún no hay proyectos terminados</string>
     <string name="delete_project">Eliminar</string>
@@ -670,21 +671,9 @@
 
     <!-- Ravelry -->
     <string name="tool_ravelry">Ravelry</string>
-    <string name="desc_ravelry">Busca patrones y guarda favoritos</string>
-    <string name="ravelry_saved_patterns">Patrones guardados</string>
-    <string name="start_project">Empezar proyecto</string>
-    <string name="save_pattern">Guardar patrón</string>
-    <string name="ravelry_save_pattern_explanation">Guarda los detalles del patrón en tu Biblioteca. No se descarga ningún PDF.</string>
-    <string name="ravelry_open_saved_pattern">Abrir</string>
+    <string name="desc_ravelry">Explora patrones y guarda los PDF en KnitTools</string>
     <string name="open_in_ravelry">Abrir en Ravelry</string>
-    <string name="pattern_saved">Patrón guardado</string>
-    <string name="search_hint">Buscar patrones…</string>
-    <string name="ravelry_import_loading">Cargando patrón</string>
-    <string name="ravelry_import_title">¿Guardar este patrón?</string>
-    <string name="ravelry_import_already_saved">Patrón ya guardado</string>
-    <string name="ravelry_import_needs_sign_in">Inicia sesión en Ravelry para guardar este patrón.</string>
     <string name="ravelry_import_could_not_import">No se pudo importar este patrón.</string>
-    <string name="ravelry_import_backend_unavailable">La importación de Ravelry no está disponible temporalmente.</string>
     <string name="saved_pattern_detail_pdf_attached">PDF adjunto</string>
     <string name="saved_pattern_detail_available_offline">Disponible sin conexión</string>
     <string name="saved_pattern_detail_open_on_ravelry">Abrir en Ravelry</string>
@@ -693,35 +682,10 @@
     <string name="saved_pattern_detail_open_pattern">Abrir patrón</string>
     <string name="saved_pattern_detail_attach_to_project">Adjuntar al proyecto</string>
     <string name="saved_pattern_detail_remove_confirm">¿Eliminar este patrón guardado de la biblioteca?\n\nSi hay anotaciones PDF creadas en la biblioteca para este patrón, también se eliminarán y dejarán de aparecer en los proyectos. Se conservarán los PDF ya adjuntos a los proyectos y las anotaciones PDF creadas dentro de los proyectos.</string>
-    <string name="filter_weight">Grosor</string>
-    <string name="filter_difficulty">Dificultad</string>
     <string name="free">Gratis</string>
     <string name="paid">De pago</string>
     <string name="availability_unknown">Disponibilidad desconocida</string>
-    <string name="no_results">No se encontraron patrones</string>
-    <string name="search_error">No se pudieron cargar los patrones. Comprueba tu conexión a internet.</string>
-    <string name="ravelry_search_rate_limited">Ravelry está limitando las búsquedas. Inténtalo de nuevo más tarde.</string>
-    <string name="ravelry_search_auth_error">No se pudo usar el inicio de sesión de Ravelry. Vuelve a iniciar sesión e inténtalo de nuevo.</string>
-    <string name="ravelry_search_service_error">Ravelry no está disponible temporalmente. Inténtalo de nuevo más tarde.</string>
-    <string name="ravelry_sign_in">Iniciar sesión con Ravelry</string>
-    <string name="ravelry_browse">Explorar Ravelry</string>
-    <string name="ravelry_disconnect">Desconectar Ravelry</string>
-    <string name="ravelry_disconnect_confirm">¿Desconectar Ravelry? Tendrás que volver a iniciar sesión para usar las funciones de Ravelry.</string>
-    <string name="ravelry_not_connected">Inicia sesión para buscar patrones de Ravelry desde KnitTools.</string>
-    <string name="ravelry_connecting">Conectando con Ravelry…</string>
-    <string name="ravelry_auth_pending">Termina de iniciar sesión en Ravelry en el navegador.</string>
-    <string name="ravelry_connected">Conectado a Ravelry</string>
-    <string name="ravelry_connected_as">Conectado como %1$s</string>
-    <string name="ravelry_auth_cancelled">Se canceló el inicio de sesión en Ravelry.</string>
-    <string name="ravelry_auth_expired">El inicio de sesión en Ravelry caducó. Inicia sesión de nuevo.</string>
-    <string name="ravelry_backend_unavailable">La conexión con Ravelry no está disponible temporalmente.</string>
-    <string name="ravelry_disconnecting">Desconectando Ravelry…</string>
     <string name="difficulty_format">%.1f / 5</string>
-    <plurals name="yardage_format">
-        <item quantity="one">%d yarda</item>
-        <item quantity="many">%d yardas</item>
-        <item quantity="other">%d yardas</item>
-    </plurals>
 
     <!-- Info tips -->
     <string name="tip_pattern_repeat_title">Repetición del patrón</string>
@@ -749,8 +713,6 @@
     <string name="row_label_with_target">%1$d / %2$d</string>
     <string name="widget_undo_action">Deshacer</string>
     <string name="widget_undo_content_description">Deshacer el último cambio</string>
-    <string name="search_more_error">No se pudieron cargar más patrones. Comprueba tu conexión a internet.</string>
-    <string name="pattern_detail_error">No se pudieron cargar los detalles del patrón. Comprueba tu conexión a internet.</string>
     <string name="project_actions_title">Acciones del proyecto</string>
     <string name="project_actions_section_counter_tools">Herramientas de contadores</string>
     <string name="project_content_title">Proyecto</string>
@@ -763,12 +725,7 @@
 
     <!-- Täydennetyt lokalisoidut käyttöliittymätekstit -->
     <string name="yarn_card_number_fallback">Hilo #%1$d</string>
-    <string name="pattern_detail_needles">Agujas</string>
-    <string name="pattern_detail_yardage">Metraje</string>
-    <string name="pattern_detail_sizes">Tallas</string>
-    <string name="pattern_saved_to_library">Guardado en la biblioteca</string>
     <string name="show_more">Mostrar más</string>
-    <string name="show_less">Mostrar menos</string>
     <string name="pro_start_free_trial">Iniciar prueba gratuita</string><string name="pro_start_14_day_trial">Iniciar prueba gratuita de 14 días</string><string name="pro_trial_start_failed">No se pudo iniciar la prueba. Inténtalo de nuevo.</string>
     <string name="pro_prompt_not_now">Ahora no</string><string name="pro_prompt_see_pro">Ver Pro</string><string name="pro_prompt_trial_body">Inicia tu prueba gratuita de Pro durante 14 días. No se requiere ningún método de pago. Todo lo que crees seguirá disponible después de la prueba.</string>
     <string name="pro_prompt_reactivation_title">Reactiva este proyecto con Pro</string>
@@ -1068,6 +1025,17 @@
     <string name="web_pattern_delete_confirm_title">¿Eliminar el patrón web?</string>
     <string name="web_pattern_delete_confirm_message">¿Eliminar %1$s de Patrones guardados en la biblioteca?\n\nSi hay anotaciones PDF creadas en la biblioteca para este patrón, también se eliminarán y dejarán de aparecer en los proyectos. Se conservarán los PDF ya adjuntos a los proyectos y las anotaciones PDF creadas dentro de los proyectos.</string>
     <string name="web_pattern_attach">Vincular a un proyecto</string>
+    <string name="pattern_mark_up">Anotar</string>
+    <string name="pattern_mark_up_done">Listo</string>
+    <string name="incoming_pdf_title">Guardar patrón</string>
+    <string name="incoming_pdf_other_section">O</string>
+    <string name="incoming_pdf_new_project">Empezar un proyecto nuevo</string>
+    <string name="incoming_pdf_library_only">Guardar solo en la Biblioteca</string>
+    <string name="incoming_pdf_open_failed">No se pudo abrir el PDF</string>
+    <string name="incoming_pdf_save_failed">No se pudo guardar el patrón</string>
+    <string name="ravelry_browser_hint">Abre un patrón y toca Download PDF para guardarlo en KnitTools.</string>
+    <string name="incoming_pdf_downloading">Descargando patrón…</string>
+    <string name="incoming_pdf_not_pdf">Solo se pueden guardar patrones PDF</string>
     <string name="web_pattern_unlink">Desvincular la información del patrón</string>
     <string name="web_pattern_replace_confirm_title">¿Sustituir la información del patrón?</string>
     <string name="web_pattern_replace_confirm_message">¿Sustituir la información actual del patrón por %1$s?</string>

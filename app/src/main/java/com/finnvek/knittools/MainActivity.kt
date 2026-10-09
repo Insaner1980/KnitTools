@@ -1,12 +1,10 @@
 package com.finnvek.knittools
 
 import android.animation.ValueAnimator
-import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.graphics.BitmapFactory
 import android.graphics.Color
-import android.net.Uri
 import android.os.Bundle
 import android.view.animation.LinearInterpolator
 import android.widget.ImageView
@@ -17,8 +15,6 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
-import androidx.browser.auth.AuthTabIntent
-import androidx.browser.customtabs.CustomTabsIntent
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.AlertDialog
@@ -40,13 +36,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.core.animation.doOnEnd
-import androidx.core.net.toUri
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.splashscreen.SplashScreenViewProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import com.finnvek.knittools.analytics.PostHogAnalytics
-import com.finnvek.knittools.auth.RavelryAuthManager
 import com.finnvek.knittools.billing.BillingManager
 import com.finnvek.knittools.data.datastore.PreferencesManager
 import com.finnvek.knittools.data.storage.CounterLaunchTokenStore
@@ -61,12 +55,15 @@ import com.finnvek.knittools.ui.ProvidePreferenceAwareHapticFeedback
 import com.finnvek.knittools.ui.SplashLogoDrawable
 import com.finnvek.knittools.ui.navigation.CounterLaunchIntentData
 import com.finnvek.knittools.ui.navigation.CounterLaunchRequest
+import com.finnvek.knittools.ui.navigation.IncomingPdfHost
+import com.finnvek.knittools.ui.navigation.IncomingPdfViewModel
 import com.finnvek.knittools.ui.navigation.KnitToolsNavActions
 import com.finnvek.knittools.ui.navigation.KnitToolsNavHost
 import com.finnvek.knittools.ui.navigation.KnitToolsNavRequests
 import com.finnvek.knittools.ui.navigation.PatternShareCoordinatorViewModel
 import com.finnvek.knittools.ui.navigation.PatternShareOfferResult
 import com.finnvek.knittools.ui.navigation.TopLevelDestination
+import com.finnvek.knittools.ui.navigation.receiveFromIntent
 import com.finnvek.knittools.ui.navigation.toPatternSharePayload
 import com.finnvek.knittools.ui.navigation.withValidatedCounterLaunchTrust
 import com.finnvek.knittools.ui.theme.KnitToolsTheme
@@ -86,9 +83,6 @@ class MainActivity : AppCompatActivity() {
     lateinit var inAppUpdateManager: InAppUpdateManager
 
     @Inject
-    lateinit var ravelryAuthManager: RavelryAuthManager
-
-    @Inject
     lateinit var billingManager: BillingManager
 
     @Inject
@@ -105,6 +99,7 @@ class MainActivity : AppCompatActivity() {
     lateinit var ioDispatcher: CoroutineDispatcher
 
     private val patternShareCoordinator: PatternShareCoordinatorViewModel by viewModels()
+    private val incomingPdfViewModel: IncomingPdfViewModel by viewModels()
 
     private val updateResultLauncher =
         registerForActivityResult(
@@ -112,26 +107,6 @@ class MainActivity : AppCompatActivity() {
         ) { result ->
             inAppUpdateManager.onUpdateFlowResult(result.resultCode)
             // Flexible mode — lataustulos käsitellään installStateListenerissa
-        }
-
-    private val ravelryAuthTabLauncher =
-        AuthTabIntent.registerActivityResultLauncher(this) { result ->
-            when (result.resultCode) {
-                AuthTabIntent.RESULT_OK -> {
-                    val callbackUri = result.resultUri
-                    if (callbackUri != null) {
-                        handleRavelryCallbackUri(callbackUri)
-                    } else {
-                        lifecycleScope.launch {
-                            ravelryAuthManager.refreshAuthStatus()
-                        }
-                    }
-                }
-
-                else -> {
-                    ravelryAuthManager.markBrowserAuthCancelled()
-                }
-            }
         }
 
     private var counterLaunchRequest by mutableStateOf<CounterLaunchRequest?>(null)
@@ -253,6 +228,12 @@ class MainActivity : AppCompatActivity() {
                             ),
                         snackbarHostState = snackbarHostState,
                         actions = createNavActions(),
+                        incomingPdfHost = { onNavigate ->
+                            IncomingPdfHost(
+                                viewModelProvider = { incomingPdfViewModel },
+                                onNavigate = onNavigate,
+                            )
+                        },
                     )
                 }
                 if (showTrialEndedNotice) {
@@ -271,8 +252,7 @@ class MainActivity : AppCompatActivity() {
     private fun createNavActions() =
         KnitToolsNavActions(
             onPurchasePro = billingManager::launchPurchaseFlow,
-            onLaunchRavelryAuth = ::launchRavelryAuth,
-            onBrowseRavelry = ::launchRavelryBrowse,
+            onWebPdfDownload = incomingPdfViewModel::receiveDownload,
             onCounterLaunchHandled = {
                 counterLaunchRequest?.let {
                     consumedCounterLaunchRequestId = it.requestId
@@ -306,15 +286,15 @@ class MainActivity : AppCompatActivity() {
         restoreCounterLaunchRequest(savedInstanceState)
         openProUpgradeRequest = intent?.action == ACTION_OPEN_PRO_UPGRADE
         openWidgetProPromptRequest = intent?.action == ACTION_OPEN_WIDGET_PRO_PROMPT
-        val isOAuthCallback = handleOAuthCallbackIfNeeded(intent)
-        val isShareImport = !isOAuthCallback && handlePatternShareIntentIfNeeded(intent)
-        if (isOAuthCallback || isShareImport) {
+        val isShareImport =
+            handlePatternShareIntentIfNeeded(intent) ||
+                incomingPdfViewModel.receiveFromIntent(intent, contentResolver)
+        if (isShareImport) {
             counterLaunchRequest = null
         }
         suppressPassiveTrialNotice =
             openProUpgradeRequest ||
             openWidgetProPromptRequest ||
-            isOAuthCallback ||
             isShareImport ||
             counterLaunchRequest != null
         launchRequestsReady = true
@@ -377,32 +357,6 @@ class MainActivity : AppCompatActivity() {
         inAppUpdateManager.cleanup()
     }
 
-    fun launchRavelryBrowse() {
-        CustomTabsIntent
-            .Builder()
-            .setShareState(CustomTabsIntent.SHARE_STATE_ON)
-            .build()
-            .launchUrl(this, RAVELRY_PATTERN_SEARCH_URL.toUri())
-    }
-
-    fun launchRavelryAuth(uri: Uri) {
-        try {
-            AuthTabIntent
-                .Builder()
-                .build()
-                .launch(ravelryAuthTabLauncher, uri, RavelryAuthManager.REDIRECT_SCHEME)
-        } catch (_: ActivityNotFoundException) {
-            try {
-                CustomTabsIntent
-                    .Builder()
-                    .build()
-                    .launchUrl(this, uri)
-            } catch (_: ActivityNotFoundException) {
-                ravelryAuthManager.markBrowserAuthCancelled()
-            }
-        }
-    }
-
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         consumedPatternShareIntent = false
@@ -410,13 +364,14 @@ class MainActivity : AppCompatActivity() {
         launchRequestsReady = false
         openProUpgradeRequest = intent.action == ACTION_OPEN_PRO_UPGRADE
         openWidgetProPromptRequest = intent.action == ACTION_OPEN_WIDGET_PRO_PROMPT
-        val isOAuthCallback = handleOAuthCallbackIfNeeded(intent)
-        val isShareImport = !isOAuthCallback && handlePatternShareIntentIfNeeded(intent)
+        val isShareImport =
+            handlePatternShareIntentIfNeeded(intent) ||
+                incomingPdfViewModel.receiveFromIntent(intent, contentResolver)
         launchRequestJob?.cancel()
         launchRequestJob =
             lifecycleScope.launch {
                 counterLaunchRequest =
-                    if (isOAuthCallback || isShareImport) {
+                    if (isShareImport) {
                         null
                     } else {
                         intent.toCounterLaunchRequest(consumedRequestId = null)
@@ -424,34 +379,10 @@ class MainActivity : AppCompatActivity() {
                 suppressPassiveTrialNotice =
                     openProUpgradeRequest ||
                     openWidgetProPromptRequest ||
-                    isOAuthCallback ||
                     isShareImport ||
                     counterLaunchRequest != null
                 launchRequestsReady = true
             }
-    }
-
-    private fun handleOAuthCallbackIfNeeded(intent: Intent?): Boolean {
-        val uri = intent?.data ?: return false
-        if (!ravelryAuthManager.isOAuthCallback(uri)) return false
-        handleRavelryCallbackUri(uri)
-        return true
-    }
-
-    private fun handleRavelryCallbackUri(uri: Uri) {
-        clearCounterLaunchIntent()
-        lifecycleScope.launch {
-            val handled = ravelryAuthManager.handleCallback(uri)
-            if (handled) {
-                clearOAuthCallbackIntent(uri)
-            }
-        }
-    }
-
-    private fun clearOAuthCallbackIntent(uri: Uri) {
-        if (intent?.data == uri) {
-            intent.data = null
-        }
     }
 
     private fun handlePatternShareIntentIfNeeded(intent: Intent?): Boolean {
@@ -508,7 +439,6 @@ class MainActivity : AppCompatActivity() {
 
     private suspend fun Intent?.toCounterLaunchRequest(consumedRequestId: String?): CounterLaunchRequest? {
         if (this == null) return null
-        val isOAuthCallback = data?.let(ravelryAuthManager::isOAuthCallback) == true
         val shouldOpenCounter = getBooleanExtra(EXTRA_OPEN_COUNTER, false)
         val launchId = getStringExtra(EXTRA_COUNTER_LAUNCH_ID)
         val intentData =
@@ -517,7 +447,6 @@ class MainActivity : AppCompatActivity() {
                     shouldOpenCounter = shouldOpenCounter,
                     projectId = getLongExtra(EXTRA_PROJECT_ID, 0L).takeIf { it > 0L },
                     launchId = launchId,
-                    isOAuthCallback = isOAuthCallback,
                 ).withValidatedCounterLaunchTrust { candidateLaunchId ->
                     CounterLaunchTokenStore.consumeLaunchId(this@MainActivity, candidateLaunchId)
                 }
@@ -536,7 +465,6 @@ class MainActivity : AppCompatActivity() {
         private const val ACTION_OPEN_PRO_UPGRADE = "com.finnvek.knittools.action.OPEN_PRO_UPGRADE"
         private const val ACTION_OPEN_WIDGET_PRO_PROMPT = "com.finnvek.knittools.action.OPEN_WIDGET_PRO_PROMPT"
         private const val MIME_TYPE_TEXT_PLAIN = "text/plain"
-        private const val RAVELRY_PATTERN_SEARCH_URL = "https://www.ravelry.com/patterns/search"
         private const val SPLASH_EXIT_DURATION_MILLIS = 760L
         private const val SPLASH_REVEAL_MILLIS = 640f
         private const val SPLASH_FADE_MILLIS = 120f

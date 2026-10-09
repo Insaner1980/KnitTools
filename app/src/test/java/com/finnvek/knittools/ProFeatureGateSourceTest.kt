@@ -182,7 +182,6 @@ class ProFeatureGateSourceTest {
         assertTrue(mainActivity.contains("trialManager.claimTrialEndNotice()"))
         assertTrue(mainActivity.contains("openProUpgradeRequest ||"))
         assertTrue(mainActivity.contains("openWidgetProPromptRequest ||"))
-        assertTrue(mainActivity.contains("isOAuthCallback ||"))
         assertTrue(mainActivity.contains("isShareImport ||"))
         assertTrue(mainActivity.contains("counterLaunchRequest != null"))
     }

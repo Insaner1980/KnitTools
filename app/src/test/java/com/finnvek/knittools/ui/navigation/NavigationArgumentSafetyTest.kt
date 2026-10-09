@@ -26,13 +26,8 @@ class NavigationArgumentSafetyTest {
     }
 
     @Test
-    fun `positive int route id is accepted`() {
-        assertEquals(42, 42.toPositiveRouteIdOrNull())
-    }
-
-    @Test
-    fun `zero and negative int route ids are rejected`() {
-        assertNull(0.toPositiveRouteIdOrNull())
-        assertNull((-1).toPositiveRouteIdOrNull())
+    fun `ravelry browser opens search when no link is given`() {
+        assertEquals("ravelry_browser", Screen.RavelryBrowser.createRoute())
+        assertEquals("ravelry_browser", Screen.RavelryBrowser.createRoute(" "))
     }
 }

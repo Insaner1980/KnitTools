@@ -55,7 +55,8 @@ class UiConsistencySourceTest {
         // Projektin toimintosheetin otsikkona toimii projektikortti (ProjectOverviewLink).
         val titleExceptions = setOf("counter/ProjectActionsBottomSheet.kt")
         val sheetCall = Regex("""(?<![\w.])ModalBottomSheet\(""")
-        val sources = screenSources() + componentSources()
+        // Kommentit ja merkkijonot pois: kommentoitu "SheetTitle(" ei saa hyväksyä otsikotonta sheetiä.
+        val sources = (screenSources() + componentSources()).mapValues { (_, text) -> text.codeOnly() }
         // Otsikko tarkistetaan jokaisen sheetin omasta sisällöstä: yksi otsikko ei saa kelvata
         // saman tiedoston kaikille sheeteille. Sisältö voi olla saman tiedoston apufunktiossa.
         val withoutTitle =
@@ -192,7 +193,13 @@ class UiConsistencySourceTest {
         }
     }
 
-    private fun String.containsTitle(): Boolean = "SheetTitle(" in this || "FormSheet(" in this
+    private fun String.containsTitle(): Boolean = titleCall.containsMatchIn(this)
+
+    /** Lähdekoodi ilman kommentteja ja merkkijonoja; merkkijonot jäävät tyhjiksi, jotta rakenne säilyy. */
+    private fun String.codeOnly(): String =
+        commentOrString.replace(this) { match ->
+            if (match.value.startsWith("\"")) "\"\"" else ""
+        }
 
     /** Kutsun argumentit avaavasta sulkeesta vastaavaan sulkevaan asti. */
     private fun callArguments(
@@ -228,5 +235,11 @@ class UiConsistencySourceTest {
     private companion object {
         const val SCREENS = "app/src/main/java/com/finnvek/knittools/ui/screens"
         const val COMPONENTS = "app/src/main/java/com/finnvek/knittools/ui/components"
+
+        /** Varsinainen kutsu, ei esim. `SheetTitleText(` tai `.SheetTitle(`. */
+        val titleCall = Regex("""(?<![\w.])(SheetTitle|FormSheet)\(""")
+
+        // Raakamerkkijono, tavallinen merkkijono, rivikommentti tai lohkokommentti.
+        val commentOrString = Regex("\"\"\"[\\s\\S]*?\"\"\"|\"(?:\\\\.|[^\"\\\\\\n])*\"|//[^\\n]*|/\\*[\\s\\S]*?\\*/")
     }
 }

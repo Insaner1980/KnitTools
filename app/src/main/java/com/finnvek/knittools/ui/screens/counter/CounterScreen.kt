@@ -45,6 +45,7 @@ import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -221,6 +222,7 @@ fun ProjectContentHost(
     var pendingExistingWebPatternId by rememberSaveable { mutableStateOf<Long?>(null) }
     // Korvausvahvistus koskee projektia, jossa ohjetta liitettiin, ei vahvistushetken projektia.
     var pendingWebPatternProjectId by rememberSaveable { mutableStateOf<Long?>(null) }
+    val currentProjectId by rememberUpdatedState(state.projectId)
     var showDocumentsSheet by rememberSaveable { mutableStateOf(false) }
     var projectDocumentError by remember { mutableStateOf<ProjectDocumentError?>(null) }
     var showTargetDialog by rememberSaveable { mutableStateOf(false) }
@@ -317,12 +319,15 @@ fun ProjectContentHost(
             onHideNotesSheet = { showNotesSheet = false },
             onExpandNotes = { state.projectId?.let(onNotesEditor) },
             onHidePatternPicker = { showPatternPicker = false },
-            onWebPatternReplacementRequired = { pattern, existingPatternId ->
-                showPatternPicker = false
-                pendingWebPatternId = pattern.id
-                pendingWebPatternName = pattern.name
-                pendingExistingWebPatternId = existingPatternId
-                pendingWebPatternProjectId = state.projectId
+            onWebPatternReplacementRequired = { pattern, existingPatternId, requestProjectId ->
+                // Projekti vaihtui pyynnön aikana: vahvistusta ei avata uuden projektin päälle.
+                if (requestProjectId == currentProjectId) {
+                    showPatternPicker = false
+                    pendingWebPatternId = pattern.id
+                    pendingWebPatternName = pattern.name
+                    pendingExistingWebPatternId = existingPatternId
+                    pendingWebPatternProjectId = requestProjectId
+                }
             },
             onPatternMetadataAttachFailed = {
                 coroutineScope.launch {
@@ -2065,7 +2070,7 @@ private fun rememberCounterSheetActions(
     onHideNotesSheet: () -> Unit,
     onExpandNotes: () -> Unit,
     onHidePatternPicker: () -> Unit,
-    onWebPatternReplacementRequired: (SavedPattern, Long) -> Unit,
+    onWebPatternReplacementRequired: (pattern: SavedPattern, existingPatternId: Long, requestProjectId: Long) -> Unit,
     onPatternMetadataAttachFailed: () -> Unit,
     onImportFromRavelry: () -> Unit,
     onAddWebPattern: () -> Unit,
@@ -2109,8 +2114,12 @@ private fun rememberCounterSheetActions(
             onPatternPickerDismiss = onHidePatternPicker,
             onPatternFileSelected = { uri, name -> viewModel.attachPattern(uri, name) },
             onSavedPatternSelected = { pattern ->
-                if (pattern.isWebPatternCompatible) {
-                    viewModel.attachSavedPatternMetadata(pattern.id) { result ->
+                // Pyynnön projekti kulkee tuloksen mukana, jottei myöhäinen tulos osu uuteen projektiin.
+                val requestProjectId = viewModel.uiState.value.projectId
+                if (pattern.isWebPatternCompatible && requestProjectId == null) {
+                    onPatternMetadataAttachFailed()
+                } else if (pattern.isWebPatternCompatible && requestProjectId != null) {
+                    viewModel.attachSavedPatternMetadata(pattern.id, projectId = requestProjectId) { result ->
                         when (result) {
                             is SavedPatternMetadataMutationResult.Attached,
                             is SavedPatternMetadataMutationResult.AlreadyAttached,
@@ -2119,7 +2128,11 @@ private fun rememberCounterSheetActions(
                             }
 
                             is SavedPatternMetadataMutationResult.ReplacementRequired -> {
-                                onWebPatternReplacementRequired(pattern, result.existingSavedPatternId)
+                                onWebPatternReplacementRequired(
+                                    pattern,
+                                    result.existingSavedPatternId,
+                                    requestProjectId,
+                                )
                             }
 
                             SavedPatternMetadataMutationResult.ProjectMissing,

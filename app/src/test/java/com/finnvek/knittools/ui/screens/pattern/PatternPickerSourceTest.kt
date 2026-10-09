@@ -51,8 +51,12 @@ class PatternPickerSourceTest {
         val viewModel = ProjectSourceFiles.read(COUNTER_VIEW_MODEL)
         val repository = ProjectSourceFiles.read(COUNTER_REPOSITORY)
 
-        assertTrue(counterScreen.contains("if (pattern.isWebPatternCompatible)"))
-        assertTrue(counterScreen.contains("viewModel.attachSavedPatternMetadata(pattern.id)"))
+        assertTrue(counterScreen.contains("} else if (pattern.isWebPatternCompatible && requestProjectId != null) {"))
+        assertTrue(
+            counterScreen.contains("viewModel.attachSavedPatternMetadata(pattern.id, projectId = requestProjectId)"),
+        )
+        // Myöhäinen korvausvaatimus ei avaa vahvistusta projektin vaihduttua.
+        assertTrue(counterScreen.contains("if (requestProjectId == currentProjectId) {"))
         assertTrue(counterScreen.contains("viewModel.attachSavedPattern(pattern)"))
         assertFalse(counterScreen.contains("pattern.localPdfUri?.let"))
         assertTrue(viewModel.contains("fun attachSavedPattern(pattern: SavedPattern)"))

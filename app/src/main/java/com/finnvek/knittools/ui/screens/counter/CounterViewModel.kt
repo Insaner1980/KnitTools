@@ -1957,7 +1957,7 @@ class CounterViewModel
                     persistPatternAttachment(
                         projectId = projectId,
                         // Tiedosto säilyttää alkuperäisen nimensä, nimikkeeksi luettava ohjeen nimi.
-                        patternName = PatternDisplayNames.fromFileName(sanitizedName),
+                        patternName = PatternDisplayNames.documentLabel(sanitizedName),
                         attachment = attachment,
                     )
                 analytics.track(

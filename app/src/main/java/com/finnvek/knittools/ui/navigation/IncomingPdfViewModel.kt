@@ -13,8 +13,10 @@ import com.finnvek.knittools.data.remote.WebPdfDownloader
 import com.finnvek.knittools.data.storage.AppFileStorage
 import com.finnvek.knittools.data.storage.PatternDocumentStorage
 import com.finnvek.knittools.data.storage.displayNameOrNull
+import com.finnvek.knittools.di.ApplicationScope
 import com.finnvek.knittools.di.IoDispatcher
 import com.finnvek.knittools.domain.model.CounterProject
+import com.finnvek.knittools.domain.model.PROJECT_DOCUMENT_LABEL_MAX_LENGTH
 import com.finnvek.knittools.domain.model.PatternDisplayNames
 import com.finnvek.knittools.pro.ProFeature
 import com.finnvek.knittools.pro.ProManager
@@ -27,6 +29,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -84,6 +87,7 @@ class IncomingPdfViewModel
         private val webPdfDownloader: WebPdfDownloader,
         @param:ApplicationContext private val context: Context,
         @param:IoDispatcher private val ioDispatcher: CoroutineDispatcher,
+        @param:ApplicationScope private val applicationScope: CoroutineScope,
     ) : ViewModel() {
         private val mutablePending = MutableStateFlow(restorePending())
         val pending: StateFlow<IncomingPdf?> = mutablePending.asStateFlow()
@@ -184,7 +188,7 @@ class IncomingPdfViewModel
             }
             // Uusi PDF korvaa käsittelemättä jääneen edellisen; sen kopio siivotaan pois.
             deleteUnusedCopy(mutablePending.value)
-            setPending(IncomingPdf(copiedUri, PatternDisplayNames.fromFileName(fileName)))
+            setPending(IncomingPdf(copiedUri, PatternDisplayNames.documentLabel(fileName)))
         }
 
         fun attachToProject(
@@ -200,13 +204,17 @@ class IncomingPdfViewModel
         fun startNewProject(name: String) {
             val pdf = mutablePending.value ?: return
             runBusy {
+                // Projekti ja PDF samassa transaktiossa: epäonnistunut liitos ei jätä tyhjää projektia.
                 val result =
-                    counterRepository.createProject(
+                    counterRepository.createProjectWithImportedPdf(
                         name = name.ifBlank { pdf.suggestedName },
                         canCreateAdditionalProjects = proManager.hasFeature(ProFeature.UNLIMITED_PROJECTS),
+                        patternUri = pdf.localUri,
+                        patternName = documentLabel(pdf, name),
                     )
                 if (result is ProjectCreationResult.Created) {
-                    attach(pdf, result.projectId, name)
+                    setPending(null)
+                    outcomeChannel.send(IncomingPdfOutcome.OpenProject(result.projectId))
                 } else {
                     outcomeChannel.send(IncomingPdfOutcome.SaveFailed)
                 }
@@ -233,7 +241,7 @@ class IncomingPdfViewModel
         fun discard() {
             val pdf = mutablePending.value ?: return
             setPending(null)
-            viewModelScope.launch { deleteUnusedCopy(pdf) }
+            deleteUnusedCopy(pdf)
         }
 
         private suspend fun attach(
@@ -245,7 +253,7 @@ class IncomingPdfViewModel
                 counterRepository.attachPattern(
                     id = projectId,
                     patternUri = pdf.localUri,
-                    patternName = name.ifBlank { pdf.suggestedName },
+                    patternName = documentLabel(pdf, name),
                     currentPatternPage = 0,
                     patternRowMapping = null,
                 )
@@ -285,9 +293,23 @@ class IncomingPdfViewModel
             }
         }
 
-        private suspend fun deleteUnusedCopy(pdf: IncomingPdf?) {
+        private fun documentLabel(
+            pdf: IncomingPdf,
+            name: String,
+        ): String =
+            name
+                .trim()
+                .ifBlank { pdf.suggestedName }
+                .take(PROJECT_DOCUMENT_LABEL_MAX_LENGTH)
+                .trimEnd()
+
+        /**
+         * Siivous sovelluksen elinkaaren scopessa: ViewModelin poistuminen ei saa keskeyttää sitä,
+         * koska pattern_pdfs/0-hakemiston orpoja ei siivota myöhemmin.
+         */
+        private fun deleteUnusedCopy(pdf: IncomingPdf?) {
             pdf ?: return
-            withContext(ioDispatcher) {
+            applicationScope.launch(ioDispatcher) {
                 runCatching { AppFileStorage.deleteIfAppOwned(context, pdf.localUri.toUri()) }
             }
         }

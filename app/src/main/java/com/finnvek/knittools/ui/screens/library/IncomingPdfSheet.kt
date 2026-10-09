@@ -21,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.model.CounterProject
+import com.finnvek.knittools.domain.model.PROJECT_DOCUMENT_LABEL_MAX_LENGTH
 import com.finnvek.knittools.pro.ProStatus
 import com.finnvek.knittools.ui.components.CancelButton
 import com.finnvek.knittools.ui.components.ProBadge
@@ -71,7 +72,8 @@ fun IncomingPdfSheet(
             SheetTitle(text = stringResource(R.string.incoming_pdf_title))
             ProjectYarnTextField(
                 value = name,
-                onValueChange = { name = it },
+                // Nimike tallentuu projektin dokumentiksi, jonka enimmäispituus on rajattu.
+                onValueChange = { name = it.take(PROJECT_DOCUMENT_LABEL_MAX_LENGTH) },
                 label = stringResource(R.string.web_pattern_title_label),
                 singleLine = true,
             )

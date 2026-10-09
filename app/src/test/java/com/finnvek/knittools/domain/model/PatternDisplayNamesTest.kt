@@ -1,6 +1,7 @@
 package com.finnvek.knittools.domain.model
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class PatternDisplayNamesTest {
@@ -22,6 +23,18 @@ class PatternDisplayNamesTest {
     @Test
     fun `name without letters falls back to the original`() {
         assertEquals("..pdf", PatternDisplayNames.fromFileName("..pdf"))
+    }
+
+    @Test
+    fun `document label fits the project document label limit`() {
+        val label =
+            PatternDisplayNames.documentLabel(
+                "A_VERY_LONG_PATTERN_NAME_FROM_A_DESIGNER_SHOP_WITH_SIZES_AND_VERSION_2026.pdf",
+            )
+
+        assertTrue(label.length <= PROJECT_DOCUMENT_LABEL_MAX_LENGTH)
+        assertEquals(ProjectDocumentLabelValidation.Valid(label), validateProjectDocumentLabel(label))
+        assertEquals("Harbor Socks", PatternDisplayNames.documentLabel("harbor__socks.PDF"))
     }
 
     @Test

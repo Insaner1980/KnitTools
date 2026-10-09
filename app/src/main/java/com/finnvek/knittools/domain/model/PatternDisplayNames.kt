@@ -31,6 +31,13 @@ object PatternDisplayNames {
         }
     }
 
+    /**
+     * Projektin dokumentin nimike tiedostonimestä. Pitkä tiedostonimi lyhennetään nimikkeen
+     * enimmäispituuteen, ettei liitos kaadu pituustarkistukseen.
+     */
+    fun documentLabel(fileName: String): String =
+        fromFileName(fileName).take(PROJECT_DOCUMENT_LABEL_MAX_LENGTH).trimEnd()
+
     /** Näytettävä nimi: tiedostonimeltä näyttävä nimike siistitään, käyttäjän antama nimi pysyy ennallaan. */
     fun forDisplay(label: String): String =
         if (label.trim().endsWith(PDF_EXTENSION, ignoreCase = true)) fromFileName(label) else label

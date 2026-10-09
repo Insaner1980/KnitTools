@@ -97,8 +97,8 @@ internal fun YarnUsageRow(
                 },
                 name,
             )
-        // Oikeassa reunassa kuten osioiden tekstitoiminnot: keskitettynä koko leveydeltä se irtosi rivistä,
-        // jota se koskee.
+        // Langan kortin sisällä (inCard) toiminto on nimen alla vasemmassa reunassa, muuten oikeassa
+        // reunassa kuten osioiden tekstitoiminnot. Keskitettynä se irtosi rivistä, jota se koskee.
         TextButton(
             onClick = { onUsage(YarnUsageOpenRequest(item, name)) },
             colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.knitToolsColors.primaryReadable),

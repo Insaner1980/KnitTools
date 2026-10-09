@@ -153,7 +153,7 @@ class ProjectFoldersActivityTest {
         clickText(folderProjectName)
 
         waitForContentDescription(BACK_DESCRIPTION)
-        waitForText(folderProjectName.uppercase(Locale.ROOT))
+        waitForText(folderProjectName)
         navigateBack()
         waitForContentDescription(folderDescription(selected = true))
         waitForText(folderProjectName)
@@ -166,7 +166,7 @@ class ProjectFoldersActivityTest {
             activity.startActivity(MainActivity.createCounterLaunchIntent(activity, widgetProjectId))
         }
         waitForContentDescription(BACK_DESCRIPTION)
-        waitForText(widgetProjectName.uppercase(Locale.ROOT))
+        waitForText(widgetProjectName)
 
         navigateBack()
         waitForContentDescription(folderDescription(selected = true))
@@ -187,7 +187,7 @@ class ProjectFoldersActivityTest {
         clickContentDescription(folderDescription(selected = false))
         waitForText(folderProjectName)
         clickText(folderProjectName)
-        waitForText(folderProjectName.uppercase(Locale.ROOT))
+        waitForText(folderProjectName)
 
         moveCounterProjectTo(destinationFolderName)
         waitForAssignment(destinationFolderId)

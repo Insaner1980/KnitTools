@@ -1292,7 +1292,7 @@ The create action is not a Material FAB. It uses the image-backed `counter_plus_
 The counter route is `counter` and obtains the selected project from the Projects-graph `CounterViewModel`. The top bar owns:
 
 - back navigation;
-- uppercase project name;
+- project name in its original capitalization;
 - overflow actions.
 
 It does not show pattern subtitles, PDF names, Ravelry titles, or generic `Pattern attached` copy. The bottom navigation remains visible.

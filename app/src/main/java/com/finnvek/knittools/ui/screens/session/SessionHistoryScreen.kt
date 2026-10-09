@@ -23,7 +23,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.finnvek.knittools.R
 import com.finnvek.knittools.ui.components.ConfirmationDialog
-import com.finnvek.knittools.ui.components.SectionLabel
+import com.finnvek.knittools.ui.components.ProjectNameLabel
 import com.finnvek.knittools.ui.components.SessionItem
 import com.finnvek.knittools.ui.components.ToolScreenScaffold
 
@@ -67,8 +67,8 @@ fun SessionHistoryScreen(onBack: () -> Unit) {
         ) {
             if (sessions.isEmpty()) {
                 projectName?.let { name ->
-                    SectionLabel(
-                        text = name,
+                    ProjectNameLabel(
+                        name = name,
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                     )
                 }
@@ -94,8 +94,8 @@ fun SessionHistoryScreen(onBack: () -> Unit) {
                     // pitää lukea ruudulta. Sama osiomerkki kuin Libraryssa.
                     projectName?.let { name ->
                         item {
-                            SectionLabel(
-                                text = name,
+                            ProjectNameLabel(
+                                name = name,
                                 modifier = Modifier.padding(bottom = 4.dp),
                             )
                         }

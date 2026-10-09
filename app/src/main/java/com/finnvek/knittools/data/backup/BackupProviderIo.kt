@@ -49,9 +49,11 @@ internal interface BackupProviderIo {
     )
 }
 
+// Dagger-moduuli ei ole SAM-tyyppi: fun interface sallisi turhat lambda-toteutukset.
+@Suppress("kotlin:S6517")
 @Module
 @InstallIn(SingletonComponent::class)
-internal fun interface BackupProviderIoModule {
+internal interface BackupProviderIoModule {
     @Binds
     fun bindBackupProviderIo(implementation: ContentResolverBackupProviderIo): BackupProviderIo
 }

@@ -193,17 +193,13 @@ private fun DrawScope.drawSymbol(
         }
 
         "s2kp" -> {
-            // Käännetty V (centered double decrease)
+            // Keskitetty kaksoiskavennus: Λ ja keskiviiva. Ilman keskiviivaa merkki olisi sama kuin
+            // takareunasta neulottu silmukka, ja alaspäin osoittava V on nurin nostetun silmukan merkki.
+            drawVShape(tint, pad, s)
             drawLine(
                 tint,
-                Offset(pad + s * 0.1f, pad + s * 0.15f),
                 Offset(center.x, s - pad - s * 0.15f),
-                strokeWidth = 2f,
-            )
-            drawLine(
-                tint,
-                Offset(s - pad - s * 0.1f, pad + s * 0.15f),
-                Offset(center.x, s - pad - s * 0.15f),
+                Offset(center.x, pad + s * 0.15f),
                 strokeWidth = 2f,
             )
         }

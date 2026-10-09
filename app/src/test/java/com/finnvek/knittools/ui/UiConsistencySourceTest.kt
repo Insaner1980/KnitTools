@@ -41,6 +41,16 @@ class UiConsistencySourceTest {
     }
 
     @Test
+    fun `project names keep their casing in section labels`() {
+        // SectionLabel muuttaa tekstin versaaleiksi; projektin nimi kulkee ProjectNameLabelin kautta.
+        assertOnlyAllowed(
+            Regex("""SectionLabel\(\s*(text\s*=\s*)?[\w.]*(projectName|project\.name)\b"""),
+            emptyMap(),
+            "Käytä ProjectNameLabel-komponenttia: projektin nimeä ei muuteta versaaleiksi",
+        )
+    }
+
+    @Test
     fun `screens use shared text field colors`() {
         // Muistiinpanoeditori on koko näytön kirjoituspinta ilman kenttää.
         assertOnlyAllowed(

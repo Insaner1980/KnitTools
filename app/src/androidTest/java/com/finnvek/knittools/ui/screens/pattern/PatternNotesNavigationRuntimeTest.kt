@@ -47,7 +47,6 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
-import java.util.Locale
 import java.util.UUID
 
 @RunWith(AndroidJUnit4::class)
@@ -441,8 +440,8 @@ class PatternNotesNavigationRuntimeTest {
         scrollToText(text(R.string.pattern_open_project_notes))
         capture("reader-menu")
         click(repeatActivation) { hasText(it, text(R.string.pattern_open_project_notes)) }
-        // Projektin nimi on editorissa osiomerkkinä versaaleilla, yläpalkissa pelkkä Notes.
-        waitForText(projectName.uppercase(Locale.ROOT))
+        // Projektin nimi on editorissa osiomerkkinä alkuperäisessä kirjoitusasussaan, yläpalkissa pelkkä Notes.
+        waitForText(projectName)
         editable()
     }
 

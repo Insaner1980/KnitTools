@@ -26,7 +26,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.model.CounterHistoryAction
-import com.finnvek.knittools.ui.components.SectionLabel
+import com.finnvek.knittools.ui.components.ProjectNameLabel
 import com.finnvek.knittools.ui.components.ToolScreenScaffold
 import com.finnvek.knittools.ui.components.localizedDateTimePattern
 import com.finnvek.knittools.ui.components.rememberCurrentLocale
@@ -83,7 +83,7 @@ internal fun CounterHistoryContent(
                 else -> {
                     // Projektin nimi samana osiomerkkinä kuin istuntohistoriassa, ei omana roosana otsikkona.
                     item(key = "project") {
-                        SectionLabel(text = state.projectName)
+                        ProjectNameLabel(name = state.projectName)
                     }
                     if (state.days.isEmpty()) {
                         item(key = "empty") { CounterHistoryEmpty() }

@@ -46,7 +46,7 @@ import com.finnvek.knittools.ui.components.ProBadge
 import com.finnvek.knittools.ui.components.ProPromptRequest
 import com.finnvek.knittools.ui.components.ProPromptSheet
 import com.finnvek.knittools.ui.components.ProPromptSource
-import com.finnvek.knittools.ui.components.SectionLabel
+import com.finnvek.knittools.ui.components.ProjectNameLabel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -109,8 +109,8 @@ fun NotesEditorScreen(
         Box(modifier = Modifier.fillMaxSize().padding(padding).imePadding()) {
             if (state.canEditNotes) {
                 Column {
-                    SectionLabel(
-                        text = state.projectName,
+                    ProjectNameLabel(
+                        name = state.projectName,
                         modifier = Modifier.padding(horizontal = 16.dp),
                     )
                     if (state.saveFailed) {

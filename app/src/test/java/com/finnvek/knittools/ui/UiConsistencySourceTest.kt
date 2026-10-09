@@ -85,6 +85,21 @@ class UiConsistencySourceTest {
     }
 
     @Test
+    fun `title check ignores titles in nested comments and strings`() {
+        val untitled =
+            listOf(
+                "ModalBottomSheet(onDismissRequest = {}) {",
+                "    /* ulompi /* sisempi */ SheetTitle(text = otsikko) */",
+                "    Text(\"SheetTitle(\")",
+                "    // SheetTitle(text = otsikko)",
+                "}",
+            ).joinToString("\n")
+
+        assertEquals(false, titleCall.containsMatchIn(untitled.codeOnly()))
+        assertEquals(true, titleCall.containsMatchIn("SheetTitle(text = otsikko)".codeOnly()))
+    }
+
+    @Test
     fun `choices use SegmentedToggle instead of FilterChip`() {
         // Sallittu: PDF-merkintöjen vieritettävä työkalupaletti, jossa tilat ja toiminnot ovat rinnakkain.
         // Myös jaetut komponentit, jottei sirurivi palaa komponentin kautta.
@@ -195,11 +210,68 @@ class UiConsistencySourceTest {
 
     private fun String.containsTitle(): Boolean = titleCall.containsMatchIn(this)
 
-    /** Lähdekoodi ilman kommentteja ja merkkijonoja; merkkijonot jäävät tyhjiksi, jotta rakenne säilyy. */
-    private fun String.codeOnly(): String =
-        commentOrString.replace(this) { match ->
-            if (match.value.startsWith("\"")) "\"\"" else ""
+    /**
+     * Lähdekoodi ilman kommentteja ja merkkijonoja; merkkijonot jäävät tyhjiksi, jotta rakenne säilyy.
+     * Lohkokommentit lasketaan sisäkkäin kuten Kotlinissa: säännöllinen lauseke pysähtyi ensimmäiseen
+     * sulkeutumiseen ja jätti ulomman kommentin loppuosan koodiksi.
+     */
+    @Suppress("CyclomaticComplexMethod", "NestedBlockDepth")
+    private fun String.codeOnly(): String {
+        val code = StringBuilder(length)
+        var index = 0
+        while (index < length) {
+            index =
+                when {
+                    startsWith(RAW_QUOTE, index) -> {
+                        code.append("\"\"")
+                        indexOf(RAW_QUOTE, index + RAW_QUOTE.length).let { end ->
+                            if (end < 0) length else end + RAW_QUOTE.length
+                        }
+                    }
+
+                    this[index] == '"' || this[index] == '\'' -> {
+                        val quote = this[index]
+                        var end = index + 1
+                        while (end < length && this[end] != quote && this[end] != '\n') {
+                            if (this[end] == '\\') end++
+                            end++
+                        }
+                        code.append(quote).append(quote)
+                        minOf(end + 1, length)
+                    }
+
+                    startsWith("//", index) -> indexOf('\n', index).let { end -> if (end < 0) length else end }
+
+                    startsWith("/*", index) -> {
+                        var depth = 0
+                        var end = index
+                        while (end < length) {
+                            when {
+                                startsWith("/*", end) -> {
+                                    depth++
+                                    end += 2
+                                }
+
+                                startsWith("*/", end) -> {
+                                    depth--
+                                    end += 2
+                                    if (depth == 0) break
+                                }
+
+                                else -> end++
+                            }
+                        }
+                        end
+                    }
+
+                    else -> {
+                        code.append(this[index])
+                        index + 1
+                    }
+                }
         }
+        return code.toString()
+    }
 
     /** Kutsun argumentit avaavasta sulkeesta vastaavaan sulkevaan asti. */
     private fun callArguments(
@@ -239,7 +311,6 @@ class UiConsistencySourceTest {
         /** Varsinainen kutsu, ei esim. `SheetTitleText(` tai `.SheetTitle(`. */
         val titleCall = Regex("""(?<![\w.])(SheetTitle|FormSheet)\(""")
 
-        // Raakamerkkijono, tavallinen merkkijono, rivikommentti tai lohkokommentti.
-        val commentOrString = Regex("\"\"\"[\\s\\S]*?\"\"\"|\"(?:\\\\.|[^\"\\\\\\n])*\"|//[^\\n]*|/\\*[\\s\\S]*?\\*/")
+        const val RAW_QUOTE = "\"\"\""
     }
 }

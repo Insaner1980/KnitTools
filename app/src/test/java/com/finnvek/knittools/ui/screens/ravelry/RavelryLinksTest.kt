@@ -49,4 +49,26 @@ class RavelryLinksTest {
         assertFalse(isRavelryPurchaseUrl("notpaypal.com.evil.example", "/"))
         assertFalse(isRavelryPurchaseUrl(null, "/checkout"))
     }
+
+    @Test
+    fun `in-app browser shows only ravelry pages`() {
+        fun nav(
+            host: String,
+            path: String = "/",
+            scheme: String = "https",
+            mainFrame: Boolean = true,
+            redirect: Boolean = false,
+        ) = ravelryNavigation(scheme, host, path, mainFrame, redirect)
+
+        assertEquals(RavelryNavigation.InApp, nav("www.ravelry.com", "/patterns/library/the-shift"))
+        assertEquals(RavelryNavigation.InApp, nav("www.ravelry.com", "/account/login"))
+        assertEquals(RavelryNavigation.Purchase, nav("www.ravelry.com", "/stores/shop/products/1/checkout"))
+        assertEquals(RavelryNavigation.External, nav("designer-blog.example", "/free-hat"))
+        assertEquals(RavelryNavigation.External, nav("ravelry.com.evil.example"))
+        // Latauspalvelimen uudelleenohjaus ja upotettu kehys jatkuvat, jottei PDF-lataus katkea.
+        assertEquals(RavelryNavigation.InApp, nav("downloads.example-cdn.com", "/pattern.pdf", redirect = true))
+        assertEquals(RavelryNavigation.InApp, nav("frames.example", mainFrame = false))
+        assertEquals(RavelryNavigation.Blocked, nav("www.ravelry.com", scheme = "http"))
+        assertEquals(RavelryNavigation.Blocked, nav("www.ravelry.com", scheme = "intent"))
+    }
 }

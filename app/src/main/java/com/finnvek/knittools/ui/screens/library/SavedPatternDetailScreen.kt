@@ -71,7 +71,7 @@ fun SavedPatternDetailScreen(
     pattern: SavedPattern,
     onBack: () -> Unit,
     onOpenPattern: () -> Unit,
-    onAttachToProject: (projectId: Long) -> Unit,
+    onAttachToProject: (projectId: Long, onResult: (attached: Boolean) -> Unit) -> Unit,
     onRemove: () -> Unit,
     modifier: Modifier = Modifier,
     onOpenWebsite: ((String) -> ExternalWebLinkOpenResult)? = null,
@@ -188,7 +188,13 @@ fun SavedPatternDetailScreen(
             projects = projects,
             onSelect = { projectId ->
                 showProjectPicker = false
-                if (isWebPattern) startWebAttach(projectId, null) else onAttachToProject(projectId)
+                if (isWebPattern) {
+                    startWebAttach(projectId, null)
+                } else {
+                    onAttachToProject(projectId) { attached ->
+                        if (!attached) coroutineScope.launch { snackbarHostState.showSnackbar(attachFailedMessage) }
+                    }
+                }
             },
             onDismiss = { showProjectPicker = false },
         )

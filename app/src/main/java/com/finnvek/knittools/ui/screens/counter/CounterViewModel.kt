@@ -2013,10 +2013,22 @@ class CounterViewModel
         fun attachSavedPatternToProject(
             projectId: Long,
             savedPatternId: Long,
+            onResult: (attached: Boolean) -> Unit,
         ) {
-            if (projectId <= 0L || savedPatternId <= 0L) return
+            if (projectId <= 0L || savedPatternId <= 0L) {
+                onResult(false)
+                return
+            }
             viewModelScope.launch {
-                repository.attachSavedPattern(projectId = projectId, savedPatternId = savedPatternId)
+                val attached =
+                    try {
+                        repository.attachSavedPattern(projectId = projectId, savedPatternId = savedPatternId) != null
+                    } catch (cancellation: CancellationException) {
+                        throw cancellation
+                    } catch (_: Exception) {
+                        false
+                    }
+                onResult(attached)
             }
         }
 

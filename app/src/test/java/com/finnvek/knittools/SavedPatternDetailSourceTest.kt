@@ -46,7 +46,8 @@ class SavedPatternDetailSourceTest {
         assertTrue(navGraph.contains("libraryViewModel.loadSavedPattern(savedPatternId)"))
         assertTrue(navGraph.contains("Screen.LibraryPatternViewer(savedPatternId).route"))
         assertTrue(navGraph.contains("counterViewModel.attachSavedPatternToProject(projectId, pattern.id)"))
-        assertTrue(navGraph.contains("navController.openProjectOverview(projectId)"))
+        // Projektiin siirrytään vasta onnistuneen liitoksen jälkeen.
+        assertTrue(navGraph.contains("if (attached) navController.openProjectOverview(projectId)"))
         assertTrue(navGraph.contains("libraryViewModel.deleteSavedPattern(savedPatternId)"))
         val detailRoute =
             navGraph

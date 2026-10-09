@@ -35,7 +35,7 @@ Odotetut sopimusarvot, varmistettu nykyisista lahdetiedostoista:
   resursseissa, BuildConfig/generoiduissa vakioissa, Gradle-tiedostoissa, manifesteissa, testeissa, APK:ssa tai AAB:ssa.
 - Room-version luetaan @Database-annotaatiosta. Schema exportin pitaa olla paalla, N.json pitaa loytya,
   ja auto/manual-migraatiopolun pitaa ulottua varhaisimmasta exportoidusta schemasta versioon N.
-- Widget counter launch on CounterLaunchTokenStore-tokenilla rajattu, ja OAuth callback ei saa muodostaa counter launchia.
+- Widget counter launch on CounterLaunchTokenStore-tokenilla rajattu, eikä poistettua Ravelry-OAuth-callbackia saa palauttaa.
 - locales_config.xml ja app/src/main/res/values* kielihakemistot ovat pariteetissa; default values vastaa localea en.
 #>
 
@@ -726,7 +726,7 @@ function Test-ForbiddenDependencies {
                     }
                 }
 
-                if ($line.Text -match 'com\.google\.firebase' -and $line.Text -notmatch 'firebase-(bom|auth|functions|crashlytics)"|com\.google\.firebase\.crashlytics"|^import com\.google\.firebase\.crashlytics\.buildtools\.gradle\.CrashlyticsExtension$') {
+                if ($line.Text -match 'com\.google\.firebase' -and $line.Text -notmatch 'firebase-(bom|crashlytics)"|com\.google\.firebase\.crashlytics"|^import com\.google\.firebase\.crashlytics\.buildtools\.gradle\.CrashlyticsExtension$') {
                     $problems += "unapproved direct Firebase dependency found in $file"
                     if ($null -eq $firstLine) {
                         $firstPath = $file
@@ -1161,10 +1161,12 @@ function Test-WidgetOAuthBoundary {
     $check = "widget-oauth-boundary"
     $mainPath = "app/src/main/java/com/finnvek/knittools/MainActivity.kt"
     $requestPath = "app/src/main/java/com/finnvek/knittools/ui/navigation/CounterLaunchRequest.kt"
+    $manifestPath = "app/src/main/AndroidManifest.xml"
 
     try {
         $mainText = Read-TextFile $mainPath
         $requestText = Read-TextFile $requestPath
+        $manifestText = Read-TextFile $manifestPath
         $warnings = @()
         $firstPath = $mainPath
         $firstLine = $null
@@ -1172,7 +1174,6 @@ function Test-WidgetOAuthBoundary {
         $anchors = @(
             [pscustomobject]@{ Path = $mainPath; Text = $mainText; Pattern = "CounterLaunchTokenStore.consumeLaunchId"; Message = "token store consumption symbol not found" },
             [pscustomobject]@{ Path = $mainPath; Text = $mainText; Pattern = "CounterLaunchTokenStore.issueLaunchId"; Message = "token issue symbol not found" },
-            [pscustomobject]@{ Path = $requestPath; Text = $requestText; Pattern = "if (intentData.isOAuthCallback) return null"; Message = "OAuth callback null guard not found" },
             [pscustomobject]@{ Path = $requestPath; Text = $requestText; Pattern = "if (!intentData.isTrustedCounterLaunch) return null"; Message = "trusted launch guard not found" }
         )
 
@@ -1186,26 +1187,26 @@ function Test-WidgetOAuthBoundary {
             }
         }
 
-        $start = $mainText.IndexOf("private fun handleOAuthCallbackIfNeeded")
-        $end = $mainText.IndexOf("private fun clearOAuthCallbackIntent")
-        if ($start -ge 0 -and $end -gt $start) {
-            $oauthBody = $mainText.Substring($start, $end - $start)
-            if ($oauthBody -match 'toCounterLaunchRequest|CounterLaunchRequest\s*\(|createCounterLaunchIntent') {
-                $line = Get-LineNumber -RelativePath $mainPath -Pattern "handleOAuthCallbackIfNeeded"
-                Add-Fail -Check $check -Message "OAuth callback handling directly touches counter launch construction path" -RelativePath $mainPath -Line $line
+        # Ravelry-OAuth poistettiin Androidista 2026-10-09: paluuosoite ei saa palata, koska
+        # se ohittaisi laskurin avauksen token-portin ja toisi kirjautumisen takaisin sovellukseen.
+        $oauthSurfaces = @(
+            [pscustomobject]@{ Path = $mainPath; Text = $mainText; Pattern = "handleOAuthCallbackIfNeeded" },
+            [pscustomobject]@{ Path = $mainPath; Text = $mainText; Pattern = "isOAuthCallback" },
+            [pscustomobject]@{ Path = $requestPath; Text = $requestText; Pattern = "isOAuthCallback" },
+            [pscustomobject]@{ Path = $manifestPath; Text = $manifestText; Pattern = "ravelry-auth-complete" }
+        )
+        foreach ($surface in $oauthSurfaces) {
+            if ($surface.Text.Contains($surface.Pattern)) {
+                $line = Get-LineNumber -RelativePath $surface.Path -Pattern ([regex]::Escape($surface.Pattern))
+                Add-Fail -Check $check -Message "removed OAuth callback surface '$($surface.Pattern)' is back in $($surface.Path)" -RelativePath $surface.Path -Line $line
                 return
-            }
-        } else {
-            $warnings += "OAuth callback handler bounds could not be parsed"
-            if ($null -eq $firstLine) {
-                $firstLine = Get-LineNumber -RelativePath $mainPath -Pattern "OAuth|oauth"
             }
         }
 
         if ($warnings.Count -gt 0) {
             Add-Warn -Check $check -Message (($warnings -join "; ") + "; static drift detector only") -RelativePath $firstPath -Line $firstLine
         } else {
-            Add-Pass -Check $check -Message "token gate anchors and OAuth null-guard present"
+            Add-Pass -Check $check -Message "token gate anchors present and no OAuth callback surface"
         }
     } catch {
         Add-Warn -Check $check -Message ("manual review needed: " + $_.Exception.Message) -RelativePath $mainPath

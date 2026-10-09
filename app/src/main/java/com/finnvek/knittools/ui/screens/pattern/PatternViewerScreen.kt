@@ -2060,7 +2060,9 @@ private fun PatternViewerContent(
                             }
                         },
                         interactionOverlay = { viewport ->
-                            if (editableLayerVisible &&
+                            // Piirto vain merkintätilassa, vaikka edellinen työkalu olisi vielä valittuna.
+                            if (state.annotationMode &&
+                                editableLayerVisible &&
                                 state.annotationState.activeTool != PatternAnnotationTool.BROWSE
                             ) {
                                 PatternAnnotationInputOverlay(

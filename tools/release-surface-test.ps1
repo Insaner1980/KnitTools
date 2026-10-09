@@ -481,13 +481,13 @@ try {
             -Name "widget-oauth-counter-launch" `
             -ExpectedStatus "FAIL" `
             -ExpectedCheck "widget-oauth-boundary" `
-            -PassMessage "OAuth counter launch mutation detected" `
+            -PassMessage "OAuth callback reintroduction detected" `
             -Mutate {
                 param($fixture)
-                $path = Join-Path $fixture "app/src/main/java/com/finnvek/knittools/MainActivity.kt"
+                $path = Join-Path $fixture "app/src/main/AndroidManifest.xml"
                 $text = Get-Content -Raw -LiteralPath $path
-                $signature = "private fun handleOAuthCallbackIfNeeded(intent: Intent?): Boolean {"
-                Set-FileText -Path $path -Text ($text.Replace($signature, "$signature`r`n        createCounterLaunchIntent()"))
+                $filter = '<data android:scheme="knittools" android:host="ravelry-auth-complete" />'
+                Set-FileText -Path $path -Text ($text.Replace("</activity>", "$filter`r`n        </activity>"))
             }
     }
 } finally {

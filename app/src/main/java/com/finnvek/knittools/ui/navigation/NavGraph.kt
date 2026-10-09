@@ -736,9 +736,12 @@ private fun NavGraphBuilder.savedPatternDetailRoute(navController: NavHostContro
                 navController.navigateSingleTopTo(Screen.LibraryPatternViewer(savedPatternId).route)
             },
             projects = projects,
-            onAttachToProject = { projectId ->
-                counterViewModel.attachSavedPatternToProject(projectId, pattern.id)
-                navController.openProjectOverview(projectId)
+            onAttachToProject = { projectId, onResult ->
+                // Projektiin siirrytään vasta kun liitos onnistui; virheen kertoo ohjeen sivu.
+                counterViewModel.attachSavedPatternToProject(projectId, pattern.id) { attached ->
+                    if (attached) navController.openProjectOverview(projectId)
+                    onResult(attached)
+                }
             },
             onAttachWebPattern = { projectId, expectedExistingId, onResult ->
                 counterViewModel.attachSavedPatternMetadata(

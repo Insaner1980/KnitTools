@@ -93,7 +93,7 @@ class MentalModelClarityRuntimeTest {
                 pattern = pattern(source),
                 onBack = {},
                 onOpenPattern = {},
-                onAttachToProject = {},
+                onAttachToProject = { _, _ -> },
                 onRemove = { deleted++ },
             )
         }
@@ -159,7 +159,7 @@ class MentalModelClarityRuntimeTest {
     @Test fun savedPdfStates() {
         val current = mutableStateOf(pattern())
         render {
-            SavedPatternDetailScreen(current.value, {}, {}, {}, {})
+            SavedPatternDetailScreen(current.value, {}, {}, { _, _ -> }, {})
         }
         val explanation = text(R.string.saved_pattern_detail_no_pdf_explanation)
         rule.onNodeWithText(explanation).performScrollTo()

@@ -51,7 +51,7 @@ class SavedPatternDetailWebScreenTest {
                     pattern = webPattern(),
                     onBack = {},
                     onOpenPattern = {},
-                    onAttachToProject = {},
+                    onAttachToProject = { _, _ -> },
                     projects = listOf(PROJECT),
                     onAttachWebPattern = { projectId, expectedId, onResult ->
                         assertEquals(PROJECT.id, projectId)
@@ -138,7 +138,7 @@ class SavedPatternDetailWebScreenTest {
                         ExternalWebLinkOpenResult.Opened
                     },
                     onEditWebPattern = { edited += 1 },
-                    onAttachToProject = {},
+                    onAttachToProject = { _, _ -> },
                     projects = listOf(PROJECT),
                     onAttachWebPattern = { _, _, onResult ->
                         onResult(SavedPatternMetadataMutationResult.Attached(7L))
@@ -194,7 +194,7 @@ class SavedPatternDetailWebScreenTest {
                     onBack = {},
                     onOpenPattern = {},
                     onEditWebPattern = {},
-                    onAttachToProject = {},
+                    onAttachToProject = { _, _ -> },
                     projects = listOf(PROJECT),
                     onOpenProject = { attached += 1 },
                     onAttachWebPattern = { _, expectedId, onResult ->

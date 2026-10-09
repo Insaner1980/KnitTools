@@ -524,7 +524,9 @@ class PatternViewerSourceTest {
 
         assertTrue(
             normalizedGuard.contains(
-                "if(editableLayerVisible&&state.annotationState.activeTool!=PatternAnnotationTool.BROWSE)",
+                // Lukutilassa ei piirretä, vaikka edellinen työkalu olisi vielä valittuna.
+                "if(state.annotationMode&&editableLayerVisible&&" +
+                    "state.annotationState.activeTool!=PatternAnnotationTool.BROWSE)",
             ),
         )
     }

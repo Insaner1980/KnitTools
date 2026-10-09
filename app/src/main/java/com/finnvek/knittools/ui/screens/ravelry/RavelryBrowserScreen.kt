@@ -56,9 +56,9 @@ fun RavelryBrowserScreen(
     val context = LocalContext.current
     val purchaseMessage = stringResource(R.string.ravelry_purchase_in_browser)
     val noBrowserMessage = stringResource(R.string.web_pattern_no_browser)
-    val openPurchase by rememberUpdatedState<(String) -> Unit> { url ->
+    val openOutside by rememberUpdatedState<(String, String?) -> Unit> { url, message ->
         val opened = openExternalWebLink(context, url) == ExternalWebLinkOpenResult.Opened
-        Toast.makeText(context, if (opened) purchaseMessage else noBrowserMessage, Toast.LENGTH_LONG).show()
+        (if (opened) message else noBrowserMessage)?.let { Toast.makeText(context, it, Toast.LENGTH_LONG).show() }
     }
 
     // Järjestelmän takaisin-ele selaa ensin Ravelryn sivuhistoriaa.
@@ -103,17 +103,27 @@ fun RavelryBrowserScreen(
                         CookieManager.getInstance().setAcceptCookie(true)
                         webViewClient =
                             object : WebViewClient() {
-                                // Vain HTTPS-sivut; muut osoitteet (http, intent, tiedostot) estetään.
-                                // Kassa ja maksu avataan käyttäjän selaimessa (ks. isRavelryPurchaseUrl).
+                                // Vain Ravelryn HTTPS-sivut; kassa ja muut sivustot avataan käyttäjän selaimessa
+                                // ja muut osoitteet (http, intent, tiedostot) estetään (ks. ravelryNavigation).
                                 override fun shouldOverrideUrlLoading(
                                     view: WebView,
                                     request: WebResourceRequest,
                                 ): Boolean {
                                     val url = request.url
-                                    if (url.scheme != HTTPS) return true
-                                    if (!isRavelryPurchaseUrl(url.host, url.path)) return false
-                                    openPurchase(url.toString())
-                                    return true
+                                    val navigation =
+                                        ravelryNavigation(
+                                            scheme = url.scheme,
+                                            host = url.host,
+                                            path = url.path,
+                                            isMainFrame = request.isForMainFrame,
+                                            isRedirect = request.isRedirect,
+                                        )
+                                    when (navigation) {
+                                        RavelryNavigation.Purchase -> openOutside(url.toString(), purchaseMessage)
+                                        RavelryNavigation.External -> openOutside(url.toString(), null)
+                                        RavelryNavigation.InApp, RavelryNavigation.Blocked -> Unit
+                                    }
+                                    return navigation != RavelryNavigation.InApp
                                 }
 
                                 override fun onPageStarted(
@@ -166,6 +176,5 @@ fun RavelryBrowserScreen(
     }
 }
 
-private const val HTTPS = "https"
 private const val FULL_PROGRESS = 100
 private const val RAVELRY_PATTERN_SEARCH_URL = "https://www.ravelry.com/patterns/search"

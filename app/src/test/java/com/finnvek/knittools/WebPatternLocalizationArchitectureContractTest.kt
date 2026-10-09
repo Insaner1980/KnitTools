@@ -128,11 +128,19 @@ class WebPatternLocalizationArchitectureContractTest {
         val productionSources = sourceFilesUnder("app/src/main/java")
         val ravelryBrowser = productionSources.filter { it.contains("fun RavelryBrowserScreen(") }
         assertEquals(1, ravelryBrowser.size)
+        // Ravelry-selaimelle sallitaan vain WebView-importit; muut kielletyt riippuvuudet tarkistetaan siltäkin.
+        val ravelryBrowserWithoutAllowedImports =
+            ravelryBrowser
+                .single()
+                .lines()
+                .filterNot { line ->
+                    line.trim() in setOf("import android.webkit.WebView", "import android.webkit.WebViewClient")
+                }.joinToString("\n")
         val dependencyAndProductionSources =
             listOf(
                 ProjectSourceFiles.read("app/build.gradle.kts"),
                 ProjectSourceFiles.read("gradle/libs.versions.toml"),
-            ) + (productionSources - ravelryBrowser.toSet())
+            ) + (productionSources - ravelryBrowser.toSet()) + ravelryBrowserWithoutAllowedImports
         val dependencyAndProductionText = dependencyAndProductionSources.joinToString("\n")
         forbiddenImplementationTokens.forEach { token ->
             assertFalse("Web pattern V1 must not introduce $token", dependencyAndProductionText.contains(token))

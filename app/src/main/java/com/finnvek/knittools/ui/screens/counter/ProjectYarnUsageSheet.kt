@@ -9,8 +9,6 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -37,7 +35,7 @@ import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.calculator.MeasurementNumberError
 import com.finnvek.knittools.domain.model.YarnUsageUnit
 import com.finnvek.knittools.repository.YarnUsageResult
-import com.finnvek.knittools.ui.components.CancelButton
+import com.finnvek.knittools.ui.components.ConfirmationDialog
 import com.finnvek.knittools.ui.components.FormSheetActions
 import com.finnvek.knittools.ui.components.FormSheetConfirm
 import com.finnvek.knittools.ui.components.LabelWithInfo
@@ -193,27 +191,20 @@ fun ProjectYarnUsageSheet(
         }
     }
     if (confirmDelete) {
-        AlertDialog(
-            onDismissRequest = { confirmDelete = false },
-            title = { Text(stringResource(R.string.yarn_usage_delete_title)) },
-            text = { Text(stringResource(R.string.yarn_usage_delete_body, draft.name)) },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        confirmDelete = false
-                        actions.onDelete()
-                    },
-                    enabled = !state.busy,
-                    modifier = Modifier.heightIn(min = 48.dp).testTag("yarn_usage_confirm_delete"),
-                    // Poisto on punainen kuten muissa vahvistuksissa.
-                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
-                ) { Text(stringResource(R.string.yarn_usage_delete)) }
+        // Jaettu vahvistusdialogi: tallennuksen aikana poisto on poissa käytöstä.
+        ConfirmationDialog(
+            title = stringResource(R.string.yarn_usage_delete_title),
+            message = stringResource(R.string.yarn_usage_delete_body, draft.name),
+            confirmText = stringResource(R.string.yarn_usage_delete),
+            isDestructive = true,
+            onConfirm = {
+                confirmDelete = false
+                actions.onDelete()
             },
-            dismissButton = {
-                CancelButton(onClick = {
-                    confirmDelete = false
-                }, modifier = Modifier.heightIn(min = 48.dp))
-            },
+            onDismiss = { confirmDelete = false },
+            confirmEnabled = !state.busy,
+            confirmModifier = Modifier.heightIn(min = 48.dp).testTag("yarn_usage_confirm_delete"),
+            dismissModifier = Modifier.heightIn(min = 48.dp),
         )
     }
 }

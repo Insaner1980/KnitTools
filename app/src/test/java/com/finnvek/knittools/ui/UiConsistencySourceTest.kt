@@ -56,12 +56,18 @@ class UiConsistencySourceTest {
         val titleExceptions = setOf("counter/ProjectActionsBottomSheet.kt")
         val sheetCall = Regex("""(?<![\w.])ModalBottomSheet\(""")
         val sources = screenSources() + componentSources()
+        // Otsikko tarkistetaan jokaisen sheetin omasta sisällöstä: yksi otsikko ei saa kelvata
+        // saman tiedoston kaikille sheeteille. Sisältö voi olla saman tiedoston apufunktiossa.
         val withoutTitle =
             sources
-                .filter { (path, text) -> sheetCall.containsMatchIn(text) && path !in titleExceptions }
-                .filterValues { text -> "SheetTitle(" !in text && "FormSheet(" !in text }
-                .keys
-        assertEquals("Käytä SheetTitlea sheetin otsikkona", emptySet<String>(), withoutTitle)
+                .filterKeys { it !in titleExceptions }
+                .mapValues { (_, text) ->
+                    sheetCall.findAll(text).count { match ->
+                        val argumentsEnd = match.range.last + callArguments(text, match.range.last).length
+                        !hasSheetTitle(text, trailingBlock(text, argumentsEnd))
+                    }
+                }.filterValues { it > 0 }
+        assertEquals("Käytä SheetTitlea jokaisen sheetin otsikkona", emptyMap<String, Int>(), withoutTitle)
 
         val withoutSurface =
             sources
@@ -80,10 +86,12 @@ class UiConsistencySourceTest {
     @Test
     fun `choices use SegmentedToggle instead of FilterChip`() {
         // Sallittu: PDF-merkintöjen vieritettävä työkalupaletti, jossa tilat ja toiminnot ovat rinnakkain.
+        // Myös jaetut komponentit, jottei sirurivi palaa komponentin kautta.
         assertOnlyAllowed(
             Regex("""(?<![\w.])FilterChip\("""),
             mapOf("pattern/PatternAnnotationToolbar.kt" to 1),
             "Käytä SegmentedTogglea tai ProjectFilterPilliä",
+            sources = screenSources() + componentSources(),
         )
     }
 
@@ -97,7 +105,6 @@ class UiConsistencySourceTest {
                 "counter/CounterScreen.kt" to 6,
                 "counter/MultiCounterComponents.kt" to 2,
                 "counter/PhotoGalleryScreen.kt" to 1,
-                "counter/ProjectYarnUsageSheet.kt" to 1,
                 "counter/TargetRowsDialog.kt" to 1,
                 "library/WebPatternEditorScreen.kt" to 2,
                 "pattern/PatternViewerScreen.kt" to 2,
@@ -146,13 +153,46 @@ class UiConsistencySourceTest {
         pattern: Regex,
         allowed: Map<String, Int>,
         hint: String,
+        sources: Map<String, String> = screenSources(),
     ) {
         val actual =
-            screenSources()
+            sources
                 .mapValues { (_, text) -> pattern.findAll(text).count() }
                 .filterValues { it > 0 }
         assertEquals(hint, allowed, actual)
     }
+
+    /** Kutsua seuraava sisältölohko `{ … }`, eli sheetin sisältö. */
+    private fun trailingBlock(
+        text: String,
+        fromIndex: Int,
+    ): String {
+        val open = text.indexOf('{', fromIndex)
+        if (open < 0) return ""
+        var depth = 0
+        for (index in open until text.length) {
+            when (text[index]) {
+                '{' -> depth++
+                '}' -> if (--depth == 0) return text.substring(open, index)
+            }
+        }
+        return text.substring(open)
+    }
+
+    /** Otsikko suoraan sisällössä tai saman tiedoston apufunktiossa, jota sisältö kutsuu. */
+    private fun hasSheetTitle(
+        fileText: String,
+        block: String,
+    ): Boolean {
+        if (block.containsTitle()) return true
+        return Regex("""\b([A-Z]\w+)\(""").findAll(block).any { call ->
+            val declaration = Regex("""fun ${call.groupValues[1]}\(""").find(fileText) ?: return@any false
+            val bodyStart = declaration.range.last + callArguments(fileText, declaration.range.last).length
+            trailingBlock(fileText, bodyStart).containsTitle()
+        }
+    }
+
+    private fun String.containsTitle(): Boolean = "SheetTitle(" in this || "FormSheet(" in this
 
     /** Kutsun argumentit avaavasta sulkeesta vastaavaan sulkevaan asti. */
     private fun callArguments(

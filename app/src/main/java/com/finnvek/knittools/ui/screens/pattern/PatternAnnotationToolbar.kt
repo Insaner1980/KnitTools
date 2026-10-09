@@ -52,6 +52,7 @@ import com.finnvek.knittools.domain.model.PatternAnnotationLimits
 import com.finnvek.knittools.domain.model.PatternCalloutSymbol
 import com.finnvek.knittools.ui.components.CancelButton
 import com.finnvek.knittools.ui.components.ScrollableFormDialog
+import com.finnvek.knittools.ui.components.SegmentedToggle
 import com.finnvek.knittools.ui.theme.PatternAnnotationTokens
 
 internal data class PatternAnnotationToolbarActions(
@@ -451,19 +452,12 @@ private fun <T> ChartChoiceRow(
     label: @Composable (T) -> String,
     onSelected: (T) -> Unit,
 ) {
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
-        modifier = Modifier.horizontalScroll(rememberScrollState()),
-    ) {
-        choices.forEach { choice ->
-            FilterChip(
-                selected = choice == selected,
-                onClick = { onSelected(choice) },
-                label = { Text(label(choice)) },
-                modifier = Modifier.heightIn(min = PatternAnnotationTokens.TOOL_TOUCH_TARGET),
-            )
-        }
-    }
+    // Valinnat ovat SegmentedToggle kuten muissakin dialogeissa, eivät FilterChip-rivejä.
+    SegmentedToggle(
+        options = choices.map { label(it) },
+        selectedIndex = choices.indexOf(selected),
+        onSelect = { onSelected(choices[it]) },
+    )
 }
 
 @Composable
@@ -553,19 +547,11 @@ private fun HighlighterAxisControls(
     selected: PatternHighlighterAxisLock,
     onSelected: (PatternHighlighterAxisLock) -> Unit,
 ) {
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        modifier = Modifier.horizontalScroll(rememberScrollState()),
-    ) {
-        AXIS_ITEMS.forEach { item ->
-            FilterChip(
-                selected = selected == item.axisLock,
-                onClick = { onSelected(item.axisLock) },
-                label = { Text(stringResource(item.labelRes)) },
-                modifier = Modifier.heightIn(min = PatternAnnotationTokens.TOOL_TOUCH_TARGET),
-            )
-        }
-    }
+    SegmentedToggle(
+        options = AXIS_ITEMS.map { stringResource(it.labelRes) },
+        selectedIndex = AXIS_ITEMS.indexOfFirst { it.axisLock == selected },
+        onSelect = { onSelected(AXIS_ITEMS[it].axisLock) },
+    )
 }
 
 private data class ToolItem(

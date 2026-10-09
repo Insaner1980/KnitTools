@@ -63,6 +63,7 @@ import com.finnvek.knittools.domain.model.ProjectFolderNameValidationResult
 import com.finnvek.knittools.domain.model.validateProjectFolderName
 import com.finnvek.knittools.ui.components.CancelButton
 import com.finnvek.knittools.ui.components.ScreenTitleSelector
+import com.finnvek.knittools.ui.components.SheetTitle
 import com.finnvek.knittools.ui.components.dialogTextFieldColors
 import com.finnvek.knittools.ui.theme.ProjectListDimens
 
@@ -131,7 +132,11 @@ fun ProjectFoldersSheet(
         }
     }
 
-    ModalBottomSheet(onDismissRequest = { if (!isMutating) onDismiss() }, sheetState = sheetState) {
+    ModalBottomSheet(
+        onDismissRequest = { if (!isMutating) onDismiss() },
+        sheetState = sheetState,
+        containerColor = MaterialTheme.colorScheme.surface,
+    ) {
         Column(
             verticalArrangement = Arrangement.spacedBy(4.dp),
             modifier =
@@ -142,7 +147,7 @@ fun ProjectFoldersSheet(
                     .verticalScroll(rememberScrollState())
                     .padding(horizontal = 16.dp, vertical = 8.dp),
         ) {
-            Text(text = stringResource(R.string.folder_sheet_title), style = MaterialTheme.typography.titleLarge)
+            SheetTitle(text = stringResource(R.string.folder_sheet_title))
             FolderFilterRow(
                 filter = ProjectFolderFilter.AllProjects,
                 folders = folders,
@@ -384,7 +389,11 @@ fun MoveToFolderSheet(
             }
         }
     // CPD-OFF: Siirtolomakkeen Compose-rakenne pidetaan toiminnon yhteydessa.
-    ModalBottomSheet(onDismissRequest = { if (!isMoving) onDismiss() }, sheetState = sheetState) {
+    ModalBottomSheet(
+        onDismissRequest = { if (!isMoving) onDismiss() },
+        sheetState = sheetState,
+        containerColor = MaterialTheme.colorScheme.surface,
+    ) {
         Column(
             verticalArrangement = Arrangement.spacedBy(4.dp),
             modifier =
@@ -395,9 +404,8 @@ fun MoveToFolderSheet(
                     .verticalScroll(rememberScrollState())
                     .padding(horizontal = 16.dp, vertical = 8.dp),
         ) {
-            Text(
+            SheetTitle(
                 text = title,
-                style = MaterialTheme.typography.titleLarge,
                 modifier =
                     fallbackFocusRequester?.let { Modifier.focusRequester(it).focusable() } ?: Modifier,
             )

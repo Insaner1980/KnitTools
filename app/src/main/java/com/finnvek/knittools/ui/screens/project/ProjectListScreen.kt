@@ -5,12 +5,10 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -18,14 +16,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -89,6 +83,8 @@ import com.finnvek.knittools.ui.components.SectionLabel
 import com.finnvek.knittools.ui.components.SelectionAction
 import com.finnvek.knittools.ui.components.SelectionActionBar
 import com.finnvek.knittools.ui.components.workSessionStatusText
+import com.finnvek.knittools.ui.screens.counter.ActiveSessionCompletionDialog
+import com.finnvek.knittools.ui.screens.counter.ActiveSessionDeletionDialog
 import com.finnvek.knittools.ui.theme.ProjectListDimens
 import kotlinx.coroutines.launch
 
@@ -269,7 +265,7 @@ fun ProjectListScreen(
     )
 
     if (pendingCompletionSessionAction != null) {
-        ProjectListActiveSessionCompletionDialog(
+        ActiveSessionCompletionDialog(
             onSave = { viewModel.resolvePendingCompletion(saveSession = true) },
             onDiscard = { viewModel.resolvePendingCompletion(saveSession = false) },
             onCancel = viewModel::cancelPendingCompletion,
@@ -277,7 +273,7 @@ fun ProjectListScreen(
     }
 
     if (pendingDeletionSessionAction != null) {
-        ProjectListActiveSessionDeletionDialog(
+        ActiveSessionDeletionDialog(
             onDiscardAndDelete = viewModel::resolvePendingDeletion,
             onCancel = viewModel::cancelPendingDeletion,
         )
@@ -645,63 +641,6 @@ private fun ProjectListDialogs(
         )
     }
 }
-
-@Composable
-// CPD-OFF: Istuntodialogien toimintorakenne pidetaan kayttokohteen yhteydessa.
-private fun ProjectListActiveSessionCompletionDialog(
-    onSave: () -> Unit,
-    onDiscard: () -> Unit,
-    onCancel: () -> Unit,
-) {
-    AlertDialog(
-        onDismissRequest = onCancel,
-        title = { Text(stringResource(R.string.work_session_complete_project_title)) },
-        text = {
-            Text(
-                text = stringResource(R.string.work_session_complete_project_body),
-                modifier = Modifier.verticalScroll(rememberScrollState()),
-            )
-        },
-        confirmButton = {
-            Column(horizontalAlignment = Alignment.End) {
-                TextButton(onClick = onSave, modifier = Modifier.defaultMinSize(minHeight = 48.dp)) {
-                    Text(stringResource(R.string.work_session_save_and_complete))
-                }
-                TextButton(onClick = onDiscard, modifier = Modifier.defaultMinSize(minHeight = 48.dp)) {
-                    Text(stringResource(R.string.work_session_discard_and_complete))
-                }
-            }
-        },
-        dismissButton = {
-            CancelButton(onClick = onCancel, modifier = Modifier.defaultMinSize(minHeight = 48.dp))
-        },
-    )
-}
-
-@Composable
-private fun ProjectListActiveSessionDeletionDialog(
-    onDiscardAndDelete: () -> Unit,
-    onCancel: () -> Unit,
-) {
-    AlertDialog(
-        onDismissRequest = onCancel,
-        title = { Text(stringResource(R.string.work_session_delete_project_title)) },
-        text = { Text(stringResource(R.string.work_session_delete_project_body)) },
-        confirmButton = {
-            TextButton(
-                onClick = onDiscardAndDelete,
-                modifier = Modifier.defaultMinSize(minHeight = 48.dp),
-                colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
-            ) {
-                Text(stringResource(R.string.work_session_discard_and_delete))
-            }
-        },
-        dismissButton = {
-            CancelButton(onClick = onCancel, modifier = Modifier.defaultMinSize(minHeight = 48.dp))
-        },
-    )
-}
-// CPD-ON
 
 @Composable
 private fun MultiCompleteDialog(

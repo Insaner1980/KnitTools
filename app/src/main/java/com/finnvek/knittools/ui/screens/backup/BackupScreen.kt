@@ -11,13 +11,11 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -35,6 +33,7 @@ import com.finnvek.knittools.R
 import com.finnvek.knittools.data.backup.BackupError
 import com.finnvek.knittools.data.backup.BackupFormat
 import com.finnvek.knittools.ui.components.CancelButton
+import com.finnvek.knittools.ui.components.ConfirmationDialog
 import com.finnvek.knittools.ui.components.ToolScreenScaffold
 import java.text.DateFormat
 import java.time.LocalDate
@@ -154,17 +153,17 @@ internal fun BackupContent(
         }
     }
     if (confirm && state.preview != null) {
-        AlertDialog(
-            onDismissRequest = { confirm = false },
-            title = { Text(stringResource(R.string.backup_confirm_title)) },
-            text = { Text(stringResource(R.string.backup_confirm_message)) },
-            confirmButton = {
-                TextButton({
-                    confirm = false
-                    onConfirm()
-                }) { Text(stringResource(R.string.backup_replace)) }
+        // Palautus korvaa nykyiset tiedot, joten vahvistus on punainen kuten muut tuhoavat toiminnot.
+        ConfirmationDialog(
+            title = stringResource(R.string.backup_confirm_title),
+            message = stringResource(R.string.backup_confirm_message),
+            confirmText = stringResource(R.string.backup_replace),
+            isDestructive = true,
+            onConfirm = {
+                confirm = false
+                onConfirm()
             },
-            dismissButton = { CancelButton({ confirm = false }) },
+            onDismiss = { confirm = false },
         )
     }
 }

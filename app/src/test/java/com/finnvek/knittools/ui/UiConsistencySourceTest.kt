@@ -51,6 +51,63 @@ class UiConsistencySourceTest {
     }
 
     @Test
+    fun `sheets use SheetTitle and the shared surface`() {
+        // Projektin toimintosheetin otsikkona toimii projektikortti (ProjectOverviewLink).
+        val titleExceptions = setOf("counter/ProjectActionsBottomSheet.kt")
+        val sheetCall = Regex("""(?<![\w.])ModalBottomSheet\(""")
+        val sources = screenSources() + componentSources()
+        val withoutTitle =
+            sources
+                .filter { (path, text) -> sheetCall.containsMatchIn(text) && path !in titleExceptions }
+                .filterValues { text -> "SheetTitle(" !in text && "FormSheet(" !in text }
+                .keys
+        assertEquals("Käytä SheetTitlea sheetin otsikkona", emptySet<String>(), withoutTitle)
+
+        val withoutSurface =
+            sources
+                .mapValues { (_, text) ->
+                    sheetCall.findAll(text).count { match ->
+                        "containerColor = MaterialTheme.colorScheme.surface" !in callArguments(text, match.range.last)
+                    }
+                }.filterValues { it > 0 }
+        assertEquals(
+            "Sheetin pohja on colorScheme.surface kuten muissa sheeteissä",
+            emptyMap<String, Int>(),
+            withoutSurface,
+        )
+    }
+
+    @Test
+    fun `choices use SegmentedToggle instead of FilterChip`() {
+        // Sallittu: PDF-merkintöjen vieritettävä työkalupaletti, jossa tilat ja toiminnot ovat rinnakkain.
+        assertOnlyAllowed(
+            Regex("""(?<![\w.])FilterChip\("""),
+            mapOf("pattern/PatternAnnotationToolbar.kt" to 1),
+            "Käytä SegmentedTogglea tai ProjectFilterPilliä",
+        )
+    }
+
+    @Test
+    fun `simple confirmations use ConfirmationDialog`() {
+        // Sallitut: lomakedialogit (nimeäminen, laskurin lisäys, tavoite, silmukat, sivulle siirto, kansio),
+        // monen vaihtoehdon istuntodialogit sekä verkko-ohjeen korvaus- ja jakovalinnat tilakytkimineen.
+        assertOnlyAllowed(
+            Regex("""(?<![\w.])AlertDialog\("""),
+            mapOf(
+                "counter/CounterScreen.kt" to 6,
+                "counter/MultiCounterComponents.kt" to 2,
+                "counter/PhotoGalleryScreen.kt" to 1,
+                "counter/ProjectYarnUsageSheet.kt" to 1,
+                "counter/TargetRowsDialog.kt" to 1,
+                "library/WebPatternEditorScreen.kt" to 2,
+                "pattern/PatternViewerScreen.kt" to 2,
+                "project/ProjectFolderComponents.kt" to 2,
+            ),
+            "Käytä ConfirmationDialogia tavallisiin vahvistuksiin (isDestructive poistoille)",
+        )
+    }
+
+    @Test
     fun `screens use shared text field colors`() {
         // Muistiinpanoeditori on koko näytön kirjoituspinta ilman kenttää.
         assertOnlyAllowed(
@@ -95,6 +152,21 @@ class UiConsistencySourceTest {
                 .mapValues { (_, text) -> pattern.findAll(text).count() }
                 .filterValues { it > 0 }
         assertEquals(hint, allowed, actual)
+    }
+
+    /** Kutsun argumentit avaavasta sulkeesta vastaavaan sulkevaan asti. */
+    private fun callArguments(
+        text: String,
+        openParenIndex: Int,
+    ): String {
+        var depth = 0
+        for (index in openParenIndex until text.length) {
+            when (text[index]) {
+                '(' -> depth++
+                ')' -> if (--depth == 0) return text.substring(openParenIndex, index)
+            }
+        }
+        return text.substring(openParenIndex)
     }
 
     private fun screenSources(): Map<String, String> = sourcesUnder(SCREENS)

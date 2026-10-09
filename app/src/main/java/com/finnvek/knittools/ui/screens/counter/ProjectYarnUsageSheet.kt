@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -204,6 +205,8 @@ fun ProjectYarnUsageSheet(
                     },
                     enabled = !state.busy,
                     modifier = Modifier.heightIn(min = 48.dp).testTag("yarn_usage_confirm_delete"),
+                    // Poisto on punainen kuten muissa vahvistuksissa.
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
                 ) { Text(stringResource(R.string.yarn_usage_delete)) }
             },
             dismissButton = {

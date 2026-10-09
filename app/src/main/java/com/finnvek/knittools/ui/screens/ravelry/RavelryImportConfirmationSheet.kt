@@ -23,6 +23,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.finnvek.knittools.R
 import com.finnvek.knittools.data.remote.PatternDetail
+import com.finnvek.knittools.ui.components.SheetTitle
 import com.finnvek.knittools.ui.components.StatusMessage
 import com.finnvek.knittools.ui.components.StatusMessageType
 import com.finnvek.knittools.ui.theme.ComponentDimens
@@ -52,6 +53,8 @@ fun RavelryImportConfirmationSheet(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             // CPD-ON
+            // Sama otsikko kaikissa tuonnin tiloissa, kuten muissakin sheeteissä.
+            SheetTitle(text = stringResource(R.string.pattern_picker_import_from_ravelry))
             when (state.status) {
                 RavelryImportStatus.AwaitingUserConfirmation ->
                     ImportMessageContent(

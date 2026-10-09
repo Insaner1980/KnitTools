@@ -29,6 +29,7 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.semantics
 import com.finnvek.knittools.R
+import com.finnvek.knittools.ui.components.SheetTitle
 import com.finnvek.knittools.ui.components.localizedDateTimePattern
 import com.finnvek.knittools.ui.components.rememberCurrentLocale
 import com.finnvek.knittools.ui.theme.InsightsDimens
@@ -64,11 +65,15 @@ private fun CompletionHistory(state: InsightsUiState) {
         }
     }
     if (expanded) {
-        ModalBottomSheet(onDismissRequest = { expanded = false }) {
+        ModalBottomSheet(
+            onDismissRequest = { expanded = false },
+            containerColor = MaterialTheme.colorScheme.surface,
+        ) {
             LazyColumn(
                 Modifier.testTag("completion_history").padding(horizontal = InsightsDimens.ScreenHorizontalPadding),
             ) {
-                item { InsightsSectionHeader(title = stringResource(R.string.insights_completions_title)) }
+                // Sheetin otsikko kuten muissa sheeteissä; osio-otsikko kuuluu näytön sisältöön.
+                item { SheetTitle(text = stringResource(R.string.insights_completions_title)) }
                 items(state.completions.events, key = { it.id }) { CompletionEventRow(it, state) }
             }
         }

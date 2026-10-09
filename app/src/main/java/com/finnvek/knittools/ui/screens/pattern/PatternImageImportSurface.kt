@@ -17,7 +17,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -39,7 +38,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.finnvek.knittools.R
-import com.finnvek.knittools.ui.components.CancelButton
+import com.finnvek.knittools.ui.components.ConfirmationDialog
 import com.finnvek.knittools.ui.theme.knitToolsColors
 import java.io.File
 
@@ -167,18 +166,13 @@ internal fun PatternImageImportSurface(
     }
 
     if (state.replacementConfirmationPending) {
-        AlertDialog(
-            onDismissRequest = onCancel,
-            title = { Text(stringResource(R.string.pattern_image_replace_title)) },
-            text = { Text(stringResource(R.string.pattern_image_replace_message)) },
-            confirmButton = {
-                TextButton(onClick = onCreate) {
-                    Text(stringResource(R.string.pattern_image_replace_action))
-                }
-            },
-            dismissButton = {
-                CancelButton(onClick = onCancel)
-            },
+        ConfirmationDialog(
+            title = stringResource(R.string.pattern_image_replace_title),
+            message = stringResource(R.string.pattern_image_replace_message),
+            confirmText = stringResource(R.string.pattern_image_replace_action),
+            isDestructive = true,
+            onConfirm = onCreate,
+            onDismiss = onCancel,
         )
     }
 }

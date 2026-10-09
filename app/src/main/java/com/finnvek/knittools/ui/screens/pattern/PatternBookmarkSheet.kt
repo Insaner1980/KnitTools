@@ -13,7 +13,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -33,6 +32,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
@@ -43,7 +43,10 @@ import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.model.PATTERN_BOOKMARK_NAME_MAX_LENGTH
 import com.finnvek.knittools.domain.model.PatternBookmark
 import com.finnvek.knittools.ui.components.CancelButton
+import com.finnvek.knittools.ui.components.ConfirmationDialog
+import com.finnvek.knittools.ui.components.OverviewTextAction
 import com.finnvek.knittools.ui.components.ScrollableFormDialog
+import com.finnvek.knittools.ui.components.SheetTitle
 
 internal data class PatternBookmarkSheetActions(
     val onDismiss: () -> Unit,
@@ -74,6 +77,7 @@ internal fun PatternBookmarkSheet(
     ModalBottomSheet(
         onDismissRequest = actions.onDismiss,
         sheetState = sheetState,
+        containerColor = MaterialTheme.colorScheme.surface,
     ) {
         Column(
             verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -83,16 +87,14 @@ internal fun PatternBookmarkSheet(
                     .verticalScroll(rememberScrollState())
                     .padding(horizontal = 16.dp, vertical = 8.dp),
         ) {
-            Text(
-                text = stringResource(R.string.pattern_bookmarks),
-                style = MaterialTheme.typography.titleLarge,
-            )
-            TextButton(
-                onClick = { showAddDialog = true },
-                enabled = state.documentKey != null && !state.isMutating,
-                modifier = Modifier.heightIn(min = 48.dp),
-            ) {
-                Text(stringResource(R.string.pattern_bookmark_add_here))
+            // Sama otsikko ja oikean reunan lisäystoiminto kuin muistutuksissa ja projektinäkymän osioissa.
+            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                SheetTitle(text = stringResource(R.string.pattern_bookmarks), modifier = Modifier.weight(1f))
+                OverviewTextAction(
+                    label = stringResource(R.string.pattern_bookmark_add_here),
+                    onClick = { showAddDialog = true },
+                    enabled = state.documentKey != null && !state.isMutating,
+                )
             }
             state.error?.let { error ->
                 Text(
@@ -183,27 +185,16 @@ internal fun PatternBookmarkSheet(
         }
     }
     deleteBookmark?.let { bookmark ->
-        AlertDialog(
-            onDismissRequest = { deleteBookmarkId = null },
-            title = { Text(stringResource(R.string.pattern_bookmark_delete_title)) },
-            text = { Text(stringResource(R.string.pattern_bookmark_delete_message, bookmark.name)) },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        actions.onDelete(bookmark.id)
-                        deleteBookmarkId = null
-                    },
-                    modifier = Modifier.heightIn(min = 48.dp),
-                ) {
-                    Text(stringResource(R.string.delete))
-                }
+        ConfirmationDialog(
+            title = stringResource(R.string.pattern_bookmark_delete_title),
+            message = stringResource(R.string.pattern_bookmark_delete_message, bookmark.name),
+            confirmText = stringResource(R.string.delete),
+            isDestructive = true,
+            onConfirm = {
+                actions.onDelete(bookmark.id)
+                deleteBookmarkId = null
             },
-            dismissButton = {
-                CancelButton(
-                    onClick = { deleteBookmarkId = null },
-                    modifier = Modifier.heightIn(min = 48.dp),
-                )
-            },
+            onDismiss = { deleteBookmarkId = null },
         )
     }
 }

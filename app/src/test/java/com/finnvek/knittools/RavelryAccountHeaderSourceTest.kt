@@ -15,7 +15,9 @@ class RavelryAccountHeaderSourceTest {
         assertTrue(header.contains("onBrowseRavelry: () -> Unit"))
         assertTrue(header.contains("RavelryAuthState.Connected"))
         assertTrue(header.contains("R.string.ravelry_browse"))
-        assertTrue(header.contains("Icons.Filled.MoreVert"))
+        // Katkaisuvalikko on tilarivin päässä jaetulla ⋮-painikkeella, ei omalla rivillään painikkeen alla.
+        assertTrue(header.contains("MoreOptionsIconButton(onClick = { expanded = true })"))
+        assertTrue(header.contains("if (authState is RavelryAuthState.Connected) {"))
         assertTrue(header.contains("DropdownMenu("))
         assertTrue(header.contains("DropdownMenuItem("))
         assertTrue(header.contains("Text(stringResource(R.string.ravelry_disconnect))"))

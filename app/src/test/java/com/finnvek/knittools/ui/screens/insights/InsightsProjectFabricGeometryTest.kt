@@ -148,6 +148,17 @@ class InsightsProjectFabricGeometryTest {
     }
 
     @Test
+    fun `short ranges get larger cells capped at the maximum`() {
+        val fourWeeks = model(endDate = START.plusWeeks(3).plusDays(2))
+
+        assertEquals(4, projectFabricColumnCount(fourWeeks))
+        // Neljä saraketta jakaa koko leveyden, mutta solu ei kasva yli enimmäiskoon.
+        assertEquals(32f, projectFabricCellSize(WIDTH, GAP, columns = 4, maxCellSize = 32f), TOLERANCE)
+        assertEquals(CELL_SIZE, projectFabricCellSize(WIDTH, GAP, columns = 26, maxCellSize = 32f), TOLERANCE)
+        assertEquals(START.plusWeeks(1), hitCapped(x = 33f + 5f, y = MONTH_HEIGHT + 5f, model = fourWeeks))
+    }
+
+    @Test
     fun `locale first day is row zero`() {
         assertEquals(0, projectFabricRowIndex(LocalDate.of(2026, 8, 17), DayOfWeek.MONDAY))
         assertEquals(6, projectFabricRowIndex(LocalDate.of(2026, 8, 23), DayOfWeek.MONDAY))
@@ -185,6 +196,21 @@ class InsightsProjectFabricGeometryTest {
             monthLabelHeight = MONTH_HEIGHT,
             gap = GAP,
             model = model,
+        )
+
+    private fun hitCapped(
+        x: Float,
+        y: Float,
+        model: InsightsProjectFabricModel,
+    ): LocalDate? =
+        projectFabricDateAt(
+            x = x,
+            y = y,
+            availableWidth = WIDTH,
+            monthLabelHeight = MONTH_HEIGHT,
+            gap = GAP,
+            model = model,
+            maxCellSize = 32f,
         )
 
     private fun model(endDate: LocalDate): InsightsProjectFabricModel =

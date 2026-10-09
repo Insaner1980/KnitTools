@@ -288,10 +288,17 @@ internal fun ProjectOverviewReminders(
     state: CounterUiState,
     actions: ProjectOverviewContentActions,
 ) {
-    OverviewSectionHeader(R.string.reminders, R.string.project_overview_add, actions.onAddReminder)
     val active = state.reminders.filterNot { it.isCompleted }
     val next =
         active.filter { it.targetRow >= state.counter.count }.minByOrNull { it.targetRow } ?: active.firstOrNull()
+    // Piilossa olevat muistutukset avataan otsikkorivin See all -toiminnolla kuten Photosissa. Erillinen
+    // "Reminders ›" -rivi luki toisena muistutuksena; sheetissä on oma Add-toiminto.
+    val hasHidden = state.reminders.size > if (next == null) 0 else 1
+    if (hasHidden) {
+        OverviewSectionHeader(R.string.reminders, R.string.project_overview_see_all, actions.onReminders)
+    } else {
+        OverviewSectionHeader(R.string.reminders, R.string.project_overview_add, actions.onAddReminder)
+    }
     if (next == null) {
         OverviewEmptyText(R.string.no_reminders)
     } else {
@@ -303,9 +310,6 @@ internal fun ProjectOverviewReminders(
             CrossStitchGlyph.REMINDER,
             actions.onReminders,
         )
-    }
-    if (state.reminders.size > 1 || (next == null && state.reminders.isNotEmpty())) {
-        OverviewLinkRow(stringResource(R.string.reminders), null, CrossStitchGlyph.REMINDER, actions.onReminders)
     }
 }
 

@@ -4,10 +4,12 @@ import android.animation.ValueAnimator
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
+import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.net.Uri
 import android.os.Bundle
-import android.view.animation.AccelerateInterpolator
+import android.view.animation.LinearInterpolator
+import android.widget.ImageView
 import android.widget.Toast
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
@@ -37,8 +39,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.core.animation.doOnEnd
 import androidx.core.net.toUri
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.core.splashscreen.SplashScreenViewProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import com.finnvek.knittools.analytics.PostHogAnalytics
@@ -54,6 +58,7 @@ import com.finnvek.knittools.pro.ProManager
 import com.finnvek.knittools.pro.ProStatus
 import com.finnvek.knittools.pro.TrialManager
 import com.finnvek.knittools.ui.ProvidePreferenceAwareHapticFeedback
+import com.finnvek.knittools.ui.SplashLogoDrawable
 import com.finnvek.knittools.ui.navigation.CounterLaunchIntentData
 import com.finnvek.knittools.ui.navigation.CounterLaunchRequest
 import com.finnvek.knittools.ui.navigation.KnitToolsNavActions
@@ -135,6 +140,7 @@ class MainActivity : AppCompatActivity() {
     private var consumedCounterLaunchRequestId: String? = null
     private var consumedPatternShareIntent = false
     private var startupThemeLoaded = false
+    private var splashExitAnimator: ValueAnimator? = null
     private var edgeToEdgeDarkTheme: Boolean? = null
     private var launchRequestJob: Job? = null
     private var launchRequestsReady by mutableStateOf(false)
@@ -148,31 +154,42 @@ class MainActivity : AppCompatActivity() {
         val splashScreen = installSplashScreen()
         super.onCreate(savedInstanceState)
         splashScreen.setKeepOnScreenCondition { !startupThemeLoaded }
-        splashScreen.setOnExitAnimationListener { splashScreenView ->
-            if (!ValueAnimator.areAnimatorsEnabled()) {
-                splashScreenView.remove()
-                return@setOnExitAnimationListener
-            }
-
-            val exitInterpolator = AccelerateInterpolator()
-            splashScreenView.iconView
-                .animate()
-                .scaleX(SPLASH_ICON_EXIT_SCALE)
-                .scaleY(SPLASH_ICON_EXIT_SCALE)
-                .setDuration(SPLASH_EXIT_DURATION_MILLIS)
-                .setInterpolator(exitInterpolator)
-                .start()
-            splashScreenView.view
-                .animate()
-                .alpha(0f)
-                .setDuration(SPLASH_EXIT_DURATION_MILLIS)
-                .setInterpolator(exitInterpolator)
-                .withEndAction(splashScreenView::remove)
-                .start()
-        }
+        splashScreen.setOnExitAnimationListener(::animateSplashExit)
         startLaunchRequestInitialization(savedInstanceState)
         checkForInAppUpdate()
         setContent { MainActivityContent() }
+    }
+
+    private fun animateSplashExit(splash: SplashScreenViewProvider) {
+        if (!ValueAnimator.areAnimatorsEnabled()) {
+            splash.remove()
+            return
+        }
+
+        val icon = splash.iconView
+        (icon as? ImageView)?.setImageDrawable(null)
+        val logo = SplashLogoDrawable(BitmapFactory.decodeResource(resources, R.drawable.splash_logo))
+        val insetX = (icon.width * SPLASH_LOGO_INSET).toInt()
+        val insetY = (icon.height * SPLASH_LOGO_INSET).toInt()
+        logo.setBounds(insetX, insetY, icon.width - insetX, icon.height - insetY)
+        icon.overlay.add(logo)
+        val animator =
+            ValueAnimator.ofFloat(0f, 1f).apply {
+                duration = SPLASH_EXIT_DURATION_MILLIS
+                interpolator = LinearInterpolator()
+                addUpdateListener {
+                    val elapsed = (it.animatedValue as Float) * SPLASH_EXIT_DURATION_MILLIS
+                    logo.elapsedMillis = elapsed
+                    splash.view.alpha = 1f - ((elapsed - SPLASH_REVEAL_MILLIS) / SPLASH_FADE_MILLIS).coerceIn(0f, 1f)
+                }
+                doOnEnd {
+                    icon.overlay.remove(logo)
+                    splash.remove()
+                    splashExitAnimator = null
+                }
+            }
+        splashExitAnimator = animator
+        animator.start()
     }
 
     @Composable
@@ -350,6 +367,11 @@ class MainActivity : AppCompatActivity() {
         super.onSaveInstanceState(outState)
     }
 
+    override fun onStop() {
+        splashExitAnimator?.cancel()
+        super.onStop()
+    }
+
     override fun onDestroy() {
         super.onDestroy()
         inAppUpdateManager.cleanup()
@@ -515,8 +537,10 @@ class MainActivity : AppCompatActivity() {
         private const val ACTION_OPEN_WIDGET_PRO_PROMPT = "com.finnvek.knittools.action.OPEN_WIDGET_PRO_PROMPT"
         private const val MIME_TYPE_TEXT_PLAIN = "text/plain"
         private const val RAVELRY_PATTERN_SEARCH_URL = "https://www.ravelry.com/patterns/search"
-        private const val SPLASH_EXIT_DURATION_MILLIS = 180L
-        private const val SPLASH_ICON_EXIT_SCALE = 0.94f
+        private const val SPLASH_EXIT_DURATION_MILLIS = 760L
+        private const val SPLASH_REVEAL_MILLIS = 640f
+        private const val SPLASH_FADE_MILLIS = 120f
+        private const val SPLASH_LOGO_INSET = 0.1f
         private const val STATE_CONSUMED_COUNTER_LAUNCH_REQUEST_ID =
             "com.finnvek.knittools.state.CONSUMED_COUNTER_LAUNCH_REQUEST_ID"
 

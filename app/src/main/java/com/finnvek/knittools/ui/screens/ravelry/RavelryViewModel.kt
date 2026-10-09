@@ -440,40 +440,47 @@ class RavelryViewModel
                     request = request,
                 )
             viewModelScope.launch {
-                try {
-                    val detail =
-                        when (request) {
-                            is RavelryImportRequest.PatternId -> repository.getPatternDetail(request.patternId)
-                            is RavelryImportRequest.Url -> repository.importPatternByUrl(request.url)
-                        }
-                    if (requestId != importRequestId) return@launch
-                    val duplicate = repository.findDuplicateFor(detail)
-                    if (requestId != importRequestId) return@launch
-                    _importConfirmationState.value =
-                        if (duplicate != null) {
-                            RavelryImportConfirmationState(
-                                status = RavelryImportStatus.AlreadySaved,
-                                request = request,
-                                pattern = detail,
-                                savedPatternId = duplicate.id,
-                            )
-                        } else {
-                            RavelryImportConfirmationState(
-                                status = RavelryImportStatus.Ready,
-                                request = request,
-                                pattern = detail,
-                            )
-                        }
-                } catch (e: CancellationException) {
-                    throw e
-                } catch (e: Exception) {
-                    if (requestId == importRequestId) {
-                        _importConfirmationState.value =
-                            RavelryImportConfirmationState(
-                                status = e.toImportStatus(),
-                                request = request,
-                            )
+                loadImportConfirmation(request, requestId)
+            }
+        }
+
+        private suspend fun loadImportConfirmation(
+            request: RavelryImportRequest,
+            requestId: Long,
+        ) {
+            try {
+                val detail =
+                    when (request) {
+                        is RavelryImportRequest.PatternId -> repository.getPatternDetail(request.patternId)
+                        is RavelryImportRequest.Url -> repository.importPatternByUrl(request.url)
                     }
+                if (requestId != importRequestId) return
+                val duplicate = repository.findDuplicateFor(detail)
+                if (requestId != importRequestId) return
+                _importConfirmationState.value =
+                    if (duplicate != null) {
+                        RavelryImportConfirmationState(
+                            status = RavelryImportStatus.AlreadySaved,
+                            request = request,
+                            pattern = detail,
+                            savedPatternId = duplicate.id,
+                        )
+                    } else {
+                        RavelryImportConfirmationState(
+                            status = RavelryImportStatus.Ready,
+                            request = request,
+                            pattern = detail,
+                        )
+                    }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                if (requestId == importRequestId) {
+                    _importConfirmationState.value =
+                        RavelryImportConfirmationState(
+                            status = e.toImportStatus(),
+                            request = request,
+                        )
                 }
             }
         }

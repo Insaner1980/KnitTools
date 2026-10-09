@@ -49,11 +49,13 @@ internal interface BackupProviderIo {
     )
 }
 
+// Dagger-moduuli ei ole SAM-tyyppi: fun interface sallisi turhat lambda-toteutukset.
+@Suppress("kotlin:S6517")
 @Module
 @InstallIn(SingletonComponent::class)
-internal abstract class BackupProviderIoModule {
+internal interface BackupProviderIoModule {
     @Binds
-    abstract fun bindBackupProviderIo(implementation: ContentResolverBackupProviderIo): BackupProviderIo
+    fun bindBackupProviderIo(implementation: ContentResolverBackupProviderIo): BackupProviderIo
 }
 
 @Singleton
@@ -145,10 +147,11 @@ internal class ContentResolverBackupProviderIo internal constructor(
                 var handle: BackupProviderHandle? = null
                 var failure =
                     runCatching {
-                        handle =
+                        val openedHandle =
                             deadline.call { request.open() } ?: throw IOException("Provider returned no descriptor")
+                        handle = openedHandle
                         deadline.markOpened()
-                        block(checkNotNull(handle), deadline)
+                        block(openedHandle, deadline)
                     }.exceptionOrNull()?.let(deadline::classify)
                 val closeFailure =
                     runCatching {
@@ -229,7 +232,7 @@ internal class ContentResolverBackupProviderIo internal constructor(
     }
 }
 
-internal interface BackupProviderEndpoint {
+internal fun interface BackupProviderEndpoint {
     fun request(
         uri: Uri,
         mode: String,
@@ -297,14 +300,13 @@ private class AndroidBackupProviderRequest(
 
 private class AndroidBackupProviderHandle(
     private val descriptor: ParcelFileDescriptor,
-) : BackupProviderHandle {
+) : BackupProviderHandle,
+    Closeable by descriptor {
     override fun inputStream(): InputStream = ParcelFileDescriptor.AutoCloseInputStream(descriptor)
 
     override fun outputStream(): OutputStream = ParcelFileDescriptor.AutoCloseOutputStream(descriptor)
 
     override fun checkError() = descriptor.checkError()
-
-    override fun close() = descriptor.close()
 }
 
 private class ProviderNoProgressException(

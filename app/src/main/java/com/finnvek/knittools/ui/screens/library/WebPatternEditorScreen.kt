@@ -140,7 +140,13 @@ internal fun WebPatternEditorContent(
             FormSheetConfirm(
                 text = stringResource(R.string.save),
                 onClick = { attemptSave() },
-                enabled = !state.isLoading && !state.didPersist && state.route != null,
+                // Harmaa kunnes pakolliset kentät on täytetty, kuten muissa lisäyslomakkeissa.
+                // Virheellinen osoite tarkistetaan yhä tallennusyrityksellä, jotta syy näkyy kentän alla.
+                enabled =
+                    !state.isLoading &&
+                        !state.didPersist &&
+                        state.route != null &&
+                        state.hasRequiredFields,
                 busy = state.isSaving,
             ),
     ) {

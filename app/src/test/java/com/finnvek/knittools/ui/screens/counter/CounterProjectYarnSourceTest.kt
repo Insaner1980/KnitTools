@@ -43,11 +43,12 @@ class CounterProjectYarnSourceTest {
     }
 
     @Test
-    fun `yarn management uses large option cards with supporting copy`() {
+    fun `yarn management uses the shared sheet option rows with supporting copy`() {
         val sheet = ProjectSourceFiles.read(YARN_MANAGEMENT_SHEET)
         val strings = ProjectSourceFiles.read(STRINGS)
 
-        assertTrue(sheet.contains("YarnOptionCard("))
+        assertTrue(sheet.contains("SheetOptionRow("))
+        assertFalse(sheet.contains("YarnOptionCard("))
         assertTrue(sheet.contains("R.string.choose_from_my_yarn_body"))
         assertTrue(sheet.contains("R.string.add_yarn_to_project_body"))
         assertTrue(strings.contains("""<string name="choose_from_my_yarn_body">"""))
@@ -72,7 +73,9 @@ class CounterProjectYarnSourceTest {
         val explanation = row.substringAfterLast("Text(")
 
         assertTrue(row.contains("onClick = { onSaveProjectYarnNoteToMyYarn(note.id) }"))
-        assertTrue(row.contains("enabled = note.savedYarnCardId == null"))
+        // Tallennettu tila on merkki eikä käytöstä poistettu painike.
+        assertTrue(row.contains("BadgePill(text = stringResource(R.string.saved_to_my_yarn))"))
+        assertFalse(row.contains("enabled = note.savedYarnCardId == null"))
         val savedLabelIndex = row.indexOf("R.string.saved_to_my_yarn")
         assertTrue(savedLabelIndex >= 0)
         assertTrue(savedLabelIndex < row.indexOf("R.string.save_to_my_yarn_explanation"))

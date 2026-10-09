@@ -36,14 +36,17 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.sp
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.calculator.CounterState
 import com.finnvek.knittools.domain.calculator.CounterValueFormatter
+import com.finnvek.knittools.domain.calculator.MainCounterTargetSlot
 import com.finnvek.knittools.domain.calculator.formatIntegerForDisplay
 import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.domain.model.CraftType
@@ -57,6 +60,7 @@ import com.finnvek.knittools.ui.components.CounterStepButtonFaceAppearance
 import com.finnvek.knittools.ui.components.CounterStepSymbol
 import com.finnvek.knittools.ui.components.MainCounterTargetStatus
 import com.finnvek.knittools.ui.components.ProBadge
+import com.finnvek.knittools.ui.components.ProjectProgressBar
 import com.finnvek.knittools.ui.components.RollingCounter
 import com.finnvek.knittools.ui.components.SectionLabel
 import com.finnvek.knittools.ui.components.StitchCounter
@@ -64,7 +68,9 @@ import com.finnvek.knittools.ui.components.localizedUppercase
 import com.finnvek.knittools.ui.components.mainCounterCountText
 import com.finnvek.knittools.ui.components.mainCounterDecreaseContentDescription
 import com.finnvek.knittools.ui.components.mainCounterIncreaseContentDescription
+import com.finnvek.knittools.ui.components.mainCounterLabelText
 import com.finnvek.knittools.ui.components.mainCounterProjectCardCountText
+import com.finnvek.knittools.ui.components.mainCounterTargetFraction
 import com.finnvek.knittools.ui.components.mainCounterTargetStatus
 import com.finnvek.knittools.ui.components.mainCounterTargetText
 import com.finnvek.knittools.ui.components.rememberCurrentLocale
@@ -404,10 +410,9 @@ private fun CounterHero(
         CounterRowLabel(state = state, onShowTargetDialog = actions.onShowTargetDialog)
         CounterMainNumber(state = state)
         val display = CounterValueFormatter.forMainCounter(state.toMainCounterProject())
-        CounterTargetHelperLabel(
-            status = mainCounterTargetStatus(display.targetLine),
-            onShowTargetDialog = actions.onShowTargetDialog,
-        )
+        display.targetLine?.let { targetLine ->
+            CounterTargetProgress(targetLine = targetLine, onShowTargetDialog = actions.onShowTargetDialog)
+        }
         Spacer(modifier = Modifier.height(heroButtonSpacing))
         CounterButtons(
             state = state,
@@ -440,26 +445,28 @@ private fun CounterStitchTracker(
     )
 }
 
+/**
+ * Luvun yläpuolella on vain yksikkö ("Rows", "Rounds" tai oma nimike): "Row 34 / 72" toisti saman
+ * luvun, joka näkyy heti alla isona. Ruudunlukija saa koko lukeman ison luvun kuvauksesta.
+ */
 @Composable
 private fun CounterRowLabel(
     state: CounterHeroState,
     onShowTargetDialog: () -> Unit,
 ) {
     val display = CounterValueFormatter.forMainCounter(state.toMainCounterProject())
-    val labelText =
-        display.targetLine?.let { mainCounterTargetText(it) }
-            ?: mainCounterCountText(display.heroTitle)
     Text(
-        text = labelText,
-        style =
-            MaterialTheme.typography.headlineSmall.copy(
-                fontSize = CounterDimens.CounterRowLabelFontSize,
-                fontWeight = FontWeight.SemiBold,
-            ),
-        color = MaterialTheme.colorScheme.onSurface,
+        text = mainCounterLabelText(display.heroTitle.labelType, display.heroTitle.customLabel),
+        style = counterCaptionStyle(),
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier.clickable(onClick = onShowTargetDialog),
     )
 }
+
+/** Laskurin pienet tekstit: yksikkö luvun yllä ja tavoiterivi palkin alla. */
+@Composable
+private fun counterCaptionStyle(): TextStyle =
+    MaterialTheme.typography.labelMedium.copy(fontSize = CounterDimens.CounterTargetHelperFontSize)
 
 @Composable
 private fun CounterMainNumber(state: CounterHeroState) {
@@ -535,38 +542,64 @@ internal fun counterMainNumberFittedFontSize(
     return lowFontSize
 }
 
+/**
+ * Tavoitteen edistyminen samalla palkilla kuin jatka-kortissa: tavoite vasemmalla ja jäljellä oleva
+ * määrä oikealla. Napautus avaa tavoitteen muokkauksen kuten aiempi tavoiterivi.
+ */
 @Composable
-private fun CounterTargetHelperLabel(
-    status: MainCounterTargetStatus?,
+private fun CounterTargetProgress(
+    targetLine: MainCounterTargetSlot,
     onShowTargetDialog: () -> Unit,
 ) {
-    val text =
-        when (status) {
-            is MainCounterTargetStatus.Remaining ->
-                stringResource(
-                    R.string.counter_target_remaining_format,
-                    mainCounterProjectCardCountText(status.countSlot),
-                )
-            MainCounterTargetStatus.Reached -> stringResource(R.string.counter_target_reached)
-            is MainCounterTargetStatus.Past ->
-                stringResource(
-                    R.string.counter_target_past_format,
-                    mainCounterProjectCardCountText(status.countSlot),
-                )
-
-            null -> return
+    val fraction = mainCounterTargetFraction(targetLine) ?: return
+    val statusText = mainCounterTargetStatus(targetLine)?.let { counterTargetStatusText(it) } ?: return
+    Column(
+        modifier =
+            Modifier
+                .padding(top = CounterDimens.CounterTargetHelperSpacing)
+                .widthIn(max = CounterDimens.CounterControlsMaxWidth)
+                .clickable(onClick = onShowTargetDialog),
+    ) {
+        ProjectProgressBar(fraction)
+        // Tila saa jäljelle jäävän leveyden ja rivittyy siinä: kapeassa rivissä suomenkielinen "Tavoite
+        // saavutettu" painui tavoitteen päälle.
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(top = CounterDimens.CounterTargetHelperSpacing),
+            horizontalArrangement = Arrangement.spacedBy(CounterDimens.CounterTargetHelperSpacing),
+        ) {
+            Text(
+                text = stringResource(R.string.counter_target_of_format, targetLine.target),
+                style = counterCaptionStyle(),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+            )
+            Text(
+                text = statusText,
+                style = counterCaptionStyle(),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.End,
+                modifier = Modifier.weight(1f),
+            )
         }
-    Spacer(modifier = Modifier.height(CounterDimens.CounterTargetHelperSpacing))
-    Text(
-        text = text,
-        style =
-            MaterialTheme.typography.labelMedium.copy(
-                fontSize = CounterDimens.CounterTargetHelperFontSize,
-            ),
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier.clickable(onClick = onShowTargetDialog),
-    )
+    }
 }
+
+/** Laskurissa jäljellä oleva määrä yksikön kanssa ("38 rows left"), toisin kuin listan lyhyt muoto. */
+@Composable
+private fun counterTargetStatusText(status: MainCounterTargetStatus): String =
+    when (status) {
+        is MainCounterTargetStatus.Remaining ->
+            stringResource(
+                R.string.counter_target_remaining_format,
+                mainCounterProjectCardCountText(status.countSlot),
+            )
+        MainCounterTargetStatus.Reached -> stringResource(R.string.counter_target_reached)
+        is MainCounterTargetStatus.Past ->
+            stringResource(
+                R.string.counter_target_past_format,
+                mainCounterProjectCardCountText(status.countSlot),
+            )
+    }
 
 @Composable
 private fun CounterButtons(

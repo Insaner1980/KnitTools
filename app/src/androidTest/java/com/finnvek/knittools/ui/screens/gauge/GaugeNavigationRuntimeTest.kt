@@ -99,7 +99,7 @@ class GaugeNavigationRuntimeTest {
         clickText(text(R.string.tool_gauge_converter))
         waitForText(text(R.string.measurement_task))
         assertAdjustmentSelected()
-        selectChoice(R.string.measurement_units, R.string.measurement_per_10cm)
+        selectChoice(R.string.gauge_stated_per, R.string.measurement_per_10cm)
         assertField(gaugeLabel(R.string.measurement_pattern_stitches), "")
         assertField(text(R.string.stitches_in_pattern), "")
         assertTextAbsent(text(R.string.measurement_nearest_count))
@@ -219,7 +219,7 @@ class GaugeNavigationRuntimeTest {
     }
 
     private fun enterStitchAdjustment() {
-        selectChoice(R.string.measurement_units, R.string.measurement_per_10cm)
+        selectChoice(R.string.gauge_stated_per, R.string.measurement_per_10cm)
         selectChoice(R.string.your_gauge_section, R.string.enter_directly)
         setField(gaugeLabel(R.string.measurement_actual_stitches), "22")
         setField(gaugeLabel(R.string.measurement_pattern_stitches), "20")
@@ -265,26 +265,14 @@ class GaugeNavigationRuntimeTest {
         selectorResource: Int,
         optionResource: Int,
     ) {
-        val selector = clickableAncestor(scrollToText(text(selectorResource)))
-        val option = text(optionResource)
-        if (findNode(selector) { hasText(it, option) } != null) return
-        val windowId = selector.windowId
-        clickText(text(selectorResource))
-        click("selector option " + option) { it.windowId != windowId && hasText(it, option) }
-        waitUntil("selector popup dismissed") {
-            InstrumentationRegistry
-                .getInstrumentation()
-                .uiAutomation.rootInActiveWindow
-                ?.windowId == windowId
-        }
+        // Valinnat ovat segmenttivalitsimia: nimike ja vaihtoehdot näkyvät suoraan ilman ponnahdusikkunaa.
+        scrollToText(text(selectorResource))
+        clickText(text(optionResource))
     }
 
     private fun assertAdjustmentSelected() {
-        val selector = clickableAncestor(scrollToText(text(R.string.measurement_task)))
-        assertNotNull(
-            "The legacy calculator entry must default to adjustment",
-            findNode(selector) { hasText(it, text(R.string.measurement_adjust)) },
-        )
+        scrollToText(text(R.string.measurement_task))
+        assertTabSelected(R.string.measurement_adjust)
     }
 
     private fun assertTabSelected(labelResource: Int) {

@@ -148,9 +148,18 @@ private fun DrawScope.drawSymbol(
             )
         }
 
-        "slip_knitwise", "slip_purlwise" -> {
+        "slip_knitwise" -> {
             // Vaakaviiva
             drawLine(tint, Offset(pad + s * 0.15f, center.y), Offset(s - pad - s * 0.15f, center.y), strokeWidth = 2f)
+        }
+
+        "slip_purlwise" -> {
+            // Alaspäin osoittava V on yleisin nostetun silmukan merkki (Vogue Knitting); aiemmin
+            // molemmat nostot piirtyivät samana vaakaviivana eikä niitä erottanut toisistaan.
+            val top = pad + s * 0.2f
+            val bottom = s - pad - s * 0.2f
+            drawLine(tint, Offset(pad + s * 0.2f, top), Offset(center.x, bottom), strokeWidth = 2f)
+            drawLine(tint, Offset(center.x, bottom), Offset(s - pad - s * 0.2f, top), strokeWidth = 2f)
         }
 
         "k2tog" -> {
@@ -184,17 +193,13 @@ private fun DrawScope.drawSymbol(
         }
 
         "s2kp" -> {
-            // Käännetty V (centered double decrease)
+            // Keskitetty kaksoiskavennus: Λ ja keskiviiva. Ilman keskiviivaa merkki olisi sama kuin
+            // takareunasta neulottu silmukka, ja alaspäin osoittava V on nurin nostetun silmukan merkki.
+            drawVShape(tint, pad, s)
             drawLine(
                 tint,
-                Offset(pad + s * 0.1f, pad + s * 0.15f),
                 Offset(center.x, s - pad - s * 0.15f),
-                strokeWidth = 2f,
-            )
-            drawLine(
-                tint,
-                Offset(s - pad - s * 0.1f, pad + s * 0.15f),
-                Offset(center.x, s - pad - s * 0.15f),
+                Offset(center.x, pad + s * 0.15f),
                 strokeWidth = 2f,
             )
         }

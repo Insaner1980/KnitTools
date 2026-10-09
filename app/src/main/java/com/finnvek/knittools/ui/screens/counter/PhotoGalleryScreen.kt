@@ -366,7 +366,8 @@ private fun EmptyPhotoGallery(padding: PaddingValues) {
     CrossStitchEmptyState(
         glyph = CrossStitchGlyph.PHOTOS,
         title = stringResource(R.string.no_photos),
-        message = stringResource(R.string.take_photo),
+        // Selitys eikä "Take photo": sama teksti oli jo alareunan pillerissä.
+        message = stringResource(R.string.photo_gallery_empty_body),
         modifier = Modifier.padding(padding),
     )
 }

@@ -143,9 +143,10 @@ class InsightsRedesignSourceTest {
             "A separate range control must not come back as its own row",
             screen.contains("SegmentedToggle(") || screen.contains("InsightsRangeChip"),
         )
+        // Projektisuodatin on jaettu ProjectFilterPill, joten kosketuskohde tarkistetaan sieltä.
         assertTrue(
             "The project filter must reserve the touch target even when drawn smaller",
-            screen.contains("minimumInteractiveComponentSize()"),
+            ProjectSourceFiles.read(PROJECT_FILTER_PILL).contains("minimumInteractiveComponentSize()"),
         )
     }
 
@@ -224,17 +225,21 @@ class InsightsRedesignSourceTest {
     @Test
     fun `the project menu is styled and shows which filter is on`() {
         val screen = ProjectSourceFiles.read(INSIGHTS_SCREEN)
+        // Projektisuodatin on jaettu komponentti, jota myös Libraryn valokuvat käyttävät.
+        val projectFilter = ProjectSourceFiles.read(PROJECT_FILTER_PILL)
 
         // Valikko oli näytön ainoa vakio-Material-pinta, eikä siitä nähnyt mikä on valittu.
         // Molemmat pudotusvalikot samaan tyyliin: kaksi eri nakoista samalla naytolla
         // luki huolimattomuutena, ja aikavalivalikko jai ilman valintamerkintaa.
-        assertEquals(
-            "Both dropdowns must use the app surface",
-            2,
-            screen.split("containerColor = MaterialTheme.colorScheme.surface").size - 1,
-        )
-        assertTrue(screen.contains("InsightsMenuItem"))
-        assertTrue("The menu must carry the same yarn dots as the pill", screen.contains("dotColor"))
+        listOf(screen, projectFilter).forEach { source ->
+            assertTrue(
+                "Both dropdowns must use the app surface",
+                source.contains("containerColor = MaterialTheme.colorScheme.surface"),
+            )
+        }
+        assertTrue(screen.contains("FilterMenuItem("))
+        assertTrue(screen.contains("ProjectFilterPill("))
+        assertTrue("The menu must carry the same yarn dots as the pill", projectFilter.contains("dotColor"))
     }
 
     @Test
@@ -295,6 +300,8 @@ class InsightsRedesignSourceTest {
     private companion object {
         const val INSIGHTS_SCREEN =
             "app/src/main/java/com/finnvek/knittools/ui/screens/insights/InsightsScreen.kt"
+        const val PROJECT_FILTER_PILL =
+            "app/src/main/java/com/finnvek/knittools/ui/components/ProjectFilterPill.kt"
         const val INSIGHTS_SECTIONS =
             "app/src/main/java/com/finnvek/knittools/ui/screens/insights/InsightsSections.kt"
         const val INSIGHTS_CHART =

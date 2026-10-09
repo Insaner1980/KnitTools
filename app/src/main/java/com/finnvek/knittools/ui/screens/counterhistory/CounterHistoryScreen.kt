@@ -26,12 +26,11 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.model.CounterHistoryAction
-import com.finnvek.knittools.ui.components.SectionLabel
+import com.finnvek.knittools.ui.components.ProjectNameLabel
 import com.finnvek.knittools.ui.components.ToolScreenScaffold
 import com.finnvek.knittools.ui.components.localizedDateTimePattern
 import com.finnvek.knittools.ui.components.rememberCurrentLocale
 import com.finnvek.knittools.ui.theme.CounterDimens
-import com.finnvek.knittools.ui.theme.knitToolsColors
 import java.time.ZoneId
 
 @Composable
@@ -82,19 +81,20 @@ internal fun CounterHistoryContent(
                 state.loading -> item { CircularProgressIndicator() }
                 state.projectMissing -> Unit
                 else -> {
+                    // Projektin nimi samana osiomerkkinä kuin istuntohistoriassa, ei omana roosana otsikkona.
                     item(key = "project") {
-                        Text(
-                            state.projectName,
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.knitToolsColors.brandWine,
-                        )
+                        ProjectNameLabel(name = state.projectName)
                     }
                     if (state.days.isEmpty()) {
                         item(key = "empty") { CounterHistoryEmpty() }
                     }
                     state.days.forEach { day ->
                         item(key = "date:${day.key}", contentType = "date") {
-                            SectionLabel(text = day.date)
+                            Text(
+                                day.date,
+                                style = MaterialTheme.typography.titleSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
                         }
                         items(day.rows, key = { it.event.id }, contentType = { "event" }) { row ->
                             CounterHistoryEvent(row)

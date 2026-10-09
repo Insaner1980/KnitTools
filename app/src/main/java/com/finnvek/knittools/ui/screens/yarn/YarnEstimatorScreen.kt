@@ -163,7 +163,7 @@ private fun YarnInputFields(
     NumberInputField(
         value = yarnPerSkein,
         onValueChange = onYarnPerSkeinChange,
-        label = stringResource(R.string.yarn_per_skein, lengthUnit),
+        label = stringResource(R.string.length_per_skein),
         modifier = Modifier.fillMaxWidth(),
         options = NumberInputOptions(isDecimal = true, suffix = lengthUnit, placeholder = perSkeinExample),
     )

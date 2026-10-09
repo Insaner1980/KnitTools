@@ -5,6 +5,7 @@ import android.content.ClipboardManager
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
@@ -35,6 +36,7 @@ import com.finnvek.knittools.domain.calculator.ParsedInstruction
 import com.finnvek.knittools.domain.model.GaugeBasis
 import com.finnvek.knittools.domain.model.MeasurementUnit
 import com.finnvek.knittools.ui.components.CollectWithLifecycleEffect
+import com.finnvek.knittools.ui.components.InfoTip
 import com.finnvek.knittools.ui.components.PasteInstructionButton
 import com.finnvek.knittools.ui.components.ToolInputCard
 import com.finnvek.knittools.ui.components.ToolScreenScaffold
@@ -122,12 +124,7 @@ fun GaugeContent(
                         GaugeTask.ADJUST -> AdjustmentFields(state, onAction)
                         GaugeTask.CONVERT -> Unit
                     }
-                    Text(
-                        text = stringResource(state.task.warningResource()),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.fillMaxWidth().testTag("measurement_warning"),
-                    )
+                    GaugeWarning(state.task)
                 }
                 state.resultError?.let { resultError ->
                     val message = stringResource(resultError.messageResource())
@@ -192,13 +189,37 @@ private fun ConversionFields(
     ToolInputCard { GaugeNumericField(state, GaugeField.CONVERSION, onAction) }
 }
 
+/**
+ * Tehtävän huomautus tuloksen yllä. Mallin sovituksen viiden rivin varoitus on lyhyt lause ja koko teksti
+ * ⓘ-vihjeessä; kopioitavaan tulokseen jää edelleen koko varoitus.
+ */
+@Composable
+private fun GaugeWarning(task: GaugeTask) {
+    val full = stringResource(task.warningResource())
+    Row(
+        modifier = Modifier.fillMaxWidth().testTag("measurement_warning"),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = if (task == GaugeTask.ADJUST) stringResource(R.string.measurement_adjust_warning_short) else full,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.weight(1f),
+        )
+        if (task == GaugeTask.ADJUST) {
+            InfoTip(title = stringResource(R.string.measurement_adjust), description = full)
+        }
+    }
+}
+
 @Composable
 private fun GaugeBasisSelector(
     state: GaugeUiState,
     onAction: (GaugeAction) -> Unit,
 ) {
     GaugeSelector(
-        label = stringResource(R.string.measurement_units),
+        // Kaavan tiheyden mittapohja, ei sovelluksen yksikköasetus (oletus tulee asetuksesta).
+        label = stringResource(R.string.gauge_stated_per),
         selectedValue = state.basis,
         choices = GaugeBasis.entries.map { it to stringResource(it.titleResource()) },
         onSelect = { onAction(GaugeAction.Basis(it)) },

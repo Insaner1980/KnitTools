@@ -118,6 +118,9 @@ data class WebPatternEditorUiState(
                 designerValidation is WebPatternDesignerValidation.Valid &&
                 urlValidation is WebPatternUrlValidation.Valid
 
+    val hasRequiredFields: Boolean
+        get() = title.isNotBlank() && url.isNotBlank()
+
     val sourceHost: String?
         get() = (urlValidation as? WebPatternUrlValidation.Valid)?.value?.host
 

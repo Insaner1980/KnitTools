@@ -1,6 +1,8 @@
 package com.finnvek.knittools.ui.theme
 
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.ui.unit.dp
 
 object ComponentDimens {
@@ -21,7 +23,15 @@ object ComponentDimens {
 
     val SegmentedContainerPadding = 6.dp
     val SegmentedItemTextInset = 6.dp
-    val SegmentedItemMinHeight = 40.dp
+
+    // Kosketuskohteen minimi: valitsimet korvaavat pudotusvalikoita, joiden rivit olivat 48 dp.
+    val SegmentedItemMinHeight = 48.dp
+
+    // Tekstipainike linjassa yläpuolisen tekstin kanssa: oletuspehmuste sisentää sen eri linjaan.
+    val FlushTextButtonPadding = PaddingValues(vertical = ButtonDefaults.TextButtonContentPadding.calculateTopPadding())
+
+    // Valintamoodin alapalkin tekstitoiminnon kosketuskohde (SelectionActionBar).
+    val SelectionBarActionMinHeight = 48.dp
 
     val ResultInsetPadding = 20.dp
     val ResultCardBorderWidth = 1.5.dp
@@ -39,6 +49,11 @@ object ComponentDimens {
     val FormSheetBottomPadding = 32.dp
     val FormSheetItemSpacing = 12.dp
     val FormSheetActionMinHeight = 48.dp
+
+    // Sheetin vaihtoehtorivi (SheetOptionRow): kaavan lisäys, langan valinta ja muut sheetin valinnat.
+    val SheetOptionHorizontalPadding = 16.dp
+    val SheetOptionVerticalPadding = 12.dp
+    val SheetOptionMinHeight = 56.dp
 
     // Info-vihjeen ikoni nimikkeen vieressä (LabelWithInfo) ja IconButtonissa.
     val InfoIconSize = 18.dp

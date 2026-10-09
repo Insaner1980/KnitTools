@@ -95,10 +95,9 @@ import com.finnvek.knittools.ui.components.ProPromptSource
 import com.finnvek.knittools.ui.components.ProjectDetailsSheet
 import com.finnvek.knittools.ui.components.ProjectDetailsValues
 import com.finnvek.knittools.ui.components.ScrollableFormDialog
-import com.finnvek.knittools.ui.components.SectionLabel
+import com.finnvek.knittools.ui.components.SheetTitle
 import com.finnvek.knittools.ui.components.cardTextFieldColors
 import com.finnvek.knittools.ui.components.dialogTextFieldColors
-import com.finnvek.knittools.ui.components.localizedUppercase
 import com.finnvek.knittools.ui.findActivity
 import com.finnvek.knittools.ui.platform.ExternalWebLinkOpenResult
 import com.finnvek.knittools.ui.platform.openExternalWebLink
@@ -1701,14 +1700,15 @@ private fun CounterTopBar(
 }
 
 // Otsikon napautus avaa projektinäkymän. Nimen muokkaus kuuluu projektinäkymän Edit details -dialogiin,
-// joten erillinen otsikon sisäinen muokkauskenttä poistettiin.
+// joten erillinen otsikon sisäinen muokkauskenttä poistettiin. Nimi näkyy sellaisenaan kuten projektinäkymässä:
+// versaalit katkaisivat pitkiä nimiä ja näyttivät saman projektin eri näköisenä kahdessa näkymässä.
 @Composable
 private fun CounterTopBarTitle(
     state: CounterUiState,
     onOpenOverview: () -> Unit,
 ) {
     Text(
-        text = state.projectName.ifEmpty { stringResource(R.string.default_project_name) }.localizedUppercase(),
+        text = state.projectName.ifEmpty { stringResource(R.string.default_project_name) },
         style =
             MaterialTheme.typography.titleLarge.copy(
                 fontWeight = FontWeight.Bold,
@@ -1771,11 +1771,7 @@ private fun CountersListSheet(
                     .padding(bottom = 32.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            Text(
-                text = stringResource(R.string.counters_list_title),
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
+            SheetTitle(text = stringResource(R.string.counters_list_title))
             if (projectCounters.isEmpty()) {
                 Text(
                     text = stringResource(R.string.counters_list_empty),
@@ -1817,7 +1813,7 @@ private fun YarnPickerSheet(
                     .padding(bottom = 32.dp),
         ) {
             // CPD-ON
-            SectionLabel(
+            SheetTitle(
                 text = stringResource(R.string.select_yarn_card),
                 modifier = Modifier.padding(bottom = 12.dp),
             )
@@ -1900,7 +1896,7 @@ private fun NotesSheet(
                 modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                SectionLabel(
+                SheetTitle(
                     text = stringResource(R.string.notes),
                     modifier = Modifier.weight(1f),
                 )

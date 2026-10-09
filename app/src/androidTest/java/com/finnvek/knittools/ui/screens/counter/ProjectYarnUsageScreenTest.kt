@@ -381,16 +381,16 @@ class ProjectYarnUsageScreenTest {
         edit(YarnUsageField.ALLOCATED, "600")
         edit(YarnUsageField.USED, "350")
         field(YarnUsageField.USED).performImeAction()
+        // Yksikkö on segmenttivalitsin: vaihtoehdot näkyvät suoraan ilman pudotusvalikon avaamista.
         composeRule
             .onNodeWithTag("yarn_usage_unit")
             .performScrollTo()
             .assertHeightIsAtLeast(48.dp)
-            .performClick()
-        composeRule.waitUntil(5_000) { composeRule.onNodeWithTag("yarn_usage_unit_option_0").isDisplayed() }
         composeRule
             .onNodeWithTag(
                 "yarn_usage_unit_option_0",
-            ).assertIsSelected()
+            ).performScrollTo()
+            .assertIsSelected()
             .assertHeightIsAtLeast(48.dp)
             .performClick()
         composeRule.onNodeWithText(yarnName).performScrollTo().assertIsDisplayed()
@@ -553,8 +553,6 @@ class ProjectYarnUsageScreenTest {
     }
 
     private fun chooseUnit(index: Int) {
-        composeRule.onNodeWithTag("yarn_usage_unit").performScrollTo().performClick()
-        composeRule.waitUntil(5_000) { composeRule.onNodeWithTag("yarn_usage_unit_option_$index").isDisplayed() }
         composeRule.onNodeWithTag("yarn_usage_unit_option_$index").performScrollTo().performClick()
     }
 

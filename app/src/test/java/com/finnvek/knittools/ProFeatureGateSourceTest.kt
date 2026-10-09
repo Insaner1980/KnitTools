@@ -95,7 +95,8 @@ class ProFeatureGateSourceTest {
         assertTrue(viewModel.contains("runProjectYarnNoteSaveIfAllowed("))
         assertTrue(viewModel.contains("canUseYarnCards = proManager.hasFeature(ProFeature.UNLIMITED_YARN)"))
         assertFalse(yarnManagementSheet.contains("canSaveToMyYarn: Boolean"))
-        assertTrue(yarnManagementSheet.contains("enabled = note.savedYarnCardId == null"))
+        // Tallennettu muistiinpano näyttää tilamerkin, joten tallennustoiminto näkyy vain tallentamattomalle.
+        assertTrue(yarnManagementSheet.contains("if (note.savedYarnCardId == null) {"))
         assertTrue(yarnManagementSheet.contains("ProBadge(status = proStatus)"))
 
         assertTrue(viewModel.contains("fun addReminder("))

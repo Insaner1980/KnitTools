@@ -21,6 +21,7 @@ class CounterStringResourcesSourceTest {
                 "counter_actions",
                 "counter_value_of_target_format",
                 "counter_target_remaining_format",
+                "counter_target_of_format",
                 "counter_target_reached",
                 "counter_target_past_format",
                 "project_content_add_pattern",

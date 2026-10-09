@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -22,7 +21,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -59,6 +57,8 @@ import com.finnvek.knittools.domain.model.ProgressPhoto
 import com.finnvek.knittools.ui.components.ConfirmationDialog
 import com.finnvek.knittools.ui.components.CrossStitchEmptyState
 import com.finnvek.knittools.ui.components.CrossStitchGlyph
+import com.finnvek.knittools.ui.components.ProjectFilterOption
+import com.finnvek.knittools.ui.components.ProjectFilterPill
 import com.finnvek.knittools.ui.components.cardContainerColor
 import com.finnvek.knittools.ui.components.rememberLocaleDateFormat
 import com.finnvek.knittools.ui.screens.counter.PhotoViewer
@@ -173,6 +173,8 @@ fun AllPhotosScreen(
         if (state.photos.isEmpty()) {
             CrossStitchEmptyState(
                 glyph = CrossStitchGlyph.PHOTOS,
+                // Sama otsikko kuin projektin galleriassa; selitys kertoo, mistä kuvat tulevat.
+                title = stringResource(R.string.no_photos),
                 message = stringResource(R.string.empty_all_photos),
                 modifier = Modifier.padding(padding),
             )
@@ -286,13 +288,22 @@ private fun AllPhotosContent(
     val projectsWithPhotos = remember(state.photos) { state.photos.map { it.projectId }.distinct() }
 
     Column(modifier = Modifier.fillMaxSize().padding(padding)) {
-        // Suodatinsiput piilotetaan valintamoodissa
+        // Suodatin piilotetaan valintamoodissa
         if (!state.isSelectMode) {
-            ProjectFilterChips(
-                projectsWithPhotos = projectsWithPhotos,
-                projectMap = projectMap,
+            // Sama projektipilleri kuin Insightsissa: sirurivi ei skaalautunut projektimäärän kasvaessa.
+            ProjectFilterPill(
+                projects =
+                    projectsWithPhotos.map { projectId ->
+                        ProjectFilterOption(
+                            id = projectId,
+                            name =
+                                projectMap[projectId]?.name
+                                    ?: stringResource(R.string.new_project_name_format, projectId),
+                        )
+                    },
                 selectedProjectId = selectedProjectId,
-                onProjectFilterClick = onProjectFilterClick,
+                onSelectProject = onProjectFilterClick,
+                modifier = Modifier.padding(horizontal = 16.dp),
             )
             Spacer(modifier = Modifier.height(8.dp))
         }
@@ -303,39 +314,6 @@ private fun AllPhotosContent(
             projectMap = projectMap,
             onPhotoClick = onPhotoClick,
         )
-    }
-}
-
-@Composable
-private fun ProjectFilterChips(
-    projectsWithPhotos: List<Long>,
-    projectMap: Map<Long, CounterProject>,
-    selectedProjectId: Long?,
-    onProjectFilterClick: (Long?) -> Unit,
-) {
-    LazyRow(
-        contentPadding = PaddingValues(horizontal = 16.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        item {
-            FilterChip(
-                selected = selectedProjectId == null,
-                onClick = { onProjectFilterClick(null) },
-                label = { Text(stringResource(R.string.filter_all)) },
-            )
-        }
-        items(projectsWithPhotos, key = { it }) { projectId ->
-            val name = projectMap[projectId]?.name ?: stringResource(R.string.new_project_name_format, projectId)
-            FilterChip(
-                selected = selectedProjectId == projectId,
-                onClick = { onProjectFilterClick(projectId) },
-                label = {
-                    Text(
-                        text = name,
-                    )
-                },
-            )
-        }
     }
 }
 

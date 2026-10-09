@@ -48,7 +48,7 @@
     <string name="library_title">Library</string>
     <string name="saved_patterns_title">Saved Patterns</string>
     <string name="my_yarn_title">My Yarn</string>
-    <string name="all_photos_title">Photos</string>
+    <string name="all_photos_title">Progress Photos</string>
 
     <!-- Hub hero text -->
 
@@ -233,12 +233,12 @@
     <string name="linked_project_label">Linked project</string>
     <string name="remove_project_link">Remove link</string>
     <string name="select_project">Select project</string>
-    <string name="status_label">Status</string>
     <string name="quantity_label">Quantity</string>
     <string name="status_in_stash">In Stash</string>
     <string name="status_in_use">In Use</string>
     <string name="status_finished">Finished</string>
     <string name="yarn_not_linked">Not linked</string>
+    <string name="yarn_card_project_format">For %1$s</string>
     <string name="yarn_details_title">Details</string>
     <string name="yarn_details_empty_body">Brand, weight, color, and dye lot are optional. Add only what helps this project.</string>
     <string name="delete_yarn_card_message">Delete this yarn card? This cannot be undone.</string>
@@ -258,13 +258,12 @@
     <!-- Settings -->
     <!-- Row Counter -->
     <string name="default_project_name">My Project</string>
-    <string name="reset_counter">Reset Counter</string>
+    <string name="reset_counter">Reset counter</string>
     <string name="reset_counter_message">Reset the counter to 0?</string>
     <string name="pattern_repeat" tools:ignore="UnusedResources">Pattern repeat</string>
     <string name="notes">Notes</string>
     <string name="open_notes_editor">Open notes editor</string>
     <string name="add_note">Add note\u2026</string>
-    <string name="notes_editor_title">Notes \u2014 %1$s</string>
     <string name="write_your_notes_here">Write your notes here\u2026</string>
 
 
@@ -280,6 +279,7 @@
     <string name="counter_decrease_row">Subtract row</string>
     <string name="counter_undo_last_change">Undo last change</string>
     <string name="counter_target_remaining_format">%1$s left</string>
+    <string name="counter_target_of_format">of %1$d</string>
     <string name="counter_target_reached">Target reached</string>
     <string name="counter_target_past_format">%1$s past target</string>
     <string name="project_content_add_pattern">Add Pattern</string>
@@ -335,7 +335,7 @@
 
     <!-- Yarn Estimator -->
     <string name="total_yarn_needed">Total yarn needed</string>
-    <string name="yarn_per_skein">%s per skein</string>
+    <string name="length_per_skein">Length per skein</string>
     <string name="weight_per_skein">Weight per skein</string>
     <string name="total_weight">Total weight: %s g</string>
     <string name="estimated_skeins">Estimated: about %s skeins</string>
@@ -356,6 +356,7 @@
     <string name="settings_section_general">General</string>
     <string name="settings_theme">Theme</string>
     <string name="settings_section_pro">PRO</string>
+    <string name="settings_section_data">DATA</string>
     <string name="settings_section_info">INFO</string>
     <string name="settings_language">App language</string>
     <string name="settings_language_change_hint">Changes apply immediately</string>
@@ -395,8 +396,6 @@
 
     <!-- Yarn Card -->
     <string name="fiber_content">Fiber content</string>
-    <string name="weight_grams">Weight (g)</string>
-    <string name="length_meters">Length (m)</string>
     <string name="needle_size_label">Needle size</string>
     <string name="gauge_label">Gauge</string>
     <string name="color_name">Color name</string>
@@ -405,6 +404,8 @@
     <string name="yarn_color_number_short">#%1$s</string>
     <string name="yarn_dye_lot_short">Lot %1$s</string>
     <string name="weight_category">Weight category</string>
+    <string name="yarn_weight_other">Other</string>
+    <string name="yarn_weight_ply_format">%1$s ply</string>
     <string name="care_symbols">Care</string>
     <string name="no_saved_yarns">No saved yarn cards yet</string>
 
@@ -487,8 +488,7 @@
     <string name="desc_all_photos">Progress photos from all your projects</string>
     <string name="empty_saved_patterns">No saved patterns yet.\nAdd a web pattern or import a PDF.</string>
     <string name="empty_my_yarn">No yarn notes saved yet.</string>
-    <string name="empty_all_photos">No progress photos yet.</string>
-    <string name="filter_all">All</string>
+    <string name="empty_all_photos">Photos you take in your projects are collected here.</string>
 
     <!-- Insights -->
     <!-- Insights: kestot, hero ja kaavio -->
@@ -539,8 +539,8 @@
     <string name="insights_project_fabric_next_active_day">Next active day</string>
     <string name="insights_last_worked_format">Last worked %1$s</string>
     <plurals name="insights_days_meta_format">
-        <item quantity="one">%1$d of %2$d day</item>
-        <item quantity="other">%1$d of %2$d days</item>
+        <item quantity="one">Active %1$d of %2$d day</item>
+        <item quantity="other">Active %1$d of %2$d days</item>
     </plurals>
     <string name="insights_chart_axis_today">today</string>
     <string name="insights_chart_a11y_daily">Daily %1$s time, %2$s, %3$s, longest %4$s</string>
@@ -574,7 +574,7 @@
     <string name="help_and_guide">Help &amp; Guide</string>
 
     <!-- Gauge Calculator — swatch section -->
-    <string name="your_gauge_section">Your Gauge</string>
+    <string name="your_gauge_section">Your gauge</string>
     <string name="measure_swatch">Measure swatch</string>
     <string name="enter_directly">Enter directly</string>
     <string name="measured_width">Measured width</string>
@@ -911,7 +911,7 @@
 
     <!-- Progress Photos -->
     <string name="take_photo">Take photo</string>
-    <string name="progress_photos">Progress photos</string>
+    <string name="progress_photos">Progress Photos</string>
     <string name="counters_list_empty">No extra counters</string>
     <string name="row_label_format" tools:ignore="PluralsCandidate">Row %d</string>
     <string name="share_photo">Share</string>
@@ -932,7 +932,8 @@
         <item quantity="other">Delete %d yarn cards?</item>
     </plurals>
     <string name="delete_yarn_card">Delete yarn card</string>
-    <string name="no_photos">No photos yet</string>
+    <string name="no_photos">No progress photos yet</string>
+    <string name="photo_gallery_empty_body">Photos you take of this project appear here.</string>
     <string name="rename_photo">Rename photo</string>
     <string name="photo_name_hint">e.g. Sleeve done</string>
 
@@ -1132,7 +1133,6 @@
     <string name="pro_badge_trial_description">Pro feature, available during trial</string>
     <string name="knittools_pro">KnitTools Pro</string>
     <string name="pro_content_stays_available">Everything you create remains available.</string>
-    <string name="pro_status_not_started">Not started</string>
     <plurals name="pro_status_trial_days">
         <item quantity="one">Trial, %1$d day left</item>
         <item quantity="other">Trial, %1$d days left</item>
@@ -1241,7 +1241,8 @@
     <string name="folder_move_later">Move later</string>
     <string name="folder_move_to">Move to folder</string>
     <string name="folder_remove_from">Remove from folder</string>
-    <string name="folder_move_selected_projects">Move selected projects</string>
+    <string name="selection_action_move">Move</string>
+    <string name="selection_action_complete">Complete</string>
     <string name="folder_no_folders">No folders</string>
     <string name="folder_empty">%1$s has no projects.</string>
     <string name="folder_no_unfiled">No Unfiled projects</string>
@@ -1304,7 +1305,7 @@
     <string name="measurement_axis">Direction</string>
     <string name="measurement_stitches_width">Stitches and width</string>
     <string name="measurement_rows_height">Rows and height</string>
-    <string name="measurement_units">Measurement units</string>
+    <string name="gauge_stated_per">Gauge stated</string>
     <string name="measurement_from_unit">From unit</string>
     <string name="measurement_to_unit">To unit</string>
     <string name="measurement_value">Value</string>
@@ -1342,6 +1343,7 @@
     <string name="measurement_project_context">Project: %1$s</string>
     <string name="measurement_estimate">Estimate based on the entered gauge.</string>
     <string name="measurement_adjust_warning">Mathematical estimate from the entered gauge. Shaping and construction are not rewritten. Ease, stitch repeats, borders, armholes, necklines and sleeves may need separate adjustment. Measure a washed or blocked swatch for a more useful estimate.</string>
+    <string name="measurement_adjust_warning_short">An estimate from your gauge. Shaping may need separate adjustment.</string>
     <string name="measurement_swatch_hint">For a more useful estimate, measure the swatch after washing or blocking.</string>
     <string name="measurement_result">Result</string>
     <string name="measurement_value_unit_format">%1$s %2$s</string>
@@ -1445,8 +1447,6 @@
     <string name="pattern_open_project_notes">Open project notes</string>
     <string name="widget_preview_primary_count" translatable="false">42</string>
     <string name="insights_completions_title">Project completions</string>
-    <string name="insights_completions_empty">No completions in this period.</string>
-    <string name="insights_completions_project_empty">No completion recorded for this project in this period.</string>
     <string name="insights_completions_period">%1$s – %2$s</string>
     <plurals name="insights_completion_count">
         <item quantity="one">%d completion</item>
@@ -1482,7 +1482,7 @@
     <string name="backup_error_write">The backup could not be saved. Check the destination and try again. Delete any incomplete destination file.</string>
     <string name="backup_error_restore">Restore failed. Your previous content has been kept. Try again.</string>
 
-    <string name="counter_history_title">Counter history</string>
+    <string name="counter_history_title">Counter History</string>
     <string name="counter_history_empty_title">No counter history yet</string>
     <string name="counter_history_empty_body">Counter changes will appear here as you work on this project.</string>
     <string name="counter_history_increase">Increase</string>

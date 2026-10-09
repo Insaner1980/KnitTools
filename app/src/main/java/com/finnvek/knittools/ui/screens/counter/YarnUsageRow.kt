@@ -5,12 +5,14 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.relocation.bringIntoViewRequester
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
@@ -25,6 +27,8 @@ import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.model.ProjectYarnUsageItem
 import com.finnvek.knittools.domain.model.YarnUsageSourceStatus
 import com.finnvek.knittools.domain.model.YarnUsageUnit
+import com.finnvek.knittools.ui.theme.ComponentDimens
+import com.finnvek.knittools.ui.theme.knitToolsColors
 
 @Composable
 @Suppress("kotlin:S3776") // Käyttörivi näyttää null- ja yksikkökohtaiset arvot ilman erillistä välitilamallia.
@@ -32,7 +36,12 @@ internal fun YarnUsageRow(
     item: ProjectYarnUsageItem,
     onUsage: (YarnUsageOpenRequest) -> Unit,
     requestFocus: Boolean = false,
+    // Langan kortin sisällä toiminto on nimen alla vasemmassa reunassa: korttien väliin
+    // irrallisena se ei kertonut, kumpaa lankaa se koskee.
+    inCard: Boolean = false,
 ) {
+    val actionAlignment = if (inCard) Alignment.Start else Alignment.End
+    val actionPadding = if (inCard) ComponentDimens.FlushTextButtonPadding else ButtonDefaults.TextButtonContentPadding
     val name =
         item.name.ifBlank {
             stringResource(
@@ -88,11 +97,15 @@ internal fun YarnUsageRow(
                 },
                 name,
             )
+        // Langan kortin sisällä (inCard) toiminto on nimen alla vasemmassa reunassa, muuten oikeassa
+        // reunassa kuten osioiden tekstitoiminnot. Keskitettynä se irtosi rivistä, jota se koskee.
         TextButton(
             onClick = { onUsage(YarnUsageOpenRequest(item, name)) },
+            colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.knitToolsColors.primaryReadable),
+            contentPadding = actionPadding,
             modifier =
                 Modifier
-                    .fillMaxWidth()
+                    .align(actionAlignment)
                     .heightIn(
                         min = 48.dp,
                     ).bringIntoViewRequester(bring)
@@ -109,7 +122,13 @@ internal fun YarnUsageRow(
             val deleteLabel = stringResource(R.string.yarn_usage_delete_named, name)
             TextButton(
                 onClick = { onUsage(YarnUsageOpenRequest(item, name, delete = true)) },
-                modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).semantics { contentDescription = deleteLabel },
+                contentPadding = actionPadding,
+                modifier =
+                    Modifier
+                        .align(
+                            actionAlignment,
+                        ).heightIn(min = 48.dp)
+                        .semantics { contentDescription = deleteLabel },
             ) {
                 Text(stringResource(R.string.yarn_usage_delete))
             }

@@ -9,9 +9,12 @@ import com.finnvek.knittools.domain.model.ShapePayload
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertThrows
 import org.junit.Test
 import java.io.ByteArrayOutputStream
+import java.io.IOException
+import java.io.OutputStream
 
 class PatternPdfExportBudgetTest {
     @Test
@@ -163,6 +166,43 @@ class PatternPdfExportBudgetTest {
         assertLimit(PatternPdfExportLimitReason.OUTPUT_BYTES) { output.write(1) }
         assertLimit(PatternPdfExportLimitReason.OUTPUT_BYTES) { output.write(byteArrayOf(1)) }
         assertArrayEquals(byteArrayOf(), target.toByteArray())
+    }
+
+    @Test
+    fun `bounded output forwards flush but leaves delegate closure to its owner`() {
+        var flushCount = 0
+        var closeCount = 0
+        val target =
+            object : ByteArrayOutputStream() {
+                override fun flush() {
+                    flushCount++
+                }
+
+                override fun close() {
+                    closeCount++
+                }
+            }
+        val output: OutputStream = PatternPdfExportBoundedOutputStream(target, maxBytes = 3L)
+
+        output.write(byteArrayOf(1, 2, 3))
+        output.flush()
+        output.close()
+
+        assertEquals(1, flushCount)
+        assertEquals(0, closeCount)
+        assertArrayEquals(byteArrayOf(1, 2, 3), target.toByteArray())
+    }
+
+    @Test
+    fun `bounded output preserves delegate flush failures`() {
+        val failure = IOException("flush failed")
+        val target =
+            object : ByteArrayOutputStream() {
+                override fun flush() = throw failure
+            }
+        val output: OutputStream = PatternPdfExportBoundedOutputStream(target, maxBytes = 3L)
+
+        assertSame(failure, assertThrows(IOException::class.java) { output.flush() })
     }
 
     private fun lineAnnotation(id: Long) =

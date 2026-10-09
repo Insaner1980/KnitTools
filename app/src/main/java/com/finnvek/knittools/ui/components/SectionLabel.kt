@@ -17,8 +17,28 @@ fun SectionLabel(
     text: String,
     modifier: Modifier = Modifier,
 ) {
+    SectionLabelText(text = text.localizedUppercase(), modifier = modifier)
+}
+
+/**
+ * Projektin nimi osiomerkkinä: sama tyyli kuin [SectionLabel], mutta nimi säilyttää
+ * käyttäjän kirjoitusasun. Projektin nimeä ei koskaan muuteta versaaleiksi.
+ */
+@Composable
+fun ProjectNameLabel(
+    name: String,
+    modifier: Modifier = Modifier,
+) {
+    SectionLabelText(text = name, modifier = modifier)
+}
+
+@Composable
+private fun SectionLabelText(
+    text: String,
+    modifier: Modifier = Modifier,
+) {
     Text(
-        text = text.localizedUppercase(),
+        text = text,
         style = MaterialTheme.typography.labelSmall,
         color = MaterialTheme.knitToolsColors.sectionLabel,
         modifier = modifier.semantics { heading() },

@@ -177,7 +177,14 @@ internal fun FabricPhotoPlaceholder(
         FabricSwatch(
             kind = kind,
             color = color,
-            modifier = Modifier.matchParentSize().alpha(ProjectOverviewDimens.PLACEHOLDER_FABRIC_ALPHA),
+            modifier =
+                Modifier.matchParentSize().alpha(
+                    if (kind == FabricKind.YARN) {
+                        ProjectOverviewDimens.PLACEHOLDER_YARN_FABRIC_ALPHA
+                    } else {
+                        ProjectOverviewDimens.PLACEHOLDER_FABRIC_ALPHA
+                    },
+                ),
         )
         Text(
             label,

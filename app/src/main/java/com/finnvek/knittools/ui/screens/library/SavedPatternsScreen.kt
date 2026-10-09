@@ -1,9 +1,6 @@
 package com.finnvek.knittools.ui.screens.library
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
@@ -11,7 +8,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -22,10 +18,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.outlined.Circle
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -62,12 +55,13 @@ import com.finnvek.knittools.domain.model.webPatternUrlOrNull
 import com.finnvek.knittools.ui.components.BadgePill
 import com.finnvek.knittools.ui.components.ConfirmationDialog
 import com.finnvek.knittools.ui.components.LabeledCounterImageButton
+import com.finnvek.knittools.ui.components.SelectionAction
+import com.finnvek.knittools.ui.components.SelectionActionBar
 import com.finnvek.knittools.ui.components.cardContainerColor
 import com.finnvek.knittools.ui.components.withExtraBottom
 import com.finnvek.knittools.ui.screens.ravelry.PatternCard
 import com.finnvek.knittools.ui.screens.ravelry.PatternCardState
 import com.finnvek.knittools.ui.theme.ProjectListDimens
-import com.finnvek.knittools.ui.theme.knitToolsColors
 
 // Data-luokat SavedPatternsScreen-parametrien ryhmittelyyn (S107)
 data class SavedPatternsState(
@@ -260,40 +254,11 @@ internal fun SelectModeDeleteBar(
     visible: Boolean,
     onDeleteClick: () -> Unit,
 ) {
-    // CPD-OFF: Valintapalkin Compose-rakenne on komponentin varsinainen vastuu.
-    AnimatedVisibility(
+    // Sama matala tekstitoimintopalkki kuin projektien joukkovalinnassa.
+    SelectionActionBar(
         visible = visible,
-        enter = slideInVertically(initialOffsetY = { it }),
-        exit = slideOutVertically(targetOffsetY = { it }),
-    ) {
-        Surface(color = MaterialTheme.knitToolsColors.cardContainer) {
-            Row(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                horizontalArrangement = Arrangement.Center,
-                // CPD-ON
-            ) {
-                Button(
-                    onClick = onDeleteClick,
-                    modifier = Modifier.fillMaxWidth(),
-                    colors =
-                        ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.error,
-                        ),
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.Delete,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp),
-                    )
-                    Spacer(modifier = Modifier.size(8.dp))
-                    Text(stringResource(R.string.delete))
-                }
-            }
-        }
-    }
+        actions = listOf(SelectionAction(stringResource(R.string.delete), onDeleteClick, destructive = true)),
+    )
 }
 
 // Jaettu valintaindikaattori multi-select-moodeille

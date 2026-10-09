@@ -440,7 +440,8 @@ class PatternNotesNavigationRuntimeTest {
         scrollToText(text(R.string.pattern_open_project_notes))
         capture("reader-menu")
         click(repeatActivation) { hasText(it, text(R.string.pattern_open_project_notes)) }
-        waitForText(text(R.string.notes_editor_title, projectName))
+        // Projektin nimi on editorissa osiomerkkinä alkuperäisessä kirjoitusasussaan, yläpalkissa pelkkä Notes.
+        waitForText(projectName)
         editable()
     }
 

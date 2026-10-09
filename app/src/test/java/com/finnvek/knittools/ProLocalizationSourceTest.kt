@@ -227,7 +227,6 @@ class ProLocalizationSourceTest {
                 "pro_badge_trial_description",
                 "knittools_pro",
                 "pro_content_stays_available",
-                "pro_status_not_started",
                 "pro_status_trial_days",
                 "pro_status_trial_ended",
                 "pro_status_purchased",

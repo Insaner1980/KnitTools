@@ -7,16 +7,21 @@ import org.junit.Test
 
 class MyYarnCardSourceTest {
     @Test
-    fun `my yarn cards use compact text summaries instead of metadata pills`() {
+    fun `my yarn cards use compact text summaries and one shared status pill`() {
         val screen = ProjectSourceFiles.read(MY_YARN_SCREEN)
 
         assertTrue(screen.contains("card.displayName { fallbackName }"))
         assertTrue(screen.contains("YarnCardMetaLine("))
         assertTrue(screen.contains("YarnManualColorRow("))
-        assertTrue(screen.contains("linkedProjectName ?: stringResource(R.string.yarn_not_linked)"))
+        // Tila on ainoa pilleri; paksuus ja määrä pysyvät tekstirivillä.
+        assertTrue(screen.contains("YarnStatusPill(status = card.status"))
+        // Projektiin linkitetyn käytössä olevan langan tila kerrotaan projektirivillä, ei toistuvalla pillerillä.
+        assertTrue(screen.contains("if (card.status != YarnCardStatus.IN_USE || projectLine == null) {"))
         assertFalse(screen.contains("WeightCategoryPill("))
-        assertFalse(screen.contains("StatusPill("))
         assertFalse(screen.contains("QuantityPill("))
+        // Projektirivi vain linkitetylle langalle nimikkeen kanssa, ei "Not linked" -riviä.
+        assertTrue(screen.contains("stringResource(R.string.yarn_card_project_format, it)"))
+        assertFalse(screen.contains("R.string.yarn_not_linked"))
     }
 
     @Test
@@ -37,13 +42,13 @@ class MyYarnCardSourceTest {
     }
 
     @Test
-    fun `not linked yarn summary is localized`() {
+    fun `yarn card project line is localized`() {
         val missing =
             ProjectSourceFiles.localizedStringFiles().filter { file ->
-                !ProjectSourceFiles.read(file).contains("""name="yarn_not_linked"""")
+                !ProjectSourceFiles.read(file).contains("""name="yarn_card_project_format"""")
             }
 
-        assertTrue("Missing yarn_not_linked in $missing", missing.isEmpty())
+        assertTrue("Missing yarn_card_project_format in $missing", missing.isEmpty())
     }
 
     @Test
@@ -60,7 +65,7 @@ class MyYarnCardSourceTest {
         assertTrue(screen.contains("ManualYarnCardSheet("))
         assertTrue(screen.contains("ProjectYarnTextField("))
         assertTrue(screen.contains("label = stringResource(R.string.project_yarn_name)"))
-        assertTrue(screen.contains("label = stringResource(R.string.weight_category)"))
+        assertTrue(screen.contains("YarnWeightField(value = weightCategory, onValueChange = { weightCategory = it })"))
         assertTrue(screen.contains("label = stringResource(R.string.color_name)"))
         assertTrue(screen.contains("label = stringResource(R.string.color_number)"))
         assertTrue(screen.contains("label = stringResource(R.string.dye_lot)"))

@@ -445,7 +445,6 @@ private fun NavGraphBuilder.projectsGraph(
             val counterViewModel: CounterViewModel = hiltViewModel(parentEntry)
             val annotationViewModel: PatternAnnotationViewModel = hiltViewModel(backStackEntry)
             val patternViewerViewModel: PatternViewerViewModel = hiltViewModel(backStackEntry)
-            val counterState by counterViewModel.uiState.collectAsStateWithLifecycle()
             if (!rememberRouteProjectReady(
                     projectId,
                     { counterViewModel },

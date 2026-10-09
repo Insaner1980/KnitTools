@@ -1,9 +1,6 @@
 package com.finnvek.knittools.ui.screens.project
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -28,7 +25,6 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -39,7 +35,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -91,9 +86,10 @@ import com.finnvek.knittools.ui.components.ProjectDetailsValues
 import com.finnvek.knittools.ui.components.RenameProjectDialog
 import com.finnvek.knittools.ui.components.ScrollableFormDialog
 import com.finnvek.knittools.ui.components.SectionLabel
+import com.finnvek.knittools.ui.components.SelectionAction
+import com.finnvek.knittools.ui.components.SelectionActionBar
 import com.finnvek.knittools.ui.components.workSessionStatusText
 import com.finnvek.knittools.ui.theme.ProjectListDimens
-import com.finnvek.knittools.ui.theme.knitToolsColors
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
@@ -968,54 +964,19 @@ private fun MultiSelectBottomBar(
     onComplete: () -> Unit,
     onDelete: () -> Unit,
 ) {
-    AnimatedVisibility(
+    SelectionActionBar(
         visible = isMultiSelectMode && hasSelection,
-        enter = slideInVertically(initialOffsetY = { it }),
-        exit = slideOutVertically(targetOffsetY = { it }),
-    ) {
-        Surface(color = MaterialTheme.knitToolsColors.cardContainer) {
-            Column(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(ProjectListDimens.ItemLineGap),
-            ) {
-                Button(
-                    onClick = onMove,
-                    modifier =
-                        Modifier.fillMaxWidth().defaultMinSize(
-                            minHeight = ProjectListDimens.FooterActionTouchSize,
-                        ),
-                ) {
-                    Text(stringResource(R.string.folder_move_selected_projects))
-                }
-                Button(
-                    onClick = onComplete,
+        actions =
+            listOf(
+                SelectionAction(stringResource(R.string.selection_action_move), onMove),
+                SelectionAction(
+                    stringResource(R.string.selection_action_complete),
+                    onComplete,
                     enabled = hasActiveSelection,
-                    modifier =
-                        Modifier.fillMaxWidth().defaultMinSize(
-                            minHeight = ProjectListDimens.FooterActionTouchSize,
-                        ),
-                ) {
-                    Text(stringResource(R.string.complete_project))
-                }
-                Button(
-                    onClick = onDelete,
-                    modifier =
-                        Modifier.fillMaxWidth().defaultMinSize(
-                            minHeight = ProjectListDimens.FooterActionTouchSize,
-                        ),
-                    colors =
-                        ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.error,
-                        ),
-                ) {
-                    Text(stringResource(R.string.delete_project))
-                }
-            }
-        }
-    }
+                ),
+                SelectionAction(stringResource(R.string.delete_project), onDelete, destructive = true),
+            ),
+    )
 }
 
 // Data-luokat ProjectListContent-parametrien ryhmittelyyn (S107)

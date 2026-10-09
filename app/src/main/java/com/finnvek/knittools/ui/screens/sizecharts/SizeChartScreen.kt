@@ -15,15 +15,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuAnchorType
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -42,13 +36,12 @@ import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.calculator.SizeChartData
 import com.finnvek.knittools.domain.model.SizeChartEntry
 import com.finnvek.knittools.domain.model.SizeLabel
+import com.finnvek.knittools.ui.components.SegmentedToggle
 import com.finnvek.knittools.ui.components.ToolScreenScaffold
-import com.finnvek.knittools.ui.components.highContainerTextFieldColors
 import com.finnvek.knittools.ui.components.rememberCurrentLocale
 import com.finnvek.knittools.ui.screens.home.HomeViewModel
 import com.finnvek.knittools.ui.theme.knitToolsColors
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SizeChartScreen(
     onBack: () -> Unit,
@@ -56,7 +49,6 @@ fun SizeChartScreen(
 ) {
     var selectedCategory by rememberSaveable { mutableStateOf(SizeChartData.Category.WOMEN) }
     val useImperial by homeViewModel.useImperial.collectAsStateWithLifecycle()
-    var dropdownExpanded by remember { mutableStateOf(false) }
 
     val headers = remember(selectedCategory) { SizeChartData.headers(selectedCategory) }
     val entries = remember(selectedCategory) { SizeChartData.entries(selectedCategory) }
@@ -78,41 +70,14 @@ fun SizeChartScreen(
         BoxWithConstraints(Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp)) {
             val tableWidth = maxOf(maxWidth, 112.dp * LocalDensity.current.fontScale * headers.size)
             Column {
-                // Kategoria-dropdown
-                ExposedDropdownMenuBox(
-                    expanded = dropdownExpanded,
-                    onExpandedChange = { dropdownExpanded = it },
-                ) {
-                    TextField(
-                        value = categoryLabels[selectedCategory] ?: "",
-                        onValueChange = {},
-                        readOnly = true,
-                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = dropdownExpanded) },
-                        modifier =
-                            Modifier
-                                .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
-                                .fillMaxWidth()
-                                .padding(vertical = 8.dp),
-                        // Pyöristetty kuten muut kentät: oletusmuodon suora alareuna luki alaviivana.
-                        shape = MaterialTheme.shapes.medium,
-                        colors =
-                            highContainerTextFieldColors(),
-                    )
-                    ExposedDropdownMenu(
-                        expanded = dropdownExpanded,
-                        onDismissRequest = { dropdownExpanded = false },
-                    ) {
-                        SizeChartData.Category.entries.forEach { category ->
-                            DropdownMenuItem(
-                                text = { Text(categoryLabels[category] ?: category.name) },
-                                onClick = {
-                                    selectedCategory = category
-                                    dropdownExpanded = false
-                                },
-                            )
-                        }
-                    }
-                }
+                // Kaikki kategoriat näkyvät kerralla ja vaihto on yksi napautus; pudotusvalikko piilotti ne.
+                val categories = SizeChartData.Category.entries
+                SegmentedToggle(
+                    options = categories.map { categoryLabels.getValue(it) },
+                    selectedIndex = categories.indexOf(selectedCategory),
+                    onSelect = { selectedCategory = categories[it] },
+                    modifier = Modifier.padding(vertical = 8.dp),
+                )
 
                 Box(Modifier.weight(1f).horizontalScroll(rememberScrollState())) {
                     LazyColumn(

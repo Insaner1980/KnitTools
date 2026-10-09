@@ -47,6 +47,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.model.YarnCard
+import com.finnvek.knittools.domain.model.YarnCardStatus
 import com.finnvek.knittools.domain.model.displayName
 import com.finnvek.knittools.pro.ProStatus
 import com.finnvek.knittools.ui.components.ConfirmationDialog
@@ -252,7 +253,8 @@ internal fun ManualYarnCardSheet(
     onDismiss: () -> Unit,
     initialInput: ManualYarnCardInput = ManualYarnCardInput(yarnName = ""),
     @StringRes titleRes: Int = R.string.add_yarn_to_my_yarn,
-    @StringRes bodyRes: Int = R.string.manual_yarn_optional_details,
+    // Muokkauksessa ohje jätetään pois: "Aloita nimestä" ei päde, kun nimi on jo annettu.
+    @StringRes bodyRes: Int? = R.string.manual_yarn_optional_details,
 ) {
     var yarnName by rememberSaveable { mutableStateOf(initialInput.yarnName) }
     var brand by rememberSaveable { mutableStateOf(initialInput.brand) }
@@ -265,7 +267,7 @@ internal fun ManualYarnCardSheet(
     val validQuantity = parseManualYarnQuantity(quantity)
     FormSheet(
         title = stringResource(titleRes),
-        description = stringResource(bodyRes),
+        description = bodyRes?.let { stringResource(it) },
         onDismiss = onDismiss,
         confirm =
             FormSheetConfirm(
@@ -308,13 +310,8 @@ internal fun ManualYarnCardSheet(
             singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
         )
-        ProjectYarnTextField(
-            value = weightCategory,
-            // CPD-ON
-            onValueChange = { weightCategory = it },
-            label = stringResource(R.string.weight_category),
-            singleLine = true,
-        )
+        // CPD-ON
+        YarnWeightField(value = weightCategory, onValueChange = { weightCategory = it })
         ProjectYarnTextField(
             value = colorName,
             onValueChange = { colorName = it },
@@ -497,8 +494,9 @@ private fun YarnCardContent(
 ) {
     val fallbackName = stringResource(R.string.yarn_card_number_fallback, card.id)
     val displayName = card.displayName { fallbackName }
-    val status = yarnStatusUi(card.status)
-    val projectLine = linkedProjectName ?: stringResource(R.string.yarn_not_linked)
+    // Projektirivi vain linkitetylle langalle ja nimikkeen kanssa: pelkkä nimi tai "Not linked" ei kertonut,
+    // mitä rivi tarkoittaa.
+    val projectLine = linkedProjectName?.let { stringResource(R.string.yarn_card_project_format, it) }
 
     Row(
         modifier = Modifier.padding(yarnCardContentPadding),
@@ -522,13 +520,20 @@ private fun YarnCardContent(
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.onSurface,
             )
-            YarnCardMetaLine(card = card, status = status)
+            YarnCardMetaLine(card = card)
             YarnManualColorRow(card = card)
-            Text(
-                text = projectLine,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.knitToolsColors.onSurfaceMuted,
-            )
+            projectLine?.let {
+                Text(
+                    text = it,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.knitToolsColors.onSurfaceMuted,
+                )
+            }
+        }
+        // "For Linen Market Bag" kertoo jo käytön: lähes jokaisessa kortissa toistuva IN USE peitti poikkeavat
+        // tilat. Pilleri näkyy varastossa olevalle, valmiille ja projektiin linkittämättömälle käytössä olevalle.
+        if (card.status != YarnCardStatus.IN_USE || projectLine == null) {
+            YarnStatusPill(status = card.status, modifier = Modifier.align(Alignment.Top))
         }
         if (showOpenAffordance) {
             Icon(
@@ -542,15 +547,12 @@ private fun YarnCardContent(
 }
 
 @Composable
-private fun YarnCardMetaLine(
-    card: YarnCard,
-    status: YarnStatusUi,
-) {
+private fun YarnCardMetaLine(card: YarnCard) {
+    // Tila on kortin oikeassa reunassa pillerinä, joten sitä ei toisteta tällä rivillä.
     val summary =
         listOfNotNull(
             card.weightCategory.takeIf { it.isNotBlank() },
             skeinCountText(card.quantityInStash),
-            status.label,
         ).joinToString(YARN_CARD_SUMMARY_SEPARATOR)
 
     Text(

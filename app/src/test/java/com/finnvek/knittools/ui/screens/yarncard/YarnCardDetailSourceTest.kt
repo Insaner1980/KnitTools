@@ -36,8 +36,11 @@ class YarnCardDetailSourceTest {
         val source = ProjectSourceFiles.read(YARN_CARD_DETAIL_SCREEN)
 
         // Hiusviivaosiot ja SectionLabel-otsikot kuten projektinäkymässä, ei osioita korttien sisällä.
+        // Tila ei ole oma osionsa vaan segmenttivalitsin nimen alla.
+        assertTrue(source.contains("YarnStatusToggle(status = form.status, onStatusChange = actions.onStatusChange)"))
+        assertTrue(source.contains("SegmentedToggle("))
+        assertFalse(source.contains("YarnStatusSheet("))
         listOf(
-            "R.string.status_label",
             "R.string.quantity_label",
             "R.string.linked_project_label",
             "R.string.yarn_details_title",
@@ -49,7 +52,7 @@ class YarnCardDetailSourceTest {
         assertFalse(source.contains("private fun ActionRow("))
         assertFalse(source.contains("HorizontalDivider("))
         assertFalse(source.contains("typography.labelSmall"))
-        assertTrue(source.contains("SectionLabel(text = stringResource(R.string.select_project))"))
+        assertTrue(source.contains("SheetTitle(text = stringResource(R.string.select_project))"))
     }
 
     @Test

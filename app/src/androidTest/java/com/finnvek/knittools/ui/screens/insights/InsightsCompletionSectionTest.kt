@@ -32,20 +32,21 @@ class InsightsCompletionSectionTest {
 
     @Test fun populatedDarkNarrowLargeFont() = showPopulated(true, 2f)
 
-    @Test fun emptySelectedProjectIsQuietSection() {
+    // Tyhjä osio jätetään pois kuten Insightsin muutkin tyhjät osiot.
+    @Test fun emptySelectedProjectOmitsSection() {
         rule.setContent {
             KnitToolsTheme {
                 LazyColumn { completionSection(InsightsUiState(isLoading = false, selectedProjectId = 1)) }
             }
         }
-        rule.onNodeWithText(rule.activity.getString(R.string.insights_completions_project_empty)).assertIsDisplayed()
+        rule.onNodeWithText(rule.activity.getString(R.string.insights_completions_title)).assertDoesNotExist()
     }
 
-    @Test fun emptyRangeIsQuietSection() {
+    @Test fun emptyRangeOmitsSection() {
         rule.setContent {
             KnitToolsTheme { LazyColumn { completionSection(InsightsUiState(isLoading = false)) } }
         }
-        rule.onNodeWithText(rule.activity.getString(R.string.insights_completions_empty)).assertIsDisplayed()
+        rule.onNodeWithText(rule.activity.getString(R.string.insights_completions_title)).assertDoesNotExist()
     }
 
     @Test

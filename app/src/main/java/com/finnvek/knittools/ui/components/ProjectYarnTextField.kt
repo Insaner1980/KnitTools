@@ -16,6 +16,8 @@ internal fun ProjectYarnTextField(
     modifier: Modifier = Modifier,
     singleLine: Boolean = false,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
+    readOnly: Boolean = false,
+    trailingIcon: (@Composable () -> Unit)? = null,
 ) {
     TextField(
         value = value,
@@ -24,6 +26,8 @@ internal fun ProjectYarnTextField(
         label = { Text(label) },
         singleLine = singleLine,
         keyboardOptions = keyboardOptions,
+        readOnly = readOnly,
+        trailingIcon = trailingIcon,
         shape = MaterialTheme.shapes.medium,
         colors =
             cardTextFieldColors(),

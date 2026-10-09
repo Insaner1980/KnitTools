@@ -48,7 +48,7 @@
     <string name="library_title">Bibliothek</string>
     <string name="saved_patterns_title">Gespeicherte Anleitungen</string>
     <string name="my_yarn_title">Mein Garn</string>
-    <string name="all_photos_title">Fotos</string>
+    <string name="all_photos_title">Fortschrittsfotos</string>
 
     <!-- Hub hero text -->
 
@@ -200,7 +200,7 @@
     <string name="select_yarn_card">Garnkarte auswählen</string>
     <string name="linked_yarn_title">Verknüpftes Garn</string>
     <string name="no_linked_yarn">Noch kein Garn verknüpft</string>
-    <string name="choose_from_my_yarn">Aus My Yarn wählen</string>
+    <string name="choose_from_my_yarn">Aus meinem Garn wählen</string>
     <string name="choose_from_my_yarn_body">Ein gespeichertes Garn auswählen</string>
     <string name="add_yarn_to_project">Garn zu diesem Projekt hinzufügen</string>
     <string name="add_yarn_to_project_body">Eine kurze Garnnotiz nur für dieses Projekt speichern</string>
@@ -214,20 +214,20 @@
     <string name="change_yarn_photo">Garnfoto ändern</string>
     <string name="manual_yarn_optional_details">Beginne mit einem Namen. Marke, Stärke, Farbe und Partie sind optional.</string>
     <string name="project_yarn_quantity_format">Menge: %d</string>
-    <string name="save_to_my_yarn">In My Yarn speichern</string>
-    <string name="saved_to_my_yarn">In My Yarn gespeichert</string>
+    <string name="save_to_my_yarn">In meinem Garn speichern</string>
+    <string name="saved_to_my_yarn">In meinem Garn gespeichert</string>
     <string name="save_to_my_yarn_explanation">Kopiert Garnname, Beschreibung und Menge auf eine mit diesem Projekt verknüpfte Garnkarte unter Mein Garn. Dieser Eintrag bleibt hier; seine Notizen werden nicht kopiert.</string>
     <string name="saved_to_my_yarn_explanation">Dieser Projekteintrag bleibt separat. Seine Notizen wurden nicht auf die Garnkarte unter Mein Garn kopiert.</string>
     <string name="yarn_count_format">%1$d Garne</string>
     <string name="linked_project_label">Verknüpftes Projekt</string>
     <string name="remove_project_link">Verknüpfung entfernen</string>
     <string name="select_project">Projekt auswählen</string>
-    <string name="status_label">Status</string>
     <string name="quantity_label">Menge</string>
     <string name="status_in_stash">Vorrat</string>
     <string name="status_in_use">In Gebrauch</string>
     <string name="status_finished">Aufgebraucht</string>
     <string name="yarn_not_linked">Nicht verknüpft</string>
+    <string name="yarn_card_project_format">Projekt: %1$s</string>
     <string name="yarn_details_title">Details</string>
     <string name="yarn_details_empty_body">Marke, Garnstärke, Farbe und Partie sind optional. Füge nur hinzu, was diesem Projekt hilft.</string>
     <string name="delete_yarn_card_message">Diese Garnkarte löschen? Dies kann nicht rückgängig gemacht werden.</string>
@@ -252,7 +252,6 @@
     <string name="pattern_repeat">Rapport</string>
     <string name="notes">Notizen</string>
     <string name="add_note">Notiz hinzufügen…</string>
-    <string name="notes_editor_title">Notizen — %1$s</string>
     <string name="write_your_notes_here">Schreibe hier deine Notizen…</string>
 
 
@@ -268,6 +267,7 @@
     <string name="counter_decrease_row">Reihe abziehen</string>
     <string name="counter_undo_last_change">Letzte Änderung rückgängig machen</string>
     <string name="counter_target_remaining_format">Noch %1$s</string>
+    <string name="counter_target_of_format">von %1$d</string>
     <string name="counter_target_reached">Ziel erreicht</string>
     <string name="counter_target_past_format">%1$s über dem Ziel</string>
     <string name="project_content_add_pattern">Anleitung hinzufügen</string>
@@ -323,7 +323,7 @@
 
     <!-- Yarn Estimator -->
     <string name="total_yarn_needed">Gesamter Garnbedarf</string>
-    <string name="yarn_per_skein">%s pro Knäuel</string>
+    <string name="length_per_skein">Länge pro Knäuel</string>
     <string name="weight_per_skein">Gewicht pro Knäuel</string>
     <string name="total_weight">Gesamtgewicht: %s g</string>
     <string name="estimated_skeins">Geschätzt: etwa %s Knäuel</string>
@@ -344,6 +344,7 @@
     <string name="settings_section_general">Allgemein</string>
     <string name="settings_theme">Erscheinungsbild</string>
     <string name="settings_section_pro">PRO</string>
+    <string name="settings_section_data">DATEN</string>
     <string name="settings_section_info">INFO</string>
     <string name="settings_language">App-Sprache</string>
     <string name="settings_language_change_hint">Die Änderung gilt sofort</string>
@@ -382,8 +383,6 @@
 
     <!-- Yarn Card -->
     <string name="fiber_content">Fasergehalt</string>
-    <string name="weight_grams">Gewicht (g)</string>
-    <string name="length_meters">Länge (m)</string>
     <string name="needle_size_label">Nadelstärke</string>
     <string name="gauge_label">Maschenprobe</string>
     <string name="color_name">Farbname</string>
@@ -392,6 +391,8 @@
     <string name="yarn_color_number_short">Nr. %1$s</string>
     <string name="yarn_dye_lot_short">Partie %1$s</string>
     <string name="weight_category">Stärkenkategorie</string>
+    <string name="yarn_weight_other">Andere</string>
+    <string name="yarn_weight_ply_format">%1$s-fädig</string>
     <string name="care_symbols">Pflege</string>
     <string name="no_saved_yarns">Noch keine Garnkarten gespeichert</string>
 
@@ -461,8 +462,7 @@
     <string name="desc_all_photos">Fortschrittsfotos aus all deinen Projekten</string>
     <string name="empty_saved_patterns">Noch keine Anleitungen gespeichert.\nFüge eine Webanleitung hinzu oder importiere eine PDF-Datei.</string>
     <string name="empty_my_yarn">Noch keine Garnnotizen gespeichert.</string>
-    <string name="empty_all_photos">Noch keine Fortschrittsfotos.</string>
-    <string name="filter_all">Alle</string>
+    <string name="empty_all_photos">Fotos aus deinen Projekten werden hier gesammelt.</string>
 
     <!-- Insights -->
     <!-- Insights: kestot, hero ja kaavio -->
@@ -513,8 +513,8 @@
     <string name="insights_project_fabric_next_active_day">Nächster aktiver Tag</string>
     <string name="insights_last_worked_format">Zuletzt bearbeitet %1$s</string>
     <plurals name="insights_days_meta_format">
-        <item quantity="one">%1$d von %2$d Tag</item>
-        <item quantity="other">%1$d von %2$d Tagen</item>
+        <item quantity="one">Aktiv an %1$d von %2$d Tag</item>
+        <item quantity="other">Aktiv an %1$d von %2$d Tagen</item>
     </plurals>
     <string name="insights_chart_axis_today">heute</string>
     <string name="insights_chart_a11y_daily">Tägliche Zeit für %1$s, %2$s, %3$s, am längsten %4$s</string>
@@ -645,7 +645,8 @@
         <item quantity="other">%d Garnkarten löschen?</item>
     </plurals>
     <string name="delete_yarn_card">Garnkarte löschen</string>
-    <string name="no_photos">Noch keine Fotos</string>
+    <string name="no_photos">Noch keine Fortschrittsfotos</string>
+    <string name="photo_gallery_empty_body">Fotos, die du von diesem Projekt machst, erscheinen hier.</string>
     <string name="rename_photo">Foto umbenennen</string>
     <string name="photo_name_hint">z. B. Ärmel fertig</string>
 
@@ -771,7 +772,7 @@
     <string name="pro_prompt_reminders_title">Reihenerinnerung mit Pro hinzufügen</string><string name="pro_prompt_reminders_body">Eine neue Reihenerinnerung erfordert Pro. Deine bestehenden Erinnerungen funktionieren weiter und bleiben bearbeitbar.</string>
     <string name="pro_prompt_pattern_camera_title">Musterfotos mit Pro in PDF umwandeln</string><string name="pro_prompt_pattern_camera_body">Das Erstellen einer neuen PDF aus Musterfotos erfordert Pro. Deine bestehenden Muster und PDFs bleiben verfügbar.</string>
     <string name="pro_prompt_widget_title">Startbildschirm-Widget mit Pro nutzen</string><string name="pro_prompt_widget_body">Das Startbildschirm-Widget ist eine erweiterte Pro-Ansicht. Deine Projekt- und Zählerdaten bleiben in KnitTools verfügbar.</string>
-    <string name="pro_badge">PRO</string><string name="pro_badge_locked_description">Pro-Funktion</string><string name="pro_badge_trial_description">Pro-Funktion, während der Testphase verfügbar</string><string name="knittools_pro">KnitTools Pro</string><string name="pro_content_stays_available">Alles, was du erstellst, bleibt verfügbar.</string><string name="pro_status_not_started">Nicht gestartet</string>
+    <string name="pro_badge">PRO</string><string name="pro_badge_locked_description">Pro-Funktion</string><string name="pro_badge_trial_description">Pro-Funktion, während der Testphase verfügbar</string><string name="knittools_pro">KnitTools Pro</string><string name="pro_content_stays_available">Alles, was du erstellst, bleibt verfügbar.</string>
     <plurals name="pro_status_trial_days"><item quantity="one">Testphase, noch %1$d Tag</item><item quantity="other">Testphase, noch %1$d Tage</item></plurals>
     <string name="pro_status_trial_ended">Testphase beendet</string><string name="pro_status_purchased">Gekauft</string><string name="pro_trial_ended_title">Deine Pro-Testphase ist beendet</string><string name="pro_trial_ended_body">Alles, was du erstellt hast, ist weiterhin verfügbar. Du kannst es weiter nutzen und bearbeiten. Pro ist nur für neue Pro-Inhalte und erweiterte Ansichten erforderlich.</string><string name="pro_continue_free">Kostenlos fortfahren</string>
     <string name="pro_page_intro">Schaffe mehr Platz für jedes Projekt und halte deinen Arbeitsablauf zusammen.</string><string name="pro_page_trust">Alles, was du erstellst, bleibt verfügbar, auch wenn deine Testphase endet.</string><string name="pro_group_projects_title">Projekte und Materialien</string><string name="pro_group_projects_body">Arbeite an mehreren aktiven Projekten und erstelle die erste Projektnotiz, Fortschrittsfotos und Garnkarten.</string><string name="pro_group_workflow_title">Zählen und Arbeitsablauf</string><string name="pro_group_workflow_body">Nutze den kompakten Wiederholungszähler, zusätzliche, Wiederholungs-, Formungs- und Abschnittszähler, Reihenerinnerungen, Musterfotos als PDF und das Startbildschirm-Widget.</string><string name="pro_group_insights_title">Einblicke</string><string name="pro_group_insights_body">Sieh Tages-, Wochen- und Monatsdiagramme deiner Aktivität sowie deine Aktivitätsserie.</string>
@@ -867,7 +868,8 @@
     <string name="folder_move_later">Später verschieben</string>
     <string name="folder_move_to">In Ordner verschieben</string>
     <string name="folder_remove_from">Aus Ordner entfernen</string>
-    <string name="folder_move_selected_projects">Ausgewählte Projekte verschieben</string>
+    <string name="selection_action_move">Verschieben</string>
+    <string name="selection_action_complete">Fertig</string>
     <string name="folder_no_folders">Keine Ordner</string>
     <string name="folder_empty">%1$s enthält keine Projekte.</string>
     <string name="folder_no_unfiled">Keine Projekte ohne Ordner</string>
@@ -930,7 +932,7 @@
     <string name="measurement_axis">Richtung</string>
     <string name="measurement_stitches_width">Maschen und Breite</string>
     <string name="measurement_rows_height">Reihen und Höhe</string>
-    <string name="measurement_units">Maßeinheiten</string>
+    <string name="gauge_stated_per">Maschenprobe angegeben</string>
     <string name="measurement_from_unit">Ausgangseinheit</string>
     <string name="measurement_to_unit">Zieleinheit</string>
     <string name="measurement_value">Wert</string>
@@ -968,6 +970,7 @@
     <string name="measurement_project_context">Projekt: %1$s</string>
     <string name="measurement_estimate">Schätzung auf Grundlage der eingegebenen Maschenprobe.</string>
     <string name="measurement_adjust_warning">Mathematische Schätzung auf Grundlage der eingegebenen Maschenprobe. Formgebung und Konstruktion werden nicht umgeschrieben. Bewegungszugabe, Musterrapporte, Ränder, Armausschnitte, Halsausschnitte und Ärmel müssen eventuell separat angepasst werden. Miss eine gewaschene oder gespannte Maschenprobe für eine aussagekräftigere Schätzung.</string>
+    <string name="measurement_adjust_warning_short">Eine Schätzung aus deiner Maschenprobe. Formgebung muss eventuell separat angepasst werden.</string>
     <string name="measurement_swatch_hint">Miss die Maschenprobe nach dem Waschen oder Spannen für eine aussagekräftigere Schätzung.</string>
     <string name="measurement_result">Ergebnis</string>
     <string name="measurement_value_unit_format">%1$s %2$s</string>
@@ -1070,8 +1073,6 @@
     <string name="web_pattern_project_unavailable">Projekt ist nicht mehr verfügbar</string>
     <string name="pattern_open_project_notes">Projektnotizen öffnen</string>
     <string name="insights_completions_title">Projektabschlüsse</string>
-    <string name="insights_completions_empty">Keine Abschlüsse in diesem Zeitraum.</string>
-    <string name="insights_completions_project_empty">Für dieses Projekt wurde in diesem Zeitraum kein Abschluss erfasst.</string>
     <string name="insights_completions_period">%1$s – %2$s</string>
     <plurals name="insights_completion_count">
         <item quantity="one">%d Abschluss</item>

@@ -2,16 +2,13 @@ package com.finnvek.knittools.ui.screens.ravelry
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -20,12 +17,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.finnvek.knittools.R
 import com.finnvek.knittools.auth.RavelryAuthState
 import com.finnvek.knittools.ui.components.ConfirmationDialog
+import com.finnvek.knittools.ui.components.MoreOptionsIconButton
 import com.finnvek.knittools.ui.theme.knitToolsColors
 
 @Composable
@@ -49,31 +48,27 @@ internal fun RavelryAccountHeader(
             modifier = Modifier.fillMaxWidth().padding(headerContentPadding),
             verticalArrangement = Arrangement.spacedBy(headerActionSpacing),
         ) {
-            RavelryAccountStatus(
-                authState = authState,
+            // Katkaisuvalikko on tilarivin päässä: omalla rivillään painikkeen alla ⋮ jäi irralliseksi.
+            Row(
                 modifier = Modifier.fillMaxWidth(),
-            )
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = authState.messageText(),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.weight(1f),
+                )
+                if (authState is RavelryAuthState.Connected) {
+                    RavelryAccountMenu(onDisconnect = onDisconnect)
+                }
+            }
             RavelryAccountActions(
                 authState = authState,
                 onSignIn = onSignIn,
                 onBrowseRavelry = onBrowseRavelry,
-                onDisconnect = onDisconnect,
             )
         }
-    }
-}
-
-@Composable
-private fun RavelryAccountStatus(
-    authState: RavelryAuthState,
-    modifier: Modifier = Modifier,
-) {
-    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(headerTextSpacing)) {
-        Text(
-            text = authState.messageText(),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
     }
 }
 
@@ -82,14 +77,12 @@ private fun RavelryAccountActions(
     authState: RavelryAuthState,
     onSignIn: () -> Unit,
     onBrowseRavelry: () -> Unit,
-    onDisconnect: () -> Unit,
 ) {
     when (authState) {
         is RavelryAuthState.Connected -> {
             Button(onClick = onBrowseRavelry) {
                 Text(stringResource(R.string.ravelry_browse))
             }
-            RavelryAccountMenu(onDisconnect = onDisconnect)
         }
 
         RavelryAuthState.Starting,
@@ -125,12 +118,7 @@ private fun RavelryAccountMenu(onDisconnect: () -> Unit) {
         )
     }
 
-    IconButton(onClick = { expanded = true }) {
-        Icon(
-            imageVector = Icons.Filled.MoreVert,
-            contentDescription = stringResource(R.string.more_options),
-        )
-    }
+    MoreOptionsIconButton(onClick = { expanded = true })
     DropdownMenu(
         expanded = expanded,
         onDismissRequest = { expanded = false },
@@ -145,16 +133,9 @@ private fun RavelryAccountMenu(onDisconnect: () -> Unit) {
     }
 }
 
-private fun RavelryAuthState.messageMaxLines(): Int =
-    when (this) {
-        is RavelryAuthState.Connected -> 1
-        else -> 2
-    }
-
 private val headerVerticalPadding = 6.dp
 private val headerContentPadding = 12.dp
 private val headerActionSpacing = 8.dp
-private val headerTextSpacing = 2.dp
 
 @Composable
 private fun RavelryAuthState.messageText(): String =

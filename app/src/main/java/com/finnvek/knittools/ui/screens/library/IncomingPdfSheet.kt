@@ -1,12 +1,6 @@
 package com.finnvek.knittools.ui.screens.library
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -28,10 +22,10 @@ import com.finnvek.knittools.ui.components.ProBadge
 import com.finnvek.knittools.ui.components.ProjectOptionRows
 import com.finnvek.knittools.ui.components.ProjectYarnTextField
 import com.finnvek.knittools.ui.components.SectionLabel
+import com.finnvek.knittools.ui.components.SheetContentColumn
 import com.finnvek.knittools.ui.components.SheetOptionRow
 import com.finnvek.knittools.ui.components.SheetTitle
 import com.finnvek.knittools.ui.navigation.IncomingPdf
-import com.finnvek.knittools.ui.theme.ComponentDimens
 
 data class IncomingPdfSheetActions(
     val onAttach: (projectId: Long, name: String) -> Unit,
@@ -59,16 +53,7 @@ fun IncomingPdfSheet(
         onDismissRequest = { if (!busy) actions.onDismiss() },
         containerColor = MaterialTheme.colorScheme.surface,
     ) {
-        Column(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .navigationBarsPadding()
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = ComponentDimens.FormSheetHorizontalPadding)
-                    .padding(bottom = ComponentDimens.LargeContentPadding),
-            verticalArrangement = Arrangement.spacedBy(ComponentDimens.StandardSpacing),
-        ) {
+        SheetContentColumn {
             SheetTitle(text = stringResource(R.string.incoming_pdf_title))
             ProjectYarnTextField(
                 value = name,

@@ -17,12 +17,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -44,7 +42,7 @@ import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.model.SavedPattern
 import com.finnvek.knittools.domain.model.isWebPatternCompatible
 import com.finnvek.knittools.pro.ProStatus
-import com.finnvek.knittools.ui.components.CancelButton
+import com.finnvek.knittools.ui.components.ConfirmationDialog
 import com.finnvek.knittools.ui.components.ProBadge
 import com.finnvek.knittools.ui.components.ProPromptRequest
 import com.finnvek.knittools.ui.components.ProPromptSheet
@@ -215,23 +213,16 @@ fun PatternPickerSheet(
     }
 
     if (showDiscardConfirmation) {
-        AlertDialog(
-            onDismissRequest = keepSelectedImages,
-            title = { Text(stringResource(R.string.pattern_image_discard_title)) },
-            text = { Text(stringResource(R.string.pattern_image_discard_message)) },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        showDiscardConfirmation = false
-                        imageImportViewModel.cancelImport()
-                    },
-                ) {
-                    Text(stringResource(R.string.pattern_image_discard_action))
-                }
+        ConfirmationDialog(
+            title = stringResource(R.string.pattern_image_discard_title),
+            message = stringResource(R.string.pattern_image_discard_message),
+            confirmText = stringResource(R.string.pattern_image_discard_action),
+            isDestructive = true,
+            onConfirm = {
+                showDiscardConfirmation = false
+                imageImportViewModel.cancelImport()
             },
-            dismissButton = {
-                CancelButton(onClick = keepSelectedImages)
-            },
+            onDismiss = keepSelectedImages,
         )
     }
 }

@@ -13,7 +13,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -117,10 +116,7 @@ fun ProPromptSheet(
                     .padding(bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Text(
-                text = request.title(),
-                style = MaterialTheme.typography.headlineSmall,
-            )
+            SheetTitle(text = request.title())
             Text(
                 text = request.body(proState.status),
                 style = MaterialTheme.typography.bodyLarge,
@@ -138,9 +134,8 @@ fun ProPromptSheet(
                 horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                TextButton(onClick = onDismiss) {
-                    Text(stringResource(R.string.pro_prompt_not_now))
-                }
+                // Neutraali peruutus, jotta kokeilun aloitus on ainoa oranssi toiminto.
+                CancelButton(onClick = onDismiss, text = stringResource(R.string.pro_prompt_not_now))
                 Button(
                     onClick =
                         if (proState.status == ProStatus.TRIAL_NOT_STARTED) {

@@ -122,6 +122,7 @@ import com.finnvek.knittools.repository.SavedPatternMetadataMutationResult
 import com.finnvek.knittools.ui.components.BackIconButton
 import com.finnvek.knittools.ui.components.CancelButton
 import com.finnvek.knittools.ui.components.CollectWithLifecycleEffect
+import com.finnvek.knittools.ui.components.ConfirmationDialog
 import com.finnvek.knittools.ui.components.OverviewEmptyText
 import com.finnvek.knittools.ui.components.OverviewLinkRow
 import com.finnvek.knittools.ui.components.OverviewTextAction
@@ -901,34 +902,24 @@ internal fun ProjectDocumentsSheet(
     }
 
     removeDocument?.let { document ->
-        AlertDialog(
-            onDismissRequest = { removeDocument = null },
-            title = { Text(stringResource(R.string.project_documents_remove_title)) },
-            text = {
-                Text(
-                    stringResource(
-                        when {
-                            state.documents.size == 1 -> R.string.project_documents_remove_last_message
-                            document.isPrimary -> R.string.project_documents_remove_primary_message
-                            else -> R.string.project_documents_remove_message
-                        },
-                        document.label,
-                    ),
-                )
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        onRemove(document.id)
-                        removeDocument = null
+        ConfirmationDialog(
+            title = stringResource(R.string.project_documents_remove_title),
+            message =
+                stringResource(
+                    when {
+                        state.documents.size == 1 -> R.string.project_documents_remove_last_message
+                        document.isPrimary -> R.string.project_documents_remove_primary_message
+                        else -> R.string.project_documents_remove_message
                     },
-                ) {
-                    Text(stringResource(R.string.project_documents_remove_action))
-                }
+                    document.label,
+                ),
+            confirmText = stringResource(R.string.project_documents_remove_action),
+            isDestructive = true,
+            onConfirm = {
+                onRemove(document.id)
+                removeDocument = null
             },
-            dismissButton = {
-                CancelButton(onClick = { removeDocument = null })
-            },
+            onDismiss = { removeDocument = null },
         )
     }
 }

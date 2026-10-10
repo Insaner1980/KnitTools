@@ -18,6 +18,8 @@ fun CancelButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
+    // Peruutuksen oma sanamuoto, esim. Pro-kehotteen "Not now"; oletuksena Cancel.
+    text: String? = null,
 ) {
     TextButton(
         onClick = onClick,
@@ -25,6 +27,6 @@ fun CancelButton(
         enabled = enabled,
         colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.onSurfaceVariant),
     ) {
-        Text(stringResource(R.string.cancel))
+        Text(text ?: stringResource(R.string.cancel))
     }
 }

@@ -81,8 +81,9 @@ fun ProjectActionsBottomSheet(
     ModalBottomSheet(
         onDismissRequest = callbacks.onDismiss,
         sheetState = sheetState,
-        containerColor = MaterialTheme.colorScheme.background,
-        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+        // Sama pinta ja oletusmuoto kuin muissa sheeteissä. Otsikkona toimii projektikortti
+        // (ProjectOverviewLink), joten erillistä SheetTitlea ei toisteta sen yläpuolelle.
+        containerColor = MaterialTheme.colorScheme.surface,
     ) {
         Column(modifier = Modifier.verticalScroll(rememberScrollState()).padding(bottom = 18.dp)) {
             ProjectOverviewLink(state, callbacks)

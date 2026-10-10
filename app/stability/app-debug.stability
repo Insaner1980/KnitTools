@@ -63,13 +63,14 @@ public fun com.finnvek.knittools.ui.components.BadgePill(text: kotlin.String, mo
     - contentColor: STABLE (marked @Stable or @Immutable)
 
 @Composable
-public fun com.finnvek.knittools.ui.components.CancelButton(onClick: kotlin.Function0<kotlin.Unit>, modifier: androidx.compose.ui.Modifier, enabled: kotlin.Boolean): kotlin.Unit
+public fun com.finnvek.knittools.ui.components.CancelButton(onClick: kotlin.Function0<kotlin.Unit>, modifier: androidx.compose.ui.Modifier, enabled: kotlin.Boolean, text: kotlin.String?): kotlin.Unit
   skippable: true
   restartable: true
   params:
     - onClick: STABLE (function type)
     - modifier: STABLE (marked @Stable or @Immutable)
     - enabled: STABLE (primitive type)
+    - text: STABLE (class with no mutable properties)
 
 @Composable
 public fun com.finnvek.knittools.ui.components.CollectWithLifecycleEffect(flowProvider: @[Composable] androidx.compose.runtime.internal.ComposableFunction0<kotlinx.coroutines.flow.Flow<T of com.finnvek.knittools.ui.components.CollectWithLifecycleEffect>>, onEach: kotlin.coroutines.SuspendFunction1<T of com.finnvek.knittools.ui.components.CollectWithLifecycleEffect, kotlin.Unit>): kotlin.Unit
@@ -531,6 +532,14 @@ public fun com.finnvek.knittools.ui.components.ProjectFilterPill(projects: kotli
     - modifier: STABLE (marked @Stable or @Immutable)
 
 @Composable
+public fun com.finnvek.knittools.ui.components.ProjectNameLabel(name: kotlin.String, modifier: androidx.compose.ui.Modifier): kotlin.Unit
+  skippable: true
+  restartable: true
+  params:
+    - name: STABLE (String is immutable)
+    - modifier: STABLE (marked @Stable or @Immutable)
+
+@Composable
 public fun com.finnvek.knittools.ui.components.ProjectProgressBar(fraction: kotlin.Float, modifier: androidx.compose.ui.Modifier, height: androidx.compose.ui.unit.Dp): kotlin.Unit
   skippable: true
   restartable: true
@@ -661,6 +670,14 @@ public fun com.finnvek.knittools.ui.components.SearchTextField(value: kotlin.Str
 
 @Composable
 public fun com.finnvek.knittools.ui.components.SectionLabel(text: kotlin.String, modifier: androidx.compose.ui.Modifier): kotlin.Unit
+  skippable: true
+  restartable: true
+  params:
+    - text: STABLE (String is immutable)
+    - modifier: STABLE (marked @Stable or @Immutable)
+
+@Composable
+private fun com.finnvek.knittools.ui.components.SectionLabelText(text: kotlin.String, modifier: androidx.compose.ui.Modifier): kotlin.Unit
   skippable: true
   restartable: true
   params:
@@ -3867,23 +3884,6 @@ public fun com.finnvek.knittools.ui.screens.project.ProjectFoldersSheet(folders:
     - onDismiss: STABLE (function type)
     - focusFolderId: STABLE (class with no mutable properties)
     - focusCreateFolder: STABLE (primitive type)
-
-@Composable
-private fun com.finnvek.knittools.ui.screens.project.ProjectListActiveSessionCompletionDialog(onSave: kotlin.Function0<kotlin.Unit>, onDiscard: kotlin.Function0<kotlin.Unit>, onCancel: kotlin.Function0<kotlin.Unit>): kotlin.Unit
-  skippable: true
-  restartable: true
-  params:
-    - onSave: STABLE (function type)
-    - onDiscard: STABLE (function type)
-    - onCancel: STABLE (function type)
-
-@Composable
-private fun com.finnvek.knittools.ui.screens.project.ProjectListActiveSessionDeletionDialog(onDiscardAndDelete: kotlin.Function0<kotlin.Unit>, onCancel: kotlin.Function0<kotlin.Unit>): kotlin.Unit
-  skippable: true
-  restartable: true
-  params:
-    - onDiscardAndDelete: STABLE (function type)
-    - onCancel: STABLE (function type)
 
 @Composable
 private fun com.finnvek.knittools.ui.screens.project.ProjectListContent(state: com.finnvek.knittools.ui.screens.project.ProjectListContentState, actions: com.finnvek.knittools.ui.screens.project.ProjectListContentActions): kotlin.Unit

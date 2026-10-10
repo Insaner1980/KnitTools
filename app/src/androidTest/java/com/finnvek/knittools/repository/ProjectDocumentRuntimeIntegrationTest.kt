@@ -17,6 +17,10 @@ import com.finnvek.knittools.data.local.PatternBookmarkEntity
 import com.finnvek.knittools.data.local.ProjectDocumentSchemaConstraints
 import com.finnvek.knittools.data.local.RoomDatabaseTransactionRunner
 import com.finnvek.knittools.data.storage.PdfPageRenderer
+import com.finnvek.knittools.domain.model.FreehandPayload
+import com.finnvek.knittools.domain.model.NormalizedPatternPoint
+import com.finnvek.knittools.domain.model.PatternAnnotationKind
+import com.finnvek.knittools.domain.model.PatternAnnotationPayloadCodec
 import com.finnvek.knittools.domain.model.ProjectDocument
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
@@ -282,16 +286,30 @@ class ProjectDocumentRuntimeIntegrationTest {
     private fun annotation(
         layerId: Long,
         zIndex: Long,
-    ) = PatternAnnotationEntity(
-        layerId = layerId,
-        page = 0,
-        kind = "FREEHAND",
-        payloadVersion = 1,
-        payloadJson = "{}",
-        zIndex = zIndex,
-        createdAt = System.currentTimeMillis(),
-        updatedAt = System.currentTimeMillis(),
-    )
+    ): PatternAnnotationEntity {
+        // Lukupolku hylkää dekoodautumattoman payloadin, joten fixture on oikea vapaakäsiviiva.
+        val payload =
+            requireNotNull(
+                PatternAnnotationPayloadCodec.encode(
+                    PatternAnnotationKind.FREEHAND,
+                    FreehandPayload(
+                        listOf(NormalizedPatternPoint(0.1f, 0.1f), NormalizedPatternPoint(0.9f, 0.9f)),
+                        0,
+                        2f,
+                    ),
+                ),
+            )
+        return PatternAnnotationEntity(
+            layerId = layerId,
+            page = 0,
+            kind = PatternAnnotationKind.FREEHAND.name,
+            payloadVersion = payload.payloadVersion,
+            payloadJson = payload.payloadJson,
+            zIndex = zIndex,
+            createdAt = System.currentTimeMillis(),
+            updatedAt = System.currentTimeMillis(),
+        )
+    }
 
     private companion object {
         private const val TEST_DATABASE = "project-document-runtime.db"

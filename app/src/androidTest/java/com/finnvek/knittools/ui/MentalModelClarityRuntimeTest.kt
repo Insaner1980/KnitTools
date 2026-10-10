@@ -113,14 +113,19 @@ class MentalModelClarityRuntimeTest {
             } else {
                 text(R.string.saved_pattern_detail_remove_confirm)
             }
-        rule.onNodeWithText(action).performScrollTo().performClick()
+        val moreOptions = text(R.string.more_options)
+        // Poisto on kaavan sivun ylivuotovalikossa.
+        rule.onNodeWithContentDescription(moreOptions).performClick()
+        rule.onNodeWithText(action).performClick()
         capture("delete-${source.name}")
         assertReadable(message)
         rule.onNodeWithText(message).performTouchInput { swipeUp() }
         capture("delete-${source.name}-scrolled")
         rule.onNodeWithText(text(R.string.cancel)).assertIsDisplayed().performClick()
         rule.runOnIdle { assertEquals(0, deleted) }
+        rule.onNodeWithContentDescription(moreOptions).performClick()
         rule.onNodeWithText(action).performClick()
+        // Ravelry-ohjeen dialogin otsikko ja vahvistus ovat samaa tekstiä; vahvistus on viimeinen.
         rule
             .onAllNodesWithText(action)
             .onLast()

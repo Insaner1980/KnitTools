@@ -13,6 +13,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.test.platform.app.InstrumentationRegistry
 import com.finnvek.knittools.R
+import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.domain.model.SavedPattern
 import com.finnvek.knittools.domain.model.SavedPatternSource
 import com.finnvek.knittools.repository.SavedPatternMetadataMutationResult
@@ -50,11 +51,14 @@ class SavedPatternDetailWebScreenTest {
                     pattern = webPattern(),
                     onBack = {},
                     onOpenPattern = {},
-                    onAttachToProject = { attached += 1 },
-                    onAttachWebPattern = { expectedId, onResult ->
+                    onAttachToProject = { _, _ -> },
+                    projects = listOf(PROJECT),
+                    onAttachWebPattern = { projectId, expectedId, onResult ->
+                        assertEquals(PROJECT.id, projectId)
                         expectedIds += expectedId
                         callbacks += onResult
                     },
+                    onOpenProject = { attached += 1 },
                     onRemove = {},
                 )
             }
@@ -62,8 +66,10 @@ class SavedPatternDetailWebScreenTest {
         composeRule.runOnUiThread { composeRule.activity.setContent(content = content) }
         val attachLabel = context.getString(R.string.web_pattern_attach)
         composeRule.onNodeWithText(attachLabel).performScrollTo().performClick()
+        chooseProject()
         recreate(content)
         composeRule.onNodeWithText(attachLabel).performScrollTo().performClick()
+        chooseProject()
         composeRule.runOnIdle {
             assertEquals(listOf<Long?>(null), expectedIds)
             callbacks.single()(firstResult)
@@ -93,6 +99,7 @@ class SavedPatternDetailWebScreenTest {
                 composeRule.onNodeWithText(context.getString(R.string.web_pattern_save_failed)).assertIsDisplayed()
                 composeRule.runOnIdle { assertEquals(0, attached) }
                 composeRule.onNodeWithText(attachLabel).performScrollTo().performClick()
+                chooseProject()
                 composeRule.runOnIdle {
                     assertEquals(listOf(null, null), expectedIds)
                     callbacks.last()(SavedPatternMetadataMutationResult.Attached(7L))
@@ -102,6 +109,10 @@ class SavedPatternDetailWebScreenTest {
         composeRule.runOnIdle { assertEquals(1, attached) }
         recreate(content)
         composeRule.runOnIdle { assertEquals(1, attached) }
+    }
+
+    private fun chooseProject() {
+        composeRule.onNodeWithText(PROJECT.name).performClick()
     }
 
     private fun recreate(content: @Composable () -> Unit) {
@@ -127,10 +138,12 @@ class SavedPatternDetailWebScreenTest {
                         ExternalWebLinkOpenResult.Opened
                     },
                     onEditWebPattern = { edited += 1 },
-                    onAttachToProject = { attached += 1 },
-                    onAttachWebPattern = { _, onResult ->
+                    onAttachToProject = { _, _ -> },
+                    projects = listOf(PROJECT),
+                    onAttachWebPattern = { _, _, onResult ->
                         onResult(SavedPatternMetadataMutationResult.Attached(7L))
                     },
+                    onOpenProject = { attached += 1 },
                     onRemove = { removed += 1 },
                 )
             }
@@ -144,6 +157,7 @@ class SavedPatternDetailWebScreenTest {
         composeRule.onNodeWithContentDescription(context.getString(R.string.more_options)).performClick()
         composeRule.onNodeWithText(context.getString(R.string.web_pattern_edit)).performClick()
         composeRule.onNodeWithText(context.getString(R.string.web_pattern_attach)).performClick()
+        chooseProject()
         composeRule.runOnIdle {
             assertEquals(listOf("https://example.com/Pattern?Size=XL#Notes"), opened)
             assertEquals(1, edited)
@@ -180,8 +194,10 @@ class SavedPatternDetailWebScreenTest {
                     onBack = {},
                     onOpenPattern = {},
                     onEditWebPattern = {},
-                    onAttachToProject = { attached += 1 },
-                    onAttachWebPattern = { expectedId, onResult ->
+                    onAttachToProject = { _, _ -> },
+                    projects = listOf(PROJECT),
+                    onOpenProject = { attached += 1 },
+                    onAttachWebPattern = { _, expectedId, onResult ->
                         expectedIds += expectedId
                         onResult(
                             if (expectedId == null) {
@@ -197,6 +213,7 @@ class SavedPatternDetailWebScreenTest {
         }
 
         composeRule.onNodeWithText(context.getString(R.string.web_pattern_attach)).performClick()
+        chooseProject()
         composeRule.onNodeWithText(context.getString(R.string.web_pattern_replace_confirm_title)).assertIsDisplayed()
         composeRule.runOnIdle { assertEquals(0, attached) }
 
@@ -216,4 +233,8 @@ class SavedPatternDetailWebScreenTest {
             originalUrl = "https://example.com/Pattern?Size=XL#Notes",
             canonicalUrl = "https://example.com/Pattern?Size=XL#Notes",
         )
+
+    private companion object {
+        val PROJECT = CounterProject(id = 42L, name = "Sukat")
+    }
 }

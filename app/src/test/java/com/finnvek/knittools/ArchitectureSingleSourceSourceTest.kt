@@ -99,19 +99,6 @@ class ArchitectureSingleSourceSourceTest {
     }
 
     @Test
-    fun `pattern info labels use string resources`() {
-        val ravelryDetailScreen = ProjectSourceFiles.read(RAVELRY_DETAIL_SCREEN)
-
-        assertFalse(ravelryDetailScreen.contains("label = \"Yardage\""))
-        assertFalse(ravelryDetailScreen.contains("value = \"${'$'}it yards\""))
-        assertTrue(ravelryDetailScreen.contains("R.string.pattern_detail_yardage"))
-        assertTrue(
-            Regex("""pluralStringResource\(\s*R\.plurals\.yardage_format,\s*it,\s*it\s*\)""")
-                .containsMatchIn(ravelryDetailScreen),
-        )
-    }
-
-    @Test
     fun `top level navigation start routes reuse screen routes`() {
         val screen = ProjectSourceFiles.read(SCREEN)
 
@@ -209,7 +196,5 @@ class ArchitectureSingleSourceSourceTest {
             "app/src/main/java/com/finnvek/knittools/ui/screens/counter/PhotoComponents.kt"
         private const val SCREEN =
             "app/src/main/java/com/finnvek/knittools/ui/navigation/Screen.kt"
-        private const val RAVELRY_DETAIL_SCREEN =
-            "app/src/main/java/com/finnvek/knittools/ui/screens/ravelry/RavelryDetailScreen.kt"
     }
 }

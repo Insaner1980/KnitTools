@@ -99,8 +99,10 @@ class WebPatternLocalizationArchitectureContractTest {
             setOf(".widget.CounterWidgetActions", "androidx.core.content.FileProvider"),
             exportedComponentNames(manifest, exported = "false"),
         )
-        assertEquals(1, Regex("android.intent.action.SEND").findAll(manifest).count())
+        // Kaksi jakokohdetta: verkko-ohjeen linkki (text/plain) ja ladattu PDF-ohje (application/pdf).
+        assertEquals(2, Regex("android.intent.action.SEND").findAll(manifest).count())
         assertEquals(1, Regex("android:mimeType=\"text/plain\"").findAll(manifest).count())
+        assertEquals(1, Regex("android:mimeType=\"application/pdf\"").findAll(manifest).count())
         assertEquals(
             setOf(
                 "progress_photos" to "progress_photos/",
@@ -121,11 +123,24 @@ class WebPatternLocalizationArchitectureContractTest {
         val proFeatures = balancedContentAfter(proState, "enum class ProFeature", '{', '}')
         assertFalse(proFeatures.contains("WEB_"))
 
+        // Verkko-ohje avataan alkuperäisellä sivustolla sovelluksen ulkopuolella. Ainoa WebView on
+        // Ravelry-selain, jossa Download PDF tallentuu suoraan sovellukseen (config/security-decisions.md).
+        val productionSources = sourceFilesUnder("app/src/main/java")
+        val ravelryBrowser = productionSources.filter { it.contains("fun RavelryBrowserScreen(") }
+        assertEquals(1, ravelryBrowser.size)
+        // Ravelry-selaimelle sallitaan vain WebView-importit; muut kielletyt riippuvuudet tarkistetaan siltäkin.
+        val ravelryBrowserWithoutAllowedImports =
+            ravelryBrowser
+                .single()
+                .lines()
+                .filterNot { line ->
+                    line.trim() in setOf("import android.webkit.WebView", "import android.webkit.WebViewClient")
+                }.joinToString("\n")
         val dependencyAndProductionSources =
             listOf(
                 ProjectSourceFiles.read("app/build.gradle.kts"),
                 ProjectSourceFiles.read("gradle/libs.versions.toml"),
-            ) + sourceFilesUnder("app/src/main/java")
+            ) + (productionSources - ravelryBrowser.toSet()) + ravelryBrowserWithoutAllowedImports
         val dependencyAndProductionText = dependencyAndProductionSources.joinToString("\n")
         forbiddenImplementationTokens.forEach { token ->
             assertFalse("Web pattern V1 must not introduce $token", dependencyAndProductionText.contains(token))

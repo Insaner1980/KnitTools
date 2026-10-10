@@ -24,7 +24,7 @@ Odotetut sopimusarvot, varmistettu nykyisista lahdetiedostoista:
 - FileProvider rootit: files-path progress_photos -> progress_photos/ ja files-path pattern_captures -> pattern_captures/.
   yarn_photos, pattern_pdfs, broad files/cache/external roots ja external storage roots eivat kuulu jaettuun pintaan.
 - Release signing gate riippuu KNITTOOLS_* signing -ymparistomuuttujista.
-- Firebase Auth/Functions ja Google Services ovat sallittuja vain Ravelry-backendia varten.
+- Google Services -konfiguraatio on sallittu vain Firebase Crashlyticsia varten; Firebase Auth/Functions eivat kuulu Androidiin.
   Firebase Crashlytics SDK ja Gradle-plugin ovat sallittuja julkaisuversion kaatumisraportointiin.
   app/google-services.json saa olla paikallinen ignoroitu tiedosto, ja debug-build voi luoda
   app/src/debug/google-services.json -placeholderin, mutta kumpikaan ei saa olla git-indexissa.
@@ -35,7 +35,7 @@ Odotetut sopimusarvot, varmistettu nykyisista lahdetiedostoista:
   resursseissa, BuildConfig/generoiduissa vakioissa, Gradle-tiedostoissa, manifesteissa, testeissa, APK:ssa tai AAB:ssa.
 - Room-version luetaan @Database-annotaatiosta. Schema exportin pitaa olla paalla, N.json pitaa loytya,
   ja auto/manual-migraatiopolun pitaa ulottua varhaisimmasta exportoidusta schemasta versioon N.
-- Widget counter launch on CounterLaunchTokenStore-tokenilla rajattu, ja OAuth callback ei saa muodostaa counter launchia.
+- Widget counter launch on CounterLaunchTokenStore-tokenilla rajattu, eikä poistettua Ravelry-OAuth-callbackia saa palauttaa.
 - locales_config.xml ja app/src/main/res/values* kielihakemistot ovat pariteetissa; default values vastaa localea en.
 #>
 
@@ -551,10 +551,8 @@ function Test-FirebaseBoundary {
         $requiredAnchors = @(
             [pscustomobject]@{ Path = "app/build.gradle.kts"; Text = $appGradle; Anchor = 'apply(plugin = "com.google.gms.google-services")' },
             [pscustomobject]@{ Path = "app/build.gradle.kts"; Text = $appGradle; Anchor = "implementation(platform(libs.firebase.bom))" },
-            [pscustomobject]@{ Path = "app/build.gradle.kts"; Text = $appGradle; Anchor = "implementation(libs.firebase.auth)" },
-            [pscustomobject]@{ Path = "app/build.gradle.kts"; Text = $appGradle; Anchor = "implementation(libs.firebase.functions)" },
-            [pscustomobject]@{ Path = "gradle/libs.versions.toml"; Text = $catalog; Anchor = 'firebase-auth = { group = "com.google.firebase", name = "firebase-auth" }' },
-            [pscustomobject]@{ Path = "gradle/libs.versions.toml"; Text = $catalog; Anchor = 'firebase-functions = { group = "com.google.firebase", name = "firebase-functions" }' },
+            [pscustomobject]@{ Path = "app/build.gradle.kts"; Text = $appGradle; Anchor = "implementation(libs.firebase.crashlytics)" },
+            [pscustomobject]@{ Path = "gradle/libs.versions.toml"; Text = $catalog; Anchor = 'firebase-crashlytics = { group = "com.google.firebase", name = "firebase-crashlytics" }' },
             [pscustomobject]@{ Path = "gradle/libs.versions.toml"; Text = $catalog; Anchor = 'google-services = { id = "com.google.gms.google-services"' }
         )
 
@@ -571,7 +569,7 @@ function Test-FirebaseBoundary {
         if ($problems.Count -gt 0) {
             Add-Fail -Check $check -Message ($problems -join "; ") -RelativePath $firstPath -Line $firstLine
         } else {
-            Add-Pass -Check $check -Message "Firebase Auth/Functions and ignored Google Services config match contract"
+            Add-Pass -Check $check -Message "Firebase Crashlytics and ignored Google Services config match contract"
         }
     } catch {
         Add-Fail -Check $check -Message $_.Exception.Message -RelativePath $firstPath -Line $firstLine
@@ -708,7 +706,7 @@ function Test-ForbiddenDependencies {
 
                 if ($line.Text -match '^\s*(implementation|api|runtimeOnly|compileOnly|debugImplementation|releaseImplementation|testImplementation|androidTestImplementation)\s*\(\s*libs\.firebase\.([A-Za-z0-9_.-]+)') {
                     $alias = $Matches[2]
-                    if ($alias -notin @("bom", "auth", "functions", "crashlytics")) {
+                    if ($alias -notin @("bom", "crashlytics")) {
                         $problems += "unapproved Firebase dependency alias '$alias' found in $file"
                         if ($null -eq $firstLine) {
                             $firstPath = $file
@@ -719,7 +717,7 @@ function Test-ForbiddenDependencies {
 
                 if ($file -eq "gradle/libs.versions.toml" -and $line.Text -match '^\s*(firebase[-A-Za-z0-9_.]*)\s*=') {
                     $key = $Matches[1]
-                    if ($key -notin @("firebaseBom", "firebase-bom", "firebase-auth", "firebase-functions", "firebase-crashlytics")) {
+                    if ($key -notin @("firebaseBom", "firebase-bom", "firebase-crashlytics")) {
                         $problems += "unapproved Firebase catalog entry '$key' found in $file"
                         if ($null -eq $firstLine) {
                             $firstPath = $file
@@ -728,7 +726,7 @@ function Test-ForbiddenDependencies {
                     }
                 }
 
-                if ($line.Text -match 'com\.google\.firebase' -and $line.Text -notmatch 'firebase-(bom|auth|functions|crashlytics)"|com\.google\.firebase\.crashlytics"|^import com\.google\.firebase\.crashlytics\.buildtools\.gradle\.CrashlyticsExtension$') {
+                if ($line.Text -match 'com\.google\.firebase' -and $line.Text -notmatch 'firebase-(bom|crashlytics)"|com\.google\.firebase\.crashlytics"|^import com\.google\.firebase\.crashlytics\.buildtools\.gradle\.CrashlyticsExtension$') {
                     $problems += "unapproved direct Firebase dependency found in $file"
                     if ($null -eq $firstLine) {
                         $firstPath = $file
@@ -1163,10 +1161,12 @@ function Test-WidgetOAuthBoundary {
     $check = "widget-oauth-boundary"
     $mainPath = "app/src/main/java/com/finnvek/knittools/MainActivity.kt"
     $requestPath = "app/src/main/java/com/finnvek/knittools/ui/navigation/CounterLaunchRequest.kt"
+    $manifestPath = "app/src/main/AndroidManifest.xml"
 
     try {
         $mainText = Read-TextFile $mainPath
         $requestText = Read-TextFile $requestPath
+        $manifestText = Read-TextFile $manifestPath
         $warnings = @()
         $firstPath = $mainPath
         $firstLine = $null
@@ -1174,7 +1174,6 @@ function Test-WidgetOAuthBoundary {
         $anchors = @(
             [pscustomobject]@{ Path = $mainPath; Text = $mainText; Pattern = "CounterLaunchTokenStore.consumeLaunchId"; Message = "token store consumption symbol not found" },
             [pscustomobject]@{ Path = $mainPath; Text = $mainText; Pattern = "CounterLaunchTokenStore.issueLaunchId"; Message = "token issue symbol not found" },
-            [pscustomobject]@{ Path = $requestPath; Text = $requestText; Pattern = "if (intentData.isOAuthCallback) return null"; Message = "OAuth callback null guard not found" },
             [pscustomobject]@{ Path = $requestPath; Text = $requestText; Pattern = "if (!intentData.isTrustedCounterLaunch) return null"; Message = "trusted launch guard not found" }
         )
 
@@ -1188,26 +1187,26 @@ function Test-WidgetOAuthBoundary {
             }
         }
 
-        $start = $mainText.IndexOf("private fun handleOAuthCallbackIfNeeded")
-        $end = $mainText.IndexOf("private fun clearOAuthCallbackIntent")
-        if ($start -ge 0 -and $end -gt $start) {
-            $oauthBody = $mainText.Substring($start, $end - $start)
-            if ($oauthBody -match 'toCounterLaunchRequest|CounterLaunchRequest\s*\(|createCounterLaunchIntent') {
-                $line = Get-LineNumber -RelativePath $mainPath -Pattern "handleOAuthCallbackIfNeeded"
-                Add-Fail -Check $check -Message "OAuth callback handling directly touches counter launch construction path" -RelativePath $mainPath -Line $line
+        # Ravelry-OAuth poistettiin Androidista 2026-10-09: paluuosoite ei saa palata, koska
+        # se ohittaisi laskurin avauksen token-portin ja toisi kirjautumisen takaisin sovellukseen.
+        $oauthSurfaces = @(
+            [pscustomobject]@{ Path = $mainPath; Text = $mainText; Pattern = "handleOAuthCallbackIfNeeded" },
+            [pscustomobject]@{ Path = $mainPath; Text = $mainText; Pattern = "isOAuthCallback" },
+            [pscustomobject]@{ Path = $requestPath; Text = $requestText; Pattern = "isOAuthCallback" },
+            [pscustomobject]@{ Path = $manifestPath; Text = $manifestText; Pattern = "ravelry-auth-complete" }
+        )
+        foreach ($surface in $oauthSurfaces) {
+            if ($surface.Text.Contains($surface.Pattern)) {
+                $line = Get-LineNumber -RelativePath $surface.Path -Pattern ([regex]::Escape($surface.Pattern))
+                Add-Fail -Check $check -Message "removed OAuth callback surface '$($surface.Pattern)' is back in $($surface.Path)" -RelativePath $surface.Path -Line $line
                 return
-            }
-        } else {
-            $warnings += "OAuth callback handler bounds could not be parsed"
-            if ($null -eq $firstLine) {
-                $firstLine = Get-LineNumber -RelativePath $mainPath -Pattern "OAuth|oauth"
             }
         }
 
         if ($warnings.Count -gt 0) {
             Add-Warn -Check $check -Message (($warnings -join "; ") + "; static drift detector only") -RelativePath $firstPath -Line $firstLine
         } else {
-            Add-Pass -Check $check -Message "token gate anchors and OAuth null-guard present"
+            Add-Pass -Check $check -Message "token gate anchors present and no OAuth callback surface"
         }
     } catch {
         Add-Warn -Check $check -Message ("manual review needed: " + $_.Exception.Message) -RelativePath $mainPath

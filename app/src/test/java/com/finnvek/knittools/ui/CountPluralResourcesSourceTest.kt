@@ -42,7 +42,6 @@ class CountPluralResourcesSourceTest {
                 "delete_n_projects",
                 "delete_yarn_cards_confirm",
                 "stitches_result",
-                "yardage_format",
             )
         val SOURCE_USAGES =
             listOf(
@@ -64,8 +63,6 @@ class CountPluralResourcesSourceTest {
                     "delete_yarn_cards_confirm",
                 "app/src/main/java/com/finnvek/knittools/ui/screens/caston/CastOnScreen.kt" to
                     "stitches_result",
-                "app/src/main/java/com/finnvek/knittools/ui/screens/ravelry/RavelryDetailScreen.kt" to
-                    "yardage_format",
             )
     }
 }

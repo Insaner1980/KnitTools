@@ -95,6 +95,7 @@
     <string name="counter_decrease_repeat">Herhaling aftrekken</string>
     <string name="counter_add_custom">%1$s toevoegen</string>
     <string name="counter_decrease_custom">%1$s aftrekken</string>
+    <string name="project_picker_empty">Nog geen projecten. Maak er een aan bij Projecten.</string>
     <string name="no_active_projects">Geen actieve projecten</string>
     <string name="no_completed_projects">Nog geen voltooide projecten</string>
     <string name="delete_project">Verwijderen</string>
@@ -652,21 +653,9 @@
 
     <!-- Ravelry -->
     <string name="tool_ravelry">Ravelry</string>
-    <string name="desc_ravelry">Zoek patronen en sla favorieten op</string>
-    <string name="ravelry_saved_patterns">Opgeslagen patronen</string>
-    <string name="start_project">Project starten</string>
-    <string name="save_pattern">Patroon opslaan</string>
-    <string name="ravelry_save_pattern_explanation">Slaat de patroongegevens op in je Bibliotheek. Er wordt geen PDF gedownload.</string>
-    <string name="ravelry_open_saved_pattern">Openen</string>
+    <string name="desc_ravelry">Blader door patronen en sla pdf\'s op in KnitTools</string>
     <string name="open_in_ravelry">Openen in Ravelry</string>
-    <string name="pattern_saved">Patroon opgeslagen</string>
-    <string name="search_hint">Zoek naar patronen…</string>
-    <string name="ravelry_import_loading">Patroon laden</string>
-    <string name="ravelry_import_title">Dit patroon opslaan?</string>
-    <string name="ravelry_import_already_saved">Patroon al opgeslagen</string>
-    <string name="ravelry_import_needs_sign_in">Log in met Ravelry om dit patroon op te slaan.</string>
     <string name="ravelry_import_could_not_import">Dit patroon kon niet worden geïmporteerd.</string>
-    <string name="ravelry_import_backend_unavailable">Ravelry-import is tijdelijk niet beschikbaar.</string>
     <string name="saved_pattern_detail_pdf_attached">PDF gekoppeld</string>
     <string name="saved_pattern_detail_available_offline">Offline beschikbaar</string>
     <string name="saved_pattern_detail_open_on_ravelry">Openen op Ravelry</string>
@@ -675,34 +664,10 @@
     <string name="saved_pattern_detail_open_pattern">Patroon openen</string>
     <string name="saved_pattern_detail_attach_to_project">Aan project koppelen</string>
     <string name="saved_pattern_detail_remove_confirm">Dit opgeslagen patroon uit de bibliotheek verwijderen?\n\nEventuele PDF-annotaties die in de bibliotheek voor dit patroon zijn gemaakt, worden ook verwijderd en zijn niet meer zichtbaar in projecten. PDF-bestanden die al aan projecten zijn gekoppeld en PDF-annotaties die binnen projecten zijn gemaakt, blijven behouden.</string>
-    <string name="filter_weight">Dikte</string>
-    <string name="filter_difficulty">Moeilijkheidsgraad</string>
     <string name="free">Gratis</string>
     <string name="paid">Betaald</string>
     <string name="availability_unknown">Beschikbaarheid onbekend</string>
-    <string name="no_results">Geen patronen gevonden</string>
-    <string name="search_error">Patronen konden niet worden geladen. Controleer je internetverbinding.</string>
-    <string name="ravelry_search_rate_limited">Ravelry beperkt zoekopdrachten. Probeer het later opnieuw.</string>
-    <string name="ravelry_search_auth_error">De Ravelry-inlog kon niet worden gebruikt. Log opnieuw in en probeer het opnieuw.</string>
-    <string name="ravelry_search_service_error">Ravelry is tijdelijk niet beschikbaar. Probeer het later opnieuw.</string>
-    <string name="ravelry_sign_in">Inloggen met Ravelry</string>
-    <string name="ravelry_browse">Ravelry verkennen</string>
-    <string name="ravelry_disconnect">Ravelry loskoppelen</string>
-    <string name="ravelry_disconnect_confirm">Ravelry loskoppelen? Je moet opnieuw inloggen om de Ravelry-functies te gebruiken.</string>
-    <string name="ravelry_not_connected">Log in om Ravelry-patronen vanuit KnitTools te zoeken.</string>
-    <string name="ravelry_connecting">Verbinden met Ravelry…</string>
-    <string name="ravelry_auth_pending">Voltooi de Ravelry-login in de browser.</string>
-    <string name="ravelry_connected">Verbonden met Ravelry</string>
-    <string name="ravelry_connected_as">Verbonden als %1$s</string>
-    <string name="ravelry_auth_cancelled">Ravelry-login is geannuleerd.</string>
-    <string name="ravelry_auth_expired">Ravelry-login is verlopen. Log opnieuw in.</string>
-    <string name="ravelry_backend_unavailable">Ravelry-verbinding is tijdelijk niet beschikbaar.</string>
-    <string name="ravelry_disconnecting">Verbinding met Ravelry verbreken…</string>
     <string name="difficulty_format">%.1f / 5</string>
-    <plurals name="yardage_format">
-        <item quantity="one">%d yard</item>
-        <item quantity="other">%d yard</item>
-    </plurals>
 
     <!-- Info tips -->
     <string name="tip_pattern_repeat_title">Patroonherhaling</string>
@@ -730,8 +695,6 @@
     <string name="row_label_with_target">%1$d / %2$d</string>
     <string name="widget_undo_action">Ongedaan maken</string>
     <string name="widget_undo_content_description">Laatste wijziging ongedaan maken</string>
-    <string name="search_more_error">Kan niet meer patronen laden. Controleer je internetverbinding.</string>
-    <string name="pattern_detail_error">Kan patroondetails niet laden. Controleer je internetverbinding.</string>
     <string name="project_actions_title">Projectacties</string>
     <string name="project_actions_section_counter_tools">Tellerhulpmiddelen</string>
     <string name="project_content_title">Project</string>
@@ -744,12 +707,7 @@
 
     <!-- Täydennetyt lokalisoidut käyttöliittymätekstit -->
     <string name="yarn_card_number_fallback">Garen #%1$d</string>
-    <string name="pattern_detail_needles">Naalden</string>
-    <string name="pattern_detail_yardage">Looplengte</string>
-    <string name="pattern_detail_sizes">Maten</string>
-    <string name="pattern_saved_to_library">Opgeslagen in bibliotheek</string>
     <string name="show_more">Laat meer zien</string>
-    <string name="show_less">Laat minder zien</string>
     <string name="pro_start_free_trial">Gratis proefperiode starten</string><string name="pro_start_14_day_trial">Gratis proefperiode van 14 dagen starten</string><string name="pro_trial_start_failed">De proefperiode kon niet worden gestart. Probeer het opnieuw.</string>
     <string name="pro_prompt_not_now">Niet nu</string><string name="pro_prompt_see_pro">Pro bekijken</string><string name="pro_prompt_trial_body">Start je gratis Pro-proefperiode van 14 dagen. Er is geen betaalmethode nodig. Alles wat je maakt, blijft na de proefperiode beschikbaar.</string>
     <string name="pro_prompt_reactivation_title">Activeer dit project opnieuw met Pro</string>
@@ -1040,6 +998,18 @@
     <string name="web_pattern_delete_confirm_title">Webpatroon verwijderen?</string>
     <string name="web_pattern_delete_confirm_message">%1$s uit Opgeslagen patronen in de bibliotheek verwijderen?\n\nEventuele PDF-annotaties die in de bibliotheek voor dit patroon zijn gemaakt, worden ook verwijderd en zijn niet meer zichtbaar in projecten. PDF-bestanden die al aan projecten zijn gekoppeld en PDF-annotaties die binnen projecten zijn gemaakt, blijven behouden.</string>
     <string name="web_pattern_attach">Aan project koppelen</string>
+    <string name="pattern_mark_up">Markeren</string>
+    <string name="pattern_mark_up_done">Klaar</string>
+    <string name="incoming_pdf_title">Patroon opslaan</string>
+    <string name="incoming_pdf_other_section">Of</string>
+    <string name="incoming_pdf_new_project">Nieuw project starten</string>
+    <string name="incoming_pdf_library_only">Alleen in Bibliotheek opslaan</string>
+    <string name="incoming_pdf_open_failed">Kan de pdf niet openen</string>
+    <string name="incoming_pdf_save_failed">Kan het patroon niet opslaan</string>
+    <string name="ravelry_browser_hint">Open een patroon en tik op Download PDF om het in KnitTools op te slaan.</string>
+    <string name="ravelry_purchase_in_browser">Afrekenen opent in je browser. Download het patroon na de aankoop hier uit je Ravelry-bibliotheek.</string>
+    <string name="incoming_pdf_downloading">Patroon downloaden…</string>
+    <string name="incoming_pdf_not_pdf">Alleen pdf-patronen kunnen worden opgeslagen</string>
     <string name="web_pattern_unlink">Patroongegevens ontkoppelen</string>
     <string name="web_pattern_replace_confirm_title">Patroongegevens vervangen?</string>
     <string name="web_pattern_replace_confirm_message">De huidige patroongegevens vervangen door %1$s?</string>

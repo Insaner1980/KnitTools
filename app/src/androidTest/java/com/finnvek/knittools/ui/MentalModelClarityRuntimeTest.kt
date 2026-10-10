@@ -25,43 +25,21 @@ import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeUp
 import androidx.compose.ui.text.TextLayoutResult
-import androidx.lifecycle.SavedStateHandle
-import androidx.lifecycle.ViewModelStore
-import androidx.room.Room
 import androidx.test.platform.app.InstrumentationRegistry
 import com.finnvek.knittools.R
-import com.finnvek.knittools.auth.RavelryAuthManager
-import com.finnvek.knittools.data.local.KnitToolsDatabase
-import com.finnvek.knittools.data.local.RoomDatabaseTransactionRunner
-import com.finnvek.knittools.data.remote.PatternDetail
-import com.finnvek.knittools.data.remote.PatternSearchParams
-import com.finnvek.knittools.data.remote.PatternSearchResponse
-import com.finnvek.knittools.data.remote.RavelryApiService
-import com.finnvek.knittools.data.remote.RavelryBackendAuthStatus
-import com.finnvek.knittools.data.remote.RavelryBackendClient
-import com.finnvek.knittools.data.remote.RavelryBackendCurrentUser
-import com.finnvek.knittools.data.remote.RavelryStartAuthResponse
 import com.finnvek.knittools.domain.model.ProjectYarnNote
 import com.finnvek.knittools.domain.model.ProjectYarnUsageItem
 import com.finnvek.knittools.domain.model.SavedPattern
 import com.finnvek.knittools.domain.model.SavedPatternSource
 import com.finnvek.knittools.domain.model.YarnUsageSource
 import com.finnvek.knittools.pro.ProStatus
-import com.finnvek.knittools.repository.RavelryRepository
-import com.finnvek.knittools.repository.SavedPatternRepository
 import com.finnvek.knittools.ui.screens.counter.YarnManagementSheet
 import com.finnvek.knittools.ui.screens.counter.YarnManagementSheetActions
 import com.finnvek.knittools.ui.screens.library.SavedPatternDetailScreen
 import com.finnvek.knittools.ui.screens.library.SavedPatternsActions
 import com.finnvek.knittools.ui.screens.library.SavedPatternsScreen
 import com.finnvek.knittools.ui.screens.library.SavedPatternsState
-import com.finnvek.knittools.ui.screens.ravelry.RavelryDetailScreen
-import com.finnvek.knittools.ui.screens.ravelry.RavelryViewModel
 import com.finnvek.knittools.ui.theme.KnitToolsTheme
-import com.finnvek.knittools.widget.WidgetEntryPoint
-import dagger.hilt.android.EntryPointAccessors
-import kotlinx.coroutines.Dispatchers
-import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -77,15 +55,7 @@ class MentalModelClarityRuntimeTest {
     private val language = arguments.getString("clarityLocale", "en")
     private val dark = arguments.getString("clarityDark", "false").toBoolean()
     private val context get() = rule.activity
-    private val store = ViewModelStore()
-    private var database: KnitToolsDatabase? = null
     private val title = "Cable cardigan with a long descriptive pattern title for winter evenings"
-
-    @After
-    fun closeFixtures() {
-        rule.runOnUiThread { store.clear() }
-        database?.close()
-    }
 
     private fun render(content: @Composable () -> Unit) {
         rule.setContent {
@@ -123,7 +93,7 @@ class MentalModelClarityRuntimeTest {
                 pattern = pattern(source),
                 onBack = {},
                 onOpenPattern = {},
-                onAttachToProject = {},
+                onAttachToProject = { _, _ -> },
                 onRemove = { deleted++ },
             )
         }
@@ -189,7 +159,7 @@ class MentalModelClarityRuntimeTest {
     @Test fun savedPdfStates() {
         val current = mutableStateOf(pattern())
         render {
-            SavedPatternDetailScreen(current.value, {}, {}, {}, {})
+            SavedPatternDetailScreen(current.value, {}, {}, { _, _ -> }, {})
         }
         val explanation = text(R.string.saved_pattern_detail_no_pdf_explanation)
         rule.onNodeWithText(explanation).performScrollTo()
@@ -261,43 +231,6 @@ class MentalModelClarityRuntimeTest {
         capture("yarn-third-entry")
     }
 
-    @Test fun unsavedRavelryDetail() {
-        val db = Room.inMemoryDatabaseBuilder(context, KnitToolsDatabase::class.java).build()
-        database = db
-        val backend = SyntheticRavelryBackend()
-        val entry = EntryPointAccessors.fromApplication(context.applicationContext, WidgetEntryPoint::class.java)
-        val savedRepository =
-            SavedPatternRepository(
-                db.savedPatternDao(),
-                context,
-                db.counterProjectDao(),
-                RoomDatabaseTransactionRunner(db),
-                Dispatchers.IO,
-            )
-        val vm =
-            RavelryViewModel(
-                RavelryRepository(RavelryApiService(backend), savedRepository, entry.counterRepository()),
-                entry.proManager(),
-                RavelryAuthManager(backend),
-                SavedStateHandle(),
-            )
-        store.put("ravelry", vm)
-        render { RavelryDetailScreen(42, {}, {}, viewModelProvider = { vm }) }
-        rule.waitUntil(15_000) { vm.patternDetail.value != null && !vm.isDetailLoading.value }
-        val explanation = text(R.string.ravelry_save_pattern_explanation)
-        rule.onNodeWithText(explanation).performScrollTo()
-        capture("ravelry-before-save")
-        assertReadable(explanation)
-        rule
-            .onNodeWithText(text(R.string.save_pattern))
-            .performScrollTo()
-            .assertIsEnabled()
-            .performClick()
-        rule.waitUntil(15_000) { vm.isPatternSaved.value }
-        rule.onAllNodesWithText(explanation).assertCountEquals(0)
-        capture("ravelry-after-save")
-    }
-
     private fun assertReadable(value: String) {
         val layouts = mutableListOf<TextLayoutResult>()
         rule
@@ -318,26 +251,4 @@ class MentalModelClarityRuntimeTest {
         }
         screenshot.recycle()
     }
-}
-
-private class SyntheticRavelryBackend : RavelryBackendClient {
-    override suspend fun authStatus() = RavelryBackendAuthStatus(true, "Synthetic tester")
-
-    override suspend fun importPatternById(ravelryPatternId: Int) =
-        PatternDetail(id = ravelryPatternId, name = "Synthetic cable cardigan", permalink = "test")
-
-    override suspend fun startAuth(): RavelryStartAuthResponse = error("External auth is forbidden in this fixture")
-
-    override suspend fun completeAuth(
-        state: String,
-        proof: String,
-    ): Unit = error("External auth is forbidden in this fixture")
-
-    override suspend fun disconnect() = Unit
-
-    override suspend fun currentUser() = RavelryBackendCurrentUser(true)
-
-    override suspend fun searchPatterns(params: PatternSearchParams): PatternSearchResponse = error("Unused")
-
-    override suspend fun importPatternByUrl(url: String): PatternDetail = error("Unused")
 }

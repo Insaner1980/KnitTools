@@ -524,7 +524,9 @@ class PatternViewerSourceTest {
 
         assertTrue(
             normalizedGuard.contains(
-                "if(editableLayerVisible&&state.annotationState.activeTool!=PatternAnnotationTool.BROWSE)",
+                // Lukutilassa ei piirretä, vaikka edellinen työkalu olisi vielä valittuna.
+                "if(state.annotationMode&&editableLayerVisible&&" +
+                    "state.annotationState.activeTool!=PatternAnnotationTool.BROWSE)",
             ),
         )
     }
@@ -561,7 +563,8 @@ class PatternViewerSourceTest {
         assertTrue(preflightIndex >= 0)
         assertTrue(destinationRequestIndex > preflightIndex)
         assertTrue(request.contains("}.onSuccess {"))
-        assertTrue(viewer.contains("annotationActions.onExportRequest(state.patternUri.toUri())"))
+        // Vienti käynnistyy lukijan valikosta; kohde avataan vasta esitarkistuksen jälkeen.
+        assertTrue(viewer.contains("annotationViewModel.requestAnnotatedPdfExport(it.toUri())"))
         assertTrue(
             viewer.contains(
                 "CollectWithLifecycleEffect({ annotationActions.exportDestinationRequestsProvider() }) { source ->",

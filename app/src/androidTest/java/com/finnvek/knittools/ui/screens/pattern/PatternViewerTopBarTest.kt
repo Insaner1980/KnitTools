@@ -127,7 +127,6 @@ class PatternViewerTopBarTest {
             onReturnToCurrentRow = {},
             onVerticalReadingGuideToggle = {},
             onCenterVerticalReadingGuide = {},
-            onOpenBookmarks = {},
             onOpenDocuments = onOpenDocuments,
             onSaveReadingLineAsCurrentRow = {},
             onClearReadingLineRowMarker = {},

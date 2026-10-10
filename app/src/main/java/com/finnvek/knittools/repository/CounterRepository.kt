@@ -207,47 +207,18 @@ class CounterRepository
             mainCounterLabelType: MainCounterLabelType = craftType.defaultMainCounterLabelType(),
             mainCounterCustomLabel: String? = null,
             canCreateAdditionalProjects: Boolean,
-            linkedPattern: SavedPattern? = null,
             targetFolderId: Long? = null,
         ): ProjectCreationResult =
             try {
                 transactionRunner.run {
-                    if (!canAddActiveProject(canCreateAdditionalProjects)) {
-                        return@run ProjectCreationResult.LimitReached
-                    }
-                    val projectName = uniqueProjectName(name) ?: return@run ProjectCreationResult.InvalidProject
-                    val labelType =
-                        validatedMainCounterLabelType(
-                            craftType = craftType,
-                            labelType = mainCounterLabelType,
-                            customLabel = mainCounterCustomLabel,
-                        ) ?: return@run ProjectCreationResult.InvalidProject
-                    if (targetFolderId != null && projectFolderDao.getById(targetFolderId) == null) {
-                        return@run ProjectCreationResult.FolderMissing
-                    }
-                    val linkedPatternId =
-                        linkedPattern?.let { pattern ->
-                            savedPatternRepository.saveRavelryPatternIfMissingInCurrentTransaction(pattern)
-                        }
-                    val now = System.currentTimeMillis()
-                    val projectId =
-                        dao.insert(
-                            CounterProject(
-                                name = projectName,
-                                craftType = craftType,
-                                mainCounterLabelType = labelType,
-                                mainCounterCustomLabel = sanitizeMainCounterCustomLabel(mainCounterCustomLabel),
-                                createdAt = now,
-                                updatedAt = now,
-                                linkedPatternId = linkedPatternId,
-                            ).toEntity(),
-                        )
-                    if (targetFolderId != null) {
-                        projectFolderDao.insertOrReplaceAssignment(
-                            ProjectFolderAssignmentEntity(projectId = projectId, folderId = targetFolderId),
-                        )
-                    }
-                    ProjectCreationResult.Created(projectId)
+                    insertProjectInCurrentTransaction(
+                        name = name,
+                        craftType = craftType,
+                        mainCounterLabelType = mainCounterLabelType,
+                        mainCounterCustomLabel = mainCounterCustomLabel,
+                        canCreateAdditionalProjects = canCreateAdditionalProjects,
+                        targetFolderId = targetFolderId,
+                    )
                 }
             } catch (cancelled: CancellationException) {
                 throw cancelled
@@ -258,6 +229,98 @@ class CounterRepository
                     throw constraint
                 }
             }
+
+        /**
+         * Uusi projekti ja tuotu PDF samassa transaktiossa: epäonnistunut liitos peruu myös projektin,
+         * jottei tyhjä projekti jää viemään ilmaisversion ainoaa aktiivista paikkaa.
+         */
+        suspend fun createProjectWithImportedPdf(
+            name: String,
+            canCreateAdditionalProjects: Boolean,
+            patternUri: String,
+            patternName: String,
+        ): ProjectCreationResult =
+            fileReferenceCoordinator.withReferenceLock {
+                if (projectDocumentRepository.preflightImportedPdf(patternUri, patternName) != null) {
+                    return@withReferenceLock ProjectCreationResult.InvalidProject
+                }
+                transactionRunner.run {
+                    val created =
+                        insertProjectInCurrentTransaction(
+                            name = name,
+                            craftType = CraftType.KNITTING,
+                            mainCounterLabelType = CraftType.KNITTING.defaultMainCounterLabelType(),
+                            mainCounterCustomLabel = null,
+                            canCreateAdditionalProjects = canCreateAdditionalProjects,
+                            targetFolderId = null,
+                        )
+                    if (created !is ProjectCreationResult.Created) return@run created
+                    val added =
+                        projectDocumentRepository.addImportedPdfInCurrentTransaction(
+                            created.projectId,
+                            patternUri,
+                            patternName,
+                        )
+                    // Poikkeus peruu koko transaktion, myös juuri luodun projektin.
+                    check(added is ProjectDocumentMutationResult.Added) { "Imported PDF attachment failed: $added" }
+                    linkPrimaryDocumentPatternInTransaction(created.projectId, currentLinkedPatternId = null, added)
+                    created
+                }
+            }
+
+        private suspend fun insertProjectInCurrentTransaction(
+            name: String,
+            craftType: CraftType,
+            mainCounterLabelType: MainCounterLabelType,
+            mainCounterCustomLabel: String?,
+            canCreateAdditionalProjects: Boolean,
+            targetFolderId: Long?,
+        ): ProjectCreationResult {
+            if (!canAddActiveProject(canCreateAdditionalProjects)) return ProjectCreationResult.LimitReached
+            val projectName = uniqueProjectName(name) ?: return ProjectCreationResult.InvalidProject
+            val labelType =
+                validatedMainCounterLabelType(
+                    craftType = craftType,
+                    labelType = mainCounterLabelType,
+                    customLabel = mainCounterCustomLabel,
+                ) ?: return ProjectCreationResult.InvalidProject
+            if (targetFolderId != null && projectFolderDao.getById(targetFolderId) == null) {
+                return ProjectCreationResult.FolderMissing
+            }
+            val now = System.currentTimeMillis()
+            val projectId =
+                dao.insert(
+                    CounterProject(
+                        name = projectName,
+                        craftType = craftType,
+                        mainCounterLabelType = labelType,
+                        mainCounterCustomLabel = sanitizeMainCounterCustomLabel(mainCounterCustomLabel),
+                        createdAt = now,
+                        updatedAt = now,
+                    ).toEntity(),
+                )
+            if (targetFolderId != null) {
+                projectFolderDao.insertOrReplaceAssignment(
+                    ProjectFolderAssignmentEntity(projectId = projectId, folderId = targetFolderId),
+                )
+            }
+            return ProjectCreationResult.Created(projectId)
+        }
+
+        /** Ensisijainen tuotu PDF antaa projektille ohjeen tiedot, jos projektilla ei vielä ole niitä. */
+        private suspend fun linkPrimaryDocumentPatternInTransaction(
+            projectId: Long,
+            currentLinkedPatternId: Long?,
+            added: ProjectDocumentMutationResult.Added,
+        ) {
+            if (!added.document.isPrimary || currentLinkedPatternId != null) return
+            dao.updatePatternInformation(
+                id = projectId,
+                linkedPatternId = added.document.savedPatternId,
+                patternName = added.document.label,
+                updatedAt = System.currentTimeMillis(),
+            )
+        }
 
         suspend fun updateProject(project: CounterProject) {
             transactionRunner.run {
@@ -545,14 +608,7 @@ class CounterRepository
                         val added =
                             projectDocumentRepository.addImportedPdfInCurrentTransaction(id, patternUri, patternName)
                         if (added is ProjectDocumentMutationResult.Added) {
-                            if (added.document.isPrimary && project?.linkedPatternId == null) {
-                                dao.updatePatternInformation(
-                                    id = id,
-                                    linkedPatternId = added.document.savedPatternId,
-                                    patternName = added.document.label,
-                                    updatedAt = System.currentTimeMillis(),
-                                )
-                            }
+                            linkPrimaryDocumentPatternInTransaction(id, project?.linkedPatternId, added)
                             if (currentPatternPage != 0 || patternRowMapping != null) {
                                 check(
                                     projectDocumentRepository.updateViewerStateInTransaction(

@@ -37,6 +37,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Remove
+import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
@@ -108,6 +109,7 @@ import com.finnvek.knittools.domain.calculator.parseMapping
 import com.finnvek.knittools.domain.model.DEFAULT_READING_GUIDE_FRACTION
 import com.finnvek.knittools.domain.model.DEFAULT_READING_LINE_Y_FRACTION
 import com.finnvek.knittools.domain.model.PatternAnnotationOwner
+import com.finnvek.knittools.domain.model.PatternDisplayNames
 import com.finnvek.knittools.domain.model.ProjectDocument
 import com.finnvek.knittools.domain.model.READING_LINE_MAX_Y_FRACTION
 import com.finnvek.knittools.domain.model.READING_LINE_MIN_Y_FRACTION
@@ -150,7 +152,10 @@ private data class PatternRenderState(
     val renderer: PdfPageRenderer?,
     val rendererError: String?,
     val renderedBitmap: Bitmap?,
-)
+) {
+    /** Merkitse näytetään vasta kun sivu on piirretty; latauksen aikana ei ole mitä merkitä. */
+    val canAnnotate: Boolean get() = rendererError == null && renderedBitmap != null
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -204,6 +209,8 @@ fun PatternViewerScreen(
     var showDocumentPicker by rememberSaveable { mutableStateOf(false) }
     var viewportFocusRequest by remember(selectedDocument?.id) { mutableStateOf<PatternViewportFocusRequest?>(null) }
     var accessibilityAnnouncement by remember(selectedDocument?.id) { mutableStateOf<String?>(null) }
+    val annotationMode =
+        rememberAnnotationModeControls(patternUri, annotationState.activeTool, annotationViewModel::setActiveTool)
 
     LaunchedEffect(currentPage) {
         annotationViewModel.setCurrentPage(currentPage)
@@ -287,6 +294,9 @@ fun PatternViewerScreen(
                         canManageBookmarks = true,
                         hasCurrentRowMarker = hasCurrentRowMarker,
                         hasPageRowMarkers = hasPageRowMarkers,
+                        canAnnotate = patternUri != null && renderState.canAnnotate,
+                        annotationMode = annotationMode.active,
+                        annotationExportEnabled = !annotationState.isExporting,
                     ),
                 actions =
                     TopBarActions(
@@ -306,13 +316,6 @@ fun PatternViewerScreen(
                         },
                         onCenterVerticalReadingGuide = {
                             counterViewModel.centerVerticalReadingGuide(selectedDocument?.id)
-                        },
-                        onOpenBookmarks = {
-                            patternViewerViewModel.selectNearestBookmark(
-                                pageIndex = currentPage,
-                                yFraction = selectedDocument?.readingLineYFraction ?: DEFAULT_READING_LINE_Y_FRACTION,
-                            )
-                            showBookmarkSheet = true
                         },
                         onOpenDocuments = { showDocumentSheet = true },
                         onOpenProjectNotes = onOpenProjectNotes.takeIf { selectedDocument != null },
@@ -348,6 +351,11 @@ fun PatternViewerScreen(
                                 )
                         },
                         onDetachPattern = {},
+                        onToggleAnnotationMode = annotationMode.toggle,
+                        onOpenAnnotationLayers = annotationMode.openLayers,
+                        onExportAnnotations = {
+                            patternUri?.let { annotationViewModel.requestAnnotatedPdfExport(it.toUri()) }
+                        },
                     ),
             )
         },
@@ -368,6 +376,14 @@ fun PatternViewerScreen(
                         },
                         onNextPage = {
                             counterViewModel.updatePatternPage(currentPage + 1, selectedDocument?.id)
+                        },
+                        // Kirjanmerkit omana painikkeenaan: 11 rivin valikossa niitä ei löytänyt.
+                        onOpenBookmarks = {
+                            patternViewerViewModel.selectNearestBookmark(
+                                pageIndex = currentPage,
+                                yFraction = selectedDocument?.readingLineYFraction ?: DEFAULT_READING_LINE_Y_FRACTION,
+                            )
+                            showBookmarkSheet = true
                         },
                     ),
             )
@@ -462,6 +478,7 @@ fun PatternViewerScreen(
                         currentPage = currentPage,
                         viewportFocusRequest = viewportFocusRequest,
                         annotationState = annotationState,
+                        annotationMode = annotationMode.active,
                     )
                 },
                 actions =
@@ -518,6 +535,15 @@ fun PatternViewerScreen(
                         .weight(1f),
             )
         }
+    }
+
+    if (annotationMode.showLayers) {
+        PatternAnnotationLayersSheet(
+            state = annotationState,
+            onMasterVisibilityChange = annotationViewModel::setMasterLayerVisible,
+            onProjectVisibilityChange = annotationViewModel::setProjectLayerVisible,
+            onDismiss = annotationMode.closeLayers,
+        )
     }
 
     if (showBookmarkSheet) {
@@ -1248,6 +1274,8 @@ fun LibraryPatternViewerScreen(
             currentPage = currentPage,
             onPageClamped = { currentPage = it },
         )
+    val annotationMode =
+        rememberAnnotationModeControls(patternUri, annotationState.activeTool, annotationViewModel::setActiveTool)
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -1267,6 +1295,9 @@ fun LibraryPatternViewerScreen(
                         canManageBookmarks = false,
                         hasCurrentRowMarker = false,
                         hasPageRowMarkers = false,
+                        canAnnotate = patternUri != null && renderState.canAnnotate,
+                        annotationMode = annotationMode.active,
+                        annotationExportEnabled = !annotationState.isExporting,
                     ),
                 actions =
                     TopBarActions(
@@ -1279,13 +1310,17 @@ fun LibraryPatternViewerScreen(
                         onCenterVerticalReadingGuide = {
                             verticalReadingGuideXFraction = DEFAULT_READING_GUIDE_FRACTION
                         },
-                        onOpenBookmarks = {},
                         onOpenDocuments = {},
                         onSaveReadingLineAsCurrentRow = {},
                         onClearReadingLineRowMarker = {},
                         onClearReadingLinePageMarkers = {},
                         onStartRowCalibration = {},
                         onDetachPattern = {},
+                        onToggleAnnotationMode = annotationMode.toggle,
+                        onOpenAnnotationLayers = annotationMode.openLayers,
+                        onExportAnnotations = {
+                            patternUri?.let { annotationViewModel.requestAnnotatedPdfExport(it.toUri()) }
+                        },
                     ),
             )
         },
@@ -1318,6 +1353,7 @@ fun LibraryPatternViewerScreen(
                     currentPage = currentPage,
                     viewportFocusRequest = null,
                     annotationState = annotationState,
+                    annotationMode = annotationMode.active,
                 )
             },
             actions =
@@ -1341,6 +1377,15 @@ fun LibraryPatternViewerScreen(
                 Modifier
                     .fillMaxSize()
                     .padding(scaffoldPadding),
+        )
+    }
+
+    if (annotationMode.showLayers) {
+        PatternAnnotationLayersSheet(
+            state = annotationState,
+            onMasterVisibilityChange = annotationViewModel::setMasterLayerVisible,
+            onProjectVisibilityChange = annotationViewModel::setProjectLayerVisible,
+            onDismiss = annotationMode.closeLayers,
         )
     }
 }
@@ -1439,6 +1484,9 @@ internal data class TopBarState(
     val canManageBookmarks: Boolean,
     val hasCurrentRowMarker: Boolean,
     val hasPageRowMarkers: Boolean,
+    val canAnnotate: Boolean = false,
+    val annotationMode: Boolean = false,
+    val annotationExportEnabled: Boolean = true,
 )
 
 internal data class TopBarActions(
@@ -1449,7 +1497,6 @@ internal data class TopBarActions(
     val onReturnToCurrentRow: () -> Unit,
     val onVerticalReadingGuideToggle: (Boolean) -> Unit,
     val onCenterVerticalReadingGuide: () -> Unit,
-    val onOpenBookmarks: () -> Unit,
     val onOpenDocuments: () -> Unit,
     val onSaveReadingLineAsCurrentRow: () -> Unit,
     val onClearReadingLineRowMarker: () -> Unit,
@@ -1457,6 +1504,9 @@ internal data class TopBarActions(
     val onStartRowCalibration: () -> Unit,
     val onDetachPattern: () -> Unit,
     val onOpenProjectNotes: (() -> Unit)? = null,
+    val onToggleAnnotationMode: () -> Unit = {},
+    val onOpenAnnotationLayers: () -> Unit = {},
+    val onExportAnnotations: () -> Unit = {},
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -1478,7 +1528,9 @@ internal fun PatternViewerTopBar(
     TopAppBar(
         title = {
             Text(
-                text = state.patternName ?: stringResource(R.string.pattern_viewer_title),
+                text =
+                    state.patternName?.let(PatternDisplayNames::forDisplay)
+                        ?: stringResource(R.string.pattern_viewer_title),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.focusRequester(titleFocusRequester).focusable(),
@@ -1488,6 +1540,16 @@ internal fun PatternViewerTopBar(
             BackIconButton(onClick = actions.onBack)
         },
         actions = {
+            if (state.canAnnotate) {
+                // Merkitse avaa merkintätilan; Valmis palaa lukutilaan. Valikko pysyy oikeassa reunassa.
+                OverviewTextAction(
+                    label =
+                        stringResource(
+                            if (state.annotationMode) R.string.pattern_mark_up_done else R.string.pattern_mark_up,
+                        ),
+                    onClick = actions.onToggleAnnotationMode,
+                )
+            }
             Box {
                 IconButton(onClick = { showOverflowMenu = true }) {
                     Icon(
@@ -1619,12 +1681,20 @@ private fun PatternViewerOverflowMenu(
                 actions.onCenterVerticalReadingGuide()
             },
         )
-        if (state.canManageBookmarks) {
+        if (state.canAnnotate) {
             DropdownMenuItem(
-                text = { Text(stringResource(R.string.pattern_bookmarks)) },
+                text = { Text(stringResource(R.string.pattern_annotations_layers)) },
                 onClick = {
                     closeOverflowMenu()
-                    actions.onOpenBookmarks()
+                    actions.onOpenAnnotationLayers()
+                },
+            )
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.pattern_annotation_export_pdf)) },
+                enabled = state.annotationExportEnabled,
+                onClick = {
+                    closeOverflowMenu()
+                    actions.onExportAnnotations()
                 },
             )
         }
@@ -1866,15 +1936,11 @@ private fun PatternViewerContent(
     BoxWithConstraints(modifier = modifier) {
         val toolsMaxHeight = maxHeight / 2
         Column(modifier = Modifier.fillMaxSize()) {
-            if (state.patternUri != null) {
+            // Lukutilassa ohje täyttää näytön; työkalut näkyvät vain merkintätilassa.
+            if (state.patternUri != null && state.annotationMode) {
                 Column(
                     modifier = Modifier.heightIn(max = toolsMaxHeight).verticalScroll(rememberScrollState()),
                 ) {
-                    PatternAnnotationLayerPanel(
-                        state = state.annotationState,
-                        onMasterVisibilityChange = annotationActions.onMasterLayerVisibilityChange,
-                        onProjectVisibilityChange = annotationActions.onProjectLayerVisibilityChange,
-                    )
                     PatternAnnotationToolbar(
                         state = state.annotationState,
                         actions = annotationActions.annotationToolbarActions,
@@ -1886,32 +1952,27 @@ private fun PatternViewerContent(
                             modifier = Modifier.padding(horizontal = 12.dp),
                         )
                     }
-                    TextButton(
-                        enabled = !state.annotationState.isExporting,
-                        onClick = {
-                            annotationActions.onExportRequest(state.patternUri.toUri())
-                        },
-                    ) {
-                        val exportText =
-                            if (state.annotationState.isExporting) {
-                                stringResource(
-                                    R.string.pattern_annotation_export_progress,
-                                    state.annotationState.exportCompletedPages,
-                                    state.annotationState.exportTotalPages,
-                                )
-                            } else {
-                                stringResource(R.string.pattern_annotation_export_pdf)
-                            }
-                        Text(exportText)
-                    }
-                    if (state.annotationState.exportFailed) {
-                        Text(
-                            text = stringResource(R.string.pattern_annotation_export_failed),
-                            color = MaterialTheme.colorScheme.error,
-                            modifier = Modifier.padding(horizontal = 12.dp),
-                        )
-                    }
                 }
+            }
+            // Vienti käynnistyy valikosta, joten edistyminen ja virhe näkyvät tilasta riippumatta.
+            if (state.annotationState.isExporting) {
+                Text(
+                    text =
+                        stringResource(
+                            R.string.pattern_annotation_export_progress,
+                            state.annotationState.exportCompletedPages,
+                            state.annotationState.exportTotalPages,
+                        ),
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                )
+            }
+            if (state.annotationState.exportFailed) {
+                Text(
+                    text = stringResource(R.string.pattern_annotation_export_failed),
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.padding(horizontal = 12.dp),
+                )
             }
             when {
                 state.patternUri == null -> {
@@ -2002,7 +2063,9 @@ private fun PatternViewerContent(
                             }
                         },
                         interactionOverlay = { viewport ->
-                            if (editableLayerVisible &&
+                            // Piirto vain merkintätilassa, vaikka edellinen työkalu olisi vielä valittuna.
+                            if (state.annotationMode &&
+                                editableLayerVisible &&
                                 state.annotationState.activeTool != PatternAnnotationTool.BROWSE
                             ) {
                                 PatternAnnotationInputOverlay(
@@ -2037,6 +2100,7 @@ private data class PatternViewerContentState(
     val currentPage: Int,
     val viewportFocusRequest: PatternViewportFocusRequest?,
     val annotationState: PatternAnnotationUiState,
+    val annotationMode: Boolean = false,
 )
 
 private data class PatternViewerContentActions(
@@ -2058,7 +2122,6 @@ private data class PatternViewerAnnotationActions(
     val annotationInputActions: PatternAnnotationInputActions,
     val annotationToolbarActions: PatternAnnotationToolbarActions,
     val exportDestinationRequestsProvider: () -> Flow<Uri>,
-    val onExportRequest: (Uri) -> Unit,
     val onExport: (Uri, Uri, PatternAnnotationRenderStyle) -> Unit,
 )
 
@@ -2069,7 +2132,6 @@ private fun PatternAnnotationViewModel.patternContentAnnotationActions() =
         annotationInputActions = patternInputActions(),
         annotationToolbarActions = patternToolbarActions(),
         exportDestinationRequestsProvider = { exportDestinationRequests },
-        onExportRequest = ::requestAnnotatedPdfExport,
         onExport = ::exportAnnotatedPdf,
     )
 
@@ -2400,6 +2462,7 @@ private data class BottomBarActions(
     val onNextRow: () -> Unit,
     val onPreviousPage: () -> Unit,
     val onNextPage: () -> Unit,
+    val onOpenBookmarks: () -> Unit,
 )
 
 @Composable
@@ -2450,6 +2513,12 @@ private fun BottomBarNavigationRow(
                     contentDescription = stringResource(R.string.counter_increase),
                 )
             }
+        }
+        IconButton(onClick = actions.onOpenBookmarks) {
+            Icon(
+                imageVector = Icons.Outlined.BookmarkBorder,
+                contentDescription = stringResource(R.string.pattern_bookmarks),
+            )
         }
         Row(verticalAlignment = Alignment.CenterVertically) {
             IconButton(

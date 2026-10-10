@@ -11,8 +11,6 @@ import com.finnvek.knittools.data.local.PatternAnnotationSchemaConstraints
 import com.finnvek.knittools.data.local.ProjectCompletionEntity
 import com.finnvek.knittools.data.local.ProjectDocumentSchemaConstraints
 import com.finnvek.knittools.domain.model.MainCounterChange
-import com.finnvek.knittools.domain.model.SavedPattern
-import com.finnvek.knittools.domain.model.SavedPatternSource
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
@@ -153,32 +151,6 @@ class ActiveProjectPolicyRoomTest {
             repository.updateProject(before.copy(isCompleted = false))
             assertEquals(before, repository.getProject(id))
             assertEquals(0, repository.getActiveProjectCount())
-        }
-
-    @Test
-    fun blockedPatternCreationLeavesBothTablesUntouched() =
-        runBlocking {
-            seed("Active")
-            val before = database.counterProjectDao().getAllProjectsOnce()
-            val pattern =
-                SavedPattern(
-                    source = SavedPatternSource.Ravelry,
-                    ravelryPatternId = 42,
-                    name = "Pattern",
-                    designerName = "Designer",
-                )
-            assertEquals(
-                ProjectCreationResult.LimitReached,
-                repository.createProject("From pattern", canCreateAdditionalProjects = false, linkedPattern = pattern),
-            )
-            assertEquals(before, database.counterProjectDao().getAllProjectsOnce())
-            assertTrue(
-                database
-                    .savedPatternDao()
-                    .getAll()
-                    .first()
-                    .isEmpty(),
-            )
         }
 
     @Test

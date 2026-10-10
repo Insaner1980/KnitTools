@@ -85,7 +85,10 @@ class PostHogAnalyticsTest {
         assertNull(screenNameForRoute("https://private.example/pattern"))
         assertNull(screenNameForRoute("private project title"))
         assertNull(screenNameForRoute("projects_tab"))
-        assertEquals("ravelry_import", screenNameForRoute("ravelry_import/private-pattern-url"))
+        assertEquals(
+            "ravelry_browser",
+            screenNameForRoute("ravelry_browser?url=https%3A%2F%2Fwww.ravelry.com%2Fprivate"),
+        )
         assertEquals("gauge", screenNameForRoute("gauge?projectId=123"))
     }
 

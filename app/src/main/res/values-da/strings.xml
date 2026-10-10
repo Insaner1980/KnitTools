@@ -95,6 +95,7 @@
     <string name="counter_decrease_repeat">Træk gentagelse fra</string>
     <string name="counter_add_custom">Tilføj %1$s</string>
     <string name="counter_decrease_custom">Træk %1$s fra</string>
+    <string name="project_picker_empty">Ingen projekter endnu. Opret et under Projekter.</string>
     <string name="no_active_projects">Ingen aktive projekter</string>
     <string name="no_completed_projects">Ingen afsluttede projekter endnu</string>
     <string name="delete_project">Slet</string>
@@ -652,21 +653,9 @@
 
     <!-- Ravelry -->
     <string name="tool_ravelry">Ravelry</string>
-    <string name="desc_ravelry">Søg efter opskrifter og gem favoritter</string>
-    <string name="ravelry_saved_patterns">Gemte opskrifter</string>
-    <string name="start_project">Start projekt</string>
-    <string name="save_pattern">Gem opskrift</string>
-    <string name="ravelry_save_pattern_explanation">Gemmer opskriftens oplysninger i dit Bibliotek. Der downloades ingen PDF.</string>
-    <string name="ravelry_open_saved_pattern">Åbn</string>
+    <string name="desc_ravelry">Gennemse opskrifter og gem PDF\'er i KnitTools</string>
     <string name="open_in_ravelry">Åbn i Ravelry</string>
-    <string name="pattern_saved">Opskrift gemt</string>
-    <string name="search_hint">Søg efter opskrifter…</string>
-    <string name="ravelry_import_loading">Indlæser opskrift</string>
-    <string name="ravelry_import_title">Gem denne opskrift?</string>
-    <string name="ravelry_import_already_saved">Opskriften er allerede gemt</string>
-    <string name="ravelry_import_needs_sign_in">Log ind med Ravelry for at gemme denne opskrift.</string>
     <string name="ravelry_import_could_not_import">Kunne ikke importere denne opskrift.</string>
-    <string name="ravelry_import_backend_unavailable">Ravelry-import er midlertidigt utilgængelig.</string>
     <string name="saved_pattern_detail_pdf_attached">PDF vedhæftet</string>
     <string name="saved_pattern_detail_available_offline">Tilgængelig offline</string>
     <string name="saved_pattern_detail_open_on_ravelry">Åbn på Ravelry</string>
@@ -675,34 +664,10 @@
     <string name="saved_pattern_detail_open_pattern">Åbn opskrift</string>
     <string name="saved_pattern_detail_attach_to_project">Knyt til projekt</string>
     <string name="saved_pattern_detail_remove_confirm">Fjerne denne gemte opskrift fra biblioteket?\n\nEventuelle PDF-annotationer oprettet i biblioteket til denne opskrift slettes også og vises ikke længere i projekter. PDF-filer, der allerede er vedhæftet projekter, og PDF-annotationer oprettet i projekterne bevares.</string>
-    <string name="filter_weight">Tykkelse</string>
-    <string name="filter_difficulty">Sværhedsgrad</string>
     <string name="free">Gratis</string>
     <string name="paid">Betalt</string>
     <string name="availability_unknown">Tilgængelighed ukendt</string>
-    <string name="no_results">Ingen opskrifter fundet</string>
-    <string name="search_error">Kunne ikke indlæse opskrifter. Tjek din internetforbindelse.</string>
-    <string name="ravelry_search_rate_limited">Ravelry begrænser søgninger. Prøv igen senere.</string>
-    <string name="ravelry_search_auth_error">Ravelry-login kunne ikke bruges. Log ind igen og prøv igen.</string>
-    <string name="ravelry_search_service_error">Ravelry er midlertidigt utilgængelig. Prøv igen senere.</string>
-    <string name="ravelry_sign_in">Log ind med Ravelry</string>
-    <string name="ravelry_browse">Gennemse Ravelry</string>
-    <string name="ravelry_disconnect">Afbryd Ravelry</string>
-    <string name="ravelry_disconnect_confirm">Afbryd forbindelsen til Ravelry? Du skal logge ind igen for at bruge Ravelry-funktionerne.</string>
-    <string name="ravelry_not_connected">Log ind for at søge efter Ravelry-opskrifter fra KnitTools.</string>
-    <string name="ravelry_connecting">Opretter forbindelse til Ravelry…</string>
-    <string name="ravelry_auth_pending">Færdiggør login med Ravelry i browseren.</string>
-    <string name="ravelry_connected">Forbundet til Ravelry</string>
-    <string name="ravelry_connected_as">Forbundet som %1$s</string>
-    <string name="ravelry_auth_cancelled">Ravelry-login blev annulleret.</string>
-    <string name="ravelry_auth_expired">Ravelry-login udløb. Log ind igen.</string>
-    <string name="ravelry_backend_unavailable">Ravelry-forbindelsen er midlertidigt utilgængelig.</string>
-    <string name="ravelry_disconnecting">Afbryder Ravelry…</string>
     <string name="difficulty_format">%.1f / 5</string>
-    <plurals name="yardage_format">
-        <item quantity="one">%d yard</item>
-        <item quantity="other">%d yard</item>
-    </plurals>
 
     <!-- Info tips -->
     <string name="tip_pattern_repeat_title">Mønsterrapport</string>
@@ -730,8 +695,6 @@
     <string name="row_label_with_target">Række %1$d / %2$d</string>
     <string name="widget_undo_action">Fortryd</string>
     <string name="widget_undo_content_description">Fortryd sidste ændring</string>
-    <string name="search_more_error">Kunne ikke indlæse flere opskrifter. Tjek din internetforbindelse.</string>
-    <string name="pattern_detail_error">Kunne ikke indlæse opskriftsdetaljer. Tjek din internetforbindelse.</string>
     <string name="project_actions_title">Projekthandlinger</string>
     <string name="project_actions_section_counter_tools">Tællerværktøjer</string>
     <string name="project_content_title">Projekt</string>
@@ -744,12 +707,7 @@
 
     <!-- Täydennetyt lokalisoidut käyttöliittymätekstit -->
     <string name="yarn_card_number_fallback">Garn #%1$d</string>
-    <string name="pattern_detail_needles">Nåle</string>
-    <string name="pattern_detail_yardage">Løbelængde</string>
-    <string name="pattern_detail_sizes">Størrelser</string>
-    <string name="pattern_saved_to_library">Gemt i biblioteket</string>
     <string name="show_more">Vis mere</string>
-    <string name="show_less">Vis mindre</string>
     <string name="pro_start_free_trial">Start gratis prøveperiode</string><string name="pro_start_14_day_trial">Start 14 dages gratis prøveperiode</string><string name="pro_trial_start_failed">Prøveperioden kunne ikke startes. Prøv igen.</string>
     <string name="pro_prompt_not_now">Ikke nu</string><string name="pro_prompt_see_pro">Se Pro</string><string name="pro_prompt_trial_body">Start din gratis 14-dages Pro-prøveperiode. Der kræves ingen betalingsmetode. Alt, du opretter, er fortsat tilgængeligt efter prøveperioden.</string>
     <string name="pro_prompt_reactivation_title">Genaktivér dette projekt med Pro</string>
@@ -1040,6 +998,18 @@
     <string name="web_pattern_delete_confirm_title">Slet webmønsteret?</string>
     <string name="web_pattern_delete_confirm_message">Slet %1$s fra Gemte opskrifter i biblioteket?\n\nEventuelle PDF-annotationer oprettet i biblioteket til denne opskrift slettes også og vises ikke længere i projekter. PDF-filer, der allerede er vedhæftet projekter, og PDF-annotationer oprettet i projekterne bevares.</string>
     <string name="web_pattern_attach">Tilknyt til projekt</string>
+    <string name="pattern_mark_up">Markér</string>
+    <string name="pattern_mark_up_done">Færdig</string>
+    <string name="incoming_pdf_title">Gem mønster</string>
+    <string name="incoming_pdf_other_section">Eller</string>
+    <string name="incoming_pdf_new_project">Start et nyt projekt</string>
+    <string name="incoming_pdf_library_only">Gem kun i Biblioteket</string>
+    <string name="incoming_pdf_open_failed">PDF-filen kunne ikke åbnes</string>
+    <string name="incoming_pdf_save_failed">Mønsteret kunne ikke gemmes</string>
+    <string name="ravelry_browser_hint">Åbn et mønster, og tryk på Download PDF for at gemme det i KnitTools.</string>
+    <string name="ravelry_purchase_in_browser">Betalingen åbnes i din browser. Når du har købt, kan du downloade opskriften her fra dit Ravelry-bibliotek.</string>
+    <string name="incoming_pdf_downloading">Henter mønsteret…</string>
+    <string name="incoming_pdf_not_pdf">Kun PDF-mønstre kan gemmes</string>
     <string name="web_pattern_unlink">Fjern tilknytningen til mønsteroplysninger</string>
     <string name="web_pattern_replace_confirm_title">Erstat mønsteroplysningerne?</string>
     <string name="web_pattern_replace_confirm_message">Erstat de nuværende mønsteroplysninger med %1$s?</string>

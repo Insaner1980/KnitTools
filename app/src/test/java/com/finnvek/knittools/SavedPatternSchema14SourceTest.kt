@@ -52,29 +52,6 @@ class SavedPatternSchema14SourceTest {
         assertTrue(database.contains("ALTER TABLE `saved_patterns_new` RENAME TO `saved_patterns`"))
     }
 
-    @Test
-    fun `saved pattern repository detects duplicates by id canonical url original url then confirmed title designer`() {
-        val dao = ProjectSourceFiles.read(SAVED_PATTERN_DAO)
-        val repository = ProjectSourceFiles.read(SAVED_PATTERN_REPOSITORY)
-
-        assertTrue(dao.contains("getByRavelryPatternId"))
-        assertTrue(dao.contains("getByCanonicalUrl"))
-        assertTrue(dao.contains("getByOriginalUrl"))
-        assertTrue(dao.contains("getAllOnce"))
-        assertTrue(dao.contains("getByTitleAndDesignerName"))
-        assertTrue(repository.contains("findDuplicateCandidate"))
-        assertTrue(repository.contains("pattern.ravelryPatternId?.let"))
-        assertTrue(repository.contains("dao.getByRavelryPatternId"))
-        assertTrue(repository.contains("dao.getByCanonicalUrl"))
-        assertTrue(repository.contains("dao.getByOriginalUrl"))
-        assertTrue(repository.contains("normalizedOriginalUrl"))
-        assertTrue(repository.contains("includeTitleDesigner"))
-        assertTrue(repository.indexOf("dao.getByRavelryPatternId") < repository.indexOf("dao.getByCanonicalUrl"))
-        assertTrue(repository.indexOf("dao.getByCanonicalUrl") < repository.indexOf("dao.getByOriginalUrl"))
-        assertTrue(repository.indexOf("dao.getByOriginalUrl") < repository.indexOf("normalizedOriginalUrl"))
-        assertTrue(repository.indexOf("normalizedOriginalUrl") < repository.indexOf("if (includeTitleDesigner"))
-    }
-
     private companion object {
         private const val DATABASE = "app/src/main/java/com/finnvek/knittools/data/local/KnitToolsDatabase.kt"
         private const val DATABASE_MODULE = "app/src/main/java/com/finnvek/knittools/di/DatabaseModule.kt"

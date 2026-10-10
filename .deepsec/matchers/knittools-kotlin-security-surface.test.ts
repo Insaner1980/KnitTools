@@ -171,37 +171,6 @@ Log.i(TAG, """raw ( ) " text""")`;
   assert.deepEqual(sensitiveAndroidLog.match(content, productionPath), []);
 });
 
-test("named callable matches cover actual Android calls and only backend onCall exports", () => {
-  const root = path.resolve(process.cwd(), "..");
-  const client = fs.readFileSync(path.join(root,
-    "app/src/main/java/com/finnvek/knittools/data/remote/RavelryBackendClient.kt"), "utf8");
-  const backend = ["auth.ts", "patternImport.ts"].map((file) =>
-    fs.readFileSync(path.join(root, "functions/src/ravelry", file), "utf8")).join("\n");
-  const exports = fs.readFileSync(path.join(root, "functions/src/index.ts"), "utf8");
-  const calls = [...client.matchAll(/\bcallBackend\(\s*"(ravelry\w+)"/g)];
-  const callableNames = [...backend.matchAll(/export const (ravelry\w+) = onCall\(/g)]
-    .map((match) => match[1]).sort();
-  assert.equal(calls.length, 8);
-  assert.deepEqual(calls.map((match) => match[1]).sort(), callableNames);
-  const named = ravelryFirebaseCallableSurface.match(client, productionPath)
-    .filter((match) => match.matchedPattern === "Ravelry backend callable name");
-  assert.deepEqual(named.map((match) => match.lineNumbers[0]).sort((a, b) => a - b),
-    calls.map((match) => client.slice(0, match.index + match[0].indexOf('"'))
-      .split(/\r\n|\r|\n/).length).sort((a, b) => a - b));
-  for (const name of callableNames) {
-    assert.ok(exports.includes(name));
-    for (const call of [`callBackend("${name}")`, `functions.getHttpsCallable("${name}").call()`]) {
-      const matches = ravelryFirebaseCallableSurface.match(`// Ravelry\n${call}`, productionPath);
-      assert.equal(matches.filter((match) => match.matchedPattern === "Ravelry backend callable name").length, 1);
-    }
-  }
-  assert.match(backend, /export const ravelryCallback = onRequest\(/);
-  for (const name of ["ravelryCallback", "ravelryOAuthStart", "ravelryOAuthCallback"]) {
-    assert.deepEqual(ravelryFirebaseCallableSurface.match(
-      `// Ravelry\ncallBackend("${name}")`, productionPath), []);
-  }
-});
-
 test("flags Android Kotlin entry points without scanning test files", () => {
   const content = `
 class MainActivity : AppCompatActivity() {

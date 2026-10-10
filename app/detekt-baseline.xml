@@ -17,9 +17,7 @@
     <ID>MaxLineLength:SessionDao.kt:SessionDao$"SELECT * FROM sessions WHERE startedAt &gt;= :start AND startedAt &lt;= :end AND (:projectId IS NULL OR projectId = :projectId) ORDER BY startedAt"</ID>
     <ID>MutableStateAutoboxing:PatternViewerScreen.kt:mutableStateOf(0)</ID>
     <ID>ReturnCount:InstructionParser.kt:InstructionParser$private fun parseIncreaseDecrease: ParsedInstruction?</ID>
-    <ID>SwallowedException:RavelryViewModel.kt:RavelryViewModel$e: Exception</ID>
     <ID>TooGenericExceptionCaught:CounterWidgetActions.kt:CounterWidgetActions$e: Exception</ID>
-    <ID>TooGenericExceptionCaught:RavelryViewModel.kt:RavelryViewModel$e: Exception</ID>
     <ID>TooManyFunctions:CounterProjectDao.kt:CounterProjectDao</ID>
     <ID>TooManyFunctions:CounterRepository.kt:CounterRepository</ID>
     <ID>TooManyFunctions:CounterScreen.kt:com.finnvek.knittools.ui.screens.counter.CounterScreen.kt</ID>

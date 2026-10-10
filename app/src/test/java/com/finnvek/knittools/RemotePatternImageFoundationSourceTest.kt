@@ -68,19 +68,14 @@ class RemotePatternImageFoundationSourceTest {
     @Test
     fun `all current Ravelry image surfaces use the shared remote image path`() {
         val patternCard = ProjectSourceFiles.read(PATTERN_CARD)
-        val ravelryDetail = ProjectSourceFiles.read(RAVELRY_DETAIL)
         val savedPatternDetail = ProjectSourceFiles.read(SAVED_PATTERN_DETAIL)
-        val search = ProjectSourceFiles.read(RAVELRY_SEARCH)
-        val importConfirmation = ProjectSourceFiles.read(RAVELRY_IMPORT_CONFIRMATION)
         val savedPatterns = ProjectSourceFiles.read(SAVED_PATTERNS)
 
-        listOf(patternCard, ravelryDetail, savedPatternDetail).forEach { source ->
+        listOf(patternCard, savedPatternDetail).forEach { source ->
             assertTrue(source.contains("RemotePatternImage("))
             assertFalse(source.contains("AsyncImage("))
         }
-        listOf(search, importConfirmation, savedPatterns).forEach { source ->
-            assertTrue(source.contains("PatternCard("))
-        }
+        assertTrue(savedPatterns.contains("PatternCard("))
     }
 
     @Test
@@ -145,14 +140,8 @@ class RemotePatternImageFoundationSourceTest {
             "app/src/main/java/com/finnvek/knittools/ui/components/RemotePatternImage.kt"
         private const val PATTERN_CARD =
             "app/src/main/java/com/finnvek/knittools/ui/screens/ravelry/PatternCard.kt"
-        private const val RAVELRY_DETAIL =
-            "app/src/main/java/com/finnvek/knittools/ui/screens/ravelry/RavelryDetailScreen.kt"
         private const val SAVED_PATTERN_DETAIL =
             "app/src/main/java/com/finnvek/knittools/ui/screens/library/SavedPatternDetailScreen.kt"
-        private const val RAVELRY_SEARCH =
-            "app/src/main/java/com/finnvek/knittools/ui/screens/ravelry/RavelrySearchScreen.kt"
-        private const val RAVELRY_IMPORT_CONFIRMATION =
-            "app/src/main/java/com/finnvek/knittools/ui/screens/ravelry/RavelryImportConfirmationSheet.kt"
         private const val SAVED_PATTERNS =
             "app/src/main/java/com/finnvek/knittools/ui/screens/library/SavedPatternsScreen.kt"
         private const val ANDROID_MANIFEST = "app/src/main/AndroidManifest.xml"

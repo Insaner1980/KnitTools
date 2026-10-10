@@ -62,25 +62,14 @@ sealed class Screen(
         }
     }
 
-    data object Ravelry : Screen("ravelry")
+    // Ravelry sovelluksen sisällä: Download PDF tallentuu suoraan KnitToolsiin.
+    data object RavelryBrowser : Screen("ravelry_browser") {
+        const val ARG_URL = "url"
+        const val ROUTE = "ravelry_browser?url={$ARG_URL}"
 
-    data class RavelryImport(
-        val url: String,
-    ) : Screen("ravelry_import/${Uri.encode(url)}") {
-        companion object {
-            const val ARG_IMPORT_URL = "importUrl"
-            const val ROUTE = "ravelry_import/{$ARG_IMPORT_URL}"
-
-            fun importUrl(routeArgument: String?): String? = routeArgument?.takeIf { it.isNotBlank() }
-        }
-    }
-
-    data class RavelryDetail(
-        val patternId: Int,
-    ) : Screen("ravelry_detail/$patternId") {
-        companion object {
-            const val ROUTE = "ravelry_detail/{patternId}"
-        }
+        /** Jaettu tai tallennettu Ravelry-linkki avautuu suoraan; ilman osoitetta näkyy kaavahaku. */
+        fun createRoute(url: String? = null): String =
+            url?.takeIf { it.isNotBlank() }?.let { "$route?url=${Uri.encode(it)}" } ?: route
     }
 
     data object ProjectList : Screen("project_list")

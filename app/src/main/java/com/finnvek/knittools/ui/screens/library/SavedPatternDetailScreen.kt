@@ -41,6 +41,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.finnvek.knittools.R
+import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.domain.model.SavedPattern
 import com.finnvek.knittools.domain.model.SavedPatternSource
 import com.finnvek.knittools.domain.model.isWebPatternCompatible
@@ -51,14 +52,14 @@ import com.finnvek.knittools.ui.components.MoreOptionsIconButton
 import com.finnvek.knittools.ui.components.OverviewEmptyText
 import com.finnvek.knittools.ui.components.OverviewLinkRow
 import com.finnvek.knittools.ui.components.OverviewSectionHeader
+import com.finnvek.knittools.ui.components.ProjectPickerSheet
 import com.finnvek.knittools.ui.components.RemotePatternImage
 import com.finnvek.knittools.ui.components.ToolScreenScaffold
 import com.finnvek.knittools.ui.components.rememberScrollTitleState
 import com.finnvek.knittools.ui.platform.ExternalWebLinkOpenResult
 import com.finnvek.knittools.ui.platform.openExternalWebLink
 import com.finnvek.knittools.ui.screens.ravelry.PatternAvailabilityBadge
-import com.finnvek.knittools.ui.screens.ravelry.openRavelryUrl
-import com.finnvek.knittools.ui.screens.ravelry.ravelryExternalUrlOrNull
+import com.finnvek.knittools.ui.screens.ravelry.ravelryPageUrlOrNull
 import com.finnvek.knittools.ui.theme.ProjectOverviewDimens
 import com.finnvek.knittools.ui.theme.knitToolsColors
 import kotlinx.coroutines.launch
@@ -70,25 +71,30 @@ fun SavedPatternDetailScreen(
     pattern: SavedPattern,
     onBack: () -> Unit,
     onOpenPattern: () -> Unit,
-    onAttachToProject: () -> Unit,
+    onAttachToProject: (projectId: Long, onResult: (attached: Boolean) -> Unit) -> Unit,
     onRemove: () -> Unit,
     modifier: Modifier = Modifier,
     onOpenWebsite: ((String) -> ExternalWebLinkOpenResult)? = null,
+    onOpenRavelry: (String) -> Unit = {},
     onEditWebPattern: () -> Unit = {},
-    onAttachWebPattern: (Long?, (SavedPatternMetadataMutationResult) -> Unit) -> Unit = { _, onResult ->
+    projects: List<CounterProject> = emptyList(),
+    onAttachWebPattern: (Long, Long?, (SavedPatternMetadataMutationResult) -> Unit) -> Unit = { _, _, onResult ->
         onResult(SavedPatternMetadataMutationResult.PersistenceFailure)
     },
+    onOpenProject: (projectId: Long) -> Unit = {},
     deleteErrorId: Long = 0L,
 ) {
     var showRemoveConfirmDialog by rememberSaveable { mutableStateOf(false) }
     var pendingReplacementId by rememberSaveable(pattern.id) { mutableStateOf<Long?>(null) }
+    var showProjectPicker by rememberSaveable(pattern.id) { mutableStateOf(false) }
+    // Projekti, johon verkko-ohjetta ollaan liittämässä; korvausvahvistus käyttää samaa valintaa.
+    var attachProjectId by rememberSaveable(pattern.id) { mutableStateOf<Long?>(null) }
     val attachmentViewModel: SavedPatternAttachmentViewModel = viewModel(key = "web-attachment-${pattern.id}")
     val attachmentState by attachmentViewModel.state.collectAsStateWithLifecycle()
     var lastHandledDeleteErrorId by rememberSaveable(pattern.id) { mutableLongStateOf(deleteErrorId) }
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
-    val openFailedMessage = stringResource(R.string.pattern_open_failed)
     val ravelryUrl = pattern.ravelryUrlOrNull()
     val webUrl = pattern.webPatternUrlOrNull
     val isWebPattern = pattern.isWebPatternCompatible && webUrl != null
@@ -106,7 +112,7 @@ fun SavedPatternDetailScreen(
             is SavedPatternMetadataMutationResult.AlreadyAttached,
             -> {
                 pendingReplacementId = null
-                onAttachToProject()
+                attachProjectId?.let(onOpenProject)
             }
 
             is SavedPatternMetadataMutationResult.ReplacementRequired -> {
@@ -170,13 +176,36 @@ fun SavedPatternDetailScreen(
             onDismiss = { showRemoveConfirmDialog = false },
         )
     }
+    val startWebAttach: (Long, Long?) -> Unit = { projectId, expectedExistingId ->
+        attachProjectId = projectId
+        attachmentViewModel.attach(expectedExistingId) { expected, onResult ->
+            onAttachWebPattern(projectId, expected, onResult)
+        }
+    }
+    if (showProjectPicker) {
+        ProjectPickerSheet(
+            title = stringResource(R.string.saved_pattern_detail_attach_to_project),
+            projects = projects,
+            onSelect = { projectId ->
+                showProjectPicker = false
+                if (isWebPattern) {
+                    startWebAttach(projectId, null)
+                } else {
+                    onAttachToProject(projectId) { attached ->
+                        if (!attached) coroutineScope.launch { snackbarHostState.showSnackbar(attachFailedMessage) }
+                    }
+                }
+            },
+            onDismiss = { showProjectPicker = false },
+        )
+    }
     pendingReplacementId?.let { expectedExistingId ->
         ConfirmationDialog(
             title = stringResource(R.string.web_pattern_replace_confirm_title),
             message = stringResource(R.string.web_pattern_replace_confirm_message, pattern.name),
             confirmText = stringResource(R.string.web_pattern_attach),
             onConfirm = {
-                attachmentViewModel.attach(expectedExistingId, onAttachWebPattern)
+                attachProjectId?.let { projectId -> startWebAttach(projectId, expectedExistingId) }
             },
             onDismiss = { pendingReplacementId = null },
         )
@@ -201,7 +230,8 @@ fun SavedPatternDetailScreen(
         }
     }
     val openRavelry: () -> Unit = {
-        ravelryUrl?.let { url -> openRavelryUrl(context = context, url = url, failureMessage = openFailedMessage) }
+        // Sovelluksen oma Ravelry-selain, jotta Download PDF tallentuu suoraan KnitToolsiin.
+        ravelryUrl?.let(onOpenRavelry)
     }
     ToolScreenScaffold(
         title = pattern.name,
@@ -248,7 +278,7 @@ fun SavedPatternDetailScreen(
                 SavedPatternProjectSection(
                     label = stringResource(R.string.web_pattern_attach),
                     description = stringResource(R.string.web_pattern_attach_description, pattern.name),
-                    onAttach = { attachmentViewModel.attach(null, onAttachWebPattern) },
+                    onAttach = { showProjectPicker = true },
                 )
             } else {
                 when {
@@ -263,16 +293,19 @@ fun SavedPatternDetailScreen(
                         SavedPatternPrimaryAction(stringResource(R.string.open_in_ravelry), openRavelry)
                     }
                 }
-                RavelrySourceSection(
-                    pattern = pattern,
-                    canOpenRavelry = ravelryUrl != null,
-                    // Ravelry-linkki rivinä vain kun päätoiminto on PDF; muuten se on jo painike.
-                    onOpenRavelry = openRavelry.takeIf { pattern.hasAttachedPdf && ravelryUrl != null },
-                )
+                // Tuotu PDF ei ole Ravelry-ohje: sille ei näytetä Ravelry-osiota eikä tuntematonta saatavuutta.
+                if (pattern.source == SavedPatternSource.Ravelry || ravelryUrl != null) {
+                    RavelrySourceSection(
+                        pattern = pattern,
+                        canOpenRavelry = ravelryUrl != null,
+                        // Ravelry-linkki rivinä vain kun päätoiminto on PDF; muuten se on jo painike.
+                        onOpenRavelry = openRavelry.takeIf { pattern.hasAttachedPdf && ravelryUrl != null },
+                    )
+                }
                 SavedPatternProjectSection(
                     label = stringResource(R.string.saved_pattern_detail_attach_to_project),
                     description = null,
-                    onAttach = onAttachToProject,
+                    onAttach = { showProjectPicker = true },
                 )
             }
         }
@@ -463,4 +496,4 @@ private val SavedPattern.requiresRavelryAccess: Boolean
 private fun SavedPattern.ravelryUrlOrNull(): String? =
     canonicalUrl
         .ifBlank { originalUrl }
-        .let(::ravelryExternalUrlOrNull)
+        .let(::ravelryPageUrlOrNull)

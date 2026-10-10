@@ -40,8 +40,8 @@ class PatternPickerSourceTest {
         assertTrue(picker.contains("onImportFromRavelry: () -> Unit"))
         assertTrue(picker.contains("R.string.pattern_picker_import_from_ravelry"))
         assertTrue(counterScreen.contains("onImportFromRavelry = actions.onImportFromRavelry"))
-        assertTrue(navGraph.contains("navController.navigateToTopLevel(TopLevelDestination.Tools)"))
-        assertTrue(navGraph.contains("navController.navigateSingleTopTo(Screen.Ravelry.route)"))
+        // Tuo Ravelrysta avaa Ravelryn sovelluksen sisällä, jotta Download PDF tallentuu suoraan.
+        assertTrue(navGraph.contains("navController.navigateSingleTopTo(Screen.RavelryBrowser.route)"))
         assertTrue(strings.contains("""<string name="pattern_picker_import_from_ravelry">"""))
     }
 
@@ -51,8 +51,12 @@ class PatternPickerSourceTest {
         val viewModel = ProjectSourceFiles.read(COUNTER_VIEW_MODEL)
         val repository = ProjectSourceFiles.read(COUNTER_REPOSITORY)
 
-        assertTrue(counterScreen.contains("if (pattern.isWebPatternCompatible)"))
-        assertTrue(counterScreen.contains("viewModel.attachSavedPatternMetadata(pattern.id)"))
+        assertTrue(counterScreen.contains("} else if (pattern.isWebPatternCompatible && requestProjectId != null) {"))
+        assertTrue(
+            counterScreen.contains("viewModel.attachSavedPatternMetadata(pattern.id, projectId = requestProjectId)"),
+        )
+        // Myöhäinen korvausvaatimus ei avaa vahvistusta projektin vaihduttua.
+        assertTrue(counterScreen.contains("if (requestProjectId == currentProjectId) {"))
         assertTrue(counterScreen.contains("viewModel.attachSavedPattern(pattern)"))
         assertFalse(counterScreen.contains("pattern.localPdfUri?.let"))
         assertTrue(viewModel.contains("fun attachSavedPattern(pattern: SavedPattern)"))

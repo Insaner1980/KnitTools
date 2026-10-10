@@ -93,7 +93,7 @@ fun HomeScreen(onNavigate: (Screen) -> Unit) {
                     HubListItem(
                         title = stringResource(R.string.tool_ravelry),
                         description = stringResource(R.string.desc_ravelry),
-                        onClick = { onNavigate(Screen.Ravelry) },
+                        onClick = { onNavigate(Screen.RavelryBrowser) },
                         titleColor = MaterialTheme.knitToolsColors.tealAccent,
                     )
                 }

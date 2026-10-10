@@ -212,97 +212,6 @@ class SavedPatternRepositoryDomainApiTest {
         }
 
     @Test
-    fun `saved pattern repository reuses existing ravelry pattern`() =
-        runTest {
-            val dao =
-                FakeSavedPatternDao(
-                    savedPatterns =
-                        listOf(
-                            SavedPatternEntity(
-                                id = 7L,
-                                source = SavedPatternSource.Ravelry.persistedValue,
-                                ravelryPatternId = 42,
-                                name = "Old name",
-                                designerName = "Designer",
-                                canonicalUrl = "https://example.com/patterns/42",
-                                localPdfUri = "content://test/existing.pdf",
-                                isAvailableOffline = true,
-                            ),
-                        ),
-                )
-            val repository =
-                SavedPatternRepository(
-                    dao,
-                    context,
-                    RepositoryDomainFakeCounterProjectDao(),
-                    ImmediateDatabaseTransactionRunner,
-                    UnconfinedTestDispatcher(testScheduler),
-                )
-
-            val savedId =
-                repository.saveRavelryPatternIfMissing(
-                    SavedPattern(
-                        source = SavedPatternSource.Ravelry,
-                        ravelryPatternId = 42,
-                        name = "New name",
-                        designerName = "Designer",
-                        canonicalUrl = "https://example.com/patterns/42",
-                    ),
-                )
-
-            assertEquals(7L, savedId)
-            assertEquals(0, dao.insertCount)
-            val existing = repository.getById(savedId)
-            assertEquals("Old name", existing?.name)
-            assertEquals("content://test/existing.pdf", existing?.localPdfUri)
-            assertEquals(true, existing?.isAvailableOffline)
-        }
-
-    @Test
-    fun `saved pattern repository reuses existing ravelry pattern by normalized original url`() =
-        runTest {
-            val dao =
-                FakeSavedPatternDao(
-                    savedPatterns =
-                        listOf(
-                            SavedPatternEntity(
-                                id = 7L,
-                                source = SavedPatternSource.Other.persistedValue,
-                                ravelryPatternId = null,
-                                name = "Old name",
-                                designerName = "Designer",
-                                originalUrl = "https://carts.ravelry.com/patterns/library/delight-cardigan/",
-                                canonicalUrl = "",
-                            ),
-                        ),
-                )
-            val repository =
-                SavedPatternRepository(
-                    dao,
-                    context,
-                    RepositoryDomainFakeCounterProjectDao(),
-                    ImmediateDatabaseTransactionRunner,
-                    UnconfinedTestDispatcher(testScheduler),
-                )
-
-            val savedId =
-                repository.saveRavelryPatternIfMissing(
-                    SavedPattern(
-                        source = SavedPatternSource.Ravelry,
-                        ravelryPatternId = 99,
-                        name = "Delight Cardigan",
-                        designerName = "Designer",
-                        originalUrl =
-                            "https://www.ravelry.com/patterns/library/delight-cardigan?utm_source=share#notes",
-                        canonicalUrl = "https://www.ravelry.com/patterns/library/delight-cardigan",
-                    ),
-                )
-
-            assertEquals(7L, savedId)
-            assertEquals(0, dao.insertCount)
-        }
-
-    @Test
     fun `saved pattern repository prunes missing app owned pattern on viewer load`() =
         runTest {
             val missingUri = "file:///data/data/com.finnvek.knittools/files/pattern_pdfs/1/missing.pdf"
@@ -517,9 +426,6 @@ internal class FakeSavedPatternDao(
 
     override suspend fun getById(id: Long): SavedPatternEntity? = savedPatterns.firstOrNull { it.id == id }
 
-    override suspend fun getByRavelryPatternId(ravelryPatternId: Int): SavedPatternEntity? =
-        savedPatterns.firstOrNull { it.ravelryPatternId == ravelryPatternId }
-
     override suspend fun getByCanonicalUrl(canonicalUrl: String): SavedPatternEntity? =
         savedPatterns.firstOrNull { it.canonicalUrl == canonicalUrl }
 
@@ -528,16 +434,8 @@ internal class FakeSavedPatternDao(
         excludedId: Long,
     ): SavedPatternEntity? = savedPatterns.firstOrNull { it.canonicalUrl == canonicalUrl && it.id != excludedId }
 
-    override suspend fun getByOriginalUrl(originalUrl: String): SavedPatternEntity? =
-        savedPatterns.firstOrNull { it.originalUrl == originalUrl }
-
     override suspend fun getByLocalPdfUri(localPdfUri: String): SavedPatternEntity? =
         savedPatterns.firstOrNull { it.localPdfUri == localPdfUri }
-
-    override suspend fun getByTitleAndDesignerName(
-        name: String,
-        designerName: String,
-    ): SavedPatternEntity? = savedPatterns.firstOrNull { it.name == name && it.designerName == designerName }
 
     override suspend fun getAllOnce(): List<SavedPatternEntity> = savedPatterns
 

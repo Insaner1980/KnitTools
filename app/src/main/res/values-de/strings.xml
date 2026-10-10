@@ -95,6 +95,7 @@
     <string name="counter_decrease_repeat">Wiederholung abziehen</string>
     <string name="counter_add_custom">%1$s hinzufügen</string>
     <string name="counter_decrease_custom">%1$s abziehen</string>
+    <string name="project_picker_empty">Noch keine Projekte. Lege eines unter Projekte an.</string>
     <string name="no_active_projects">Keine aktiven Projekte</string>
     <string name="no_completed_projects">Noch keine fertigen Projekte</string>
     <string name="delete_project">Löschen</string>
@@ -652,21 +653,9 @@
 
     <!-- Ravelry -->
     <string name="tool_ravelry">Ravelry</string>
-    <string name="desc_ravelry">Anleitungen suchen und Favoriten speichern</string>
-    <string name="ravelry_saved_patterns">Gespeicherte Anleitungen</string>
-    <string name="start_project">Projekt starten</string>
-    <string name="save_pattern">Anleitung speichern</string>
-    <string name="ravelry_save_pattern_explanation">Speichert die Angaben zur Anleitung in deiner Bibliothek. Dabei wird keine PDF heruntergeladen.</string>
-    <string name="ravelry_open_saved_pattern">Öffnen</string>
+    <string name="desc_ravelry">Anleitungen durchsuchen und PDFs in KnitTools speichern</string>
     <string name="open_in_ravelry">In Ravelry öffnen</string>
-    <string name="pattern_saved">Anleitung gespeichert</string>
-    <string name="search_hint">Anleitungen suchen…</string>
-    <string name="ravelry_import_loading">Anleitung wird geladen</string>
-    <string name="ravelry_import_title">Diese Anleitung speichern?</string>
-    <string name="ravelry_import_already_saved">Anleitung bereits gespeichert</string>
-    <string name="ravelry_import_needs_sign_in">Melde dich bei Ravelry an, um diese Anleitung zu speichern.</string>
     <string name="ravelry_import_could_not_import">Diese Anleitung konnte nicht importiert werden.</string>
-    <string name="ravelry_import_backend_unavailable">Ravelry-Import ist vorübergehend nicht verfügbar.</string>
     <string name="saved_pattern_detail_pdf_attached">PDF angehängt</string>
     <string name="saved_pattern_detail_available_offline">Offline verfügbar</string>
     <string name="saved_pattern_detail_open_on_ravelry">Auf Ravelry öffnen</string>
@@ -675,34 +664,10 @@
     <string name="saved_pattern_detail_open_pattern">Anleitung öffnen</string>
     <string name="saved_pattern_detail_attach_to_project">An Projekt anhängen</string>
     <string name="saved_pattern_detail_remove_confirm">Diese gespeicherte Anleitung aus der Bibliothek entfernen?\n\nFalls für diese Anleitung PDF-Anmerkungen in der Bibliothek erstellt wurden, werden sie ebenfalls gelöscht und nicht mehr in Projekten angezeigt. Bereits an Projekte angehängte PDFs und innerhalb von Projekten erstellte PDF-Anmerkungen bleiben erhalten.</string>
-    <string name="filter_weight">Stärke</string>
-    <string name="filter_difficulty">Schwierigkeit</string>
     <string name="free">Kostenlos</string>
     <string name="paid">Kostenpflichtig</string>
     <string name="availability_unknown">Verfügbarkeit unbekannt</string>
-    <string name="no_results">Keine Anleitungen gefunden</string>
-    <string name="search_error">Anleitungen konnten nicht geladen werden. Überprüfe deine Internetverbindung.</string>
-    <string name="ravelry_search_rate_limited">Ravelry begrenzt Suchanfragen. Versuche es später erneut.</string>
-    <string name="ravelry_search_auth_error">Die Ravelry-Anmeldung konnte nicht verwendet werden. Melde dich erneut an und versuche es wieder.</string>
-    <string name="ravelry_search_service_error">Ravelry ist vorübergehend nicht verfügbar. Versuche es später erneut.</string>
-    <string name="ravelry_sign_in">Mit Ravelry anmelden</string>
-    <string name="ravelry_browse">Ravelry durchsuchen</string>
-    <string name="ravelry_disconnect">Ravelry trennen</string>
-    <string name="ravelry_disconnect_confirm">Ravelry trennen? Du musst dich erneut anmelden, um die Ravelry-Funktionen zu verwenden.</string>
-    <string name="ravelry_not_connected">Melde dich an, um Ravelry-Anleitungen in KnitTools zu suchen.</string>
-    <string name="ravelry_connecting">Verbindung zu Ravelry wird hergestellt…</string>
-    <string name="ravelry_auth_pending">Schließe die Ravelry-Anmeldung im Browser ab.</string>
-    <string name="ravelry_connected">Mit Ravelry verbunden</string>
-    <string name="ravelry_connected_as">Verbunden als %1$s</string>
-    <string name="ravelry_auth_cancelled">Ravelry-Anmeldung wurde abgebrochen.</string>
-    <string name="ravelry_auth_expired">Ravelry-Anmeldung ist abgelaufen. Melde dich erneut an.</string>
-    <string name="ravelry_backend_unavailable">Ravelry-Verbindung ist vorübergehend nicht verfügbar.</string>
-    <string name="ravelry_disconnecting">Ravelry wird getrennt…</string>
     <string name="difficulty_format">%.1f / 5</string>
-    <plurals name="yardage_format">
-        <item quantity="one">%d Yard</item>
-        <item quantity="other">%d Yard</item>
-    </plurals>
 
     <!-- Info tips -->
     <string name="tip_pattern_repeat_title">Rapport</string>
@@ -730,8 +695,6 @@
     <string name="row_label_with_target">Reihe %1$d / %2$d</string>
     <string name="widget_undo_action">Rückgängig</string>
     <string name="widget_undo_content_description">Letzte Änderung rückgängig machen</string>
-    <string name="search_more_error">Weitere Muster konnten nicht geladen werden. Prüfe deine Internetverbindung.</string>
-    <string name="pattern_detail_error">Musterdetails konnten nicht geladen werden. Prüfe deine Internetverbindung.</string>
     <string name="project_actions_title">Projektaktionen</string>
     <string name="project_actions_section_counter_tools">Zählerwerkzeuge</string>
     <string name="project_content_title">Projekt</string>
@@ -744,12 +707,7 @@
 
     <!-- Täydennetyt lokalisoidut käyttöliittymätekstit -->
     <string name="yarn_card_number_fallback">Garn #%1$d</string>
-    <string name="pattern_detail_needles">Nadeln</string>
-    <string name="pattern_detail_yardage">Lauflänge</string>
-    <string name="pattern_detail_sizes">Größen</string>
-    <string name="pattern_saved_to_library">In der Bibliothek gespeichert</string>
     <string name="show_more">Mehr anzeigen</string>
-    <string name="show_less">Weniger anzeigen</string>
     <string name="pro_start_free_trial">Kostenlose Testphase starten</string><string name="pro_start_14_day_trial">14-tägige kostenlose Testphase starten</string><string name="pro_trial_start_failed">Die Testphase konnte nicht gestartet werden. Versuche es erneut.</string>
     <string name="pro_prompt_not_now">Nicht jetzt</string><string name="pro_prompt_see_pro">Pro ansehen</string><string name="pro_prompt_trial_body">Starte deine kostenlose 14-tägige Pro-Testphase. Es ist keine Zahlungsmethode erforderlich. Alles, was du erstellst, bleibt nach der Testphase verfügbar.</string>
     <string name="pro_prompt_reactivation_title">Reaktiviere dieses Projekt mit Pro</string>
@@ -1040,6 +998,18 @@
     <string name="web_pattern_delete_confirm_title">Webmuster löschen?</string>
     <string name="web_pattern_delete_confirm_message">%1$s aus den gespeicherten Anleitungen in der Bibliothek löschen?\n\nFalls für diese Anleitung PDF-Anmerkungen in der Bibliothek erstellt wurden, werden sie ebenfalls gelöscht und nicht mehr in Projekten angezeigt. Bereits an Projekte angehängte PDFs und innerhalb von Projekten erstellte PDF-Anmerkungen bleiben erhalten.</string>
     <string name="web_pattern_attach">Mit Projekt verknüpfen</string>
+    <string name="pattern_mark_up">Markieren</string>
+    <string name="pattern_mark_up_done">Fertig</string>
+    <string name="incoming_pdf_title">Anleitung speichern</string>
+    <string name="incoming_pdf_other_section">Oder</string>
+    <string name="incoming_pdf_new_project">Neues Projekt beginnen</string>
+    <string name="incoming_pdf_library_only">Nur in der Bibliothek speichern</string>
+    <string name="incoming_pdf_open_failed">PDF konnte nicht geöffnet werden</string>
+    <string name="incoming_pdf_save_failed">Anleitung konnte nicht gespeichert werden</string>
+    <string name="ravelry_browser_hint">Öffne eine Anleitung und tippe auf Download PDF, um sie in KnitTools zu speichern.</string>
+    <string name="ravelry_purchase_in_browser">Die Kasse öffnet sich in deinem Browser. Lade die Anleitung nach dem Kauf hier aus deiner Ravelry-Bibliothek herunter.</string>
+    <string name="incoming_pdf_downloading">Anleitung wird geladen…</string>
+    <string name="incoming_pdf_not_pdf">Nur PDF-Anleitungen können gespeichert werden</string>
     <string name="web_pattern_unlink">Musterinformationen entfernen</string>
     <string name="web_pattern_replace_confirm_title">Musterinformationen ersetzen?</string>
     <string name="web_pattern_replace_confirm_message">Die aktuellen Musterinformationen durch %1$s ersetzen?</string>

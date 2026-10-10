@@ -81,7 +81,7 @@ public fun com.finnvek.knittools.ui.components.CollectWithLifecycleEffect(flowPr
     - onEach: STABLE (function type)
 
 @Composable
-public fun com.finnvek.knittools.ui.components.ConfirmationDialog(title: kotlin.String, message: kotlin.String, confirmText: kotlin.String, isDestructive: kotlin.Boolean, onConfirm: kotlin.Function0<kotlin.Unit>, onDismiss: kotlin.Function0<kotlin.Unit>, scrollableMessage: kotlin.Boolean): kotlin.Unit
+public fun com.finnvek.knittools.ui.components.ConfirmationDialog(title: kotlin.String, message: kotlin.String, confirmText: kotlin.String, isDestructive: kotlin.Boolean, onConfirm: kotlin.Function0<kotlin.Unit>, onDismiss: kotlin.Function0<kotlin.Unit>, scrollableMessage: kotlin.Boolean, confirmEnabled: kotlin.Boolean, confirmModifier: androidx.compose.ui.Modifier, dismissModifier: androidx.compose.ui.Modifier): kotlin.Unit
   skippable: true
   restartable: true
   params:
@@ -92,6 +92,9 @@ public fun com.finnvek.knittools.ui.components.ConfirmationDialog(title: kotlin.
     - onConfirm: STABLE (function type)
     - onDismiss: STABLE (function type)
     - scrollableMessage: STABLE (primitive type)
+    - confirmEnabled: STABLE (primitive type)
+    - confirmModifier: STABLE (marked @Stable or @Immutable)
+    - dismissModifier: STABLE (marked @Stable or @Immutable)
 
 @Composable
 public fun com.finnvek.knittools.ui.components.ContinueProjectCard(project: com.finnvek.knittools.domain.model.CounterProject, sessionStatus: kotlin.String?, onClick: kotlin.Function0<kotlin.Unit>?, onClickLabel: kotlin.String?, onOpenCounter: kotlin.Function0<kotlin.Unit>?, modifier: androidx.compose.ui.Modifier, showName: kotlin.Boolean): kotlin.Unit
@@ -2098,7 +2101,7 @@ private fun com.finnvek.knittools.ui.screens.counter.rememberCounterDialogAction
     - viewModelProvider: STABLE (composable function type)
 
 @Composable
-private fun com.finnvek.knittools.ui.screens.counter.rememberCounterSheetActions(viewModelProvider: @[Composable] androidx.compose.runtime.internal.ComposableFunction0<com.finnvek.knittools.ui.screens.counter.CounterViewModel>, onShowYarnPicker: kotlin.Function0<kotlin.Unit>, onHideYarnPicker: kotlin.Function0<kotlin.Unit>, onHideYarnManagementSheet: kotlin.Function0<kotlin.Unit>, onHideNotesSheet: kotlin.Function0<kotlin.Unit>, onExpandNotes: kotlin.Function0<kotlin.Unit>, onHidePatternPicker: kotlin.Function0<kotlin.Unit>, onWebPatternReplacementRequired: kotlin.Function2<com.finnvek.knittools.domain.model.SavedPattern, kotlin.Long, kotlin.Unit>, onPatternMetadataAttachFailed: kotlin.Function0<kotlin.Unit>, onImportFromRavelry: kotlin.Function0<kotlin.Unit>, onAddWebPattern: kotlin.Function0<kotlin.Unit>, onSeePro: kotlin.Function0<kotlin.Unit>, onSaveProjectYarnNoteToMyYarn: kotlin.Function1<kotlin.Long, kotlin.Unit>): com.finnvek.knittools.ui.screens.counter.CounterSheetActions
+private fun com.finnvek.knittools.ui.screens.counter.rememberCounterSheetActions(viewModelProvider: @[Composable] androidx.compose.runtime.internal.ComposableFunction0<com.finnvek.knittools.ui.screens.counter.CounterViewModel>, onShowYarnPicker: kotlin.Function0<kotlin.Unit>, onHideYarnPicker: kotlin.Function0<kotlin.Unit>, onHideYarnManagementSheet: kotlin.Function0<kotlin.Unit>, onHideNotesSheet: kotlin.Function0<kotlin.Unit>, onExpandNotes: kotlin.Function0<kotlin.Unit>, onHidePatternPicker: kotlin.Function0<kotlin.Unit>, onWebPatternReplacementRequired: kotlin.Function3<@[ParameterName(name = \, onPatternMetadataAttachFailed: kotlin.Function0<kotlin.Unit>, onImportFromRavelry: kotlin.Function0<kotlin.Unit>, onAddWebPattern: kotlin.Function0<kotlin.Unit>, onSeePro: kotlin.Function0<kotlin.Unit>, onSaveProjectYarnNoteToMyYarn: kotlin.Function1<kotlin.Long, kotlin.Unit>): com.finnvek.knittools.ui.screens.counter.CounterSheetActions
   skippable: false
   restartable: false
   params:
@@ -2887,7 +2890,7 @@ private fun com.finnvek.knittools.ui.screens.library.SavedPatternDetailMenu(onEd
     - onDelete: STABLE (function type)
 
 @Composable
-public fun com.finnvek.knittools.ui.screens.library.SavedPatternDetailScreen(pattern: com.finnvek.knittools.domain.model.SavedPattern, onBack: kotlin.Function0<kotlin.Unit>, onOpenPattern: kotlin.Function0<kotlin.Unit>, onAttachToProject: kotlin.Function1<@[ParameterName(name = \, onRemove: kotlin.Function0<kotlin.Unit>, modifier: androidx.compose.ui.Modifier, onOpenWebsite: kotlin.Function1<kotlin.String, com.finnvek.knittools.ui.platform.ExternalWebLinkOpenResult>?, onOpenRavelry: kotlin.Function1<kotlin.String, kotlin.Unit>, onEditWebPattern: kotlin.Function0<kotlin.Unit>, projects: kotlin.collections.List<com.finnvek.knittools.domain.model.CounterProject>, onAttachWebPattern: kotlin.Function3<kotlin.Long, kotlin.Long?, kotlin.Function1<com.finnvek.knittools.repository.SavedPatternMetadataMutationResult, kotlin.Unit>, kotlin.Unit>, onOpenProject: kotlin.Function1<@[ParameterName(name = \, deleteErrorId: kotlin.Long): kotlin.Unit
+public fun com.finnvek.knittools.ui.screens.library.SavedPatternDetailScreen(pattern: com.finnvek.knittools.domain.model.SavedPattern, onBack: kotlin.Function0<kotlin.Unit>, onOpenPattern: kotlin.Function0<kotlin.Unit>, onAttachToProject: kotlin.Function2<@[ParameterName(name = \, onRemove: kotlin.Function0<kotlin.Unit>, modifier: androidx.compose.ui.Modifier, onOpenWebsite: kotlin.Function1<kotlin.String, com.finnvek.knittools.ui.platform.ExternalWebLinkOpenResult>?, onOpenRavelry: kotlin.Function1<kotlin.String, kotlin.Unit>, onEditWebPattern: kotlin.Function0<kotlin.Unit>, projects: kotlin.collections.List<com.finnvek.knittools.domain.model.CounterProject>, onAttachWebPattern: kotlin.Function3<kotlin.Long, kotlin.Long?, kotlin.Function1<com.finnvek.knittools.repository.SavedPatternMetadataMutationResult, kotlin.Unit>, kotlin.Unit>, onOpenProject: kotlin.Function1<@[ParameterName(name = \, deleteErrorId: kotlin.Long): kotlin.Unit
   skippable: false
   restartable: true
   params:

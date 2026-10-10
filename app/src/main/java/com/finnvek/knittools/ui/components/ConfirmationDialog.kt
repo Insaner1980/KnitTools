@@ -15,8 +15,11 @@ import com.finnvek.knittools.R
 /**
  * Yhtenäinen vahvistusdialogi destruktiivisille ja muille toiminnoille.
  * Destruktiivisissa (isDestructive=true) vahvista-nappi saa error-värin.
+ * [confirmEnabled] pitää vahvistuksen poissa käytöstä kesken tallennuksen, ja painikkeiden
+ * modifierit tuovat kosketuskoon ja testitunnisteet ilman omaa AlertDialogia.
  */
 @Composable
+@Suppress("kotlin:S107") // Valinnaiset parametrit korvaavat kutsukohtaiset AlertDialogit.
 fun ConfirmationDialog(
     title: String,
     message: String,
@@ -25,6 +28,9 @@ fun ConfirmationDialog(
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
     scrollableMessage: Boolean = false,
+    confirmEnabled: Boolean = true,
+    confirmModifier: Modifier = Modifier,
+    dismissModifier: Modifier = Modifier,
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -38,6 +44,8 @@ fun ConfirmationDialog(
         confirmButton = {
             TextButton(
                 onClick = onConfirm,
+                enabled = confirmEnabled,
+                modifier = confirmModifier,
                 colors =
                     if (isDestructive) {
                         ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
@@ -49,7 +57,7 @@ fun ConfirmationDialog(
             }
         },
         dismissButton = {
-            CancelButton(onClick = onDismiss)
+            CancelButton(onClick = onDismiss, modifier = dismissModifier)
         },
     )
 }

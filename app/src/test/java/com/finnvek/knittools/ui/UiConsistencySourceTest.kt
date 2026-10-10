@@ -55,13 +55,20 @@ class UiConsistencySourceTest {
         // Projektin toimintosheetin otsikkona toimii projektikortti (ProjectOverviewLink).
         val titleExceptions = setOf("counter/ProjectActionsBottomSheet.kt")
         val sheetCall = Regex("""(?<![\w.])ModalBottomSheet\(""")
-        val sources = screenSources() + componentSources()
+        // Kommentit ja merkkijonot pois: kommentoitu "SheetTitle(" ei saa hyväksyä otsikotonta sheetiä.
+        val sources = (screenSources() + componentSources()).mapValues { (_, text) -> text.codeOnly() }
+        // Otsikko tarkistetaan jokaisen sheetin omasta sisällöstä: yksi otsikko ei saa kelvata
+        // saman tiedoston kaikille sheeteille. Sisältö voi olla saman tiedoston apufunktiossa.
         val withoutTitle =
             sources
-                .filter { (path, text) -> sheetCall.containsMatchIn(text) && path !in titleExceptions }
-                .filterValues { text -> "SheetTitle(" !in text && "FormSheet(" !in text }
-                .keys
-        assertEquals("Käytä SheetTitlea sheetin otsikkona", emptySet<String>(), withoutTitle)
+                .filterKeys { it !in titleExceptions }
+                .mapValues { (_, text) ->
+                    sheetCall.findAll(text).count { match ->
+                        val argumentsEnd = match.range.last + callArguments(text, match.range.last).length
+                        !hasSheetTitle(text, trailingBlock(text, argumentsEnd))
+                    }
+                }.filterValues { it > 0 }
+        assertEquals("Käytä SheetTitlea jokaisen sheetin otsikkona", emptyMap<String, Int>(), withoutTitle)
 
         val withoutSurface =
             sources
@@ -78,12 +85,29 @@ class UiConsistencySourceTest {
     }
 
     @Test
+    fun `title check ignores titles in nested comments and strings`() {
+        val untitled =
+            listOf(
+                "ModalBottomSheet(onDismissRequest = {}) {",
+                "    /* ulompi /* sisempi */ SheetTitle(text = otsikko) */",
+                "    Text(\"SheetTitle(\")",
+                "    // SheetTitle(text = otsikko)",
+                "}",
+            ).joinToString("\n")
+
+        assertEquals(false, titleCall.containsMatchIn(untitled.codeOnly()))
+        assertEquals(true, titleCall.containsMatchIn("SheetTitle(text = otsikko)".codeOnly()))
+    }
+
+    @Test
     fun `choices use SegmentedToggle instead of FilterChip`() {
         // Sallittu: PDF-merkintöjen vieritettävä työkalupaletti, jossa tilat ja toiminnot ovat rinnakkain.
+        // Myös jaetut komponentit, jottei sirurivi palaa komponentin kautta.
         assertOnlyAllowed(
             Regex("""(?<![\w.])FilterChip\("""),
             mapOf("pattern/PatternAnnotationToolbar.kt" to 1),
             "Käytä SegmentedTogglea tai ProjectFilterPilliä",
+            sources = screenSources() + componentSources(),
         )
     }
 
@@ -97,7 +121,6 @@ class UiConsistencySourceTest {
                 "counter/CounterScreen.kt" to 6,
                 "counter/MultiCounterComponents.kt" to 2,
                 "counter/PhotoGalleryScreen.kt" to 1,
-                "counter/ProjectYarnUsageSheet.kt" to 1,
                 "counter/TargetRowsDialog.kt" to 1,
                 "library/WebPatternEditorScreen.kt" to 2,
                 "pattern/PatternViewerScreen.kt" to 2,
@@ -146,12 +169,108 @@ class UiConsistencySourceTest {
         pattern: Regex,
         allowed: Map<String, Int>,
         hint: String,
+        sources: Map<String, String> = screenSources(),
     ) {
         val actual =
-            screenSources()
+            sources
                 .mapValues { (_, text) -> pattern.findAll(text).count() }
                 .filterValues { it > 0 }
         assertEquals(hint, allowed, actual)
+    }
+
+    /** Kutsua seuraava sisältölohko `{ … }`, eli sheetin sisältö. */
+    private fun trailingBlock(
+        text: String,
+        fromIndex: Int,
+    ): String {
+        val open = text.indexOf('{', fromIndex)
+        if (open < 0) return ""
+        var depth = 0
+        for (index in open until text.length) {
+            when (text[index]) {
+                '{' -> depth++
+                '}' -> if (--depth == 0) return text.substring(open, index)
+            }
+        }
+        return text.substring(open)
+    }
+
+    /** Otsikko suoraan sisällössä tai saman tiedoston apufunktiossa, jota sisältö kutsuu. */
+    private fun hasSheetTitle(
+        fileText: String,
+        block: String,
+    ): Boolean {
+        if (block.containsTitle()) return true
+        return Regex("""\b([A-Z]\w+)\(""").findAll(block).any { call ->
+            val declaration = Regex("""fun ${call.groupValues[1]}\(""").find(fileText) ?: return@any false
+            val bodyStart = declaration.range.last + callArguments(fileText, declaration.range.last).length
+            trailingBlock(fileText, bodyStart).containsTitle()
+        }
+    }
+
+    private fun String.containsTitle(): Boolean = titleCall.containsMatchIn(this)
+
+    /**
+     * Lähdekoodi ilman kommentteja ja merkkijonoja; merkkijonot jäävät tyhjiksi, jotta rakenne säilyy.
+     * Lohkokommentit lasketaan sisäkkäin kuten Kotlinissa: säännöllinen lauseke pysähtyi ensimmäiseen
+     * sulkeutumiseen ja jätti ulomman kommentin loppuosan koodiksi.
+     */
+    @Suppress("CyclomaticComplexMethod", "NestedBlockDepth")
+    private fun String.codeOnly(): String {
+        val code = StringBuilder(length)
+        var index = 0
+        while (index < length) {
+            index =
+                when {
+                    startsWith(RAW_QUOTE, index) -> {
+                        code.append("\"\"")
+                        indexOf(RAW_QUOTE, index + RAW_QUOTE.length).let { end ->
+                            if (end < 0) length else end + RAW_QUOTE.length
+                        }
+                    }
+
+                    this[index] == '"' || this[index] == '\'' -> {
+                        val quote = this[index]
+                        var end = index + 1
+                        while (end < length && this[end] != quote && this[end] != '\n') {
+                            if (this[end] == '\\') end++
+                            end++
+                        }
+                        code.append(quote).append(quote)
+                        minOf(end + 1, length)
+                    }
+
+                    startsWith("//", index) -> indexOf('\n', index).let { end -> if (end < 0) length else end }
+
+                    startsWith("/*", index) -> {
+                        var depth = 0
+                        var end = index
+                        while (end < length) {
+                            when {
+                                startsWith("/*", end) -> {
+                                    depth++
+                                    end += 2
+                                }
+
+                                startsWith("*/", end) -> {
+                                    depth--
+                                    end += 2
+                                    if (depth == 0) break
+                                }
+
+                                else -> end++
+                            }
+                        }
+                        end
+                    }
+
+                    else -> {
+                        code.append(this[index])
+                        index + 1
+                    }
+                }
+        }
+        return code.toString()
     }
 
     /** Kutsun argumentit avaavasta sulkeesta vastaavaan sulkevaan asti. */
@@ -188,5 +307,10 @@ class UiConsistencySourceTest {
     private companion object {
         const val SCREENS = "app/src/main/java/com/finnvek/knittools/ui/screens"
         const val COMPONENTS = "app/src/main/java/com/finnvek/knittools/ui/components"
+
+        /** Varsinainen kutsu, ei esim. `SheetTitleText(` tai `.SheetTitle(`. */
+        val titleCall = Regex("""(?<![\w.])(SheetTitle|FormSheet)\(""")
+
+        const val RAW_QUOTE = "\"\"\""
     }
 }

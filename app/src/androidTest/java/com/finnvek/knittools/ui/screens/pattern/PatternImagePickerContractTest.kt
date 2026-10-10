@@ -13,6 +13,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.finnvek.knittools.data.storage.PatternDocumentStorage
 import com.finnvek.knittools.data.storage.PatternImageStageException
 import com.finnvek.knittools.data.storage.PatternImageStageFailure
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertThrows
@@ -89,7 +90,7 @@ class PatternImagePickerContractTest {
         val failure =
             assertThrows(PatternImageStageException::class.java) {
                 runBlocking {
-                    PatternDocumentStorage().stageSelectedImages(
+                    PatternDocumentStorage(Dispatchers.IO).stageSelectedImages(
                         context = context,
                         projectId = System.currentTimeMillis(),
                         sessionId = "page-limit",

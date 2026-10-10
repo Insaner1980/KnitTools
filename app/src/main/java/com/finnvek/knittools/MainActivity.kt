@@ -38,8 +38,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.core.animation.doOnEnd
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.splashscreen.SplashScreenViewProvider
+import androidx.lifecycle.DEFAULT_ARGS_KEY
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.viewmodel.MutableCreationExtras
 import com.finnvek.knittools.analytics.PostHogAnalytics
 import com.finnvek.knittools.billing.BillingManager
 import com.finnvek.knittools.data.datastore.PreferencesManager
@@ -99,7 +101,13 @@ class MainActivity : AppCompatActivity() {
     lateinit var ioDispatcher: CoroutineDispatcher
 
     private val patternShareCoordinator: PatternShareCoordinatorViewModel by viewModels()
-    private val incomingPdfViewModel: IncomingPdfViewModel by viewModels()
+    private val incomingPdfViewModel: IncomingPdfViewModel by viewModels(
+        extrasProducer = {
+            MutableCreationExtras(defaultViewModelCreationExtras).apply {
+                this[DEFAULT_ARGS_KEY] = Bundle()
+            }
+        },
+    )
 
     private val updateResultLauncher =
         registerForActivityResult(

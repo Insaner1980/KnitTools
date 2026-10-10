@@ -106,7 +106,7 @@
         PostHog Android SDK ei ole CVE-2024-9710:n PostHog-palvelin. CVE koskee palvelimen
         database_schema-metodia, jota tässä Android-artefaktissa ei ole.
         ]]></notes>
-        <packageUrl regex="true">^pkg:maven/com\.posthog/posthog-android@3\.70\.0$</packageUrl>
+        <packageUrl regex="true">^pkg:maven/com\.posthog/posthog-android@3\.72\.0$</packageUrl>
         <cve>CVE-2024-9710</cve>
     </suppress>
 
@@ -115,7 +115,7 @@
         PostHog JVM SDK:n ydinkirjasto ei ole CVE-2024-9710:n PostHog-palvelin. CVE koskee
         palvelimen database_schema-metodia, jota tässä SDK-artefaktissa ei ole.
         ]]></notes>
-        <packageUrl regex="true">^pkg:maven/com\.posthog/posthog@6\.43\.0$</packageUrl>
+        <packageUrl regex="true">^pkg:maven/com\.posthog/posthog@6\.47\.0$</packageUrl>
         <cve>CVE-2024-9710</cve>
     </suppress>
 

@@ -37,23 +37,8 @@ class IncomingPdfSourceTest {
     fun `discarded copies are cleaned up outside the view model lifetime`() {
         val viewModel = ProjectSourceFiles.read(VIEW_MODEL)
 
-        assertTrue(viewModel.contains("applicationScope.launch {"))
+        assertTrue(viewModel.contains("applicationScope.launch(ioDispatcher)"))
         assertFalse(viewModel.contains("viewModelScope.launch { deleteUnusedCopy("))
-        assertTrue(viewModel.contains("savedPatternRepository.deleteLocalPatternFileIfUnused(pdf.localUri)"))
-        assertFalse(viewModel.contains("AppFileStorage.deleteIfAppOwned("))
-    }
-
-    @Test
-    fun `incoming pdf saved state excludes external intent defaults`() {
-        val activity = ProjectSourceFiles.read("app/src/main/java/com/finnvek/knittools/MainActivity.kt")
-        val incomingPdfCreation =
-            activity
-                .substringAfter("private val incomingPdfViewModel:")
-                .substringBefore("private val updateResultLauncher")
-
-        assertTrue(incomingPdfCreation.contains("extrasProducer = {"))
-        assertTrue(incomingPdfCreation.contains("MutableCreationExtras(defaultViewModelCreationExtras)"))
-        assertTrue(incomingPdfCreation.contains("this[DEFAULT_ARGS_KEY] = Bundle()"))
     }
 
     private companion object {

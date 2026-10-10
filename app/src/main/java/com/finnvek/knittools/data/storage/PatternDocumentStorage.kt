@@ -8,14 +8,11 @@ import android.graphics.pdf.PdfDocument
 import android.net.Uri
 import android.os.storage.StorageManager
 import androidx.core.net.toUri
-import com.finnvek.knittools.di.IoDispatcher
 import com.finnvek.knittools.ui.screens.pattern.PatternImageImportLimits
 import com.finnvek.knittools.ui.screens.pattern.PatternImageSelection
 import com.finnvek.knittools.ui.screens.pattern.StagedPatternPage
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.ensureActive
-import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.IOException
 import java.nio.file.FileAlreadyExistsException
@@ -66,9 +63,7 @@ internal data class PatternImageStageBatch(
 @Singleton
 class PatternDocumentStorage
     @Inject
-    constructor(
-        @param:IoDispatcher private val ioDispatcher: CoroutineDispatcher,
-    ) {
+    constructor() {
         fun createCaptureImageFile(
             context: Context,
             projectId: Long,
@@ -401,40 +396,39 @@ class PatternDocumentStorage
             projectId: Long,
             sourceUri: Uri,
             fileName: String,
-        ): String? =
-            withContext(ioDispatcher) {
-                if (AppFileStorage.isAppOwnedUri(context, sourceUri)) return@withContext null
-                val maxCopyBytes = availablePdfCopyBytes(context) ?: return@withContext null
-                val copyContext = coroutineContext
+        ): String? {
+            if (AppFileStorage.isAppOwnedUri(context, sourceUri)) return null
+            val maxCopyBytes = availablePdfCopyBytes(context) ?: return null
+            val copyContext = coroutineContext
 
-                try {
-                    context.contentResolver.openInputStream(sourceUri)?.use { input ->
-                        val copiedFile =
-                            PatternDocumentFiles.writeUniquePdf(
-                                directory = File(context.filesDir, "pattern_pdfs/$projectId"),
-                                fileName = fileName,
-                            ) { targetFile ->
-                                PatternDocumentFiles.copyBounded(
-                                    input = input,
-                                    target = targetFile,
-                                    maxBytes = maxCopyBytes,
-                                ) {
-                                    copyContext.ensureActive()
-                                }
-                                copyContext.ensureActive()
-                                if (!isReadablePdf(context, targetFile)) {
-                                    throw IOException("Pattern PDF is not readable")
-                                }
+            return try {
+                context.contentResolver.openInputStream(sourceUri)?.use { input ->
+                    val copiedFile =
+                        PatternDocumentFiles.writeUniquePdf(
+                            directory = File(context.filesDir, "pattern_pdfs/$projectId"),
+                            fileName = fileName,
+                        ) { targetFile ->
+                            PatternDocumentFiles.copyBounded(
+                                input = input,
+                                target = targetFile,
+                                maxBytes = maxCopyBytes,
+                            ) {
                                 copyContext.ensureActive()
                             }
-                        copiedFile?.toUri()?.toString()
-                    }
-                } catch (failure: CancellationException) {
-                    throw failure
-                } catch (_: Exception) {
-                    null
+                            copyContext.ensureActive()
+                            if (!isReadablePdf(context, targetFile)) {
+                                throw IOException("Pattern PDF is not readable")
+                            }
+                            copyContext.ensureActive()
+                        }
+                    copiedFile?.toUri()?.toString()
                 }
+            } catch (failure: CancellationException) {
+                throw failure
+            } catch (_: Exception) {
+                null
             }
+        }
 
         private fun availablePdfCopyBytes(context: Context): Long? =
             try {

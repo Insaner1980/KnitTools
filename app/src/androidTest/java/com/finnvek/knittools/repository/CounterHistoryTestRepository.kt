@@ -58,7 +58,7 @@ internal class RoomCounterTestFixture(
             projectCounterDao = database.projectCounterDao(),
             sessionDao = database.sessionDao(),
             photoStorage = ProgressPhotoStorage(),
-            patternDocumentStorage = PatternDocumentStorage(Dispatchers.IO),
+            patternDocumentStorage = PatternDocumentStorage(),
             context = context,
             yarnCardRepository = yarnCardRepository,
             savedPatternRepository = savedPatterns,

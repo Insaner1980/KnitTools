@@ -1,5 +1,12 @@
 package com.finnvek.knittools.ui.components
 
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -9,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.model.CounterProject
+import com.finnvek.knittools.ui.theme.ComponentDimens
 
 /** Projektit valintariveinä: aktiiviset ensin, valmiit omana osionaan. */
 @Composable
@@ -42,7 +50,16 @@ fun ProjectPickerSheet(
         onDismissRequest = onDismiss,
         containerColor = MaterialTheme.colorScheme.surface,
     ) {
-        SheetContentColumn {
+        Column(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .navigationBarsPadding()
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = ComponentDimens.FormSheetHorizontalPadding)
+                    .padding(bottom = ComponentDimens.LargeContentPadding),
+            verticalArrangement = Arrangement.spacedBy(ComponentDimens.StandardSpacing),
+        ) {
             SheetTitle(text = title)
             if (projects.isEmpty()) {
                 OverviewEmptyText(R.string.project_picker_empty)

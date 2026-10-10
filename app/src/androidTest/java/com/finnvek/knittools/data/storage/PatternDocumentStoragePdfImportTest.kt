@@ -5,7 +5,6 @@ import android.graphics.pdf.PdfDocument
 import androidx.core.net.toUri
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -20,7 +19,7 @@ import java.io.File
 @RunWith(AndroidJUnit4::class)
 class PatternDocumentStoragePdfImportTest {
     private val context = ApplicationProvider.getApplicationContext<Context>()
-    private val storage = PatternDocumentStorage(Dispatchers.IO)
+    private val storage = PatternDocumentStorage()
     private val sourceDirectory = File(context.cacheDir, "pattern-pdf-import-test")
     private val targetDirectory = File(context.filesDir, "pattern_pdfs/$PROJECT_ID")
 

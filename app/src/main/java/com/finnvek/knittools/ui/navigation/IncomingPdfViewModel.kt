@@ -41,7 +41,10 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import java.io.File
 import javax.inject.Inject
 
 /** Toisesta sovelluksesta avattu tai jaettu PDF, joka on jo kopioitu sovelluksen omaan tallennustilaan. */
@@ -89,6 +92,7 @@ class IncomingPdfViewModel
         @param:IoDispatcher private val ioDispatcher: CoroutineDispatcher,
         @param:ApplicationScope private val applicationScope: CoroutineScope,
     ) : ViewModel() {
+        private val pendingMutex = Mutex()
         private val mutablePending = MutableStateFlow(restorePending())
         val pending: StateFlow<IncomingPdf?> = mutablePending.asStateFlow()
 
@@ -169,14 +173,12 @@ class IncomingPdfViewModel
         ) {
             val copiedUri =
                 try {
-                    withContext(ioDispatcher) {
-                        patternDocumentStorage.copyPdfToInternal(
-                            context = context,
-                            projectId = UNASSIGNED_PDF_DIRECTORY_ID,
-                            sourceUri = uri,
-                            fileName = fileName,
-                        )
-                    }
+                    patternDocumentStorage.copyPdfToInternal(
+                        context = context,
+                        projectId = UNASSIGNED_PDF_DIRECTORY_ID,
+                        sourceUri = uri,
+                        fileName = fileName,
+                    )
                 } catch (cancellation: CancellationException) {
                     throw cancellation
                 } catch (_: Exception) {
@@ -186,24 +188,29 @@ class IncomingPdfViewModel
                 outcomeChannel.send(IncomingPdfOutcome.OpenFailed)
                 return
             }
-            // Uusi PDF korvaa käsittelemättä jääneen edellisen; sen kopio siivotaan pois.
-            deleteUnusedCopy(mutablePending.value)
-            setPending(IncomingPdf(copiedUri, PatternDisplayNames.documentLabel(fileName)))
+            val pdf = IncomingPdf(copiedUri, PatternDisplayNames.documentLabel(fileName))
+            try {
+                pendingMutex.withLock {
+                    deleteUnusedCopy(mutablePending.value)
+                    setPending(pdf)
+                }
+            } catch (cancellation: CancellationException) {
+                deleteUnusedCopy(pdf)
+                throw cancellation
+            }
         }
 
         fun attachToProject(
             projectId: Long,
             name: String,
         ) {
-            val pdf = mutablePending.value ?: return
-            runBusy {
+            runBusy { pdf ->
                 attach(pdf, projectId, name)
             }
         }
 
         fun startNewProject(name: String) {
-            val pdf = mutablePending.value ?: return
-            runBusy {
+            runBusy { pdf ->
                 // Projekti ja PDF samassa transaktiossa: epäonnistunut liitos ei jätä tyhjää projektia.
                 val result =
                     counterRepository.createProjectWithImportedPdf(
@@ -222,8 +229,7 @@ class IncomingPdfViewModel
         }
 
         fun saveToLibrary(name: String) {
-            val pdf = mutablePending.value ?: return
-            runBusy {
+            runBusy { pdf ->
                 val savedPatternId =
                     savedPatternRepository.saveImportedPatternIfMissing(
                         patternUrl = pdf.localUri,
@@ -239,9 +245,14 @@ class IncomingPdfViewModel
         }
 
         fun discard() {
-            val pdf = mutablePending.value ?: return
-            setPending(null)
-            deleteUnusedCopy(pdf)
+            if (mutableBusy.value) return
+            viewModelScope.launch {
+                pendingMutex.withLock {
+                    val pdf = mutablePending.value ?: return@withLock
+                    setPending(null)
+                    deleteUnusedCopy(pdf)
+                }
+            }
         }
 
         private suspend fun attach(
@@ -277,12 +288,15 @@ class IncomingPdfViewModel
             }
         }
 
-        private fun runBusy(block: suspend () -> Unit) {
+        private fun runBusy(block: suspend (IncomingPdf) -> Unit) {
             if (mutableBusy.value) return
             mutableBusy.value = true
             viewModelScope.launch {
                 try {
-                    block()
+                    pendingMutex.withLock {
+                        val pdf = mutablePending.value ?: return@withLock
+                        block(pdf)
+                    }
                 } catch (cancellation: CancellationException) {
                     throw cancellation
                 } catch (_: Exception) {
@@ -309,8 +323,14 @@ class IncomingPdfViewModel
          */
         private fun deleteUnusedCopy(pdf: IncomingPdf?) {
             pdf ?: return
-            applicationScope.launch(ioDispatcher) {
-                runCatching { AppFileStorage.deleteIfAppOwned(context, pdf.localUri.toUri()) }
+            applicationScope.launch {
+                try {
+                    savedPatternRepository.deleteLocalPatternFileIfUnused(pdf.localUri)
+                } catch (cancellation: CancellationException) {
+                    throw cancellation
+                } catch (_: Exception) {
+                    // Failed cleanup can leave an orphan but must not undo a completed save.
+                }
             }
         }
 
@@ -321,8 +341,16 @@ class IncomingPdfViewModel
         }
 
         private fun restorePending(): IncomingPdf? {
-            val localUri = savedStateHandle.get<String>(KEY_LOCAL_URI) ?: return null
-            val name = savedStateHandle.get<String>(KEY_NAME) ?: return null
+            val localUri = savedStateHandle.get<Any?>(KEY_LOCAL_URI) as? String ?: return null
+            val name = savedStateHandle.get<Any?>(KEY_NAME) as? String ?: return null
+            val isStagedPdf =
+                runCatching {
+                    val file = AppFileStorage.resolveAppOwnedFile(context, localUri.toUri()) ?: return@runCatching false
+                    file.isFile &&
+                        file.canonicalFile.parentFile ==
+                        File(context.filesDir, "pattern_pdfs/$UNASSIGNED_PDF_DIRECTORY_ID").canonicalFile
+                }.getOrDefault(false)
+            if (!isStagedPdf) return null
             return IncomingPdf(localUri, name)
         }
 

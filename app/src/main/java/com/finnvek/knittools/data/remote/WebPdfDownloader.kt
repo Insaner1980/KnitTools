@@ -95,7 +95,7 @@ class WebPdfDownloader
                 return target
             } finally {
                 // Keskeytynyt tai liian suuri lataus ei jätä puolikasta tiedostoa välimuistiin.
-                if (!completed) target.delete()
+                if (!completed && target.exists() && !target.delete()) target.deleteOnExit()
             }
         }
 

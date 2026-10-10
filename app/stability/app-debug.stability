@@ -81,12 +81,13 @@ public fun com.finnvek.knittools.ui.components.CollectWithLifecycleEffect(flowPr
     - onEach: STABLE (function type)
 
 @Composable
-public fun com.finnvek.knittools.ui.components.ConfirmationDialog(title: kotlin.String, message: kotlin.String, confirmText: kotlin.String, isDestructive: kotlin.Boolean, onConfirm: kotlin.Function0<kotlin.Unit>, onDismiss: kotlin.Function0<kotlin.Unit>, scrollableMessage: kotlin.Boolean, confirmEnabled: kotlin.Boolean, confirmModifier: androidx.compose.ui.Modifier, dismissModifier: androidx.compose.ui.Modifier): kotlin.Unit
+public fun com.finnvek.knittools.ui.components.ConfirmationDialog(title: kotlin.String, message: kotlin.String, modifier: androidx.compose.ui.Modifier, confirmText: kotlin.String, isDestructive: kotlin.Boolean, onConfirm: kotlin.Function0<kotlin.Unit>, onDismiss: kotlin.Function0<kotlin.Unit>, scrollableMessage: kotlin.Boolean, confirmEnabled: kotlin.Boolean, confirmModifier: androidx.compose.ui.Modifier, dismissModifier: androidx.compose.ui.Modifier): kotlin.Unit
   skippable: true
   restartable: true
   params:
     - title: STABLE (String is immutable)
     - message: STABLE (String is immutable)
+    - modifier: STABLE (marked @Stable or @Immutable)
     - confirmText: STABLE (String is immutable)
     - isDestructive: STABLE (primitive type)
     - onConfirm: STABLE (function type)
@@ -781,6 +782,14 @@ public fun com.finnvek.knittools.ui.components.SessionItem(startedAt: kotlin.Lon
     - endRow: STABLE (primitive type)
     - modifier: STABLE (marked @Stable or @Immutable)
     - onDelete: STABLE (function type)
+
+@Composable
+internal fun com.finnvek.knittools.ui.components.SheetContentColumn(modifier: androidx.compose.ui.Modifier, content: @[Composable] @[ExtensionFunctionType] androidx.compose.runtime.internal.ComposableFunction1<androidx.compose.foundation.layout.ColumnScope, kotlin.Unit>): kotlin.Unit
+  skippable: true
+  restartable: true
+  params:
+    - modifier: STABLE (marked @Stable or @Immutable)
+    - content: STABLE (composable function type)
 
 @Composable
 public fun com.finnvek.knittools.ui.components.SheetOptionRow(title: kotlin.String, onClick: kotlin.Function0<kotlin.Unit>, modifier: androidx.compose.ui.Modifier, body: kotlin.String?, enabled: kotlin.Boolean, badge: @[Composable] androidx.compose.runtime.internal.ComposableFunction0<kotlin.Unit>?): kotlin.Unit

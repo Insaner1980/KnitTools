@@ -23,6 +23,7 @@ import com.finnvek.knittools.R
 fun ConfirmationDialog(
     title: String,
     message: String,
+    modifier: Modifier = Modifier,
     confirmText: String = stringResource(R.string.confirm),
     isDestructive: Boolean = false,
     onConfirm: () -> Unit,
@@ -34,6 +35,7 @@ fun ConfirmationDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
+        modifier = modifier,
         title = { Text(title) },
         text = {
             Text(

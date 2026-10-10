@@ -13,6 +13,7 @@ import com.finnvek.knittools.ui.screens.pattern.PatternImageImportLimits
 import com.finnvek.knittools.ui.screens.pattern.PatternImageSelection
 import com.finnvek.knittools.ui.screens.pattern.StagedPatternPage
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -30,7 +31,7 @@ import java.util.UUID
 class PatternImagePdfPipelineTest {
     private val context = ApplicationProvider.getApplicationContext<Context>()
     private val projectId = System.currentTimeMillis()
-    private val storage = PatternDocumentStorage()
+    private val storage = PatternDocumentStorage(Dispatchers.IO)
     private val fixtureDir = File(context.cacheDir, "pattern-image-test-${UUID.randomUUID()}").apply { mkdirs() }
 
     @After

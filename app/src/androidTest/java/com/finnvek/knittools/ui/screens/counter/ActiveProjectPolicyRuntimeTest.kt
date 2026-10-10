@@ -20,6 +20,7 @@ import com.finnvek.knittools.data.datastore.AppLanguage
 import com.finnvek.knittools.data.local.CounterProjectEntity
 import com.finnvek.knittools.data.local.KnitToolsDatabase
 import com.finnvek.knittools.pro.ProFeature
+import com.finnvek.knittools.pro.ProPolicyTestControl
 import com.finnvek.knittools.pro.ProStatus
 import com.finnvek.knittools.pro.TrialStartResult
 import com.finnvek.knittools.pro.TrialState
@@ -74,8 +75,8 @@ class ActiveProjectPolicyRuntimeTest {
     fun setup() {
         app = ApplicationProvider.getApplicationContext()
         assumeTrue(
-            "Requires the offline isolated policy installation",
-            app.packageName == "com.finnvek.knittools.activepolicytest",
+            "Requires the isolated offline package: -Pknittools.isolatedTest=activepolicy",
+            ProPolicyTestControl.isActive,
         )
         database = app.database.get()
         repository = EntryPointAccessors.fromApplication(app, WidgetEntryPoint::class.java).counterRepository()
@@ -141,6 +142,8 @@ class ActiveProjectPolicyRuntimeTest {
         launch()
         createViaUi("First free project")
         val first = projectId("First free project")
+        // Valmistuminen on projektinäkymän valikossa; laskurin otsikko avaa projektinäkymän.
+        open("First free project")
         action(R.string.complete_project)
         click(R.string.complete_project)
         waitFor { runBlocking { repository.getProject(first)?.isCompleted == true } }
@@ -183,11 +186,15 @@ class ActiveProjectPolicyRuntimeTest {
         open("Finished target")
         action(R.string.reactivate_project)
         waitFor { runBlocking { repository.getProject(completed)?.isCompleted == false } }
+        openCounterFromOverview("Finished target")
         clickDescription(R.string.counter_add_row)
         waitFor { runBlocking { repository.getProject(completed)?.count == 1 } }
         val legacy = seed("Legacy active")
+        // Laskurista palataan ensin projektinäkymään ja sieltä listaan.
+        pressBack()
         pressBack()
         open("Legacy active")
+        openCounterFromOverview("Legacy active")
         clickDescription(R.string.counter_add_row)
         waitFor { runBlocking { repository.getProject(legacy)?.count == 1 } }
         assertEquals(1, runBlocking { repository.getProject(completed)?.count })
@@ -311,6 +318,13 @@ class ActiveProjectPolicyRuntimeTest {
         clickObservation("open-idle-finished")
     }
 
+    /** Projektinäkymästä laskuriin vie jatka-kortin nappi. */
+    private fun openCounterFromOverview(name: String) {
+        val description = app.getString(R.string.project_continue_content_description, name)
+        clickNode(description) { it.contentDescription?.toString() == description }
+        idle()
+    }
+
     private fun action(label: Int) {
         actionSearch++
         diagnostic("before-open-sheet", requested = text(label))
@@ -358,7 +372,7 @@ class ActiveProjectPolicyRuntimeTest {
         operation: String? = null,
         clickEvidence: JSONObject? = null,
     ) {
-        if (!::app.isInitialized || app.packageName != "com.finnvek.knittools.activepolicytest") return
+        if (!::app.isInitialized || !ProPolicyTestControl.isActive) return
         val started = SystemClock.elapsedRealtime()
         val record =
             JSONObject()
@@ -523,15 +537,13 @@ class ActiveProjectPolicyRuntimeTest {
                     .get()
                     .purchaseStateReady.value,
             )
-            val manager = trialManager()
-            val state =
-                manager.javaClass
-                    .getMethod(
-                        "getTrialState",
-                    ).invoke(manager) as kotlinx.coroutines.flow.StateFlow<*>
-            record.put("controlledTrialState", state.value.toString())
-            val result = manager.javaClass.getDeclaredField("auditResult").apply { isAccessible = true }
-            record.put("controlledTrialStartResult", result.get(manager).toString())
+            record.put(
+                "proState",
+                app.proManager
+                    .get()
+                    .proState.value
+                    .toString(),
+            )
         } catch (failure: Throwable) {
             record.put("diagnosticError", failure.stackTraceToString())
         }
@@ -612,7 +624,8 @@ class ActiveProjectPolicyRuntimeTest {
             val nodes = currentNodes()
             val evidence = JSONObject().put("lookupStarted", SystemClock.elapsedRealtime())
             attempts.put(evidence)
-            val heading = counterProject?.uppercase(Locale.getDefault())
+            // Projektin nimi näkyy laskurissa ja projektinäkymässä kirjoitusasussaan.
+            val heading = counterProject
             val projectNode = nodes.singleOrNull { it.text?.toString() == heading && it.isVisibleToUser }
             val projectReady = heading == null || projectNode?.refresh() == true && projectNode.isVisibleToUser
             evidence.put("expectedHeading", heading).put("projectReady", projectReady)
@@ -744,31 +757,12 @@ class ActiveProjectPolicyRuntimeTest {
             )
         }
 
-    private fun trialManager(): Any =
-        app.proManager.get().javaClass.getDeclaredField("trialManager").let {
-            it.isAccessible = true
-            requireNotNull(it.get(app.proManager.get()))
-        }
+    // Osto- ja kokeilutila ohjataan debug-buildin ProPolicyTestControlista (vain .activepolicytest-paketissa).
+    private fun trial(state: TrialState) = ProPolicyTestControl.setTrialState(state)
 
-    private fun trial(state: TrialState) {
-        val manager = trialManager()
-        manager.javaClass.getMethod("auditState", TrialState::class.java).invoke(manager, state)
-    }
+    private fun trialResult(result: TrialStartResult) = ProPolicyTestControl.setTrialStartResult(result)
 
-    private fun trialResult(result: TrialStartResult) {
-        val manager = trialManager()
-        manager.javaClass.getMethod("auditStartResult", TrialStartResult::class.java).invoke(manager, result)
-    }
-
-    private fun purchased(value: Boolean) {
-        val manager = app.billingManager.get()
-        manager.javaClass
-            .getMethod(
-                "auditPurchased",
-                Boolean::class.javaPrimitiveType,
-                Boolean::class.javaPrimitiveType,
-            ).invoke(manager, value, true)
-    }
+    private fun purchased(value: Boolean) = ProPolicyTestControl.setPurchased(value)
 
     private fun screenshot(name: String) {
         val folder = File(app.getExternalFilesDir(null), "active-policy").apply { mkdirs() }

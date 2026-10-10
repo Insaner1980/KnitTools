@@ -12,6 +12,7 @@ import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
@@ -20,6 +21,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.model.SavedPattern
 import com.finnvek.knittools.domain.model.SavedPatternSource
+import com.finnvek.knittools.ui.components.uppercaseForDisplay
 import com.finnvek.knittools.ui.theme.KnitToolsTheme
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -31,6 +33,10 @@ class SavedPatternsWebScreenTest {
     val composeRule = createComposeRule()
 
     private val context = InstrumentationRegistry.getInstrumentation().targetContext
+
+    // BadgePill näyttää lähteen versaalina.
+    private val webLabel =
+        context.getString(R.string.web_pattern_label).uppercaseForDisplay(context.resources.configuration.locales[0])
 
     @Test
     fun largeFontReservesSelectionSpaceAndRestoresNormalInset() {
@@ -94,7 +100,11 @@ class SavedPatternsWebScreenTest {
             }
         }
 
-        composeRule.onNodeWithText(context.getString(R.string.web_pattern_add)).assertIsDisplayed().performClick()
+        // Pilleri tiivistää tekstinsä yhdeksi painikkeen sisältökuvaukseksi.
+        composeRule
+            .onNodeWithContentDescription(context.getString(R.string.web_pattern_add))
+            .assertIsDisplayed()
+            .performClick()
         composeRule.runOnIdle { assertEquals(1, additions) }
     }
 
@@ -131,7 +141,7 @@ class SavedPatternsWebScreenTest {
         }
 
         composeRule.onNodeWithText("Cable cardigan").assertIsDisplayed()
-        composeRule.onNodeWithText(context.getString(R.string.web_pattern_label)).assertIsDisplayed()
+        composeRule.onNodeWithText(webLabel).assertIsDisplayed()
         composeRule.onNodeWithText("example.com").assertIsDisplayed()
         composeRule.onAllNodesWithText(context.getString(R.string.availability_unknown)).assertCountEquals(0)
         composeRule.onAllNodes(hasText("Cable cardigan") and hasClickAction()).assertCountEquals(1)
@@ -144,7 +154,7 @@ class SavedPatternsWebScreenTest {
         assertEquals(
             listOf(
                 "Cable cardigan",
-                context.getString(R.string.web_pattern_label),
+                webLabel,
                 "example.com",
             ),
             card.config[SemanticsProperties.Text].map { it.text },

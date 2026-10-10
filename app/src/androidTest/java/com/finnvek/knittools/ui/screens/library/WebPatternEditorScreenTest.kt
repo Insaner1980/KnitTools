@@ -9,7 +9,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.test.assertHeightIsAtLeast
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsFocused
@@ -20,8 +20,10 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performImeAction
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.test.platform.app.InstrumentationRegistry
@@ -34,6 +36,7 @@ import com.finnvek.knittools.ui.navigation.WebPatternEditorRoute
 import com.finnvek.knittools.ui.theme.KnitToolsTheme
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 
@@ -439,10 +442,13 @@ class WebPatternEditorScreenTest {
             }
         }
 
+        // Pitkä nimi rivittyy. Tarkistetaan rivimäärä eikä dp-korkeutta, joka riippuu fontin leveydestä.
+        val titleLayouts = mutableListOf<TextLayoutResult>()
         composeRule
             .onNodeWithTag(WEB_PATTERN_TITLE_FIELD_TAG)
             .assertIsDisplayed()
-            .assertHeightIsAtLeast(120.dp)
+            .performSemanticsAction(SemanticsActions.GetTextLayoutResult) { action -> action(titleLayouts) }
+        assertTrue(titleLayouts.single().lineCount > 1)
         composeRule.onNodeWithText(longHost).performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithText(context.getString(R.string.save)).performScrollTo().assertIsDisplayed()
     }

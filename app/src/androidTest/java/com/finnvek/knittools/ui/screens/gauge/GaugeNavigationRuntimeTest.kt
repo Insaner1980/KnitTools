@@ -14,6 +14,7 @@ import com.finnvek.knittools.App
 import com.finnvek.knittools.MainActivity
 import com.finnvek.knittools.R
 import com.finnvek.knittools.data.local.CounterProjectEntity
+import com.finnvek.knittools.data.local.KNITTOOLS_DATABASE_VERSION
 import com.finnvek.knittools.data.local.KnitToolsDatabase
 import com.finnvek.knittools.domain.model.MainCounterChange
 import com.finnvek.knittools.repository.CounterRepository
@@ -199,13 +200,16 @@ class GaugeNavigationRuntimeTest {
 
     private fun openFixtureProject() {
         assertTabSelected(R.string.tab_projects)
+        // Projektikortti avaa projektinäkymän; laskuriin vie jatka-kortin nappi.
         clickText(fixtureProjectName)
+        clickContentDescription(text(R.string.project_continue_content_description, fixtureProjectName))
         waitForProjectCounter()
     }
 
     private fun waitForProjectCounter() {
         waitForText(fixtureProjectName)
-        waitForNode("project actions") { it.contentDescription?.toString() == text(R.string.project_actions_title) }
+        // Projektinäkymässäkin on toimintovalikko, joten laskurin tunnistaa rivinlisäyksestä.
+        waitForNode("project counter") { it.contentDescription?.toString() == text(R.string.counter_add_row) }
     }
 
     private fun openProjectCalculator() {
@@ -266,8 +270,11 @@ class GaugeNavigationRuntimeTest {
         optionResource: Int,
     ) {
         // Valinnat ovat segmenttivalitsimia: nimike ja vaihtoehdot näkyvät suoraan ilman ponnahdusikkunaa.
+        // Vaihtoehto vieritetään näkyviin itse: nimikkeen alla se voi jäädä ruudun alareunan alle.
         scrollToText(text(selectorResource))
-        clickText(text(optionResource))
+        val option = scrollToText(text(optionResource))
+        // Valitulla RadioButton-vaihtoehdolla ei ole klikkaustoimintoa, joten valmiiksi valittua ei napauteta.
+        if (generateSequence(option) { it.parent }.none { it.isChecked }) clickText(text(optionResource))
     }
 
     private fun assertAdjustmentSelected() {
@@ -281,9 +288,10 @@ class GaugeNavigationRuntimeTest {
             if (!hasText(candidate, label)) {
                 false
             } else {
+                // Alanavigaation välilehti on selected; segmenttivalitsimen RadioButton-vaihtoehto on checked.
                 var node: AccessibilityNodeInfo? = candidate
-                while (node != null && !node.isSelected && !node.isClickable) node = node.parent
-                node?.isSelected == true
+                while (node != null && !node.isSelected && !node.isChecked && !node.isClickable) node = node.parent
+                node?.isSelected == true || node?.isChecked == true
             }
         }
     }
@@ -489,7 +497,7 @@ class GaugeNavigationRuntimeTest {
                         cursor.getLong(0)
                     }
                 }
-            assertEquals("Calculator must keep Room schema 24", 24, sqlite.version)
+            assertEquals("Calculator must not change the Room schema", KNITTOOLS_DATABASE_VERSION, sqlite.version)
             DatabaseSnapshot(database.counterProjectDao().getProject(fixtureProjectId), counts)
         }
 

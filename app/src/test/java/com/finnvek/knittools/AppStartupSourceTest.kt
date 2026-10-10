@@ -92,8 +92,8 @@ class AppStartupSourceTest {
             ),
         )
         assertTrue(proManager.contains("suspend fun hasFeatureAfterInitialLoad(feature: ProFeature): Boolean"))
-        assertTrue(proManager.contains("billingManager.purchaseStateReady.first { it }"))
-        assertTrue(proManager.contains("billingManager.isProPurchased.value || hasFeature(feature)"))
+        assertTrue(proManager.contains("purchaseStateReady(billingManager.purchaseStateReady).first { it }"))
+        assertTrue(proManager.contains("currentPurchased(billingManager.isProPurchased.value) || hasFeature(feature)"))
         assertTrue(widget.contains("hasFeatureAfterInitialLoad(ProFeature.WIDGET)"))
         assertTrue(actions.contains("hasFeatureAfterInitialLoad(ProFeature.WIDGET)"))
         assertFalse(widget.contains("hasFeature(ProFeature.WIDGET)"))

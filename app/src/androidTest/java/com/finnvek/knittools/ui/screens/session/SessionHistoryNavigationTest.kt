@@ -33,13 +33,15 @@ class SessionHistoryNavigationTest : HistoryNavigationTest("Session context ") {
             }
         }
         val before = runBlocking(Dispatchers.IO) { repository.getSessionsForProject(id).first() }
-        clickText(name)
-        clickDescription(R.string.project_actions_title)
-        clickText(label(R.string.session_history_title))
-        verifyHistory(populated, "projects")
-        clickDescription(R.string.back)
-        awaitDescription(R.string.project_actions_title)
-        clickDescription(R.string.back)
+        // Projektinäkymä näyttää istuntohistorian linkin vain kun istuntoja on; Insights näyttää sen aina.
+        if (populated) {
+            clickText(name)
+            clickText(label(R.string.session_history_title))
+            verifyHistory(populated, "projects")
+            clickDescription(R.string.back)
+            awaitDescription(R.string.project_actions_title)
+            clickDescription(R.string.back)
+        }
         clickText(label(R.string.tab_insights))
         clickText(label(R.string.all_projects))
         clickText(name)
@@ -59,6 +61,7 @@ class SessionHistoryNavigationTest : HistoryNavigationTest("Session context ") {
         entrance: String,
     ) {
         awaitText(label(R.string.session_history_title))
+        await("counter history not shown") { find { hasText(it, label(R.string.counter_history_title)) } == null }
         awaitDescription(R.string.back)
         awaitText(name.uppercase())
         awaitSelectedTab(if (entrance == "projects") R.string.tab_projects else R.string.tab_insights)

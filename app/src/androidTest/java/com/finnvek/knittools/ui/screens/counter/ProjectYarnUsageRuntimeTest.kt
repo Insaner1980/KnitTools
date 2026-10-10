@@ -84,11 +84,9 @@ class ProjectYarnUsageRuntimeTest {
 
     private fun launchProject() {
         scenario = ActivityScenario.launch(Intent(app, MainActivity::class.java))
+        // Projektikortti avaa projektinäkymän; laskuriin vie jatka-kortin nappi.
         clickText(projectName)
-        waitUntil("counter") {
-            findNode { it.contentDescription?.toString() == text(R.string.project_actions_title) } !=
-                null
-        }
+        clickDescription(text(R.string.project_continue_content_description, projectName))
         openYarn()
     }
 

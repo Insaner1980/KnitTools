@@ -41,6 +41,7 @@ data class ProState(
     @Suppress("UNUSED_PARAMETER")
     fun hasFeature(
         feature: ProFeature,
-        debugUnlockAllFeatures: Boolean = BuildConfig.DEBUG,
+        // Policy-testipaketti testaa Pro-portit, joten debugin avaus ei koske sitä.
+        debugUnlockAllFeatures: Boolean = BuildConfig.DEBUG && !ProPolicyTestControl.isActive,
     ): Boolean = debugUnlockAllFeatures || isPro
 }

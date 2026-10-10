@@ -7,6 +7,7 @@
 - `./gradlew :app:detekt` — static analysis
 - `./gradlew lint` — Android lint
 - `./gradlew :app:generateBaselineProfile` — generoi Baseline Profile yhdistetyllä laitteella
+- Erilliset, verkkoluvattomat testipaketit (`-Pknittools.isolatedTest=activepolicy|notes`, vain debug): pakettiin pääte `.activepolicytest`/`.notestest`, INTERNET- ja BILLING-oikeudet poistettu (`app/src/isolatedTest/AndroidManifest.xml`). `ActiveProjectPolicyRuntimeTest` ajetaan `activepolicy`-profiililla; se tyhjentää paketin tietokannan ja ohjaa osto- ja kokeilutilaa debug-only `ProPolicyTestControl`ista (`src/debugShared`; releasen vastine `src/release` vain välittää oikeat arvot, ei asettajia). Profiili kytkee pois debugin Pro-avauksen ja demodatan. `PatternNotesNavigationRuntimeTest` ajetaan `notes`-profiililla ja argumentilla `-Pandroid.testInstrumentationRunnerArguments.notesNavigationIsolated=true`. Älä lisää Pro- tai ostotilan ohituksia main-lähdekoodiin.
 
 ## Quality Tools (global, in ~/bin/)
 

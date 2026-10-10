@@ -29,7 +29,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -89,15 +88,17 @@ fun LabeledCounterImageButton(
         shadowElevation = CounterDimens.LabeledImageButtonElevation,
         modifier =
             modifier
-                .clearAndSetSemantics {
-                    this.contentDescription = contentDescription
-                    role = Role.Button
-                }.clickable(
+                // clickable ennen tyhjennystä: muuten clearAndSetSemantics pyyhkii myös klikkaustoiminnon,
+                // eikä ruudunlukija, Switch Access tai Voice Access voi aktivoida pilleriä.
+                .clickable(
                     interactionSource = interactionSource,
                     indication = null,
                     enabled = enabled,
+                    role = Role.Button,
                     onClick = onClick,
-                ),
+                ).clearAndSetSemantics {
+                    this.contentDescription = contentDescription
+                },
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(

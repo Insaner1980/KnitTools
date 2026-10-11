@@ -9,7 +9,7 @@
       "kind": "android-application",
       "required": true,
       "variants": ["debug", "release"],
-      "sourceSets": ["main", "debug", "debugShared", "release", "test", "androidTest"]
+      "sourceSets": ["main", "debug", "debugShared", "release", "test", "androidTest", "isolatedTest"]
     },
     {
       "path": ":baselineprofile",

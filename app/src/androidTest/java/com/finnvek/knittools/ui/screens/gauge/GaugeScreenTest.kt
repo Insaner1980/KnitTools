@@ -99,9 +99,11 @@ class GaugeScreenTest {
     @Test
     fun legacyAdjustmentShowsIndependentStitchesRowsAndAllPhysicalResults() {
         val model = render()
-        composeRule.onNodeWithTag("measurement_task").assert(
-            SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "Adjust pattern counts"),
-        )
+        // Tehtävä on segmenttivalitsin, joten valinta luetaan vaihtoehdon selected-tilasta.
+        composeRule
+            .onNodeWithTag("measurement_task_option_${GaugeTask.ADJUST.ordinal}")
+            .assertTextEquals("Adjust pattern counts")
+            .assertIsSelected()
         choose("measurement_source", 1)
         edit(GaugeField.ACTUAL_STITCHES, "22")
         edit(GaugeField.PATTERN_STITCHES, "20")

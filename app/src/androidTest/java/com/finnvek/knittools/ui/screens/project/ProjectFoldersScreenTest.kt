@@ -285,7 +285,7 @@ class ProjectFoldersScreenTest {
         assertEquals(1, textLayoutResult.lineCount)
         assertFalse(textLayoutResult.isLineEllipsized(0))
         composeRule.onNodeWithText("Select All").assertIsDisplayed()
-        composeRule.onNodeWithText("Move selected projects").assertIsDisplayed()
+        composeRule.onNodeWithText("Move").assertIsDisplayed()
         composeRule.onNodeWithText("Complete").assertIsDisplayed()
         composeRule.onNodeWithText("Delete").assertIsDisplayed()
         captureScreenshot("project-folders-selection")
@@ -296,7 +296,7 @@ class ProjectFoldersScreenTest {
                 setOf(activeId, completedId)
         }
         composeRule.onNodeWithText("2 selected").assertIsDisplayed()
-        composeRule.onNodeWithText("Move selected projects").performClick()
+        composeRule.onNodeWithText("Move").performClick()
         composeRule.onNodeWithText("Move 2 selected projects").assertIsDisplayed()
         captureScreenshot("project-folders-move-sheet")
         composeRule.onNodeWithContentDescription("Move destination. Project organization folder.").performClick()

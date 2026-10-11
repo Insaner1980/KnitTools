@@ -209,7 +209,7 @@ class PatternNotesNavigationRuntimeTest {
             assertSecondaryPage()
             assertPreserved(before)
         }
-        // Yksi Back riittää takaisin counteriin: editorikohteita ei saa jäädä pinoon.
+        // Yksi Back riittää takaisin projektinäkymään: editorikohteita ei saa jäädä pinoon.
         clickDescription(text(R.string.back))
         waitFor { it.contentDescription?.toString() == text(R.string.project_actions_title) }
         clickDescription(text(R.string.back))
@@ -426,8 +426,8 @@ class PatternNotesNavigationRuntimeTest {
     ) {
         scrollToText(projectName)
         clickText(projectName)
-        clickDescription(text(R.string.project_actions_title))
-        waitForText(text(R.string.project_documents_title))
+        // Projektikortti avaa projektinäkymän, jonka Ohje ja dokumentit -osiossa dokumenttivalikko on.
+        scrollToText(text(R.string.project_documents_title))
         clickText(text(R.string.project_documents_title))
         clickText(documentLabel)
         waitForText(documentLabel)

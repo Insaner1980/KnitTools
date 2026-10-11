@@ -47,10 +47,11 @@ class ProManager
                 try {
                     trialManager.initialize()
 
+                    // Debugin policy-testipaketti voi ohjata tiloja; releasessa ne kulkevat sellaisenaan.
                     combine(
-                        trialManager.trialState,
-                        billingManager.isProPurchased,
-                        billingManager.purchaseStateReady,
+                        ProPolicyTestControl.trialState(trialManager.trialState),
+                        ProPolicyTestControl.purchased(billingManager.isProPurchased),
+                        ProPolicyTestControl.purchaseStateReady(billingManager.purchaseStateReady),
                     ) { trial, isPurchased, purchaseStateReady ->
                         val state =
                             when {
@@ -99,12 +100,12 @@ class ProManager
 
         fun hasFeature(feature: ProFeature): Boolean = _proState.value.hasFeature(feature)
 
-        suspend fun startTrial(): TrialStartResult = trialManager.startTrial()
+        suspend fun startTrial(): TrialStartResult = ProPolicyTestControl.startTrial { trialManager.startTrial() }
 
         suspend fun hasFeatureAfterInitialLoad(feature: ProFeature): Boolean {
             waitForInitialProState()
             waitForInitialPurchaseState()
-            return billingManager.isProPurchased.value || hasFeature(feature)
+            return ProPolicyTestControl.currentPurchased(billingManager.isProPurchased.value) || hasFeature(feature)
         }
 
         fun hasFeatureFlow(feature: ProFeature): Flow<Boolean> =
@@ -115,9 +116,9 @@ class ProManager
         fun isPro(): Boolean = _proState.value.isPro
 
         private suspend fun waitForInitialPurchaseState() {
-            if (billingManager.purchaseStateReady.value) return
+            if (ProPolicyTestControl.currentPurchaseStateReady(billingManager.purchaseStateReady.value)) return
             withTimeoutOrNull(INITIAL_STATE_WAIT_TIMEOUT_MS) {
-                billingManager.purchaseStateReady.first { it }
+                ProPolicyTestControl.purchaseStateReady(billingManager.purchaseStateReady).first { it }
             }
         }
 

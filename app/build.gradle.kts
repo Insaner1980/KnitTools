@@ -1,5 +1,6 @@
 import com.android.build.api.variant.BuildConfigField
 import com.google.firebase.crashlytics.buildtools.gradle.CrashlyticsExtension
+import com.google.gms.googleservices.GoogleServicesTask
 import org.gradle.api.GradleException
 import org.gradle.testing.jacoco.tasks.JacocoReport
 import java.io.File
@@ -46,6 +47,19 @@ val posthogProjectToken =
                 },
         ).map(String::trim)
 val posthogTokenValid = posthogProjectToken.map { it.matches(Regex("phc_[A-Za-z0-9]+")) }
+
+// Erillinen, verkkoluvaton testipaketti laitetesteille, jotka tyhjentävät tietokannan tai ohjaavat Pro-tilaa.
+// Käyttö: -Pknittools.isolatedTest=activepolicy|notes. Koskee vain debugia; ilman ominaisuutta build ei muutu.
+val baseApplicationId = "com.finnvek.knittools"
+val isolatedTestProfile: String? = providers.gradleProperty("knittools.isolatedTest").orNull
+val isolatedTestPackageSuffix: String? =
+    when (isolatedTestProfile) {
+        null -> null
+        "activepolicy" -> ".activepolicytest"
+        "notes" -> ".notestest"
+        else -> error("Tuntematon knittools.isolatedTest=$isolatedTestProfile (sallitut: activepolicy, notes)")
+    }
+val isolatedTestManifest = layout.projectDirectory.file("src/isolatedTest/AndroidManifest.xml")
 
 // Variantit, jotka eivät päädy jakeluun ja joille riittää paikallinen placeholder-config.
 // benchmarkRelease ja nonMinifiedRelease tulevat baselineprofile-pluginista.
@@ -209,7 +223,7 @@ android {
             .toInt()
 
     defaultConfig {
-        applicationId = "com.finnvek.knittools"
+        applicationId = baseApplicationId
         minSdk =
             libs.versions.androidMinSdk
                 .get()
@@ -328,6 +342,25 @@ androidComponents {
             "SENTRY_DSN",
             debugBuildConfigField("sentry.dsn", "KNITTOOLS_SENTRY_DSN", "SENTRY_DSN"),
         )
+        buildConfigFields.put(
+            "ACTIVE_POLICY_TEST",
+            BuildConfigField("boolean", (isolatedTestProfile == "activepolicy").toString(), null),
+        )
+        isolatedTestPackageSuffix?.let { suffix ->
+            variant.applicationId.set(baseApplicationId + suffix)
+            // Poistaa INTERNET- ja BILLING-oikeudet: testipaketti ei voi tavoittaa verkkoa eikä Play-laskutusta.
+            variant.sources.manifests.addStaticManifestFile(isolatedTestManifest.asFile.path)
+        }
+    }
+}
+
+// google-services.json tuntee vain perustunnuksen, joten testipaketin Firebase-resurssit generoidaan sille.
+// Lisäosa kytkee tunnuksen omassa konfiguroinnissaan, joten ylikirjoitus tehdään projektien arvioinnin jälkeen.
+if (isolatedTestPackageSuffix != null) {
+    gradle.projectsEvaluated {
+        tasks.withType<GoogleServicesTask>().matching { it.name == "processDebugGoogleServices" }.configureEach {
+            applicationId.set(baseApplicationId)
+        }
     }
 }
 

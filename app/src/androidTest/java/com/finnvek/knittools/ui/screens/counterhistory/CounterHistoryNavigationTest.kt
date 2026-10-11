@@ -17,7 +17,7 @@ import java.io.File
 
 class CounterHistoryNavigationTest : HistoryNavigationTest("History test ", stepSize = 2) {
     @Test fun actionsOpenDistinctHistoryAndLiveChangesUndoAndBackUseTheSameProject() {
-        openProject()
+        openCounter()
         clickDescription(R.string.counter_add_row)
         awaitHistorySize(1)
         clickDescription(R.string.counter_add_row)
@@ -44,16 +44,12 @@ class CounterHistoryNavigationTest : HistoryNavigationTest("History test ", step
         openHistory()
         awaitAction(R.string.counter_history_reset)
         back()
-        clickDescription(R.string.project_actions_title)
-        clickText(label(R.string.session_history_title))
-        awaitText(label(R.string.session_history_title))
-        await("counter history closed") { find { hasText(it, label(R.string.counter_history_title)) } == null }
-        back()
-        awaitDescription(R.string.project_actions_title)
+        // Istuntohistoria ei ole laskurin toiminnoissa; sen erillisyys testataan SessionHistoryNavigationTestissä.
+        awaitDescription(R.string.counter_add_row)
     }
 
     @Test fun emptyCompletedProjectCanReadHistoryAndDeletionReturnsToProjects() {
-        openProject()
+        openCounter()
         openHistory()
         awaitText(label(R.string.counter_history_empty_title))
         runBlocking(Dispatchers.IO) {
@@ -89,7 +85,7 @@ class CounterHistoryNavigationTest : HistoryNavigationTest("History test ", step
                 }
                 repository.observeCounterHistory(id).first()
             }
-        openProject()
+        openCounter()
         awaitHistorySize(3)
         openHistory()
         awaitAction(R.string.counter_history_reset)
@@ -106,15 +102,10 @@ class CounterHistoryNavigationTest : HistoryNavigationTest("History test ", step
         awaitHistorySize(3)
         scenario.close()
         scenario = ActivityScenario.launch(Intent(app, MainActivity::class.java))
-        openProject()
+        openCounter()
         openHistory()
         awaitAction(R.string.counter_history_reset)
         runBlocking(Dispatchers.IO) { assertEquals(old, repository.observeCounterHistory(id).first()) }
-    }
-
-    private fun openProject() {
-        clickText(name)
-        awaitDescription(R.string.project_actions_title)
     }
 
     private fun openHistory() {

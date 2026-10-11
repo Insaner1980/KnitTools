@@ -9,6 +9,7 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.platform.app.InstrumentationRegistry
 import com.finnvek.knittools.App
 import com.finnvek.knittools.MainActivity
+import com.finnvek.knittools.R
 import com.finnvek.knittools.repository.CounterRepository
 import com.finnvek.knittools.repository.ProjectCreationResult
 import com.finnvek.knittools.widget.WidgetEntryPoint
@@ -58,6 +59,14 @@ abstract class HistoryNavigationTest(
 
     protected fun awaitDescription(resource: Int) {
         await(label(resource)) { find { it.contentDescription?.toString() == label(resource) } != null }
+    }
+
+    /** Projektikortti avaa projektinäkymän; laskuriin vie jatka-kortin nappi. */
+    protected fun openCounter() {
+        clickText(name)
+        val continueLabel = app.getString(R.string.project_continue_content_description, name)
+        click(continueLabel) { it.contentDescription?.toString() == continueLabel }
+        awaitDescription(R.string.counter_add_row)
     }
 
     protected fun clickText(text: String) = click(text) { hasText(it, text) }

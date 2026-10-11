@@ -33,6 +33,7 @@ import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.isDisplayed
 import androidx.compose.ui.test.isFocused
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
@@ -253,7 +254,8 @@ class ProjectYarnUsageScreenTest {
         ) { runBlocking { database.projectYarnNoteDao().getById(4)?.savedYarnCardId != null } }
         composeRule.onAllNodesWithText("Used: 350 m").assertCountEquals(1)
         composeRule.onAllNodesWithText("Edit usage").assertCountEquals(1)
-        composeRule.onNodeWithText("Saved to My Yarn").performScrollTo().assertIsDisplayed()
+        // Tallennettu lanka on BadgePill-merkki, joka näytetään versaalina.
+        composeRule.onNodeWithText("SAVED TO MY YARN").performScrollTo().assertIsDisplayed()
         assertEquals(id, currentUsage().id)
     }
 
@@ -435,21 +437,24 @@ class ProjectYarnUsageScreenTest {
         large: Boolean = false,
         handle: SavedStateHandle = SavedStateHandle(),
     ): ProjectYarnUsageViewModel {
-        if (composeRule.activity.resources.configuration.locales[0]
-                .language != locale.language
+        // Myös maa: en-FI muotoilee desimaalit pilkulla, vaikka kieli on sama kuin en-US:ssä.
+        if (!composeRule.activity.resources.configuration.locales[0]
+                .matches(locale)
         ) {
             setApplicationLocales(locale.toLanguageTag())
         }
         shell("settings put system font_scale ${if (large) "2.0" else "1.0"}")
         composeRule.waitUntil(10_000) {
             val config = composeRule.activity.resources.configuration
-            config.locales[0].language == locale.language && config.fontScale == if (large) 2f else 1f
+            config.locales[0].matches(locale) && config.fontScale == if (large) 2f else 1f
         }
         val model = createModel(handle)
         composeRule.setContent { TestSurface(model, locale, dark, large) }
         waitForManagement()
         return model
     }
+
+    private fun Locale.matches(expected: Locale): Boolean = language == expected.language && country == expected.country
 
     private fun currentApplicationLocaleTags(): String =
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -557,7 +562,13 @@ class ProjectYarnUsageScreenTest {
     }
 
     private fun remaining(text: String) {
-        field(YarnUsageField.USED).performImeAction()
+        // Viimeisen kentän IME-toiminto sulkee näppäimistön; muunnoksen ollessa päällä viimeinen on paino.
+        val conversionVisible =
+            composeRule
+                .onAllNodesWithTag("yarn_usage_input_${YarnUsageField.WEIGHT.name}")
+                .fetchSemanticsNodes()
+                .isNotEmpty()
+        field(if (conversionVisible) YarnUsageField.WEIGHT else YarnUsageField.USED).performImeAction()
         composeRule.waitUntil(5_000) { !shell("dumpsys input_method").contains("mInputShown=true") }
         composeRule.waitUntil(5_000) {
             composeRule.onNodeWithTag("yarn_usage_remaining").performScrollTo()

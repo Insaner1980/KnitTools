@@ -180,7 +180,7 @@ class ProjectFoldersActivityTest {
     }
 
     @Test
-    fun counterActionsMoveActiveSessionProjectToFolderThenUnfiledWithoutChangingMetadata() {
+    fun overviewMenuMovesActiveSessionProjectToFolderThenUnfiledWithoutChangingMetadata() {
         waitForContentDescription(ALL_PROJECTS_SELECTED_DESCRIPTION)
         clickContentDescription(ALL_PROJECTS_SELECTED_DESCRIPTION)
         waitForContentDescription(folderDescription(selected = false))
@@ -189,9 +189,10 @@ class ProjectFoldersActivityTest {
         clickText(folderProjectName)
         waitForText(folderProjectName)
 
-        moveCounterProjectTo(destinationFolderName)
+        // Projektikortti avaa projektinäkymän, jonka ylivuotovalikossa kansiosiirto on.
+        moveOverviewProjectTo(destinationFolderName)
         waitForAssignment(destinationFolderId)
-        moveCounterProjectTo(UNFILED_LABEL)
+        moveOverviewProjectTo(UNFILED_LABEL)
         waitForAssignment(null)
 
         runBlocking {
@@ -207,10 +208,8 @@ class ProjectFoldersActivityTest {
         }
     }
 
-    private fun moveCounterProjectTo(destination: String) {
+    private fun moveOverviewProjectTo(destination: String) {
         clickContentDescription(PROJECT_ACTIONS_DESCRIPTION)
-        waitForText(MOVE_TO_FOLDER_LABEL)
-        waitForText(STOP_WORK_SESSION_LABEL)
         clickText(MOVE_TO_FOLDER_LABEL)
         waitForText("Move $folderProjectName to folder")
         scrollUntilTextVisible(destination)
@@ -324,7 +323,6 @@ class ProjectFoldersActivityTest {
         const val BACK_DESCRIPTION = "Back"
         const val PROJECT_ACTIONS_DESCRIPTION = "Project actions"
         const val MOVE_TO_FOLDER_LABEL = "Move to folder"
-        const val STOP_WORK_SESSION_LABEL = "Stop work session"
         const val UNFILED_LABEL = "Unfiled"
         const val UI_TIMEOUT_MILLIS = 5_000L
         const val UI_POLL_MILLIS = 50L

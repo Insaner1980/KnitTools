@@ -7,10 +7,13 @@ import com.finnvek.knittools.domain.model.KnitSession
 import com.finnvek.knittools.repository.CounterRepository
 import com.finnvek.knittools.ui.navigation.toPositiveRouteIdOrNull
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -22,6 +25,9 @@ class SessionHistoryViewModel
         savedStateHandle: SavedStateHandle,
         private val repository: CounterRepository,
     ) : ViewModel() {
+        private val deleteErrorChannel = Channel<Unit>(Channel.BUFFERED)
+        val deleteErrors = deleteErrorChannel.receiveAsFlow()
+
         private val projectId: Long? = savedStateHandle.get<Long>("projectId")?.toPositiveRouteIdOrNull()
         private val projectState =
             (projectId?.let(repository::observeProject) ?: flowOf(null))
@@ -53,7 +59,13 @@ class SessionHistoryViewModel
 
         fun deleteSession(sessionId: Long) {
             viewModelScope.launch {
-                repository.deleteSession(sessionId)
+                try {
+                    repository.deleteSession(sessionId)
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (_: Exception) {
+                    deleteErrorChannel.send(Unit)
+                }
             }
         }
 

@@ -182,6 +182,10 @@ fun PatternViewerScreen(
     val resources = LocalResources.current
     val context = LocalContext.current
     val selectedDocument = documentState.selectedDocument
+    val contentErrorMessage = stringResource(R.string.generic_error_unknown)
+    CollectWithLifecycleEffect({ counterViewModel.projectContentErrors }) {
+        Toast.makeText(context, contentErrorMessage, Toast.LENGTH_LONG).show()
+    }
     val selectedDocumentAvailable = selectedDocument?.let { documentState.isAvailable(it.id) } == true
     val patternUri = selectedDocument?.localPdfUri?.takeIf { selectedDocumentAvailable }
     val currentPage = selectedDocument?.currentPage ?: 0
@@ -654,6 +658,7 @@ fun PatternViewerScreen(
     if (showDocumentPicker) {
         PatternPickerSheet(
             projectId = counterState.projectId,
+            isRestoringProject = counterState.isRestoringProject,
             savedPatterns = savedPatterns.filter { !it.localPdfUri.isNullOrBlank() },
             canUseCameraScan = counterState.canUsePatternCameraScan,
             proStatus = counterState.proStatus,
@@ -661,8 +666,8 @@ fun PatternViewerScreen(
             mode = PatternPickerMode.ADD_READABLE_PROJECT_DOCUMENT,
             excludedSavedPatternIds = documentState.documents.mapNotNullTo(mutableSetOf()) { it.savedPatternId },
             onSavedPatternSelected = { patternViewerViewModel.addSavedPattern(it.id) },
-            onDocumentSelected = { uri, name ->
-                counterViewModel.attachPattern(uri, name) { result ->
+            onDocumentSelected = { uri, name, owner ->
+                counterViewModel.attachPattern(uri, name, expectedProjectId = owner) { result ->
                     patternViewerViewModel.handleDocumentAddResult(result)
                     if (result !is ProjectDocumentMutationResult.Added) {
                         showDocumentPicker = false
@@ -1436,6 +1441,7 @@ private fun rememberPatternRenderState(
         }
     }
 
+    var pageRenderFailed by remember(renderer, currentPage) { mutableStateOf(false) }
     val renderedBitmap by produceState<Bitmap?>(
         initialValue = null,
         key1 = renderer,
@@ -1456,6 +1462,7 @@ private fun rememberPatternRenderState(
                         .also { pendingBitmap = it }
                 }
             pendingBitmap = null
+            pageRenderFailed = bitmap == null
             value = bitmap
             awaitDispose { bitmap?.recycle() }
         } finally {
@@ -1465,7 +1472,7 @@ private fun rememberPatternRenderState(
 
     return PatternRenderState(
         renderer = renderer,
-        rendererError = rendererError,
+        rendererError = rendererError ?: patternOpenFailed.takeIf { pageRenderFailed },
         renderedBitmap = renderedBitmap,
     )
 }

@@ -18,7 +18,11 @@ internal fun ProjectYarnUsageRelations.items(): List<ProjectYarnUsageItem> {
             }.thenByDescending { it.note.id },
         ).forEach { resolved ->
             val source = YarnUsageSource(resolved.card?.id, resolved.note.id)
-            val usage = usages.firstOrNull { it.usage.matches(source) }?.usage?.toDomain()
+            val usage =
+                (
+                    usages.firstOrNull { it.usage.projectYarnNoteId == resolved.note.id }
+                        ?: usages.firstOrNull { it.usage.matches(source) }
+                )?.usage?.toDomain()
             usage?.let { matchedUsages.add(it.id) }
             result.add(ProjectYarnUsageItem(source, resolved.note.name, usage))
         }
@@ -38,7 +42,11 @@ internal fun YarnCardEntity.usageName(): String = listOf(brand, yarnName).filter
 
 private fun com.finnvek.knittools.data.local.ProjectYarnUsageEntity.matches(source: YarnUsageSource): Boolean =
     (source.projectYarnNoteId != null && projectYarnNoteId == source.projectYarnNoteId) ||
-        (source.yarnCardId != null && yarnCardId == source.yarnCardId)
+        (
+            source.yarnCardId != null &&
+                yarnCardId == source.yarnCardId &&
+                (projectYarnNoteId == null || source.projectYarnNoteId == null)
+        )
 
 private fun ResolvedProjectYarnUsage.orphanItem(): ProjectYarnUsageItem =
     ProjectYarnUsageItem(

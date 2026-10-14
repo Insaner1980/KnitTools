@@ -40,7 +40,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -193,6 +192,9 @@ class PatternNotesNavigationRuntimeTest {
         capture("editor")
         checkNotNull(scenario).recreate()
         waitUntil("restored note draft") { find { it.isEditable }?.text?.toString() == EDITED_NOTES }
+        assertTrue(editable().performAction(AccessibilityNodeInfo.ACTION_CLICK))
+        waitUntil("soft keyboard visible") { shell("dumpsys input_method").contains("mInputShown=true") }
+        capture("editor-ime")
 
         // Ensimmäinen järjestelmän Back saa sulkea näppäimistön poistumatta editorista.
         systemBackFromEditor()
@@ -452,7 +454,7 @@ class PatternNotesNavigationRuntimeTest {
         shell("input keyevent KEYCODE_BACK")
         if (keyboardVisible) {
             waitUntil("keyboard hidden") { !shell("dumpsys input_method").contains("mInputShown=true") }
-            assertNotNull(find { it.isEditable })
+            editable()
             shell("input keyevent KEYCODE_BACK")
         }
     }

@@ -10,9 +10,11 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
@@ -21,8 +23,10 @@ import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import java.io.IOException
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class YarnCardViewModelTest {
@@ -47,6 +51,101 @@ class YarnCardViewModelTest {
     }
 
     private fun createViewModel() = YarnCardViewModel(repository, counterRepository)
+
+    @Test
+    fun `detail write failures report errors without changing observed card and permit retry`() =
+        runTest {
+            val vm = createViewModel()
+            val card = YarnCard(id = 7L, yarnName = "Original", quantityInStash = 3)
+            vm.loadFromCard(card)
+            val original = vm.formState.value
+            val errors = mutableListOf<Unit>()
+            backgroundScope.launch(testDispatcher) { vm.mutationErrors.collect { errors.add(it) } }
+            coEvery { repository.changeQuantity(7L, 1) } throws IOException("quantity")
+            coEvery { repository.updateStatus(7L, YarnCardStatus.IN_USE) } throws IOException("status")
+            coEvery { repository.updateLinkedProjectId(7L, 99L) } throws IOException("link")
+            coEvery { repository.saveCard(any()) } throws IOException("details")
+
+            vm.updateQuantity(1)
+            vm.updateStatus(YarnCardStatus.IN_USE)
+            vm.setLinkedProject(99L)
+            vm.updateManualDetails(ManualYarnCardInput(yarnName = "Changed"))
+            advanceUntilIdle()
+
+            assertEquals(4, errors.size)
+            assertEquals(original, vm.formState.value)
+            coEvery { repository.changeQuantity(7L, 1) } returns true
+            vm.updateQuantity(1)
+            advanceUntilIdle()
+            coVerify(exactly = 2) { repository.changeQuantity(7L, 1) }
+            assertEquals(4, errors.size)
+        }
+
+    @Test
+    fun `rejected detail writes are reported rather than treated as success`() =
+        runTest {
+            val vm = createViewModel()
+            vm.loadFromCard(YarnCard(id = 7L, yarnName = "Original"))
+            val errors = mutableListOf<Unit>()
+            backgroundScope.launch(testDispatcher) { vm.mutationErrors.collect { errors.add(it) } }
+            coEvery { repository.changeQuantity(7L, 1) } returns false
+            coEvery { repository.updateStatus(7L, YarnCardStatus.IN_USE) } returns false
+            coEvery { repository.updateLinkedProjectId(7L, 99L) } returns false
+            coEvery { repository.saveCard(any()) } returns null
+
+            vm.updateQuantity(1)
+            vm.updateStatus(YarnCardStatus.IN_USE)
+            vm.setLinkedProject(99L)
+            vm.updateManualDetails(ManualYarnCardInput(yarnName = "Changed"))
+            advanceUntilIdle()
+
+            assertEquals(4, errors.size)
+        }
+
+    @Test
+    fun `failed delete invokes failure callback and only successful retry invokes navigation`() =
+        runTest {
+            val vm = createViewModel()
+            val errors = mutableListOf<Unit>()
+            backgroundScope.launch(testDispatcher) { vm.mutationErrors.collect { errors.add(it) } }
+            var failed = 0
+            var deleted = 0
+            coEvery { repository.deleteCard(7L) } throws IOException("delete")
+            vm.deleteCard(7L, onFailure = { failed++ }) { deleted++ }
+            advanceUntilIdle()
+            assertEquals(1, failed)
+            assertEquals(0, deleted)
+            assertEquals(1, errors.size)
+
+            coEvery { repository.deleteCard(7L) } returns false
+            vm.deleteCard(7L, onFailure = { failed++ }) { deleted++ }
+            advanceUntilIdle()
+            assertEquals(2, failed)
+            assertEquals(0, deleted)
+
+            coEvery { repository.deleteCard(7L) } returns true
+            vm.deleteCard(7L, onFailure = { failed++ }) { deleted++ }
+            advanceUntilIdle()
+            assertEquals(2, failed)
+            assertEquals(1, deleted)
+            assertEquals(2, errors.size)
+        }
+
+    @Test
+    fun `cancelled detail write does not report failure or successful deletion`() =
+        runTest {
+            val vm = createViewModel()
+            val errors = mutableListOf<Unit>()
+            backgroundScope.launch(testDispatcher) { vm.mutationErrors.collect { errors.add(it) } }
+            coEvery { repository.deleteCard(7L) } throws CancellationException("cancelled")
+            var callbacks = 0
+
+            vm.deleteCard(7L, onFailure = { callbacks++ }) { callbacks++ }
+            advanceUntilIdle()
+
+            assertEquals(0, callbacks)
+            assertTrue(errors.isEmpty())
+        }
 
     @Test
     fun `loadFromCard sets editingCardId`() {

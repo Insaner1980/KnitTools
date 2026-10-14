@@ -64,9 +64,12 @@ class ProUpgradeViewModel
 
         fun startTrial() {
             viewModelScope.launch {
-                if (proManager.startTrial() == TrialStartResult.Failed) {
-                    _statusMessageRes.value = com.finnvek.knittools.R.string.pro_trial_start_failed
-                }
+                _statusMessageRes.value =
+                    if (proManager.startTrial() == TrialStartResult.Failed) {
+                        com.finnvek.knittools.R.string.pro_trial_start_failed
+                    } else {
+                        null
+                    }
             }
         }
 

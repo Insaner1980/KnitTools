@@ -6,6 +6,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 internal data class SavedPatternAttachmentState(
+    val projectId: Long? = null,
     val inFlight: Boolean = false,
     val result: SavedPatternMetadataMutationResult? = null,
 )
@@ -15,13 +16,14 @@ internal class SavedPatternAttachmentViewModel : ViewModel() {
     val state = _state.asStateFlow()
 
     fun attach(
+        projectId: Long,
         expectedExistingId: Long?,
         startAttachment: (Long?, (SavedPatternMetadataMutationResult) -> Unit) -> Unit,
     ) {
         if (_state.value.inFlight || _state.value.result != null) return
-        _state.value = SavedPatternAttachmentState(inFlight = true)
+        _state.value = SavedPatternAttachmentState(projectId = projectId, inFlight = true)
         startAttachment(expectedExistingId) { result ->
-            _state.value = SavedPatternAttachmentState(result = result)
+            _state.value = SavedPatternAttachmentState(projectId = projectId, result = result)
         }
     }
 

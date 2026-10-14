@@ -205,11 +205,17 @@ private fun SmallWidget(
     projectId: Long?,
 ) {
     val stacked = LocalSize.current.height >= CounterWidget.STACKED_SMALL_SIZE.height
+    val largeFont = LocalContext.current.resources.configuration.fontScale > 1.3f
     WidgetCard(
         projectId = projectId,
         horizontalPadding = if (stacked) 8.dp else 14.dp,
-        verticalPadding = if (stacked) 0.dp else 4.dp,
-        frame = WidgetCardFrame(outerPadding = 2.dp, borderWidth = 2.dp, cornerRadius = 18.dp),
+        verticalPadding = if (stacked || largeFont) 0.dp else 4.dp,
+        frame =
+            WidgetCardFrame(
+                outerPadding = if (largeFont) 0.dp else 2.dp,
+                borderWidth = if (largeFont) 1.dp else 2.dp,
+                cornerRadius = 18.dp,
+            ),
     ) {
         if (stacked) {
             Column(
@@ -272,10 +278,11 @@ private fun MediumWidget(
     data: WidgetData,
     projectId: Long?,
 ) {
+    val largeFont = LocalContext.current.resources.configuration.fontScale > 1.3f
     WidgetCard(
         projectId = projectId,
         horizontalPadding = 16.dp,
-        verticalPadding = 6.dp,
+        verticalPadding = if (largeFont) 0.dp else 6.dp,
     ) {
         WidgetHeader(data = data, fontSize = 13.sp, centered = true, maxLines = 1)
         WidgetTargetLabel(data = data, fontSize = 11.sp)
@@ -296,7 +303,7 @@ private fun MediumWidget(
             )
         }
         WidgetProgressBar(data = data, topSpacing = 4.dp)
-        Spacer(modifier = GlanceModifier.height(6.dp))
+        Spacer(modifier = GlanceModifier.height(if (largeFont) 0.dp else 6.dp))
         Row(
             modifier = GlanceModifier.fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -322,10 +329,11 @@ private fun LargeWidget(
     data: WidgetData,
     projectId: Long?,
 ) {
+    val largeFont = LocalContext.current.resources.configuration.fontScale > 1.3f
     WidgetCard(
         projectId = projectId,
         horizontalPadding = 18.dp,
-        verticalPadding = 6.dp,
+        verticalPadding = if (largeFont) 0.dp else 6.dp,
     ) {
         WidgetHeader(data = data, fontSize = 14.sp, centered = true, maxLines = 1)
         WidgetTargetLabel(data = data, fontSize = 12.sp)
@@ -347,7 +355,7 @@ private fun LargeWidget(
             )
         }
         WidgetProgressBar(data = data, topSpacing = 4.dp)
-        Spacer(modifier = GlanceModifier.height(6.dp))
+        Spacer(modifier = GlanceModifier.height(if (largeFont) 0.dp else 6.dp))
         Row(
             modifier = GlanceModifier.fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally,

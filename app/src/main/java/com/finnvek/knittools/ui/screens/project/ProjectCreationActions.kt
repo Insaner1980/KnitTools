@@ -9,6 +9,7 @@ import com.finnvek.knittools.pro.ProFeature
 import com.finnvek.knittools.pro.ProManager
 import com.finnvek.knittools.repository.CounterRepository
 import com.finnvek.knittools.repository.ProjectCreationResult
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
@@ -38,6 +39,7 @@ internal class ProjectCreationActions(
     private val savedStateHandle: SavedStateHandle,
     private val scope: CoroutineScope,
     private val analytics: UsageAnalytics = UsageAnalytics.NONE,
+    private val onFailure: (Throwable) -> Unit,
     private val onCreated: suspend (Long) -> Unit,
 ) {
     private val isPro: Boolean get() = proManager.hasFeature(ProFeature.UNLIMITED_PROJECTS)
@@ -93,12 +95,11 @@ internal class ProjectCreationActions(
         creationContinuationJob =
             scope.launch(start = CoroutineStart.LAZY) {
                 try {
-                    val count = repository.getActiveProjectCount()
-                    if (!pendingCreationOpening && pendingProjectCreation == null) return@launch
-                    if (!isPro && count >= 1) {
-                        _projectCreationPromptCount.value = count
-                    } else {
-                        resumePendingProjectCreation(reconsiderLimit = false)
+                    runCatching {
+                        reconcileCreationLimit()
+                    }.onFailure { failure ->
+                        if (failure is CancellationException) throw failure
+                        onFailure(failure)
                     }
                 } finally {
                     creationContinuationJob = null
@@ -108,6 +109,16 @@ internal class ProjectCreationActions(
                 }
             }
         creationContinuationJob?.start()
+    }
+
+    private suspend fun reconcileCreationLimit() {
+        val count = repository.getActiveProjectCount()
+        if (!pendingCreationOpening && pendingProjectCreation == null) return
+        if (!isPro && count >= 1) {
+            _projectCreationPromptCount.value = count
+        } else {
+            resumePendingProjectCreation(reconsiderLimit = false)
+        }
     }
 
     fun create(request: PendingProjectCreation) {
@@ -139,37 +150,24 @@ internal class ProjectCreationActions(
         analytics.track(UsageEvent.PROJECT_CREATION_SUBMITTED)
         var limited = false
         try {
-            _projectCreationError.value = null
-            val result =
-                repository.createProject(
-                    name = request.name,
-                    craftType = request.craftType,
-                    mainCounterLabelType = request.mainCounterLabelType,
-                    mainCounterCustomLabel = request.mainCounterCustomLabel,
-                    canCreateAdditionalProjects = isPro,
-                    targetFolderId = request.targetFolderId,
-                )
-            if (pendingProjectCreation != request) return
-            when (result) {
-                is ProjectCreationResult.Created -> {
-                    analytics.track(UsageEvent.PROJECT_CREATED)
-                    pendingProjectCreation = null
-                    _projectCreationPromptCount.value = null
-                    onCreated(result.projectId)
-                }
-                ProjectCreationResult.LimitReached -> {
-                    val activeCount = repository.getActiveProjectCount()
-                    limited = true
-                    if (pendingProjectCreation == request) _projectCreationPromptCount.value = activeCount
-                }
-                ProjectCreationResult.InvalidProject -> {
+            runCatching {
+                _projectCreationError.value = null
+                val result =
+                    repository.createProject(
+                        name = request.name,
+                        craftType = request.craftType,
+                        mainCounterLabelType = request.mainCounterLabelType,
+                        mainCounterCustomLabel = request.mainCounterCustomLabel,
+                        canCreateAdditionalProjects = isPro,
+                        targetFolderId = request.targetFolderId,
+                    )
+                if (pendingProjectCreation != request) return
+                limited = handleCreationResult(request, result)
+            }.onFailure { failure ->
+                if (failure is CancellationException) throw failure
+                if (pendingProjectCreation == request) {
                     analytics.track(UsageEvent.PROJECT_CREATION_FAILED)
-                    pendingProjectCreation = null
-                }
-                ProjectCreationResult.FolderMissing -> {
-                    analytics.track(UsageEvent.PROJECT_CREATION_FAILED)
-                    pendingProjectCreation = null
-                    _projectCreationError.value = result
+                    onFailure(failure)
                 }
             }
         } finally {
@@ -183,6 +181,35 @@ internal class ProjectCreationActions(
                 reconcilePendingCreation()
             }
         }
+    }
+
+    private suspend fun handleCreationResult(
+        request: PendingProjectCreation,
+        result: ProjectCreationResult,
+    ): Boolean {
+        when (result) {
+            is ProjectCreationResult.Created -> {
+                analytics.track(UsageEvent.PROJECT_CREATED)
+                pendingProjectCreation = null
+                _projectCreationPromptCount.value = null
+                onCreated(result.projectId)
+            }
+            ProjectCreationResult.LimitReached -> {
+                val activeCount = repository.getActiveProjectCount()
+                if (pendingProjectCreation == request) _projectCreationPromptCount.value = activeCount
+                return true
+            }
+            ProjectCreationResult.InvalidProject -> {
+                analytics.track(UsageEvent.PROJECT_CREATION_FAILED)
+                pendingProjectCreation = null
+            }
+            ProjectCreationResult.FolderMissing -> {
+                analytics.track(UsageEvent.PROJECT_CREATION_FAILED)
+                pendingProjectCreation = null
+                _projectCreationError.value = result
+            }
+        }
+        return false
     }
 
     private companion object {

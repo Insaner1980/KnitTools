@@ -273,13 +273,16 @@ object InstructionParser {
         // "k2tog every Nth stitch (Y sts)" — implisiittinen decrease
         val k2togPattern =
             Regex(
-                """(?:K2TOG|SSK|P2TOG|SK2P|S2KP)\s+(?:EVERY|EACH)\s+(\d+)\w*\s+(?:ST|STITCH).*?(\d+)\s*(?:STS?|STITCHES?)""",
+                """(K2TOG|SSK|P2TOG|SK2P|S2KP)\s+(?:EVERY|EACH)\s+(\d+)\w*\s+(?:ST|STITCH).*?(\d+)\s*(?:STS?|STITCHES?)""",
             )
         val match = k2togPattern.find(upper) ?: return null
-        val every = match.groupValues[1].toIntOrNull()
-        val total = match.groupValues[2].toIntOrNull()
+        val every = match.groupValues[2].toIntOrNull()
+        val total = match.groupValues[3].toIntOrNull()
         if (every == null || total == null || every <= 0) return null
-        return ParsedInstruction.IncreaseDecrease(total, total / every, false)
+        val stitchesRemoved = if (match.groupValues[1] in setOf("SK2P", "S2KP")) 2L else 1L
+        val change = total / every * stitchesRemoved
+        if (change > Int.MAX_VALUE) return null
+        return ParsedInstruction.IncreaseDecrease(total, change.toInt(), false)
     }
 
     // --- Gauge-patternien tunnistus ---

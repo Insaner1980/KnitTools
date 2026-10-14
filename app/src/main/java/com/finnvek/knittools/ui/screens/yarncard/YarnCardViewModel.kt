@@ -10,12 +10,14 @@ import com.finnvek.knittools.repository.CounterRepository
 import com.finnvek.knittools.repository.YarnCardRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -52,6 +54,9 @@ class YarnCardViewModel
     ) : ViewModel() {
         private val _formState = MutableStateFlow(YarnCardFormState())
         val formState: StateFlow<YarnCardFormState> = _formState.asStateFlow()
+
+        private val mutationErrorsChannel = Channel<Unit>(Channel.BUFFERED)
+        val mutationErrors = mutationErrorsChannel.receiveAsFlow()
 
         val savedCards: StateFlow<List<YarnCard>> =
             repository.getAllCards().stateIn(
@@ -138,10 +143,11 @@ class YarnCardViewModel
 
         fun deleteCard(
             id: Long,
+            onFailure: () -> Unit = {},
             onDeleted: () -> Unit,
         ) {
-            viewModelScope.launch {
-                if (repository.deleteCard(id)) onDeleted()
+            launchCardMutation(onFailure) {
+                repository.deleteCard(id).also { deleted -> if (deleted) onDeleted() }
             }
         }
 
@@ -151,13 +157,13 @@ class YarnCardViewModel
 
         fun updateQuantity(delta: Int) {
             val cardId = _formState.value.editingCardId ?: return
-            viewModelScope.launch { repository.changeQuantity(cardId, delta) }
+            launchCardMutation { repository.changeQuantity(cardId, delta) }
         }
 
         fun updateStatus(status: String) {
             if (!YarnCardStatus.isSupported(status)) return
             val cardId = _formState.value.editingCardId ?: return
-            viewModelScope.launch { repository.updateStatus(cardId, status) }
+            launchCardMutation { repository.updateStatus(cardId, status) }
         }
 
         fun updatePhotoUri(
@@ -181,7 +187,7 @@ class YarnCardViewModel
             val previousProjectId = _formState.value.linkedProjectId
             if (previousProjectId == projectId) return
 
-            viewModelScope.launch {
+            launchCardMutation {
                 repository.updateLinkedProjectId(cardId, projectId)
             }
         }
@@ -192,7 +198,7 @@ class YarnCardViewModel
             val yarnName = input.yarnName.trim()
             if (yarnName.isBlank()) return
 
-            viewModelScope.launch {
+            launchCardMutation {
                 repository.saveCard(
                     YarnCard(
                         id = cardId,
@@ -213,7 +219,27 @@ class YarnCardViewModel
                         status = form.status,
                         linkedProjectId = form.linkedProjectId,
                     ),
-                )
+                ) != null
+            }
+        }
+
+        private fun launchCardMutation(
+            onFailure: () -> Unit = {},
+            operation: suspend () -> Boolean,
+        ) {
+            viewModelScope.launch {
+                val succeeded =
+                    try {
+                        operation()
+                    } catch (cancellation: CancellationException) {
+                        throw cancellation
+                    } catch (_: Exception) {
+                        false
+                    }
+                if (!succeeded) {
+                    onFailure()
+                    mutationErrorsChannel.send(Unit)
+                }
             }
         }
     }

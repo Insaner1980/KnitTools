@@ -5,7 +5,9 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 import com.finnvek.knittools.data.local.KNITTOOLS_DATABASE_VERSION
 import com.finnvek.knittools.domain.model.PatternAnnotationKind
 import com.finnvek.knittools.domain.model.PatternAnnotationPayloadCodec
+import com.finnvek.knittools.domain.model.ProjectFolderNameValidationResult
 import com.finnvek.knittools.domain.model.parseYarnCardIdsWithinLimits
+import com.finnvek.knittools.domain.model.validateProjectFolderName
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
@@ -153,7 +155,10 @@ internal object BackupTables {
                                 BackupFormat.requireValid(!value.jsonPrimitive.isString, BackupError.VALIDATION)
                                 val number =
                                     value.jsonPrimitive.doubleOrNull ?: invalidValue()
-                                BackupFormat.requireValid(number.isFinite(), BackupError.VALIDATION)
+                                BackupFormat.requireValid(
+                                    number.isFinite() && (column.name !in floatColumns || number.toFloat().isFinite()),
+                                    BackupError.VALIDATION,
+                                )
                                 statement.bindDouble(index + 1, number)
                             }
                             else -> throw BackupException(BackupError.VALIDATION)
@@ -219,6 +224,31 @@ internal object BackupTables {
         db.query("SELECT projectId FROM project_documents GROUP BY projectId HAVING SUM(isPrimary) != 1").use {
             BackupFormat.requireValid(!it.moveToFirst(), BackupError.VALIDATION)
         }
+        db
+            .query(
+                """
+                SELECT 1 FROM project_yarn_usage AS usage
+                LEFT JOIN project_yarn_notes AS note ON note.id = usage.projectYarnNoteId
+                WHERE note.projectId != usage.projectId
+                    OR usage.plannedMeters < 0 OR usage.allocatedMeters < 0 OR usage.usedMeters < 0
+                    OR (usage.metersPerSkein IS NULL) != (usage.gramsPerSkein IS NULL)
+                    OR usage.metersPerSkein <= 0 OR usage.gramsPerSkein <= 0
+                LIMIT 1
+                """.trimIndent(),
+            ).use {
+                BackupFormat.requireValid(!it.moveToFirst(), BackupError.VALIDATION)
+            }
+        db.query("SELECT name, normalizedName FROM project_folders").use { cursor ->
+            while (cursor.moveToNext()) {
+                val validated = validateProjectFolderName(cursor.getString(0))
+                BackupFormat.requireValid(
+                    validated is ProjectFolderNameValidationResult.Valid &&
+                        validated.name == cursor.getString(0) &&
+                        validated.normalizedName == cursor.getString(1),
+                    BackupError.VALIDATION,
+                )
+            }
+        }
         val annotationBudget = BackupBudget(trackEmbeddedIdentities = false)
         db.query("SELECT kind, payloadVersion, payloadJson, layerId, page FROM pattern_annotations").use { cursor ->
             while (cursor.moveToNext()) {
@@ -269,10 +299,12 @@ internal object BackupTables {
         if (column in booleanColumns) BackupFormat.requireValid(number in 0..1, BackupError.VALIDATION)
         val identity = column == "id" || column.endsWith("Id")
         if (identity) BackupFormat.requireValid(number > 0, BackupError.VALIDATION)
-        if (!identity && column !in longColumns) {
+        if ((!identity || column == "ravelryPatternId") && column !in longColumns) {
             BackupFormat.requireValid(number in Int.MIN_VALUE.toLong()..Int.MAX_VALUE.toLong(), BackupError.VALIDATION)
         }
     }
+
+    private val floatColumns = setOf("difficulty", "gaugeStitches", "gaugeRows")
 
     private val booleanColumns =
         setOf(

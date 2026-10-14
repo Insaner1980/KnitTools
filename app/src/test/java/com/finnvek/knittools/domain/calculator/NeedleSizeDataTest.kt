@@ -43,6 +43,15 @@ class NeedleSizeDataTest {
     }
 
     @Test
+    fun `US 17 uses a metric size listed by the cited Craft Yarn Council reference`() {
+        val needle = NeedleSizeData.search("17").single()
+
+        assertEquals(12.5, needle.metricMm, 0.0)
+        assertEquals(listOf(needle), NeedleSizeData.search("12,5"))
+        assertTrue(NeedleSizeData.search("12.0").isEmpty())
+    }
+
+    @Test
     fun `search by UK size`() {
         val results = NeedleSizeData.search("14")
         assertTrue(results.any { it.metricMm == 2.0 })

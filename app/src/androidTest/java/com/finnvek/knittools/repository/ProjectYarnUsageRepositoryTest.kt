@@ -9,6 +9,8 @@ import com.finnvek.knittools.data.local.CounterProjectEntity
 import com.finnvek.knittools.data.local.DatabaseTransactionRunner
 import com.finnvek.knittools.data.local.KnitToolsDatabase
 import com.finnvek.knittools.data.local.ProjectYarnNoteEntity
+import com.finnvek.knittools.data.local.ProjectYarnUsageDao
+import com.finnvek.knittools.data.local.ProjectYarnUsageEntity
 import com.finnvek.knittools.data.local.RoomDatabaseTransactionRunner
 import com.finnvek.knittools.data.local.YarnCardEntity
 import com.finnvek.knittools.domain.model.ProjectYarnNote
@@ -17,6 +19,7 @@ import com.finnvek.knittools.domain.model.YarnUsageAmounts
 import com.finnvek.knittools.domain.model.YarnUsageSource
 import com.finnvek.knittools.domain.model.YarnUsageSourceStatus
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -24,6 +27,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -59,14 +63,16 @@ class ProjectYarnUsageRepositoryTest {
         database.close()
     }
 
-    private fun newRepository(runner: DatabaseTransactionRunner = RoomDatabaseTransactionRunner(database)) =
-        ProjectYarnUsageRepository(
-            database.projectYarnUsageDao(),
-            database.projectYarnNoteDao(),
-            database.yarnCardDao(),
-            runner,
-            Dispatchers.IO,
-        )
+    private fun newRepository(
+        runner: DatabaseTransactionRunner = RoomDatabaseTransactionRunner(database),
+        usageDao: ProjectYarnUsageDao = database.projectYarnUsageDao(),
+    ) = ProjectYarnUsageRepository(
+        usageDao,
+        database.projectYarnNoteDao(),
+        database.yarnCardDao(),
+        runner,
+        Dispatchers.IO,
+    )
 
     private fun noteRepository(runner: DatabaseTransactionRunner = RoomDatabaseTransactionRunner(database)) =
         ProjectYarnNoteRepository(database.projectYarnNoteDao(), yarnRepository, runner, database.projectYarnUsageDao())
@@ -144,6 +150,76 @@ class ProjectYarnUsageRepositoryTest {
                     }.awaitAll()
             assertEquals(1, results.count { it is YarnUsageResult.Created })
             assertEquals(7, results.count { it is YarnUsageResult.AlreadyExists })
+        }
+
+    @Test
+    fun pausedUsageEditSerializesAnotherEditorAndRejectsItsStaleWholeRow() =
+        runTest {
+            seed()
+            val original = create()
+            val beforeItems = requireNotNull(repository.observeForProject(1).first())
+            val dao = database.projectYarnUsageDao()
+            val read = CompletableDeferred<Unit>()
+            val resume = CompletableDeferred<Unit>()
+            var paused = false
+            val pausedDao =
+                object : ProjectYarnUsageDao by dao {
+                    override suspend fun getById(id: Long): ProjectYarnUsageEntity? {
+                        val row = dao.getById(id)
+                        if (!paused) {
+                            paused = true
+                            read.complete(Unit)
+                            resume.await()
+                        }
+                        return row
+                    }
+                }
+            val firstRepository = newRepository(usageDao = pausedDao)
+            val first =
+                async(Dispatchers.IO) {
+                    firstRepository.update(1, original.id, original.updatedAt, amounts.copy(plannedMeters = 1500.0))
+                }
+            read.await()
+            val attempted = CompletableDeferred<Unit>()
+            val second =
+                async(Dispatchers.IO) {
+                    attempted.complete(Unit)
+                    repository.update(1, original.id, original.updatedAt, amounts.copy(usedMeters = 700.0))
+                }
+            attempted.await()
+            assertFalse(second.isCompleted)
+            resume.complete(Unit)
+            val updated = (first.await() as YarnUsageResult.Updated).usage
+            assertEquals(YarnUsageResult.StaleAction, second.await())
+            val expected = original.copy(amounts = amounts.copy(plannedMeters = 1500.0), updatedAt = updated.updatedAt)
+            assertEquals(expected, dao.getById(original.id)?.toDomain())
+            assertEquals(
+                beforeItems.map { item -> if (item.usage?.id == original.id) item.copy(usage = expected) else item },
+                requireNotNull(repository.observeForProject(1).first()),
+            )
+        }
+
+    @Test
+    fun exhaustedRevisionLeavesUsageAndItsSourcesUnchanged() =
+        runTest {
+            seed(pair = true)
+            val usage = create()
+            val usageBefore =
+                requireNotNull(
+                    database.projectYarnUsageDao().getById(usage.id),
+                ).copy(updatedAt = Long.MAX_VALUE)
+            assertEquals(1, database.projectYarnUsageDao().update(usageBefore))
+            val projectBefore = database.counterProjectDao().getProject(1)
+            val cardBefore = database.yarnCardDao().getCard(3)
+            val noteBefore = database.projectYarnNoteDao().getById(4)
+
+            val result = repository.update(1, usage.id, Long.MAX_VALUE, amounts.copy(usedMeters = 700.0))
+
+            assertEquals(YarnUsageResult.PersistenceFailure, result)
+            assertEquals(usageBefore, database.projectYarnUsageDao().getById(usage.id))
+            assertEquals(projectBefore, database.counterProjectDao().getProject(1))
+            assertEquals(cardBefore, database.yarnCardDao().getCard(3))
+            assertEquals(noteBefore, database.projectYarnNoteDao().getById(4))
         }
 
     @Test
@@ -253,6 +329,55 @@ class ProjectYarnUsageRepositoryTest {
             seed()
             noteRepository().saveToMyYarn(4)
             assertTrue(requireNotNull(repository.observeForProject(1).first()).all { it.usage == null })
+        }
+
+    @Test
+    fun mergingRestoredUsagesRejectsAnOlderEditorWithoutLosingMergedAmounts() =
+        runTest {
+            seed(pair = true)
+            val original = create()
+            val dao = database.projectYarnUsageDao()
+            dao.update(requireNotNull(dao.getById(original.id)).copy(yarnCardId = null, usedMeters = null))
+            dao.insert(
+                ProjectYarnUsageEntity(
+                    projectId = 1,
+                    yarnCardId = 3,
+                    sourceNameSnapshot = "Wool",
+                    usedMeters = amounts.usedMeters,
+                    createdAt = original.createdAt,
+                    updatedAt = original.updatedAt,
+                ),
+            )
+
+            assertEquals(3L, noteRepository().saveToMyYarn(4))
+            val merged = requireNotNull(dao.getById(original.id))
+            assertEquals(amounts, merged.toDomain().amounts)
+            assertTrue(merged.updatedAt > original.updatedAt)
+            assertEquals(
+                YarnUsageResult.StaleAction,
+                repository.update(1, original.id, original.updatedAt, amounts.copy(usedMeters = null)),
+            )
+            assertEquals(listOf(merged), requireNotNull(dao.getProject(1)).usages.map { it.usage })
+        }
+
+    @Test
+    fun exhaustedMergeRevisionLeavesBothRestoredUsagesUnchanged() =
+        runTest {
+            seed(pair = true)
+            val original = create()
+            val dao = database.projectYarnUsageDao()
+            val noteUsage = requireNotNull(dao.getById(original.id)).copy(yarnCardId = null, updatedAt = Long.MAX_VALUE)
+            dao.update(noteUsage)
+            val cardId = dao.insert(noteUsage.copy(id = 0, yarnCardId = 3, projectYarnNoteId = null, updatedAt = 10))
+            val before = requireNotNull(dao.getProject(1))
+
+            try {
+                noteRepository().saveToMyYarn(4)
+                fail("Expected exhausted revision")
+            } catch (_: ArithmeticException) {
+                assertEquals(before, dao.getProject(1))
+                assertNotNull(dao.getById(cardId))
+            }
         }
 
     @Test

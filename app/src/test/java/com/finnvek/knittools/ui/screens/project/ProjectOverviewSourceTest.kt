@@ -29,7 +29,7 @@ class ProjectOverviewSourceTest {
             )
         assertTrue(host.contains("if (!overview)"))
         assertTrue(host.contains("projectActionTargetId == viewModel.uiState.value.projectId"))
-        assertTrue(host.contains("consumeProjectClosedEvent(selectionVersion, onBack)"))
+        assertTrue(host.contains("consumeProjectClosedEvent(selectionVersion, actions.onProjectClosed)"))
         assertTrue(host.contains("ActiveSessionCompletionDialog("))
         assertTrue(host.contains("ActiveSessionDeletionDialog("))
     }

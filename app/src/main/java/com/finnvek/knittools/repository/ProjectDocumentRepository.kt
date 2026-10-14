@@ -483,7 +483,10 @@ class ProjectDocumentRepository
                         projectId,
                     ).map(ProjectDocumentEntity::toDomain)
                     .inDocumentOrder()
-            val nextSortOrder = documentDao.getHighestSortOrder(projectId) + 1
+            val nextSortOrder =
+                (documentDao.getHighestSortOrder(projectId).toLong() + 1L)
+                    .coerceAtMost(Int.MAX_VALUE.toLong())
+                    .toInt()
             val now = System.currentTimeMillis()
             val entity =
                 ProjectDocumentEntity(

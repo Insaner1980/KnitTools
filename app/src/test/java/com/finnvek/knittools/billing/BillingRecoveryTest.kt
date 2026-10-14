@@ -16,6 +16,7 @@ import com.finnvek.knittools.data.datastore.PreferencesManager
 import com.finnvek.knittools.pro.ProManager
 import com.finnvek.knittools.pro.ProStatus
 import com.finnvek.knittools.pro.TrialManager
+import com.finnvek.knittools.pro.TrialStartResult
 import com.finnvek.knittools.pro.TrialState
 import com.finnvek.knittools.ui.screens.pro.ProUpgradeViewModel
 import com.finnvek.knittools.ui.screens.settings.SettingsViewModel
@@ -43,6 +44,7 @@ import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -58,6 +60,8 @@ class BillingRecoveryTest {
     private val builder = mockk<BillingClient.Builder>(relaxed = true)
     private lateinit var connection: BillingClientStateListener
     private lateinit var billing: BillingManager
+    private lateinit var trial: TrialManager
+    private val trialStates = MutableStateFlow(TrialState(hasStarted = true))
     private lateinit var pro: ProManager
     private lateinit var viewModel: ProUpgradeViewModel
     private val viewModels = ViewModelStore()
@@ -80,8 +84,8 @@ class BillingRecoveryTest {
         coEvery { client.queryProductDetails(any()) } returns
             ProductDetailsResult(result(BillingClient.BillingResponseCode.OK), emptyList())
         billing = BillingManager(mockk<Context>(relaxed = true))
-        val trial = mockk<TrialManager>(relaxed = true)
-        every { trial.trialState } returns MutableStateFlow(TrialState(hasStarted = true))
+        trial = mockk<TrialManager>(relaxed = true)
+        every { trial.trialState } returns trialStates
         pro = ProManager(trial, billing)
         billing.initialize()
         pro.initialize()
@@ -96,6 +100,76 @@ class BillingRecoveryTest {
         unmockkAll()
         Dispatchers.resetMain()
     }
+
+    @Test
+    fun `late empty initial query cannot revoke a newer restored purchase`() =
+        runTest(dispatcher) {
+            val initial = deferInitialQuery()
+            coEvery { client.queryPurchasesAsync(any()) } returns
+                purchases(BillingClient.BillingResponseCode.OK, listOf(purchased()))
+
+            assertEquals(RestorePurchasesResult.RESTORED, billing.restorePurchasesWithResult())
+            initial.complete(purchases(BillingClient.BillingResponseCode.OK))
+
+            assertTrue(billing.isProPurchased.value)
+            assertEquals(ProStatus.PRO_PURCHASED, viewModel.proState.value.status)
+        }
+
+    @Test
+    fun `purchase callback supersedes an older query but a later empty query can revoke it`() =
+        runTest(dispatcher) {
+            val initial = deferInitialQuery()
+
+            val purchase = purchased()
+            every { purchase.purchaseToken } returns "callback-test-token"
+            billing.onPurchasesUpdated(result(BillingClient.BillingResponseCode.OK), listOf(purchase))
+            initial.complete(purchases(BillingClient.BillingResponseCode.OK))
+            assertTrue(billing.isProPurchased.value)
+
+            assertTrue(billing.purchaseStateReady.value)
+            assertFalse(billing.purchaseQueryFailed.value)
+
+            coEvery { client.queryPurchasesAsync(any()) } returns purchases(BillingClient.BillingResponseCode.OK)
+            assertEquals(RestorePurchasesResult.NOT_FOUND, billing.restorePurchasesWithResult())
+            assertFalse(billing.isProPurchased.value)
+        }
+
+    @Test
+    fun `late owned query cannot override a newer empty restore`() =
+        runTest(dispatcher) {
+            val initial = deferInitialQuery()
+            coEvery { client.queryPurchasesAsync(any()) } returns purchases(BillingClient.BillingResponseCode.OK)
+
+            assertEquals(RestorePurchasesResult.NOT_FOUND, billing.restorePurchasesWithResult())
+            initial.complete(purchases(BillingClient.BillingResponseCode.OK, listOf(purchased())))
+
+            assertFalse(billing.isProPurchased.value)
+            assertTrue(billing.purchaseStateReady.value)
+        }
+
+    @Test
+    fun `successful trial retry clears the previous start failure`() =
+        runTest(dispatcher) {
+            trialStates.value = TrialState()
+            coEvery { client.queryPurchasesAsync(any()) } returns purchases(BillingClient.BillingResponseCode.OK)
+            connection.onBillingSetupFinished(result(BillingClient.BillingResponseCode.OK))
+            assertTrue(viewModel.proStateReady.value)
+            assertEquals(ProStatus.TRIAL_NOT_STARTED, viewModel.proState.value.status)
+            coEvery { trial.startTrial() } returns TrialStartResult.Failed
+
+            viewModel.startTrial()
+
+            assertEquals(com.finnvek.knittools.R.string.pro_trial_start_failed, viewModel.statusMessageRes.value)
+            coEvery { trial.startTrial() } coAnswers {
+                trialStates.value = TrialState(isActive = true, daysRemaining = 14, hasStarted = true)
+                TrialStartResult.Started
+            }
+
+            viewModel.startTrial()
+
+            assertEquals(ProStatus.TRIAL_ACTIVE, viewModel.proState.value.status)
+            assertNull(viewModel.statusMessageRes.value)
+        }
 
     @Test
     fun `initial failure then public restore resolves real Pro presentation`() =
@@ -200,9 +274,7 @@ class BillingRecoveryTest {
     @Test
     fun `late initial failure cannot undo successful overlapping restore`() =
         runTest(dispatcher) {
-            val initial = CompletableDeferred<PurchasesResult>()
-            coEvery { client.queryPurchasesAsync(any()) } coAnswers { initial.await() }
-            connection.onBillingSetupFinished(result(BillingClient.BillingResponseCode.OK))
+            val initial = deferInitialQuery()
             coEvery { client.queryPurchasesAsync(any()) } returns
                 purchases(BillingClient.BillingResponseCode.OK, listOf(purchased()))
             viewModel.restorePurchases()
@@ -662,4 +734,11 @@ class BillingRecoveryTest {
         code: Int,
         owned: List<Purchase> = emptyList(),
     ): PurchasesResult = PurchasesResult(result(code), owned)
+
+    private fun deferInitialQuery(): CompletableDeferred<PurchasesResult> {
+        val initial = CompletableDeferred<PurchasesResult>()
+        coEvery { client.queryPurchasesAsync(any()) } coAnswers { initial.await() }
+        connection.onBillingSetupFinished(result(BillingClient.BillingResponseCode.OK))
+        return initial
+    }
 }

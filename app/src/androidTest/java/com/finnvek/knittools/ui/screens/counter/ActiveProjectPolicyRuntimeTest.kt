@@ -17,6 +17,7 @@ import com.finnvek.knittools.App
 import com.finnvek.knittools.MainActivity
 import com.finnvek.knittools.R
 import com.finnvek.knittools.data.datastore.AppLanguage
+import com.finnvek.knittools.data.datastore.ThemeMode
 import com.finnvek.knittools.data.local.CounterProjectEntity
 import com.finnvek.knittools.data.local.KnitToolsDatabase
 import com.finnvek.knittools.pro.ProFeature
@@ -83,6 +84,9 @@ class ActiveProjectPolicyRuntimeTest {
         runBlocking(Dispatchers.IO) {
             database.clearAllTables()
             app.preferencesManager.get().setAppLanguage(AppLanguage.ENGLISH)
+            InstrumentationRegistry.getArguments().getString("auditTheme")?.let { theme ->
+                app.preferencesManager.get().setThemeMode(ThemeMode.valueOf(theme))
+            }
             if (!app.preferencesManager
                     .get()
                     .preferences
@@ -153,6 +157,7 @@ class ActiveProjectPolicyRuntimeTest {
         pressBack()
         clickDescription(R.string.new_project)
         waitText(text(R.string.pro_prompt_projects_title))
+        scrollToText(R.string.pro_prompt_not_now)
         screenshot("en-create")
         click(R.string.pro_prompt_not_now)
         assertEquals(1, runBlocking { repository.getActiveProjectCount() })
@@ -282,11 +287,13 @@ class ActiveProjectPolicyRuntimeTest {
         launch()
         clickDescription(R.string.new_project)
         waitText("Luo toinen aktiivinen projekti Prolla")
+        scrollToText(R.string.pro_prompt_not_now)
         screenshot("fi-create")
         click(R.string.pro_prompt_not_now)
         open("Valmis projekti")
         action(R.string.reactivate_project)
         waitText("Aktivoi projekti uudelleen Prolla")
+        scrollToText(R.string.pro_prompt_not_now)
         screenshot("fi-reactivation")
         click(R.string.pro_prompt_not_now)
         assertEquals(1, runBlocking { repository.getActiveProjectCount() })
@@ -572,6 +579,28 @@ class ActiveProjectPolicyRuntimeTest {
             .put("bounds", bounds.toShortString())
             .put("actions", JSONArray(node.actionList.map { "${it.id}:${it.label}" }))
             .put("nativeDescription", node.toString())
+    }
+
+    private fun scrollToText(label: Int) {
+        waitFor {
+            if (findText(text(label))?.isVisibleToUser == true) {
+                true
+            } else {
+                val expandable =
+                    currentNodes().firstOrNull { node ->
+                        node.actionList.any { it.id == AccessibilityNodeInfo.ACTION_EXPAND }
+                    }
+                if (expandable != null) {
+                    expandable.performAction(AccessibilityNodeInfo.ACTION_EXPAND)
+                } else {
+                    currentNodes().lastOrNull { it.isScrollable }?.performAction(
+                        AccessibilityNodeInfo.ACTION_SCROLL_FORWARD,
+                    )
+                }
+                false
+            }
+        }
+        idle()
     }
 
     private fun click(label: Int) {

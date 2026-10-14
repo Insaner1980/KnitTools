@@ -52,6 +52,7 @@ import com.finnvek.knittools.data.storage.ProgressPhotoStorage
 import com.finnvek.knittools.domain.model.ProjectFolderFilter
 import com.finnvek.knittools.domain.model.ProjectSortOrder
 import com.finnvek.knittools.pro.ProManager
+import com.finnvek.knittools.pro.ProPolicyTestControl
 import com.finnvek.knittools.pro.TrialManager
 import com.finnvek.knittools.repository.ProgressPhotoRepository
 import com.finnvek.knittools.repository.ProjectFolderMutationResult
@@ -88,11 +89,13 @@ class ProjectFoldersScreenTest {
     private lateinit var folderRepository: ProjectFolderRepository
     private lateinit var preferencesManager: PreferencesManager
     private lateinit var viewModelStore: ViewModelStore
+    private lateinit var proManager: ProManager
     private var originalShowCompleted = false
     private lateinit var originalSortOrder: ProjectSortOrder
 
     @Before
     fun setUp() {
+        if (ProPolicyTestControl.isActive) ProPolicyTestControl.setPurchased(true)
         database =
             Room
                 .inMemoryDatabaseBuilder(context, KnitToolsDatabase::class.java)
@@ -128,6 +131,7 @@ class ProjectFoldersScreenTest {
         composeRule.runOnUiThread { viewModelStore.clear() }
         runBlocking { withTimeout(5_000) { viewModelJobs.joinAll() } }
         database.close()
+        if (ProPolicyTestControl.isActive) ProPolicyTestControl.setPurchased(false)
     }
 
     @Test
@@ -387,6 +391,9 @@ class ProjectFoldersScreenTest {
         val destination = createFolder("Gifts")
         val viewModel = renderScreen()
         awaitFolderState(viewModel)
+        if (ProPolicyTestControl.isActive) {
+            composeRule.waitUntil(timeoutMillis = 5_000) { proManager.proState.value.isPro }
+        }
 
         composeRule
             .onNodeWithContentDescription(
@@ -522,9 +529,10 @@ class ProjectFoldersScreenTest {
         val fixture =
             com.finnvek.knittools.repository
                 .RoomCounterTestFixture(database, context)
+        proManager = ProManager(TrialManager(context, Dispatchers.IO), BillingManager(context)).apply { initialize() }
         return ProjectListViewModel(
             repository = fixture.counterRepository(),
-            proManager = ProManager(TrialManager(context, Dispatchers.IO), BillingManager(context)),
+            proManager = proManager,
             photoRepository =
                 ProgressPhotoRepository(
                     dao = database.progressPhotoDao(),

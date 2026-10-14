@@ -18,11 +18,13 @@ class PatternCloudImportSourceTest {
         assertTrue(viewModel.contains("resolvePatternName(sourceUri, name)"))
         assertTrue(picker.contains("private const val PATTERN_PDF_MIME_TYPE = \"application/pdf\""))
         assertTrue(picker.contains("private fun pdfMimeTypes(): Array<String> = arrayOf(PATTERN_PDF_MIME_TYPE)"))
-        assertTrue(picker.contains("val openPdfDocumentPicker = { openDocumentLauncher.launch(pdfMimeTypes()) }"))
+        assertTrue(picker.contains("pendingDocumentProjectId = owner"))
+        assertTrue(picker.contains("openDocumentLauncher.launch(pdfMimeTypes())"))
         assertTrue(picker.contains("openDeviceFiles = openPdfDocumentPicker"))
         assertTrue(picker.contains("openCloudProviderFiles = openPdfDocumentPicker"))
         assertTrue(picker.contains("R.string.pattern_picker_import_cloud_pdf"))
-        assertTrue(picker.contains("onDocumentSelected(uri.toString(), \"\")"))
+        assertTrue(picker.contains("onDocumentSelected(uri, \"\", owner)"))
+        assertTrue(picker.contains("owner == currentProjectId"))
 
         listOf("OAuth", "oauth", "DropboxClient", "DriveScopes", "GoogleSignIn", "accessToken").forEach { token ->
             assertFalse("Pattern picker must not add provider-specific auth: $token", picker.contains(token))

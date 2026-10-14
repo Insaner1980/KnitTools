@@ -1,6 +1,7 @@
 package com.finnvek.knittools.ui.screens.counter
 
 import android.view.WindowManager
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
@@ -99,6 +100,7 @@ import com.finnvek.knittools.ui.components.ScrollableFormDialog
 import com.finnvek.knittools.ui.components.SheetTitle
 import com.finnvek.knittools.ui.components.cardTextFieldColors
 import com.finnvek.knittools.ui.components.dialogTextFieldColors
+import com.finnvek.knittools.ui.components.mainCounterLabelText
 import com.finnvek.knittools.ui.findActivity
 import com.finnvek.knittools.ui.platform.ExternalWebLinkOpenResult
 import com.finnvek.knittools.ui.platform.openExternalWebLink
@@ -157,6 +159,7 @@ private fun ProjectDocumentMutationResult.toProjectDocumentError(): ProjectDocum
 
 data class CounterScreenActions(
     val onBack: () -> Unit = {},
+    val onProjectClosed: () -> Unit = onBack,
     val onProjectOverview: (Long) -> Unit = {},
     val onOpenCounter: () -> Unit = {},
     val onSessionHistory: (Long) -> Unit = {},
@@ -197,7 +200,7 @@ fun ProjectContentHost(
     val context = LocalContext.current
 
     CollectWithLifecycleEffect({ viewModel.projectClosedEvents }) { selectionVersion ->
-        viewModel.consumeProjectClosedEvent(selectionVersion, onBack)
+        viewModel.consumeProjectClosedEvent(selectionVersion, actions.onProjectClosed)
     }
 
     var showResetDialog by rememberSaveable { mutableStateOf(false) }
@@ -215,6 +218,7 @@ fun ProjectContentHost(
     var editingReminderId by rememberSaveable { mutableStateOf<Long?>(null) }
     var showAddCounter by rememberSaveable { mutableStateOf(false) }
     var showStitchDialog by rememberSaveable { mutableStateOf(false) }
+    var enableStitchTrackingOnConfirm by rememberSaveable { mutableStateOf(false) }
     var showPatternPicker by rememberSaveable { mutableStateOf(false) }
     var patternPickerMode by rememberSaveable { mutableStateOf(PatternPickerMode.INITIAL_PROJECT_PATTERN) }
     var pendingWebPatternId by rememberSaveable { mutableStateOf<Long?>(null) }
@@ -248,6 +252,7 @@ fun ProjectContentHost(
         editingReminderId = null
         showAddCounter = false
         showStitchDialog = false
+        enableStitchTrackingOnConfirm = false
         showPatternPicker = false
         patternPickerMode = PatternPickerMode.INITIAL_PROJECT_PATTERN
         pendingWebPatternId = null
@@ -260,7 +265,8 @@ fun ProjectContentHost(
         projectActionTargetId = null
     }
 
-    LaunchedEffect(state.projectId) {
+    LaunchedEffect(state.projectId, state.isRestoringProject) {
+        if (state.isRestoringProject) return@LaunchedEffect
         val previousProjectId = previousOverlayProjectId
         if (previousProjectId != null && previousProjectId != state.projectId) {
             hideProjectScopedOverlays()
@@ -356,6 +362,7 @@ fun ProjectContentHost(
                     pendingWebPatternName.orEmpty(),
                 ),
             confirmText = stringResource(R.string.web_pattern_attach),
+            isDestructive = true,
             onConfirm = {
                 viewModel.attachSavedPatternMetadata(
                     savedPatternId = replacementPatternId,
@@ -393,6 +400,7 @@ fun ProjectContentHost(
     val dialogActionDependencies =
         CounterDialogActionDependencies(
             projectId = projectActionTargetId,
+            enableStitchTrackingOnConfirm = enableStitchTrackingOnConfirm,
             editingReminderId = editingReminderId,
             onBack = onBack,
             onHideAddReminder = {
@@ -403,7 +411,10 @@ fun ProjectContentHost(
             onHideResetDialog = { showResetDialog = false },
             onHideCompleteDialog = { showCompleteDialog = false },
             onHideDeleteDialog = { showDeleteDialog = false },
-            onHideStitchDialog = { showStitchDialog = false },
+            onHideStitchDialog = {
+                showStitchDialog = false
+                enableStitchTrackingOnConfirm = false
+            },
             onReminderProRequired = { pendingProAction = PendingCounterProAction.RetryReminder },
             onCounterProRequired = { pendingProAction = PendingCounterProAction.RetryCounter },
         )
@@ -518,6 +529,7 @@ fun ProjectContentHost(
     CounterTargetRowsDialogHost(
         showDialog = showTargetDialog,
         currentTarget = state.targetRows,
+        counterLabel = mainCounterLabelText(state.mainCounterLabelType, state.mainCounterCustomLabel),
         onDismiss = { showTargetDialog = false },
         onConfirm = { target ->
             viewModel.setTargetRows(target)
@@ -567,6 +579,7 @@ fun ProjectContentHost(
                 notes = state.notes,
                 showPatternPicker = showPatternPicker,
                 projectId = state.projectId,
+                isRestoringProject = state.isRestoringProject,
                 savedPatterns = savedPatterns,
                 canUseCameraScan = state.canUsePatternCameraScan,
                 proStatus = state.proStatus,
@@ -717,6 +730,7 @@ fun ProjectContentHost(
                 },
                 onOpenStitchCount = {
                     showProjectActionsSheet = false
+                    enableStitchTrackingOnConfirm = false
                     showStitchDialog = true
                 },
                 onToggleStitchTracking = { enabled ->
@@ -725,6 +739,7 @@ fun ProjectContentHost(
                         stitchCount = state.stitchCount,
                         onRequestStitchCount = {
                             showProjectActionsSheet = false
+                            enableStitchTrackingOnConfirm = true
                             showStitchDialog = true
                         },
                         onSetStitchTrackingEnabled = viewModel::setStitchTrackingEnabled,
@@ -811,6 +826,9 @@ fun ProjectContentHost(
     val genericErrorUnknown = stringResource(R.string.generic_error_unknown)
     CollectWithLifecycleEffect({ viewModel.reactivationErrors }) {
         snackbarHostState.showSnackbar(genericErrorUnknown)
+    }
+    CollectWithLifecycleEffect({ viewModel.projectContentErrors }) {
+        Toast.makeText(context, genericErrorUnknown, Toast.LENGTH_LONG).show()
     }
 
     pendingProAction?.let { action ->
@@ -1020,6 +1038,7 @@ fun ProjectContentHost(
 private fun CounterTargetRowsDialogHost(
     showDialog: Boolean,
     currentTarget: Int?,
+    counterLabel: String,
     onDismiss: () -> Unit,
     onConfirm: (Int?) -> Unit,
     onRemove: () -> Unit,
@@ -1027,6 +1046,7 @@ private fun CounterTargetRowsDialogHost(
     if (showDialog) {
         TargetRowsDialog(
             currentTarget = currentTarget,
+            counterLabel = counterLabel,
             onDismiss = onDismiss,
             onConfirm = onConfirm,
             onRemove = onRemove,
@@ -1588,6 +1608,7 @@ data class CounterSheetState(
     val hasExistingPattern: Boolean,
     val patternPickerMode: PatternPickerMode,
     val attachedSavedPatternIds: Set<Long>,
+    val isRestoringProject: Boolean = false,
 )
 
 data class CounterSheetActions(
@@ -1603,7 +1624,7 @@ data class CounterSheetActions(
     val onNotesDismiss: () -> Unit,
     val onNotesExpand: () -> Unit,
     val onPatternPickerDismiss: () -> Unit,
-    val onPatternFileSelected: (String, String) -> Unit,
+    val onPatternFileSelected: (String, String, Long) -> Unit,
     val onSavedPatternSelected: (SavedPattern) -> Unit,
     val onImportFromRavelry: () -> Unit,
     val onAddWebPattern: () -> Unit,
@@ -1650,6 +1671,7 @@ private fun CounterScreenSheets(
     if (state.showPatternPicker) {
         PatternPickerSheet(
             projectId = state.projectId,
+            isRestoringProject = state.isRestoringProject,
             savedPatterns = state.savedPatterns,
             canUseCameraScan = state.canUseCameraScan,
             proStatus = state.proStatus,
@@ -1744,6 +1766,7 @@ private fun CounterTopBarTitle(
 
 private data class CounterDialogActionDependencies(
     val projectId: Long?,
+    val enableStitchTrackingOnConfirm: Boolean,
     val editingReminderId: Long?,
     val onBack: () -> Unit,
     val onHideAddReminder: () -> Unit,
@@ -2010,7 +2033,9 @@ private fun rememberCounterDialogActions(
             },
             onDeleteDismiss = dependencies.onHideDeleteDialog,
             onStitchConfirm = { stitchCount ->
-                runForCurrentProject(dependencies, viewModel) { setStitchCount(stitchCount) }
+                runForCurrentProject(dependencies, viewModel) {
+                    setStitchCount(stitchCount, enableTracking = dependencies.enableStitchTrackingOnConfirm)
+                }
             },
             onStitchDismiss = dependencies.onHideStitchDialog,
         )
@@ -2112,7 +2137,13 @@ private fun rememberCounterSheetActions(
             onNotesDismiss = onHideNotesSheet,
             onNotesExpand = onExpandNotes,
             onPatternPickerDismiss = onHidePatternPicker,
-            onPatternFileSelected = { uri, name -> viewModel.attachPattern(uri, name) },
+            onPatternFileSelected = {
+                uri,
+                name,
+                owner,
+                ->
+                viewModel.attachPattern(uri, name, expectedProjectId = owner)
+            },
             onSavedPatternSelected = { pattern ->
                 // Pyynnön projekti kulkee tuloksen mukana, jottei myöhäinen tulos osu uuteen projektiin.
                 val requestProjectId = viewModel.uiState.value.projectId

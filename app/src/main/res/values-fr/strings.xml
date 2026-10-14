@@ -245,7 +245,7 @@
 
     <!-- Session History -->
     <string name="session_history_title">Historique des séances</string>
-    <string name="no_sessions">Aucune session enregistrée pour le moment. Commencez à tricoter pour voir votre historique ici.</string>
+    <string name="no_sessions">Aucune session enregistrée pour le moment. Ouvrez un projet et démarrez une session de travail pour enregistrer votre temps ici.</string>
     <string name="session_row_range">Rangs %1$d \u2192 %2$d</string>
     <string name="session_row_single">Rang %1$d</string>
     <string name="delete_session_title">Supprimer la session ?</string>
@@ -532,13 +532,13 @@
         <item quantity="other">Actif %1$d sur %2$d jours</item>
     </plurals>
     <string name="insights_chart_axis_today">aujourd’hui</string>
-    <string name="insights_chart_a11y_daily">Temps quotidien pour %1$s, %2$s, %3$s, plus long %4$s</string>
-    <string name="insights_chart_a11y_monthly">Temps mensuel pour %1$s, %2$s, %3$s, plus long %4$s</string>
+    <string name="insights_chart_a11y_daily">Temps quotidien %1$s, %2$s, %3$s, plus long %4$s</string>
+    <string name="insights_chart_a11y_monthly">Temps mensuel %1$s, %2$s, %3$s, plus long %4$s</string>
     <string name="insights_chart_a11y_next">Barre suivante</string>
     <string name="insights_chart_a11y_previous">Barre précédente</string>
     <string name="insights_project_sub_format">%1$s, %2$s</string>
     <string name="insights_empty_title">Pas encore de temps sur les aiguilles.</string>
-    <string name="insights_empty_body">Ouvrez un projet et commencez à compter. Votre temps apparaîtra ici.</string>
+    <string name="insights_empty_body">Ouvrez un projet et démarrez une session de travail pour enregistrer votre temps ici.</string>
     <string name="insights_nothing_yet_week">Rien encore cette semaine.</string>
     <string name="insights_nothing_yet_month">Rien encore ce mois-ci.</string>
     <string name="insights_nothing_yet_all_time">Rien encore.</string>
@@ -693,7 +693,7 @@
     <string name="tip_edge_stitches_title">Mailles lisière</string>
     <string name="tip_edge_stitches_desc">Les mailles lisière sont des mailles supplémentaires hors de la répétition du motif. Indiquez le total des mailles lisière à monter ; le calculateur les ajoute après avoir calculé la largeur souhaitée, par exemple 2 pour une maille de chaque côté.</string>
     <string name="tip_flat_vs_circular_title">À plat ou en rond</string>
-    <string name="tip_flat_vs_circular_desc">Tricot à plat : vous travaillez en aller-retour sur des aiguilles droites ou circulaires en tournant à la fin de chaque rang. Les augmentations/diminutions se font sur les deux bords.\n\nTricot en rond : vous travaillez en continu. Les augmentations/diminutions sont réparties uniformément tout autour du rang.</string>
+    <string name="tip_flat_vs_circular_desc">Tricot à plat : vous travaillez en aller-retour sur des aiguilles droites ou circulaires en tournant à la fin de chaque rang.\n\nTricot en rond : vous travaillez en continu. Les augmentations/diminutions sont réparties uniformément tout autour du rang.</string>
     <string name="tip_needle_sizes_title">Systèmes de tailles d’aiguilles</string>
     <string name="tip_needle_sizes_desc">Le système métrique (mm) est la norme universelle. Les tailles US utilisent un système numéroté (0–50). Les tailles UK/Canada utilisent un autre système numéroté. Les tailles japonaises ont leur propre numérotation. Vérifiez toujours la taille en mm pour être sûr.</string>
     <string name="tip_imperial_units_title">Unités impériales</string>
@@ -705,11 +705,10 @@
     <string name="widget_rows_remaining_format">%d rangs restants</string>
     <string name="widget_target_reached">Objectif atteint</string>
     <string name="widget_stitches_format">Mailles : %1$d / %2$d</string>
-    <string name="target_rows_dialog_title">Définir les rangs cibles</string>
+    <string name="target_rows_dialog_title">Définir un objectif</string>
     <string name="target_rows_set">Définir l’objectif…</string>
     <string name="target_rows_edit">Modifier l’objectif</string>
     <string name="target_rows_remove">Supprimer l’objectif</string>
-    <string name="target_rows_hint">Nombre de rangs</string>
     <string name="row_label_with_target">Rang %1$d / %2$d</string>
     <string name="widget_undo_action">Annuler</string>
     <string name="widget_undo_content_description">Annuler la dernière modification</string>
@@ -745,7 +744,7 @@
     <string name="pro_prompt_photos_title">Ajoutez des photos de progression avec Pro</string><string name="pro_prompt_photos_body">Créer une nouvelle photo de progression nécessite Pro. Vos photos existantes restent disponibles.</string>
     <string name="pro_prompt_notes_title">Ajoutez des notes de projet avec Pro</string><string name="pro_prompt_notes_body">Créer la première note de ce projet nécessite Pro. Les notes déjà créées restent modifiables.</string>
     <string name="pro_prompt_yarn_title">Ajoutez un fil avec Pro</string><string name="pro_prompt_yarn_body">Créer une nouvelle fiche de fil nécessite Pro. Vos fiches existantes restent disponibles et modifiables.</string>
-    <string name="pro_prompt_save_yarn_title">Enregistrez ce fil avec Pro</string><string name="pro_prompt_save_yarn_body">Enregistrer ce fil de projet dans Mes fils crée une nouvelle fiche et nécessite Pro. La note de fil du projet reste disponible.</string>
+    <string name="pro_prompt_save_yarn_title">Enregistrez ce fil avec Pro</string><string name="pro_prompt_save_yarn_body">Enregistrer ce fil de projet dans Mon fil crée une nouvelle fiche et nécessite Pro. La note de fil du projet reste disponible.</string>
     <string name="pro_prompt_counters_title">Ajoutez un compteur avec Pro</string><string name="pro_prompt_counters_body">Créer un nouveau compteur supplémentaire nécessite Pro. Vos compteurs existants restent disponibles et modifiables.</string>
     <string name="pro_prompt_reminders_title">Ajoutez un rappel de rang avec Pro</string><string name="pro_prompt_reminders_body">Créer un nouveau rappel de rang nécessite Pro. Vos rappels existants continuent de fonctionner et restent modifiables.</string>
     <string name="pro_prompt_pattern_camera_title">Transformez les photos du modèle en PDF avec Pro</string><string name="pro_prompt_pattern_camera_body">Créer un nouveau PDF à partir de photos du modèle nécessite Pro. Vos modèles et PDF existants restent disponibles.</string>
@@ -970,7 +969,7 @@
         <item quantity="other">%1$d rangs</item>
     </plurals>
     <string name="yarn_usage_title">Utilisation du fil</string>
-    <string name="yarn_usage_scope">Suit uniquement le fil réservé à ce projet. Les quantités dans Mes fils restent inchangées.</string>
+    <string name="yarn_usage_scope">Suit uniquement le fil réservé à ce projet. Les quantités dans Mon fil restent inchangées.</string>
     <string name="yarn_usage_unit">Unité de quantité</string>
     <string name="yarn_usage_grams">Grammes</string>
     <string name="yarn_usage_skeins">Écheveaux</string>

@@ -20,16 +20,19 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
@@ -38,6 +41,7 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import java.io.IOException
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class LibraryViewModelTest {
@@ -99,6 +103,66 @@ class LibraryViewModelTest {
             proManager = proManager,
             counterRepository = counterRepository,
         )
+
+    @Test
+    fun `leaving a pattern route cancels its load without affecting the next route`() =
+        runTest {
+            val pending = CompletableDeferred<SavedPattern?>()
+            coEvery { savedPatternRepository.getByIdIfAvailable(7L) } coAnswers { pending.await() }
+            coEvery { savedPatternRepository.getByIdIfAvailable(8L) } returns savedPattern(8L)
+            val viewModel = createViewModel()
+            var previousRouteCalled = false
+
+            val previousRoute =
+                launch {
+                    viewModel.loadSavedPattern(7L).first()
+                    previousRouteCalled = true
+                }
+            advanceUntilIdle()
+            previousRoute.cancel()
+            pending.complete(null)
+            advanceUntilIdle()
+
+            assertFalse(previousRouteCalled)
+            val currentPatternId = viewModel.loadSavedPattern(8L).first()?.id
+            advanceUntilIdle()
+            assertEquals(8L, currentPatternId)
+        }
+
+    @Test
+    fun `transient pattern route read failure retries before delivering the row`() =
+        runTest {
+            var attempts = 0
+            val pattern = savedPattern(7L)
+            coEvery { savedPatternRepository.getByIdIfAvailable(7L) } coAnswers {
+                if (++attempts == 1) throw IOException("transient read failure")
+                pattern
+            }
+            val results = mutableListOf<SavedPattern?>()
+            val viewModel = createViewModel()
+
+            launch { results += viewModel.loadSavedPattern(7L).first() }
+            advanceUntilIdle()
+
+            assertEquals(listOf(pattern), results)
+            assertEquals(2, attempts)
+        }
+
+    @Test
+    fun `leaving a pattern route during read backoff prevents retry and callback`() =
+        runTest {
+            coEvery { savedPatternRepository.getByIdIfAvailable(7L) } throws IOException("transient read failure")
+            val results = mutableListOf<SavedPattern?>()
+            val viewModel = createViewModel()
+            val loading = launch { results += viewModel.loadSavedPattern(7L).first() }
+            runCurrent()
+
+            loading.cancel()
+            advanceUntilIdle()
+
+            assertTrue(results.isEmpty())
+            coVerify(exactly = 1) { savedPatternRepository.getByIdIfAvailable(7L) }
+        }
 
     @Test
     fun `failed pattern delete clears selection state`() =
@@ -243,6 +307,18 @@ class LibraryViewModelTest {
         }
 
     @Test
+    fun `manual yarn creation reports a rejected repository write`() =
+        runTest {
+            coEvery { yarnCardRepository.saveCard(any()) } returns null
+            val viewModel = createViewModel()
+
+            assertTrue(viewModel.createManualYarnCard(ManualYarnCardInput(yarnName = "Blue")))
+            advanceUntilIdle()
+
+            assertEquals(1L, viewModel.yarnSaveErrorId.value)
+        }
+
+    @Test
     fun `manual yarn creation rejects zero quantity`() =
         runTest {
             val viewModel = createViewModel()
@@ -274,6 +350,29 @@ class LibraryViewModelTest {
             advanceUntilIdle()
 
             coVerify(exactly = 0) { yarnCardRepository.saveCard(any()) }
+        }
+
+    @Test
+    fun `rejected yarn deletion reports an error and permits retry`() =
+        runTest {
+            coEvery { yarnCardRepository.deleteCards(listOf(3L)) } returns false
+            val viewModel = createViewModel()
+
+            viewModel.enterYarnSelectMode(3L)
+            viewModel.deleteSelectedYarn()
+            advanceUntilIdle()
+
+            assertEquals(1L, viewModel.yarnDeleteErrorId.value)
+            assertFalse(viewModel.isYarnSelectMode.value)
+            assertTrue(viewModel.selectedYarnIds.value.isEmpty())
+
+            coEvery { yarnCardRepository.deleteCards(listOf(3L)) } returns true
+            viewModel.enterYarnSelectMode(3L)
+            viewModel.deleteSelectedYarn()
+            advanceUntilIdle()
+
+            coVerify(exactly = 2) { yarnCardRepository.deleteCards(listOf(3L)) }
+            assertEquals(1L, viewModel.yarnDeleteErrorId.value)
         }
 
     @Test

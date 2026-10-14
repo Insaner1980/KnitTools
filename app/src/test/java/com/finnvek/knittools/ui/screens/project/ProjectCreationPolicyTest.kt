@@ -44,6 +44,7 @@ class ProjectCreationPolicyTest : ProjectListViewModelFixture() {
                     SavedStateHandle(),
                     backgroundScope,
                     analytics = UsageAnalytics { events += it },
+                    onFailure = { throw it },
                     onCreated = {},
                 )
             actions.create(PendingProjectCreation("Private name", CROCHET, CUSTOM, "Private label", null))
@@ -193,6 +194,7 @@ class ProjectCreationPolicyTest : ProjectListViewModelFixture() {
                 if (reads == 1) count.await() else 1
             }
             val errors = mutableListOf<Throwable>()
+            val reportedFailures = mutableListOf<Throwable>()
             val scope =
                 CoroutineScope(
                     SupervisorJob() + StandardTestDispatcher(testScheduler) +
@@ -205,6 +207,7 @@ class ProjectCreationPolicyTest : ProjectListViewModelFixture() {
                         proManager,
                         pendingDraftHandle(),
                         scope,
+                        onFailure = { reportedFailures += it },
                     ) { error("Unexpected creation") }
                 runCurrent()
                 active.value = emptyList()
@@ -220,7 +223,8 @@ class ProjectCreationPolicyTest : ProjectListViewModelFixture() {
                 active.value = listOf(CounterProject(id = 10L, name = "Another"))
                 runCurrent()
                 assertEquals(3, reads)
-                assertEquals(listOf("Count failed"), errors.map { it.message })
+                assertEquals(emptyList<Throwable>(), errors)
+                assertEquals(listOf("Count failed"), reportedFailures.map { it.message })
                 runCurrent()
                 assertEquals(3, reads)
                 coVerify(exactly = 0) { repository.createProject(any(), any(), any(), any(), any(), any()) }
@@ -326,6 +330,7 @@ class ProjectCreationPolicyTest : ProjectListViewModelFixture() {
         coEvery { repository.createProject(any(), any(), any(), any(), any(), any()) } coAnswers
             { heldCreate.await() }
         val errors = mutableListOf<Throwable>()
+        val reportedFailures = mutableListOf<Throwable>()
         val scope =
             CoroutineScope(
                 SupervisorJob() + StandardTestDispatcher(testScheduler) +
@@ -334,7 +339,10 @@ class ProjectCreationPolicyTest : ProjectListViewModelFixture() {
         val handle = pendingDraftHandle()
         val navigated = mutableListOf<Long>()
         try {
-            val actions = ProjectCreationActions(repository, proManager, handle, scope) { navigated += it }
+            val actions =
+                ProjectCreationActions(repository, proManager, handle, scope, onFailure = { reportedFailures += it }) {
+                    navigated += it
+                }
             runCurrent()
             assertEquals(1, actions.projectCreationPromptCount.value)
             active.value = emptyList()
@@ -364,7 +372,8 @@ class ProjectCreationPolicyTest : ProjectListViewModelFixture() {
             assertEquals(dismiss || created, handle.get<Any>("pending_project_creation") == null)
             val expectedErrors =
                 listOfNotNull(failure).filterNot { it is kotlinx.coroutines.CancellationException }.map { it.message }
-            assertEquals(expectedErrors, errors.map { it.message })
+            assertEquals(emptyList<Throwable>(), errors)
+            assertEquals(expectedErrors, reportedFailures.map { it.message })
         } finally {
             scope.cancel()
         }

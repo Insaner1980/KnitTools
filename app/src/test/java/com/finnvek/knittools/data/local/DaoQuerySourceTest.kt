@@ -105,7 +105,7 @@ class DaoQuerySourceTest {
     fun `project total minutes use exact session seconds`() {
         val dao = ProjectSourceFiles.read(SESSION_DAO)
 
-        assertTrue(dao.contains("SUM(durationSeconds)"))
+        assertTrue(dao.contains("TOTAL(durationSeconds)"))
         assertFalse(dao.contains("SUM(durationMinutes)"))
     }
 

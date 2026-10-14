@@ -210,7 +210,8 @@ private fun ReminderListItem(
     onDeleteClick: () -> Unit = {},
 ) {
     // Lähestyvä muistutus erottuu tekstin värillä eikä erillisellä pisteellä.
-    val isUpcoming = !reminder.isCompleted && reminder.targetRow <= currentRow + UPCOMING_ROW_WINDOW
+    val isUpcoming =
+        !reminder.isCompleted && reminder.targetRow.toLong() <= currentRow.toLong() + UPCOMING_ROW_WINDOW
     val detail =
         listOfNotNull(
             stringResource(R.string.row_label_format, reminder.targetRow),

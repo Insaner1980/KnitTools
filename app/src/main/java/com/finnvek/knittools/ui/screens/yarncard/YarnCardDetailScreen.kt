@@ -44,6 +44,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.model.CounterProject
+import com.finnvek.knittools.ui.components.CollectWithLifecycleEffect
 import com.finnvek.knittools.ui.components.ConfirmationDialog
 import com.finnvek.knittools.ui.components.CounterImageButton
 import com.finnvek.knittools.ui.components.FabricKind
@@ -92,6 +93,9 @@ fun YarnCardDetailScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
     val photoImportError = stringResource(R.string.generic_error_unknown)
+    CollectWithLifecycleEffect({ viewModel.mutationErrors }) {
+        snackbarHostState.showSnackbar(photoImportError)
+    }
     val yarnPhotoPicker =
         rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
             uri?.let {

@@ -179,7 +179,7 @@ internal fun ProjectOverviewPattern(
             if (available) {
                 stringResource(
                     R.string.project_overview_pdf_page_format,
-                    primary.currentPage + 1,
+                    primary.currentPage.toLong() + 1L,
                 )
             } else {
                 stringResource(R.string.project_documents_unavailable)

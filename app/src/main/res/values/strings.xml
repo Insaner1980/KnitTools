@@ -250,7 +250,7 @@
 
     <!-- Session History -->
     <string name="session_history_title">Session History</string>
-    <string name="no_sessions">No sessions recorded yet. Start knitting to see your history here.</string>
+    <string name="no_sessions">No sessions recorded yet. Open a project and start a work session to record your time here.</string>
     <string name="session_row_range">Rows %1$d \u2192 %2$d</string>
     <string name="session_row_single">Row %1$d</string>
     <string name="delete_session_title">Delete session?</string>
@@ -463,11 +463,10 @@
     <string name="widget_rows_remaining_format" tools:ignore="PluralsCandidate,UnusedResources">%d rows left</string>
     <string name="widget_target_reached" tools:ignore="UnusedResources">Target reached</string>
     <string name="widget_stitches_format" tools:ignore="UnusedResources">Stitches: %1$d / %2$d</string>
-    <string name="target_rows_dialog_title">Set target rows</string>
+    <string name="target_rows_dialog_title">Set target</string>
     <string name="target_rows_set" tools:ignore="UnusedResources">Set target…</string>
     <string name="target_rows_edit" tools:ignore="UnusedResources">Edit target</string>
     <string name="target_rows_remove">Remove target</string>
-    <string name="target_rows_hint">Number of rows</string>
     <string name="row_label_with_target">Row %1$d / %2$d</string>
     <string name="widget_undo_action" tools:ignore="UnusedResources">Undo</string>
     <string name="widget_undo_content_description" tools:ignore="UnusedResources">Undo last change</string>
@@ -550,7 +549,7 @@
     <string name="insights_chart_a11y_previous">Previous bar</string>
     <string name="insights_project_sub_format">%1$s, %2$s</string>
     <string name="insights_empty_title">No time on the needles yet.</string>
-    <string name="insights_empty_body">Open a project and start counting. Your time shows up here.</string>
+    <string name="insights_empty_body">Open a project and start a work session to record your time here.</string>
     <string name="insights_nothing_yet_week">Nothing yet this week.</string>
     <string name="insights_nothing_yet_month">Nothing yet this month.</string>
     <string name="insights_nothing_yet_all_time">Nothing yet.</string>
@@ -963,7 +962,7 @@
     <string name="tip_edge_stitches_title">Edge stitches</string>
     <string name="tip_edge_stitches_desc">Edge stitches are extra stitches outside the pattern repeat. Enter the total edge stitches to cast on; the calculator adds them after calculating the desired width, for example 2 for one stitch on each side.</string>
     <string name="tip_flat_vs_circular_title">Flat vs. circular</string>
-    <string name="tip_flat_vs_circular_desc">Flat knitting: you work back and forth on straight or circular needles, turning at the end of each row. Increases/decreases happen at both edges.\n\nCircular knitting: you work in a continuous round. Increases/decreases are evenly spaced around the round.</string>
+    <string name="tip_flat_vs_circular_desc">Flat knitting: you work back and forth on straight or circular needles, turning at the end of each row.\n\nCircular knitting: you work in a continuous round. Increases/decreases are evenly spaced around the round.</string>
     <string name="tip_needle_sizes_title">Needle size systems</string>
     <string name="tip_needle_sizes_desc">Metric (mm) is the universal standard. US sizes use a numbered system (0–50). UK/Canadian sizes use a different numbered system. Japanese sizes have their own numbering. Always check the mm size to be sure.</string>
     <string name="tip_imperial_units_title">Imperial units</string>

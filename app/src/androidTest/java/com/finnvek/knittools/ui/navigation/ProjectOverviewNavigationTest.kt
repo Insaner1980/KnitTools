@@ -24,6 +24,17 @@ class ProjectOverviewNavigationTest {
                 composable(Screen.ProjectList.route) { Text("Projects") }
                 composable(Screen.Counter.route) { Text("Counter") }
                 composable(
+                    Screen.PatternViewer.ROUTE,
+                    arguments =
+                        listOf(
+                            navArgument("projectId") { type = NavType.LongType },
+                            navArgument("selectedProjectDocumentId") {
+                                type = NavType.LongType
+                                defaultValue = 0L
+                            },
+                        ),
+                ) { Text("Pattern") }
+                composable(
                     Screen.ProjectOverview.ROUTE,
                     arguments =
                         listOf(
@@ -35,6 +46,46 @@ class ProjectOverviewNavigationTest {
                 ) { Text("Overview") }
             }
         }
+    }
+
+    @Test
+    fun delayedDocumentSelectionCannotReopenDepartedWorkspace() {
+        setup()
+        rule.runOnIdle { nav.navigate(Screen.Counter.route) }
+        rule.waitForIdle()
+        val delayedAction = rule.runOnIdle { projectWorkspaceActions(nav, {}).onPatternViewer }
+        rule.runOnIdle { nav.popBackStack() }
+        rule.waitForIdle()
+        rule.runOnIdle { delayedAction(7L, 41L) }
+        rule.waitForIdle()
+        rule.runOnIdle { assertEquals(Screen.ProjectList.route, nav.currentDestination?.route) }
+
+        rule.runOnIdle { nav.navigate(Screen.Counter.route) }
+        rule.waitForIdle()
+        rule.runOnIdle { projectWorkspaceActions(nav, {}).onPatternViewer(7L, 41L) }
+        rule.waitForIdle()
+        rule.runOnIdle {
+            assertEquals(Screen.PatternViewer.ROUTE, nav.currentDestination?.route)
+            assertEquals(7L, nav.currentBackStackEntry?.arguments?.getLong("projectId"))
+            assertEquals(41L, nav.currentBackStackEntry?.arguments?.getLong("selectedProjectDocumentId"))
+        }
+    }
+
+    @Test
+    fun closingProjectFromOverviewRemovesItsCounterFromBackStack() {
+        setup()
+        openOverviewFromCounter()
+        closeProjectAndAssertList()
+    }
+
+    @Test
+    fun closingProjectFromCounterRemovesItsOverviewFromBackStack() {
+        setup()
+        rule.runOnIdle { nav.navigate(Screen.ProjectOverview(7).route) }
+        rule.waitForIdle()
+        rule.runOnIdle { projectWorkspaceActions(nav, {}).onOpenCounter() }
+        rule.waitForIdle()
+        closeProjectAndAssertList()
     }
 
     @Test
@@ -52,10 +103,7 @@ class ProjectOverviewNavigationTest {
     @Test
     fun counterOverviewRoundTripReusesCounter() {
         setup()
-        rule.runOnIdle { nav.navigate(Screen.Counter.route) }
-        rule.waitForIdle()
-        rule.runOnIdle { projectWorkspaceActions(nav, {}).onProjectOverview(7) }
-        rule.waitForIdle()
+        openOverviewFromCounter()
         rule.runOnIdle { projectWorkspaceActions(nav, {}).onOpenCounter() }
         rule.waitForIdle()
         rule.runOnIdle {
@@ -81,5 +129,21 @@ class ProjectOverviewNavigationTest {
         rule.waitForIdle()
         rule.runOnIdle { projectWorkspaceActions(nav, {}).onProjectOverview(finalProjectId) }
         rule.waitForIdle()
+    }
+
+    private fun openOverviewFromCounter() {
+        rule.runOnIdle { nav.navigate(Screen.Counter.route) }
+        rule.waitForIdle()
+        rule.runOnIdle { projectWorkspaceActions(nav, {}).onProjectOverview(7) }
+        rule.waitForIdle()
+    }
+
+    private fun closeProjectAndAssertList() {
+        rule.runOnIdle { projectWorkspaceActions(nav, {}).onProjectClosed() }
+        rule.waitForIdle()
+        rule.runOnIdle {
+            assertEquals(Screen.ProjectList.route, nav.currentDestination?.route)
+            assertEquals(null, nav.previousBackStackEntry)
+        }
     }
 }

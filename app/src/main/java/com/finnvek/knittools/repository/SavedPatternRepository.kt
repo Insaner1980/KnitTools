@@ -148,7 +148,7 @@ class SavedPatternRepository
                         }
 
                         val now = System.currentTimeMillis()
-                        val updatedAt = if (now > current.updatedAt) now else current.updatedAt + 1L
+                        val updatedAt = if (now > current.updatedAt) now else Math.addExact(current.updatedAt, 1L)
                         dao.update(
                             current.copy(
                                 source = SavedPatternSource.WebLink.persistedValue,

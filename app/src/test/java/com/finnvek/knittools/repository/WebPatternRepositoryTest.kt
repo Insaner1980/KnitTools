@@ -275,6 +275,26 @@ class WebPatternRepositoryTest {
         }
 
     @Test
+    fun `update rejects an exhausted revision without changing pattern or linked project`() =
+        runTest {
+            val current = webEntity(id = 7L, updatedAt = Long.MAX_VALUE)
+            coEvery { dao.getById(7L) } returns current
+            coEvery { dao.getByCanonicalUrlExcludingId("https://example.com/new", 7L) } returns null
+            coEvery { dao.getAllOnce() } returns listOf(current)
+
+            assertEquals(
+                WebPatternMutationResult.PersistenceFailure,
+                repository().updateWebPattern(
+                    7L,
+                    Long.MAX_VALUE,
+                    WebPatternInput("Renamed pattern", "", "https://example.com/new"),
+                ),
+            )
+            coVerify(exactly = 0) { dao.update(any()) }
+            coVerify(exactly = 0) { projectDao.updateLinkedPatternName(any(), any(), any()) }
+        }
+
+    @Test
     fun `repository preserves cancellation and types persistence failure`() =
         runTest {
             val repository = repository()

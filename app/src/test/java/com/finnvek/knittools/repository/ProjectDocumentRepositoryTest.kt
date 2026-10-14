@@ -97,6 +97,23 @@ class ProjectDocumentRepositoryTest {
         }
 
     @Test
+    fun `append after restored maximum order keeps existing documents first`() =
+        runTest {
+            val existing = document(id = 10, order = Int.MAX_VALUE, primary = true)
+            coEvery { documentDao.getForProject(PROJECT_ID) } returns listOf(existing)
+            coEvery { documentDao.getHighestSortOrder(PROJECT_ID) } returns Int.MAX_VALUE
+            val inserted = slot<ProjectDocumentEntity>()
+            coEvery { documentDao.insert(capture(inserted)) } returns 42L
+
+            val result = repository.addImportedPdf(PROJECT_ID, URI_B, "Chart", "local:b")
+
+            assertTrue(result is ProjectDocumentMutationResult.Added)
+            assertEquals(Int.MAX_VALUE, inserted.captured.sortOrder)
+            assertEquals(false, inserted.captured.isPrimary)
+            coVerify(exactly = 0) { documentDao.updateSortOrder(any(), any(), any(), any()) }
+        }
+
+    @Test
     fun `saved pattern requires a readable PDF and rejects stale duplicates`() =
         runTest {
             coEvery { savedPatternRepository.getById(90L) } returns

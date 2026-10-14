@@ -71,6 +71,7 @@ data class AllPhotosState(
     val isSelectMode: Boolean,
     val selectedPhotoIds: Set<Long>,
     val deleteErrorId: Long = 0L,
+    val isLoading: Boolean = false,
 )
 
 data class AllPhotosActions(
@@ -99,7 +100,8 @@ fun AllPhotosScreen(
     val deleteFailedMessage = stringResource(R.string.generic_error_unknown)
     val viewingPhoto = remember(viewingPhotoId, state.photos) { state.photos.firstOrNull { it.id == viewingPhotoId } }
 
-    LaunchedEffect(selectedProjectId, state.photos) {
+    LaunchedEffect(selectedProjectId, state.photos, state.isLoading) {
+        if (state.isLoading) return@LaunchedEffect
         val selectedId = selectedProjectId ?: return@LaunchedEffect
         if (state.photos.none { it.projectId == selectedId }) selectedProjectId = null
     }

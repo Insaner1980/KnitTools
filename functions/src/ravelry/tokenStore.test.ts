@@ -4,8 +4,67 @@ import { describe, it } from "node:test";
 import type { Firestore } from "firebase-admin/firestore";
 
 import { createTokenStore, type StoredRavelryToken } from "./tokenStore";
+import { getRavelryCurrentUser } from "./authCore";
 
 describe("Ravelry token Firestore store", () => {
+  for (const operation of ["login", "refresh"] as const) {
+    it(`binds current-user responses to the owning login during ${operation}`, async () => {
+      const active: StoredRavelryToken = {
+        uid: "uid", authType: "oauth2", accessToken: "synthetic-old",
+        ravelryUserId: "old-user", ravelryUsername: "old-name",
+        createdAtMillis: 1, updatedAtMillis: 1, connectionGeneration: 3,
+      };
+      let stored: Record<string, unknown> = { ...active };
+      const reference = { get: async () => ({ data: () => stored }) };
+      const firestore = {
+        collection: () => ({ doc: () => reference }),
+        async runTransaction<T>(operation: (transaction: unknown) => Promise<T>): Promise<T> {
+          return operation({
+            get: reference.get,
+            set(_ref: unknown, data: Record<string, unknown>, options?: { merge?: boolean }) {
+              stored = options?.merge ? { ...stored, ...data } : data;
+            },
+            update(_ref: unknown, data: Record<string, unknown>) {
+              stored = { ...stored, ...data };
+            },
+          });
+        },
+      } as unknown as Firestore;
+      const tokenStore = createTokenStore(firestore);
+      const result = await getRavelryCurrentUser({
+        uid: active.uid,
+        tokenStore,
+        nowMillis: () => 100,
+        client: {
+          async getCurrentUser(accessToken) {
+            assert.equal(accessToken, active.accessToken);
+            if (operation === "login") {
+              await tokenStore.savePendingTokenIfGenerationCurrent({
+                token: {
+                  ...active, accessToken: "synthetic-new",
+                  ravelryUserId: "new-user", ravelryUsername: "new-name",
+                },
+                state: "new-state", completionProofHash: "new-proof", expiresAtMillis: 1_000,
+              }, 3);
+              assert.equal(await tokenStore.activatePendingToken(active.uid, "new-state", "new-proof", 100), true);
+            } else {
+              assert.ok(await tokenStore.saveRefreshedTokenIfCurrent({
+                ...active, accessToken: "synthetic-new", updatedAtMillis: 100,
+              }, active));
+            }
+            return { ravelryUserId: "old-user", ravelryUsername: "old-name" };
+          },
+        },
+      });
+      assert.equal(stored.accessToken, "synthetic-new");
+      assert.equal(stored.ravelryUserId, operation === "login" ? "new-user" : "old-user");
+      assert.equal(stored.ravelryUsername, operation === "login" ? "new-name" : "old-name");
+      assert.deepEqual(result, operation === "login" ? { connected: false } : {
+        connected: true, ravelryUserId: "old-user", ravelryUsername: "old-name",
+      });
+    });
+  }
+
   it("preserves only the current generation pending while replacing refreshed active fields", async () => {
     const active: StoredRavelryToken = {
       uid: "uid", authType: "oauth2", accessToken: "synthetic-active",

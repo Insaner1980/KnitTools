@@ -463,7 +463,8 @@ class InsightsViewModel
                                 }.filter { it.minutes > 0 }
                         InsightsChartBucket(
                             bucketStart = bucketStart,
-                            totalMinutes = segments.sumOf { it.minutes },
+                            totalMinutes =
+                                segments.sumOf { it.minutes.toLong() }.coerceAtMost(Int.MAX_VALUE.toLong()).toInt(),
                             totalRows = contributions.sumOf { it.second.totalRows },
                             segments = segments,
                         )

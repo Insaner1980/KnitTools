@@ -2,7 +2,7 @@
 
 ## Configuration
 
-- SDK: `com.posthog:posthog-android:3.64.1`, pinned in the version catalog.
+- SDK: `com.posthog:posthog-android:3.72.0`, pinned in the version catalog.
 - Ingestion: `https://eu.i.posthog.com`; project 274433.
 - Local config: ignored root `posthog.properties`, containing `projectToken=<project token>`.
 - CI alternative: `KNITTOOLS_POSTHOG_PROJECT_TOKEN`. The environment value takes precedence.

@@ -31,7 +31,65 @@ class SessionInsightsDatabaseTest {
 
     @After fun close() = database.close()
 
+    @Test fun restoredExtremeDurationsHaveBoundedProjectMinutes() =
+        runTest {
+            database.counterProjectDao().insert(CounterProjectEntity(id = 1, name = "Synthetic"))
+            val dao = database.sessionDao()
+            repeat(2) {
+                dao.insert(
+                    SessionEntity(
+                        projectId = 1,
+                        startedAt = 0,
+                        endedAt = 1_000,
+                        startRow = 0,
+                        endRow = 1,
+                        durationMinutes = 1,
+                        durationSeconds = Long.MAX_VALUE,
+                    ),
+                )
+            }
+            assertEquals(Int.MAX_VALUE, dao.getTotalMinutes(1))
+            assertEquals(0, dao.getTotalMinutes(2))
+        }
+
     @Test fun sessionSnapshotSurvivesProjectDeletionBetweenBatches() = checkConcurrentReplacement(restore = false)
+
+    @Test fun projectMinutesRoundTheTotalOnceAndKeepEmptyProjectsAtZero() =
+        runTest {
+            database.counterProjectDao().insert(CounterProjectEntity(id = 1, name = "Synthetic"))
+            val dao = database.sessionDao()
+            assertEquals(0, dao.getTotalMinutes(1))
+            listOf(0L to 0, 1L to 1, 59L to 1, 60L to 1, 61L to 2).forEach { (seconds, expected) ->
+                val id =
+                    dao.insert(
+                        SessionEntity(
+                            projectId = 1,
+                            startedAt = 0,
+                            endedAt = 1_000,
+                            startRow = 0,
+                            endRow = 1,
+                            durationMinutes = 0,
+                            durationSeconds = seconds,
+                        ),
+                    )
+                assertEquals(expected, dao.getTotalMinutes(1))
+                dao.deleteById(id)
+            }
+            repeat(2) {
+                dao.insert(
+                    SessionEntity(
+                        projectId = 1,
+                        startedAt = 0,
+                        endedAt = 30_000,
+                        startRow = 0,
+                        endRow = 1,
+                        durationMinutes = 0,
+                        durationSeconds = 30,
+                    ),
+                )
+            }
+            assertEquals(1, dao.getTotalMinutes(1))
+        }
 
     @Test fun sessionSnapshotSurvivesHistoryReplacementBetweenBatches() = checkConcurrentReplacement(restore = true)
 

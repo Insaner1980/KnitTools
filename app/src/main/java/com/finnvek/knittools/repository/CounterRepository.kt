@@ -440,6 +440,7 @@ class CounterRepository
             name: String,
         ): String? =
             transactionRunner.run {
+                if (dao.getProject(id) == null) return@run null
                 val projectName = uniqueProjectName(name, excludedProjectId = id) ?: return@run null
                 dao.updateName(id, projectName, System.currentTimeMillis())
                 projectName
@@ -492,6 +493,7 @@ class CounterRepository
         ): Boolean =
             transactionRunner.run {
                 val project = dao.getProject(id)?.toDomain() ?: return@run false
+                if (project.isCompleted || secondaryCount < 0) return@run false
                 val canUseSecondaryCounter =
                     project.secondaryCounterUsed ||
                         proManager?.hasFeature(ProFeature.SECONDARY_COUNTER) != false
@@ -509,12 +511,13 @@ class CounterRepository
         suspend fun updateProjectStitchCount(
             id: Long,
             stitchCount: Int?,
+            enableTracking: Boolean = false,
         ): Boolean {
             if (stitchCount != null && stitchCount <= 0) return false
             return transactionRunner.run {
                 val project = dao.getProject(id)?.toDomain() ?: return@run false
                 if (project.isCompleted) return@run false
-                val trackingEnabled = project.stitchTrackingEnabled && stitchCount != null
+                val trackingEnabled = stitchCount != null && (enableTracking || project.stitchTrackingEnabled)
                 val currentStitch =
                     stitchCount
                         ?.takeIf { trackingEnabled }
@@ -872,6 +875,25 @@ class CounterRepository
                 }
             }
         }
+
+        suspend fun updatePatternRowMappingIfUnchanged(
+            id: Long,
+            mapping: String?,
+            documentId: Long,
+            expectedMapping: String?,
+        ): Boolean =
+            transactionRunner.run {
+                val project = dao.getProject(id)?.toDomain() ?: return@run false
+                val document = viewerDocument(id, documentId) ?: return@run false
+                if (document.rowMapping != expectedMapping) return@run false
+                val updatedDocument = document.copy(rowMapping = mapping)
+                if (updatedDocument.readingLineFollowCurrentRow) {
+                    applyReadingLineFollow(updatedDocument, project.count, project.count)
+                } else {
+                    check(projectDocumentRepository.updateViewerStateInTransaction(updatedDocument))
+                }
+                true
+            }
 
         suspend fun updateReadingLine(
             id: Long,
@@ -1499,6 +1521,7 @@ class CounterRepository
             projectId: Long,
             choice: ActiveSessionCompletionChoice?,
             completedAtMillis: Long? = null,
+            expectedSession: ActiveWorkSession? = null,
         ): ProjectCompletionResult =
             runSessionMutation(
                 ProjectCompletionResult.PersistenceFailure,
@@ -1511,7 +1534,8 @@ class CounterRepository
                 if (project.isCompleted) return@runSessionMutation ProjectCompletionResult.Completed
                 val now = sessionTimeSource.snapshot()
                 val active = synchronizeActiveSession(now)
-                val activeSessionResult = finalizeActiveSessionForCompletion(projectId, choice, active, now)
+                val activeSessionResult =
+                    finalizeActiveSessionForCompletion(projectId, choice, active, now, expectedSession)
                 if (activeSessionResult != null) return@runSessionMutation activeSessionResult
                 val completedAt = completedAtMillis ?: now.wallClockMillis
                 dao.archiveProject(projectId, project.count, completedAt, completedAt)
@@ -1526,9 +1550,12 @@ class CounterRepository
             choice: ActiveSessionCompletionChoice?,
             active: ActiveSessionEntity?,
             now: com.finnvek.knittools.domain.model.SessionTimeSnapshot,
+            expectedSession: ActiveWorkSession?,
         ): ProjectCompletionResult? {
             if (active?.projectId != projectId) return null
-            if (choice == null) return ProjectCompletionResult.NeedsActiveSessionChoice(active.toDomain())
+            if (choice == null || !active.matchesDecision(expectedSession)) {
+                return ProjectCompletionResult.NeedsActiveSessionChoice(active.toDomain())
+            }
             if (choice == ActiveSessionCompletionChoice.SAVE && active.recoveryReason != null) {
                 return ProjectCompletionResult.NeedsRecoveryReview(active.toDomain())
             }
@@ -1543,9 +1570,10 @@ class CounterRepository
         suspend fun deleteProjectResolvingActiveSession(
             id: Long,
             discardActiveSession: Boolean,
+            expectedSession: ActiveWorkSession? = null,
         ): ProjectDeletionResult =
             try {
-                deleteProjectResolvingActiveSessionInternal(id, discardActiveSession)
+                deleteProjectResolvingActiveSessionInternal(id, discardActiveSession, expectedSession)
             } catch (cancellation: CancellationException) {
                 throw cancellation
             } catch (_: Exception) {
@@ -1555,12 +1583,15 @@ class CounterRepository
         private suspend fun deleteProjectResolvingActiveSessionInternal(
             id: Long,
             discardActiveSession: Boolean,
+            expectedSession: ActiveWorkSession?,
         ): ProjectDeletionResult {
             val conflict =
                 transactionRunner.run {
                     val project = dao.getProject(id) ?: return@run ProjectDeletionResult.ProjectUnavailable
                     val active = sessionDao.getActiveSession()
-                    if (active?.projectId == project.id && !discardActiveSession) {
+                    if (active?.projectId == project.id &&
+                        (!discardActiveSession || !active.matchesDecision(expectedSession))
+                    ) {
                         ProjectDeletionResult.NeedsActiveSessionDiscard(active.toDomain())
                     } else {
                         null
@@ -1574,7 +1605,7 @@ class CounterRepository
                     val project = dao.getProject(id) ?: return@run ProjectDeletionResult.ProjectUnavailable
                     val active = sessionDao.getActiveSession()
                     if (active?.projectId == project.id) {
-                        if (!discardActiveSession) {
+                        if (!discardActiveSession || !active.matchesDecision(expectedSession)) {
                             return@run ProjectDeletionResult.NeedsActiveSessionDiscard(active.toDomain())
                         }
                         sessionDao.deleteActiveSession(active.sessionToken)
@@ -1589,6 +1620,12 @@ class CounterRepository
             }
             return result
         }
+
+        private fun ActiveSessionEntity.matchesDecision(expected: ActiveWorkSession?): Boolean =
+            expected != null &&
+                projectId == expected.projectId &&
+                sessionToken == expected.sessionToken &&
+                recoveryIntervalToken == expected.recoveryIntervalToken
 
         private suspend fun captureProjectCleanup(id: Long): ProjectFileCleanup? {
             val project = dao.getProject(id) ?: return null

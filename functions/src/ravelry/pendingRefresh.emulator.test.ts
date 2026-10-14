@@ -130,7 +130,7 @@ describe("Pending auth during refresh in local Firestore", {
     assert.equal(disconnect.status, "fulfilled");
     if (activation.status === "rejected") assert.equal(activation.reason.code, "invalid_completion");
     assert.equal(await f.tokenStore.getToken(f.uid), null);
-    assert.equal(await f.tokenStore.getConnectionGeneration(f.uid), 4);
+    assert.equal(await f.tokenStore.getConnectionGeneration(f.uid), activation.status === "fulfilled" ? 5 : 4);
     assert.equal((await f.ref.get()).data()?.pending, undefined);
     await assert.rejects(completeRavelryOAuth(proof), { code: "invalid_completion" });
   });

@@ -14,6 +14,7 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
@@ -25,12 +26,14 @@ import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
@@ -234,6 +237,48 @@ class PatternViewerViewModelTest {
         }
 
     @Test
+    fun `duplicate bookmark submission is ignored while creation is pending and retry remains possible`() =
+        runTest {
+            val observed = MutableStateFlow(active(DOCUMENT_A, emptyList()))
+            val repository = mockk<PatternBookmarkRepository>()
+            every { repository.observeActiveBookmarks(7L) } returns observed
+            val pending = CompletableDeferred<PatternBookmarkMutationResult>()
+            var writes = 0
+            coEvery { repository.add(7L, DOCUMENT_A, "Body", 0, 0.5f) } coAnswers {
+                writes += 1
+                pending.await()
+            }
+            val viewModel =
+                PatternViewerViewModel(
+                    repository,
+                    emptyDocumentRepository(),
+                    SavedStateHandle(mapOf("projectId" to 7L)),
+                )
+            backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.uiState.collect() }
+            advanceUntilIdle()
+
+            viewModel.addBookmark("Body", 0, 0.5f)
+            viewModel.addBookmark("Body", 0, 0.5f)
+            runCurrent()
+            assertEquals(1, writes)
+            assertTrue(viewModel.uiState.value.isMutating)
+
+            pending.complete(PatternBookmarkMutationResult.NotFound)
+            advanceUntilIdle()
+            assertFalse(viewModel.uiState.value.isMutating)
+            coEvery { repository.add(7L, DOCUMENT_A, "Body", 0, 0.5f) } coAnswers {
+                writes += 1
+                PatternBookmarkMutationResult.Success(bookmark(writes.toLong(), DOCUMENT_A))
+            }
+            viewModel.addBookmark("Body", 0, 0.5f)
+            advanceUntilIdle()
+            assertEquals(2, writes)
+            viewModel.addBookmark("Body", 0, 0.5f)
+            advanceUntilIdle()
+            assertEquals(3, writes)
+        }
+
+    @Test
     fun `add rename and delete surface exact mutation errors`() =
         runTest {
             val repository = mockk<PatternBookmarkRepository>()
@@ -297,6 +342,51 @@ class PatternViewerViewModelTest {
         }
 
     @Test
+    fun `document switch discards both delayed and already queued bookmark focus`() =
+        runTest {
+            listOf(false, true).forEach { queuedBeforeSwitch ->
+                val first = bookmark(1, DOCUMENT_A)
+                val second = bookmark(2, DOCUMENT_B)
+                val observed = MutableStateFlow(active(DOCUMENT_A, listOf(first)))
+                val result = CompletableDeferred<PatternBookmarkMutationResult>()
+                val repository = mockk<PatternBookmarkRepository>()
+                every { repository.observeActiveBookmarks(7L) } returns observed
+                coEvery { repository.jumpTo(7L, DOCUMENT_A, 1L) } coAnswers { result.await() }
+                coEvery { repository.jumpTo(7L, DOCUMENT_B, 2L) } returns PatternBookmarkMutationResult.Success(second)
+                val viewModel =
+                    PatternViewerViewModel(
+                        repository,
+                        bookmarkDocumentRepository(),
+                        SavedStateHandle(mapOf("projectId" to 7L)),
+                    )
+                backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.uiState.collect() }
+                advanceUntilIdle()
+
+                viewModel.jumpToBookmark(1L)
+                advanceUntilIdle()
+                if (queuedBeforeSwitch) {
+                    result.complete(PatternBookmarkMutationResult.Success(first))
+                    advanceUntilIdle()
+                }
+                viewModel.selectDocument(42L)
+                observed.value = active(DOCUMENT_B, listOf(second))
+                advanceUntilIdle()
+                result.complete(PatternBookmarkMutationResult.Success(first))
+                advanceUntilIdle()
+                val received = mutableListOf<PatternViewerEvent>()
+                backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+                    viewModel.events.collect { received.add(it) }
+                }
+                advanceUntilIdle()
+
+                assertTrue("Obsolete focus delivered, queuedBeforeSwitch=$queuedBeforeSwitch", received.isEmpty())
+                viewModel.jumpToBookmark(2L)
+                advanceUntilIdle()
+                assertEquals(listOf(second), received.map { (it as PatternViewerEvent.BookmarkJumped).bookmark })
+            }
+        }
+
+    @Test
     fun `same-page and cross-page jumps emit one focus event each`() =
         runTest {
             val first = bookmark(1, DOCUMENT_A, page = 0, y = 0.3f)
@@ -309,7 +399,7 @@ class PatternViewerViewModelTest {
             val viewModel =
                 PatternViewerViewModel(
                     repository,
-                    emptyDocumentRepository(),
+                    bookmarkDocumentRepository(),
                     SavedStateHandle(
                         mapOf(
                             "projectId" to 7L,
@@ -369,6 +459,19 @@ class PatternViewerViewModelTest {
     private fun emptyDocumentRepository(): ProjectDocumentRepository =
         mockk<ProjectDocumentRepository>(relaxed = true).also { repository ->
             every { repository.observeDocuments(7L) } returns MutableStateFlow(emptyList())
+        }
+
+    private fun bookmarkDocumentRepository(): ProjectDocumentRepository =
+        mockk<ProjectDocumentRepository>().also { repository ->
+            every { repository.observeDocuments(7L) } returns
+                MutableStateFlow(
+                    listOf(
+                        projectDocument(41L, DOCUMENT_A, isPrimary = true),
+                        projectDocument(42L, DOCUMENT_B, isPrimary = false),
+                    ),
+                )
+            coEvery { repository.isAvailable(any()) } returns true
+            coEvery { repository.select(7L, any()) } returns ProjectDocumentMutationResult.Selected
         }
 
     private fun active(

@@ -215,6 +215,40 @@ class ProjectYarnUsageViewModelTest {
         }
 
     @Test
+    fun `previous project save result preserves the new project draft and pending save`() =
+        runTest {
+            for (oldResult in listOf(YarnUsageResult.Created(usage()), YarnUsageResult.PersistenceFailure)) {
+                val previousSave = CompletableDeferred<YarnUsageResult>()
+                val currentSave = CompletableDeferred<YarnUsageResult>()
+                coEvery { repository.create(1, note.source, any(), any()) } coAnswers { previousSave.await() }
+                coEvery { repository.create(2, card.source, any(), any()) } coAnswers { currentSave.await() }
+                val handle = SavedStateHandle()
+                val model = model(handle)
+                model.open(note, note.name)
+                model.edit(YarnUsageField.USED, "10")
+                model.save()
+
+                model.observe(2)
+                model.open(card, card.name)
+                model.edit(YarnUsageField.USED, "20")
+                model.save()
+                val currentDraft = model.draft()
+                assertTrue(model.editor.value.busy)
+
+                previousSave.complete(oldResult)
+
+                assertEquals(currentDraft, model.draft())
+                assertEquals(currentDraft, handle.restoreYarnUsage())
+                assertTrue(model.editor.value.busy)
+                assertFalse(model.editor.value.completed)
+                assertNull(model.editor.value.error)
+                currentSave.complete(YarnUsageResult.PersistenceFailure)
+                assertFalse(model.editor.value.busy)
+                assertEquals(YarnUsageResult.PersistenceFailure, model.editor.value.error)
+            }
+        }
+
+    @Test
     fun `failed saves and stale sources preserve the draft`() =
         runTest {
             val model = model()

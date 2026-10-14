@@ -21,6 +21,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -189,7 +190,7 @@ class ActiveProjectPolicyRoomTest {
     fun completionEventFailureRollsBackProjectAndSession() =
         runBlocking {
             val id = seed("Rollback")
-            repository.startSession(id)
+            val started = repository.startSession(id) as StartSessionResult.Started
             val before = repository.getProject(id)
             val session = database.sessionDao().getActiveSession()
             database.openHelper.writableDatabase.execSQL(
@@ -198,7 +199,11 @@ class ActiveProjectPolicyRoomTest {
             )
             assertEquals(
                 ProjectCompletionResult.PersistenceFailure,
-                repository.completeProjectWithSessionChoice(id, ActiveSessionCompletionChoice.DISCARD),
+                repository.completeProjectWithSessionChoice(
+                    id,
+                    ActiveSessionCompletionChoice.DISCARD,
+                    expectedSession = started.session,
+                ),
             )
             assertEquals(before, repository.getProject(id))
             assertEquals(session, database.sessionDao().getActiveSession())
@@ -261,6 +266,59 @@ class ActiveProjectPolicyRoomTest {
                 ).awaitAll()
             }
             assertEquals(1, repository.observeCompletions(id).first().size)
+        }
+
+    @Test
+    fun pausedCompletionSerializesAnotherAttemptAndPreservesTheFirstWholeRecord() =
+        runBlocking {
+            val id = seed("Paused completion")
+            val before = requireNotNull(database.counterProjectDao().getProject(id))
+            val dao = database.counterProjectDao()
+            val read = CompletableDeferred<Unit>()
+            val resume = CompletableDeferred<Unit>()
+            var paused = false
+            val pausedDao =
+                object : CounterProjectDao by dao {
+                    override suspend fun getProject(id: Long): CounterProjectEntity? {
+                        val row = dao.getProject(id)
+                        if (!paused) {
+                            paused = true
+                            read.complete(Unit)
+                            resume.await()
+                        }
+                        return row
+                    }
+                }
+            val first =
+                async(Dispatchers.IO) {
+                    newCounterRepository(pausedDao).completeProjectWithSessionChoice(id, null, 200L)
+                }
+            read.await()
+            val attempted = CompletableDeferred<Unit>()
+            val second =
+                async(Dispatchers.IO) {
+                    attempted.complete(Unit)
+                    repository.completeProjectWithSessionChoice(id, null, 300L)
+                }
+            attempted.await()
+            assertFalse(second.isCompleted)
+            resume.complete(Unit)
+            assertEquals(ProjectCompletionResult.Completed, first.await())
+            assertEquals(ProjectCompletionResult.Completed, second.await())
+            assertEquals(
+                before.copy(isCompleted = true, completedAt = 200L, totalRows = before.count, updatedAt = 200L),
+                dao.getProject(id),
+            )
+            val event = repository.observeCompletions(id).first().single()
+            assertEquals(id, event.projectId)
+            assertEquals(200L, event.completedAt)
+            assertEquals(
+                java.time.ZoneId
+                    .systemDefault()
+                    .id,
+                event.zoneId,
+            )
+            assertNull(database.sessionDao().getActiveSession())
         }
 
     private suspend fun race(

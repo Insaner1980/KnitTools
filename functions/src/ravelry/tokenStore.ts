@@ -216,7 +216,11 @@ export function createTokenStore(firestore: Firestore): RavelryTokenStore {
         ) {
           return false;
         }
-        transaction.set(ref, withoutUndefinedValues(pending.token));
+        // A new login invalidates responses from the previous login; refresh keeps its generation.
+        transaction.set(ref, withoutUndefinedValues({
+          ...pending.token,
+          connectionGeneration: connectionGenerationFromData(snapshot.data()) + 1,
+        }));
         return true;
       });
     },

@@ -33,7 +33,7 @@ object NeedleSizeData {
             NeedleSize(8.0, "11", "0", "—"),
             NeedleSize(9.0, "13", "00", "—"),
             NeedleSize(10.0, "15", "000", "—"),
-            NeedleSize(12.0, "17", "—", "—"),
+            NeedleSize(12.5, "17", "—", "—"),
             NeedleSize(15.0, "19", "—", "—"),
             NeedleSize(19.0, "35", "—", "—"),
             NeedleSize(25.0, "50", "—", "—"),

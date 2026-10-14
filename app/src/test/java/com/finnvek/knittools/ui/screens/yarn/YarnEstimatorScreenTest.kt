@@ -37,6 +37,7 @@ class YarnEstimatorScreenTest {
         assertNull(calculate(largeFinite, "0." + "0".repeat(307) + "1", "1"))
         assertEquals(YarnEstimate(1, 1e308, 1.0), calculate("1", "1", largeFinite))
         assertNull(calculate("2", "1", largeFinite))
+        assertNull(calculate("0." + "0".repeat(307) + "1", largeFinite, "50"))
     }
 
     @Test

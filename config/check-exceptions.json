@@ -110,7 +110,7 @@
       "id": "knittools-detekt-baseline",
       "tool": "detekt",
       "rule": "baseline",
-      "scope": "25 recorded finding IDs in app/detekt-baseline.xml",
+      "scope": "23 recorded finding IDs in app/detekt-baseline.xml",
       "reason": "The bounded legacy baseline remains visible while findings are reduced without mixing unrelated feature work.",
       "owner": "project-maintainers",
       "added": "2026-07-28",
@@ -744,6 +744,59 @@
       "findingPath": "app/src/androidTest/java/com/finnvek/knittools/ui/screens/pattern/PatternBookmarkDraftTest.kt",
       "findingSelectors": [
         "key = \"document\""
+      ]
+    },
+    {
+      "id": "knittools-mobsf-hardcoded-project-overview-screen-test",
+      "tool": "mobsfscan",
+      "rule": "android_kotlin_hardcoded",
+      "scope": "Project document key fixture in ProjectOverviewScreenTest.kt",
+      "reason": "The exact MobSF match is a test document identifier used to verify the maximum page label, not a credential or secret.",
+      "owner": "project-maintainers",
+      "added": "2026-10-14",
+      "expires": "2026-10-31",
+      "tracking": "local-review:knittools-mobsf-hardcoded-project-overview-screen-test",
+      "sourcePath": "app/src/androidTest/java/com/finnvek/knittools/ui/screens/project/ProjectOverviewScreenTest.kt",
+      "selector": "documentKey = \"audit-document\"",
+      "findingPath": "app/src/androidTest/java/com/finnvek/knittools/ui/screens/project/ProjectOverviewScreenTest.kt",
+      "findingSelectors": [
+        "key = \"audit-document\""
+      ]
+    },
+    {
+      "id": "knittools-mobsf-migration-audit-sql-test",
+      "tool": "mobsfscan",
+      "rule": "android_kotlin_sql_raw_query",
+      "scope": "Test-owned migration fixture and constraint SQL in MigrationAuditTest.kt",
+      "reason": "SQL uses fixed statements or identifiers read only from the test-created Room schema; fixture values are bound parameters. SQLite constraint exceptions verify rejected test writes. No untrusted input reaches these statements.",
+      "owner": "project-maintainers",
+      "added": "2026-10-14",
+      "expires": "2026-10-31",
+      "tracking": "local-review:knittools-mobsf-migration-audit-sql-test",
+      "sourcePath": "app/src/androidTest/java/com/finnvek/knittools/data/local/MigrationAuditTest.kt",
+      "selector": "db.execSQL(",
+      "findingPath": "app/src/androidTest/java/com/finnvek/knittools/data/local/MigrationAuditTest.kt",
+      "findingSelectors": [
+        "android.database.sqlite",
+        "execsql("
+      ]
+    },
+    {
+      "id": "knittools-mobsf-fixed-counter-history-sql-test",
+      "tool": "mobsfscan",
+      "rule": "android_kotlin_sql_raw_query",
+      "scope": "Fixed failure-injection trigger in CounterHistoryRoomTest.kt",
+      "reason": "The exact MobSF matches are the SQLiteException import and a fixed test-only trigger that rejects a stitch-tracking update to verify atomicity. The trigger SQL contains no untrusted input.",
+      "owner": "project-maintainers",
+      "added": "2026-10-14",
+      "expires": "2026-10-31",
+      "tracking": "local-review:knittools-mobsf-fixed-counter-history-sql-test",
+      "sourcePath": "app/src/androidTest/java/com/finnvek/knittools/repository/CounterHistoryRoomTest.kt",
+      "selector": "CREATE TRIGGER reject_stitch_activation",
+      "findingPath": "app/src/androidTest/java/com/finnvek/knittools/repository/CounterHistoryRoomTest.kt",
+      "findingSelectors": [
+        "android.database.sqlite",
+        "execsql("
       ]
     },
     {

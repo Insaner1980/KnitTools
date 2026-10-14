@@ -7,6 +7,14 @@ import org.junit.Test
 
 class ProjectDocumentTest {
     @Test
+    fun `sanitized label does not split a supplementary character at the limit`() {
+        val prefix = "x".repeat(PROJECT_DOCUMENT_LABEL_MAX_LENGTH - 1)
+        assertEquals(prefix, projectDocument(id = 1).copy(label = "$prefix\uD83E\uDDF6").sanitized().label)
+        val fittingLabel = "${prefix.dropLast(1)}\uD83E\uDDF6"
+        assertEquals(fittingLabel, projectDocument(id = 1).copy(label = fittingLabel).sanitized().label)
+    }
+
+    @Test
     fun `label validation trims and accepts the 50 character boundary`() {
         val boundary = "x".repeat(PROJECT_DOCUMENT_LABEL_MAX_LENGTH)
 

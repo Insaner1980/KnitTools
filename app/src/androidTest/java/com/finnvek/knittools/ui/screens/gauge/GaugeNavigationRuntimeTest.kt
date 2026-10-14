@@ -2,9 +2,12 @@ package com.finnvek.knittools.ui.screens.gauge
 
 import android.content.ClipboardManager
 import android.content.Intent
+import android.graphics.Rect
 import android.os.Build
 import android.os.Bundle
 import android.os.SystemClock
+import android.view.InputDevice
+import android.view.MotionEvent
 import android.view.accessibility.AccessibilityNodeInfo
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
@@ -19,7 +22,6 @@ import com.finnvek.knittools.data.local.KnitToolsDatabase
 import com.finnvek.knittools.domain.model.MainCounterChange
 import com.finnvek.knittools.repository.CounterRepository
 import com.finnvek.knittools.repository.ProjectCreationResult
-import com.finnvek.knittools.repository.ProjectNotesSaveResult
 import com.finnvek.knittools.widget.WidgetEntryPoint
 import dagger.hilt.android.EntryPointAccessors
 import kotlinx.coroutines.Dispatchers
@@ -193,7 +195,8 @@ class GaugeNavigationRuntimeTest {
             val created = repository.createProject(fixtureProjectName, canCreateAdditionalProjects = true)
             check(created is ProjectCreationResult.Created) { "Could not create the measurement navigation fixture" }
             fixtureProjectId = created.projectId
-            check(repository.saveProjectNotes(fixtureProjectId, "", FIXTURE_NOTES) is ProjectNotesSaveResult.Saved)
+            // Seed existing content independently of the current notes-creation entitlement.
+            database.counterProjectDao().updateNotes(fixtureProjectId, FIXTURE_NOTES, System.currentTimeMillis())
             check(repository.applyMainCounterChange(fixtureProjectId, MainCounterChange.Increment))
         }
     }
@@ -202,6 +205,7 @@ class GaugeNavigationRuntimeTest {
         assertTabSelected(R.string.tab_projects)
         // Projektikortti avaa projektinäkymän; laskuriin vie jatka-kortin nappi.
         clickText(fixtureProjectName)
+        waitForNode("project overview toolbar") { it.contentDescription?.toString() == text(R.string.back) }
         clickContentDescription(text(R.string.project_continue_content_description, fixtureProjectName))
         waitForProjectCounter()
     }
@@ -387,6 +391,12 @@ class GaugeNavigationRuntimeTest {
     ): AccessibilityNodeInfo {
         waitForUiIdle()
         findNode(matches = matches)?.let { return it }
+        findNode(visibleOnly = false, matches = matches)?.let { target ->
+            if (target.performAction(AccessibilityNodeInfo.AccessibilityAction.ACTION_SHOW_ON_SCREEN.id)) {
+                waitForUiIdle()
+                findNode(matches = matches)?.let { return it }
+            }
+        }
         waitForNode("scrollable content") { it.isScrollable }
         waitUntil("start of scrollable content") {
             val scrollable = findNode { it.isScrollable } ?: return@waitUntil false
@@ -397,19 +407,17 @@ class GaugeNavigationRuntimeTest {
                 false
             }
         }
-        var result: AccessibilityNodeInfo? = null
-        waitUntil(description) {
-            result = findNode(matches = matches)
-            if (result != null) {
-                true
-            } else {
+        // Large fonts make this form several viewports long. Bound the traversal by
+        // scroll steps, not the short timeout used for a single asynchronous UI change.
+        repeat(40) {
+            findNode(matches = matches)?.let { return it }
+            val scrollable =
                 findNode { node ->
                     node.isScrollable && node.actionList.any { it.id == AccessibilityNodeInfo.ACTION_SCROLL_FORWARD }
-                }?.let { scroll(it, AccessibilityNodeInfo.ACTION_SCROLL_FORWARD) }
-                false
-            }
+                } ?: throw AssertionError("Reached end of scrollable content before " + description)
+            scrollForwardPartially(scrollable)
         }
-        return checkNotNull(result)
+        return findNode(matches = matches) ?: throw AssertionError("Scroll step limit reached for " + description)
     }
 
     private fun scroll(
@@ -417,6 +425,36 @@ class GaugeNavigationRuntimeTest {
         action: Int,
     ) {
         if (node.refresh() && node.performAction(action)) waitForUiIdle()
+    }
+
+    private fun scrollForwardPartially(node: AccessibilityNodeInfo) {
+        val bounds = Rect().also(node::getBoundsInScreen)
+        val automation = InstrumentationRegistry.getInstrumentation().uiAutomation
+        val start = SystemClock.uptimeMillis()
+        repeat(13) { step ->
+            val action =
+                when (step) {
+                    0 -> MotionEvent.ACTION_DOWN
+                    12 -> MotionEvent.ACTION_UP
+                    else -> MotionEvent.ACTION_MOVE
+                }
+            val event =
+                MotionEvent.obtain(
+                    start,
+                    start + step * 25L,
+                    action,
+                    bounds.exactCenterX(),
+                    bounds.top + bounds.height() * (0.7f - 0.4f * step / 12f),
+                    0,
+                )
+            event.source = InputDevice.SOURCE_TOUCHSCREEN
+            try {
+                assertTrue(automation.injectInputEvent(event, true))
+            } finally {
+                event.recycle()
+            }
+        }
+        waitForUiIdle()
     }
 
     // CPD-OFF: UIAutomator-odotusapujen toistuva rakenne pidetaan runtime-testin yhteydessa.
@@ -529,6 +567,8 @@ class GaugeNavigationRuntimeTest {
                 "project_documents",
                 "project_folders",
                 "project_folder_assignments",
+                "project_yarn_usage",
+                "project_completions",
             )
     }
 }

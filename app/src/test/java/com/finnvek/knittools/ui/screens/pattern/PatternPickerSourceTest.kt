@@ -72,7 +72,7 @@ class PatternPickerSourceTest {
         assertFalse(viewModel.contains("updateSavedPatternAttachmentState("))
         assertTrue(viewModel.contains("attachment.copiedUri"))
         assertTrue(viewModel.contains("repository.isPatternDocumentAttached(projectId, attachment.internalUri)"))
-        assertTrue(viewModel.contains("AppFileStorage.deleteIfAppOwned(context, failedUri)"))
+        assertTrue(viewModel.contains("savedPatternRepository.deleteLocalPatternFileIfUnused(failedUri)"))
     }
 
     @Test

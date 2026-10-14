@@ -8,11 +8,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -22,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.finnvek.knittools.R
+import com.finnvek.knittools.ui.components.CollectWithLifecycleEffect
 import com.finnvek.knittools.ui.components.ConfirmationDialog
 import com.finnvek.knittools.ui.components.ProjectNameLabel
 import com.finnvek.knittools.ui.components.SessionItem
@@ -34,6 +38,12 @@ fun SessionHistoryScreen(onBack: () -> Unit) {
     val projectMissing by viewModel.projectMissing.collectAsStateWithLifecycle()
     val projectName by viewModel.projectName.collectAsStateWithLifecycle()
     var pendingDeleteSessionId by rememberSaveable { mutableStateOf<Long?>(null) }
+    val snackbarHostState = remember { SnackbarHostState() }
+    val deleteErrorMessage = stringResource(R.string.generic_error_unknown)
+
+    CollectWithLifecycleEffect({ viewModel.deleteErrors }) {
+        snackbarHostState.showSnackbar(deleteErrorMessage)
+    }
 
     LaunchedEffect(projectMissing) {
         if (projectMissing) {
@@ -58,6 +68,7 @@ fun SessionHistoryScreen(onBack: () -> Unit) {
     ToolScreenScaffold(
         title = stringResource(R.string.session_history_title),
         onBack = onBack,
+        snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { padding ->
         Column(
             modifier =

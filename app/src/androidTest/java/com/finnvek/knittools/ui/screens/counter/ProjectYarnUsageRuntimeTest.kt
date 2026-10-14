@@ -11,10 +11,12 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.finnvek.knittools.App
 import com.finnvek.knittools.MainActivity
 import com.finnvek.knittools.R
+import com.finnvek.knittools.data.datastore.PreferencesManager
 import com.finnvek.knittools.data.local.KnitToolsDatabase
 import com.finnvek.knittools.data.local.ProjectYarnNoteEntity
 import com.finnvek.knittools.data.local.RoomDatabaseTransactionRunner
 import com.finnvek.knittools.domain.model.YarnCard
+import com.finnvek.knittools.pro.ProPolicyTestControl
 import com.finnvek.knittools.repository.CounterRepository
 import com.finnvek.knittools.repository.ProjectCreationResult
 import com.finnvek.knittools.repository.ProjectYarnUsageRepository
@@ -24,6 +26,7 @@ import dagger.hilt.android.EntryPointAccessors
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -49,10 +52,12 @@ class ProjectYarnUsageRuntimeTest {
     private val projectName = "Yarn usage runtime " + UUID.randomUUID().toString().take(8)
     private val noteName = "Runtime mohair"
     private var sentinel: File? = null
+    private var imperialBefore = false
 
     @Before
     fun setUp() {
         app = ApplicationProvider.getApplicationContext()
+        if (ProPolicyTestControl.isActive) ProPolicyTestControl.setPurchased(true)
         database = app.database.get()
         counter = EntryPointAccessors.fromApplication(app, WidgetEntryPoint::class.java).counterRepository()
         val runner = RoomDatabaseTransactionRunner(database)
@@ -66,6 +71,16 @@ class ProjectYarnUsageRuntimeTest {
                 Dispatchers.IO,
             )
         runBlocking(Dispatchers.IO) {
+            if (ProPolicyTestControl.isActive) {
+                withTimeout(5_000) {
+                    app.proManager
+                        .get()
+                        .proState
+                        .first { it.isPro }
+                }
+            }
+            imperialBefore = PreferencesManager(app).preferences.first().useImperial
+            PreferencesManager(app).setUseImperial(false)
             projectId =
                 (
                     counter.createProject(
@@ -97,9 +112,11 @@ class ProjectYarnUsageRuntimeTest {
             runBlocking(Dispatchers.IO) {
                 if (projectId != 0L) counter.deleteProject(projectId)
                 if (cardId != 0L) yarn.deleteCard(cardId)
+                PreferencesManager(app).setUseImperial(imperialBefore)
             }
         }
         sentinel?.delete()
+        if (ProPolicyTestControl.isActive) ProPolicyTestControl.setPurchased(false)
     }
 
     @Test

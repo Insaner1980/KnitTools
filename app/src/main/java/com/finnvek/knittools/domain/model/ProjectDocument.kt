@@ -62,7 +62,10 @@ fun List<ProjectDocument>.primaryFallback(): ProjectDocument? = inDocumentOrder(
 
 private fun sanitizedProjectDocumentLabel(value: String): String {
     val trimmed = value.trim()
-    return trimmed.take(PROJECT_DOCUMENT_LABEL_MAX_LENGTH).ifEmpty { "Pattern" }
+    return trimmed
+        .take(PROJECT_DOCUMENT_LABEL_MAX_LENGTH)
+        .let { label -> if (label.lastOrNull()?.isHighSurrogate() == true) label.dropLast(1) else label }
+        .ifEmpty { "Pattern" }
 }
 
 private fun sanitizePersistedFraction(value: Float): Float =

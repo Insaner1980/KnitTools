@@ -24,6 +24,7 @@ import com.finnvek.knittools.ui.components.CancelButton
 @Composable
 fun TargetRowsDialog(
     currentTarget: Int?,
+    counterLabel: String,
     onDismiss: () -> Unit,
     onConfirm: (Int) -> Unit,
     onRemove: () -> Unit,
@@ -38,7 +39,7 @@ fun TargetRowsDialog(
             OutlinedTextField(
                 value = text,
                 onValueChange = { new -> text = new.filter { it.isDigit() }.take(5) },
-                label = { Text(stringResource(R.string.target_rows_hint)) },
+                label = { Text(counterLabel) },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 modifier = Modifier.fillMaxWidth(),

@@ -139,10 +139,12 @@ class ProjectYarnUsageViewModel
             deleting: Boolean,
             operation: suspend () -> YarnUsageResult,
         ) {
+            val draft = editor.value.draft ?: return
             mutableEditor.update { it.copy(busy = true, error = null, deleting = deleting) }
             viewModelScope.launch {
                 try {
                     val result = operation()
+                    if (editor.value.draft !== draft) return@launch
                     if (result is YarnUsageResult.Created ||
                         result is YarnUsageResult.Updated ||
                         result == YarnUsageResult.Deleted
@@ -153,7 +155,7 @@ class ProjectYarnUsageViewModel
                         mutableEditor.update { it.copy(error = result) }
                     }
                 } finally {
-                    mutableEditor.update { it.copy(busy = false) }
+                    mutableEditor.update { if (it.draft === draft) it.copy(busy = false) else it }
                 }
             }
         }

@@ -1,6 +1,7 @@
 package com.finnvek.knittools.ui.screens.project
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.CompositionLocalProvider
@@ -25,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import androidx.test.platform.app.InstrumentationRegistry
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.model.CounterProject
+import com.finnvek.knittools.domain.model.ProjectDocument
 import com.finnvek.knittools.domain.model.YarnUsageUnit
 import com.finnvek.knittools.ui.components.ProjectCard
 import com.finnvek.knittools.ui.screens.counter.CounterScreenActions
@@ -97,6 +99,53 @@ class ProjectOverviewScreenTest {
         rule.onNodeWithContentDescription(text(R.string.project_actions_title)).performClick()
         rule.onNodeWithText(text(R.string.reactivate_project)).performClick()
         assertEquals(1, reactivated)
+    }
+
+    @Test
+    fun restoredMaximumPageIndexKeepsPositivePageLabelAndDocumentAction() {
+        val document =
+            ProjectDocument(
+                id = 12,
+                projectId = 8,
+                savedPatternId = null,
+                documentKey = "audit-document",
+                label = "Pattern",
+                localPdfUri = "file:///audit.pdf",
+                sortOrder = 0,
+                isPrimary = true,
+                currentPage = Int.MAX_VALUE,
+                rowMapping = null,
+                readingLineEnabled = false,
+                readingLineYFraction = 0.5f,
+                readingLineFollowCurrentRow = false,
+                verticalReadingGuideEnabled = false,
+                verticalReadingGuideXFraction = 0.5f,
+                createdAt = 1,
+                updatedAt = 1,
+            )
+        var opened: Pair<Long, Long?>? = null
+        rule.setContent {
+            KnitToolsTheme {
+                Column {
+                    ProjectOverviewPattern(
+                        CounterUiState(
+                            projectId = 8,
+                            projectDocuments = listOf(document),
+                            projectDocumentAvailability = mapOf(12L to true),
+                        ),
+                        CounterScreenActions(
+                            onPatternViewer = { projectId, documentId -> opened = projectId to documentId },
+                        ),
+                        contentActions(),
+                    )
+                }
+            }
+        }
+        rule
+            .onNodeWithText(context.getString(R.string.project_overview_pdf_page_format, 2_147_483_648L))
+            .assertIsDisplayed()
+            .performClick()
+        assertEquals(8L to 12L, opened)
     }
 
     @Test

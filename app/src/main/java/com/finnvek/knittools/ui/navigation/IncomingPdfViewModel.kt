@@ -30,6 +30,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -93,6 +94,7 @@ class IncomingPdfViewModel
         @param:ApplicationScope private val applicationScope: CoroutineScope,
     ) : ViewModel() {
         private val pendingMutex = Mutex()
+        private var incomingRequestVersion = 0L
         private val mutablePending = MutableStateFlow(restorePending())
         val pending: StateFlow<IncomingPdf?> = mutablePending.asStateFlow()
 
@@ -123,12 +125,13 @@ class IncomingPdfViewModel
         val outcomes: Flow<IncomingPdfOutcome> = outcomeChannel.receiveAsFlow()
 
         fun receive(uri: Uri) {
+            val requestVersion = ++incomingRequestVersion
             viewModelScope.launch {
                 val fileName =
                     withContext(ioDispatcher) { context.contentResolver.displayNameOrNull(uri) }
                         ?: uri.lastPathSegment?.takeIf(String::isNotBlank)
                         ?: context.getString(R.string.pattern_pdf_fallback_name)
-                receiveCopy(uri, fileName)
+                receiveCopy(uri, fileName, requestVersion)
             }
         }
 
@@ -141,6 +144,7 @@ class IncomingPdfViewModel
             val isPdf =
                 download.mimeType.equals(PDF_MIME_TYPE, ignoreCase = true) ||
                     fileName.endsWith(".pdf", ignoreCase = true)
+            val requestVersion = if (isPdf) ++incomingRequestVersion else incomingRequestVersion
             viewModelScope.launch {
                 if (!isPdf) {
                     outcomeChannel.send(IncomingPdfOutcome.NotPdf)
@@ -160,9 +164,9 @@ class IncomingPdfViewModel
                     return@launch
                 }
                 try {
-                    receiveCopy(Uri.fromFile(file), fileName)
+                    receiveCopy(Uri.fromFile(file), fileName, requestVersion)
                 } finally {
-                    withContext(ioDispatcher) { file.delete() }
+                    withContext(NonCancellable + ioDispatcher) { file.delete() }
                 }
             }
         }
@@ -170,6 +174,7 @@ class IncomingPdfViewModel
         private suspend fun receiveCopy(
             uri: Uri,
             fileName: String,
+            requestVersion: Long,
         ) {
             val copiedUri =
                 try {
@@ -191,6 +196,10 @@ class IncomingPdfViewModel
             val pdf = IncomingPdf(copiedUri, PatternDisplayNames.documentLabel(fileName))
             try {
                 pendingMutex.withLock {
+                    if (requestVersion != incomingRequestVersion) {
+                        deleteUnusedCopy(pdf)
+                        return@withLock
+                    }
                     deleteUnusedCopy(mutablePending.value)
                     setPending(pdf)
                 }

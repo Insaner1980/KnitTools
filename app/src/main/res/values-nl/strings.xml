@@ -239,7 +239,7 @@
 
     <!-- Session History -->
     <string name="session_history_title">Sessiegeschiedenis</string>
-    <string name="no_sessions">Nog geen sessies geregistreerd. Begin met breien om hier je geschiedenis te zien.</string>
+    <string name="no_sessions">Nog geen sessies geregistreerd. Open een project en start een werksessie om je tijd hier vast te leggen.</string>
     <string name="session_row_range">Toeren %1$d \u2192 %2$d</string>
     <string name="session_row_single">Toer %1$d</string>
     <string name="delete_session_title">Sessie verwijderen?</string>
@@ -524,7 +524,7 @@
     <string name="insights_chart_a11y_previous">Vorige balk</string>
     <string name="insights_project_sub_format">%1$s, %2$s</string>
     <string name="insights_empty_title">Nog geen tijd op de naalden.</string>
-    <string name="insights_empty_body">Open een project en begin met tellen. Je tijd verschijnt hier.</string>
+    <string name="insights_empty_body">Open een project en start een werksessie om je tijd hier vast te leggen.</string>
     <string name="insights_nothing_yet_week">Deze week nog niets.</string>
     <string name="insights_nothing_yet_month">Deze maand nog niets.</string>
     <string name="insights_nothing_yet_all_time">Nog niets.</string>
@@ -675,7 +675,7 @@
     <string name="tip_edge_stitches_title">Kantsteken</string>
     <string name="tip_edge_stitches_desc">Kantsteken zijn extra steken buiten de patroonherhaling. Vul het totale aantal op te zetten kantsteken in; de calculator telt ze op nadat de gewenste breedte is berekend, bijvoorbeeld 2 voor één steek aan elke kant.</string>
     <string name="tip_flat_vs_circular_title">Heen en weer vs. in het rond</string>
-    <string name="tip_flat_vs_circular_desc">Bij heen-en-weer breien werk je vooruit en terug op rechte of rondbreinaalden en keer je aan het einde van elke toer. Meerderen en minderen gebeuren aan beide kanten.\n\nBij rondbreien werk je in een doorlopende ronde. Meerderen en minderen worden gelijkmatig over de ronde verdeeld.</string>
+    <string name="tip_flat_vs_circular_desc">Bij heen-en-weer breien werk je vooruit en terug op rechte of rondbreinaalden en keer je aan het einde van elke toer.\n\nBij rondbreien werk je in een doorlopende ronde. Meerderen en minderen worden gelijkmatig over de ronde verdeeld.</string>
     <string name="tip_needle_sizes_title">Systemen voor naaldmaten</string>
     <string name="tip_needle_sizes_desc">Metrisch (mm) is de universele standaard. US-maten gebruiken een nummersysteem (0–50). UK/Canadese maten gebruiken een ander nummersysteem. Japanse maten hebben hun eigen nummering. Controleer altijd de maat in mm om zeker te zijn.</string>
     <string name="tip_imperial_units_title">Imperiale eenheden</string>
@@ -691,7 +691,6 @@
     <string name="target_rows_set">Doel instellen…</string>
     <string name="target_rows_edit">Doel bewerken</string>
     <string name="target_rows_remove">Doel verwijderen</string>
-    <string name="target_rows_hint">Doelwaarde</string>
     <string name="row_label_with_target">%1$d / %2$d</string>
     <string name="widget_undo_action">Ongedaan maken</string>
     <string name="widget_undo_content_description">Laatste wijziging ongedaan maken</string>

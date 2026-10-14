@@ -79,7 +79,7 @@ internal class InsightsSessionAccumulator(
         daily.forEach { (date, seconds) ->
             if (rangeDate == null || !date.isBefore(rangeDate)) activeDates.add(date)
             if (previousStart != null && date.isBefore(requireNotNull(rangeDate))) {
-                previousSeconds[date] = (previousSeconds[date] ?: 0L) + seconds
+                previousSeconds[date] = addSessionSeconds(previousSeconds[date] ?: 0L, seconds)
             }
         }
         chart.add(session)
@@ -118,7 +118,7 @@ internal class InsightsSessionAccumulator(
 
 private operator fun SessionMetricSummary.plus(other: SessionMetricSummary) =
     SessionMetricSummary(
-        totalSeconds + other.totalSeconds,
+        addSessionSeconds(totalSeconds, other.totalSeconds),
         totalRows + other.totalRows,
         sessionCount + other.sessionCount,
     )
@@ -146,7 +146,7 @@ internal class SessionPaceAccumulator(
             val old = project[date]
             project[date] =
                 PaceBucketMetric(
-                    (old?.totalSeconds ?: 0L) + metric.totalSeconds,
+                    addSessionSeconds(old?.totalSeconds ?: 0L, metric.totalSeconds),
                     (old?.totalRows ?: 0L) + metric.totalRows,
                     0f,
                 )

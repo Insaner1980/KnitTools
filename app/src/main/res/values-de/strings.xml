@@ -239,7 +239,7 @@
 
     <!-- Session History -->
     <string name="session_history_title">Arbeitsverlauf</string>
-    <string name="no_sessions">Noch keine Sitzungen aufgezeichnet. Beginne zu stricken, um hier deinen Verlauf zu sehen.</string>
+    <string name="no_sessions">Noch keine Sitzungen aufgezeichnet. Öffne ein Projekt und starte eine Arbeitssitzung, um deine Zeit hier zu erfassen.</string>
     <string name="session_row_range">Reihen %1$d \u2192 %2$d</string>
     <string name="session_row_single">Reihe %1$d</string>
     <string name="delete_session_title">Sitzung löschen?</string>
@@ -518,13 +518,13 @@
         <item quantity="other">Aktiv an %1$d von %2$d Tagen</item>
     </plurals>
     <string name="insights_chart_axis_today">heute</string>
-    <string name="insights_chart_a11y_daily">Tägliche Zeit für %1$s, %2$s, %3$s, am längsten %4$s</string>
-    <string name="insights_chart_a11y_monthly">Monatliche Zeit für %1$s, %2$s, %3$s, am längsten %4$s</string>
+    <string name="insights_chart_a11y_daily">Täglich verbrachte Zeit %1$s, %2$s, %3$s, am längsten %4$s</string>
+    <string name="insights_chart_a11y_monthly">Monatlich verbrachte Zeit %1$s, %2$s, %3$s, am längsten %4$s</string>
     <string name="insights_chart_a11y_next">Nächster Balken</string>
     <string name="insights_chart_a11y_previous">Vorheriger Balken</string>
     <string name="insights_project_sub_format">%1$s, %2$s</string>
     <string name="insights_empty_title">Noch keine Zeit an den Nadeln.</string>
-    <string name="insights_empty_body">Öffne ein Projekt und beginne zu zählen. Deine Zeit erscheint hier.</string>
+    <string name="insights_empty_body">Öffne ein Projekt und starte eine Arbeitssitzung, um deine Zeit hier zu erfassen.</string>
     <string name="insights_nothing_yet_week">Diese Woche noch nichts.</string>
     <string name="insights_nothing_yet_month">Diesen Monat noch nichts.</string>
     <string name="insights_nothing_yet_all_time">Noch nichts.</string>
@@ -675,7 +675,7 @@
     <string name="tip_edge_stitches_title">Randmaschen</string>
     <string name="tip_edge_stitches_desc">Randmaschen sind zusätzliche Maschen außerhalb des Rapports. Gib die Gesamtzahl der anzuschlagenden Randmaschen ein; der Rechner fügt sie nach der Berechnung der gewünschten Breite hinzu, z. B. 2 für eine Masche an jeder Seite.</string>
     <string name="tip_flat_vs_circular_title">Flach vs. rund</string>
-    <string name="tip_flat_vs_circular_desc">Flach gestrickt: Du arbeitest hin und her auf geraden oder Rundnadeln und wendest am Ende jeder Reihe. Zu- und Abnahmen erfolgen an beiden Rändern.\n\nRund gestrickt: Du arbeitest in einer fortlaufenden Runde. Zu- und Abnahmen werden gleichmäßig über die Runde verteilt.</string>
+    <string name="tip_flat_vs_circular_desc">Flach gestrickt: Du arbeitest hin und her auf geraden oder Rundnadeln und wendest am Ende jeder Reihe.\n\nRund gestrickt: Du arbeitest in einer fortlaufenden Runde. Zu- und Abnahmen werden gleichmäßig über die Runde verteilt.</string>
     <string name="tip_needle_sizes_title">Systeme für Nadelstärken</string>
     <string name="tip_needle_sizes_desc">Metrisch (mm) ist der universelle Standard. US-Größen verwenden ein nummeriertes System (0–50). UK/Kanada nutzen ein anderes Nummernsystem. Japanische Größen haben eine eigene Nummerierung. Prüfe sicherheitshalber immer die mm-Angabe.</string>
     <string name="tip_imperial_units_title">Imperiale Einheiten</string>
@@ -687,11 +687,10 @@
     <string name="widget_rows_remaining_format">%d Reihen übrig</string>
     <string name="widget_target_reached">Ziel erreicht</string>
     <string name="widget_stitches_format">Maschen: %1$d / %2$d</string>
-    <string name="target_rows_dialog_title">Zielreihen festlegen</string>
+    <string name="target_rows_dialog_title">Ziel festlegen</string>
     <string name="target_rows_set">Ziel festlegen…</string>
     <string name="target_rows_edit">Ziel bearbeiten</string>
     <string name="target_rows_remove">Ziel entfernen</string>
-    <string name="target_rows_hint">Anzahl der Reihen</string>
     <string name="row_label_with_target">Reihe %1$d / %2$d</string>
     <string name="widget_undo_action">Rückgängig</string>
     <string name="widget_undo_content_description">Letzte Änderung rückgängig machen</string>

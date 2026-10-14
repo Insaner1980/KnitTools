@@ -51,6 +51,7 @@ internal fun CounterUiState.withStartedProject(project: CounterProject): Counter
         projectYarnNotes = emptyList(),
         reminders = emptyList(),
         projectCounters = emptyList(),
+        latestPhotos = emptyList(),
         activeAlert = null,
         dismissedReminderTrigger = null,
         sessionSeconds = 0,

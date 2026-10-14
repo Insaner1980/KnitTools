@@ -2,6 +2,7 @@ package com.finnvek.knittools.repository
 
 import android.content.Context
 import android.content.ContextWrapper
+import android.database.Cursor
 import android.graphics.Bitmap
 import android.graphics.pdf.PdfDocument
 import android.graphics.pdf.PdfRenderer
@@ -27,6 +28,8 @@ import com.finnvek.knittools.data.backup.ContentResolverBackupProviderIo
 import com.finnvek.knittools.data.datastore.PreferencesManager
 import com.finnvek.knittools.data.datastore.ThemeMode
 import com.finnvek.knittools.data.local.ActiveSessionSchemaConstraints
+import com.finnvek.knittools.data.local.CounterHistoryEntity
+import com.finnvek.knittools.data.local.CounterProjectEntity
 import com.finnvek.knittools.data.local.KnitToolsDatabase
 import com.finnvek.knittools.data.local.MAX_COMPLETED_SESSIONS
 import com.finnvek.knittools.data.local.PatternAnnotationSchemaConstraints
@@ -81,6 +84,7 @@ class BackupRepositoryTest {
     private lateinit var repository: BackupRepository
     private lateinit var patternFiles: PatternFileReferenceCoordinator
     private lateinit var yarnCards: YarnCardRepository
+    private var processProbe: BackupRestoreProcessProbe? = null
     private var selectionId = UUID.randomUUID()
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
@@ -91,7 +95,14 @@ class BackupRepositoryTest {
 
     @Before fun setUp() {
         val app = ApplicationProvider.getApplicationContext<Context>()
-        directory = File(app.cacheDir, "backup-test-${UUID.randomUUID()}").apply { mkdirs() }
+        val processPhase = BackupRestoreProcessProbe.phase()
+        directory = File(app.cacheDir, processPhase?.let { "backup-process-$it" } ?: "backup-test-${UUID.randomUUID()}")
+        if (processPhase != null) {
+            val verifying = InstrumentationRegistry.getArguments().getString("backupCrashVerify") == "true"
+            check(directory.exists() == verifying)
+            processProbe = BackupRestoreProcessProbe(directory)
+        }
+        directory.mkdirs()
         context =
             object : ContextWrapper(app) {
                 override fun getApplicationContext(): Context = this
@@ -106,6 +117,7 @@ class BackupRepositoryTest {
                 .addCallback(PatternAnnotationSchemaConstraints.callback)
                 .addCallback(ActiveSessionSchemaConstraints.callback)
                 .addCallback(ProjectDocumentSchemaConstraints.callback)
+                .apply { processProbe?.let { openHelperFactory(it.factory) } }
                 .build()
         patternFiles = PatternFileReferenceCoordinator()
         yarnCards =
@@ -170,6 +182,9 @@ class BackupRepositoryTest {
             assertEquals(null, result)
             assertEquals(notes, db.projectYarnNoteDao().observeForProject(project.id).first())
             assertEquals(project, db.counterProjectDao().getProject(project.id))
+            val items = requireNotNull(db.projectYarnUsageDao().getProject(project.id)).items()
+            assertEquals(null, items.single { it.source.projectYarnNoteId == secondNote.id }.usage)
+            assertEquals(1, items.count { it.usage?.id == before.id })
             assertEquals(1L, number("SELECT COUNT(*) FROM yarn_cards"))
             assertEquals(1L, number("SELECT COUNT(*) FROM project_yarn_usage"))
         }
@@ -177,6 +192,45 @@ class BackupRepositoryTest {
     @Test fun allEighteenTablesFilesRelationshipsAndCompletionEventsSurviveRealReplacement() =
         runBlocking {
             seed()
+            val originalProject =
+                db.counterProjectDao().getAllProjectsOnce().single().copy(
+                    craftType = "CROCHET",
+                    mainCounterLabelType = "CUSTOM",
+                    mainCounterCustomLabel = "Kerrokset",
+                    readingLineEnabled = true,
+                    readingLineYFraction = 0.25f,
+                    readingLineFollowCurrentRow = false,
+                    verticalReadingGuideEnabled = true,
+                    verticalReadingGuideXFraction = 0.75f,
+                    secondaryCount = 17,
+                    secondaryCounterUsed = true,
+                    stepSize = 7,
+                    notesCreated = true,
+                    createdAt = 1_600_000_000_000L,
+                    updatedAt = 1_800_000_000_000L,
+                    sectionName = "Hihan osa",
+                    stitchCount = 99,
+                    totalRows = 123,
+                    patternName = "Virkattu hihansuu",
+                    currentPatternPage = 2,
+                    patternRowMapping = """[{"row":12,"page":2,"yPosition":0.25}]""",
+                    stitchTrackingEnabled = true,
+                    currentStitch = 11,
+                    targetRows = 222,
+                )
+            db.counterProjectDao().update(originalProject)
+            listOf(Long.MIN_VALUE, Long.MAX_VALUE).forEach { timestamp ->
+                db.counterProjectDao().insertHistory(
+                    CounterHistoryEntity(
+                        projectId = originalProject.id,
+                        action = "future-action",
+                        previousValue = Int.MIN_VALUE,
+                        newValue = Int.MAX_VALUE,
+                        timestamp = timestamp,
+                    ),
+                )
+            }
+            val originalHistory = db.counterProjectDao().observeCounterHistory(originalProject.id).first()
             val archive = File(directory, "backup.knittools-backup")
             repository.export(archive.toUri())
             if (InstrumentationRegistry.getArguments().getString("backupFixture") == "true") {
@@ -189,15 +243,14 @@ class BackupRepositoryTest {
             assertEquals(2, preview.patterns)
             assertEquals(1, preview.yarnCards)
             assertEquals(4, preview.files)
+            processProbe?.arm(db.openHelper.writableDatabase, context)
             repository.restore(selectionId)
             BackupFormat.tables.forEach {
                 assertEquals(
-                    if (it in
-                        setOf("saved_patterns", "project_documents")
-                    ) {
-                        2L
-                    } else {
-                        1L
+                    when (it) {
+                        "counter_history" -> 3L
+                        "saved_patterns", "project_documents" -> 2L
+                        else -> 1L
                     },
                     number("SELECT COUNT(*) FROM `$it`"),
                 )
@@ -208,16 +261,25 @@ class BackupRepositoryTest {
             assertEquals("Private notes", project.notes)
             assertEquals(12, project.count)
             val restoredHistory = counterHistoryTestRepository(db, context).observeCounterHistory(project.id).first()
-            assertEquals(1, restoredHistory.size)
-            assertEquals(1_700_000_000_000L, restoredHistory.single().timestamp)
-            assertEquals(CounterHistoryAction.INCREASE, restoredHistory.single().action)
-            assertEquals(11 to 12, restoredHistory.single().let { it.previousValue to it.newValue })
-            assertEquals(number("SELECT id FROM counter_history"), restoredHistory.single().id)
+            assertEquals(3, restoredHistory.size)
+            val restoredEntities = db.counterProjectDao().observeCounterHistory(project.id).first()
+            originalHistory.zip(restoredEntities).forEach { (original, restored) ->
+                assertTrue(restored.id > originalHistory.maxOf { it.id })
+                assertEquals(original.copy(id = restored.id, projectId = project.id), restored)
+            }
+            val increased = restoredHistory.single { it.action == CounterHistoryAction.INCREASE }
+            assertEquals(1_700_000_000_000L, increased.timestamp)
+            assertEquals(11 to 12, increased.let { it.previousValue to it.newValue })
+            assertEquals(number("SELECT id FROM counter_history WHERE action = 'increment'"), increased.id)
             assertEquals(
-                number("SELECT previousValue FROM counter_history").toInt(),
-                restoredHistory.single().previousValue,
+                number("SELECT previousValue FROM counter_history WHERE action = 'increment'").toInt(),
+                increased.previousValue,
             )
-            assertEquals(number("SELECT newValue FROM counter_history").toInt(), restoredHistory.single().newValue)
+            assertEquals(
+                number("SELECT newValue FROM counter_history WHERE action = 'increment'").toInt(),
+                increased.newValue,
+            )
+            assertEquals(2, restoredHistory.count { it.action == CounterHistoryAction.CHANGED })
 
             assertEquals(project.id, number("SELECT projectId FROM project_completions"))
             assertEquals(1_700_000_000_000L, number("SELECT completedAt FROM project_completions"))
@@ -242,12 +304,335 @@ class BackupRepositoryTest {
             assertEquals(4, references.size)
             references.forEach { assertTrue(AppFileStorage.resolveAppOwnedFile(context, it.toUri())?.isFile == true) }
             val pdfUri = text("SELECT localPdfUri FROM project_documents WHERE isPrimary = 1")
+            assertEquals(
+                originalProject.copy(
+                    id = project.id,
+                    yarnCardIds = number("SELECT id FROM yarn_cards").toString(),
+                    linkedPatternId = number("SELECT savedPatternId FROM project_documents WHERE isPrimary = 1"),
+                    patternUri = pdfUri,
+                ),
+                project,
+            )
             PdfRenderer(
                 ParcelFileDescriptor.open(File(checkNotNull(pdfUri.toUri().path)), ParcelFileDescriptor.MODE_READ_ONLY),
             ).use {
                 assertEquals(1, it.pageCount)
             }
             assertTrue(File(context.noBackupFilesDir, "manual-backup").listFiles().orEmpty().isEmpty())
+        }
+
+    fun verifyRecoveredProcessFixture() =
+        runBlocking {
+            val phase = checkNotNull(BackupRestoreProcessProbe.phase())
+            val checkpoint = File(directory, "checkpoint.txt").readText().split(" ")
+            assertFalse(checkpoint[0].toInt() == android.os.Process.myPid())
+            assertEquals(phase, checkpoint[1])
+            assertEquals((phase == "precommit").toString(), checkpoint[2])
+            repository.recoverInterruptedOperations()
+            val sql = db.openHelper.writableDatabase
+            assertEquals("ok", text("PRAGMA quick_check"))
+            sql.query("PRAGMA foreign_key_check").use { assertFalse(it.moveToFirst()) }
+            val after = File(directory, "after")
+            BackupTables.export(sql, after, { _, _ -> }, check = {})
+            BackupFormat.tables.forEach { table ->
+                if (phase == "precommit") {
+                    assertEquals(
+                        table,
+                        File(directory, "before/tables/$table.jsonl").readText(),
+                        File(after, "tables/$table.jsonl").readText(),
+                    )
+                } else {
+                    assertEquals(
+                        table,
+                        when (table) {
+                            "counter_history" -> 3L
+                            "saved_patterns", "project_documents" -> 2L
+                            else -> 1L
+                        },
+                        number("SELECT COUNT(*) FROM `$table`"),
+                    )
+                }
+            }
+            assertEquals(
+                if (phase ==
+                    "precommit"
+                ) {
+                    "Later edit"
+                } else {
+                    "Cardigan"
+                },
+                text("SELECT name FROM counter_projects"),
+            )
+            assertEquals(12L, number("SELECT count FROM counter_projects"))
+            assertEquals(11L, number("SELECT currentStitch FROM counter_projects"))
+            val hashes =
+                BackupTables
+                    .references(sql)
+                    .map { checkNotNull(AppFileStorage.resolveAppOwnedFile(context, it.toUri())).canonicalFile }
+                    .distinct()
+                    .map { file ->
+                        assertTrue(file.isFile)
+                        BackupFormat.digest(file) {}
+                    }.sorted()
+            assertEquals(File(directory, "file-hashes.txt").readText(), hashes.joinToString("\n"))
+            assertTrue(File(context.noBackupFilesDir, "manual-backup").listFiles().orEmpty().isEmpty())
+            val app = ApplicationProvider.getApplicationContext<Context>()
+            val proof = File(app.cacheDir, "backup-process-proof-$phase")
+            check(!proof.exists())
+            File(directory, "before").copyRecursively(File(proof, "before"))
+            after.copyRecursively(File(proof, "after"))
+            File(directory, "checkpoint.txt").copyTo(File(proof, "checkpoint.txt"))
+            File(directory, "file-hashes.txt").copyTo(File(proof, "file-hashes.txt"))
+        }
+
+    @Test fun auditedRowsPreserveEveryColumnAfterReplacementAndDatabaseReopen() =
+        runBlocking {
+            seed()
+            val sql = db.openHelper.writableDatabase
+            sql.execSQL(
+                "UPDATE yarn_cards SET brand = ?, yarnName = ?, fiberContent = '70% wool', weightGrams = '50,5', " +
+                    "lengthMeters = '123.75', needleSize = '3–4 mm', gaugeInfo = '22 × 31', colorName = 'Sininen', " +
+                    "colorNumber = '0007', dyeLot = 'Erä 007', weightCategory = 'Imported weight', careSymbols = ?, " +
+                    "createdAt = 1600000000000, quantityInStash = 2147483647, status = 'IN_USE', linkedProjectId = 1",
+                arrayOf<Any>("Å brand ".repeat(80), "Ö yarn\n第二行", Long.MIN_VALUE),
+            )
+            sql.execSQL(
+                "UPDATE sessions SET startedAt = 1700000000000, endedAt = 1700000121000, startRow = 17, endRow = 24, " +
+                    "durationMinutes = 3, durationSeconds = 121, rowsWorked = 7, zoneId = 'Europe/Helsinki'",
+            )
+            sql.execSQL(
+                "UPDATE active_sessions SET startedAtWallMillis = 1700000000000, startRow = 10, " +
+                    "lastObservedRow = 23, trustedLastObservedRow = 14, trustedRowsWorked = 4, " +
+                    "pendingRowsWorked = 9, reviewedRowsWorked = 3, " +
+                    "reviewedLastObservedRow = 17, unreviewedRowsWorked = 6, checkpointedDurationSeconds = 123, " +
+                    "reviewedDurationBaselineSeconds = 60, segmentStartedAtWallMillis = 1700000123000, " +
+                    "segmentStartedElapsedRealtimeMillis = 89000, bootCount = 7, recoveryReason = 'REBOOTED', " +
+                    "recoveryIntervalToken = 'old-interval', recoverySuggestedDurationSeconds = 61, " +
+                    "recoveryPromptShown = 1, updatedAtWallMillis = 1700000184000",
+            )
+            sql.execSQL(
+                "UPDATE row_reminders SET targetRow = 2147483647, repeatInterval = 7, message = 'Älä unohda 🧶', " +
+                    "isCompleted = 1, createdAt = 1600000000001",
+            )
+            sql.execSQL("UPDATE progress_photos SET rowNumber = 123, note = 'Kuva 🧶', createdAt = 1600000000002")
+            sql.execSQL(
+                "UPDATE project_counters SET name = 'Hiha 🧶', count = 7, stepSize = 3, repeatAt = 11, " +
+                    "sortOrder = 5, " +
+                    "createdAt = 1600000000003, counterType = 'SHAPING', startingStitches = 56, stitchChange = -2, " +
+                    "shapeEveryN = 4, repeatStartRow = 2, repeatEndRow = 6, totalRepeats = 8, currentRepeat = 3, " +
+                    "linkedToMainCounter = 1",
+            )
+            val tables =
+                listOf(
+                    "yarn_cards",
+                    "sessions",
+                    "active_sessions",
+                    "row_reminders",
+                    "progress_photos",
+                    "project_counters",
+                )
+
+            fun row(table: String): Map<String, Any?> =
+                db.openHelper.writableDatabase.query("SELECT * FROM `$table`").use { cursor ->
+                    assertTrue(cursor.moveToFirst())
+                    val values =
+                        cursorValues(cursor)
+                    assertFalse(cursor.moveToNext())
+                    values
+                }
+            val before = tables.associateWith(::row)
+            tables.forEach { table ->
+                val original = before.getValue(table)
+                BackupTables
+                    .columns(sql, table)
+                    .filterNot { it.name == "id" || it.name == "singletonId" }
+                    .forEach { column ->
+                        val mutation = runCatching { sql.execSQL("UPDATE `$table` SET `${column.name}` = NULL") }
+                        if (column.required) {
+                            assertTrue("$table.${column.name} rejects null", mutation.isFailure)
+                            assertEquals(original, row(table))
+                        } else {
+                            mutation.getOrThrow()
+                            assertEquals(original + (column.name to null), row(table))
+                            sql.execSQL("UPDATE `$table` SET `${column.name}` = ?", arrayOf(original[column.name]))
+                            assertEquals(original, row(table))
+                        }
+                    }
+                if (table != "yarn_cards") {
+                    assertTrue(runCatching { sql.execSQL("UPDATE `$table` SET projectId = 99999") }.isFailure)
+                    assertEquals(original, row(table))
+                }
+            }
+            val oldPhoto =
+                checkNotNull(
+                    AppFileStorage.resolveAppOwnedFile(
+                        context,
+                        (before.getValue("progress_photos")["photoUri"] as String).toUri(),
+                    ),
+                )
+            val photoBytes = oldPhoto.readBytes()
+            restoreAndReopenDatabase("audited-columns.knittools-backup")
+            val projectId = number("SELECT id FROM counter_projects")
+            tables.forEach { table ->
+                val actual = row(table)
+                val expected = before.getValue(table).toMutableMap()
+                if (table == "active_sessions") {
+                    expected["bootCount"] = null
+                    expected["recoveryReason"] = "BOOT_IDENTITY_UNAVAILABLE"
+                    expected["recoverySuggestedDurationSeconds"] = null
+                    expected["recoveryPromptShown"] = 0L
+                    listOf("sessionToken", "recoveryIntervalToken").forEach { token ->
+                        val value = actual.getValue(token) as String
+                        UUID.fromString(value)
+                        assertFalse(value == expected[token])
+                        expected[token] = value
+                    }
+                } else {
+                    assertTrue((actual.getValue("id") as Long) > (expected.getValue("id") as Long))
+                    expected["id"] = actual["id"]
+                }
+                expected[if (table == "yarn_cards") "linkedProjectId" else "projectId"] = projectId
+                if (table == "yarn_cards" || table == "progress_photos") {
+                    expected["photoUri"] = actual["photoUri"]
+                    val uri = (actual.getValue("photoUri") as String).toUri()
+                    assertTrue(checkNotNull(AppFileStorage.resolveAppOwnedFile(context, uri)).isFile)
+                    if (table == "progress_photos") {
+                        assertTrue(photoBytes.contentEquals(File(checkNotNull(uri.path)).readBytes()))
+                    }
+                }
+                assertEquals(table, expected, actual)
+            }
+        }
+
+    @Test fun partThreeColumnsSurviveIdentityRebasingAndDatabaseReopen() =
+        runBlocking {
+            seed()
+            val sql = db.openHelper.writableDatabase
+            sql.execSQL(
+                "UPDATE project_yarn_notes SET name = ?, description = ?, quantity = 2147483647, notes = ?, " +
+                    "savedYarnCardId = 1, createdAt = ?, updatedAt = ?",
+                arrayOf<Any>("Ö yarn 🧶", "description\n第二行", "note ".repeat(80), Long.MIN_VALUE, Long.MAX_VALUE),
+            )
+            sql.execSQL(
+                "UPDATE saved_patterns SET ravelryPatternId = 2147483647, name = ?, designerName = ?, " +
+                    "thumbnailUrl = 'https://example.invalid/image', difficulty = ?, " +
+                    "gaugeStitches = ?, gaugeRows = ?, " +
+                    "needleSize = '', yarnWeight = 'Imported', yardage = 2147483647, availability = 'paid', " +
+                    "originalUrl = 'https://example.invalid/original', " +
+                    "canonicalUrl = 'https://example.invalid/canonical', " +
+                    "isAvailableOffline = 1, savedAt = ?, updatedAt = ?, lastSyncedAt = ? WHERE id = 1",
+                arrayOf<Any>(
+                    "Ohje 🧶",
+                    "Å designer",
+                    Float.MAX_VALUE,
+                    Float.MIN_VALUE,
+                    -Float.MAX_VALUE,
+                    Long.MIN_VALUE,
+                    Long.MAX_VALUE,
+                    17L,
+                ),
+            )
+            sql.execSQL(
+                "UPDATE pattern_annotation_layers SET createdAt = ?, updatedAt = ?",
+                arrayOf(Long.MIN_VALUE, Long.MAX_VALUE),
+            )
+            sql.execSQL(
+                "UPDATE pattern_annotations SET page = 1, zIndex = ?, createdAt = ?, updatedAt = ?",
+                arrayOf(Long.MAX_VALUE, Long.MIN_VALUE, Long.MAX_VALUE),
+            )
+            sql.execSQL(
+                "UPDATE pattern_bookmarks SET name = 'Merkki 🧶', pageIndex = 1, yFraction = 0.875, createdAt = ?",
+                arrayOf(Long.MIN_VALUE),
+            )
+            sql.execSQL(
+                "UPDATE project_documents SET label = 'Ohje 🧶', currentPage = 1, rowMapping = '[]', " +
+                    "readingLineEnabled = 1, " +
+                    "readingLineYFraction = 0.25, readingLineFollowCurrentRow = 1, verticalReadingGuideEnabled = 1, " +
+                    "verticalReadingGuideXFraction = 0.75, createdAt = ?, updatedAt = ? WHERE id = 1",
+                arrayOf(Long.MIN_VALUE, Long.MAX_VALUE),
+            )
+            sql.execSQL(
+                "UPDATE project_folders SET name = ?, normalizedName = ?, sortOrder = 2147483647",
+                arrayOf("Å" + "x".repeat(49), "å" + "x".repeat(49)),
+            )
+            val tables =
+                listOf(
+                    "project_yarn_notes",
+                    "saved_patterns",
+                    "pattern_annotation_layers",
+                    "pattern_annotations",
+                    "pattern_bookmarks",
+                    "project_documents",
+                    "project_folders",
+                    "project_folder_assignments",
+                    "project_yarn_usage",
+                )
+
+            fun rows(table: String): List<Map<String, Any?>> =
+                db.openHelper.writableDatabase.query("SELECT * FROM `$table` ORDER BY rowid").use { cursor ->
+                    buildList {
+                        while (cursor.moveToNext()) {
+                            add(
+                                cursorValues(cursor),
+                            )
+                        }
+                    }
+                }
+            val before = tables.associateWith(::rows)
+            val pdfBytes =
+                before.getValue("saved_patterns").associate { row ->
+                    row.getValue("localPdfUri") to
+                        File(checkNotNull((row.getValue("localPdfUri") as String).toUri().path)).readBytes()
+                }
+            restoreAndReopenDatabase("part-three.knittools-backup")
+            val after = tables.associateWith(::rows)
+            val ids =
+                tables.filterNot { it == "project_folder_assignments" }.associateWith { table ->
+                    val oldRows = before.getValue(table)
+                    val newRows = after.getValue(table)
+                    assertEquals(table, oldRows.size, newRows.size)
+                    oldRows.zip(newRows).associate { (old, new) ->
+                        val oldId = old.getValue("id") as Long
+                        val newId = new.getValue("id") as Long
+                        assertTrue("$table fresh identity", newId > (oldRows.maxOf { it.getValue("id") as Long }))
+                        oldId to newId
+                    }
+                }
+            val projectId = number("SELECT id FROM counter_projects")
+            val cardId = number("SELECT id FROM yarn_cards")
+            assertTrue(projectId > 1L)
+            assertTrue(cardId > 1L)
+            val foreignTables =
+                mapOf(
+                    "savedPatternId" to "saved_patterns",
+                    "layerId" to "pattern_annotation_layers",
+                    "folderId" to "project_folders",
+                    "projectYarnNoteId" to "project_yarn_notes",
+                )
+            tables.forEach { table ->
+                assertEquals(table, before.getValue(table).size, after.getValue(table).size)
+                before.getValue(table).zip(after.getValue(table)).forEach { (old, actual) ->
+                    val expected = old.toMutableMap()
+                    if ("id" in old) expected["id"] = ids.getValue(table).getValue(old.getValue("id") as Long)
+                    if (old["projectId"] != null) expected["projectId"] = projectId
+                    listOf("savedYarnCardId", "yarnCardId").filter { old[it] != null }.forEach { expected[it] = cardId }
+                    foreignTables.forEach { (column, parent) ->
+                        if (old[column] != null) expected[column] = ids.getValue(parent).getValue(old[column] as Long)
+                    }
+                    (old["documentKey"] as? String)?.let { key ->
+                        val savedId = key.removePrefix("saved:").removeSuffix(":v1").toLong()
+                        expected["documentKey"] = "saved:${ids.getValue("saved_patterns").getValue(savedId)}:v1"
+                    }
+                    (old["localPdfUri"] as? String)?.let { oldUri ->
+                        val newUri = actual.getValue("localPdfUri") as String
+                        assertFalse(oldUri == newUri)
+                        val file = checkNotNull(AppFileStorage.resolveAppOwnedFile(context, newUri.toUri()))
+                        assertTrue(pdfBytes.getValue(oldUri).contentEquals(file.readBytes()))
+                        expected["localPdfUri"] = newUri
+                    }
+                    assertEquals(table, expected, actual)
+                }
+            }
         }
 
     @Test fun failedValidationAndCancelledPreviewDoNotChangeCurrentRowsOrFiles() =
@@ -270,11 +655,11 @@ class BackupRepositoryTest {
             db.openHelper.writableDatabase.execSQL("UPDATE counter_projects SET name = 'Current'")
             val archive = File(directory, "oversized-source")
             repository.export(archive.toUri())
-            rewriteTableText(
+            rewriteTableValue(
                 archive,
                 "counter_projects",
                 "notes",
-                "x".repeat(BackupLimits.MAX_FIELD_CHARACTERS + 1),
+                JsonPrimitive("x".repeat(BackupLimits.MAX_FIELD_CHARACTERS + 1)),
             )
 
             expectBackupFailure { prepare(archive.toUri()) }
@@ -285,11 +670,11 @@ class BackupRepositoryTest {
             repository.export(valid.toUri())
             prepare(valid.toUri())
             val staged = File(context.noBackupFilesDir, "manual-backup/$selectionId/backup.zip")
-            rewriteTableText(
+            rewriteTableValue(
                 staged,
                 "counter_projects",
                 "notes",
-                "x".repeat(BackupLimits.MAX_FIELD_CHARACTERS + 1),
+                JsonPrimitive("x".repeat(BackupLimits.MAX_FIELD_CHARACTERS + 1)),
             )
 
             expectBackupFailure { repository.restore(selectionId) }
@@ -640,6 +1025,62 @@ class BackupRepositoryTest {
             }
         }
 
+    @Test fun invalidMetadataAndFolderKeysAreRejectedBeforePreviewAndAtConfirmationWithoutLiveMutation() =
+        runBlocking {
+            seed()
+            db.counterProjectDao().insert(CounterProjectEntity(id = 2, name = "Other project"))
+            val sql = db.openHelper.writableDatabase
+
+            fun rows() =
+                BackupFormat.tables.associateWith { table ->
+                    sql.query("SELECT * FROM `$table` ORDER BY rowid").use { cursor ->
+                        buildList {
+                            while (cursor.moveToNext()) {
+                                add(List(cursor.columnCount) { column -> cursor.getString(column) })
+                            }
+                        }
+                    }
+                }
+            val originalRows = rows()
+            val references = BackupTables.references(sql)
+            val archive = File(directory, "valid-metadata")
+            repository.export(archive.toUri())
+            val validBytes = archive.readBytes()
+            val invalidValues =
+                listOf(
+                    Triple("saved_patterns", "ravelryPatternId", JsonPrimitive(Int.MAX_VALUE.toLong() + 1)),
+                    Triple("saved_patterns", "ravelryPatternId", JsonPrimitive(Long.MAX_VALUE)),
+                    Triple("saved_patterns", "difficulty", JsonPrimitive(1e300)),
+                    Triple("saved_patterns", "gaugeStitches", JsonPrimitive(-1e300)),
+                    Triple("saved_patterns", "gaugeRows", JsonPrimitive(1e300)),
+                    Triple("project_folders", "normalizedName", JsonPrimitive("wrong-key")),
+                    Triple("project_folders", "name", JsonPrimitive("")),
+                    Triple("project_folders", "name", JsonPrimitive(" Wool ")),
+                    Triple("project_folders", "name", JsonPrimitive("x".repeat(51))),
+                    Triple("project_yarn_usage", "projectId", JsonPrimitive(2)),
+                    Triple("project_yarn_usage", "plannedMeters", JsonPrimitive(-1.0)),
+                    Triple("project_yarn_usage", "allocatedMeters", JsonPrimitive(-1.0)),
+                    Triple("project_yarn_usage", "usedMeters", JsonPrimitive(-1.0)),
+                    Triple("project_yarn_usage", "metersPerSkein", JsonPrimitive(0.0)),
+                    Triple("project_yarn_usage", "gramsPerSkein", JsonPrimitive(100.0)),
+                )
+            for ((table, column, value) in invalidValues) {
+                archive.writeBytes(validBytes)
+                rewriteTableValue(archive, table, column, value)
+                expectBackupFailure(BackupError.VALIDATION) { prepare(archive.toUri()) }
+                assertEquals(originalRows, rows())
+                assertReferencesAndPreviewCleanedUp(references)
+
+                archive.writeBytes(validBytes)
+                prepare(archive.toUri())
+                val staged = File(context.noBackupFilesDir, "manual-backup/$selectionId/backup.zip")
+                rewriteTableValue(staged, table, column, value)
+                expectBackupFailure(BackupError.VALIDATION) { repository.restore(selectionId) }
+                assertEquals(originalRows, rows())
+                assertReferencesAndPreviewCleanedUp(references)
+            }
+        }
+
     @Test fun startupJournalRecoveryKeepsCommittedReferencesAndRemovesUncommittedFiles() =
         runBlocking {
             seed()
@@ -787,6 +1228,7 @@ class BackupRepositoryTest {
                                 "availability" to "unknown",
                             )
                         "yarn_cards" -> mapOf("photoUri" to yarn.toUri().toString(), "linkedProjectId" to 1)
+                        "project_folders" -> mapOf("name" to "Wool", "normalizedName" to "wool")
                         "progress_photos" -> mapOf("photoUri" to photo.toUri().toString())
                         "pattern_annotation_layers" ->
                             mapOf(
@@ -900,17 +1342,17 @@ class BackupRepositoryTest {
         BackupArchive.write(payload, archive, updated)
     }
 
-    private fun rewriteTableText(
+    private fun rewriteTableValue(
         archive: File,
         tableName: String,
         columnName: String,
-        value: String,
+        value: JsonPrimitive,
     ) {
         val payload = File(directory, "rewrite-${UUID.randomUUID()}").apply { mkdirs() }
         try {
             val manifest = BackupArchive.extract(archive, payload)
             val table = File(payload, "tables/$tableName.jsonl")
-            val lines = table.readLines()
+            val lines = table.readLines().toMutableList()
             val header = BackupFormat.json.parseToJsonElement(lines.first()).jsonArray
             val column = header.indexOf(JsonPrimitive(columnName))
             val row =
@@ -918,8 +1360,9 @@ class BackupRepositoryTest {
                     .parseToJsonElement(lines[1])
                     .jsonArray
                     .toMutableList()
-            row[column] = JsonPrimitive(value)
-            table.writeText(lines.first() + "\n" + JsonArray(row) + "\n")
+            row[column] = value
+            lines[1] = JsonArray(row).toString()
+            table.writeText(lines.joinToString("\n", postfix = "\n"))
             rewriteArchive(payload, archive, manifest)
         } finally {
             payload.deleteRecursively()
@@ -1054,5 +1497,32 @@ class BackupRepositoryTest {
             maxBytes: Long,
             check: () -> Unit,
         ) = throw IOException("provider unavailable")
+    }
+
+    private fun cursorValues(cursor: Cursor): Map<String, Any?> =
+        cursor.columnNames
+            .mapIndexed { index, name ->
+                name to
+                    when (cursor.getType(index)) {
+                        Cursor.FIELD_TYPE_NULL -> null
+                        Cursor.FIELD_TYPE_INTEGER -> cursor.getLong(index)
+                        Cursor.FIELD_TYPE_FLOAT -> cursor.getDouble(index)
+                        else -> cursor.getString(index)
+                    }
+            }.toMap()
+
+    private suspend fun restoreAndReopenDatabase(archiveName: String) {
+        val archive = File(directory, archiveName)
+        repository.export(archive.toUri())
+        prepare(archive.toUri())
+        repository.restore(selectionId)
+        db.close()
+        db =
+            Room
+                .databaseBuilder(context, KnitToolsDatabase::class.java, File(directory, "live.db").absolutePath)
+                .addCallback(PatternAnnotationSchemaConstraints.callback)
+                .addCallback(ActiveSessionSchemaConstraints.callback)
+                .addCallback(ProjectDocumentSchemaConstraints.callback)
+                .build()
     }
 }

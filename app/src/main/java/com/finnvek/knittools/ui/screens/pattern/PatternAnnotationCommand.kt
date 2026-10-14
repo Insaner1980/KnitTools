@@ -43,6 +43,16 @@ sealed interface PatternAnnotationCommand {
         }
     }
 
+    data class UpdateBatch(
+        val before: List<PatternAnnotation>,
+        val after: List<PatternAnnotation>,
+    ) : PatternAnnotationCommand {
+        override suspend fun apply(repository: PatternAnnotationRepository): PatternAnnotationCommand {
+            repository.restoreBatch(after)
+            return UpdateBatch(before = after, after = before)
+        }
+    }
+
     data class ClearPage(
         val layerId: Long,
         val page: Int,

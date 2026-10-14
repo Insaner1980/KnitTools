@@ -206,7 +206,7 @@
     <string name="select_yarn_card">Selecionar ficha de fio</string>
     <string name="linked_yarn_title">Fio ligado</string>
     <string name="no_linked_yarn">Ainda não há fio ligado</string>
-    <string name="choose_from_my_yarn">Escolher dos meus fios</string>
+    <string name="choose_from_my_yarn">Escolher de «O meu fio»</string>
     <string name="choose_from_my_yarn_body">Escolha um fio guardado</string>
     <string name="add_yarn_to_project">Adicionar fio a este projeto</string>
     <string name="add_yarn_to_project_body">Guarde uma nota rápida de fio apenas para este projeto</string>
@@ -220,8 +220,8 @@
     <string name="change_yarn_photo">Alterar foto do fio</string>
     <string name="manual_yarn_optional_details">Comece por um nome. Marca, espessura, cor e lote são opcionais.</string>
     <string name="project_yarn_quantity_format">Quantidade: %d</string>
-    <string name="save_to_my_yarn">Guardar nos meus fios</string>
-    <string name="saved_to_my_yarn">Guardado nos meus fios</string>
+    <string name="save_to_my_yarn">Guardar em «O meu fio»</string>
+    <string name="saved_to_my_yarn">Guardado em «O meu fio»</string>
     <string name="save_to_my_yarn_explanation">Copia o nome do fio, a descrição e a quantidade para uma ficha na secção O meu fio ligada a este projeto. Esta entrada mantém-se aqui; as notas não são copiadas.</string>
     <string name="saved_to_my_yarn_explanation">Esta entrada do projeto mantém-se separada. As notas não foram copiadas para a ficha na secção O meu fio.</string>
     <string name="yarn_count_format">%1$d fios</string>
@@ -245,7 +245,7 @@
 
     <!-- Session History -->
     <string name="session_history_title">Histórico de sessões</string>
-    <string name="no_sessions">Ainda não há sessões registadas. Comece a tricotar para ver o seu histórico aqui.</string>
+    <string name="no_sessions">Ainda não há sessões registadas. Abra um projeto e inicie uma sessão de trabalho para registar o seu tempo aqui.</string>
     <string name="session_row_range">Carreiras %1$d \u2192 %2$d</string>
     <string name="session_row_single">Carreira %1$d</string>
     <string name="delete_session_title">Eliminar sessão?</string>
@@ -538,7 +538,7 @@
     <string name="insights_chart_a11y_previous">Barra anterior</string>
     <string name="insights_project_sub_format">%1$s, %2$s</string>
     <string name="insights_empty_title">Ainda sem tempo nas agulhas.</string>
-    <string name="insights_empty_body">Abra um projeto e comece a contar. O seu tempo aparecerá aqui.</string>
+    <string name="insights_empty_body">Abra um projeto e inicie uma sessão de trabalho para registar o seu tempo aqui.</string>
     <string name="insights_nothing_yet_week">Ainda nada esta semana.</string>
     <string name="insights_nothing_yet_month">Ainda nada este mês.</string>
     <string name="insights_nothing_yet_all_time">Ainda nada.</string>
@@ -693,7 +693,7 @@
     <string name="tip_edge_stitches_title">Pontos de ourela</string>
     <string name="tip_edge_stitches_desc">Os pontos de ourela são pontos extra fora da repetição do motivo. Introduza o total de pontos de ourela a montar; a calculadora adiciona-os depois de calcular a largura pretendida, por exemplo 2 para um ponto em cada lado.</string>
     <string name="tip_flat_vs_circular_title">Plano vs. circular</string>
-    <string name="tip_flat_vs_circular_desc">Tricô plano: trabalha de ida e volta em agulhas direitas ou circulares, virando no fim de cada carreira. Os aumentos/diminuições acontecem em ambas as bordas.\n\nTricô circular: trabalha numa volta contínua. Os aumentos/diminuições distribuem-se uniformemente ao longo da volta.</string>
+    <string name="tip_flat_vs_circular_desc">Tricô plano: trabalha de ida e volta em agulhas direitas ou circulares, virando no fim de cada carreira.\n\nTricô circular: trabalha numa volta contínua. Os aumentos/diminuições distribuem-se uniformemente ao longo da volta.</string>
     <string name="tip_needle_sizes_title">Sistemas de tamanhos de agulhas</string>
     <string name="tip_needle_sizes_desc">O sistema métrico (mm) é o padrão universal. Os tamanhos US usam um sistema numerado (0–50). UK/Canadá usam outro sistema numerado. Os tamanhos japoneses têm a sua própria numeração. Verifique sempre o tamanho em mm para ter a certeza.</string>
     <string name="tip_imperial_units_title">Unidades imperiais</string>
@@ -709,7 +709,6 @@
     <string name="target_rows_set">Definir objetivo…</string>
     <string name="target_rows_edit">Editar objetivo</string>
     <string name="target_rows_remove">Remover objetivo</string>
-    <string name="target_rows_hint">Valor do objetivo</string>
     <string name="row_label_with_target">%1$d / %2$d</string>
     <string name="widget_undo_action">Anular</string>
     <string name="widget_undo_content_description">Anular última alteração</string>
@@ -745,7 +744,7 @@
     <string name="pro_prompt_photos_title">Adicione fotos de progresso com o Pro</string><string name="pro_prompt_photos_body">Criar uma nova foto de progresso requer o Pro. As suas fotos atuais continuarão disponíveis.</string>
     <string name="pro_prompt_notes_title">Adicione notas de projeto com o Pro</string><string name="pro_prompt_notes_body">Criar a primeira nota deste projeto requer o Pro. As notas que já criou continuarão editáveis.</string>
     <string name="pro_prompt_yarn_title">Adicione fio com o Pro</string><string name="pro_prompt_yarn_body">Criar um novo cartão de fio requer o Pro. Os seus cartões atuais continuarão disponíveis e editáveis.</string>
-    <string name="pro_prompt_save_yarn_title">Guarde este fio com o Pro</string><string name="pro_prompt_save_yarn_body">Guardar este fio do projeto em Os meus fios cria um novo cartão e requer o Pro. A nota de fio do projeto continuará disponível.</string>
+    <string name="pro_prompt_save_yarn_title">Guarde este fio com o Pro</string><string name="pro_prompt_save_yarn_body">Guardar este fio do projeto em O meu fio cria um novo cartão e requer o Pro. A nota de fio do projeto continuará disponível.</string>
     <string name="pro_prompt_counters_title">Adicione um contador com o Pro</string><string name="pro_prompt_counters_body">Criar um novo contador adicional requer o Pro. Os seus contadores atuais continuarão disponíveis e editáveis.</string>
     <string name="pro_prompt_reminders_title">Adicione um lembrete de carreira com o Pro</string><string name="pro_prompt_reminders_body">Criar um novo lembrete de carreira requer o Pro. Os seus lembretes atuais continuarão a funcionar e poderão ser editados.</string>
     <string name="pro_prompt_pattern_camera_title">Transforme fotos do padrão em PDF com o Pro</string><string name="pro_prompt_pattern_camera_body">Criar um novo PDF a partir de fotos do padrão requer o Pro. Os seus padrões e PDF atuais continuarão disponíveis.</string>
@@ -970,7 +969,7 @@
         <item quantity="other">%1$d carreiras</item>
     </plurals>
     <string name="yarn_usage_title">Utilização do fio</string>
-    <string name="yarn_usage_scope">Regista apenas o fio reservado para este projeto. As quantidades em Os meus fios não mudam.</string>
+    <string name="yarn_usage_scope">Regista apenas o fio reservado para este projeto. As quantidades em O meu fio não mudam.</string>
     <string name="yarn_usage_unit">Unidade de quantidade</string>
     <string name="yarn_usage_grams">Gramas</string>
     <string name="yarn_usage_skeins">Meadas</string>

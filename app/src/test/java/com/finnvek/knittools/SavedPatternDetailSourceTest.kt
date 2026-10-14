@@ -47,7 +47,7 @@ class SavedPatternDetailSourceTest {
         assertTrue(navGraph.contains("Screen.LibraryPatternViewer(savedPatternId).route"))
         assertTrue(navGraph.contains("counterViewModel.attachSavedPatternToProject(projectId, pattern.id)"))
         // Projektiin siirrytään vasta onnistuneen liitoksen jälkeen.
-        assertTrue(navGraph.contains("if (attached) navController.openProjectOverview(projectId)"))
+        assertTrue(navGraph.contains("if (navController.currentBackStackEntry?.id == backStackEntryId && attached)"))
         assertTrue(navGraph.contains("libraryViewModel.deleteSavedPattern(savedPatternId)"))
         val detailRoute =
             navGraph
@@ -55,6 +55,12 @@ class SavedPatternDetailSourceTest {
                 .substringBefore("private fun NavGraphBuilder.libraryPatternViewerRoute")
         assertTrue(detailRoute.contains("libraryViewModel.patternDeleteErrorId.collectAsStateWithLifecycle()"))
         assertTrue(detailRoute.contains("deleteErrorId = patternDeleteErrorId"))
+        listOf(
+            detailRoute.substringAfter("onAttachToProject =").substringBefore("onAttachWebPattern ="),
+            detailRoute.substringAfter("onRemove =").substringBefore("onOpenRavelry ="),
+        ).forEach { completion ->
+            assertTrue(completion.contains("if (navController.currentBackStackEntry?.id == backStackEntryId"))
+        }
         assertTrue(viewModel.contains("fun deleteSavedPattern("))
         assertTrue(viewModel.contains("savedPatternRepository.deleteById(id)"))
     }

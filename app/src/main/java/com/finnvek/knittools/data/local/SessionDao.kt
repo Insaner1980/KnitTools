@@ -47,7 +47,7 @@ interface SessionDao {
 
     @Query(
         """
-        SELECT CAST((COALESCE(SUM(durationSeconds), 0) + 59) / 60 AS INTEGER)
+        SELECT CAST(MIN(2147483647, (TOTAL(durationSeconds) + 59) / 60) AS INTEGER)
         FROM sessions
         WHERE projectId = :projectId
         """,

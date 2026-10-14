@@ -322,6 +322,7 @@ private fun DrawScope.drawStackedBar(
         drawBarFromBaseline(fallbackColor, topLeft, barSize, cornerPx)
         return
     }
+    val segmentMinutes = segments.sumOf { it.minutes.toLong() }.toFloat()
     clipPath(barPath(topLeft, barSize, cornerPx)) {
         var bottom = topLeft.y + barSize.height
         segments.forEachIndexed { index, segment ->
@@ -329,7 +330,7 @@ private fun DrawScope.drawStackedBar(
                 if (index == segments.lastIndex) {
                     bottom - topLeft.y
                 } else {
-                    barSize.height * segment.minutes / totalMinutes.toFloat()
+                    barSize.height * segment.minutes / segmentMinutes
                 }
             if (height <= 0f) return@forEachIndexed
             drawRect(

@@ -15,6 +15,7 @@ import com.finnvek.knittools.repository.ProgressPhotoRepository
 import com.finnvek.knittools.repository.SavedPatternDeleteResult
 import com.finnvek.knittools.repository.SavedPatternRepository
 import com.finnvek.knittools.repository.YarnCardRepository
+import com.finnvek.knittools.repository.retryOnRepositoryReadFailure
 import com.finnvek.knittools.ui.screens.yarncard.ManualYarnCardInput
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.Flow
@@ -22,6 +23,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
@@ -110,14 +112,9 @@ class LibraryViewModel
                         .associate { it.id to it.name }
                 }
 
-        fun loadSavedPattern(
-            id: Long,
-            onLoaded: (SavedPattern?) -> Unit,
-        ) {
-            viewModelScope.launch {
-                onLoaded(savedPatternRepository.getByIdIfAvailable(id))
-            }
-        }
+        fun loadSavedPattern(id: Long): Flow<SavedPattern?> =
+            flow { emit(savedPatternRepository.getByIdIfAvailable(id)) }
+                .retryOnRepositoryReadFailure()
 
         fun deletePhoto(photo: ProgressPhoto) {
             viewModelScope.launch {
@@ -278,7 +275,9 @@ class LibraryViewModel
             deleteSelected(
                 selectedIds = _selectedYarnIds,
                 exitSelectMode = ::exitYarnSelectMode,
-                deleteByIds = yarnCardRepository::deleteCards,
+                deleteByIds = { ids ->
+                    if (!yarnCardRepository.deleteCards(ids)) _yarnDeleteErrorId.value += 1
+                },
                 onError = { _yarnDeleteErrorId.value += 1 },
             )
         }
@@ -307,18 +306,20 @@ class LibraryViewModel
 
             viewModelScope.launch {
                 try {
-                    yarnCardRepository.saveCard(
-                        YarnCard(
-                            yarnName = yarnName,
-                            brand = input.brand.trim(),
-                            quantityInStash = input.quantity,
-                            weightCategory = input.weightCategory.trim(),
-                            colorName = input.colorName.trim(),
-                            colorNumber = input.colorNumber.trim(),
-                            dyeLot = input.dyeLot.trim(),
-                            status = YarnCardStatus.IN_STASH,
-                        ),
-                    )
+                    val savedId =
+                        yarnCardRepository.saveCard(
+                            YarnCard(
+                                yarnName = yarnName,
+                                brand = input.brand.trim(),
+                                quantityInStash = input.quantity,
+                                weightCategory = input.weightCategory.trim(),
+                                colorName = input.colorName.trim(),
+                                colorNumber = input.colorNumber.trim(),
+                                dyeLot = input.dyeLot.trim(),
+                                status = YarnCardStatus.IN_STASH,
+                            ),
+                        )
+                    if (savedId == null) _yarnSaveErrorId.value += 1
                 } catch (cancellation: CancellationException) {
                     throw cancellation
                 } catch (_: Exception) {

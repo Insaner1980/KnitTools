@@ -33,6 +33,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
@@ -61,6 +63,7 @@ import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.model.ProgressPhoto
 import com.finnvek.knittools.pro.ProStatus
 import com.finnvek.knittools.ui.components.CancelButton
+import com.finnvek.knittools.ui.components.CollectWithLifecycleEffect
 import com.finnvek.knittools.ui.components.CrossStitchEmptyState
 import com.finnvek.knittools.ui.components.CrossStitchGlyph
 import com.finnvek.knittools.ui.components.LabeledCounterImageButton
@@ -74,6 +77,8 @@ import com.finnvek.knittools.ui.components.rememberLocaleDateFormat
 import com.finnvek.knittools.ui.components.withExtraBottom
 import com.finnvek.knittools.ui.theme.ProjectListDimens
 import com.finnvek.knittools.ui.theme.knitToolsColors
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emptyFlow
 import java.util.Date
 
 private enum class PendingPhotoProAction {
@@ -85,7 +90,7 @@ data class PhotoGalleryActions(
     val cancelPhotoCreation: () -> Unit,
     val createPhotoCaptureTarget: (Long, (PhotoCaptureTarget?) -> Unit) -> Unit,
     val deletePendingPhotoFile: (String?) -> Unit,
-    val savePhoto: (Uri) -> Unit,
+    val savePhoto: (Uri, Long?) -> Boolean,
     val deletePhoto: (ProgressPhoto) -> Unit,
     val updateNote: (Long, String?) -> Unit = { _, _ -> },
 )
@@ -100,11 +105,18 @@ fun PhotoGalleryScreen(
     onBack: () -> Unit,
     onSeePro: () -> Unit,
     actions: PhotoGalleryActions,
+    errorsProvider: () -> Flow<Unit> = { emptyFlow() },
 ) {
     val context = LocalContext.current
+    val snackbarHostState = remember { SnackbarHostState() }
+    val errorMessage = stringResource(R.string.generic_error_unknown)
+    CollectWithLifecycleEffect({ errorsProvider() }) {
+        snackbarHostState.showSnackbar(errorMessage)
+    }
     var pendingPhotoUriString by rememberSaveable { mutableStateOf<String?>(null) }
     var pendingPhotoFilePath by rememberSaveable { mutableStateOf<String?>(null) }
-    val pendingPhotoUri = pendingPhotoUriString?.toUri()
+    var pendingPhotoProjectId by rememberSaveable { mutableStateOf<Long?>(null) }
+    var pendingPermissionProjectId by rememberSaveable { mutableStateOf<Long?>(null) }
     var renamingPhotoId by rememberSaveable { mutableStateOf<Long?>(null) }
     var viewingPhotoId by rememberSaveable { mutableStateOf<Long?>(null) }
     val renamingPhoto = remember(renamingPhotoId, photos) { photos.firstOrNull { it.id == renamingPhotoId } }
@@ -117,19 +129,21 @@ fun PhotoGalleryScreen(
         rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { success ->
             handlePhotoCaptureResult(
                 success = success,
-                pendingPhotoUri = pendingPhotoUri,
+                pendingPhotoUri = pendingPhotoUriString?.toUri(),
                 pendingPhotoFilePath = pendingPhotoFilePath,
+                pendingPhotoProjectId = pendingPhotoProjectId,
                 actions = actions,
             )
             pendingPhotoUriString = null
             pendingPhotoFilePath = null
-            if (!success) actions.cancelPhotoCreation()
+            pendingPhotoProjectId = null
         }
 
-    fun startCameraCapture() {
-        requestCameraCaptureTarget(projectId, actions) { captureTarget ->
+    fun startCameraCapture(ownerProjectId: Long?) {
+        requestCameraCaptureTarget(ownerProjectId, actions) { captureTarget ->
             pendingPhotoUriString = captureTarget.uri.toString()
             pendingPhotoFilePath = captureTarget.filePath
+            pendingPhotoProjectId = ownerProjectId
             try {
                 cameraLauncher.launch(captureTarget.uri)
             } catch (_: ActivityNotFoundException) {
@@ -137,28 +151,39 @@ fun PhotoGalleryScreen(
                 actions.cancelPhotoCreation()
                 pendingPhotoUriString = null
                 pendingPhotoFilePath = null
+                pendingPhotoProjectId = null
             } catch (_: IllegalStateException) {
                 actions.deletePendingPhotoFile(captureTarget.filePath)
                 actions.cancelPhotoCreation()
                 pendingPhotoUriString = null
                 pendingPhotoFilePath = null
+                pendingPhotoProjectId = null
             } catch (_: SecurityException) {
                 actions.deletePendingPhotoFile(captureTarget.filePath)
                 actions.cancelPhotoCreation()
                 pendingPhotoUriString = null
                 pendingPhotoFilePath = null
+                pendingPhotoProjectId = null
             }
         }
     }
 
     val permissionLauncher =
         rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            val ownerProjectId = pendingPermissionProjectId
+            pendingPermissionProjectId = null
             handleCameraPermissionResult(
                 granted = granted,
                 context = context,
                 deniedMessage = cameraPermissionDeniedMessage,
                 permanentlyDeniedMessage = cameraPermissionDeniedPermanentMessage,
-                onGranted = ::startCameraCapture,
+                onGranted = {
+                    if (ownerProjectId != null && (projectId == ownerProjectId || projectId == null)) {
+                        startCameraCapture(ownerProjectId)
+                    } else {
+                        actions.cancelPhotoCreation()
+                    }
+                },
             )
             if (!granted) actions.cancelPhotoCreation()
         }
@@ -167,7 +192,10 @@ fun PhotoGalleryScreen(
         requestPhotoCapturePermission(
             canCreatePhoto = canCreatePhoto,
             actions = actions,
-            onAuthorized = { permissionLauncher.launch(Manifest.permission.CAMERA) },
+            onAuthorized = {
+                pendingPermissionProjectId = projectId
+                permissionLauncher.launch(Manifest.permission.CAMERA)
+            },
             onProRequired = { pendingProAction = PendingPhotoProAction.Capture },
         )
     }
@@ -182,6 +210,7 @@ fun PhotoGalleryScreen(
             onTrialStarted = {
                 pendingProAction = null
                 actions.authorizePhotoCreation()
+                pendingPermissionProjectId = projectId
                 permissionLauncher.launch(Manifest.permission.CAMERA)
             },
             onSeePro = onSeePro,
@@ -212,6 +241,7 @@ fun PhotoGalleryScreen(
     val density = LocalDensity.current
     var actionHeight by remember { mutableStateOf(0.dp) }
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
@@ -281,12 +311,13 @@ private fun handlePhotoCaptureResult(
     success: Boolean,
     pendingPhotoUri: Uri?,
     pendingPhotoFilePath: String?,
+    pendingPhotoProjectId: Long?,
     actions: PhotoGalleryActions,
 ) {
-    if (success) {
-        pendingPhotoUri?.let(actions.savePhoto)
-    } else {
+    val admitted = success && pendingPhotoUri?.let { actions.savePhoto(it, pendingPhotoProjectId) } == true
+    if (!admitted) {
         actions.deletePendingPhotoFile(pendingPhotoFilePath)
+        actions.cancelPhotoCreation()
     }
 }
 

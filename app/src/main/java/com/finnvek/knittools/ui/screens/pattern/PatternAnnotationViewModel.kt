@@ -220,8 +220,16 @@ class PatternAnnotationViewModel
             }
 
         private val trackerHighlights =
-            combine(pageAnnotations, counterContext) { annotations, counters ->
-                resolveTrackerHighlights(annotations.master + annotations.project, counters)
+            combine(pageAnnotations, counterContext, layerVisibility) { annotations, counters, visibility ->
+                resolveTrackerHighlights(
+                    visiblePatternAnnotations(
+                        annotations.master,
+                        annotations.project,
+                        visibility.master,
+                        visibility.project,
+                    ),
+                    counters,
+                )
             }
 
         private val annotationFeedback =
@@ -533,14 +541,35 @@ class PatternAnnotationViewModel
         }
 
         fun bringSelectedForward() {
-            val selected = selectedAnnotation() ?: return
-            updateSelected { selected.copy(zIndex = nextEditableZIndex(), updatedAt = System.currentTimeMillis()) }
+            reorderSelected(toFront = true)
         }
 
         fun sendSelectedBackward() {
+            reorderSelected(toFront = false)
+        }
+
+        private fun reorderSelected(toFront: Boolean) {
             val selected = selectedAnnotation() ?: return
-            val bottomZIndex = editableAnnotations().minOfOrNull(PatternAnnotation::zIndex)?.minus(1L) ?: 0L
-            updateSelected { selected.copy(zIndex = bottomZIndex, updatedAt = System.currentTimeMillis()) }
+            val before = editableAnnotations()
+            val edge = if (toFront) before.maxOf(PatternAnnotation::zIndex) else before.minOf(PatternAnnotation::zIndex)
+            val now = System.currentTimeMillis()
+            if (edge != if (toFront) Long.MAX_VALUE else Long.MIN_VALUE) {
+                updateSelected { selected.copy(zIndex = edge + if (toFront) 1L else -1L, updatedAt = now) }
+                return
+            }
+            val remaining =
+                before
+                    .filterNot { it.id == selected.id }
+                    .sortedWith(compareBy(PatternAnnotation::zIndex, PatternAnnotation::id))
+            val ordered = if (toFront) remaining + selected else listOf(selected) + remaining
+            val after =
+                ordered.mapIndexed { index, annotation ->
+                    annotation.copy(
+                        zIndex = index.toLong(),
+                        updatedAt = if (annotation.id == selected.id) now else annotation.updatedAt,
+                    )
+                }
+            executeCommand(PatternAnnotationCommand.UpdateBatch(before, after))
         }
 
         fun addTextBox(
@@ -853,7 +882,10 @@ class PatternAnnotationViewModel
         }
 
         private fun nextEditableZIndex(): Long =
-            editableAnnotations().maxOfOrNull(PatternAnnotation::zIndex)?.plus(1L) ?: 0L
+            editableAnnotations()
+                .maxOfOrNull(PatternAnnotation::zIndex)
+                ?.coerceAtMost(Long.MAX_VALUE - 1L)
+                ?.plus(1L) ?: 0L
 
         private fun createCounterContextFlow(owner: PatternAnnotationOwner): Flow<PatternCounterContext> =
             when (owner) {
@@ -955,6 +987,7 @@ private data class PageAnnotations(
     val topZIndex: Long =
         listOfNotNull(master.maxOfOrNull(PatternAnnotation::zIndex), project.maxOfOrNull(PatternAnnotation::zIndex))
             .maxOrNull()
+            ?.coerceAtMost(Long.MAX_VALUE - 1L)
             ?.plus(1L) ?: 0L
 }
 

@@ -260,6 +260,28 @@ class SessionMetricsTest {
         assertEquals(emptyList<Int>(), apportionDisplayMinutes(emptyList()))
     }
 
+    @Test
+    fun `display minutes do not wrap for large restored durations`() {
+        assertEquals(Int.MAX_VALUE, secondsToDisplayMinutes((Int.MAX_VALUE.toLong() + 1L) * 60L))
+        assertEquals(Int.MAX_VALUE, secondsToDisplayMinutes(Long.MAX_VALUE))
+        assertEquals(1, secondsToDisplayMinutes(59L))
+        assertEquals(1, secondsToDisplayMinutes(60L))
+        assertEquals(2, secondsToDisplayMinutes(61L))
+    }
+
+    @Test
+    fun `apportioned large durations preserve positive project minutes`() {
+        val largestMinutes = Int.MAX_VALUE.toLong() * 60L
+        assertEquals(
+            listOf(Int.MAX_VALUE, Int.MAX_VALUE),
+            apportionDisplayMinutes(listOf(largestMinutes, largestMinutes)),
+        )
+        assertEquals(
+            listOf(Int.MAX_VALUE, Int.MAX_VALUE, 1),
+            apportionDisplayMinutes(listOf(Long.MAX_VALUE, Long.MAX_VALUE, 1L)),
+        )
+    }
+
     private fun instantMillis(
         year: Int,
         month: Int,

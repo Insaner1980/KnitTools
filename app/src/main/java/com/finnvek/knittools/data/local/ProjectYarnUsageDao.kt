@@ -114,7 +114,7 @@ private fun mergeLinkedUsageRows(
         metersPerSkein = metersPerSkein,
         gramsPerSkein = gramsPerSkein,
         createdAt = minOf(survivor.createdAt, other.createdAt),
-        updatedAt = maxOf(survivor.updatedAt, other.updatedAt),
+        updatedAt = maxOf(System.currentTimeMillis(), Math.addExact(maxOf(survivor.updatedAt, other.updatedAt), 1L)),
     )
 }
 

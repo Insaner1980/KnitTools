@@ -85,9 +85,19 @@ internal fun PatternAnnotationToolbar(
     modifier: Modifier = Modifier,
 ) {
     val hapticFeedback = LocalHapticFeedback.current
-    var showTextEditor by rememberSaveable { mutableStateOf(false) }
-    var showCalloutEditor by rememberSaveable { mutableStateOf(false) }
-    var showChartTrackerEditor by rememberSaveable { mutableStateOf(false) }
+    var showTextEditor by rememberSaveable(state.owner, state.editableLayerId, state.currentPage) {
+        mutableStateOf(false)
+    }
+    var showCalloutEditor by rememberSaveable(state.owner, state.editableLayerId, state.currentPage) {
+        mutableStateOf(false)
+    }
+    var showChartTrackerEditor by rememberSaveable(
+        state.owner,
+        state.editableLayerId,
+        state.currentPage,
+        state.selectedAnnotationId,
+        state.chartCounterOptions.map { it.type to it.extraCounterId },
+    ) { mutableStateOf(false) }
     Column(
         verticalArrangement = Arrangement.spacedBy(PatternAnnotationTokens.TOOLBAR_ITEM_SPACING),
         modifier =

@@ -324,6 +324,7 @@ internal class ProviderDeadline(
     private val timeoutNanos = TimeUnit.MILLISECONDS.toNanos(timeoutMillis)
     private var deadlineNanos = 0L
     private var scheduled: ScheduledFuture<*>? = null
+    private var deadlineGeneration = 0L
     private var opening = true
     private var timedOut = false
     private var cancelled: CancellationException? = null
@@ -386,20 +387,22 @@ internal class ProviderDeadline(
         if (resetDeadline || deadlineNanos == 0L) deadlineNanos = System.nanoTime() + timeoutNanos
         scheduled?.cancel(false)
         val delay = (deadlineNanos - System.nanoTime()).coerceAtLeast(0L)
-        scheduled = scheduler.schedule(::expire, delay, TimeUnit.NANOSECONDS)
+        val generation = ++deadlineGeneration
+        scheduled = scheduler.schedule({ expire(generation) }, delay, TimeUnit.NANOSECONDS)
     }
 
     @Synchronized
     private fun pause() {
+        deadlineGeneration++
         scheduled?.cancel(false)
         scheduled = null
     }
 
-    private fun expire() {
+    private fun expire(generation: Long) {
         val completeOpening: Boolean
         val abort: Boolean
         synchronized(this) {
-            if (finished || timedOut || cancelled != null) return
+            if (generation != deadlineGeneration || finished || timedOut || cancelled != null) return
             timedOut = true
             scheduled = null
             completeOpening = opening

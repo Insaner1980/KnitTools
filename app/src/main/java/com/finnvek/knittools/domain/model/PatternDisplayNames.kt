@@ -36,7 +36,10 @@ object PatternDisplayNames {
      * enimmäispituuteen, ettei liitos kaadu pituustarkistukseen.
      */
     fun documentLabel(fileName: String): String =
-        fromFileName(fileName).take(PROJECT_DOCUMENT_LABEL_MAX_LENGTH).trimEnd()
+        fromFileName(fileName)
+            .take(PROJECT_DOCUMENT_LABEL_MAX_LENGTH)
+            .let { value -> if (value.lastOrNull()?.isHighSurrogate() == true) value.dropLast(1) else value }
+            .trimEnd()
 
     /** Näytettävä nimi: tiedostonimeltä näyttävä nimike siistitään, käyttäjän antama nimi pysyy ennallaan. */
     fun forDisplay(label: String): String =

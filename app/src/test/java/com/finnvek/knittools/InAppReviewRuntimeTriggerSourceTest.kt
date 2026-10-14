@@ -1,5 +1,6 @@
 package com.finnvek.knittools
 
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -16,8 +17,9 @@ class InAppReviewRuntimeTriggerSourceTest {
                 "inAppReviewManager.reviewEligibility.collectAsStateWithLifecycle(initialValue = false)",
             ),
         )
-        assertTrue(activity.contains("LaunchedEffect(reviewEligible)"))
-        assertTrue(activity.contains("if (reviewEligible)"))
+        assertTrue(activity.contains("InAppReviewRequestEffect(reviewEligible)"))
+        assertTrue(activity.contains("snapshotFlow { currentEligibility }.filter { it }.collect"))
+        assertFalse(activity.contains("LaunchedEffect(reviewEligible)"))
     }
 
     private companion object {

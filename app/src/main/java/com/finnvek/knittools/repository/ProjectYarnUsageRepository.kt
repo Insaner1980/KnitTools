@@ -116,7 +116,8 @@ class ProjectYarnUsageRepository
                 validate(amounts)?.let { return@mutate it }
                 checkCurrent(projectId, id, expectedUpdatedAt)?.let { return@mutate it }
                 val current = requireNotNull(dao.getById(id))
-                val next = current.withAmounts(amounts, maxOf(System.currentTimeMillis(), current.updatedAt + 1))
+                val updatedAt = maxOf(System.currentTimeMillis(), Math.addExact(current.updatedAt, 1L))
+                val next = current.withAmounts(amounts, updatedAt)
                 check(dao.update(next) == 1)
                 YarnUsageResult.Updated(next.toDomain())
             }

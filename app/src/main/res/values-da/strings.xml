@@ -239,7 +239,7 @@
 
     <!-- Session History -->
     <string name="session_history_title">Arbejdshistorik</string>
-    <string name="no_sessions">Ingen sessioner registreret endnu. Begynd at strikke for at se din historik her.</string>
+    <string name="no_sessions">Ingen sessioner registreret endnu. Åbn et projekt, og start en arbejdssession for at registrere din tid her.</string>
     <string name="session_row_range">Pinde %1$d \u2192 %2$d</string>
     <string name="session_row_single">Række %1$d</string>
     <string name="delete_session_title">Slette session?</string>
@@ -524,7 +524,7 @@
     <string name="insights_chart_a11y_previous">Forrige søjle</string>
     <string name="insights_project_sub_format">%1$s, %2$s</string>
     <string name="insights_empty_title">Ingen tid på pindene endnu.</string>
-    <string name="insights_empty_body">Åbn et projekt, og begynd at tælle. Din tid dukker op her.</string>
+    <string name="insights_empty_body">Åbn et projekt, og start en arbejdssession for at registrere din tid her.</string>
     <string name="insights_nothing_yet_week">Intet endnu i denne uge.</string>
     <string name="insights_nothing_yet_month">Intet endnu i denne måned.</string>
     <string name="insights_nothing_yet_all_time">Intet endnu.</string>
@@ -675,7 +675,7 @@
     <string name="tip_edge_stitches_title">Kantmasker</string>
     <string name="tip_edge_stitches_desc">Kantmasker er ekstra masker uden for mønsterrapporten. Indtast det samlede antal kantmasker, der skal slås op; beregneren lægger dem til efter beregningen af den ønskede bredde, f.eks. 2 for én maske i hver side.</string>
     <string name="tip_flat_vs_circular_title">Fladstrik vs. rundstrik</string>
-    <string name="tip_flat_vs_circular_desc">Ved fladstrik arbejder du frem og tilbage på lige eller rundpinde og vender ved slutningen af hver pind. Udtagninger og indtagninger sker i begge sider.\n\nVed rundstrik arbejder du i en sammenhængende omgang. Udtagninger og indtagninger fordeles jævnt rundt på omgangen.</string>
+    <string name="tip_flat_vs_circular_desc">Ved fladstrik arbejder du frem og tilbage på lige eller rundpinde og vender ved slutningen af hver pind.\n\nVed rundstrik arbejder du i en sammenhængende omgang. Udtagninger og indtagninger fordeles jævnt rundt på omgangen.</string>
     <string name="tip_needle_sizes_title">Systemer for pindestørrelser</string>
     <string name="tip_needle_sizes_desc">Metrisk (mm) er den universelle standard. US-størrelser bruger et nummersystem (0–50). UK/Canada bruger et andet nummersystem. Japanske størrelser har deres egen nummerering. Tjek altid mm-størrelsen for at være sikker.</string>
     <string name="tip_imperial_units_title">Imperiale enheder</string>
@@ -687,11 +687,10 @@
     <string name="widget_rows_remaining_format">%d rækker tilbage</string>
     <string name="widget_target_reached">Mål nået</string>
     <string name="widget_stitches_format">Masker: %1$d / %2$d</string>
-    <string name="target_rows_dialog_title">Angiv målrækker</string>
+    <string name="target_rows_dialog_title">Angiv mål</string>
     <string name="target_rows_set">Angiv mål…</string>
     <string name="target_rows_edit">Rediger mål</string>
     <string name="target_rows_remove">Fjern mål</string>
-    <string name="target_rows_hint">Antal rækker</string>
     <string name="row_label_with_target">Række %1$d / %2$d</string>
     <string name="widget_undo_action">Fortryd</string>
     <string name="widget_undo_content_description">Fortryd sidste ændring</string>

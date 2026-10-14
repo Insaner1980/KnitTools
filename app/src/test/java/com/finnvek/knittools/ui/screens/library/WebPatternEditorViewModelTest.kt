@@ -7,6 +7,7 @@ import com.finnvek.knittools.repository.CounterRepository
 import com.finnvek.knittools.repository.SavedPatternMetadataMutationResult
 import com.finnvek.knittools.repository.SavedPatternRepository
 import com.finnvek.knittools.repository.WebPatternMutationResult
+import com.finnvek.knittools.ui.navigation.PatternShareCoordinatorViewModel
 import com.finnvek.knittools.ui.navigation.PatternShareImportRequest
 import com.finnvek.knittools.ui.navigation.PatternSharePayload
 import com.finnvek.knittools.ui.navigation.Screen
@@ -14,11 +15,13 @@ import com.finnvek.knittools.ui.navigation.WebPatternEditorOrigin
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
@@ -118,6 +121,179 @@ class WebPatternEditorViewModelTest {
             assertNull(model.uiState.value.pendingIncomingShare)
             coVerify(exactly = 0) { patterns.createWebPattern(any()) }
             coVerify(exactly = 0) { patterns.updateWebPattern(any(), any(), any()) }
+        }
+
+    @Test
+    fun `later shares wait for the unresolved incoming choice and retain coordinator order`() =
+        runTest {
+            for (useIncoming in listOf(false, true)) {
+                val handle = routeHandle(WebPatternEditorOrigin.Manual)
+                val editor = model(handle)
+                editor.updateTitle("Current draft")
+                editor.updateUrl("https://example.com/current")
+                val coordinator = PatternShareCoordinatorViewModel(SavedStateHandle())
+                coordinator.offer(PatternSharePayload.WebLink("https://example.com/first", "First"))
+                val first = requireNotNull(coordinator.pending.value)
+                assertEquals(WebPatternShareAcceptResult.Stored, editor.offerSharedRequest(first))
+                coordinator.acknowledge(first.requestId)
+                coordinator.offer(PatternSharePayload.WebLink("https://example.com/second", "Second"))
+                val second = requireNotNull(coordinator.pending.value)
+                coordinator.offer(PatternSharePayload.WebLink("https://example.com/third", "Third"))
+
+                assertEquals(WebPatternShareAcceptResult.Ignored, editor.offerSharedRequest(second))
+                assertEquals(
+                    first.requestId,
+                    editor.uiState.value.pendingIncomingShare
+                        ?.requestId,
+                )
+                assertEquals("Current draft", editor.uiState.value.title)
+                val restored = model(handle.restoredCopy())
+                assertEquals(WebPatternShareAcceptResult.Ignored, restored.offerSharedRequest(second))
+                restored.resolveIncomingShare(useIncoming)
+                assertEquals(WebPatternShareAcceptResult.Stored, restored.offerSharedRequest(second))
+                assertEquals(
+                    second.requestId,
+                    restored.uiState.value.pendingIncomingShare
+                        ?.requestId,
+                )
+                coordinator.acknowledge(second.requestId)
+
+                assertEquals(
+                    "https://example.com/third",
+                    coordinator.pending.value
+                        ?.payload
+                        ?.url,
+                )
+                assertEquals(if (useIncoming) "First" else "Current draft", restored.uiState.value.title)
+            }
+        }
+
+    @Test
+    fun `incoming share waits for the edit load before changing its draft`() =
+        runTest {
+            val loading = CompletableDeferred<SavedPattern?>()
+            coEvery { patterns.getById(9L) } coAnswers { loading.await() }
+            val editor = model(routeHandle(WebPatternEditorOrigin.Edit, patternId = 9L))
+            runCurrent()
+            val coordinator = PatternShareCoordinatorViewModel(SavedStateHandle())
+            coordinator.offer(PatternSharePayload.WebLink("https://example.com/next", "Next draft"))
+            val request = requireNotNull(coordinator.pending.value)
+
+            val accepted = editor.offerSharedRequest(request)
+            if (accepted == WebPatternShareAcceptResult.Stored) coordinator.acknowledge(request.requestId)
+
+            assertEquals(request.requestId, coordinator.pending.value?.requestId)
+            assertNull(editor.uiState.value.pendingIncomingShare)
+            loading.complete(webPattern(9L))
+            runCurrent()
+            assertEquals("Pattern", editor.uiState.value.title)
+            assertEquals(WebPatternShareAcceptResult.Stored, editor.offerSharedRequest(request))
+            editor.resolveIncomingShare(useIncoming = true)
+            assertEquals("Next draft", editor.uiState.value.title)
+            assertEquals("https://example.com/next", editor.uiState.value.url)
+        }
+
+    @Test
+    fun `unresolved shared choice prevents saving the previous draft`() =
+        runTest {
+            coEvery { patterns.createWebPattern(any()) } returns WebPatternMutationResult.Created(9L)
+            val editor = model(routeHandle(WebPatternEditorOrigin.Manual))
+            editor.updateTitle("Current draft")
+            editor.updateUrl("https://example.com/current")
+            val request = PatternShareImportRequest(1L, PatternSharePayload.WebLink("https://example.com/next", "Next"))
+            assertEquals(WebPatternShareAcceptResult.Stored, editor.offerSharedRequest(request))
+
+            editor.save()
+            runCurrent()
+
+            assertFalse(editor.uiState.value.didPersist)
+            assertNull(editor.uiState.value.completion)
+            assertEquals(
+                request.requestId,
+                editor.uiState.value.pendingIncomingShare
+                    ?.requestId,
+            )
+            coVerify(exactly = 0) { patterns.createWebPattern(any()) }
+        }
+
+    @Test
+    fun `incoming share remains queued until an in flight save resolves`() =
+        runTest {
+            for (result in listOf(WebPatternMutationResult.Created(9L), WebPatternMutationResult.PersistenceFailure)) {
+                val saving = CompletableDeferred<WebPatternMutationResult>()
+                coEvery { patterns.createWebPattern(any()) } coAnswers { saving.await() }
+                val editor = model(routeHandle(WebPatternEditorOrigin.Manual))
+                editor.updateTitle("Current draft")
+                editor.updateUrl("https://example.com/current")
+                editor.save()
+                runCurrent()
+                val coordinator = PatternShareCoordinatorViewModel(SavedStateHandle())
+                coordinator.offer(PatternSharePayload.WebLink("https://example.com/next", "Next draft"))
+                val request = requireNotNull(coordinator.pending.value)
+
+                val accepted = editor.offerSharedRequest(request)
+                if (accepted == WebPatternShareAcceptResult.Stored) coordinator.acknowledge(request.requestId)
+
+                assertEquals(request.requestId, coordinator.pending.value?.requestId)
+                assertEquals(WebPatternShareAcceptResult.Ignored, accepted)
+                assertNull(editor.uiState.value.pendingIncomingShare)
+                assertEquals("Current draft", editor.uiState.value.title)
+                saving.complete(result)
+                runCurrent()
+                if (result is WebPatternMutationResult.Created) {
+                    assertEquals(WebPatternShareAcceptResult.Ignored, editor.offerSharedRequest(request))
+                    assertEquals(
+                        9L,
+                        (editor.uiState.value.completion as WebPatternEditorCompletion.OpenDetail).patternId,
+                    )
+                    val nextEditor = model(routeHandle(WebPatternEditorOrigin.Share))
+                    assertEquals(WebPatternShareAcceptResult.Stored, nextEditor.offerSharedRequest(request))
+                    assertEquals("Next draft", nextEditor.uiState.value.title)
+                } else {
+                    assertEquals(WebPatternEditorError.SaveFailed, editor.uiState.value.error)
+                    assertEquals(WebPatternShareAcceptResult.Stored, editor.offerSharedRequest(request))
+                    assertEquals(
+                        request.requestId,
+                        editor.uiState.value.pendingIncomingShare
+                            ?.requestId,
+                    )
+                    assertEquals("Current draft", editor.uiState.value.title)
+                }
+                coordinator.acknowledge(request.requestId)
+                assertNull(coordinator.pending.value)
+            }
+        }
+
+    @Test
+    fun `replacement dismissal cannot complete an in flight attachment`() =
+        runTest {
+            coEvery { patterns.createWebPattern(any()) } returns WebPatternMutationResult.Created(15L)
+            coEvery { projects.attachSavedPatternMetadata(42L, 15L, null) } returns
+                SavedPatternMetadataMutationResult.ReplacementRequired(88L)
+            val attachment = CompletableDeferred<SavedPatternMetadataMutationResult>()
+            coEvery { projects.attachSavedPatternMetadata(42L, 15L, 88L) } coAnswers { attachment.await() }
+            val editor = model(routeHandle(WebPatternEditorOrigin.Project, projectId = 42L))
+            editor.updateTitle("Replacement")
+            editor.updateUrl("https://example.com/replacement")
+            editor.save()
+            runCurrent()
+            val pending = editor.uiState.value.pendingReplacement
+            assertNotNull(pending)
+            editor.confirmReplacement()
+            runCurrent()
+
+            editor.dismissReplacement()
+
+            assertTrue(editor.uiState.value.isSaving)
+            assertEquals(pending, editor.uiState.value.pendingReplacement)
+            assertNull(editor.uiState.value.completion)
+            attachment.complete(SavedPatternMetadataMutationResult.PersistenceFailure)
+            runCurrent()
+            assertFalse(editor.uiState.value.isSaving)
+            assertEquals(WebPatternEditorError.SaveFailed, editor.uiState.value.error)
+            assertNull(editor.uiState.value.completion)
+            editor.dismissReplacement()
+            assertEquals(42L, (editor.uiState.value.completion as WebPatternEditorCompletion.OpenProject).projectId)
         }
 
     @Test

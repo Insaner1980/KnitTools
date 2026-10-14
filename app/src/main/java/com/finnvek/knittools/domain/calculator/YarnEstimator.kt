@@ -14,6 +14,7 @@ object YarnEstimator {
         if (!weightPerSkein.isFinite() || weightPerSkein <= 0.0) return null
 
         val exactSkeins = totalYarnNeeded / yarnPerSkein
+        if (exactSkeins <= 0.0) return null
         val roundedSkeins = ceil(exactSkeins)
         if (!roundedSkeins.isFinite() || roundedSkeins > Int.MAX_VALUE.toDouble()) return null
         val skeinsNeeded = roundedSkeins.toInt()

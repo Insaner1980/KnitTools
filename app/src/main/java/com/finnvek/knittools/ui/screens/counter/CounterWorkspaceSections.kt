@@ -610,7 +610,7 @@ private fun CounterButtons(
 ) {
     val display = CounterValueFormatter.forMainCounter(state.toMainCounterProject())
 
-    Box(
+    BoxWithConstraints(
         modifier =
             Modifier
                 .fillMaxWidth()
@@ -625,6 +625,7 @@ private fun CounterButtons(
             onClick = onDecrement,
             modifier =
                 Modifier
+                    .widthIn(max = maxWidth / 2)
                     .size(CounterDimens.CounterMinusTouchSize)
                     .align(Alignment.TopStart),
         )
@@ -635,6 +636,7 @@ private fun CounterButtons(
             onClick = onIncrement,
             modifier =
                 Modifier
+                    .widthIn(max = maxWidth / 2)
                     .size(CounterDimens.CounterPrimaryTouchSize)
                     .align(Alignment.TopEnd),
         )

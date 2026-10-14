@@ -245,7 +245,7 @@
 
     <!-- Session History -->
     <string name="session_history_title">Historial de sesiones</string>
-    <string name="no_sessions">Aún no hay sesiones registradas. Empieza a tejer para ver tu historial aquí.</string>
+    <string name="no_sessions">Aún no hay sesiones registradas. Abre un proyecto e inicia una sesión de trabajo para registrar tu tiempo aquí.</string>
     <string name="session_row_range">Vueltas %1$d \u2192 %2$d</string>
     <string name="session_row_single">Vuelta %1$d</string>
     <string name="delete_session_title">¿Eliminar sesión?</string>
@@ -273,7 +273,7 @@
     <string name="counter_add_row">Añadir vuelta</string>
     <string name="counter_decrease_row">Quitar vuelta</string>
     <string name="counter_undo_last_change">Deshacer el último cambio</string>
-    <string name="counter_target_remaining_format">Quedan %1$s</string>
+    <string name="counter_target_remaining_format">Por completar: %1$s</string>
     <string name="counter_target_of_format">de %1$d</string>
     <string name="counter_target_reached">Objetivo alcanzado</string>
     <string name="counter_target_past_format">%1$s por encima del objetivo</string>
@@ -532,13 +532,13 @@
         <item quantity="other">Activo %1$d de %2$d días</item>
     </plurals>
     <string name="insights_chart_axis_today">hoy</string>
-    <string name="insights_chart_a11y_daily">Tiempo diario de %1$s, %2$s, %3$s, más largo %4$s</string>
-    <string name="insights_chart_a11y_monthly">Tiempo mensual de %1$s, %2$s, %3$s, más largo %4$s</string>
+    <string name="insights_chart_a11y_daily">Tiempo diario dedicado %1$s, %2$s, %3$s, más largo %4$s</string>
+    <string name="insights_chart_a11y_monthly">Tiempo mensual dedicado %1$s, %2$s, %3$s, más largo %4$s</string>
     <string name="insights_chart_a11y_next">Barra siguiente</string>
     <string name="insights_chart_a11y_previous">Barra anterior</string>
     <string name="insights_project_sub_format">%1$s, %2$s</string>
     <string name="insights_empty_title">Aún no hay tiempo en las agujas.</string>
-    <string name="insights_empty_body">Abre un proyecto y empieza a contar. Tu tiempo aparecerá aquí.</string>
+    <string name="insights_empty_body">Abre un proyecto e inicia una sesión de trabajo para registrar tu tiempo aquí.</string>
     <string name="insights_nothing_yet_week">Nada aún esta semana.</string>
     <string name="insights_nothing_yet_month">Nada aún este mes.</string>
     <string name="insights_nothing_yet_all_time">Nada aún.</string>
@@ -693,7 +693,7 @@
     <string name="tip_edge_stitches_title">Puntos de borde</string>
     <string name="tip_edge_stitches_desc">Los puntos de borde son puntos extra fuera de la repetición del patrón. Introduce el total de puntos de borde que vas a montar; la calculadora los añade después de calcular el ancho deseado, por ejemplo 2 para un punto en cada lado.</string>
     <string name="tip_flat_vs_circular_title">Plano frente a circular</string>
-    <string name="tip_flat_vs_circular_desc">Tejido plano: trabajas de ida y vuelta con agujas rectas o circulares, girando al final de cada vuelta. Los aumentos y disminuciones ocurren en ambos bordes.\n\nTejido circular: trabajas en una vuelta continua. Los aumentos y disminuciones se reparten uniformemente alrededor de la vuelta.</string>
+    <string name="tip_flat_vs_circular_desc">Tejido plano: trabajas de ida y vuelta con agujas rectas o circulares, girando al final de cada vuelta.\n\nTejido circular: trabajas en una vuelta continua. Los aumentos y disminuciones se reparten uniformemente alrededor de la vuelta.</string>
     <string name="tip_needle_sizes_title">Sistemas de tallas de agujas</string>
     <string name="tip_needle_sizes_desc">El sistema métrico (mm) es el estándar universal. Las tallas US usan un sistema numerado (0–50). Las tallas UK/Canadá usan un sistema numerado diferente. Las tallas japonesas tienen su propia numeración. Comprueba siempre la medida en mm para asegurarte.</string>
     <string name="tip_imperial_units_title">Unidades imperiales</string>
@@ -709,7 +709,6 @@
     <string name="target_rows_set">Establecer objetivo…</string>
     <string name="target_rows_edit">Editar objetivo</string>
     <string name="target_rows_remove">Quitar objetivo</string>
-    <string name="target_rows_hint">Valor objetivo</string>
     <string name="row_label_with_target">%1$d / %2$d</string>
     <string name="widget_undo_action">Deshacer</string>
     <string name="widget_undo_content_description">Deshacer el último cambio</string>
@@ -745,7 +744,7 @@
     <string name="pro_prompt_photos_title">Añade fotos de progreso con Pro</string><string name="pro_prompt_photos_body">Crear una foto de progreso nueva requiere Pro. Tus fotos actuales seguirán disponibles.</string>
     <string name="pro_prompt_notes_title">Añade notas de proyecto con Pro</string><string name="pro_prompt_notes_body">Crear la primera nota de este proyecto requiere Pro. Las notas que ya hayas creado seguirán siendo editables.</string>
     <string name="pro_prompt_yarn_title">Añade hilo con Pro</string><string name="pro_prompt_yarn_body">Crear una ficha de hilo nueva requiere Pro. Tus fichas actuales seguirán disponibles y se podrán editar.</string>
-    <string name="pro_prompt_save_yarn_title">Guarda este hilo con Pro</string><string name="pro_prompt_save_yarn_body">Guardar este hilo del proyecto en Mis hilos crea una ficha nueva y requiere Pro. La nota de hilo del proyecto seguirá disponible.</string>
+    <string name="pro_prompt_save_yarn_title">Guarda este hilo con Pro</string><string name="pro_prompt_save_yarn_body">Guardar este hilo del proyecto en Mi hilo crea una ficha nueva y requiere Pro. La nota de hilo del proyecto seguirá disponible.</string>
     <string name="pro_prompt_counters_title">Añade un contador con Pro</string><string name="pro_prompt_counters_body">Crear un contador adicional nuevo requiere Pro. Tus contadores actuales seguirán disponibles y se podrán editar.</string>
     <string name="pro_prompt_reminders_title">Añade un recordatorio de fila con Pro</string><string name="pro_prompt_reminders_body">Crear un recordatorio de fila nuevo requiere Pro. Tus recordatorios actuales seguirán funcionando y se podrán editar.</string>
     <string name="pro_prompt_pattern_camera_title">Convierte fotos del patrón en PDF con Pro</string><string name="pro_prompt_pattern_camera_body">Crear un PDF nuevo a partir de fotos del patrón requiere Pro. Tus patrones y PDF actuales seguirán disponibles.</string>
@@ -765,7 +764,7 @@
     <string name="work_session_recovery_needed">Hay que revisar el tiempo de la sesión</string>
     <string name="work_session_resolve">Resolver</string>
     <string name="work_session_recovery_title">Revisar tiempo de sesión</string>
-    <string name="work_session_pending_rows_format">Progreso pendiente: %1$d vueltas</string>
+    <string name="work_session_pending_rows_format">Progreso pendiente en vueltas: %1$d</string>
     <string name="work_session_hours">Horas</string>
     <string name="work_session_minutes">Minutos</string>
     <string name="work_session_add_and_continue">Añadir y continuar</string>
@@ -798,7 +797,7 @@
     <string name="work_session_stop_summary_title">¿Detener la sesión de trabajo?</string>
     <string name="work_session_save">Guardar sesión</string>
     <string name="work_session_discard">Descartar sesión</string>
-    <string name="work_session_active_description">Sesión de trabajo de %1$s, %2$s transcurrido</string>
+    <string name="work_session_active_description">Sesión de trabajo de %1$s, tiempo transcurrido: %2$s</string>
     <string name="work_session_could_not_start">No se pudo iniciar la sesión</string>
     <string name="work_session_could_not_save">No se pudo guardar la sesión</string>
     <string name="work_session_history_full">El historial de sesiones está lleno. Tus sesiones anteriores se conservan.</string>
@@ -970,7 +969,7 @@
         <item quantity="other">%1$d vueltas</item>
     </plurals>
     <string name="yarn_usage_title">Uso de hilo</string>
-    <string name="yarn_usage_scope">Registra solo el hilo reservado para este proyecto. Las cantidades en Mis hilos no cambian.</string>
+    <string name="yarn_usage_scope">Registra solo el hilo reservado para este proyecto. Las cantidades en Mi hilo no cambian.</string>
     <string name="yarn_usage_unit">Unidad de cantidad</string>
     <string name="yarn_usage_grams">Gramos</string>
     <string name="yarn_usage_skeins">Madejas</string>

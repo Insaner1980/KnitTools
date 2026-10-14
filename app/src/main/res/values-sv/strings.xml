@@ -239,7 +239,7 @@
 
     <!-- Session History -->
     <string name="session_history_title">Arbetspasshistorik</string>
-    <string name="no_sessions">Inga sessioner registrerade ännu. Börja sticka för att se din historik här.</string>
+    <string name="no_sessions">Inga sessioner registrerade ännu. Öppna ett projekt och starta en arbetssession för att registrera din tid här.</string>
     <string name="session_row_range">Varv %1$d \u2192 %2$d</string>
     <string name="session_row_single">Varv %1$d</string>
     <string name="delete_session_title">Ta bort pass?</string>
@@ -524,7 +524,7 @@
     <string name="insights_chart_a11y_previous">Föregående stapel</string>
     <string name="insights_project_sub_format">%1$s, %2$s</string>
     <string name="insights_empty_title">Ingen tid på stickorna än.</string>
-    <string name="insights_empty_body">Öppna ett projekt och börja räkna. Din tid dyker upp här.</string>
+    <string name="insights_empty_body">Öppna ett projekt och starta en arbetssession för att registrera din tid här.</string>
     <string name="insights_nothing_yet_week">Inget än den här veckan.</string>
     <string name="insights_nothing_yet_month">Inget än den här månaden.</string>
     <string name="insights_nothing_yet_all_time">Inget än.</string>
@@ -675,7 +675,7 @@
     <string name="tip_edge_stitches_title">Kantmaskor</string>
     <string name="tip_edge_stitches_desc">Kantmaskor är extra maskor utanför mönsterrapporten. Ange det totala antalet kantmaskor som ska läggas upp; räknaren lägger till dem efter att önskad bredd har beräknats, till exempel 2 för en maska i varje sida.</string>
     <string name="tip_flat_vs_circular_title">Platt vs. runt</string>
-    <string name="tip_flat_vs_circular_desc">Platt stickning: du stickar fram och tillbaka på raka eller runda stickor och vänder i slutet av varje varv. Ökningar/minskningar sker i båda kanterna.\n\nRundstickning: du stickar i ett kontinuerligt varv. Ökningar/minskningar fördelas jämnt runt varvet.</string>
+    <string name="tip_flat_vs_circular_desc">Platt stickning: du stickar fram och tillbaka på raka eller runda stickor och vänder i slutet av varje varv.\n\nRundstickning: du stickar i ett kontinuerligt varv. Ökningar/minskningar fördelas jämnt runt varvet.</string>
     <string name="tip_needle_sizes_title">System för stickstorlekar</string>
     <string name="tip_needle_sizes_desc">Metrisk storlek (mm) är den universella standarden. US-storlekar använder ett numrerat system (0–50). UK/Kanada använder ett annat numrerat system. Japanska storlekar har en egen numrering. Kontrollera alltid mm-storleken för säkerhets skull.</string>
     <string name="tip_imperial_units_title">Brittiska/amerikanska mått</string>
@@ -687,11 +687,10 @@
     <string name="widget_rows_remaining_format">%d varv kvar</string>
     <string name="widget_target_reached">Mål uppnått</string>
     <string name="widget_stitches_format">Maskor: %1$d / %2$d</string>
-    <string name="target_rows_dialog_title">Ange målvarv</string>
+    <string name="target_rows_dialog_title">Ange mål</string>
     <string name="target_rows_set">Ange mål…</string>
     <string name="target_rows_edit">Redigera mål</string>
     <string name="target_rows_remove">Ta bort mål</string>
-    <string name="target_rows_hint">Antal varv</string>
     <string name="row_label_with_target">Varv %1$d / %2$d</string>
     <string name="widget_undo_action">Ångra</string>
     <string name="widget_undo_content_description">Ångra senaste ändringen</string>

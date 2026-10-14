@@ -12,8 +12,8 @@ class ContentPaddingTest {
         val original = PaddingValues(start = 3.dp, top = 5.dp, end = 7.dp, bottom = 11.dp)
         LayoutDirection.entries.forEach { direction ->
             val result = original.withExtraBottom(13.dp, direction)
-            assertEquals(original.calculateLeftPadding(direction), result.calculateLeftPadding(LayoutDirection.Ltr))
-            assertEquals(original.calculateRightPadding(direction), result.calculateRightPadding(LayoutDirection.Ltr))
+            assertEquals(original.calculateLeftPadding(direction), result.calculateLeftPadding(direction))
+            assertEquals(original.calculateRightPadding(direction), result.calculateRightPadding(direction))
             assertEquals(5.dp, result.calculateTopPadding())
             assertEquals(24.dp, result.calculateBottomPadding())
         }

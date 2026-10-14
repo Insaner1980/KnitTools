@@ -207,7 +207,7 @@ internal fun previousPeriodMinutes(
         dailySeconds
             .entries
             .filter { (date, _) -> date >= previousStart && date < previousEndExclusive }
-            .sumOf { (_, seconds) -> seconds }
+            .fold(0L) { total, (_, seconds) -> addSessionSeconds(total, seconds) }
     return secondsToDisplayMinutes(windowSeconds)
 }
 

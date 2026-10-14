@@ -19,7 +19,8 @@ class UiStateRetentionSourceTest {
 
         assertTrue(screen.contains("var previousOverlayProjectId by rememberSaveable"))
         assertTrue(screen.contains("hideProjectScopedOverlays()"))
-        assertTrue(screen.contains("LaunchedEffect(state.projectId)"))
+        assertTrue(screen.contains("LaunchedEffect(state.projectId, state.isRestoringProject)"))
+        assertTrue(screen.contains("if (state.isRestoringProject) return@LaunchedEffect"))
     }
 
     @Test

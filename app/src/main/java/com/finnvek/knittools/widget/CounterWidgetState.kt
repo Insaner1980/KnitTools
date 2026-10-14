@@ -18,6 +18,7 @@ import com.finnvek.knittools.R
 import com.finnvek.knittools.data.datastore.safePreferencesData
 import com.finnvek.knittools.data.datastore.updatePreferencesSafely
 import com.finnvek.knittools.domain.model.CounterProject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.first
 
 private val Context.widgetDataStore by preferencesDataStore(
@@ -112,6 +113,7 @@ object CounterWidgetState {
         updatePlacedWidgets(context) {}
     }
 
+    @Suppress("TooGenericExceptionCaught")
     private suspend fun updatePlacedWidgets(
         context: Context,
         beforeUpdate: suspend (GlanceId) -> Unit,
@@ -119,8 +121,14 @@ object CounterWidgetState {
         val widget = CounterWidget()
         val manager = GlanceAppWidgetManager(context)
         manager.getGlanceIds(CounterWidget::class.java).forEach { glanceId ->
-            beforeUpdate(glanceId)
-            widget.update(context, glanceId)
+            try {
+                beforeUpdate(glanceId)
+                widget.update(context, glanceId)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                // A removed or unavailable instance must not prevent the remaining widgets from refreshing.
+            }
         }
     }
 

@@ -30,7 +30,8 @@ class ProgressPhotoGallerySourceTest {
         assertTrue(source.contains("pendingPhotoFilePath"))
         assertTrue(source.contains("actions.deletePendingPhotoFile"))
         assertTrue(source.contains("private fun handlePhotoCaptureResult("))
-        assertTrue(source.contains("} else {\n        actions.deletePendingPhotoFile(pendingPhotoFilePath)"))
+        assertTrue(source.contains("actions.savePhoto(it, pendingPhotoProjectId)"))
+        assertTrue(source.contains("if (!admitted) {\n        actions.deletePendingPhotoFile(pendingPhotoFilePath)"))
     }
 
     @Test

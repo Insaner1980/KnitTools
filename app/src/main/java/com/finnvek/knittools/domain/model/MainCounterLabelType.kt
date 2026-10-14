@@ -21,6 +21,7 @@ fun sanitizeMainCounterCustomLabel(label: String?): String? =
     label
         ?.trim()
         ?.take(MAIN_COUNTER_CUSTOM_LABEL_MAX_LENGTH)
+        ?.let { value -> if (value.lastOrNull()?.isHighSurrogate() == true) value.dropLast(1) else value }
         ?.takeIf { it.isNotEmpty() }
 
 fun resolvedMainCounterLabelType(

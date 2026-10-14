@@ -12,8 +12,10 @@ import com.finnvek.knittools.data.local.ProjectDocumentDao
 import com.finnvek.knittools.data.local.SavedPatternDao
 import com.finnvek.knittools.data.local.SavedPatternEntity
 import com.finnvek.knittools.data.local.SessionDao
+import com.finnvek.knittools.data.local.toDomain
 import com.finnvek.knittools.data.storage.PatternDocumentStorage
 import com.finnvek.knittools.data.storage.ProgressPhotoStorage
+import com.finnvek.knittools.domain.model.ActiveWorkSession
 import com.finnvek.knittools.domain.model.ProgressPhoto
 import com.finnvek.knittools.domain.model.SavedPatternSource
 import io.mockk.coEvery
@@ -76,7 +78,12 @@ class DeletionCleanupOrderingTest {
                     databaseFailure = IOException("database failed"),
                 )
 
-            val result = fixture.repository.deleteProjectResolvingActiveSession(PROJECT_ID, discardActiveSession = true)
+            val result =
+                fixture.repository.deleteProjectResolvingActiveSession(
+                    PROJECT_ID,
+                    discardActiveSession = true,
+                    expectedSession = fixture.session,
+                )
 
             assertEquals(ProjectDeletionResult.PersistenceFailure, result)
             fixture.assertNoPhysicalCleanup()
@@ -87,7 +94,12 @@ class DeletionCleanupOrderingTest {
         runTest {
             val fixture = projectFixture(activeSession = activeSession())
 
-            val result = fixture.repository.deleteProjectResolvingActiveSession(PROJECT_ID, discardActiveSession = true)
+            val result =
+                fixture.repository.deleteProjectResolvingActiveSession(
+                    PROJECT_ID,
+                    discardActiveSession = true,
+                    expectedSession = fixture.session,
+                )
 
             assertEquals(ProjectDeletionResult.Deleted, result)
             fixture.assertDatabaseDeletePrecedesCleanup()
@@ -228,7 +240,12 @@ class DeletionCleanupOrderingTest {
     private suspend fun assertCleanupFailureIsBestEffort(failure: ProjectCleanupFailure) {
         val fixture = projectFixture(activeSession = activeSession(), cleanupFailure = failure)
 
-        val result = fixture.repository.deleteProjectResolvingActiveSession(PROJECT_ID, discardActiveSession = true)
+        val result =
+            fixture.repository.deleteProjectResolvingActiveSession(
+                PROJECT_ID,
+                discardActiveSession = true,
+                expectedSession = fixture.session,
+            )
 
         assertEquals(ProjectDeletionResult.Deleted, result)
         coVerify(exactly = 1) { fixture.projectDao.delete(PROJECT_ID) }
@@ -336,6 +353,7 @@ class DeletionCleanupOrderingTest {
             )
         return ProjectDeletionFixture(
             repository = repository,
+            session = activeSession?.toDomain(),
             projectDao = projectDao,
             photoStorage = photoStorage,
             captureStorage = captureStorage,
@@ -390,6 +408,7 @@ class DeletionCleanupOrderingTest {
 
     private data class ProjectDeletionFixture(
         val repository: CounterRepository,
+        val session: ActiveWorkSession?,
         val projectDao: CounterProjectDao,
         val photoStorage: ProgressPhotoStorage,
         val captureStorage: PatternDocumentStorage,

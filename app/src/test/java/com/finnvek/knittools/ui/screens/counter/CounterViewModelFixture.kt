@@ -7,6 +7,7 @@ import androidx.lifecycle.SavedStateHandle
 import com.finnvek.knittools.data.datastore.PreferencesManager
 import com.finnvek.knittools.data.local.ProjectDocumentDao
 import com.finnvek.knittools.data.local.ProjectDocumentEntity
+import com.finnvek.knittools.data.storage.PatternDocumentStorage
 import com.finnvek.knittools.domain.calculator.RowMarker
 import com.finnvek.knittools.domain.calculator.serializeMapping
 import com.finnvek.knittools.domain.model.CounterProject
@@ -37,8 +38,10 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
 import org.junit.After
@@ -48,6 +51,7 @@ import org.junit.Before
 abstract class CounterViewModelFixture {
     protected val dispatcher = StandardTestDispatcher()
     protected val repository = mockk<CounterRepository>(relaxed = true)
+    protected val photoRepository = mockk<ProgressPhotoRepository>()
     protected val layers = MutableStateFlow(listOf(layer(41L, active = true), layer(42L, active = false)))
     protected val observedProject = MutableStateFlow(CounterProject(id = 7L, name = "Project"))
 
@@ -76,6 +80,13 @@ abstract class CounterViewModelFixture {
         countersOverride: ProjectCounterRepository? = null,
         proManagerOverride: ProManager? = null,
         savedStateHandle: SavedStateHandle = SavedStateHandle(),
+        documentRepositoryOverride: ProjectDocumentRepository? = null,
+        yarnRepositoryOverride: YarnCardRepository? = null,
+        reminderRepositoryOverride: ReminderRepository? = null,
+        yarnNoteRepositoryOverride: ProjectYarnNoteRepository? = null,
+        savedPatternsOverride: SavedPatternRepository? = null,
+        patternStorageOverride: PatternDocumentStorage? = null,
+        contextOverride: Context? = null,
     ): CounterViewModel {
         val preferences = mockk<PreferencesManager>()
         every { preferences.preferences } returns emptyFlow()
@@ -84,20 +95,21 @@ abstract class CounterViewModelFixture {
             every { proManager.proState } returns MutableStateFlow(ProState())
             every { proManager.hasFeature(any()) } returns false
         }
-        val yarnRepository = mockk<YarnCardRepository>()
+        val yarnRepository = yarnRepositoryOverride ?: mockk<YarnCardRepository>()
         every { yarnRepository.getAllCards() } returns emptyFlow()
-        val savedPatterns = mockk<SavedPatternRepository>()
+        val savedPatterns = savedPatternsOverride ?: mockk<SavedPatternRepository>()
         every { savedPatterns.getAll() } returns savedPatternRows
-        val reminders = mockk<ReminderRepository>()
-        every { reminders.getRemindersForProject(any()) } returns flowOf(emptyList())
+        val reminders = reminderRepositoryOverride ?: mockk<ReminderRepository>()
+        if (reminderRepositoryOverride == null) {
+            every { reminders.getRemindersForProject(any()) } returns flowOf(emptyList())
+        }
         val counters = countersOverride ?: mockk<ProjectCounterRepository>()
         if (countersOverride == null) {
             every { counters.getCountersForProject(any()) } returns flowOf(emptyList())
         }
-        val photos = mockk<ProgressPhotoRepository>()
-        every { photos.getLatestPhotos(any()) } returns flowOf(emptyList())
-        every { photos.getPhotosForProject(any()) } returns flowOf(emptyList())
-        val yarnNotes = mockk<ProjectYarnNoteRepository>()
+        every { photoRepository.getLatestPhotos(any()) } returns flowOf(emptyList())
+        every { photoRepository.getPhotosForProject(any()) } returns flowOf(emptyList())
+        val yarnNotes = yarnNoteRepositoryOverride ?: mockk<ProjectYarnNoteRepository>()
         every { yarnNotes.observeForProject(any()) } returns flowOf(emptyList())
         val documentDao = mockk<ProjectDocumentDao>()
         every { documentDao.observeForProject(any()) } returns flowOf(listOf(document(41L), document(42L)))
@@ -111,20 +123,28 @@ abstract class CounterViewModelFixture {
             repository = repository,
             reminderRepository = reminders,
             projectCounterRepository = counters,
-            photoRepository = photos,
+            photoRepository = photoRepository,
             projectYarnNoteRepository = yarnNotes,
             preferencesManager = preferences,
             proManager = proManager,
             yarnCardRepository = yarnRepository,
             savedPatternRepository = savedPatterns,
-            projectDocumentRepository = documents,
-            patternDocumentStorage = mockk(),
-            inAppReviewManager = mockk(),
+            projectDocumentRepository = documentRepositoryOverride ?: documents,
+            patternDocumentStorage = patternStorageOverride ?: mockk(),
+            inAppReviewManager = mockk(relaxed = true),
             savedStateHandle = savedStateHandle,
-            context = mockk<Context>(relaxed = true),
+            context = contextOverride ?: mockk<Context>(relaxed = true),
             ioDispatcher = dispatcher,
             applicationScope = backgroundScope,
         )
+    }
+
+    protected fun TestScope.collectErrors(flow: Flow<Unit>): List<Unit> {
+        val errors = mutableListOf<Unit>()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            flow.collect { errors.add(it) }
+        }
+        return errors
     }
 
     protected fun document(id: Long) =

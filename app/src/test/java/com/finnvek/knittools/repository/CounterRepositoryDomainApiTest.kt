@@ -82,6 +82,78 @@ class CounterRepositoryDomainApiTest {
         )
 
     @Test
+    fun `saving stitch count for requested activation enables tracking in one write`() =
+        runTest {
+            coEvery { projectDao.getProject(7L) } returns CounterProjectEntity(id = 7L, name = "Project")
+            var storedCount: Int? = null
+            var storedTracking = false
+            var writes = 0
+            coEvery { projectDao.updateStitchState(7L, any(), any(), any(), any()) } coAnswers {
+                storedCount = secondArg()
+                storedTracking = thirdArg()
+                writes += 1
+            }
+
+            assertTrue(repository.updateProjectStitchCount(7L, 100, enableTracking = true))
+
+            assertEquals(100, storedCount)
+            assertTrue(storedTracking)
+            assertEquals(1, writes)
+        }
+
+    @Test
+    fun `ordinary stitch count changes preserve tracking choice and clearing disables it`() =
+        runTest {
+            var storedProject =
+                CounterProjectEntity(
+                    id = 7L,
+                    name = "Project",
+                    stitchCount = 12,
+                    currentStitch = 8,
+                    stitchTrackingEnabled = true,
+                )
+            coEvery { projectDao.getProject(7L) } coAnswers { storedProject }
+            coEvery { projectDao.updateStitchState(7L, any(), any(), any(), any()) } coAnswers {
+                storedProject =
+                    storedProject.copy(
+                        stitchCount = secondArg(),
+                        stitchTrackingEnabled = thirdArg(),
+                        currentStitch = arg(3),
+                    )
+            }
+
+            assertTrue(repository.updateProjectStitchCount(7L, 3))
+            assertEquals(3, storedProject.currentStitch)
+            assertTrue(storedProject.stitchTrackingEnabled)
+            assertTrue(repository.updateStitchTrackingEnabled(7L, false))
+            assertEquals(3, storedProject.stitchCount)
+            assertEquals(0, storedProject.currentStitch)
+            assertTrue(repository.updateProjectStitchCount(7L, 100))
+            assertEquals(100, storedProject.stitchCount)
+            assertFalse(storedProject.stitchTrackingEnabled)
+            assertTrue(repository.updateStitchTrackingEnabled(7L, true))
+            assertTrue(repository.updateProjectStitchCount(7L, null))
+            assertEquals(null, storedProject.stitchCount)
+            assertFalse(storedProject.stitchTrackingEnabled)
+            assertEquals(0, storedProject.currentStitch)
+        }
+
+    @Test
+    fun `requested stitch activation rejects invalid totals and missing or completed projects`() =
+        runTest {
+            coEvery { projectDao.getProject(7L) } returns
+                CounterProjectEntity(id = 7L, name = "Done", isCompleted = true)
+            coEvery { projectDao.getProject(8L) } returns null
+
+            assertFalse(repository.updateProjectStitchCount(7L, 0, enableTracking = true))
+            assertFalse(repository.updateProjectStitchCount(7L, -1, enableTracking = true))
+            assertFalse(repository.updateProjectStitchCount(7L, 100, enableTracking = true))
+            assertFalse(repository.updateProjectStitchCount(8L, 100, enableTracking = true))
+
+            coVerify(exactly = 0) { projectDao.updateStitchState(any(), any(), any(), any(), any()) }
+        }
+
+    @Test
     fun `counter repository exposes project domain models`() =
         runTest {
             every { projectDao.getAllProjects() } returns
@@ -380,6 +452,7 @@ class CounterRepositoryDomainApiTest {
     fun `updateProjectName tekee nimestä uniikin muita projekteja vasten`() =
         runTest {
             val runner = ProjectCreationTransactionRunner()
+            coEvery { projectDao.getProject(7L) } returns CounterProjectEntity(id = 7L, name = "Pipo")
             coEvery { projectDao.getAllProjectsOnce() } returns
                 listOf(
                     CounterProjectEntity(id = 1L, name = "Sukat"),
@@ -391,6 +464,31 @@ class CounterRepositoryDomainApiTest {
             assertEquals("Sukat (2)", savedName)
             assertEquals(1, runner.runCount)
             coVerify { projectDao.updateName(7L, "Sukat (2)", any()) }
+        }
+
+    @Test
+    fun `rename rejects a missing project without claiming a saved name`() =
+        runTest {
+            coEvery { projectDao.getProject(7L) } returns null
+
+            assertEquals(null, repository.updateProjectName(7L, "New name"))
+            coVerify(exactly = 0) { projectDao.updateName(any(), any(), any()) }
+        }
+
+    @Test
+    fun `secondary mutation rejects completed missing and negative input without writing`() =
+        runTest {
+            coEvery { projectDao.getProject(7L) } returns
+                CounterProjectEntity(id = 7L, isCompleted = true, secondaryCounterUsed = true)
+            assertFalse(repository.updateProjectSecondaryCount(7L, 2))
+            coEvery { projectDao.getProject(7L) } returns null
+            assertFalse(repository.updateProjectSecondaryCount(7L, 2))
+            coEvery { projectDao.getProject(7L) } returns CounterProjectEntity(id = 7L, secondaryCounterUsed = true)
+            assertFalse(repository.updateProjectSecondaryCount(7L, -1))
+            coVerify(exactly = 0) { projectDao.updateSecondaryCount(any(), any(), any()) }
+
+            assertTrue(repository.updateProjectSecondaryCount(7L, Int.MAX_VALUE))
+            coVerify(exactly = 1) { projectDao.updateSecondaryCount(7L, Int.MAX_VALUE, any()) }
         }
 
     @Test
@@ -822,6 +920,34 @@ class CounterRepositoryDomainApiTest {
 
             assertEquals(ProjectDocumentMutationResult.DuplicateUri, result)
             coVerify(exactly = 0) { projectDao.updatePatternInformation(any(), any(), any(), any()) }
+        }
+
+    @Test
+    fun `document mapping replacement rejects a changed base and accepts the current base`() =
+        runTest {
+            coEvery { projectDao.getProject(7L) } returns CounterProjectEntity(id = 7L, name = "Project")
+            var stored =
+                projectDocument("file:///chart.pdf", "Chart").copy(
+                    id = 42L,
+                    rowMapping = "[{\"row\":20,\"page\":4,\"yPosition\":0.8}]",
+                    readingLineFollowCurrentRow = false,
+                )
+            val currentMapping = stored.rowMapping
+            coEvery { projectDocumentRepository.getDocument(42L) } coAnswers { stored }
+            coEvery { projectDocumentRepository.updateViewerStateInTransaction(any()) } coAnswers {
+                stored = firstArg()
+                true
+            }
+
+            assertFalse(repository.updatePatternRowMappingIfUnchanged(7L, "[]", 42L, expectedMapping = null))
+            assertEquals(currentMapping, stored.rowMapping)
+            coVerify(exactly = 0) { projectDocumentRepository.updateViewerStateInTransaction(any()) }
+            assertTrue(repository.updatePatternRowMappingIfUnchanged(7L, "[]", 42L, currentMapping))
+            assertEquals("[]", stored.rowMapping)
+            assertEquals(42L, stored.id)
+            assertEquals("project:7:document", stored.documentKey)
+            assertFalse(repository.updatePatternRowMappingIfUnchanged(8L, null, 42L, "[]"))
+            assertEquals("[]", stored.rowMapping)
         }
 
     private fun projectDocument(

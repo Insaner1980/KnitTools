@@ -161,6 +161,30 @@ class PatternAnnotationPageBudgetTest {
             assertEquals(2, repository.getForLayers(listOf(master.id, layerId)).size)
         }
 
+    @Test fun generatedIdentityKeepsNewAnnotationAboveTiedMaximumRank() =
+        runBlocking {
+            val existing = shape(10L).copy(zIndex = Long.MAX_VALUE)
+            repository.insertAnnotation(existing)
+            val insertedId = repository.insertAnnotation(shape(0L).copy(zIndex = Long.MAX_VALUE))
+
+            assertTrue(insertedId > existing.id)
+            assertEquals(listOf(existing.id, insertedId), repository.observePage(layerId, 0).first().map { it.id })
+        }
+
+    @Test fun rankRebaseUndoAndRedoPreserveTheExactRows() =
+        runBlocking {
+            val before = listOf(shape(1L).copy(zIndex = Long.MIN_VALUE), shape(2L).copy(zIndex = Long.MAX_VALUE))
+            repository.restoreBatch(before)
+            val after = listOf(before[1].copy(zIndex = 0L), before[0].copy(zIndex = 1L, updatedAt = 2L))
+
+            val undo = PatternAnnotationCommand.UpdateBatch(before, after).apply(repository)
+            assertEquals(after, repository.observePage(layerId, 0).first())
+            val redo = undo.apply(repository)
+            assertEquals(before, repository.observePage(layerId, 0).first())
+            redo.apply(repository)
+            assertEquals(after, repository.observePage(layerId, 0).first())
+        }
+
     private fun shape(id: Long) =
         PatternAnnotation(
             id,

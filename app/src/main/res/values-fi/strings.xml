@@ -239,7 +239,7 @@
 
     <!-- Istuntohistoria -->
     <string name="session_history_title">Työskentelyhistoria</string>
-    <string name="no_sessions">Istuntoja ei ole vielä tallennettu. Aloita neulominen, niin näet historian täällä.</string>
+    <string name="no_sessions">Istuntoja ei ole vielä tallennettu. Avaa projekti ja aloita työskentelyistunto, jotta aikasi tallentuu tänne.</string>
     <string name="session_row_range">Kerrokset %1$d \u2192 %2$d</string>
     <string name="session_row_single">Rivi %1$d</string>
     <string name="delete_session_title">Poistetaanko istunto?</string>
@@ -446,11 +446,10 @@
     <string name="widget_description">Kerroslaskuriwidget aktiiviselle projektille</string>
     <string name="widget_pro_required">Päivitä Prohon käyttääksesi widgetiä</string>
     <string name="widget_stitches_format">Silmukat: %1$d / %2$d</string>
-    <string name="target_rows_dialog_title">Aseta tavoitekerrokset</string>
+    <string name="target_rows_dialog_title">Aseta tavoite</string>
     <string name="target_rows_set">Aseta tavoite…</string>
     <string name="target_rows_edit">Muokkaa tavoitetta</string>
     <string name="target_rows_remove">Poista tavoite</string>
-    <string name="target_rows_hint">Kerrosten määrä</string>
     <string name="row_label_with_target">Kerros %1$d / %2$d</string>
     <string name="widget_undo_action">Peru</string>
     <string name="widget_undo_content_description">Peru viimeisin muutos</string>
@@ -533,7 +532,7 @@
     <string name="insights_chart_a11y_previous">Edellinen pylväs</string>
     <string name="insights_project_sub_format">%1$s, %2$s</string>
     <string name="insights_empty_title">Puikoilla ei ole vielä aikaa.</string>
-    <string name="insights_empty_body">Avaa projekti ja aloita laskeminen. Aikasi näkyy täällä.</string>
+    <string name="insights_empty_body">Avaa projekti ja aloita työskentelyistunto, jotta aikasi tallentuu tänne.</string>
     <string name="insights_nothing_yet_week">Ei vielä mitään tällä viikolla.</string>
     <string name="insights_nothing_yet_month">Ei vielä mitään tässä kuussa.</string>
     <string name="insights_nothing_yet_all_time">Ei vielä mitään.</string>
@@ -636,14 +635,14 @@
     <string name="abbr_k_meaning">Neulo oikein</string>
     <string name="abbr_k_desc">Pistä puikko silmukan etureunasta, kierrä lanka, vedä läpi</string>
     <string name="abbr_p_meaning">Neulo nurin</string>
-    <string name="abbr_p_desc">Pistä puikko silmukan takareunasta, kierrä lanka, vedä läpi</string>
+    <string name="abbr_p_desc">Pistä puikko silmukkaan nurinneulottavasti, kierrä lanka ja vedä läpi</string>
     <string name="abbr_sts_meaning">Silmukka/silmukat</string>
     <string name="abbr_sts_desc">Yksi tai useampi silmukka puikolla</string>
     <string name="abbr_rs_meaning">Oikea puoli</string>
     <string name="abbr_rs_desc">Työn näkyvä etupuoli</string>
     <string name="abbr_ws_meaning">Nurja puoli</string>
     <string name="abbr_ws_desc">Työn kääntöpuoli</string>
-    <string name="abbr_yo_meaning">Langankierto (ylivetosilmukka)</string>
+    <string name="abbr_yo_meaning">Langankierto</string>
     <string name="abbr_yo_desc">Kierrä lanka puikon yli luodaksesi uuden silmukan ja koristereiän</string>
     <string name="abbr_kwise_meaning">Oikeinneulottavasti</string>
     <string name="abbr_kwise_desc">Pistä puikko silmukkaan kuin oikein neulottaessa</string>
@@ -653,7 +652,7 @@
     <string name="abbr_k2tog_desc">Oikealle kallistuva kavennus: neulo kaksi silmukkaa yhtenä oikein</string>
     <string name="abbr_p2tog_meaning">Neulo 2 yhteen nurin</string>
     <string name="abbr_p2tog_desc">Neulo kaksi silmukkaa yhtenä nurin</string>
-    <string name="abbr_ssk_meaning">Nosta, nosta, neulo (ylivetokavennus)</string>
+    <string name="abbr_ssk_meaning">Nosta, nosta, neulo</string>
     <string name="abbr_ssk_desc">Vasemmalle kallistuva kavennus: nosta 2 silmukkaa oikein, neulo ne yhteen takareunoista</string>
     <string name="abbr_ssp_meaning">Nosta, nosta, neulo nurin</string>
     <string name="abbr_ssp_desc">Vasemmalle kallistuva kavennus nurjan puolen kerroksella</string>
@@ -758,7 +757,7 @@
     <string name="abbr_prev_meaning">Edellinen</string>
     <string name="abbr_prev_desc">Nykyistä edeltävä kerros, kierros tai silmukka</string>
     <string name="abbr_patt_meaning">Malli/kuvio</string>
-    <string name="abbr_patt_desc">Jatka aloitetulla kuvioilla</string>
+    <string name="abbr_patt_desc">Jatka aloitetulla kuviolla</string>
     <string name="abbr_sk_meaning">Ohita</string>
     <string name="abbr_sk_desc">Jätä seuraava silmukka väliin</string>
     <string name="abbr_selvage_meaning">Reunasilmukka</string>
@@ -945,7 +944,7 @@
     <string name="tip_edge_stitches_title">Reunasilmukat</string>
     <string name="tip_edge_stitches_desc">Reunasilmukat ovat mallikerran ulkopuolisia lisäsilmukoita. Syötä luotavien reunasilmukoiden kokonaismäärä; laskuri lisää ne halutun leveyden laskemisen jälkeen. Esimerkiksi 2 tarkoittaa yhtä silmukkaa kummassakin reunassa.</string>
     <string name="tip_flat_vs_circular_title">Tasoneule vs. pyöröneule</string>
-    <string name="tip_flat_vs_circular_desc">Tasoneule: neulot edestakaisin suorilla tai pyöröpuikoilla ja käännät työn jokaisen kerroksen lopussa. Lisäykset ja kavennukset tehdään molemmissa reunoissa.\n\nPyöröneule: neulot jatkuvaa kierrosta. Lisäykset ja kavennukset jaetaan tasaisesti koko kierrokselle.</string>
+    <string name="tip_flat_vs_circular_desc">Tasoneule: neulot edestakaisin suorilla tai pyöröpuikoilla ja käännät työn jokaisen kerroksen lopussa.\n\nPyöröneule: neulot jatkuvaa kierrosta. Lisäykset ja kavennukset jaetaan tasaisesti koko kierrokselle.</string>
     <string name="tip_needle_sizes_title">Puikkokokojen järjestelmät</string>
     <string name="tip_needle_sizes_desc">Metrinen koko (mm) on yleinen standardi. US-koot käyttävät numeroasteikkoa (0–50). UK- ja kanadalaiset koot käyttävät eri numerojärjestelmää. Japanilaisissa kooissa on oma numerointi. Varmista aina koko millimetreinä.</string>
     <string name="tip_imperial_units_title">Imperiaaliset yksiköt</string>

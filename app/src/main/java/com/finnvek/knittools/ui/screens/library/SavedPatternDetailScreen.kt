@@ -87,8 +87,6 @@ fun SavedPatternDetailScreen(
     var showRemoveConfirmDialog by rememberSaveable { mutableStateOf(false) }
     var pendingReplacementId by rememberSaveable(pattern.id) { mutableStateOf<Long?>(null) }
     var showProjectPicker by rememberSaveable(pattern.id) { mutableStateOf(false) }
-    // Projekti, johon verkko-ohjetta ollaan liittämässä; korvausvahvistus käyttää samaa valintaa.
-    var attachProjectId by rememberSaveable(pattern.id) { mutableStateOf<Long?>(null) }
     val attachmentViewModel: SavedPatternAttachmentViewModel = viewModel(key = "web-attachment-${pattern.id}")
     val attachmentState by attachmentViewModel.state.collectAsStateWithLifecycle()
     var lastHandledDeleteErrorId by rememberSaveable(pattern.id) { mutableLongStateOf(deleteErrorId) }
@@ -112,7 +110,7 @@ fun SavedPatternDetailScreen(
             is SavedPatternMetadataMutationResult.AlreadyAttached,
             -> {
                 pendingReplacementId = null
-                attachProjectId?.let(onOpenProject)
+                attachmentState.projectId?.let(onOpenProject)
             }
 
             is SavedPatternMetadataMutationResult.ReplacementRequired -> {
@@ -177,8 +175,7 @@ fun SavedPatternDetailScreen(
         )
     }
     val startWebAttach: (Long, Long?) -> Unit = { projectId, expectedExistingId ->
-        attachProjectId = projectId
-        attachmentViewModel.attach(expectedExistingId) { expected, onResult ->
+        attachmentViewModel.attach(projectId, expectedExistingId) { expected, onResult ->
             onAttachWebPattern(projectId, expected, onResult)
         }
     }
@@ -204,8 +201,9 @@ fun SavedPatternDetailScreen(
             title = stringResource(R.string.web_pattern_replace_confirm_title),
             message = stringResource(R.string.web_pattern_replace_confirm_message, pattern.name),
             confirmText = stringResource(R.string.web_pattern_attach),
+            isDestructive = true,
             onConfirm = {
-                attachProjectId?.let { projectId -> startWebAttach(projectId, expectedExistingId) }
+                attachmentState.projectId?.let { projectId -> startWebAttach(projectId, expectedExistingId) }
             },
             onDismiss = { pendingReplacementId = null },
         )

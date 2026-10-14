@@ -9,8 +9,11 @@ import io.mockk.unmockkStatic
 import io.mockk.verify
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.async
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
@@ -28,6 +31,25 @@ import java.net.HttpURLConnection
 class WebPdfDownloaderTest {
     @get:Rule
     val temporaryFolder = TemporaryFolder()
+
+    @Test
+    fun `cancellation at completed download handoff removes the unclaimed file`() =
+        runTest {
+            lateinit var operation: Deferred<File?>
+            val input = mockk<InputStream>(relaxed = true)
+            every { input.read(any<ByteArray>()) } answers {
+                operation.cancel()
+                -1
+            }
+            val connection = connection(input)
+            val downloader = downloader(connection, StandardTestDispatcher(testScheduler))
+
+            operation = async { downloader.download(download) }
+            runCurrent()
+
+            assertTrue(operation.isCancelled)
+            assertTrue(File(temporaryFolder.root, "web_pdf_downloads").listFiles().orEmpty().isEmpty())
+        }
 
     @Test
     fun `completed download preserves its temporary file`() =

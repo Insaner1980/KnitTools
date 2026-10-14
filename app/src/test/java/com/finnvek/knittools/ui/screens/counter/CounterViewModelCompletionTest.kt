@@ -6,6 +6,7 @@ import com.finnvek.knittools.domain.model.ActiveWorkSession
 import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.repository.ActiveSessionCompletionChoice
 import com.finnvek.knittools.repository.ProjectCompletionResult
+import com.finnvek.knittools.repository.ProjectDeletionResult
 import com.finnvek.knittools.repository.StartSessionResult
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -26,6 +27,37 @@ import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class CounterViewModelCompletionTest : CounterViewModelFixture() {
+    @Test
+    fun `late deletion prompt cannot attach to another selected project`() =
+        runTest {
+            assertLateDeletionIgnored(
+                ProjectDeletionResult.NeedsActiveSessionDiscard(activeSession().copy(projectId = 7L)),
+            )
+        }
+
+    @Test
+    fun `late deletion failure cannot replace another selected projects retry state`() =
+        runTest {
+            assertLateDeletionIgnored(ProjectDeletionResult.PersistenceFailure)
+        }
+
+    private fun TestScope.assertLateDeletionIgnored(result: ProjectDeletionResult) {
+        val deletion = CompletableDeferred<ProjectDeletionResult>()
+        coEvery { repository.deleteProjectResolvingActiveSession(7L, false) } coAnswers { deletion.await() }
+        val viewModel = viewModel()
+        runCurrent()
+        viewModel.deleteProject(7L)
+        runCurrent()
+        val otherState = selectOtherProject(viewModel)
+
+        deletion.complete(result)
+        runCurrent()
+
+        assertOtherProjectUnchanged(viewModel, otherState)
+        coVerify(exactly = 1) { repository.deleteProjectResolvingActiveSession(7L, false) }
+        coVerify(exactly = 0) { repository.deleteProjectResolvingActiveSession(8L, any(), any()) }
+    }
+
     @Test
     fun `completion failure after project switch cannot retry another project`() =
         runTest {
@@ -226,9 +258,16 @@ class CounterViewModelCompletionTest : CounterViewModelFixture() {
                 ProjectCompletionResult.NeedsActiveSessionChoice(originalSession),
                 ProjectCompletionResult.NeedsActiveSessionChoice(currentSession),
             )
-        coEvery { repository.completeProjectWithSessionChoice(7L, originalChoice) } returns
+        coEvery {
+            repository.completeProjectWithSessionChoice(
+                7L,
+                originalChoice,
+                expectedSession = originalSession,
+            )
+        } returns
             ProjectCompletionResult.PersistenceFailure
-        coEvery { repository.completeProjectWithSessionChoice(7L, newChoice) } returns ProjectCompletionResult.Completed
+        coEvery { repository.completeProjectWithSessionChoice(7L, newChoice, expectedSession = currentSession) } returns
+            ProjectCompletionResult.Completed
         val viewModel = viewModel()
         runCurrent()
         viewModel.completeProject()
@@ -244,14 +283,20 @@ class CounterViewModelCompletionTest : CounterViewModelFixture() {
         runCurrent()
 
         coVerify(exactly = 2) { repository.completeProjectWithSessionChoice(7L, null) }
-        coVerify(exactly = 1) { repository.completeProjectWithSessionChoice(7L, originalChoice) }
-        coVerify(exactly = 0) { repository.completeProjectWithSessionChoice(7L, newChoice) }
+        coVerify(exactly = 1) {
+            repository.completeProjectWithSessionChoice(7L, originalChoice, expectedSession = originalSession)
+        }
+        coVerify(
+            exactly = 0,
+        ) { repository.completeProjectWithSessionChoice(7L, newChoice, expectedSession = currentSession) }
         assertEquals(currentSession, viewModel.uiState.value.activeSession)
         assertEquals(currentSession, viewModel.uiState.value.pendingProjectCompletionSession)
         viewModel.completeProjectWithActiveSession(!saveOriginalSession)
         runCurrent()
 
-        coVerify(exactly = 1) { repository.completeProjectWithSessionChoice(7L, newChoice) }
+        coVerify(
+            exactly = 1,
+        ) { repository.completeProjectWithSessionChoice(7L, newChoice, expectedSession = currentSession) }
         assertNull(viewModel.uiState.value.projectId)
     }
 

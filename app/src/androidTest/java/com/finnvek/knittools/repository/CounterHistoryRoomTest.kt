@@ -1,17 +1,22 @@
 package com.finnvek.knittools.repository
 
+import android.database.sqlite.SQLiteException
 import android.util.Log
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import com.finnvek.knittools.data.local.CounterHistoryEntity
+import com.finnvek.knittools.data.local.CounterProjectDao
 import com.finnvek.knittools.data.local.CounterProjectEntity
 import com.finnvek.knittools.data.local.KnitToolsDatabase
 import com.finnvek.knittools.domain.model.CounterHistory
 import com.finnvek.knittools.domain.model.CounterHistoryAction
 import com.finnvek.knittools.domain.model.MainCounterChange
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.first
@@ -43,6 +48,47 @@ class CounterHistoryRoomTest {
         database.close()
         ApplicationProvider.getApplicationContext<android.content.Context>().deleteDatabase(databaseName)
     }
+
+    @Test fun stitchSetupSurvivesRoomReopenAndOrdinaryEditsPreserveTrackingChoice() =
+        runBlocking {
+            val id = database.counterProjectDao().insert(CounterProjectEntity(name = "Stitch setup"))
+            assertTrue(repository.updateProjectStitchCount(id, 100, enableTracking = true))
+            database.close()
+            setup()
+            val dao = database.counterProjectDao()
+            assertEquals(100, dao.getProject(id)?.stitchCount)
+            assertEquals(true, dao.getProject(id)?.stitchTrackingEnabled)
+            dao.updateCurrentStitch(id, 75, 123L)
+            assertTrue(repository.updateProjectStitchCount(id, 40))
+            assertEquals(40, dao.getProject(id)?.currentStitch)
+            assertTrue(repository.updateStitchTrackingEnabled(id, false))
+            assertEquals(40, dao.getProject(id)?.stitchCount)
+            assertEquals(0, dao.getProject(id)?.currentStitch)
+            assertTrue(repository.updateProjectStitchCount(id, 60))
+            assertEquals(false, dao.getProject(id)?.stitchTrackingEnabled)
+            assertTrue(repository.updateStitchTrackingEnabled(id, true))
+            assertTrue(repository.updateProjectStitchCount(id, null))
+            assertEquals(null, dao.getProject(id)?.stitchCount)
+            assertEquals(false, dao.getProject(id)?.stitchTrackingEnabled)
+            assertEquals(0, dao.getProject(id)?.currentStitch)
+        }
+
+    @Test fun rejectedStitchActivationLeavesTheWholeRoomRowUnchanged() =
+        runBlocking {
+            val dao = database.counterProjectDao()
+            val id = dao.insert(CounterProjectEntity(name = "Rejected setup", stitchCount = 40, updatedAt = 123L))
+            val before = dao.getProject(id)
+            database.openHelper.writableDatabase.execSQL(
+                "CREATE TRIGGER reject_stitch_activation BEFORE UPDATE OF stitchTrackingEnabled ON counter_projects " +
+                    "BEGIN SELECT RAISE(ABORT, 'test abort'); END",
+            )
+
+            val failure =
+                runCatching { repository.updateProjectStitchCount(id, 100, enableTracking = true) }.exceptionOrNull()
+
+            assertTrue(failure is SQLiteException)
+            assertEquals(before, dao.getProject(id))
+        }
 
     @Test fun canonicalAndWidgetChangesUpdateScopedObservationAndUndoRemovesLatest() =
         runBlocking {
@@ -103,6 +149,45 @@ class CounterHistoryRoomTest {
             val addedBytes = pragma("page_count") * pragma("page_size") - bytesBefore
             Log.i("HistoryRetentionTest", "2001 history rows added $addedBytes SQLite bytes including index")
             assertEquals(56 to 58, rows.first().let { it.previousValue to it.newValue })
+        }
+
+    @Test fun pausedCounterTransactionPreservesCompetingNotesWriteAndHistory() =
+        runBlocking {
+            withTimeout(10_000) {
+                val dao = database.counterProjectDao()
+                val id = dao.insert(CounterProjectEntity(name = "Concurrent", count = 7, stepSize = 3, notes = "Base"))
+                val read = CompletableDeferred<Unit>()
+                val resume = CompletableDeferred<Unit>()
+                val pausingDao =
+                    object : CounterProjectDao by dao {
+                        override suspend fun getProject(id: Long): CounterProjectEntity? {
+                            val project = dao.getProject(id)
+                            if (!read.isCompleted) {
+                                read.complete(Unit)
+                                resume.await()
+                            }
+                            return project
+                        }
+                    }
+                val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+                val paused = counterHistoryTestRepository(database, context, pausingDao)
+                val counterWrite = async { paused.applyMainCounterChange(id, MainCounterChange.Increment) }
+                read.await()
+                val notesWrite =
+                    async(start = CoroutineStart.UNDISPATCHED) {
+                        repository.saveProjectNotes(id, "Base", "Edited notes")
+                    }
+                assertFalse(notesWrite.isCompleted)
+                resume.complete(Unit)
+
+                assertTrue(counterWrite.await())
+                assertTrue(notesWrite.await() is ProjectNotesSaveResult.Saved)
+                val project = requireNotNull(dao.getProject(id))
+                assertEquals(10, project.count)
+                assertEquals("Edited notes", project.notes)
+                val history = repository.observeCounterHistory(id).first().single()
+                assertEquals(7 to 10, history.previousValue to history.newValue)
+            }
         }
 
     @Test fun completionAndReactivationRetainHistoryAndDeletionCascadesOnlyTarget() =

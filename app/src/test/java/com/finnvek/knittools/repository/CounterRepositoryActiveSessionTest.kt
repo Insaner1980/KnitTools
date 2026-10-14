@@ -29,49 +29,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
-class CounterRepositoryActiveSessionTest {
-    private val projectDao = mockk<CounterProjectDao>(relaxed = true)
-    private val sessionDao = mockk<SessionDao>(relaxed = true)
-    private val timeSource = FakeSessionTimeSource()
-    private var active: ActiveSessionEntity? = null
-    private val completed = mutableListOf<SessionEntity>()
-    private var failActiveDelete = false
-    private lateinit var repository: CounterRepository
-
-    @Before
-    fun setUp() {
-        active = null
-        completed.clear()
-        failActiveDelete = false
-        coEvery { projectDao.getProject(7L) } returns
-            CounterProjectEntity(id = 7L, name = "Cardigan", count = 12)
-        coEvery { projectDao.getProject(8L) } returns
-            CounterProjectEntity(id = 8L, name = "Socks", count = 3)
-        coEvery { projectDao.getProject(9L) } returns
-            CounterProjectEntity(id = 9L, name = "Finished", count = 20, isCompleted = true)
-        coEvery { projectDao.getProject(99L) } returns null
-        coEvery { sessionDao.getActiveSession() } answers { active }
-        coEvery { sessionDao.insertActiveSession(any()) } answers { active = firstArg() }
-        coEvery { sessionDao.updateActiveSession(any()) } answers {
-            active = firstArg()
-            1
-        }
-        coEvery { sessionDao.deleteActiveSession(any()) } answers {
-            if (failActiveDelete) error("forced active delete failure")
-            if (active?.sessionToken == firstArg<String>()) {
-                active = null
-                1
-            } else {
-                0
-            }
-        }
-        coEvery { sessionDao.insert(any()) } answers {
-            completed += firstArg<SessionEntity>()
-            completed.size.toLong()
-        }
-        repository = buildRepository(mockk<ProjectCounterDao>(relaxed = true))
-    }
-
+class CounterRepositoryActiveSessionTest : CounterRepositoryActiveSessionFixture() {
     // CPD-OFF: Istuntotestien skenaariokohtainen asetelma pidetaan testien yhteydessa.
     @Test
     fun `explicit start and stop persist one coherent completed session`() =
@@ -151,7 +109,11 @@ class CounterRepositoryActiveSessionTest {
             )
             assertEquals(
                 ProjectCompletionResult.HistoryLimitReached,
-                repository.completeProjectWithSessionChoice(7L, ActiveSessionCompletionChoice.SAVE),
+                repository.completeProjectWithSessionChoice(
+                    7L,
+                    ActiveSessionCompletionChoice.SAVE,
+                    expectedSession = started.session,
+                ),
             )
             assertEquals(started.session.sessionToken, active?.sessionToken)
             coVerify(exactly = 0) { projectDao.archiveProject(any(), any(), any(), any()) }
@@ -239,6 +201,7 @@ class CounterRepositoryActiveSessionTest {
                 repository.completeProjectWithSessionChoice(
                     7L,
                     choice = ActiveSessionCompletionChoice.DISCARD,
+                    expectedSession = discardedSession.session,
                 ),
             )
             assertTrue(completed.isEmpty())
@@ -251,6 +214,7 @@ class CounterRepositoryActiveSessionTest {
                 repository.completeProjectWithSessionChoice(
                     7L,
                     choice = ActiveSessionCompletionChoice.SAVE,
+                    expectedSession = savedSession.session,
                 ),
             )
             assertEquals(60L, completed.single().durationSeconds)
@@ -271,9 +235,68 @@ class CounterRepositoryActiveSessionTest {
                 repository.completeProjectWithSessionChoice(
                     7L,
                     choice = ActiveSessionCompletionChoice.SAVE,
+                    expectedSession = recovery,
                 ),
             )
             coVerify(exactly = 0) { projectDao.archiveProject(any(), any(), any(), any()) }
+        }
+
+    @Test
+    fun `old completion choices cannot finalize a replacement session`() =
+        runTest {
+            val original = (repository.startSession(7L) as StartSessionResult.Started).session
+            repository.discardActiveSession(original.sessionToken)
+            val replacement = (repository.startSession(7L) as StartSessionResult.Started).session
+
+            ActiveSessionCompletionChoice.entries.forEach { choice ->
+                assertEquals(
+                    ProjectCompletionResult.NeedsActiveSessionChoice(replacement),
+                    repository.completeProjectWithSessionChoice(7L, choice, expectedSession = original),
+                )
+            }
+            assertEquals(replacement.sessionToken, active?.sessionToken)
+            assertTrue(completed.isEmpty())
+            coVerify(exactly = 0) { projectDao.archiveProject(any(), any(), any(), any()) }
+        }
+
+    @Test
+    fun `old completion choices cannot finalize a newly recovered interval`() =
+        runTest {
+            val original = (repository.startSession(7L) as StartSessionResult.Started).session
+            timeSource.reboot()
+            val recovery = requireNotNull(repository.refreshActiveSession())
+
+            ActiveSessionCompletionChoice.entries.forEach { choice ->
+                assertEquals(
+                    ProjectCompletionResult.NeedsActiveSessionChoice(recovery),
+                    repository.completeProjectWithSessionChoice(7L, choice, expectedSession = original),
+                )
+            }
+            assertEquals(recovery.recoveryIntervalToken, active?.recoveryIntervalToken)
+            assertTrue(completed.isEmpty())
+            coVerify(exactly = 0) { projectDao.archiveProject(any(), any(), any(), any()) }
+        }
+
+    @Test
+    fun `old deletion confirmation cannot discard a replacement or recovered session`() =
+        runTest {
+            val original = (repository.startSession(7L) as StartSessionResult.Started).session
+            repository.discardActiveSession(original.sessionToken)
+            val replacement = (repository.startSession(7L) as StartSessionResult.Started).session
+            assertEquals(
+                ProjectDeletionResult.NeedsActiveSessionDiscard(replacement),
+                repository.deleteProjectResolvingActiveSession(7L, true, original),
+            )
+
+            timeSource.reboot()
+            val recovery = requireNotNull(repository.refreshActiveSession())
+            assertEquals(
+                ProjectDeletionResult.NeedsActiveSessionDiscard(recovery),
+                repository.deleteProjectResolvingActiveSession(7L, true, replacement),
+            )
+            assertEquals(recovery.recoveryIntervalToken, active?.recoveryIntervalToken)
+            assertTrue(completed.isEmpty())
+            coVerify(exactly = 0) { projectDao.delete(any()) }
         }
 
     @Test
@@ -664,8 +687,52 @@ class CounterRepositoryActiveSessionTest {
         }
 
     // CPD-ON
+}
 
-    private suspend fun stopReviewedSession(sessionToken: String): StopSessionResult {
+abstract class CounterRepositoryActiveSessionFixture {
+    protected val projectDao = mockk<CounterProjectDao>(relaxed = true)
+    protected val sessionDao = mockk<SessionDao>(relaxed = true)
+    protected val timeSource = FakeSessionTimeSource()
+    protected var active: ActiveSessionEntity? = null
+    protected val completed = mutableListOf<SessionEntity>()
+    protected var failActiveDelete = false
+    protected lateinit var repository: CounterRepository
+
+    @Before
+    fun setUp() {
+        active = null
+        completed.clear()
+        failActiveDelete = false
+        coEvery { projectDao.getProject(7L) } returns
+            CounterProjectEntity(id = 7L, name = "Cardigan", count = 12)
+        coEvery { projectDao.getProject(8L) } returns
+            CounterProjectEntity(id = 8L, name = "Socks", count = 3)
+        coEvery { projectDao.getProject(9L) } returns
+            CounterProjectEntity(id = 9L, name = "Finished", count = 20, isCompleted = true)
+        coEvery { projectDao.getProject(99L) } returns null
+        coEvery { sessionDao.getActiveSession() } answers { active }
+        coEvery { sessionDao.insertActiveSession(any()) } answers { active = firstArg() }
+        coEvery { sessionDao.updateActiveSession(any()) } answers {
+            active = firstArg()
+            1
+        }
+        coEvery { sessionDao.deleteActiveSession(any()) } answers {
+            if (failActiveDelete) error("forced active delete failure")
+            if (active?.sessionToken == firstArg<String>()) {
+                active = null
+                1
+            } else {
+                0
+            }
+        }
+        coEvery { sessionDao.insert(any()) } answers {
+            completed += firstArg<SessionEntity>()
+            completed.size.toLong()
+        }
+        repository = buildRepository(mockk<ProjectCounterDao>(relaxed = true))
+    }
+
+    protected suspend fun stopReviewedSession(sessionToken: String): StopSessionResult {
         val reviewed = requireNotNull(repository.refreshActiveSession())
         return repository.stopSession(
             sessionToken = sessionToken,
@@ -675,13 +742,13 @@ class CounterRepositoryActiveSessionTest {
         )
     }
 
-    private fun repositoryProjectCounterDao(): ProjectCounterDao =
+    protected fun repositoryProjectCounterDao(): ProjectCounterDao =
         mockk<ProjectCounterDao>(relaxed = true) {
             coEvery { getCountersForProject(any()) } returns flowOf(emptyList())
         }
 
     // CPD-OFF: Testin repository-kooste pidetaan istuntofixturen yhteydessa.
-    private fun buildRepository(
+    protected fun buildRepository(
         counterDao: ProjectCounterDao,
         transactionRunner: DatabaseTransactionRunner = ImmediateDatabaseTransactionRunner,
     ): CounterRepository =
@@ -702,7 +769,7 @@ class CounterRepositoryActiveSessionTest {
         )
     // CPD-ON
 
-    private inner class SnapshotTransactionRunner : DatabaseTransactionRunner {
+    protected inner class SnapshotTransactionRunner : DatabaseTransactionRunner {
         override suspend fun <T> run(block: suspend () -> T): T {
             val activeBefore = active
             val completedBefore = completed.toList()
@@ -717,7 +784,7 @@ class CounterRepositoryActiveSessionTest {
         }
     }
 
-    private class FakeSessionTimeSource : SessionTimeSource {
+    protected class FakeSessionTimeSource : SessionTimeSource {
         private var wallMillis = 1_000L
         private var elapsedMillis = 5_000L
         private var bootCount = 4L

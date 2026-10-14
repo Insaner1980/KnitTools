@@ -79,6 +79,11 @@ class YarnEstimatorTest {
     }
 
     @Test
+    fun `positive ratio underflow cannot report zero required skeins`() {
+        assertNull(YarnEstimator.estimate(1e-308, 1e308, 50.0))
+    }
+
+    @Test
     fun `integer and finite weight boundaries retain valid results`() {
         val maxSkeins = requireNotNull(YarnEstimator.estimate(Int.MAX_VALUE.toDouble(), 1.0, 1.0))
         assertEquals(Int.MAX_VALUE, maxSkeins.skeinsNeeded)

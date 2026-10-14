@@ -89,6 +89,43 @@ class BackupTablesTest {
         assertThrows(BackupException::class.java) { BackupTables.verify(db) }
     }
 
+    @Test fun databaseVerificationRejectsInvalidFolderNamesAndNormalization() {
+        val invalidNames =
+            listOf(
+                "Wool" to "different-key",
+                "Wool" to "WOOL",
+                " " to "",
+                " Wool " to "wool",
+                "Wool\n" to "wool",
+                "Wool\u2028" to "wool",
+                "a".repeat(51) to "a".repeat(51),
+            )
+        for ((name, normalizedName) in invalidNames) {
+            val db = database()
+            every { db.query("SELECT name, normalizedName FROM project_folders") } returns
+                backupCursor(listOf(listOf(name, normalizedName)))
+
+            assertThrows(BackupException::class.java) { BackupTables.verify(db) }
+        }
+    }
+
+    @Test fun databaseVerificationAcceptsCanonicalFolderNamesWithoutChangingDisplayText() {
+        val db = database()
+        every { db.query("SELECT name, normalizedName FROM project_folders") } returns
+            backupCursor(
+                listOf(
+                    listOf("Wool", "wool"),
+                    listOf("A".repeat(50), "a".repeat(50)),
+                    listOf("A\u0308iti", "äiti"),
+                ),
+            )
+
+        BackupTables.verify(db)
+
+        verify(exactly = 0) { db.execSQL(any<String>()) }
+        verify(exactly = 0) { db.compileStatement(any()) }
+    }
+
     @get:Rule val temporary = TemporaryFolder()
     private val statement = mockk<SupportSQLiteStatement>(relaxed = true)
     private val columns =
@@ -141,6 +178,38 @@ class BackupTablesTest {
         }
     }
 
+    @Test fun importPreservesFiniteFloatMetadataBoundariesAndNulls() {
+        val db = database()
+        val folder = temporary.newFolder()
+        BackupTables.export(db, folder, { _, _ -> }) {}
+        every { db.query("PRAGMA table_info(`saved_patterns`)") } answers {
+            backupCursor(
+                listOf(
+                    listOf(0, "difficulty", "REAL", 0),
+                    listOf(1, "gaugeRows", "REAL", 0),
+                    listOf(2, "gaugeStitches", "REAL", 0),
+                    listOf(3, "id", "INTEGER", 1),
+                    listOf(4, "ravelryPatternId", "INTEGER", 0),
+                ),
+            )
+        }
+        File(folder, "tables/saved_patterns.jsonl").writeText(
+            "[\"difficulty\",\"gaugeRows\",\"gaugeStitches\",\"id\",\"ravelryPatternId\"]\n" +
+                "[${Float.MAX_VALUE},${Float.MIN_VALUE},${-Float.MAX_VALUE},7,${Int.MAX_VALUE}]\n" +
+                "[null,null,0,8,null]\n",
+        )
+
+        BackupTables.import(db, folder)
+
+        verify(exactly = 1) { statement.bindDouble(1, Float.MAX_VALUE.toString().toDouble()) }
+        verify(exactly = 1) { statement.bindDouble(2, Float.MIN_VALUE.toString().toDouble()) }
+        verify(exactly = 1) { statement.bindDouble(3, (-Float.MAX_VALUE).toString().toDouble()) }
+        verify(exactly = 1) { statement.bindLong(5, Int.MAX_VALUE.toLong()) }
+        verify(exactly = 1) { statement.bindNull(1) }
+        verify(exactly = 1) { statement.bindNull(2) }
+        verify(exactly = 1) { statement.bindNull(5) }
+    }
+
     @Test fun malformedRowsHeadersAndUnterminatedLinesAreRejected() {
         val folder = temporary.newFolder()
         val file = File(folder, "tables/sessions.jsonl").apply { requireNotNull(parentFile).mkdirs() }
@@ -159,6 +228,8 @@ class BackupTablesTest {
             listOf(
                 Triple("id", "INTEGER", "0"),
                 Triple("projectId", "INTEGER", "-1"),
+                Triple("ravelryPatternId", "INTEGER", "2147483648"),
+                Triple("ravelryPatternId", "INTEGER", "9223372036854775807"),
                 Triple("isPrimary", "INTEGER", "2"),
                 Triple("count", "INTEGER", "2147483648"),
                 Triple("count", "INTEGER", "1.5"),
@@ -166,6 +237,9 @@ class BackupTablesTest {
                 Triple("value", "REAL", "\"1.0\""),
                 Triple("value", "REAL", "true"),
                 Triple("value", "REAL", "1e999"),
+                Triple("difficulty", "REAL", "1e300"),
+                Triple("gaugeStitches", "REAL", "-1e300"),
+                Triple("gaugeRows", "REAL", "1e300"),
                 Triple("name", "TEXT", "1"),
                 Triple("name", "TEXT", "null"),
                 Triple("value", "BLOB", "1"),
@@ -181,6 +255,7 @@ class BackupTablesTest {
                 writeText("[\"$name\"]\n[$value]\n")
             }
             assertThrows(BackupException::class.java) { BackupTables.import(db, folder) }
+            verify(exactly = 0) { statement.executeInsert() }
         }
     }
 

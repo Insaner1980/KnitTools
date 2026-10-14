@@ -41,7 +41,7 @@ class InAppReviewManager
          */
         suspend fun recordAction() {
             context.reviewDataStore.editPreferencesSafely { prefs ->
-                prefs[KEY_ACTION_COUNT] = (prefs[KEY_ACTION_COUNT] ?: 0) + 1
+                prefs[KEY_ACTION_COUNT] = nextActionCount(prefs[KEY_ACTION_COUNT] ?: 0)
             }
         }
 
@@ -87,6 +87,8 @@ class InAppReviewManager
             private val KEY_REVIEW_REQUESTED = booleanPreferencesKey("review_requested")
             private val KEY_ACTION_COUNT = intPreferencesKey("action_count")
             const val ACTIONS_THRESHOLD = 20
+
+            internal fun nextActionCount(current: Int): Int = current.coerceIn(0, Int.MAX_VALUE - 1) + 1
 
             internal fun shouldRequestReview(
                 reviewRequested: Boolean,

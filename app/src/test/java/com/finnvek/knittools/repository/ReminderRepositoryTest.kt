@@ -102,6 +102,32 @@ class ReminderRepositoryTest {
         }
 
     @Test
+    fun `completion from stale snapshot does not overwrite a newer reminder edit`() =
+        runTest {
+            val original = fakeDao.reminder(5L).toDomain().copy(repeatInterval = null)
+            repository.update(1L, original)
+            val edited = original.copy(targetRow = 24, message = "New message")
+            repository.update(1L, edited)
+
+            val result = repository.update(1L, original.copy(isCompleted = true), expectedReminder = original)
+
+            assertEquals(ReminderMutationResult.StaleAction, result)
+            assertEquals(edited, fakeDao.reminder(5L).toDomain())
+        }
+
+    @Test
+    fun `completion from current snapshot preserves every other field`() =
+        runTest {
+            val original = fakeDao.reminder(5L).toDomain().copy(repeatInterval = null)
+            repository.update(1L, original)
+
+            val result = repository.update(1L, original.copy(isCompleted = true), expectedReminder = original)
+
+            assertEquals(ReminderMutationResult.Success(5L), result)
+            assertEquals(original.copy(isCompleted = true), fakeDao.reminder(5L).toDomain())
+        }
+
+    @Test
     fun `insert validates and normalizes reminder at repository boundary`() =
         runTest {
             val result =

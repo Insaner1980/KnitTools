@@ -66,11 +66,12 @@ class ReminderRepository
         suspend fun update(
             projectId: Long,
             reminder: RowReminder,
+            expectedReminder: RowReminder? = null,
         ): ReminderMutationResult {
             val validated =
                 ReminderLogic.validatedForPersistence(reminder)
                     ?: return ReminderMutationResult.InvalidReminder
-            return mutateOwnedReminder(projectId, validated.id) { current ->
+            return mutateOwnedReminder(projectId, validated.id, expectedReminder) { current ->
                 dao.update(
                     validated
                         .copy(
@@ -95,6 +96,7 @@ class ReminderRepository
         private suspend fun mutateOwnedReminder(
             projectId: Long,
             reminderId: Long,
+            expectedReminder: RowReminder? = null,
             mutation: suspend (RowReminder) -> Unit,
         ): ReminderMutationResult =
             runMutation {
@@ -105,6 +107,9 @@ class ReminderRepository
                     dao.getReminder(reminderId)?.toDomain()
                         ?: return@runMutation ReminderMutationResult.ReminderUnavailable
                 if (current.projectId != projectId) {
+                    return@runMutation ReminderMutationResult.StaleAction
+                }
+                if (expectedReminder != null && current != expectedReminder) {
                     return@runMutation ReminderMutationResult.StaleAction
                 }
                 mutation(current)

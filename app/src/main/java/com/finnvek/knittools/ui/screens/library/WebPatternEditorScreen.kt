@@ -57,7 +57,7 @@ fun WebPatternEditorScreen(
     val viewModel = viewModelProvider()
     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
-    LaunchedEffect(request?.requestId) {
+    LaunchedEffect(request?.requestId, state.pendingIncomingShare?.requestId, state.isLoading, state.isSaving) {
         val currentRequest = request ?: return@LaunchedEffect
         if (viewModel.offerSharedRequest(currentRequest) == WebPatternShareAcceptResult.Stored) {
             onRequestStored(currentRequest.requestId)
@@ -179,7 +179,7 @@ internal fun WebPatternEditorContent(
             text = { Text(stringResource(R.string.web_pattern_replace_confirm_message, state.title)) },
             confirmButton = {
                 TextButton(onClick = onConfirmReplacement, enabled = !state.isSaving) {
-                    Text(stringResource(R.string.web_pattern_attach))
+                    Text(stringResource(R.string.web_pattern_attach), color = MaterialTheme.colorScheme.error)
                 }
             },
             dismissButton = {

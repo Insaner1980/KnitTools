@@ -157,7 +157,7 @@ Use [`CLAUDE.md`](CLAUDE.md) when product wording, visual direction, or UX struc
 - `pc` runs PMD CPD duplicate detection with KnitTools' default `PMD_CPD_MINIMUM_TOKENS=100`, `cr` runs compose-rules through ktlint/detekt, `ga` runs Android Lint with Google Android Security Lints, and `cs` is available for Compose Stability Analyzer projects.
 - `sentry` verifies that debug includes `io.sentry`, release does not include `io.sentry`, and writes `reports/sentry.txt`
 - `rs` delegates to `tools/release-surface.ps1`; `rst` delegates to `tools/release-surface-test.ps1`. These guard KnitTools-specific release and architecture boundaries and must stay repo-local.
-- `sc` runs dependency, secret, and light Semgrep checks; `sc -Full` also runs the Android-specific `ac` path and DeepSec custom report
+- `sc` runs dependency, secret, light Semgrep, and Android-specific `ac` checks; DeepSec is a separate `ds` run requiring explicit per-run external-AI provider, data-scope, cost, and retention approval.
 - `tools/sc.ps1` is the only security-check source of truth. Bash scripts under `scripts/` are compatibility delegates and must fail closed instead of implementing separate scanners.
 - `app/stability/app-debug.stability` is the versioned Compose stability baseline; other variant dumps remain local and ignored.
 - `tools/sonar.ps1 -PlanOnly` is read-only; an actual Sonar upload requires `-AllowExternalUpload` and runs through a bounded managed Gradle process.

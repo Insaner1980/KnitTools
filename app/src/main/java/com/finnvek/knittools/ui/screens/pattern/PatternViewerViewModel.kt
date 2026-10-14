@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
@@ -163,7 +164,15 @@ class PatternViewerViewModel
             )
 
         private val eventChannel = Channel<PatternViewerEvent>(Channel.BUFFERED)
-        val events = eventChannel.receiveAsFlow()
+        val events =
+            eventChannel.receiveAsFlow().filter { event ->
+                when (event) {
+                    is PatternViewerEvent.BookmarkJumped ->
+                        documents.value?.any {
+                            it.id == selectedDocumentId.value && it.documentKey == event.bookmark.documentKey
+                        } == true
+                }
+            }
         private var nextRequestId = 1L
         private var initialDocumentSelectionApplied = false
 
@@ -283,6 +292,7 @@ class PatternViewerViewModel
             pageIndex: Int,
             yFraction: Float,
         ) {
+            if (operationState.value.isMutating) return
             val documentKey = uiState.value.documentKey ?: return setError(PatternBookmarkError.STALE_DOCUMENT)
             runMutation(
                 mutation = { bookmarkRepository.add(projectId, documentKey, name, pageIndex, yFraction) },
@@ -348,8 +358,8 @@ class PatternViewerViewModel
             onSuccess: suspend (PatternBookmark) -> Unit,
             failureError: PatternBookmarkError,
         ) {
+            operationState.value = PatternBookmarkOperationState(isMutating = true)
             viewModelScope.launch {
-                operationState.value = PatternBookmarkOperationState(isMutating = true)
                 try {
                     when (val result = mutation()) {
                         is PatternBookmarkMutationResult.Success -> onSuccess(result.bookmark)

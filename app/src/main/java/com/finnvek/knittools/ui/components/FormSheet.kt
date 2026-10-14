@@ -24,6 +24,8 @@ import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.window.DialogWindowProvider
 import com.finnvek.knittools.ui.theme.ComponentDimens
 
@@ -92,7 +94,7 @@ fun SheetTitle(
         text = text,
         style = MaterialTheme.typography.headlineSmall,
         color = MaterialTheme.colorScheme.onSurface,
-        modifier = modifier,
+        modifier = modifier.semantics { heading() },
     )
 }
 

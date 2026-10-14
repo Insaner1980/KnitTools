@@ -8,9 +8,9 @@ internal fun PaddingValues.withExtraBottom(
     extraBottom: Dp,
     layoutDirection: LayoutDirection,
 ): PaddingValues =
-    PaddingValues(
-        start = calculateLeftPadding(layoutDirection),
+    PaddingValues.Absolute(
+        left = calculateLeftPadding(layoutDirection),
         top = calculateTopPadding(),
-        end = calculateRightPadding(layoutDirection),
+        right = calculateRightPadding(layoutDirection),
         bottom = calculateBottomPadding() + extraBottom,
     )

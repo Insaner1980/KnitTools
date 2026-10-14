@@ -2,7 +2,9 @@ package com.finnvek.knittools.ui.screens.project
 
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModelStore
+import com.finnvek.knittools.R
 import com.finnvek.knittools.data.datastore.AppPreferences
+import com.finnvek.knittools.domain.model.ActiveWorkSession
 import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.domain.model.ProjectDocument
 import com.finnvek.knittools.domain.model.ProjectSortOrder
@@ -16,7 +18,9 @@ import com.finnvek.knittools.serializedCopy
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
+import io.mockk.mockk
 import io.mockk.verify
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -32,6 +36,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.io.IOException
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ProjectListViewModelTest : ProjectListViewModelFixture() {
@@ -482,11 +487,45 @@ class ProjectListViewModelTest : ProjectListViewModelFixture() {
 
             assertTrue(vm.isMultiSelectMode.value)
             assertEquals(setOf(1L), vm.selectedProjectIds.value)
+            assertEquals(R.string.generic_error_unknown, withTimeoutOrNull(1) { vm.sessionErrors.first() })
+        }
+
+    @Test
+    fun `bulk completion waits for both active session choice and recovery review`() =
+        runTest {
+            val projects = listOf(CounterProject(id = 1L, name = "First"), CounterProject(id = 2L, name = "Second"))
+            val session = mockk<ActiveWorkSession>()
+            every { repository.getActiveProjects(ProjectSortOrder.UPDATED) } returns flowOf(projects)
+            coEvery { repository.getProject(1L) } returns projects.first()
+            coEvery { repository.refreshActiveSession() } returns null
+            val vm = createViewModel()
+            backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.activeProjects.collect() }
+            vm.enterMultiSelectMode(1L)
+            vm.toggleProjectSelection(2L)
+
+            listOf(
+                ProjectCompletionResult.NeedsActiveSessionChoice(session),
+                ProjectCompletionResult.NeedsRecoveryReview(session),
+            ).forEach { result ->
+                coEvery { repository.completeProjectWithSessionChoice(1L, null) } returns result
+
+                vm.completeSelectedProjects()
+
+                assertEquals(session, vm.pendingCompletionSessionAction.value?.session)
+                assertEquals(setOf(1L, 2L), vm.pendingCompletionSessionAction.value?.projectIds)
+                assertEquals(setOf(1L, 2L), vm.selectedProjectIds.value)
+                assertTrue(vm.isMultiSelectMode.value)
+                vm.cancelPendingCompletion()
+            }
+            coVerify(exactly = 2) { repository.completeProjectWithSessionChoice(1L, null) }
+            coVerify(exactly = 0) { repository.completeProjectWithSessionChoice(2L, any()) }
         }
 
     @Test
     fun `failed bulk deletion preserves selection for retry`() =
         runTest {
+            every { repository.getActiveProjects(ProjectSortOrder.UPDATED) } returns
+                flowOf(listOf(CounterProject(id = 1L, name = "Active")))
             coEvery { repository.refreshActiveSession() } returns null
             coEvery { repository.deleteProjectResolvingActiveSession(1L, false) } returns
                 ProjectDeletionResult.PersistenceFailure
@@ -497,9 +536,84 @@ class ProjectListViewModelTest : ProjectListViewModelFixture() {
 
             assertTrue(vm.isMultiSelectMode.value)
             assertEquals(setOf(1L), vm.selectedProjectIds.value)
+            assertEquals(R.string.generic_error_unknown, withTimeoutOrNull(1) { vm.sessionErrors.first() })
         }
 
     // CPD-ON
+
+    @Test
+    fun `failed single deletion reports an error and successful retry does not repeat it`() =
+        runTest {
+            coEvery { repository.deleteProjectResolvingActiveSession(3L, false) } returnsMany
+                listOf(ProjectDeletionResult.PersistenceFailure, ProjectDeletionResult.Deleted)
+            val vm = createViewModel()
+
+            vm.deleteProject(3L)
+            assertEquals(R.string.generic_error_unknown, withTimeoutOrNull(1) { vm.sessionErrors.first() })
+            vm.deleteProject(3L)
+            assertEquals(null, withTimeoutOrNull(1) { vm.sessionErrors.first() })
+        }
+
+    @Test
+    fun `rename failure is reported without crashing and retry can succeed`() =
+        runTest {
+            coEvery { repository.updateProjectName(3L, "New name") } throws IOException("synthetic write failure")
+            val vm = createViewModel()
+
+            vm.renameProject(3L, "New name")
+            assertEquals(R.string.generic_error_unknown, withTimeoutOrNull(1) { vm.sessionErrors.first() })
+            coEvery { repository.updateProjectName(3L, "New name") } returns "New name"
+            vm.renameProject(3L, "New name")
+            assertEquals(null, withTimeoutOrNull(1) { vm.sessionErrors.first() })
+            coVerify(exactly = 2) { repository.updateProjectName(3L, "New name") }
+        }
+
+    @Test
+    fun `rename cancellation is not reported as a persistence failure`() =
+        runTest {
+            coEvery { repository.updateProjectName(3L, "New name") } throws CancellationException("cancelled")
+            val vm = createViewModel()
+
+            vm.renameProject(3L, "New name")
+
+            assertEquals(null, withTimeoutOrNull(1) { vm.sessionErrors.first() })
+        }
+
+    @Test
+    fun `creation failure reports an error and retains the exact draft for retry`() =
+        runTest {
+            every { proManager.hasFeature(ProFeature.UNLIMITED_PROJECTS) } returns true
+            coEvery { repository.createProject(any(), any(), any(), any(), any(), any()) } throws
+                IOException("synthetic creation failure")
+            val vm = createViewModel()
+
+            vm.createProject(
+                "Original",
+                com.finnvek.knittools.domain.model.CraftType.CROCHET,
+                com.finnvek.knittools.domain.model.MainCounterLabelType.CUSTOM,
+                "Circuits",
+                12L,
+            )
+            assertEquals(R.string.generic_error_unknown, withTimeoutOrNull(1) { vm.sessionErrors.first() })
+            assertEquals(null, withTimeoutOrNull(1) { vm.navigateToProject.first() })
+            coEvery { repository.createProject(any(), any(), any(), any(), any(), any()) } returns
+                ProjectCreationResult.Created(42L)
+
+            vm.retryPendingProjectCreation()
+
+            assertEquals(42L, withTimeoutOrNull(1) { vm.navigateToProject.first() })
+            assertEquals(null, withTimeoutOrNull(1) { vm.sessionErrors.first() })
+            coVerify(exactly = 2) {
+                repository.createProject(
+                    "Original",
+                    com.finnvek.knittools.domain.model.CraftType.CROCHET,
+                    com.finnvek.knittools.domain.model.MainCounterLabelType.CUSTOM,
+                    "Circuits",
+                    true,
+                    12L,
+                )
+            }
+        }
 
     @Test
     fun `show completed toggle delegates each request to transactional preference toggle`() =
@@ -582,4 +696,157 @@ class ProjectListViewModelTest : ProjectListViewModelFixture() {
             createdAt = 1L,
             updatedAt = 1L,
         )
+}
+
+@OptIn(ExperimentalCoroutinesApi::class)
+class ProjectSelectionViewModelTest : ProjectListViewModelFixture() {
+    @Test
+    fun `committed bulk deletion continues after observation removes the deleted item`() =
+        runTest {
+            val projects = MutableStateFlow((1L..2L).map { CounterProject(id = it, name = "Project $it") })
+            every { repository.getActiveProjects(ProjectSortOrder.UPDATED) } returns projects
+            coEvery { repository.deleteProjectResolvingActiveSession(1L, false) } coAnswers {
+                projects.value = projects.value.filter { it.id != 1L }
+                ProjectDeletionResult.Deleted
+            }
+            coEvery { repository.deleteProjectResolvingActiveSession(2L, false) } returns ProjectDeletionResult.Deleted
+            val vm = createViewModel()
+            runCurrent()
+            vm.enterMultiSelectMode()
+            vm.selectAllProjects()
+
+            vm.deleteSelectedProjects()
+            runCurrent()
+
+            coVerify(exactly = 1) { repository.deleteProjectResolvingActiveSession(2L, false) }
+            assertFalse(vm.isMultiSelectMode.value)
+        }
+
+    @Test
+    fun `late bulk session prompt does not restore cancelled selection`() =
+        runTest {
+            every { repository.getActiveProjects(ProjectSortOrder.UPDATED) } returns
+                flowOf(listOf(CounterProject(id = 1L, name = "Project")))
+            val session = mockk<ActiveWorkSession> { every { projectId } returns 1L }
+            val deletion = CompletableDeferred<ProjectDeletionResult>()
+            coEvery { repository.deleteProjectResolvingActiveSession(1L, false) } coAnswers { deletion.await() }
+            val vm = createViewModel()
+            runCurrent()
+            vm.enterMultiSelectMode()
+            vm.selectAllProjects()
+            vm.deleteSelectedProjects()
+            runCurrent()
+
+            vm.exitMultiSelectMode()
+            deletion.complete(ProjectDeletionResult.NeedsActiveSessionDiscard(session))
+            runCurrent()
+            vm.resolvePendingDeletion()
+            runCurrent()
+
+            assertEquals(null, vm.pendingDeletionSessionAction.value)
+            coVerify(exactly = 0) { repository.deleteProjectResolvingActiveSession(1L, true, any()) }
+        }
+
+    @Test
+    fun `selection drops completed hidden and externally deleted projects`() =
+        runTest {
+            val active = MutableStateFlow(listOf(CounterProject(id = 1L, name = "Active")))
+            val preferences = MutableStateFlow(AppPreferences(showCompletedProjects = true))
+            every { preferencesManager.preferences } returns preferences
+            every { repository.getActiveProjects(ProjectSortOrder.UPDATED) } returns active
+            every { repository.getCompletedProjects(ProjectSortOrder.UPDATED) } returns
+                flowOf(listOf(CounterProject(id = 2L, name = "Completed", isCompleted = true)))
+            val vm = createViewModel()
+            runCurrent()
+            vm.enterMultiSelectMode()
+            vm.selectAllProjects()
+            assertEquals(setOf(1L, 2L), vm.selectedProjectIds.value)
+
+            preferences.value = AppPreferences(showCompletedProjects = false)
+            runCurrent()
+            assertEquals(setOf(1L), vm.selectedProjectIds.value)
+            active.value = emptyList()
+            runCurrent()
+            assertEquals(emptySet<Long>(), vm.selectedProjectIds.value)
+        }
+
+    @Test
+    fun `bulk deletion rechecks visible selection after delayed session read`() =
+        runTest {
+            val active = MutableStateFlow((1L..2L).map { CounterProject(id = it, name = "Project $it") })
+            every { repository.getActiveProjects(ProjectSortOrder.UPDATED) } returns active
+            val session = CompletableDeferred<ActiveWorkSession?>()
+            coEvery { repository.refreshActiveSession() } coAnswers { session.await() }
+            coEvery { repository.deleteProjectResolvingActiveSession(2L, false) } returns ProjectDeletionResult.Deleted
+            val vm = createViewModel()
+            runCurrent()
+            vm.enterMultiSelectMode()
+            vm.selectAllProjects()
+            vm.deleteSelectedProjects()
+            active.value = active.value.filter { it.id == 2L }
+            runCurrent()
+
+            session.complete(null)
+            runCurrent()
+
+            coVerify(exactly = 0) { repository.deleteProjectResolvingActiveSession(1L, any(), any()) }
+            coVerify(exactly = 1) { repository.deleteProjectResolvingActiveSession(2L, false) }
+        }
+
+    @Test
+    fun `pending bulk deletion retry retains only projects not already deleted`() =
+        runTest {
+            every { repository.getActiveProjects(ProjectSortOrder.UPDATED) } returns
+                flowOf((1L..3L).map { CounterProject(id = it, name = "Project $it") })
+            val session = mockk<ActiveWorkSession> { every { projectId } returns 1L }
+            coEvery { repository.refreshActiveSession() } returns session
+            coEvery { repository.deleteProjectResolvingActiveSession(1L, true, session) } returns
+                ProjectDeletionResult.Deleted
+            coEvery { repository.deleteProjectResolvingActiveSession(2L, false, session) } returnsMany
+                listOf(ProjectDeletionResult.PersistenceFailure, ProjectDeletionResult.Deleted)
+            coEvery { repository.deleteProjectResolvingActiveSession(3L, false, session) } returns
+                ProjectDeletionResult.Deleted
+            val vm = createViewModel()
+            runCurrent()
+            vm.enterMultiSelectMode()
+            vm.selectAllProjects()
+            vm.deleteSelectedProjects()
+            vm.resolvePendingDeletion()
+            runCurrent()
+            assertEquals(setOf(2L, 3L), vm.selectedProjectIds.value)
+            assertEquals(setOf(2L, 3L), vm.pendingDeletionSessionAction.value?.projectIds)
+            coVerify(exactly = 0) { repository.deleteProjectResolvingActiveSession(3L, any(), any()) }
+
+            vm.resolvePendingDeletion()
+            runCurrent()
+
+            coVerify(exactly = 1) { repository.deleteProjectResolvingActiveSession(1L, true, session) }
+            coVerify(exactly = 1) { repository.deleteProjectResolvingActiveSession(3L, false, session) }
+            assertFalse(vm.isMultiSelectMode.value)
+        }
+
+    @Test
+    fun `pending bulk deletion drops a project that becomes invisible before confirmation`() =
+        runTest {
+            val projects = MutableStateFlow((1L..2L).map { CounterProject(id = it, name = "Project $it") })
+            every { repository.getActiveProjects(ProjectSortOrder.UPDATED) } returns projects
+            val session = mockk<ActiveWorkSession> { every { projectId } returns 1L }
+            coEvery { repository.refreshActiveSession() } returns session
+            coEvery { repository.deleteProjectResolvingActiveSession(2L, false, session) } returns
+                ProjectDeletionResult.Deleted
+            val vm = createViewModel()
+            runCurrent()
+            vm.enterMultiSelectMode()
+            vm.selectAllProjects()
+            vm.deleteSelectedProjects()
+
+            projects.value = projects.value.filter { it.id == 2L }
+            runCurrent()
+            assertEquals(setOf(2L), vm.pendingDeletionSessionAction.value?.projectIds)
+            vm.resolvePendingDeletion()
+            runCurrent()
+
+            coVerify(exactly = 0) { repository.deleteProjectResolvingActiveSession(1L, any(), any()) }
+            coVerify(exactly = 1) { repository.deleteProjectResolvingActiveSession(2L, false, session) }
+        }
 }

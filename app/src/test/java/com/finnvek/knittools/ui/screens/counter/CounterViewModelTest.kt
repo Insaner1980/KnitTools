@@ -15,6 +15,8 @@ import com.finnvek.knittools.pro.ProStatus
 import com.finnvek.knittools.repository.ProjectCompletionResult
 import com.finnvek.knittools.repository.ProjectCounterMutationResult
 import com.finnvek.knittools.repository.ProjectCounterRepository
+import com.finnvek.knittools.repository.ProjectDocumentMutationResult
+import com.finnvek.knittools.repository.ProjectDocumentRepository
 import com.finnvek.knittools.repository.SavedPatternMetadataMutationResult
 import com.finnvek.knittools.repository.StartSessionResult
 import io.mockk.coEvery
@@ -24,7 +26,9 @@ import io.mockk.mockk
 import io.mockk.slot
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runCurrent
@@ -38,6 +42,54 @@ import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class CounterViewModelTest : CounterViewModelFixture() {
+    @Test
+    fun `document selection result cannot navigate after another project selection`() =
+        runTest {
+            val result = CompletableDeferred<ProjectDocumentMutationResult>()
+            val documents = mockk<ProjectDocumentRepository>(relaxed = true)
+            every { documents.observeDocuments(any<Long>()) } returns flowOf(emptyList())
+            coEvery { documents.select(7L, 41L) } coAnswers { result.await() }
+            val other = CounterProject(id = 8L, name = "Other")
+            every { repository.observeProject(8L) } returns flowOf(other)
+            val viewModel = viewModel(documentRepositoryOverride = documents)
+            val callbacks = mutableListOf<ProjectDocumentMutationResult>()
+            advanceUntilIdle()
+
+            viewModel.selectProjectDocument(41L) { callbacks += it }
+            runCurrent()
+            viewModel.selectProject(other)
+            advanceUntilIdle()
+            viewModel.selectProject(observedProject.value)
+            advanceUntilIdle()
+            result.complete(ProjectDocumentMutationResult.Selected)
+            advanceUntilIdle()
+
+            assertEquals(7L, viewModel.uiState.value.projectId)
+            assertTrue(callbacks.isEmpty())
+            coVerify(exactly = 1) { documents.select(7L, 41L) }
+        }
+
+    @Test
+    fun `current project document mutation delivers success and rejection results`() =
+        runTest {
+            val documents = mockk<ProjectDocumentRepository>(relaxed = true)
+            every { documents.observeDocuments(any<Long>()) } returns flowOf(emptyList())
+            coEvery { documents.select(7L, 41L) } returns ProjectDocumentMutationResult.Selected
+            coEvery { documents.select(7L, 42L) } returns ProjectDocumentMutationResult.PdfUnavailable
+            val viewModel = viewModel(documentRepositoryOverride = documents)
+            val callbacks = mutableListOf<ProjectDocumentMutationResult>()
+            advanceUntilIdle()
+
+            viewModel.selectProjectDocument(41L) { callbacks += it }
+            viewModel.selectProjectDocument(42L) { callbacks += it }
+            advanceUntilIdle()
+
+            assertEquals(
+                listOf(ProjectDocumentMutationResult.Selected, ProjectDocumentMutationResult.PdfUnavailable),
+                callbacks,
+            )
+        }
+
     @Test
     fun `marker edit after document switch preserves secondary markers instead of copying primary markers`() =
         runTest {
@@ -63,7 +115,7 @@ class CounterViewModelTest : CounterViewModelFixture() {
             val viewModel = viewModel()
             advanceUntilIdle()
             val mapping = slot<String>()
-            coEvery { repository.updatePatternRowMapping(7L, capture(mapping), 42L) } returns Unit
+            coEvery { repository.updatePatternRowMappingIfUnchanged(7L, capture(mapping), 42L, any()) } returns true
             val secondaryMapping = serializeMapping(listOf(RowMarker(20, 4, 0.8f)))
 
             viewModel.upsertPatternRowMarker(
@@ -79,6 +131,51 @@ class CounterViewModelTest : CounterViewModelFixture() {
                 listOf(RowMarker(20, 4, 0.8f), RowMarker(30, 4, 0.7f)),
                 parseMapping(mapping.captured),
             )
+        }
+
+    @Test
+    fun `document marker edit cannot use an unconditional mapping replacement`() =
+        runTest {
+            val viewModel = viewModel()
+            advanceUntilIdle()
+            val baseMapping = serializeMapping(listOf(RowMarker(20, 4, 0.8f)))
+
+            viewModel.upsertPatternRowMarker(30, 4, 0.7f, 42L, baseMapping)
+            advanceUntilIdle()
+
+            coVerify(exactly = 0) { repository.updatePatternRowMapping(7L, any(), 42L) }
+            coVerify(exactly = 1) {
+                repository.updatePatternRowMappingIfUnchanged(7L, any(), 42L, baseMapping)
+            }
+        }
+
+    @Test
+    fun `reading guide write failures use the content error channel`() =
+        runTest {
+            val viewModel = viewModel()
+            advanceUntilIdle()
+            val failure = IllegalStateException("database write failed")
+            coEvery { repository.commitManualReadingLinePosition(7L, any(), 42L) } throws failure
+            coEvery { repository.updateCurrentPatternPage(7L, any(), 42L) } throws failure
+            coEvery { repository.updateReadingLineVisibility(7L, any(), 42L) } throws failure
+            coEvery { repository.setReadingLineFollowCurrentRow(7L, any(), 42L) } throws failure
+            coEvery { repository.updateVerticalReadingGuide(7L, any(), any(), 42L) } throws failure
+            val actions: List<() -> Unit> =
+                listOf(
+                    { viewModel.commitManualReadingLinePosition(0.6f, 42L) },
+                    { viewModel.updatePatternPage(2, 42L) },
+                    { viewModel.setReadingLineEnabled(true, 42L) },
+                    { viewModel.setReadingLineFollowCurrentRow(true, 42L) },
+                    { viewModel.setVerticalReadingGuideEnabled(true, 42L) },
+                    { viewModel.updateVerticalReadingGuideXFraction(0.6f, 42L) },
+                )
+            actions.forEachIndexed { index, action ->
+                val error = async { viewModel.projectContentErrors.first() }
+                action()
+                advanceUntilIdle()
+                assertTrue("Missing content error for action $index", error.isCompleted)
+                error.await()
+            }
         }
 
     @Test
@@ -229,6 +326,40 @@ class CounterViewModelTest : CounterViewModelFixture() {
             advanceUntilIdle()
 
             coVerify(exactly = 1) { counters.addCounter(any()) }
+        }
+
+    @Test
+    fun `secondary counter saturates at integer maximum and preserves decrement boundaries`() =
+        runTest {
+            val project =
+                CounterProject(
+                    id = 7L,
+                    name = "Project",
+                    secondaryCount = Int.MAX_VALUE - 1,
+                    secondaryCounterUsed = true,
+                )
+            observedProject.value = project
+            every { repository.getActiveProjects() } returns flowOf(listOf(project))
+            coEvery { repository.updateProjectSecondaryCount(7L, any()) } returns true
+            val viewModel = viewModel()
+            advanceUntilIdle()
+
+            repeat(2) {
+                viewModel.incrementSecondary()
+                advanceUntilIdle()
+                assertEquals(Int.MAX_VALUE, viewModel.uiState.value.secondaryCount)
+            }
+            coVerify(exactly = 2) { repository.updateProjectSecondaryCount(7L, Int.MAX_VALUE) }
+            viewModel.decrementSecondary()
+            advanceUntilIdle()
+            assertEquals(Int.MAX_VALUE - 1, viewModel.uiState.value.secondaryCount)
+
+            observedProject.value = project.copy(secondaryCount = 0)
+            advanceUntilIdle()
+            viewModel.decrementSecondary()
+            advanceUntilIdle()
+            assertEquals(0, viewModel.uiState.value.secondaryCount)
+            coVerify { repository.updateProjectSecondaryCount(7L, 0) }
         }
 
     @Test

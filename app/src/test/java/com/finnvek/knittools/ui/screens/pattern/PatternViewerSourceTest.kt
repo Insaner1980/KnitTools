@@ -420,11 +420,19 @@ class PatternViewerSourceTest {
         assertTrue(removeRowBlock.contains("currentPatternRowMarkers(documentId, documentRowMapping)"))
         assertTrue(removeRowBlock.contains("filterNot { it.row == row && it.page == page }"))
         assertTrue(removeRowBlock.contains("if (markers.size == currentMarkers.size) return"))
-        assertTrue(removeRowBlock.contains("updatePatternRowMapping(serializeMapping(markers), documentId)"))
+        assertTrue(
+            removeRowBlock.contains(
+                "updatePatternRowMapping(serializeMapping(markers), documentId, documentRowMapping)",
+            ),
+        )
         assertTrue(removePageBlock.contains("currentPatternRowMarkers(documentId, documentRowMapping)"))
         assertTrue(removePageBlock.contains("filterNot { it.page == page }"))
         assertTrue(removePageBlock.contains("if (markers.size == currentMarkers.size) return"))
-        assertTrue(removePageBlock.contains("updatePatternRowMapping(serializeMapping(markers), documentId)"))
+        assertTrue(
+            removePageBlock.contains(
+                "updatePatternRowMapping(serializeMapping(markers), documentId, documentRowMapping)",
+            ),
+        )
         assertTrue(currentMarkersBlock.contains("return parseMapping(mapping)"))
     }
 

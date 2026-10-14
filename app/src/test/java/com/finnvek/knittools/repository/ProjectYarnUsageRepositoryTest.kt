@@ -73,6 +73,46 @@ class ProjectYarnUsageRepositoryTest {
     }
 
     @Test
+    fun `shared restored card does not expose another notes usage for editing`() {
+        val sharedCard = card(id = 3, name = "Shared wool")
+        val ownedUsage = usage(id = 100, cardId = 3, noteId = 4)
+        val snapshot =
+            relations(
+                notes =
+                    listOf(
+                        resolvedNote(4, "Owner", 10, sharedCard),
+                        resolvedNote(5, "Other note", 20, sharedCard),
+                    ),
+                cards = listOf(sharedCard),
+                usages = listOf(resolvedUsage(ownedUsage, sharedCard)),
+            )
+
+        val items = snapshot.items()
+
+        assertEquals(ownedUsage.toDomain(), items.single { it.source.projectYarnNoteId == 4L }.usage)
+        assertNull(items.single { it.source.projectYarnNoteId == 5L }.usage)
+        assertEquals(1, items.count { it.usage?.id == 100L })
+    }
+
+    @Test
+    fun `explicit note usage takes precedence over separately tracked card usage`() {
+        val sharedCard = card(id = 3, name = "Wool")
+        val noteUsage = usage(id = 100, noteId = 4)
+        val cardUsage = usage(id = 101, cardId = 3).copy(usedMeters = 10.0)
+        val snapshot =
+            relations(
+                notes = listOf(resolvedNote(4, "Owner", 10, sharedCard)),
+                cards = listOf(sharedCard),
+                usages = listOf(resolvedUsage(cardUsage, sharedCard), resolvedUsage(noteUsage)),
+            )
+
+        val items = snapshot.items()
+
+        assertEquals(noteUsage.toDomain(), items.single { it.source.projectYarnNoteId == 4L }.usage)
+        assertEquals(setOf(100L, 101L), items.mapNotNull { it.usage?.id }.toSet())
+    }
+
+    @Test
     fun `linking separately tracked note and card does not throw or overwrite either usage`() =
         runTest {
             val noteUsage = usage(id = 1, noteId = 4, snapshot = "Note")
@@ -106,7 +146,7 @@ class ProjectYarnUsageRepositoryTest {
         runTest {
             val noteUsage = usage(id = 1, noteId = 4, snapshot = "Note").copy(usedMeters = null)
             val cardUsage = usage(id = 2, cardId = 3, snapshot = "Card")
-            val dao = FakeUsageDao(snapshot = null).apply { sourceRows = listOf(noteUsage, cardUsage) }
+            val dao = FakeUsageDao(snapshot = relations()).apply { sourceRows = listOf(noteUsage, cardUsage) }
 
             val result = dao.linkSavedCard(projectId = 1, noteId = 4, cardId = 3)
 
@@ -115,6 +155,13 @@ class ProjectYarnUsageRepositoryTest {
             assertEquals(3L, dao.sourceRows.single().yarnCardId)
             assertEquals(4L, dao.sourceRows.single().projectYarnNoteId)
             assertEquals(amounts.usedMeters, dao.sourceRows.single().usedMeters)
+            assertTrue(dao.sourceRows.single().updatedAt > maxOf(noteUsage.updatedAt, cardUsage.updatedAt))
+            val merged = dao.sourceRows.single()
+            assertEquals(
+                YarnUsageResult.StaleAction,
+                repository(dao).update(1, noteUsage.id, noteUsage.updatedAt, noteUsage.toDomain().amounts),
+            )
+            assertEquals(merged, dao.sourceRows.single())
         }
 
     @Test
@@ -231,6 +278,19 @@ class ProjectYarnUsageRepositoryTest {
 
             dao.snapshot = null
             assertEquals(YarnUsageResult.ProjectMissing, repository.delete(1, 9, updated.usage.updatedAt))
+        }
+
+    @Test
+    fun `update rejects an exhausted revision and preserves the complete usage row`() =
+        runTest {
+            val current = usage(id = 9, cardId = 3, noteId = 4, updatedAt = Long.MAX_VALUE)
+            val dao = FakeUsageDao(relations()).apply { row = current }
+
+            assertEquals(
+                YarnUsageResult.PersistenceFailure,
+                repository(dao).update(1, 9, Long.MAX_VALUE, amounts.copy(usedMeters = 400.0)),
+            )
+            assertEquals(current, dao.row)
         }
 
     @Test

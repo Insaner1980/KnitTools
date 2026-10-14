@@ -32,7 +32,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.core.animation.doOnEnd
@@ -72,6 +74,7 @@ import com.finnvek.knittools.ui.theme.KnitToolsTheme
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
@@ -194,10 +197,8 @@ class MainActivity : AppCompatActivity() {
 
         val reviewEligible by
             inAppReviewManager.reviewEligibility.collectAsStateWithLifecycle(initialValue = false)
-        LaunchedEffect(reviewEligible) {
-            if (reviewEligible) {
-                inAppReviewManager.maybeRequestReview(this@MainActivity)
-            }
+        InAppReviewRequestEffect(reviewEligible) {
+            inAppReviewManager.maybeRequestReview(this@MainActivity)
         }
 
         val snackbarHostState = remember { SnackbarHostState() }
@@ -244,7 +245,7 @@ class MainActivity : AppCompatActivity() {
                         },
                     )
                 }
-                if (showTrialEndedNotice) {
+                if (showTrialEndedNotice && proStateReady && proState.status == ProStatus.TRIAL_EXPIRED) {
                     TrialEndedDialog(
                         onSeePro = {
                             showTrialEndedNotice = false
@@ -502,6 +503,20 @@ class MainActivity : AppCompatActivity() {
                 action = ACTION_OPEN_WIDGET_PRO_PROMPT
                 addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
             }
+    }
+}
+
+@Composable
+internal fun InAppReviewRequestEffect(
+    reviewEligible: Boolean,
+    onRequest: suspend () -> Unit,
+) {
+    val currentEligibility by rememberUpdatedState(reviewEligible)
+    val currentRequest by rememberUpdatedState(onRequest)
+    LaunchedEffect(Unit) {
+        snapshotFlow { currentEligibility }.filter { it }.collect {
+            currentRequest()
+        }
     }
 }
 

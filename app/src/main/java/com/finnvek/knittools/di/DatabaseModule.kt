@@ -10,6 +10,7 @@ import com.finnvek.knittools.data.local.PatternAnnotationDao
 import com.finnvek.knittools.data.local.PatternAnnotationLayerDao
 import com.finnvek.knittools.data.local.PatternAnnotationSchemaConstraints
 import com.finnvek.knittools.data.local.PatternBookmarkDao
+import com.finnvek.knittools.data.local.PreservingSQLiteOpenHelperFactory
 import com.finnvek.knittools.data.local.ProgressPhotoDao
 import com.finnvek.knittools.data.local.ProjectCounterDao
 import com.finnvek.knittools.data.local.ProjectDocumentDao
@@ -43,6 +44,7 @@ object DatabaseModule {
     ): KnitToolsDatabase =
         Room
             .databaseBuilder(context, KnitToolsDatabase::class.java, DB_NAME)
+            .openHelperFactory(PreservingSQLiteOpenHelperFactory())
             .addMigrations(*KnitToolsDatabase.ALL_MANUAL_MIGRATIONS)
             .addCallback(PatternAnnotationSchemaConstraints.callback)
             .addCallback(ActiveSessionSchemaConstraints.callback)

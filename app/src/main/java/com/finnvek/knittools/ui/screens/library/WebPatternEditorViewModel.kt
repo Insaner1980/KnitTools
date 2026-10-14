@@ -113,6 +113,7 @@ data class WebPatternEditorUiState(
             !isLoading &&
                 !isSaving &&
                 !didPersist &&
+                pendingIncomingShare == null &&
                 route != null &&
                 titleValidation is WebPatternTitleValidation.Valid &&
                 designerValidation is WebPatternDesignerValidation.Valid &&
@@ -179,10 +180,13 @@ class WebPatternEditorViewModel
         fun updateUrl(value: String) = updateDraft { it.copy(url = value, error = null) }
 
         fun offerSharedRequest(request: PatternShareImportRequest): WebPatternShareAcceptResult {
+            val state = mutableUiState.value
             val acceptedRequestId = savedStateHandle.get<Long>(KEY_ACCEPTED_SHARE_REQUEST_ID)
             if (acceptedRequestId == request.requestId) return WebPatternShareAcceptResult.Stored
-            val existingPending = mutableUiState.value.pendingIncomingShare
+            val existingPending = state.pendingIncomingShare
             if (existingPending?.requestId == request.requestId) return WebPatternShareAcceptResult.Stored
+            if (state.isLoading || state.isSaving || state.didPersist) return WebPatternShareAcceptResult.Ignored
+            if (existingPending != null) return WebPatternShareAcceptResult.Ignored
 
             return when (val payload = request.payload) {
                 is PatternSharePayload.Ravelry -> WebPatternShareAcceptResult.Ignored
@@ -323,6 +327,7 @@ class WebPatternEditorViewModel
         }
 
         fun dismissReplacement() {
+            if (mutableUiState.value.isSaving) return
             val pending = mutableUiState.value.pendingReplacement ?: return
             complete(WebPatternEditorCompletion.OpenProject(nextEventId(), pending.projectId))
         }

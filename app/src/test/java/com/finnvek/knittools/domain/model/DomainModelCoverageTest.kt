@@ -90,6 +90,15 @@ class DomainModelCoverageTest {
     }
 
     @Test
+    fun `custom label truncation preserves complete Unicode characters`() {
+        val prefix = "x".repeat(MAIN_COUNTER_CUSTOM_LABEL_MAX_LENGTH - 1)
+
+        assertEquals(prefix, sanitizeMainCounterCustomLabel(prefix + "\uD83E\uDDF6"))
+        val fittingLabel = "x".repeat(MAIN_COUNTER_CUSTOM_LABEL_MAX_LENGTH - 2) + "\uD83E\uDDF6"
+        assertEquals(fittingLabel, sanitizeMainCounterCustomLabel(fittingLabel))
+    }
+
+    @Test
     fun `yarn card statuses normalize unsupported values to stash`() {
         assertTrue(YarnCardStatus.isSupported(YarnCardStatus.IN_STASH))
         assertTrue(YarnCardStatus.isSupported(YarnCardStatus.IN_USE))

@@ -3,13 +3,16 @@ package com.finnvek.knittools.data.remote
 import android.content.Context
 import com.finnvek.knittools.di.IoDispatcher
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.URL
+import java.util.concurrent.atomic.AtomicReference
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.coroutines.coroutineContext
@@ -35,30 +38,41 @@ class WebPdfDownloader
         @param:ApplicationContext private val context: Context,
         @param:IoDispatcher private val ioDispatcher: CoroutineDispatcher,
     ) {
-        suspend fun download(download: WebPdfDownload): File? =
-            withContext(ioDispatcher) {
-                var url = download.url
-                repeat(MAX_REDIRECTS + 1) {
-                    if (!url.startsWith("https://", ignoreCase = true)) return@withContext null
-                    val connection = open(url, download)
-                    try {
-                        when (connection.responseCode) {
-                            in HttpURLConnection.HTTP_MULT_CHOICE..HTTP_LAST_REDIRECT -> {
-                                val location = connection.getHeaderField("Location") ?: return@withContext null
-                                url = URL(URL(url), location).toString()
+        suspend fun download(download: WebPdfDownload): File? {
+            val completedDownload = AtomicReference<File?>()
+            try {
+                return withContext(ioDispatcher) {
+                    var url = download.url
+                    repeat(MAX_REDIRECTS + 1) {
+                        if (!url.startsWith("https://", ignoreCase = true)) return@withContext null
+                        val connection = open(url, download)
+                        try {
+                            when (connection.responseCode) {
+                                in HttpURLConnection.HTTP_MULT_CHOICE..HTTP_LAST_REDIRECT -> {
+                                    val location = connection.getHeaderField("Location") ?: return@withContext null
+                                    url = URL(URL(url), location).toString()
+                                }
+
+                                in HttpURLConnection.HTTP_OK until HttpURLConnection.HTTP_MULT_CHOICE ->
+                                    return@withContext writeToTempFile(connection).also(completedDownload::set)
+
+                                else -> return@withContext null
                             }
-
-                            in HttpURLConnection.HTTP_OK until HttpURLConnection.HTTP_MULT_CHOICE ->
-                                return@withContext writeToTempFile(connection)
-
-                            else -> return@withContext null
+                        } finally {
+                            connection.disconnect()
                         }
-                    } finally {
-                        connection.disconnect()
+                    }
+                    null
+                }
+            } catch (cancellation: CancellationException) {
+                completedDownload.get()?.let { file ->
+                    withContext(NonCancellable + ioDispatcher) {
+                        if (file.exists() && !file.delete()) file.deleteOnExit()
                     }
                 }
-                null
+                throw cancellation
             }
+        }
 
         private fun open(
             url: String,

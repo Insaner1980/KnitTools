@@ -85,6 +85,29 @@ class WebPatternRepositoryRoomTest {
         }
 
     @Test
+    fun exhaustedRevisionLeavesPatternAndLinkedProjectUnchanged() =
+        runTest {
+            val patternId = database.savedPatternDao().insert(webEntity("Old title", Long.MAX_VALUE))
+            val projectId =
+                database.counterProjectDao().insert(
+                    CounterProjectEntity(name = "Project", linkedPatternId = patternId, patternName = "Old title"),
+                )
+            val patternBefore = database.savedPatternDao().getById(patternId)
+            val projectBefore = database.counterProjectDao().getProject(projectId)
+
+            val result =
+                repository.updateWebPattern(
+                    patternId,
+                    Long.MAX_VALUE,
+                    WebPatternInput("New title", "Designer", "https://example.com/new"),
+                )
+
+            assertEquals(WebPatternMutationResult.PersistenceFailure, result)
+            assertEquals(patternBefore, database.savedPatternDao().getById(patternId))
+            assertEquals(projectBefore, database.counterProjectDao().getProject(projectId))
+        }
+
+    @Test
     fun linkedTitleUpdateRollsBackWhenProjectPropagationFails() =
         runTest {
             val patternId = database.savedPatternDao().insert(webEntity(name = "Old title", updatedAt = 50L))

@@ -16,11 +16,13 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
@@ -217,6 +219,50 @@ class PatternImageImportViewModelTest {
         }
 
     @Test
+    fun `late preview failure keeps conversion and attachment busy`() =
+        runTest {
+            val page = page("first")
+            val outputUri = "file:///pattern_pdfs/7/generated.pdf"
+            val handle =
+                SavedStateHandle(
+                    mapOf(
+                        "pattern_image_project_id" to 7L,
+                        "pattern_image_session_id" to "session-a",
+                        "pattern_image_pages" to encodeStagedPatternPages(listOf(page)),
+                    ),
+                )
+            val viewModel = viewModel(handle)
+            val conversion = CompletableDeferred<Pair<String, String>>()
+            val attachment = CompletableDeferred<ProjectDocumentMutationResult>()
+            every { storage.hasCreationSpace(context, page.byteCount) } returns true
+            coEvery { storage.convertImagesToPdf(any(), 7L, listOf(page), any(), any()) } coAnswers {
+                conversion.await()
+            }
+            coEvery { repository.attachPattern(7L, outputUri, "generated.pdf", 0, null) } coAnswers {
+                attachment.await()
+            }
+
+            viewModel.createPatternPdf(replaceExisting = false)
+            runCurrent()
+            viewModel.markPreviewFailed(page.id)
+            val convertingState = viewModel.uiState.value
+            conversion.complete(outputUri to "generated.pdf")
+            runCurrent()
+            viewModel.markPreviewFailed(page.id)
+            val attachingState = viewModel.uiState.value
+            attachment.complete(ProjectDocumentMutationResult.AlreadyAttached)
+            advanceUntilIdle()
+
+            assertEquals(PatternImageImportPhase.CONVERTING, convertingState.phase)
+            assertTrue(convertingState.isBusy)
+            assertEquals(setOf(page.id), convertingState.invalidPageIds)
+            assertEquals(PatternImageImportPhase.ATTACHING, attachingState.phase)
+            assertTrue(attachingState.isBusy)
+            assertEquals(PatternImageImportPhase.SUCCESS, viewModel.uiState.value.phase)
+            verify(exactly = 0) { storage.deleteStagedPage(any()) }
+        }
+
+    @Test
     fun `attachment failure keeps staged pages and removes unreferenced output`() =
         runTest {
             val page = page("first")
@@ -271,6 +317,38 @@ class PatternImageImportViewModelTest {
             assertEquals(PatternImageImportPhase.SUCCESS, viewModel.uiState.value.phase)
             verify(exactly = 0) { storage.deleteGeneratedPdf(context, outputUri) }
             verify { storage.deleteImportSession(context, 7L, "session-a") }
+        }
+
+    @Test
+    fun `unknown attachment outcome preserves output and retryable draft`() =
+        runTest {
+            val page = page("first")
+            val outputUri = "file:///pattern_pdfs/7/generated.pdf"
+            val handle =
+                SavedStateHandle(
+                    mapOf(
+                        "pattern_image_project_id" to 7L,
+                        "pattern_image_session_id" to "session-a",
+                        "pattern_image_pages" to encodeStagedPatternPages(listOf(page)),
+                    ),
+                )
+            val viewModel = viewModel(handle)
+            every { storage.hasCreationSpace(context, page.byteCount) } returns true
+            coEvery { storage.convertImagesToPdf(any(), 7L, listOf(page), any(), any()) } returns
+                (outputUri to "generated.pdf")
+            coEvery { repository.attachPattern(7L, outputUri, "generated.pdf", 0, null) } throws
+                java.io.IOException("late acknowledgement")
+            coEvery { repository.isPatternDocumentAttached(7L, outputUri) } throws
+                java.io.IOException("read unavailable")
+
+            viewModel.createPatternPdf(replaceExisting = false)
+            advanceUntilIdle()
+
+            assertEquals(PatternImageImportPhase.ERROR, viewModel.uiState.value.phase)
+            assertEquals(PatternImageImportError.ATTACHMENT, viewModel.uiState.value.error)
+            assertEquals(listOf(page), viewModel.uiState.value.selection.pages)
+            verify(exactly = 0) { storage.deleteGeneratedPdf(context, outputUri) }
+            verify(exactly = 0) { storage.deleteImportSession(any(), any(), any()) }
         }
 
     @Test

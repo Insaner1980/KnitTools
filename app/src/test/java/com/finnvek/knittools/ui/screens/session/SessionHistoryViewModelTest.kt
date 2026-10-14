@@ -7,6 +7,7 @@ import com.finnvek.knittools.repository.CounterRepository
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -27,6 +28,7 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import java.io.IOException
 import java.util.concurrent.TimeUnit
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -118,6 +120,40 @@ class SessionHistoryViewModelTest {
             createViewModel().deleteSession(7L)
 
             io.mockk.coVerify { repository.deleteSession(7L) }
+        }
+
+    @Test
+    fun `delete failure preserves observed sessions and permits retry`() =
+        runTest {
+            val saved = listOf(sessionAt(7))
+            every { repository.getSessionsForProject(projectId) } returns flowOf(saved)
+            coEvery { repository.deleteSession(7L) } throws IOException("synthetic write failure")
+            val vm = createViewModel()
+            backgroundScope.launch(testDispatcher) { vm.sessions.collect() }
+            val errors = mutableListOf<Unit>()
+            backgroundScope.launch(testDispatcher) { vm.deleteErrors.collect { errors.add(it) } }
+
+            vm.deleteSession(7L)
+            assertEquals(saved, vm.sessions.value)
+            assertEquals(1, errors.size)
+            coEvery { repository.deleteSession(7L) } returns Unit
+            vm.deleteSession(7L)
+            io.mockk.coVerify(exactly = 2) { repository.deleteSession(7L) }
+            assertEquals(1, errors.size)
+        }
+
+    @Test
+    fun `delete cancellation is not reported as a write failure`() =
+        runTest {
+            every { repository.getSessionsForProject(projectId) } returns flowOf(emptyList())
+            coEvery { repository.deleteSession(7L) } throws CancellationException("cancelled")
+            val vm = createViewModel()
+            val errors = mutableListOf<Unit>()
+            backgroundScope.launch(testDispatcher) { vm.deleteErrors.collect { errors.add(it) } }
+
+            vm.deleteSession(7L)
+
+            assertTrue(errors.isEmpty())
         }
 
     @Test

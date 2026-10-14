@@ -421,6 +421,27 @@ class InstructionParserTest {
     // === Edge cases ===
 
     @Test
+    fun `regex counts both stitches removed by sk2p`() {
+        assertEquals(
+            ParsedInstruction.IncreaseDecrease(96, 16, false),
+            InstructionParser.parse("SK2P EVERY 12TH STITCH (96 STS)"),
+        )
+    }
+
+    @Test
+    fun `regex counts both stitches removed by s2kp`() {
+        assertEquals(
+            ParsedInstruction.IncreaseDecrease(96, 16, false),
+            InstructionParser.parse("S2KP EVERY 12TH STITCH (96 STS)"),
+        )
+    }
+
+    @Test
+    fun `regex rejects an unrepresentable double decrease count`() {
+        assertTrue(InstructionParser.parse("S2KP EVERY 1ST STITCH (2147483647 STS)") is ParsedInstruction.Failure)
+    }
+
+    @Test
     fun `regex - garbage returns failure`() {
         assertTrue(InstructionParser.parseWithRegex("HELLO WORLD") is ParsedInstruction.Failure)
     }

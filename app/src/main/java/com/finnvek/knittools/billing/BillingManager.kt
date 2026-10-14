@@ -69,6 +69,7 @@ class BillingManager
         val purchaseFlowInFlight: StateFlow<Boolean> = _purchaseFlowInFlight.asStateFlow()
 
         private var billingClient: BillingClient? = null
+        private var purchaseQueryGeneration = 0L
         private val acknowledgementsInFlight = mutableSetOf<String>()
         private val acknowledgedPurchaseTokens = mutableSetOf<String>()
         private val pendingAcknowledgementRetries = mutableSetOf<String>()
@@ -221,7 +222,10 @@ class BillingManager
                         if (purchase.products.contains(PRODUCT_ID)) {
                             when (purchase.purchaseState) {
                                 Purchase.PurchaseState.PURCHASED -> {
+                                    purchaseQueryGeneration++
                                     _isProPurchased.value = true
+                                    _purchaseStateReady.value = true
+                                    _purchaseQueryFailed.value = false
                                     acknowledgePurchase(purchase)
                                 }
 
@@ -295,6 +299,7 @@ class BillingManager
         @Suppress("TooGenericExceptionCaught")
         private suspend fun queryPurchasesInternal(): PurchaseQueryResult {
             val client = billingClient ?: return PurchaseQueryResult.Failure
+            val generation = ++purchaseQueryGeneration
             val params =
                 QueryPurchasesParams
                     .newBuilder()
@@ -309,7 +314,7 @@ class BillingManager
                 } catch (_: Exception) {
                     null
                 }
-            if (billingClient !== client) return PurchaseQueryResult.Failure
+            if (billingClient !== client || generation != purchaseQueryGeneration) return PurchaseQueryResult.Failure
             if (result == null || result.billingResult.responseCode != BillingClient.BillingResponseCode.OK) {
                 _purchaseQueryFailed.value = !_purchaseStateReady.value
                 return PurchaseQueryResult.Failure

@@ -3,8 +3,10 @@ package com.finnvek.knittools.ui.navigation
 import android.content.ContentResolver
 import android.content.Context
 import android.net.Uri
+import android.webkit.URLUtil
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModelStore
+import com.finnvek.knittools.data.remote.WebPdfDownload
 import com.finnvek.knittools.data.remote.WebPdfDownloader
 import com.finnvek.knittools.data.storage.PatternDocumentStorage
 import com.finnvek.knittools.pro.ProManager
@@ -22,6 +24,7 @@ import io.mockk.unmockkStatic
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -92,8 +95,41 @@ class IncomingPdfViewModelTest {
     fun tearDown() {
         models.clear()
         unmockkStatic(Uri::class)
+        unmockkStatic(URLUtil::class)
         Dispatchers.resetMain()
     }
+
+    @Test
+    fun `clearing the owner during downloaded pdf staging removes the download cache file`() =
+        runTest {
+            val cacheFile = temporaryFolder.newFile("download.pdf")
+            val download =
+                WebPdfDownload(
+                    "https://example.invalid/pattern.pdf",
+                    "test",
+                    null,
+                    "application/pdf",
+                ) { null }
+            val downloader = mockk<WebPdfDownloader>()
+            coEvery { downloader.download(download) } returns cacheFile
+            mockkStatic(URLUtil::class)
+            every { URLUtil.guessFileName(any(), any(), any()) } returns "download.pdf"
+            val cacheUri = mockk<Uri>()
+            every { Uri.fromFile(cacheFile) } returns cacheUri
+            coEvery { storage.copyPdfToInternal(context, 0L, cacheUri, "download.pdf") } coAnswers {
+                awaitCancellation()
+            }
+            val model = viewModel(handle(stagedUri), downloader)
+
+            model.receiveDownload(download)
+            runCurrent()
+            assertTrue(cacheFile.exists())
+            models.clear()
+            advanceUntilIdle()
+
+            assertFalse(cacheFile.exists())
+            assertEquals(stagedUri, model.pending.value?.localUri)
+        }
 
     @Test
     fun `app staged pending pdf survives recreation`() =
@@ -135,6 +171,33 @@ class IncomingPdfViewModelTest {
         runTest {
             assertNull(viewModel(handle(42L)).pending.value)
             assertNull(viewModel(SavedStateHandle(mapOf("incoming_pdf_local_uri" to stagedUri))).pending.value)
+        }
+
+    @Test
+    fun `late older import cannot replace the newer pending pdf`() =
+        runTest {
+            val older = mockk<Uri> { every { lastPathSegment } returns "Older.pdf" }
+            val newer = mockk<Uri> { every { lastPathSegment } returns "Newer.pdf" }
+            val olderCopy = CompletableDeferred<String?>()
+            val olderUri = "file:///older.pdf"
+            val newerUri = "file:///newer.pdf"
+            coEvery { storage.copyPdfToInternal(context, 0L, older, "Older.pdf") } coAnswers { olderCopy.await() }
+            coEvery { storage.copyPdfToInternal(context, 0L, newer, "Newer.pdf") } returns newerUri
+            val model = viewModel(handle(stagedUri))
+
+            model.receive(older)
+            runCurrent()
+            model.receive(newer)
+            runCurrent()
+            assertEquals(newerUri, model.pending.value?.localUri)
+
+            olderCopy.complete(olderUri)
+            advanceUntilIdle()
+
+            assertEquals(newerUri, model.pending.value?.localUri)
+            coVerify(exactly = 1) { savedPatternRepository.deleteLocalPatternFileIfUnused(olderUri) }
+            coVerify(exactly = 0) { savedPatternRepository.deleteLocalPatternFileIfUnused(newerUri) }
+            coVerify(exactly = 1) { savedPatternRepository.deleteLocalPatternFileIfUnused(stagedUri) }
         }
 
     @Test
@@ -263,14 +326,17 @@ class IncomingPdfViewModelTest {
         model.receive(uri)
     }
 
-    private fun TestScope.viewModel(handle: SavedStateHandle): IncomingPdfViewModel =
+    private fun TestScope.viewModel(
+        handle: SavedStateHandle,
+        downloader: WebPdfDownloader = mockk(),
+    ): IncomingPdfViewModel =
         IncomingPdfViewModel(
             savedStateHandle = handle,
             patternDocumentStorage = storage,
             counterRepository = counterRepository,
             savedPatternRepository = savedPatternRepository,
             proManager = proManager,
-            webPdfDownloader = mockk<WebPdfDownloader>(),
+            webPdfDownloader = downloader,
             context = context,
             ioDispatcher = dispatcher,
             applicationScope = this,

@@ -183,7 +183,7 @@
     <string name="pattern_image_replace_message">L’allegato attuale verrà sostituito quando il nuovo PDF sarà pronto.</string>
     <string name="pattern_image_replace_action">Sostituisci modello</string>
     <string name="pattern_image_conversion_progress">Creazione pagina %1$d di %2$d</string>
-    <string name="pattern_image_attaching">Allegato PDF del modello</string>
+    <string name="pattern_image_attaching">Aggiunta del PDF del modello in corso</string>
     <string name="pattern_image_cancel_conversion">Annulla conversione</string>
     <string name="pattern_image_discard_title">Scartare le immagini selezionate?</string>
     <string name="pattern_image_discard_message">Le pagine selezionate verranno rimosse.</string>
@@ -206,7 +206,7 @@
     <string name="select_yarn_card">Seleziona scheda filato</string>
     <string name="linked_yarn_title">Filato collegato</string>
     <string name="no_linked_yarn">Nessun filato collegato per ora</string>
-    <string name="choose_from_my_yarn">Scegli dai miei filati</string>
+    <string name="choose_from_my_yarn">Scegli da “Il mio filato”</string>
     <string name="choose_from_my_yarn_body">Scegli un filato salvato</string>
     <string name="add_yarn_to_project">Aggiungi filato a questo progetto</string>
     <string name="add_yarn_to_project_body">Salva una nota rapida sul filato solo per questo progetto</string>
@@ -220,8 +220,8 @@
     <string name="change_yarn_photo">Cambia foto del filato</string>
     <string name="manual_yarn_optional_details">Inizia con un nome. Marca, spessore, colore e bagno sono facoltativi.</string>
     <string name="project_yarn_quantity_format">Quantità: %d</string>
-    <string name="save_to_my_yarn">Salva nei miei filati</string>
-    <string name="saved_to_my_yarn">Salvato nei miei filati</string>
+    <string name="save_to_my_yarn">Salva in “Il mio filato”</string>
+    <string name="saved_to_my_yarn">Salvato in “Il mio filato”</string>
     <string name="save_to_my_yarn_explanation">Copia il nome del filato, la descrizione e la quantità in una scheda nella sezione Il mio filato, collegata a questo progetto. Questa voce rimane qui; le note non vengono copiate.</string>
     <string name="saved_to_my_yarn_explanation">Questa voce del progetto rimane separata. Le note non sono state copiate nella scheda della sezione Il mio filato.</string>
     <string name="yarn_count_format">%1$d filati</string>
@@ -245,7 +245,7 @@
 
     <!-- Session History -->
     <string name="session_history_title">Cronologia delle sessioni</string>
-    <string name="no_sessions">Nessuna sessione registrata per ora. Inizia a lavorare per vedere qui la cronologia.</string>
+    <string name="no_sessions">Nessuna sessione registrata per ora. Apri un progetto e avvia una sessione di lavoro per registrare qui il tuo tempo.</string>
     <string name="session_row_range">Ferri %1$d \u2192 %2$d</string>
     <string name="session_row_single">Ferro %1$d</string>
     <string name="delete_session_title">Eliminare la sessione?</string>
@@ -532,13 +532,13 @@
         <item quantity="other">Attivo %1$d su %2$d giorni</item>
     </plurals>
     <string name="insights_chart_axis_today">oggi</string>
-    <string name="insights_chart_a11y_daily">Tempo giornaliero per %1$s, %2$s, %3$s, il più lungo %4$s</string>
-    <string name="insights_chart_a11y_monthly">Tempo mensile per %1$s, %2$s, %3$s, il più lungo %4$s</string>
+    <string name="insights_chart_a11y_daily">Tempo giornaliero %1$s, %2$s, %3$s, il più lungo %4$s</string>
+    <string name="insights_chart_a11y_monthly">Tempo mensile %1$s, %2$s, %3$s, il più lungo %4$s</string>
     <string name="insights_chart_a11y_next">Barra successiva</string>
     <string name="insights_chart_a11y_previous">Barra precedente</string>
     <string name="insights_project_sub_format">%1$s, %2$s</string>
     <string name="insights_empty_title">Ancora nessun tempo sui ferri.</string>
-    <string name="insights_empty_body">Apri un progetto e inizia a contare. Il tuo tempo comparirà qui.</string>
+    <string name="insights_empty_body">Apri un progetto e avvia una sessione di lavoro per registrare qui il tuo tempo.</string>
     <string name="insights_nothing_yet_week">Ancora nulla questa settimana.</string>
     <string name="insights_nothing_yet_month">Ancora nulla questo mese.</string>
     <string name="insights_nothing_yet_all_time">Ancora nulla.</string>
@@ -693,7 +693,7 @@
     <string name="tip_edge_stitches_title">Maglie di vivagno</string>
     <string name="tip_edge_stitches_desc">Le maglie di vivagno sono maglie extra fuori dalla ripetizione del motivo. Inserisci il totale delle maglie di vivagno da avviare; il calcolatore le aggiunge dopo aver calcolato la larghezza desiderata, ad esempio 2 per una maglia su ciascun lato.</string>
     <string name="tip_flat_vs_circular_title">In piano vs. in tondo</string>
-    <string name="tip_flat_vs_circular_desc">Nel lavoro in piano lavori avanti e indietro su ferri dritti o circolari, girando alla fine di ogni ferro. Aumenti e diminuzioni avvengono su entrambi i lati.\n\nNel lavoro in tondo lavori in modo continuo. Aumenti e diminuzioni sono distribuiti uniformemente lungo il giro.</string>
+    <string name="tip_flat_vs_circular_desc">Nel lavoro in piano lavori avanti e indietro su ferri dritti o circolari, girando alla fine di ogni ferro.\n\nNel lavoro in tondo lavori in modo continuo. Aumenti e diminuzioni sono distribuiti uniformemente lungo il giro.</string>
     <string name="tip_needle_sizes_title">Sistemi di misure dei ferri</string>
     <string name="tip_needle_sizes_desc">Il sistema metrico (mm) è lo standard universale. Le misure US usano un sistema numerato (0–50). Le misure UK/Canada usano un altro sistema numerato. Le misure giapponesi hanno una numerazione propria. Controlla sempre la misura in mm per sicurezza.</string>
     <string name="tip_imperial_units_title">Unità imperiali</string>
@@ -709,7 +709,6 @@
     <string name="target_rows_set">Imposta obiettivo…</string>
     <string name="target_rows_edit">Modifica obiettivo</string>
     <string name="target_rows_remove">Rimuovi obiettivo</string>
-    <string name="target_rows_hint">Valore obiettivo</string>
     <string name="row_label_with_target">%1$d / %2$d</string>
     <string name="widget_undo_action">Annulla</string>
     <string name="widget_undo_content_description">Annulla l’ultima modifica</string>
@@ -745,7 +744,7 @@
     <string name="pro_prompt_photos_title">Aggiungi foto dei progressi con Pro</string><string name="pro_prompt_photos_body">Per creare una nuova foto dei progressi è necessario Pro. Le foto esistenti rimangono disponibili.</string>
     <string name="pro_prompt_notes_title">Aggiungi note al progetto con Pro</string><string name="pro_prompt_notes_body">Per creare la prima nota di questo progetto è necessario Pro. Le note già create rimangono modificabili.</string>
     <string name="pro_prompt_yarn_title">Aggiungi filato con Pro</string><string name="pro_prompt_yarn_body">Per creare una nuova scheda filato è necessario Pro. Le schede esistenti rimangono disponibili e modificabili.</string>
-    <string name="pro_prompt_save_yarn_title">Salva questo filato con Pro</string><string name="pro_prompt_save_yarn_body">Salvare questo filato del progetto in I miei filati crea una nuova scheda e richiede Pro. La nota sul filato del progetto rimane disponibile.</string>
+    <string name="pro_prompt_save_yarn_title">Salva questo filato con Pro</string><string name="pro_prompt_save_yarn_body">Salvare questo filato del progetto in “Il mio filato” crea una nuova scheda e richiede Pro. La nota sul filato del progetto rimane disponibile.</string>
     <string name="pro_prompt_counters_title">Aggiungi un contatore con Pro</string><string name="pro_prompt_counters_body">Per creare un nuovo contatore aggiuntivo è necessario Pro. I contatori esistenti rimangono disponibili e modificabili.</string>
     <string name="pro_prompt_reminders_title">Aggiungi un promemoria di riga con Pro</string><string name="pro_prompt_reminders_body">Per creare un nuovo promemoria di riga è necessario Pro. I promemoria esistenti continuano a funzionare e rimangono modificabili.</string>
     <string name="pro_prompt_pattern_camera_title">Trasforma le foto del modello in PDF con Pro</string><string name="pro_prompt_pattern_camera_body">Per creare un nuovo PDF dalle foto del modello è necessario Pro. I modelli e i PDF esistenti rimangono disponibili.</string>
@@ -970,7 +969,7 @@
         <item quantity="other">%1$d ferri</item>
     </plurals>
     <string name="yarn_usage_title">Utilizzo del filato</string>
-    <string name="yarn_usage_scope">Registra solo il filato riservato a questo progetto. Le quantità in I miei filati restano invariate.</string>
+    <string name="yarn_usage_scope">Registra solo il filato riservato a questo progetto. Le quantità in “Il mio filato” restano invariate.</string>
     <string name="yarn_usage_unit">Unità di quantità</string>
     <string name="yarn_usage_grams">Grammi</string>
     <string name="yarn_usage_skeins">Matasse</string>

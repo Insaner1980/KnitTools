@@ -35,7 +35,7 @@ import com.finnvek.knittools.data.backup.BackupFormat
 import com.finnvek.knittools.ui.components.CancelButton
 import com.finnvek.knittools.ui.components.ConfirmationDialog
 import com.finnvek.knittools.ui.components.ToolScreenScaffold
-import java.text.DateFormat
+import com.finnvek.knittools.ui.components.rememberLocaleDateFormat
 import java.time.LocalDate
 import java.util.Date
 
@@ -125,7 +125,7 @@ internal fun BackupContent(
                 Text(
                     stringResource(
                         R.string.backup_preview_date,
-                        DateFormat.getDateTimeInstance().format(Date(preview.createdAt)),
+                        rememberLocaleDateFormat("yMMMd", includeTime = true).format(Date(preview.createdAt)),
                     ),
                 )
                 Text(stringResource(R.string.backup_preview_version, preview.versionName))

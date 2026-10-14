@@ -201,7 +201,7 @@ internal class PatternImageImportViewModel
             if (!pageExists) return
             _uiState.update {
                 it.copy(
-                    phase = PatternImageImportPhase.ERROR,
+                    phase = if (it.isBusy) it.phase else PatternImageImportPhase.ERROR,
                     error = PatternImageImportError.UNSUPPORTED,
                     invalidPageIds = it.invalidPageIds + pageId,
                 )
@@ -272,8 +272,9 @@ internal class PatternImageImportViewModel
                 val output = convertImages(startState, projectId)
                 uncommittedOutputUri = output.first
                 _uiState.update { it.copy(phase = PatternImageImportPhase.ATTACHING, progress = null) }
-                if (!attachGeneratedPattern(projectId, output)) {
-                    deleteGeneratedPdf(uncommittedOutputUri)
+                val attached = attachGeneratedPattern(projectId, output)
+                if (attached != true) {
+                    if (attached == false) deleteGeneratedPdf(uncommittedOutputUri)
                     uncommittedOutputUri = null
                     showRecoverableError(PatternImageImportError.ATTACHMENT)
                     return
@@ -314,7 +315,7 @@ internal class PatternImageImportViewModel
         private suspend fun attachGeneratedPattern(
             projectId: Long,
             output: Pair<String, String>,
-        ): Boolean {
+        ): Boolean? {
             val failure =
                 runCatching {
                     repository.attachPattern(
@@ -330,8 +331,10 @@ internal class PatternImageImportViewModel
             val committed =
                 withContext(NonCancellable) {
                     runCatching { repository.isPatternDocumentAttached(projectId, output.first) }
-                        .getOrDefault(false)
+                        .getOrNull()
                 }
+            // An unreadable attachment state must not authorize deleting a potentially committed PDF.
+            if (committed == null) return null
             if (committed) return true
             if (failure is CancellationException) throw failure
             return false

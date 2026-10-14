@@ -6,6 +6,17 @@ import org.junit.Test
 
 class PatternDisplayNamesTest {
     @Test
+    fun `document label does not split a supplementary character at the limit`() {
+        val prefix = "Ab" + "x".repeat(PROJECT_DOCUMENT_LABEL_MAX_LENGTH - 3)
+        assertEquals(prefix, PatternDisplayNames.documentLabel("$prefix\uD83E\uDDF6.pdf"))
+        val fittingPrefix = prefix.dropLast(1)
+        assertEquals(
+            "$fittingPrefix\uD83E\uDDF6",
+            PatternDisplayNames.documentLabel("$fittingPrefix\uD83E\uDDF6.pdf"),
+        )
+    }
+
+    @Test
     fun `upper case file name becomes title case without extension`() {
         assertEquals("Step By Step Sweater V3", PatternDisplayNames.fromFileName("STEP_BY_STEP_SWEATER_V3.pdf"))
     }

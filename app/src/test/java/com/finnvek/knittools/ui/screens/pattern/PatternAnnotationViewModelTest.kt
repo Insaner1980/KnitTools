@@ -789,6 +789,118 @@ class PatternAnnotationViewModelTest {
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)
+class PatternAnnotationOrderingViewModelTest {
+    @Before
+    fun setUp() {
+        Dispatchers.setMain(StandardTestDispatcher())
+    }
+
+    @After
+    fun tearDown() {
+        Dispatchers.resetMain()
+    }
+
+    @Test
+    fun `bring forward at maximum rank preserves ordering through undo and redo`() =
+        verifyOrdering(Long.MAX_VALUE, toFront = true)
+
+    @Test
+    fun `send backward at minimum rank preserves ordering through undo and redo`() =
+        verifyOrdering(Long.MIN_VALUE, toFront = false)
+
+    @Test
+    fun `ordinary forward supports undo and redo`() = verifyOrdering(5L, toFront = true)
+
+    @Test
+    fun `ordinary backward supports undo and redo`() = verifyOrdering(-5L, toFront = false)
+
+    private fun verifyOrdering(
+        otherRank: Long,
+        toFront: Boolean,
+    ) = runTest {
+        val fixture = OrderingFixture(otherRank)
+        val before = fixture.annotations.value
+        val viewModel = fixture.route.viewModel()
+        advanceUntilIdle()
+        viewModel.selectAnnotationAt(NormalizedPatternPoint(0.5f, 0.2f))
+        runCurrent()
+        assertEquals(1L, viewModel.uiState.value.selectedAnnotationId)
+        if (toFront) viewModel.bringSelectedForward() else viewModel.sendSelectedBackward()
+        advanceUntilIdle()
+        val expected = if (toFront) listOf(2L, 1L) else listOf(1L, 2L)
+        assertEquals(expected, fixture.orderedIds())
+        viewModel.undo()
+        advanceUntilIdle()
+        assertEquals(before, fixture.annotations.value)
+        viewModel.redo()
+        advanceUntilIdle()
+        assertEquals(expected, fixture.orderedIds())
+    }
+
+    @Test
+    fun `duplicate stays above an existing maximum rank annotation`() =
+        runTest {
+            val fixture = OrderingFixture(Long.MAX_VALUE)
+            val viewModel = fixture.route.viewModel()
+            advanceUntilIdle()
+            viewModel.selectAnnotationAt(NormalizedPatternPoint(0.5f, 0.2f))
+            runCurrent()
+            viewModel.duplicateSelected()
+            advanceUntilIdle()
+            assertEquals(listOf(1L, 2L, 3L), fixture.orderedIds())
+            val duplicate = fixture.annotations.value.last()
+            assertEquals(Long.MAX_VALUE, duplicate.zIndex)
+        }
+
+    private class OrderingFixture(
+        otherRank: Long,
+    ) {
+        val route = projectRoute()
+        val annotations =
+            MutableStateFlow(
+                listOf(
+                    line(1L, 0L, 0.2f),
+                    line(2L, otherRank, 0.8f),
+                ),
+            )
+
+        init {
+            every { route.annotationRepository.observePage(31L, 0) } returns flowOf(emptyList())
+            every { route.annotationRepository.observePage(41L, 0) } returns annotations
+            coEvery { route.annotationRepository.updateAnnotation(any()) } coAnswers {
+                val changed = firstArg<PatternAnnotation>()
+                annotations.value = annotations.value.map { if (it.id == changed.id) changed else it }
+            }
+            coEvery { route.annotationRepository.restoreBatch(any()) } coAnswers {
+                val changed = firstArg<List<PatternAnnotation>>().associateBy { it.id }
+                annotations.value = annotations.value.map { changed[it.id] ?: it }
+            }
+            coEvery { route.annotationRepository.insertAnnotation(any()) } coAnswers {
+                annotations.value += firstArg<PatternAnnotation>().copy(id = 3L)
+                3L
+            }
+        }
+
+        fun orderedIds(): List<Long> =
+            annotations.value.sortedWith(compareBy<PatternAnnotation>({ it.zIndex }, { it.id })).map { it.id }
+
+        private fun line(
+            id: Long,
+            rank: Long,
+            y: Float,
+        ) = annotation(41L, 0, rank).copy(
+            id = id,
+            payload =
+                FreehandPayload(
+                    listOf(NormalizedPatternPoint(0.1f, y), NormalizedPatternPoint(0.9f, y)),
+                    0,
+                    2f,
+                ),
+        )
+    }
+}
+
+@OptIn(ExperimentalCoroutinesApi::class)
 class PatternAnnotationPressureViewModelTest {
     @Before
     fun setUp() {
@@ -1095,6 +1207,70 @@ class PatternAnnotationDocumentSelectionTest {
                     onProgress = any(),
                 )
             }
+        }
+
+    @Test
+    fun `history keeps only the newest 50 of 51 committed commands`() =
+        runTest {
+            val route = projectRoute()
+            every { route.annotationRepository.observePage(any(), 0) } returns flowOf(emptyList())
+            var nextId = 0L
+            val deletedIds = mutableListOf<Long>()
+            coEvery { route.annotationRepository.insertAnnotation(any()) } answers { ++nextId }
+            coEvery { route.annotationRepository.deleteAnnotation(any()) } answers {
+                deletedIds += firstArg<Long>()
+            }
+            val viewModel = route.viewModel()
+            advanceUntilIdle()
+
+            repeat(51) { index ->
+                viewModel.addTextBox("Note $index")
+                advanceUntilIdle()
+                assertTrue(viewModel.uiState.value.canUndo)
+            }
+            assertEquals(51L, nextId)
+            repeat(50) {
+                viewModel.undo()
+                advanceUntilIdle()
+            }
+            assertEquals((51L downTo 2L).toList(), deletedIds)
+            assertFalse(viewModel.uiState.value.canUndo)
+            assertTrue(viewModel.uiState.value.canRedo)
+            viewModel.undo()
+            advanceUntilIdle()
+            assertEquals(50, deletedIds.size)
+
+            viewModel.addTextBox("New note")
+            advanceUntilIdle()
+            assertTrue(viewModel.uiState.value.canUndo)
+            assertFalse(viewModel.uiState.value.canRedo)
+        }
+
+    @Test
+    fun `hidden master trackers do not consume visible project highlight budget`() =
+        runTest {
+            val route = projectRoute()
+            val master = listOf(trackerAnnotation(101L, 31L, 0), trackerAnnotation(102L, 31L, 0))
+            val project = trackerAnnotation(103L, 41L, 0)
+            every { route.annotationRepository.observePage(31L, 0) } returns flowOf(master)
+            every { route.annotationRepository.observePage(41L, 0) } returns flowOf(listOf(project))
+            val viewModel = route.viewModel()
+            advanceUntilIdle()
+            assertEquals(setOf(101L, 102L), viewModel.uiState.value.trackerHighlights.keys)
+
+            viewModel.setMasterLayerVisible(false)
+            advanceUntilIdle()
+            assertEquals(setOf(103L), viewModel.uiState.value.trackerHighlights.keys)
+
+            viewModel.setProjectLayerVisible(false)
+            advanceUntilIdle()
+            assertTrue(
+                viewModel.uiState.value.trackerHighlights
+                    .isEmpty(),
+            )
+            viewModel.setMasterLayerVisible(true)
+            advanceUntilIdle()
+            assertEquals(setOf(101L, 102L), viewModel.uiState.value.trackerHighlights.keys)
         }
 
     @Test

@@ -1,6 +1,7 @@
 package com.finnvek.knittools.domain.calculator
 
 import com.finnvek.knittools.domain.model.RowReminder
+import com.finnvek.knittools.domain.model.takeWithoutSplittingSurrogatePair
 
 object ReminderLogic {
     const val MESSAGE_MAX_LENGTH = 200
@@ -10,11 +11,7 @@ object ReminderLogic {
         if (reminder.repeatInterval != null && reminder.repeatInterval <= 0) return null
         val trimmedMessage = reminder.message.trim()
         if (trimmedMessage.isEmpty()) return null
-        val boundedMessage =
-            trimmedMessage
-                .take(MESSAGE_MAX_LENGTH)
-                .let { value -> if (value.lastOrNull()?.isHighSurrogate() == true) value.dropLast(1) else value }
-        return reminder.copy(message = boundedMessage)
+        return reminder.copy(message = trimmedMessage.takeWithoutSplittingSurrogatePair(MESSAGE_MAX_LENGTH))
     }
 
     fun shouldTrigger(

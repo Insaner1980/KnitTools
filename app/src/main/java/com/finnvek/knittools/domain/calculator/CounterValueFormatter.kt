@@ -85,14 +85,15 @@ object CounterValueFormatter {
         val resolvedCustomLabel = customLabel.takeIf { labelType == MainCounterLabelType.CUSTOM }
         val target = project.targetRows?.takeIf { it > 0 }
         val labelSlot = MainCounterLabelSlot(labelType = labelType, customLabel = resolvedCustomLabel)
+        val countSlot =
+            MainCounterCountSlot(
+                count = project.count,
+                labelType = labelType,
+                customLabel = resolvedCustomLabel,
+            )
 
         return MainCounterValueDisplay(
-            heroTitle =
-                MainCounterCountSlot(
-                    count = project.count,
-                    labelType = labelType,
-                    customLabel = resolvedCustomLabel,
-                ),
+            heroTitle = countSlot,
             targetLine =
                 target?.let {
                     MainCounterTargetSlot(
@@ -104,12 +105,7 @@ object CounterValueFormatter {
                 },
             increaseContentDescription = labelSlot,
             decreaseContentDescription = labelSlot,
-            projectCardCount =
-                MainCounterCountSlot(
-                    count = project.count,
-                    labelType = labelType,
-                    customLabel = resolvedCustomLabel,
-                ),
+            projectCardCount = countSlot,
         )
     }
 

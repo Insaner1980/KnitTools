@@ -39,9 +39,7 @@ object MeasurementCalculator {
         val exactCount = exactCountForSize(density, lengthMm) ?: return null
         val roundedCount = roundedWholeCount(exactCount, allowZero = true) ?: return null
         val roundedLength =
-            if (roundedCount ==
-                0
-            ) {
+            if (roundedCount == 0) {
                 0.0
             } else {
                 sizeFromCount(roundedCount.toDouble(), density) ?: return null

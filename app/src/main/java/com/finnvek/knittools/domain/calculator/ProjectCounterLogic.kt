@@ -2,6 +2,7 @@ package com.finnvek.knittools.domain.calculator
 
 import com.finnvek.knittools.domain.model.ProjectCounter
 import com.finnvek.knittools.domain.model.ProjectCounterType
+import com.finnvek.knittools.domain.model.takeWithoutSplittingSurrogatePair
 
 object ProjectCounterLogic {
     const val MAX_NAME_LENGTH = 50
@@ -16,11 +17,7 @@ object ProjectCounterLogic {
             counter.copy(linkedToMainCounter = false)
         }
 
-    fun normalizeName(name: String): String =
-        name
-            .trim()
-            .take(MAX_NAME_LENGTH)
-            .let { value -> if (value.lastOrNull()?.isHighSurrogate() == true) value.dropLast(1) else value }
+    fun normalizeName(name: String): String = name.trim().takeWithoutSplittingSurrogatePair(MAX_NAME_LENGTH)
 
     fun validatedForPersistence(counter: ProjectCounter): ProjectCounter? {
         val name = normalizeName(counter.name)
@@ -109,27 +106,26 @@ object ProjectCounterLogic {
     }
 
     fun increment(counter: ProjectCounter): ProjectCounter {
-        val count = counter.count.coerceAtLeast(0)
-        val stepSize = counter.stepSize.coerceAtLeast(1)
-        val newCount = count.toLong() + stepSize
-        // SHAPING-tyyppi ei resettaa — normaali laskenta
-        if (counter.counterType == ProjectCounterType.SHAPING) {
-            return counter.copy(count = newCount.coerceAtMost(Int.MAX_VALUE.toLong()).toInt(), stepSize = stepSize)
-        }
         if (counter.counterType == ProjectCounterType.REPEAT_SECTION) {
             return counter
         }
+        val count = counter.count.coerceAtLeast(0)
+        val stepSize = counter.stepSize.coerceAtLeast(1)
+        val newCount = count.toLong() + stepSize
         val repeatAt = counter.repeatAt
-        return if (
-            counter.counterType == ProjectCounterType.REPEATING &&
-            repeatAt != null &&
-            repeatAt > 0 &&
-            newCount >= repeatAt.toLong()
-        ) {
-            counter.copy(count = (newCount % repeatAt.toLong()).toInt(), stepSize = stepSize)
-        } else {
-            counter.copy(count = newCount.coerceAtMost(Int.MAX_VALUE.toLong()).toInt(), stepSize = stepSize)
-        }
+        // Vain REPEATING-tyyppi palaa alkuun; SHAPING ja COUNT_UP laskevat normaalisti.
+        val nextCount =
+            if (
+                counter.counterType == ProjectCounterType.REPEATING &&
+                repeatAt != null &&
+                repeatAt > 0 &&
+                newCount >= repeatAt.toLong()
+            ) {
+                (newCount % repeatAt.toLong()).toInt()
+            } else {
+                newCount.coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
+            }
+        return counter.copy(count = nextCount, stepSize = stepSize)
     }
 
     fun decrement(counter: ProjectCounter): ProjectCounter {

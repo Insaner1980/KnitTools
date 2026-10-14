@@ -37,8 +37,7 @@ object PatternDisplayNames {
      */
     fun documentLabel(fileName: String): String =
         fromFileName(fileName)
-            .take(PROJECT_DOCUMENT_LABEL_MAX_LENGTH)
-            .let { value -> if (value.lastOrNull()?.isHighSurrogate() == true) value.dropLast(1) else value }
+            .takeWithoutSplittingSurrogatePair(PROJECT_DOCUMENT_LABEL_MAX_LENGTH)
             .trimEnd()
 
     /** Näytettävä nimi: tiedostonimeltä näyttävä nimike siistitään, käyttäjän antama nimi pysyy ennallaan. */

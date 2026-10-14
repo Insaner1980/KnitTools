@@ -39,6 +39,8 @@ private val rowMappingJson =
         encodeDefaults = true
     }
 
+private val rowMarkerOrder: Comparator<RowMarker> = compareBy<RowMarker> { it.page }.thenBy { it.row }
+
 fun parseMapping(json: String?): List<RowMarker> {
     if (json == null || json.length > ROW_MAPPING_MAX_JSON_LENGTH || json.isBlank()) return emptyList()
     return runCatching {
@@ -49,7 +51,7 @@ fun parseMapping(json: String?): List<RowMarker> {
             }?.filter(RowMarker::isValid)
             ?.distinctBy { marker -> marker.row to marker.page }
             ?.take(ROW_MAPPING_MAX_MARKERS)
-            ?.sortedWith(compareBy<RowMarker> { it.page }.thenBy { it.row })
+            ?.sortedWith(rowMarkerOrder)
             ?.toList()
             .orEmpty()
     }.getOrDefault(emptyList())
@@ -61,7 +63,7 @@ fun serializeMapping(markers: List<RowMarker>): String =
             .filter(RowMarker::isValid)
             .distinctBy { it.row to it.page }
             .take(ROW_MAPPING_MAX_MARKERS)
-            .sortedWith(compareBy<RowMarker> { it.page }.thenBy { it.row }),
+            .sortedWith(rowMarkerOrder),
     )
 
 fun createCalibrationRowMarkers(
@@ -85,7 +87,7 @@ fun createCalibrationRowMarkers(
             page = lastPage,
             yPosition = sanitizeReadingLineYFraction(lastYPosition),
         ),
-    ).sortedWith(compareBy<RowMarker> { it.page }.thenBy { it.row })
+    ).sortedWith(rowMarkerOrder)
 }
 
 fun interpolateYPosition(

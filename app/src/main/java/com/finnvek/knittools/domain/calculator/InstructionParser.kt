@@ -394,33 +394,13 @@ object InstructionParser {
         // "X rows" (swatch-kontekstissa)
         val swRowP = Regex("""(\d+)\s*ROWS?""")
 
-        val swW =
-            widthP
-                .find(upper)
-                ?.groupValues
-                ?.get(1)
-                ?.toDoubleOrNull()
-        val swH =
-            heightP
-                .find(upper)
-                ?.groupValues
-                ?.get(1)
-                ?.toDoubleOrNull()
+        val swW = widthP.firstGroupDouble(upper)
+        val swH = heightP.firstGroupDouble(upper)
 
         // Swatch: vähintään leveys tai korkeus + silmukat/rivit
         if (swW != null || swH != null) {
-            val swSt =
-                swStP
-                    .find(upper)
-                    ?.groupValues
-                    ?.get(1)
-                    ?.toIntOrNull()
-            val swR =
-                swRowP
-                    .find(upper)
-                    ?.groupValues
-                    ?.get(1)
-                    ?.toIntOrNull()
+            val swSt = swStP.firstGroupInt(upper)
+            val swR = swRowP.firstGroupInt(upper)
             return ParsedInstruction.GaugeSwatch(
                 width = swW,
                 stitches = swSt,
@@ -432,21 +412,10 @@ object InstructionParser {
 
         // "swatch: X cm, Y stitches" tai "my swatch is X cm with Y stitches"
         if (upper.contains("SWATCH") || upper.contains("MEASURED")) {
-            val swSt =
-                swStP
-                    .find(upper)
-                    ?.groupValues
-                    ?.get(1)
-                    ?.toIntOrNull()
-            val swR =
-                swRowP
-                    .find(upper)
-                    ?.groupValues
-                    ?.get(1)
-                    ?.toIntOrNull()
+            val swSt = swStP.firstGroupInt(upper)
+            val swR = swRowP.firstGroupInt(upper)
             // Ensimmäinen cm/in-luku on leveys
-            val cmOrIn = Regex("""(\d+(?:\.\d+)?)\s*(?:CM|IN|INCHES?)""").find(upper)
-            val width = cmOrIn?.groupValues?.get(1)?.toDoubleOrNull()
+            val width = Regex("""(\d+(?:\.\d+)?)\s*(?:CM|IN|INCHES?)""").firstGroupDouble(upper)
             if (width != null || swSt != null || swR != null) {
                 return ParsedInstruction.GaugeSwatch(
                     width = width,
@@ -494,6 +463,10 @@ object InstructionParser {
 
         return null
     }
+
+    private fun Regex.firstGroupInt(text: String): Int? = find(text)?.groupValues?.get(1)?.toIntOrNull()
+
+    private fun Regex.firstGroupDouble(text: String): Double? = find(text)?.groupValues?.get(1)?.toDoubleOrNull()
 
     private fun detectGaugeUnit(text: String): ParsedInstruction.GaugeUnit =
         if (text.contains("4 IN")) {

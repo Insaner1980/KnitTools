@@ -14,22 +14,24 @@ object CounterLogic {
             (currentCount.toLong() + stepSize.toLong())
                 .coerceAtMost(Int.MAX_VALUE.toLong())
                 .toInt()
-        return if (newCount == currentCount) {
-            state.copy(count = currentCount, stepSize = stepSize)
-        } else {
-            state.copy(
-                count = newCount,
-                previousCount = currentCount,
-                stepSize = stepSize,
-            )
-        }
+        return applyCountChange(state, currentCount, newCount, stepSize)
     }
 
     fun decrement(state: CounterState): CounterState {
         val currentCount = state.count.coerceAtLeast(0)
         val stepSize = state.stepSize.coerceAtLeast(1)
         val newCount = (currentCount.toLong() - stepSize.toLong()).coerceAtLeast(0L).toInt()
-        return if (newCount == currentCount) {
+        return applyCountChange(state, currentCount, newCount, stepSize)
+    }
+
+    /** Rajaan osunut muutos ei muuta arvoa, joten se ei myöskään korvaa kumottavaa edellistä arvoa. */
+    private fun applyCountChange(
+        state: CounterState,
+        currentCount: Int,
+        newCount: Int,
+        stepSize: Int,
+    ): CounterState =
+        if (newCount == currentCount) {
             state.copy(count = currentCount, stepSize = stepSize)
         } else {
             state.copy(
@@ -38,7 +40,6 @@ object CounterLogic {
                 stepSize = stepSize,
             )
         }
-    }
 
     fun undo(state: CounterState): CounterState =
         if (state.previousCount != null) {

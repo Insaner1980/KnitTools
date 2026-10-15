@@ -1,9 +1,13 @@
 version: 2
 updates:
+  # Cooldown: uusia versioita ehdotetaan vasta 7 päivää julkaisun jälkeen, jotta
+  # haitalliseksi tai rikkinäiseksi havaittu julkaisu ehditään vetää pois.
   - package-ecosystem: "gradle"
     directory: "/"
     schedule:
       interval: "weekly"
+    cooldown:
+      default-days: 7
     ignore:
       # Compose Rules 0.6.4+ on käännetty detekt 2.0.0-alpha.6:ta vasten, mutta
       # projekti pysyy dokumentoidusti alpha.5:ssä (AGP 9 -poikkeus). Poista
@@ -14,11 +18,17 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    cooldown:
+      default-days: 7
   - package-ecosystem: "npm"
     directory: "/.deepsec"
     schedule:
       interval: "weekly"
+    cooldown:
+      default-days: 7
   - package-ecosystem: "npm"
     directory: "/functions"
     schedule:
       interval: "weekly"
+    cooldown:
+      default-days: 7

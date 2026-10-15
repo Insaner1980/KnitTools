@@ -262,9 +262,8 @@ private fun numericKeyboardType(
     allowNegative: Boolean,
 ): KeyboardType =
     when {
-        isDecimal && allowNegative -> KeyboardType.Text
-        isDecimal -> KeyboardType.Decimal
         allowNegative -> KeyboardType.Text
+        isDecimal -> KeyboardType.Decimal
         else -> KeyboardType.Number
     }
 

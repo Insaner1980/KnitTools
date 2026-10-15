@@ -125,6 +125,12 @@ fun PhotoGalleryScreen(
     val cameraPermissionDeniedPermanentMessage = stringResource(R.string.camera_permission_denied_permanent)
     var pendingProAction by rememberSaveable { mutableStateOf<PendingPhotoProAction?>(null) }
 
+    fun clearPendingCapture() {
+        pendingPhotoUriString = null
+        pendingPhotoFilePath = null
+        pendingPhotoProjectId = null
+    }
+
     val cameraLauncher =
         rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { success ->
             handlePhotoCaptureResult(
@@ -134,36 +140,28 @@ fun PhotoGalleryScreen(
                 pendingPhotoProjectId = pendingPhotoProjectId,
                 actions = actions,
             )
-            pendingPhotoUriString = null
-            pendingPhotoFilePath = null
-            pendingPhotoProjectId = null
+            clearPendingCapture()
         }
 
     fun startCameraCapture(ownerProjectId: Long?) {
         requestCameraCaptureTarget(ownerProjectId, actions) { captureTarget ->
+            fun abandonCapture() {
+                actions.deletePendingPhotoFile(captureTarget.filePath)
+                actions.cancelPhotoCreation()
+                clearPendingCapture()
+            }
+
             pendingPhotoUriString = captureTarget.uri.toString()
             pendingPhotoFilePath = captureTarget.filePath
             pendingPhotoProjectId = ownerProjectId
             try {
                 cameraLauncher.launch(captureTarget.uri)
             } catch (_: ActivityNotFoundException) {
-                actions.deletePendingPhotoFile(captureTarget.filePath)
-                actions.cancelPhotoCreation()
-                pendingPhotoUriString = null
-                pendingPhotoFilePath = null
-                pendingPhotoProjectId = null
+                abandonCapture()
             } catch (_: IllegalStateException) {
-                actions.deletePendingPhotoFile(captureTarget.filePath)
-                actions.cancelPhotoCreation()
-                pendingPhotoUriString = null
-                pendingPhotoFilePath = null
-                pendingPhotoProjectId = null
+                abandonCapture()
             } catch (_: SecurityException) {
-                actions.deletePendingPhotoFile(captureTarget.filePath)
-                actions.cancelPhotoCreation()
-                pendingPhotoUriString = null
-                pendingPhotoFilePath = null
-                pendingPhotoProjectId = null
+                abandonCapture()
             }
         }
     }

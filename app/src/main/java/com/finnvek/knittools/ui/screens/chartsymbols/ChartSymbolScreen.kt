@@ -122,9 +122,9 @@ private fun DrawScope.drawSymbol(
     drawRect(tint, topLeft = Offset(pad, pad), size = Size(s - 2 * pad, s - 2 * pad), style = stroke)
 
     when (id) {
+        // Tyhjä ruutu = oikealta puolelta neulottu silmukka
         "knit" -> { /* Pelkkä pohjaruutu, ei lisäpiirtoa */ }
 
-        // Tyhjä ruutu = oikealta puolelta neulottu silmukka
         "purl" -> {
             // Piste keskellä
             drawCircle(tint, radius = s * 0.08f, center = center)
@@ -366,7 +366,7 @@ private fun DrawScope.drawSymbol(
     }
 }
 
-// V-muoto symboleille knit_tbl ja kfb
+// V-muoto symboleille knit_tbl, kfb ja s2kp
 private fun DrawScope.drawVShape(
     tint: Color,
     pad: Float,

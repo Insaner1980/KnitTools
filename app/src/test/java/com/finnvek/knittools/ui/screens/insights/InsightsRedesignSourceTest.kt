@@ -28,17 +28,13 @@ class InsightsRedesignSourceTest {
     }
 
     @Test
-    fun `insights sections use hairline rules instead of card containers`() {
+    fun `insights sections use no card containers`() {
         INSIGHTS_FILES.forEach { path ->
             val source = ProjectSourceFiles.read(path)
 
             assertFalse("$path reintroduces a Card container", Regex("""\bCard\s*\(""").containsMatchIn(source))
             assertFalse("$path reintroduces a Surface container", Regex("""\bSurface\s*\(""").containsMatchIn(source))
         }
-
-        val sections = ProjectSourceFiles.read(INSIGHTS_SECTIONS)
-        assertTrue(sections.contains("InsightsDimens.RuleStrongAlpha"))
-        assertTrue(sections.contains("InsightsDimens.RuleHairlineAlpha"))
     }
 
     @Test

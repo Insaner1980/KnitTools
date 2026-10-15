@@ -96,11 +96,11 @@ internal fun PatternBookmarkSheet(
                     enabled = state.documentKey != null && !state.isMutating,
                 )
             }
-            state.error?.let { error ->
+            errorDescription?.let { description ->
                 Text(
-                    text = errorDescription.orEmpty(),
+                    text = description,
                     color = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.semantics { contentDescription = errorDescription.orEmpty() },
+                    modifier = Modifier.semantics { contentDescription = description },
                 )
                 TextButton(
                     onClick = actions.onClearError,

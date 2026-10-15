@@ -52,9 +52,7 @@ internal fun PatternAnnotationOverlay(
             )
         }
     val annotationsWithDraft =
-        if (inProgressVisible &&
-            inProgressAnnotation != null
-        ) {
+        if (inProgressVisible && inProgressAnnotation != null) {
             visibleAnnotations + inProgressAnnotation
         } else {
             visibleAnnotations

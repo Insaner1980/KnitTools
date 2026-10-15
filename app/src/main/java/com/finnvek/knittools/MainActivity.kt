@@ -492,12 +492,6 @@ class MainActivity : AppCompatActivity() {
                 addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
             }
 
-        fun createProUpgradeLaunchIntent(context: Context): Intent =
-            Intent(context, MainActivity::class.java).apply {
-                action = ACTION_OPEN_PRO_UPGRADE
-                addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
-            }
-
         fun createWidgetProPromptLaunchIntent(context: Context): Intent =
             Intent(context, MainActivity::class.java).apply {
                 action = ACTION_OPEN_WIDGET_PRO_PROMPT

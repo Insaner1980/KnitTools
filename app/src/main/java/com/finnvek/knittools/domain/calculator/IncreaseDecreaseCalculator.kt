@@ -77,12 +77,7 @@ object IncreaseDecreaseCalculator {
         mode: IncreaseDecreaseMode,
         style: KnittingStyle,
     ): String {
-        val actionAbbrev =
-            when (mode) {
-                IncreaseDecreaseMode.INCREASE -> "M1"
-                IncreaseDecreaseMode.DECREASE -> "K2tog"
-            }
-
+        val actionAbbrev = actionAbbreviation(mode)
         val base = availableForKnit / sections
         val remainder = availableForKnit % sections
 
@@ -159,27 +154,14 @@ object IncreaseDecreaseCalculator {
         availableForKnit: Int,
         sections: Int,
         mode: IncreaseDecreaseMode,
-    ): String {
-        val groups =
-            buildBalancedActionGroups(
-                availableForKnit,
-                sections,
-                mode,
-            ).joinToString(", ")
-        return groups
-    }
+    ): String = buildBalancedActionGroups(availableForKnit, sections, mode).joinToString(", ")
 
     private fun buildBalancedActionGroups(
         availableForKnit: Int,
         sections: Int,
         mode: IncreaseDecreaseMode,
     ): List<String> {
-        val actionAbbrev =
-            when (mode) {
-                IncreaseDecreaseMode.INCREASE -> "M1"
-                IncreaseDecreaseMode.DECREASE -> "K2tog"
-            }
-
+        val actionAbbrev = actionAbbreviation(mode)
         val base = availableForKnit / sections
         val remainder = availableForKnit % sections
 
@@ -213,6 +195,12 @@ object IncreaseDecreaseCalculator {
 
         return parts
     }
+
+    private fun actionAbbreviation(mode: IncreaseDecreaseMode): String =
+        when (mode) {
+            IncreaseDecreaseMode.INCREASE -> "M1"
+            IncreaseDecreaseMode.DECREASE -> "K2tog"
+        }
 
     private fun formatActionGroup(
         knitStitches: Int,

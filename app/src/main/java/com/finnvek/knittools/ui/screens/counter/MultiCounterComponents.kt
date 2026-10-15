@@ -329,8 +329,7 @@ private fun RenameCounterDialog(
                 onValueChange = { if (it.length <= ProjectCounterLogic.MAX_NAME_LENGTH) name = it },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
-                colors =
-                    dialogTextFieldColors(),
+                colors = dialogTextFieldColors(),
             )
         },
         confirmButton = {
@@ -395,8 +394,7 @@ fun AddCounterDialog(
             totalRepeats = totalRepeats,
             linkedToMainCounter = linkedToMainCounter && canLinkToMainCounter,
         )
-    val canSave =
-        isAddCounterFormValid(formParams)
+    val canSave = isAddCounterFormValid(formParams)
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -605,8 +603,7 @@ private fun AddCounterDialogContent(
             placeholder = { Text(stringResource(R.string.counter_name_hint)) },
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
-            colors =
-                dialogTextFieldColors(),
+            colors = dialogTextFieldColors(),
         )
         SegmentedToggle(
             options =

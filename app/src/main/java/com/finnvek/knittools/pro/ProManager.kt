@@ -31,11 +31,6 @@ class ProManager
         val proState: StateFlow<ProState> = _proState.asStateFlow()
         private val _initialStateReady = MutableStateFlow(false)
         val initialStateReady: StateFlow<Boolean> = _initialStateReady.asStateFlow()
-        val isProUser: Flow<Boolean> =
-            proState
-                .map { it.isPro }
-                .distinctUntilChanged()
-
         private var initialized = false
 
         @Suppress("TooGenericExceptionCaught")

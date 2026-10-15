@@ -41,6 +41,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
@@ -53,6 +54,7 @@ import com.finnvek.knittools.BuildConfig
 import com.finnvek.knittools.R
 import com.finnvek.knittools.data.datastore.AppLanguage
 import com.finnvek.knittools.data.datastore.ThemeMode
+import com.finnvek.knittools.pro.ProState
 import com.finnvek.knittools.pro.ProStatus
 import com.finnvek.knittools.ui.components.CollectWithLifecycleEffect
 import com.finnvek.knittools.ui.components.InfoTip
@@ -231,7 +233,7 @@ fun SettingsScreen(
 }
 
 @Composable
-private fun com.finnvek.knittools.pro.ProState.settingsStatusText(): String =
+private fun ProState.settingsStatusText(): String =
     when (status) {
         // Aloittamaton kokeilu kerrotaan toimintona: "Not started" luki oranssina virheenä tai rikkinäisenä linkkinä.
         ProStatus.TRIAL_NOT_STARTED -> {
@@ -239,7 +241,7 @@ private fun com.finnvek.knittools.pro.ProState.settingsStatusText(): String =
         }
 
         ProStatus.TRIAL_ACTIVE -> {
-            androidx.compose.ui.res.pluralStringResource(
+            pluralStringResource(
                 R.plurals.pro_status_trial_days,
                 trialDaysRemaining,
                 trialDaysRemaining,

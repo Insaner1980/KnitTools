@@ -31,6 +31,7 @@ import com.finnvek.knittools.domain.calculator.resolveReadingLineLocation
 import com.finnvek.knittools.domain.calculator.saturatingAdd
 import com.finnvek.knittools.domain.model.ActiveSessionRecoveryReason
 import com.finnvek.knittools.domain.model.ActiveSessionTimeEvaluation
+import com.finnvek.knittools.domain.model.ActiveSessionTimingAnchors
 import com.finnvek.knittools.domain.model.ActiveWorkSession
 import com.finnvek.knittools.domain.model.CounterHistory
 import com.finnvek.knittools.domain.model.CounterHistoryAction
@@ -44,6 +45,7 @@ import com.finnvek.knittools.domain.model.ProjectCounterType
 import com.finnvek.knittools.domain.model.ProjectDocument
 import com.finnvek.knittools.domain.model.ProjectSortOrder
 import com.finnvek.knittools.domain.model.SavedPattern
+import com.finnvek.knittools.domain.model.SessionTimeSnapshot
 import com.finnvek.knittools.domain.model.isWebPatternCompatible
 import com.finnvek.knittools.domain.model.resolvedMainCounterLabelType
 import com.finnvek.knittools.domain.model.sanitizeMainCounterCustomLabel
@@ -360,45 +362,6 @@ class CounterRepository
                 dao.getProject(id)?.toDomain()
             }
 
-        suspend fun adjustProjectCount(
-            id: Long,
-            delta: Int,
-        ) = dao.adjustCount(id, delta, System.currentTimeMillis())
-
-        suspend fun adjustProjectCountWithHistory(
-            id: Long,
-            delta: Int,
-            stepSize: Int,
-            action: String,
-            previousValue: Int,
-            newValue: Int,
-        ) = dao.adjustCountWithHistory(
-            projectId = id,
-            delta = delta,
-            stepSize = stepSize,
-            action = action,
-            previousValue = previousValue,
-            newValue = newValue,
-            updatedAt = System.currentTimeMillis(),
-        )
-
-        suspend fun updateProjectCounterStateWithHistory(
-            id: Long,
-            count: Int,
-            stepSize: Int,
-            action: String,
-            previousValue: Int,
-            newValue: Int,
-        ) = dao.updateCounterStateWithHistory(
-            projectId = id,
-            count = count,
-            stepSize = stepSize,
-            action = action,
-            previousValue = previousValue,
-            newValue = newValue,
-            updatedAt = System.currentTimeMillis(),
-        )
-
         suspend fun applyMainCounterChange(
             id: Long,
             change: MainCounterChange,
@@ -434,17 +397,6 @@ class CounterRepository
                 id = id,
                 change = if (increment) MainCounterChange.Increment else MainCounterChange.Decrement,
             )
-
-        suspend fun updateProjectName(
-            id: Long,
-            name: String,
-        ): String? =
-            transactionRunner.run {
-                if (dao.getProject(id) == null) return@run null
-                val projectName = uniqueProjectName(name, excludedProjectId = id) ?: return@run null
-                dao.updateName(id, projectName, System.currentTimeMillis())
-                projectName
-            }
 
         suspend fun saveProjectNotes(
             id: Long,
@@ -502,11 +454,6 @@ class CounterRepository
                 dao.updateSecondaryCount(id, secondaryCount, System.currentTimeMillis())
                 true
             }
-
-        suspend fun updateProjectSectionName(
-            id: Long,
-            sectionName: String?,
-        ) = dao.updateSectionName(id, sectionName, System.currentTimeMillis())
 
         suspend fun updateProjectStitchCount(
             id: Long,
@@ -993,11 +940,6 @@ class CounterRepository
             id: Long,
             stepSize: Int,
         ) = dao.updateStepSize(id, stepSize.coerceAtLeast(1), System.currentTimeMillis())
-
-        suspend fun updateProjectYarnCardIds(
-            id: Long,
-            yarnCardIds: String,
-        ) = dao.updateYarnCardIds(id, yarnCardIds, System.currentTimeMillis())
 
         suspend fun archiveProject(
             id: Long,
@@ -1549,7 +1491,7 @@ class CounterRepository
             projectId: Long,
             choice: ActiveSessionCompletionChoice?,
             active: ActiveSessionEntity?,
-            now: com.finnvek.knittools.domain.model.SessionTimeSnapshot,
+            now: SessionTimeSnapshot,
             expectedSession: ActiveWorkSession?,
         ): ProjectCompletionResult? {
             if (active?.projectId != projectId) return null
@@ -1762,9 +1704,7 @@ class CounterRepository
 
         suspend fun getLatestSession(projectId: Long): KnitSession? = sessionDao.getLatestSession(projectId)?.toDomain()
 
-        private suspend fun synchronizeActiveSession(
-            now: com.finnvek.knittools.domain.model.SessionTimeSnapshot,
-        ): ActiveSessionEntity? {
+        private suspend fun synchronizeActiveSession(now: SessionTimeSnapshot): ActiveSessionEntity? {
             val active = sessionDao.getActiveSession() ?: return null
             if (active.recoveryReason != null) {
                 if (active.recoveryIntervalToken != null) return active
@@ -1827,7 +1767,7 @@ class CounterRepository
 
         private suspend fun checkpointTrustedSession(
             active: ActiveSessionEntity,
-            now: com.finnvek.knittools.domain.model.SessionTimeSnapshot,
+            now: SessionTimeSnapshot,
         ): ActiveSessionEntity {
             if (active.recoveryReason != null) return active
             return when (val evaluation = evaluateActiveSessionTime(active.timingAnchors(), now)) {
@@ -1901,7 +1841,7 @@ class CounterRepository
 
         private suspend fun saveAndDeleteActiveSession(
             active: ActiveSessionEntity,
-            now: com.finnvek.knittools.domain.model.SessionTimeSnapshot,
+            now: SessionTimeSnapshot,
         ): Long? {
             val evaluation = evaluateActiveSessionTime(active.timingAnchors(), now)
             val trusted = evaluation as? ActiveSessionTimeEvaluation.Trusted
@@ -1958,7 +1898,7 @@ class CounterRepository
         private suspend fun createStartedSession(
             projectId: Long,
             startRow: Int,
-            now: com.finnvek.knittools.domain.model.SessionTimeSnapshot,
+            now: SessionTimeSnapshot,
         ): StartSessionResult.Started {
             if (sessionDao.countCompletedSessions() >= MAX_COMPLETED_SESSIONS) {
                 throw SessionHistoryLimitReachedException()
@@ -1993,7 +1933,7 @@ class CounterRepository
         }
 
         private fun ActiveSessionEntity.timingAnchors() =
-            com.finnvek.knittools.domain.model.ActiveSessionTimingAnchors(
+            ActiveSessionTimingAnchors(
                 segmentStartedAtWallMillis = segmentStartedAtWallMillis,
                 segmentStartedElapsedRealtimeMillis = segmentStartedElapsedRealtimeMillis,
                 bootCount = bootCount,

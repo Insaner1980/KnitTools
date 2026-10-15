@@ -2,6 +2,7 @@ package com.finnvek.knittools.ui.screens.pattern
 
 import android.Manifest
 import android.content.ActivityNotFoundException
+import android.content.Context
 import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -382,6 +383,14 @@ private fun rememberPatternPickerActions(
             imagePickerLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
         }
     }
+    val launchCameraScan: () -> Unit = {
+        currentProjectId?.let { authorizedProjectId ->
+            imageImportViewModel.authorizeCameraCapture(authorizedProjectId)
+            pendingCaptureProjectId = authorizedProjectId
+            pendingCaptureAuthorized = true
+            permissionLauncher.launch(Manifest.permission.CAMERA)
+        }
+    }
 
     return remember(
         imagePickerLauncher,
@@ -414,22 +423,12 @@ private fun rememberPatternPickerActions(
             authorizeAndChooseImages = launchGalleryPicker,
             startCameraScan = {
                 if (canStartPatternCameraScan(currentProjectId, currentCanUseCameraScan)) {
-                    currentProjectId?.let(imageImportViewModel::authorizeCameraCapture)
-                    pendingCaptureProjectId = currentProjectId
-                    pendingCaptureAuthorized = true
-                    permissionLauncher.launch(Manifest.permission.CAMERA)
+                    launchCameraScan()
                 } else {
                     onLockedCameraScan()
                 }
             },
-            authorizeAndStartCameraScan = {
-                currentProjectId?.let { authorizedProjectId ->
-                    imageImportViewModel.authorizeCameraCapture(authorizedProjectId)
-                    pendingCaptureProjectId = authorizedProjectId
-                    pendingCaptureAuthorized = true
-                    permissionLauncher.launch(Manifest.permission.CAMERA)
-                }
-            },
+            authorizeAndStartCameraScan = launchCameraScan,
             continueWithoutPattern = onDismiss,
         )
     }
@@ -560,7 +559,7 @@ internal fun canStartPatternCameraScan(
 
 private fun pdfMimeTypes(): Array<String> = arrayOf(PATTERN_PDF_MIME_TYPE)
 
-private fun showCameraPermissionDeniedToast(context: android.content.Context) {
+private fun showCameraPermissionDeniedToast(context: Context) {
     val activity = context.findActivity()
     val permanentlyDenied =
         activity != null &&

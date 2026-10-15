@@ -77,7 +77,6 @@ import com.finnvek.knittools.ui.components.ProPromptSource
 import com.finnvek.knittools.ui.components.ProjectCard
 import com.finnvek.knittools.ui.components.ProjectDetailsSheet
 import com.finnvek.knittools.ui.components.ProjectDetailsValues
-import com.finnvek.knittools.ui.components.RenameProjectDialog
 import com.finnvek.knittools.ui.components.ScrollableFormDialog
 import com.finnvek.knittools.ui.components.SectionLabel
 import com.finnvek.knittools.ui.components.SelectionAction
@@ -220,8 +219,6 @@ fun ProjectListScreen(
     var menuProjectId by rememberSaveable { mutableLongStateOf(0L) }
     var menuProjectName by rememberSaveable { mutableStateOf("") }
     var showDeleteDialog by rememberSaveable { mutableStateOf(false) }
-    var showRenameDialog by rememberSaveable { mutableStateOf(false) }
-    var renameText by rememberSaveable { mutableStateOf("") }
     var showOverflowMenu by rememberSaveable { mutableStateOf(false) }
     var showSortMenu by rememberSaveable { mutableStateOf(false) }
     var showMultiCompleteDialog by rememberSaveable { mutableStateOf(false) }
@@ -229,8 +226,6 @@ fun ProjectListScreen(
     ProjectListDialogs(
         state =
             ProjectListDialogState(
-                showRenameDialog = showRenameDialog,
-                renameText = renameText,
                 showDeleteDialog = showDeleteDialog,
                 deleteProjectName = menuProjectName,
                 showMultiCompleteDialog = showMultiCompleteDialog,
@@ -240,12 +235,6 @@ fun ProjectListScreen(
             ),
         actions =
             ProjectListDialogActions(
-                onRenameTextChange = { renameText = it },
-                onRenameConfirm = {
-                    viewModel.renameProject(menuProjectId, renameText.trim())
-                    showRenameDialog = false
-                },
-                onRenameDismiss = { showRenameDialog = false },
                 onDeleteConfirm = {
                     viewModel.deleteProject(menuProjectId)
                     showDeleteDialog = false
@@ -309,9 +298,7 @@ fun ProjectListScreen(
                     creationFolderName ?: stringResource(R.string.folder_unfiled),
                 ),
             errorMessage =
-                if (projectCreationError ==
-                    ProjectCreationResult.FolderMissing
-                ) {
+                if (projectCreationError == ProjectCreationResult.FolderMissing) {
                     stringResource(R.string.folder_missing)
                 } else {
                     null
@@ -373,9 +360,7 @@ fun ProjectListScreen(
                 folderState.mutationError?.let {
                     stringResource(
                         it.errorResource(
-                            if (editingFolderId ==
-                                null
-                            ) {
+                            if (editingFolderId == null) {
                                 R.string.folder_create_error
                             } else {
                                 R.string.folder_rename_error
@@ -581,8 +566,6 @@ fun ProjectListScreen(
 
 // Data-luokat ProjectListDialogs-parametrien ryhmittelyyn (S107)
 data class ProjectListDialogState(
-    val showRenameDialog: Boolean,
-    val renameText: String,
     val showDeleteDialog: Boolean,
     val deleteProjectName: String,
     val showMultiCompleteDialog: Boolean,
@@ -592,9 +575,6 @@ data class ProjectListDialogState(
 )
 
 data class ProjectListDialogActions(
-    val onRenameTextChange: (String) -> Unit,
-    val onRenameConfirm: () -> Unit,
-    val onRenameDismiss: () -> Unit,
     val onDeleteConfirm: () -> Unit,
     val onDeleteDismiss: () -> Unit,
     val onMultiCompleteConfirm: () -> Unit,
@@ -608,15 +588,6 @@ private fun ProjectListDialogs(
     state: ProjectListDialogState,
     actions: ProjectListDialogActions,
 ) {
-    if (state.showRenameDialog) {
-        RenameProjectDialog(
-            renameText = state.renameText,
-            onRenameTextChange = actions.onRenameTextChange,
-            onConfirm = actions.onRenameConfirm,
-            onDismiss = actions.onRenameDismiss,
-        )
-    }
-
     if (state.showDeleteDialog) {
         DeleteProjectDialog(
             projectName = state.deleteProjectName,
@@ -1098,9 +1069,7 @@ private fun ProjectListContent(
                         photoUri = state.latestPhotoUris[project.id],
                         onClick = {
                             if (state.isMultiSelectMode) {
-                                actions.onToggleSelection(
-                                    project.id,
-                                )
+                                actions.onToggleSelection(project.id)
                             } else {
                                 actions.onOpenOverview(project.id)
                             }

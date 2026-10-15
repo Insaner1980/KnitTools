@@ -770,14 +770,7 @@ private fun SavedPatternDetailContent(
                 navController.openProjectOverview(projectId)
             }
         },
-        onEditWebPattern = {
-            navController.navigateSingleTopTo(
-                Screen.WebPatternEditor.createRoute(
-                    origin = WebPatternEditorOrigin.Edit,
-                    patternId = savedPatternId,
-                ),
-            )
-        },
+        onEditWebPattern = { navController.editWebPattern(savedPatternId) },
         onRemove = {
             libraryViewModel.deleteSavedPattern(savedPatternId) {
                 if (navController.currentBackStackEntry?.id == backStackEntryId) {
@@ -1145,14 +1138,7 @@ private fun NavGraphBuilder.counterHistoryDestination(navController: NavHostCont
         }
         CounterHistoryScreen(
             onBack = { navController.popBackStackOrNavigateToTopLevel(TopLevelDestination.Projects) },
-            onProjectMissing = {
-                if (!navController.popBackStack(Screen.ProjectList.route, false)) {
-                    navController.navigate(Screen.ProjectList.route) {
-                        popUpTo(TopLevelDestination.Projects.route)
-                        launchSingleTop = true
-                    }
-                }
-            },
+            onProjectMissing = { navController.returnToProjectList() },
         )
     }
 }

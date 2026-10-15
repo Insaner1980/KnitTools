@@ -76,9 +76,7 @@ fun AbbreviationsScreen(
                         isExpanded = expandedAbbreviation == abbreviation.abbreviation,
                         onClick = {
                             expandedAbbreviation =
-                                if (expandedAbbreviation ==
-                                    abbreviation.abbreviation
-                                ) {
+                                if (expandedAbbreviation == abbreviation.abbreviation) {
                                     null
                                 } else {
                                     abbreviation.abbreviation

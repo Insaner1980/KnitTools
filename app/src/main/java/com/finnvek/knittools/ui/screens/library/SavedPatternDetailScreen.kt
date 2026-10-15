@@ -44,6 +44,7 @@ import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.domain.model.SavedPattern
 import com.finnvek.knittools.domain.model.SavedPatternSource
+import com.finnvek.knittools.domain.model.WebPatternUrl
 import com.finnvek.knittools.domain.model.isWebPatternCompatible
 import com.finnvek.knittools.domain.model.webPatternUrlOrNull
 import com.finnvek.knittools.repository.SavedPatternMetadataMutationResult
@@ -393,7 +394,7 @@ private fun SavedPatternPrimaryAction(
 }
 
 @Composable
-private fun WebPatternSourceSection(url: com.finnvek.knittools.domain.model.WebPatternUrl) {
+private fun WebPatternSourceSection(url: WebPatternUrl) {
     OverviewSectionHeader(R.string.web_pattern_website_label)
     Column(verticalArrangement = Arrangement.spacedBy(ProjectOverviewDimens.ContentGap)) {
         Text(text = url.host, style = MaterialTheme.typography.titleMedium)

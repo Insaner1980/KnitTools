@@ -73,7 +73,6 @@
     <string name="main_counter_custom">Eigenes</string>
     <string name="main_counter_custom_label">Eigenes Label</string>
     <string name="main_counter_custom_label_error">Label eingeben.</string>
-    <string name="project_metadata_format">%1$s, %2$s</string>
     <plurals name="rounds_format">
         <item quantity="one">%1$d Runde</item>
         <item quantity="other">%1$d Runden</item>
@@ -100,7 +99,6 @@
     <string name="no_completed_projects">Noch keine fertigen Projekte</string>
     <string name="delete_project">Löschen</string>
     <string name="delete_project_message">%s löschen? Dies kann nicht rückgängig gemacht werden.</string>
-    <string name="rename_project">Umbenennen</string>
     <string name="complete_project">Fertigstellen</string>
     <string name="reactivate_project">Reaktivieren</string>
     <string name="complete_project_message">%s fertigstellen? Das Projekt wird zu deinen fertigen Projekten verschoben.</string>
@@ -133,8 +131,6 @@
     <string name="just_now">gerade eben</string>
 
     <!-- Counter Screen -->
-    <string name="stitch_count_format">%s M</string>
-    <string name="set_stitches">Maschen festlegen</string>
     <string name="stitches_per_row">Maschen pro Reihe</string>
     <string name="track_stitches">Maschen verfolgen</string>
     <string name="stitch_counter_compact_format">%1$d/%2$d</string>
@@ -219,7 +215,6 @@
     <string name="saved_to_my_yarn">In meinem Garn gespeichert</string>
     <string name="save_to_my_yarn_explanation">Kopiert Garnname, Beschreibung und Menge auf eine mit diesem Projekt verknüpfte Garnkarte unter Mein Garn. Dieser Eintrag bleibt hier; seine Notizen werden nicht kopiert.</string>
     <string name="saved_to_my_yarn_explanation">Dieser Projekteintrag bleibt separat. Seine Notizen wurden nicht auf die Garnkarte unter Mein Garn kopiert.</string>
-    <string name="yarn_count_format">%1$d Garne</string>
     <string name="linked_project_label">Verknüpftes Projekt</string>
     <string name="remove_project_link">Verknüpfung entfernen</string>
     <string name="select_project">Projekt auswählen</string>
@@ -250,7 +245,6 @@
     <string name="default_project_name">Mein Projekt</string>
     <string name="reset_counter">Zähler zurücksetzen</string>
     <string name="reset_counter_message">Den Zähler auf 0 zurücksetzen?</string>
-    <string name="pattern_repeat">Rapport</string>
     <string name="notes">Notizen</string>
     <string name="add_note">Notiz hinzufügen…</string>
     <string name="write_your_notes_here">Schreibe hier deine Notizen…</string>
@@ -412,11 +406,6 @@
     <string name="camera_permission_denied_permanent">Kameraberechtigung verweigert — aktiviere sie in den Einstellungen</string>
 
     <!-- Care symbol categories -->
-    <string name="care_category_washing">Waschen</string>
-    <string name="care_category_bleaching">Bleichen</string>
-    <string name="care_category_drying">Trocknen</string>
-    <string name="care_category_ironing">Bügeln</string>
-    <string name="care_category_dry_cleaning">Chemische Reinigung</string>
     <string name="care_wash_30">30°</string>
     <string name="care_wash_40">40°</string>
     <string name="care_wash_60">60°</string>
@@ -680,20 +669,12 @@
     <string name="tip_needle_sizes_desc">Metrisch (mm) ist der universelle Standard. US-Größen verwenden ein nummeriertes System (0–50). UK/Kanada nutzen ein anderes Nummernsystem. Japanische Größen haben eine eigene Nummerierung. Prüfe sicherheitshalber immer die mm-Angabe.</string>
     <string name="tip_imperial_units_title">Imperiale Einheiten</string>
     <string name="tip_imperial_units_desc">Wenn aktiviert, verwenden alle Rechner Zoll statt Zentimeter und Yard statt Meter. Die Maschenprobe wird dann pro 4 Zoll statt pro 10 cm gemessen.</string>
-    <string name="pattern_row_highlight_description">Reihe %1$d etwa %2$d Prozent unterhalb des Seitenanfangs markiert</string>
     <string name="open_notes_editor">Notizen öffnen</string>
     <string name="restore_purchases_checking">Käufe werden geprüft…</string>
     <string name="retry">Erneut versuchen</string>
-    <string name="widget_rows_remaining_format">%d Reihen übrig</string>
-    <string name="widget_target_reached">Ziel erreicht</string>
-    <string name="widget_stitches_format">Maschen: %1$d / %2$d</string>
     <string name="target_rows_dialog_title">Ziel festlegen</string>
-    <string name="target_rows_set">Ziel festlegen…</string>
-    <string name="target_rows_edit">Ziel bearbeiten</string>
     <string name="target_rows_remove">Ziel entfernen</string>
     <string name="row_label_with_target">Reihe %1$d / %2$d</string>
-    <string name="widget_undo_action">Rückgängig</string>
-    <string name="widget_undo_content_description">Letzte Änderung rückgängig machen</string>
     <string name="project_actions_title">Projektaktionen</string>
     <string name="project_actions_section_counter_tools">Zählerwerkzeuge</string>
     <string name="project_content_title">Projekt</string>

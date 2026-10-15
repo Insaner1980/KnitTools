@@ -1,10 +1,8 @@
 package com.finnvek.knittools.domain.calculator
 
-import com.finnvek.knittools.ProjectSourceFiles
 import com.finnvek.knittools.domain.model.READING_LINE_MAX_Y_FRACTION
 import com.finnvek.knittools.domain.model.READING_LINE_MIN_Y_FRACTION
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -118,7 +116,6 @@ class RowMappingParserTest {
             ),
             markers,
         )
-        assertEquals(0.5f, interpolateYPosition(markers, targetRow = 20, page = 2))
     }
 
     @Test
@@ -133,124 +130,5 @@ class RowMappingParserTest {
                 lastYPosition = 0.8f,
             ),
         )
-    }
-
-    @Test
-    fun `interpolateYPosition returns exact and interpolated positions without one sided extrapolation`() {
-        val markers =
-            listOf(
-                RowMarker(row = 10, page = 1, yPosition = 0.2f),
-                RowMarker(row = 20, page = 1, yPosition = 0.8f),
-            )
-
-        assertEquals(0.2f, interpolateYPosition(markers, targetRow = 10, page = 1))
-        assertEquals(0.5f, interpolateYPosition(markers, targetRow = 15, page = 1))
-        assertNull(interpolateYPosition(markers, targetRow = 5, page = 1))
-        assertNull(interpolateYPosition(markers, targetRow = 25, page = 1))
-        assertNull(interpolateYPosition(markers, targetRow = 15, page = 2))
-    }
-
-    @Test
-    fun `interpolateYPosition does not sort page markers on every resolve`() {
-        val source = ProjectSourceFiles.read(ROW_MAPPING_PARSER)
-        val interpolateBlock =
-            source
-                .substringAfter("fun interpolateYPosition(")
-                .substringBefore("fun resolveReadingLineYFraction(")
-
-        assertTrue(interpolateBlock.contains("markers.forEach { marker ->"))
-        assertFalse(interpolateBlock.contains(".filter { it.page == page }.sortedBy { it.row }"))
-    }
-
-    @Test
-    fun `resolveReadingLineYFraction returns exact marker and interpolates between two page markers`() {
-        val markers =
-            listOf(
-                RowMarker(row = 10, page = 1, yPosition = 0.2f),
-                RowMarker(row = 20, page = 1, yPosition = 0.8f),
-            )
-
-        assertEquals(
-            0.2f,
-            requireNotNull(
-                resolveReadingLineYFraction(
-                    markers = markers,
-                    currentRow = 10,
-                    currentPage = 1,
-                    currentYFraction = 0.5f,
-                    rowDelta = 0,
-                ),
-            ),
-            0.0001f,
-        )
-        assertEquals(
-            0.5f,
-            requireNotNull(
-                resolveReadingLineYFraction(
-                    markers = markers,
-                    currentRow = 15,
-                    currentPage = 1,
-                    currentYFraction = 0.5f,
-                    rowDelta = 5,
-                ),
-            ),
-            0.0001f,
-        )
-    }
-
-    @Test
-    fun `resolveReadingLineYFraction uses row step fallback for one marker instead of locking to anchor`() {
-        val markers = listOf(RowMarker(row = 13, page = 1, yPosition = 0.45f))
-
-        assertEquals(
-            0.57f,
-            requireNotNull(
-                resolveReadingLineYFraction(
-                    markers = markers,
-                    currentRow = 19,
-                    currentPage = 1,
-                    currentYFraction = 0.45f,
-                    rowDelta = 6,
-                ),
-            ),
-            0.0001f,
-        )
-    }
-
-    @Test
-    fun `resolveReadingLineYFraction ignores markers from other pages and returns null without row delta`() {
-        val markers =
-            listOf(
-                RowMarker(row = 10, page = 1, yPosition = 0.2f),
-                RowMarker(row = 20, page = 1, yPosition = 0.8f),
-            )
-
-        assertNull(
-            resolveReadingLineYFraction(
-                markers = markers,
-                currentRow = 15,
-                currentPage = 2,
-                currentYFraction = 0.5f,
-                rowDelta = 0,
-            ),
-        )
-        assertEquals(
-            0.34f,
-            requireNotNull(
-                resolveReadingLineYFraction(
-                    markers = markers,
-                    currentRow = 17,
-                    currentPage = 2,
-                    currentYFraction = 0.3f,
-                    rowDelta = 2,
-                ),
-            ),
-            0.0001f,
-        )
-    }
-
-    private companion object {
-        const val ROW_MAPPING_PARSER =
-            "app/src/main/java/com/finnvek/knittools/domain/calculator/RowMappingParser.kt"
     }
 }

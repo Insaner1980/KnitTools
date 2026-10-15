@@ -22,11 +22,6 @@ sealed interface MinutesPerRowDisplay {
 
 /** Yksi totuuden lähde tahtiluvun laskennalle. */
 object MinutesPerRowFormatter {
-    fun fromTotals(
-        totalMinutes: Int,
-        totalRows: Long,
-    ): MinutesPerRowDisplay = fromSeconds(totalMinutes.coerceAtLeast(0).toLong() * 60L, totalRows)
-
     fun fromSeconds(
         totalSeconds: Long,
         totalRows: Long,

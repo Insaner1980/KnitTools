@@ -1,9 +1,13 @@
 package com.finnvek.knittools.ui.screens.insights
 
 import androidx.appcompat.app.AppCompatDelegate
+import java.time.DayOfWeek
+import java.time.temporal.WeekFields
 import java.util.Locale
 
 internal fun currentInsightsLocale(): Locale = AppCompatDelegate.getApplicationLocales().get(0) ?: Locale.getDefault()
+
+internal fun currentInsightsFirstDayOfWeek(): DayOfWeek = WeekFields.of(currentInsightsLocale()).firstDayOfWeek
 
 // Android plural selection requires Int. Preserve the last six digits and million
 // multiples for the supported locales; formatting still receives the original Long.

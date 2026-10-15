@@ -61,7 +61,6 @@ class PatternViewerTopBarTest {
             totalPages = 3,
             currentPage = 0,
             currentRow = 1,
-            canDetachPattern = false,
             canManageDocuments = true,
             readingLineEnabled = false,
             readingLineFollowCurrentRow = true,
@@ -132,7 +131,6 @@ class PatternViewerTopBarTest {
             onClearReadingLineRowMarker = {},
             onClearReadingLinePageMarkers = {},
             onStartRowCalibration = {},
-            onDetachPattern = {},
         )
 
     // CPD-OFF: Kuvakaappauksen testiapuri pidetaan testiluokan yhteydessa.

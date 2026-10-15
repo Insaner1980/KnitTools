@@ -440,42 +440,6 @@ class CounterRepositoryDomainApiTest {
         }
 
     @Test
-    fun `updateProjectName hylkaa tyhjan nimen ennen tietokantakirjoitusta`() =
-        runTest {
-            val result = repository.updateProjectName(7L, "   ")
-
-            assertEquals(null, result)
-            coVerify(exactly = 0) { projectDao.updateName(any(), any(), any()) }
-        }
-
-    @Test
-    fun `updateProjectName tekee nimestä uniikin muita projekteja vasten`() =
-        runTest {
-            val runner = ProjectCreationTransactionRunner()
-            coEvery { projectDao.getProject(7L) } returns CounterProjectEntity(id = 7L, name = "Pipo")
-            coEvery { projectDao.getAllProjectsOnce() } returns
-                listOf(
-                    CounterProjectEntity(id = 1L, name = "Sukat"),
-                    CounterProjectEntity(id = 7L, name = "Pipo"),
-                )
-
-            val savedName = createRepository(transactionRunner = runner).updateProjectName(7L, "Sukat")
-
-            assertEquals("Sukat (2)", savedName)
-            assertEquals(1, runner.runCount)
-            coVerify { projectDao.updateName(7L, "Sukat (2)", any()) }
-        }
-
-    @Test
-    fun `rename rejects a missing project without claiming a saved name`() =
-        runTest {
-            coEvery { projectDao.getProject(7L) } returns null
-
-            assertEquals(null, repository.updateProjectName(7L, "New name"))
-            coVerify(exactly = 0) { projectDao.updateName(any(), any(), any()) }
-        }
-
-    @Test
     fun `secondary mutation rejects completed missing and negative input without writing`() =
         runTest {
             coEvery { projectDao.getProject(7L) } returns

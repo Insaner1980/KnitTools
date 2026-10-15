@@ -136,21 +136,11 @@ fun ProPromptSheet(
             ) {
                 // Neutraali peruutus, jotta kokeilun aloitus on ainoa oranssi toiminto.
                 CancelButton(onClick = onDismiss, text = stringResource(R.string.pro_prompt_not_now))
-                Button(
-                    onClick =
-                        if (proState.status == ProStatus.TRIAL_NOT_STARTED) {
-                            viewModel::startTrial
-                        } else {
-                            onSeePro
-                        },
-                ) {
+                val canStartTrial = proState.status == ProStatus.TRIAL_NOT_STARTED
+                Button(onClick = if (canStartTrial) viewModel::startTrial else onSeePro) {
                     Text(
                         stringResource(
-                            if (proState.status == ProStatus.TRIAL_NOT_STARTED) {
-                                R.string.pro_start_free_trial
-                            } else {
-                                R.string.pro_prompt_see_pro
-                            },
+                            if (canStartTrial) R.string.pro_start_free_trial else R.string.pro_prompt_see_pro,
                         ),
                     )
                 }

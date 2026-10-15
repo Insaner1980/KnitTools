@@ -189,9 +189,7 @@ private fun GaugeResultValue(
         Text(
             text = line.value,
             style =
-                if (line.id ==
-                    "nearest_count"
-                ) {
+                if (line.id == "nearest_count") {
                     MaterialTheme.typography.headlineSmall
                 } else {
                     MaterialTheme.typography.bodyLarge

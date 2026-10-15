@@ -73,7 +73,6 @@
     <string name="main_counter_custom">Aangepast</string>
     <string name="main_counter_custom_label">Aangepast label</string>
     <string name="main_counter_custom_label_error">Voer een label in.</string>
-    <string name="project_metadata_format">%1$s, %2$s</string>
     <plurals name="rounds_format">
         <item quantity="one">%1$d ronde</item>
         <item quantity="other">%1$d rondes</item>
@@ -100,7 +99,6 @@
     <string name="no_completed_projects">Nog geen voltooide projecten</string>
     <string name="delete_project">Verwijderen</string>
     <string name="delete_project_message">%s verwijderen? Dit kan niet ongedaan worden gemaakt.</string>
-    <string name="rename_project">Naam wijzigen</string>
     <string name="complete_project">Voltooien</string>
     <string name="reactivate_project">Opnieuw activeren</string>
     <string name="complete_project_message">%s voltooien? Het project wordt naar je voltooide projecten verplaatst.</string>
@@ -133,8 +131,6 @@
     <string name="just_now">zojuist</string>
 
     <!-- Counter Screen -->
-    <string name="stitch_count_format">%s st</string>
-    <string name="set_stitches">Steken instellen</string>
     <string name="stitches_per_row">Steken per toer</string>
     <string name="track_stitches">Steken bijhouden</string>
     <string name="stitch_counter_compact_format">%1$d/%2$d</string>
@@ -219,7 +215,6 @@
     <string name="saved_to_my_yarn">Opgeslagen in Mijn garen</string>
     <string name="save_to_my_yarn_explanation">Kopieert de garennaam, beschrijving en hoeveelheid naar een garenkaart in Mijn garen die aan dit project is gekoppeld. Deze vermelding blijft hier; de notities worden niet gekopieerd.</string>
     <string name="saved_to_my_yarn_explanation">Deze projectvermelding blijft apart bestaan. De notities zijn niet naar de garenkaart in Mijn garen gekopieerd.</string>
-    <string name="yarn_count_format">%1$d garens</string>
     <string name="linked_project_label">Gekoppeld project</string>
     <string name="remove_project_link">Koppeling verwijderen</string>
     <string name="select_project">Project selecteren</string>
@@ -250,7 +245,6 @@
     <string name="default_project_name">Mijn project</string>
     <string name="reset_counter">Teller resetten</string>
     <string name="reset_counter_message">De teller resetten naar 0?</string>
-    <string name="pattern_repeat">Patroonherhaling</string>
     <string name="notes">Notities</string>
     <string name="add_note">Notitie toevoegen…</string>
     <string name="write_your_notes_here">Schrijf hier je notities…</string>
@@ -412,11 +406,6 @@
     <string name="camera_permission_denied_permanent">Cameratoestemming geweigerd — schakel deze in via Instellingen</string>
 
     <!-- Care symbol categories -->
-    <string name="care_category_washing">Wassen</string>
-    <string name="care_category_bleaching">Bleken</string>
-    <string name="care_category_drying">Drogen</string>
-    <string name="care_category_ironing">Strijken</string>
-    <string name="care_category_dry_cleaning">Chemisch reinigen</string>
     <string name="care_wash_30">30°</string>
     <string name="care_wash_40">40°</string>
     <string name="care_wash_60">60°</string>
@@ -680,20 +669,12 @@
     <string name="tip_needle_sizes_desc">Metrisch (mm) is de universele standaard. US-maten gebruiken een nummersysteem (0–50). UK/Canadese maten gebruiken een ander nummersysteem. Japanse maten hebben hun eigen nummering. Controleer altijd de maat in mm om zeker te zijn.</string>
     <string name="tip_imperial_units_title">Imperiale eenheden</string>
     <string name="tip_imperial_units_desc">Als dit is ingeschakeld, gebruiken alle rekenhulpen inch in plaats van centimeters en yard in plaats van meters. De stekenproef wordt dan gemeten per 4 inch in plaats van per 10 cm.</string>
-    <string name="pattern_row_highlight_description">Tellerstand %1$d gemarkeerd op ongeveer %2$d procent van de pagina</string>
     <string name="open_notes_editor">Notitie-editor openen</string>
     <string name="restore_purchases_checking">Aankopen controleren…</string>
     <string name="retry">Opnieuw proberen</string>
-    <string name="widget_rows_remaining_format">%d rijen over</string>
-    <string name="widget_target_reached">Doel bereikt</string>
-    <string name="widget_stitches_format">Steken: %1$d / %2$d</string>
     <string name="target_rows_dialog_title">Doel instellen</string>
-    <string name="target_rows_set">Doel instellen…</string>
-    <string name="target_rows_edit">Doel bewerken</string>
     <string name="target_rows_remove">Doel verwijderen</string>
     <string name="row_label_with_target">%1$d / %2$d</string>
-    <string name="widget_undo_action">Ongedaan maken</string>
-    <string name="widget_undo_content_description">Laatste wijziging ongedaan maken</string>
     <string name="project_actions_title">Projectacties</string>
     <string name="project_actions_section_counter_tools">Tellerhulpmiddelen</string>
     <string name="project_content_title">Project</string>

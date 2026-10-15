@@ -230,7 +230,6 @@ private fun SavedPatternsDeleteDialog(
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun SavedPatternsTopBar(
     state: SavedPatternsState,

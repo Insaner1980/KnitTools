@@ -18,6 +18,7 @@ import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.IOException
+import java.io.InputStream
 import java.nio.file.FileAlreadyExistsException
 import java.nio.file.Files
 import java.util.Locale
@@ -263,37 +264,6 @@ class PatternDocumentStorage
                 false
             }
 
-        suspend fun convertImageToPdf(
-            context: Context,
-            projectId: Long,
-            imageUri: Uri,
-            fileName: String? = null,
-        ): Pair<String, String>? {
-            val imageFile = AppFileStorage.resolveAppOwnedFile(context, imageUri) ?: return null
-            val info = runCatching { inspectStagedImage(imageFile) }.getOrNull() ?: return null
-            val page =
-                StagedPatternPage(
-                    id = imageFile.name,
-                    sourceUri = imageUri.toString(),
-                    stagedPath = imageFile.absolutePath,
-                    byteCount = imageFile.length(),
-                    width = info.width,
-                    height = info.height,
-                )
-            return try {
-                convertImagesToPdf(
-                    context = context,
-                    projectId = projectId,
-                    pages = listOf(page),
-                    fileName = fileName ?: "pattern-photo-${System.currentTimeMillis()}.pdf",
-                ) { _, _ -> }
-            } catch (failure: CancellationException) {
-                throw failure
-            } catch (_: Exception) {
-                null
-            }
-        }
-
         internal fun inspectStagedImage(file: File): PatternImageInfo {
             val bitmap = decodeBoundedBitmap(file)
             return try {
@@ -493,7 +463,7 @@ private fun deleteEmptySessionDirectory(directory: File) {
 
 internal object PatternDocumentFiles {
     fun copyBounded(
-        input: java.io.InputStream,
+        input: InputStream,
         target: File,
         maxBytes: Long,
         onChunk: () -> Unit = {},
@@ -560,14 +530,14 @@ internal object PatternDocumentFiles {
         write: (File) -> Unit,
     ): File {
         if (!directory.exists() && !directory.mkdirs()) {
-            throw java.io.IOException("Pattern PDF directory creation failed")
+            throw IOException("Pattern PDF directory creation failed")
         }
         val safeFileName = safePdfFileName(fileName)
         val tempFile = createTempFile(directory, safeFileName)
         return try {
             write(tempFile)
             moveToUniquePdf(tempFile, directory, safeFileName)
-                ?: throw java.io.IOException("Pattern PDF publish failed")
+                ?: throw IOException("Pattern PDF publish failed")
         } finally {
             if (tempFile.exists() && !tempFile.delete()) {
                 tempFile.deleteOnExit()

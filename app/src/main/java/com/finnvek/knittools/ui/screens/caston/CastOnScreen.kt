@@ -40,6 +40,7 @@ import com.finnvek.knittools.ui.components.ToolInputCard
 import com.finnvek.knittools.ui.components.ToolScreenScaffold
 import com.finnvek.knittools.ui.components.rememberCurrentLocale
 import com.finnvek.knittools.ui.screens.home.HomeViewModel
+import java.util.Locale
 
 @Composable
 @Suppress("kotlin:S3776") // Laskurin syötteet ja tulos pidetään yhdessä pienessä työkalunäkymässä.
@@ -213,39 +214,39 @@ private fun CastOnResultSection(
         )
         result.adjustedDown?.let { down ->
             val adjustedWidth = result.adjustedDownWidth ?: return@let
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text =
-                    stringResource(
-                        R.string.adjusted_down,
-                        down,
-                        formatDecimalForDisplay(adjustedWidth, locale, 1, 1),
-                        unit,
-                    ),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            AdjustedWidthText(R.string.adjusted_down, down, adjustedWidth, unit, locale)
         }
         result.adjustedUp?.let { up ->
             val adjustedWidth = result.adjustedUpWidth ?: return@let
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text =
-                    stringResource(
-                        R.string.adjusted_up,
-                        up,
-                        formatDecimalForDisplay(adjustedWidth, locale, 1, 1),
-                        unit,
-                    ),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            AdjustedWidthText(R.string.adjusted_up, up, adjustedWidth, unit, locale)
         }
     }
     if (edgeCount > 0) {
         Spacer(modifier = Modifier.height(8.dp))
         InfoNote(text = stringResource(R.string.edge_stitches_total_format, edgeCount))
     }
+}
+
+@Composable
+private fun AdjustedWidthText(
+    messageRes: Int,
+    stitches: Int,
+    adjustedWidth: Double,
+    unit: String,
+    locale: Locale,
+) {
+    Spacer(modifier = Modifier.height(4.dp))
+    Text(
+        text =
+            stringResource(
+                messageRes,
+                stitches,
+                formatDecimalForDisplay(adjustedWidth, locale, 1, 1),
+                unit,
+            ),
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
 }
 
 // Esimerkkiarvot tyhjiin kenttiin: aikuisen villapuseron leveys ja tavallinen DK-langan tiheys.

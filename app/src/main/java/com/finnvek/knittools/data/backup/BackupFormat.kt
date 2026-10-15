@@ -64,8 +64,6 @@ internal object BackupFormat {
     const val MAX_TOTAL = BackupLimits.MAX_ARCHIVE_BYTES
     const val MAX_TABLE = BackupLimits.MAX_TABLE_BYTES
     const val MAX_MANIFEST = 512L * 1_024L
-    const val MAX_ROW = BackupLimits.MAX_ROW_CHARACTERS
-    const val MAX_ROWS = BackupLimits.MAX_ROWS_PER_TABLE
     const val RESERVE = 32L * 1024 * 1024
     val json = Json { encodeDefaults = true }
     val hashPattern = Regex("[0-9a-f]{64}")

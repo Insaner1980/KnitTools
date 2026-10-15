@@ -141,13 +141,7 @@ class LibraryViewModel
         }
 
         fun togglePhotoSelection(id: Long) {
-            _selectedPhotoIds.update { current ->
-                val next = if (id in current) current - id else current + id
-                if (next.isEmpty()) {
-                    _isPhotoSelectMode.value = false
-                }
-                next
-            }
+            toggleSelection(selectedIds = _selectedPhotoIds, selectMode = _isPhotoSelectMode, id = id)
         }
 
         fun selectAllPhotos(visibleIds: List<Long>) {
@@ -176,13 +170,7 @@ class LibraryViewModel
         }
 
         fun togglePatternSelection(id: Long) {
-            _selectedPatternIds.update { current ->
-                val next = if (id in current) current - id else current + id
-                if (next.isEmpty()) {
-                    _isPatternSelectMode.value = false
-                }
-                next
-            }
+            toggleSelection(selectedIds = _selectedPatternIds, selectMode = _isPatternSelectMode, id = id)
         }
 
         fun selectAllPatterns(visibleIds: List<Long>) {
@@ -258,13 +246,7 @@ class LibraryViewModel
         }
 
         fun toggleYarnSelection(id: Long) {
-            _selectedYarnIds.update { current ->
-                val next = if (id in current) current - id else current + id
-                if (next.isEmpty()) {
-                    _isYarnSelectMode.value = false
-                }
-                next
-            }
+            toggleSelection(selectedIds = _selectedYarnIds, selectMode = _isYarnSelectMode, id = id)
         }
 
         fun selectAllYarn(visibleIds: List<Long>) {
@@ -325,6 +307,20 @@ class LibraryViewModel
                 } catch (_: Exception) {
                     _yarnSaveErrorId.value += 1
                 }
+            }
+        }
+
+        private fun toggleSelection(
+            selectedIds: MutableStateFlow<Set<Long>>,
+            selectMode: MutableStateFlow<Boolean>,
+            id: Long,
+        ) {
+            selectedIds.update { current ->
+                val next = if (id in current) current - id else current + id
+                if (next.isEmpty()) {
+                    selectMode.value = false
+                }
+                next
             }
         }
 

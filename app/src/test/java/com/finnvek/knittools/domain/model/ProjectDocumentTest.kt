@@ -1,7 +1,6 @@
 package com.finnvek.knittools.domain.model
 
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -74,12 +73,6 @@ class ProjectDocumentTest {
 
         assertEquals(listOf(11L, 7L, 9L), documents.inDocumentOrder().map { it.id })
         assertEquals(11L, documents.primaryFallback()?.id)
-    }
-
-    @Test
-    fun `opening decision rejects an unavailable document`() {
-        assertTrue(projectDocument(id = 1).canOpen(isFileAvailable = true))
-        assertFalse(projectDocument(id = 1).canOpen(isFileAvailable = false))
     }
 
     private fun projectDocument(

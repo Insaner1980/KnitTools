@@ -50,9 +50,6 @@ data class ProjectDocument(
             readingLineYFraction = sanitizePersistedFraction(readingLineYFraction),
             verticalReadingGuideXFraction = sanitizePersistedFraction(verticalReadingGuideXFraction),
         )
-
-    fun canOpen(isFileAvailable: Boolean): Boolean =
-        documentKey.isNotBlank() && localPdfUri.isNotBlank() && isFileAvailable
 }
 
 fun List<ProjectDocument>.inDocumentOrder(): List<ProjectDocument> =
@@ -60,13 +57,11 @@ fun List<ProjectDocument>.inDocumentOrder(): List<ProjectDocument> =
 
 fun List<ProjectDocument>.primaryFallback(): ProjectDocument? = inDocumentOrder().firstOrNull()
 
-private fun sanitizedProjectDocumentLabel(value: String): String {
-    val trimmed = value.trim()
-    return trimmed
-        .take(PROJECT_DOCUMENT_LABEL_MAX_LENGTH)
-        .let { label -> if (label.lastOrNull()?.isHighSurrogate() == true) label.dropLast(1) else label }
+private fun sanitizedProjectDocumentLabel(value: String): String =
+    value
+        .trim()
+        .takeWithoutSplittingSurrogatePair(PROJECT_DOCUMENT_LABEL_MAX_LENGTH)
         .ifEmpty { "Pattern" }
-}
 
 private fun sanitizePersistedFraction(value: Float): Float =
     if (value.isFinite()) {

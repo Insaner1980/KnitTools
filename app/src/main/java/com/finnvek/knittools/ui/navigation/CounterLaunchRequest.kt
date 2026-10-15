@@ -34,9 +34,4 @@ data class CounterLaunchIntentData(
 
 internal fun CounterLaunchIntentData.withValidatedCounterLaunchTrust(
     consumeLaunchId: (String?) -> Boolean,
-): CounterLaunchIntentData =
-    copy(
-        isTrustedCounterLaunch =
-            shouldOpenCounter &&
-                consumeLaunchId(launchId),
-    )
+): CounterLaunchIntentData = copy(isTrustedCounterLaunch = shouldOpenCounter && consumeLaunchId(launchId))

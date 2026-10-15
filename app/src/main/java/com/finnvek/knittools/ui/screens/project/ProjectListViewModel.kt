@@ -329,7 +329,7 @@ class ProjectListViewModel
 
         // === Projektitoiminnot ===
 
-        private suspend fun updateContinueKnitting(projects: List<CounterProject>) {
+        private fun updateContinueKnitting(projects: List<CounterProject>) {
             val candidate = projects.firstOrNull { it.count > 0 }
             _continueKnittingProject.value =
                 if (candidate != null) {
@@ -603,23 +603,6 @@ class ProjectListViewModel
                 _pendingDeletionSessionAction.update { it?.copy(projectIds = it.projectIds - id) }
             }
             return true
-        }
-
-        fun renameProject(
-            id: Long,
-            newName: String,
-        ) {
-            viewModelScope.launch {
-                try {
-                    if (repository.updateProjectName(id, newName) == null) {
-                        sessionErrorChannel.trySend(R.string.generic_error_unknown)
-                    }
-                } catch (cancelled: CancellationException) {
-                    throw cancelled
-                } catch (_: Exception) {
-                    sessionErrorChannel.trySend(R.string.generic_error_unknown)
-                }
-            }
         }
 
         fun reactivateProject(id: Long) {

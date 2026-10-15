@@ -26,6 +26,8 @@ import java.util.concurrent.Executors
 import java.util.concurrent.RejectedExecutionException
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.ScheduledFuture
+import java.util.concurrent.ScheduledThreadPoolExecutor
+import java.util.concurrent.ThreadFactory
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
@@ -220,13 +222,13 @@ internal class ContentResolverBackupProviderIo internal constructor(
         private const val COPY_BUFFER_SIZE = 64 * 1024
         private val threadNumber = AtomicInteger()
         private val threadFactory =
-            java.util.concurrent.ThreadFactory { task ->
+            ThreadFactory { task ->
                 Thread(task, "backup-provider-${threadNumber.incrementAndGet()}").apply { isDaemon = true }
             }
         private val worker = Executors.newCachedThreadPool(threadFactory)
         private val descriptorCloser = Executors.newCachedThreadPool(threadFactory)
         private val watchdog =
-            java.util.concurrent.ScheduledThreadPoolExecutor(1, threadFactory).apply {
+            ScheduledThreadPoolExecutor(1, threadFactory).apply {
                 removeOnCancelPolicy = true
             }
     }

@@ -621,12 +621,6 @@ internal class FakePatternAnnotationDao(
     ) = Unit
 
     override suspend fun deleteById(id: Long) = Unit
-
-    override suspend fun updateZIndex(
-        id: Long,
-        zIndex: Long,
-        updatedAt: Long,
-    ) = Unit
 }
 
 internal suspend inline fun withParsedFileUrisForDomainApi(

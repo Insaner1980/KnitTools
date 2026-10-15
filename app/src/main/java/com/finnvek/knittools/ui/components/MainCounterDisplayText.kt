@@ -133,15 +133,3 @@ fun mainCounterDecreaseContentDescription(slot: MainCounterLabelSlot): String =
                 slot.customLabel ?: stringResource(R.string.main_counter_custom),
             )
     }
-
-@Composable
-fun projectMetadataText(
-    craftType: CraftType,
-    labelType: MainCounterLabelType,
-    customLabel: String?,
-): String =
-    stringResource(
-        R.string.project_metadata_format,
-        craftTypeLabel(craftType),
-        mainCounterLabelText(labelType, customLabel),
-    )

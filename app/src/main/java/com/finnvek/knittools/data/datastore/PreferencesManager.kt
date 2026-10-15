@@ -12,7 +12,6 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
-import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.finnvek.knittools.domain.model.ProjectSortOrder
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -124,20 +123,6 @@ class PreferencesManager
             }
         }
 
-        // Tooltipit
-
-        val dismissedTooltips: Flow<Set<String>> =
-            context.dataStore.safePreferencesData.map { prefs ->
-                prefs[KEY_DISMISSED_TOOLTIPS] ?: emptySet()
-            }
-
-        suspend fun dismissTooltip(id: String) {
-            context.dataStore.editPreferencesSafely { prefs ->
-                val current = prefs[KEY_DISMISSED_TOOLTIPS] ?: emptySet()
-                prefs[KEY_DISMISSED_TOOLTIPS] = current + id
-            }
-        }
-
         suspend fun applyStoredAppLanguage() {
             try {
                 val prefs = context.dataStore.readPreferencesOrNull() ?: return
@@ -219,6 +204,5 @@ class PreferencesManager
             val KEY_USE_IMPERIAL = booleanPreferencesKey("use_imperial")
             val KEY_SHOW_COMPLETED = booleanPreferencesKey("show_completed_projects")
             val KEY_SORT_ORDER = stringPreferencesKey("project_sort_order")
-            val KEY_DISMISSED_TOOLTIPS = stringSetPreferencesKey("dismissed_tooltips")
         }
     }

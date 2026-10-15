@@ -73,7 +73,6 @@
     <string name="main_counter_custom">Egen</string>
     <string name="main_counter_custom_label">Egen etikett</string>
     <string name="main_counter_custom_label_error">Ange en etikett.</string>
-    <string name="project_metadata_format">%1$s, %2$s</string>
     <plurals name="rounds_format">
         <item quantity="one">%1$d omgång</item>
         <item quantity="other">%1$d omgångar</item>
@@ -100,7 +99,6 @@
     <string name="no_completed_projects">Inga färdiga projekt ännu</string>
     <string name="delete_project">Ta bort</string>
     <string name="delete_project_message">Ta bort %s? Detta kan inte ångras.</string>
-    <string name="rename_project">Byt namn</string>
     <string name="complete_project">Slutför</string>
     <string name="reactivate_project">Återaktivera</string>
     <string name="complete_project_message">Slutföra %s? Projektet flyttas till dina färdiga projekt.</string>
@@ -133,8 +131,6 @@
     <string name="just_now">just nu</string>
 
     <!-- Counter Screen -->
-    <string name="stitch_count_format">%s m</string>
-    <string name="set_stitches">Ställ in maskor</string>
     <string name="stitches_per_row">Maskor per varv</string>
     <string name="track_stitches">Följ maskor</string>
     <string name="stitch_counter_compact_format">%1$d/%2$d</string>
@@ -219,7 +215,6 @@
     <string name="saved_to_my_yarn">Sparat i Mitt garn</string>
     <string name="save_to_my_yarn_explanation">Kopierar garnets namn, beskrivning och antal till ett garnkort i Mitt garn som länkas till det här projektet. Den här posten finns kvar här; anteckningarna kopieras inte.</string>
     <string name="saved_to_my_yarn_explanation">Den här projektposten förblir separat. Anteckningarna kopierades inte till garnkortet i Mitt garn.</string>
-    <string name="yarn_count_format">%1$d garner</string>
     <string name="linked_project_label">Länkat projekt</string>
     <string name="remove_project_link">Ta bort länk</string>
     <string name="select_project">Välj projekt</string>
@@ -250,7 +245,6 @@
     <string name="default_project_name">Mitt projekt</string>
     <string name="reset_counter">Nollställ räknaren</string>
     <string name="reset_counter_message">Nollställa räknaren till 0?</string>
-    <string name="pattern_repeat">Mönsterrapport</string>
     <string name="notes">Anteckningar</string>
     <string name="add_note">Lägg till anteckning…</string>
     <string name="write_your_notes_here">Skriv dina anteckningar här…</string>
@@ -412,11 +406,6 @@
     <string name="camera_permission_denied_permanent">Kamerabehörighet nekad — aktivera den i Inställningar</string>
 
     <!-- Care symbol categories -->
-    <string name="care_category_washing">Tvätt</string>
-    <string name="care_category_bleaching">Blekning</string>
-    <string name="care_category_drying">Torkning</string>
-    <string name="care_category_ironing">Strykning</string>
-    <string name="care_category_dry_cleaning">Kemtvätt</string>
     <string name="care_wash_30">30°</string>
     <string name="care_wash_40">40°</string>
     <string name="care_wash_60">60°</string>
@@ -680,20 +669,12 @@
     <string name="tip_needle_sizes_desc">Metrisk storlek (mm) är den universella standarden. US-storlekar använder ett numrerat system (0–50). UK/Kanada använder ett annat numrerat system. Japanska storlekar har en egen numrering. Kontrollera alltid mm-storleken för säkerhets skull.</string>
     <string name="tip_imperial_units_title">Brittiska/amerikanska mått</string>
     <string name="tip_imperial_units_desc">När detta är aktiverat använder alla räknare tum i stället för centimeter och yard i stället för meter. Stickfastheten mäts per 4 tum i stället för per 10 cm.</string>
-    <string name="pattern_row_highlight_description">Varv %1$d markerat ungefär %2$d procent ned på sidan</string>
     <string name="open_notes_editor">Öppna anteckningsredigeraren</string>
     <string name="restore_purchases_checking">Kontrollerar köp…</string>
     <string name="retry">Försök igen</string>
-    <string name="widget_rows_remaining_format">%d varv kvar</string>
-    <string name="widget_target_reached">Mål uppnått</string>
-    <string name="widget_stitches_format">Maskor: %1$d / %2$d</string>
     <string name="target_rows_dialog_title">Ange mål</string>
-    <string name="target_rows_set">Ange mål…</string>
-    <string name="target_rows_edit">Redigera mål</string>
     <string name="target_rows_remove">Ta bort mål</string>
     <string name="row_label_with_target">Varv %1$d / %2$d</string>
-    <string name="widget_undo_action">Ångra</string>
-    <string name="widget_undo_content_description">Ångra senaste ändringen</string>
     <string name="project_actions_title">Projektåtgärder</string>
     <string name="project_actions_section_counter_tools">Räknarverktyg</string>
     <string name="project_content_title">Projekt</string>

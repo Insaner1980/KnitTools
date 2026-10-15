@@ -95,21 +95,18 @@ internal fun CounterUiState.withObservedProject(project: CounterProject): Counte
 internal fun CounterUiState.withCounterChange(
     updatedCounter: CounterState,
     resetStitch: Boolean,
-): CounterUiState =
-    reminders
-        .filter { reminder -> projectId == null || reminder.projectId == projectId }
-        .let { projectReminders ->
-            val dismissal = dismissedReminderTrigger?.takeIf { it.row == updatedCounter.count }
-            copy(
-                counter = updatedCounter,
-                currentStitch = if (resetStitch) 0 else currentStitch,
-                dismissedReminderTrigger = dismissal,
-                activeAlert = activeReminder(projectReminders, updatedCounter.count, dismissal),
-            )
-        }
+): CounterUiState {
+    val dismissal = dismissedReminderTrigger?.takeIf { it.row == updatedCounter.count }
+    return copy(
+        counter = updatedCounter,
+        currentStitch = if (resetStitch) 0 else currentStitch,
+        dismissedReminderTrigger = dismissal,
+        activeAlert = activeReminder(selectedProjectReminders(reminders), updatedCounter.count, dismissal),
+    )
+}
 
 internal fun CounterUiState.withReminderList(reminders: List<RowReminder>): CounterUiState {
-    val projectReminders = reminders.filter { reminder -> projectId == null || reminder.projectId == projectId }
+    val projectReminders = selectedProjectReminders(reminders)
     val dismissal = dismissedReminderTrigger?.takeIf { it.row == counter.count }
     return copy(
         reminders = reminders,
@@ -121,18 +118,15 @@ internal fun CounterUiState.withReminderList(reminders: List<RowReminder>): Coun
 internal fun CounterUiState.withDismissedReminder(reminderId: Long): CounterUiState {
     val reminder = reminders.find { it.id == reminderId }
     val immediateDismissal = DismissedReminderTrigger(reminderId = reminderId, row = counter.count)
-    val persistedDismissal =
-        if (reminder?.repeatInterval != null) {
-            immediateDismissal
-        } else {
-            null
-        }
-    val projectReminders = reminders.filter { reminder -> projectId == null || reminder.projectId == projectId }
+    val persistedDismissal = immediateDismissal.takeIf { reminder?.repeatInterval != null }
     return copy(
-        activeAlert = activeReminder(projectReminders, counter.count, immediateDismissal),
+        activeAlert = activeReminder(selectedProjectReminders(reminders), counter.count, immediateDismissal),
         dismissedReminderTrigger = persistedDismissal,
     )
 }
+
+private fun CounterUiState.selectedProjectReminders(source: List<RowReminder>): List<RowReminder> =
+    source.filter { reminder -> projectId == null || reminder.projectId == projectId }
 
 private fun activeReminder(
     reminders: List<RowReminder>,

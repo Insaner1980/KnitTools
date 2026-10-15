@@ -224,10 +224,7 @@ class ProjectDocumentRepository
         ): ProjectDocumentMutationResult? {
             if (
                 validateProjectDocumentLabel(label) !is ProjectDocumentLabelValidation.Valid ||
-                (
-                    documentKey != null &&
-                        documentKey.trim().isEmpty()
-                )
+                (documentKey != null && documentKey.trim().isEmpty())
             ) {
                 return ProjectDocumentMutationResult.InvalidLabel
             }

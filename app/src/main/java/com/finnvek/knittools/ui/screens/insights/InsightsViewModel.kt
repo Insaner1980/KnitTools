@@ -42,7 +42,6 @@ import java.time.ZoneId
 import java.time.ZoneId.systemDefault
 import java.time.temporal.ChronoUnit
 import java.time.temporal.TemporalAdjusters
-import java.time.temporal.WeekFields
 import javax.inject.Inject
 
 private const val DATE_CHANGE_CHECK_INTERVAL_MILLIS = 60_000L
@@ -201,7 +200,7 @@ class InsightsViewModel
                         rangeStartDate(
                             activeTimeRange,
                             date.date,
-                            WeekFields.of(currentInsightsLocale()).firstDayOfWeek,
+                            currentInsightsFirstDayOfWeek(),
                         )?.atStartOfDay(date.zone)?.toInstant()?.toEpochMilli(),
                     currentDate = date.date,
                     zone = date.zone,
@@ -242,7 +241,8 @@ class InsightsViewModel
                     }.mapLatest { input ->
                         val projectList = input.projects.value
                         val sessionMetrics = input.sessions.value
-                        if (sessionMetrics == null || projectList == null || input.completions.value == null) {
+                        val completions = input.completions.value
+                        if (sessionMetrics == null || projectList == null || completions == null) {
                             InsightsUiState(
                                 projects = projectList.orEmpty(),
                                 selectedProjectId = params.projectId,
@@ -251,7 +251,7 @@ class InsightsViewModel
                                     rangeStartDate(
                                         params.timeRange,
                                         params.currentDate,
-                                        WeekFields.of(currentInsightsLocale()).firstDayOfWeek,
+                                        currentInsightsFirstDayOfWeek(),
                                     ),
                                 rangeEnd = params.currentDate,
                                 timeRange = params.timeRange,
@@ -260,7 +260,7 @@ class InsightsViewModel
                             )
                         } else {
                             buildUiState(
-                                requireNotNull(input.completions.value),
+                                completions,
                                 sessionMetrics,
                                 projectList,
                                 params,
@@ -281,7 +281,7 @@ class InsightsViewModel
             featureGates: InsightsProFeatureGates,
         ): InsightsUiState {
             val today = params.currentDate
-            val firstDayOfWeek = WeekFields.of(currentInsightsLocale()).firstDayOfWeek
+            val firstDayOfWeek = currentInsightsFirstDayOfWeek()
             val rangeMetrics = sessions.summary
             val firstSessionDate = sessions.firstDate
             val axis = insightsChartAxis(params.timeRange, today, firstSessionDate, firstDayOfWeek)
@@ -299,10 +299,11 @@ class InsightsViewModel
                 } else {
                     null
                 }
-            val measuredBuckets = chartBucketsFromMetrics(sessions.chart(axis.interval).values, projectOrder)
+            val chartAccumulator = sessions.chart(axis.interval)
+            val measuredBuckets = chartBucketsFromMetrics(chartAccumulator.values, projectOrder)
             val hasMeaningfulChartData =
                 measuredBuckets.values.count { it.totalMinutes > 0 } +
-                    sessions.chart(axis.interval).futureMeasuredBucketCount >=
+                    chartAccumulator.futureMeasuredBucketCount >=
                     MINIMUM_MEANINGFUL_CHART_BUCKETS
             val chartBuckets =
                 if (featureGates.canUseCharts) fillChartBuckets(axis, measuredBuckets) else emptyList()
@@ -388,20 +389,7 @@ class InsightsViewModel
             ): Int {
                 val activeDates = activityDates(sessions, rangeStartMillis, zone)
                 if (activeDates.isEmpty()) return 0
-                val anchor =
-                    when {
-                        activeDates.contains(currentDate) -> currentDate
-                        activeDates.contains(currentDate.minusDays(1)) -> currentDate.minusDays(1)
-                        else -> return 0
-                    }
-
-                var streak = 0
-                var currentDate = anchor
-                while (activeDates.contains(currentDate)) {
-                    streak++
-                    currentDate = currentDate.minusDays(1)
-                }
-                return streak
+                return currentStreak(activeDates, currentDate)
             }
 
             /**

@@ -86,6 +86,7 @@ import com.finnvek.knittools.domain.model.YarnCard
 import com.finnvek.knittools.domain.model.displayName
 import com.finnvek.knittools.domain.model.isWebPatternCompatible
 import com.finnvek.knittools.domain.model.webPatternUrlOrNull
+import com.finnvek.knittools.pro.ProStatus
 import com.finnvek.knittools.repository.ProjectDocumentMutationResult
 import com.finnvek.knittools.repository.SavedPatternMetadataMutationResult
 import com.finnvek.knittools.ui.components.CancelButton
@@ -198,6 +199,12 @@ fun ProjectContentHost(
     val coroutineScope = rememberCoroutineScope()
     val resources = LocalResources.current
     val context = LocalContext.current
+
+    fun showWebPatternSaveFailed() {
+        coroutineScope.launch {
+            snackbarHostState.showSnackbar(resources.getString(R.string.web_pattern_save_failed))
+        }
+    }
 
     CollectWithLifecycleEffect({ viewModel.projectClosedEvents }) { selectionVersion ->
         viewModel.consumeProjectClosedEvent(selectionVersion, actions.onProjectClosed)
@@ -335,11 +342,7 @@ fun ProjectContentHost(
                     pendingWebPatternProjectId = requestProjectId
                 }
             },
-            onPatternMetadataAttachFailed = {
-                coroutineScope.launch {
-                    snackbarHostState.showSnackbar(resources.getString(R.string.web_pattern_save_failed))
-                }
-            },
+            onPatternMetadataAttachFailed = { showWebPatternSaveFailed() },
             onImportFromRavelry = onImportFromRavelry,
             onAddWebPattern = { state.projectId?.let(onAddWebPattern) },
             onSeePro = onUpgradeToPro,
@@ -349,6 +352,13 @@ fun ProjectContentHost(
                 }
             },
         )
+
+    fun clearPendingWebPatternReplacement() {
+        pendingWebPatternId = null
+        pendingWebPatternName = null
+        pendingExistingWebPatternId = null
+        pendingWebPatternProjectId = null
+    }
 
     val replacementPatternId = pendingWebPatternId
     val expectedExistingPatternId = pendingExistingWebPatternId
@@ -369,26 +379,16 @@ fun ProjectContentHost(
                     expectedExistingSavedPatternId = expectedExistingPatternId,
                     projectId = replacementProjectId,
                 ) { result ->
-                    pendingWebPatternId = null
-                    pendingWebPatternName = null
-                    pendingExistingWebPatternId = null
-                    pendingWebPatternProjectId = null
+                    clearPendingWebPatternReplacement()
                     if (
                         result != SavedPatternMetadataMutationResult.Attached(replacementPatternId) &&
                         result != SavedPatternMetadataMutationResult.AlreadyAttached(replacementPatternId)
                     ) {
-                        coroutineScope.launch {
-                            snackbarHostState.showSnackbar(resources.getString(R.string.web_pattern_save_failed))
-                        }
+                        showWebPatternSaveFailed()
                     }
                 }
             },
-            onDismiss = {
-                pendingWebPatternId = null
-                pendingWebPatternName = null
-                pendingExistingWebPatternId = null
-                pendingWebPatternProjectId = null
-            },
+            onDismiss = { clearPendingWebPatternReplacement() },
         )
     }
     val projectCountersActions =
@@ -640,9 +640,7 @@ fun ProjectContentHost(
                             result != SavedPatternMetadataMutationResult.Unlinked &&
                             result != SavedPatternMetadataMutationResult.AlreadyUnlinked
                         ) {
-                            coroutineScope.launch {
-                                snackbarHostState.showSnackbar(resources.getString(R.string.web_pattern_save_failed))
-                            }
+                            showWebPatternSaveFailed()
                         }
                     }
                 }
@@ -836,23 +834,11 @@ fun ProjectContentHost(
             when (action) {
                 PendingCounterProAction.OpenReminder,
                 PendingCounterProAction.RetryReminder,
-                -> {
-                    ProPromptRequest(
-                        source = ProPromptSource.Reminders,
-                    )
-                }
+                -> ProPromptRequest(source = ProPromptSource.Reminders)
 
-                PendingCounterProAction.SaveToMyYarn -> {
-                    ProPromptRequest(
-                        source = ProPromptSource.SaveToMyYarn,
-                    )
-                }
+                PendingCounterProAction.SaveToMyYarn -> ProPromptRequest(source = ProPromptSource.SaveToMyYarn)
 
-                else -> {
-                    ProPromptRequest(
-                        source = ProPromptSource.Counters,
-                    )
-                }
+                else -> ProPromptRequest(source = ProPromptSource.Counters)
             }
         ProPromptSheet(
             request = request,
@@ -1560,8 +1546,7 @@ private fun StitchCountDialog(
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 shape = MaterialTheme.shapes.large,
-                colors =
-                    dialogTextFieldColors(),
+                colors = dialogTextFieldColors(),
             )
         },
         confirmButton = {
@@ -1604,7 +1589,7 @@ data class CounterSheetState(
     val projectId: Long?,
     val savedPatterns: List<SavedPattern>,
     val canUseCameraScan: Boolean,
-    val proStatus: com.finnvek.knittools.pro.ProStatus,
+    val proStatus: ProStatus,
     val hasExistingPattern: Boolean,
     val patternPickerMode: PatternPickerMode,
     val attachedSavedPatternIds: Set<Long>,
@@ -1958,8 +1943,7 @@ private fun NotesSheet(
                 placeholder = { Text(stringResource(R.string.add_note)) },
                 minLines = 6,
                 shape = MaterialTheme.shapes.large,
-                colors =
-                    cardTextFieldColors(),
+                colors = cardTextFieldColors(),
             )
         }
     }
@@ -2137,11 +2121,7 @@ private fun rememberCounterSheetActions(
             onNotesDismiss = onHideNotesSheet,
             onNotesExpand = onExpandNotes,
             onPatternPickerDismiss = onHidePatternPicker,
-            onPatternFileSelected = {
-                uri,
-                name,
-                owner,
-                ->
+            onPatternFileSelected = { uri, name, owner ->
                 viewModel.attachPattern(uri, name, expectedProjectId = owner)
             },
             onSavedPatternSelected = { pattern ->

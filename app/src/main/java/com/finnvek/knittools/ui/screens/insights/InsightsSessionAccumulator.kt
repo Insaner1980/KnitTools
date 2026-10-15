@@ -8,15 +8,13 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.ZoneOffset
-import java.time.temporal.TemporalAdjusters
-import java.time.temporal.WeekFields
 
 internal fun insightsPreviousStart(params: InsightsQueryParams): LocalDate? {
     val start =
         InsightsViewModel.rangeStartDate(
             params.timeRange,
             params.currentDate,
-            WeekFields.of(currentInsightsLocale()).firstDayOfWeek,
+            currentInsightsFirstDayOfWeek(),
         ) ?: return null
     return when (params.timeRange) {
         TimeRange.THIS_WEEK -> start.minusWeeks(1)
@@ -34,7 +32,7 @@ internal class InsightsSessionAccumulator(
     private val params: InsightsQueryParams,
     val facts: SessionInsightsFacts,
 ) {
-    private val firstDay = WeekFields.of(currentInsightsLocale()).firstDayOfWeek
+    private val firstDay = currentInsightsFirstDayOfWeek()
     private val rangeDate = params.startMillis?.let { Instant.ofEpochMilli(it).atZone(params.zone).toLocalDate() }
     private val previousStart = insightsPreviousStart(params)
     private val previousSeconds = mutableMapOf<LocalDate, Long>()
@@ -57,11 +55,7 @@ internal class InsightsSessionAccumulator(
         )
     val fabric =
         SessionPaceAccumulator(
-            millis(
-                params.currentDate.with(TemporalAdjusters.previousOrSame(firstDay)).minusWeeks(
-                    PROJECT_FABRIC_WEEK_COUNT - 1L,
-                ),
-            ),
+            millis(projectFabricWindowStart(params.currentDate, firstDay)),
             PaceGroupingInterval.DAY,
             params.zone,
             firstDay,

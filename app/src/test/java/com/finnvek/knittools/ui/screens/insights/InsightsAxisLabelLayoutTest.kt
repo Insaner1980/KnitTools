@@ -1,5 +1,6 @@
 package com.finnvek.knittools.ui.screens.insights
 
+import androidx.compose.ui.unit.dp
 import com.finnvek.knittools.ui.theme.InsightsDimens
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -82,6 +83,6 @@ class InsightsAxisLabelLayoutTest {
     fun `the filter pill is visually lighter than the touch target it keeps`() {
         // Visuaalinen korkeus saa alittaa kosketuskohteen minimin, koska
         // minimumInteractiveComponentSize() laajentaa osumakohteen erikseen.
-        assertTrue(InsightsDimens.FilterPillHeight < InsightsDimens.FilterChipMinTouchTarget)
+        assertTrue(InsightsDimens.FilterPillHeight < 48.dp)
     }
 }

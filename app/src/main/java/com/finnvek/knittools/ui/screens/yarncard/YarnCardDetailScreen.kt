@@ -20,6 +20,7 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -384,16 +385,8 @@ private fun YarnDetailsSection(
             stringResource(R.string.fiber_content) to form.fiberContent,
             stringResource(R.string.weight_category) to form.weightCategory,
             // Nimikkeessä ei toisteta yksikköä: arvo kertoo sen jo ("50 g").
-            stringResource(R.string.weight_per_skein) to
-                form.weightGrams
-                    .takeIf { it.isNotBlank() }
-                    ?.let { formatYarnMeasurement(it, "g") }
-                    .orEmpty(),
-            stringResource(R.string.length_per_skein) to
-                form.lengthMeters
-                    .takeIf { it.isNotBlank() }
-                    ?.let { formatYarnMeasurement(it, "m") }
-                    .orEmpty(),
+            stringResource(R.string.weight_per_skein) to formatYarnMeasurement(form.weightGrams, "g"),
+            stringResource(R.string.length_per_skein) to formatYarnMeasurement(form.lengthMeters, "m"),
             stringResource(R.string.needle_size_label) to form.needleSize,
             stringResource(R.string.gauge_label) to form.gaugeInfo,
             stringResource(R.string.color_name) to form.colorName,
@@ -494,7 +487,7 @@ private fun YarnCareSection(careSymbols: Long) {
     }
 }
 
-@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun LinkedProjectSheet(
     projects: List<CounterProject>,

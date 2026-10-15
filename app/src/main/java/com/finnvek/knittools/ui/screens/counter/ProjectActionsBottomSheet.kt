@@ -27,7 +27,6 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
@@ -223,45 +222,28 @@ private fun ProjectActionsSection(
 }
 
 @Composable
-@Suppress("kotlin:S107") // Yhteinen toimintorivi pitää valinnaiset ulkoasu- ja tilaparametrit näkyvinä.
 private fun ActionRow(
     label: String,
     onClick: () -> Unit,
     trailingCount: Int? = null,
-    enabled: Boolean = true,
     showChevron: Boolean = true,
-    isDanger: Boolean = false,
     proStatus: ProStatus? = null,
 ) {
     val locale = rememberCurrentLocale()
-    val contentColor =
-        when {
-            isDanger -> MaterialTheme.colorScheme.error
-            !enabled -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
-            else -> MaterialTheme.colorScheme.onSurface
-        }
-    val mutedColor =
-        if (enabled) {
-            MaterialTheme.colorScheme.onSurfaceVariant
-        } else {
-            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f)
-        }
+    val mutedColor = MaterialTheme.colorScheme.onSurfaceVariant
     Row(
         modifier =
             Modifier
                 .fillMaxWidth()
                 .defaultMinSize(minHeight = 48.dp)
-                .clickable(enabled = enabled, onClick = onClick)
+                .clickable(onClick = onClick)
                 .padding(
                     horizontal = CounterDimens.ProjectActionsHorizontalPadding,
                     vertical = CounterDimens.ProjectActionsRowVerticalPadding,
                 ),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        ActionRowBody(
-            label = label,
-            contentColor = contentColor,
-        )
+        ActionRowBody(label = label)
         if (trailingCount != null) {
             Text(
                 text = formatIntegerForDisplay(trailingCount.toLong(), locale),
@@ -287,14 +269,7 @@ private fun SwitchRow(
     label: String,
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
-    enabled: Boolean = true,
 ) {
-    val contentColor =
-        if (enabled) {
-            MaterialTheme.colorScheme.onSurface
-        } else {
-            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
-        }
     Row(
         modifier =
             Modifier
@@ -302,7 +277,6 @@ private fun SwitchRow(
                 .defaultMinSize(minHeight = 48.dp)
                 .toggleable(
                     value = checked,
-                    enabled = enabled,
                     role = Role.Switch,
                     onValueChange = onCheckedChange,
                 ).padding(
@@ -311,28 +285,21 @@ private fun SwitchRow(
                 ),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        ActionRowBody(
-            label = label,
-            contentColor = contentColor,
-        )
+        ActionRowBody(label = label)
         Switch(
             checked = checked,
             onCheckedChange = null,
-            enabled = enabled,
         )
     }
 }
 
 @Composable
 // Ilman yleisiä Material-ikoneita kuten asetuksissa: Counters ja Measurements jakoivat saman listaikonin.
-private fun RowScope.ActionRowBody(
-    label: String,
-    contentColor: Color,
-) {
+private fun RowScope.ActionRowBody(label: String) {
     Text(
         text = label,
         style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
-        color = contentColor,
+        color = MaterialTheme.colorScheme.onSurface,
         modifier = Modifier.weight(1f),
     )
 }

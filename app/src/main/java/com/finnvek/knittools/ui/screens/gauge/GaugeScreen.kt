@@ -134,11 +134,8 @@ fun GaugeContent(
                         modifier =
                             Modifier
                                 .fillMaxWidth()
-                                .semantics {
-                                    error(
-                                        message,
-                                    )
-                                }.testTag("measurement_result_error"),
+                                .semantics { error(message) }
+                                .testTag("measurement_result_error"),
                     )
                 }
                 GaugeResults(presentation, onCopy = { onAction(GaugeAction.Copy(it)) })

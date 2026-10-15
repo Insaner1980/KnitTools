@@ -183,26 +183,24 @@ private fun IncreaseDecreaseResultSection(result: IncreaseDecreaseResult) {
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        ResultCard(title = stringResource(R.string.easy_to_remember)) {
-            AnimatedResultNumber(targetValue = result.easyPattern) { value ->
-                ResultNumberInset {
-                    Text(
-                        text = value,
-                        style = MaterialTheme.typography.headlineMedium,
-                        color = MaterialTheme.colorScheme.primary,
-                    )
-                }
-            }
-        }
-        ResultCard(title = stringResource(R.string.balanced)) {
-            AnimatedResultNumber(targetValue = result.balancedPattern) { value ->
-                ResultNumberInset {
-                    Text(
-                        text = value,
-                        style = MaterialTheme.typography.headlineMedium,
-                        color = MaterialTheme.colorScheme.primary,
-                    )
-                }
+        PatternResultCard(title = stringResource(R.string.easy_to_remember), pattern = result.easyPattern)
+        PatternResultCard(title = stringResource(R.string.balanced), pattern = result.balancedPattern)
+    }
+}
+
+@Composable
+private fun PatternResultCard(
+    title: String,
+    pattern: String,
+) {
+    ResultCard(title = title) {
+        AnimatedResultNumber(targetValue = pattern) { value ->
+            ResultNumberInset {
+                Text(
+                    text = value,
+                    style = MaterialTheme.typography.headlineMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                )
             }
         }
     }

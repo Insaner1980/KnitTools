@@ -16,7 +16,7 @@ class MinutesPerRowFormatterTest {
     fun `no rows means no division at all`() {
         assertEquals(
             MinutesPerRowDisplay.Unavailable,
-            MinutesPerRowFormatter.fromTotals(totalMinutes = 120, totalRows = 0),
+            MinutesPerRowFormatter.fromSeconds(totalSeconds = 120L * 60L, totalRows = 0),
         )
     }
 
@@ -24,11 +24,11 @@ class MinutesPerRowFormatterTest {
     fun `result rounding below one reports the under one marker`() {
         assertEquals(
             MinutesPerRowDisplay.UnderOneMinute,
-            MinutesPerRowFormatter.fromTotals(totalMinutes = 10, totalRows = 40),
+            MinutesPerRowFormatter.fromSeconds(totalSeconds = 10L * 60L, totalRows = 40),
         )
         assertEquals(
             MinutesPerRowDisplay.UnderOneMinute,
-            MinutesPerRowFormatter.fromTotals(totalMinutes = 0, totalRows = 5),
+            MinutesPerRowFormatter.fromSeconds(totalSeconds = 0L * 60L, totalRows = 5),
         )
     }
 
@@ -36,15 +36,15 @@ class MinutesPerRowFormatterTest {
     fun `pace rounds to the nearest whole minute`() {
         assertEquals(
             MinutesPerRowDisplay.Minutes(9),
-            MinutesPerRowFormatter.fromTotals(totalMinutes = 795, totalRows = 85),
+            MinutesPerRowFormatter.fromSeconds(totalSeconds = 795L * 60L, totalRows = 85),
         )
         assertEquals(
             MinutesPerRowDisplay.Minutes(2),
-            MinutesPerRowFormatter.fromTotals(totalMinutes = 5, totalRows = 3),
+            MinutesPerRowFormatter.fromSeconds(totalSeconds = 5L * 60L, totalRows = 3),
         )
         assertEquals(
             MinutesPerRowDisplay.Minutes(1),
-            MinutesPerRowFormatter.fromTotals(totalMinutes = 3, totalRows = 4),
+            MinutesPerRowFormatter.fromSeconds(totalSeconds = 3L * 60L, totalRows = 4),
         )
     }
 

@@ -73,7 +73,6 @@
     <string name="main_counter_custom">Personalizzata</string>
     <string name="main_counter_custom_label">Etichetta personalizzata</string>
     <string name="main_counter_custom_label_error">Inserisci una etichetta.</string>
-    <string name="project_metadata_format">%1$s, %2$s</string>
     <plurals name="rounds_format">
         <item quantity="one">%1$d giro</item>
         <item quantity="many">%1$d giri</item>
@@ -102,7 +101,6 @@
     <string name="no_completed_projects">Nessun progetto completato per ora</string>
     <string name="delete_project">Elimina</string>
     <string name="delete_project_message">Eliminare %s? Questa azione non può essere annullata.</string>
-    <string name="rename_project">Rinomina</string>
     <string name="complete_project">Completa</string>
     <string name="reactivate_project">Riattiva</string>
     <string name="complete_project_message">Completare %s? Il progetto verrà spostato tra quelli completati.</string>
@@ -138,8 +136,6 @@
     <string name="just_now">proprio ora</string>
 
     <!-- Counter Screen -->
-    <string name="stitch_count_format">%s m</string>
-    <string name="set_stitches">Imposta maglie</string>
     <string name="stitches_per_row">Maglie per ferro</string>
     <string name="track_stitches">Tieni traccia delle maglie</string>
     <string name="stitch_counter_compact_format">%1$d/%2$d</string>
@@ -224,7 +220,6 @@
     <string name="saved_to_my_yarn">Salvato in “Il mio filato”</string>
     <string name="save_to_my_yarn_explanation">Copia il nome del filato, la descrizione e la quantità in una scheda nella sezione Il mio filato, collegata a questo progetto. Questa voce rimane qui; le note non vengono copiate.</string>
     <string name="saved_to_my_yarn_explanation">Questa voce del progetto rimane separata. Le note non sono state copiate nella scheda della sezione Il mio filato.</string>
-    <string name="yarn_count_format">%1$d filati</string>
     <string name="linked_project_label">Progetto collegato</string>
     <string name="remove_project_link">Rimuovi collegamento</string>
     <string name="select_project">Seleziona progetto</string>
@@ -256,7 +251,6 @@
     <string name="default_project_name">Il mio progetto</string>
     <string name="reset_counter">Reimposta contatore</string>
     <string name="reset_counter_message">Reimpostare il contatore a 0?</string>
-    <string name="pattern_repeat">Ripetizione del motivo</string>
     <string name="notes">Note</string>
     <string name="add_note">Aggiungi nota…</string>
     <string name="write_your_notes_here">Scrivi qui le tue note…</string>
@@ -420,11 +414,6 @@
     <string name="camera_permission_denied_permanent">Autorizzazione fotocamera negata — attivala nelle Impostazioni</string>
 
     <!-- Care symbol categories -->
-    <string name="care_category_washing">Lavaggio</string>
-    <string name="care_category_bleaching">Candeggio</string>
-    <string name="care_category_drying">Asciugatura</string>
-    <string name="care_category_ironing">Stiratura</string>
-    <string name="care_category_dry_cleaning">Lavaggio a secco</string>
     <string name="care_wash_30">30°</string>
     <string name="care_wash_40">40°</string>
     <string name="care_wash_60">60°</string>
@@ -698,20 +687,12 @@
     <string name="tip_needle_sizes_desc">Il sistema metrico (mm) è lo standard universale. Le misure US usano un sistema numerato (0–50). Le misure UK/Canada usano un altro sistema numerato. Le misure giapponesi hanno una numerazione propria. Controlla sempre la misura in mm per sicurezza.</string>
     <string name="tip_imperial_units_title">Unità imperiali</string>
     <string name="tip_imperial_units_desc">Quando è attivo, tutti i calcolatori usano pollici invece di centimetri e yard invece di metri. Il campione viene quindi misurato su 4 pollici invece che su 10 cm.</string>
-    <string name="pattern_row_highlight_description">Valore %1$d evidenziato circa al %2$d per cento della pagina</string>
     <string name="open_notes_editor">Apri editor note</string>
     <string name="restore_purchases_checking">Controllo acquisti…</string>
     <string name="retry">Riprova</string>
-    <string name="widget_rows_remaining_format">%d righe rimanenti</string>
-    <string name="widget_target_reached">Obiettivo raggiunto</string>
-    <string name="widget_stitches_format">Maglie: %1$d / %2$d</string>
     <string name="target_rows_dialog_title">Imposta obiettivo</string>
-    <string name="target_rows_set">Imposta obiettivo…</string>
-    <string name="target_rows_edit">Modifica obiettivo</string>
     <string name="target_rows_remove">Rimuovi obiettivo</string>
     <string name="row_label_with_target">%1$d / %2$d</string>
-    <string name="widget_undo_action">Annulla</string>
-    <string name="widget_undo_content_description">Annulla l’ultima modifica</string>
     <string name="project_actions_title">Azioni progetto</string>
     <string name="project_actions_section_counter_tools">Strumenti contatore</string>
     <string name="project_content_title">Progetto</string>

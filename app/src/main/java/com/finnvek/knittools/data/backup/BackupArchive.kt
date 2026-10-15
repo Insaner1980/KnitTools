@@ -3,8 +3,10 @@ package com.finnvek.knittools.data.backup
 import com.finnvek.knittools.data.local.KNITTOOLS_DATABASE_VERSION
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
+import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileOutputStream
+import java.io.OutputStream
 import java.util.zip.ZipEntry
 import java.util.zip.ZipFile
 import java.util.zip.ZipInputStream
@@ -61,7 +63,7 @@ internal object BackupArchive {
                 }
                 val header = zip.getEntry(BackupFormat.MANIFEST) ?: throw BackupException(BackupError.INVALID)
                 BackupFormat.requireValid(header.size in 1..BackupFormat.MAX_MANIFEST)
-                val bytes = java.io.ByteArrayOutputStream()
+                val bytes = ByteArrayOutputStream()
                 zip.getInputStream(header).use { BackupFormat.copy(it, bytes, BackupFormat.MAX_MANIFEST, check) }
                 val headerText = bytes.toString(Charsets.UTF_8.name())
                 BackupFormat.requireJsonDepth(headerText, 4)
@@ -150,7 +152,7 @@ internal object BackupArchive {
     }
 
     private val discardOutput =
-        object : java.io.OutputStream() {
+        object : OutputStream() {
             override fun write(value: Int) = Unit
 
             override fun write(

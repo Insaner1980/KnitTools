@@ -39,6 +39,8 @@ private val rowMappingJson =
         encodeDefaults = true
     }
 
+private val rowMarkerOrder: Comparator<RowMarker> = compareBy<RowMarker> { it.page }.thenBy { it.row }
+
 fun parseMapping(json: String?): List<RowMarker> {
     if (json == null || json.length > ROW_MAPPING_MAX_JSON_LENGTH || json.isBlank()) return emptyList()
     return runCatching {
@@ -49,7 +51,7 @@ fun parseMapping(json: String?): List<RowMarker> {
             }?.filter(RowMarker::isValid)
             ?.distinctBy { marker -> marker.row to marker.page }
             ?.take(ROW_MAPPING_MAX_MARKERS)
-            ?.sortedWith(compareBy<RowMarker> { it.page }.thenBy { it.row })
+            ?.sortedWith(rowMarkerOrder)
             ?.toList()
             .orEmpty()
     }.getOrDefault(emptyList())
@@ -61,7 +63,7 @@ fun serializeMapping(markers: List<RowMarker>): String =
             .filter(RowMarker::isValid)
             .distinctBy { it.row to it.page }
             .take(ROW_MAPPING_MAX_MARKERS)
-            .sortedWith(compareBy<RowMarker> { it.page }.thenBy { it.row }),
+            .sortedWith(rowMarkerOrder),
     )
 
 fun createCalibrationRowMarkers(
@@ -85,68 +87,7 @@ fun createCalibrationRowMarkers(
             page = lastPage,
             yPosition = sanitizeReadingLineYFraction(lastYPosition),
         ),
-    ).sortedWith(compareBy<RowMarker> { it.page }.thenBy { it.row })
-}
-
-fun interpolateYPosition(
-    markers: List<RowMarker>,
-    targetRow: Int,
-    page: Int,
-): Float? {
-    var previous: RowMarker? = null
-    var next: RowMarker? = null
-
-    markers.forEach { marker ->
-        if (marker.page != page) return@forEach
-
-        when {
-            marker.row == targetRow -> return marker.yPosition
-            marker.row < targetRow -> {
-                val currentPrevious = previous
-                if (currentPrevious == null || marker.row >= currentPrevious.row) {
-                    previous = marker
-                }
-            }
-            marker.row > targetRow -> {
-                val currentNext = next
-                if (currentNext == null || marker.row < currentNext.row) {
-                    next = marker
-                }
-            }
-        }
-    }
-
-    if (previous != null && next != null && previous.row != next.row) {
-        val progress = (targetRow - previous.row).toFloat() / (next.row - previous.row).toFloat()
-        return previous.yPosition + ((next.yPosition - previous.yPosition) * progress)
-    }
-
-    return null
-}
-
-fun resolveReadingLineYFraction(
-    markers: List<RowMarker>,
-    currentRow: Int,
-    currentPage: Int,
-    currentYFraction: Float,
-    rowDelta: Int,
-): Float? {
-    val mappedYFraction =
-        interpolateYPosition(
-            markers = markers,
-            targetRow = currentRow,
-            page = currentPage,
-        )
-    if (mappedYFraction != null) {
-        return sanitizeReadingLineYFraction(mappedYFraction)
-    }
-
-    if (rowDelta == 0) return null
-
-    return advanceReadingLineForRowDelta(
-        yFraction = currentYFraction,
-        rowDelta = rowDelta,
-    )
+    ).sortedWith(rowMarkerOrder)
 }
 
 fun resolveReadingLineLocation(

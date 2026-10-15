@@ -70,12 +70,6 @@ class PatternAnnotationRepository
         suspend fun restoreBatch(annotations: List<PatternAnnotation>) =
             dao.restoreBatch(annotations.map(PatternAnnotation::toEntity))
 
-        suspend fun reorderAnnotation(
-            id: Long,
-            zIndex: Long,
-            updatedAt: Long,
-        ) = dao.updateZIndex(id, zIndex, updatedAt)
-
         private fun orderForLayers(
             layerIds: List<Long>,
             annotations: List<PatternAnnotationEntity>,

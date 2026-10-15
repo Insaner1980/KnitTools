@@ -154,9 +154,7 @@ private fun ProjectContentCardView(
                 glyph = card.kind.glyph,
                 modifier =
                     Modifier.size(
-                        if (LocalDensity.current.fontScale >=
-                            1.5f
-                        ) {
+                        if (LocalDensity.current.fontScale >= 1.5f) {
                             CounterDimens.ProjectCardCompactIconSize
                         } else {
                             CounterDimens.ProjectCardIconSize

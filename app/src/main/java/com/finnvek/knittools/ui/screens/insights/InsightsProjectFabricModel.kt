@@ -24,6 +24,15 @@ internal data class InsightsProjectFabricModel(
         get() = days.count { it.projectIds.isNotEmpty() }
 }
 
+/** Ruudukon enimmäisikkunan ensimmäinen päivä: [PROJECT_FABRIC_WEEK_COUNT] viikkoa tähän viikkoon asti. */
+internal fun projectFabricWindowStart(
+    today: LocalDate,
+    firstDayOfWeek: DayOfWeek,
+): LocalDate =
+    today
+        .with(TemporalAdjusters.previousOrSame(firstDayOfWeek))
+        .minusWeeks((PROJECT_FABRIC_WEEK_COUNT - 1).toLong())
+
 internal fun buildInsightsProjectFabric(
     sessions: List<KnitSession>,
     today: LocalDate,
@@ -31,10 +40,7 @@ internal fun buildInsightsProjectFabric(
     firstDayOfWeek: DayOfWeek,
     projectOrder: List<Long>,
 ): InsightsProjectFabricModel? {
-    val startDate =
-        today
-            .with(TemporalAdjusters.previousOrSame(firstDayOfWeek))
-            .minusWeeks((PROJECT_FABRIC_WEEK_COUNT - 1).toLong())
+    val startDate = projectFabricWindowStart(today, firstDayOfWeek)
     val buckets =
         SessionPaceAccumulator(
             startDate.atStartOfDay(zone).toInstant().toEpochMilli(),
@@ -58,10 +64,7 @@ internal fun buildInsightsProjectFabric(
     projectOrder: List<Long>,
     firstSessionDate: LocalDate?,
 ): InsightsProjectFabricModel? {
-    val windowStart =
-        today
-            .with(TemporalAdjusters.previousOrSame(firstDayOfWeek))
-            .minusWeeks((PROJECT_FABRIC_WEEK_COUNT - 1).toLong())
+    val windowStart = projectFabricWindowStart(today, firstDayOfWeek)
     // Ruudukko alkaa ensimmäisen istunnon viikosta, kun historia on ikkunaa lyhyempi: kiinteä
     // puolen vuoden ikkuna näytti otsikon aikaväliä pidemmän jakson ja kuukausia tyhjiä soluja.
     val firstSessionWeek = firstSessionDate?.with(TemporalAdjusters.previousOrSame(firstDayOfWeek))

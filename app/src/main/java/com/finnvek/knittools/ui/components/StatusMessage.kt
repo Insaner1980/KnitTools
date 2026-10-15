@@ -44,9 +44,11 @@ fun StatusMessage(
 ) {
     val accentColor =
         when (type) {
-            StatusMessageType.Info -> MaterialTheme.colorScheme.primary
+            StatusMessageType.Info,
+            StatusMessageType.Success,
+            -> MaterialTheme.colorScheme.primary
+
             StatusMessageType.Error -> MaterialTheme.colorScheme.error
-            StatusMessageType.Success -> MaterialTheme.colorScheme.primary
         }
     val icon =
         when (type) {

@@ -4,6 +4,12 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    ignore:
+      # Compose Rules 0.6.4+ on käännetty detekt 2.0.0-alpha.6:ta vasten, mutta
+      # projekti pysyy dokumentoidusti alpha.5:ssä (AGP 9 -poikkeus). Poista
+      # sääntö, kun detekt nostetaan versioon, jota uudet Compose Rules käyttävät.
+      - dependency-name: "io.nlopez.compose.rules:*"
+        versions: [">= 0.6.4"]
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:

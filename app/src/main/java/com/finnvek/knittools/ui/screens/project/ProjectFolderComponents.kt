@@ -12,6 +12,8 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
@@ -22,6 +24,8 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
@@ -257,11 +261,9 @@ fun ProjectFolderNameDialog(
                     isError = displayedError != null,
                     label = { Text(stringResource(R.string.folder_name)) },
                     supportingText = displayedError?.let { { Text(it) } },
-                    keyboardOptions =
-                        androidx.compose.foundation.text
-                            .KeyboardOptions(imeAction = ImeAction.Done),
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                     keyboardActions =
-                        androidx.compose.foundation.text.KeyboardActions(
+                        KeyboardActions(
                             onDone = { validName?.takeIf { canConfirm }?.let(onConfirm) },
                         ),
                     shape = MaterialTheme.shapes.large,
@@ -504,18 +506,7 @@ private fun FolderFilterRow(
                 .heightIn(min = FolderActionMinHeight)
                 .folderSelectionSemantics(selectedFilterDescription(filter, folders, selected), selected),
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-            Text(
-                text = label,
-                modifier = Modifier.weight(1f),
-            )
-            if (selected) {
-                androidx.compose.material3.Icon(
-                    imageVector = Icons.Filled.Check,
-                    contentDescription = null,
-                )
-            }
-        }
+        FolderOptionLabel(text = label, selected = selected)
     }
 }
 
@@ -548,21 +539,10 @@ private fun UserFolderRow(
                     .heightIn(min = FolderActionMinHeight)
                     .folderSelectionSemantics(description, isSelected),
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-                Text(
-                    text = folder.name,
-                    modifier = Modifier.weight(1f),
-                )
-                if (isSelected) {
-                    androidx.compose.material3.Icon(
-                        imageVector = Icons.Filled.Check,
-                        contentDescription = null,
-                    )
-                }
-            }
+            FolderOptionLabel(text = folder.name, selected = isSelected)
         }
         Box {
-            androidx.compose.material3.IconButton(
+            IconButton(
                 onClick = { menuExpanded = true },
                 enabled = enabled,
                 modifier =
@@ -570,7 +550,7 @@ private fun UserFolderRow(
                         .heightIn(min = FolderActionMinHeight)
                         .widthIn(min = FolderActionMinHeight),
             ) {
-                androidx.compose.material3.Icon(
+                Icon(
                     imageVector = Icons.Filled.MoreVert,
                     contentDescription = stringResource(R.string.folder_actions_description, folder.name),
                 )
@@ -664,20 +644,28 @@ private fun DestinationRow(
                     onClickLabel?.let { onClick(label = it, action = null) }
                 },
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-            Text(
-                text = label,
-                modifier = Modifier.weight(1f),
-            )
-            if (selected) {
-                androidx.compose.material3.Icon(
-                    imageVector = Icons.Filled.Check,
-                    contentDescription = null,
-                )
-            }
-        }
+        FolderOptionLabel(text = label, selected = selected)
     }
     // CPD-ON
+}
+
+@Composable
+private fun FolderOptionLabel(
+    text: String,
+    selected: Boolean,
+) {
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+        Text(
+            text = text,
+            modifier = Modifier.weight(1f),
+        )
+        if (selected) {
+            Icon(
+                imageVector = Icons.Filled.Check,
+                contentDescription = null,
+            )
+        }
+    }
 }
 
 @Composable

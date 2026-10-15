@@ -329,7 +329,7 @@ class ProjectListViewModel
 
         // === Projektitoiminnot ===
 
-        private suspend fun updateContinueKnitting(projects: List<CounterProject>) {
+        private fun updateContinueKnitting(projects: List<CounterProject>) {
             val candidate = projects.firstOrNull { it.count > 0 }
             _continueKnittingProject.value =
                 if (candidate != null) {

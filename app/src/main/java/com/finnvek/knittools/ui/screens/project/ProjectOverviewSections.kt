@@ -83,9 +83,8 @@ internal fun ProjectOverviewYarn(
                     modifier =
                         Modifier
                             .fillMaxWidth()
-                            .heightIn(
-                                min = ProjectOverviewDimens.RowMinHeight,
-                            ).clickable(onClick = onEdit),
+                            .heightIn(min = ProjectOverviewDimens.RowMinHeight)
+                            .clickable(onClick = onEdit),
                 ) {
                     // Ilman kuvaa rivi on pelkkää tekstiä: neutraali laatta ei kertonut langasta mitään.
                     card?.photoUri?.takeIf(String::isNotBlank)?.let { photoUri ->
@@ -142,10 +141,7 @@ private fun ProjectOverviewYarnAmounts(
                             )
                             val formatted = value?.let { yarnUsageAmount(it, unit, amounts) }
                             Text(
-                                if (value != null &&
-                                    value < 0 &&
-                                    formatted != null
-                                ) {
+                                if (value != null && value < 0 && formatted != null) {
                                     stringResource(R.string.yarn_usage_over_format, formatted)
                                 } else {
                                     formatted ?: stringResource(R.string.project_overview_amount_unknown)
@@ -203,10 +199,7 @@ internal fun ProjectOverviewPattern(
     }
     val metadata =
         state.linkedPattern?.takeIf { pattern ->
-            state.projectDocuments.none {
-                it.savedPatternId ==
-                    pattern.id
-            }
+            state.projectDocuments.none { it.savedPatternId == pattern.id }
         }
     metadata?.let {
         OverviewLinkRow(
@@ -273,9 +266,8 @@ internal fun ProjectOverviewPhotos(
                 contentScale = ContentScale.Crop,
                 modifier =
                     Modifier
-                        .weight(
-                            1f,
-                        ).aspectRatio(1f)
+                        .weight(1f)
+                        .aspectRatio(1f)
                         .clip(RoundedCornerShape(ProjectListDimens.ThumbnailCornerRadius))
                         .clickable(role = Role.Button, onClick = onOpen),
             )

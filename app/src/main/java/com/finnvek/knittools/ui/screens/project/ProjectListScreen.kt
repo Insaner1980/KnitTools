@@ -309,9 +309,7 @@ fun ProjectListScreen(
                     creationFolderName ?: stringResource(R.string.folder_unfiled),
                 ),
             errorMessage =
-                if (projectCreationError ==
-                    ProjectCreationResult.FolderMissing
-                ) {
+                if (projectCreationError == ProjectCreationResult.FolderMissing) {
                     stringResource(R.string.folder_missing)
                 } else {
                     null
@@ -373,9 +371,7 @@ fun ProjectListScreen(
                 folderState.mutationError?.let {
                     stringResource(
                         it.errorResource(
-                            if (editingFolderId ==
-                                null
-                            ) {
+                            if (editingFolderId == null) {
                                 R.string.folder_create_error
                             } else {
                                 R.string.folder_rename_error
@@ -1098,9 +1094,7 @@ private fun ProjectListContent(
                         photoUri = state.latestPhotoUris[project.id],
                         onClick = {
                             if (state.isMultiSelectMode) {
-                                actions.onToggleSelection(
-                                    project.id,
-                                )
+                                actions.onToggleSelection(project.id)
                             } else {
                                 actions.onOpenOverview(project.id)
                             }

@@ -126,26 +126,15 @@ private const val KIND_WEB = "web"
 private const val KIND_RAVELRY = "ravelry"
 private const val KIND_ERROR = "error"
 
-private fun SavedStateHandle.savePendingShareRequest(request: PatternShareImportRequest?) {
-    if (request == null) {
-        remove<Long>(KEY_PENDING_REQUEST_ID)
-        remove<String>(KEY_PENDING_KIND)
-        remove<String>(KEY_PENDING_URL)
-        remove<String>(KEY_PENDING_TITLE)
-        remove<String>(KEY_PENDING_ERROR)
-        return
-    }
-    this[KEY_PENDING_REQUEST_ID] = request.requestId
-    this[KEY_PENDING_KIND] =
-        when (request.payload) {
-            is PatternSharePayload.WebLink -> KIND_WEB
-            is PatternSharePayload.Ravelry -> KIND_RAVELRY
-            is PatternSharePayload.Error -> KIND_ERROR
-        }
-    this[KEY_PENDING_URL] = request.payload.url
-    this[KEY_PENDING_TITLE] = request.payload.titleSuggestion
-    this[KEY_PENDING_ERROR] = (request.payload as? PatternSharePayload.Error)?.error?.name
-}
+private fun SavedStateHandle.savePendingShareRequest(request: PatternShareImportRequest?) =
+    saveShareRequest(
+        request = request,
+        requestIdKey = KEY_PENDING_REQUEST_ID,
+        kindKey = KEY_PENDING_KIND,
+        urlKey = KEY_PENDING_URL,
+        titleKey = KEY_PENDING_TITLE,
+        errorKey = KEY_PENDING_ERROR,
+    )
 
 private fun SavedStateHandle.restorePendingShareRequest(): PatternShareImportRequest? =
     restoreShareRequest(
@@ -156,26 +145,15 @@ private fun SavedStateHandle.restorePendingShareRequest(): PatternShareImportReq
         errorKey = KEY_PENDING_ERROR,
     )
 
-private fun SavedStateHandle.saveQueuedShareRequest(request: PatternShareImportRequest?) {
-    if (request == null) {
-        remove<Long>(KEY_QUEUED_REQUEST_ID)
-        remove<String>(KEY_QUEUED_KIND)
-        remove<String>(KEY_QUEUED_URL)
-        remove<String>(KEY_QUEUED_TITLE)
-        remove<String>(KEY_QUEUED_ERROR)
-        return
-    }
-    this[KEY_QUEUED_REQUEST_ID] = request.requestId
-    this[KEY_QUEUED_KIND] =
-        when (request.payload) {
-            is PatternSharePayload.WebLink -> KIND_WEB
-            is PatternSharePayload.Ravelry -> KIND_RAVELRY
-            is PatternSharePayload.Error -> KIND_ERROR
-        }
-    this[KEY_QUEUED_URL] = request.payload.url
-    this[KEY_QUEUED_TITLE] = request.payload.titleSuggestion
-    this[KEY_QUEUED_ERROR] = (request.payload as? PatternSharePayload.Error)?.error?.name
-}
+private fun SavedStateHandle.saveQueuedShareRequest(request: PatternShareImportRequest?) =
+    saveShareRequest(
+        request = request,
+        requestIdKey = KEY_QUEUED_REQUEST_ID,
+        kindKey = KEY_QUEUED_KIND,
+        urlKey = KEY_QUEUED_URL,
+        titleKey = KEY_QUEUED_TITLE,
+        errorKey = KEY_QUEUED_ERROR,
+    )
 
 private fun SavedStateHandle.restoreQueuedShareRequest(): PatternShareImportRequest? =
     restoreShareRequest(
@@ -185,6 +163,34 @@ private fun SavedStateHandle.restoreQueuedShareRequest(): PatternShareImportRequ
         titleKey = KEY_QUEUED_TITLE,
         errorKey = KEY_QUEUED_ERROR,
     )
+
+private fun SavedStateHandle.saveShareRequest(
+    request: PatternShareImportRequest?,
+    requestIdKey: String,
+    kindKey: String,
+    urlKey: String,
+    titleKey: String,
+    errorKey: String,
+) {
+    if (request == null) {
+        remove<Long>(requestIdKey)
+        remove<String>(kindKey)
+        remove<String>(urlKey)
+        remove<String>(titleKey)
+        remove<String>(errorKey)
+        return
+    }
+    this[requestIdKey] = request.requestId
+    this[kindKey] =
+        when (request.payload) {
+            is PatternSharePayload.WebLink -> KIND_WEB
+            is PatternSharePayload.Ravelry -> KIND_RAVELRY
+            is PatternSharePayload.Error -> KIND_ERROR
+        }
+    this[urlKey] = request.payload.url
+    this[titleKey] = request.payload.titleSuggestion
+    this[errorKey] = (request.payload as? PatternSharePayload.Error)?.error?.name
+}
 
 private fun SavedStateHandle.restoreShareRequest(
     requestIdKey: String,

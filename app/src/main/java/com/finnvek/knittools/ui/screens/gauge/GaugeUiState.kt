@@ -148,17 +148,13 @@ data class GaugeUiState(
             when (task) {
                 GaugeTask.CONVERT -> convertedLength != null
                 GaugeTask.MEASURE ->
-                    listOfNotNull(stitchSwatchDensity, rowSwatchDensity).any {
-                        MeasurementCalculator.gaugeForBasis(it, basis) !=
-                            null
+                    listOfNotNull(stitchSwatchDensity, rowSwatchDensity).any { density ->
+                        MeasurementCalculator.gaugeForBasis(density, basis) != null
                     }
                 GaugeTask.CALCULATE ->
-                    if (operation ==
-                        GaugeOperation.COUNT_FOR_SIZE
-                    ) {
-                        countResult != null
-                    } else {
-                        sizeResultMm != null
+                    when (operation) {
+                        GaugeOperation.COUNT_FOR_SIZE -> countResult != null
+                        GaugeOperation.SIZE_FROM_COUNT -> sizeResultMm != null
                     }
                 GaugeTask.ADJUST -> stitchAdjustment != null || rowAdjustment != null
             }
@@ -183,20 +179,17 @@ data class GaugeUiState(
                     GaugeTask.MEASURE ->
                         failedSwatch(GaugeField.SWATCH_STITCHES, GaugeField.SWATCH_WIDTH) ||
                             failedSwatch(GaugeField.SWATCH_ROWS, GaugeField.SWATCH_HEIGHT)
-                    GaugeTask.CALCULATE ->
-                        if (axis == GaugeAxis.STITCHES) {
-                            !manualStitchGauge && failedSwatch(GaugeField.SWATCH_STITCHES, GaugeField.SWATCH_WIDTH)
-                        } else {
-                            !manualRowGauge && failedSwatch(GaugeField.SWATCH_ROWS, GaugeField.SWATCH_HEIGHT)
-                        }
-                    GaugeTask.ADJUST ->
-                        (
-                            !manualStitchGauge &&
-                                failedSwatch(GaugeField.SWATCH_STITCHES, GaugeField.SWATCH_WIDTH)
-                        ) ||
-                            (!manualRowGauge && failedSwatch(GaugeField.SWATCH_ROWS, GaugeField.SWATCH_HEIGHT))
+                    GaugeTask.CALCULATE -> failedDerivedSwatch(axis)
+                    GaugeTask.ADJUST -> failedDerivedSwatch(GaugeAxis.STITCHES) || failedDerivedSwatch(GaugeAxis.ROWS)
                 }
             return if (failed || swatchFailed) MeasurementNumberError.TOO_LARGE else null
+        }
+
+    private fun failedDerivedSwatch(axis: GaugeAxis): Boolean =
+        if (axis == GaugeAxis.STITCHES) {
+            !manualStitchGauge && failedSwatch(GaugeField.SWATCH_STITCHES, GaugeField.SWATCH_WIDTH)
+        } else {
+            !manualRowGauge && failedSwatch(GaugeField.SWATCH_ROWS, GaugeField.SWATCH_HEIGHT)
         }
 
     private fun failedAdjustment(axis: GaugeAxis): Boolean {

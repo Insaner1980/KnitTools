@@ -16,22 +16,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -43,7 +34,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -156,11 +146,12 @@ fun AllPhotosScreen(
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
-            AllPhotosTopBar(
-                state = state,
-                filteredPhotos = filteredPhotos,
+            LibraryTopBar(
+                isSelectMode = state.isSelectMode,
+                selectedCount = state.selectedPhotoIds.size,
+                titleRes = R.string.all_photos_title,
                 onExitSelectMode = actions.onExitSelectMode,
-                onSelectAll = actions.onSelectAll,
+                onSelectAll = { actions.onSelectAll(filteredPhotos.map { it.id }) },
                 onBack = actions.onBack,
             )
         },
@@ -208,72 +199,6 @@ private fun AllPhotosDeleteDialog(
         onConfirm = onConfirm,
         onDismiss = onDismiss,
     )
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun AllPhotosTopBar(
-    state: AllPhotosState,
-    filteredPhotos: List<ProgressPhoto>,
-    onExitSelectMode: () -> Unit,
-    onSelectAll: (List<Long>) -> Unit,
-    onBack: () -> Unit,
-) {
-    if (state.isSelectMode) {
-        TopAppBar(
-            title = {
-                Text(
-                    // CPD-OFF: Ruudun paikallinen Compose-rakenne pidetaan vastuun yhteydessa.
-                    text = stringResource(R.string.n_selected, state.selectedPhotoIds.size),
-                    style = MaterialTheme.typography.titleLarge,
-                )
-            },
-            navigationIcon = {
-                IconButton(onClick = onExitSelectMode) {
-                    Icon(
-                        imageVector = Icons.Filled.Close,
-                        contentDescription = stringResource(R.string.cancel),
-                    )
-                }
-            },
-            actions = {
-                TextButton(onClick = { onSelectAll(filteredPhotos.map { it.id }) }) {
-                    // CPD-ON
-                    Text(stringResource(R.string.select_all))
-                }
-            },
-            colors =
-                TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.Transparent,
-                    scrolledContainerColor = Color.Transparent,
-                ),
-        )
-    } else {
-        TopAppBar(
-            title = {
-                Text(
-                    // CPD-OFF: Ruudun paikallinen Compose-rakenne pidetaan vastuun yhteydessa.
-                    text = stringResource(R.string.all_photos_title),
-                    style = MaterialTheme.typography.titleLarge,
-                )
-            },
-            navigationIcon = {
-                IconButton(onClick = onBack) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = stringResource(R.string.back),
-                        tint = MaterialTheme.colorScheme.outline,
-                    )
-                }
-            },
-            colors =
-                TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.Transparent,
-                    // CPD-ON
-                    scrolledContainerColor = Color.Transparent,
-                ),
-        )
-    }
 }
 
 @Composable

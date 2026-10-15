@@ -119,8 +119,7 @@ class GaugeViewModel
                     text,
                     locale,
                     integer = field.isCount,
-                    allowZero =
-                        field == GaugeField.CONVERSION,
+                    allowZero = field == GaugeField.CONVERSION,
                 )
             val current = state.value
             val canonical =
@@ -214,21 +213,11 @@ class GaugeViewModel
                 eventChannel.trySend(GaugeUiEvent.Message(R.string.measurement_too_large))
                 return
             }
+            val convertedText = converted?.let { MeasurementNumberFormatter.formatEditing(it) } ?: input.text
             mutableState.update { current ->
                 current.copy(
                     fromUnit = unit,
-                    fields =
-                        current.fields + (
-                            GaugeField.CONVERSION to
-                                input.copy(
-                                    text =
-                                        converted?.let {
-                                            MeasurementNumberFormatter.formatEditing(
-                                                it,
-                                            )
-                                        } ?: input.text,
-                                )
-                        ),
+                    fields = current.fields + (GaugeField.CONVERSION to input.copy(text = convertedText)),
                 )
             }
         }
@@ -249,9 +238,7 @@ class GaugeViewModel
             when (instruction) {
                 is ParsedInstruction.Gauge -> {
                     val basisMm =
-                        if (instruction.unit ==
-                            ParsedInstruction.GaugeUnit.PER_10_CM
-                        ) {
+                        if (instruction.unit == ParsedInstruction.GaugeUnit.PER_10_CM) {
                             GaugeBasis.PER_10_CM.lengthMm
                         } else {
                             GaugeBasis.PER_4_INCHES.lengthMm
@@ -291,21 +278,8 @@ class GaugeViewModel
                 it.copy(
                     useSwatch = true,
                     manualStitchGauge =
-                        if (instruction.width != null ||
-                            instruction.stitches != null
-                        ) {
-                            false
-                        } else {
-                            it.manualStitchGauge
-                        },
-                    manualRowGauge =
-                        if (instruction.height != null ||
-                            instruction.rows != null
-                        ) {
-                            false
-                        } else {
-                            it.manualRowGauge
-                        },
+                        it.manualStitchGauge && instruction.width == null && instruction.stitches == null,
+                    manualRowGauge = it.manualRowGauge && instruction.height == null && instruction.rows == null,
                 )
             }
         }

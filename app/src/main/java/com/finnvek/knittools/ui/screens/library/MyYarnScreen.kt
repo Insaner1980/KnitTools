@@ -217,16 +217,7 @@ fun MyYarnScreen(
         floatingActionButton = {
             if (!state.isSelectMode && state.cards.isNotEmpty()) {
                 // Sama pilleri kuin Projects-näytön New Project: teksti + kolmiulotteinen plus.
-                val addLabel = stringResource(R.string.add_yarn_to_my_yarn)
-                val proDescription = proBadgeDescription(state.proStatus)
-                LabeledCounterImageButton(
-                    imageRes = R.drawable.counter_plus_button,
-                    label = addLabel,
-                    visualSize = ProjectListDimens.CreateButtonVisualSize,
-                    onClick = requestAddYarn,
-                    contentDescription = listOfNotNull(addLabel, proDescription).joinToString(", "),
-                    badge = proDescription?.let { { ProBadge(status = state.proStatus) } },
-                )
+                AddYarnButton(proStatus = state.proStatus, onAddYarn = requestAddYarn)
             }
         },
     ) { padding ->
@@ -349,7 +340,6 @@ private fun MyYarnDeleteDialog(
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun MyYarnTopBar(
     state: MyYarnState,
@@ -385,17 +375,25 @@ private fun MyYarnEmptyState(
             textAlign = TextAlign.Center,
         )
         Spacer(modifier = Modifier.height(16.dp))
-        val addLabel = stringResource(R.string.add_yarn_to_my_yarn)
-        val proDescription = proBadgeDescription(proStatus)
-        LabeledCounterImageButton(
-            imageRes = R.drawable.counter_plus_button,
-            label = addLabel,
-            visualSize = ProjectListDimens.CreateButtonVisualSize,
-            onClick = onAddYarn,
-            contentDescription = listOfNotNull(addLabel, proDescription).joinToString(", "),
-            badge = proDescription?.let { { ProBadge(status = proStatus) } },
-        )
+        AddYarnButton(proStatus = proStatus, onAddYarn = onAddYarn)
     }
+}
+
+@Composable
+private fun AddYarnButton(
+    proStatus: ProStatus,
+    onAddYarn: () -> Unit,
+) {
+    val addLabel = stringResource(R.string.add_yarn_to_my_yarn)
+    val proDescription = proBadgeDescription(proStatus)
+    LabeledCounterImageButton(
+        imageRes = R.drawable.counter_plus_button,
+        label = addLabel,
+        visualSize = ProjectListDimens.CreateButtonVisualSize,
+        onClick = onAddYarn,
+        contentDescription = listOfNotNull(addLabel, proDescription).joinToString(", "),
+        badge = proDescription?.let { { ProBadge(status = proStatus) } },
+    )
 }
 
 @Composable

@@ -1307,7 +1307,7 @@ Accessibility/source tests and historical instrumented locale evidence are liste
 | Room | 2.8.5 | Persistence/compiler/testing |
 | Coroutines | 1.11.0 | Core/Android/Play integration and tests |
 | DataStore | 1.2.1 | Preferences/trial/widget state |
-| Core KTX / Activity Compose / AppCompat | 1.19.0 / 1.13.0 / 1.8.0 | Android integration/per-app language |
+| Core KTX / Activity Compose / AppCompat | 1.19.1 / 1.13.0 / 1.8.0 | Android integration/per-app language |
 | Kotlinx serialization | 1.11.0 | Domain payload/archive JSON and Room support |
 | Guava | 33.7.2-android | Required compatibility dependency |
 | Splashscreen | 1.2.0 | Android launch surface |
@@ -1319,7 +1319,7 @@ Accessibility/source tests and historical instrumented locale evidence are liste
 | WorkManager | 2.12.0 | Declared runtime dependency; does not imply continuous sync |
 | Firebase BOM | 34.19.0 | Current Android Crashlytics dependency |
 | Google Services / Crashlytics plugin | 4.5.0 / 3.0.8 | Variant configuration/mapping integration |
-| PostHog | 3.72.0 | Release opt-in usage analytics |
+| PostHog | 3.72.1 | Release opt-in usage analytics |
 | Sentry Android core | 8.60.0 | Debug-only diagnostics |
 | Baseline Profile / Benchmark | 1.5.0 | Stable producer/benchmark tooling |
 | Profile Installer | 1.4.1 | Profile installation support |
@@ -1413,7 +1413,7 @@ Useful Windows commands below describe available validation, **not commands run 
 - **Semgrep / MobSF / secret scanners:** [config/semgrep/knittools-security.yml](config/semgrep/knittools-security.yml), project custom rules and checker delegates; gitleaks/TruffleHog results and exact exceptions must be interpreted from raw receipts, not summary adjectives.
 - **Sonar / JaCoCo:** root analysis depends on `:app:jacocoDebugUnitTestReport`; [sonar-project.properties](sonar-project.properties) supplies project configuration. JaCoCo reads Kotlin/Javac debug classes, rejects empty class inputs, and excludes generated code plus UI/widget/billing/pro/framework/storage/local/remote areas. Its percentage describes included classes, not whole-app runtime coverage. Sonar execution uploads data and needs separate authorization.
 
-At the inspected snapshot, [config/check-exceptions.json](config/check-exceptions.json) has **44 entries**, all expiring **2026-10-31**: 37 MobSF, 2 gitleaks, 2 OSV, 1 Detekt, 1 OWASP and 1 TruffleHog. [dependency-check-suppressions.xml](config/dependency-check-suppressions.xml) has **14 suppression nodes**. A prior receipt's 16 applied suppressions is a historical run count, not the current XML-node count. Keep rationale/path/expiry and scanner scope distinct.
+At the inspected snapshot, [config/check-exceptions.json](config/check-exceptions.json) has **44 entries**, all expiring **2026-10-31**: 37 MobSF, 2 gitleaks, 2 OSV, 1 Detekt, 1 OWASP and 1 TruffleHog. [dependency-check-suppressions.xml](config/dependency-check-suppressions.xml) has **12 suppression nodes**. A prior receipt's 16 applied suppressions is a historical run count, not the current XML-node count. Keep rationale/path/expiry and scanner scope distinct.
 
 ### DeepSec and release-surface checks
 
@@ -1568,7 +1568,7 @@ No speculative implementation defect is implied by an unexecuted check. These bo
 | [Ravelry Firebase Backend And Saved Patterns Plan.md](<Ravelry Firebase Backend And Saved Patterns Plan.md>) | Historical API/backend plan, not the current browser product |
 | [config/local-backup.md](config/local-backup.md), [config/insights-session-budget.md](config/insights-session-budget.md), [config/annotation-page-limits.md](config/annotation-page-limits.md) | Detailed budgets/rationale; current implementation and dated runtime evidence still govern |
 | [config/future-sync-spec.md](config/future-sync-spec.md) | Future sync specification boundary, not shipped service |
-| [config/posthog.md](config/posthog.md) | Consent/data policy; older SDK 3.64.1 mention is superseded by catalog 3.72.0 |
+| [config/posthog.md](config/posthog.md) | Consent/data policy; older SDK 3.64.1 mention is superseded by catalog 3.72.1 |
 | Root Fable/Projects/Insights plans and `docs` | Design/implementation history; older Outfit, cardless rows or selectors are not current visual contracts |
 | `reports` | Dated, often ignored evidence; pair outcomes with input identity and command rather than importing old pass claims |
 

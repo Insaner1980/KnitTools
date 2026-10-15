@@ -63,26 +63,6 @@
 
     <suppress until="2026-10-31Z">
         <notes><![CDATA[
-        Kotlin runtime stdlib -JARit matchautuvat JetBrains Kotlin -tuotteen CPE:hen, mutta
-        CVE-2026-53914 koskee build cache -metadataa eikä sovelluksen runtime-luokkapolkua.
-        Rajaus pidetään nykyisissä raportoiduissa PURL-versioissa, jotta uusi Kotlin-versio
-        pakottaa arvioimaan tilanteen uudelleen.
-        ]]></notes>
-        <packageUrl regex="true">^pkg:maven/org\.jetbrains\.kotlin/kotlin-stdlib@2\.4\.10$</packageUrl>
-        <cve>CVE-2026-53914</cve>
-    </suppress>
-
-    <suppress until="2026-10-31Z">
-        <notes><![CDATA[
-        Kotlin stdlib jdk7 runtime -JAR matchautuu JetBrains Kotlin -tuotteen CPE:hen, mutta
-        CVE-2026-53914 koskee build cache -metadataa eikä sovelluksen runtime-luokkapolkua.
-        ]]></notes>
-        <packageUrl regex="true">^pkg:maven/org\.jetbrains\.kotlin/kotlin-stdlib-jdk7@2\.4\.10$</packageUrl>
-        <cve>CVE-2026-53914</cve>
-    </suppress>
-
-    <suppress until="2026-10-31Z">
-        <notes><![CDATA[
         Kotlin stdlib jdk8 runtime -JAR matchautuu JetBrains Kotlin -tuotteen CPE:hen.
         CVE-2026-53914 koskee build cache -metadataa, ja CVE-2020-29582 koski ennen 1.4.21
         korjattua tilapäistiedostojen luontia, joten nämä eivät kuvaa tätä runtime-artefaktia.
@@ -106,7 +86,7 @@
         PostHog Android SDK ei ole CVE-2024-9710:n PostHog-palvelin. CVE koskee palvelimen
         database_schema-metodia, jota tässä Android-artefaktissa ei ole.
         ]]></notes>
-        <packageUrl regex="true">^pkg:maven/com\.posthog/posthog-android@3\.72\.0$</packageUrl>
+        <packageUrl regex="true">^pkg:maven/com\.posthog/posthog-android@3\.72\.1$</packageUrl>
         <cve>CVE-2024-9710</cve>
     </suppress>
 
@@ -115,7 +95,7 @@
         PostHog JVM SDK:n ydinkirjasto ei ole CVE-2024-9710:n PostHog-palvelin. CVE koskee
         palvelimen database_schema-metodia, jota tässä SDK-artefaktissa ei ole.
         ]]></notes>
-        <packageUrl regex="true">^pkg:maven/com\.posthog/posthog@6\.47\.0$</packageUrl>
+        <packageUrl regex="true">^pkg:maven/com\.posthog/posthog@6\.47\.1$</packageUrl>
         <cve>CVE-2024-9710</cve>
     </suppress>
 

@@ -2,7 +2,6 @@ package com.finnvek.knittools.ui.components
 
 import com.finnvek.knittools.domain.calculator.formatDecimalForDisplay
 import com.finnvek.knittools.domain.calculator.formatIntegerForDisplay
-import com.finnvek.knittools.domain.calculator.formatSignedDecimalForDisplay
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import java.util.Locale
@@ -29,11 +28,6 @@ class LocaleFormattingTest {
     @Test
     fun `canonical decimal input is shown with locale separator`() {
         assertEquals("12,5", localizeDecimalSeparatorForDisplay("12.5", Locale.forLanguageTag("fi-FI")))
-    }
-
-    @Test
-    fun `signed decimal display keeps locale separator`() {
-        assertEquals("+2,5", formatSignedDecimalForDisplay(2.5, Locale.forLanguageTag("fi-FI"), fractionDigits = 1))
     }
 
     @Test

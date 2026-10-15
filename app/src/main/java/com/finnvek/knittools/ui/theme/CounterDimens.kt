@@ -67,8 +67,6 @@ object CounterDimens {
     val ExtraCounterCardHorizontalPadding = 22.dp
     val ExtraCounterCardVerticalPadding = 18.dp
     val ExtraCounterContentSpacing = 8.dp
-    val ExtraCounterValueSpacing = 14.dp
-    val ExtraCounterValueColumnWidth = 74.dp
     val ExtraCounterStepperTouchSize = 56.dp
     val ExtraCounterStepperVisualSize = 42.dp
     val ExtraCounterStepperIconSize = 20.dp

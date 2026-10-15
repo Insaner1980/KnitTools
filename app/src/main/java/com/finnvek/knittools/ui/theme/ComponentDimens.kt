@@ -12,7 +12,6 @@ object ComponentDimens {
     val ContentPadding = 16.dp
     val LargeContentPadding = 24.dp
     val StandardIconSize = 20.dp
-    val CompactProgressStrokeWidth = 2.dp
     val AnimatedResultOffset = 6.dp
 
     @Suppress("MayBeConstant")

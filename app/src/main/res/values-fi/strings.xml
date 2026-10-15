@@ -73,7 +73,6 @@
     <string name="main_counter_custom">Oma</string>
     <string name="main_counter_custom_label">Oma nimi</string>
     <string name="main_counter_custom_label_error">Anna nimi.</string>
-    <string name="project_metadata_format">%1$s, %2$s</string>
     <plurals name="rounds_format">
         <item quantity="one">%1$d kerros</item>
         <item quantity="other">%1$d kerrosta</item>
@@ -100,7 +99,6 @@
     <string name="no_completed_projects">Ei valmiita projekteja vielä</string>
     <string name="delete_project">Poista</string>
     <string name="delete_project_message">Poistetaanko %s? Tätä ei voi kumota.</string>
-    <string name="rename_project">Nimeä uudelleen</string>
     <string name="complete_project">Merkitse valmistuneeksi</string>
     <string name="reactivate_project">Aktivoi uudelleen</string>
     <string name="complete_project_message">Merkitäänkö %s valmistuneeksi? Projekti siirretään valmiisiin projekteihin.</string>
@@ -133,8 +131,6 @@
     <string name="just_now">juuri nyt</string>
 
     <!-- Laskurinäkymä -->
-    <string name="stitch_count_format">%s s</string>
-    <string name="set_stitches">Aseta silmukkamäärä</string>
     <string name="stitches_per_row">Silmukkaa per kerros</string>
     <string name="track_stitches">Seuraa silmukoita</string>
     <string name="stitch_counter_compact_format">%1$d/%2$d</string>
@@ -219,7 +215,6 @@
     <string name="saved_to_my_yarn">Tallennettu omiin lankoihin</string>
     <string name="save_to_my_yarn_explanation">Kopioi langan nimen, kuvauksen ja määrän projektiin linkitetylle Omat langat -lankakortille. Tämä kirjaus jää tänne, eikä sen muistiinpanoja kopioida.</string>
     <string name="saved_to_my_yarn_explanation">Tämä projektin lankakirjaus säilyy erillisenä. Sen muistiinpanoja ei kopioitu Omat langat -lankakortille.</string>
-    <string name="yarn_count_format">%1$d lankaa</string>
     <string name="linked_project_label">Liitetty projekti</string>
     <string name="remove_project_link">Poista linkki</string>
     <string name="select_project">Valitse projekti</string>
@@ -250,7 +245,6 @@
     <string name="default_project_name">Oma projekti</string>
     <string name="reset_counter">Nollaa laskuri</string>
     <string name="reset_counter_message">Nollataanko laskuri arvoon 0?</string>
-    <string name="pattern_repeat">Mallikerta</string>
     <string name="notes">Muistiinpanot</string>
     <string name="add_note">Lisää muistiinpano…</string>
     <string name="write_your_notes_here">Kirjoita muistiinpanosi tähän…</string>
@@ -412,11 +406,6 @@
     <string name="camera_permission_denied_permanent">Kameran käyttö estetty — ota se käyttöön asetuksissa</string>
 
     <!-- Hoitomerkkien luokat -->
-    <string name="care_category_washing">Pesu</string>
-    <string name="care_category_bleaching">Valkaisu</string>
-    <string name="care_category_drying">Kuivaus</string>
-    <string name="care_category_ironing">Silitys</string>
-    <string name="care_category_dry_cleaning">Kemiallinen pesu</string>
     <string name="care_wash_30">30°</string>
     <string name="care_wash_40">40°</string>
     <string name="care_wash_60">60°</string>
@@ -445,14 +434,9 @@
     <string name="widget_name">Kerroslaskuri</string>
     <string name="widget_description">Kerroslaskuriwidget aktiiviselle projektille</string>
     <string name="widget_pro_required">Päivitä Prohon käyttääksesi widgetiä</string>
-    <string name="widget_stitches_format">Silmukat: %1$d / %2$d</string>
     <string name="target_rows_dialog_title">Aseta tavoite</string>
-    <string name="target_rows_set">Aseta tavoite…</string>
-    <string name="target_rows_edit">Muokkaa tavoitetta</string>
     <string name="target_rows_remove">Poista tavoite</string>
     <string name="row_label_with_target">Kerros %1$d / %2$d</string>
-    <string name="widget_undo_action">Peru</string>
-    <string name="widget_undo_content_description">Peru viimeisin muutos</string>
 
     <!-- Hubit -->
     <string name="desc_increase_decrease">Jaa lisäykset tai kavennukset tasaisesti kerrokselle</string>
@@ -960,12 +944,9 @@
     <string name="extra_counters_title">Lisälaskurit</string>
     <string name="counter_repeat_label">Toisto</string>
     <string name="counters_list_title">Laskurit</string>
-    <string name="pattern_row_highlight_description">Rivi %1$d korostettu noin %2$d prosenttia sivun alusta</string>
     <string name="open_notes_editor">Avaa muistiinpanot</string>
     <string name="restore_purchases_checking">Tarkistetaan ostoksia…</string>
     <string name="retry">Yritä uudelleen</string>
-    <string name="widget_rows_remaining_format">%d riviä jäljellä</string>
-    <string name="widget_target_reached">Tavoite saavutettu</string>
     <string name="yarn_card_number_fallback">Lanka #%1$d</string>
     <string name="pro_start_free_trial">Aloita ilmainen kokeilu</string>
     <string name="pro_start_14_day_trial">Aloita 14 päivän ilmainen kokeilu</string>

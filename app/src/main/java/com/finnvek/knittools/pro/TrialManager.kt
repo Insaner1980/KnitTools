@@ -159,20 +159,6 @@ class TrialManager
             }
         }
 
-        suspend fun updateTimestamp() {
-            val now = sessionTimeSource.snapshot()
-            var updatedState: TrialState? = null
-            val didWrite =
-                context.trialDataStore.editPreferencesSafely { preferences ->
-                    updatedState = preferences.evaluateAndPersistTrialState(now)
-                }
-            if (didWrite) {
-                updatedState?.let { _trialState.value = it }
-            } else {
-                _trialState.value = TrialState()
-            }
-        }
-
         private suspend fun refreshTrialState() {
             val now = sessionTimeSource.snapshot()
             var refreshedState: TrialState? = null

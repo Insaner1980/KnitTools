@@ -90,67 +90,6 @@ fun createCalibrationRowMarkers(
     ).sortedWith(rowMarkerOrder)
 }
 
-fun interpolateYPosition(
-    markers: List<RowMarker>,
-    targetRow: Int,
-    page: Int,
-): Float? {
-    var previous: RowMarker? = null
-    var next: RowMarker? = null
-
-    markers.forEach { marker ->
-        if (marker.page != page) return@forEach
-
-        when {
-            marker.row == targetRow -> return marker.yPosition
-            marker.row < targetRow -> {
-                val currentPrevious = previous
-                if (currentPrevious == null || marker.row >= currentPrevious.row) {
-                    previous = marker
-                }
-            }
-            marker.row > targetRow -> {
-                val currentNext = next
-                if (currentNext == null || marker.row < currentNext.row) {
-                    next = marker
-                }
-            }
-        }
-    }
-
-    if (previous != null && next != null && previous.row != next.row) {
-        val progress = (targetRow - previous.row).toFloat() / (next.row - previous.row).toFloat()
-        return previous.yPosition + ((next.yPosition - previous.yPosition) * progress)
-    }
-
-    return null
-}
-
-fun resolveReadingLineYFraction(
-    markers: List<RowMarker>,
-    currentRow: Int,
-    currentPage: Int,
-    currentYFraction: Float,
-    rowDelta: Int,
-): Float? {
-    val mappedYFraction =
-        interpolateYPosition(
-            markers = markers,
-            targetRow = currentRow,
-            page = currentPage,
-        )
-    if (mappedYFraction != null) {
-        return sanitizeReadingLineYFraction(mappedYFraction)
-    }
-
-    if (rowDelta == 0) return null
-
-    return advanceReadingLineForRowDelta(
-        yFraction = currentYFraction,
-        rowDelta = rowDelta,
-    )
-}
-
 fun resolveReadingLineLocation(
     markers: List<RowMarker>,
     previousRow: Int,

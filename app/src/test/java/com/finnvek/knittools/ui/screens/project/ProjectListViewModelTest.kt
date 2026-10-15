@@ -20,7 +20,6 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -555,31 +554,6 @@ class ProjectListViewModelTest : ProjectListViewModelFixture() {
         }
 
     @Test
-    fun `rename failure is reported without crashing and retry can succeed`() =
-        runTest {
-            coEvery { repository.updateProjectName(3L, "New name") } throws IOException("synthetic write failure")
-            val vm = createViewModel()
-
-            vm.renameProject(3L, "New name")
-            assertEquals(R.string.generic_error_unknown, withTimeoutOrNull(1) { vm.sessionErrors.first() })
-            coEvery { repository.updateProjectName(3L, "New name") } returns "New name"
-            vm.renameProject(3L, "New name")
-            assertEquals(null, withTimeoutOrNull(1) { vm.sessionErrors.first() })
-            coVerify(exactly = 2) { repository.updateProjectName(3L, "New name") }
-        }
-
-    @Test
-    fun `rename cancellation is not reported as a persistence failure`() =
-        runTest {
-            coEvery { repository.updateProjectName(3L, "New name") } throws CancellationException("cancelled")
-            val vm = createViewModel()
-
-            vm.renameProject(3L, "New name")
-
-            assertEquals(null, withTimeoutOrNull(1) { vm.sessionErrors.first() })
-        }
-
-    @Test
     fun `creation failure reports an error and retains the exact draft for retry`() =
         runTest {
             every { proManager.hasFeature(ProFeature.UNLIMITED_PROJECTS) } returns true
@@ -627,17 +601,6 @@ class ProjectListViewModelTest : ProjectListViewModelFixture() {
             runCurrent()
 
             coVerify(exactly = 2) { preferencesManager.toggleShowCompletedProjects() }
-        }
-
-    @Test
-    fun `renameProject calls repository`() =
-        runTest {
-            every { proManager.hasFeature(any()) } returns true
-
-            val vm = createViewModel()
-            vm.renameProject(3L, "Uusi nimi")
-
-            coVerify { repository.updateProjectName(3L, "Uusi nimi") }
         }
 
     @Test

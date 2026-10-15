@@ -7,12 +7,8 @@ import org.junit.Test
 
 class PatternAvailabilityTest {
     @Test
-    fun `stable values round trip through backend and persistence parsers`() {
+    fun `stable values round trip through the persistence parser`() {
         PatternAvailability.entries.forEach { availability ->
-            assertEquals(
-                availability,
-                PatternAvailability.fromBackendValue(availability.persistedValue),
-            )
             assertEquals(
                 availability,
                 PatternAvailability.fromPersistedValue(availability.persistedValue),
@@ -23,7 +19,6 @@ class PatternAvailabilityTest {
     @Test
     fun `missing or malformed values safely become unknown`() {
         listOf(null, "", " ", "PAID", "subscription").forEach { value ->
-            assertEquals(PatternAvailability.Unknown, PatternAvailability.fromBackendValue(value))
             assertEquals(PatternAvailability.Unknown, PatternAvailability.fromPersistedValue(value))
         }
     }

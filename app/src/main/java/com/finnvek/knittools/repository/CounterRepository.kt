@@ -362,45 +362,6 @@ class CounterRepository
                 dao.getProject(id)?.toDomain()
             }
 
-        suspend fun adjustProjectCount(
-            id: Long,
-            delta: Int,
-        ) = dao.adjustCount(id, delta, System.currentTimeMillis())
-
-        suspend fun adjustProjectCountWithHistory(
-            id: Long,
-            delta: Int,
-            stepSize: Int,
-            action: String,
-            previousValue: Int,
-            newValue: Int,
-        ) = dao.adjustCountWithHistory(
-            projectId = id,
-            delta = delta,
-            stepSize = stepSize,
-            action = action,
-            previousValue = previousValue,
-            newValue = newValue,
-            updatedAt = System.currentTimeMillis(),
-        )
-
-        suspend fun updateProjectCounterStateWithHistory(
-            id: Long,
-            count: Int,
-            stepSize: Int,
-            action: String,
-            previousValue: Int,
-            newValue: Int,
-        ) = dao.updateCounterStateWithHistory(
-            projectId = id,
-            count = count,
-            stepSize = stepSize,
-            action = action,
-            previousValue = previousValue,
-            newValue = newValue,
-            updatedAt = System.currentTimeMillis(),
-        )
-
         suspend fun applyMainCounterChange(
             id: Long,
             change: MainCounterChange,
@@ -436,17 +397,6 @@ class CounterRepository
                 id = id,
                 change = if (increment) MainCounterChange.Increment else MainCounterChange.Decrement,
             )
-
-        suspend fun updateProjectName(
-            id: Long,
-            name: String,
-        ): String? =
-            transactionRunner.run {
-                if (dao.getProject(id) == null) return@run null
-                val projectName = uniqueProjectName(name, excludedProjectId = id) ?: return@run null
-                dao.updateName(id, projectName, System.currentTimeMillis())
-                projectName
-            }
 
         suspend fun saveProjectNotes(
             id: Long,
@@ -504,11 +454,6 @@ class CounterRepository
                 dao.updateSecondaryCount(id, secondaryCount, System.currentTimeMillis())
                 true
             }
-
-        suspend fun updateProjectSectionName(
-            id: Long,
-            sectionName: String?,
-        ) = dao.updateSectionName(id, sectionName, System.currentTimeMillis())
 
         suspend fun updateProjectStitchCount(
             id: Long,
@@ -995,11 +940,6 @@ class CounterRepository
             id: Long,
             stepSize: Int,
         ) = dao.updateStepSize(id, stepSize.coerceAtLeast(1), System.currentTimeMillis())
-
-        suspend fun updateProjectYarnCardIds(
-            id: Long,
-            yarnCardIds: String,
-        ) = dao.updateYarnCardIds(id, yarnCardIds, System.currentTimeMillis())
 
         suspend fun archiveProject(
             id: Long,

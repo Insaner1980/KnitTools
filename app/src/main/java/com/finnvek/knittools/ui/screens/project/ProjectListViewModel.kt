@@ -605,23 +605,6 @@ class ProjectListViewModel
             return true
         }
 
-        fun renameProject(
-            id: Long,
-            newName: String,
-        ) {
-            viewModelScope.launch {
-                try {
-                    if (repository.updateProjectName(id, newName) == null) {
-                        sessionErrorChannel.trySend(R.string.generic_error_unknown)
-                    }
-                } catch (cancelled: CancellationException) {
-                    throw cancelled
-                } catch (_: Exception) {
-                    sessionErrorChannel.trySend(R.string.generic_error_unknown)
-                }
-            }
-        }
-
         fun reactivateProject(id: Long) {
             viewModelScope.launch {
                 val project = repository.getProject(id) ?: return@launch

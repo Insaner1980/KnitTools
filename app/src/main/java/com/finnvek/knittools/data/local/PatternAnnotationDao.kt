@@ -154,13 +154,6 @@ abstract class PatternAnnotationDao {
     @Query("DELETE FROM pattern_annotations WHERE id = :id")
     abstract suspend fun deleteById(id: Long)
 
-    @Query("UPDATE pattern_annotations SET zIndex = :zIndex, updatedAt = :updatedAt WHERE id = :id")
-    abstract suspend fun updateZIndex(
-        id: Long,
-        zIndex: Long,
-        updatedAt: Long,
-    )
-
     private fun validatePages(annotations: List<PatternAnnotationEntity>) {
         val budgets = mutableMapOf<Pair<Long, Int>, PatternAnnotationPageBudget>()
         for (entity in annotations) {

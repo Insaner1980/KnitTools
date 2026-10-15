@@ -74,7 +74,6 @@
     <string name="main_counter_custom">Custom</string>
     <string name="main_counter_custom_label">Custom label</string>
     <string name="main_counter_custom_label_error">Enter a label.</string>
-    <string name="project_metadata_format">%1$s, %2$s</string>
     <string name="project_updated_format">Updated %1$s</string>
     <string name="project_completed_format">Completed %1$s</string>
     <string name="project_section_count_format">%1$s %2$d</string>
@@ -104,7 +103,6 @@
     <string name="no_completed_projects">No completed projects yet</string>
     <string name="delete_project">Delete</string>
     <string name="delete_project_message">Delete %s? This cannot be undone.</string>
-    <string name="rename_project">Rename</string>
     <string name="complete_project">Complete</string>
     <string name="reactivate_project">Reactivate</string>
     <string name="complete_project_message">Complete %s? The project will be moved to your completed projects.</string>
@@ -137,8 +135,6 @@
     <string name="just_now">just now</string>
 
     <!-- Counter Screen -->
-    <string name="stitch_count_format" tools:ignore="UnusedResources">%s st</string>
-    <string name="set_stitches" tools:ignore="UnusedResources">Set stitches</string>
     <string name="stitches_per_row">Stitches per row</string>
     <string name="track_stitches">Track stitches</string>
     <string name="stitch_counter_compact_format">%1$d/%2$d</string>
@@ -159,7 +155,6 @@
     <string name="pattern_calibration_save_first">Save first</string>
     <string name="pattern_calibration_save_last">Save last</string>
     <string name="pattern_calibration_invalid_row">Use two different row numbers</string>
-    <string name="pattern_row_highlight_description" tools:ignore="PluralsCandidate">Row %1$d highlighted about %2$d percent down the page</string>
     <string name="pattern_page_jump">Page jump</string>
     <string name="pattern_page_number">Page number</string>
     <string name="pattern_page_indicator">Page %1$d of %2$d</string>
@@ -230,7 +225,6 @@
     <string name="saved_to_my_yarn">Saved to My Yarn</string>
     <string name="save_to_my_yarn_explanation">Copies the yarn name, description and quantity to a My Yarn card linked to this project. This entry stays here; its notes are not copied.</string>
     <string name="saved_to_my_yarn_explanation">This project entry stays separate. Its notes were not copied to the My Yarn card.</string>
-    <string name="yarn_count_format" tools:ignore="PluralsCandidate,UnusedResources">%1$d yarns</string>
     <string name="linked_project_label">Linked project</string>
     <string name="remove_project_link">Remove link</string>
     <string name="select_project">Select project</string>
@@ -261,7 +255,6 @@
     <string name="default_project_name">My Project</string>
     <string name="reset_counter">Reset counter</string>
     <string name="reset_counter_message">Reset the counter to 0?</string>
-    <string name="pattern_repeat" tools:ignore="UnusedResources">Pattern repeat</string>
     <string name="notes">Notes</string>
     <string name="open_notes_editor">Open notes editor</string>
     <string name="add_note">Add note\u2026</string>
@@ -426,11 +419,6 @@
     <string name="retry">Retry</string>
 
     <!-- Care symbol categories -->
-    <string name="care_category_washing">Washing</string>
-    <string name="care_category_bleaching">Bleaching</string>
-    <string name="care_category_drying">Drying</string>
-    <string name="care_category_ironing">Ironing</string>
-    <string name="care_category_dry_cleaning">Dry cleaning</string>
     <string name="care_wash_30">30°</string>
     <string name="care_wash_40">40°</string>
     <string name="care_wash_60">60°</string>
@@ -460,16 +448,9 @@
     <string name="widget_name">Row Counter</string>
     <string name="widget_description">Row counter widget for active project</string>
     <string name="widget_pro_required">Upgrade to Pro to use the widget</string>
-    <string name="widget_rows_remaining_format" tools:ignore="PluralsCandidate,UnusedResources">%d rows left</string>
-    <string name="widget_target_reached" tools:ignore="UnusedResources">Target reached</string>
-    <string name="widget_stitches_format" tools:ignore="UnusedResources">Stitches: %1$d / %2$d</string>
     <string name="target_rows_dialog_title">Set target</string>
-    <string name="target_rows_set" tools:ignore="UnusedResources">Set target…</string>
-    <string name="target_rows_edit" tools:ignore="UnusedResources">Edit target</string>
     <string name="target_rows_remove">Remove target</string>
     <string name="row_label_with_target">Row %1$d / %2$d</string>
-    <string name="widget_undo_action" tools:ignore="UnusedResources">Undo</string>
-    <string name="widget_undo_content_description" tools:ignore="UnusedResources">Undo last change</string>
 
     <!-- Hubs -->
     <string name="desc_increase_decrease">Evenly space increases or decreases across a row</string>

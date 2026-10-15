@@ -26,19 +26,6 @@ open class StubCounterProjectDao(
 
     override suspend fun update(project: CounterProjectEntity) = Unit
 
-    override suspend fun adjustCount(
-        id: Long,
-        delta: Int,
-        updatedAt: Long,
-    ) = Unit
-
-    override suspend fun adjustCountAndStepSize(
-        id: Long,
-        delta: Int,
-        stepSize: Int,
-        updatedAt: Long,
-    ) = Unit
-
     override suspend fun updateCounterState(
         id: Long,
         count: Int,
@@ -70,12 +57,6 @@ open class StubCounterProjectDao(
     override suspend fun updateSecondaryCount(
         id: Long,
         secondaryCount: Int,
-        updatedAt: Long,
-    ) = Unit
-
-    override suspend fun updateSectionName(
-        id: Long,
-        sectionName: String?,
         updatedAt: Long,
     ) = Unit
 

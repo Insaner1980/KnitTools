@@ -38,36 +38,6 @@ interface CounterProjectDao {
     @Query(
         """
         UPDATE counter_projects
-        SET count = CASE WHEN count + :delta < 0 THEN 0 ELSE count + :delta END,
-            updatedAt = :updatedAt
-        WHERE id = :id
-        """,
-    )
-    suspend fun adjustCount(
-        id: Long,
-        delta: Int,
-        updatedAt: Long,
-    )
-
-    @Query(
-        """
-        UPDATE counter_projects
-        SET count = CASE WHEN count + :delta < 0 THEN 0 ELSE count + :delta END,
-            stepSize = :stepSize,
-            updatedAt = :updatedAt
-        WHERE id = :id
-        """,
-    )
-    suspend fun adjustCountAndStepSize(
-        id: Long,
-        delta: Int,
-        stepSize: Int,
-        updatedAt: Long,
-    )
-
-    @Query(
-        """
-        UPDATE counter_projects
         SET count = :count,
             stepSize = :stepSize,
             updatedAt = :updatedAt
@@ -138,20 +108,6 @@ interface CounterProjectDao {
     suspend fun updateSecondaryCount(
         id: Long,
         secondaryCount: Int,
-        updatedAt: Long,
-    )
-
-    @Query(
-        """
-        UPDATE counter_projects
-        SET sectionName = :sectionName,
-            updatedAt = :updatedAt
-        WHERE id = :id
-        """,
-    )
-    suspend fun updateSectionName(
-        id: Long,
-        sectionName: String?,
         updatedAt: Long,
     )
 
@@ -475,27 +431,6 @@ interface CounterProjectDao {
 
     @Insert
     suspend fun insertHistory(entry: CounterHistoryEntity)
-
-    @Transaction
-    suspend fun adjustCountWithHistory(
-        projectId: Long,
-        delta: Int,
-        stepSize: Int,
-        action: String,
-        previousValue: Int,
-        newValue: Int,
-        updatedAt: Long,
-    ) {
-        adjustCountAndStepSize(projectId, delta, stepSize, updatedAt)
-        insertHistory(
-            CounterHistoryEntity(
-                projectId = projectId,
-                action = action,
-                previousValue = previousValue,
-                newValue = newValue,
-            ),
-        )
-    }
 
     @Transaction
     suspend fun updateCounterStateWithHistory(

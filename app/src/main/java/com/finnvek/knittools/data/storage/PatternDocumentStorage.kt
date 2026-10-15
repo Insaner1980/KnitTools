@@ -264,37 +264,6 @@ class PatternDocumentStorage
                 false
             }
 
-        suspend fun convertImageToPdf(
-            context: Context,
-            projectId: Long,
-            imageUri: Uri,
-            fileName: String? = null,
-        ): Pair<String, String>? {
-            val imageFile = AppFileStorage.resolveAppOwnedFile(context, imageUri) ?: return null
-            val info = runCatching { inspectStagedImage(imageFile) }.getOrNull() ?: return null
-            val page =
-                StagedPatternPage(
-                    id = imageFile.name,
-                    sourceUri = imageUri.toString(),
-                    stagedPath = imageFile.absolutePath,
-                    byteCount = imageFile.length(),
-                    width = info.width,
-                    height = info.height,
-                )
-            return try {
-                convertImagesToPdf(
-                    context = context,
-                    projectId = projectId,
-                    pages = listOf(page),
-                    fileName = fileName ?: "pattern-photo-${System.currentTimeMillis()}.pdf",
-                ) { _, _ -> }
-            } catch (failure: CancellationException) {
-                throw failure
-            } catch (_: Exception) {
-                null
-            }
-        }
-
         internal fun inspectStagedImage(file: File): PatternImageInfo {
             val bitmap = decodeBoundedBitmap(file)
             return try {

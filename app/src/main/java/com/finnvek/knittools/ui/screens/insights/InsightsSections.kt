@@ -73,24 +73,6 @@ import java.time.LocalDate
 import java.time.ZoneId
 import java.time.temporal.ChronoUnit
 
-/** Vahva viiva hero-lohkon alla. */
-@Composable
-internal fun InsightsStrongRule(modifier: Modifier = Modifier) {
-    HorizontalDivider(
-        modifier = modifier,
-        color = MaterialTheme.colorScheme.onSurface.copy(alpha = InsightsDimens.RuleStrongAlpha),
-    )
-}
-
-/** Hiusviiva osioiden ja listarivien välissä. */
-@Composable
-internal fun InsightsHairline(modifier: Modifier = Modifier) {
-    HorizontalDivider(
-        modifier = modifier,
-        color = MaterialTheme.colorScheme.onSurface.copy(alpha = InsightsDimens.RuleHairlineAlpha),
-    )
-}
-
 /** Aikaväli omana rivinään: sijamuodoton väliviivanotaatio, ei osa virkettä. */
 @Composable
 internal fun InsightsRangeKicker(

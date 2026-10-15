@@ -168,23 +168,6 @@ class YarnCardViewModelTest {
     }
 
     @Test
-    fun `loadCardForDetail clears stale card state when card is missing`() =
-        runTest {
-            coEvery { repository.getCard(99L) } returns null
-            val vm = createViewModel()
-            vm.loadFromCard(YarnCard(id = 5L, brand = "Old", yarnName = "Card"))
-
-            var loaded: Boolean? = null
-            vm.loadCardForDetail(99L) { loaded = it }
-            advanceUntilIdle()
-
-            assertEquals(false, loaded)
-            assertNull(vm.formState.value.editingCardId)
-            assertEquals("", vm.formState.value.brand)
-            assertEquals("", vm.formState.value.yarnName)
-        }
-
-    @Test
     fun `updateStatus ignores unsupported values`() =
         runTest {
             val vm = createViewModel()
@@ -328,23 +311,4 @@ class YarnCardViewModelTest {
         assertEquals("", form.yarnName)
         assertEquals("", form.photoUri)
     }
-
-    @Test
-    fun `linkCardToProject delegates consistent project link update`() =
-        runTest {
-            val vm = createViewModel()
-            vm.linkCardToProject(5L, 1L)
-
-            coVerify { repository.updateLinkedProjectId(5L, 1L) }
-        }
-
-    @Test
-    fun `linkCardToProject does not bypass yarn repository for duplicate checks`() =
-        runTest {
-            val vm = createViewModel()
-            vm.linkCardToProject(5L, 1L)
-
-            coVerify(exactly = 0) { counterRepository.updateProjectYarnCardIds(any(), any()) }
-            coVerify { repository.updateLinkedProjectId(5L, 1L) }
-        }
 }

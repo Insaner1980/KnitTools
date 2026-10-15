@@ -4,7 +4,6 @@ import androidx.compose.ui.graphics.Color
 
 // === Taustat ===
 val Background = Color(0xFF1E1E12) // Päätausta — tumma oliivi
-val BackgroundAlt = Color(0xFF252518) // Hieman vaaleampi, kontrastialue
 
 // === Pinnat (tumma khaki/oliivi — EI valkoinen) ===
 val Surface = Color(0xFF2E2E20) // Korttien peruspinta
@@ -30,7 +29,6 @@ val TertiaryContainer = Color(0xFF3A3520)
 val TextPrimary = Color(0xFFE8E4D0) // Pääteksti — lämmin kerma
 val TextSecondary = Color(0xFFB8B4A0) // Kuvaukset, toissijainen info
 val TextMuted = Color(0xFFA8A491) // Hiljennetty teksti, chevronit, aikaleimat
-val TextDisabled = Color(0xFF5A5840) // Disabled-tila
 
 // === Aksentti ===
 val DustyRose = Color(0xFFB8908F) // Pro trial -teksti, yarn card
@@ -39,12 +37,10 @@ val DustyRose = Color(0xFFB8908F) // Pro trial -teksti, yarn card
 val Error = Color(0xFFC44D4D)
 val ErrorContainer = Color(0xFF3A2020)
 val Success = Color(0xFF8BA44A) // Onnistumisen vihreä
-val SuccessContainer = Color(0xFF3A4020)
 
 // === Navigaatio ===
 val NavBackground = OnAccent // Alanav-tausta — erittäin tumma
 val NavText = Color(0xFFB0AC92) // Inaktiiviset navikohteet — vaalennettu luettavuutta varten
-val NavActive = Color(0xFFC45100) // Aktiivinen kohde — poltettu oranssi
 val NavActiveBg = Color(0xFF3A2010) // Aktiivisen tabin indikaattoritausta
 
 // === Erotin ===
@@ -56,7 +52,6 @@ val LightRavelryTeal = Color(0xFF4A7172)
 
 // === Light-teeman taustat ===
 val LightBackground = Color(0xFFE8E4D0) // Lämmin kerma (app-ikonin tausta)
-val LightBackgroundAlt = Color(0xFFDDD8C3) // Hieman tummempi, kontrastialue
 
 // === Light-teeman pinnat (tummempi = korkeampi korotus) ===
 val LightSurface = Color(0xFFD2CDB5) // Korttien peruspinta
@@ -78,7 +73,6 @@ val LightEmptyStateText = Color(0xFF6A6350)
 
 // === Light-teeman Secondary — Tummempi avokado (kontrasti vaalealla taustalla) ===
 val LightSecondary = Color(0xFF394B18)
-val LightSecondaryMuted = Color(0xFF5A7525)
 val LightSecondaryContainer = Color(0xFFD0DDB5)
 
 // === Light-teeman Tertiary — Tumma kulta/sinappi ===
@@ -89,8 +83,6 @@ val LightTertiaryContainer = Color(0xFFE8DFB5)
 val LightTextPrimary = Color(0xFF2E2A1E) // Tumma lämmin ruskea
 val LightTextSecondary = Color(0xFF4C4634) // Keskiväri ruskea
 val LightTextMuted = Color(0xFF4A473C) // Hiljennetty ruskea
-val LightTextDisabled = Color(0xFFC0BAA5) // Disabled-tila
-val LightCounterMinusIcon = Color(0xFF211E16)
 
 // === Light-teeman aksentti ===
 val LightDustyRose = Color(0xFF9E706E) // Syvempi dusty rose
@@ -100,7 +92,6 @@ val LightSectionLabel = Color(0xFF7F5452)
 
 // === Light-teeman status ===
 val LightErrorContainer = Color(0xFFEAD0D0)
-val LightSuccessContainer = Color(0xFFD0DDB5)
 
 // === Light-teeman navigaatio ===
 val LightNavBackground = Color(0xFFDDD8C3) // Lämmin navipalkki
@@ -141,15 +132,6 @@ val LightYarnColors =
         Color(0xFF578576), // Teal — 3,07 → 3,27:1
         Color(0xFF8E73A0), // Laventeli — 2,67 → 3,22:1
         Color(0xFFA85A3A), // Ruosteenpunainen — 3,92:1, ennallaan
-    )
-
-val InsightChartColors =
-    listOf(
-        Primary,
-        Secondary,
-        Tertiary,
-        DustyRose,
-        RavelryTeal,
     )
 
 // === Insights — aktiviteettiruudukon ramppi (kylmä → lämmin), solidit värit ilman alpha-sekoitusta ===

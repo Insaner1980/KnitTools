@@ -140,12 +140,6 @@ class ProgressPhotoRepository
             cleanupDeletedPhotos(photos)
         }
 
-        suspend fun deleteAllPhotosForProject(projectId: Long) {
-            withContext(ioDispatcher) {
-                storage.deleteProjectPhotos(context, projectId)
-            }
-        }
-
         suspend fun deletePendingPhotoFile(filePath: String?) {
             withContext(ioDispatcher) {
                 storage.deletePendingPhotoFile(filePath)

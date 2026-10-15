@@ -73,7 +73,6 @@
     <string name="main_counter_custom">Egendefinert</string>
     <string name="main_counter_custom_label">Egendefinert etikett</string>
     <string name="main_counter_custom_label_error">Angi en etikett.</string>
-    <string name="project_metadata_format">%1$s, %2$s</string>
     <plurals name="rounds_format">
         <item quantity="one">%1$d runde</item>
         <item quantity="other">%1$d runder</item>
@@ -100,7 +99,6 @@
     <string name="no_completed_projects">Ingen fullførte prosjekter ennå</string>
     <string name="delete_project">Slett</string>
     <string name="delete_project_message">Slette %s? Dette kan ikke angres.</string>
-    <string name="rename_project">Gi nytt navn</string>
     <string name="complete_project">Fullfør</string>
     <string name="reactivate_project">Aktiver på nytt</string>
     <string name="complete_project_message">Fullføre %s? Prosjektet flyttes til fullførte prosjekter.</string>
@@ -133,8 +131,6 @@
     <string name="just_now">akkurat nå</string>
 
     <!-- Counter Screen -->
-    <string name="stitch_count_format">%s m</string>
-    <string name="set_stitches">Angi masker</string>
     <string name="stitches_per_row">Masker per rad</string>
     <string name="track_stitches">Spor masker</string>
     <string name="stitch_counter_compact_format">%1$d/%2$d</string>
@@ -219,7 +215,6 @@
     <string name="saved_to_my_yarn">Lagret i Mitt garn</string>
     <string name="save_to_my_yarn_explanation">Kopierer garnnavn, beskrivelse og antall til et garnkort i Mitt garn som knyttes til dette prosjektet. Denne oppføringen blir værende her; notatene kopieres ikke.</string>
     <string name="saved_to_my_yarn_explanation">Denne prosjektoppføringen forblir separat. Notatene ble ikke kopiert til garnkortet i Mitt garn.</string>
-    <string name="yarn_count_format">%1$d garn</string>
     <string name="linked_project_label">Koblet prosjekt</string>
     <string name="remove_project_link">Fjern kobling</string>
     <string name="select_project">Velg prosjekt</string>
@@ -250,7 +245,6 @@
     <string name="default_project_name">Mitt prosjekt</string>
     <string name="reset_counter">Tilbakestill teller</string>
     <string name="reset_counter_message">Tilbakestille telleren til 0?</string>
-    <string name="pattern_repeat">Mønsterrapport</string>
     <string name="notes">Notater</string>
     <string name="add_note">Legg til notat…</string>
     <string name="write_your_notes_here">Skriv notatene dine her…</string>
@@ -412,11 +406,6 @@
     <string name="camera_permission_denied_permanent">Kameratillatelse avslått — aktiver den i Innstillinger</string>
 
     <!-- Care symbol categories -->
-    <string name="care_category_washing">Vask</string>
-    <string name="care_category_bleaching">Bleking</string>
-    <string name="care_category_drying">Tørking</string>
-    <string name="care_category_ironing">Stryking</string>
-    <string name="care_category_dry_cleaning">Rens</string>
     <string name="care_wash_30">30°</string>
     <string name="care_wash_40">40°</string>
     <string name="care_wash_60">60°</string>
@@ -680,20 +669,12 @@
     <string name="tip_needle_sizes_desc">Metrisk (mm) er den universelle standarden. US-størrelser bruker et nummersystem (0–50). UK/Canada bruker et annet nummersystem. Japanske størrelser har sin egen nummerering. Sjekk alltid mm-størrelsen for å være sikker.</string>
     <string name="tip_imperial_units_title">Britiske/amerikanske enheter</string>
     <string name="tip_imperial_units_desc">Når dette er aktivert, bruker alle kalkulatorer tommer i stedet for centimeter og yard i stedet for meter. Fastheten måles da per 4 tommer i stedet for per 10 cm.</string>
-    <string name="pattern_row_highlight_description">Rad %1$d markert omtrent %2$d prosent ned på siden</string>
     <string name="open_notes_editor">Åpne notatredigering</string>
     <string name="restore_purchases_checking">Sjekker kjøp…</string>
     <string name="retry">Prøv igjen</string>
-    <string name="widget_rows_remaining_format">%d rader igjen</string>
-    <string name="widget_target_reached">Mål nådd</string>
-    <string name="widget_stitches_format">Masker: %1$d / %2$d</string>
     <string name="target_rows_dialog_title">Sett mål</string>
-    <string name="target_rows_set">Sett mål…</string>
-    <string name="target_rows_edit">Rediger mål</string>
     <string name="target_rows_remove">Fjern mål</string>
     <string name="row_label_with_target">Rad %1$d / %2$d</string>
-    <string name="widget_undo_action">Angre</string>
-    <string name="widget_undo_content_description">Angre siste endring</string>
     <string name="project_actions_title">Prosjekthandlinger</string>
     <string name="project_actions_section_counter_tools">Telleverktøy</string>
     <string name="project_content_title">Prosjekt</string>

@@ -290,7 +290,6 @@ fun PatternViewerScreen(
                         totalPages = renderState.renderer?.pageCount ?: 0,
                         currentPage = currentPage,
                         currentRow = counterState.counter.count.takeIf { patternUri != null },
-                        canDetachPattern = false,
                         canManageDocuments = true,
                         readingLineEnabled = selectedDocument?.readingLineEnabled == true,
                         readingLineFollowCurrentRow = selectedDocument?.readingLineFollowCurrentRow == true,
@@ -354,7 +353,6 @@ fun PatternViewerScreen(
                                     rowInput = counterState.counter.count.toString(),
                                 )
                         },
-                        onDetachPattern = {},
                         onToggleAnnotationMode = annotationMode.toggle,
                         onOpenAnnotationLayers = annotationMode.openLayers,
                         onExportAnnotations = {
@@ -473,7 +471,6 @@ fun PatternViewerScreen(
                         renderedBitmap = renderState.renderedBitmap,
                         patternName = selectedDocument?.label,
                         currentRow = counterState.counter.count,
-                        positionPercent = null,
                         readingLineEnabled = selectedDocument?.readingLineEnabled == true,
                         readingLineYFraction = readingLinePreviewYFraction,
                         readingLineFollowCurrentRow = selectedDocument?.readingLineFollowCurrentRow,
@@ -1291,7 +1288,6 @@ fun LibraryPatternViewerScreen(
                         totalPages = renderState.renderer?.pageCount ?: 0,
                         currentPage = currentPage,
                         currentRow = null,
-                        canDetachPattern = false,
                         canManageDocuments = false,
                         readingLineEnabled = readingLineEnabled,
                         readingLineFollowCurrentRow = false,
@@ -1319,7 +1315,6 @@ fun LibraryPatternViewerScreen(
                         onClearReadingLineRowMarker = {},
                         onClearReadingLinePageMarkers = {},
                         onStartRowCalibration = {},
-                        onDetachPattern = {},
                         onToggleAnnotationMode = annotationMode.toggle,
                         onOpenAnnotationLayers = annotationMode.openLayers,
                         onExportAnnotations = {
@@ -1348,7 +1343,6 @@ fun LibraryPatternViewerScreen(
                     renderedBitmap = renderState.renderedBitmap,
                     patternName = patternName,
                     currentRow = null,
-                    positionPercent = null,
                     readingLineEnabled = readingLineEnabled,
                     readingLineYFraction = readingLineYFraction,
                     readingLineFollowCurrentRow = null,
@@ -1482,7 +1476,6 @@ internal data class TopBarState(
     val totalPages: Int,
     val currentPage: Int,
     val currentRow: Int?,
-    val canDetachPattern: Boolean,
     val canManageDocuments: Boolean,
     val readingLineEnabled: Boolean,
     val readingLineFollowCurrentRow: Boolean,
@@ -1508,7 +1501,6 @@ internal data class TopBarActions(
     val onClearReadingLineRowMarker: () -> Unit,
     val onClearReadingLinePageMarkers: () -> Unit,
     val onStartRowCalibration: () -> Unit,
-    val onDetachPattern: () -> Unit,
     val onOpenProjectNotes: (() -> Unit)? = null,
     val onToggleAnnotationMode: () -> Unit = {},
     val onOpenAnnotationLayers: () -> Unit = {},
@@ -1727,15 +1719,6 @@ private fun PatternViewerOverflowMenu(
             actions = actions,
             closeOverflowMenu = closeOverflowMenu,
         )
-        if (state.canDetachPattern) {
-            DropdownMenuItem(
-                text = { Text(stringResource(R.string.remove_pattern)) },
-                onClick = {
-                    closeOverflowMenu()
-                    actions.onDetachPattern()
-                },
-            )
-        }
     }
 }
 
@@ -2011,20 +1994,6 @@ private fun PatternViewerContent(
                             actions.onViewportFocusRequestConsumed(requestId)
                         },
                         overlay = { viewport ->
-                            RowHighlightOverlay(
-                                yPosition = state.positionPercent?.let { it / 100f },
-                                modifier = Modifier.fillMaxSize(),
-                                accessibilityDescription =
-                                    if (state.currentRow != null && state.positionPercent != null) {
-                                        stringResource(
-                                            R.string.pattern_row_highlight_description,
-                                            state.currentRow,
-                                            state.positionPercent,
-                                        )
-                                    } else {
-                                        null
-                                    },
-                            )
                             PatternAnnotationOverlay(
                                 masterAnnotations = state.annotationState.masterAnnotations,
                                 projectAnnotations = state.annotationState.projectAnnotations,
@@ -2096,7 +2065,6 @@ private data class PatternViewerContentState(
     val renderedBitmap: Bitmap?,
     val patternName: String?,
     val currentRow: Int?,
-    val positionPercent: Int?,
     val readingLineEnabled: Boolean,
     val readingLineYFraction: Float,
     val readingLineFollowCurrentRow: Boolean?,

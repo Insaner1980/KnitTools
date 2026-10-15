@@ -612,10 +612,6 @@ class PatternAnnotationViewModel
             executeHistoryCommand(isUndo = false)
         }
 
-        fun clearWriteError() {
-            interaction.update { it.copy(writeError = PatternAnnotationWriteError.NONE) }
-        }
-
         fun requestAnnotatedPdfExport(sourceUri: Uri) {
             val exporter = pdfExporter ?: return
             if (interaction.value.isExporting) return

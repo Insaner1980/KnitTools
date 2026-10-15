@@ -60,7 +60,6 @@ import com.finnvek.knittools.repository.ProgressPhotoRepository
 import com.finnvek.knittools.repository.ProjectCompletionResult
 import com.finnvek.knittools.repository.ProjectCounterMutationResult
 import com.finnvek.knittools.repository.ProjectCounterRepository
-import com.finnvek.knittools.repository.ProjectCreationResult
 import com.finnvek.knittools.repository.ProjectDeletionResult
 import com.finnvek.knittools.repository.ProjectDocumentMutationResult
 import com.finnvek.knittools.repository.ProjectDocumentRepository
@@ -856,10 +855,6 @@ class CounterViewModel
             projectClosedEventChannel.trySend(projectSelectionVersion)
         }
 
-        fun openSessionHistory(onReady: (Long) -> Unit) {
-            _uiState.value.projectId?.let(onReady)
-        }
-
         private fun observeActiveSession() {
             viewModelScope.launch {
                 repository.observeActiveSession().collect { session ->
@@ -1275,28 +1270,6 @@ class CounterViewModel
                     -> Unit
                 }
             }
-        }
-
-        fun createNewProject(name: String): Boolean {
-            if (name.isBlank()) return false
-            viewModelScope.launch {
-                when (
-                    val result =
-                        repository.createProject(
-                            name = name,
-                            canCreateAdditionalProjects =
-                                proManager.hasFeature(ProFeature.UNLIMITED_PROJECTS),
-                        )
-                ) {
-                    is ProjectCreationResult.Created ->
-                        repository.getProject(result.projectId)?.let { selectProject(it) }
-                    ProjectCreationResult.InvalidProject,
-                    ProjectCreationResult.LimitReached,
-                    ProjectCreationResult.FolderMissing,
-                    -> Unit
-                }
-            }
-            return true
         }
 
         fun completeProject() {
@@ -2576,10 +2549,6 @@ class CounterViewModel
             }
         }
 
-        fun updateReadingLineYFraction(yFraction: Float) {
-            commitManualReadingLinePosition(yFraction)
-        }
-
         fun commitManualReadingLinePosition(
             yFraction: Float,
             documentId: Long? = null,
@@ -2833,16 +2802,6 @@ class CounterViewModel
             val project = repository.getProject(id) ?: return false
             openProject(project)
             return true
-        }
-
-        fun setSectionName(name: String?) {
-            val projectId = _uiState.value.projectId ?: return
-            _uiState.update { state ->
-                if (state.projectId == projectId) state.copy(sectionName = name) else state
-            }
-            viewModelScope.launch {
-                repository.updateProjectSectionName(projectId, name)
-            }
         }
 
         fun setStitchCount(

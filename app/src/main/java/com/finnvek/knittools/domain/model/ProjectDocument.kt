@@ -50,9 +50,6 @@ data class ProjectDocument(
             readingLineYFraction = sanitizePersistedFraction(readingLineYFraction),
             verticalReadingGuideXFraction = sanitizePersistedFraction(verticalReadingGuideXFraction),
         )
-
-    fun canOpen(isFileAvailable: Boolean): Boolean =
-        documentKey.isNotBlank() && localPdfUri.isNotBlank() && isFileAvailable
 }
 
 fun List<ProjectDocument>.inDocumentOrder(): List<ProjectDocument> =

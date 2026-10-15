@@ -52,31 +52,15 @@ class TrialStartSourceTest {
 
     @Test
     fun `trial progress updates derive and persist anchors inside one atomic edit`() {
-        val source = ProjectSourceFiles.read(TRIAL_MANAGER)
-        val updateBody =
-            source
-                .substringAfter("suspend fun updateTimestamp()")
-                .substringBefore("private suspend fun refreshTrialState")
-        val refreshBody = refreshTrialStateBody(source)
-
-        listOf(updateBody, refreshBody).forEach { body ->
-            assertAtomicProgress(body)
-        }
+        assertAtomicProgress(refreshTrialStateBody(ProjectSourceFiles.read(TRIAL_MANAGER)))
     }
 
     @Test
     fun `trial progress fails closed in memory when datastore write fails`() {
-        val source = ProjectSourceFiles.read(TRIAL_MANAGER)
-        val updateBody =
-            source
-                .substringAfter("suspend fun updateTimestamp()")
-                .substringBefore("private suspend fun refreshTrialState")
-        val refreshBody = refreshTrialStateBody(source)
+        val refreshBody = refreshTrialStateBody(ProjectSourceFiles.read(TRIAL_MANAGER))
 
-        assertTrue(updateBody.contains("if (didWrite)"))
-        assertTrue(updateBody.contains("updatedState?.let { _trialState.value = it }"))
-        assertTrue(updateBody.contains("else {"))
-        assertTrue(updateBody.contains("_trialState.value = TrialState()"))
+        assertTrue(refreshBody.contains("if (didWrite)"))
+        assertTrue(refreshBody.contains("refreshedState?.let { _trialState.value = it }"))
         assertTrue(refreshBody.contains("else {"))
         assertTrue(refreshBody.contains("_trialState.value = TrialState()"))
     }

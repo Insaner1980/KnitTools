@@ -58,13 +58,6 @@ class YarnCardViewModel
         private val mutationErrorsChannel = Channel<Unit>(Channel.BUFFERED)
         val mutationErrors = mutationErrorsChannel.receiveAsFlow()
 
-        val savedCards: StateFlow<List<YarnCard>> =
-            repository.getAllCards().stateIn(
-                scope = viewModelScope,
-                started = SharingStarted.WhileSubscribed(5000),
-                initialValue = emptyList(),
-            )
-
         val availableProjects: StateFlow<List<CounterProject>> =
             counterRepository
                 .getActiveProjects()
@@ -83,40 +76,7 @@ class YarnCardViewModel
                 initialValue = null,
             )
 
-        // Lankakortin linkitys kulkee repositorion kautta, jotta projektin vastalinkki pysyy mukana.
-        fun linkCardToProject(
-            cardId: Long,
-            projectId: Long,
-        ) {
-            viewModelScope.launch {
-                repository.updateLinkedProjectId(cardId, projectId)
-            }
-        }
-
-        fun loadCardById(id: Long) {
-            loadCardForDetail(id)
-        }
-
         fun observeCardForDetail(id: Long): Flow<YarnCard?> = repository.observeCard(id)
-
-        fun loadCardForDetail(
-            id: Long,
-            onLoaded: (Boolean) -> Unit = {},
-        ) {
-            viewModelScope.launch {
-                onLoaded(loadCardForDetailInternal(id))
-            }
-        }
-
-        private suspend fun loadCardForDetailInternal(id: Long): Boolean {
-            val card = repository.getCard(id)
-            if (card == null) {
-                clearFormState()
-                return false
-            }
-            loadFromCard(card)
-            return true
-        }
 
         fun loadFromCard(card: YarnCard) {
             _formState.value =

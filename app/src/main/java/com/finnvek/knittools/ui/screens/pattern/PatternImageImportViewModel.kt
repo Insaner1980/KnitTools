@@ -199,10 +199,6 @@ internal class PatternImageImportViewModel
             }
         }
 
-        fun clearDuplicateNotice() {
-            _uiState.update { it.copy(duplicatesIgnored = 0) }
-        }
-
         fun createPatternPdf(replaceExisting: Boolean) {
             if (replaceExisting) {
                 _uiState.update { it.copy(replacementConfirmationPending = true) }

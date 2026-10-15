@@ -29,7 +29,6 @@ object InsightsDimens {
     val FilterChipSpacing = 8.dp
     val FilterChipIndicatorSpacing = 4.dp
     val FilterChipIndicatorSize = 18.dp
-    val FilterChipMinTouchTarget = 48.dp
 
     /**
      * Suodatin on toissijainen kontrolli ja useimmiten oletusarvossaan, joten se ei saa
@@ -42,7 +41,6 @@ object InsightsDimens {
     val FilterChipDotSpacing = 8.dp
 
     // Kicker
-    val KickerTopPadding = 14.dp
     val KickerFontSize = 13.sp
 
     // Hero
@@ -72,13 +70,6 @@ object InsightsDimens {
     // Trendirivi
     val TrendFontSize = 13.sp
     val TrendBottomPadding = 4.dp
-
-    // Viivat: näytöllä on tasan kaksi painoa
-    @Suppress("MayBeConstant")
-    val RuleStrongAlpha = 0.32f
-
-    @Suppress("MayBeConstant")
-    val RuleHairlineAlpha = 0.15f
 
     @Suppress("MayBeConstant")
     val ChartGridlineAlpha = 0.55f
@@ -140,7 +131,6 @@ object InsightsDimens {
 
     // Projektit päivittäin -ruudukko
     val ProjectFabricCellGap = 1.dp
-    val ProjectFabricMonthLabelHeight = 20.dp
     val ProjectFabricSelectionStroke = 1.dp
 
     // Lyhyen jakson solut kasvavat tähän asti; muuten muutaman viikon ruudukko venyisi metrin korkuiseksi.
@@ -151,10 +141,8 @@ object InsightsDimens {
 
     val ProjectFabricDetailTopPadding = 8.dp
 
-    // Kaavion akseli ja vihjeet
+    // Kaavion akseli
     val ChartAxisLabelFontSize = 13.sp
-    val ChartHintFontSize = 12.sp
-    val ChartHintTopPadding = 8.dp
 
     // Projektilista
     val ProjectRowMinHeight = 48.dp

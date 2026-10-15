@@ -5,6 +5,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -30,9 +31,7 @@ fun RowHighlightOverlay(
         drawRect(
             color = highlightColor,
             topLeft = Offset(0f, centerY - (bandHeight / 2f)),
-            size =
-                androidx.compose.ui.geometry
-                    .Size(size.width, bandHeight),
+            size = Size(size.width, bandHeight),
         )
     }
 }

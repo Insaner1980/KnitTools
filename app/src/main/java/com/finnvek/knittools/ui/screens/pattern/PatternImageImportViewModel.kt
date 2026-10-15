@@ -103,22 +103,13 @@ internal class PatternImageImportViewModel
                                     sourceUris = sourceUris,
                                 )
                             }
-                        val appended = state.selection.append(batch.pages)
-                        val selection =
-                            (appended as? PatternImageAppendResult.Accepted)?.selection
-                                ?: state.selection
-                        val duplicateCount =
-                            batch.duplicatesIgnored +
-                                ((appended as? PatternImageAppendResult.Accepted)?.duplicatesIgnored ?: 0)
+                        val accepted = state.selection.append(batch.pages) as? PatternImageAppendResult.Accepted
+                        val selection = accepted?.selection ?: state.selection
+                        val duplicateCount = batch.duplicatesIgnored + (accepted?.duplicatesIgnored ?: 0)
                         _uiState.update {
                             it.copy(
                                 selection = selection,
-                                phase =
-                                    if (selection.pages.isEmpty()) {
-                                        PatternImageImportPhase.IDLE
-                                    } else {
-                                        PatternImageImportPhase.READY
-                                    },
+                                phase = selectionPhase(selection.pages),
                                 duplicatesIgnored = duplicateCount,
                             )
                         }
@@ -370,12 +361,7 @@ internal class PatternImageImportViewModel
                 val selection = transform(state.selection)
                 state.copy(
                     selection = selection,
-                    phase =
-                        if (selection.pages.isEmpty()) {
-                            PatternImageImportPhase.IDLE
-                        } else {
-                            PatternImageImportPhase.READY
-                        },
+                    phase = selectionPhase(selection.pages),
                     error = null,
                 )
             }
@@ -465,11 +451,14 @@ internal class PatternImageImportViewModel
                     origin = origin,
                     pickerRequestId = handle.get<String>(KEY_PICKER_REQUEST_ID),
                     selection = PatternImageSelection(pages),
-                    phase = if (pages.isEmpty()) PatternImageImportPhase.IDLE else PatternImageImportPhase.READY,
+                    phase = selectionPhase(pages),
                 )
             }
         }
     }
+
+private fun selectionPhase(pages: List<StagedPatternPage>): PatternImageImportPhase =
+    if (pages.isEmpty()) PatternImageImportPhase.IDLE else PatternImageImportPhase.READY
 
 private fun PatternImageStageFailure.toImportError(): PatternImageImportError =
     when (this) {

@@ -341,27 +341,11 @@ class PatternAnnotationViewModel
         }
 
         fun setPenStrokeWidth(width: Float) {
-            interaction.update {
-                it.copy(
-                    penStrokeWidth =
-                        width.coerceIn(
-                            PatternAnnotationLimits.MIN_STROKE_WIDTH,
-                            PatternAnnotationLimits.MAX_STROKE_WIDTH,
-                        ),
-                )
-            }
+            interaction.update { it.copy(penStrokeWidth = width.coerceToStrokeWidthLimits()) }
         }
 
         fun setHighlighterStrokeWidth(width: Float) {
-            interaction.update {
-                it.copy(
-                    highlighterStrokeWidth =
-                        width.coerceIn(
-                            PatternAnnotationLimits.MIN_STROKE_WIDTH,
-                            PatternAnnotationLimits.MAX_STROKE_WIDTH,
-                        ),
-                )
-            }
+            interaction.update { it.copy(highlighterStrokeWidth = width.coerceToStrokeWidthLimits()) }
         }
 
         fun setPressureEnabled(enabled: Boolean) {
@@ -1170,6 +1154,9 @@ private fun PatternAnnotationTool.toAnnotationKind(): PatternAnnotationKind? =
         PatternAnnotationTool.CHART -> PatternAnnotationKind.CHART_REGION
         else -> null
     }
+
+private fun Float.coerceToStrokeWidthLimits(): Float =
+    coerceIn(PatternAnnotationLimits.MIN_STROKE_WIDTH, PatternAnnotationLimits.MAX_STROKE_WIDTH)
 
 private const val DUPLICATE_OFFSET = 0.02f
 private const val HISTORY_LIMIT = 50

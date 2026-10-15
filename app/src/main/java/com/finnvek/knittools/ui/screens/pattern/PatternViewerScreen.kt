@@ -1214,8 +1214,7 @@ private fun RowCalibrationPanel(
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 supportingText = rowCalibrationSupportingText(state.showInvalidRowError),
                 shape = MaterialTheme.shapes.medium,
-                colors =
-                    cardTextFieldColors(),
+                colors = cardTextFieldColors(),
                 modifier = Modifier.fillMaxWidth(),
             )
             Row(
@@ -1841,8 +1840,7 @@ private fun PatternPageJumpDialog(
                     )
                 },
                 shape = MaterialTheme.shapes.medium,
-                colors =
-                    dialogTextFieldColors(),
+                colors = dialogTextFieldColors(),
             )
         },
         confirmButton = {

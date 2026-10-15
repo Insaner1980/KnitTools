@@ -1298,7 +1298,7 @@ Accessibility/source tests and historical instrumented locale evidence are liste
 | Tool/library | Current declared version | Role |
 | --- | --- | --- |
 | Android Gradle Plugin | 9.4.1 | App/test plugin, built-in Kotlin toolchain |
-| Kotlin Compose/serialization plugin | 2.4.10 | Compose compiler and serialization |
+| Kotlin Compose/serialization plugin | 2.4.21 | Compose compiler and serialization |
 | KSP | 2.3.12 | Room/Hilt code generation |
 | Compose BOM | 2026.09.00 | UI, Foundation, Animation, Material 3, tooling/tests |
 | Navigation Compose | 2.10.2 | Current route graphs |
@@ -1309,7 +1309,7 @@ Accessibility/source tests and historical instrumented locale evidence are liste
 | DataStore | 1.2.1 | Preferences/trial/widget state |
 | Core KTX / Activity Compose / AppCompat | 1.19.0 / 1.13.0 / 1.8.0 | Android integration/per-app language |
 | Kotlinx serialization | 1.11.0 | Domain payload/archive JSON and Room support |
-| Guava | 33.7.1-android | Required compatibility dependency |
+| Guava | 33.7.2-android | Required compatibility dependency |
 | Splashscreen | 1.2.0 | Android launch surface |
 | Play Review / Update | 2.0.2 / 2.1.0 | Play integrations |
 | Billing | 9.1.0 | One-time Pro |
@@ -1320,13 +1320,13 @@ Accessibility/source tests and historical instrumented locale evidence are liste
 | Firebase BOM | 34.19.0 | Current Android Crashlytics dependency |
 | Google Services / Crashlytics plugin | 4.5.0 / 3.0.8 | Variant configuration/mapping integration |
 | PostHog | 3.72.0 | Release opt-in usage analytics |
-| Sentry Android core | 8.59.0 | Debug-only diagnostics |
+| Sentry Android core | 8.60.0 | Debug-only diagnostics |
 | Baseline Profile / Benchmark | 1.5.0 | Stable producer/benchmark tooling |
 | Profile Installer | 1.4.1 | Profile installation support |
 | Wire runtime | 7.1.0 | Explicit security-compatible resolution override |
 | ktlint Gradle | 14.2.0 | Format/lint plugin |
 | Detekt | 2.0.0-alpha.5 | Temporary AGP 9 compatibility exception |
-| Compose rules | 0.5.8 | Detekt/ktlint Compose checks |
+| Compose rules | 0.6.3 | Detekt/ktlint Compose checks; newest release built against Detekt 2.0.0-alpha.5 |
 | Android security lint | 1.0.4 | Additional lint checks |
 | Compose stability analyzer | 0.12.0 | Debug stability baseline/report |
 | OWASP Dependency-Check | 13.0.0 | Dependency advisory scan |

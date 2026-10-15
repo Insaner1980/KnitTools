@@ -10,9 +10,9 @@ Use [`CLAUDE.md`](CLAUDE.md) when product wording, visual direction, or UX struc
 - Kotlin + Jetpack Compose + Material 3
 - Hilt, Room, DataStore, Glance
 - Room schema version `25`
-- AGP `9.4.1` + Kotlin Compose plugin `2.4.10`
+- AGP `9.4.1` + Kotlin Compose plugin `2.4.21`
 - Gradle daemon and CI use Eclipse Temurin JDK `17`
-- Detekt `2.0.0-alpha.5` is a temporary AGP 9 compatibility exception; keep it until a stable compatible release is verified. Baseline Profile/Benchmark uses stable `1.5.0`.
+- Detekt `2.0.0-alpha.5` is a temporary AGP 9 compatibility exception; keep it until a stable compatible release is verified. Compose Rules (`detektComposeRules`) must be a release built against the same `dev.detekt:detekt-core` version (`0.6.3` for alpha.5), otherwise two Detekt cores end up on the detekt classpath. Baseline Profile/Benchmark uses stable `1.5.0`.
 
 ## Architecture
 

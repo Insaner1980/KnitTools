@@ -74,8 +74,7 @@ class ProjectYarnUsageViewModel
         ) {
             if (editor.value.busy) return
             val project = projectId ?: return
-            val unit =
-                preferredYarnUsageUnit(preferencesManager.preferences.first().useImperial)
+            val unit = preferredYarnUsageUnit(preferencesManager.preferences.first().useImperial)
             val current = items.value?.firstOrNull { it.key == item.key } ?: item
             val amounts = current.usage?.amounts
 

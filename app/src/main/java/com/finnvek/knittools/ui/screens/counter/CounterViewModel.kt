@@ -82,6 +82,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.channels.Channel
@@ -179,10 +180,12 @@ data class CounterUiState(
     val targetRows: Int? = null,
 ) {
     val primaryDocument: ProjectDocument?
-        get() =
-            projectDocuments.firstOrNull(ProjectDocument::isPrimary)
-                ?: projectDocuments.minWithOrNull(compareBy(ProjectDocument::sortOrder, ProjectDocument::id))
+        get() = primaryProjectDocument(projectDocuments)
 }
+
+private fun primaryProjectDocument(documents: List<ProjectDocument>): ProjectDocument? =
+    documents.firstOrNull(ProjectDocument::isPrimary)
+        ?: documents.minWithOrNull(compareBy(ProjectDocument::sortOrder, ProjectDocument::id))
 
 data class SessionStartConflict(
     val activeSession: ActiveWorkSession,
@@ -760,9 +763,7 @@ class CounterViewModel
                                         false
                                     }
                             }
-                        val primary =
-                            documents.firstOrNull(ProjectDocument::isPrimary)
-                                ?: documents.minWithOrNull(compareBy(ProjectDocument::sortOrder, ProjectDocument::id))
+                        val primary = primaryProjectDocument(documents)
                         _uiState.update { state ->
                             state.copy(
                                 projectDocuments = documents,
@@ -1299,8 +1300,7 @@ class CounterViewModel
         }
 
         fun completeProject() {
-            val state = _uiState.value
-            val projectId = state.projectId ?: return
+            val projectId = _uiState.value.projectId ?: return
             launchProjectCompletion(projectId, choice = null)
         }
 
@@ -1505,7 +1505,7 @@ class CounterViewModel
                 return
             }
             reactivationJob =
-                viewModelScope.launch(start = kotlinx.coroutines.CoroutineStart.LAZY) {
+                viewModelScope.launch(start = CoroutineStart.LAZY) {
                     var limited = false
                     try {
                         if (checkEligibility) {
@@ -1724,14 +1724,7 @@ class CounterViewModel
             val secondaryCount = state.secondaryCount
             val selectionVersion = projectSelectionVersion
             launchProjectContentMutation {
-                val saved =
-                    try {
-                        repository.updateProjectSecondaryCount(projectId, secondaryCount)
-                    } catch (cancellation: CancellationException) {
-                        throw cancellation
-                    } catch (_: Exception) {
-                        false
-                    }
+                val saved = tryProjectWrite { repository.updateProjectSecondaryCount(projectId, secondaryCount) }
                 if (!saved) {
                     val persisted = repository.getProject(projectId) ?: return@launchProjectContentMutation false
                     _uiState.update { current ->
@@ -1833,15 +1826,10 @@ class CounterViewModel
             }
         }
 
-        private fun canUseProjectCounter(counter: ProjectCounter): Boolean =
-            _uiState.value.projectCounters.any {
-                it.id == counter.id
-            }
+        private fun canUseProjectCounter(counter: ProjectCounter): Boolean = canUseProjectCounter(counter.id)
 
         private fun canUseProjectCounter(counterId: Long): Boolean =
-            _uiState.value.projectCounters
-                .firstOrNull { it.id == counterId }
-                ?.let(::canUseProjectCounter) == true
+            _uiState.value.projectCounters.any { it.id == counterId }
 
         fun incrementProjectCounter(counter: ProjectCounter) {
             if (!canUseProjectCounter(counter)) return
@@ -2331,12 +2319,8 @@ class CounterViewModel
             }
             viewModelScope.launch {
                 val attached =
-                    try {
+                    tryProjectWrite {
                         repository.attachSavedPattern(projectId = projectId, savedPatternId = savedPatternId) != null
-                    } catch (cancellation: CancellationException) {
-                        throw cancellation
-                    } catch (_: Exception) {
-                        false
                     }
                 onResult(attached)
             }
@@ -2584,8 +2568,7 @@ class CounterViewModel
             enabled: Boolean,
             documentId: Long? = null,
         ) {
-            val state = _uiState.value
-            val projectId = state.projectId ?: return
+            val projectId = _uiState.value.projectId ?: return
             _uiState.update { it.copy(readingLineEnabled = enabled) }
             launchProjectContentMutation {
                 repository.updateReadingLineVisibility(projectId, enabled, documentId)
@@ -2601,8 +2584,7 @@ class CounterViewModel
             yFraction: Float,
             documentId: Long? = null,
         ) {
-            val state = _uiState.value
-            val projectId = state.projectId ?: return
+            val projectId = _uiState.value.projectId ?: return
             val sanitizedYFraction = sanitizeReadingLineYFraction(yFraction)
             _uiState.update {
                 it.copy(
@@ -2708,8 +2690,7 @@ class CounterViewModel
             documentRowMapping: String? = null,
         ) {
             val currentMarkers = currentPatternRowMarkers(documentId, documentRowMapping) ?: return
-            val markers =
-                currentMarkers.filterNot { it.row == row && it.page == page }
+            val markers = currentMarkers.filterNot { it.row == row && it.page == page }
             if (markers.size == currentMarkers.size) return
             updatePatternRowMapping(serializeMapping(markers), documentId, documentRowMapping)
         }
@@ -2720,8 +2701,7 @@ class CounterViewModel
             documentRowMapping: String? = null,
         ) {
             val currentMarkers = currentPatternRowMarkers(documentId, documentRowMapping) ?: return
-            val markers =
-                currentMarkers.filterNot { it.page == page }
+            val markers = currentMarkers.filterNot { it.page == page }
             if (markers.size == currentMarkers.size) return
             updatePatternRowMapping(serializeMapping(markers), documentId, documentRowMapping)
         }
@@ -2764,14 +2744,7 @@ class CounterViewModel
             val projectId = state.projectId ?: return
             val selectionVersion = projectSelectionVersion
             viewModelScope.launch {
-                val changed =
-                    try {
-                        repository.applyMainCounterChange(projectId, change)
-                    } catch (cancellation: CancellationException) {
-                        throw cancellation
-                    } catch (_: Exception) {
-                        false
-                    }
+                val changed = tryProjectWrite { repository.applyMainCounterChange(projectId, change) }
                 if (!changed) projectContentErrorsChannel.send(Unit)
                 val persisted = loadProjectAfterCountChange(projectId, changed) ?: return@launch
                 if (selectionVersion != projectSelectionVersion || _uiState.value.projectId != projectId) return@launch

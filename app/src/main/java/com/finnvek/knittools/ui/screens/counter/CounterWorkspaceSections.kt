@@ -679,9 +679,7 @@ private fun CompactPatternRepeatRow(
                 ).height(CounterDimens.CounterRepeatHeight)
                 .clip(RoundedCornerShape(CounterDimens.CounterRepeatCornerRadius))
                 .background(MaterialTheme.colorScheme.surfaceContainer)
-                .padding(
-                    horizontal = CounterDimens.CounterRepeatHorizontalPadding,
-                ),
+                .padding(horizontal = CounterDimens.CounterRepeatHorizontalPadding),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {

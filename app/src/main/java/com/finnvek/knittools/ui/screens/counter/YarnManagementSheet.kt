@@ -100,9 +100,8 @@ fun YarnManagementSheet(
                 text = stringResource(R.string.project_content_yarn),
                 modifier =
                     Modifier
-                        .focusRequester(
-                            headingFocus,
-                        ).focusable()
+                        .focusRequester(headingFocus)
+                        .focusable()
                         .testTag("yarn_management_heading"),
             )
             SectionLabel(text = stringResource(R.string.linked_yarn_title))

@@ -93,9 +93,8 @@ fun ProjectYarnUsageSheet(
                 text = stringResource(R.string.yarn_usage_title),
                 modifier =
                     Modifier
-                        .focusRequester(
-                            headingFocus,
-                        ).focusable()
+                        .focusRequester(headingFocus)
+                        .focusable()
                         .semantics { heading() }
                         .testTag("yarn_usage_heading"),
             )
@@ -117,9 +116,7 @@ fun ProjectYarnUsageSheet(
                     style = MaterialTheme.typography.bodySmall,
                 )
             }
-            if (draft.pendingUnit !=
-                null
-            ) {
+            if (draft.pendingUnit != null) {
                 Text(
                     stringResource(R.string.yarn_usage_conversion_required),
                     style = MaterialTheme.typography.bodyMedium,
@@ -168,8 +165,7 @@ fun ProjectYarnUsageSheet(
                     enabled = !state.busy,
                     modifier =
                         Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("yarn_usage_delete").semantics {
-                            contentDescription =
-                                description
+                            contentDescription = description
                         },
                 ) {
                     Text(stringResource(R.string.yarn_usage_delete))
@@ -230,14 +226,10 @@ private fun UsageField(
             },
         )
     val unit =
-        if (field ==
-            YarnUsageField.LENGTH
-        ) {
-            YarnUsageUnit.METERS
-        } else if (ratio) {
-            YarnUsageUnit.GRAMS
-        } else {
-            draft.unit
+        when {
+            field == YarnUsageField.LENGTH -> YarnUsageUnit.METERS
+            ratio -> YarnUsageUnit.GRAMS
+            else -> draft.unit
         }
     val error =
         when (input.error) {

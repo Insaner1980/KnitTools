@@ -63,9 +63,7 @@ internal fun YarnUsageRow(
             Text(name, style = MaterialTheme.typography.bodyLarge)
             Text(
                 stringResource(
-                    if (item.status ==
-                        YarnUsageSourceStatus.UNLINKED
-                    ) {
+                    if (item.status == YarnUsageSourceStatus.UNLINKED) {
                         R.string.yarn_usage_unlinked
                     } else {
                         R.string.yarn_usage_unavailable
@@ -88,9 +86,7 @@ internal fun YarnUsageRow(
         val action = if (item.usage == null) R.string.yarn_usage_track else R.string.yarn_usage_edit
         val description =
             stringResource(
-                if (item.usage ==
-                    null
-                ) {
+                if (item.usage == null) {
                     R.string.yarn_usage_track_named
                 } else {
                     R.string.yarn_usage_edit_named
@@ -106,15 +102,11 @@ internal fun YarnUsageRow(
             modifier =
                 Modifier
                     .align(actionAlignment)
-                    .heightIn(
-                        min = 48.dp,
-                    ).bringIntoViewRequester(bring)
+                    .heightIn(min = 48.dp)
+                    .bringIntoViewRequester(bring)
                     .focusRequester(focus)
                     .focusProperties { canFocus = true }
-                    .semantics {
-                        contentDescription =
-                            description
-                    },
+                    .semantics { contentDescription = description },
         ) {
             Text(stringResource(action))
         }
@@ -125,9 +117,8 @@ internal fun YarnUsageRow(
                 contentPadding = actionPadding,
                 modifier =
                     Modifier
-                        .align(
-                            actionAlignment,
-                        ).heightIn(min = 48.dp)
+                        .align(actionAlignment)
+                        .heightIn(min = 48.dp)
                         .semantics { contentDescription = deleteLabel },
             ) {
                 Text(stringResource(R.string.yarn_usage_delete))

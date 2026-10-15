@@ -271,7 +271,6 @@ fun AddReminderDialog(
     }
     var message by rememberSaveable(reminder?.id) { mutableStateOf(reminder?.message.orEmpty()) }
 
-    val isRepeating = selectedType == 1
     val form =
         ReminderDialogForm(
             rowText = rowText,
@@ -296,13 +295,13 @@ fun AddReminderDialog(
         confirmButton = {
             ReminderDialogConfirmButton(
                 validation = validation,
-                isRepeating = isRepeating,
+                isRepeating = form.isRepeating,
                 message = message,
                 onSave = onSave,
             )
         },
         dismissButton = {
-            ReminderDialogDismissButton(onDismiss = onDismiss)
+            CancelButton(onClick = onDismiss)
         },
     )
 }
@@ -401,11 +400,6 @@ private fun ReminderDialogConfirmButton(
     ) {
         Text(stringResource(R.string.save))
     }
-}
-
-@Composable
-private fun ReminderDialogDismissButton(onDismiss: () -> Unit) {
-    CancelButton(onClick = onDismiss)
 }
 
 private fun limitReminderMessage(

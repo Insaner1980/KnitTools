@@ -3710,15 +3710,6 @@ public fun com.finnvek.knittools.ui.screens.pro.ProUpgradeScreen(onBack: kotlin.
     - viewModelProvider: STABLE (composable function type)
 
 @Composable
-private fun com.finnvek.knittools.ui.screens.project.ActiveProjectItem(project: com.finnvek.knittools.domain.model.CounterProject, state: com.finnvek.knittools.ui.screens.project.ActiveProjectItemState, actions: com.finnvek.knittools.ui.screens.project.ActiveProjectItemActions): kotlin.Unit
-  skippable: true
-  restartable: true
-  params:
-    - project: STABLE (class with no mutable properties)
-    - state: STABLE (class with no mutable properties)
-    - actions: STABLE (class with no mutable properties)
-
-@Composable
 private fun com.finnvek.knittools.ui.screens.project.DeleteProjectDialog(projectName: kotlin.String, onConfirm: kotlin.Function0<kotlin.Unit>, onDismiss: kotlin.Function0<kotlin.Unit>): kotlin.Unit
   skippable: true
   restartable: true
@@ -3928,6 +3919,18 @@ private fun com.finnvek.knittools.ui.screens.project.ProjectListDialogs(state: c
   params:
     - state: STABLE (class with no mutable properties)
     - actions: STABLE (class with no mutable properties)
+
+@Composable
+private fun com.finnvek.knittools.ui.screens.project.ProjectListItem(project: com.finnvek.knittools.domain.model.CounterProject, state: com.finnvek.knittools.ui.screens.project.ProjectListContentState, actions: com.finnvek.knittools.ui.screens.project.ProjectListContentActions, patternName: kotlin.String?, modifier: androidx.compose.ui.Modifier, statusText: kotlin.String?): kotlin.Unit
+  skippable: true
+  restartable: true
+  params:
+    - project: STABLE (class with no mutable properties)
+    - state: STABLE (marked @Stable or @Immutable)
+    - actions: STABLE (class with no mutable properties)
+    - patternName: STABLE (class with no mutable properties)
+    - modifier: STABLE (marked @Stable or @Immutable)
+    - statusText: STABLE (class with no mutable properties)
 
 @Composable
 public fun com.finnvek.knittools.ui.screens.project.ProjectListScreen(onOpenCounter: kotlin.Function1<kotlin.Long, kotlin.Unit>, onOpenOverview: kotlin.Function1<kotlin.Long, kotlin.Unit>, onUpgradeToPro: kotlin.Function0<kotlin.Unit>, viewModelProvider: @[Composable] androidx.compose.runtime.internal.ComposableFunction0<com.finnvek.knittools.ui.screens.project.ProjectListViewModel>): kotlin.Unit

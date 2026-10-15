@@ -200,14 +200,23 @@ class ProjectListWorkspaceSourceTest {
             sourceBetween(
                 screen,
                 "private fun ProjectListContent(",
+                "private fun ProjectListItem(",
+            )
+        val completedRows =
+            sourceBetween(content, "items = state.completed,", "if (index < state.completed.lastIndex)")
+        val item =
+            sourceBetween(
+                screen,
+                "private fun ProjectListItem(",
                 "private fun ProjectSectionLabel(",
             )
 
-        assertTrue(content.contains("project = project.copy(count = project.totalRows ?: project.count)"))
-        assertTrue(content.contains("photoUri = state.latestPhotoUris[project.id]"))
-        assertTrue(content.contains("patternName = project.patternName"))
-        assertFalse(content.contains("completedYarn"))
-        assertFalse(content.contains("completedAttachment"))
+        assertTrue(completedRows.contains("project = project.copy(count = project.totalRows ?: project.count)"))
+        assertTrue(completedRows.contains("state = state"))
+        assertTrue(item.contains("photoUri = state.latestPhotoUris[project.id]"))
+        assertTrue(completedRows.contains("patternName = project.patternName"))
+        assertFalse(completedRows.contains("completedYarn"))
+        assertFalse(completedRows.contains("completedAttachment"))
     }
 
     @Test

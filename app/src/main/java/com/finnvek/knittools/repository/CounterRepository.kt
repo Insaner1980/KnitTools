@@ -31,6 +31,7 @@ import com.finnvek.knittools.domain.calculator.resolveReadingLineLocation
 import com.finnvek.knittools.domain.calculator.saturatingAdd
 import com.finnvek.knittools.domain.model.ActiveSessionRecoveryReason
 import com.finnvek.knittools.domain.model.ActiveSessionTimeEvaluation
+import com.finnvek.knittools.domain.model.ActiveSessionTimingAnchors
 import com.finnvek.knittools.domain.model.ActiveWorkSession
 import com.finnvek.knittools.domain.model.CounterHistory
 import com.finnvek.knittools.domain.model.CounterHistoryAction
@@ -44,6 +45,7 @@ import com.finnvek.knittools.domain.model.ProjectCounterType
 import com.finnvek.knittools.domain.model.ProjectDocument
 import com.finnvek.knittools.domain.model.ProjectSortOrder
 import com.finnvek.knittools.domain.model.SavedPattern
+import com.finnvek.knittools.domain.model.SessionTimeSnapshot
 import com.finnvek.knittools.domain.model.isWebPatternCompatible
 import com.finnvek.knittools.domain.model.resolvedMainCounterLabelType
 import com.finnvek.knittools.domain.model.sanitizeMainCounterCustomLabel
@@ -1549,7 +1551,7 @@ class CounterRepository
             projectId: Long,
             choice: ActiveSessionCompletionChoice?,
             active: ActiveSessionEntity?,
-            now: com.finnvek.knittools.domain.model.SessionTimeSnapshot,
+            now: SessionTimeSnapshot,
             expectedSession: ActiveWorkSession?,
         ): ProjectCompletionResult? {
             if (active?.projectId != projectId) return null
@@ -1763,7 +1765,7 @@ class CounterRepository
         suspend fun getLatestSession(projectId: Long): KnitSession? = sessionDao.getLatestSession(projectId)?.toDomain()
 
         private suspend fun synchronizeActiveSession(
-            now: com.finnvek.knittools.domain.model.SessionTimeSnapshot,
+            now: SessionTimeSnapshot,
         ): ActiveSessionEntity? {
             val active = sessionDao.getActiveSession() ?: return null
             if (active.recoveryReason != null) {
@@ -1827,7 +1829,7 @@ class CounterRepository
 
         private suspend fun checkpointTrustedSession(
             active: ActiveSessionEntity,
-            now: com.finnvek.knittools.domain.model.SessionTimeSnapshot,
+            now: SessionTimeSnapshot,
         ): ActiveSessionEntity {
             if (active.recoveryReason != null) return active
             return when (val evaluation = evaluateActiveSessionTime(active.timingAnchors(), now)) {
@@ -1901,7 +1903,7 @@ class CounterRepository
 
         private suspend fun saveAndDeleteActiveSession(
             active: ActiveSessionEntity,
-            now: com.finnvek.knittools.domain.model.SessionTimeSnapshot,
+            now: SessionTimeSnapshot,
         ): Long? {
             val evaluation = evaluateActiveSessionTime(active.timingAnchors(), now)
             val trusted = evaluation as? ActiveSessionTimeEvaluation.Trusted
@@ -1958,7 +1960,7 @@ class CounterRepository
         private suspend fun createStartedSession(
             projectId: Long,
             startRow: Int,
-            now: com.finnvek.knittools.domain.model.SessionTimeSnapshot,
+            now: SessionTimeSnapshot,
         ): StartSessionResult.Started {
             if (sessionDao.countCompletedSessions() >= MAX_COMPLETED_SESSIONS) {
                 throw SessionHistoryLimitReachedException()
@@ -1993,7 +1995,7 @@ class CounterRepository
         }
 
         private fun ActiveSessionEntity.timingAnchors() =
-            com.finnvek.knittools.domain.model.ActiveSessionTimingAnchors(
+            ActiveSessionTimingAnchors(
                 segmentStartedAtWallMillis = segmentStartedAtWallMillis,
                 segmentStartedElapsedRealtimeMillis = segmentStartedElapsedRealtimeMillis,
                 bootCount = bootCount,

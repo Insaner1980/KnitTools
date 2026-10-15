@@ -147,9 +147,7 @@ class ProjectYarnUsageRepository
         private suspend fun sourceError(source: YarnUsageSource): YarnUsageResult {
             val note = source.projectYarnNoteId?.let { noteDao.getById(it) }
             val card = source.yarnCardId?.let { cardDao.getCard(it) }
-            return if (note == null &&
-                card == null
-            ) {
+            return if (note == null && card == null) {
                 YarnUsageResult.SourceMissing
             } else {
                 YarnUsageResult.SourceNotOwnedByProject

@@ -1,7 +1,9 @@
 package com.finnvek.knittools.repository
 
+import com.finnvek.knittools.data.local.ProjectYarnUsageEntity
 import com.finnvek.knittools.data.local.ProjectYarnUsageRelations
 import com.finnvek.knittools.data.local.ResolvedProjectYarnUsage
+import com.finnvek.knittools.data.local.ResolvedUsageNote
 import com.finnvek.knittools.data.local.YarnCardEntity
 import com.finnvek.knittools.domain.model.ProjectYarnUsageItem
 import com.finnvek.knittools.domain.model.YarnUsageSource
@@ -13,9 +15,7 @@ internal fun ProjectYarnUsageRelations.items(): List<ProjectYarnUsageItem> {
     val pairedCards = notes.mapNotNull { it.card?.id }.toSet()
     notes
         .sortedWith(
-            compareByDescending<com.finnvek.knittools.data.local.ResolvedUsageNote> {
-                it.note.createdAt
-            }.thenByDescending { it.note.id },
+            compareByDescending<ResolvedUsageNote> { it.note.createdAt }.thenByDescending { it.note.id },
         ).forEach { resolved ->
             val source = YarnUsageSource(resolved.card?.id, resolved.note.id)
             val usage =
@@ -40,7 +40,7 @@ internal fun ProjectYarnUsageRelations.items(): List<ProjectYarnUsageItem> {
 
 internal fun YarnCardEntity.usageName(): String = listOf(brand, yarnName).filter { it.isNotBlank() }.joinToString(" ")
 
-private fun com.finnvek.knittools.data.local.ProjectYarnUsageEntity.matches(source: YarnUsageSource): Boolean =
+private fun ProjectYarnUsageEntity.matches(source: YarnUsageSource): Boolean =
     (source.projectYarnNoteId != null && projectYarnNoteId == source.projectYarnNoteId) ||
         (
             source.yarnCardId != null &&

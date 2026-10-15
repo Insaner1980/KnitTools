@@ -2,7 +2,6 @@
 <SmellBaseline>
   <ManuallySuppressedIssues/>
   <CurrentIssues>
-    <ID>ContentSlotReused:TooltipManager.kt:content: @Composable () -&gt; Unit</ID>
     <ID>CyclomaticComplexMethod:ChartSymbolScreen.kt:private fun DrawScope.drawSymbol</ID>
     <ID>CyclomaticComplexMethod:InstructionParser.kt:InstructionParser$private fun parseIncreaseDecrease: ParsedInstruction?</ID>
     <ID>CyclomaticComplexMethod:MultiCounterComponents.kt:private fun isAddCounterFormValid: Boolean</ID>

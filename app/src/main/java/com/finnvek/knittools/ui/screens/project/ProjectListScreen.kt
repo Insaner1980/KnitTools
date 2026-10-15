@@ -1014,23 +1014,15 @@ private fun ProjectListContent(
                     items = visibleActiveProjects,
                     key = { _, project -> project.id },
                 ) { index, project ->
-                    ActiveProjectItem(
+                    ProjectListItem(
                         project = project,
-                        state =
-                            ActiveProjectItemState(
-                                isMultiSelectMode = state.isMultiSelectMode,
-                                isSelected = project.id in state.selectedProjectIds,
-                                photoUri = state.latestPhotoUris[project.id],
-                                patternName = state.patternNames[project.id],
-                                hasActiveSession = project.id == state.activeSessionProjectId,
-                                sessionNeedsReview =
-                                    project.id == state.activeSessionProjectId && state.activeSessionNeedsReview,
-                            ),
-                        actions =
-                            ActiveProjectItemActions(
-                                onOpenOverview = actions.onOpenOverview,
-                                onToggleSelection = actions.onToggleSelection,
-                                onEnterMultiSelect = actions.onEnterMultiSelect,
+                        state = state,
+                        actions = actions,
+                        patternName = state.patternNames[project.id],
+                        statusText =
+                            workSessionStatusText(
+                                project.id == state.activeSessionProjectId,
+                                project.id == state.activeSessionProjectId && state.activeSessionNeedsReview,
                             ),
                     )
                     if (index < visibleActiveProjects.lastIndex) {
@@ -1064,25 +1056,11 @@ private fun ProjectListContent(
                     key = { _, project -> project.id },
                 ) { index, project ->
                     val completedDescription = stringResource(R.string.section_completed)
-                    ProjectCard(
+                    ProjectListItem(
                         project = project.copy(count = project.totalRows ?: project.count),
-                        photoUri = state.latestPhotoUris[project.id],
-                        onClick = {
-                            if (state.isMultiSelectMode) {
-                                actions.onToggleSelection(project.id)
-                            } else {
-                                actions.onOpenOverview(project.id)
-                            }
-                        },
-                        onLongClick =
-                            if (state.isMultiSelectMode) {
-                                null
-                            } else {
-                                { actions.onEnterMultiSelect(project.id) }
-                            },
+                        state = state,
+                        actions = actions,
                         patternName = project.patternName,
-                        selected = (project.id in state.selectedProjectIds).takeIf { state.isMultiSelectMode },
-                        onToggleSelection = { actions.onToggleSelection(project.id) },
                         modifier = Modifier.semantics { stateDescription = completedDescription },
                     )
                     if (index < state.completed.lastIndex) {
@@ -1094,32 +1072,20 @@ private fun ProjectListContent(
     }
 }
 
-// Data-luokat ActiveProjectItem-parametrien ryhmittelyyn (S107)
-data class ActiveProjectItemState(
-    val isMultiSelectMode: Boolean,
-    val isSelected: Boolean,
-    val photoUri: String?,
-    val patternName: String?,
-    val hasActiveSession: Boolean = false,
-    val sessionNeedsReview: Boolean = false,
-)
-
-data class ActiveProjectItemActions(
-    val onOpenOverview: (Long) -> Unit,
-    val onToggleSelection: (Long) -> Unit,
-    val onEnterMultiSelect: (Long) -> Unit,
-)
-
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun ActiveProjectItem(
+private fun ProjectListItem(
     project: CounterProject,
-    state: ActiveProjectItemState,
-    actions: ActiveProjectItemActions,
+    state: ProjectListContentState,
+    actions: ProjectListContentActions,
+    patternName: String?,
+    modifier: Modifier = Modifier,
+    statusText: String? = null,
 ) {
     ProjectCard(
         project = project,
-        photoUri = state.photoUri,
+        photoUri = state.latestPhotoUris[project.id],
+        modifier = modifier,
         onClick = {
             if (state.isMultiSelectMode) {
                 actions.onToggleSelection(project.id)
@@ -1133,10 +1099,10 @@ private fun ActiveProjectItem(
             } else {
                 { actions.onEnterMultiSelect(project.id) }
             },
-        patternName = state.patternName,
-        selected = state.isSelected.takeIf { state.isMultiSelectMode },
+        patternName = patternName,
+        selected = (project.id in state.selectedProjectIds).takeIf { state.isMultiSelectMode },
         onToggleSelection = { actions.onToggleSelection(project.id) },
-        statusText = workSessionStatusText(state.hasActiveSession, state.sessionNeedsReview),
+        statusText = statusText,
     )
 }
 

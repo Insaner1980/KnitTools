@@ -2,6 +2,7 @@ package com.finnvek.knittools.widget
 
 import android.content.Context
 import androidx.datastore.core.handlers.ReplaceFileCorruptionHandler
+import androidx.datastore.preferences.core.MutablePreferences
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.emptyPreferences
@@ -152,7 +153,7 @@ object CounterWidgetState {
             stitchTrackingEnabled = prefs[KEY_STITCH_TRACKING] ?: false,
         )
 
-    private fun androidx.datastore.preferences.core.MutablePreferences.applyWidgetData(data: WidgetData) {
+    private fun MutablePreferences.applyWidgetData(data: WidgetData) {
         this[KEY_PROJECT_NAME] = data.projectName
         this[KEY_COUNT] = data.count
         this[KEY_PROJECT_ID] = data.projectId

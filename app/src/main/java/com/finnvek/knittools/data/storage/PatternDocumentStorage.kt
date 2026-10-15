@@ -18,6 +18,7 @@ import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.IOException
+import java.io.InputStream
 import java.nio.file.FileAlreadyExistsException
 import java.nio.file.Files
 import java.util.Locale
@@ -493,7 +494,7 @@ private fun deleteEmptySessionDirectory(directory: File) {
 
 internal object PatternDocumentFiles {
     fun copyBounded(
-        input: java.io.InputStream,
+        input: InputStream,
         target: File,
         maxBytes: Long,
         onChunk: () -> Unit = {},
@@ -560,14 +561,14 @@ internal object PatternDocumentFiles {
         write: (File) -> Unit,
     ): File {
         if (!directory.exists() && !directory.mkdirs()) {
-            throw java.io.IOException("Pattern PDF directory creation failed")
+            throw IOException("Pattern PDF directory creation failed")
         }
         val safeFileName = safePdfFileName(fileName)
         val tempFile = createTempFile(directory, safeFileName)
         return try {
             write(tempFile)
             moveToUniquePdf(tempFile, directory, safeFileName)
-                ?: throw java.io.IOException("Pattern PDF publish failed")
+                ?: throw IOException("Pattern PDF publish failed")
         } finally {
             if (tempFile.exists() && !tempFile.delete()) {
                 tempFile.deleteOnExit()

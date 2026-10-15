@@ -128,10 +128,8 @@ private fun CompletionTimeline(buckets: List<InsightsCompletionBucket>) {
                     )
                 }
                 Text(completionCount(bucket.count), style = MaterialTheme.typography.labelMedium)
-                Text(
-                    if (bucket.start ==
-                        bucket.end
-                    ) {
+                val periodLabel =
+                    if (bucket.start == bucket.end) {
                         completionDate(bucket.start)
                     } else {
                         stringResource(
@@ -139,9 +137,8 @@ private fun CompletionTimeline(buckets: List<InsightsCompletionBucket>) {
                             completionDate(bucket.start),
                             completionDate(bucket.end),
                         )
-                    },
-                    style = MaterialTheme.typography.labelSmall,
-                )
+                    }
+                Text(periodLabel, style = MaterialTheme.typography.labelSmall)
             }
         }
     }

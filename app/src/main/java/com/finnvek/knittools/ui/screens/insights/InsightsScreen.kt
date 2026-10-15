@@ -1,6 +1,5 @@
 package com.finnvek.knittools.ui.screens.insights
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -383,10 +382,10 @@ private fun InsightsProjectFabricDayDetails(
     projects: List<CounterProject>,
 ) {
     val projectNames = projects.associate { it.id to it.name }
-    val names = mutableListOf<String>()
-    for (projectId in day.projectIds) {
-        names += projectNames[projectId] ?: stringResource(R.string.new_project_name_format, projectId)
-    }
+    val names =
+        day.projectIds.map { projectId ->
+            projectNames[projectId] ?: stringResource(R.string.new_project_name_format, projectId)
+        }
     Text(
         text = names.joinToString().ifEmpty { stringResource(R.string.insights_no_tracked_activity) },
         style = MaterialTheme.typography.bodySmall,
@@ -414,7 +413,6 @@ private fun LazyListScope.chartSection(
     // Yksi pylväs ei ole kaavio vaan luku: asteikko skaalautuu maksimiin, joten ainoa
     // pylväs piirtyy aina täyskorkeana. Yhden minuutin istunto näytti yhtä isolta kuin
     // kolmen tunnin urakka. Hero kertoo saman luvun rehellisemmin.
-    //
     if (!uiState.hasMeaningfulChartData) return
     item {
         InsightsSectionHeader(
@@ -498,23 +496,27 @@ private fun InsightsContextRow(
                 modifier = Modifier.weight(1f, fill = false),
             )
             Spacer(modifier = Modifier.width(InsightsDimens.ContextRowGap))
-            ProjectFilterPill(
-                projects = uiState.projects.map { ProjectFilterOption(it.id, it.name) },
-                selectedProjectId = uiState.selectedProjectId,
-                onSelectProject = onSelectProject,
-            )
+            InsightsProjectFilter(uiState = uiState, onSelectProject = onSelectProject)
         }
     } else {
         // Yksin vasemmalla täytetty pilleri luki toisena otsikkona. Oikea yläkulma on
         // paikka jossa kontrollit asuvat, joten se lukee siellä suodattimena.
         Box(modifier = rowModifier, contentAlignment = Alignment.CenterEnd) {
-            ProjectFilterPill(
-                projects = uiState.projects.map { ProjectFilterOption(it.id, it.name) },
-                selectedProjectId = uiState.selectedProjectId,
-                onSelectProject = onSelectProject,
-            )
+            InsightsProjectFilter(uiState = uiState, onSelectProject = onSelectProject)
         }
     }
+}
+
+@Composable
+private fun InsightsProjectFilter(
+    uiState: InsightsUiState,
+    onSelectProject: (Long?) -> Unit,
+) {
+    ProjectFilterPill(
+        projects = uiState.projects.map { ProjectFilterOption(it.id, it.name) },
+        selectedProjectId = uiState.selectedProjectId,
+        onSelectProject = onSelectProject,
+    )
 }
 
 private data class InsightsRangeOption(

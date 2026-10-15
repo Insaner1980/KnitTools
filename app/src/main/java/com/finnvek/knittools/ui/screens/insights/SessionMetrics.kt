@@ -373,8 +373,7 @@ internal fun secondsToDisplayMinutes(seconds: Long): Int =
  */
 internal fun apportionDisplayMinutes(secondsParts: List<Long>): List<Int> {
     if (secondsParts.isEmpty()) return emptyList()
-    val totalSeconds =
-        secondsParts.fold(0L) { total, seconds -> total + seconds.coerceIn(0L, Long.MAX_VALUE - total) }
+    val totalSeconds = secondsParts.fold(0L, ::addSessionSeconds)
     val target = secondsToDisplayMinutes(totalSeconds)
     val minutes =
         IntArray(secondsParts.size) { index ->

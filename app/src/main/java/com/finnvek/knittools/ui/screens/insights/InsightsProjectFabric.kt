@@ -290,8 +290,7 @@ internal fun moveProjectFabricSelection(
 ): LocalDate? {
     val activeDates = days.filter { it.projectIds.isNotEmpty() }.map { it.date }
     if (activeDates.isEmpty()) return null
-    if (selectedDate == null) return if (step < 0) activeDates.last() else activeDates.first()
-    val selectedIndex = activeDates.indexOf(selectedDate)
+    val selectedIndex = selectedDate?.let(activeDates::indexOf) ?: -1
     if (selectedIndex < 0) return if (step < 0) activeDates.last() else activeDates.first()
     return activeDates[(selectedIndex + step).mod(activeDates.size)]
 }

@@ -1704,9 +1704,7 @@ class CounterRepository
 
         suspend fun getLatestSession(projectId: Long): KnitSession? = sessionDao.getLatestSession(projectId)?.toDomain()
 
-        private suspend fun synchronizeActiveSession(
-            now: SessionTimeSnapshot,
-        ): ActiveSessionEntity? {
+        private suspend fun synchronizeActiveSession(now: SessionTimeSnapshot): ActiveSessionEntity? {
             val active = sessionDao.getActiveSession() ?: return null
             if (active.recoveryReason != null) {
                 if (active.recoveryIntervalToken != null) return active

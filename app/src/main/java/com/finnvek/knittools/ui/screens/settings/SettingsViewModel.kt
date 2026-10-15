@@ -2,6 +2,7 @@ package com.finnvek.knittools.ui.screens.settings
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.finnvek.knittools.R
 import com.finnvek.knittools.billing.BillingManager
 import com.finnvek.knittools.billing.RestorePurchasesResult
 import com.finnvek.knittools.data.datastore.AppLanguage
@@ -50,7 +51,7 @@ class SettingsViewModel
         fun setUsageAnalyticsEnabled(enabled: Boolean) {
             viewModelScope.launch {
                 if (!preferencesManager.setUsageAnalyticsEnabled(enabled)) {
-                    messageChannel.send(com.finnvek.knittools.R.string.generic_error_unknown)
+                    messageChannel.send(R.string.generic_error_unknown)
                 }
             }
         }
@@ -78,21 +79,13 @@ class SettingsViewModel
             _isRestoring.value = true
             viewModelScope.launch {
                 try {
-                    when (billingManager.restorePurchasesWithResult()) {
-                        RestorePurchasesResult.RESTORED -> {
-                            messageChannel.send(com.finnvek.knittools.R.string.pro_restored)
+                    val messageRes =
+                        when (billingManager.restorePurchasesWithResult()) {
+                            RestorePurchasesResult.RESTORED -> R.string.pro_restored
+                            RestorePurchasesResult.NOT_FOUND -> R.string.no_purchases_found
+                            RestorePurchasesResult.FAILED -> R.string.generic_error_unknown
                         }
-
-                        RestorePurchasesResult.NOT_FOUND -> {
-                            messageChannel.send(
-                                com.finnvek.knittools.R.string.no_purchases_found,
-                            )
-                        }
-
-                        RestorePurchasesResult.FAILED -> {
-                            messageChannel.send(com.finnvek.knittools.R.string.generic_error_unknown)
-                        }
-                    }
+                    messageChannel.send(messageRes)
                 } finally {
                     _isRestoring.value = false
                 }

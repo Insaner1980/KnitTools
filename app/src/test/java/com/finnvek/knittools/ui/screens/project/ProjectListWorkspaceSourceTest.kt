@@ -83,7 +83,7 @@ class ProjectListWorkspaceSourceTest {
             sourceBetween(
                 screen,
                 "private fun ProjectListContent(",
-                "data class ActiveProjectItemState(",
+                "private fun ProjectSectionLabel(",
             )
         val createAction = sourceFrom(screenFunction, "LabeledCounterImageButton(")
         val dimens = ProjectSourceFiles.read(PROJECT_LIST_DIMENS)
@@ -138,7 +138,9 @@ class ProjectListWorkspaceSourceTest {
         val screen = ProjectSourceFiles.read(PROJECT_LIST_SCREEN)
         val nav = ProjectSourceFiles.read(NAV_GRAPH)
         // ContinueProjectCard ei kuulu laskuun: haetaan vain itsenäinen ProjectCard-kutsu.
-        assertEquals(2, "(?<![A-Za-z])ProjectCard\\(".toRegex().findAll(screen).count())
+        assertEquals(1, "(?<![A-Za-z])ProjectCard\\(".toRegex().findAll(screen).count())
+        val content = sourceBetween(screen, "private fun ProjectListContent(", "private fun ProjectListItem(")
+        assertEquals(2, "ProjectListItem\\(".toRegex().findAll(content).count())
         assertTrue(screen.contains("actions.onOpenOverview(project.id)"))
         assertFalse(screen.contains("actions.onOpenCounter(project.id)"))
         assertTrue(screen.contains("actions.onOpenCounter(ck.projectId)"))
@@ -156,7 +158,7 @@ class ProjectListWorkspaceSourceTest {
             sourceBetween(
                 screen,
                 "private fun ProjectListContent(",
-                "data class ActiveProjectItemState(",
+                "private fun ProjectSectionLabel(",
             )
         val sectionLabel =
             sourceBetween(screen, "private fun ProjectSectionLabel(", "private fun DeleteProjectDialog(")
@@ -198,14 +200,23 @@ class ProjectListWorkspaceSourceTest {
             sourceBetween(
                 screen,
                 "private fun ProjectListContent(",
-                "data class ActiveProjectItemState(",
+                "private fun ProjectListItem(",
+            )
+        val completedRows =
+            sourceBetween(content, "items = state.completed,", "if (index < state.completed.lastIndex)")
+        val item =
+            sourceBetween(
+                screen,
+                "private fun ProjectListItem(",
+                "private fun ProjectSectionLabel(",
             )
 
-        assertTrue(content.contains("project = project.copy(count = project.totalRows ?: project.count)"))
-        assertTrue(content.contains("photoUri = state.latestPhotoUris[project.id]"))
-        assertTrue(content.contains("patternName = project.patternName"))
-        assertFalse(content.contains("completedYarn"))
-        assertFalse(content.contains("completedAttachment"))
+        assertTrue(completedRows.contains("project = project.copy(count = project.totalRows ?: project.count)"))
+        assertTrue(completedRows.contains("state = state"))
+        assertTrue(item.contains("photoUri = state.latestPhotoUris[project.id]"))
+        assertTrue(completedRows.contains("patternName = project.patternName"))
+        assertFalse(completedRows.contains("completedYarn"))
+        assertFalse(completedRows.contains("completedAttachment"))
     }
 
     @Test

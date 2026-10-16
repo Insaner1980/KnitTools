@@ -395,6 +395,8 @@ dependencyCheck {
             rootProject.file("config/dependency-check-suppressions.xml").absolutePath,
         )
     scanConfigurations = listOf("debugRuntimeClasspath", "releaseRuntimeClasspath")
+    // OWASP scans Gradle dependencies; OSV owns the repository's Node lockfiles.
+    setScanSet(emptyList<File>())
     skipTestGroups = true
     hostedSuppressions {
         enabled = false

@@ -127,7 +127,7 @@ class CounterWorkspaceSourceTest {
         assertTrue(workspace.contains("contentAlignment = Alignment.Center"))
         assertTrue(workspace.contains("val textMeasurer = rememberTextMeasurer()"))
         assertTrue(workspace.contains("counterMainNumberFittedFontSize("))
-        assertTrue(workspace.contains("maxWidthPx = constraints.maxWidth"))
+        assertTrue(workspace.contains("maxWidthPx = (constraints.maxWidth -"))
         assertTrue(workspace.contains("measureWidth = { candidateFontSize ->"))
         assertTrue(workspace.contains("baseTextStyle.copy(fontSize = candidateFontSize)"))
         assertTrue(workspace.contains("fontSize = fittedFontSize"))

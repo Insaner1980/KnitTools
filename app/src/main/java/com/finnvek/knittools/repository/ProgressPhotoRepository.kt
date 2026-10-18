@@ -9,6 +9,7 @@ import com.finnvek.knittools.data.local.toDomain
 import com.finnvek.knittools.data.storage.ProgressPhotoStorage
 import com.finnvek.knittools.di.IoDispatcher
 import com.finnvek.knittools.domain.model.ProgressPhoto
+import com.finnvek.knittools.domain.model.takeWithoutSplittingSurrogatePair
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.NonCancellable
@@ -102,13 +103,20 @@ class ProgressPhotoRepository
                             projectId = projectId,
                             photoUri = targetUri,
                             rowNumber = rowNumber,
-                            note = note?.take(100),
+                            note = note?.takeWithoutSplittingSurrogatePair(100),
                         ),
                     )
                 }.fold(
                     onSuccess = { it },
                     onFailure = { failure ->
-                        runCatching { storage.deletePhoto(context, projectId, targetUri) }
+                        withContext(NonCancellable) {
+                            val mayBePublished =
+                                runCatching { dao.getAllPhotosOnce().any { it.photoUri == targetUri } }
+                                    .getOrDefault(true)
+                            if (!mayBePublished) {
+                                runCatching { storage.deletePhoto(context, projectId, targetUri) }
+                            }
+                        }
                         throw failure
                     },
                 )
@@ -118,7 +126,7 @@ class ProgressPhotoRepository
             id: Long,
             note: String?,
         ) {
-            dao.updateNote(id, note?.take(100)?.ifBlank { null })
+            dao.updateNote(id, note?.takeWithoutSplittingSurrogatePair(100)?.ifBlank { null })
         }
 
         suspend fun deletePhoto(photo: ProgressPhoto) {

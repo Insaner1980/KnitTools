@@ -144,6 +144,32 @@ class ProjectDocumentRepositoryTest {
         }
 
     @Test
+    fun `saved PDF with a long title gets a bounded label without changing its source name`() =
+        runTest {
+            val title = "A".repeat(49) + "\uD83E\uDDF6 chart"
+            val pattern =
+                SavedPattern(
+                    id = 91,
+                    source = SavedPatternSource.LocalFile,
+                    name = title,
+                    designerName = "",
+                    localPdfUri = URI_A,
+                )
+            coEvery { savedPatternRepository.getById(91L) } returns pattern
+            val inserted = slot<ProjectDocumentEntity>()
+            coEvery { documentDao.insert(capture(inserted)) } returns 41L
+
+            val result = repository.addSavedPattern(PROJECT_ID, 91L)
+
+            assertTrue(result is ProjectDocumentMutationResult.Added)
+            assertEquals("A".repeat(49), inserted.captured.label)
+            assertEquals(91L, inserted.captured.savedPatternId)
+            assertEquals(URI_A, inserted.captured.localPdfUri)
+            assertEquals(title, pattern.name)
+            coVerify(exactly = 0) { savedPatternRepository.save(any()) }
+        }
+
+    @Test
     fun `reorder swaps adjacent order without changing primary`() =
         runTest {
             coEvery { documentDao.getForProject(PROJECT_ID) } returns

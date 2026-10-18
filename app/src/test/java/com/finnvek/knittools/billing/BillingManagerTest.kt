@@ -361,13 +361,7 @@ class BillingManagerTest {
     @Test
     fun `already owned response restores pro from purchase query`() =
         runTest {
-            val billingClient = mockk<BillingClient>(relaxed = true)
-            mockkStatic("com.android.billingclient.api.BillingClientKotlinKt")
-            coEvery { billingClient.queryPurchasesAsync(any()) } returns
-                PurchasesResult(
-                    billingResult(BillingClient.BillingResponseCode.OK),
-                    listOf(proPurchase()),
-                )
+            val billingClient = clientWithProPurchase()
             val manager = createManager(billingClient)
 
             manager.onPurchasesUpdated(
@@ -414,6 +408,46 @@ class BillingManagerTest {
             )
 
             assertEquals(BillingUserMessage.PURCHASE_NETWORK_ERROR, message.await())
+        }
+
+    @Test
+    fun `already owned launch result restores purchased entitlement`() =
+        runTest {
+            val billingClient = clientWithProPurchase()
+            val manager = createManager(billingClient)
+
+            manager.applyPurchaseFlowResult(billingResult(BillingClient.BillingResponseCode.ITEM_ALREADY_OWNED))
+            advanceUntilIdle()
+
+            assertTrue(manager.isProPurchased.value)
+            assertTrue(manager.purchaseStateReady.value)
+            assertFalse(manager.purchaseFlowInFlight.value)
+            coVerify(exactly = 1) { billingClient.queryPurchasesAsync(any()) }
+            manager.destroy()
+        }
+
+    @Test
+    fun `already owned launch result reports empty or failed restore`() =
+        runTest {
+            mockkStatic("com.android.billingclient.api.BillingClientKotlinKt")
+            listOf(
+                BillingClient.BillingResponseCode.OK,
+                BillingClient.BillingResponseCode.NETWORK_ERROR,
+            ).forEach { code ->
+                val billingClient = mockk<BillingClient>(relaxed = true)
+                coEvery { billingClient.queryPurchasesAsync(any()) } returns
+                    PurchasesResult(billingResult(code), emptyList())
+                val manager = createManager(billingClient)
+                val message = async(UnconfinedTestDispatcher(testScheduler)) { manager.purchaseMessages.first() }
+
+                manager.applyPurchaseFlowResult(billingResult(BillingClient.BillingResponseCode.ITEM_ALREADY_OWNED))
+                advanceUntilIdle()
+
+                assertFalse(manager.isProPurchased.value)
+                assertEquals(BillingUserMessage.ALREADY_OWNED_RESTORE_FAILED, message.await())
+                coVerify(exactly = 1) { billingClient.queryPurchasesAsync(any()) }
+                manager.destroy()
+            }
         }
 
     @Test
@@ -502,4 +536,15 @@ class BillingManagerTest {
             """.trimIndent(),
             "signature",
         )
+
+    private fun clientWithProPurchase(): BillingClient {
+        val billingClient = mockk<BillingClient>(relaxed = true)
+        mockkStatic("com.android.billingclient.api.BillingClientKotlinKt")
+        coEvery { billingClient.queryPurchasesAsync(any()) } returns
+            PurchasesResult(
+                billingResult(BillingClient.BillingResponseCode.OK),
+                listOf(proPurchase()),
+            )
+        return billingClient
+    }
 }

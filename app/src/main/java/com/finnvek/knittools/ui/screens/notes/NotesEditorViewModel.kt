@@ -10,12 +10,14 @@ import com.finnvek.knittools.repository.CounterRepository
 import com.finnvek.knittools.repository.ProjectNotesSaveResult
 import com.finnvek.knittools.ui.navigation.toPositiveRouteIdOrNull
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -55,7 +57,9 @@ class NotesEditorViewModel
                     _uiState.update { it.copy(isMissingProject = true) }
                     return@launch
                 }
-                repository.observeProject(loadedProjectId).collect { project ->
+                combine(repository.observeProject(loadedProjectId), proState) { project, _ ->
+                    project
+                }.collect { project ->
                     if (project == null) {
                         _uiState.update { it.copy(isMissingProject = true) }
                         return@collect
@@ -68,7 +72,6 @@ class NotesEditorViewModel
                         _uiState.update { state ->
                             state.copy(
                                 projectName = project.name,
-                                notes = "",
                                 isLoaded = true,
                                 canEditNotes = false,
                                 isMissingProject = false,
@@ -77,7 +80,7 @@ class NotesEditorViewModel
                         return@collect
                     }
                     val restoredDraft =
-                        if (!_uiState.value.isLoaded) {
+                        if (!_uiState.value.isLoaded || !_uiState.value.canEditNotes) {
                             savedStateHandle.get<String>(NOTES_DRAFT_KEY)
                         } else {
                             null
@@ -223,6 +226,7 @@ class NotesEditorViewModel
             loadedProjectId: Long,
             notes: String,
         ) {
+            saveJob?.cancel()
             saveJob =
                 viewModelScope.launch {
                     delay(DEBOUNCE_MS)
@@ -271,6 +275,8 @@ class NotesEditorViewModel
                         creationAuthorized =
                             savedStateHandle.get<Boolean>(NOTES_CREATION_AUTHORIZED_KEY) == true,
                     )
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
                 } catch (_: Exception) {
                     // Viimeinen poistumistallennus ei saa kaataa sovellusta.
                 }

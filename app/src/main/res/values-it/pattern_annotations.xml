@@ -73,4 +73,6 @@
     <string name="pattern_annotation_export_failed">Esportazione PDF non riuscita. Il PDF originale non è stato modificato.</string>
     <string name="pattern_annotation_export_default_name">modello</string>
     <string name="pattern_annotation_export_filename">%1$s-annotato.pdf</string>
+    <string name="pattern_annotation_edit_text">Modifica testo</string>
+    <string name="pattern_annotation_write_failed">Impossibile salvare il testo. L’annotazione potrebbe essere cambiata. Chiudi l’editor e riprova.</string>
 </resources>

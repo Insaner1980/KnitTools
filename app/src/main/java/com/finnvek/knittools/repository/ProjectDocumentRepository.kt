@@ -8,6 +8,7 @@ import com.finnvek.knittools.data.local.distinctSqliteQueryChunks
 import com.finnvek.knittools.data.local.toDomain
 import com.finnvek.knittools.domain.model.DEFAULT_READING_GUIDE_FRACTION
 import com.finnvek.knittools.domain.model.DEFAULT_READING_LINE_Y_FRACTION
+import com.finnvek.knittools.domain.model.PROJECT_DOCUMENT_LABEL_MAX_LENGTH
 import com.finnvek.knittools.domain.model.PatternAnnotationDocumentKey
 import com.finnvek.knittools.domain.model.PatternAnnotationOwner
 import com.finnvek.knittools.domain.model.ProjectDocument
@@ -16,6 +17,7 @@ import com.finnvek.knittools.domain.model.inDocumentOrder
 import com.finnvek.knittools.domain.model.primaryFallback
 import com.finnvek.knittools.domain.model.sanitizeReadingGuideFraction
 import com.finnvek.knittools.domain.model.sanitizeReadingLineYFraction
+import com.finnvek.knittools.domain.model.takeWithoutSplittingSurrogatePair
 import com.finnvek.knittools.domain.model.validateProjectDocumentLabel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
@@ -252,7 +254,7 @@ class ProjectDocumentRepository
                 projectId = projectId,
                 savedPatternId = savedPatternId,
                 localPdfUri = currentLocalPdfUri,
-                label = pattern.name,
+                label = pattern.name.trim().takeWithoutSplittingSurrogatePair(PROJECT_DOCUMENT_LABEL_MAX_LENGTH),
                 documentKey = PatternAnnotationDocumentKey.savedPattern(savedPatternId),
             )
         }

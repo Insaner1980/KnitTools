@@ -27,6 +27,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -50,9 +51,11 @@ import com.finnvek.knittools.domain.model.ChartRowDirection
 import com.finnvek.knittools.domain.model.ChartTrackingMode
 import com.finnvek.knittools.domain.model.PatternAnnotationLimits
 import com.finnvek.knittools.domain.model.PatternCalloutSymbol
+import com.finnvek.knittools.domain.model.TextBoxPayload
 import com.finnvek.knittools.ui.components.CancelButton
 import com.finnvek.knittools.ui.components.ScrollableFormDialog
 import com.finnvek.knittools.ui.components.SegmentedToggle
+import com.finnvek.knittools.ui.components.dialogTextFieldColors
 import com.finnvek.knittools.ui.theme.PatternAnnotationTokens
 
 internal data class PatternAnnotationToolbarActions(
@@ -75,6 +78,9 @@ internal data class PatternAnnotationToolbarActions(
     val onRedo: () -> Unit,
     val onClearPage: () -> Unit,
     val onAddChartTracker: (PatternChartTrackerDraft) -> Unit,
+    val onEditText: () -> Unit,
+    val onCancelTextEdit: (PatternAnnotationTextEdit) -> Unit,
+    val onSaveTextEdit: (PatternAnnotationTextEdit, String) -> Unit,
 )
 
 @Composable
@@ -175,6 +181,11 @@ internal fun PatternAnnotationToolbar(
             }
         }
         if (state.selectedAnnotationIsEditable) {
+            if (state.selectedAnnotationIsText) {
+                TextButton(onClick = actions.onEditText, enabled = !state.isSaving) {
+                    Text(stringResource(R.string.pattern_annotation_edit_text))
+                }
+            }
             AnnotationSelectionControls(actions)
         }
     }
@@ -186,6 +197,18 @@ internal fun PatternAnnotationToolbar(
                 showTextEditor = false
             },
         )
+    }
+    state.textEdit?.let { edit ->
+        key(edit) {
+            PatternTextEditorDialog(
+                initialText = (edit.annotation.payload as TextBoxPayload).text,
+                titleRes = R.string.pattern_annotation_edit_text,
+                isSaving = state.isSaving,
+                writeFailed = state.writeError == PatternAnnotationWriteError.WRITE_FAILED,
+                onDismiss = { actions.onCancelTextEdit(edit) },
+                onConfirm = { text -> actions.onSaveTextEdit(edit, text) },
+            )
+        }
     }
     if (showCalloutEditor) {
         PatternCalloutEditorDialog(
@@ -272,25 +295,34 @@ private fun AnnotationSelectionControls(actions: PatternAnnotationToolbarActions
 private fun PatternTextEditorDialog(
     onDismiss: () -> Unit,
     onConfirm: (String) -> Unit,
+    initialText: String = "",
+    @StringRes titleRes: Int = R.string.pattern_annotation_text_editor_title,
+    isSaving: Boolean = false,
+    writeFailed: Boolean = false,
 ) {
-    var text by rememberSaveable { mutableStateOf("") }
+    var text by rememberSaveable { mutableStateOf(initialText) }
     ScrollableFormDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.pattern_annotation_text_editor_title)) },
+        onDismissRequest = { if (!isSaving) onDismiss() },
+        title = { Text(stringResource(titleRes)) },
         text = {
-            OutlinedTextField(
-                value = text,
-                onValueChange = { text = it },
-                label = { Text(stringResource(R.string.pattern_annotation_text_label)) },
-            )
+            Column {
+                OutlinedTextField(
+                    value = text,
+                    onValueChange = { text = it },
+                    label = { Text(stringResource(R.string.pattern_annotation_text_label)) },
+                    colors = dialogTextFieldColors(),
+                    enabled = !isSaving,
+                )
+                if (writeFailed) Text(stringResource(R.string.pattern_annotation_write_failed))
+            }
         },
         confirmButton = {
-            TextButton(onClick = { onConfirm(text) }, enabled = text.isNotBlank()) {
+            TextButton(onClick = { onConfirm(text) }, enabled = text.isNotBlank() && !isSaving) {
                 Text(stringResource(R.string.save))
             }
         },
         dismissButton = {
-            CancelButton(onClick = onDismiss)
+            CancelButton(onClick = onDismiss, enabled = !isSaving)
         },
     )
 }

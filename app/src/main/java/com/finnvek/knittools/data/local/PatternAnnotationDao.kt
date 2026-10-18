@@ -8,6 +8,9 @@ import androidx.room.Transaction
 import androidx.room.Update
 import com.finnvek.knittools.data.storage.PATTERN_PDF_EXPORT_MAX_ANNOTATIONS
 import com.finnvek.knittools.data.storage.PATTERN_PDF_EXPORT_MAX_ANNOTATION_PAYLOAD_BYTES
+import com.finnvek.knittools.domain.model.PatternAnnotation
+import com.finnvek.knittools.domain.model.PatternAnnotationKind
+import com.finnvek.knittools.domain.model.PatternAnnotationOwner
 import com.finnvek.knittools.domain.model.PatternAnnotationPageBudget
 import com.finnvek.knittools.domain.model.PatternAnnotationPageLimitException
 import com.finnvek.knittools.domain.model.PatternAnnotationPayloadCodec
@@ -16,6 +19,50 @@ import kotlinx.coroutines.flow.map
 
 @Dao
 abstract class PatternAnnotationDao {
+    @Query("SELECT * FROM pattern_annotation_layers WHERE id = :layerId")
+    abstract suspend fun getTextEditLayer(layerId: Long): PatternAnnotationLayerEntity?
+
+    @Transaction
+    open suspend fun updateText(
+        owner: PatternAnnotationOwner,
+        expected: PatternAnnotation,
+        text: String,
+    ): PatternAnnotation {
+        val layer = checkNotNull(getTextEditLayer(expected.layerId)) { "Annotation layer no longer exists" }
+        val editable =
+            when (owner) {
+                is PatternAnnotationOwner.Project -> layer.projectId == owner.projectId && layer.isActive
+                is PatternAnnotationOwner.SavedPattern -> layer.savedPatternId == owner.savedPatternId
+            }
+        check(editable && layer.documentKey == owner.documentKey) { "Annotation layer is not editable" }
+        val current =
+            checkNotNull(getPageBounded(expected.layerId, expected.page).firstOrNull { it.id == expected.id }) {
+                "Annotation no longer exists"
+            }
+        // Undo can restore the same content with a newer modification timestamp.
+        val currentContent = current.toDomain()?.copy(updatedAt = expected.updatedAt)
+        check(expected.kind == PatternAnnotationKind.TEXT_BOX && currentContent == expected) {
+            "Annotation changed while editing"
+        }
+        val json =
+            requireNotNull(
+                PatternAnnotationPayloadCodec.replaceText(current.payloadVersion, current.payloadJson, text),
+            ) {
+                "Invalid annotation text"
+            }
+        val updated =
+            current.copy(
+                payloadJson = json,
+                updatedAt =
+                    maxOf(
+                        System.currentTimeMillis(),
+                        current.updatedAt + 1,
+                    ),
+            )
+        update(updated)
+        return checkNotNull(updated.toDomain())
+    }
+
     suspend fun getForLayers(layerIds: List<Long>): List<PatternAnnotationEntity> =
         getForLayersBounded(
             layerIds,

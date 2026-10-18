@@ -1,5 +1,14 @@
 package com.finnvek.knittools.domain.calculator
 
+const val MAX_MAIN_COUNTER_STEP_SIZE = 99
+
+fun parseMainCounterStepSize(text: String): Int? =
+    text
+        .trim()
+        .takeIf { it.isNotEmpty() && it.all(Char::isDigit) }
+        ?.toIntOrNull()
+        ?.takeIf { it in 1..MAX_MAIN_COUNTER_STEP_SIZE }
+
 data class CounterState(
     val count: Int = 0,
     val previousCount: Int? = null,

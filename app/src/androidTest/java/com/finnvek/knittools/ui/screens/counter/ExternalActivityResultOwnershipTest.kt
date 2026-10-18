@@ -37,9 +37,6 @@ import androidx.lifecycle.DEFAULT_ARGS_KEY
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.MutableCreationExtras
 import androidx.test.core.app.ApplicationProvider
-import androidx.test.runner.lifecycle.ActivityLifecycleCallback
-import androidx.test.runner.lifecycle.ActivityLifecycleMonitorRegistry
-import androidx.test.runner.lifecycle.Stage
 import com.finnvek.knittools.App
 import com.finnvek.knittools.MainActivity
 import com.finnvek.knittools.R
@@ -48,6 +45,7 @@ import com.finnvek.knittools.data.local.KnitToolsDatabase
 import com.finnvek.knittools.data.storage.AppFileStorage
 import com.finnvek.knittools.pro.ProStatus
 import com.finnvek.knittools.repository.CounterRepository
+import com.finnvek.knittools.ui.TestContentSplashRule
 import com.finnvek.knittools.ui.screens.pattern.PatternPickerSheet
 import com.finnvek.knittools.ui.theme.KnitToolsTheme
 import com.finnvek.knittools.widget.WidgetEntryPoint
@@ -62,7 +60,6 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
-import org.junit.rules.ExternalResource
 import java.io.File
 import java.util.UUID
 
@@ -70,22 +67,7 @@ class ExternalActivityResultOwnershipTest {
     // These tests replace activity content; its startup splash must not block the test clock's first draw.
     @get:Rule(order = 0)
     val splash =
-        object : ExternalResource() {
-            private val callback =
-                ActivityLifecycleCallback { activity, stage ->
-                    if (activity is MainActivity && stage == Stage.CREATED) {
-                        MainActivity::class.java
-                            .getDeclaredField(
-                                "startupThemeLoaded",
-                            ).apply { isAccessible = true }
-                            .setBoolean(activity, true)
-                    }
-                }
-
-            override fun before() = ActivityLifecycleMonitorRegistry.getInstance().addLifecycleCallback(callback)
-
-            override fun after() = ActivityLifecycleMonitorRegistry.getInstance().removeLifecycleCallback(callback)
-        }
+        TestContentSplashRule()
 
     @get:Rule(order = 1)
     val rule = createAndroidComposeRule<MainActivity>()

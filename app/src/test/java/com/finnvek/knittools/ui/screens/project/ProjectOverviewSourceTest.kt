@@ -92,12 +92,12 @@ class ProjectOverviewSourceTest {
         assertTrue(overviewComponents.contains(".height(ProjectOverviewDimens.NoPhotoHeight)"))
         assertTrue(overviewComponents.contains("FabricSwatch("))
         assertTrue(screen.contains("R.string.project_overview_open_photos"))
-        // Tilateksti peruslinjaan rivin oikeaan reunaan yhteisessä jatka-kortissa, ei lukeman perään.
+        // Count and target status keep baseline alignment and can wrap independently at large fonts.
         assertTrue(screen.contains("ContinueProjectCard("))
         assertTrue(
             ProjectSourceFiles
                 .read("app/src/main/java/com/finnvek/knittools/ui/components/ContinueProjectCard.kt")
-                .contains("modifier = Modifier.weight(1f).alignByBaseline()"),
+                .contains("modifier = Modifier.alignByBaseline()"),
         )
         // Edistymispalkin pohja erottuu taustasta.
         assertFalse(progressBar.contains("background(MaterialTheme.colorScheme.background)"))

@@ -1,5 +1,6 @@
 package com.finnvek.knittools.data.local
 
+import android.database.sqlite.SQLiteConstraintException
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -10,6 +11,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -93,6 +95,35 @@ class ActiveSessionDatabaseTest {
             database.sessionDao().insertActiveSession(activeSession("delete-me"))
             assertEquals(1, database.sessionDao().deleteActiveSession("delete-me"))
             assertEquals(null, database.sessionDao().getActiveSession())
+        }
+
+    @Test
+    fun invalidSingletonUpdatesPreserveTheEntireActiveSession() =
+        runTest {
+            database.counterProjectDao().insert(CounterProjectEntity(id = 7L, name = "Cardigan"))
+            val original = activeSession("stable-token")
+            database.sessionDao().insertActiveSession(original)
+            val sql = database.openHelper.writableDatabase
+
+            listOf(-1L, 0L, 2L).forEach { invalidId ->
+                val failure =
+                    runCatching {
+                        sql.execSQL(
+                            "UPDATE active_sessions SET singletonId = ?, sessionToken = 'changed', pendingRowsWorked = 99",
+                            arrayOf(invalidId),
+                        )
+                    }.exceptionOrNull()
+                assertTrue(failure is SQLiteConstraintException)
+                assertTrue(failure?.message.orEmpty().contains("active_sessions singletonId must be 1"))
+                assertEquals(original, database.sessionDao().getActiveSession())
+                sql.query("SELECT COUNT(*) FROM active_sessions").use { cursor ->
+                    assertTrue(cursor.moveToFirst())
+                    assertEquals(1, cursor.getInt(0))
+                }
+            }
+
+            sql.execSQL("UPDATE active_sessions SET singletonId = 1, pendingRowsWorked = 2")
+            assertEquals(original.copy(pendingRowsWorked = 2), database.sessionDao().getActiveSession())
         }
 
     private fun activeSession(token: String) =

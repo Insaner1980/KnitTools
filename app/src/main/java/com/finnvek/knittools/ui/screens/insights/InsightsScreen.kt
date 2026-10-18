@@ -543,17 +543,20 @@ private fun chartContentDescription(
 ): String {
     val longestMinutes = uiState.chartBuckets.maxOfOrNull { it.totalMinutes } ?: 0
     return stringResource(
-        if (uiState.chartInterval == PaceGroupingInterval.DAY) {
-            R.string.insights_chart_a11y_daily
-        } else {
-            R.string.insights_chart_a11y_monthly
-        },
+        chartContentDescriptionResource(uiState.chartInterval),
         craftVerbText(uiState.craftMix),
         rangeLabel,
         daysMetaText(uiState),
         durationText(DurationDisplayFormatter.fromMinutes(longestMinutes)),
     )
 }
+
+internal fun chartContentDescriptionResource(interval: PaceGroupingInterval): Int =
+    when (interval) {
+        PaceGroupingInterval.DAY -> R.string.insights_chart_a11y_daily
+        PaceGroupingInterval.WEEK -> R.string.insights_chart_a11y_weekly
+        PaceGroupingInterval.MONTH -> R.string.insights_chart_a11y_monthly
+    }
 
 /** "19 / 28 päivää" — näytön informatiivisin luku. */
 @Composable

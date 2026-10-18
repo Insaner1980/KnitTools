@@ -88,6 +88,7 @@ import com.finnvek.knittools.domain.model.isWebPatternCompatible
 import com.finnvek.knittools.domain.model.webPatternUrlOrNull
 import com.finnvek.knittools.pro.ProStatus
 import com.finnvek.knittools.repository.ProjectDocumentMutationResult
+import com.finnvek.knittools.repository.ProjectYarnNoteEditResult
 import com.finnvek.knittools.repository.SavedPatternMetadataMutationResult
 import com.finnvek.knittools.ui.components.CancelButton
 import com.finnvek.knittools.ui.components.CollectWithLifecycleEffect
@@ -116,6 +117,7 @@ import com.finnvek.knittools.ui.screens.project.ProjectOverviewRouteContent
 import com.finnvek.knittools.ui.theme.CounterDimens
 import com.finnvek.knittools.ui.theme.knitToolsColors
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
 private enum class PendingCounterProAction {
@@ -236,6 +238,27 @@ fun ProjectContentHost(
     val currentProjectId by rememberUpdatedState(state.projectId)
     var showDocumentsSheet by rememberSaveable { mutableStateOf(false) }
     var projectDocumentError by remember { mutableStateOf<ProjectDocumentError?>(null) }
+    var showStepSizeSheet by rememberSaveable(state.projectId) { mutableStateOf(false) }
+    var stepDelta by remember(state.projectId) { mutableStateOf<Int?>(null) }
+    val stepLifecycleOwner = LocalLifecycleOwner.current
+    LaunchedEffect(viewModel, state.projectId, stepLifecycleOwner) {
+        stepLifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            try {
+                viewModel.stepFeedback.collectLatest { feedback ->
+                    if (feedback.projectId == state.projectId) {
+                        stepDelta = feedback.delta
+                        try {
+                            delay(CounterDimens.STEP_FEEDBACK_DURATION_MILLIS)
+                        } finally {
+                            stepDelta = null
+                        }
+                    }
+                }
+            } finally {
+                stepDelta = null
+            }
+        }
+    }
     var showTargetDialog by rememberSaveable { mutableStateOf(false) }
     var pendingProAction by rememberSaveable { mutableStateOf<PendingCounterProAction?>(null) }
     var previousOverlayProjectId by rememberSaveable { mutableStateOf<Long?>(null) }
@@ -285,6 +308,7 @@ fun ProjectContentHost(
         onPhotoGallery()
     }
     val requestAddCounter = {
+        projectActionTargetId = state.projectId
         requestCounterFeature(
             hasAccess = state.canUseMultipleCounters,
             onOpenFeature = { showAddCounter = true },
@@ -500,6 +524,7 @@ fun ProjectContentHost(
                     viewModel.incrementStitch()
                 },
                 onShowTargetDialog = { showTargetDialog = true },
+                onShowStepSize = { showStepSizeSheet = true },
                 onDismissReminder = viewModel::dismissReminder,
                 onStopSession = viewModel::stopWorkSession,
                 onResolveSessionRecovery = viewModel::showRecoveryPrompt,
@@ -515,7 +540,7 @@ fun ProjectContentHost(
             CounterDialogState(
                 showAddReminder = showAddReminder,
                 editingReminder = reminderBeingEdited,
-                showAddCounter = showAddCounter,
+                showAddCounter = showAddCounter && projectActionTargetId == state.projectId,
                 showResetDialog = showResetDialog && projectActionTargetId == state.projectId,
                 showCompleteDialog = showCompleteDialog && projectActionTargetId == state.projectId,
                 showDeleteDialog = showDeleteDialog && projectActionTargetId == state.projectId,
@@ -526,6 +551,21 @@ fun ProjectContentHost(
         actions = dialogActions,
     )
 
+    if (showStepSizeSheet) {
+        state.projectId?.let { projectId ->
+            key(projectId) {
+                MainCounterStepSheet(
+                    stepSize = state.counter.stepSize,
+                    labelType = state.mainCounterLabelType,
+                    customLabel = state.mainCounterCustomLabel,
+                    onSave = { size, onResult ->
+                        viewModel.setStepSize(size, expectedProjectId = projectId, onResult = onResult)
+                    },
+                    onDismiss = { showStepSizeSheet = false },
+                )
+            }
+        }
+    }
     CounterTargetRowsDialogHost(
         showDialog = showTargetDialog,
         currentTarget = state.targetRows,
@@ -847,11 +887,13 @@ fun ProjectContentHost(
                 pendingProAction = null
                 when (action) {
                     PendingCounterProAction.OpenCounter -> {
-                        showAddCounter = true
+                        runForCurrentProject(dialogActionDependencies, viewModel) { showAddCounter = true }
                     }
 
                     PendingCounterProAction.RetryCounter -> {
-                        if (viewModel.retryAddProjectCounter()) showAddCounter = false
+                        runForCurrentProject(dialogActionDependencies, viewModel) {
+                            if (retryAddProjectCounter()) showAddCounter = false
+                        }
                     }
 
                     PendingCounterProAction.OpenReminder -> {
@@ -1015,6 +1057,7 @@ fun ProjectContentHost(
                 state = state,
                 projectCountersActions = projectCountersActions,
                 actions = mainContentActions,
+                stepDelta = stepDelta,
             )
         }
     }
@@ -1601,6 +1644,7 @@ data class CounterSheetActions(
     val onShowYarnPickerFromManagement: () -> Unit,
     val onUnlinkYarn: (Long) -> Unit,
     val onSaveProjectYarnNote: (String, String, Int, String) -> Unit,
+    val onEditProjectYarnNote: suspend (ProjectYarnNote, ProjectYarnNote) -> ProjectYarnNoteEditResult,
     val onDeleteProjectYarnNote: (Long) -> Unit,
     val onSaveProjectYarnNoteToMyYarn: (Long) -> Unit,
     val onYarnPickerDismiss: () -> Unit,
@@ -1639,6 +1683,7 @@ private fun CounterScreenSheets(
                     onUnlinkYarn = actions.onUnlinkYarn,
                     onAddYarn = actions.onShowYarnPickerFromManagement,
                     onSaveProjectYarnNote = actions.onSaveProjectYarnNote,
+                    onEditProjectYarnNote = actions.onEditProjectYarnNote,
                     onDeleteProjectYarnNote = actions.onDeleteProjectYarnNote,
                     onSaveProjectYarnNoteToMyYarn = actions.onSaveProjectYarnNoteToMyYarn,
                     onDismiss = actions.onYarnManagementDismiss,
@@ -2052,10 +2097,12 @@ private fun saveProjectCounter(
     dependencies: CounterDialogActionDependencies,
     draft: ProjectCounterDraft,
 ) {
-    if (viewModel.addProjectCounter(draft)) {
-        dependencies.onHideAddCounter()
-    } else {
-        dependencies.onCounterProRequired()
+    runForCurrentProject(dependencies, viewModel) {
+        if (addProjectCounter(draft)) {
+            dependencies.onHideAddCounter()
+        } else {
+            dependencies.onCounterProRequired()
+        }
     }
 }
 
@@ -2064,7 +2111,7 @@ private inline fun runForCurrentProject(
     viewModel: CounterViewModel,
     action: CounterViewModel.() -> Unit,
 ) {
-    if (dependencies.projectId == viewModel.uiState.value.projectId) {
+    if (dependencies.projectId != null && dependencies.projectId == viewModel.uiState.value.projectId) {
         viewModel.action()
     }
 }
@@ -2113,6 +2160,7 @@ private fun rememberCounterSheetActions(
             },
             onUnlinkYarn = viewModel::unlinkYarnCard,
             onSaveProjectYarnNote = viewModel::saveProjectYarnNote,
+            onEditProjectYarnNote = { original, draft -> viewModel.editProjectYarnNote(original, draft).await() },
             onDeleteProjectYarnNote = viewModel::deleteProjectYarnNote,
             onSaveProjectYarnNoteToMyYarn = onSaveProjectYarnNoteToMyYarn,
             onYarnPickerDismiss = onHideYarnPicker,

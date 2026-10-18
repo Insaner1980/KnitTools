@@ -31,7 +31,19 @@ abstract class HistoryNavigationTest(
     protected val name = namePrefix + UUID.randomUUID().toString().take(8)
     protected val automation get() = InstrumentationRegistry.getInstrumentation().uiAutomation
 
-    protected fun label(resource: Int) = app.getString(resource)
+    protected fun label(resource: Int): String {
+        val stepResource =
+            when (resource) {
+                R.string.counter_add_row -> R.string.counter_step_increase
+                R.string.counter_decrease_row -> R.string.counter_step_decrease
+                else -> null
+            }
+        return if (stepResource != null && (stepSize ?: 1) > 1) {
+            app.getString(stepResource, stepSize, app.getString(R.string.main_counter_rows))
+        } else {
+            app.getString(resource)
+        }
+    }
 
     @Before fun seed() {
         app = ApplicationProvider.getApplicationContext()

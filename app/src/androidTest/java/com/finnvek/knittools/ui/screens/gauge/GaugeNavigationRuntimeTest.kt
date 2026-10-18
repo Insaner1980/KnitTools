@@ -21,7 +21,6 @@ import com.finnvek.knittools.data.local.KNITTOOLS_DATABASE_VERSION
 import com.finnvek.knittools.data.local.KnitToolsDatabase
 import com.finnvek.knittools.domain.model.MainCounterChange
 import com.finnvek.knittools.repository.CounterRepository
-import com.finnvek.knittools.repository.ProjectCreationResult
 import com.finnvek.knittools.widget.WidgetEntryPoint
 import dagger.hilt.android.EntryPointAccessors
 import kotlinx.coroutines.Dispatchers
@@ -192,9 +191,8 @@ class GaugeNavigationRuntimeTest {
     private fun createProjectFixture() {
         fixtureProjectName = "Measurement test " + UUID.randomUUID().toString().take(8)
         runBlocking(Dispatchers.IO) {
-            val created = repository.createProject(fixtureProjectName, canCreateAdditionalProjects = true)
-            check(created is ProjectCreationResult.Created) { "Could not create the measurement navigation fixture" }
-            fixtureProjectId = created.projectId
+            // Calculator navigation needs existing content independently of the current creation entitlement.
+            fixtureProjectId = database.counterProjectDao().insert(CounterProjectEntity(name = fixtureProjectName))
             // Seed existing content independently of the current notes-creation entitlement.
             database.counterProjectDao().updateNotes(fixtureProjectId, FIXTURE_NOTES, System.currentTimeMillis())
             check(repository.applyMainCounterChange(fixtureProjectId, MainCounterChange.Increment))

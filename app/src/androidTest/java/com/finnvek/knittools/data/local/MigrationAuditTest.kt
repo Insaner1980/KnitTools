@@ -2,6 +2,7 @@ package com.finnvek.knittools.data.local
 
 import android.database.Cursor
 import android.os.Bundle
+import androidx.room.Room
 import androidx.room.migration.Migration
 import androidx.room.testing.MigrationTestHelper
 import androidx.room.util.TableInfo
@@ -22,6 +23,62 @@ import java.util.UUID
 class MigrationAuditTest {
     @get:Rule
     val helper = MigrationTestHelper(InstrumentationRegistry.getInstrumentation(), KnitToolsDatabase::class.java)
+
+    @Test
+    fun boundaryLegacyValuesSurviveEachStepAndProductionConfiguredReopen() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        for (start in 10 until KNITTOOLS_DATABASE_VERSION) {
+            val name = "audit-reopen-$start-${UUID.randomUUID()}"
+            val before =
+                helper.createDatabase(name, start).use { db ->
+                    seed(db, start)
+                    db.execSQL(
+                        "UPDATE sessions SET startedAt = ?, endedAt = ?",
+                        arrayOf(Long.MIN_VALUE, Long.MAX_VALUE),
+                    )
+                    db.execSQL("UPDATE counter_projects SET notes = '', yarnCardIds = '41,41,999999'")
+                    db.execSQL("UPDATE yarn_cards SET linkedProjectId = 999999")
+                    if (start < 14) db.execSQL("UPDATE saved_patterns SET ravelryId = 0, patternUrl = '' WHERE id = 42")
+                    if (start < 17) {
+                        db.execSQL("UPDATE pattern_annotations SET color = 'invalid', pathData = '' WHERE id = 42")
+                    }
+                    rows(db)
+                }
+            helper.runMigrationsAndValidate(name, start + 1, true, *KnitToolsDatabase.ALL_MANUAL_MIGRATIONS).use { db ->
+                assertPreserved(before, rows(db), start, start + 1)
+            }
+            repeat(2) { opening ->
+                val room =
+                    Room
+                        .databaseBuilder(context, KnitToolsDatabase::class.java, name)
+                        .openHelperFactory(PreservingSQLiteOpenHelperFactory())
+                        .addMigrations(*KnitToolsDatabase.ALL_MANUAL_MIGRATIONS)
+                        .addCallback(PatternAnnotationSchemaConstraints.callback)
+                        .addCallback(ActiveSessionSchemaConstraints.callback)
+                        .addCallback(ProjectDocumentSchemaConstraints.callback)
+                        .build()
+                try {
+                    val db = room.openHelper.writableDatabase
+                    assertPreserved(before, rows(db), start, KNITTOOLS_DATABASE_VERSION)
+                    probeForeignKey(db)
+                    probeRequiredColumns(db)
+                    val original = rows(db)
+                    try {
+                        db.execSQL("UPDATE pattern_annotation_layers SET projectId = NULL, savedPatternId = NULL")
+                        fail("Expected owner trigger after reopen")
+                    } catch (_: android.database.sqlite.SQLiteConstraintException) {
+                        assertEquals(original, rows(db))
+                    }
+                    db.execSQL("UPDATE sessions SET endedAt = ?", arrayOf(Long.MAX_VALUE))
+                    assertEquals(original, rows(db))
+                    receipt("reopen:$start->$KNITTOOLS_DATABASE_VERSION:$opening:boundary-values+required+fk+owner")
+                } finally {
+                    room.close()
+                }
+            }
+            assertTrue(context.deleteDatabase(name))
+        }
+    }
 
     @Test
     fun everyAdjacentMigrationPreservesAllExistingColumnsAndMatchesFreshConstraints() {

@@ -1,6 +1,7 @@
 package com.finnvek.knittools.data.backup
 
 import android.net.Uri
+import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineStart
@@ -93,7 +94,10 @@ class BackupProviderIoTest {
             val request = TestRequest(open = { handle }, closeDescriptor = handle::close)
             val source = temporary.newFile().apply { writeText("archive") }
 
-            val failure = runCatching { providerIo(request).write(source, mockk(), 1024) }.exceptionOrNull()
+            val failure =
+                runCatching {
+                    providerIo(request).write(source, mockk { every { scheme } returns "content" }, 1024)
+                }.exceptionOrNull()
 
             assertTrue(failure is IOException)
             assertTrue(output.closed.get())
@@ -176,7 +180,7 @@ class BackupProviderIoTest {
             val output = ByteArrayOutputStream()
             val writeHandle = TestHandle(output = output)
             providerIo(TestRequest(open = { writeHandle }, closeDescriptor = writeHandle::close))
-                .write(target, mockk(), 1024)
+                .write(target, mockk { every { scheme } returns "content" }, 1024)
             assertArrayEquals(bytes, output.toByteArray())
         }
 

@@ -69,13 +69,66 @@ internal object BackupZipStructure {
             check()
             BackupFormat.requireValid(++count <= directory.count && directory.end - input.filePointer >= 46)
             BackupFormat.requireValid(input.readInt() == 0x504b0102)
-            input.skipBytes(24)
-            val variableBytes = input.short() + input.short() + input.short()
-            input.skipBytes(12)
+            input.skipBytes(16)
+            val compressedSize = input.uint()
+            val uncompressedSize = input.uint()
+            val nameLength = input.short()
+            val extraLength = input.short()
+            val commentLength = input.short()
+            val variableBytes = nameLength + extraLength + commentLength
+            input.skipBytes(8)
+            var localOffset = input.uint()
             BackupFormat.requireValid(variableBytes <= directory.end - input.filePointer)
-            input.seek(input.filePointer + variableBytes)
+            val nextEntry = input.filePointer + variableBytes
+            val name = ByteArray(nameLength).also(input::readFully)
+            if (localOffset == 0xffffffffL) {
+                val sizeBytes =
+                    (if (uncompressedSize == 0xffffffffL) 8 else 0) +
+                        (if (compressedSize == 0xffffffffL) 8 else 0)
+                localOffset = zip64LocalOffset(input, extraLength, sizeBytes)
+            }
+            verifyLocalName(input, localOffset, directory.offset, name)
+            input.seek(nextEntry)
         }
         BackupFormat.requireValid(count == directory.count)
+    }
+
+    private fun zip64LocalOffset(
+        input: RandomAccessFile,
+        extraLength: Int,
+        sizeBytes: Int,
+    ): Long {
+        val end = input.filePointer + extraLength
+        while (end - input.filePointer >= 4) {
+            val tag = input.short()
+            val size = input.short()
+            BackupFormat.requireValid(size <= end - input.filePointer)
+            if (tag == 1) {
+                BackupFormat.requireValid(size >= sizeBytes + 8)
+                input.skipBytes(sizeBytes)
+                return input.long()
+            }
+            input.skipBytes(size)
+        }
+        throw BackupException(BackupError.CORRUPT)
+    }
+
+    private fun verifyLocalName(
+        input: RandomAccessFile,
+        offset: Long,
+        directoryOffset: Long,
+        expected: ByteArray,
+    ) {
+        BackupFormat.requireValid(offset >= 0 && offset <= directoryOffset - 30L)
+        input.seek(offset)
+        BackupFormat.requireValid(input.readInt() == 0x504b0304)
+        input.skipBytes(22)
+        val nameLength = input.short()
+        val extraLength = input.short()
+        BackupFormat.requireValid(nameLength == expected.size)
+        BackupFormat.requireValid(nameLength + extraLength <= directoryOffset - input.filePointer)
+        val actual = ByteArray(nameLength).also(input::readFully)
+        BackupFormat.requireValid(actual.contentEquals(expected))
     }
 
     private data class Directory(

@@ -553,6 +553,10 @@ internal class RepositoryDomainFakeCounterProjectDao(
 internal class FakePatternAnnotationDao(
     patternAnnotations: List<PatternAnnotationEntity> = emptyList(),
 ) : PatternAnnotationDao() {
+    override suspend fun getTextEditLayer(
+        layerId: Long,
+    ): com.finnvek.knittools.data.local.PatternAnnotationLayerEntity? = null
+
     private val patternAnnotations = patternAnnotations.toMutableList()
     var lastInserted: PatternAnnotationEntity? = null
     var lastExportQueryLimit: Int? = null

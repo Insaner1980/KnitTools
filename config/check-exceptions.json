@@ -2,6 +2,125 @@
   "schemaVersion": 1,
   "exceptions": [
     {
+      "id": "knittools-semgrep-test-share-receiver",
+      "tool": "semgrep",
+      "rule": "config.semgrep.knittools-exported-component-review",
+      "scope": "Exact androidTest-only AuditPart16ShareReceiver declaration",
+      "reason": "The instrumentation APK intentionally receives an explicit cross-UID ACTION_SEND from AuditPart16ShareTest to verify granted URI access, unlink behavior and sibling-file isolation. It has no target APK runtime dependency and is absent from production manifests; disabling export would invalidate the separate-UID test.",
+      "owner": "project-maintainers",
+      "added": "2026-10-18",
+      "expires": "2026-10-31",
+      "tracking": "local-review:knittools-semgrep-test-share-receiver",
+      "sourcePath": "app/src/androidTest/AndroidManifest.xml",
+      "selector": "nosemgrep: config.semgrep.knittools-exported-component-review",
+      "findingPath": "app/src/androidTest/AndroidManifest.xml"
+    },
+    {
+      "id": "knittools-mobsf-test-target-sdk",
+      "tool": "mobsfscan",
+      "rule": "android_task_hijacking2",
+      "scope": "androidTest source manifest targetSdk inference",
+      "reason": "MobSF does not resolve Gradle targetSdk from this source manifest. The merged debugAndroidTest manifest declares targetSdkVersion 37; the exported recipient belongs only to the instrumentation APK. No SDK or launch-mode change is needed.",
+      "owner": "project-maintainers",
+      "added": "2026-10-18",
+      "expires": "2026-10-31",
+      "tracking": "local-review:knittools-mobsf-test-target-sdk",
+      "sourcePath": "app/build.gradle.kts",
+      "selector": "libs.versions.androidTargetSdk",
+      "findingPath": "app/src/androidTest/AndroidManifest.xml",
+      "findingSelectors": [
+        "activity exported, targetsdk<29 and launchmode != singleinstance or taskaffinity is not empty"
+      ]
+    },
+    {
+      "id": "knittools-mobsf-yarn-note-edit-document-key",
+      "tool": "mobsfscan",
+      "rule": "android_kotlin_hardcoded",
+      "scope": "Exact synthetic document identity in ProjectYarnNoteEditRoomTest.kt",
+      "reason": "The documentKey identifies a synthetic project document used to verify unrelated data is preserved during yarn-note edits; it is not a credential or cryptographic key.",
+      "owner": "project-maintainers",
+      "added": "2026-10-18",
+      "expires": "2026-10-31",
+      "tracking": "local-review:knittools-mobsf-yarn-note-edit-document-key",
+      "sourcePath": "app/src/androidTest/java/com/finnvek/knittools/repository/ProjectYarnNoteEditRoomTest.kt",
+      "selector": "documentKey = \"synthetic-document\"",
+      "findingPath": "app/src/androidTest/java/com/finnvek/knittools/repository/ProjectYarnNoteEditRoomTest.kt",
+      "findingSelectors": [
+        "key = \"synthetic-document\""
+      ]
+    },
+    {
+      "id": "knittools-mobsf-backup-repository-test-sql",
+      "tool": "mobsfscan",
+      "rule": "android_kotlin_sql_raw_query",
+      "scope": "Exact SQLite matches in BackupRepositoryTest.kt",
+      "reason": "Test-only SQLite fixture writes and failure injection. Values are literals or bound parameters; interpolated identifiers come from fixed fixture table lists and the local Room schema. The execSQL wrapper delegates Room/backup statements to the test database without introducing external SQL input.",
+      "owner": "project-maintainers",
+      "added": "2026-10-18",
+      "expires": "2026-10-31",
+      "tracking": "local-review:knittools-mobsf-backup-repository-test-sql",
+      "sourcePath": "app/src/androidTest/java/com/finnvek/knittools/repository/BackupRepositoryTest.kt",
+      "selector": "class BackupRepositoryTest",
+      "findingPath": "app/src/androidTest/java/com/finnvek/knittools/repository/BackupRepositoryTest.kt",
+      "findingSelectors": [
+        "android.database.sqlite",
+        "execsql("
+      ]
+    },
+    {
+      "id": "knittools-mobsf-main-counter-step-test-sql",
+      "tool": "mobsfscan",
+      "rule": "android_kotlin_sql_raw_query",
+      "scope": "Exact SQLite matches in MainCounterStepRoomTest.kt",
+      "reason": "The fixed CREATE/DROP TRIGGER pair injects a save failure in the test database. The only interpolation is a Long project ID returned by the fixture insert; SQLiteException is the asserted failure type. No untrusted SQL input.",
+      "owner": "project-maintainers",
+      "added": "2026-10-18",
+      "expires": "2026-10-31",
+      "tracking": "local-review:knittools-mobsf-main-counter-step-test-sql",
+      "sourcePath": "app/src/androidTest/java/com/finnvek/knittools/repository/MainCounterStepRoomTest.kt",
+      "selector": "CREATE TRIGGER fail_main_step AFTER UPDATE OF stepSize ON counter_projects",
+      "findingPath": "app/src/androidTest/java/com/finnvek/knittools/repository/MainCounterStepRoomTest.kt",
+      "findingSelectors": [
+        "android.database.sqlite",
+        "execsql("
+      ]
+    },
+    {
+      "id": "knittools-mobsf-active-session-database-test-sql",
+      "tool": "mobsfscan",
+      "rule": "android_kotlin_sql_raw_query",
+      "scope": "Exact SQLite matches in ActiveSessionDatabaseTest.kt",
+      "reason": "Test-only in-memory database constraint checks use fixed UPDATE statements and bound fixture IDs; SQLiteConstraintException is an assertion target. No untrusted SQL input.",
+      "owner": "project-maintainers",
+      "added": "2026-10-16",
+      "expires": "2026-10-31",
+      "tracking": "local-review:knittools-mobsf-active-session-database-test-sql",
+      "sourcePath": "app/src/androidTest/java/com/finnvek/knittools/data/local/ActiveSessionDatabaseTest.kt",
+      "selector": "fun invalidSingletonUpdatesPreserveTheEntireActiveSession()",
+      "findingPath": "app/src/androidTest/java/com/finnvek/knittools/data/local/ActiveSessionDatabaseTest.kt",
+      "findingSelectors": [
+        "android.database.sqlite",
+        "execsql("
+      ]
+    },
+    {
+      "id": "knittools-mobsf-annotation-migration-test-document-key",
+      "tool": "mobsfscan",
+      "rule": "android_kotlin_hardcoded",
+      "scope": "Exact documentKey fixture in PatternAnnotationMigration17Test.kt",
+      "reason": "The literal 'changed' is a document identity in a fixed migration-test UPDATE used to prove rejected owner changes leave the row intact; it is not a credential or cryptographic key.",
+      "owner": "project-maintainers",
+      "added": "2026-10-16",
+      "expires": "2026-10-31",
+      "tracking": "local-review:knittools-mobsf-annotation-migration-test-document-key",
+      "sourcePath": "app/src/androidTest/java/com/finnvek/knittools/data/local/PatternAnnotationMigration17Test.kt",
+      "selector": "documentKey = 'changed', updatedAt = 9999 WHERE id = ?",
+      "findingPath": "app/src/androidTest/java/com/finnvek/knittools/data/local/PatternAnnotationMigration17Test.kt",
+      "findingSelectors": [
+        "key = 'changed', updatedat = 9999 where id = ?\""
+      ]
+    },
+    {
       "id": "knittools-gitleaks-public-firebase-client-key",
       "tool": "gitleaks",
       "rule": "gcp-api-key",

@@ -4,6 +4,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 object CounterDimens {
+    val StepRingMinimumSize = 48.dp
+    val StepRingMaximumSize = 96.dp
+    val StepRingTextPadding = 8.dp
+    val StepRingButtonGap = 8.dp
+    val StepFeedbackWidth = 72.dp
+    const val STEP_FEEDBACK_DURATION_MILLIS = 900L
+
     // Tekstillinen kolmiulotteinen nappi (uusi projekti): pilleri, jonka päässä on nappikuva.
     val LabeledImageButtonElevation = 3.dp
     val LabeledImageButtonTextStart = 20.dp

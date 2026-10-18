@@ -98,6 +98,13 @@ class SavedPatternDetailWebScreenTest {
             else -> {
                 composeRule.onNodeWithText(context.getString(R.string.web_pattern_save_failed)).assertIsDisplayed()
                 composeRule.runOnIdle { assertEquals(0, attached) }
+                // At large font sizes the transient snackbar covers the attachment button.
+                composeRule.waitUntil(timeoutMillis = 10_000) {
+                    composeRule
+                        .onAllNodesWithText(context.getString(R.string.web_pattern_save_failed))
+                        .fetchSemanticsNodes()
+                        .isEmpty()
+                }
                 composeRule.onNodeWithText(attachLabel).performScrollTo().performClick()
                 chooseProject()
                 composeRule.runOnIdle {

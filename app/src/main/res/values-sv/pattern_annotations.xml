@@ -73,4 +73,6 @@
     <string name="pattern_annotation_export_failed">PDF-exporten misslyckades. Den ursprungliga PDF-filen ändrades inte.</string>
     <string name="pattern_annotation_export_default_name">mönster</string>
     <string name="pattern_annotation_export_filename">%1$s-med-anteckningar.pdf</string>
+    <string name="pattern_annotation_edit_text">Redigera text</string>
+    <string name="pattern_annotation_write_failed">Texten kunde inte sparas. Anteckningen kan ha ändrats. Stäng redigeraren och försök igen.</string>
 </resources>

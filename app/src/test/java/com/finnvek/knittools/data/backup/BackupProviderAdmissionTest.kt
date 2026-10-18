@@ -49,7 +49,7 @@ class BackupProviderAdmissionTest {
     private val workers = Executors.newSingleThreadExecutor()
     private val closers = Executors.newFixedThreadPool(2)
     private val watchdog = ScheduledThreadPoolExecutor(1).apply { removeOnCancelPolicy = true }
-    private val uri = mockk<Uri>()
+    private val uri = mockk<Uri> { every { scheme } returns "content" }
 
     @After fun stopExecutors() {
         listOf(workers, closers, watchdog).forEach { it.shutdown() }

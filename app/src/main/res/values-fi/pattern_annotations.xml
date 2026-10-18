@@ -73,4 +73,6 @@
     <string name="pattern_annotation_export_failed">PDF-vienti epäonnistui. Alkuperäistä PDF-tiedostoa ei muutettu.</string>
     <string name="pattern_annotation_export_default_name">ohje</string>
     <string name="pattern_annotation_export_filename">%1$s-merkinnöillä.pdf</string>
+    <string name="pattern_annotation_edit_text">Muokkaa tekstiä</string>
+    <string name="pattern_annotation_write_failed">Tekstiä ei voitu tallentaa. Merkintä on saattanut muuttua. Sulje muokkain ja yritä uudelleen.</string>
 </resources>

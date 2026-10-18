@@ -522,6 +522,7 @@
     </plurals>
     <string name="insights_chart_axis_today">aujourd’hui</string>
     <string name="insights_chart_a11y_daily">Temps quotidien %1$s, %2$s, %3$s, plus long %4$s</string>
+    <string name="insights_chart_a11y_weekly">Temps hebdomadaire %1$s, %2$s, %3$s, plus long %4$s</string>
     <string name="insights_chart_a11y_monthly">Temps mensuel %1$s, %2$s, %3$s, plus long %4$s</string>
     <string name="insights_chart_a11y_next">Barre suivante</string>
     <string name="insights_chart_a11y_previous">Barre précédente</string>
@@ -1117,4 +1118,22 @@
     <string name="project_actions_overview_subtitle">Fil, modèle, notes et détails</string>
     <string name="project_actions_section_work_session">Séance de travail</string>
     <string name="project_overview_amount_unknown">Inconnu</string>
+    <string name="counter_step_rows_title">Rangs par appui</string>
+    <string name="counter_step_rounds_title">Tours par appui</string>
+    <string name="counter_step_repeats_title">Répétitions par appui</string>
+    <string name="counter_step_custom_title">%1$s par appui</string>
+    <string name="counter_step_description">Choisissez la quantité ajoutée ou retirée à chaque appui.</string>
+    <string name="counter_step_custom_amount">Quantité personnalisée</string>
+    <string name="counter_step_invalid">Saisissez un entier entre 1 et %1$d.</string>
+    <string name="counter_step_save_failed">Impossible d’enregistrer le pas. Réessayez.</string>
+    <string name="counter_step_change_description">%1$s : %2$d. Modifier.</string>
+    <string name="counter_step_increase">Augmenter de %1$d. %2$s.</string>
+    <string name="counter_step_decrease">Diminuer de %1$d. %2$s.</string>
+    <string name="counter_step_multiplier">×%1$d</string>
+    <string name="counter_step_delta">%1$+d</string>
+    <string name="project_yarn_edit_title">Modifier le fil du projet</string>
+    <string name="project_yarn_edit_conflict">Cette note de fil a été modifiée pendant votre saisie. Fermez-la et rouvrez-la pour consulter la dernière version.</string>
+    <string name="project_yarn_edit_missing">Cette note de fil ne fait plus partie de ce projet. Fermez cet écran.</string>
+    <string name="project_yarn_edit_invalid">Saisissez un nom de fil.</string>
+    <string name="project_yarn_edit_failed">Impossible d’enregistrer les modifications. Votre brouillon est conservé. Réessayez.</string>
 </resources>

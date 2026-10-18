@@ -1,5 +1,10 @@
 package com.finnvek.knittools.ui.screens.counter
 
+import com.finnvek.knittools.data.local.CounterProjectDao
+import com.finnvek.knittools.data.local.CounterProjectEntity
+import com.finnvek.knittools.data.local.DatabaseTransactionRunner
+import com.finnvek.knittools.data.local.RowReminderDao
+import com.finnvek.knittools.data.local.toEntity
 import com.finnvek.knittools.domain.model.ProjectCounter
 import com.finnvek.knittools.domain.model.ProjectCounterDraft
 import com.finnvek.knittools.domain.model.RowReminder
@@ -15,6 +20,7 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
@@ -30,6 +36,47 @@ import java.io.IOException
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class CounterContentMutationsTest : CounterViewModelFixture() {
+    @Test
+    fun `delayed reminder edit preserves a newer stored reminder`() =
+        runTest {
+            val original = RowReminder(id = 19L, projectId = 7L, targetRow = 4, message = "Original")
+            var stored = original.toEntity()
+            val reminderDao = mockk<RowReminderDao>()
+            every { reminderDao.getRemindersForProject(7L) } returns flowOf(listOf(stored))
+            coEvery { reminderDao.getReminder(19L) } answers { stored }
+            coEvery { reminderDao.update(any()) } answers {
+                stored = firstArg()
+                1
+            }
+            val projectDao = mockk<CounterProjectDao>()
+            coEvery { projectDao.getProject(7L) } returns CounterProjectEntity(id = 7L, name = "Project")
+            val entered = CompletableDeferred<Unit>()
+            val resume = CompletableDeferred<Unit>()
+            val transaction =
+                object : DatabaseTransactionRunner {
+                    override suspend fun <T> run(block: suspend () -> T): T {
+                        entered.complete(Unit)
+                        resume.await()
+                        return block()
+                    }
+                }
+            val reminders = ReminderRepository(reminderDao, projectDao, purchasedPro(), transaction)
+            val model = viewModel(reminderRepositoryOverride = reminders)
+            val errors = collectErrors(model.projectContentErrors)
+            advanceUntilIdle()
+
+            model.updateReminder(19L, 8, null, "Older pending edit")
+            entered.await()
+            val newer = original.copy(targetRow = 24, message = "Newer edit").toEntity()
+            stored = newer
+            resume.complete(Unit)
+            advanceUntilIdle()
+
+            assertEquals(newer, stored)
+            assertEquals(1, errors.size)
+            coVerify(exactly = 0) { reminderDao.update(any()) }
+        }
+
     @Test
     fun `every extra counter action exposes rejected persistence and creation can be retried`() =
         runTest {

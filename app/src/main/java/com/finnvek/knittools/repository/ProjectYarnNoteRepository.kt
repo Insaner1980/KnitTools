@@ -14,6 +14,14 @@ import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import javax.inject.Singleton
 
+enum class ProjectYarnNoteEditResult {
+    Saved,
+    InvalidName,
+    Missing,
+    Conflict,
+    Failed,
+}
+
 @Singleton
 class ProjectYarnNoteRepository
     @Inject
@@ -39,6 +47,43 @@ class ProjectYarnNoteRepository
                 dao.delete(id)
             }
         }
+
+        suspend fun edit(
+            original: ProjectYarnNote,
+            draft: ProjectYarnNote,
+        ): ProjectYarnNoteEditResult =
+            transactionRunner.run {
+                if (draft.name.isBlank()) return@run ProjectYarnNoteEditResult.InvalidName
+                val current = dao.getById(original.id)?.toDomain() ?: return@run ProjectYarnNoteEditResult.Missing
+                if (current.projectId != original.projectId ||
+                    draft.projectId != original.projectId ||
+                    draft.id != original.id
+                ) {
+                    return@run ProjectYarnNoteEditResult.Missing
+                }
+                val normalized = draft.normalized()
+                // A retry after a committed but cancelled response is already satisfied.
+                if (current.sameEditableFields(normalized)) return@run ProjectYarnNoteEditResult.Saved
+                if (!current.sameEditableFields(original)) return@run ProjectYarnNoteEditResult.Conflict
+                val updated =
+                    current.copy(
+                        name = normalized.name,
+                        description = normalized.description,
+                        quantity = normalized.quantity,
+                        notes = normalized.notes,
+                        updatedAt = normalized.updatedAt,
+                    )
+                if (dao.update(updated.toEntity()) ==
+                    1
+                ) {
+                    ProjectYarnNoteEditResult.Saved
+                } else {
+                    ProjectYarnNoteEditResult.Missing
+                }
+            }
+
+        private fun ProjectYarnNote.sameEditableFields(other: ProjectYarnNote): Boolean =
+            name == other.name && description == other.description && quantity == other.quantity && notes == other.notes
 
         suspend fun saveToMyYarn(noteId: Long): Long? {
             return transactionRunner.run {

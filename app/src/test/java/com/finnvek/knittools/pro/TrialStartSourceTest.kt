@@ -26,6 +26,7 @@ class TrialStartSourceTest {
         val cleanStartBody = source.substringAfter("private fun isCleanUnstartedState")
 
         assertEqualsOne(needle = "editPreferencesSafely", source = startBody)
+        assertTrue(startBody.indexOf("sessionTimeSource.snapshot()") > startBody.indexOf("{ preferences ->"))
         assertTrue(startBody.contains("isCleanUnstartedState("))
         assertTrue(cleanStartBody.contains("startTimestamp == 0L"))
         assertTrue(cleanStartBody.contains("storedTiming == StoredTrialTiming.Legacy"))
@@ -99,6 +100,7 @@ class TrialStartSourceTest {
 
     private fun assertAtomicProgress(body: String) {
         assertEqualsOne(needle = "editPreferencesSafely", source = body)
+        assertTrue(body.indexOf("sessionTimeSource.snapshot()") > body.indexOf("{ preferences ->"))
         assertFalse(body.contains("safePreferencesData.first()"))
         assertTrue(body.contains("preferences.evaluateAndPersistTrialState(now)"))
     }

@@ -23,6 +23,7 @@ import com.finnvek.knittools.di.ApplicationScope
 import com.finnvek.knittools.di.IoDispatcher
 import com.finnvek.knittools.domain.calculator.CounterLogic
 import com.finnvek.knittools.domain.calculator.CounterState
+import com.finnvek.knittools.domain.calculator.MAX_MAIN_COUNTER_STEP_SIZE
 import com.finnvek.knittools.domain.calculator.ReadingLineResolutionKind
 import com.finnvek.knittools.domain.calculator.RepeatSectionLogic
 import com.finnvek.knittools.domain.calculator.RowMarker
@@ -65,6 +66,7 @@ import com.finnvek.knittools.repository.ProjectDocumentMutationResult
 import com.finnvek.knittools.repository.ProjectDocumentRepository
 import com.finnvek.knittools.repository.ProjectNotesSaveResult
 import com.finnvek.knittools.repository.ProjectReactivationResult
+import com.finnvek.knittools.repository.ProjectYarnNoteEditResult
 import com.finnvek.knittools.repository.ProjectYarnNoteRepository
 import com.finnvek.knittools.repository.RecoveryResolutionResult
 import com.finnvek.knittools.repository.ReminderMutationResult
@@ -82,8 +84,10 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.async
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
@@ -215,6 +219,11 @@ sealed interface CounterViewerEvent {
     ) : CounterViewerEvent
 }
 
+data class MainCounterStepFeedback(
+    val projectId: Long,
+    val delta: Int,
+)
+
 private data class PendingReminderDraft(
     val projectId: Long,
     val targetRow: Int,
@@ -277,6 +286,9 @@ class CounterViewModel
         val uiState: StateFlow<CounterUiState> = _uiState.asStateFlow()
         private val _viewerEvents = MutableSharedFlow<CounterViewerEvent>(extraBufferCapacity = 1)
         val viewerEvents: SharedFlow<CounterViewerEvent> = _viewerEvents.asSharedFlow()
+        private val _stepFeedback = MutableSharedFlow<MainCounterStepFeedback>(extraBufferCapacity = 1)
+        val stepFeedback: SharedFlow<MainCounterStepFeedback> = _stepFeedback.asSharedFlow()
+        private val stepSizeSaveMutex = Mutex()
         private var projectSelectionVersion = 0L
         private var pendingNotesBase: PendingNotesSave? = null
         private val notesSaveMutex = Mutex()
@@ -660,6 +672,23 @@ class CounterViewModel
                 ) > 0L
             }
         }
+
+        fun editProjectYarnNote(
+            original: ProjectYarnNote,
+            draft: ProjectYarnNote,
+        ): Deferred<ProjectYarnNoteEditResult> =
+            viewModelScope.async {
+                if (_uiState.value.projectId != original.projectId) {
+                    return@async ProjectYarnNoteEditResult.Missing
+                }
+                try {
+                    projectYarnNoteRepository.edit(original, draft)
+                } catch (cancellation: CancellationException) {
+                    throw cancellation
+                } catch (_: Exception) {
+                    ProjectYarnNoteEditResult.Failed
+                }
+            }
 
         fun deleteProjectYarnNote(noteId: Long) {
             launchProjectContentMutation {
@@ -1596,6 +1625,14 @@ class CounterViewModel
             val updatedCounter = CounterLogic.increment(state.counter)
             analytics.track(UsageEvent.COUNTER_INCREMENTED)
             if (updatedCounter.count == state.counter.count) return
+            if (state.counter.stepSize > 1) {
+                _stepFeedback.tryEmit(
+                    MainCounterStepFeedback(
+                        state.projectId,
+                        updatedCounter.count - state.counter.count,
+                    ),
+                )
+            }
             val resetStitch = state.stitchTrackingEnabled && updatedCounter.count != state.counter.count
             _uiState.update { it.withCounterChange(updatedCounter, resetStitch) }
             syncRepeatSectionCounters(updatedCounter.count, state.projectCounters, persist = true)
@@ -1614,6 +1651,14 @@ class CounterViewModel
             val updatedCounter = CounterLogic.decrement(state.counter)
             analytics.track(UsageEvent.COUNTER_DECREMENTED)
             if (updatedCounter.count == state.counter.count) return
+            if (state.counter.stepSize > 1) {
+                _stepFeedback.tryEmit(
+                    MainCounterStepFeedback(
+                        state.projectId,
+                        updatedCounter.count - state.counter.count,
+                    ),
+                )
+            }
             val resetStitch = state.stitchTrackingEnabled && updatedCounter.count != state.counter.count
             _uiState.update { it.withCounterChange(updatedCounter, resetStitch) }
             syncRepeatSectionCounters(updatedCounter.count, state.projectCounters, persist = true)
@@ -1667,6 +1712,14 @@ class CounterViewModel
             state.projectId ?: return
             val updatedCounter = CounterLogic.reset(state.counter)
             if (updatedCounter.count == state.counter.count) return
+            if (state.counter.stepSize > 1) {
+                _stepFeedback.tryEmit(
+                    MainCounterStepFeedback(
+                        state.projectId,
+                        updatedCounter.count - state.counter.count,
+                    ),
+                )
+            }
             val resetStitch = state.stitchTrackingEnabled && updatedCounter.count != state.counter.count
             _uiState.update { it.withCounterChange(updatedCounter, resetStitch) }
             syncRepeatSectionCounters(updatedCounter.count, state.projectCounters, persist = true)
@@ -1917,6 +1970,7 @@ class CounterViewModel
                         message = message,
                         isCompleted = false,
                     ),
+                    expectedReminder = reminder,
                 ) is ReminderMutationResult.Success
             }
         }
@@ -2174,13 +2228,40 @@ class CounterViewModel
             }
         }
 
-        fun setStepSize(size: Int) {
-            val state = _uiState.value
-            val updatedCounter = CounterLogic.setStepSize(state.counter, size)
-            _uiState.update { it.copy(counter = updatedCounter) }
-            viewModelScope.launch {
-                val id = state.projectId ?: return@launch
-                repository.updateProjectStepSize(id, updatedCounter.stepSize)
+        fun setStepSize(
+            size: Int,
+            expectedProjectId: Long? = _uiState.value.projectId,
+            onResult: (Boolean) -> Unit,
+        ): Job {
+            val selectionVersion = projectSelectionVersion
+            return viewModelScope.launch {
+                onResult(saveStepSize(size, expectedProjectId, selectionVersion))
+            }
+        }
+
+        private suspend fun saveStepSize(
+            size: Int,
+            expectedProjectId: Long?,
+            selectionVersion: Long,
+        ): Boolean {
+            val id = expectedProjectId ?: return false
+            return stepSizeSaveMutex.withLock {
+                if (_uiState.value.projectId != id ||
+                    selectionVersion != projectSelectionVersion ||
+                    size !in 1..MAX_MAIN_COUNTER_STEP_SIZE
+                ) {
+                    return@withLock false
+                }
+                val saved = tryProjectWrite { repository.updateProjectStepSize(id, size) }
+                if (_uiState.value.projectId != id || selectionVersion != projectSelectionVersion) {
+                    return@withLock false
+                }
+                if (saved) {
+                    _uiState.update { current ->
+                        current.copy(counter = CounterLogic.setStepSize(current.counter, size))
+                    }
+                }
+                saved
             }
         }
 

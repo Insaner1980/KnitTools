@@ -61,6 +61,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -148,7 +149,7 @@ private const val READING_LINE_BAND_ALPHA = 0.14f
 private const val VERTICAL_GUIDE_BAND_WIDTH_FRACTION = 0.035f
 private const val VERTICAL_GUIDE_BAND_ALPHA = 0.10f
 
-private data class PatternRenderState(
+internal data class PatternRenderState(
     val renderer: PdfPageRenderer?,
     val rendererError: String?,
     val renderedBitmap: Bitmap?,
@@ -1389,7 +1390,7 @@ fun LibraryPatternViewerScreen(
 }
 
 @Composable
-private fun rememberPatternRenderState(
+internal fun rememberPatternRenderState(
     patternUri: String?,
     currentPage: Int,
     onPageClamped: (Int) -> Unit,
@@ -1435,31 +1436,33 @@ private fun rememberPatternRenderState(
     }
 
     var pageRenderFailed by remember(renderer, currentPage) { mutableStateOf(false) }
-    val renderedBitmap by produceState<Bitmap?>(
-        initialValue = null,
-        key1 = renderer,
-        key2 = currentPage,
-    ) {
-        value = null
-        val activeRenderer =
-            renderer ?: run {
-                return@produceState
-            }
-        var pendingBitmap: Bitmap? = null
-        try {
-            val bitmap =
-                withContext(AppDispatchers.IO) {
-                    runCatching {
-                        activeRenderer.renderPage(currentPage, 1600)
-                    }.getOrNull()
-                        .also { pendingBitmap = it }
+    val renderedBitmap by key(renderer, currentPage) {
+        produceState<Bitmap?>(
+            initialValue = null,
+            key1 = renderer,
+            key2 = currentPage,
+        ) {
+            value = null
+            val activeRenderer =
+                renderer ?: run {
+                    return@produceState
                 }
-            pendingBitmap = null
-            pageRenderFailed = bitmap == null
-            value = bitmap
-            awaitDispose { bitmap?.recycle() }
-        } finally {
-            pendingBitmap?.recycle()
+            var pendingBitmap: Bitmap? = null
+            try {
+                val bitmap =
+                    withContext(AppDispatchers.IO) {
+                        runCatching {
+                            activeRenderer.renderPage(currentPage, 1600)
+                        }.getOrNull()
+                            .also { pendingBitmap = it }
+                    }
+                pendingBitmap = null
+                pageRenderFailed = bitmap == null
+                value = bitmap
+                awaitDispose { bitmap?.recycle() }
+            } finally {
+                pendingBitmap?.recycle()
+            }
         }
     }
 
@@ -2118,7 +2121,7 @@ private fun PatternAnnotationViewModel.patternInputActions() =
         onSelectAnnotation = ::selectAnnotationAt,
     )
 
-private fun PatternAnnotationViewModel.patternToolbarActions() =
+internal fun PatternAnnotationViewModel.patternToolbarActions() =
     PatternAnnotationToolbarActions(
         onToolSelected = ::setActiveTool,
         onPenArgbChange = ::setPenArgb,
@@ -2139,6 +2142,9 @@ private fun PatternAnnotationViewModel.patternToolbarActions() =
         onRedo = ::redo,
         onClearPage = ::clearEditablePage,
         onAddChartTracker = ::addChartTrackerFromSelected,
+        onEditText = ::editSelectedText,
+        onCancelTextEdit = ::cancelTextEdit,
+        onSaveTextEdit = ::saveTextEdit,
     )
 
 internal data class ReadingLineOverlayActions(

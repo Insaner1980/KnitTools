@@ -87,6 +87,15 @@ sonar {
 project(":app") {
     sonar {
         properties {
+            property(
+                "sonar.java.test.binaries",
+                tasks
+                    .named<JavaCompile>("compileDebugAndroidTestJavaWithJavac")
+                    .get()
+                    .destinationDirectory
+                    .get()
+                    .asFile,
+            )
             sonarProjectProperties
                 .getProperty("sonar.coverage.exclusions")
                 ?.takeIf { it.isNotBlank() }
@@ -107,4 +116,5 @@ project(":app") {
 
 tasks.named("sonar") {
     dependsOn(":app:jacocoDebugUnitTestReport")
+    dependsOn(":app:compileDebugAndroidTestJavaWithJavac")
 }

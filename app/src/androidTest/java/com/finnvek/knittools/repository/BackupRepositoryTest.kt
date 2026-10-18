@@ -11,6 +11,9 @@ import android.os.ParcelFileDescriptor
 import androidx.core.net.toUri
 import androidx.room.Room
 import androidx.room.withTransaction
+import androidx.sqlite.db.SupportSQLiteDatabase
+import androidx.sqlite.db.SupportSQLiteOpenHelper
+import androidx.sqlite.db.framework.FrameworkSQLiteOpenHelperFactory
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -37,6 +40,7 @@ import com.finnvek.knittools.data.local.ProjectDocumentSchemaConstraints
 import com.finnvek.knittools.data.local.RoomDatabaseTransactionRunner
 import com.finnvek.knittools.data.local.toDomain
 import com.finnvek.knittools.data.storage.AppFileStorage
+import com.finnvek.knittools.data.time.AndroidSessionTimeSource
 import com.finnvek.knittools.domain.calculator.evaluateActiveSessionTime
 import com.finnvek.knittools.domain.model.ActiveSessionTimeEvaluation
 import com.finnvek.knittools.domain.model.CounterHistoryAction
@@ -85,6 +89,7 @@ class BackupRepositoryTest {
     private lateinit var patternFiles: PatternFileReferenceCoordinator
     private lateinit var yarnCards: YarnCardRepository
     private var processProbe: BackupRestoreProcessProbe? = null
+    private var beforeSql: (String) -> Unit = {}
     private var selectionId = UUID.randomUUID()
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
@@ -96,7 +101,13 @@ class BackupRepositoryTest {
     @Before fun setUp() {
         val app = ApplicationProvider.getApplicationContext<Context>()
         val processPhase = BackupRestoreProcessProbe.phase()
-        directory = File(app.cacheDir, processPhase?.let { "backup-process-$it" } ?: "backup-test-${UUID.randomUUID()}")
+        val processRun = InstrumentationRegistry.getArguments().getString("backupCrashRun").orEmpty()
+        check(processRun.matches(Regex("[a-zA-Z0-9-]*")))
+        directory =
+            File(
+                app.cacheDir,
+                processPhase?.let { "backup-process-$it$processRun" } ?: "backup-test-${UUID.randomUUID()}",
+            )
         if (processPhase != null) {
             val verifying = InstrumentationRegistry.getArguments().getString("backupCrashVerify") == "true"
             check(directory.exists() == verifying)
@@ -117,7 +128,7 @@ class BackupRepositoryTest {
                 .addCallback(PatternAnnotationSchemaConstraints.callback)
                 .addCallback(ActiveSessionSchemaConstraints.callback)
                 .addCallback(ProjectDocumentSchemaConstraints.callback)
-                .apply { processProbe?.let { openHelperFactory(it.factory) } }
+                .openHelperFactory(processProbe?.factory ?: faultInjectingFactory())
                 .build()
         patternFiles = PatternFileReferenceCoordinator()
         yarnCards =
@@ -136,6 +147,125 @@ class BackupRepositoryTest {
         scope.cancel()
         directory.deleteRecursively()
     }
+
+    private fun faultInjectingFactory() =
+        SupportSQLiteOpenHelper.Factory { configuration ->
+            val helper = FrameworkSQLiteOpenHelperFactory().create(configuration)
+
+            fun wrap(database: SupportSQLiteDatabase): SupportSQLiteDatabase =
+                object : SupportSQLiteDatabase by database {
+                    override fun execSQL(sql: String) {
+                        beforeSql(sql)
+                        database.execSQL(sql)
+                    }
+
+                    override fun execSQL(
+                        sql: String,
+                        bindArgs: Array<out Any?>,
+                    ) {
+                        beforeSql(sql)
+                        database.execSQL(sql, bindArgs)
+                    }
+                }
+            object : SupportSQLiteOpenHelper by helper {
+                override val writableDatabase get() = wrap(helper.writableDatabase)
+
+                override val readableDatabase get() = wrap(helper.readableDatabase)
+            }
+        }
+
+    @Test fun sequenceReseedFailureRollsBackEveryTableAndSequence() =
+        runBlocking {
+            seed()
+            val archive = File(directory, "sequence-backup")
+            repository.export(archive.toUri())
+            prepare(archive.toUri())
+            val before = File(directory, "before-sequence")
+            BackupTables.export(db.openHelper.writableDatabase, before, { _, _ -> }, check = {})
+            val originalSequence = number("SELECT SUM(seq) FROM sqlite_sequence")
+            var injected = false
+            beforeSql = { sql ->
+                if (sql.startsWith("UPDATE sqlite_sequence")) {
+                    injected = true
+                    throw android.database.sqlite.SQLiteException("Synthetic reseed failure")
+                }
+            }
+            expectBackupFailure { repository.restore(selectionId) }
+            beforeSql = {}
+            assertTrue(injected)
+            val after = File(directory, "after-sequence")
+            BackupTables.export(db.openHelper.writableDatabase, after, { _, _ -> }, check = {})
+            BackupFormat.tables.forEach { table ->
+                assertEquals(
+                    File(before, "tables/$table.jsonl").readText(),
+                    File(after, "tables/$table.jsonl").readText(),
+                )
+            }
+            assertEquals(originalSequence, number("SELECT SUM(seq) FROM sqlite_sequence"))
+            assertFalse(context.filesDir.walkTopDown().any { it.isFile && it.name.startsWith("restore-") })
+        }
+
+    @Test fun missingPublishedFileBeforeCommitRollsBackToOriginalReferences() =
+        runBlocking {
+            seed()
+            val references = BackupTables.references(db.openHelper.writableDatabase)
+            val archive = File(directory, "missing-backup")
+            repository.export(archive.toUri())
+            prepare(archive.toUri())
+            var deleted = false
+            beforeSql = { sql ->
+                if (!deleted && sql.startsWith("DELETE FROM ")) {
+                    val published = context.filesDir.walkTopDown().first { it.isFile && it.name.startsWith("restore-") }
+                    check(published.delete())
+                    deleted = true
+                }
+            }
+            expectBackupFailure { repository.restore(selectionId) }
+            beforeSql = {}
+            assertTrue(deleted)
+            assertEquals("Cardigan", text("SELECT name FROM counter_projects"))
+            assertEquals(references, BackupTables.references(db.openHelper.writableDatabase))
+            references.forEach { assertTrue(AppFileStorage.resolveAppOwnedFile(context, it.toUri())?.isFile == true) }
+            assertFalse(context.filesDir.walkTopDown().any { it.isFile && it.name.startsWith("restore-") })
+        }
+
+    @Test fun restoredDataAllowsNewProjectCounterAndSessionWithoutOldIdentityReuse() =
+        runBlocking {
+            seed()
+            val oldToken = checkNotNull(db.sessionDao().getActiveSession()).sessionToken
+            val archive = File(directory, "next-mutation-backup")
+            repository.export(archive.toUri())
+            prepare(archive.toUri())
+            repository.restore(selectionId)
+            val restoredProject = db.counterProjectDao().getAllProjectsOnce().single()
+            val restoredSession = checkNotNull(db.sessionDao().getActiveSession())
+            val counters =
+                RoomCounterTestFixture(db, context)
+                    .counterRepository(
+                        sessionTimeSource = AndroidSessionTimeSource(context),
+                    )
+            assertEquals(StopSessionResult.StaleAction, counters.discardActiveSession(oldToken))
+            assertEquals(StopSessionResult.Discarded, counters.discardActiveSession(restoredSession.sessionToken))
+            val created =
+                counters.createProject(
+                    "After restore",
+                    canCreateAdditionalProjects = true,
+                ) as ProjectCreationResult.Created
+            assertTrue(created.projectId > restoredProject.id)
+            val started = counters.startSession(created.projectId) as StartSessionResult.Started
+            checkNotNull(started.session.timingAnchors.bootCount)
+            counters.applyMainCounterChange(
+                created.projectId,
+                com.finnvek.knittools.domain.model.MainCounterChange.Increment,
+            )
+            val active = checkNotNull(db.sessionDao().getActiveSession())
+            assertEquals(1, active.trustedRowsWorked)
+            assertEquals(1, db.counterProjectDao().getProject(created.projectId)?.count)
+            val stopped = counters.stopSession(started.session.sessionToken, active.checkpointedDurationSeconds, 1, 1)
+            assertTrue(stopped is StopSessionResult.Saved)
+            assertEquals(null, db.sessionDao().getActiveSession())
+            assertEquals(12, db.counterProjectDao().getProject(restoredProject.id)?.count)
+        }
 
     @Test fun restoredSharedCardCannotStealAnotherNotesUsage() =
         runBlocking {
@@ -204,7 +334,7 @@ class BackupRepositoryTest {
                     verticalReadingGuideXFraction = 0.75f,
                     secondaryCount = 17,
                     secondaryCounterUsed = true,
-                    stepSize = 7,
+                    stepSize = Int.MAX_VALUE,
                     notesCreated = true,
                     createdAt = 1_600_000_000_000L,
                     updatedAt = 1_800_000_000_000L,
@@ -377,7 +507,8 @@ class BackupRepositoryTest {
             assertEquals(File(directory, "file-hashes.txt").readText(), hashes.joinToString("\n"))
             assertTrue(File(context.noBackupFilesDir, "manual-backup").listFiles().orEmpty().isEmpty())
             val app = ApplicationProvider.getApplicationContext<Context>()
-            val proof = File(app.cacheDir, "backup-process-proof-$phase")
+            val processRun = InstrumentationRegistry.getArguments().getString("backupCrashRun").orEmpty()
+            val proof = File(app.cacheDir, "backup-process-proof-$phase$processRun")
             check(!proof.exists())
             File(directory, "before").copyRecursively(File(proof, "before"))
             after.copyRecursively(File(proof, "after"))

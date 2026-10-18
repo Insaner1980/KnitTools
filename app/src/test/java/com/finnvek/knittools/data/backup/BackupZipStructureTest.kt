@@ -73,6 +73,36 @@ class BackupZipStructureTest {
         }
     }
 
+    @Test fun zip64LocalOffsetsAreCheckedAgainstLocalNames() {
+        val archive = temporary.newFile()
+        ZipOutputStream(archive.outputStream()).use {
+            it.putNextEntry(ZipEntry("example"))
+            it.closeEntry()
+        }
+        val original = archive.readBytes()
+        val end = original.size - 22
+        val buffer = ByteBuffer.wrap(original).order(ByteOrder.LITTLE_ENDIAN)
+        val central = buffer.getInt(end + 16)
+        val nameEnd = central + 46 + "example".length
+        buffer.putInt(central + 42, -1)
+        buffer.putShort(central + 30, 12)
+        buffer.putInt(end + 12, buffer.getInt(end + 12) + 12)
+        val extra =
+            ByteBuffer
+                .allocate(12)
+                .order(ByteOrder.LITTLE_ENDIAN)
+                .putShort(1)
+                .putShort(8)
+                .putLong(0)
+                .array()
+        val bytes = original.copyOfRange(0, nameEnd) + extra + original.copyOfRange(nameEnd, original.size)
+        archive.writeBytes(bytes)
+        BackupZipStructure.verify(archive) {}
+        bytes[30] = 'X'.code.toByte()
+        archive.writeBytes(bytes)
+        assertThrows(BackupException::class.java) { BackupZipStructure.verify(archive) {} }
+    }
+
     @Test fun falseCountsOversizedDirectoryAndInvalidOffsetsAreRejectedBeforeZipAllocation() {
         val archive = temporary.newFile()
         ZipOutputStream(archive.outputStream()).use {

@@ -210,6 +210,44 @@ class PatternPdfExporterTest {
             assertTempDirectoryEmpty()
         }
 
+    @Test
+    fun exportCannotOverwriteItsSource() =
+        runBlocking {
+            val source = createPdf("source-alias.pdf", pageCount = 2)
+            val original = source.readBytes()
+            val failure = exportEmptyPdfFailure(exporter, source, source, mutableListOf())
+            assertArrayEquals("The source PDF must stay byte-identical", original, source.readBytes())
+            assertTrue("An aliased destination must be rejected", failure != null)
+            assertTempDirectoryEmpty()
+        }
+
+    @Test
+    fun exportCannotOverwriteSourceThroughFileProviderAlias() =
+        runBlocking {
+            val source = File(context.filesDir, "pattern_captures/161992/source.pdf")
+            source.parentFile!!.mkdirs()
+            createPdf("alias-input.pdf", 1).copyTo(source, overwrite = true)
+            val before = source.readBytes()
+            try {
+                val failure =
+                    runCatching {
+                        exporter.export(
+                            source.toUri(),
+                            AppFileStorage.fileProviderUri(context, source),
+                            emptyList(),
+                            emptyMap(),
+                            renderStyle(),
+                        ) {
+                        }
+                    }.exceptionOrNull()
+                assertArrayEquals(before, source.readBytes())
+                assertTrue(failure != null)
+                assertTempDirectoryEmpty()
+            } finally {
+                source.delete()
+            }
+        }
+
     private suspend fun exportEmptyPdfFailure(
         pdfExporter: PatternPdfExporter,
         source: File,

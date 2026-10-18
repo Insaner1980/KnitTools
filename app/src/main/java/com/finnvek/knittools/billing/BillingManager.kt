@@ -454,7 +454,11 @@ class BillingManager
         internal fun applyPurchaseFlowResult(result: BillingResult) {
             if (result.responseCode == BillingClient.BillingResponseCode.OK) return
             _purchaseFlowInFlight.value = false
-            emitPurchaseMessage(result.toUserMessage())
+            if (result.responseCode == BillingClient.BillingResponseCode.ITEM_ALREADY_OWNED) {
+                scope.launch { restoreAlreadyOwnedPurchase() }
+            } else {
+                emitPurchaseMessage(result.toUserMessage())
+            }
         }
 
         private fun applyProductUnavailable(message: BillingUserMessage) {

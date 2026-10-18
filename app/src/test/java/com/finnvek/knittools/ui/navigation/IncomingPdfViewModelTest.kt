@@ -27,8 +27,10 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runCurrent
@@ -290,6 +292,127 @@ class IncomingPdfViewModelTest {
             coVerify(exactly = 1) { savedPatternRepository.deleteLocalPatternFileIfUnused(NEW_PDF_URI) }
             coVerify(exactly = 0) { savedPatternRepository.deleteLocalPatternFileIfUnused(stagedUri) }
         }
+
+    @Test
+    fun `duplicate library taps publish once and emit one outcome`() =
+        runTest { assertDuplicateDelivery(attach = false) }
+
+    @Test
+    fun `duplicate attachment taps publish once and emit one outcome`() =
+        runTest { assertDuplicateDelivery(attach = true) }
+
+    @Test
+    fun `library owner cancellation before and after publication retains the staged file`() =
+        runTest { assertOwnerCancellation(attach = false) }
+
+    @Test
+    fun `attachment owner cancellation before and after publication retains the staged file`() =
+        runTest { assertOwnerCancellation(attach = true) }
+
+    @Test
+    fun `failed attachment preserves pending identity and retry opens the initiating project`() =
+        runTest {
+            val model = viewModel(handle(stagedUri))
+            val outcomes = mutableListOf<IncomingPdfOutcome>()
+            backgroundScope.launch(
+                UnconfinedTestDispatcher(testScheduler),
+            ) { model.outcomes.collect { outcomes.add(it) } }
+            coEvery { counterRepository.attachPattern(7L, stagedUri, any(), 0, null) } throws
+                IllegalStateException("Controlled pre-commit failure")
+            model.attachToProject(7L, "A")
+            advanceUntilIdle()
+            assertEquals(listOf(IncomingPdfOutcome.SaveFailed), outcomes)
+            assertEquals(stagedUri, model.pending.value?.localUri)
+            coEvery { counterRepository.attachPattern(7L, stagedUri, any(), 0, null) } returns
+                mockk<ProjectDocumentMutationResult.Added>()
+            model.attachToProject(7L, "A")
+            advanceUntilIdle()
+            assertEquals(IncomingPdfOutcome.OpenProject(7L), outcomes.last())
+            assertNull(model.pending.value)
+            coVerify(exactly = 0) { savedPatternRepository.deleteLocalPatternFileIfUnused(stagedUri) }
+        }
+
+    private fun mockPublication(
+        attach: Boolean,
+        publish: suspend () -> Unit,
+    ) {
+        if (attach) {
+            coEvery { counterRepository.attachPattern(7L, stagedUri, any(), 0, null) } coAnswers {
+                publish()
+                mockk<ProjectDocumentMutationResult.Added>()
+            }
+        } else {
+            coEvery { savedPatternRepository.saveImportedPatternIfMissing(stagedUri, any()) } coAnswers {
+                publish()
+                11L
+            }
+        }
+    }
+
+    private suspend fun TestScope.assertDuplicateDelivery(attach: Boolean) {
+        val release = CompletableDeferred<Unit>()
+        var writes = 0
+
+        suspend fun publish() {
+            release.await()
+            writes++
+        }
+        mockPublication(attach, ::publish)
+        val model = viewModel(handle(stagedUri))
+        val outcomes = mutableListOf<IncomingPdfOutcome>()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { model.outcomes.collect { outcomes.add(it) } }
+
+        fun save() = if (attach) model.attachToProject(7L, "A") else model.saveToLibrary("A")
+        save()
+        runCurrent()
+        save()
+        model.discard()
+        runCurrent()
+        assertEquals(0, writes)
+        assertTrue(model.busy.value)
+        release.complete(Unit)
+        advanceUntilIdle()
+        assertEquals(1, writes)
+        assertEquals(
+            listOf(if (attach) IncomingPdfOutcome.OpenProject(7L) else IncomingPdfOutcome.OpenSavedPattern(11L)),
+            outcomes,
+        )
+        assertNull(model.pending.value)
+        coVerify(exactly = 0) { savedPatternRepository.deleteLocalPatternFileIfUnused(stagedUri) }
+    }
+
+    private suspend fun TestScope.assertOwnerCancellation(attach: Boolean) {
+        for (afterCommit in listOf(false, true)) {
+            val release = CompletableDeferred<Unit>()
+            var published = false
+
+            suspend fun publish() {
+                if (!afterCommit) release.await()
+                published = true
+                if (afterCommit) release.await()
+            }
+            mockPublication(attach, ::publish)
+            val model = viewModel(handle(stagedUri))
+            val outcomes = mutableListOf<IncomingPdfOutcome>()
+            val collector =
+                backgroundScope.launch(
+                    UnconfinedTestDispatcher(testScheduler),
+                ) { model.outcomes.collect { outcomes.add(it) } }
+            if (attach) model.attachToProject(7L, "A") else model.saveToLibrary("A")
+            runCurrent()
+            assertEquals(afterCommit, published)
+            models.clear()
+            release.complete(Unit)
+            advanceUntilIdle()
+            assertEquals(afterCommit, published)
+            assertEquals(stagedUri, model.pending.value?.localUri)
+            assertTrue(outcomes.isEmpty())
+            assertFalse(model.busy.value)
+            assertTrue(File(URI(stagedUri)).isFile)
+            collector.cancel()
+        }
+        coVerify(exactly = 0) { savedPatternRepository.deleteLocalPatternFileIfUnused(stagedUri) }
+    }
 
     private suspend fun TestScope.assertReplacementWaitsForSave(
         releaseSave: CompletableDeferred<Unit>,

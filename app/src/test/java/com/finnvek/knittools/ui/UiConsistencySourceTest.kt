@@ -2,6 +2,8 @@ package com.finnvek.knittools.ui
 
 import com.finnvek.knittools.ProjectSourceFiles
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.nio.file.Files
 import java.nio.file.Path
@@ -13,6 +15,19 @@ import java.nio.file.Path
  * paikallinen kopio kaatuu testiin eikä huku vanhojen sekaan.
  */
 class UiConsistencySourceTest {
+    @Test
+    fun `main step uses shared face and form without modifying image buttons`() {
+        val workspace = screenSources().getValue("counter/CounterWorkspaceSections.kt")
+        val sheet = screenSources().getValue("counter/MainCounterStepSheet.kt")
+        assertTrue(workspace.contains("CounterStepButtonFace("))
+        assertFalse(workspace.contains("SegmentedToggle("))
+        assertFalse(workspace.contains("drawCircle("))
+        assertTrue(sheet.contains("FormSheet("))
+        assertTrue(sheet.contains("SegmentedToggle("))
+        assertTrue(sheet.contains("NumberInputField("))
+        assertEquals(3, Regex("CounterImageButton\\(").findAll(workspace).count())
+    }
+
     @Test
     fun `screens use card tokens instead of raw surface roles`() {
         // Laskurin omat ohjaimet (askelpainikkeet, toistolaskuri, edistymisraita) eivät ole kortteja.

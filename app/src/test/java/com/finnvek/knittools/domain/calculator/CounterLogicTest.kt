@@ -6,6 +6,28 @@ import org.junit.Test
 
 class CounterLogicTest {
     @Test
+    fun `step input accepts positive bounded integers only`() {
+        for (value in listOf("1", "2", "5", "99", " 12 ")) {
+            assertEquals(value.trim().toInt(), parseMainCounterStepSize(value))
+        }
+        for (value in listOf("", "0", "-1", "100", "1.5", "1,5", "1e2", "+5", "999999999999")) {
+            assertNull(value, parseMainCounterStepSize(value))
+        }
+    }
+
+    @Test
+    fun `one undo restores the entire positive or negative step including a clamped step`() {
+        val original = CounterState(count = 12, stepSize = 5)
+        assertEquals(17, CounterLogic.increment(original).count)
+        assertEquals(7, CounterLogic.decrement(original).count)
+        assertEquals(12, CounterLogic.undo(CounterLogic.increment(original)).count)
+        assertEquals(12, CounterLogic.undo(CounterLogic.decrement(original)).count)
+        val nearZero = CounterState(count = 2, stepSize = 5)
+        assertEquals(0, CounterLogic.decrement(nearZero).count)
+        assertEquals(2, CounterLogic.undo(CounterLogic.decrement(nearZero)).count)
+    }
+
+    @Test
     fun `increment increases count by step size`() {
         val state = CounterState(count = 5, stepSize = 1)
         val result = CounterLogic.increment(state)

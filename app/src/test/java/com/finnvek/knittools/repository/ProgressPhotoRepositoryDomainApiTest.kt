@@ -160,6 +160,13 @@ class ProgressPhotoRepositoryDomainApiTest {
             assertEquals(42, dao.lastInserted?.rowNumber)
             assertEquals(100, dao.lastInserted?.note?.length)
             verify { storage.deleteTemporarySource(context, sourceUri) }
+
+            withUriFromFile(targetFile, targetUriString) {
+                repository.savePhoto(7L, sourceUri, rowNumber = 42, note = "a".repeat(99) + "\uD83D\uDE00")
+            }
+            assertEquals("a".repeat(99), dao.lastInserted?.note)
+            assertEquals(42, dao.lastInserted?.rowNumber)
+            assertEquals(targetUriString, dao.lastInserted?.photoUri)
         }
 
     @Test
@@ -230,6 +237,19 @@ class ProgressPhotoRepositoryDomainApiTest {
             repository.updatePhotoNote(4L, "a".repeat(120))
 
             assertEquals(mapOf(3L to null, 4L to "a".repeat(100)), dao.updatedNotes)
+
+            val boundaryNotes =
+                listOf(null to null, "" to null) +
+                    (99..101).map { length -> "a".repeat(length) to "a".repeat(minOf(length, 100)) } +
+                    (98..99).map { length ->
+                        val prefix = "a".repeat(length)
+                        val input = prefix + "\uD83D\uDE00"
+                        input to if (length == 98) input else prefix
+                    }
+            for ((note, expected) in boundaryNotes) {
+                repository.updatePhotoNote(5L, note)
+                assertEquals(expected, dao.updatedNotes[5L])
+            }
         }
 
     private fun progressPhotoPruningFixture(dispatcher: CoroutineDispatcher): ProgressPhotoPruningFixture {

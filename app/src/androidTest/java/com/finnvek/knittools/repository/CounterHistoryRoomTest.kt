@@ -32,6 +32,35 @@ import org.junit.Test
 import java.util.UUID
 
 class CounterHistoryRoomTest {
+    @Test fun mainStepSurvivesReopenAndEachTapHasOneUndoIncludingZeroClamp() =
+        runBlocking {
+            val dao = database.counterProjectDao()
+            val id = dao.insert(CounterProjectEntity(name = "Main step", count = 12, targetRows = 20))
+            val other = dao.insert(CounterProjectEntity(name = "Other step", stepSize = 2))
+            assertTrue(repository.updateProjectStepSize(id, 5))
+            assertFalse(repository.updateProjectStepSize(id, 0))
+            assertFalse(repository.updateProjectStepSize(id, 100))
+            database.close()
+            setup()
+            assertEquals(5, repository.getProject(id)?.stepSize)
+            assertEquals(2, repository.getProject(other)?.stepSize)
+            assertTrue(repository.applyMainCounterChange(id, MainCounterChange.Increment))
+            assertEquals(17, repository.getProject(id)?.count)
+            assertEquals(20, repository.getProject(id)?.targetRows)
+            assertTrue(repository.applyMainCounterChange(id, MainCounterChange.Undo))
+            assertEquals(12, repository.getProject(id)?.count)
+            assertTrue(repository.applyMainCounterChange(id, MainCounterChange.Decrement))
+            assertEquals(7, repository.getProject(id)?.count)
+            assertTrue(repository.applyMainCounterChange(id, MainCounterChange.Undo))
+            assertEquals(12, repository.getProject(id)?.count)
+            database.counterProjectDao().updateCount(id, 2, 123L)
+            assertTrue(repository.applyMainCounterChange(id, MainCounterChange.Decrement))
+            assertEquals(0, repository.getProject(id)?.count)
+            assertFalse(repository.applyMainCounterChange(id, MainCounterChange.Decrement))
+            assertTrue(repository.applyMainCounterChange(id, MainCounterChange.Undo))
+            assertEquals(2, repository.getProject(id)?.count)
+        }
+
     private lateinit var database: KnitToolsDatabase
     private lateinit var repository: CounterRepository
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)

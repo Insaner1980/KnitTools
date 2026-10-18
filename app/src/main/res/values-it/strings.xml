@@ -522,6 +522,7 @@
     </plurals>
     <string name="insights_chart_axis_today">oggi</string>
     <string name="insights_chart_a11y_daily">Tempo giornaliero %1$s, %2$s, %3$s, il più lungo %4$s</string>
+    <string name="insights_chart_a11y_weekly">Tempo settimanale %1$s, %2$s, %3$s, il più lungo %4$s</string>
     <string name="insights_chart_a11y_monthly">Tempo mensile %1$s, %2$s, %3$s, il più lungo %4$s</string>
     <string name="insights_chart_a11y_next">Barra successiva</string>
     <string name="insights_chart_a11y_previous">Barra precedente</string>
@@ -1117,4 +1118,22 @@
     <string name="project_actions_overview_subtitle">Filato, modello, note e dettagli</string>
     <string name="project_actions_section_work_session">Sessione di lavoro</string>
     <string name="project_overview_amount_unknown">Sconosciuto</string>
+    <string name="counter_step_rows_title">Ferri per tocco</string>
+    <string name="counter_step_rounds_title">Giri per tocco</string>
+    <string name="counter_step_repeats_title">Ripetizioni per tocco</string>
+    <string name="counter_step_custom_title">%1$s per tocco</string>
+    <string name="counter_step_description">Scegli quanto aggiungere o sottrarre con ogni tocco.</string>
+    <string name="counter_step_custom_amount">Quantità personalizzata</string>
+    <string name="counter_step_invalid">Inserisci un numero intero da 1 a %1$d.</string>
+    <string name="counter_step_save_failed">Impossibile salvare il passo. Riprova.</string>
+    <string name="counter_step_change_description">%1$s: %2$d. Modifica.</string>
+    <string name="counter_step_increase">Aumenta di %1$d. %2$s.</string>
+    <string name="counter_step_decrease">Diminuisci di %1$d. %2$s.</string>
+    <string name="counter_step_multiplier">×%1$d</string>
+    <string name="counter_step_delta">%1$+d</string>
+    <string name="project_yarn_edit_title">Modifica filato del progetto</string>
+    <string name="project_yarn_edit_conflict">Questa nota sul filato è cambiata durante la modifica. Chiudila e riaprila per vedere la versione più recente.</string>
+    <string name="project_yarn_edit_missing">Questa nota sul filato non appartiene più al progetto. Chiudi la modifica.</string>
+    <string name="project_yarn_edit_invalid">Inserisci un nome per il filato.</string>
+    <string name="project_yarn_edit_failed">Impossibile salvare le modifiche. La bozza è ancora qui. Riprova.</string>
 </resources>

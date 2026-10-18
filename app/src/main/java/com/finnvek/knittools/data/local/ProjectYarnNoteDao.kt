@@ -2,6 +2,7 @@ package com.finnvek.knittools.data.local
 
 import androidx.room.Dao
 import androidx.room.Query
+import androidx.room.Update
 import androidx.room.Upsert
 import kotlinx.coroutines.flow.Flow
 
@@ -21,6 +22,9 @@ interface ProjectYarnNoteDao {
 
     @Upsert
     suspend fun upsert(note: ProjectYarnNoteEntity): Long
+
+    @Update
+    suspend fun update(note: ProjectYarnNoteEntity): Int
 
     @Query(
         """

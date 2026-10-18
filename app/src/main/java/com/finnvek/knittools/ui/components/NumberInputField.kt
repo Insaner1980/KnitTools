@@ -52,6 +52,7 @@ data class NumberInputOptions(
     val allowZero: Boolean = true,
     // Esimerkkiarvo tyhjään kenttään: kertoo millaista lukua kysytään ilman erillistä ohjetekstiä.
     val placeholder: String? = null,
+    val readOnly: Boolean = false,
 )
 
 @Composable
@@ -115,6 +116,7 @@ fun NumberInputField(
         Spacer(modifier = Modifier.height(8.dp))
         TextField(
             value = value,
+            readOnly = options.readOnly,
             onValueChange = { newValue ->
                 onValueChange(
                     if (options.preserveRawInput) {

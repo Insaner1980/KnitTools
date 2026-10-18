@@ -2,7 +2,7 @@ package com.finnvek.knittools.data.storage
 
 import android.content.Context
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
+import android.graphics.ImageDecoder
 import android.net.Uri
 import androidx.core.graphics.scale
 import androidx.core.net.toUri
@@ -127,18 +127,13 @@ class ProgressPhotoStorage
             maxDimension: Int,
         ): Bitmap? =
             runCatching {
-                val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-                context.contentResolver.openInputStream(sourceUri)?.use { input ->
-                    BitmapFactory.decodeStream(input, null, bounds)
-                }
-                if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return null
-
-                val options =
-                    BitmapFactory.Options().apply {
-                        inSampleSize = calculateBitmapInSampleSize(bounds.outWidth, bounds.outHeight, maxDimension)
-                    }
-                context.contentResolver.openInputStream(sourceUri)?.use { input ->
-                    BitmapFactory.decodeStream(input, null, options)
+                ImageDecoder.decodeBitmap(
+                    ImageDecoder.createSource(context.contentResolver, sourceUri),
+                ) { decoder, info, _ ->
+                    decoder.allocator = ImageDecoder.ALLOCATOR_SOFTWARE
+                    decoder.setTargetSampleSize(
+                        calculateBitmapInSampleSize(info.size.width, info.size.height, maxDimension),
+                    )
                 }
             }.getOrNull()
 

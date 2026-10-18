@@ -508,6 +508,7 @@
     </plurals>
     <string name="insights_chart_axis_today">idag</string>
     <string name="insights_chart_a11y_daily">Daglig tid för %1$s, %2$s, %3$s, längst %4$s</string>
+    <string name="insights_chart_a11y_weekly">Veckovis tid för %1$s, %2$s, %3$s, längst %4$s</string>
     <string name="insights_chart_a11y_monthly">Månatlig tid för %1$s, %2$s, %3$s, längst %4$s</string>
     <string name="insights_chart_a11y_next">Nästa stapel</string>
     <string name="insights_chart_a11y_previous">Föregående stapel</string>
@@ -1106,4 +1107,22 @@
     <string name="project_actions_overview_subtitle">Garn, mönster, anteckningar och detaljer</string>
     <string name="project_actions_section_work_session">Arbetspass</string>
     <string name="project_overview_amount_unknown">Okänt</string>
+    <string name="counter_step_rows_title">Varv per tryck</string>
+    <string name="counter_step_rounds_title">Rundvarv per tryck</string>
+    <string name="counter_step_repeats_title">Upprepningar per tryck</string>
+    <string name="counter_step_custom_title">%1$s per tryck</string>
+    <string name="counter_step_description">Välj hur mycket ett tryck lägger till eller drar ifrån.</string>
+    <string name="counter_step_custom_amount">Eget antal</string>
+    <string name="counter_step_invalid">Ange ett heltal mellan 1 och %1$d.</string>
+    <string name="counter_step_save_failed">Det gick inte att spara steglängden. Försök igen.</string>
+    <string name="counter_step_change_description">%1$s: %2$d. Ändra.</string>
+    <string name="counter_step_increase">Öka med %1$d. %2$s.</string>
+    <string name="counter_step_decrease">Minska med %1$d. %2$s.</string>
+    <string name="counter_step_multiplier">×%1$d</string>
+    <string name="counter_step_delta">%1$+d</string>
+    <string name="project_yarn_edit_title">Redigera projektgarn</string>
+    <string name="project_yarn_edit_conflict">Garnanteckningen ändrades medan du redigerade. Stäng och öppna den igen för att se den senaste versionen.</string>
+    <string name="project_yarn_edit_missing">Garnanteckningen tillhör inte längre detta projekt. Stäng redigeraren.</string>
+    <string name="project_yarn_edit_invalid">Ange ett garnnamn.</string>
+    <string name="project_yarn_edit_failed">Det gick inte att spara ändringarna. Ditt utkast finns kvar. Försök igen.</string>
 </resources>

@@ -61,6 +61,7 @@ class ProjectCounterRepository
                 val project =
                     projectDao.getProject(validated.projectId)?.toDomain()
                         ?: return@runMutation ProjectCounterMutationResult.ProjectUnavailable
+                if (project.isCompleted) return@runMutation ProjectCounterMutationResult.StaleAction
                 val initialCounter =
                     if (validated.counterType == ProjectCounterType.REPEAT_SECTION) {
                         RepeatSectionLogic.updatePosition(validated, project.count)

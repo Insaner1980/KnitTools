@@ -3,6 +3,7 @@ package com.finnvek.knittools.ui.components
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -91,12 +92,15 @@ fun ContinueProjectCard(
                     )
                 }
                 Spacer(modifier = Modifier.height(ProjectListDimens.ProgressGroupTopGap))
-                Row(horizontalArrangement = Arrangement.spacedBy(ProjectListDimens.HeroContentGap)) {
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(ProjectListDimens.HeroContentGap),
+                    verticalArrangement = Arrangement.spacedBy(ProjectListDimens.ItemLineGap),
+                ) {
                     Text(
                         text = countText,
                         style = MaterialTheme.typography.projectHeroCount,
                         color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.weight(1f).alignByBaseline(),
+                        modifier = Modifier.alignByBaseline(),
                     )
                     targetStatus?.let {
                         Text(

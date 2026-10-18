@@ -508,6 +508,7 @@
     </plurals>
     <string name="insights_chart_axis_today">vandaag</string>
     <string name="insights_chart_a11y_daily">Dagelijkse tijd voor %1$s, %2$s, %3$s, langst %4$s</string>
+    <string name="insights_chart_a11y_weekly">Wekelijkse tijd voor %1$s, %2$s, %3$s, langst %4$s</string>
     <string name="insights_chart_a11y_monthly">Maandelijkse tijd voor %1$s, %2$s, %3$s, langst %4$s</string>
     <string name="insights_chart_a11y_next">Volgende balk</string>
     <string name="insights_chart_a11y_previous">Vorige balk</string>
@@ -1089,4 +1090,22 @@
     <string name="project_actions_overview_subtitle">Garen, patroon, notities en details</string>
     <string name="project_actions_section_work_session">Werksessie</string>
     <string name="project_overview_amount_unknown">Onbekend</string>
+    <string name="counter_step_rows_title">Naalden per tik</string>
+    <string name="counter_step_rounds_title">Toeren per tik</string>
+    <string name="counter_step_repeats_title">Herhalingen per tik</string>
+    <string name="counter_step_custom_title">%1$s per tik</string>
+    <string name="counter_step_description">Kies hoeveel elke tik toevoegt of aftrekt.</string>
+    <string name="counter_step_custom_amount">Eigen aantal</string>
+    <string name="counter_step_invalid">Voer een geheel getal van 1 tot %1$d in.</string>
+    <string name="counter_step_save_failed">De stapgrootte kon niet worden opgeslagen. Probeer het opnieuw.</string>
+    <string name="counter_step_change_description">%1$s: %2$d. Wijzigen.</string>
+    <string name="counter_step_increase">Verhoog met %1$d. %2$s.</string>
+    <string name="counter_step_decrease">Verlaag met %1$d. %2$s.</string>
+    <string name="counter_step_multiplier">×%1$d</string>
+    <string name="counter_step_delta">%1$+d</string>
+    <string name="project_yarn_edit_title">Projectgaren bewerken</string>
+    <string name="project_yarn_edit_conflict">Deze garennotitie is tijdens het bewerken gewijzigd. Sluit en open deze opnieuw om de nieuwste versie te bekijken.</string>
+    <string name="project_yarn_edit_missing">Deze garennotitie hoort niet meer bij dit project. Sluit de editor.</string>
+    <string name="project_yarn_edit_invalid">Voer een garennaam in.</string>
+    <string name="project_yarn_edit_failed">De wijzigingen konden niet worden opgeslagen. Je concept blijft bewaard. Probeer het opnieuw.</string>
 </resources>

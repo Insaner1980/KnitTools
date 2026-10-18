@@ -1,5 +1,6 @@
 package com.finnvek.knittools.ui.screens.insights
 
+import com.finnvek.knittools.R
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
@@ -10,6 +11,22 @@ import java.time.LocalDate
 
 class InsightsChartModelTest {
     private val monday = DayOfWeek.MONDAY
+
+    @Test
+    fun `all time accessibility names the period actually used by its buckets`() {
+        val today = LocalDate.of(2026, 7, 28)
+        val cases =
+            listOf(
+                LocalDate.of(2026, 7, 20) to R.string.insights_chart_a11y_daily,
+                LocalDate.of(2026, 5, 20) to R.string.insights_chart_a11y_weekly,
+                LocalDate.of(2025, 5, 20) to R.string.insights_chart_a11y_monthly,
+            )
+        cases.forEach { (firstSessionDate, expectedDescription) ->
+            val axis = insightsChartAxis(TimeRange.ALL_TIME, today, firstSessionDate, monday)
+
+            assertEquals(expectedDescription, chartContentDescriptionResource(axis.interval))
+        }
+    }
 
     @Test
     fun `week axis stops at today instead of drawing days that have not happened`() {

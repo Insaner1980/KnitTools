@@ -7,6 +7,7 @@ import com.finnvek.knittools.data.local.toEntity
 import com.finnvek.knittools.data.storage.PATTERN_PDF_EXPORT_MAX_ANNOTATIONS
 import com.finnvek.knittools.data.storage.PATTERN_PDF_EXPORT_MAX_ANNOTATION_PAYLOAD_BYTES
 import com.finnvek.knittools.domain.model.PatternAnnotation
+import com.finnvek.knittools.domain.model.PatternAnnotationOwner
 import com.finnvek.knittools.domain.model.PatternAnnotationPageLimitException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -59,6 +60,12 @@ class PatternAnnotationRepository
         }
 
         suspend fun updateAnnotation(annotation: PatternAnnotation) = dao.update(annotation.toEntity())
+
+        suspend fun updateText(
+            owner: PatternAnnotationOwner,
+            expected: PatternAnnotation,
+            text: String,
+        ): PatternAnnotation = dao.updateText(owner, expected, text)
 
         suspend fun clearPage(
             layerId: Long,

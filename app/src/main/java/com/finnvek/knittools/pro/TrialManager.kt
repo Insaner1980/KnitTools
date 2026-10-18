@@ -86,10 +86,10 @@ class TrialManager
         }
 
         suspend fun startTrial(): TrialStartResult {
-            val now = sessionTimeSource.snapshot()
             var startResult: TrialStartResult? = null
             val didWrite =
                 context.trialDataStore.editPreferencesSafely { preferences ->
+                    val now = sessionTimeSource.snapshot()
                     val startTimestamp = preferences[KEY_TRIAL_START] ?: 0L
                     val lastKnownTimestamp = preferences[KEY_LAST_KNOWN_TIMESTAMP] ?: 0L
                     val clockTamperedAlready = preferences[KEY_CLOCK_TAMPERED] ?: false
@@ -160,10 +160,10 @@ class TrialManager
         }
 
         private suspend fun refreshTrialState() {
-            val now = sessionTimeSource.snapshot()
             var refreshedState: TrialState? = null
             val didWrite =
                 context.trialDataStore.editPreferencesSafely { preferences ->
+                    val now = sessionTimeSource.snapshot()
                     refreshedState = preferences.evaluateAndPersistTrialState(now)
                 }
             if (didWrite) {

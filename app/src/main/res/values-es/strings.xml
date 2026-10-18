@@ -522,6 +522,7 @@
     </plurals>
     <string name="insights_chart_axis_today">hoy</string>
     <string name="insights_chart_a11y_daily">Tiempo diario dedicado %1$s, %2$s, %3$s, más largo %4$s</string>
+    <string name="insights_chart_a11y_weekly">Tiempo semanal dedicado %1$s, %2$s, %3$s, más largo %4$s</string>
     <string name="insights_chart_a11y_monthly">Tiempo mensual dedicado %1$s, %2$s, %3$s, más largo %4$s</string>
     <string name="insights_chart_a11y_next">Barra siguiente</string>
     <string name="insights_chart_a11y_previous">Barra anterior</string>
@@ -1117,4 +1118,22 @@
     <string name="project_actions_overview_subtitle">Hilo, patrón, notas y detalles</string>
     <string name="project_actions_section_work_session">Sesión de trabajo</string>
     <string name="project_overview_amount_unknown">Desconocido</string>
+    <string name="counter_step_rows_title">Vueltas por toque</string>
+    <string name="counter_step_rounds_title">Rondas por toque</string>
+    <string name="counter_step_repeats_title">Repeticiones por toque</string>
+    <string name="counter_step_custom_title">%1$s por toque</string>
+    <string name="counter_step_description">Elige cuánto añade o resta cada toque.</string>
+    <string name="counter_step_custom_amount">Cantidad personalizada</string>
+    <string name="counter_step_invalid">Introduce un número entero entre 1 y %1$d.</string>
+    <string name="counter_step_save_failed">No se pudo guardar el incremento. Inténtalo de nuevo.</string>
+    <string name="counter_step_change_description">%1$s: %2$d. Cambiar.</string>
+    <string name="counter_step_increase">Aumentar en %1$d. %2$s.</string>
+    <string name="counter_step_decrease">Disminuir en %1$d. %2$s.</string>
+    <string name="counter_step_multiplier">×%1$d</string>
+    <string name="counter_step_delta">%1$+d</string>
+    <string name="project_yarn_edit_title">Editar hilo del proyecto</string>
+    <string name="project_yarn_edit_conflict">Esta nota de hilo cambió durante la edición. Ciérrala y vuelve a abrirla para ver la última versión.</string>
+    <string name="project_yarn_edit_missing">Esta nota de hilo ya no pertenece a este proyecto. Cierra el editor.</string>
+    <string name="project_yarn_edit_invalid">Introduce un nombre de hilo.</string>
+    <string name="project_yarn_edit_failed">No se pudieron guardar los cambios. Tu borrador sigue aquí. Inténtalo de nuevo.</string>
 </resources>

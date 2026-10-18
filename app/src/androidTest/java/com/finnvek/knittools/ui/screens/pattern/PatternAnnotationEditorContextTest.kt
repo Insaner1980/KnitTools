@@ -119,6 +119,9 @@ class PatternAnnotationEditorContextTest {
                             onRedo = {},
                             onClearPage = {},
                             onAddChartTracker = { writes++ },
+                            onEditText = {},
+                            onCancelTextEdit = {},
+                            onSaveTextEdit = { _, _ -> writes++ },
                         ),
                 )
             }

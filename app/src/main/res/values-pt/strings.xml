@@ -522,6 +522,7 @@
     </plurals>
     <string name="insights_chart_axis_today">hoje</string>
     <string name="insights_chart_a11y_daily">Tempo diário a %1$s, %2$s, %3$s, mais longo %4$s</string>
+    <string name="insights_chart_a11y_weekly">Tempo semanal a %1$s, %2$s, %3$s, mais longo %4$s</string>
     <string name="insights_chart_a11y_monthly">Tempo mensal a %1$s, %2$s, %3$s, mais longo %4$s</string>
     <string name="insights_chart_a11y_next">Barra seguinte</string>
     <string name="insights_chart_a11y_previous">Barra anterior</string>
@@ -1117,4 +1118,22 @@
     <string name="project_actions_overview_subtitle">Fio, receita, notas e detalhes</string>
     <string name="project_actions_section_work_session">Sessão de trabalho</string>
     <string name="project_overview_amount_unknown">Desconhecido</string>
+    <string name="counter_step_rows_title">Carreiras por toque</string>
+    <string name="counter_step_rounds_title">Voltas por toque</string>
+    <string name="counter_step_repeats_title">Repetições por toque</string>
+    <string name="counter_step_custom_title">%1$s por toque</string>
+    <string name="counter_step_description">Escolha quanto cada toque adiciona ou subtrai.</string>
+    <string name="counter_step_custom_amount">Quantidade personalizada</string>
+    <string name="counter_step_invalid">Introduza um número inteiro entre 1 e %1$d.</string>
+    <string name="counter_step_save_failed">Não foi possível guardar o incremento. Tente novamente.</string>
+    <string name="counter_step_change_description">%1$s: %2$d. Alterar.</string>
+    <string name="counter_step_increase">Aumentar em %1$d. %2$s.</string>
+    <string name="counter_step_decrease">Diminuir em %1$d. %2$s.</string>
+    <string name="counter_step_multiplier">×%1$d</string>
+    <string name="counter_step_delta">%1$+d</string>
+    <string name="project_yarn_edit_title">Editar fio do projeto</string>
+    <string name="project_yarn_edit_conflict">Esta nota de fio foi alterada durante a edição. Feche e volte a abrir para ver a versão mais recente.</string>
+    <string name="project_yarn_edit_missing">Esta nota de fio já não pertence a este projeto. Feche o editor.</string>
+    <string name="project_yarn_edit_invalid">Introduza um nome para o fio.</string>
+    <string name="project_yarn_edit_failed">Não foi possível guardar as alterações. O rascunho continua aqui. Tente novamente.</string>
 </resources>

@@ -186,6 +186,27 @@ class ProjectDocumentMigration22Test {
         db.close()
     }
 
+    @Test
+    fun migrate21to22TruncatesLabelWithoutSplittingSurrogatePair() {
+        val testDb = "migration-test-v21-to-v22-unicode-label"
+        val originalName = "A".repeat(49) + "\uD83E\uDDF6 chart"
+        helper.createDatabase(testDb, 21).apply {
+            insertProject(
+                id = 1,
+                name = "Unicode label",
+                patternUri = "content://patterns/chart.pdf",
+                patternName = originalName,
+            )
+            close()
+        }
+
+        val db = helper.runMigrationsAndValidate(testDb, 22, true, KnitToolsDatabase.MIGRATION_21_22)
+
+        assertEquals("A".repeat(49), scalarString(db, "SELECT label FROM project_documents WHERE projectId = 1"))
+        assertEquals(originalName, scalarString(db, "SELECT patternName FROM counter_projects WHERE id = 1"))
+        db.close()
+    }
+
     private fun SupportSQLiteDatabase.insertProject(
         id: Long,
         name: String,

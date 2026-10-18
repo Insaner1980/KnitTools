@@ -2,6 +2,9 @@ package com.finnvek.knittools.domain.model
 
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.jsonObject
 import kotlin.math.pow
 import kotlin.math.round
 
@@ -29,6 +32,18 @@ object PatternAnnotationPayloadCodec {
         kind: PatternAnnotationKind,
         encoded: EncodedPatternAnnotationPayload,
     ): PatternAnnotationPayload? = decode(kind, encoded.payloadVersion, encoded.payloadJson)
+
+    fun replaceText(
+        payloadVersion: Int,
+        json: String,
+        text: String,
+    ): String? {
+        if (text.isBlank() || text.length > MAX_PAYLOAD_BYTES) return null
+        if (decode(PatternAnnotationKind.TEXT_BOX, payloadVersion, json) !is TextBoxPayload) return null
+        val fields = payloadJson.parseToJsonElement(json).jsonObject
+        val updated = JsonObject(fields + ("text" to JsonPrimitive(text))).toString()
+        return updated.takeIf { decode(PatternAnnotationKind.TEXT_BOX, payloadVersion, it) != null }
+    }
 
     fun decode(
         kind: PatternAnnotationKind,

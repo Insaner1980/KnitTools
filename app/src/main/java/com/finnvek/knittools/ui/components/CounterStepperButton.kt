@@ -119,6 +119,24 @@ fun CounterStepButtonFace(
     enabled: Boolean = true,
     prominent: Boolean = true,
 ) {
+    CounterStepButtonFace(appearance, modifier, enabled, prominent) { stepColor ->
+        CounterStepSymbolIcon(
+            symbol = symbol,
+            contentDescription = contentDescription,
+            modifier = Modifier.size(appearance.symbolSize),
+            tint = stepColor,
+        )
+    }
+}
+
+@Composable
+fun CounterStepButtonFace(
+    appearance: CounterStepButtonFaceAppearance,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    prominent: Boolean = true,
+    content: @Composable (Color) -> Unit,
+) {
     val stepColor =
         appearance.contentColor.copy(
             alpha = counterStepperVisualAlpha(enabled = enabled, prominent = prominent),
@@ -137,12 +155,7 @@ fun CounterStepButtonFace(
                 ),
         contentAlignment = Alignment.Center,
     ) {
-        CounterStepSymbolIcon(
-            symbol = symbol,
-            contentDescription = contentDescription,
-            modifier = Modifier.size(appearance.symbolSize),
-            tint = stepColor,
-        )
+        content(stepColor)
     }
 }
 

@@ -106,6 +106,11 @@ data class PatternChartTrackerDraft(
     val c2cOrigin: ChartCorner,
 )
 
+data class PatternAnnotationTextEdit(
+    val owner: PatternAnnotationOwner,
+    val annotation: PatternAnnotation,
+)
+
 data class PatternAnnotationUiState(
     val owner: PatternAnnotationOwner,
     val currentPage: Int = 0,
@@ -130,6 +135,8 @@ data class PatternAnnotationUiState(
     val writeError: PatternAnnotationWriteError = PatternAnnotationWriteError.NONE,
     val selectedAnnotationId: Long? = null,
     val selectedAnnotationIsEditable: Boolean = false,
+    val selectedAnnotationIsText: Boolean = false,
+    val textEdit: PatternAnnotationTextEdit? = null,
     val selectedAnnotationSupportsChartTracker: Boolean = false,
     val canUndo: Boolean = false,
     val canRedo: Boolean = false,
@@ -207,6 +214,17 @@ class PatternAnnotationViewModel
                         if (failure !is PatternAnnotationPageLimitException) throw failure
                         emit(PageAnnotations(limitExceeded = true))
                     }.onStart { emit(PageAnnotations()) }
+                }.onEach { annotations ->
+                    interaction.update { state ->
+                        val edit = state.textEdit
+                        if (edit != null &&
+                            (annotations.master + annotations.project).none { it.id == edit.annotation.id }
+                        ) {
+                            state.copy(textEdit = null)
+                        } else {
+                            state
+                        }
+                    }
                 }.withReadRecovery(annotationReadFailed)
                 .stateIn(
                     scope = viewModelScope,
@@ -287,6 +305,8 @@ class PatternAnnotationViewModel
                     isSaving = feedback.interaction.isSaving,
                     writeError = feedback.interaction.writeError,
                     selectedAnnotationId = feedback.interaction.selectedAnnotationId,
+                    selectedAnnotationIsText = selectedAnnotation?.payload is TextBoxPayload,
+                    textEdit = feedback.interaction.textEdit,
                     selectedAnnotationIsEditable =
                         selectedAnnotation != null &&
                             selectedAnnotation.layerId == selection.editableLayerId,
@@ -311,7 +331,7 @@ class PatternAnnotationViewModel
         fun setCurrentPage(page: Int) {
             require(page >= 0) { "Pattern annotation page must be non-negative" }
             if (page == currentPage.value) return
-            interaction.update { state -> state.copy(draftStroke = null, selectedAnnotationId = null) }
+            interaction.update { state -> state.copy(draftStroke = null, selectedAnnotationId = null, textEdit = null) }
             currentPage.value = page
         }
 
@@ -554,6 +574,42 @@ class PatternAnnotationViewModel
                     )
                 }
             executeCommand(PatternAnnotationCommand.UpdateBatch(before, after))
+        }
+
+        fun editSelectedText() {
+            val annotation = selectedAnnotation() ?: return
+            if (annotation.payload !is TextBoxPayload || interaction.value.isSaving) return
+            if (annotation.layerId != layers.value.editableLayerId || annotation.page != currentPage.value) return
+            interaction.update {
+                it.copy(
+                    textEdit = PatternAnnotationTextEdit(layers.value.owner, annotation),
+                    writeError = PatternAnnotationWriteError.NONE,
+                )
+            }
+        }
+
+        fun cancelTextEdit(edit: PatternAnnotationTextEdit) {
+            interaction.update { if (it.textEdit === edit && !it.isSaving) it.copy(textEdit = null) else it }
+        }
+
+        fun saveTextEdit(
+            edit: PatternAnnotationTextEdit,
+            text: String,
+        ) {
+            if (interaction.value.textEdit !== edit || interaction.value.isSaving || text.isBlank()) return
+            if (edit.owner != layers.value.owner || edit.annotation.layerId != layers.value.editableLayerId) return
+            if (edit.annotation.page != currentPage.value ||
+                editableAnnotations().none { it.id == edit.annotation.id }
+            ) {
+                return
+            }
+            if (text == (edit.annotation.payload as TextBoxPayload).text) {
+                cancelTextEdit(edit)
+                return
+            }
+            executeCommand(PatternAnnotationCommand.EditText(edit.owner, edit.annotation, text)) { state ->
+                if (state.textEdit === edit) state.copy(textEdit = null) else state
+            }
         }
 
         fun addTextBox(
@@ -854,6 +910,7 @@ class PatternAnnotationViewModel
                         draftStroke = null,
                         writeError = PatternAnnotationWriteError.NONE,
                         selectedAnnotationId = null,
+                        textEdit = null,
                         undoStack = emptyList(),
                         redoStack = emptyList(),
                     )
@@ -977,6 +1034,7 @@ private data class LayerVisibility(
 )
 
 private data class PatternAnnotationInteractionState(
+    val textEdit: PatternAnnotationTextEdit? = null,
     val activeTool: PatternAnnotationTool = PatternAnnotationTool.BROWSE,
     val penArgb: Int = PatternAnnotationTokens.PEN_DEFAULT_ARGB,
     val penStrokeWidth: Float = PatternAnnotationTokens.PEN_DEFAULT_WIDTH,

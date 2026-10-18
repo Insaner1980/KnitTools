@@ -1,11 +1,42 @@
 package com.finnvek.knittools.domain.model
 
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class PatternAnnotationPayloadCodecTest {
+    @Test
+    fun `text replacement preserves unknown fields and rejects unsupported or invalid payloads`() {
+        val payload = TextBoxPayload(NormalizedPatternBounds(0.1f, 0.2f, 0.8f, 0.4f), "Original", 18f, 123)
+        val encoded = checkNotNull(PatternAnnotationPayloadCodec.encode(PatternAnnotationKind.TEXT_BOX, payload))
+        val original = encoded.payloadJson.dropLast(1) + ",\"unknown\":{\"nested\":[1,2,3]}}"
+        val updated =
+            checkNotNull(
+                PatternAnnotationPayloadCodec.replaceText(encoded.payloadVersion, original, "  新しい\\\" text\n "),
+            )
+        assertEquals(
+            Json.parseToJsonElement(original).jsonObject - "text",
+            Json.parseToJsonElement(updated).jsonObject - "text",
+        )
+        assertEquals(
+            payload.copy(text = "  新しい\\\" text\n "),
+            PatternAnnotationPayloadCodec.decode(PatternAnnotationKind.TEXT_BOX, encoded.payloadVersion, updated),
+        )
+        assertNull(PatternAnnotationPayloadCodec.replaceText(2, original, "New"))
+        assertNull(PatternAnnotationPayloadCodec.replaceText(1, "{}", "New"))
+        assertNull(PatternAnnotationPayloadCodec.replaceText(1, original, " \n"))
+        assertNull(
+            PatternAnnotationPayloadCodec.replaceText(
+                1,
+                original,
+                "ä".repeat(PatternAnnotationPayloadCodec.MAX_PAYLOAD_BYTES),
+            ),
+        )
+    }
+
     @Test
     fun `drawing annotation payloads round trip with their matching kind`() {
         val shape =

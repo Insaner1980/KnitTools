@@ -1,9 +1,16 @@
 package com.finnvek.knittools.repository
 
+import androidx.lifecycle.SavedStateHandle
+import com.finnvek.knittools.data.datastore.PreferencesManager
+import com.finnvek.knittools.data.local.DatabaseTransactionRunner
 import com.finnvek.knittools.data.local.KnitToolsDatabase
 import com.finnvek.knittools.data.local.RoomDatabaseTransactionRunner
 import com.finnvek.knittools.data.storage.PatternDocumentStorage
 import com.finnvek.knittools.data.storage.ProgressPhotoStorage
+import com.finnvek.knittools.pro.InAppReviewManager
+import com.finnvek.knittools.pro.ProManager
+import com.finnvek.knittools.ui.screens.counter.CounterViewModel
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 
 internal fun counterHistoryTestRepository(
@@ -52,6 +59,9 @@ internal class RoomCounterTestFixture(
         projectDao: com.finnvek.knittools.data.local.CounterProjectDao = database.counterProjectDao(),
         savedPatterns: SavedPatternRepository = savedPatternRepository,
         documents: ProjectDocumentRepository = projectDocumentRepository,
+        transactions: DatabaseTransactionRunner = transactionRunner,
+        sessionTimeSource: com.finnvek.knittools.data.time.SessionTimeSource =
+            com.finnvek.knittools.data.time.UnavailableBootSessionTimeSource,
     ): CounterRepository =
         CounterRepository(
             dao = projectDao,
@@ -64,7 +74,57 @@ internal class RoomCounterTestFixture(
             savedPatternRepository = savedPatterns,
             projectDocumentRepository = documents,
             projectFolderDao = database.projectFolderDao(),
-            transactionRunner = transactionRunner,
+            transactionRunner = transactions,
             ioDispatcher = Dispatchers.IO,
+            sessionTimeSource = sessionTimeSource,
+        )
+
+    fun counterViewModel(
+        pro: ProManager,
+        applicationScope: CoroutineScope,
+        counters: ProjectCounterRepository =
+            ProjectCounterRepository(
+                database.projectCounterDao(),
+                database.counterProjectDao(),
+                pro,
+                transactionRunner,
+            ),
+        transactions: DatabaseTransactionRunner = transactionRunner,
+    ): CounterViewModel =
+        CounterViewModel(
+            repository = counterRepository(transactions = transactions),
+            reminderRepository =
+                ReminderRepository(
+                    database.rowReminderDao(),
+                    database.counterProjectDao(),
+                    pro,
+                    transactionRunner,
+                ),
+            projectCounterRepository = counters,
+            photoRepository =
+                ProgressPhotoRepository(
+                    database.progressPhotoDao(),
+                    ProgressPhotoStorage(),
+                    context,
+                    Dispatchers.IO,
+                ),
+            projectYarnNoteRepository =
+                ProjectYarnNoteRepository(
+                    database.projectYarnNoteDao(),
+                    yarnCardRepository,
+                    transactionRunner,
+                    database.projectYarnUsageDao(),
+                ),
+            preferencesManager = PreferencesManager(context),
+            proManager = pro,
+            yarnCardRepository = yarnCardRepository,
+            savedPatternRepository = savedPatternRepository,
+            projectDocumentRepository = projectDocumentRepository,
+            patternDocumentStorage = PatternDocumentStorage(Dispatchers.IO),
+            inAppReviewManager = InAppReviewManager(context),
+            savedStateHandle = SavedStateHandle(),
+            context = context,
+            ioDispatcher = Dispatchers.IO,
+            applicationScope = applicationScope,
         )
 }

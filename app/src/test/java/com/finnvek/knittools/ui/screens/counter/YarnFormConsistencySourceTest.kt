@@ -23,7 +23,18 @@ class YarnFormConsistencySourceTest {
     fun `project yarn note form opens as the shared form sheet`() {
         val sheet = ProjectSourceFiles.read("$COUNTER/YarnManagementSheet.kt")
 
-        assertTrue(sheet.contains("FormSheet(\n        title = stringResource(R.string.add_yarn_to_project)"))
+        val formTitle =
+            sheet
+                .substringAfter("internal fun ProjectYarnForm(")
+                .substringAfter("FormSheet(")
+                .substringBefore("description =")
+                .replace(Regex("\\s+"), " ")
+                .trim()
+        assertTrue(
+            formTitle ==
+                "title = stringResource( if (initialNote == null ) { R.string.add_yarn_to_project " +
+                "} else { R.string.project_yarn_edit_title }, ),",
+        )
         assertFalse(sheet.contains("CancelButton(onClick = onCancel)"))
     }
 

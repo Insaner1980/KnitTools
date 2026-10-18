@@ -12,10 +12,12 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flow
@@ -82,6 +84,50 @@ class NotesEditorViewModelTest {
             savedStateHandle = SavedStateHandle(mapOf("projectId" to 1L)),
         )
     }
+
+    @Test
+    fun `late entitlement unlocks first notes and preserves the draft across access changes`() =
+        runTest {
+            val entitlement = MutableStateFlow(ProState())
+            every { proManager.proState } returns entitlement
+            every { proManager.hasFeature(ProFeature.NOTES) } answers {
+                entitlement.value.hasFeature(ProFeature.NOTES, debugUnlockAllFeatures = false)
+            }
+            val handle =
+                SavedStateHandle(
+                    mapOf("projectId" to 1L, "notesDraft" to "Restored draft", "notesDraftBase" to ""),
+                )
+            every { repository.observeProject(1L) } returns
+                flowOf(CounterProject(id = 1L, name = "Test", notesCreated = false))
+            val viewModel = NotesEditorViewModel(repository, proManager, applicationScope, handle)
+            runCurrent()
+            assertFalse(viewModel.uiState.value.canEditNotes)
+
+            entitlement.value = ProState(status = ProStatus.TRIAL_ACTIVE)
+            runCurrent()
+            assertTrue(viewModel.uiState.value.canEditNotes)
+            assertEquals("Restored draft", viewModel.uiState.value.notes)
+            viewModel.onNotesChanged("Edited draft")
+
+            entitlement.value = ProState(status = ProStatus.TRIAL_EXPIRED)
+            runCurrent()
+            assertFalse(viewModel.uiState.value.canEditNotes)
+            assertEquals("Edited draft", viewModel.uiState.value.notes)
+            assertEquals("Edited draft", handle.get<String>("notesDraft"))
+
+            entitlement.value = ProState(status = ProStatus.PRO_PURCHASED)
+            runCurrent()
+            assertTrue(viewModel.uiState.value.canEditNotes)
+            assertEquals("Edited draft", viewModel.uiState.value.notes)
+            coEvery { repository.saveProjectNotes(1L, "", "Edited draft", false) } returns
+                ProjectNotesSaveResult.Saved(
+                    CounterProject(id = 1L, name = "Test", notes = "Edited draft", notesCreated = true),
+                )
+            viewModel.saveImmediately()
+            advanceUntilIdle()
+            coVerify(exactly = 1) { repository.saveProjectNotes(1L, "", "Edited draft", false) }
+            assertNull(handle.get<String>("notesDraft"))
+        }
 
     @Test
     fun `initial state loads project notes and Pro flag`() =
@@ -370,6 +416,28 @@ class NotesEditorViewModelTest {
             assertNull(handle.get<String>("notesDraftBase"))
             assertFalse(viewModel.uiState.value.saveFailed)
             coVerify(exactly = 1) { repository.saveProjectNotes(any(), any(), any(), any()) }
+        }
+
+    @Test
+    fun `final persistence propagates repository cancellation`() =
+        runTest {
+            val viewModel = vm(notes = "Base")
+            runCurrent()
+            viewModel.onNotesChanged("Unsaved edit")
+            val cancellation = CancellationException("Cancelled persistence")
+            coEvery { repository.saveProjectNotes(1L, "Base", "Unsaved edit", false) } throws cancellation
+            val store = androidx.lifecycle.ViewModelStore()
+            store.put("editor", viewModel)
+
+            store.clear()
+            val flush = applicationScope.coroutineContext[Job]?.children?.single()
+            var completionCause: Throwable? = null
+            checkNotNull(flush).invokeOnCompletion { completionCause = it }
+            runCurrent()
+
+            assertTrue(flush.isCancelled)
+            assertEquals(cancellation, completionCause)
+            coVerify(exactly = 1) { repository.saveProjectNotes(1L, "Base", "Unsaved edit", false) }
         }
 
     @Test

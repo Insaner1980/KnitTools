@@ -23,6 +23,7 @@ import com.finnvek.knittools.data.time.UnavailableBootSessionTimeSource
 import com.finnvek.knittools.di.IoDispatcher
 import com.finnvek.knittools.domain.calculator.CounterLogic
 import com.finnvek.knittools.domain.calculator.CounterState
+import com.finnvek.knittools.domain.calculator.MAX_MAIN_COUNTER_STEP_SIZE
 import com.finnvek.knittools.domain.calculator.ProjectCounterLogic
 import com.finnvek.knittools.domain.calculator.ReadingLineLocationResolution
 import com.finnvek.knittools.domain.calculator.evaluateActiveSessionTime
@@ -939,7 +940,17 @@ class CounterRepository
         suspend fun updateProjectStepSize(
             id: Long,
             stepSize: Int,
-        ) = dao.updateStepSize(id, stepSize.coerceAtLeast(1), System.currentTimeMillis())
+        ): Boolean =
+            withContext(ioDispatcher) {
+                if (stepSize !in 1..MAX_MAIN_COUNTER_STEP_SIZE) {
+                    return@withContext false
+                }
+                transactionRunner.run {
+                    if (dao.getProject(id) == null) return@run false
+                    dao.updateStepSize(id, stepSize, System.currentTimeMillis())
+                    true
+                }
+            }
 
         suspend fun archiveProject(
             id: Long,
@@ -1494,7 +1505,9 @@ class CounterRepository
             now: SessionTimeSnapshot,
             expectedSession: ActiveWorkSession?,
         ): ProjectCompletionResult? {
-            if (active?.projectId != projectId) return null
+            if (active?.projectId != projectId) {
+                return if (expectedSession != null) ProjectCompletionResult.ProjectUnavailable else null
+            }
             if (choice == null || !active.matchesDecision(expectedSession)) {
                 return ProjectCompletionResult.NeedsActiveSessionChoice(active.toDomain())
             }

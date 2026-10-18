@@ -397,7 +397,7 @@ private fun SwitchRow(
 }
 
 @Composable
-private fun SwitchRowWithTip(
+internal fun SwitchRowWithTip(
     label: String,
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
@@ -416,9 +416,10 @@ private fun SwitchRowWithTip(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         // Info nimikkeen vieressä, ei kytkimen vieressä.
-        Text(label)
-        InfoTip(title = tipTitle, description = tipDescription)
-        Spacer(modifier = Modifier.weight(1f))
+        Row(modifier = Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
+            Text(label, modifier = Modifier.weight(1f, fill = false))
+            InfoTip(title = tipTitle, description = tipDescription)
+        }
         Switch(checked = checked, onCheckedChange = null)
     }
 }

@@ -35,8 +35,11 @@ class SavedPatternsWebScreenTest {
     private val context = InstrumentationRegistry.getInstrumentation().targetContext
 
     // BadgePill näyttää lähteen versaalina.
-    private val webLabel =
-        context.getString(R.string.web_pattern_label).uppercaseForDisplay(context.resources.configuration.locales[0])
+    private val webLabel
+        get() =
+            context
+                .getString(R.string.web_pattern_label)
+                .uppercaseForDisplay(context.resources.configuration.locales[0])
 
     @Test
     fun largeFontReservesSelectionSpaceAndRestoresNormalInset() {

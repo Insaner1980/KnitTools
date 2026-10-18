@@ -155,6 +155,41 @@ class ActiveProjectPolicyRoomTest {
         }
 
     @Test
+    fun oldSessionCompletionChoiceCannotCompleteReopenedProject() =
+        runBlocking {
+            val id = seed("Stale completion choice")
+            val started = repository.startSession(id) as StartSessionResult.Started
+            assertTrue(
+                repository.completeProjectWithSessionChoice(
+                    id,
+                    null,
+                ) is ProjectCompletionResult.NeedsActiveSessionChoice,
+            )
+            assertEquals(
+                ProjectCompletionResult.Completed,
+                repository.completeProjectWithSessionChoice(
+                    id,
+                    ActiveSessionCompletionChoice.DISCARD,
+                    completedAtMillis = 200L,
+                    expectedSession = started.session,
+                ),
+            )
+            assertEquals(ProjectReactivationResult.Reactivated, repository.reactivateProject(id, 200L, true))
+            val before = repository.getProject(id)
+            val events = repository.observeCompletions(id).first()
+
+            for (choice in ActiveSessionCompletionChoice.entries) {
+                assertEquals(
+                    ProjectCompletionResult.ProjectUnavailable,
+                    repository.completeProjectWithSessionChoice(id, choice, expectedSession = started.session),
+                )
+                assertEquals(before, repository.getProject(id))
+                assertEquals(events, repository.observeCompletions(id).first())
+                assertNull(database.sessionDao().getActiveSession())
+            }
+        }
+
+    @Test
     fun completionHistoryPreservesCyclesFiltersAndCascades() =
         runBlocking {
             val first = seed("Cycles")

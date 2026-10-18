@@ -1,5 +1,6 @@
 package com.finnvek.knittools.ui.components
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -17,10 +18,13 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalView
@@ -53,12 +57,18 @@ fun FormSheet(
     cancelEnabled: Boolean = true,
     content: @Composable ColumnScope.() -> Unit,
 ) {
+    val canDismiss by rememberUpdatedState(cancelEnabled)
     ModalBottomSheet(
         onDismissRequest = onDismiss,
-        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        sheetState =
+            rememberModalBottomSheetState(
+                skipPartiallyExpanded = true,
+                confirmValueChange = { canDismiss || it != SheetValue.Hidden },
+            ),
         containerColor = MaterialTheme.colorScheme.surface,
         modifier = modifier,
     ) {
+        BackHandler(enabled = !cancelEnabled) {}
         Column(
             modifier =
                 Modifier

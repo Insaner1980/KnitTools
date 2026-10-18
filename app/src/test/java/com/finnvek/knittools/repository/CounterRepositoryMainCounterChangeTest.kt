@@ -28,6 +28,23 @@ import org.junit.Test
 
 class CounterRepositoryMainCounterChangeTest {
     @Test
+    fun `step size update validates and targets only the existing project step`() =
+        runTest {
+            val dao = mockk<CounterProjectDao>(relaxed = true)
+            val transaction = RecordingTransactionRunner()
+            coEvery { dao.getProject(7L) } returns CounterProjectEntity(id = 7L, name = "Step", count = 42)
+            coEvery { dao.getProject(8L) } returns null
+            val repository = buildRepository(dao, mockk(relaxed = true), transaction)
+            assertTrue(repository.updateProjectStepSize(7L, 5))
+            assertFalse(repository.updateProjectStepSize(8L, 5))
+            assertFalse(repository.updateProjectStepSize(7L, 0))
+            assertFalse(repository.updateProjectStepSize(7L, 100))
+            coVerify(exactly = 1) { dao.updateStepSize(7L, 5, any()) }
+            coVerify(exactly = 0) { dao.updateCount(any(), any(), any()) }
+            assertEquals(2, transaction.runCount)
+        }
+
+    @Test
     fun `applyMainCounterChange increments linked counters by the real main-counter delta`() =
         runTest {
             val transactionRunner = RecordingTransactionRunner()

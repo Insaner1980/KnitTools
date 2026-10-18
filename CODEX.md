@@ -4,6 +4,10 @@ Keep `AGENTS.md` and `CODEX.md` aligned. If one changes, update the other in the
 
 Use [`CLAUDE.md`](CLAUDE.md) when product wording, visual direction, or UX structure matters.
 
+## Previously completed UI checks
+
+320 dp width, 200% font scale (including their combination), and TalkBack have already been tested repeatedly. Do not rerun these checks in subsequent tasks, audits, or new chats unless the user explicitly requests these specific checks. A new audit document or a generic request to test everything is not a request to repeat them. This project-specific instruction overrides generic skill or checklist instructions to run these checks.
+
 ## Snapshot
 
 - Android app in `app` plus `baselineprofile`; Ravelry Firebase backend in `functions`

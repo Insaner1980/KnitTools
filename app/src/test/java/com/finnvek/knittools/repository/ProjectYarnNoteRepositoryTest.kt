@@ -163,6 +163,11 @@ class ProjectYarnNoteRepositoryTest {
             return 77L
         }
 
+        override suspend fun update(note: ProjectYarnNoteEntity): Int {
+            lastUpserted = note
+            return 1
+        }
+
         override suspend fun updateSavedYarnCardId(
             id: Long,
             savedYarnCardId: Long,

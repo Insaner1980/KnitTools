@@ -3,7 +3,7 @@ package com.finnvek.knittools.data.storage
 import android.content.ContentResolver
 import android.content.Context
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
+import android.graphics.ImageDecoder
 import android.net.Uri
 import io.mockk.every
 import io.mockk.just
@@ -11,11 +11,11 @@ import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.runs
 import io.mockk.unmockkStatic
+import io.mockk.verify
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import java.io.ByteArrayInputStream
 import java.nio.file.Files
 import kotlin.io.path.createTempFile
 
@@ -67,27 +67,18 @@ class ProgressPhotoStorageTest {
         val targetFile = createTempFile(suffix = ".jpg").toFile()
 
         every { context.contentResolver } returns contentResolver
-        every { contentResolver.openInputStream(sourceUri) } answers { ByteArrayInputStream(byteArrayOf(1)) }
         every { original.width } returns 1
         every { original.height } returns 4_000
         every { original.recycle() } just runs
         every { scaled.compress(Bitmap.CompressFormat.JPEG, any(), any()) } returns true
         every { scaled.recycle() } just runs
 
-        mockkStatic(BitmapFactory::class)
+        val source = mockk<ImageDecoder.Source>()
+        mockkStatic(ImageDecoder::class)
         mockkStatic(Bitmap::class)
         try {
-            every { BitmapFactory.decodeStream(any(), null, any()) } answers {
-                thirdArg<BitmapFactory.Options>().let { options ->
-                    if (options.inJustDecodeBounds) {
-                        options.outWidth = 1
-                        options.outHeight = 4_000
-                        null
-                    } else {
-                        original
-                    }
-                }
-            }
+            every { ImageDecoder.createSource(contentResolver, sourceUri) } returns source
+            every { ImageDecoder.decodeBitmap(source, any<ImageDecoder.OnHeaderDecodedListener>()) } returns original
             every { Bitmap.createScaledBitmap(original, any(), any(), true) } answers {
                 require(secondArg<Int>() > 0) { "Scaled width must be positive" }
                 require(thirdArg<Int>() > 0) { "Scaled height must be positive" }
@@ -97,7 +88,7 @@ class ProgressPhotoStorageTest {
             assertTrue(ProgressPhotoStorage().compressAndSave(context, sourceUri, targetFile))
         } finally {
             unmockkStatic(Bitmap::class)
-            unmockkStatic(BitmapFactory::class)
+            unmockkStatic(ImageDecoder::class)
             targetFile.delete()
         }
     }
@@ -114,32 +105,25 @@ class ProgressPhotoStorageTest {
                 .toFile()
 
         every { context.contentResolver } returns contentResolver
-        every { contentResolver.openInputStream(sourceUri) } answers { ByteArrayInputStream(byteArrayOf(1)) }
         every { bitmap.width } returns 64
         every { bitmap.height } returns 64
         every { bitmap.compress(Bitmap.CompressFormat.JPEG, any(), any()) } returns false
         every { bitmap.recycle() } just runs
         // CPD-ON
 
-        mockkStatic(BitmapFactory::class)
+        val source = mockk<ImageDecoder.Source>()
+        mockkStatic(ImageDecoder::class)
         try {
-            every { BitmapFactory.decodeStream(any(), null, any()) } answers {
-                thirdArg<BitmapFactory.Options>().let { options ->
-                    if (options.inJustDecodeBounds) {
-                        options.outWidth = 64
-                        options.outHeight = 64
-                        null
-                    } else {
-                        bitmap
-                    }
-                }
-            }
+            every { ImageDecoder.createSource(contentResolver, sourceUri) } returns source
+            every { ImageDecoder.decodeBitmap(source, any<ImageDecoder.OnHeaderDecodedListener>()) } returns bitmap
 
             val saved = ProgressPhotoStorage().compressAndSave(context, sourceUri, targetFile)
 
             assertFalse(saved)
+            verify(exactly = 1) { bitmap.compress(Bitmap.CompressFormat.JPEG, 80, any()) }
+            verify(exactly = 1) { bitmap.recycle() }
         } finally {
-            unmockkStatic(BitmapFactory::class)
+            unmockkStatic(ImageDecoder::class)
             targetFile.delete()
         }
     }

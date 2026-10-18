@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -20,6 +21,8 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicText
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.Icon
@@ -31,9 +34,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
@@ -70,11 +77,13 @@ import com.finnvek.knittools.ui.components.mainCounterDecreaseContentDescription
 import com.finnvek.knittools.ui.components.mainCounterIncreaseContentDescription
 import com.finnvek.knittools.ui.components.mainCounterLabelText
 import com.finnvek.knittools.ui.components.mainCounterProjectCardCountText
+import com.finnvek.knittools.ui.components.mainCounterStepTitle
 import com.finnvek.knittools.ui.components.mainCounterTargetFraction
 import com.finnvek.knittools.ui.components.mainCounterTargetStatus
 import com.finnvek.knittools.ui.components.mainCounterTargetText
 import com.finnvek.knittools.ui.components.rememberCurrentLocale
 import com.finnvek.knittools.ui.theme.CounterDimens
+import com.finnvek.knittools.ui.theme.knitToolsColors
 import java.util.Locale
 
 data class ProjectCountersSectionActions(
@@ -108,6 +117,7 @@ data class CounterWorkspaceActions(
     val onDismissReminder: (Long) -> Unit,
     val onStopSession: () -> Unit,
     val onResolveSessionRecovery: () -> Unit,
+    val onShowStepSize: () -> Unit = {},
 )
 
 internal data class CounterHeroState(
@@ -141,6 +151,7 @@ fun CounterWorkspace(
     state: CounterUiState,
     projectCountersActions: ProjectCountersSectionActions,
     actions: CounterWorkspaceActions,
+    stepDelta: Int? = null,
 ) {
     BoxWithConstraints(modifier = Modifier.fillMaxSize().padding(scaffoldPadding)) {
         val heroMinimumHeight =
@@ -162,6 +173,7 @@ fun CounterWorkspace(
             item(key = "counter-hero") {
                 CounterHero(
                     state = state.toCounterHeroState(),
+                    stepDelta = stepDelta,
                     actions = actions,
                     modifier = Modifier.heightIn(min = heroMinimumHeight),
                 )
@@ -372,6 +384,7 @@ private fun CounterWorkspaceActions.onProjectContentClick(
 @Composable
 private fun CounterHero(
     state: CounterHeroState,
+    stepDelta: Int?,
     actions: CounterWorkspaceActions,
     modifier: Modifier = Modifier,
 ) {
@@ -408,7 +421,7 @@ private fun CounterHero(
             Spacer(modifier = Modifier.height(CounterDimens.CounterRepeatToRowSpacing))
         }
         CounterRowLabel(state = state, onShowTargetDialog = actions.onShowTargetDialog)
-        CounterMainNumber(state = state)
+        CounterMainNumber(state = state, stepDelta = stepDelta)
         val display = CounterValueFormatter.forMainCounter(state.toMainCounterProject())
         display.targetLine?.let { targetLine ->
             CounterTargetProgress(targetLine = targetLine, onShowTargetDialog = actions.onShowTargetDialog)
@@ -419,6 +432,7 @@ private fun CounterHero(
             onDecrement = actions.onDecrement,
             onIncrement = actions.onIncrement,
             onUndo = actions.onUndo,
+            onShowStepSize = actions.onShowStepSize,
         )
         if (state.visibleStitchTotal != null) {
             Spacer(modifier = Modifier.height(controlsToStitchTrackerSpacing))
@@ -469,13 +483,25 @@ private fun counterCaptionStyle(): TextStyle =
     MaterialTheme.typography.labelMedium.copy(fontSize = CounterDimens.CounterTargetHelperFontSize)
 
 @Composable
-private fun CounterMainNumber(state: CounterHeroState) {
+private fun CounterMainNumber(
+    state: CounterHeroState,
+    stepDelta: Int?,
+) {
     val locale = rememberCurrentLocale()
     val display = CounterValueFormatter.forMainCounter(state.toMainCounterProject())
     val counterDescription =
         display.targetLine?.let { mainCounterTargetText(it) }
             ?: mainCounterCountText(display.heroTitle)
     val countText = formatIntegerForDisplay(state.counter.count.toLong(), locale)
+    val feedbackSpace =
+        if (state.counter.stepSize >
+            1
+        ) {
+            CounterDimens.StepFeedbackWidth
+        } else {
+            CounterDimens.StepRingButtonGap * 0
+        }
+    val density = LocalDensity.current
     val baseTextStyle =
         MaterialTheme.typography.displayMedium.copy(
             fontSize = CounterDimens.CounterMainNumberFontSize,
@@ -491,15 +517,18 @@ private fun CounterMainNumber(state: CounterHeroState) {
             counterMainNumberFittedFontSize(
                 maxFontSize = CounterDimens.CounterMainNumberFontSize,
                 minFontSize = CounterDimens.CounterMainNumberMinimumFontSize,
-                maxWidthPx = constraints.maxWidth,
+                maxWidthPx = (constraints.maxWidth - with(density) { feedbackSpace.roundToPx() } * 2).coerceAtLeast(0),
                 measureWidth = { candidateFontSize ->
-                    textMeasurer
-                        .measure(
-                            text = countText,
-                            style = baseTextStyle.copy(fontSize = candidateFontSize),
-                            softWrap = false,
-                            maxLines = 1,
-                        ).size.width
+                    // RollingCounter lays out each character separately, including grouping spaces.
+                    countText.sumOf { character ->
+                        textMeasurer
+                            .measure(
+                                text = character.toString(),
+                                style = baseTextStyle.copy(fontSize = candidateFontSize),
+                                softWrap = false,
+                                maxLines = 1,
+                            ).size.width
+                    }
                 },
             )
         RollingCounter(
@@ -507,6 +536,20 @@ private fun CounterMainNumber(state: CounterHeroState) {
             textStyle = baseTextStyle.copy(fontSize = fittedFontSize),
             contentDescription = counterDescription,
         )
+        if (stepDelta != null && state.counter.stepSize > 1) {
+            Text(
+                text = stringResource(R.string.counter_step_delta, stepDelta),
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.knitToolsColors.primaryReadable,
+                modifier =
+                    Modifier
+                        .align(Alignment.CenterEnd)
+                        .width(feedbackSpace)
+                        .testTag("main-counter-step-feedback")
+                        .clearAndSetSemantics {},
+                textAlign = TextAlign.Center,
+            )
+        }
     }
 }
 
@@ -525,12 +568,10 @@ internal fun counterMainNumberFittedFontSize(
     if (measureWidth(maxFontSize) <= maxWidthPx) {
         return maxFontSize
     }
-    if (measureWidth(minFontSize) > maxWidthPx) {
-        return minFontSize
-    }
-
-    var lowFontSize = minFontSize
-    var highFontSize = maxFontSize
+    // Keep the preferred minimum when possible, but never truncate a valid counter value.
+    val minimumFits = measureWidth(minFontSize) <= maxWidthPx
+    var lowFontSize = if (minimumFits) minFontSize else 0.sp
+    var highFontSize = if (minimumFits) maxFontSize else minFontSize
     repeat(CounterDimens.CounterMainNumberFitIterations) {
         val candidateFontSize = ((lowFontSize.value + highFontSize.value) / 2f).sp
         if (measureWidth(candidateFontSize) <= maxWidthPx) {
@@ -607,9 +648,16 @@ private fun CounterButtons(
     onDecrement: () -> Unit,
     onIncrement: () -> Unit,
     onUndo: () -> Unit,
+    onShowStepSize: () -> Unit,
 ) {
     val display = CounterValueFormatter.forMainCounter(state.toMainCounterProject())
 
+    val ringText = stringResource(R.string.counter_step_multiplier, state.counter.stepSize)
+    val textStyle = MaterialTheme.typography.labelLarge
+    val measured = rememberTextMeasurer().measure(ringText, textStyle, maxLines = 1, softWrap = false)
+    val ringSize =
+        with(LocalDensity.current) { measured.size.width.toDp() + CounterDimens.StepRingTextPadding * 2 }
+            .coerceIn(CounterDimens.StepRingMinimumSize, CounterDimens.StepRingMaximumSize)
     BoxWithConstraints(
         modifier =
             Modifier
@@ -617,28 +665,50 @@ private fun CounterButtons(
                 .widthIn(max = CounterDimens.CounterControlsMaxWidth)
                 .height(CounterDimens.CounterControlsHeight),
     ) {
+        val buttonWidth =
+            ((maxWidth - ringSize - CounterDimens.StepRingButtonGap * 2) / 2)
+                .coerceAtMost(CounterDimens.CounterPrimaryTouchSize)
         CounterImageButton(
             imageRes = R.drawable.counter_minus_button,
-            contentDescription = mainCounterDecreaseContentDescription(display.decreaseContentDescription),
+            contentDescription =
+                mainCounterDecreaseContentDescription(
+                    display.decreaseContentDescription,
+                    state.counter.stepSize,
+                ),
             visualSize = CounterDimens.CounterMinusVisualSize,
             visualOffsetY = CounterDimens.CounterMinusOpticalOffsetY,
             onClick = onDecrement,
             modifier =
                 Modifier
-                    .widthIn(max = maxWidth / 2)
+                    .width(buttonWidth)
                     .size(CounterDimens.CounterMinusTouchSize)
                     .align(Alignment.TopStart),
         )
         CounterImageButton(
             imageRes = R.drawable.counter_plus_button,
-            contentDescription = mainCounterIncreaseContentDescription(display.increaseContentDescription),
+            contentDescription =
+                mainCounterIncreaseContentDescription(
+                    display.increaseContentDescription,
+                    state.counter.stepSize,
+                ),
             visualSize = CounterDimens.CounterPrimaryVisualSize,
             onClick = onIncrement,
             modifier =
                 Modifier
-                    .widthIn(max = maxWidth / 2)
+                    .width(buttonWidth)
                     .size(CounterDimens.CounterPrimaryTouchSize)
                     .align(Alignment.TopEnd),
+        )
+        MainCounterStepButton(
+            stepSize = state.counter.stepSize,
+            text = ringText,
+            title = mainCounterStepTitle(state.mainCounterLabelType, state.mainCounterCustomLabel),
+            size = ringSize,
+            onClick = onShowStepSize,
+            modifier =
+                Modifier
+                    .align(Alignment.TopCenter)
+                    .padding(top = (CounterDimens.CounterPrimaryTouchSize - ringSize) / 2),
         )
         CounterImageButton(
             imageRes = R.drawable.counter_undo_button,
@@ -650,6 +720,47 @@ private fun CounterButtons(
                     .size(CounterDimens.CounterUndoTouchSize)
                     .align(Alignment.BottomCenter),
         )
+    }
+}
+
+@Composable
+private fun MainCounterStepButton(
+    stepSize: Int,
+    text: String,
+    title: String,
+    size: androidx.compose.ui.unit.Dp,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val description = stringResource(R.string.counter_step_change_description, title, stepSize)
+    val ringColor = if (stepSize > 1) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+    val textColor = if (stepSize > 1) MaterialTheme.knitToolsColors.primaryReadable else ringColor
+    Box(
+        modifier =
+            modifier
+                .size(size)
+                .testTag("main-counter-step")
+                .clickable(interactionSource = null, indication = null, role = Role.Button, onClick = onClick)
+                .semantics { contentDescription = description },
+        contentAlignment = Alignment.Center,
+    ) {
+        CounterStepButtonFace(
+            appearance =
+                CounterStepButtonFaceAppearance(
+                    visualSize = size,
+                    symbolSize = CounterDimens.CounterRepeatIconSize,
+                    containerColor = Color.Transparent,
+                    contentColor = ringColor,
+                ),
+        ) {
+            BasicText(
+                text = text,
+                style = MaterialTheme.typography.labelLarge.copy(color = textColor, textAlign = TextAlign.Center),
+                maxLines = 1,
+                autoSize = TextAutoSize.StepBased(),
+                modifier = Modifier.padding(CounterDimens.StepRingTextPadding).clearAndSetSemantics {},
+            )
+        }
     }
 }
 
@@ -670,17 +781,17 @@ private fun CompactPatternRepeatRow(
     onIncrement: () -> Unit,
 ) {
     val locale = rememberCurrentLocale()
-    Row(
+    FlowRow(
         modifier =
             Modifier
                 .widthIn(
                     min = CounterDimens.CounterRepeatMinWidth,
                     max = CounterDimens.CounterRepeatMaxWidth,
-                ).height(CounterDimens.CounterRepeatHeight)
+                ).heightIn(min = CounterDimens.CounterRepeatHeight)
                 .clip(RoundedCornerShape(CounterDimens.CounterRepeatCornerRadius))
                 .background(MaterialTheme.colorScheme.surfaceContainer)
                 .padding(horizontal = CounterDimens.CounterRepeatHorizontalPadding),
-        verticalAlignment = Alignment.CenterVertically,
+        itemVerticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
         Text(

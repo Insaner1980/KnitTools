@@ -28,7 +28,7 @@ fun ConfirmationDialog(
     isDestructive: Boolean = false,
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
-    scrollableMessage: Boolean = false,
+    scrollableMessage: Boolean = true,
     confirmEnabled: Boolean = true,
     confirmModifier: Modifier = Modifier,
     dismissModifier: Modifier = Modifier,

@@ -90,15 +90,16 @@ internal object BackupArchive {
                     }
                     BackupFormat.requireValid(BackupFormat.digest(target, check) == item.sha256)
                 }
+                verifyLocalHeaders(archive, manifest, zip, check)
                 manifest
             }
-        verifyLocalHeaders(archive, manifest, check)
         return manifest
     }
 
     private fun verifyLocalHeaders(
         archive: File,
         manifest: BackupManifest,
+        centralDirectory: ZipFile,
         check: () -> Unit,
     ) {
         // Tarkistetaan myös paikalliset otsakkeet: keskusluettelo voi piilottaa ylimääräisiä tai toistuvia jäseniä.
@@ -117,6 +118,13 @@ internal object BackupArchive {
                         expected[name]?.size ?: throw BackupException(BackupError.CORRUPT)
                     }
                 BackupFormat.copy(zip, discardOutput, max, check)
+                val central = centralDirectory.getEntry(name) ?: throw BackupException(BackupError.CORRUPT)
+                BackupFormat.requireValid(
+                    entry.size == central.size &&
+                        entry.compressedSize == central.compressedSize &&
+                        entry.crc == central.crc &&
+                        entry.method == central.method,
+                )
                 entry = zip.nextEntry
             }
             BackupFormat.requireValid(names == expected.keys + BackupFormat.MANIFEST)

@@ -109,27 +109,57 @@ fun mainCounterProjectCardCountText(slot: MainCounterCountSlot): String =
     }
 
 @Composable
-fun mainCounterIncreaseContentDescription(slot: MainCounterLabelSlot): String =
-    when (slot.labelType) {
-        MainCounterLabelType.ROWS -> stringResource(R.string.counter_add_row)
-        MainCounterLabelType.ROUNDS -> stringResource(R.string.counter_add_round)
-        MainCounterLabelType.REPEATS -> stringResource(R.string.counter_add_repeat)
-        MainCounterLabelType.CUSTOM ->
-            stringResource(
-                R.string.counter_add_custom,
-                slot.customLabel ?: stringResource(R.string.main_counter_custom),
-            )
+fun mainCounterIncreaseContentDescription(
+    slot: MainCounterLabelSlot,
+    stepSize: Int = 1,
+): String =
+    if (stepSize > 1) {
+        stringResource(R.string.counter_step_increase, stepSize, mainCounterLabelText(slot.labelType, slot.customLabel))
+    } else {
+        when (slot.labelType) {
+            MainCounterLabelType.ROWS -> stringResource(R.string.counter_add_row)
+            MainCounterLabelType.ROUNDS -> stringResource(R.string.counter_add_round)
+            MainCounterLabelType.REPEATS -> stringResource(R.string.counter_add_repeat)
+            MainCounterLabelType.CUSTOM ->
+                stringResource(
+                    R.string.counter_add_custom,
+                    slot.customLabel ?: stringResource(R.string.main_counter_custom),
+                )
+        }
     }
 
 @Composable
-fun mainCounterDecreaseContentDescription(slot: MainCounterLabelSlot): String =
-    when (slot.labelType) {
-        MainCounterLabelType.ROWS -> stringResource(R.string.counter_decrease_row)
-        MainCounterLabelType.ROUNDS -> stringResource(R.string.counter_decrease_round)
-        MainCounterLabelType.REPEATS -> stringResource(R.string.counter_decrease_repeat)
+fun mainCounterDecreaseContentDescription(
+    slot: MainCounterLabelSlot,
+    stepSize: Int = 1,
+): String =
+    if (stepSize > 1) {
+        stringResource(R.string.counter_step_decrease, stepSize, mainCounterLabelText(slot.labelType, slot.customLabel))
+    } else {
+        when (slot.labelType) {
+            MainCounterLabelType.ROWS -> stringResource(R.string.counter_decrease_row)
+            MainCounterLabelType.ROUNDS -> stringResource(R.string.counter_decrease_round)
+            MainCounterLabelType.REPEATS -> stringResource(R.string.counter_decrease_repeat)
+            MainCounterLabelType.CUSTOM ->
+                stringResource(
+                    R.string.counter_decrease_custom,
+                    slot.customLabel ?: stringResource(R.string.main_counter_custom),
+                )
+        }
+    }
+
+@Composable
+fun mainCounterStepTitle(
+    labelType: MainCounterLabelType,
+    customLabel: String?,
+): String =
+    when (labelType) {
+        MainCounterLabelType.ROWS -> stringResource(R.string.counter_step_rows_title)
+        MainCounterLabelType.ROUNDS -> stringResource(R.string.counter_step_rounds_title)
+        MainCounterLabelType.REPEATS -> stringResource(R.string.counter_step_repeats_title)
         MainCounterLabelType.CUSTOM ->
             stringResource(
-                R.string.counter_decrease_custom,
-                slot.customLabel ?: stringResource(R.string.main_counter_custom),
+                R.string.counter_step_custom_title,
+                mainCounterLabelText(labelType, customLabel),
             )
     }

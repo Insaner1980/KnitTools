@@ -11,8 +11,10 @@ import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -29,6 +31,79 @@ import java.nio.file.Files
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class YarnCardPhotoReplacementTest {
+    @Test
+    fun `cancelled photo result preserves a copy already published by the database`() =
+        verifyCancelledPhotoResult(published = true)
+
+    @Test
+    fun `cancelled unpublished photo is removed`() = verifyCancelledPhotoResult(published = false)
+
+    @Test
+    fun `cancelled photo result preserves the copy when publication cannot be checked`() =
+        verifyCancelledPhotoResult(published = true, failReadback = true)
+
+    private fun verifyCancelledPhotoResult(
+        published: Boolean,
+        failReadback: Boolean = false,
+    ) = runTest {
+        val yarnDao = mockk<YarnCardDao>(relaxed = true)
+        val context = mockk<Context>(relaxed = true)
+        val storage = mockk<YarnPhotoStorage>(relaxed = true)
+        val sourceUri = mockk<Uri>()
+        val filesDir = Files.createTempDirectory("knittools-photo-cancellation").toFile()
+        val copiedFile =
+            File(filesDir, "yarn_photos/5/published.jpg").apply {
+                parentFile?.mkdirs()
+                writeText("published")
+            }
+        val copiedUri = "file:///published.jpg"
+        var stored = YarnCardEntity(id = 5L, photoUri = "")
+        val committed = CompletableDeferred<Unit>()
+        var failure: Throwable? = null
+        every { context.filesDir } returns filesDir
+        coEvery { yarnDao.getCard(5L) } coAnswers {
+            if (failReadback && committed.isCompleted) error("Synthetic readback failure")
+            stored
+        }
+        every { storage.copyPhoto(context, 5L, sourceUri) } returns copiedUri
+        coEvery { yarnDao.updatePhotoUri(5L, copiedUri) } coAnswers {
+            if (published) stored = stored.copy(photoUri = copiedUri)
+            committed.complete(Unit)
+            awaitCancellation()
+        }
+        val repository =
+            YarnCardRepository(
+                dao = yarnDao,
+                counterProjectDao = mockk(relaxed = true),
+                context = context,
+                transactionRunner = ImmediateDatabaseTransactionRunner,
+                ioDispatcher = StandardTestDispatcher(testScheduler),
+                yarnPhotoStorage = storage,
+            )
+
+        try {
+            withParsedFileUri(copiedUri, copiedFile.absolutePath) {
+                val job =
+                    launch {
+                        try {
+                            repository.updatePhotoUri(5L, sourceUri)
+                        } catch (cancelled: CancellationException) {
+                            failure = cancelled
+                            throw cancelled
+                        }
+                    }
+                committed.await()
+                job.cancel()
+                job.join()
+            }
+            assertTrue(failure is CancellationException)
+            assertEquals(if (published) copiedUri else "", stored.photoUri)
+            assertEquals("Only an unpublished photo can be deleted", published || failReadback, copiedFile.exists())
+        } finally {
+            filesDir.deleteRecursively()
+        }
+    }
+
     // CPD-OFF: Testin skenaariokohtainen asetelma pidetaan paikallisena ja luettavana.
     @Test
     fun `yarn card photo update deletes copied photo when database save throws`() =

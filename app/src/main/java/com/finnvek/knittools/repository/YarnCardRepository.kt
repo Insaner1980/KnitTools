@@ -161,7 +161,11 @@ class YarnCardRepository
                     }
                 val updateResult = runCatching { dao.updatePhotoUri(id, copiedPhotoUri) }
                 updateResult.exceptionOrNull()?.let { failure ->
-                    deleteAppOwnedPhoto(copiedPhotoUri)
+                    withContext(ioDispatcher + NonCancellable) {
+                        val isUnreferenced =
+                            runCatching { dao.getCard(id)?.photoUri != copiedPhotoUri }.getOrDefault(false)
+                        if (isUnreferenced) deleteAppOwnedPhoto(copiedPhotoUri)
+                    }
                     throw failure
                 }
                 val updated = updateResult.getOrThrow() > 0

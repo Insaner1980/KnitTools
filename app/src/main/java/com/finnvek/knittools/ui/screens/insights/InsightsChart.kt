@@ -3,18 +3,14 @@ package com.finnvek.knittools.ui.screens.insights
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
@@ -30,6 +26,7 @@ import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
@@ -38,7 +35,10 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.constrainHeight
+import androidx.compose.ui.unit.dp
 import com.finnvek.knittools.R
 import com.finnvek.knittools.ui.components.localizedDateTimePattern
 import com.finnvek.knittools.ui.components.rememberCurrentLocale
@@ -465,12 +465,11 @@ private fun DrawScope.drawChartGridlines(
 }
 
 /**
- * Akselileimat sijoitetaan ämpärin kohdalle painotetuilla soluilla, jolloin leima
- * osuu pylvään keskelle myös kun ämpäreitä on 31. Leima saa levitä naapurisolun
- * tyhjän tilan päälle, koska kapea solu ei mahduta edes kahta numeroa.
+ * Axis labels follow bucket centers and stay inside the plot at either edge.
+ * Measured text widths determine which ticks fit without overlapping.
  */
 @Composable
-private fun ChartAxisLabels(
+internal fun ChartAxisLabels(
     buckets: List<InsightsChartBucket>,
     interval: PaceGroupingInterval,
     timeRange: TimeRange,
@@ -500,28 +499,47 @@ private fun ChartAxisLabels(
     // oman pylväänsä ohi.
     val pinsToEdges = buckets.size > SPARSE_AXIS_MAX_BUCKETS
 
-    Row(
+    val labels =
+        buckets.mapIndexedNotNull { index, bucket ->
+            when {
+                showsToday && index == lastIndex -> index to stringResource(R.string.insights_chart_axis_today)
+                index in labelled -> index to axisLabel(bucket.bucketStart, interval, timeRange)
+                else -> null
+            }
+        }
+    Layout(
+        content = { labels.forEach { (_, text) -> ChartAxisLabel(text) } },
         modifier =
             Modifier
                 .fillMaxWidth()
                 .heightIn(min = InsightsDimens.ChartAxisBandHeight),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        buckets.forEachIndexed { index, bucket ->
-            Box(
-                modifier = Modifier.weight(1f),
-                contentAlignment =
+    ) { measurables, constraints ->
+        val placeables = measurables.map { it.measure(Constraints()) }
+        val width = constraints.maxWidth
+        val height = constraints.constrainHeight(placeables.maxOfOrNull { it.height } ?: 0)
+        val gap = 4.dp.roundToPx()
+        val positions =
+            placeables.mapIndexed { labelIndex, placeable ->
+                val bucketIndex = labels[labelIndex].first
+                val centered = ((bucketIndex + 0.5f) * width / buckets.size - placeable.width / 2f).roundToInt()
+                val preferred =
                     when {
-                        !pinsToEdges -> Alignment.Center
-                        index == 0 -> Alignment.CenterStart
-                        index == lastIndex -> Alignment.CenterEnd
-                        else -> Alignment.Center
-                    },
-            ) {
-                if (showsToday && index == lastIndex) {
-                    ChartAxisLabel(text = stringResource(R.string.insights_chart_axis_today))
-                } else if (index in labelled) {
-                    ChartAxisLabel(text = axisLabel(bucket.bucketStart, interval, timeRange))
+                        pinsToEdges && bucketIndex == 0 -> 0
+                        pinsToEdges && bucketIndex == lastIndex -> width - placeable.width
+                        else -> centered
+                    }
+                preferred.coerceIn(0, (width - placeable.width).coerceAtLeast(0))
+            }
+        val todayLeft = if (showsToday) positions.last() else Int.MAX_VALUE
+        layout(width, height) {
+            var previousRight = -gap
+            placeables.forEachIndexed { index, placeable ->
+                val left = positions[index]
+                val isToday = showsToday && labels[index].first == lastIndex
+                // Reserve space for today and omit colliding ticks using their measured text widths.
+                if (isToday || (left >= previousRight + gap && left + placeable.width + gap <= todayLeft)) {
+                    placeable.placeRelative(left, (height - placeable.height) / 2)
+                    previousRight = left + placeable.width
                 }
             }
         }
@@ -537,7 +555,6 @@ private fun ChartAxisLabel(text: String) {
         maxLines = 1,
         softWrap = false,
         textAlign = TextAlign.Center,
-        modifier = Modifier.wrapContentWidth(unbounded = true),
     )
 }
 

@@ -12,12 +12,12 @@ import javax.xml.parsers.DocumentBuilderFactory
 
 class SavedPatternDetailSourceTest {
     @Test
-    fun `saved pattern deletion messages can scroll without changing other confirmations`() {
+    fun `confirmation messages scroll by default and saved pattern deletion opts in explicitly`() {
         val dialog =
             ProjectSourceFiles.read(
                 "app/src/main/java/com/finnvek/knittools/ui/components/ConfirmationDialog.kt",
             )
-        assertTrue(dialog.contains("scrollableMessage: Boolean = false"))
+        assertTrue(dialog.contains("scrollableMessage: Boolean = true"))
         assertTrue(
             dialog.contains("if (scrollableMessage) Modifier.verticalScroll(rememberScrollState()) else Modifier"),
         )

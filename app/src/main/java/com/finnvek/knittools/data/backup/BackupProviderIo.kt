@@ -102,6 +102,9 @@ internal class ContentResolverBackupProviderIo internal constructor(
         maxBytes: Long,
         check: () -> Unit,
     ) {
+        if (destination.scheme == "file" && destination.path?.let(::File)?.canonicalFile == source.canonicalFile) {
+            throw IOException("Backup destination must not overwrite its source archive")
+        }
         transfer(endpoint.request(destination, "wt")) { handle, deadline ->
             val output = handle.outputStream()
             FileInputStream(source).use { input ->

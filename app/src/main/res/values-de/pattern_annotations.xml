@@ -73,4 +73,6 @@
     <string name="pattern_annotation_export_failed">PDF-Export fehlgeschlagen. Die ursprüngliche PDF wurde nicht geändert.</string>
     <string name="pattern_annotation_export_default_name">Anleitung</string>
     <string name="pattern_annotation_export_filename">%1$s-mit-anmerkungen.pdf</string>
+    <string name="pattern_annotation_edit_text">Text bearbeiten</string>
+    <string name="pattern_annotation_write_failed">Der Text konnte nicht gespeichert werden. Die Anmerkung wurde möglicherweise geändert. Schließe den Editor und versuche es erneut.</string>
 </resources>

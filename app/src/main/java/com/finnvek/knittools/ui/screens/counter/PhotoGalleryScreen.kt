@@ -61,6 +61,7 @@ import androidx.core.net.toUri
 import coil3.compose.AsyncImage
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.model.ProgressPhoto
+import com.finnvek.knittools.domain.model.takeWithoutSplittingSurrogatePair
 import com.finnvek.knittools.pro.ProStatus
 import com.finnvek.knittools.ui.components.CancelButton
 import com.finnvek.knittools.ui.components.CollectWithLifecycleEffect
@@ -503,7 +504,7 @@ private fun RenamePhotoDialog(
         text = {
             TextField(
                 value = text,
-                onValueChange = { text = it.take(100) },
+                onValueChange = { text = it.takeWithoutSplittingSurrogatePair(100) },
                 singleLine = true,
                 placeholder = { Text(stringResource(R.string.photo_name_hint)) },
                 shape = MaterialTheme.shapes.medium,

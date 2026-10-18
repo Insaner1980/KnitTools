@@ -508,6 +508,7 @@
     </plurals>
     <string name="insights_chart_axis_today">i dag</string>
     <string name="insights_chart_a11y_daily">Daglig tid til %1$s, %2$s, %3$s, lengst %4$s</string>
+    <string name="insights_chart_a11y_weekly">Ukentlig tid til %1$s, %2$s, %3$s, lengst %4$s</string>
     <string name="insights_chart_a11y_monthly">Månedlig tid til %1$s, %2$s, %3$s, lengst %4$s</string>
     <string name="insights_chart_a11y_next">Neste stolpe</string>
     <string name="insights_chart_a11y_previous">Forrige stolpe</string>
@@ -1089,4 +1090,22 @@
     <string name="project_actions_overview_subtitle">Garn, oppskrift, notater og detaljer</string>
     <string name="project_actions_section_work_session">Arbeidsøkt</string>
     <string name="project_overview_amount_unknown">Ukjent</string>
+    <string name="counter_step_rows_title">Pinner per trykk</string>
+    <string name="counter_step_rounds_title">Omganger per trykk</string>
+    <string name="counter_step_repeats_title">Gjentakelser per trykk</string>
+    <string name="counter_step_custom_title">%1$s per trykk</string>
+    <string name="counter_step_description">Velg hvor mye ett trykk legger til eller trekker fra.</string>
+    <string name="counter_step_custom_amount">Eget antall</string>
+    <string name="counter_step_invalid">Skriv inn et heltall fra 1 til %1$d.</string>
+    <string name="counter_step_save_failed">Trinnstørrelsen kunne ikke lagres. Prøv igjen.</string>
+    <string name="counter_step_change_description">%1$s: %2$d. Endre.</string>
+    <string name="counter_step_increase">Øk med %1$d. %2$s.</string>
+    <string name="counter_step_decrease">Reduser med %1$d. %2$s.</string>
+    <string name="counter_step_multiplier">×%1$d</string>
+    <string name="counter_step_delta">%1$+d</string>
+    <string name="project_yarn_edit_title">Rediger prosjektgarn</string>
+    <string name="project_yarn_edit_conflict">Garnnotatet ble endret mens du redigerte. Lukk og åpne det igjen for å se den nyeste versjonen.</string>
+    <string name="project_yarn_edit_missing">Garnnotatet tilhører ikke lenger dette prosjektet. Lukk redigeringen.</string>
+    <string name="project_yarn_edit_invalid">Skriv inn et garnnavn.</string>
+    <string name="project_yarn_edit_failed">Kunne ikke lagre endringene. Utkastet ditt er fortsatt her. Prøv igjen.</string>
 </resources>

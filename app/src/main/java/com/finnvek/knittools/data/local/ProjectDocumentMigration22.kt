@@ -7,6 +7,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 import com.finnvek.knittools.domain.model.PROJECT_DOCUMENT_LABEL_MAX_LENGTH
 import com.finnvek.knittools.domain.model.READING_LINE_MAX_Y_FRACTION
 import com.finnvek.knittools.domain.model.READING_LINE_MIN_Y_FRACTION
+import com.finnvek.knittools.domain.model.takeWithoutSplittingSurrogatePair
 
 internal object ProjectDocumentMigration22 {
     val migration =
@@ -211,7 +212,7 @@ internal object ProjectDocumentMigration22 {
                 "Pattern",
             ).mapNotNull { it?.trim()?.takeIf(String::isNotEmpty) }
                 .first()
-        return candidate.take(PROJECT_DOCUMENT_LABEL_MAX_LENGTH)
+        return candidate.takeWithoutSplittingSurrogatePair(PROJECT_DOCUMENT_LABEL_MAX_LENGTH)
     }
 
     private fun decodedFileName(localPdfUri: String): String? =

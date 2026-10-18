@@ -59,6 +59,7 @@ class PatternPdfExporter private constructor(
         style: PatternAnnotationRenderStyle,
         onProgress: (PatternPdfExportProgress) -> Unit,
     ) = withContext(ioDispatcher) {
+        requireDifferentDestination(sourceUri, destinationUri)
         validateInputs(annotations, trackerHighlights)
         PdfPageRenderer(context, sourceUri).use { renderer ->
             val plan = planDocument(renderer)
@@ -72,6 +73,20 @@ class PatternPdfExporter private constructor(
             } finally {
                 if (tempFile.exists() && !tempFile.delete()) tempFile.deleteOnExit()
             }
+        }
+    }
+
+    private fun requireDifferentDestination(
+        source: Uri,
+        destination: Uri,
+    ) {
+        fun localFile(uri: Uri): File? =
+            AppFileStorage.resolveAppOwnedFile(context, uri)
+                ?: uri.path?.takeIf { uri.scheme == "file" }?.let(::File)
+        val sourceFile = localFile(source)?.canonicalFile
+        val destinationFile = localFile(destination)?.canonicalFile
+        if (source == destination || (sourceFile != null && sourceFile == destinationFile)) {
+            throw IOException("Pattern PDF destination must not overwrite its source")
         }
     }
 

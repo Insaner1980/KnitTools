@@ -511,6 +511,7 @@
     </plurals>
     <string name="insights_chart_axis_today">tänään</string>
     <string name="insights_chart_a11y_daily">Päivittäinen aika: %1$s, %2$s, %3$s, pisin %4$s</string>
+    <string name="insights_chart_a11y_weekly">Viikoittainen aika: %1$s, %2$s, %3$s, pisin %4$s</string>
     <string name="insights_chart_a11y_monthly">Kuukausittainen aika: %1$s, %2$s, %3$s, pisin %4$s</string>
     <string name="insights_chart_a11y_next">Seuraava pylväs</string>
     <string name="insights_chart_a11y_previous">Edellinen pylväs</string>
@@ -1382,4 +1383,22 @@
     <string name="project_actions_overview_subtitle">Lanka, ohje, muistiinpanot ja tiedot</string>
     <string name="project_actions_section_work_session">Työskentelyistunto</string>
     <string name="project_overview_amount_unknown">Ei tiedossa</string>
+    <string name="counter_step_rows_title">Kerroksia kerrallaan</string>
+    <string name="counter_step_rounds_title">Kierroksia kerrallaan</string>
+    <string name="counter_step_repeats_title">Toistoja kerrallaan</string>
+    <string name="counter_step_custom_title">%1$s kerrallaan</string>
+    <string name="counter_step_description">Valitse, kuinka paljon yksi napautus lisää tai vähentää.</string>
+    <string name="counter_step_custom_amount">Oma määrä</string>
+    <string name="counter_step_invalid">Anna kokonaisluku väliltä 1–%1$d.</string>
+    <string name="counter_step_save_failed">Askelkokoa ei voitu tallentaa. Yritä uudelleen.</string>
+    <string name="counter_step_change_description">%1$s: %2$d. Muuta.</string>
+    <string name="counter_step_increase">Lisää %1$d. %2$s.</string>
+    <string name="counter_step_decrease">Vähennä %1$d. %2$s.</string>
+    <string name="counter_step_multiplier">×%1$d</string>
+    <string name="counter_step_delta">%1$+d</string>
+    <string name="project_yarn_edit_title">Muokkaa projektin lankaa</string>
+    <string name="project_yarn_edit_conflict">Lankamuistiinpano muuttui muokkauksen aikana. Sulje ja avaa se uudelleen nähdäksesi uusimman version.</string>
+    <string name="project_yarn_edit_missing">Tämä lankamuistiinpano ei enää kuulu projektiin. Sulje muokkain.</string>
+    <string name="project_yarn_edit_invalid">Kirjoita langan nimi.</string>
+    <string name="project_yarn_edit_failed">Muutoksia ei voitu tallentaa. Luonnoksesi on yhä tässä. Yritä uudelleen.</string>
 </resources>

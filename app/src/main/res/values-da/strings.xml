@@ -508,6 +508,7 @@
     </plurals>
     <string name="insights_chart_axis_today">i dag</string>
     <string name="insights_chart_a11y_daily">Daglig tid til %1$s, %2$s, %3$s, længst %4$s</string>
+    <string name="insights_chart_a11y_weekly">Ugentlig tid til %1$s, %2$s, %3$s, længst %4$s</string>
     <string name="insights_chart_a11y_monthly">Månedlig tid til %1$s, %2$s, %3$s, længst %4$s</string>
     <string name="insights_chart_a11y_next">Næste søjle</string>
     <string name="insights_chart_a11y_previous">Forrige søjle</string>
@@ -1089,4 +1090,22 @@
     <string name="project_actions_overview_subtitle">Garn, opskrift, noter og detaljer</string>
     <string name="project_actions_section_work_session">Arbejdssession</string>
     <string name="project_overview_amount_unknown">Ukendt</string>
+    <string name="counter_step_rows_title">Pinde pr. tryk</string>
+    <string name="counter_step_rounds_title">Omgange pr. tryk</string>
+    <string name="counter_step_repeats_title">Gentagelser pr. tryk</string>
+    <string name="counter_step_custom_title">%1$s pr. tryk</string>
+    <string name="counter_step_description">Vælg, hvor meget ét tryk lægger til eller trækker fra.</string>
+    <string name="counter_step_custom_amount">Eget antal</string>
+    <string name="counter_step_invalid">Indtast et heltal fra 1 til %1$d.</string>
+    <string name="counter_step_save_failed">Trinstørrelsen kunne ikke gemmes. Prøv igen.</string>
+    <string name="counter_step_change_description">%1$s: %2$d. Skift.</string>
+    <string name="counter_step_increase">Øg med %1$d. %2$s.</string>
+    <string name="counter_step_decrease">Mindsk med %1$d. %2$s.</string>
+    <string name="counter_step_multiplier">×%1$d</string>
+    <string name="counter_step_delta">%1$+d</string>
+    <string name="project_yarn_edit_title">Rediger projektgarn</string>
+    <string name="project_yarn_edit_conflict">Garnnoten blev ændret under redigeringen. Luk og åbn den igen for at se den nyeste version.</string>
+    <string name="project_yarn_edit_missing">Garnnoten hører ikke længere til dette projekt. Luk editoren.</string>
+    <string name="project_yarn_edit_invalid">Indtast et garnnavn.</string>
+    <string name="project_yarn_edit_failed">Ændringerne kunne ikke gemmes. Din kladde er stadig her. Prøv igen.</string>
 </resources>

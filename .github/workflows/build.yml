@@ -95,7 +95,8 @@ jobs:
         uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
         with:
           api-level: 36
-          target: google_apis
+          # These app-only flows do not require Google apps, System UI or external pickers.
+          target: aosp_atd
           arch: x86_64
           profile: pixel_2
           ram-size: 3072M

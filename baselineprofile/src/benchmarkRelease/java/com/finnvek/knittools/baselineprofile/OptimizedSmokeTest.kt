@@ -27,7 +27,7 @@ class OptimizedSmokeTest {
     fun projectCounterSessionAndNavigation() =
         with(ui) {
             // R01: this is the unseeded release launcher with no INTERNET permission.
-            text(string("no_active_projects"))
+            text(string("start_compact_title_knitting"))
             capture("R01-empty")
             createProject("Smoke project")
             tapDesc("Add row")
@@ -79,8 +79,8 @@ class OptimizedSmokeTest {
         with(ui) {
             createProject("Free project")
             projects()
-            tap("New Project")
-            text("Create another active project with Pro")
+            find(By.descStartsWith(string("new_project"))).click()
+            text(string("onboarding_pro_projects_title"))
             capture("R11-free-gate")
             tap("Not now")
             startTrial()

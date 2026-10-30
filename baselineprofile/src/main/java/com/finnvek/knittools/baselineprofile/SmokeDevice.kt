@@ -69,8 +69,9 @@ internal class SmokeDevice : TestWatcher() {
         shell("settings put system accelerometer_rotation 0")
         shell("settings put system user_rotation 0")
         launch()
+        tapDesc(string("welcome_dismiss_a11y"))
         text("Projects")
-        desc("New Project")
+        find(By.descStartsWith(string("new_project")))
     }
 
     fun shell(command: String): String = device.executeShellCommand(command)
@@ -217,7 +218,7 @@ internal class SmokeDevice : TestWatcher() {
     }
 
     fun createProject(name: String) {
-        tapDesc("New Project")
+        find(By.descStartsWith(string("new_project"))).click()
         edit(0, name)
         scrollTo("Create project").click()
         desc(string("current_row_short", 0))
@@ -237,16 +238,18 @@ internal class SmokeDevice : TestWatcher() {
     fun projects() {
         // From the counter, Back returns to the Projects list.
         device.pressBack()
-        desc("New Project")
+        find(By.descStartsWith(string("new_project")))
     }
 
     fun startTrial() {
         // Exercise the real local trial action from the second-project gate.
-        tapDesc("New Project")
+        find(By.descStartsWith(string("new_project"))).click()
         tap("Start free trial")
         find(By.clazz("android.widget.EditText"))
         tapDesc("Close sheet")
-        desc("New Project")
+        text(string("trial_started_screen_title"))
+        tap(string("completed_close"))
+        find(By.descStartsWith(string("new_project")))
     }
 
     fun capture(name: String) {

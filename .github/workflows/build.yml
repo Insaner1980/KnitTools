@@ -75,7 +75,7 @@ jobs:
 
       # No signing or production service secrets are passed to this PR job.
       - name: Build optimized test target and external driver
-        run: ./gradlew -Pknittools.optimizedSmoke=true :app:assembleBenchmarkRelease :baselineprofile:assembleBenchmarkRelease
+        run: ./gradlew --no-daemon -Pknittools.optimizedSmoke=true :app:assembleBenchmarkRelease :baselineprofile:assembleBenchmarkRelease
 
       - name: Free runner disk space for emulator
         run: |
@@ -98,7 +98,7 @@ jobs:
           target: google_apis
           arch: x86_64
           profile: pixel_2
-          ram-size: 2048M
+          ram-size: 3072M
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader -no-snapshot -noaudio -no-boot-anim
           pre-emulator-launch-script: df -h "$HOME/.android/avd"

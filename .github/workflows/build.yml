@@ -77,6 +77,14 @@ jobs:
       - name: Build optimized test target and external driver
         run: ./gradlew -Pknittools.optimizedSmoke=true :app:assembleBenchmarkRelease :baselineprofile:assembleBenchmarkRelease
 
+      - name: Free runner disk space for emulator
+        run: |
+          df -h /
+          # API 24+ images require at least 6 GiB of userdata plus 20% free-space headroom.
+          # This disposable Android job uses neither Haskell nor CodeQL.
+          sudo rm -rf /usr/local/.ghcup /opt/hostedtoolcache/CodeQL
+          df -h /
+
       - name: Enable KVM
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
@@ -91,9 +99,9 @@ jobs:
           arch: x86_64
           profile: pixel_2
           ram-size: 2048M
-          disk-size: 2048M
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader -no-snapshot -noaudio -no-boot-anim
+          pre-emulator-launch-script: df -h "$HOME/.android/avd"
           script: pwsh -NoProfile -File tools/optimized-smoke.ps1 -Serial emulator-5554 -DisposableEmulator -ExpectedTests 2 -Test 'com.finnvek.knittools.baselineprofile.OptimizedSmokeTest#projectCounterSessionAndNavigation,com.finnvek.knittools.baselineprofile.OptimizedSmokeTest#freeGateTrialAndAdaptiveTransitions'
 
       - name: Preserve optimized artifact identity, mapping and diagnostics

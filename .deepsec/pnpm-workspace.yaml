@@ -20,3 +20,4 @@ overrides:
 
 patchedDependencies:
   deepsec@2.3.9: patches/deepsec@2.3.9.patch
+  zod@3.24.4: patches/zod@3.24.4.patch

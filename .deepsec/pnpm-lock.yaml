@@ -21,6 +21,7 @@ overrides:
 
 patchedDependencies:
   deepsec@2.3.9: d5a9ef3fa527c44e27ced86f7a223c0a431e14b7ccea4edb5904ab808270ed0d
+  zod@3.24.4: 7f2ba3e46707d8922aa823fe179ff2f401eff38648cbddb8f954af4a5e81472d
 
 importers:
 
@@ -2099,7 +2100,7 @@ snapshots:
       tar-stream: 3.1.7
       undici: 7.30.1
       xdg-app-paths: 5.1.0
-      zod: 3.24.4
+      zod: 3.24.4(patch_hash=7f2ba3e46707d8922aa823fe179ff2f401eff38648cbddb8f954af4a5e81472d)
     transitivePeerDependencies:
       - bare-abort-controller
       - react-native-b4a
@@ -2968,6 +2969,6 @@ snapshots:
     dependencies:
       zod: 4.6.7
 
-  zod@3.24.4: {}
+  zod@3.24.4(patch_hash=7f2ba3e46707d8922aa823fe179ff2f401eff38648cbddb8f954af4a5e81472d): {}
 
   zod@4.6.7: {}

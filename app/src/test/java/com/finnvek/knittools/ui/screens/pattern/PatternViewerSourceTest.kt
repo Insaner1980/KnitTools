@@ -630,7 +630,18 @@ class PatternViewerSourceTest {
         assertFalse(callback.contains("destination != null"))
         assertFalse(viewer.contains("pendingExportSource"))
         assertTrue(viewer.contains("SideEffect { annotationActions.onExportContextChanged(state.exportContext) }"))
-        assertTrue(viewer.contains("onDispose { annotationActions.onExportContextChanged(null) }"))
+        val disposal = viewer.blockBetween("DisposableEffect(exportRequests, activity)", "var pendingExportRequestId")
+        assertTrue(disposal.contains("onDispose {"))
+        assertTrue(
+            disposal.contains(
+                "if (activity?.isChangingConfigurations != true) annotationActions.onExportContextChanged(null)",
+            ),
+        )
+        assertTrue(callback.contains("destinationLaunched by rememberSaveable"))
+        assertTrue(callback.contains("if (requestId != null && !destinationLaunched)"))
+        val launchedIndex = callback.indexOf("destinationLaunched = true")
+        assertTrue(launchedIndex >= 0)
+        assertTrue(callback.indexOf("exportLauncher.launch(exportFilename)") > launchedIndex)
         assertTrue(viewer.contains("owner = PatternAnnotationOwner.Project(document.projectId, document.documentKey)"))
         assertTrue(viewer.contains("projectDocumentId = document.id"))
         assertTrue(viewer.contains("PatternPdfExportContext(it.toUri(), annotationState.owner)"))

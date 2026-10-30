@@ -189,7 +189,8 @@ class ExtraCounterAdmissionRuntimeTest {
                 compose.onNodeWithText(localized.getString(R.string.save)).assertDoesNotExist()
                 if (attempts.get() != 0) {
                     release.complete(Unit)
-                    val misplaced = counterRepository().getCountersForProject(second).first { it.isNotEmpty() }
+                    compose.waitForIdle()
+                    val misplaced = counterRepository().getCountersForProject(second).first()
                     assertTrue("Old First draft was stored in Second: $misplaced", misplaced.isEmpty())
                 }
                 assertEquals("A stale dialog must never enter a repository write", 0, attempts.get())

@@ -316,6 +316,53 @@ class PatternViewerViewModelTest {
             assertEquals(PatternBookmarkError.NOT_FOUND, viewModel.uiState.value.error)
         }
 
+    @Test
+    fun `shared bookmark mutations recover from exceptions and retain successful selection behavior`() =
+        runTest {
+            val item = bookmark(1L, DOCUMENT_A)
+            val observed = MutableStateFlow(active(DOCUMENT_A, listOf(item)))
+            val repository = mockk<PatternBookmarkRepository>()
+            every { repository.observeActiveBookmarks(7L) } returns observed
+            val viewModel =
+                PatternViewerViewModel(
+                    repository,
+                    bookmarkDocumentRepository(),
+                    SavedStateHandle(mapOf("projectId" to 7L)),
+                )
+            backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.uiState.collect() }
+            advanceUntilIdle()
+            val actions =
+                listOf<Pair<() -> Unit, PatternBookmarkError>>(
+                    { viewModel.addBookmark("Body", 0, 0.5f) } to PatternBookmarkError.SAVE_FAILURE,
+                    { viewModel.renameBookmark(1L, "Body") } to PatternBookmarkError.RENAME_FAILURE,
+                    { viewModel.deleteBookmark(1L) } to PatternBookmarkError.DELETE_FAILURE,
+                )
+            actions.forEach { (action, error) ->
+                coEvery { repository.add(7L, DOCUMENT_A, any(), any(), any()) } throws IllegalStateException("failed")
+                coEvery { repository.rename(7L, DOCUMENT_A, 1L, any()) } throws IllegalStateException("failed")
+                coEvery { repository.delete(7L, DOCUMENT_A, 1L) } throws IllegalStateException("failed")
+                action()
+                advanceUntilIdle()
+                assertEquals(error, viewModel.uiState.value.error)
+                assertEquals(listOf(item), viewModel.uiState.value.bookmarks)
+                assertFalse(viewModel.uiState.value.isMutating)
+
+                coEvery { repository.add(7L, DOCUMENT_A, any(), any(), any()) } returns
+                    PatternBookmarkMutationResult.Success(item)
+                coEvery { repository.rename(7L, DOCUMENT_A, 1L, any()) } returns
+                    PatternBookmarkMutationResult.Success(item)
+                coEvery { repository.delete(7L, DOCUMENT_A, 1L) } returns PatternBookmarkMutationResult.Success(item)
+                action()
+                advanceUntilIdle()
+                assertNull(viewModel.uiState.value.error)
+                assertFalse(viewModel.uiState.value.isMutating)
+                assertEquals(
+                    if (error == PatternBookmarkError.DELETE_FAILURE) null else item.id,
+                    viewModel.uiState.value.selectedBookmarkId,
+                )
+            }
+        }
+
     // CPD-OFF: Kirjanmerkkitestien skenaariokohtainen asetelma pidetaan testien yhteydessa.
     @Test
     fun `stale action fails closed without repository mutation`() =

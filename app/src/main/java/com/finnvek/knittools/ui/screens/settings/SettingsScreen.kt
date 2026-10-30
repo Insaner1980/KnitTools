@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.toggleable
@@ -35,7 +36,7 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -62,6 +63,8 @@ import com.finnvek.knittools.ui.components.LabelWithInfo
 import com.finnvek.knittools.ui.components.SectionLabel
 import com.finnvek.knittools.ui.components.SegmentedToggle
 import com.finnvek.knittools.ui.components.SheetTitle
+import com.finnvek.knittools.ui.layout.ContentWidthPolicy
+import com.finnvek.knittools.ui.layout.contentWidth
 import com.finnvek.knittools.ui.platform.ExternalWebLinkOpenResult
 import com.finnvek.knittools.ui.platform.openExternalWebLink
 import com.finnvek.knittools.ui.theme.knitToolsColors
@@ -71,6 +74,7 @@ import com.finnvek.knittools.ui.theme.knitToolsColors
 fun SettingsScreen(
     onUpgradeToPro: () -> Unit,
     onBackup: () -> Unit = {},
+    onGuide: () -> Unit = {},
     viewModelProvider: @Composable () -> SettingsViewModel = { hiltViewModel() },
 ) {
     val viewModel = viewModelProvider()
@@ -80,13 +84,14 @@ fun SettingsScreen(
     val isRestoring by viewModel.isRestoring.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val resources = LocalResources.current
-    val showLanguageSheet = remember { mutableStateOf(false) }
+    val showLanguageSheet = rememberSaveable { mutableStateOf(false) }
 
     CollectWithLifecycleEffect({ viewModel.messages }) { messageRes ->
         Toast.makeText(context, resources.getString(messageRes), Toast.LENGTH_SHORT).show()
     }
 
     Scaffold(
+        modifier = Modifier.fillMaxSize().wrapContentWidth().contentWidth(ContentWidthPolicy.Form),
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
@@ -185,6 +190,11 @@ fun SettingsScreen(
             SettingsSectionLabel(stringResource(R.string.settings_section_info))
 
             SettingsActionRow(
+                label = stringResource(R.string.guide_entry_settings),
+                onClick = onGuide,
+            )
+
+            SettingsActionRow(
                 label = stringResource(R.string.help_and_guide),
                 onClick = {
                     val messageRes =
@@ -201,6 +211,11 @@ fun SettingsScreen(
                         Toast.makeText(context, resources.getString(it), Toast.LENGTH_SHORT).show()
                     }
                 },
+            )
+
+            SettingsActionRow(
+                label = stringResource(R.string.settings_show_tips_again),
+                onClick = viewModel::showTipsAgain,
             )
 
             SettingsDivider()
@@ -454,6 +469,7 @@ private fun LanguagePickerBottomSheet(
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     ModalBottomSheet(
+        sheetMaxWidth = ContentWidthPolicy.Form.maxWidth,
         onDismissRequest = onDismiss,
         sheetState = sheetState,
         containerColor = MaterialTheme.colorScheme.surface,
@@ -527,6 +543,7 @@ private fun AppLanguage.labelResId(): Int =
         AppLanguage.FRENCH -> R.string.settings_language_french
         AppLanguage.SPANISH -> R.string.settings_language_spanish
         AppLanguage.PORTUGUESE -> R.string.settings_language_portuguese
+        AppLanguage.BRAZILIAN_PORTUGUESE -> R.string.settings_language_brazilian_portuguese
         AppLanguage.ITALIAN -> R.string.settings_language_italian
         AppLanguage.NORWEGIAN -> R.string.settings_language_norwegian
         AppLanguage.DANISH -> R.string.settings_language_danish

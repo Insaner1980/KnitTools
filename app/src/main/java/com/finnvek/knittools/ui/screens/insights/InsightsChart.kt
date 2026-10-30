@@ -10,7 +10,11 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
@@ -27,8 +31,10 @@ import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -37,6 +43,7 @@ import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.constrainHeight
 import androidx.compose.ui.unit.dp
 import com.finnvek.knittools.R
@@ -170,20 +177,15 @@ private fun ChartPlot(
         }
 
     val haptics = LocalHapticFeedback.current
+    val currentOnSelectBucket by rememberUpdatedState(onSelectBucket)
+    var plotSize by remember { mutableStateOf(IntSize.Zero) }
 
     // Eleiden oma sarakehaku; piirto laskee pitchin erikseen omasta DrawScopen koostaan.
-    fun bucketIndexAt(
-        x: Float,
-        width: Int,
-    ): Int {
-        val pitch = width / buckets.size.toFloat()
-        return (x / pitch).toInt().coerceIn(0, buckets.lastIndex)
-    }
-
     Canvas(
         modifier =
             Modifier
                 .fillMaxWidth()
+                .testTag("insights-chart-plot")
                 .height(
                     chartPlotHeight(
                         bucketCount = buckets.size,
@@ -193,15 +195,15 @@ private fun ChartPlot(
                 // Dokumentoitu poikkeus: kuukausinäkymässä 28-31 osumakohdetta ei mahdu
                 // 48dp minimiin puhelimen leveydelle. Kosketus on täydentävä polku, sillä
                 // asteikkoteksti ja lukemarivi kertovat arvot ilman vuorovaikutusta.
-                .pointerInput(buckets.size) {
+                .onSizeChanged { plotSize = it }
+                .pointerInput(buckets, plotSize) {
                     detectTapGestures { offset ->
-                        if (buckets.isEmpty()) return@detectTapGestures
-                        onSelectBucket(bucketIndexAt(offset.x, size.width))
+                        chartBucketIndexAt(offset.x, size.width, buckets.size)?.let(currentOnSelectBucket)
                     }
                 }
                 // Vetoele tekee kapeista kuukausipylväistä käytettäviä: 12dp osumatarkkuus
                 // ei riitä napautukselle, mutta sormen seuraaminen ei vaadi tarkkuutta.
-                .pointerInput(buckets.size) {
+                .pointerInput(buckets, plotSize) {
                     // Viimeksi valittu sarake pidetään eleen omassa muuttujassa. Parametrina
                     // saatu selectedIndex jäisi eleen käynnistyshetken arvoon, jolloin naksu
                     // toistuisi joka osoitintapahtumalla eikä vain sarakkeen vaihtuessa.
@@ -209,16 +211,19 @@ private fun ChartPlot(
                     detectHorizontalDragGestures(
                         onDragStart = { offset ->
                             if (buckets.isEmpty()) return@detectHorizontalDragGestures
-                            lastSelectedIndex = bucketIndexAt(offset.x, size.width)
-                            onSelectBucket(lastSelectedIndex)
+                            lastSelectedIndex = chartBucketIndexAt(offset.x, size.width, buckets.size)
+                                ?: return@detectHorizontalDragGestures
+                            currentOnSelectBucket(lastSelectedIndex)
                         },
                     ) { change, _ ->
                         if (buckets.isEmpty()) return@detectHorizontalDragGestures
-                        val index = bucketIndexAt(change.position.x, size.width)
+                        val index =
+                            chartBucketIndexAt(change.position.x, size.width, buckets.size)
+                                ?: return@detectHorizontalDragGestures
                         if (index != lastSelectedIndex) {
                             lastSelectedIndex = index
                             haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                            onSelectBucket(index)
+                            currentOnSelectBucket(index)
                         }
                     }
                 },
@@ -300,6 +305,17 @@ private fun ChartPlot(
         }
     }
 }
+
+internal fun chartBucketIndexAt(
+    x: Float,
+    width: Int,
+    bucketCount: Int,
+): Int? =
+    if (width <= 0 || bucketCount <= 0 || !x.isFinite()) {
+        null
+    } else {
+        (x / width * bucketCount).toInt().coerceIn(0, bucketCount - 1)
+    }
 
 /**
  * Pylväs, joka on jaettu projektien värisiin osiin. Osat piirretään pylvään
@@ -503,7 +519,14 @@ internal fun ChartAxisLabels(
         buckets.mapIndexedNotNull { index, bucket ->
             when {
                 showsToday && index == lastIndex -> index to stringResource(R.string.insights_chart_axis_today)
-                index in labelled -> index to axisLabel(bucket.bucketStart, interval, timeRange)
+                index in labelled ->
+                    index to
+                        axisLabel(
+                            bucket.bucketStart,
+                            interval,
+                            timeRange,
+                            spansYears = buckets.first().bucketStart.year != buckets.last().bucketStart.year,
+                        )
                 else -> null
             }
         }
@@ -537,8 +560,11 @@ internal fun ChartAxisLabels(
                 val left = positions[index]
                 val isToday = showsToday && labels[index].first == lastIndex
                 // Reserve space for today and omit colliding ticks using their measured text widths.
-                if (isToday || (left >= previousRight + gap && left + placeable.width + gap <= todayLeft)) {
-                    placeable.placeRelative(left, (height - placeable.height) / 2)
+                if (placeable.width <= width &&
+                    (isToday || (left >= previousRight + gap && left + placeable.width + gap <= todayLeft))
+                ) {
+                    // Canvas bucket coordinates are physical left-to-right, including in RTL.
+                    placeable.place(left, (height - placeable.height) / 2)
                     previousRight = left + placeable.width
                 }
             }
@@ -597,11 +623,12 @@ private fun axisLabel(
     bucketStart: LocalDate,
     interval: PaceGroupingInterval,
     timeRange: TimeRange,
+    spansYears: Boolean,
 ): String {
     val locale: Locale = rememberCurrentLocale()
     val skeleton =
         when {
-            interval == PaceGroupingInterval.MONTH -> "MMM"
+            interval == PaceGroupingInterval.MONTH -> if (spansYears) "yMMM" else "MMM"
 
             // Viikkoakselilla pelkkä päivänumero olisi monitulkintainen kuukausirajan yli.
             interval == PaceGroupingInterval.WEEK -> "MMMd"

@@ -10,10 +10,10 @@ import javax.xml.parsers.DocumentBuilderFactory
 
 class MeasurementsLocalizationTest {
     @Test
-    fun `all eleven locales have measurement strings with matching placeholders`() {
+    fun `all twelve locales have measurement strings with matching placeholders`() {
         val resources = localizedResources()
         val base = measurementStrings(resources.getValue("values"))
-        assertEquals(11, resources.size)
+        assertEquals(12, resources.size)
         assertTrue("Measurement strings must exist in the base resources", "measurement_title" in base)
 
         resources.forEach { (locale, document) ->
@@ -52,7 +52,7 @@ class MeasurementsLocalizationTest {
                         .map { items.item(it) as Element }
                         .associate { it.getAttribute("quantity") to it.textContent }
                 val requiredQuantities =
-                    if (locale in setOf("values-fr", "values-es", "values-pt", "values-it")) {
+                    if (locale in setOf("values-fr", "values-es", "values-pt", "values-pt-rBR", "values-it")) {
                         setOf("one", "many", "other")
                     } else {
                         setOf("one", "other")

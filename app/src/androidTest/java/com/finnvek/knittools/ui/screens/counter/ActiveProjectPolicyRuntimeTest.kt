@@ -115,11 +115,28 @@ class ActiveProjectPolicyRuntimeTest {
     }
 
     @Test
+    fun firstOnboardingProjectIsFreeAndSecondRequiresPro() {
+        launch()
+        createViaUi("Onboarding first project")
+        assertEquals(1, runBlocking { repository.getActiveProjectCount() })
+        assertEquals(
+            ProStatus.TRIAL_NOT_STARTED,
+            app.proManager
+                .get()
+                .proState.value.status,
+        )
+        pressBack()
+        clickDescription(R.string.new_project)
+        waitText(text(R.string.onboarding_pro_projects_title))
+        assertEquals(1, runBlocking { repository.getProjectCount() })
+    }
+
+    @Test
     fun pendingCreationOpensWhenLastActiveProjectIsCompleted() {
         val active = seed("Active project")
         launch()
         clickDescription(R.string.new_project)
-        waitText(text(R.string.pro_prompt_projects_title))
+        waitText(text(R.string.onboarding_pro_projects_title))
         runBlocking { repository.archiveProject(active, 200L) }
         waitText(text(R.string.new_project_details_title))
         typeName("Free slot creation")
@@ -133,7 +150,7 @@ class ActiveProjectPolicyRuntimeTest {
         val active = seed("Active project")
         launch()
         clickDescription(R.string.new_project)
-        waitText(text(R.string.pro_prompt_projects_title))
+        waitText(text(R.string.onboarding_pro_projects_title))
         click(R.string.pro_prompt_not_now)
         runBlocking { repository.deleteProject(active) }
         idle()
@@ -156,7 +173,7 @@ class ActiveProjectPolicyRuntimeTest {
         createViaUi("Next free project")
         pressBack()
         clickDescription(R.string.new_project)
-        waitText(text(R.string.pro_prompt_projects_title))
+        waitText(text(R.string.onboarding_pro_projects_title))
         scrollToText(R.string.pro_prompt_not_now)
         screenshot("en-create")
         click(R.string.pro_prompt_not_now)
@@ -171,12 +188,12 @@ class ActiveProjectPolicyRuntimeTest {
         launch()
         open("Finished target")
         action(R.string.reactivate_project)
-        waitText(text(R.string.pro_prompt_reactivation_title))
+        waitText(text(R.string.onboarding_pro_reactivation_title))
         screenshot("en-reactivation")
         click(R.string.pro_prompt_not_now)
         assertTrue(runBlocking { requireNotNull(repository.getProject(completed)).isCompleted })
         action(R.string.reactivate_project)
-        waitText(text(R.string.pro_prompt_reactivation_title))
+        waitText(text(R.string.onboarding_pro_reactivation_title))
         runBlocking { repository.archiveProject(active, 200L) }
         waitFor { runBlocking { repository.getProject(completed)?.isCompleted == false } }
         assertEquals(1, runBlocking { repository.getActiveProjectCount() })
@@ -215,7 +232,7 @@ class ActiveProjectPolicyRuntimeTest {
         typeName("Original draft")
         seed("Concurrent active")
         click(R.string.create_project)
-        waitText(text(R.string.pro_prompt_projects_title))
+        waitText(text(R.string.onboarding_pro_projects_title))
         click(R.string.pro_start_free_trial)
         waitFor { runBlocking { repository.getAllProjects().first().count { it.name == "Original draft" } == 1 } }
         assertEquals(2, runBlocking { repository.getActiveProjectCount() })
@@ -237,7 +254,7 @@ class ActiveProjectPolicyRuntimeTest {
         launch()
         open("Finished target")
         action(R.string.reactivate_project)
-        waitText(text(R.string.pro_prompt_reactivation_title))
+        waitText(text(R.string.onboarding_pro_reactivation_title))
         click(R.string.pro_start_free_trial)
         waitFor { runBlocking { repository.getProject(completed)?.isCompleted == false } }
         val after = runBlocking { repository.getProject(completed) }
@@ -253,7 +270,7 @@ class ActiveProjectPolicyRuntimeTest {
         launch()
         open("Finished target")
         action(R.string.reactivate_project)
-        waitText(text(R.string.pro_prompt_reactivation_title))
+        waitText(text(R.string.onboarding_pro_reactivation_title))
         for (result in listOf(
             TrialStartResult.AlreadyExpired,
             TrialStartResult.AlreadyTampered,
@@ -583,7 +600,8 @@ class ActiveProjectPolicyRuntimeTest {
 
     private fun scrollToText(label: Int) {
         waitFor {
-            if (findText(text(label))?.isVisibleToUser == true) {
+            val target = findText(text(label)) ?: findNode { it.contentDescription?.toString() == text(label) }
+            if (target?.isVisibleToUser == true) {
                 true
             } else {
                 val expandable =
@@ -604,6 +622,7 @@ class ActiveProjectPolicyRuntimeTest {
     }
 
     private fun click(label: Int) {
+        if (label == R.string.create_project) scrollToText(label)
         waitText(text(label))
         val value = text(label)
         clickNode(value) { it.text?.toString()?.equals(value, ignoreCase = true) == true }
@@ -611,6 +630,7 @@ class ActiveProjectPolicyRuntimeTest {
     }
 
     private fun clickDescription(label: Int) {
+        if (label == R.string.new_project) scrollToText(label)
         val description = text(label)
         if (label == R.string.counter_add_row) {
             clickObservation("description-wait-start")

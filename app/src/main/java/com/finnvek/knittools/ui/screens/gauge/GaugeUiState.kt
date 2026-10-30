@@ -8,6 +8,7 @@ import com.finnvek.knittools.domain.model.GaugeBasis
 import com.finnvek.knittools.domain.model.MeasurementAdjustmentResult
 import com.finnvek.knittools.domain.model.MeasurementCountResult
 import com.finnvek.knittools.domain.model.MeasurementUnit
+import com.finnvek.knittools.pro.ProState
 
 enum class GaugeTask { CONVERT, MEASURE, CALCULATE, ADJUST }
 
@@ -60,7 +61,8 @@ data class GaugeUiState(
     val manualRowGauge: Boolean = false,
     val projectName: String? = null,
     val projectUnavailable: Boolean = false,
-    val isPro: Boolean = false,
+    val proState: ProState = ProState(),
+    val proAccessReady: Boolean = false,
 ) {
     val lengthUnit: MeasurementUnit
         get() = if (basis == GaugeBasis.PER_10_CM) MeasurementUnit.CM else MeasurementUnit.INCH

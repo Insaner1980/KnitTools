@@ -42,19 +42,23 @@ import com.finnvek.knittools.domain.calculator.CounterValueFormatter
 import com.finnvek.knittools.domain.calculator.MeasurementNumberParser
 import com.finnvek.knittools.domain.calculator.ReminderLogic
 import com.finnvek.knittools.domain.model.RowReminder
-import com.finnvek.knittools.pro.ProStatus
+import com.finnvek.knittools.pro.ProActionAccess
+import com.finnvek.knittools.pro.ProFeature
+import com.finnvek.knittools.pro.ProState
+import com.finnvek.knittools.pro.proActionAccess
 import com.finnvek.knittools.ui.components.CancelButton
 import com.finnvek.knittools.ui.components.ConfirmationDialog
 import com.finnvek.knittools.ui.components.LabeledTextField
 import com.finnvek.knittools.ui.components.NumberInputField
 import com.finnvek.knittools.ui.components.NumberInputOptions
 import com.finnvek.knittools.ui.components.OverviewTextAction
-import com.finnvek.knittools.ui.components.ProBadge
+import com.finnvek.knittools.ui.components.ProMarker
 import com.finnvek.knittools.ui.components.RowMenuAction
 import com.finnvek.knittools.ui.components.RowOverflowMenu
 import com.finnvek.knittools.ui.components.ScrollableFormDialog
 import com.finnvek.knittools.ui.components.SegmentedToggle
 import com.finnvek.knittools.ui.components.SheetTitle
+import com.finnvek.knittools.ui.layout.ContentWidthPolicy
 import com.finnvek.knittools.ui.theme.ComponentDimens
 import com.finnvek.knittools.ui.theme.knitToolsColors
 import java.util.Locale
@@ -64,17 +68,20 @@ import java.util.Locale
 fun RemindersSheet(
     reminders: List<RowReminder>,
     currentRow: Int,
-    proStatus: ProStatus,
+    proState: ProState,
+    proAccessReady: Boolean,
     onAdd: () -> Unit,
     onEdit: (RowReminder) -> Unit,
     onDelete: (Long) -> Unit,
     onDismiss: () -> Unit,
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val reminderAccess = proActionAccess(proState, proAccessReady, ProFeature.ROW_REMINDERS)
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
         containerColor = MaterialTheme.colorScheme.surface,
+        sheetMaxWidth = ContentWidthPolicy.Form.maxWidth,
     ) {
         Column(
             modifier =
@@ -87,8 +94,16 @@ fun RemindersSheet(
             // Sama otsikko ja oikean reunan lisäystoiminto kuin muissa sheeteissä ja projektinäkymän osioissa.
             Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 SheetTitle(text = stringResource(R.string.reminders), modifier = Modifier.weight(1f))
-                ProBadge(status = proStatus)
-                OverviewTextAction(label = stringResource(R.string.project_overview_add), onClick = onAdd)
+                OverviewTextAction(
+                    label = stringResource(R.string.project_overview_add),
+                    onClick = onAdd,
+                    enabled =
+                        reminderAccess != ProActionAccess.Unknown ||
+                            proState.hasFeature(
+                                ProFeature.ROW_REMINDERS,
+                            ),
+                    trailingContent = { ProMarker(reminderAccess) },
+                )
             }
             if (reminders.isEmpty()) {
                 Text(
@@ -210,8 +225,7 @@ private fun ReminderListItem(
     onDeleteClick: () -> Unit = {},
 ) {
     // Lähestyvä muistutus erottuu tekstin värillä eikä erillisellä pisteellä.
-    val isUpcoming =
-        !reminder.isCompleted && reminder.targetRow.toLong() <= currentRow.toLong() + UPCOMING_ROW_WINDOW
+    val isUpcoming = ReminderLogic.isUpcoming(reminder, currentRow, UPCOMING_ROW_WINDOW)
     val detail =
         listOfNotNull(
             stringResource(R.string.row_label_format, reminder.targetRow),

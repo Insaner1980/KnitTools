@@ -6,6 +6,8 @@ import com.finnvek.knittools.data.datastore.PreferencesManager
 import com.finnvek.knittools.pro.ProManager
 import com.finnvek.knittools.pro.ProState
 import com.finnvek.knittools.repository.CounterRepository
+import com.finnvek.knittools.repository.OnboardingState
+import com.finnvek.knittools.repository.OnboardingStateRepository
 import com.finnvek.knittools.repository.ProgressPhotoRepository
 import com.finnvek.knittools.repository.ProjectCounterRepository
 import com.finnvek.knittools.repository.ProjectDocumentRepository
@@ -32,6 +34,8 @@ internal fun TestScope.emptyCounterViewModel(
     val preferences = mockk<PreferencesManager>()
     every { preferences.preferences } returns emptyFlow()
     val proManager = mockk<ProManager>()
+    every { proManager.initialControlsReady } returns MutableStateFlow(true)
+    every { proManager.initialStateReady } returns MutableStateFlow(true)
     every { proManager.proState } returns MutableStateFlow(ProState())
     every { proManager.hasFeature(any()) } returns false
     val yarns = mockk<YarnCardRepository>()
@@ -62,8 +66,13 @@ internal fun TestScope.emptyCounterViewModel(
         context = mockk<Context>(relaxed = true),
         ioDispatcher = dispatcher,
         applicationScope = backgroundScope,
+        tipSession = mockk(relaxed = true),
+        onboardingStateRepository = emptyOnboardingState(),
     )
 }
+
+private fun emptyOnboardingState(): OnboardingStateRepository =
+    mockk<OnboardingStateRepository>().also { every { it.state } returns flowOf(OnboardingState()) }
 
 private fun emptyProjectCounters(): ProjectCounterRepository {
     val counters = mockk<ProjectCounterRepository>()

@@ -1,0 +1,78 @@
+{
+  "resource_build": {
+    "started": "2026-10-19T14:32:50.0621964+03:00",
+    "ended": "2026-10-19T14:33:28.8221974+03:00",
+    "exitCode": 0
+  },
+  "fresh_tests": {
+    "ended": "2026-10-19T14:34:36.6324860+03:00",
+    "started": "2026-10-19T14:34:06.4595868+03:00",
+    "exitCode": 0
+  },
+  "suites": [
+    {
+      "name": "com.finnvek.knittools.ReferenceResourceLocalizationTest",
+      "tests": "2",
+      "skipped": "0",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-10-19T11:34:25.962Z",
+      "hostname": "DESKTOP-V7H2VNQ",
+      "time": "1.035"
+    },
+    {
+      "name": "com.finnvek.knittools.ui.CountPluralResourcesSourceTest",
+      "tests": "1",
+      "skipped": "0",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-10-19T11:34:27.009Z",
+      "hostname": "DESKTOP-V7H2VNQ",
+      "time": "0.188"
+    }
+  ],
+  "entry_hash_changes": [
+    "app/src/main/res/values-es/pattern_annotations.xml",
+    "app/src/main/res/values-es/reference_strings.xml",
+    "app/src/main/res/values-es/strings.xml"
+  ],
+  "process_closeout": [
+    {
+      "pid": 2400,
+      "log": "C:\\Users\\EmmaH\\.gradle\\daemon\\9.8.1\\daemon-2400.out.log",
+      "alive": false,
+      "stopped": true,
+      "javaHome": "C:\\Users\\EmmaH\\.gradle\\jdks\\eclipse_adoptium-17-amd64-windows.2"
+    },
+    {
+      "pid": 30132,
+      "log": "C:\\Users\\EmmaH\\.gradle\\daemon\\9.8.1\\daemon-30132.out.log",
+      "alive": false,
+      "stopped": true,
+      "javaHome": "C:\\Users\\EmmaH\\.gradle\\jdks\\eclipse_adoptium-17-amd64-windows.2"
+    }
+  ],
+  "coverage_rows": 2110,
+  "primary_resource_variants": 1413,
+  "placeholder_comparison": {
+    "variants_checked": 1411,
+    "errors": 0
+  },
+  "unrelated_preexisting_files_unchanged": 1211,
+  "verdict": "AUDIT_PASS",
+  "open_finding": null,
+  "process_closeout_note": "Initial PID filename parsing failed safely; corrected to extract digits before .out.log, then rechecked both exact task-started daemon PIDs. No process was terminated.",
+  "historical_pre_month_fix": {
+    "coverage_rows": 2101,
+    "primary_resource_variants": 1411,
+    "verdict": "REVIEW_COMPLETE / OPEN",
+    "open_finding": "LA-es-B05-58"
+  },
+  "month_fix": {
+    "id": "LA-es-B05-58",
+    "result": "VERIFIED",
+    "evidence": "month-fix-verification.json",
+    "retired_historical_rows": 2,
+    "note": "Earlier resource_build, fresh_tests, suites, placeholder_comparison and process_closeout remain historical; this repair has separately identified checks."
+  }
+}

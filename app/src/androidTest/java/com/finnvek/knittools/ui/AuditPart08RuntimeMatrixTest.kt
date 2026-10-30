@@ -418,8 +418,22 @@ class AuditPart08RuntimeMatrixTest {
         seek(s("save"))
         capture("step-editor-ime")
         hideKeyboard()
-        back()
+        tap("cancel")
+        await { nodes().none { it.isVisibleToUser && it.isEditable } }
         assertEquals(1, runBlocking { repository.getProject(projectId)!!.stepSize })
+        tapText(
+            app.getString(
+                com.finnvek.knittools.R.string.counter_step_change_description,
+                s("counter_step_rows_title"),
+                1,
+            ),
+        )
+        edit("3")
+        hideKeyboard()
+        tap("save")
+        await { runBlocking { repository.getProject(projectId)!!.stepSize == 3 } }
+        tapText(app.getString(com.finnvek.knittools.R.string.counter_step_increase, 3, s("main_counter_rows")))
+        await { runBlocking { repository.getProject(projectId)!!.count == before + 4 } }
         capture("counter-controls")
         tap("project_actions_title")
         tap("work_session_start")
@@ -504,10 +518,13 @@ class AuditPart08RuntimeMatrixTest {
     }
 
     private fun exerciseReader(project: Boolean) {
-        see("pattern_next_page")
+        // The controls appear before PdfRenderer has loaded this three-page fixture.
+        seeText(app.getString(com.finnvek.knittools.R.string.pattern_page_indicator, 1, 3))
         tap("pattern_next_page")
+        seeText(app.getString(com.finnvek.knittools.R.string.pattern_page_indicator, 2, 3))
         capture("page-two")
         tap("pattern_previous_page")
+        seeText(app.getString(com.finnvek.knittools.R.string.pattern_page_indicator, 1, 3))
         tap("more_options")
         tap("pattern_show_reading_line")
         tap("more_options")
@@ -532,9 +549,26 @@ class AuditPart08RuntimeMatrixTest {
         back()
         tap("more_options")
         tap("pattern_annotation_export_pdf")
+        await {
+            automation.rootInActiveWindow
+                ?.packageName
+                ?.toString()
+                ?.endsWith("documentsui") == true
+        }
         capture("export-destination")
-        back()
+        // Back first navigates parent folders in DocumentsUI; leave the picker, not just one folder.
+        repeat(8) {
+            if (automation.rootInActiveWindow
+                    ?.packageName
+                    ?.toString()
+                    ?.endsWith("documentsui") == true
+            ) {
+                back()
+            }
+        }
         see("pattern_next_page")
+        tap("pattern_next_page")
+        seeText(app.getString(com.finnvek.knittools.R.string.pattern_page_indicator, 2, 3))
     }
 
     @Test
@@ -1016,7 +1050,7 @@ class AuditPart08RuntimeMatrixTest {
         launch()
         tap("tab_settings")
         tap("knittools_pro")
-        seek(s("pro_page_trust"))
+        seek(s("onboarding_pro_free_project"))
         capture("pro-content-policy")
         seek(s("pro_page_purchased"))
         capture("pro-purchased-test-state")

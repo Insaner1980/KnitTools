@@ -61,7 +61,7 @@ class ProjectFoldersContractTest {
     fun `folder organization requires no permission or FileProvider expansion`() {
         val manifest = elements(ProjectSourceFiles.read("app/src/main/AndroidManifest.xml"), "uses-permission")
         assertEquals(
-            setOf("android.permission.INTERNET", "android.permission.VIBRATE", "android.permission.CAMERA"),
+            setOf("android.permission.INTERNET", "android.permission.VIBRATE"),
             manifest.map { it.getAttribute("android:name") }.toSet(),
         )
         val paths = elements(ProjectSourceFiles.read("app/src/main/res/xml/file_paths.xml"), "files-path")
@@ -69,22 +69,10 @@ class ProjectFoldersContractTest {
     }
 
     @Test
-    fun `every new folder string and plural is localized in all eleven supported sets`() {
+    fun `every new folder string and plural is localized in all twelve supported sets`() {
         val base = folderResources("values")
         assertTrue(base.isNotEmpty())
-        listOf(
-            "values",
-            "values-fi",
-            "values-sv",
-            "values-de",
-            "values-fr",
-            "values-es",
-            "values-pt",
-            "values-it",
-            "values-nb",
-            "values-da",
-            "values-nl",
-        ).forEach { locale ->
+        ProjectSourceFiles.configuredResourceDirectories().forEach { locale ->
             val resources = folderResources(locale)
             assertEquals("Folder resource keys for $locale", base.keys, resources.keys)
             resources.forEach { (name, element) ->

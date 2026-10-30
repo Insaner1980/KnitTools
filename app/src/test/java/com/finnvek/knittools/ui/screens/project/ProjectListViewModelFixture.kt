@@ -2,11 +2,14 @@ package com.finnvek.knittools.ui.screens.project
 
 import android.content.Context
 import androidx.lifecycle.SavedStateHandle
+import com.finnvek.knittools.analytics.UsageAnalytics
 import com.finnvek.knittools.data.datastore.PreferencesManager
 import com.finnvek.knittools.domain.model.ProjectDocument
 import com.finnvek.knittools.domain.model.ProjectFolderSnapshot
 import com.finnvek.knittools.pro.ProManager
 import com.finnvek.knittools.repository.CounterRepository
+import com.finnvek.knittools.repository.OnboardingState
+import com.finnvek.knittools.repository.OnboardingStateRepository
 import com.finnvek.knittools.repository.ProgressPhotoRepository
 import com.finnvek.knittools.repository.ProjectDocumentRepository
 import com.finnvek.knittools.repository.ProjectFolderRepository
@@ -36,12 +39,17 @@ abstract class ProjectListViewModelFixture {
     protected lateinit var projectDocumentRepository: ProjectDocumentRepository
     protected lateinit var folderRepository: ProjectFolderRepository
     protected lateinit var preferencesManager: PreferencesManager
+    protected lateinit var onboardingStateRepository: OnboardingStateRepository
     protected lateinit var context: Context
 
     @Before
     fun setup() {
         Dispatchers.setMain(testDispatcher)
         repository = mockk(relaxed = true)
+        every { repository.getActiveProjects(any()) } returns flowOf(emptyList())
+        every { repository.getCompletedProjects(any()) } returns flowOf(emptyList())
+        every { repository.observeActiveSession() } returns flowOf(null)
+        every { repository.observeHasAnyProject() } returns flowOf(false)
         proManager = mockk()
         every { proManager.proState } returns
             MutableStateFlow(
@@ -59,6 +67,13 @@ abstract class ProjectListViewModelFixture {
         every { projectDocumentRepository.observeDocuments(any<List<Long>>()) } returns
             flowOf(emptyMap<Long, List<ProjectDocument>>())
         preferencesManager = mockk(relaxed = true)
+        onboardingStateRepository = mockk(relaxed = true)
+        every { onboardingStateRepository.state } returns flowOf(OnboardingState())
+        every { preferencesManager.preferences } returns
+            flowOf(
+                com.finnvek.knittools.data.datastore
+                    .AppPreferences(),
+            )
         context = mockk()
         every { context.getString(any(), any()) } returns "Project 2"
     }
@@ -68,16 +83,20 @@ abstract class ProjectListViewModelFixture {
         Dispatchers.resetMain()
     }
 
-    protected fun createViewModel(savedStateHandle: SavedStateHandle = SavedStateHandle()) =
-        ProjectListViewModel(
-            repository = repository,
-            proManager = proManager,
-            photoRepository = photoRepository,
-            savedPatternRepository = savedPatternRepository,
-            projectDocumentRepository = projectDocumentRepository,
-            preferencesManager = preferencesManager,
-            context = context,
-            folderRepository = folderRepository,
-            savedStateHandle = savedStateHandle,
-        )
+    protected fun createViewModel(
+        savedStateHandle: SavedStateHandle = SavedStateHandle(),
+        analytics: UsageAnalytics = UsageAnalytics.NONE,
+    ) = ProjectListViewModel(
+        repository = repository,
+        proManager = proManager,
+        photoRepository = photoRepository,
+        savedPatternRepository = savedPatternRepository,
+        projectDocumentRepository = projectDocumentRepository,
+        preferencesManager = preferencesManager,
+        context = context,
+        folderRepository = folderRepository,
+        savedStateHandle = savedStateHandle,
+        onboardingStateRepository = onboardingStateRepository,
+        analytics = analytics,
+    )
 }

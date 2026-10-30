@@ -69,6 +69,7 @@ import com.finnvek.knittools.ui.components.CancelButton
 import com.finnvek.knittools.ui.components.ScreenTitleSelector
 import com.finnvek.knittools.ui.components.SheetTitle
 import com.finnvek.knittools.ui.components.dialogTextFieldColors
+import com.finnvek.knittools.ui.layout.ContentWidthPolicy
 import com.finnvek.knittools.ui.theme.ProjectListDimens
 
 private val FolderActionMinHeight = ProjectListDimens.FooterActionTouchSize
@@ -137,6 +138,7 @@ fun ProjectFoldersSheet(
     }
 
     ModalBottomSheet(
+        sheetMaxWidth = ContentWidthPolicy.Form.maxWidth,
         onDismissRequest = { if (!isMutating) onDismiss() },
         sheetState = sheetState,
         containerColor = MaterialTheme.colorScheme.surface,
@@ -392,6 +394,7 @@ fun MoveToFolderSheet(
         }
     // CPD-OFF: Siirtolomakkeen Compose-rakenne pidetaan toiminnon yhteydessa.
     ModalBottomSheet(
+        sheetMaxWidth = ContentWidthPolicy.Form.maxWidth,
         onDismissRequest = { if (!isMoving) onDismiss() },
         sheetState = sheetState,
         containerColor = MaterialTheme.colorScheme.surface,

@@ -2,6 +2,7 @@ package com.finnvek.knittools.ui.screens.counter
 
 import com.finnvek.knittools.domain.model.ActiveSessionRecoveryReason
 import com.finnvek.knittools.domain.model.ActiveWorkSession
+import com.finnvek.knittools.domain.model.CommittedMainCounterChange
 import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.domain.model.MainCounterChange
 import com.finnvek.knittools.repository.RecoveryResolutionResult
@@ -301,7 +302,7 @@ class CounterMainWriteResultTest : CounterViewModelFixture() {
         runTest {
             val published = mutableListOf<WidgetData>()
             coEvery { CounterWidgetState.syncAll(any(), capture(published)) } returns Unit
-            coEvery { repository.applyMainCounterChange(7L, MainCounterChange.Increment) } returns false
+            coEvery { repository.applyMainCounterChangeWithResult(7L, MainCounterChange.Increment) } returns null
             coEvery { repository.getProject(7L) } returns observedProject.value
             val viewModel = viewModel()
             val errors = incrementAndCollectErrors(viewModel)
@@ -314,7 +315,7 @@ class CounterMainWriteResultTest : CounterViewModelFixture() {
     @Test
     fun `count persistence exception restores visible count and reports failure`() =
         runTest {
-            coEvery { repository.applyMainCounterChange(7L, MainCounterChange.Increment) } throws
+            coEvery { repository.applyMainCounterChangeWithResult(7L, MainCounterChange.Increment) } throws
                 IOException("synthetic write failure")
             coEvery { repository.getProject(7L) } returns observedProject.value
             val viewModel = viewModel()
@@ -329,7 +330,8 @@ class CounterMainWriteResultTest : CounterViewModelFixture() {
         runTest {
             val published = mutableListOf<WidgetData>()
             coEvery { CounterWidgetState.syncAll(any(), capture(published)) } returns Unit
-            coEvery { repository.applyMainCounterChange(7L, MainCounterChange.Increment) } returns true
+            coEvery { repository.applyMainCounterChangeWithResult(7L, MainCounterChange.Increment) } returns
+                CommittedMainCounterChange(0, 1, null, MainCounterChange.Increment)
             coEvery { repository.getProject(7L) } returns observedProject.value.copy(count = 6)
             val viewModel = viewModel()
             advanceUntilIdle()
@@ -346,7 +348,8 @@ class CounterMainWriteResultTest : CounterViewModelFixture() {
         runTest {
             val viewModel = viewModel()
             advanceUntilIdle()
-            coEvery { repository.applyMainCounterChange(7L, MainCounterChange.Increment) } returns true
+            coEvery { repository.applyMainCounterChangeWithResult(7L, MainCounterChange.Increment) } returns
+                CommittedMainCounterChange(0, 1, null, MainCounterChange.Increment)
             coEvery { repository.getProject(7L) } returns observedProject.value.copy(count = 1)
             coEvery { CounterWidgetState.syncAll(any(), any()) } throws IOException("synthetic widget failure")
             val errors = collectErrors(viewModel.projectContentErrors)
@@ -356,17 +359,15 @@ class CounterMainWriteResultTest : CounterViewModelFixture() {
 
             assertEquals(1, viewModel.uiState.value.counter.count)
             assertTrue(errors.isEmpty())
-            coVerify(exactly = 1) { repository.applyMainCounterChange(7L, MainCounterChange.Increment) }
+            coVerify(exactly = 1) { repository.applyMainCounterChangeWithResult(7L, MainCounterChange.Increment) }
         }
 
     @Test
     fun `late count completion cannot replace newly selected project widget`() =
         runTest {
-            val result = CompletableDeferred<Boolean>()
+            val result = pendingIncrement(count = 1)
             val published = mutableListOf<WidgetData>()
             coEvery { CounterWidgetState.syncAll(any(), capture(published)) } returns Unit
-            coEvery { repository.applyMainCounterChange(7L, MainCounterChange.Increment) } coAnswers { result.await() }
-            coEvery { repository.getProject(7L) } returns observedProject.value.copy(count = 1)
             val other = CounterProject(id = 8L, name = "Other", count = 10)
             every { repository.observeProject(8L) } returns flowOf(other)
             val viewModel = viewModel()
@@ -377,7 +378,7 @@ class CounterMainWriteResultTest : CounterViewModelFixture() {
             viewModel.selectProject(other)
             advanceUntilIdle()
             val beforeCompletion = published.size
-            result.complete(true)
+            result.complete(CommittedMainCounterChange(0, 1, null, MainCounterChange.Increment))
             advanceUntilIdle()
 
             assertEquals(8L, viewModel.uiState.value.projectId)

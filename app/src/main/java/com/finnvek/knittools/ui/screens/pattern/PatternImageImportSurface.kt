@@ -25,7 +25,6 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -38,6 +37,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.finnvek.knittools.R
+import com.finnvek.knittools.ui.components.CancelButton
 import com.finnvek.knittools.ui.components.ConfirmationDialog
 import com.finnvek.knittools.ui.theme.knitToolsColors
 import java.io.File
@@ -152,16 +152,11 @@ internal fun PatternImageImportSurface(
                     Text(stringResource(R.string.pattern_image_create_pdf))
                 }
             }
-            TextButton(
+            CancelButton(
                 onClick = onCancel,
                 modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
-            ) {
-                Text(
-                    stringResource(
-                        if (busy) R.string.pattern_image_cancel_conversion else R.string.cancel,
-                    ),
-                )
-            }
+                text = stringResource(if (busy) R.string.pattern_image_cancel_conversion else R.string.cancel),
+            )
         }
     }
 

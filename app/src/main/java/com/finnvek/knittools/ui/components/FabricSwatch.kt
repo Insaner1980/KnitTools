@@ -9,13 +9,9 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.drawscope.rotate
-import androidx.compose.ui.graphics.drawscope.translate
+import androidx.compose.ui.unit.Dp
 import com.finnvek.knittools.ui.theme.FabricSwatchDimens
-import kotlin.math.atan2
 import kotlin.math.ceil
-import kotlin.math.hypot
 
 /** Tilkun pinta: projektin käsityötyyppi tai lanka, jolla ei ole kuvaa. */
 enum class FabricKind { KNIT, CROCHET, YARN }
@@ -24,20 +20,23 @@ enum class FabricKind { KNIT, CROCHET, YARN }
  * Neulepintatilkku ikonin sijaan. Neule on pystysuuntaisia ⋁-silmukoita ja virkkaus vinoja
  * säiepareja, joten käsityötyypin erottaa myös pienessä koossa. Valo tulee ylävasemmalta
  * kuten laskurin kolmiulotteisissa napeissa.
+ * [stitchScale] pitää silmukan perusyksikön vakiona, vaikka tilkun korkeus muuttuu.
  */
 @Composable
 fun FabricSwatch(
     kind: FabricKind,
     color: Color,
     modifier: Modifier = Modifier,
+    stitchScale: Dp? = null,
 ) {
     Spacer(
         modifier.clipToBounds().drawWithCache {
+            if (size.minDimension <= 0f) return@drawWithCache onDrawBehind { }
             val fabric =
                 when (kind) {
-                    FabricKind.KNIT -> knitFabric(size, color)
-                    FabricKind.CROCHET -> crochetFabric(size, color)
-                    FabricKind.YARN -> yarnFabric(size, color)
+                    FabricKind.KNIT -> knitFabric(size, color, stitchScale?.toPx())
+                    FabricKind.CROCHET -> crochetFabric(size, color, stitchScale?.toPx())
+                    FabricKind.YARN -> yarnFabric(size, color, stitchScale?.toPx())
                 }
             val vignette =
                 Brush.radialGradient(
@@ -53,29 +52,13 @@ fun FabricSwatch(
             onDrawBehind {
                 drawRect(fabric.background)
                 fabric.strands.forEach { strand ->
-                    translate(strand.center.x, strand.center.y) {
-                        rotate(strand.degrees, pivot = Offset.Zero) {
-                            val topLeft = Offset(-strand.halfLength, -strand.halfThickness)
-                            val ovalSize = Size(strand.halfLength * 2f, strand.halfThickness * 2f)
-                            drawOval(strand.fill, topLeft, ovalSize)
-                            drawOval(fabric.edge, topLeft, ovalSize, style = Stroke(fabric.edgeWidth))
-                        }
-                    }
+                    drawFabricStrand(strand, fabric.edge, fabric.edgeWidth)
                 }
                 drawRect(vignette)
             }
         },
     )
 }
-
-/** Yksi säie tai silmukan jalka: soikio, jonka pitkä akseli on kulmassa [degrees]. */
-private class FabricStrand(
-    val center: Offset,
-    val halfLength: Float,
-    val halfThickness: Float,
-    val degrees: Float,
-    val fill: Brush,
-)
 
 private class Fabric(
     val background: Color,
@@ -84,43 +67,12 @@ private class Fabric(
     val strands: List<FabricStrand>,
 )
 
-/** Säie kahden pisteen välillä. Liukuväri on säikeen omassa koordinaatistossa poikittain. */
-private fun strandBetween(
-    from: Offset,
-    to: Offset,
-    thickness: Float,
-    fill: Brush,
-    extraLength: Float = 0f,
-): FabricStrand {
-    val delta = to - from
-    return FabricStrand(
-        center = (from + to) / 2f,
-        halfLength = hypot(delta.x, delta.y) / 2f + extraLength,
-        halfThickness = thickness / 2f,
-        degrees = Math.toDegrees(atan2(delta.y, delta.x).toDouble()).toFloat(),
-        fill = fill,
-    )
-}
-
-// Sävytys samaan tapaan kuin mockupissa: positiivinen vaalentaa kohti valkoista, negatiivinen tummentaa.
-private fun Color.shade(amount: Float): Color =
-    if (amount >= 0f) {
-        Color(red + (1f - red) * amount, green + (1f - green) * amount, blue + (1f - blue) * amount, alpha)
-    } else {
-        Color(red * (1f + amount), green * (1f + amount), blue * (1f + amount), alpha)
-    }
-
-private fun crossGradient(
-    halfThickness: Float,
-    top: Color,
-    bottom: Color,
-): Brush = Brush.verticalGradient(listOf(top, bottom), startY = -halfThickness, endY = halfThickness)
-
 private fun knitFabric(
     size: Size,
     color: Color,
+    stitchUnit: Float?,
 ): Fabric {
-    val unit = size.minDimension / FabricSwatchDimens.ProjectReferenceSize
+    val unit = stitchUnit ?: size.minDimension / FabricSwatchDimens.ProjectReferenceSize
     val width = FabricSwatchDimens.KnitStitchWidth * unit
     val height = width * FabricSwatchDimens.KnitRowRatio
     val half = width * FabricSwatchDimens.KnitLegHalfThickness
@@ -167,8 +119,9 @@ private fun knitFabric(
 private fun crochetFabric(
     size: Size,
     color: Color,
+    stitchUnit: Float?,
 ): Fabric {
-    val unit = size.minDimension / FabricSwatchDimens.ProjectReferenceSize
+    val unit = stitchUnit ?: size.minDimension / FabricSwatchDimens.ProjectReferenceSize
     val width = FabricSwatchDimens.CrochetStitchWidth * unit
     val height = width * FabricSwatchDimens.CrochetRowRatio
     val thickness = width * FabricSwatchDimens.CrochetStrandThickness
@@ -223,8 +176,9 @@ private fun crochetFabric(
 private fun yarnFabric(
     size: Size,
     color: Color,
+    stitchUnit: Float?,
 ): Fabric {
-    val unit = size.minDimension / FabricSwatchDimens.YarnReferenceSize
+    val unit = stitchUnit ?: size.minDimension / FabricSwatchDimens.YarnReferenceSize
     val ply = FabricSwatchDimens.YarnPly * unit
     val step = ply * FabricSwatchDimens.YarnRowStep
     val columnStep = ply * FabricSwatchDimens.YarnColumnStep

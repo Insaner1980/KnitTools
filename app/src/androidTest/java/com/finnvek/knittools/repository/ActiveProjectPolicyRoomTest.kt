@@ -10,6 +10,7 @@ import com.finnvek.knittools.data.local.KnitToolsDatabase
 import com.finnvek.knittools.data.local.PatternAnnotationSchemaConstraints
 import com.finnvek.knittools.data.local.ProjectCompletionEntity
 import com.finnvek.knittools.data.local.ProjectDocumentSchemaConstraints
+import com.finnvek.knittools.domain.calculator.ProjectStartValues
 import com.finnvek.knittools.domain.model.MainCounterChange
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
@@ -51,6 +52,41 @@ class ActiveProjectPolicyRoomTest {
     fun close() {
         database.close()
     }
+
+    @Test
+    fun startingCountAndTargetAreInitialStateWithoutUndoHistory() =
+        runBlocking {
+            val result =
+                repository.createProject(
+                    "Already started",
+                    canCreateAdditionalProjects = false,
+                    startValues = ProjectStartValues(37, 120),
+                )
+            assertTrue(result is ProjectCreationResult.Created)
+            val project = repository.getAllProjects().first().single()
+            assertEquals(37, project.count)
+            assertEquals(120, project.targetRows)
+            assertTrue(repository.observeCounterHistory(project.id).first().isEmpty())
+            assertFalse(repository.applyMainCounterChange(project.id, MainCounterChange.Undo))
+            assertEquals(37, repository.getProject(project.id)?.count)
+            assertEquals(ProjectCreationResult.LimitReached, create("Second active project"))
+        }
+
+    @Test
+    fun invalidStartingValuesDoNotInsertAnyProject() =
+        runBlocking {
+            listOf(-1 to null, 100_000 to null, 0 to 0, 0 to 100_000).forEach { (count, target) ->
+                assertEquals(
+                    ProjectCreationResult.InvalidProject,
+                    repository.createProject(
+                        "Invalid",
+                        canCreateAdditionalProjects = false,
+                        startValues = ProjectStartValues(count, target),
+                    ),
+                )
+            }
+            assertFalse(repository.hasAnyProject())
+        }
 
     @Test
     fun completedHistoryDoesNotBlockCreation() =

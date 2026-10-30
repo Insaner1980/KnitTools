@@ -75,4 +75,5 @@
     <string name="pattern_annotation_export_filename">%1$s-annotato.pdf</string>
     <string name="pattern_annotation_edit_text">Modifica testo</string>
     <string name="pattern_annotation_write_failed">Impossibile salvare il testo. L’annotazione potrebbe essere cambiata. Chiudi l’editor e riprova.</string>
+    <string name="pattern_annotation_command_failed">Una modifica a un’annotazione non è stata salvata. Chiudi questo messaggio e riprova con gli strumenti di annotazione.</string>
 </resources>

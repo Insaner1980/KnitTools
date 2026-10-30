@@ -133,12 +133,7 @@ class UiConsistencySourceTest {
         assertOnlyAllowed(
             Regex("""(?<![\w.])AlertDialog\("""),
             mapOf(
-                "counter/CounterScreen.kt" to 6,
-                "counter/MultiCounterComponents.kt" to 2,
-                "counter/PhotoGalleryScreen.kt" to 1,
-                "counter/TargetRowsDialog.kt" to 1,
                 "library/WebPatternEditorScreen.kt" to 2,
-                "pattern/PatternViewerScreen.kt" to 2,
                 "project/ProjectFolderComponents.kt" to 2,
             ),
             "Käytä ConfirmationDialogia tavallisiin vahvistuksiin (isDestructive poistoille)",
@@ -178,6 +173,116 @@ class UiConsistencySourceTest {
             val offenders = sources.filter { (_, text) -> retired.containsMatchIn(text) }.keys
             assertEquals("${retired.pattern} palasi: $offenders", emptySet<String>(), offenders)
         }
+    }
+
+    @Test
+    fun `pro markers use the local resolver and the retired badge stays removed`() {
+        val sources = (screenSources() + componentSources()).mapValues { (_, text) -> text.codeOnly() }
+        val retired = Regex("""\b(ProBadge|ProBadgeState|proBadgeDescription)\b""")
+        assertFalse(componentSources().containsKey("ProBadge.kt"))
+        assertEquals(emptySet<String>(), sources.filterValues(retired::containsMatchIn).keys)
+        val violations =
+            sources
+                .mapValues { (_, code) ->
+                    markerResolverViolations(code)
+                }.filterValues { it.isNotEmpty() }
+        assertEquals(
+            "ProMarker saa proActionAccess-kutsun tai saman funktion immutable resolver-arvon",
+            emptyMap<String, List<String>>(),
+            violations,
+        )
+        assertTrue(sources.values.any { markerCall.containsMatchIn(it) })
+    }
+
+    @Test
+    fun `marker resolver check rejects literals mutable aliases unrelated functions and ad hoc pro checks`() {
+        val valid =
+            listOf(
+                "fun Row() { ProMarker(access = proActionAccess(state, ready, feature)) }",
+                "fun Row() { val itemAccess = proActionAccess(state, ready, feature); Box { ProMarker(itemAccess) } }",
+                "fun Row() { val itemAccess: ProActionAccess = proActionAccess(state, ready, feature); " +
+                    "ProMarker(itemAccess) }",
+                "fun ProMarker(access: ProActionAccess) { Text(label) }",
+            )
+        valid.forEach { assertTrue(it, markerResolverViolations(it).isEmpty()) }
+        val invalid =
+            listOf(
+                "fun Row() { ProMarker(ProActionAccess.Locked) }",
+                "fun Row() { var itemAccess = proActionAccess(state, ready, feature); ProMarker(itemAccess) }",
+                "fun Row(access: ProActionAccess) { ProMarker(access) }",
+                "fun Other() { val access = proActionAccess(state, ready, feature) }; fun Row() { ProMarker(access) }",
+                "fun Row() { val access = if (state.isPro) ProActionAccess.Allowed else ProActionAccess.Locked; " +
+                    "ProMarker(access) }",
+                "fun Row() { if (state.isPro) { ProMarker(proActionAccess(state, ready, feature)) } }",
+                "fun Row() { ProMarker(proActionAccess(state, ready, feature).let { ProActionAccess.Locked }) }",
+                "fun Row() { val access = proActionAccess(state, ready, feature).let { ProActionAccess.Locked }; " +
+                    "ProMarker(access) }",
+                "fun Row() { /* val access = proActionAccess(state, ready, feature) */ ProMarker(access) }",
+            )
+        invalid.forEach { assertEquals(it, 1, markerResolverViolations(it).size) }
+    }
+
+    private fun markerResolverViolations(source: String): List<String> {
+        val code = source.codeOnly()
+        return markerCall
+            .findAll(code)
+            .filterNot { call ->
+                val prefix = enclosingFunctionPrefix(code, call.range.first) ?: return@filterNot false
+                val arguments =
+                    callArguments(code, call.range.last)
+                        .removePrefix("(")
+                        .replaceFirst(Regex("""^\s*access\s*=\s*"""), "")
+                        .trimStart()
+                if (Regex("""\.\s*isPro\b""").containsMatchIn(prefix)) return@filterNot false
+                if (isResolverExpression(arguments)) return@filterNot true
+                val name = Regex("""^(\w+)\s*(?:,|$)""").find(arguments)?.groupValues?.get(1) ?: return@filterNot false
+                val assignment =
+                    Regex("""\b(val|var)\s+${Regex.escape(name)}(?:\s*:\s*ProActionAccess)?\s*=\s*""")
+                        .findAll(prefix)
+                        .lastOrNull() ?: return@filterNot false
+                assignment.groupValues[1] == "val" &&
+                    isResolverExpression(
+                        prefix.substring(assignment.range.last + 1),
+                        allowFollowingStatements = true,
+                    )
+            }.map { call -> callArguments(code, call.range.last).removePrefix("(").trim() }
+            .toList()
+    }
+
+    /** Vain sama funktio kelpaa: toisen rivin resolver-arvo ei saa hyväksyä paikallista oikotietä. */
+    private fun enclosingFunctionPrefix(
+        code: String,
+        callIndex: Int,
+    ): String? =
+        Regex("""\bfun\s+[\w.]+\s*\(""")
+            .findAll(code)
+            .mapNotNull { declaration ->
+                val parametersEnd = declaration.range.last + callArguments(code, declaration.range.last).length
+                val bodyStart = code.indexOf('{', parametersEnd)
+                if (bodyStart < 0 || bodyStart > callIndex) return@mapNotNull null
+                if (Regex(
+                        """\bfun\b""",
+                    ).containsMatchIn(code.substring(parametersEnd, bodyStart))
+                ) {
+                    return@mapNotNull null
+                }
+                val body = trailingBlock(code, parametersEnd)
+                if (callIndex >= bodyStart + body.length) return@mapNotNull null
+                bodyStart to code.substring(bodyStart, callIndex)
+            }.maxByOrNull { it.first }
+            ?.second
+
+    private fun isResolverExpression(
+        arguments: String,
+        allowFollowingStatements: Boolean = false,
+    ): Boolean {
+        if (!arguments.startsWith("proActionAccess(")) return false
+        val open = arguments.indexOf('(')
+        val end = open + callArguments(arguments, open).length + 1
+        val remaining = arguments.substring(end.coerceAtMost(arguments.length)).trimStart()
+        if (remaining.isEmpty() || remaining.startsWith(',')) return true
+        if (!allowFollowingStatements || remaining.startsWith('.') || remaining.startsWith('?')) return false
+        return remaining.startsWith(';') || arguments.substring(end).contains('\n')
     }
 
     private fun assertOnlyAllowed(
@@ -325,6 +430,8 @@ class UiConsistencySourceTest {
 
         /** Varsinainen kutsu, ei esim. `SheetTitleText(` tai `.SheetTitle(`. */
         val titleCall = Regex("""(?<![\w.])(SheetTitle|FormSheet)\(""")
+
+        val markerCall = Regex("""(?<![\w.])(?<!fun )ProMarker\(""")
 
         const val RAW_QUOTE = "\"\"\""
     }

@@ -13,6 +13,8 @@ import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
@@ -29,6 +31,37 @@ class ProManagerTest {
     fun tearDown() {
         Dispatchers.resetMain()
     }
+
+    @Test
+    fun `initial controls wait for trial and purchase resolution including terminal query failure`() =
+        kotlinx.coroutines.test.runTest {
+            val initialized = kotlinx.coroutines.CompletableDeferred<Unit>()
+            val trial =
+                mockk<TrialManager> {
+                    coEvery { initialize() } coAnswers { initialized.await() }
+                    every { trialState } returns MutableStateFlow(TrialState())
+                }
+            val ready = MutableStateFlow(false)
+            val failed = MutableStateFlow(false)
+            val billing =
+                mockk<BillingManager> {
+                    every { isProPurchased } returns MutableStateFlow(false)
+                    every { purchaseStateReady } returns ready
+                    every { purchaseQueryFailed } returns failed
+                }
+            val manager = ProManager(trial, billing)
+            manager.initialize()
+            assertFalse(manager.initialControlsReady.value)
+            initialized.complete(Unit)
+            assertFalse(manager.initialControlsReady.value)
+            failed.value = true
+            assertTrue(manager.initialControlsReady.value)
+            assertFalse(manager.initialStateReady.value)
+            assertEquals(ProStatus.TRIAL_NOT_STARTED, manager.proState.value.status)
+            ready.value = true
+            assertTrue(manager.initialControlsReady.value)
+            assertTrue(manager.initialStateReady.value)
+        }
 
     @Test
     fun `initialize allows retry when trial initialization fails`() {
@@ -72,6 +105,7 @@ class ProManagerTest {
             mockk<BillingManager> {
                 every { isProPurchased } returns MutableStateFlow(true)
                 every { purchaseStateReady } returns MutableStateFlow(true)
+                every { purchaseQueryFailed } returns MutableStateFlow(false)
             }
         val manager = ProManager(trialManager, billingManager)
 

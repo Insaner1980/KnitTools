@@ -2,20 +2,19 @@ package com.finnvek.knittools.domain.model
 
 /**
  * Langan vakiopaksuudet Ravelryn nimillä, jotta käsin lisätty ja Ravelrystä tuotu lanka tallentuvat
- * samalla arvolla. [ply] on australialais-brittiläinen säiemäärä vihjeeksi valintalistaan.
+ * samalla arvolla. Thickness categories do not specify yarn strand construction.
  */
 enum class StandardYarnWeight(
     val label: String,
-    val ply: String,
 ) {
-    LACE("Lace", "1–3"),
-    FINGERING("Fingering", "4"),
-    SPORT("Sport", "5"),
-    DK("DK", "8"),
-    WORSTED("Worsted", "10"),
-    ARAN("Aran", "10"),
-    BULKY("Bulky", "12"),
-    SUPER_BULKY("Super Bulky", "14"),
+    LACE("Lace"),
+    FINGERING("Fingering"),
+    SPORT("Sport"),
+    DK("DK"),
+    WORSTED("Worsted"),
+    ARAN("Aran"),
+    BULKY("Bulky"),
+    SUPER_BULKY("Super Bulky"),
     ;
 
     companion object {

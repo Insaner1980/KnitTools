@@ -15,7 +15,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.finnvek.knittools.domain.model.ProjectYarnNote
 import com.finnvek.knittools.domain.model.ProjectYarnUsageItem
-import com.finnvek.knittools.pro.ProStatus
+import com.finnvek.knittools.pro.ProState
 import kotlinx.coroutines.launch
 
 data class YarnUsageOpenRequest(
@@ -30,7 +30,8 @@ fun ProjectYarnUsageFlow(
     projectId: Long,
     linkedYarns: List<Pair<Long, String>>,
     projectYarnNotes: List<ProjectYarnNote>,
-    proStatus: ProStatus,
+    proState: ProState,
+    proAccessReady: Boolean,
     actions: YarnManagementSheetActions,
     viewModelProvider: @Composable () -> ProjectYarnUsageViewModel = { hiltViewModel() },
 ) {
@@ -71,7 +72,8 @@ fun ProjectYarnUsageFlow(
         YarnManagementSheet(
             linkedYarns = linkedYarns,
             projectYarnNotes = projectYarnNotes,
-            proStatus = proStatus,
+            proState = proState,
+            proAccessReady = proAccessReady,
             actions = actions,
             sheetState = managementSheet,
             usageItems = items.orEmpty(),

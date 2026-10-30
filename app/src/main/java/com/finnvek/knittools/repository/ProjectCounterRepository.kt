@@ -44,6 +44,12 @@ class ProjectCounterRepository
         private val proManager: ProManager,
         private val transactionRunner: DatabaseTransactionRunner,
     ) {
+        fun getAllCounters(): Flow<List<ProjectCounter>> =
+            dao
+                .getAllCounters()
+                .map { counters -> counters.map { it.toDomain() } }
+                .retryOnRepositoryReadFailure()
+
         fun getCountersForProject(projectId: Long): Flow<List<ProjectCounter>> =
             dao
                 .getCountersForProject(projectId)

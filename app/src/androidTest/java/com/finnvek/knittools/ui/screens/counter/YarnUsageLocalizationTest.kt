@@ -25,8 +25,8 @@ class YarnUsageLocalizationTest {
         assertSkeins("de-DE", 1.006, "1,01 Stränge")
         assertSkeins("fr-FR", 1.994, "1,99 écheveau")
         assertSkeins("fr-FR", 1.996, "2 écheveaux")
-        assertSkeins("pt-BR", 1.994, "1,99 meada")
-        assertSkeins("pt-BR", 1.996, "2 meadas")
+        assertSkeins("pt-BR", 1.994, "1,99 novelo")
+        assertSkeins("pt-BR", 1.996, "2 novelos")
         assertSkeins("pt-PT", 0.996, "1 meada")
         assertSkeins("pt-PT", 1.006, "1,01 meadas")
     }
@@ -35,8 +35,8 @@ class YarnUsageLocalizationTest {
     fun fractionalSkeinCountUsesRegionalPluralRules() {
         assertSkeins("en-US", 0.5, "0.5 skeins")
         assertSkeins("fr-FR", 0.5, "0,5 écheveau")
-        assertSkeins("pt-BR", 0.0, "0 meada")
-        assertSkeins("pt-BR", 0.5, "0,5 meada")
+        assertSkeins("pt-BR", 0.0, "0 novelo")
+        assertSkeins("pt-BR", 0.5, "0,5 novelo")
         assertSkeins("pt-PT", 0.0, "0 meadas")
         assertSkeins("pt-PT", 0.5, "0,5 meadas")
         assertSkeins("pt-PT", 1.0, "1 meada")

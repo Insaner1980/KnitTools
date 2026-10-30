@@ -34,7 +34,13 @@ class CrossStitchIconSourceTest {
         assertTrue(sections.contains("CrossStitchGlyph.REMINDER"))
         assertFalse(sections.contains("Icons.Outlined."))
         assertEquals(
-            CrossStitchGlyph.entries.toSet(),
+            setOf(
+                CrossStitchGlyph.PATTERN,
+                CrossStitchGlyph.YARN,
+                CrossStitchGlyph.NOTES,
+                CrossStitchGlyph.PHOTOS,
+                CrossStitchGlyph.REMINDER,
+            ),
             ProjectContentCardKind.entries.map { it.glyph }.toSet(),
         )
     }

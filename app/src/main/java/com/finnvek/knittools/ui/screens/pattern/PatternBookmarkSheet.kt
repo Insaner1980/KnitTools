@@ -13,7 +13,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -47,6 +46,9 @@ import com.finnvek.knittools.ui.components.ConfirmationDialog
 import com.finnvek.knittools.ui.components.OverviewTextAction
 import com.finnvek.knittools.ui.components.ScrollableFormDialog
 import com.finnvek.knittools.ui.components.SheetTitle
+import com.finnvek.knittools.ui.layout.AdaptiveDropdownMenu
+import com.finnvek.knittools.ui.layout.AdaptiveModalWindow
+import com.finnvek.knittools.ui.layout.ContentWidthPolicy
 
 internal data class PatternBookmarkSheetActions(
     val onDismiss: () -> Unit,
@@ -75,10 +77,12 @@ internal fun PatternBookmarkSheet(
     val deleteBookmark = state.bookmarks.firstOrNull { it.id == deleteBookmarkId }
 
     ModalBottomSheet(
+        sheetMaxWidth = ContentWidthPolicy.Form.maxWidth,
         onDismissRequest = actions.onDismiss,
         sheetState = sheetState,
         containerColor = MaterialTheme.colorScheme.surface,
     ) {
+        AdaptiveModalWindow()
         Column(
             verticalArrangement = Arrangement.spacedBy(8.dp),
             modifier =
@@ -271,7 +275,7 @@ private fun PatternBookmarkRow(
                     contentDescription = moreOptionsDescription,
                 )
             }
-            DropdownMenu(
+            AdaptiveDropdownMenu(
                 expanded = menuExpanded,
                 onDismissRequest = { menuExpanded = false },
             ) {
@@ -368,6 +372,7 @@ private fun PatternBookmarkError.messageRes(): Int =
         PatternBookmarkError.INVALID_LOCATION -> R.string.pattern_bookmark_invalid_location
         PatternBookmarkError.STALE_DOCUMENT -> R.string.pattern_bookmark_stale_document
         PatternBookmarkError.NOT_FOUND -> R.string.pattern_bookmark_not_found
+        PatternBookmarkError.JUMP_FAILURE -> R.string.generic_error_unknown
         PatternBookmarkError.SAVE_FAILURE -> R.string.pattern_bookmark_save_failed
         PatternBookmarkError.RENAME_FAILURE -> R.string.pattern_bookmark_rename_failed
         PatternBookmarkError.DELETE_FAILURE -> R.string.pattern_bookmark_delete_failed

@@ -74,5 +74,6 @@
     <string name="pattern_annotation_export_default_name">padrão</string>
     <string name="pattern_annotation_export_filename">%1$s-anotado.pdf</string>
     <string name="pattern_annotation_edit_text">Editar texto</string>
-    <string name="pattern_annotation_write_failed">Não foi possível guardar o texto. A anotação pode ter sido alterada. Fecha o editor e tenta novamente.</string>
+    <string name="pattern_annotation_write_failed">Não foi possível guardar o texto. A anotação pode ter sido alterada. Feche o editor e tente novamente.</string>
+    <string name="pattern_annotation_command_failed">Uma alteração numa anotação não foi guardada. Feche esta mensagem e tente novamente com as ferramentas de anotação.</string>
 </resources>

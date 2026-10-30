@@ -1,13 +1,49 @@
 package com.finnvek.knittools.data.backup
 
 import com.finnvek.knittools.data.local.MAX_COMPLETED_SESSIONS
+import io.mockk.every
+import io.mockk.mockk
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonPrimitive
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertThrows
 import org.junit.Test
+import java.io.File
 
 class BackupBudgetTest {
+    @Test fun spaceAcceptsExactReserveAndRejectsOneByteLessForZeroAndPositiveRequests() {
+        val reserveBytes = 32L * 1024 * 1024
+        assertEquals(reserveBytes, BackupFormat.RESERVE)
+        val directory = mockk<File>()
+        for (requiredBytes in listOf(0L, 64L * 1024)) {
+            every { directory.usableSpace } returns requiredBytes + reserveBytes
+            BackupFormat.space(directory, requiredBytes)
+
+            every { directory.usableSpace } returns requiredBytes + reserveBytes - 1
+            val failure = assertThrows(BackupException::class.java) { BackupFormat.space(directory, requiredBytes) }
+            assertEquals(BackupError.SPACE, failure.error)
+        }
+    }
+
+    @Test fun spaceRejectsNegativeRequiredBytes() {
+        val directory = mockk<File> { every { usableSpace } returns Long.MAX_VALUE }
+        for (requiredBytes in listOf(-1L, Long.MIN_VALUE)) {
+            val failure = assertThrows(BackupException::class.java) { BackupFormat.space(directory, requiredBytes) }
+            assertEquals(BackupError.SPACE, failure.error)
+        }
+    }
+
+    @Test fun spaceAcceptsUpperArithmeticBoundaryAndRejectsOverflow() {
+        val directory = mockk<File> { every { usableSpace } returns Long.MAX_VALUE }
+        val maximumRequiredBytes = Long.MAX_VALUE - 32L * 1024 * 1024
+        BackupFormat.space(directory, maximumRequiredBytes)
+
+        for (requiredBytes in listOf(maximumRequiredBytes + 1, Long.MAX_VALUE)) {
+            val failure = assertThrows(BackupException::class.java) { BackupFormat.space(directory, requiredBytes) }
+            assertEquals(BackupError.SPACE, failure.error)
+        }
+    }
+
     @Test fun fullNativeHistoryFitsWithoutRelaxingTheAggregateIdentityBudget() {
         val budget = BackupBudget()
         budget.addRow("counter_projects")

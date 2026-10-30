@@ -24,7 +24,10 @@ import com.finnvek.knittools.di.IoDispatcher
 import com.finnvek.knittools.domain.calculator.CounterLogic
 import com.finnvek.knittools.domain.calculator.CounterState
 import com.finnvek.knittools.domain.calculator.MAX_MAIN_COUNTER_STEP_SIZE
+import com.finnvek.knittools.domain.calculator.MAX_PROJECT_START_COUNT
+import com.finnvek.knittools.domain.calculator.MAX_TARGET_ROWS
 import com.finnvek.knittools.domain.calculator.ProjectCounterLogic
+import com.finnvek.knittools.domain.calculator.ProjectStartValues
 import com.finnvek.knittools.domain.calculator.ReadingLineLocationResolution
 import com.finnvek.knittools.domain.calculator.evaluateActiveSessionTime
 import com.finnvek.knittools.domain.calculator.parseMapping
@@ -34,6 +37,7 @@ import com.finnvek.knittools.domain.model.ActiveSessionRecoveryReason
 import com.finnvek.knittools.domain.model.ActiveSessionTimeEvaluation
 import com.finnvek.knittools.domain.model.ActiveSessionTimingAnchors
 import com.finnvek.knittools.domain.model.ActiveWorkSession
+import com.finnvek.knittools.domain.model.CommittedMainCounterChange
 import com.finnvek.knittools.domain.model.CounterHistory
 import com.finnvek.knittools.domain.model.CounterHistoryAction
 import com.finnvek.knittools.domain.model.CounterProject
@@ -42,6 +46,7 @@ import com.finnvek.knittools.domain.model.KnitSession
 import com.finnvek.knittools.domain.model.MainCounterChange
 import com.finnvek.knittools.domain.model.MainCounterLabelType
 import com.finnvek.knittools.domain.model.ProjectCompletion
+import com.finnvek.knittools.domain.model.ProjectCompletionSnapshot
 import com.finnvek.knittools.domain.model.ProjectCounterType
 import com.finnvek.knittools.domain.model.ProjectDocument
 import com.finnvek.knittools.domain.model.ProjectSortOrder
@@ -189,6 +194,11 @@ class CounterRepository
             }.map { projects -> projects.map { it.toDomain() } }
                 .retryOnRepositoryReadFailure()
 
+        fun observeHasAnyProject(): Flow<Boolean> =
+            dao.observeHasAnyProject().retryOnRepositoryReadFailure().flowOn(ioDispatcher)
+
+        suspend fun hasAnyProject(): Boolean = dao.hasAnyProject()
+
         suspend fun getActiveProjectCount(): Int = dao.getActiveProjectCount()
 
         suspend fun getProject(id: Long): CounterProject? = dao.getProject(id)?.toDomain()
@@ -211,6 +221,7 @@ class CounterRepository
             mainCounterCustomLabel: String? = null,
             canCreateAdditionalProjects: Boolean,
             targetFolderId: Long? = null,
+            startValues: ProjectStartValues = ProjectStartValues(),
         ): ProjectCreationResult =
             try {
                 transactionRunner.run {
@@ -221,6 +232,7 @@ class CounterRepository
                         mainCounterCustomLabel = mainCounterCustomLabel,
                         canCreateAdditionalProjects = canCreateAdditionalProjects,
                         targetFolderId = targetFolderId,
+                        startValues = startValues,
                     )
                 }
             } catch (cancelled: CancellationException) {
@@ -278,8 +290,16 @@ class CounterRepository
             mainCounterCustomLabel: String?,
             canCreateAdditionalProjects: Boolean,
             targetFolderId: Long?,
+            startValues: ProjectStartValues = ProjectStartValues(),
         ): ProjectCreationResult {
             if (!canAddActiveProject(canCreateAdditionalProjects)) return ProjectCreationResult.LimitReached
+            val (initialCount, targetRows) = startValues
+            if (initialCount !in 0..MAX_PROJECT_START_COUNT ||
+                targetRows != null &&
+                targetRows !in 1..MAX_TARGET_ROWS
+            ) {
+                return ProjectCreationResult.InvalidProject
+            }
             val projectName = uniqueProjectName(name) ?: return ProjectCreationResult.InvalidProject
             val labelType =
                 validatedMainCounterLabelType(
@@ -298,6 +318,8 @@ class CounterRepository
                         craftType = craftType,
                         mainCounterLabelType = labelType,
                         mainCounterCustomLabel = sanitizeMainCounterCustomLabel(mainCounterCustomLabel),
+                        count = initialCount,
+                        targetRows = targetRows,
                         createdAt = now,
                         updatedAt = now,
                     ).toEntity(),
@@ -366,10 +388,15 @@ class CounterRepository
         suspend fun applyMainCounterChange(
             id: Long,
             change: MainCounterChange,
-        ): Boolean =
+        ): Boolean = applyMainCounterChangeWithResult(id, change) != null
+
+        suspend fun applyMainCounterChangeWithResult(
+            id: Long,
+            change: MainCounterChange,
+        ): CommittedMainCounterChange? =
             transactionRunner.run {
-                val project = dao.getProject(id)?.toDomain() ?: return@run false
-                if (project.isCompleted) return@run false
+                val project = dao.getProject(id)?.toDomain() ?: return@run null
+                if (project.isCompleted) return@run null
 
                 val undoHistory =
                     if (change == MainCounterChange.Undo) dao.getLatestHistory(id) else null
@@ -378,16 +405,14 @@ class CounterRepository
                         MainCounterChange.Undo -> undoMainCounterChange(id, project, undoHistory)
                         else -> applyHistoryTrackedMainCounterChange(id, project, change)
                     }
-                if (changed) {
-                    dao.getProject(id)?.let { updated ->
-                        checkpointActiveSessionForRowChange(
-                            projectId = id,
-                            newRow = updated.count,
-                            undoneReset = undoHistory?.action == MainCounterChange.Reset.historyAction,
-                        )
-                    }
-                }
-                changed
+                if (!changed) return@run null
+                val updated = checkNotNull(dao.getProject(id))
+                checkpointActiveSessionForRowChange(
+                    projectId = id,
+                    newRow = updated.count,
+                    undoneReset = undoHistory?.action == MainCounterChange.Reset.historyAction,
+                )
+                CommittedMainCounterChange(project.count, updated.count, project.targetRows, change)
             }
 
         suspend fun applyWidgetCountChange(
@@ -769,9 +794,10 @@ class CounterRepository
                 }
             }
 
-        suspend fun detachPattern(id: Long) {
-            val primary = projectDocumentRepository.getPrimary(id) ?: return
-            projectDocumentRepository.remove(id, primary.id)
+        suspend fun detachPattern(id: Long): ProjectDocumentMutationResult {
+            val primary =
+                projectDocumentRepository.getPrimary(id) ?: return ProjectDocumentMutationResult.MissingDocument
+            return projectDocumentRepository.remove(id, primary.id)
         }
 
         private suspend fun persistSavedPatternMetadataMutation(
@@ -1317,6 +1343,7 @@ class CounterRepository
                 ) {
                     return@runSessionMutation StopSessionResult.StaleAction
                 }
+                val previousSessionCount = sessionDao.countCompletedSessions()
                 val completedSessionId =
                     insertCompletedSession(
                         active = active,
@@ -1325,7 +1352,10 @@ class CounterRepository
                         endRow = reviewedEndRow,
                     )
                 sessionDao.deleteActiveSession(active.sessionToken)
-                StopSessionResult.Saved(completedSessionId)
+                StopSessionResult.Saved(
+                    completedSessionId,
+                    wasFirstCompletedSession = completedSessionId != null && previousSessionCount == 0L,
+                )
             }
 
         suspend fun discardActiveSession(sessionToken: String): StopSessionResult =
@@ -1492,10 +1522,23 @@ class CounterRepository
                 if (activeSessionResult != null) return@runSessionMutation activeSessionResult
                 val completedAt = completedAtMillis ?: now.wallClockMillis
                 dao.archiveProject(projectId, project.count, completedAt, completedAt)
-                dao.insertCompletion(
-                    ProjectCompletionEntity(projectId = projectId, completedAt = completedAt, zoneId = now.zoneId),
+                val eventId =
+                    dao.insertCompletion(
+                        ProjectCompletionEntity(projectId = projectId, completedAt = completedAt, zoneId = now.zoneId),
+                    )
+                ProjectCompletionResult.CompletedNow(
+                    ProjectCompletionSnapshot(
+                        eventId = eventId,
+                        project =
+                            project.toDomain().copy(
+                                isCompleted = true,
+                                totalRows = project.count,
+                                completedAt = completedAt,
+                                updatedAt = completedAt,
+                            ),
+                        totalSessionMinutes = sessionDao.getTotalMinutes(projectId),
+                    ),
                 )
-                ProjectCompletionResult.Completed
             }
 
         private suspend fun finalizeActiveSessionForCompletion(

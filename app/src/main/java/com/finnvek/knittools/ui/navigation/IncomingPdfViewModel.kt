@@ -18,9 +18,10 @@ import com.finnvek.knittools.di.IoDispatcher
 import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.domain.model.PROJECT_DOCUMENT_LABEL_MAX_LENGTH
 import com.finnvek.knittools.domain.model.PatternDisplayNames
+import com.finnvek.knittools.domain.model.takeWithoutSplittingSurrogatePair
 import com.finnvek.knittools.pro.ProFeature
 import com.finnvek.knittools.pro.ProManager
-import com.finnvek.knittools.pro.ProStatus
+import com.finnvek.knittools.pro.ProState
 import com.finnvek.knittools.repository.CounterRepository
 import com.finnvek.knittools.repository.ProjectCreationResult
 import com.finnvek.knittools.repository.ProjectDocumentMutationResult
@@ -38,7 +39,6 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -47,6 +47,12 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.io.File
 import javax.inject.Inject
+
+data class IncomingPdfChoices(
+    val projects: List<CounterProject>,
+    val canStartProject: Boolean,
+    val proState: ProState,
+)
 
 /** Toisesta sovelluksesta avattu tai jaettu PDF, joka on jo kopioitu sovelluksen omaan tallennustilaan. */
 data class IncomingPdf(
@@ -100,38 +106,43 @@ class IncomingPdfViewModel
 
         private val mutableBusy = MutableStateFlow(false)
         val busy: StateFlow<Boolean> = mutableBusy.asStateFlow()
+        private val mutableReceiving = MutableStateFlow(false)
+        val receiving: StateFlow<Boolean> = mutableReceiving.asStateFlow()
+        val proAccessReady get() = proManager.initialStateReady
 
-        val activeProjects: StateFlow<List<CounterProject>> =
-            counterRepository
-                .getActiveProjects()
-                .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), emptyList())
-
-        val proStatus: StateFlow<ProStatus> =
-            proManager.proState
-                .map { it.status }
-                .stateIn(
-                    viewModelScope,
-                    SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS),
-                    proManager.proState.value.status,
-                )
-
-        /** Ilmaisversiossa uuden projektin voi aloittaa vain, kun aktiivisia projekteja ei ole. */
-        val canStartProject: StateFlow<Boolean> =
-            combine(activeProjects, proManager.proState) { projects, state ->
-                state.hasFeature(ProFeature.UNLIMITED_PROJECTS) || projects.isEmpty()
-            }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), false)
+        val choices: StateFlow<IncomingPdfChoices?> =
+            combine(counterRepository.getActiveProjects(), proManager.proState, proManager.initialControlsReady) {
+                projects,
+                state,
+                ready,
+                ->
+                if (ready) {
+                    IncomingPdfChoices(
+                        projects,
+                        state.hasFeature(ProFeature.UNLIMITED_PROJECTS) || projects.isEmpty(),
+                        state,
+                    )
+                } else {
+                    null
+                }
+            }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), null)
 
         private val outcomeChannel = Channel<IncomingPdfOutcome>(Channel.BUFFERED)
         val outcomes: Flow<IncomingPdfOutcome> = outcomeChannel.receiveAsFlow()
 
         fun receive(uri: Uri) {
             val requestVersion = ++incomingRequestVersion
+            mutableReceiving.value = true
             viewModelScope.launch {
-                val fileName =
-                    withContext(ioDispatcher) { context.contentResolver.displayNameOrNull(uri) }
-                        ?: uri.lastPathSegment?.takeIf(String::isNotBlank)
-                        ?: context.getString(R.string.pattern_pdf_fallback_name)
-                receiveCopy(uri, fileName, requestVersion)
+                try {
+                    val fileName =
+                        withContext(ioDispatcher) { context.contentResolver.displayNameOrNull(uri) }
+                            ?: uri.lastPathSegment?.takeIf(String::isNotBlank)
+                            ?: context.getString(R.string.pattern_pdf_fallback_name)
+                    receiveCopy(uri, fileName, requestVersion)
+                } finally {
+                    if (requestVersion == incomingRequestVersion) mutableReceiving.value = false
+                }
             }
         }
 
@@ -323,7 +334,7 @@ class IncomingPdfViewModel
             name
                 .trim()
                 .ifBlank { pdf.suggestedName }
-                .take(PROJECT_DOCUMENT_LABEL_MAX_LENGTH)
+                .takeWithoutSplittingSurrogatePair(PROJECT_DOCUMENT_LABEL_MAX_LENGTH)
                 .trimEnd()
 
         /**

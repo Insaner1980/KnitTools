@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -36,6 +35,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import com.finnvek.knittools.R
+import com.finnvek.knittools.ui.layout.AdaptiveDropdownMenu
 import com.finnvek.knittools.ui.theme.InsightsDimens
 import com.finnvek.knittools.ui.theme.knitToolsColors
 import com.finnvek.knittools.ui.theme.yarnColorForId
@@ -118,7 +118,7 @@ fun ProjectFilterPill(
                         .size(InsightsDimens.FilterChipIndicatorSize),
             )
         }
-        DropdownMenu(
+        AdaptiveDropdownMenu(
             expanded = showProjectPicker,
             onDismissRequest = { showProjectPicker = false },
             // Vakio-Material-pinta oli näytön ainoa tyylittelemätön kohta.

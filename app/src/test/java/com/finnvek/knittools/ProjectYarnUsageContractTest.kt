@@ -21,7 +21,7 @@ class ProjectYarnUsageContractTest {
     }
 
     @Test
-    fun `usage resources cover eleven languages with matching placeholders and no decorative separators`() {
+    fun `usage resources cover twelve languages with matching placeholders and no decorative separators`() {
         val resources =
             ProjectSourceFiles.localizedStringFiles().associate { path ->
                 val nodes =
@@ -38,7 +38,7 @@ class ProjectYarnUsageContractTest {
                         .associateBy { it.getAttribute("name") }
             }
         val base = resources.getValue("values")
-        assertEquals(11, resources.size)
+        assertEquals(12, resources.size)
         assertTrue(base.containsKey("yarn_usage_track"))
         val placeholders = Regex("%[0-9]+\\$[sdf]")
         resources.forEach { (locale, entries) ->

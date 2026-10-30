@@ -24,6 +24,7 @@ enum class ProFeature {
     INSIGHTS_CHARTS,
     STREAK,
     UNLIMITED_YARN,
+    INSTRUCTION_PASTE,
 }
 
 @Immutable

@@ -223,6 +223,18 @@ try {
         Test-GitReadFailure
 
         Test-Mutation `
+            -Name "camera-permission" `
+            -ExpectedStatus "FAIL" `
+            -ExpectedCheck "permissions" `
+            -PassMessage "unnecessary CAMERA permission mutation detected" `
+            -Mutate {
+                param($fixture)
+                $path = Join-Path $fixture "app/src/main/AndroidManifest.xml"
+                $text = Get-Content -Raw -LiteralPath $path
+                Set-FileText -Path $path -Text ($text -replace '(<uses-permission android:name="android.permission.VIBRATE" />)', "`$1`r`n    <uses-permission android:name=`"android.permission.CAMERA`" />")
+            }
+
+        Test-Mutation `
             -Name "record-audio" `
             -ExpectedStatus "FAIL" `
             -ExpectedCheck "permissions" `
@@ -231,7 +243,7 @@ try {
                 param($fixture)
                 $path = Join-Path $fixture "app/src/main/AndroidManifest.xml"
                 $text = Get-Content -Raw -LiteralPath $path
-                Set-FileText -Path $path -Text ($text -replace '(<uses-permission android:name="android.permission.CAMERA" />)', "`$1`r`n    <uses-permission android:name=`"android.permission.RECORD_AUDIO`" />")
+                Set-FileText -Path $path -Text ($text -replace '(<uses-permission android:name="android.permission.VIBRATE" />)', "`$1`r`n    <uses-permission android:name=`"android.permission.RECORD_AUDIO`" />")
             }
 
         Test-Mutation `
@@ -447,6 +459,22 @@ try {
                         $fixture `
                         "app/schemas/com.finnvek.knittools.data.local.KnitToolsDatabase/1.json"
                 Remove-Item -LiteralPath $firstSchema -Force
+            }
+
+        Test-Mutation `
+            -Name "locale-region-undeclared" `
+            -ExpectedStatus "FAIL" `
+            -ExpectedCheck "locale-parity" `
+            -PassMessage "regional resource directory requires its BCP 47 declaration" `
+            -Mutate {
+                param($fixture)
+                $path = Join-Path $fixture "app/src/main/res/xml/locales_config.xml"
+                $text = Get-Content -Raw -LiteralPath $path
+                $mutated = $text.Replace('<locale android:name="pt-BR" />', '')
+                if ($mutated -ceq $text) {
+                    throw "Brazilian Portuguese locale declaration not found"
+                }
+                Set-FileText -Path $path -Text $mutated
             }
 
         Test-Mutation `

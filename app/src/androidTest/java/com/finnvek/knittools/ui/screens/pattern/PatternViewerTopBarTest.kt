@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.test.assertIsDisplayed
@@ -115,6 +116,69 @@ class PatternViewerTopBarTest {
         }
         composeRule.onNodeWithContentDescription("More options").performClick()
         composeRule.onNodeWithText(label).assertDoesNotExist()
+    }
+
+    @Test
+    fun readingLineButtonOpensExistingSettingsWithoutChangingThem() {
+        var settingsChanges = 0
+        var followEnabled = false
+        var blocked = false
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val readingLineLabel = context.getString(R.string.pattern_horizontal_reading_line)
+        val followLabel = context.getString(R.string.pattern_follow_current_row_on)
+        composeRule.setContent {
+            MaterialTheme {
+                PatternViewerTopBar(
+                    state = topBarState("Chart").copy(readingLineFollowCurrentRow = false),
+                    actions =
+                        topBarActions {}.copy(
+                            onReadingLineToggle = { settingsChanges++ },
+                            onReadingLineFollowToggle = {
+                                settingsChanges++
+                                followEnabled = it
+                            },
+                            onVerticalReadingGuideToggle = { settingsChanges++ },
+                        ),
+                    onBlockingChanged = { blocked = it },
+                )
+            }
+        }
+
+        composeRule.runOnIdle { assertEquals(false, blocked) }
+        composeRule.onNodeWithContentDescription(readingLineLabel).assertIsDisplayed().performClick()
+        composeRule.onNodeWithText(followLabel).assertIsDisplayed()
+        composeRule.runOnIdle {
+            assertEquals(0, settingsChanges)
+            assertEquals(false, followEnabled)
+            assertEquals(true, blocked)
+        }
+        composeRule.onNodeWithText(followLabel).performClick()
+        composeRule.onNodeWithText(followLabel).assertDoesNotExist()
+        composeRule.runOnIdle {
+            assertEquals(1, settingsChanges)
+            assertEquals(true, followEnabled)
+            assertEquals(false, blocked)
+        }
+    }
+
+    @Test
+    fun readingLineButtonIsHiddenForLibraryAndMarkup() {
+        val state = mutableStateOf(topBarState("Library chart").copy(currentRow = null))
+        val label =
+            InstrumentationRegistry.getInstrumentation().targetContext.getString(
+                R.string.pattern_horizontal_reading_line,
+            )
+        composeRule.setContent {
+            MaterialTheme {
+                PatternViewerTopBar(state = state.value, actions = topBarActions {})
+            }
+        }
+
+        composeRule.onNodeWithContentDescription(label).assertDoesNotExist()
+        composeRule.runOnIdle {
+            state.value = topBarState("Chart").copy(canAnnotate = true, annotationMode = true)
+        }
+        composeRule.onNodeWithContentDescription(label).assertDoesNotExist()
     }
 
     private fun topBarActions(onOpenDocuments: () -> Unit) =

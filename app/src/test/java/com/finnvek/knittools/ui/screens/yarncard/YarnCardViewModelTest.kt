@@ -222,44 +222,45 @@ class YarnCardViewModelTest {
     @Test
     fun `updateManualDetails saves existing card with trimmed optional yarn details`() =
         runTest {
-            val savedCard = slot<YarnCard>()
-            coEvery { repository.saveCard(any()) } returns 7L
             val vm = createViewModel()
-            vm.loadFromCard(
-                YarnCard(
-                    id = 7L,
-                    brand = "Old brand",
-                    yarnName = "Old yarn",
-                    quantityInStash = 3,
-                    status = YarnCardStatus.IN_USE,
-                    linkedProjectId = 11L,
-                ),
-            )
+            for (quantity in listOf(0, 3)) {
+                val savedCard = slot<YarnCard>()
+                coEvery { repository.saveCard(capture(savedCard)) } returns 7L
+                vm.loadFromCard(
+                    YarnCard(
+                        id = 7L,
+                        brand = "Old brand",
+                        yarnName = "Old yarn",
+                        quantityInStash = quantity,
+                        status = YarnCardStatus.IN_USE,
+                        linkedProjectId = 11L,
+                    ),
+                )
 
-            vm.updateManualDetails(
-                ManualYarnCardInput(
-                    yarnName = "  Blue sock yarn  ",
-                    brand = "  Regia  ",
-                    quantity = 1,
-                    weightCategory = "  Fingering  ",
-                    colorName = "  Blue  ",
-                    colorNumber = "  123  ",
-                    dyeLot = "  A7  ",
-                ),
-            )
-            advanceUntilIdle()
+                vm.updateManualDetails(
+                    ManualYarnCardInput(
+                        yarnName = "  Blue sock yarn  ",
+                        brand = "  Regia  ",
+                        quantity = 1,
+                        weightCategory = "  Fingering  ",
+                        colorName = "  Blue  ",
+                        colorNumber = "  123  ",
+                        dyeLot = "  A7  ",
+                    ),
+                )
+                advanceUntilIdle()
 
-            coVerify { repository.saveCard(capture(savedCard)) }
-            assertEquals(7L, savedCard.captured.id)
-            assertEquals("Blue sock yarn", savedCard.captured.yarnName)
-            assertEquals("Regia", savedCard.captured.brand)
-            assertEquals(3, savedCard.captured.quantityInStash)
-            assertEquals(YarnCardStatus.IN_USE, savedCard.captured.status)
-            assertEquals(11L, savedCard.captured.linkedProjectId)
-            assertEquals("Fingering", savedCard.captured.weightCategory)
-            assertEquals("Blue", savedCard.captured.colorName)
-            assertEquals("123", savedCard.captured.colorNumber)
-            assertEquals("A7", savedCard.captured.dyeLot)
+                assertEquals(7L, savedCard.captured.id)
+                assertEquals("Blue sock yarn", savedCard.captured.yarnName)
+                assertEquals("Regia", savedCard.captured.brand)
+                assertEquals(quantity, savedCard.captured.quantityInStash)
+                assertEquals(YarnCardStatus.IN_USE, savedCard.captured.status)
+                assertEquals(11L, savedCard.captured.linkedProjectId)
+                assertEquals("Fingering", savedCard.captured.weightCategory)
+                assertEquals("Blue", savedCard.captured.colorName)
+                assertEquals("123", savedCard.captured.colorNumber)
+                assertEquals("A7", savedCard.captured.dyeLot)
+            }
         }
 
     @Test

@@ -50,6 +50,17 @@ sealed class Screen(
 
     data object Settings : Screen("settings")
 
+    data object Guide : Screen("guide")
+
+    data class GuideTopic(
+        val topicKey: String,
+    ) : Screen("guide/${Uri.encode(topicKey)}") {
+        companion object {
+            const val ARG_TOPIC = "topic"
+            const val ROUTE = "guide/{$ARG_TOPIC}"
+        }
+    }
+
     data object Backup : Screen("backup")
 
     data object ProUpgrade : Screen("pro_upgrade")
@@ -65,11 +76,21 @@ sealed class Screen(
     // Ravelry sovelluksen sisällä: Download PDF tallentuu suoraan KnitToolsiin.
     data object RavelryBrowser : Screen("ravelry_browser") {
         const val ARG_URL = "url"
-        const val ROUTE = "ravelry_browser?url={$ARG_URL}"
+        const val ARG_REQUEST_ID = "requestId"
+        const val ROUTE = "ravelry_browser?url={$ARG_URL}&requestId={$ARG_REQUEST_ID}"
 
         /** Jaettu tai tallennettu Ravelry-linkki avautuu suoraan; ilman osoitetta näkyy kaavahaku. */
-        fun createRoute(url: String? = null): String =
-            url?.takeIf { it.isNotBlank() }?.let { "$route?url=${Uri.encode(it)}" } ?: route
+        fun createRoute(
+            url: String? = null,
+            requestId: Long? = null,
+        ): String {
+            val pageRoute = url?.takeIf { it.isNotBlank() }?.let { "$route?url=${Uri.encode(it)}" } ?: route
+            return if (requestId == null) {
+                pageRoute
+            } else {
+                "$pageRoute${if ('?' in pageRoute) '&' else '?'}requestId=$requestId"
+            }
+        }
     }
 
     data object ProjectList : Screen("project_list")

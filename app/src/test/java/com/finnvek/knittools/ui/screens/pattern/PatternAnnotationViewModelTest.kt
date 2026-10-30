@@ -6,6 +6,7 @@ import com.finnvek.knittools.data.storage.PATTERN_PDF_EXPORT_MAX_ANNOTATIONS
 import com.finnvek.knittools.data.storage.PatternAnnotationRenderStyle
 import com.finnvek.knittools.data.storage.PatternPdfExportLimitException
 import com.finnvek.knittools.data.storage.PatternPdfExportLimitReason
+import com.finnvek.knittools.data.storage.PatternPdfExportProgress
 import com.finnvek.knittools.data.storage.PatternPdfExporter
 import com.finnvek.knittools.domain.model.ChartColumnDirection
 import com.finnvek.knittools.domain.model.ChartCorner
@@ -24,8 +25,10 @@ import com.finnvek.knittools.domain.model.PatternAnnotationKind
 import com.finnvek.knittools.domain.model.PatternAnnotationLayer
 import com.finnvek.knittools.domain.model.PatternAnnotationOwner
 import com.finnvek.knittools.domain.model.PatternAnnotationPageLimitException
+import com.finnvek.knittools.domain.model.PatternCalloutSymbol
 import com.finnvek.knittools.domain.model.ProjectDocument
 import com.finnvek.knittools.domain.model.ShapePayload
+import com.finnvek.knittools.domain.model.TextBoxPayload
 import com.finnvek.knittools.repository.CounterRepository
 import com.finnvek.knittools.repository.PatternAnnotationLayerRepository
 import com.finnvek.knittools.repository.PatternAnnotationRepository
@@ -40,10 +43,12 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
@@ -54,6 +59,7 @@ import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
+import kotlinx.coroutines.withContext
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -475,6 +481,8 @@ class PatternAnnotationViewModelTest {
             advanceUntilIdle()
 
             assertEquals(PatternAnnotationWriteError.WRITE_FAILED, viewModel.uiState.value.writeError)
+            assertEquals(null, viewModel.uiState.value.inProgressAnnotation)
+            assertFalse(viewModel.uiState.value.canUndo)
             assertEquals(
                 2,
                 viewModel.uiState.value.draftStroke
@@ -1047,6 +1055,30 @@ class PatternAnnotationDocumentSelectionTest {
     }
 
     @Test
+    fun `degenerate shape is discarded without blocking the next valid stroke`() =
+        runTest {
+            val route = projectRoute()
+            every { route.annotationRepository.observePage(any(), any()) } returns flowOf(emptyList())
+            coEvery { route.annotationRepository.insertAnnotation(any()) } returns 101L
+            val viewModel = route.viewModel()
+            advanceUntilIdle()
+            viewModel.setActiveTool(PatternAnnotationTool.RECTANGLE)
+            viewModel.beginStroke(NormalizedPatternPoint(0.1f, 0.2f))
+            viewModel.appendStrokePoint(NormalizedPatternPoint(0.1f, 0.2f))
+            viewModel.commitStroke(0f)
+            advanceUntilIdle()
+
+            coVerify(exactly = 0) { route.annotationRepository.insertAnnotation(any()) }
+            assertEquals(null, viewModel.uiState.value.draftStroke)
+            assertFalse(viewModel.uiState.value.isSaving)
+            viewModel.beginStroke(NormalizedPatternPoint(0.1f, 0.2f))
+            viewModel.appendStrokePoint(NormalizedPatternPoint(0.2f, 0.3f))
+            viewModel.commitStroke(0f)
+            advanceUntilIdle()
+            coVerify(exactly = 1) { route.annotationRepository.insertAnnotation(any()) }
+        }
+
+    @Test
     fun `stroke completed during undo is persisted after undo finishes`() =
         runTest {
             val route = projectRoute()
@@ -1194,7 +1226,7 @@ class PatternAnnotationDocumentSelectionTest {
 
             route.projectLayers.value = listOf(route.projectLayer.copy(isActive = false), secondaryLayer)
             advanceUntilIdle()
-            viewModel.exportAnnotatedPdf(sourceUri, destinationUri, style)
+            exportToDestination(viewModel, sourceUri, destinationUri, style, documentId = 52L)
             advanceUntilIdle()
 
             coVerify(exactly = 1) {
@@ -1288,7 +1320,7 @@ class PatternAnnotationDocumentSelectionTest {
             val viewModel = fixture.route.viewModel(pdfExporter = fixture.exporter)
             advanceUntilIdle()
 
-            viewModel.exportAnnotatedPdf(fixture.sourceUri, fixture.destinationUri, fixture.style)
+            exportToDestination(viewModel, fixture.sourceUri, fixture.destinationUri, fixture.style)
             advanceUntilIdle()
 
             coVerify(exactly = 1) {
@@ -1314,14 +1346,17 @@ class PatternAnnotationDocumentSelectionTest {
                     PATTERN_PDF_EXPORT_MAX_ANNOTATIONS,
                     any(),
                 )
-            } returns
-                List(PATTERN_PDF_EXPORT_MAX_ANNOTATIONS + 1) { index ->
-                    annotation(layerId = 41L, page = 0, zIndex = index.toLong())
-                }
+            } returnsMany
+                listOf(
+                    emptyList(),
+                    List(PATTERN_PDF_EXPORT_MAX_ANNOTATIONS + 1) { index ->
+                        annotation(layerId = 41L, page = 0, zIndex = index.toLong())
+                    },
+                )
             val viewModel = fixture.route.viewModel(pdfExporter = fixture.exporter)
             advanceUntilIdle()
 
-            viewModel.exportAnnotatedPdf(fixture.sourceUri, fixture.destinationUri, fixture.style)
+            exportToDestination(viewModel, fixture.sourceUri, fixture.destinationUri, fixture.style)
             advanceUntilIdle()
 
             assertTrue(viewModel.uiState.value.exportFailed)
@@ -1339,7 +1374,8 @@ class PatternAnnotationDocumentSelectionTest {
         val route = projectRoute()
         val exporter = mockk<PatternPdfExporter>()
         val sourceUri = mockk<Uri>()
-        val destinationRequests = mutableListOf<Uri>()
+        val destinationRequests = mutableListOf<String>()
+        every { sourceUri.toString() } returns "file:///document-51.pdf"
         every { route.annotationRepository.observePage(any(), 0) } returns flowOf(emptyList())
         coEvery {
             route.annotationRepository.getForLayersForExport(
@@ -1360,14 +1396,17 @@ class PatternAnnotationDocumentSelectionTest {
             viewModel.exportDestinationRequests.collect { destinationRequests += it }
         }
 
-        viewModel.requestAnnotatedPdfExport(sourceUri)
+        val context = PatternPdfExportContext(sourceUri, route.projectOwner, 51L)
+        viewModel.setExportContext(context)
+        viewModel.requestAnnotatedPdfExport(context)
         advanceUntilIdle()
 
         if (fails) {
             assertTrue(destinationRequests.isEmpty())
             assertTrue(viewModel.uiState.value.exportFailed)
         } else {
-            assertEquals(listOf(sourceUri), destinationRequests)
+            assertEquals(1, destinationRequests.size)
+            assertTrue(viewModel.launchExportDestination(destinationRequests.single(), context))
         }
         assertFalse(viewModel.uiState.value.isExporting)
     }
@@ -1398,6 +1437,1177 @@ class PatternAnnotationDocumentSelectionTest {
         }
 }
 
+@OptIn(ExperimentalCoroutinesApi::class)
+class PatternAnnotationWriteFeedbackTest {
+    @Before
+    fun setUp() {
+        Dispatchers.setMain(StandardTestDispatcher())
+    }
+
+    @After
+    fun tearDown() {
+        Dispatchers.resetMain()
+    }
+
+    @Test
+    fun `project and library insert failure survives tool changes until dismissal and deliberate re-entry`() =
+        runTest {
+            for (library in listOf(false, true)) {
+                val fixture = WriteFixture(library)
+                val vm = fixture.vm
+                advanceUntilIdle()
+                fixture.nextWrite = { throw IOException("insert rejected") }
+                vm.addTextBox("New text")
+                advanceUntilIdle()
+                assertFailed(vm)
+                assertTrue(fixture.rows.value.isEmpty())
+                assertFalse(vm.uiState.value.canUndo)
+                vm.setActiveTool(PatternAnnotationTool.BROWSE)
+                runCurrent()
+                assertFailed(vm)
+                vm.dismissWriteError()
+                advanceUntilIdle()
+                assertEquals(1, fixture.writeAttempts)
+                assertEquals(PatternAnnotationWriteError.NONE, vm.uiState.value.writeError)
+
+                vm.setActiveTool(PatternAnnotationTool.PEN)
+                vm.addTextBox("Re-entered text")
+                advanceUntilIdle()
+                assertEquals(
+                    if (library) 31L else 41L,
+                    fixture.rows.value
+                        .single()
+                        .layerId,
+                )
+                assertEquals(
+                    "Re-entered text",
+                    (
+                        fixture.rows.value
+                            .single()
+                            .payload as TextBoxPayload
+                    ).text,
+                )
+                assertTrue(vm.uiState.value.canUndo)
+                assertFalse(vm.uiState.value.canRedo)
+            }
+        }
+
+    @Test
+    fun `delayed stroke failure after Done hides unsaved preview and dismissal never replays it`() =
+        runTest {
+            for (library in listOf(false, true)) {
+                val fixture = WriteFixture(library)
+                val gate = CompletableDeferred<Unit>()
+                advanceUntilIdle()
+                fixture.nextWrite = {
+                    gate.await()
+                    throw IOException("stroke rejected")
+                }
+                fixture.stroke()
+                runCurrent()
+                fixture.vm.setActiveTool(PatternAnnotationTool.BROWSE)
+                runCurrent()
+                gate.complete(Unit)
+                advanceUntilIdle()
+                assertFailed(fixture.vm)
+                assertTrue(fixture.rows.value.isEmpty())
+                assertTrue(fixture.vm.uiState.value.draftStroke != null)
+                assertEquals(null, fixture.vm.uiState.value.inProgressAnnotation)
+                fixture.vm.dismissWriteError()
+                advanceUntilIdle()
+                assertEquals(null, fixture.vm.uiState.value.draftStroke)
+                assertEquals(1, fixture.writeAttempts)
+                fixture.stroke()
+                advanceUntilIdle()
+                assertEquals(1, fixture.rows.value.size)
+                assertTrue(fixture.vm.uiState.value.canUndo)
+            }
+        }
+
+    @Test
+    fun `another command failure never makes a failed stroke preview look committed`() =
+        runTest {
+            val fixture = WriteFixture()
+            advanceUntilIdle()
+            fixture.nextWrite = { throw IOException("stroke rejected") }
+            fixture.stroke()
+            advanceUntilIdle()
+            val draft = checkNotNull(fixture.vm.uiState.value.draftStroke)
+            fixture.nextWrite = { throw IOException("text rejected") }
+            fixture.vm.addTextBox("New text")
+            advanceUntilIdle()
+            assertFailed(fixture.vm)
+            assertTrue(draft === fixture.vm.uiState.value.draftStroke)
+            assertEquals(null, fixture.vm.uiState.value.inProgressAnnotation)
+            assertTrue(fixture.rows.value.isEmpty())
+            fixture.vm.dismissWriteError()
+            advanceUntilIdle()
+            assertEquals(null, fixture.vm.uiState.value.draftStroke)
+            assertEquals(2, fixture.writeAttempts)
+        }
+
+    @Test
+    fun `dismissing an older failure preserves the next queued stroke preview and captured write`() =
+        runTest {
+            val fixture = WriteFixture()
+            val firstGate = CompletableDeferred<Unit>()
+            val nextGate = CompletableDeferred<Unit>()
+            advanceUntilIdle()
+            fixture.nextWrite = {
+                firstGate.await()
+                fixture.nextWrite = { nextGate.await() }
+                throw IOException("first stroke rejected")
+            }
+            fixture.stroke()
+            runCurrent()
+            fixture.stroke(endX = 0.6f)
+            runCurrent()
+            val queuedDraft = fixture.vm.uiState.value.draftStroke
+            firstGate.complete(Unit)
+            runCurrent()
+            assertTrue(fixture.vm.uiState.value.isSaving)
+            assertEquals(PatternAnnotationWriteError.WRITE_FAILED, fixture.vm.uiState.value.writeError)
+            fixture.vm.dismissWriteError()
+            runCurrent()
+            assertTrue(queuedDraft === fixture.vm.uiState.value.draftStroke)
+            assertTrue(fixture.vm.uiState.value.inProgressAnnotation != null)
+            nextGate.complete(Unit)
+            advanceUntilIdle()
+            assertEquals(2, fixture.writeAttempts)
+            assertEquals(
+                41L,
+                fixture.rows.value
+                    .single()
+                    .layerId,
+            )
+            assertEquals(null, fixture.vm.uiState.value.draftStroke)
+            assertTrue(fixture.vm.uiState.value.canUndo)
+        }
+
+    @Test
+    fun `finishing the next gesture after a failure does not acknowledge the failed stroke`() =
+        runTest {
+            val fixture = WriteFixture()
+            val gate = CompletableDeferred<Unit>()
+            advanceUntilIdle()
+            fixture.nextWrite = {
+                gate.await()
+                throw IOException("previous stroke rejected")
+            }
+            fixture.stroke()
+            runCurrent()
+            fixture.vm.beginStroke(NormalizedPatternPoint(0.6f, 0.2f))
+            fixture.vm.appendStrokePoint(NormalizedPatternPoint(0.8f, 0.5f))
+            gate.complete(Unit)
+            advanceUntilIdle()
+            fixture.vm.commitStroke(0f)
+            advanceUntilIdle()
+            assertFailed(fixture.vm)
+            assertEquals(2, fixture.writeAttempts)
+            assertEquals(
+                0.6f,
+                (
+                    fixture.rows.value
+                        .single()
+                        .payload as FreehandPayload
+                ).points.first().x,
+            )
+            assertTrue(fixture.vm.uiState.value.canUndo)
+            fixture.vm.dismissWriteError()
+            advanceUntilIdle()
+            assertEquals(PatternAnnotationWriteError.NONE, fixture.vm.uiState.value.writeError)
+            assertEquals(1, fixture.rows.value.size)
+        }
+
+    @Test
+    fun `update failure preserves observed content and selection until deliberate recovery`() =
+        verifyMutationFailure { it.moveSelected(0.1f, 0f) }
+
+    @Test
+    fun `delete failure preserves observed content and selection until deliberate recovery`() =
+        verifyMutationFailure { it.deleteSelected() }
+
+    @Test
+    fun `clear failure preserves observed content and selection until deliberate recovery`() =
+        verifyMutationFailure { it.clearEditablePage() }
+
+    private fun verifyMutationFailure(action: (PatternAnnotationViewModel) -> Unit) =
+        runTest {
+            val fixture = WriteFixture()
+            fixture.seedShape()
+            advanceUntilIdle()
+            fixture.vm.selectAnnotationAt(NormalizedPatternPoint(0.3f, 0.3f))
+            runCurrent()
+            val before = fixture.rows.value
+            val selected = fixture.vm.uiState.value.selectedAnnotationId
+            fixture.nextWrite = { throw IOException("mutation rejected") }
+            action(fixture.vm)
+            advanceUntilIdle()
+            assertFailed(fixture.vm)
+            assertEquals(before, fixture.rows.value)
+            assertEquals(before, fixture.vm.uiState.value.projectAnnotations)
+            assertEquals(selected, fixture.vm.uiState.value.selectedAnnotationId)
+            assertFalse(fixture.vm.uiState.value.canUndo)
+            fixture.vm.dismissWriteError()
+            action(fixture.vm)
+            advanceUntilIdle()
+            assertFalse(before == fixture.rows.value)
+            assertTrue(fixture.vm.uiState.value.canUndo)
+            fixture.vm.undo()
+            advanceUntilIdle()
+            assertEquals(before, fixture.rows.value)
+        }
+
+    @Test
+    fun `undo and redo failures keep their history entries and recover only on explicit action`() =
+        runTest {
+            val fixture = WriteFixture()
+            advanceUntilIdle()
+            fixture.vm.addCallout("Note", "Details", PatternCalloutSymbol.NOTE)
+            advanceUntilIdle()
+            val committed = fixture.rows.value
+            fixture.nextWrite = { throw IOException("undo rejected") }
+            fixture.vm.undo()
+            advanceUntilIdle()
+            assertFailed(fixture.vm)
+            assertEquals(committed, fixture.rows.value)
+            assertTrue(fixture.vm.uiState.value.canUndo)
+            assertFalse(fixture.vm.uiState.value.canRedo)
+            fixture.vm.dismissWriteError()
+            runCurrent()
+            assertEquals(2, fixture.writeAttempts)
+            fixture.vm.undo()
+            advanceUntilIdle()
+            assertTrue(fixture.rows.value.isEmpty())
+            assertFalse(fixture.vm.uiState.value.canUndo)
+            assertTrue(fixture.vm.uiState.value.canRedo)
+            fixture.nextWrite = { throw IOException("redo rejected") }
+            fixture.vm.redo()
+            advanceUntilIdle()
+            assertFailed(fixture.vm)
+            assertTrue(fixture.rows.value.isEmpty())
+            assertFalse(fixture.vm.uiState.value.canUndo)
+            assertTrue(fixture.vm.uiState.value.canRedo)
+            fixture.vm.dismissWriteError()
+            fixture.vm.redo()
+            advanceUntilIdle()
+            assertEquals(committed, fixture.rows.value)
+            assertTrue(fixture.vm.uiState.value.canUndo)
+            assertFalse(fixture.vm.uiState.value.canRedo)
+            assertEquals(PatternAnnotationWriteError.NONE, fixture.vm.uiState.value.writeError)
+        }
+
+    @Test
+    fun `existing text failure retains editor identity and supports retry or cancel without replay`() =
+        runTest {
+            val fixture = WriteFixture(library = true)
+            advanceUntilIdle()
+            fixture.vm.addTextBox("Original")
+            advanceUntilIdle()
+            fixture.vm.selectAnnotationAt(NormalizedPatternPoint(0.3f, 0.3f))
+            fixture.vm.editSelectedText()
+            runCurrent()
+            val edit = checkNotNull(fixture.vm.uiState.value.textEdit)
+            val committed = fixture.rows.value
+            fixture.nextWrite = { throw IllegalStateException("text conflict") }
+            fixture.vm.saveTextEdit(edit, "Draft")
+            advanceUntilIdle()
+            assertFailed(fixture.vm)
+            assertTrue(edit === fixture.vm.uiState.value.textEdit)
+            assertEquals(committed, fixture.rows.value)
+            fixture.vm.saveTextEdit(edit, "Draft")
+            advanceUntilIdle()
+            assertEquals(
+                "Draft",
+                (
+                    fixture.rows.value
+                        .single()
+                        .payload as TextBoxPayload
+                ).text,
+            )
+            assertEquals(null, fixture.vm.uiState.value.textEdit)
+            fixture.vm.editSelectedText()
+            runCurrent()
+            val nextEdit = checkNotNull(fixture.vm.uiState.value.textEdit)
+            fixture.nextWrite = { throw IOException("text rejected") }
+            fixture.vm.saveTextEdit(nextEdit, "Abandoned")
+            advanceUntilIdle()
+            fixture.vm.cancelTextEdit(nextEdit)
+            fixture.vm.saveTextEdit(nextEdit, "Obsolete callback")
+            advanceUntilIdle()
+            assertEquals(4, fixture.writeAttempts)
+            assertEquals(PatternAnnotationWriteError.NONE, fixture.vm.uiState.value.writeError)
+            assertEquals(
+                "Draft",
+                (
+                    fixture.rows.value
+                        .single()
+                        .payload as TextBoxPayload
+                ).text,
+            )
+        }
+
+    @Test
+    fun `late insert success and failure cannot contaminate B`() = verifyLateResults(PendingAction.INSERT, false)
+
+    @Test
+    fun `late insert success and failure cannot contaminate returned A`() =
+        verifyLateResults(PendingAction.INSERT, true)
+
+    @Test
+    fun `late undo success and failure cannot contaminate B`() = verifyLateResults(PendingAction.UNDO, false)
+
+    @Test
+    fun `late undo success and failure cannot contaminate returned A`() = verifyLateResults(PendingAction.UNDO, true)
+
+    @Test
+    fun `late redo success and failure cannot contaminate B`() = verifyLateResults(PendingAction.REDO, false)
+
+    @Test
+    fun `late redo success and failure cannot contaminate returned A`() = verifyLateResults(PendingAction.REDO, true)
+
+    private fun verifyLateResults(
+        action: PendingAction,
+        returnToA: Boolean,
+    ) = runTest {
+        for (fails in listOf(false, true)) {
+            val fixture = WriteFixture()
+            val gate = CompletableDeferred<Unit>()
+            advanceUntilIdle()
+            if (action != PendingAction.INSERT) {
+                fixture.vm.addTextBox("A")
+                advanceUntilIdle()
+                if (action == PendingAction.REDO) {
+                    fixture.vm.undo()
+                    advanceUntilIdle()
+                }
+            }
+            fixture.nextWrite = {
+                gate.await()
+                if (fails) throw IOException("old context rejected")
+            }
+            when (action) {
+                PendingAction.INSERT -> fixture.vm.addTextBox("Delayed A")
+                PendingAction.UNDO -> fixture.vm.undo()
+                PendingAction.REDO -> fixture.vm.redo()
+            }
+            runCurrent()
+            fixture.switchToB()
+            runCurrent()
+            if (returnToA) {
+                fixture.route.projectLayers.value = listOf(fixture.route.projectLayer)
+                runCurrent()
+            }
+            assertEquals(if (returnToA) 41L else 42L, fixture.vm.uiState.value.editableLayerId)
+            gate.complete(Unit)
+            advanceUntilIdle()
+            assertEquals(PatternAnnotationWriteError.NONE, fixture.vm.uiState.value.writeError)
+            assertFalse(fixture.vm.uiState.value.canUndo)
+            assertFalse(fixture.vm.uiState.value.canRedo)
+            assertFalse(fixture.vm.uiState.value.isSaving)
+            val afterOldResult = fixture.rows.value
+            fixture.vm.undo()
+            fixture.vm.redo()
+            advanceUntilIdle()
+            assertEquals(afterOldResult, fixture.rows.value)
+            fixture.stroke()
+            advanceUntilIdle()
+            assertTrue(fixture.vm.uiState.value.canUndo)
+            fixture.vm.undo()
+            advanceUntilIdle()
+            assertEquals(afterOldResult, fixture.rows.value)
+        }
+    }
+
+    @Test
+    fun `mutation and redo cancellation preserve rows and history without ordinary feedback`() =
+        runTest {
+            val actions: List<(PatternAnnotationViewModel) -> Unit> =
+                listOf({ it.moveSelected(0.1f, 0f) }, { it.clearEditablePage() }, { it.redo() })
+            for ((index, action) in actions.withIndex()) {
+                val fixture = WriteFixture()
+                fixture.seedShape()
+                advanceUntilIdle()
+                fixture.vm.selectAnnotationAt(NormalizedPatternPoint(0.3f, 0.3f))
+                if (index == 2) {
+                    fixture.vm.deleteSelected()
+                    advanceUntilIdle()
+                    fixture.vm.undo()
+                }
+                advanceUntilIdle()
+                val before = fixture.rows.value
+                val state = fixture.vm.uiState.value
+                fixture.nextWrite = { throw CancellationException("cancelled") }
+                action(fixture.vm)
+                advanceUntilIdle()
+                assertEquals(before, fixture.rows.value)
+                assertEquals(state.canUndo, fixture.vm.uiState.value.canUndo)
+                assertEquals(state.canRedo, fixture.vm.uiState.value.canRedo)
+                assertEquals(PatternAnnotationWriteError.NONE, fixture.vm.uiState.value.writeError)
+                assertFalse(fixture.vm.uiState.value.isSaving)
+            }
+        }
+
+    private fun assertFailed(vm: PatternAnnotationViewModel) {
+        assertEquals(PatternAnnotationWriteError.WRITE_FAILED, vm.uiState.value.writeError)
+        assertFalse(vm.uiState.value.isSaving)
+    }
+
+    private enum class PendingAction { INSERT, UNDO, REDO }
+
+    private class WriteFixture(
+        library: Boolean = false,
+    ) {
+        val route = projectRoute()
+        val rows = MutableStateFlow<List<PatternAnnotation>>(emptyList())
+        var nextWrite: suspend () -> Unit = {}
+        var writeAttempts = 0
+        private var nextId = 100L
+        val vm: PatternAnnotationViewModel
+
+        init {
+            val repository = route.annotationRepository
+            every { repository.observePage(any(), any()) } answers {
+                val layerId = firstArg<Long>()
+                val page = secondArg<Int>()
+                rows.map { current -> current.filter { it.layerId == layerId && it.page == page } }
+            }
+            coEvery { repository.insertAnnotation(any()) } coAnswers {
+                beforeWrite()
+                val inserted = firstArg<PatternAnnotation>().copy(id = ++nextId)
+                rows.value += inserted
+                inserted.id
+            }
+            coEvery { repository.updateAnnotation(any()) } coAnswers {
+                beforeWrite()
+                val after = firstArg<PatternAnnotation>()
+                rows.value = rows.value.map { if (it.id == after.id) after else it }
+            }
+            coEvery { repository.deleteAnnotation(any()) } coAnswers {
+                beforeWrite()
+                rows.value = rows.value.filterNot { it.id == firstArg<Long>() }
+            }
+            coEvery { repository.clearPage(any(), any()) } coAnswers {
+                beforeWrite()
+                rows.value = rows.value.filterNot { it.layerId == firstArg<Long>() && it.page == secondArg<Int>() }
+            }
+            coEvery { repository.restoreBatch(any()) } coAnswers {
+                beforeWrite()
+                val restored = firstArg<List<PatternAnnotation>>()
+                rows.value = rows.value.filterNot { row -> restored.any { it.id == row.id } } + restored
+            }
+            coEvery { repository.updateText(any(), any(), any()) } coAnswers {
+                beforeWrite()
+                val before = secondArg<PatternAnnotation>()
+                val after = before.copy(payload = (before.payload as TextBoxPayload).copy(text = thirdArg()))
+                rows.value = rows.value.map { if (it.id == after.id) after else it }
+                after
+            }
+            vm =
+                if (library) {
+                    PatternAnnotationViewModel(
+                        SavedStateHandle(mapOf("savedPatternId" to 12L)),
+                        route.counterRepository,
+                        route.layerRepository,
+                        repository,
+                        route.projectDocumentRepository,
+                    )
+                } else {
+                    route.viewModel()
+                }
+        }
+
+        private suspend fun beforeWrite() {
+            writeAttempts++
+            val pending = nextWrite
+            nextWrite = {}
+            pending()
+        }
+
+        fun seedShape() {
+            rows.value =
+                listOf(
+                    PatternAnnotation(
+                        id = 99L,
+                        layerId = 41L,
+                        page = 0,
+                        kind = PatternAnnotationKind.LINE,
+                        payload =
+                            ShapePayload(
+                                NormalizedPatternPoint(0.2f, 0.2f),
+                                NormalizedPatternPoint(0.4f, 0.4f),
+                                0,
+                                2f,
+                            ),
+                        zIndex = 0L,
+                    ),
+                )
+        }
+
+        fun stroke(endX: Float = 0.4f) {
+            vm.setActiveTool(PatternAnnotationTool.PEN)
+            vm.beginStroke(NormalizedPatternPoint(0.1f, 0.2f))
+            vm.appendStrokePoint(NormalizedPatternPoint(endX, 0.5f))
+            vm.commitStroke(0f)
+        }
+
+        fun switchToB() {
+            val key = PatternAnnotationDocumentKey.savedPattern(13L)
+            route.documents.value += projectDocument(id = 52L, savedPatternId = 13L, isPrimary = false)
+            coEvery { route.layerRepository.getOrCreateMasterLayer(13L, key) } returns
+                layer(32L, PatternAnnotationOwner.SavedPattern(13L, key))
+            route.projectLayers.value = listOf(layer(42L, PatternAnnotationOwner.Project(7L, key)))
+        }
+    }
+}
+
+@OptIn(ExperimentalCoroutinesApi::class)
+class PatternAnnotationExportOwnershipTest {
+    @Before
+    fun setUp() {
+        Dispatchers.setMain(StandardTestDispatcher())
+    }
+
+    @After
+    fun tearDown() {
+        Dispatchers.resetMain()
+    }
+
+    @Test
+    fun `project request keeps ordered layers but reads persisted content again after picker`() =
+        runTest {
+            val fixture = ExportFixture(this)
+            fixture.rows = listOf(annotation(31L, 0), annotation(41L, 2))
+            val request = fixture.ready()
+            fixture.vm.setMasterLayerVisible(false)
+            fixture.vm.setProjectLayerVisible(false)
+            fixture.vm.setActiveTool(PatternAnnotationTool.PEN)
+            fixture.vm.beginStroke(NormalizedPatternPoint(0.1f, 0.1f))
+            fixture.vm.appendStrokePoint(NormalizedPatternPoint(0.8f, 0.8f))
+            fixture.rows = listOf(annotation(31L, 1), annotation(41L, 3))
+            val persisted = fixture.rows
+            val gate = CompletableDeferred<Unit>()
+            fixture.onExport = { gate.await() }
+
+            fixture.deliver(request)
+            runCurrent()
+            fixture.rows = emptyList()
+            assertEquals(listOf(listOf(31L, 41L), listOf(31L, 41L)), fixture.queries)
+            assertEquals(persisted, fixture.exports.single().annotations)
+            assertEquals(fixture.context.sourceUri, fixture.exports.single().source)
+            assertTrue(fixture.vm.uiState.value.isExporting)
+            coVerify(exactly = 0) { fixture.route.annotationRepository.insertAnnotation(any()) }
+            gate.complete(Unit)
+            runCurrent()
+            assertFalse(fixture.vm.uiState.value.isExporting)
+            assertFalse(fixture.vm.uiState.value.exportFailed)
+        }
+
+    @Test
+    fun `Library request exports only its captured master and supports source only export`() =
+        runTest {
+            val fixture = ExportFixture(this, library = true)
+            fixture.rows = listOf(annotation(31L, 0), annotation(41L, 0))
+            val first = fixture.ready()
+            fixture.vm.setMasterLayerVisible(false)
+            fixture.deliver(first)
+            runCurrent()
+            assertEquals(
+                listOf(annotation(31L, 0).layerId),
+                fixture.exports
+                    .single()
+                    .annotations
+                    .map { it.layerId },
+            )
+            assertEquals(listOf(listOf(31L), listOf(31L)), fixture.queries)
+
+            val second = fixture.ready()
+            fixture.vm.setMasterLayerVisible(true)
+            fixture.deliver(second)
+            runCurrent()
+            assertTrue(
+                fixture.exports
+                    .last()
+                    .annotations
+                    .isEmpty(),
+            )
+            assertEquals(listOf(emptyList<Long>(), emptyList<Long>()), fixture.queries.takeLast(2))
+        }
+
+    @Test
+    fun `project hidden master remains excluded when toggled during preflight`() =
+        runTest {
+            val fixture = ExportFixture(this)
+            val gate = CompletableDeferred<Unit>()
+            fixture.vm.setMasterLayerVisible(false)
+            fixture.onPreflight = { gate.await() }
+            fixture.request()
+            runCurrent()
+            fixture.vm.setMasterLayerVisible(true)
+            gate.complete(Unit)
+            runCurrent()
+            val request = fixture.requests.single()
+            assertTrue(fixture.vm.launchExportDestination(request, fixture.context))
+            fixture.deliver(request)
+            runCurrent()
+            assertEquals(listOf(listOf(41L), listOf(41L)), fixture.queries)
+        }
+
+    @Test
+    fun `cancelled destination is consumed and deliberate reentry works`() =
+        runTest {
+            val fixture = ExportFixture(this)
+            val request = fixture.ready()
+            fixture.deliver(request, destination = null)
+            fixture.deliver(request)
+            runCurrent()
+            assertTrue(fixture.exports.isEmpty())
+            assertFalse(fixture.vm.uiState.value.exportFailed)
+            fixture.deliver(fixture.ready())
+            runCurrent()
+            assertEquals(1, fixture.exports.size)
+        }
+
+    @Test
+    fun `duplicate launch and destination cannot replay or finish a running export`() =
+        runTest {
+            val fixture = ExportFixture(this)
+            val gate = CompletableDeferred<Unit>()
+            fixture.onExport = { gate.await() }
+            val request = fixture.ready()
+            assertFalse(fixture.vm.launchExportDestination(request, fixture.context))
+            fixture.deliver(request)
+            fixture.deliver(request)
+            fixture.deliver(request, destination = null)
+            runCurrent()
+            assertEquals(1, fixture.exports.size)
+            assertTrue(fixture.vm.uiState.value.isExporting)
+            gate.complete(Unit)
+            runCurrent()
+            fixture.deliver(request)
+            runCurrent()
+            assertEquals(1, fixture.exports.size)
+        }
+
+    @Test
+    fun `unlaunched destination and unknown restored token cannot write`() =
+        runTest {
+            val fixture = ExportFixture(this)
+            fixture.request()
+            runCurrent()
+            fixture.deliver(fixture.requests.single())
+            fixture.deliver("unrestorable-token")
+            runCurrent()
+            assertTrue(fixture.exports.isEmpty())
+            assertTrue(fixture.vm.launchExportDestination(fixture.requests.single(), fixture.context))
+            fixture.deliver(fixture.requests.single())
+            runCurrent()
+            assertEquals(1, fixture.exports.size)
+        }
+
+    @Test
+    fun `restored callback in a new ViewModel cannot consume its newer request`() =
+        runTest {
+            val original = ExportFixture(this, library = true)
+            val old = original.ready()
+            val restored = ExportFixture(this, library = true)
+            val fresh = restored.ready()
+            restored.deliver(old)
+            restored.deliver(old, destination = null)
+            runCurrent()
+            assertTrue(restored.exports.isEmpty())
+            restored.deliver(fresh)
+            runCurrent()
+            assertEquals(1, restored.exports.size)
+        }
+
+    @Test
+    fun `leaving viewer declines saved callback even after same context reenters`() =
+        runTest {
+            val fixture = ExportFixture(this)
+            val request = fixture.ready()
+            fixture.vm.setExportContext(null)
+            fixture.vm.setExportContext(fixture.context)
+            fixture.deliver(request)
+            runCurrent()
+            assertTrue(fixture.exports.isEmpty())
+            fixture.deliver(fixture.ready())
+            runCurrent()
+            assertEquals(1, fixture.exports.size)
+        }
+
+    @Test
+    fun `pending A callback is rejected on B and after A B A`() =
+        runTest {
+            val fixture = ExportFixture(this)
+            val old = fixture.ready()
+            fixture.switchToB()
+            fixture.deliver(old)
+            runCurrent()
+            fixture.switchToA()
+            fixture.deliver(old)
+            fixture.deliver(old, destination = null)
+            runCurrent()
+            assertTrue(fixture.exports.isEmpty())
+            fixture.deliver(fixture.ready())
+            runCurrent()
+            assertEquals(listOf(31L, 41L), fixture.queries.last())
+        }
+
+    @Test
+    fun `same URI with different owner cannot accept old request`() =
+        runTest {
+            val fixture = ExportFixture(this)
+            val old = fixture.ready()
+            fixture.switchToB(sameUri = true)
+            fixture.deliver(old)
+            runCurrent()
+            assertTrue(fixture.exports.isEmpty())
+            fixture.deliver(fixture.ready())
+            runCurrent()
+            assertEquals(listOf(32L, 42L), fixture.queries.last())
+        }
+
+    @Test
+    fun `Library owner replacement with identical source cannot receive previous owners result`() =
+        runTest {
+            val original = ExportFixture(this, library = true)
+            val old = original.ready()
+            val replacement = ExportFixture(this, library = true, libraryId = 13L)
+            replacement.context = replacement.context.copy(sourceUri = original.source)
+            replacement.vm.setExportContext(replacement.context)
+            val fresh = replacement.ready()
+            replacement.deliver(old)
+            replacement.deliver(old, destination = null)
+            runCurrent()
+            assertTrue(replacement.exports.isEmpty())
+            replacement.deliver(fresh)
+            runCurrent()
+            assertEquals(listOf(31L), replacement.queries.last())
+            assertEquals(1, replacement.exports.size)
+        }
+
+    @Test
+    fun `layer observation invalidates pending export before viewer context updates`() =
+        runTest {
+            val fixture = ExportFixture(this)
+            val old = fixture.ready()
+            fixture.switchToB(updateViewer = false)
+            fixture.deliver(old)
+            runCurrent()
+            assertTrue(fixture.exports.isEmpty())
+            fixture.switchToA()
+            fixture.deliver(old)
+            runCurrent()
+            assertTrue(fixture.exports.isEmpty())
+            fixture.deliver(fixture.ready())
+            runCurrent()
+            assertEquals(1, fixture.exports.size)
+        }
+
+    @Test
+    fun `same owner and URI with changed project relation invalidates pending request`() =
+        runTest {
+            val fixture = ExportFixture(this)
+            val old = fixture.ready()
+            fixture.route.documents.value =
+                listOf(
+                    fixture.route.documents.value
+                        .single()
+                        .copy(id = 99L),
+                )
+            fixture.context = fixture.context.copy(projectDocumentId = 99L)
+            fixture.vm.setExportContext(fixture.context)
+            runCurrent()
+            fixture.deliver(old)
+            runCurrent()
+            assertTrue(fixture.exports.isEmpty())
+            fixture.deliver(fixture.ready())
+            runCurrent()
+            assertEquals(1, fixture.exports.size)
+        }
+
+    @Test
+    fun `source owner or relation mismatch cannot start preflight`() =
+        runTest {
+            val fixture = ExportFixture(this)
+            val wrongSource = mockk<Uri>()
+            every { wrongSource.toString() } returns "file:///wrong.pdf"
+            val invalidContexts =
+                listOf(
+                    fixture.context.copy(sourceUri = wrongSource),
+                    fixture.context.copy(owner = PatternAnnotationOwner.Project(8L, fixture.context.owner.documentKey)),
+                    fixture.context.copy(projectDocumentId = 99L),
+                )
+            invalidContexts.forEach {
+                fixture.vm.setExportContext(it)
+                fixture.vm.requestAnnotatedPdfExport(it)
+            }
+            runCurrent()
+            assertTrue(fixture.queries.isEmpty())
+            coVerify(exactly = 0) { fixture.exporter.preflight(any(), any(), any()) }
+        }
+
+    @Test
+    fun `callback displayed context mismatch consumes request before writing`() =
+        runTest {
+            val fixture = ExportFixture(this)
+            val request = fixture.ready()
+            fixture.vm.exportAnnotatedPdf(
+                request,
+                fixture.context.copy(projectDocumentId = 99L),
+                fixture.destination,
+                fixture.style,
+            )
+            fixture.deliver(request)
+            runCurrent()
+            assertTrue(fixture.exports.isEmpty())
+        }
+
+    @Test
+    fun `queued preflight event cannot launch after A B A`() =
+        runTest {
+            val fixture = ExportFixture(this)
+            fixture.request()
+            runCurrent()
+            val old = fixture.requests.single()
+            fixture.switchToB()
+            fixture.switchToA()
+            assertFalse(fixture.vm.launchExportDestination(old, fixture.context))
+            fixture.deliver(old)
+            runCurrent()
+            assertTrue(fixture.exports.isEmpty())
+        }
+
+    @Test
+    fun `delayed preflight success cannot emit or clear newer busy state`() = runTest { verifyLatePreflight(false) }
+
+    @Test
+    fun `delayed preflight failure cannot emit or clear newer busy state`() = runTest { verifyLatePreflight(true) }
+
+    private fun TestScope.verifyLatePreflight(fails: Boolean) {
+        val fixture = ExportFixture(this)
+        val oldGate = CompletableDeferred<Unit>()
+        fixture.onPreflight = {
+            withContext(NonCancellable) {
+                oldGate.await()
+                if (fails) throw IOException("obsolete preflight")
+            }
+        }
+        fixture.request()
+        runCurrent()
+        fixture.switchToB()
+        fixture.switchToA()
+        val freshGate = CompletableDeferred<Unit>()
+        fixture.onPreflight = { freshGate.await() }
+        fixture.request()
+        runCurrent()
+        oldGate.complete(Unit)
+        runCurrent()
+        assertTrue(fixture.requests.isEmpty())
+        assertTrue(fixture.vm.uiState.value.isExporting)
+        assertFalse(fixture.vm.uiState.value.exportFailed)
+        freshGate.complete(Unit)
+        runCurrent()
+        assertEquals(1, fixture.requests.size)
+    }
+
+    @Test
+    fun `late progress and completion cannot clear newer export busy state`() = runTest { verifyLateExport(false) }
+
+    @Test
+    fun `late progress and failure cannot clear newer export busy state`() = runTest { verifyLateExport(true) }
+
+    private fun TestScope.verifyLateExport(fails: Boolean) {
+        val fixture = ExportFixture(this)
+        val oldGate = CompletableDeferred<Unit>()
+        fixture.onExport = { progress ->
+            withContext(NonCancellable) {
+                oldGate.await()
+                progress(PatternPdfExportProgress(8, 8))
+                if (fails) throw IOException("obsolete export")
+            }
+        }
+        val old = fixture.ready()
+        fixture.deliver(old)
+        runCurrent()
+        fixture.switchToB(sameUri = true)
+        fixture.switchToA()
+        val freshGate = CompletableDeferred<Unit>()
+        fixture.onExport = { progress ->
+            progress(PatternPdfExportProgress(1, 2))
+            freshGate.await()
+        }
+        val fresh = fixture.ready()
+        fixture.deliver(fresh)
+        runCurrent()
+        fixture.deliver(old, destination = null)
+        oldGate.complete(Unit)
+        runCurrent()
+        assertTrue(fixture.vm.uiState.value.isExporting)
+        assertFalse(fixture.vm.uiState.value.exportFailed)
+        assertEquals(1, fixture.vm.uiState.value.exportCompletedPages)
+        assertEquals(2, fixture.vm.uiState.value.exportTotalPages)
+        freshGate.complete(Unit)
+        runCurrent()
+        assertFalse(fixture.vm.uiState.value.isExporting)
+    }
+
+    @Test
+    fun `old completion cannot clear a newer failure`() =
+        runTest {
+            val fixture = ExportFixture(this)
+            val gate = CompletableDeferred<Unit>()
+            fixture.onExport = { withContext(NonCancellable) { gate.await() } }
+            fixture.deliver(fixture.ready())
+            runCurrent()
+            fixture.switchToB()
+            fixture.onExport = { throw IOException("current failure") }
+            fixture.deliver(fixture.ready())
+            runCurrent()
+            assertTrue(fixture.vm.uiState.value.exportFailed)
+            gate.complete(Unit)
+            runCurrent()
+            assertTrue(fixture.vm.uiState.value.exportFailed)
+        }
+
+    @Test
+    fun `delayed annotation read is cancelled before native export after context changes`() =
+        runTest {
+            val fixture = ExportFixture(this)
+            val request = fixture.ready()
+            val gate = CompletableDeferred<Unit>()
+            coEvery { fixture.route.annotationRepository.getForLayersForExport(any(), any(), any()) } coAnswers {
+                withContext(NonCancellable) { gate.await() }
+                emptyList()
+            }
+            fixture.deliver(request)
+            runCurrent()
+            fixture.switchToB()
+            gate.complete(Unit)
+            runCurrent()
+            assertTrue(fixture.exports.isEmpty())
+            assertFalse(fixture.vm.uiState.value.isExporting)
+            assertFalse(fixture.vm.uiState.value.exportFailed)
+        }
+
+    @Test
+    fun `valid progress stays busy until export returns and late progress is suppressed`() =
+        runTest {
+            val fixture = ExportFixture(this)
+            val gate = CompletableDeferred<Unit>()
+            var reportProgress: (PatternPdfExportProgress) -> Unit = {}
+            fixture.onExport = { progress ->
+                reportProgress = progress
+                progress(PatternPdfExportProgress(2, 2))
+                gate.await()
+            }
+            fixture.deliver(fixture.ready())
+            runCurrent()
+            assertTrue(fixture.vm.uiState.value.isExporting)
+            assertEquals(2, fixture.vm.uiState.value.exportCompletedPages)
+            gate.complete(Unit)
+            runCurrent()
+            reportProgress(PatternPdfExportProgress(99, 99))
+            runCurrent()
+            assertFalse(fixture.vm.uiState.value.isExporting)
+            assertEquals(2, fixture.vm.uiState.value.exportCompletedPages)
+        }
+
+    @Test
+    fun `preflight and export cancellation remain cancelled without error and allow reentry`() =
+        runTest {
+            val fixture = ExportFixture(this)
+            var operation: kotlinx.coroutines.Job? = null
+            fixture.onPreflight = {
+                operation = kotlin.coroutines.coroutineContext[kotlinx.coroutines.Job]
+                throw CancellationException("preflight cancelled")
+            }
+            fixture.request()
+            runCurrent()
+            assertTrue(operation?.isCancelled == true)
+            assertTrue(fixture.requests.isEmpty())
+            assertFalse(fixture.vm.uiState.value.exportFailed)
+            fixture.onPreflight = {}
+            fixture.onExport = {
+                operation = kotlin.coroutines.coroutineContext[kotlinx.coroutines.Job]
+                throw CancellationException("export cancelled")
+            }
+            fixture.deliver(fixture.ready())
+            runCurrent()
+            assertTrue(operation?.isCancelled == true)
+            assertFalse(fixture.vm.uiState.value.isExporting)
+            assertFalse(fixture.vm.uiState.value.exportFailed)
+            fixture.onExport = {}
+            fixture.deliver(fixture.ready())
+            runCurrent()
+            assertEquals(2, fixture.exports.size)
+        }
+
+    @Test
+    fun `preflight and export failures recover only through new menu requests`() =
+        runTest {
+            val fixture = ExportFixture(this, library = true)
+            fixture.onPreflight = { throw IOException("preflight failed") }
+            fixture.request()
+            runCurrent()
+            assertTrue(fixture.requests.isEmpty())
+            assertTrue(fixture.vm.uiState.value.exportFailed)
+            fixture.onPreflight = {}
+            fixture.onExport = { throw IOException("export failed") }
+            val failed = fixture.ready()
+            assertFalse(fixture.vm.uiState.value.exportFailed)
+            fixture.deliver(failed)
+            runCurrent()
+            assertTrue(fixture.vm.uiState.value.exportFailed)
+            fixture.deliver(failed)
+            runCurrent()
+            assertEquals(1, fixture.exports.size)
+            fixture.onExport = {}
+            fixture.deliver(fixture.ready())
+            runCurrent()
+            assertFalse(fixture.vm.uiState.value.exportFailed)
+            assertEquals(2, fixture.exports.size)
+        }
+
+    @Test
+    fun `visible export failure clears on document change`() =
+        runTest {
+            val fixture = ExportFixture(this)
+            fixture.onExport = { throw IOException("export failed") }
+            fixture.deliver(fixture.ready())
+            runCurrent()
+            assertTrue(fixture.vm.uiState.value.exportFailed)
+            fixture.switchToB()
+            assertFalse(fixture.vm.uiState.value.exportFailed)
+        }
+
+    private class ExportFixture(
+        val scope: TestScope,
+        library: Boolean = false,
+        libraryId: Long = 12L,
+    ) {
+        val route = projectRoute()
+        val exporter = mockk<PatternPdfExporter>()
+        val source = mockk<Uri>()
+        val destination = mockk<Uri>()
+        val style = mockk<PatternAnnotationRenderStyle>()
+        var context =
+            PatternPdfExportContext(
+                source,
+                if (library) {
+                    PatternAnnotationOwner.SavedPattern(libraryId, PatternAnnotationDocumentKey.savedPattern(libraryId))
+                } else {
+                    route.projectOwner
+                },
+                if (library) null else 51L,
+            )
+        var rows = emptyList<PatternAnnotation>()
+        val requests = mutableListOf<String>()
+        val queries = mutableListOf<List<Long>>()
+        val exports = mutableListOf<ExportCall>()
+        var onPreflight: suspend () -> Unit = {}
+        var onExport: suspend ((PatternPdfExportProgress) -> Unit) -> Unit = {}
+        val vm: PatternAnnotationViewModel
+
+        init {
+            every { source.toString() } returns "file:///document-51.pdf"
+            if (library) {
+                val owner = context.owner as PatternAnnotationOwner.SavedPattern
+                coEvery { route.layerRepository.getOrCreateMasterLayer(libraryId, owner.documentKey) } returns
+                    layer(31L, owner)
+            }
+            every { route.annotationRepository.observePage(any(), any()) } returns flowOf(emptyList())
+            coEvery { route.annotationRepository.getForLayersForExport(any(), any(), any()) } answers {
+                val ids = firstArg<List<Long>>()
+                queries += ids
+                ids.flatMap { id -> rows.filter { it.layerId == id } }
+            }
+            coEvery { exporter.preflight(any(), any(), any()) } coAnswers {
+                onPreflight()
+                mockk()
+            }
+            coEvery { exporter.export(any(), any(), any(), any(), any(), any()) } coAnswers {
+                exports += ExportCall(firstArg(), thirdArg())
+                onExport(arg(5))
+            }
+            vm =
+                if (library) {
+                    PatternAnnotationViewModel(
+                        SavedStateHandle(mapOf("savedPatternId" to libraryId)),
+                        route.counterRepository,
+                        route.layerRepository,
+                        route.annotationRepository,
+                        route.projectDocumentRepository,
+                        pdfExporter = exporter,
+                    )
+                } else {
+                    route.viewModel(exporter)
+                }
+            scope.backgroundScope.launch(UnconfinedTestDispatcher(scope.testScheduler)) {
+                vm.exportDestinationRequests.collect { requests += it }
+            }
+            scope.runCurrent()
+            vm.setExportContext(context)
+        }
+
+        fun request() = vm.requestAnnotatedPdfExport(context)
+
+        fun ready(): String {
+            val count = requests.size
+            request()
+            scope.runCurrent()
+            assertEquals(count + 1, requests.size)
+            return requests.last().also { assertTrue(vm.launchExportDestination(it, context)) }
+        }
+
+        fun deliver(
+            id: String,
+            destination: Uri? = this.destination,
+        ) = vm.exportAnnotatedPdf(id, context, destination, style)
+
+        fun switchToB(
+            sameUri: Boolean = false,
+            updateViewer: Boolean = true,
+        ) {
+            val document =
+                projectDocument(52L, 13L, false).let {
+                    if (sameUri) it.copy(localPdfUri = source.toString()) else it
+                }
+            val owner = PatternAnnotationOwner.Project(7L, document.documentKey)
+            route.documents.value += document
+            coEvery { route.layerRepository.getOrCreateMasterLayer(13L, document.documentKey) } returns
+                layer(32L, PatternAnnotationOwner.SavedPattern(13L, document.documentKey))
+            route.projectLayers.value = listOf(layer(42L, owner))
+            val uri =
+                if (sameUri) {
+                    source
+                } else {
+                    mockk<Uri>().also { uri ->
+                        every { uri.toString() } returns document.localPdfUri
+                    }
+                }
+            if (updateViewer) {
+                context = PatternPdfExportContext(uri, owner, document.id)
+                vm.setExportContext(context)
+            }
+            scope.runCurrent()
+        }
+
+        fun switchToA() {
+            route.projectLayers.value = listOf(route.projectLayer)
+            context = PatternPdfExportContext(source, route.projectOwner, 51L)
+            vm.setExportContext(context)
+            scope.runCurrent()
+        }
+    }
+
+    private data class ExportCall(
+        val source: Uri,
+        val annotations: List<PatternAnnotation>,
+    )
+}
+
 // Project-reitin jaettu alustus: sama mock-kokoonpano toistui kolmessa testissä
 private class ProjectRoute(
     val counterRepository: CounterRepository,
@@ -1419,6 +2629,29 @@ private class ProjectRoute(
             projectDocumentRepository,
             pdfExporter = pdfExporter,
         )
+}
+
+@OptIn(ExperimentalCoroutinesApi::class)
+private fun TestScope.exportToDestination(
+    viewModel: PatternAnnotationViewModel,
+    sourceUri: Uri,
+    destinationUri: Uri,
+    style: PatternAnnotationRenderStyle,
+    documentId: Long = 51L,
+) {
+    every { sourceUri.toString() } returns "file:///document-$documentId.pdf"
+    val context = PatternPdfExportContext(sourceUri, viewModel.uiState.value.owner, documentId)
+    val requests = mutableListOf<String>()
+    val collector =
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.exportDestinationRequests.collect { requests += it }
+        }
+    viewModel.setExportContext(context)
+    viewModel.requestAnnotatedPdfExport(context)
+    advanceUntilIdle()
+    assertTrue(viewModel.launchExportDestination(requests.single(), context))
+    viewModel.exportAnnotatedPdf(requests.single(), context, destinationUri, style)
+    collector.cancel()
 }
 
 private data class PdfExportFixture(

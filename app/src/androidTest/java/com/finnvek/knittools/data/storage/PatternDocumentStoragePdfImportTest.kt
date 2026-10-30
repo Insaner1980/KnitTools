@@ -1,7 +1,6 @@
 package com.finnvek.knittools.data.storage
 
 import android.content.Context
-import android.graphics.pdf.PdfDocument
 import androidx.core.net.toUri
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -63,17 +62,6 @@ class PatternDocumentStoragePdfImportTest {
             assertTrue(targetDirectory.listFiles().orEmpty().isEmpty())
             assertEquals("not a PDF", source.readText())
         }
-
-    private fun writeOnePagePdf(file: File) {
-        val document = PdfDocument()
-        try {
-            val page = document.startPage(PdfDocument.PageInfo.Builder(100, 100, 1).create())
-            document.finishPage(page)
-            file.outputStream().use(document::writeTo)
-        } finally {
-            document.close()
-        }
-    }
 
     private companion object {
         const val PROJECT_ID = 93_400L

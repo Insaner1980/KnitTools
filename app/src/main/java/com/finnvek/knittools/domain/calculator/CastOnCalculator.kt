@@ -23,7 +23,7 @@ object CastOnCalculator {
         return if (patternRepeat == null || patternRepeat <= 0) {
             calculateWithoutRepeat(bodyStitches, edgeStitches, density, unit)
         } else {
-            calculateWithRepeat(bodyStitches, patternRepeat, edgeStitches, density, unit)
+            calculateWithRepeat(exactCount, patternRepeat, edgeStitches, density, unit)
         }
     }
 
@@ -39,13 +39,13 @@ object CastOnCalculator {
     }
 
     private fun calculateWithRepeat(
-        bodyStitches: Int,
+        bodyStitches: Double,
         patternRepeat: Int,
         edgeStitches: Int,
         density: Double,
         unit: MeasurementUnit,
     ): CastOnResult? {
-        // Tavoiteleveys kuvaa runkoa; reunat lisätään toistopyöristyksen jälkeen.
+        // Compare against the exact body count; ties select the lower usable repeat.
         val nearestDown = (bodyStitches.toLong() / patternRepeat) * patternRepeat
         val nearestUp = nearestDown + patternRepeat
         val totalDown = nearestDown.takeIf { it > 0 }?.let { supportedCount(it + edgeStitches) }

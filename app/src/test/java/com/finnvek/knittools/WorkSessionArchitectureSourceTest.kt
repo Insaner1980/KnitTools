@@ -33,7 +33,7 @@ class WorkSessionArchitectureSourceTest {
         val defaultFile = files.single { it.parent.fileName.toString() == "values" }
         val defaultKeys = workSessionKeys(ProjectSourceFiles.read(defaultFile))
 
-        assertEquals(11, files.size)
+        assertEquals(12, files.size)
         assertTrue(defaultKeys.contains("work_session_edit_duration"))
         assertTrue(defaultKeys.contains("work_session_active_description"))
         files.forEach { file ->

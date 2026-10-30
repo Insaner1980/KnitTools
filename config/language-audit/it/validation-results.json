@@ -1,0 +1,122 @@
+{
+  "date": "2026-10-19",
+  "final_command": ".\\gradlew.bat --no-daemon :app:processDebugResources :app:testDebugUnitTest --rerun --tests com.finnvek.knittools.ReferenceResourceLocalizationTest --tests com.finnvek.knittools.ui.CountPluralResourcesSourceTest",
+  "runs": [
+    {
+      "log": "validation-gradle.log",
+      "start_utc_log_creation": "2026-10-19T10:59:26.975091+00:00",
+      "end_utc_final_log_write": "2026-10-19T11:00:36.527934+00:00",
+      "exit_code": 0,
+      "resource_task": "EXECUTED",
+      "test_task": "UP-TO-DATE",
+      "log_sha256": "0178c8f27b4249c7ebe6581307fc95c0d2825a2e48a271068178577db62c3e74",
+      "scope": "HISTORICAL INTERMEDIATE"
+    },
+    {
+      "log": "validation-tests.log",
+      "start_utc_log_creation": "2026-10-19T11:00:41.634391+00:00",
+      "end_utc_final_log_write": "2026-10-19T11:01:55.545862+00:00",
+      "exit_code": 0,
+      "resource_task": "UP-TO-DATE or not requested",
+      "test_task": "EXECUTED",
+      "log_sha256": "0a8b43ae12368fbb8bb848ed503b0be519d21fb6434d05213b006752eb686fd4",
+      "scope": "HISTORICAL INTERMEDIATE"
+    },
+    {
+      "log": "validation-final.log",
+      "start_utc_log_creation": "2026-10-19T11:05:27.033986+00:00",
+      "end_utc_final_log_write": "2026-10-19T11:06:14.345681+00:00",
+      "exit_code": 0,
+      "resource_task": "EXECUTED",
+      "test_task": "EXECUTED",
+      "log_sha256": "31b344a432af7c04a228e3c866391164a4410e9bdb4f371f3d1a14cc792e51c2",
+      "scope": "HISTORICAL INTERMEDIATE"
+    },
+    {
+      "log": "validation-closeout.log",
+      "start_utc_log_creation": "2026-10-19T11:07:28.607132+00:00",
+      "end_utc_final_log_write": "2026-10-19T11:08:12.896604+00:00",
+      "exit_code": 0,
+      "resource_task": "EXECUTED",
+      "test_task": "EXECUTED",
+      "log_sha256": "c3f86a37117769f5834b59601046e1eaa92b544cd9ef0c449b8981f2e7f30d26",
+      "scope": "FINAL INPUTS"
+    }
+  ],
+  "final_suites": [
+    {
+      "name": "com.finnvek.knittools.ReferenceResourceLocalizationTest",
+      "tests": "2",
+      "skipped": "0",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-10-19T11:07:59.095Z",
+      "hostname": "DESKTOP-V7H2VNQ",
+      "time": "0.803",
+      "report": "app/build/test-results/testDebugUnitTest/TEST-com.finnvek.knittools.ReferenceResourceLocalizationTest.xml",
+      "sha256": "82bae0664f0910b7a221b52674271eed6d6806466e80c69705b005d29364ce2f"
+    },
+    {
+      "name": "com.finnvek.knittools.ui.CountPluralResourcesSourceTest",
+      "tests": "1",
+      "skipped": "0",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-10-19T11:07:59.906Z",
+      "hostname": "DESKTOP-V7H2VNQ",
+      "time": "0.154",
+      "report": "app/build/test-results/testDebugUnitTest/TEST-com.finnvek.knittools.ui.CountPluralResourcesSourceTest.xml",
+      "sha256": "c993876120cbd21aed6dcdeead5798fb838711888f10c5c5bfcfcfbcc000625e"
+    }
+  ],
+  "final_tests": 3,
+  "failures": 0,
+  "errors": 0,
+  "input_manifest_sha256": "7f2449b9eff03411031bf4661f152223e8139dce17d896156d86642f34723370",
+  "input_hashes_rechecked": 145,
+  "structure": "PASS",
+  "coverage_rows": 1883,
+  "dimensions": {
+    "T": {
+      "PASS": 1883
+    },
+    "F": {
+      "PASS": 1883
+    },
+    "L": {
+      "PASS": 1883
+    },
+    "C": {
+      "PASS": 1883
+    },
+    "R": {
+      "PASS": 1478,
+      "NOT_APPLICABLE": 405
+    },
+    "V": {
+      "NOT_RUN": 1883
+    }
+  },
+  "findings_by_severity": {
+    "S3": 6,
+    "S2": 83,
+    "S1": 4
+  },
+  "findings_by_category": {
+    "LANGUAGE": 6,
+    "CONTEXT": 30,
+    "FACT": 16,
+    "TERM": 41
+  },
+  "all_findings": "VERIFIED",
+  "runtime": "NOT_RUN - source review resolved named content questions",
+  "native_review": "NOT_REQUESTED",
+  "process_cleanup": {
+    "final_single_use_daemon_pid": 8356,
+    "running_at_closeout": false,
+    "shutdown_recorded": true,
+    "java_home": "C:/Users/EmmaH/.gradle/jdks/eclipse_adoptium-17-amd64-windows.2",
+    "all_command_sessions": "EXITED",
+    "persistent_processes_started": 0
+  }
+}

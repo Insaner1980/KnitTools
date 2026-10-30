@@ -188,7 +188,7 @@ class PatternPdfExporter private constructor(
         destinationUri: Uri,
     ) {
         val output =
-            context.contentResolver.openOutputStream(destinationUri, "w")
+            context.contentResolver.openOutputStream(destinationUri, "wt")
                 ?: throw IOException("Pattern PDF destination is unavailable")
         output.buffered().use { target ->
             tempFile.inputStream().buffered().use { input ->

@@ -11,8 +11,8 @@ import javax.xml.parsers.DocumentBuilderFactory
 
 class WebPatternLocalizationArchitectureContractTest {
     @Test
-    fun `all eleven locales define complete web pattern copy with matching placeholders`() {
-        assertEquals(11, localeDirectories.size)
+    fun `all twelve locales define complete web pattern copy with matching placeholders`() {
+        assertEquals(12, localeDirectories.size)
         val defaultStrings = localizedStrings("values")
         assertEquals("Saved patterns from websites and PDFs", defaultStrings["desc_saved_patterns"])
         assertEquals(
@@ -87,7 +87,6 @@ class WebPatternLocalizationArchitectureContractTest {
             setOf(
                 "android.permission.INTERNET",
                 "android.permission.VIBRATE",
-                "android.permission.CAMERA",
             ),
             manifestAttributeValues(manifest, "uses-permission", "name"),
         )
@@ -128,19 +127,33 @@ class WebPatternLocalizationArchitectureContractTest {
         val productionSources = sourceFilesUnder("app/src/main/java")
         val ravelryBrowser = productionSources.filter { it.contains("fun RavelryBrowserScreen(") }
         assertEquals(1, ravelryBrowser.size)
+        val browserState =
+            ProjectSourceFiles.read("app/src/main/java/com/finnvek/knittools/ui/screens/ravelry/RavelryBrowserState.kt")
         // Ravelry-selaimelle sallitaan vain WebView-importit; muut kielletyt riippuvuudet tarkistetaan siltäkin.
         val ravelryBrowserWithoutAllowedImports =
             ravelryBrowser
-                .single()
+                .plus(browserState)
+                .joinToString("\n")
                 .lines()
                 .filterNot { line ->
-                    line.trim() in setOf("import android.webkit.WebView", "import android.webkit.WebViewClient")
+                    line.trim() in
+                        setOf(
+                            "import android.webkit.WebView",
+                            "import android.webkit.WebViewClient",
+                            "import androidx.webkit.WebViewCompat",
+                            "import androidx.webkit.WebViewFeature",
+                        )
                 }.joinToString("\n")
         val dependencyAndProductionSources =
             listOf(
                 ProjectSourceFiles.read("app/build.gradle.kts"),
-                ProjectSourceFiles.read("gradle/libs.versions.toml"),
-            ) + (productionSources - ravelryBrowser.toSet()) + ravelryBrowserWithoutAllowedImports
+                ProjectSourceFiles
+                    .read("gradle/libs.versions.toml")
+                    .replace(
+                        "webkit = { group = \"androidx.webkit\", name = \"webkit\", version.ref = \"webkit\" }",
+                        "",
+                    ),
+            ) + (productionSources - ravelryBrowser.toSet() - browserState) + ravelryBrowserWithoutAllowedImports
         val dependencyAndProductionText = dependencyAndProductionSources.joinToString("\n")
         forbiddenImplementationTokens.forEach { token ->
             assertFalse("Web pattern V1 must not introduce $token", dependencyAndProductionText.contains(token))
@@ -301,20 +314,7 @@ class WebPatternLocalizationArchitectureContractTest {
             "app/src/main/java/com/finnvek/knittools/repository/CounterRepository.kt"
         private const val ANDROID_NAMESPACE = "http://schemas.android.com/apk/res/android"
 
-        private val localeDirectories =
-            listOf(
-                "values",
-                "values-fi",
-                "values-sv",
-                "values-de",
-                "values-fr",
-                "values-es",
-                "values-pt",
-                "values-it",
-                "values-nb",
-                "values-da",
-                "values-nl",
-            )
+        private val localeDirectories = ProjectSourceFiles.configuredResourceDirectories()
 
         private val webPatternStringNames =
             setOf(

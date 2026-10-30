@@ -1,0 +1,241 @@
+diff --git a/app/src/main/res/values-pt/pattern_reading_assistance.xml b/app/src/main/res/values-pt/pattern_reading_assistance.xml
+index 095169dc..a5333aae 100644
+--- a/app/src/main/res/values-pt/pattern_reading_assistance.xml
++++ b/app/src/main/res/values-pt/pattern_reading_assistance.xml
+@@ -29,24 +29,24 @@
+     <string name="pattern_hide_vertical_guide">Ocultar guia vertical</string>
+     <string name="pattern_center_vertical_guide">Centrar guia vertical</string>
+     <string name="pattern_vertical_guide_description">Guia vertical</string>
+-    <string name="pattern_follow_current_row_on">Seguir a carreira atual</string>
++    <string name="pattern_follow_current_row_on">Seguir o contador principal</string>
+     <string name="pattern_follow_current_row_off">Parar de seguir</string>
+-    <string name="pattern_return_to_current_row">Voltar à carreira atual</string>
+-    <string name="pattern_follow_resumed">O seguimento foi retomado na carreira atual.</string>
+-    <string name="pattern_follow_resumed_uncalibrated">A localização da carreira não está calibrada. O seguimento foi retomado a partir da posição atual.</string>
+-    <string name="pattern_set_row_marker_here">Definir aqui o marcador da carreira %1$d</string>
+-    <string name="pattern_follow_page_announcement">A carreira %1$d moveu a linha de leitura para a página %2$d de %3$d.</string>
+-    <string name="pattern_bookmark_jump_announcement">%1$s, página %2$d de %3$d. Seguimento de carreira em pausa.</string>
++    <string name="pattern_return_to_current_row">Voltar ao valor atual</string>
++    <string name="pattern_follow_resumed">Seguimento retomado no valor atual.</string>
++    <string name="pattern_follow_resumed_uncalibrated">A posição do contador não está calibrada. Seguimento retomado a partir da posição atual.</string>
++    <string name="pattern_set_row_marker_here">Colocar aqui um marcador para o valor %1$d</string>
++    <string name="pattern_follow_page_announcement">O valor %1$d moveu a linha de leitura para a página %2$d de %3$d.</string>
++    <string name="pattern_bookmark_jump_announcement">%1$s, página %2$d de %3$d. Seguimento do contador em pausa.</string>
+     <string name="pattern_reading_line_move_up">Mover a linha de leitura para cima</string>
+     <string name="pattern_reading_line_move_down">Mover a linha de leitura para baixo</string>
+     <string name="pattern_vertical_guide_move_left">Mover a guia vertical para a esquerda</string>
+     <string name="pattern_vertical_guide_move_right">Mover a guia vertical para a direita</string>
+     <string name="pattern_reading_line_position_state">%1$d%% a partir do topo</string>
+     <string name="pattern_vertical_guide_position_state">%1$d%% a partir da esquerda</string>
+-    <string name="pattern_row_following_paused">Seguimento de carreira em pausa.</string>
+-    <string name="pattern_row_following_active">A seguir a carreira atual.</string>
++    <string name="pattern_row_following_paused">Seguimento do contador em pausa.</string>
++    <string name="pattern_row_following_active">A seguir o contador principal.</string>
+     <string name="pattern_guide_enabled_state">Ativa</string>
+     <string name="pattern_guide_disabled_state">Desativada</string>
+-    <string name="pattern_reading_line_following_state">A %1$d%% do topo. A seguir a carreira atual.</string>
+-    <string name="pattern_reading_line_manual_state">A %1$d%% do topo. Seguimento de carreira em pausa.</string>
++    <string name="pattern_reading_line_following_state">%1$d%% a partir do topo. A seguir o contador principal.</string>
++    <string name="pattern_reading_line_manual_state">%1$d%% a partir do topo. Seguimento do contador em pausa.</string>
+ </resources>
+diff --git a/app/src/main/res/values-pt/reference_strings.xml b/app/src/main/res/values-pt/reference_strings.xml
+index a27edcf8..cb1563e9 100644
+--- a/app/src/main/res/values-pt/reference_strings.xml
++++ b/app/src/main/res/values-pt/reference_strings.xml
+@@ -19,14 +19,14 @@
+     <string name="size_row_adult_m">Adulto M</string>
+     <string name="size_row_adult_l">Adulto L</string>
+     <string name="size_row_adult_xl">Adulto XL</string>
+-    <string name="size_row_child_s">Criança S</string>
+-    <string name="size_row_child_m">Criança M</string>
+-    <string name="size_row_child_l">Criança L</string>
+-    <string name="size_row_age_0_3m">0–3m</string>
+-    <string name="size_row_age_3_6m">3–6m</string>
+-    <string name="size_row_age_6_12m">6–12m</string>
+-    <string name="size_row_age_12_18m">12–18m</string>
+-    <string name="size_row_age_18_24m">18–24m</string>
++    <string name="size_row_child_s">2–4 anos</string>
++    <string name="size_row_child_m">4–6 anos</string>
++    <string name="size_row_child_l">6–8 anos</string>
++    <string name="size_row_age_0_3m">3m</string>
++    <string name="size_row_age_3_6m">6m</string>
++    <string name="size_row_age_6_12m">12m</string>
++    <string name="size_row_age_12_18m">18m</string>
++    <string name="size_row_age_18_24m">24m</string>
+     <string name="size_row_child_2">2</string>
+     <string name="size_row_child_4">4</string>
+     <string name="size_row_child_6">6</string>
+@@ -35,24 +35,24 @@
+     <string name="size_row_child_12">12</string>
+     <string name="size_row_child_14">14</string>
+     <string name="size_row_child_16">16</string>
+-    <string name="size_row_women_xs_2_4">XS (2–4)</string>
+-    <string name="size_row_women_s_6_8">S (6–8)</string>
+-    <string name="size_row_women_m_10_12">M (10–12)</string>
+-    <string name="size_row_women_l_14_16">L (14–16)</string>
+-    <string name="size_row_women_xl_18_20">XL (18–20)</string>
+-    <string name="size_row_women_2xl_22_24">2GG (22–24)</string>
+-    <string name="size_row_women_3xl_26_28">3GG (26–28)</string>
+-    <string name="size_row_women_4xl_30_32">4XL (30–32)</string>
+-    <string name="size_row_women_5xl_34_36">5GG (34–36)</string>
++    <string name="size_row_women_xs_2_4">XS</string>
++    <string name="size_row_women_s_6_8">S</string>
++    <string name="size_row_women_m_10_12">M</string>
++    <string name="size_row_women_l_14_16">L</string>
++    <string name="size_row_women_xl_18_20">XL</string>
++    <string name="size_row_women_2xl_22_24">2GG</string>
++    <string name="size_row_women_3xl_26_28">3GG</string>
++    <string name="size_row_women_4xl_30_32">4XL</string>
++    <string name="size_row_women_5xl_34_36">5GG</string>
+     <string name="size_row_men_xs_30_32">XS (30–32)</string>
+-    <string name="size_row_men_s_34_36">S (34–36)</string>
+-    <string name="size_row_men_m_38_40">M (38–40)</string>
+-    <string name="size_row_men_l_42_44">L (42–44)</string>
+-    <string name="size_row_men_xl_46_48">GG (46–48)</string>
+-    <string name="size_row_men_2xl_50_52">2GG (50–52)</string>
+-    <string name="size_row_men_3xl_54_56">3GG (54–56)</string>
+-    <string name="size_row_men_4xl_58_60">4GG (58–60)</string>
+-    <string name="size_row_men_5xl_62_64">5GG (62–64)</string>
++    <string name="size_row_men_s_34_36">S</string>
++    <string name="size_row_men_m_38_40">M</string>
++    <string name="size_row_men_l_42_44">L</string>
++    <string name="size_row_men_xl_46_48">GG</string>
++    <string name="size_row_men_2xl_50_52">2GG</string>
++    <string name="size_row_men_3xl_54_56">3GG</string>
++    <string name="size_row_men_4xl_58_60">4GG</string>
++    <string name="size_row_men_5xl_62_64">5GG</string>
+     <string name="abbr_k_meaning">Tricotar em meia</string>
+     <string name="abbr_k_desc">Insira a agulha em meia, enrole o fio, puxe</string>
+     <string name="abbr_p_meaning">Tricotar em liga</string>
+@@ -257,4 +257,5 @@
+     <string name="sym_marker_desc">Posição do marcador de ponto</string>
+     <string name="sym_repeat_name">Repetir</string>
+     <string name="sym_repeat_desc">Parêntese que delimita a repetição do motivo</string>
++    <string name="size_row_tween">Pré-adolescente</string>
+ </resources>
+diff --git a/app/src/main/res/values-pt/strings.xml b/app/src/main/res/values-pt/strings.xml
+index fea603f7..dcae1730 100644
+--- a/app/src/main/res/values-pt/strings.xml
++++ b/app/src/main/res/values-pt/strings.xml
+@@ -148,14 +148,14 @@
+     <string name="pattern_open_failed">Não foi possível abrir a receita.</string>
+     <string name="pattern_show_reading_line">Mostrar linha de leitura</string>
+     <string name="pattern_hide_reading_line">Ocultar linha de leitura</string>
+-    <string name="pattern_clear_row_mark">Limpar marcador da carreira</string>
++    <string name="pattern_clear_row_mark">Limpar marcador do contador</string>
+     <string name="pattern_clear_page_marks">Limpar marcadores da página</string>
+-    <string name="pattern_calibrate_rows">Calibrar carreiras</string>
+-    <string name="pattern_calibration_first_row">Primeira carreira</string>
+-    <string name="pattern_calibration_last_row">Última carreira</string>
++    <string name="pattern_calibrate_rows">Calibrar posições do contador</string>
++    <string name="pattern_calibration_first_row">Primeiro valor</string>
++    <string name="pattern_calibration_last_row">Último valor</string>
+     <string name="pattern_calibration_save_first">Guardar primeira</string>
+     <string name="pattern_calibration_save_last">Guardar última</string>
+-    <string name="pattern_calibration_invalid_row">Use dois números de carreira diferentes</string>
++    <string name="pattern_calibration_invalid_row">Use dois valores diferentes do contador</string>
+     <string name="pattern_page_jump">Ir para a página</string>
+     <string name="pattern_page_number">Número da página</string>
+     <string name="pattern_page_indicator">Página %1$d de %2$d</string>
+@@ -241,8 +241,8 @@
+     <!-- Session History -->
+     <string name="session_history_title">Histórico de sessões</string>
+     <string name="no_sessions">Ainda não há sessões registadas. Abra um projeto e inicie uma sessão de trabalho para registar o seu tempo aqui.</string>
+-    <string name="session_row_range">Carreiras %1$d \u2192 %2$d</string>
+-    <string name="session_row_single">Carreira %1$d</string>
++    <string name="session_row_range">Contador: %1$d → %2$d</string>
++    <string name="session_row_single">Valor %1$d</string>
+     <string name="delete_session_title">Eliminar sessão?</string>
+     <string name="delete_session_message">Eliminar esta sessão do histórico? Esta ação não pode ser anulada.</string>
+ 
+@@ -274,9 +274,9 @@
+     <string name="project_content_add_pattern">Adicionar receita</string>
+     <string name="stitch_tracker_label">Pontos</string>
+     <plurals name="reminder_repeat_occurrence_format">
+-        <item quantity="one">Repetir #%1$d a cada carreira</item>
+-        <item quantity="many">Repetir #%1$d a cada %2$d carreiras</item>
+-        <item quantity="other">Repetir #%1$d a cada %2$d carreiras</item>
++        <item quantity="one">Repetir #%1$d, intervalo %2$d</item>
++        <item quantity="many">Repetir #%1$d, intervalo %2$d</item>
++        <item quantity="other">Repetir #%1$d, intervalo %2$d</item>
+     </plurals>
+ 
+     <!-- Increase / Decrease -->
+@@ -301,7 +301,7 @@
+     <string name="increase_decrease_error_cannot_decrease">Contagem de pontos disponível: %2$d. Diminuição solicitada: %1$d.</string>
+     <string name="increase_decrease_error_not_enough_decrease">Contagem de pontos necessária: %1$d. Diminuições solicitadas: %2$d.</string>
+     <string name="increase_decrease_error_total_out_of_range">O resultado é demasiado grande. Use contagens de pontos menores.</string>
+-    <string name="increase_decrease_warning_increase_more_than_current">Está a aumentar mais do que os pontos atuais - algumas secções não terão pontos tricotados entre aumentos</string>
++    <string name="increase_decrease_error_not_enough_bars">Não há espaços suficientes entre os pontos para estes aumentos M1. Reduza o número de aumentos.</string>
+ 
+     <!-- Gauge Converter -->
+     <string name="pattern_gauge">Tensão da receita</string>
+@@ -547,7 +547,11 @@
+     <string name="relative_time_yesterday">ontem</string>
+     <string name="relative_time_days_ago">há %1$d d</string>
+     <string name="relative_time_weeks_ago">há %1$d sem</string>
+-    <string name="relative_time_months_ago">há %1$d m</string>
++    <plurals name="relative_time_months_ago">
++        <item quantity="one">há %1$d m</item>
++        <item quantity="many">há %1$d m</item>
++        <item quantity="other">há %1$d m</item>
++    </plurals>
+ 
+     <!-- Settings -->
+     <string name="help_and_guide">Ajuda e guia</string>
+@@ -594,13 +598,13 @@
+     <string name="no_reminders">Ainda não há lembretes</string>
+     <string name="delete_reminder_title">Eliminar lembrete?</string>
+     <string name="delete_reminder_confirm">Eliminar o lembrete \"%1$s\"?</string>
+-    <string name="row_number">Número da carreira</string>
++    <string name="row_number">Valor do contador</string>
+     <string name="reminder_message">Mensagem</string>
+     <string name="reminder_message_hint">ex.: Passar para a aba do calcanhar</string>
+     <string name="one_time">Uma vez</string>
+     <string name="repeating">Repetitivo</string>
+     <string name="repeat_every">Repetir a cada</string>
+-    <string name="repeat_every_rows">carreiras</string>
++    <string name="repeat_every_rows">incrementos</string>
+     <string name="dismiss">Dispensar</string>
+ 
+     <!-- Multiple Counters -->
+@@ -616,11 +620,11 @@
+     <string name="repeat_section">Secção de repetição</string>
+     <string name="starting_stitches">Número inicial de pontos</string>
+     <string name="stitch_change">Pontos a adicionar/remover</string>
+-    <string name="shape_every_n">Moldar a cada N carreiras</string>
+-    <string name="repeat_section_start_row">Carreira inicial</string>
+-    <string name="repeat_section_end_row">Carreira final</string>
++    <string name="shape_every_n">Moldar a cada N incrementos</string>
++    <string name="repeat_section_start_row">Valor inicial</string>
++    <string name="repeat_section_end_row">Valor final</string>
+     <string name="total_repeats">Total de repetições</string>
+-    <string name="repeat_section_progress_format">Repetição %1$d/%2$d, carreira %3$d/%4$d</string>
++    <string name="repeat_section_progress_format">Repetição %1$d/%2$d, valor %3$d/%4$d</string>
+     <string name="repeat_section_complete">Concluído</string>
+     <string name="rename_counter">Mudar nome</string>
+     <string name="reset_counter_name">Repor</string>
+@@ -632,7 +636,7 @@
+     <string name="take_photo">Tirar foto</string>
+     <string name="progress_photos">Fotos de progresso</string>
+     <string name="counters_list_empty">Sem contadores extra</string>
+-    <string name="row_label_format">Carreira %d</string>
++    <string name="row_label_format">Valor %d</string>
+     <string name="share_photo">Partilhar</string>
+     <string name="photo_share_failed">Não foi possível partilhar a foto.</string>
+     <string name="delete_photo">Eliminar foto</string>
+@@ -746,7 +750,7 @@
+     <string name="work_session_recovery_needed">É necessário rever o tempo da sessão</string>
+     <string name="work_session_resolve">Resolver</string>
+     <string name="work_session_recovery_title">Rever tempo da sessão</string>
+-    <string name="work_session_pending_rows_format">Progresso pendente: %1$d carreiras</string>
++    <string name="work_session_pending_rows_format">Progresso pendente do contador: %1$d</string>
+     <string name="work_session_hours">Horas</string>
+     <string name="work_session_minutes">Minutos</string>
+     <string name="work_session_add_and_continue">Adicionar e continuar</string>
+@@ -1136,4 +1140,5 @@
+     <string name="project_yarn_edit_missing">Esta nota de fio já não pertence a este projeto. Feche o editor.</string>
+     <string name="project_yarn_edit_invalid">Introduza um nome para o fio.</string>
+     <string name="project_yarn_edit_failed">Não foi possível guardar as alterações. O rascunho continua aqui. Tente novamente.</string>
++    <string name="counter_progress_format">Progresso do contador: %1$d</string>
+ </resources>

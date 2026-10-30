@@ -4,6 +4,11 @@
 # runtime classpaths; new advisories for those packages must remain visible.
 
 [[IgnoredVulns]]
+id = "GHSA-xxph-c9ww-hj94"
+ignoreUntil = 2026-10-31
+reason = "Gradle verification metadata retains Guava 31.0.1-jre, 32.0.1-jre, 33.0.0-jre, 33.2.1-jre, 33.3.1-jre, 33.4.0-jre, 33.5.0-android, 33.5.0-jre and 33.6.0-jre. Guava is absent from app debug/release and benchmark runtime classpaths; root buildscript and subproject resolution policies select fixed 33.7.2. Historical checksums remain for verification, not version selection."
+
+[[IgnoredVulns]]
 id = "GHSA-r7wm-3cxj-wff9"
 ignoreUntil = 2026-10-31
 reason = "Gradle verification metadata records jackson-core 2.20.1 and 2.21.3 from scanner tooling; Jackson is absent from the app debug/release runtime classpaths."
@@ -150,7 +155,7 @@ reason = "Gradle verification metadata records org.apache.httpcomponents:httpcli
 [[IgnoredVulns]]
 id = "GHSA-7xpr-hc2w-34m9"
 ignoreUntil = 2026-10-31
-reason = "Gradle verification metadata retains wire-runtime 6.0.0, but the root resolution policy upgrades active benchmark configurations to fixed 7.0.3; app debug/release runtime has no Wire."
+reason = "Gradle verification metadata retains wire-runtime 6.0.0, but the root resolution policy upgrades active benchmark configurations to fixed 7.1.0; app debug/release runtime has no Wire."
 
 [[IgnoredVulns]]
 id = "GHSA-84h7-rjj3-6jx4"
@@ -360,7 +365,7 @@ reason = "Dependency-Check 13.0.0 resolves fixed httpcore5-h2 5.4.3; verificatio
 [[IgnoredVulns]]
 id = "GHSA-r937-wjx7-w2jp"
 ignoreUntil = 2026-10-31
-reason = "Kotlin 2.4.10 is the latest stable project toolchain and the first listed fix is 2.4.20-Beta1; exploitation requires a privileged local attacker to supply malicious build-cache metadata, and this project configures no shared remote Gradle build cache."
+reason = "The active Kotlin toolchain is fixed 2.4.21 (the first listed fix is 2.4.20-Beta1); verification metadata retains obsolete affected 2.4.10 artifacts. This project configures no shared remote Gradle build cache."
 
 [[IgnoredVulns]]
 id = "GHSA-pmhh-3w7g-xqp8"
@@ -380,7 +385,7 @@ reason = "Gradle verification metadata retains netty-handler 4.1.110.Final and 4
 [[IgnoredVulns]]
 id = "GHSA-9rm7-3qhh-h2mc"
 ignoreUntil = 2026-10-31
-reason = "Gradle verification metadata retains wire-runtime 6.0.0 and 6.3.0, but active benchmark configurations resolve fixed 7.0.3 through the root resolution policy; app debug/release runtime has no Wire."
+reason = "Gradle verification metadata retains wire-runtime 6.0.0 and 6.3.0, but active benchmark configurations resolve fixed 7.1.0 through the root resolution policy; app debug/release runtime has no Wire."
 
 [[IgnoredVulns]]
 id = "GHSA-9pwp-9qqc-pr26"

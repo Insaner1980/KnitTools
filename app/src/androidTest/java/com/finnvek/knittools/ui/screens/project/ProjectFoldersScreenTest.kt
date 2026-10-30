@@ -6,9 +6,14 @@ import android.view.View
 import android.view.inspector.WindowInspector
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assert
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.hasAnyAncestor
@@ -18,6 +23,7 @@ import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isDialog
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.longClick
+import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -28,6 +34,8 @@ import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTextReplacement
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.text.TextLayoutResult
+import androidx.datastore.preferences.core.PreferenceDataStoreFactory
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.SAVED_STATE_REGISTRY_OWNER_KEY
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.VIEW_MODEL_STORE_OWNER_KEY
@@ -40,6 +48,7 @@ import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import com.finnvek.knittools.R
 import com.finnvek.knittools.billing.BillingManager
 import com.finnvek.knittools.data.datastore.PreferencesManager
 import com.finnvek.knittools.data.local.ActiveSessionSchemaConstraints
@@ -49,17 +58,27 @@ import com.finnvek.knittools.data.local.PatternAnnotationSchemaConstraints
 import com.finnvek.knittools.data.local.ProjectDocumentSchemaConstraints
 import com.finnvek.knittools.data.local.RoomDatabaseTransactionRunner
 import com.finnvek.knittools.data.storage.ProgressPhotoStorage
+import com.finnvek.knittools.domain.model.CounterProject
+import com.finnvek.knittools.domain.model.CraftType
+import com.finnvek.knittools.domain.model.ProjectCompletionSnapshot
 import com.finnvek.knittools.domain.model.ProjectFolderFilter
 import com.finnvek.knittools.domain.model.ProjectSortOrder
 import com.finnvek.knittools.pro.ProManager
 import com.finnvek.knittools.pro.ProPolicyTestControl
+import com.finnvek.knittools.pro.ProStatus
 import com.finnvek.knittools.pro.TrialManager
+import com.finnvek.knittools.pro.TrialStartResult
+import com.finnvek.knittools.pro.TrialState
+import com.finnvek.knittools.repository.OnboardingStateRepository
 import com.finnvek.knittools.repository.ProgressPhotoRepository
 import com.finnvek.knittools.repository.ProjectFolderMutationResult
 import com.finnvek.knittools.repository.ProjectFolderRepository
 import com.finnvek.knittools.ui.theme.KnitToolsTheme
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.runBlocking
@@ -88,6 +107,9 @@ class ProjectFoldersScreenTest {
     private lateinit var database: KnitToolsDatabase
     private lateinit var folderRepository: ProjectFolderRepository
     private lateinit var preferencesManager: PreferencesManager
+    private lateinit var onboardingStateRepository: OnboardingStateRepository
+    private lateinit var onboardingJob: Job
+    private lateinit var onboardingFile: File
     private lateinit var viewModelStore: ViewModelStore
     private lateinit var proManager: ProManager
     private var originalShowCompleted = false
@@ -109,6 +131,15 @@ class ProjectFoldersScreenTest {
                 RoomDatabaseTransactionRunner(database),
             )
         preferencesManager = PreferencesManager(context)
+        onboardingFile = File.createTempFile("project-start-", ".preferences_pb", context.cacheDir).apply { delete() }
+        onboardingJob = SupervisorJob()
+        onboardingStateRepository =
+            OnboardingStateRepository(
+                PreferenceDataStoreFactory.create(
+                    scope = CoroutineScope(Dispatchers.IO + onboardingJob),
+                    produceFile = { onboardingFile },
+                ),
+            )
         originalShowCompleted = runBlocking { preferencesManager.preferences.first().showCompletedProjects }
         originalSortOrder = runBlocking { preferencesManager.preferences.first().projectSortOrder }
         viewModelStore = ViewModelStore()
@@ -130,8 +161,224 @@ class ProjectFoldersScreenTest {
             }
         composeRule.runOnUiThread { viewModelStore.clear() }
         runBlocking { withTimeout(5_000) { viewModelJobs.joinAll() } }
+        runBlocking { onboardingJob.cancelAndJoin() }
+        onboardingFile.delete()
         database.close()
         if (ProPolicyTestControl.isActive) ProPolicyTestControl.setPurchased(false)
+    }
+
+    @Test
+    fun journeyCreationRequestWaitsForResumedAndUnblockedProjectsAndIsConsumedOnce() {
+        val folder = createFolder("Journey projects")
+        val projectId = createProject("In progress", updatedAt = 10L)
+        assign(projectId, folder.id)
+        val viewModel = createViewModel(SavedStateHandle(mapOf("project_folder_filter" to "folder:${folder.id}")))
+        viewModelStore.put("journey-creation", viewModel)
+        val requestId = mutableStateOf<String?>(null)
+        val handled = mutableListOf<String>()
+        composeRule.setContent {
+            KnitToolsTheme {
+                ProjectListScreen(
+                    onOpenCounter = {},
+                    onOpenOverview = {},
+                    viewModelProvider = { viewModel },
+                    createProjectRequestId = requestId.value,
+                    onCreateProjectRequestHandled = { handled += it },
+                )
+            }
+        }
+        composeRule.waitUntil(5_000) { !viewModel.content.value.isLoading && viewModel.proAccessReady.value }
+        composeRule.activityRule.scenario.moveToState(Lifecycle.State.STARTED)
+        composeRule.runOnIdle { requestId.value = "background-request" }
+        composeRule.runOnIdle { assertTrue(handled.isEmpty()) }
+        composeRule.activityRule.scenario.moveToState(Lifecycle.State.RESUMED)
+        val title = context.getString(R.string.new_project_details_title)
+        val cancel = context.getString(R.string.cancel)
+        composeRule.onNodeWithText(title).assertIsDisplayed()
+        composeRule
+            .onNodeWithText(context.getString(R.string.folder_project_creation_destination, folder.name))
+            .assertIsDisplayed()
+        composeRule.runOnIdle {
+            assertEquals(listOf("background-request"), handled)
+            requestId.value = "modal-request"
+        }
+        composeRule.runOnIdle { assertEquals(listOf("background-request"), handled) }
+        composeRule.onNodeWithText(cancel).performScrollTo().performClick()
+        composeRule.waitUntil(5_000) { handled.size == 2 }
+        composeRule.onNodeWithText(title).assertIsDisplayed()
+        composeRule.onNodeWithText(cancel).performScrollTo().performClick()
+        composeRule.onNodeWithText(title).assertDoesNotExist()
+        composeRule.runOnIdle {
+            viewModel.enterMultiSelectMode(projectId)
+            requestId.value = "selection-request"
+        }
+        composeRule.runOnIdle { assertEquals(listOf("background-request", "modal-request"), handled) }
+        composeRule.onNodeWithText(title).assertDoesNotExist()
+        composeRule.runOnIdle { viewModel.exitMultiSelectMode() }
+        composeRule.onNodeWithText(title).assertIsDisplayed()
+        composeRule.runOnIdle {
+            assertEquals(listOf("background-request", "modal-request", "selection-request"), handled)
+        }
+    }
+
+    @Test
+    fun completedProjectHostSurvivesRecreationAndStartsNextInSelectedFolder() {
+        check(ProPolicyTestControl.isActive)
+        ProPolicyTestControl.setPurchased(false)
+        val unusedTrial = TrialState(isActive = false, daysRemaining = 0, hasStarted = false)
+        ProPolicyTestControl.setTrialState(unusedTrial)
+        try {
+            val folder = createFolder("Next projects")
+            val projectId = createProject("Completed", completed = true, count = 42, updatedAt = 1_700_000_000_000L)
+            val pending =
+                mutableStateOf<ProjectCompletionCelebration?>(
+                    ProjectCompletionCelebration(
+                        ProjectCompletionSnapshot(
+                            73L,
+                            CounterProject(
+                                id = projectId,
+                                count = 42,
+                                isCompleted = true,
+                                completedAt = 1_700_000_000_000L,
+                            ),
+                            totalSessionMinutes = 30,
+                        ),
+                        photoUri = null,
+                    ),
+                )
+            val viewModel = createViewModel(SavedStateHandle(mapOf("project_folder_filter" to "folder:${folder.id}")))
+            viewModelStore.put("completion-host", viewModel)
+            val consumedIds = mutableListOf<Long>()
+            val content: @Composable () -> Unit = {
+                KnitToolsTheme {
+                    ProjectListScreen(
+                        onOpenCounter = {},
+                        onOpenOverview = {},
+                        viewModelProvider = { viewModel },
+                        counterCompletion = pending.value,
+                        onConsumeCounterCompletion = { eventId ->
+                            consumedIds += eventId
+                            if (pending.value?.snapshot?.eventId == eventId) pending.value = null
+                        },
+                    )
+                }
+            }
+            composeRule.setContent(content)
+            composeRule.waitUntil(5_000) { !viewModel.content.value.isLoading && viewModel.proAccessReady.value }
+            val title = context.getString(R.string.completed_title_knitting)
+            composeRule.onNodeWithText(title).assertIsDisplayed()
+
+            composeRule.activityRule.scenario.recreate()
+            composeRule.runOnUiThread { composeRule.activity.setContent(content = content) }
+            composeRule.onNodeWithText(title).assertIsDisplayed()
+            composeRule
+                .onNodeWithText(
+                    context.getString(R.string.completed_next_project),
+                ).performScrollTo()
+                .performClick()
+            composeRule.onNodeWithText(title).assertDoesNotExist()
+            composeRule.onNodeWithText(context.getString(R.string.new_project_details_title)).assertIsDisplayed()
+            composeRule
+                .onNodeWithText(context.getString(R.string.folder_project_creation_destination, folder.name))
+                .assertIsDisplayed()
+            composeRule.runOnIdle {
+                assertEquals(listOf(73L), consumedIds)
+                assertNull(pending.value)
+                assertNull(viewModel.projectCreationPromptCount.value)
+            }
+        } finally {
+            ProPolicyTestControl.setTrialState(unusedTrial)
+        }
+    }
+
+    @Test
+    fun newProjectMarkerUsesAllFoldersAndFollowsTrialStart() {
+        check(ProPolicyTestControl.isActive)
+        ProPolicyTestControl.setPurchased(false)
+        val unusedTrial = TrialState(isActive = false, daysRemaining = 0, hasStarted = false)
+        ProPolicyTestControl.setTrialState(unusedTrial)
+        try {
+            val emptyFolder = createFolder("Empty")
+            val viewModel = renderScreen(SavedStateHandle(mapOf("project_folder_filter" to "folder:${emptyFolder.id}")))
+            composeRule.waitUntil(5_000) {
+                !viewModel.content.value.isLoading &&
+                    viewModel.proAccessReady.value &&
+                    viewModel.proState.value.status == ProStatus.TRIAL_NOT_STARTED
+            }
+            val label = context.getString(R.string.new_project)
+            composeRule.onNodeWithContentDescription(label).performScrollTo().assertIsDisplayed()
+
+            createProject("Other folder", updatedAt = 1L)
+            composeRule.waitUntil(5_000) { viewModel.content.value.activeProjectCount == 1 }
+            assertTrue(
+                viewModel.content.value.active
+                    .isEmpty(),
+            )
+            val lockedDescription = context.getString(R.string.pro_badge_locked_description)
+            composeRule
+                .onNodeWithContentDescription(label)
+                .assertIsDisplayed()
+                .assert(
+                    SemanticsMatcher.expectValue(
+                        SemanticsProperties.ContentDescription,
+                        listOf(label, lockedDescription),
+                    ),
+                )
+
+            ProPolicyTestControl.setTrialStartResult(TrialStartResult.Started)
+            assertEquals(TrialStartResult.Started, runBlocking { proManager.startTrial() })
+            composeRule.waitUntil(5_000) { viewModel.proState.value.status == ProStatus.TRIAL_ACTIVE }
+            val trialDescription = context.getString(R.string.pro_badge_trial_description)
+            composeRule
+                .onNodeWithContentDescription(label)
+                .assertIsDisplayed()
+                .assert(
+                    SemanticsMatcher.expectValue(
+                        SemanticsProperties.ContentDescription,
+                        listOf(label, trialDescription),
+                    ),
+                )
+        } finally {
+            ProPolicyTestControl.setTrialState(unusedTrial)
+        }
+    }
+
+    @Test
+    fun firstProjectStartStateDismissesAndDisappearsOnceAProjectExists() {
+        val viewModel = renderScreen()
+        composeRule.waitUntil(5_000) { !viewModel.content.value.isLoading }
+        composeRule.onNodeWithText("Pick Up Where You Left Off").performScrollTo().assertIsDisplayed()
+        composeRule.onAllNodesWithContentDescription("New Project").assertCountEquals(1)
+        val compactTitle =
+            context.getString(
+                if (viewModel.content.value.preferences.lastProjectCraftType == CraftType.CROCHET) {
+                    R.string.start_compact_title_crochet
+                } else {
+                    R.string.start_compact_title_knitting
+                },
+            )
+        composeRule.onNodeWithContentDescription("Hide introduction").performScrollTo().performClick()
+        composeRule.waitUntil(5_000) { viewModel.content.value.welcomeDismissed }
+        composeRule.onNodeWithText("Pick Up Where You Left Off").assertDoesNotExist()
+        composeRule.onNodeWithText(compactTitle).assertIsDisplayed()
+        composeRule.onAllNodesWithContentDescription("New Project").assertCountEquals(1)
+
+        createProject("First project", updatedAt = 1L)
+        composeRule.waitUntil(5_000) { viewModel.content.value.hasAnyProject }
+        composeRule.onNodeWithText(compactTitle).assertDoesNotExist()
+        composeRule.onNodeWithText("First project").assertIsDisplayed()
+        composeRule.onAllNodesWithContentDescription("New Project").assertCountEquals(1)
+    }
+
+    @Test
+    fun welcomeToolsActionDismissesBeforeNavigation() {
+        var navigated = false
+        val viewModel = renderScreen(onOpenTools = { navigated = true })
+        composeRule.waitUntil(5_000) { !viewModel.content.value.isLoading }
+        composeRule.onNodeWithText("I just need the tools").performScrollTo().performClick()
+        composeRule.waitUntil(5_000) { navigated }
+        assertTrue(runBlocking { onboardingStateRepository.state.first().welcomeDismissed })
+        assertFalse(runBlocking { database.counterProjectDao().hasAnyProject() })
     }
 
     @Test
@@ -204,7 +451,7 @@ class ProjectFoldersScreenTest {
         composeRule.onNodeWithText("Sort by").performClick()
         composeRule.onNodeWithText("Last Updated").performClick()
         composeRule.waitUntil(timeoutMillis = 5_000) {
-            viewModel.sortOrder.value == ProjectSortOrder.UPDATED &&
+            viewModel.content.value.preferences.projectSortOrder == ProjectSortOrder.UPDATED &&
                 viewModel.activeProjects.value.map { it.id } == listOf(giftsZebraId, giftsAlphaId)
         }
         composeRule.onNodeWithText("Gifts Zebra").assertIsDisplayed()
@@ -212,7 +459,7 @@ class ProjectFoldersScreenTest {
         composeRule.onNodeWithText("Sort by").performClick()
         composeRule.onNodeWithText("Name").performClick()
         composeRule.waitUntil(timeoutMillis = 5_000) {
-            viewModel.sortOrder.value == ProjectSortOrder.NAME &&
+            viewModel.content.value.preferences.projectSortOrder == ProjectSortOrder.NAME &&
                 viewModel.activeProjects.value.map { it.id } == listOf(giftsAlphaId, giftsZebraId)
         }
         composeRule.onNodeWithText("Gifts Alpha").assertIsDisplayed()
@@ -247,6 +494,8 @@ class ProjectFoldersScreenTest {
                 viewModel.activeProjects.value.isEmpty()
         }
         composeRule.onNodeWithText("Archived ideas has no projects.").assertIsDisplayed()
+        composeRule.onNodeWithText("Pick Up Where You Left Off").assertDoesNotExist()
+        composeRule.onAllNodesWithContentDescription("New Project").assertCountEquals(1)
         captureScreenshot("project-folders-empty")
     }
 
@@ -514,12 +763,20 @@ class ProjectFoldersScreenTest {
             ).assertIsDisplayed()
     }
 
-    private fun renderScreen(savedStateHandle: SavedStateHandle = SavedStateHandle()): ProjectListViewModel {
+    private fun renderScreen(
+        savedStateHandle: SavedStateHandle = SavedStateHandle(),
+        onOpenTools: () -> Unit = {},
+    ): ProjectListViewModel {
         val viewModel = createViewModel(savedStateHandle)
         viewModelStore.put("project-folders", viewModel)
         composeRule.setContent {
             KnitToolsTheme(isDarkTheme = isDarkTheme) {
-                ProjectListScreen(onOpenCounter = {}, onOpenOverview = {}, viewModelProvider = { viewModel })
+                ProjectListScreen(
+                    onOpenCounter = {},
+                    onOpenOverview = {},
+                    viewModelProvider = { viewModel },
+                    onOpenTools = onOpenTools,
+                )
             }
         }
         return viewModel
@@ -546,6 +803,7 @@ class ProjectFoldersScreenTest {
             context = context,
             folderRepository = folderRepository,
             savedStateHandle = savedStateHandle,
+            onboardingStateRepository = onboardingStateRepository,
         )
     }
 

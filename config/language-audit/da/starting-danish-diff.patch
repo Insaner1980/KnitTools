@@ -1,0 +1,226 @@
+diff --git a/app/src/main/res/values-da/pattern_reading_assistance.xml b/app/src/main/res/values-da/pattern_reading_assistance.xml
+index 454a4753..4710fb30 100644
+--- a/app/src/main/res/values-da/pattern_reading_assistance.xml
++++ b/app/src/main/res/values-da/pattern_reading_assistance.xml
+@@ -29,24 +29,24 @@
+     <string name="pattern_hide_vertical_guide">Skjul lodret guide</string>
+     <string name="pattern_center_vertical_guide">Centrer lodret guide</string>
+     <string name="pattern_vertical_guide_description">Lodret guide</string>
+-    <string name="pattern_follow_current_row_on">Følg den aktuelle række</string>
++    <string name="pattern_follow_current_row_on">Følg hovedtælleren</string>
+     <string name="pattern_follow_current_row_off">Stop med at følge</string>
+-    <string name="pattern_return_to_current_row">Vend tilbage til den aktuelle række</string>
+-    <string name="pattern_follow_resumed">Følgning blev genoptaget ved den aktuelle række.</string>
+-    <string name="pattern_follow_resumed_uncalibrated">Rækkens placering er ikke kalibreret. Følgning blev genoptaget fra den aktuelle placering.</string>
+-    <string name="pattern_set_row_marker_here">Sæt rækkemarkør her for række %1$d</string>
+-    <string name="pattern_follow_page_announcement">Række %1$d flyttede læselinjen til side %2$d af %3$d.</string>
+-    <string name="pattern_bookmark_jump_announcement">%1$s, side %2$d af %3$d. Rækkefølgning sat på pause.</string>
++    <string name="pattern_return_to_current_row">Vend tilbage til aktuel værdi</string>
++    <string name="pattern_follow_resumed">Følgning genoptaget ved den aktuelle værdi.</string>
++    <string name="pattern_follow_resumed_uncalibrated">Tællerpositionen er ikke kalibreret. Følgning genoptaget fra den aktuelle position.</string>
++    <string name="pattern_set_row_marker_here">Sæt markering her for værdi %1$d</string>
++    <string name="pattern_follow_page_announcement">Værdi %1$d flyttede læselinjen til side %2$d af %3$d.</string>
++    <string name="pattern_bookmark_jump_announcement">%1$s, side %2$d af %3$d. Tællerfølgning sat på pause.</string>
+     <string name="pattern_reading_line_move_up">Flyt læselinjen op</string>
+     <string name="pattern_reading_line_move_down">Flyt læselinjen ned</string>
+     <string name="pattern_vertical_guide_move_left">Flyt den lodrette guide til venstre</string>
+     <string name="pattern_vertical_guide_move_right">Flyt den lodrette guide til højre</string>
+     <string name="pattern_reading_line_position_state">%1$d%% fra toppen</string>
+     <string name="pattern_vertical_guide_position_state">%1$d%% fra venstre</string>
+-    <string name="pattern_row_following_paused">Rækkefølgning sat på pause.</string>
+-    <string name="pattern_row_following_active">Følger den aktuelle række.</string>
++    <string name="pattern_row_following_paused">Tællerfølgning sat på pause.</string>
++    <string name="pattern_row_following_active">Følger hovedtælleren.</string>
+     <string name="pattern_guide_enabled_state">Aktiveret</string>
+     <string name="pattern_guide_disabled_state">Deaktiveret</string>
+-    <string name="pattern_reading_line_following_state">%1$d%% fra toppen. Følger den aktuelle række.</string>
+-    <string name="pattern_reading_line_manual_state">%1$d%% fra toppen. Rækkefølgning sat på pause.</string>
++    <string name="pattern_reading_line_following_state">%1$d%% fra toppen. Følger hovedtælleren.</string>
++    <string name="pattern_reading_line_manual_state">%1$d%% fra toppen. Tællerfølgning sat på pause.</string>
+ </resources>
+diff --git a/app/src/main/res/values-da/reference_strings.xml b/app/src/main/res/values-da/reference_strings.xml
+index c0e896ff..edf1dd18 100644
+--- a/app/src/main/res/values-da/reference_strings.xml
++++ b/app/src/main/res/values-da/reference_strings.xml
+@@ -19,14 +19,14 @@
+     <string name="size_row_adult_m">Voksen M</string>
+     <string name="size_row_adult_l">Voksen L</string>
+     <string name="size_row_adult_xl">Voksen XL</string>
+-    <string name="size_row_child_s">Barn S</string>
+-    <string name="size_row_child_m">Barnet M</string>
+-    <string name="size_row_child_l">Barn L</string>
+-    <string name="size_row_age_0_3m">0–3m</string>
+-    <string name="size_row_age_3_6m">3–6m</string>
+-    <string name="size_row_age_6_12m">6–12 m</string>
+-    <string name="size_row_age_12_18m">12–18m</string>
+-    <string name="size_row_age_18_24m">18–24m</string>
++    <string name="size_row_child_s">2–4 år</string>
++    <string name="size_row_child_m">4–6 år</string>
++    <string name="size_row_child_l">6–8 år</string>
++    <string name="size_row_age_0_3m">3m</string>
++    <string name="size_row_age_3_6m">6m</string>
++    <string name="size_row_age_6_12m">12 m</string>
++    <string name="size_row_age_12_18m">18m</string>
++    <string name="size_row_age_18_24m">24m</string>
+     <string name="size_row_child_2">2</string>
+     <string name="size_row_child_4">4</string>
+     <string name="size_row_child_6">6</string>
+@@ -35,24 +35,24 @@
+     <string name="size_row_child_12">12</string>
+     <string name="size_row_child_14">14</string>
+     <string name="size_row_child_16">16</string>
+-    <string name="size_row_women_xs_2_4">XS (2–4)</string>
+-    <string name="size_row_women_s_6_8">S (6–8)</string>
+-    <string name="size_row_women_m_10_12">M (10–12)</string>
+-    <string name="size_row_women_l_14_16">L (14–16)</string>
+-    <string name="size_row_women_xl_18_20">XL (18–20)</string>
+-    <string name="size_row_women_2xl_22_24">2XL (22–24)</string>
+-    <string name="size_row_women_3xl_26_28">3XL (26–28)</string>
+-    <string name="size_row_women_4xl_30_32">4XL (30–32)</string>
+-    <string name="size_row_women_5xl_34_36">5XL (34–36)</string>
++    <string name="size_row_women_xs_2_4">XS</string>
++    <string name="size_row_women_s_6_8">S</string>
++    <string name="size_row_women_m_10_12">M</string>
++    <string name="size_row_women_l_14_16">L</string>
++    <string name="size_row_women_xl_18_20">XL</string>
++    <string name="size_row_women_2xl_22_24">2XL</string>
++    <string name="size_row_women_3xl_26_28">3XL</string>
++    <string name="size_row_women_4xl_30_32">4XL</string>
++    <string name="size_row_women_5xl_34_36">5XL</string>
+     <string name="size_row_men_xs_30_32">XS (30–32)</string>
+-    <string name="size_row_men_s_34_36">S (34–36)</string>
+-    <string name="size_row_men_m_38_40">M (38–40)</string>
+-    <string name="size_row_men_l_42_44">L (42–44)</string>
+-    <string name="size_row_men_xl_46_48">XL (46–48)</string>
+-    <string name="size_row_men_2xl_50_52">2XL (50–52)</string>
+-    <string name="size_row_men_3xl_54_56">3XL (54–56)</string>
+-    <string name="size_row_men_4xl_58_60">4XL (58–60)</string>
+-    <string name="size_row_men_5xl_62_64">5XL (62–64)</string>
++    <string name="size_row_men_s_34_36">S</string>
++    <string name="size_row_men_m_38_40">M</string>
++    <string name="size_row_men_l_42_44">L</string>
++    <string name="size_row_men_xl_46_48">XL</string>
++    <string name="size_row_men_2xl_50_52">2XL</string>
++    <string name="size_row_men_3xl_54_56">3XL</string>
++    <string name="size_row_men_4xl_58_60">4XL</string>
++    <string name="size_row_men_5xl_62_64">5XL</string>
+     <string name="abbr_k_meaning">Strik</string>
+     <string name="abbr_k_desc">Stik nålen i strik, vikl garnet, træk igennem</string>
+     <string name="abbr_p_meaning">Vrang</string>
+@@ -257,4 +257,5 @@
+     <string name="sym_marker_desc">Maskemarkørens placering</string>
+     <string name="sym_repeat_name">Gentag</string>
+     <string name="sym_repeat_desc">Klamme, der markerer mønsterrapporten</string>
++    <string name="size_row_tween">Yngre teenager</string>
+ </resources>
+diff --git a/app/src/main/res/values-da/strings.xml b/app/src/main/res/values-da/strings.xml
+index 044a8b1d..d576df36 100644
+--- a/app/src/main/res/values-da/strings.xml
++++ b/app/src/main/res/values-da/strings.xml
+@@ -143,14 +143,14 @@
+     <string name="pattern_open_failed">Opskriften kunne ikke åbnes.</string>
+     <string name="pattern_show_reading_line">Vis læselinje</string>
+     <string name="pattern_hide_reading_line">Skjul læselinje</string>
+-    <string name="pattern_clear_row_mark">Fjern pindmarkering</string>
++    <string name="pattern_clear_row_mark">Fjern tællermarkering</string>
+     <string name="pattern_clear_page_marks">Fjern sidens markeringer</string>
+-    <string name="pattern_calibrate_rows">Kalibrer pinde</string>
+-    <string name="pattern_calibration_first_row">Første pind</string>
+-    <string name="pattern_calibration_last_row">Sidste pind</string>
++    <string name="pattern_calibrate_rows">Kalibrer tællerpositioner</string>
++    <string name="pattern_calibration_first_row">Første værdi</string>
++    <string name="pattern_calibration_last_row">Sidste værdi</string>
+     <string name="pattern_calibration_save_first">Gem første</string>
+     <string name="pattern_calibration_save_last">Gem sidste</string>
+-    <string name="pattern_calibration_invalid_row">Brug to forskellige pindnumre</string>
++    <string name="pattern_calibration_invalid_row">Brug to forskellige tællerværdier</string>
+     <string name="pattern_page_jump">Gå til side</string>
+     <string name="pattern_page_number">Sidenummer</string>
+     <string name="pattern_page_indicator">Side %1$d af %2$d</string>
+@@ -235,8 +235,8 @@
+     <!-- Session History -->
+     <string name="session_history_title">Arbejdshistorik</string>
+     <string name="no_sessions">Ingen sessioner registreret endnu. Åbn et projekt, og start en arbejdssession for at registrere din tid her.</string>
+-    <string name="session_row_range">Pinde %1$d \u2192 %2$d</string>
+-    <string name="session_row_single">Række %1$d</string>
++    <string name="session_row_range">Tæller: %1$d → %2$d</string>
++    <string name="session_row_single">Værdi %1$d</string>
+     <string name="delete_session_title">Slette session?</string>
+     <string name="delete_session_message">Slette denne session fra historikken? Dette kan ikke fortrydes.</string>
+ 
+@@ -268,8 +268,8 @@
+     <string name="project_content_add_pattern">Tilføj opskrift</string>
+     <string name="stitch_tracker_label">Masker</string>
+     <plurals name="reminder_repeat_occurrence_format">
+-        <item quantity="one">Gentag #%1$d hver pind</item>
+-        <item quantity="other">Gentag #%1$d hver %2$d. pind</item>
++        <item quantity="one">Gentag #%1$d, interval %2$d</item>
++        <item quantity="other">Gentag #%1$d, interval %2$d</item>
+     </plurals>
+ 
+     <!-- Increase / Decrease -->
+@@ -294,7 +294,7 @@
+     <string name="increase_decrease_error_cannot_decrease">Tilgængeligt maskeantal: %2$d. Ønsket indtagning: %1$d.</string>
+     <string name="increase_decrease_error_not_enough_decrease">Påkrævet maskeantal: %1$d. Ønskede indtagninger: %2$d.</string>
+     <string name="increase_decrease_error_total_out_of_range">Resultatet er for stort. Brug mindre masketal.</string>
+-    <string name="increase_decrease_warning_increase_more_than_current">Der tages flere masker ud end det nuværende masketal - nogle sektioner har ingen retmasker mellem udtagninger</string>
++    <string name="increase_decrease_error_not_enough_bars">Der er ikke nok mellemrum mellem maskerne til disse M1-udtagninger. Reducer antallet af udtagninger.</string>
+ 
+     <!-- Gauge Converter -->
+     <string name="pattern_gauge">Opskriftens strikkefasthed</string>
+@@ -579,13 +579,13 @@
+     <string name="no_reminders">Ingen påmindelser endnu</string>
+     <string name="delete_reminder_title">Slette påmindelse?</string>
+     <string name="delete_reminder_confirm">Slette påmindelsen \"%1$s\"?</string>
+-    <string name="row_number">Pindenummer</string>
++    <string name="row_number">Tællerværdi</string>
+     <string name="reminder_message">Besked</string>
+     <string name="reminder_message_hint">f.eks. Skift til hælflap</string>
+     <string name="one_time">Én gang</string>
+     <string name="repeating">Gentagende</string>
+     <string name="repeat_every">Gentag hver</string>
+-    <string name="repeat_every_rows">pinde</string>
++    <string name="repeat_every_rows">tællertrin</string>
+     <string name="dismiss">Afvis</string>
+ 
+     <!-- Multiple Counters -->
+@@ -601,11 +601,11 @@
+     <string name="repeat_section">Gentag sektion</string>
+     <string name="starting_stitches">Startmasker</string>
+     <string name="stitch_change">Masker, der skal tilføjes/fjernes</string>
+-    <string name="shape_every_n">Form hver N. pind</string>
+-    <string name="repeat_section_start_row">Startpind</string>
+-    <string name="repeat_section_end_row">Slutpind</string>
++    <string name="shape_every_n">Form hvert N. tællertrin</string>
++    <string name="repeat_section_start_row">Startværdi</string>
++    <string name="repeat_section_end_row">Slutværdi</string>
+     <string name="total_repeats">Samlet antal gentagelser</string>
+-    <string name="repeat_section_progress_format">Gentagelse %1$d/%2$d, pind %3$d/%4$d</string>
++    <string name="repeat_section_progress_format">Gentagelse %1$d/%2$d, værdi %3$d/%4$d</string>
+     <string name="repeat_section_complete">Færdig</string>
+     <string name="rename_counter">Omdøb</string>
+     <string name="reset_counter_name">Nulstil</string>
+@@ -617,7 +617,7 @@
+     <string name="take_photo">Tag billede</string>
+     <string name="progress_photos">Fremdriftsbilleder</string>
+     <string name="counters_list_empty">Ingen ekstra tællere</string>
+-    <string name="row_label_format">Pind %d</string>
++    <string name="row_label_format">Værdi %d</string>
+     <string name="share_photo">Del</string>
+     <string name="photo_share_failed">Billedet kunne ikke deles.</string>
+     <string name="delete_photo">Slet billede</string>
+@@ -726,7 +726,7 @@
+     <string name="work_session_recovery_needed">Sessionstiden skal gennemgås</string>
+     <string name="work_session_resolve">Løs</string>
+     <string name="work_session_recovery_title">Gennemgå sessionstid</string>
+-    <string name="work_session_pending_rows_format">Afventende rækkefremgang: %1$d</string>
++    <string name="work_session_pending_rows_format">Afventende tællerfremgang: %1$d</string>
+     <string name="work_session_hours">Timer</string>
+     <string name="work_session_minutes">Minutter</string>
+     <string name="work_session_add_and_continue">Tilføj og fortsæt</string>
+@@ -1108,4 +1108,5 @@
+     <string name="project_yarn_edit_missing">Garnnoten hører ikke længere til dette projekt. Luk editoren.</string>
+     <string name="project_yarn_edit_invalid">Indtast et garnnavn.</string>
+     <string name="project_yarn_edit_failed">Ændringerne kunne ikke gemmes. Din kladde er stadig her. Prøv igen.</string>
++    <string name="counter_progress_format">Tællerfremgang: %1$d</string>
+ </resources>

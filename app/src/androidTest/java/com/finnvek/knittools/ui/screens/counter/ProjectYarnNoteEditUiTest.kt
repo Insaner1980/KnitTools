@@ -45,6 +45,7 @@ import com.finnvek.knittools.data.local.ProjectYarnNoteEntity
 import com.finnvek.knittools.data.local.RoomDatabaseTransactionRunner
 import com.finnvek.knittools.data.local.YarnCardEntity
 import com.finnvek.knittools.data.local.toDomain
+import com.finnvek.knittools.pro.ProState
 import com.finnvek.knittools.pro.ProStatus
 import com.finnvek.knittools.repository.ProjectYarnNoteEditResult
 import com.finnvek.knittools.repository.ProjectYarnNoteRepository
@@ -365,7 +366,8 @@ class ProjectYarnNoteEditUiTest(
                     YarnManagementSheet(
                         linkedYarns = emptyList(),
                         projectYarnNotes = notes,
-                        proStatus = ProStatus.TRIAL_EXPIRED,
+                        proState = ProState(status = ProStatus.TRIAL_EXPIRED),
+                        proAccessReady = true,
                         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
                         actions =
                             YarnManagementSheetActions(

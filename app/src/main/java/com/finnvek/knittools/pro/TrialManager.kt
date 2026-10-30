@@ -2,8 +2,10 @@ package com.finnvek.knittools.pro
 
 import android.content.Context
 import androidx.annotation.VisibleForTesting
+import androidx.datastore.core.DataStore
 import androidx.datastore.core.handlers.ReplaceFileCorruptionHandler
 import androidx.datastore.preferences.core.MutablePreferences
+import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.preferencesOf
@@ -68,12 +70,18 @@ internal data class TrialTimingEvaluation(
 
 @Singleton
 class TrialManager
-    @Inject
-    constructor(
-        @param:ApplicationContext private val context: Context,
-        @param:IoDispatcher private val ioDispatcher: CoroutineDispatcher,
-        private val sessionTimeSource: SessionTimeSource = UnavailableBootSessionTimeSource,
+    internal constructor(
+        private val dataStore: DataStore<Preferences>,
+        private val ioDispatcher: CoroutineDispatcher,
+        private val sessionTimeSource: SessionTimeSource,
     ) {
+        @Inject
+        constructor(
+            @ApplicationContext context: Context,
+            @IoDispatcher ioDispatcher: CoroutineDispatcher,
+            sessionTimeSource: SessionTimeSource = UnavailableBootSessionTimeSource,
+        ) : this(context.trialDataStore, ioDispatcher, sessionTimeSource)
+
         private val _trialState = MutableStateFlow(TrialState())
         val trialState: StateFlow<TrialState> = _trialState.asStateFlow()
         private val refreshScope = CoroutineScope(SupervisorJob() + ioDispatcher)
@@ -88,7 +96,7 @@ class TrialManager
         suspend fun startTrial(): TrialStartResult {
             var startResult: TrialStartResult? = null
             val didWrite =
-                context.trialDataStore.editPreferencesSafely { preferences ->
+                dataStore.editPreferencesSafely { preferences ->
                     val now = sessionTimeSource.snapshot()
                     val startTimestamp = preferences[KEY_TRIAL_START] ?: 0L
                     val lastKnownTimestamp = preferences[KEY_LAST_KNOWN_TIMESTAMP] ?: 0L
@@ -140,7 +148,7 @@ class TrialManager
         suspend fun claimTrialEndNotice(): Boolean {
             var claimed = false
             val didWrite =
-                context.trialDataStore.editPreferencesSafely { preferences ->
+                dataStore.editPreferencesSafely { preferences ->
                     val hasStarted = (preferences[KEY_TRIAL_START] ?: 0L) > 0L
                     val wasShown = preferences[KEY_TRIAL_END_NOTICE_SHOWN] ?: false
                     if (hasStarted && !wasShown) {
@@ -151,8 +159,28 @@ class TrialManager
             return didWrite && claimed
         }
 
+        suspend fun claimTrialThreeDayNotice(): Boolean {
+            var claimed = false
+            var evaluatedState: TrialState? = null
+            val didWrite =
+                dataStore.editPreferencesSafely { preferences ->
+                    val state = preferences.evaluateAndPersistTrialState(sessionTimeSource.snapshot())
+                    evaluatedState = state
+                    if (state.isActive &&
+                        !state.clockTampered &&
+                        state.daysRemaining == 3 &&
+                        preferences[KEY_TRIAL_THREE_DAY_NOTICE_SHOWN] != true
+                    ) {
+                        preferences[KEY_TRIAL_THREE_DAY_NOTICE_SHOWN] = true
+                        claimed = true
+                    }
+                }
+            if (didWrite) evaluatedState?.let { _trialState.value = it }
+            return didWrite && claimed
+        }
+
         suspend fun markTrialEndNoticeShown() {
-            context.trialDataStore.editPreferencesSafely { preferences ->
+            dataStore.editPreferencesSafely { preferences ->
                 if ((preferences[KEY_TRIAL_START] ?: 0L) > 0L) {
                     preferences[KEY_TRIAL_END_NOTICE_SHOWN] = true
                 }
@@ -162,7 +190,7 @@ class TrialManager
         private suspend fun refreshTrialState() {
             var refreshedState: TrialState? = null
             val didWrite =
-                context.trialDataStore.editPreferencesSafely { preferences ->
+                dataStore.editPreferencesSafely { preferences ->
                     val now = sessionTimeSource.snapshot()
                     refreshedState = preferences.evaluateAndPersistTrialState(now)
                 }
@@ -239,6 +267,7 @@ class TrialManager
             private val KEY_LAST_KNOWN_TIMESTAMP = longPreferencesKey("last_known_timestamp")
             private val KEY_CLOCK_TAMPERED = booleanPreferencesKey("clock_tampered")
             private val KEY_TRIAL_END_NOTICE_SHOWN = booleanPreferencesKey("trial_end_notice_shown")
+            private val KEY_TRIAL_THREE_DAY_NOTICE_SHOWN = booleanPreferencesKey("trial_three_day_notice_shown")
             private val KEY_TRIAL_ELAPSED_DURATION = longPreferencesKey("trial_elapsed_duration_millis")
             private val KEY_TRIAL_ANCHOR_WALL_CLOCK = longPreferencesKey("trial_anchor_wall_clock_millis")
             private val KEY_TRIAL_ANCHOR_ELAPSED_REALTIME =

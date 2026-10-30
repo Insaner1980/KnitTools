@@ -46,6 +46,8 @@ class AppLanguageObservationTest {
                 for (language in listOf(
                     AppLanguage.ENGLISH,
                     AppLanguage.FRENCH,
+                    AppLanguage.BRAZILIAN_PORTUGUESE,
+                    AppLanguage.PORTUGUESE,
                     AppLanguage.SYSTEM,
                     AppLanguage.FINNISH,
                 )) {
@@ -58,6 +60,13 @@ class AppLanguageObservationTest {
                 manager.syncAppLanguageFromSystem()
                 awaitLanguage(AppLanguage.SWEDISH)
                 assertEquals(AppLanguage.SWEDISH, manager.preferences.first().appLanguage)
+                withContext(Dispatchers.Main) { locales.applicationLocales = LocaleList.forLanguageTags("pt-BR") }
+                manager.syncAppLanguageFromSystem()
+                awaitLanguage(AppLanguage.BRAZILIAN_PORTUGUESE)
+                val restartedManager = PreferencesManager(context)
+                restartedManager.applyStoredAppLanguage()
+                assertEquals(AppLanguage.BRAZILIAN_PORTUGUESE, restartedManager.preferences.first().appLanguage)
+                assertEquals("pt-BR", locales.applicationLocales.toLanguageTags())
             } finally {
                 collector.cancel()
                 manager.setAppLanguage(before)

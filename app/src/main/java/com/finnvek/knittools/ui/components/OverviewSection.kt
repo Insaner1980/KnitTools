@@ -16,6 +16,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -30,6 +31,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.semantics
 import coil3.compose.AsyncImage
 import com.finnvek.knittools.ui.theme.CrossStitchDimens
 import com.finnvek.knittools.ui.theme.ProjectOverviewDimens
@@ -45,6 +47,7 @@ internal fun OverviewSectionHeader(
     title: Int,
     action: Int? = null,
     onAction: () -> Unit = {},
+    trailingContent: @Composable () -> Unit = {},
 ) {
     Column(Modifier.padding(top = ProjectOverviewDimens.SectionTopGap)) {
         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
@@ -54,6 +57,7 @@ internal fun OverviewSectionHeader(
         ) {
             SectionLabel(text = stringResource(title), modifier = Modifier.weight(1f))
             action?.let { OverviewTextAction(stringResource(it), onAction) }
+            trailingContent()
         }
     }
 }
@@ -68,6 +72,7 @@ internal fun OverviewTextAction(
     onClick: () -> Unit,
     trailingIcon: ImageVector? = null,
     enabled: Boolean = true,
+    trailingContent: (@Composable () -> Unit)? = null,
 ) {
     Row(
         modifier =
@@ -85,6 +90,9 @@ internal fun OverviewTextAction(
             color = MaterialTheme.knitToolsColors.primaryReadable,
         )
         trailingIcon?.let { Icon(it, null, tint = MaterialTheme.knitToolsColors.primaryReadable) }
+        trailingContent?.let { content ->
+            Row(Modifier.padding(start = ProjectOverviewDimens.ContentGap)) { content() }
+        }
     }
 }
 
@@ -104,20 +112,31 @@ internal fun OverviewLinkRow(
     glyph: CrossStitchGlyph?,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    done: Boolean = false,
 ) {
     Row(
         modifier
             .fillMaxWidth()
             .heightIn(
                 min = ProjectOverviewDimens.RowMinHeight,
-            ).clickable(role = Role.Button, onClick = onClick),
+            ).then(
+                if (done) {
+                    Modifier.semantics(mergeDescendants = true) { }
+                } else {
+                    Modifier.clickable(role = Role.Button, onClick = onClick)
+                },
+            ),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(ProjectOverviewDimens.ContentGap),
     ) {
         // Sama ristipistokuvake ja korostusväri kuin laskurin sisältölaatassa.
         glyph?.let { CrossStitchIcon(it, Modifier.size(CrossStitchDimens.RowGlyphSize)) }
         Column(Modifier.weight(1f).padding(vertical = ProjectOverviewDimens.ContentGap)) {
-            Text(title, style = MaterialTheme.typography.titleMedium)
+            Text(
+                title,
+                style = MaterialTheme.typography.titleMedium,
+                color = if (done) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
+            )
             subtitle?.let {
                 Text(
                     it,
@@ -126,7 +145,11 @@ internal fun OverviewLinkRow(
                 )
             }
         }
-        Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        Icon(
+            if (done) Icons.Default.Check else Icons.AutoMirrored.Filled.KeyboardArrowRight,
+            null,
+            tint = if (done) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }
 

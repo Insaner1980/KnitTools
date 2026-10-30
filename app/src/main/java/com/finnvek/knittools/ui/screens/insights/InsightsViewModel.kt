@@ -1,29 +1,32 @@
 package com.finnvek.knittools.ui.screens.insights
 
 import androidx.compose.runtime.Immutable
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.finnvek.knittools.di.ApplicationScope
 import com.finnvek.knittools.di.IoDispatcher
 import com.finnvek.knittools.domain.calculator.DurationDisplay
 import com.finnvek.knittools.domain.calculator.DurationDisplayFormatter
 import com.finnvek.knittools.domain.calculator.MinutesPerRowDisplay
-import com.finnvek.knittools.domain.calculator.MinutesPerRowFormatter
 import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.domain.model.CraftType
 import com.finnvek.knittools.domain.model.KnitSession
 import com.finnvek.knittools.domain.model.ProjectCompletion
 import com.finnvek.knittools.pro.ProFeature
 import com.finnvek.knittools.pro.ProManager
+import com.finnvek.knittools.pro.ProStatus
 import com.finnvek.knittools.repository.CounterRepository
+import com.finnvek.knittools.repository.OnboardingStateRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
@@ -34,6 +37,7 @@ import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.yield
 import java.time.DayOfWeek
 import java.time.Instant
@@ -96,6 +100,7 @@ internal data class InsightsUiState(
     val totalDuration: DurationDisplay = DurationDisplayFormatter.fromMinutes(0),
     val totalMinutes: Int = 0,
     val totalRows: Long = 0L,
+    val rowMetricsAvailable: Boolean = false,
     val minutesPerRow: MinutesPerRowDisplay = MinutesPerRowDisplay.Unavailable,
     val activeDays: Int = 0,
     val daysInRange: Int = 0,
@@ -129,6 +134,9 @@ class InsightsViewModel
         private val counterRepository: CounterRepository,
         private val proManager: ProManager,
         @param:IoDispatcher private val ioDispatcher: CoroutineDispatcher,
+        private val savedStateHandle: SavedStateHandle,
+        private val onboardingStateRepository: OnboardingStateRepository,
+        @param:ApplicationScope private val applicationScope: CoroutineScope,
     ) : ViewModel() {
         val isPro: StateFlow<Boolean> =
             proManager
@@ -161,10 +169,8 @@ class InsightsViewModel
                 ),
             )
 
-        private val _selectedProjectId = MutableStateFlow<Long?>(null)
-        private val _timeRange = MutableStateFlow(TimeRange.ALL_TIME)
-        val selectedProjectId: StateFlow<Long?> = _selectedProjectId.asStateFlow()
-        val timeRange: StateFlow<TimeRange> = _timeRange.asStateFlow()
+        val selectedProjectId: StateFlow<Long?> = savedStateHandle.getStateFlow("selectedProjectId", null)
+        val timeRange: StateFlow<TimeRange> = savedStateHandle.getStateFlow("timeRange", TimeRange.ALL_TIME)
         private val currentDate: StateFlow<InsightsCalendar> =
             insightsCalendarChanges()
                 .stateIn(
@@ -178,14 +184,14 @@ class InsightsViewModel
                 .getAllProjects()
                 .distinctUntilChanged()
                 .withLoadingState()
+                .flowOn(ioDispatcher)
                 .onEach { load ->
                     val projects = load.value ?: return@onEach
-                    val selectedId = _selectedProjectId.value ?: return@onEach
+                    val selectedId = selectedProjectId.value ?: return@onEach
                     if (projects.none { it.id == selectedId }) {
-                        _selectedProjectId.value = null
+                        selectProject(null)
                     }
-                }.flowOn(ioDispatcher)
-                .stateIn(
+                }.stateIn(
                     viewModelScope,
                     SharingStarted.WhileSubscribed(5000),
                     RepositoryLoad.Loading,
@@ -270,7 +276,11 @@ class InsightsViewModel
                     }
                 }.distinctUntilChanged()
                 .flowOn(ioDispatcher)
-                .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), InsightsUiState())
+                .stateIn(
+                    viewModelScope,
+                    SharingStarted.WhileSubscribed(5000),
+                    InsightsUiState(timeRange = timeRange.value, selectedProjectId = selectedProjectId.value),
+                )
 
         @Suppress("LongMethod") // Yksi koonti pitää Insights-tilan keskenään riippuvat laskelmat samassa paikassa.
         private fun buildUiState(
@@ -283,7 +293,8 @@ class InsightsViewModel
             val today = params.currentDate
             val firstDayOfWeek = currentInsightsFirstDayOfWeek()
             val rangeMetrics = sessions.summary
-            val firstSessionDate = sessions.firstDate
+            // Match the chart's today-ended range when all stored-zone dates are later than device today.
+            val firstSessionDate = sessions.firstDate?.coerceAtMost(today)
             val axis = insightsChartAxis(params.timeRange, today, firstSessionDate, firstDayOfWeek)
             val timePerProject = sessions.timePerProject(projectList)
             val projectOrder = timePerProject.map { it.projectId }
@@ -307,9 +318,6 @@ class InsightsViewModel
                     MINIMUM_MEANINGFUL_CHART_BUCKETS
             val chartBuckets =
                 if (featureGates.canUseCharts) fillChartBuckets(axis, measuredBuckets) else emptyList()
-            val minutesPerRow =
-                MinutesPerRowFormatter.fromSeconds(rangeMetrics.totalSeconds, rangeMetrics.totalRows)
-
             val completionHistory = buildInsightsCompletions(completions, params, firstDayOfWeek)
             return InsightsUiState(
                 isLoading = false,
@@ -325,7 +333,10 @@ class InsightsViewModel
                 totalDuration = DurationDisplayFormatter.fromMinutes(rangeMetrics.totalMinutes),
                 totalMinutes = rangeMetrics.totalMinutes,
                 totalRows = rangeMetrics.totalRows,
-                minutesPerRow = minutesPerRow,
+                // Sessions do not store their counter unit. A project's editable current label
+                // cannot establish whether historical progress was measured in rows.
+                rowMetricsAvailable = false,
+                minutesPerRow = MinutesPerRowDisplay.Unavailable,
                 activeDays = sessions.activeDates.size,
                 daysInRange = daysInRange(params.timeRange, today, firstSessionDate, firstDayOfWeek),
                 currentStreak = if (featureGates.canUseStreak) currentStreak(sessions.activeDates, today) else 0,
@@ -351,11 +362,29 @@ class InsightsViewModel
         }
 
         fun selectProject(projectId: Long?) {
-            _selectedProjectId.value = projectId
+            savedStateHandle["selectedProjectId"] = projectId
         }
 
         fun selectTimeRange(selectedTimeRange: TimeRange) {
-            _timeRange.value = selectedTimeRange
+            savedStateHandle["timeRange"] = selectedTimeRange
+        }
+
+        fun onWeeklyChartVisible() {
+            val state = uiState.value
+            if (state.isLoading || state.timeRange != TimeRange.THIS_WEEK) return
+            if (!state.isPro || !state.hasMeaningfulChartData || state.totalMinutes <= 0) return
+            if (!proManager.initialStateReady.value) return
+            val proState = proManager.proState.value
+            if (proState.status != ProStatus.TRIAL_ACTIVE || proState.trialStartTimestamp <= 0L) return
+            applicationScope.launch {
+                try {
+                    onboardingStateRepository.markTrialChartSeen(proState.trialStartTimestamp)
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (_: Exception) {
+                    // Kaavion käyttö jatkuu, vaikka kokeilulistan merkintä ei tallennu.
+                }
+            }
         }
 
         companion object {

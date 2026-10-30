@@ -1,0 +1,116 @@
+[
+  {
+    "path": "app/src/main/java/com/finnvek/knittools/domain/calculator/CastOnCalculator.kt",
+    "recorded_sha256": "20028963e810dea7d0b858290411aab19d30d959f0feee184018e820ab91b472",
+    "current_sha256": "20028963e810dea7d0b858290411aab19d30d959f0feee184018e820ab91b472",
+    "match": true
+  },
+  {
+    "path": "app/src/main/java/com/finnvek/knittools/domain/calculator/ChartSymbolData.kt",
+    "recorded_sha256": "242384c1f2e1ff2eeb83d8df5a57ca2fd085eb11f39a314f2fa335ceb334685d",
+    "current_sha256": "242384c1f2e1ff2eeb83d8df5a57ca2fd085eb11f39a314f2fa335ceb334685d",
+    "match": true
+  },
+  {
+    "path": "app/src/main/java/com/finnvek/knittools/domain/calculator/IncreaseDecreaseCalculator.kt",
+    "recorded_sha256": "f95ec9533e15b4138e4a02f6db9e75f5e04669b3d21dfac25a022b1035ed6ef7",
+    "current_sha256": "f95ec9533e15b4138e4a02f6db9e75f5e04669b3d21dfac25a022b1035ed6ef7",
+    "match": true
+  },
+  {
+    "path": "app/src/main/java/com/finnvek/knittools/domain/calculator/NeedleSizeData.kt",
+    "recorded_sha256": "5cd76d92b0e86fdd596db513c3c0fb1dbafe9ae441d52406001a74494fbed2ea",
+    "current_sha256": "5cd76d92b0e86fdd596db513c3c0fb1dbafe9ae441d52406001a74494fbed2ea",
+    "match": true
+  },
+  {
+    "path": "app/src/main/java/com/finnvek/knittools/domain/calculator/SizeChartData.kt",
+    "recorded_sha256": "05cfd462174881af17eb2bfbd3a9a84c328492d1a8a6d7784bae35cd1ee4d0f6",
+    "current_sha256": "05cfd462174881af17eb2bfbd3a9a84c328492d1a8a6d7784bae35cd1ee4d0f6",
+    "match": true
+  },
+  {
+    "path": "app/src/main/java/com/finnvek/knittools/domain/calculator/YarnEstimator.kt",
+    "recorded_sha256": "a5d66fc4b14e1fe0d8335c35d910278195aa45a493ea324b75b005cb60996d64",
+    "current_sha256": "a5d66fc4b14e1fe0d8335c35d910278195aa45a493ea324b75b005cb60996d64",
+    "match": true
+  },
+  {
+    "path": "app/src/main/java/com/finnvek/knittools/domain/model/ChartSymbol.kt",
+    "recorded_sha256": "3fde9189e670e2df3bb9b6b64d5355a28b1087484f8d44ee2783795b5f5c3121",
+    "current_sha256": "3fde9189e670e2df3bb9b6b64d5355a28b1087484f8d44ee2783795b5f5c3121",
+    "match": true
+  },
+  {
+    "path": "app/src/main/java/com/finnvek/knittools/domain/model/StandardYarnWeight.kt",
+    "recorded_sha256": "ea1d11b8db1c6d50acd0d82c26982136e63a16d9cad2123e5b6f06065b30e54c",
+    "current_sha256": "ea1d11b8db1c6d50acd0d82c26982136e63a16d9cad2123e5b6f06065b30e54c",
+    "match": true
+  },
+  {
+    "path": "app/src/main/java/com/finnvek/knittools/ui/components/care/CareSymbol.kt",
+    "recorded_sha256": "eb2ca2b8302ac0f363e7fc32570b4175f1089f4a970749e09da2c69d7830129c",
+    "current_sha256": "eb2ca2b8302ac0f363e7fc32570b4175f1089f4a970749e09da2c69d7830129c",
+    "match": true
+  },
+  {
+    "path": "app/src/main/java/com/finnvek/knittools/ui/components/care/CareSymbolIcon.kt",
+    "recorded_sha256": "b728612f5aa9c0eed7cea84935d43561a7bbdcb64d8cae0c2d5934b87ebbaab8",
+    "current_sha256": "b728612f5aa9c0eed7cea84935d43561a7bbdcb64d8cae0c2d5934b87ebbaab8",
+    "match": true
+  },
+  {
+    "path": "app/src/main/java/com/finnvek/knittools/ui/screens/chartsymbols/ChartSymbolScreen.kt",
+    "recorded_sha256": "92ae673a6d423574751ee90f001cffe626d7c570874fbfc9335fb5c8009a8136",
+    "current_sha256": "92ae673a6d423574751ee90f001cffe626d7c570874fbfc9335fb5c8009a8136",
+    "match": true
+  },
+  {
+    "path": "app/src/main/java/com/finnvek/knittools/ui/screens/counter/YarnUsagePresentation.kt",
+    "recorded_sha256": "7fe92629b6ec1f37ca5f3913a7e68c1360750dadb77f60b3dc54efcd5215c8a0",
+    "current_sha256": "7fe92629b6ec1f37ca5f3913a7e68c1360750dadb77f60b3dc54efcd5215c8a0",
+    "match": true
+  },
+  {
+    "path": "app/src/main/java/com/finnvek/knittools/ui/screens/insights/InsightsSessionAccumulator.kt",
+    "recorded_sha256": "24c1c653440da869f57e5ec6467dee2dbf066acc6e23437ffce54d46a55a8632",
+    "current_sha256": "24c1c653440da869f57e5ec6467dee2dbf066acc6e23437ffce54d46a55a8632",
+    "match": true
+  },
+  {
+    "path": "app/src/main/java/com/finnvek/knittools/ui/screens/insights/InsightsViewModel.kt",
+    "recorded_sha256": "48693f77a7580372c767f47d627ff291de450db7ff7d73f9826922988c799ff7",
+    "current_sha256": "48693f77a7580372c767f47d627ff291de450db7ff7d73f9826922988c799ff7",
+    "match": true
+  },
+  {
+    "path": "app/src/test/java/com/finnvek/knittools/domain/calculator/ChartSymbolDataTest.kt",
+    "recorded_sha256": "3b3a75c95154ca55079ba02d723631c90c37e6e1537b3c6d0d1998aa0fb3b87b",
+    "current_sha256": "3b3a75c95154ca55079ba02d723631c90c37e6e1537b3c6d0d1998aa0fb3b87b",
+    "match": true
+  },
+  {
+    "path": "app/src/test/java/com/finnvek/knittools/domain/calculator/NeedleSizeDataTest.kt",
+    "recorded_sha256": "189fc1dbd2bc971109325fcd9a6b9778163107fea18391b471bb137604bedffb",
+    "current_sha256": "189fc1dbd2bc971109325fcd9a6b9778163107fea18391b471bb137604bedffb",
+    "match": true
+  },
+  {
+    "path": "app/src/test/java/com/finnvek/knittools/domain/calculator/SizeChartDataTest.kt",
+    "recorded_sha256": "21d04bb33cf75c37808b3dc11c243cf6f559d79c060ac0fcf7725cce14e444ab",
+    "current_sha256": "21d04bb33cf75c37808b3dc11c243cf6f559d79c060ac0fcf7725cce14e444ab",
+    "match": true
+  },
+  {
+    "path": "app/src/test/java/com/finnvek/knittools/domain/model/StandardYarnWeightTest.kt",
+    "recorded_sha256": "840862d37ae7d703929c927e47d339af1b490f26d35ad9b6592452f5641e9fc7",
+    "current_sha256": "840862d37ae7d703929c927e47d339af1b490f26d35ad9b6592452f5641e9fc7",
+    "match": true
+  },
+  {
+    "path": "app/src/test/java/com/finnvek/knittools/ui/screens/insights/InsightsSessionZoneRangeTest.kt",
+    "recorded_sha256": "73d0565ad3a8c1e44d9586997a46df01b0558bbb67a34d567ffcc567f7461b4e",
+    "current_sha256": "73d0565ad3a8c1e44d9586997a46df01b0558bbb67a34d567ffcc567f7461b4e",
+    "match": true
+  }
+]

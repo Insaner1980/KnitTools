@@ -7,9 +7,12 @@ import com.finnvek.knittools.data.backup.BackupError
 import com.finnvek.knittools.data.backup.BackupException
 import com.finnvek.knittools.data.backup.BackupPreview
 import com.finnvek.knittools.repository.BackupRepository
+import com.finnvek.knittools.repository.OnboardingStateRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
@@ -31,10 +34,12 @@ class BackupViewModel
     @Inject
     constructor(
         private val repository: BackupRepository,
+        private val onboardingStateRepository: OnboardingStateRepository,
     ) : ViewModel() {
         private val mutableState = MutableStateFlow(BackupUiState())
         val state = mutableState.asStateFlow()
         private var job: Job? = null
+        private var cancelling = false
         private var selectionId: UUID? = null
 
         override fun onCleared() {
@@ -42,7 +47,8 @@ class BackupViewModel
         }
 
         fun select(): Boolean {
-            if (state.value.busy ||
+            if (cancelling ||
+                state.value.busy ||
                 state.value.phase == BackupPhase.SELECTING ||
                 state.value.preview != null
             ) {
@@ -53,18 +59,20 @@ class BackupViewModel
         }
 
         fun export(uri: Uri?) {
+            if (cancelling || state.value.busy) return
             if (uri == null) {
                 mutableState.value = BackupUiState()
                 return
             }
             run(BackupPhase.EXPORTING) {
                 repository.export(uri)
+                recordOnboardingProgress(restored = false)
                 BackupUiState(BackupPhase.EXPORTED)
             }
         }
 
         fun prepare(uri: Uri?) {
-            if (state.value.busy) return
+            if (cancelling || state.value.busy) return
             if (uri == null) {
                 mutableState.value = BackupUiState()
                 return
@@ -79,18 +87,52 @@ class BackupViewModel
             val selected = selectionId ?: return
             run(BackupPhase.RESTORING) {
                 repository.restore(selected)
+                recordOnboardingProgress(restored = true)
                 BackupUiState(BackupPhase.RESTORED)
             }
         }
 
+        private suspend fun recordOnboardingProgress(restored: Boolean) {
+            currentCoroutineContext().ensureActive()
+            try {
+                if (restored) {
+                    onboardingStateRepository.markBasicTipsSeen()
+                } else {
+                    onboardingStateRepository
+                        .markBackupCreated()
+                }
+            } catch (failure: CancellationException) {
+                throw failure
+            } catch (_: Exception) {
+                // Opastuksen tallennusvirhe ei muuta jo valmistunutta varmuuskopiota epäonnistuneeksi.
+            }
+        }
+
         fun cancel() {
-            if (state.value.phase == BackupPhase.RESTORING) return
+            val phase = state.value.phase
+            if (cancelling ||
+                phase !in
+                setOf(
+                    BackupPhase.SELECTING,
+                    BackupPhase.EXPORTING,
+                    BackupPhase.VALIDATING,
+                    BackupPhase.PREVIEW,
+                )
+            ) {
+                return
+            }
+            cancelling = true
             val cancelledSelection = selectionId
             job?.cancel()
             job =
                 viewModelScope.launch {
-                    repository.cancelPreview(cancelledSelection)
-                    mutableState.value = BackupUiState()
+                    try {
+                        repository.cancelPreview(cancelledSelection)
+                        mutableState.value =
+                            BackupUiState(error = if (phase == BackupPhase.EXPORTING) BackupError.WRITE else null)
+                    } finally {
+                        cancelling = false
+                    }
                 }
         }
 
@@ -98,15 +140,18 @@ class BackupViewModel
             phase: BackupPhase,
             block: suspend () -> BackupUiState,
         ) {
-            if (state.value.busy) return
+            if (cancelling || state.value.busy) return
             mutableState.value = BackupUiState(phase)
             job =
                 viewModelScope.launch {
                     try {
-                        mutableState.value = block()
+                        val result = block()
+                        currentCoroutineContext().ensureActive()
+                        mutableState.value = result
                     } catch (failure: CancellationException) {
                         throw failure
                     } catch (failure: BackupException) {
+                        currentCoroutineContext().ensureActive()
                         mutableState.value = BackupUiState(error = failure.error)
                     }
                 }

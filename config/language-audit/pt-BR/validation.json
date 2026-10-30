@@ -1,0 +1,538 @@
+{
+  "date": "2026-10-19",
+  "branch": "codex/audit-korjaukset-20261018",
+  "head": "e4416c7cf0a7a9ea57006a970307ee2f3d1d228f",
+  "content_decision": "AUDIT_PASS",
+  "native_review": "NOT_REQUESTED",
+  "runtime_integration": "PASS",
+  "inventory": [
+    {
+      "locale": "en",
+      "files": 2,
+      "keys": 1350,
+      "strings": 1318,
+      "plural_keys": 32,
+      "variants": 1382
+    },
+    {
+      "locale": "fi",
+      "files": 3,
+      "keys": 1350,
+      "strings": 1318,
+      "plural_keys": 32,
+      "variants": 1382
+    },
+    {
+      "locale": "sv",
+      "files": 4,
+      "keys": 1350,
+      "strings": 1318,
+      "plural_keys": 32,
+      "variants": 1382
+    },
+    {
+      "locale": "de",
+      "files": 4,
+      "keys": 1350,
+      "strings": 1318,
+      "plural_keys": 32,
+      "variants": 1382
+    },
+    {
+      "locale": "fr",
+      "files": 4,
+      "keys": 1350,
+      "strings": 1318,
+      "plural_keys": 32,
+      "variants": 1414
+    },
+    {
+      "locale": "es",
+      "files": 4,
+      "keys": 1350,
+      "strings": 1318,
+      "plural_keys": 32,
+      "variants": 1414
+    },
+    {
+      "locale": "pt",
+      "files": 4,
+      "keys": 1350,
+      "strings": 1318,
+      "plural_keys": 32,
+      "variants": 1414
+    },
+    {
+      "locale": "pt-BR",
+      "files": 4,
+      "keys": 1350,
+      "strings": 1318,
+      "plural_keys": 32,
+      "variants": 1414
+    },
+    {
+      "locale": "it",
+      "files": 4,
+      "keys": 1350,
+      "strings": 1318,
+      "plural_keys": 32,
+      "variants": 1414
+    },
+    {
+      "locale": "nb",
+      "files": 4,
+      "keys": 1350,
+      "strings": 1318,
+      "plural_keys": 32,
+      "variants": 1382
+    },
+    {
+      "locale": "da",
+      "files": 4,
+      "keys": 1350,
+      "strings": 1318,
+      "plural_keys": 32,
+      "variants": 1382
+    },
+    {
+      "locale": "nl",
+      "files": 4,
+      "keys": 1350,
+      "strings": 1318,
+      "plural_keys": 32,
+      "variants": 1382
+    }
+  ],
+  "resource_variants": 1414,
+  "grouped_source_contexts": 20,
+  "coverage_rows": 1434,
+  "build_and_jvm": {
+    "command": ".\\gradlew.bat :app:assembleDebug :app:assembleDebugAndroidTest :app:testDebugUnitTest --tests '*AppLanguage*Test' --tests '*BrazilianPortugueseLocaleContractTest' --tests '*Localization*Test' --tests '*CountPluralResourcesSourceTest' --tests '*CounterStringResourcesSourceTest' --tests '*SavedPatternDetailSourceTest' --tests '*CounterWorkspaceSourceTest' --tests '*PatternAnnotationAccessibilitySourceTest' --tests '*ProjectFoldersContractTest' --tests '*ProjectYarnUsageContractTest' --tests '*CounterHistoryContractTest' --tests '*WorkSessionArchitectureSourceTest' --tests '*Locale*Test' --console=plain --no-daemon",
+    "result": "BUILD SUCCESSFUL",
+    "tests": 84,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "suites": [
+      {
+        "name": "com.finnvek.knittools.BrazilianPortugueseLocaleContractTest",
+        "tests": "2",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0"
+      },
+      {
+        "name": "com.finnvek.knittools.CounterHistoryContractTest",
+        "tests": "3",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0"
+      },
+      {
+        "name": "com.finnvek.knittools.data.datastore.AppLanguageMigrationSourceTest",
+        "tests": "2",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0"
+      },
+      {
+        "name": "com.finnvek.knittools.data.datastore.AppLanguageTest",
+        "tests": "6",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0"
+      },
+      {
+        "name": "com.finnvek.knittools.domain.calculator.LocaleNumberFormatterTest",
+        "tests": "2",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0"
+      },
+      {
+        "name": "com.finnvek.knittools.InstructionHintLocalizationTest",
+        "tests": "2",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0"
+      },
+      {
+        "name": "com.finnvek.knittools.MeasurementsLocalizationTest",
+        "tests": "2",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0"
+      },
+      {
+        "name": "com.finnvek.knittools.PatternReadingAssistanceLocalizationTest",
+        "tests": "1",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0"
+      },
+      {
+        "name": "com.finnvek.knittools.ProjectDocumentLocalizationTest",
+        "tests": "1",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0"
+      },
+      {
+        "name": "com.finnvek.knittools.ProjectFoldersContractTest",
+        "tests": "4",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0"
+      },
+      {
+        "name": "com.finnvek.knittools.ProjectYarnUsageContractTest",
+        "tests": "3",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0"
+      },
+      {
+        "name": "com.finnvek.knittools.ProLocalizationSourceTest",
+        "tests": "3",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0"
+      },
+      {
+        "name": "com.finnvek.knittools.RavelryLocalizationSourceTest",
+        "tests": "2",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0"
+      },
+      {
+        "name": "com.finnvek.knittools.ReferenceResourceLocalizationTest",
+        "tests": "2",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0"
+      },
+      {
+        "name": "com.finnvek.knittools.SavedPatternDetailSourceTest",
+        "tests": "5",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0"
+      },
+      {
+        "name": "com.finnvek.knittools.ui.components.LocaleFormattingTest",
+        "tests": "4",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0"
+      },
+      {
+        "name": "com.finnvek.knittools.ui.CountPluralResourcesSourceTest",
+        "tests": "1",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0"
+      },
+      {
+        "name": "com.finnvek.knittools.ui.LocaleSensitiveFormattingSourceTest",
+        "tests": "4",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0"
+      },
+      {
+        "name": "com.finnvek.knittools.ui.ProjectLocalizationSourceTest",
+        "tests": "3",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0"
+      },
+      {
+        "name": "com.finnvek.knittools.ui.screens.counter.CounterStringResourcesSourceTest",
+        "tests": "7",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0"
+      },
+      {
+        "name": "com.finnvek.knittools.ui.screens.counter.CounterWorkspaceSourceTest",
+        "tests": "14",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0"
+      },
+      {
+        "name": "com.finnvek.knittools.ui.screens.pattern.PatternAnnotationAccessibilitySourceTest",
+        "tests": "5",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0"
+      },
+      {
+        "name": "com.finnvek.knittools.WebPatternLocalizationArchitectureContractTest",
+        "tests": "3",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0"
+      },
+      {
+        "name": "com.finnvek.knittools.WorkSessionArchitectureSourceTest",
+        "tests": "3",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0"
+      }
+    ],
+    "log": "reports/ptbr-work/final-build-tests.log",
+    "log_sha256": "60022af71535f9477ded26a12331edc4d2860e73f7bcfa1e63b24318cb1d2e09"
+  },
+  "initial_failure": {
+    "result": "75 tests, one failure: eleven-file assertion in CounterStringResourcesSourceTest",
+    "resolution": "Updated count to12 while retaining placeholder assertions; final84-test run passed"
+  },
+  "ktlint": {
+    "command": ".\\gradlew.bat :app:runKtlintCheckOverMainSourceSet --init-script reports/ptbr-work/ktlint.init.gradle --no-configuration-cache --console=plain --no-daemon",
+    "scope": "All changed and new Kotlin files, explicit source list",
+    "result": "BUILD SUCCESSFUL",
+    "log_sha256": "0609ae49b4bcd715e4afb8af0931054ab3218b765cab6931bc53898034316ff7"
+  },
+  "android": {
+    "serial": "emulator-5580",
+    "api": 36,
+    "fingerprint": "google/sdk_gphone64_x86_64/emu64xa:16/BE2A.250530.026.F3/13894323:userdebug/dev-keys",
+    "isolation": "New read-only no-snapshot instance of KnitToolsLanguageEn20261018; com.finnvek.knittools was not previously installed; synthetic debug demo data",
+    "instrumentation_command": "adb -s emulator-5580 shell am instrument -w -r -e class com.finnvek.knittools.data.datastore.AppLanguageObservationTest,com.finnvek.knittools.data.datastore.BrazilianPortugueseResourcesTest,com.finnvek.knittools.ui.screens.counter.YarnUsageLocalizationTest com.finnvek.knittools.test/androidx.test.runner.AndroidJUnitRunner",
+    "result": "OK (5 tests)",
+    "log_sha256": "1066404559f1b28eacf3aa0955be229c1747e68f9d06267875199f7561294425",
+    "ui_checks": [
+      {
+        "capture": "reports/ptbr-work/ui-language.txt",
+        "sha256": "bf3e39425eb8678a6aa3e1c0423ff30b92e30c9c8bb3d26060235c81aab2abd8",
+        "verified_text": [
+          "PortuguÃªs",
+          "PortuguÃªs (Brasil)"
+        ],
+        "checked_option": null
+      },
+      {
+        "capture": "reports/ptbr-work/ui-br-selected.txt",
+        "sha256": "047929510f4f8c2dee4f12cb6593b8676e42b643c11ebc7aabaa046ece2282a3",
+        "verified_text": [
+          "ConfiguraÃ§Ãµes",
+          "PortuguÃªs (Brasil)",
+          "Manter a tela ativa"
+        ],
+        "checked_option": null
+      },
+      {
+        "capture": "reports/ptbr-work/ui-br-settings-relaunch.txt",
+        "sha256": "c79ddf7101bacf6508bc4d737b9fd9d071d486589957807b4943507addffefa3",
+        "verified_text": [
+          "ConfiguraÃ§Ãµes",
+          "PortuguÃªs (Brasil)"
+        ],
+        "checked_option": null
+      },
+      {
+        "capture": "reports/ptbr-work/ui-br-checked.txt",
+        "sha256": "207c051e6e56c7bc3b7c0d88034e562f43a4e043c7d321f51d0e7cfa63ec205a",
+        "verified_text": [
+          "PortuguÃªs (Brasil)"
+        ],
+        "checked_option": "PortuguÃªs (Brasil)"
+      },
+      {
+        "capture": "reports/ptbr-work/ui-pt-selected.txt",
+        "sha256": "2625e58298c676ea53c05c1db8334e19aa23db3609fd5097075dda654f83e321",
+        "verified_text": [
+          "DefiniÃ§Ãµes",
+          "PortuguÃªs"
+        ],
+        "checked_option": null
+      },
+      {
+        "capture": "reports/ptbr-work/ui-pt-checked.txt",
+        "sha256": "83d0e4895a84f1f9f5db10a29c921e5a134cb41c0bbbfc59eca215ab4c895f57",
+        "verified_text": [
+          "PortuguÃªs"
+        ],
+        "checked_option": "PortuguÃªs"
+      },
+      {
+        "capture": "reports/ptbr-work/ui-system.txt",
+        "sha256": "62808c559df3a934d0b0b5fbbb7b911f2c15732f022d5d6d8019b9517c49b1cb",
+        "verified_text": [
+          "Settings",
+          "Follow system"
+        ],
+        "checked_option": null
+      },
+      {
+        "capture": "reports/ptbr-work/ui-android-portuguese.txt",
+        "sha256": "0a1ad4f344d94531c2ef14882d59159a59c8780583e44fcbe7cb0d08f5157af6",
+        "verified_text": [
+          "Brasil",
+          "Portugal"
+        ],
+        "checked_option": null
+      },
+      {
+        "capture": "reports/ptbr-work/ui-android-br-synced.txt",
+        "sha256": "212c79c345fbd0442da3e4a836e4d55254ea7db56fbcb8f7f68ca9cb9f7ff5a2",
+        "verified_text": [
+          "PortuguÃªs (Brasil)"
+        ],
+        "checked_option": "PortuguÃªs (Brasil)"
+      },
+      {
+        "capture": "reports/ptbr-work/ui-system-final.txt",
+        "sha256": "3e98271566b3c352a4cfd136700afb31115f7a57866f4263a3493b9d6f1ddb25",
+        "verified_text": [
+          "Settings",
+          "Follow system"
+        ],
+        "checked_option": null
+      }
+    ],
+    "observed_application_locale_sequence": [
+      "pt-BR after app selection",
+      "pt-BR after force-stop/relaunch",
+      "pt after selecting existing Portuguese",
+      "empty after selecting System",
+      "pt-BR after selecting Brasil in Android Settings and allowing asynchronous update",
+      "empty after final System reset"
+    ],
+    "apk_sha256": "d58708e0e6218ee7509611c4846e8edcae9bb82bd4bc4ffb32ff0d048a9ad06c",
+    "test_apk_sha256": "32bef5f0d06d1f0116d3cf10cfca453c6c77389243364d5b4d1630b28eb7c8bb"
+  },
+  "preservation": {
+    "entry_file_count": 1241,
+    "unchanged_existing_files": 1207,
+    "changed_existing_files": [
+      "LANGUAGE_AUDIT.md",
+      "app/src/androidTest/java/com/finnvek/knittools/data/datastore/AppLanguageObservationTest.kt",
+      "app/src/androidTest/java/com/finnvek/knittools/ui/screens/counter/YarnUsageLocalizationTest.kt",
+      "app/src/main/java/com/finnvek/knittools/data/datastore/AppLanguage.kt",
+      "app/src/main/java/com/finnvek/knittools/ui/screens/settings/SettingsScreen.kt",
+      "app/src/main/res/values-da/strings.xml",
+      "app/src/main/res/values-de/strings.xml",
+      "app/src/main/res/values-es/strings.xml",
+      "app/src/main/res/values-fi/strings.xml",
+      "app/src/main/res/values-fr/strings.xml",
+      "app/src/main/res/values-it/strings.xml",
+      "app/src/main/res/values-nb/strings.xml",
+      "app/src/main/res/values-nl/strings.xml",
+      "app/src/main/res/values-pt/strings.xml",
+      "app/src/main/res/values-sv/strings.xml",
+      "app/src/main/res/values/strings.xml",
+      "app/src/main/res/xml/locales_config.xml",
+      "app/src/test/java/com/finnvek/knittools/CounterHistoryContractTest.kt",
+      "app/src/test/java/com/finnvek/knittools/MeasurementsLocalizationTest.kt",
+      "app/src/test/java/com/finnvek/knittools/PatternReadingAssistanceLocalizationTest.kt",
+      "app/src/test/java/com/finnvek/knittools/ProLocalizationSourceTest.kt",
+      "app/src/test/java/com/finnvek/knittools/ProjectDocumentLocalizationTest.kt",
+      "app/src/test/java/com/finnvek/knittools/ProjectFoldersContractTest.kt",
+      "app/src/test/java/com/finnvek/knittools/ProjectSourceFiles.kt",
+      "app/src/test/java/com/finnvek/knittools/ProjectYarnUsageContractTest.kt",
+      "app/src/test/java/com/finnvek/knittools/RavelryLocalizationSourceTest.kt",
+      "app/src/test/java/com/finnvek/knittools/SavedPatternDetailSourceTest.kt",
+      "app/src/test/java/com/finnvek/knittools/WebPatternLocalizationArchitectureContractTest.kt",
+      "app/src/test/java/com/finnvek/knittools/WorkSessionArchitectureSourceTest.kt",
+      "app/src/test/java/com/finnvek/knittools/data/datastore/AppLanguageTest.kt",
+      "app/src/test/java/com/finnvek/knittools/ui/ProjectLocalizationSourceTest.kt",
+      "app/src/test/java/com/finnvek/knittools/ui/screens/counter/CounterStringResourcesSourceTest.kt",
+      "app/src/test/java/com/finnvek/knittools/ui/screens/counter/CounterWorkspaceSourceTest.kt",
+      "app/src/test/java/com/finnvek/knittools/ui/screens/pattern/PatternAnnotationAccessibilitySourceTest.kt"
+    ],
+    "original_locale_proof": [
+      {
+        "path": "app/src/main/res/values-de/strings.xml",
+        "entry_sha256": "425d680640272fc1f2afc1eebbaf25e2d5a6e99f0a22ccf9ac875df0e04f628d",
+        "current_sha256": "db52a3cce50edead06b029ab1110533a6fc47047cd96333fdb68357755764a04",
+        "result": "Only new native language label; original hash reconstructs after removing line and matching line endings"
+      },
+      {
+        "path": "app/src/main/res/values-es/strings.xml",
+        "entry_sha256": "73d6fd27de0effc82ea9f8e96cc0e5b88b2a694087cbad07cf2a3fdf1aa45590",
+        "current_sha256": "7a92187e6956b08013373f070cb4b05c625b773adf687536824fffda6e05e14b",
+        "result": "Only new native language label; original hash reconstructs after removing line and matching line endings"
+      },
+      {
+        "path": "app/src/main/res/values-fi/strings.xml",
+        "entry_sha256": "2a158a218a13ce49259141ededc5335d47ef5e1f98174d98a73496ca4dd31906",
+        "current_sha256": "6047a51a53b09975e61c67f332f8a9e1fa94fc9ddabbb0556379b03cc0a873fc",
+        "result": "Only new native language label; original hash reconstructs after removing line and matching line endings"
+      },
+      {
+        "path": "app/src/main/res/values-da/strings.xml",
+        "entry_sha256": "cecf670bf48fa37f304332f8eadfc11bd8b5720ac04a80c0ccb779a0977994aa",
+        "current_sha256": "674b1bf0712670913166c0eb48fa3c9775744410ccf6cc8c7fa7b8d9e9537e50",
+        "result": "Only new native language label; original hash reconstructs after removing line and matching line endings"
+      },
+      {
+        "path": "app/src/main/res/values-sv/strings.xml",
+        "entry_sha256": "3fbb7cdc703ff0f1c0a23c5a58c21bbe4c48c8c5ddeabfd39c3f6f8e7bef4e69",
+        "current_sha256": "97b4022451fee25b142df707549b0d29e37e6f2f5f53ba6192e0348cf641cee8",
+        "result": "Only new native language label; original hash reconstructs after removing line and matching line endings"
+      },
+      {
+        "path": "app/src/main/res/values-nl/strings.xml",
+        "entry_sha256": "700d74b54d3bf5ea7219491a6a74456b6829082c3b50ec3b4555b01acdc46193",
+        "current_sha256": "017eec79108402b7c74b03ef96cfcac6a276ff24d623366a35902200bc48850f",
+        "result": "Only new native language label; original hash reconstructs after removing line and matching line endings"
+      },
+      {
+        "path": "app/src/main/res/values-fr/strings.xml",
+        "entry_sha256": "7fe3d4638a270f4b92917a9cc17c8ab11a957b57c7ccb76200366baa78ac9f80",
+        "current_sha256": "3ba99b6d5f5659c47ba2737cf76b6f0ad9e3625a869612645a0351df68ce1463",
+        "result": "Only new native language label; original hash reconstructs after removing line and matching line endings"
+      },
+      {
+        "path": "app/src/main/res/values/strings.xml",
+        "entry_sha256": "03e6391014d013b2f5ab7640dc0c5995f1fc9f855ed820245ce8fe266e0a336e",
+        "current_sha256": "92ac94d142ba9afaf84656996ba1106240c77d0c81ffc1ea77c8f5ba8b33f7b9",
+        "result": "Only new native language label; original hash reconstructs after removing line and matching line endings"
+      },
+      {
+        "path": "app/src/main/res/values-nb/strings.xml",
+        "entry_sha256": "22c1552bf1659a42e6c3a5f4050ea62883d41f8334f53224f5625c53c1753473",
+        "current_sha256": "4e76987e1e24296a21f1ade0adbce015403defb0168abdf5860950a1b0891c81",
+        "result": "Only new native language label; original hash reconstructs after removing line and matching line endings"
+      },
+      {
+        "path": "app/src/main/res/values-pt/strings.xml",
+        "entry_sha256": "1ee1cf611d552b4dfdc02121146e82b692e45e4c18d8078fd31f281a07078946",
+        "current_sha256": "9cd44f3bbf7783ae7679ce335dbadbf363d6cb4d7eafc712a8772665cc5758be",
+        "result": "Only new native language label; original hash reconstructs after removing line and matching line endings"
+      },
+      {
+        "path": "app/src/main/res/values-it/strings.xml",
+        "entry_sha256": "a9777177e386fad5882fd3846ee7366600a92f6f30fc6f8350044350b803ae31",
+        "current_sha256": "540f27b222691a29149fffff9754fa63503b923e491b8c293fd00587e09b42e0",
+        "result": "Only new native language label; original hash reconstructs after removing line and matching line endings"
+      }
+    ],
+    "original_audit_evidence": "All original config/language-audit files byte-identical to entry, including English case registries and231 BLOCKED cases",
+    "instructions": "AGENTS.md, CODEX.md and CLAUDE.md byte-identical to entry"
+  },
+  "limitations": [
+    "API levels below33 not runtime-tested; shared tag parsing tested on JVM",
+    "No release build or exhaustive screen rendering",
+    "No320dp,200% font-scale,combined-width/font or TalkBack rerun",
+    "No human native-speaker review"
+  ],
+  "process_cleanup": {
+    "emulator_pid": 2396,
+    "command": "adb -s emulator-5580 emu kill",
+    "result": "OK; PID absent and adb devices empty afterward",
+    "gradle": "One-shot --no-daemon commands completed; no persistent watcher/server started"
+  },
+  "unresolved_issues": [],
+  "publication": "No commit, push or PR",
+  "additional_validation": {
+    "git_diff_check": "PASS",
+    "coverage": "1434 unique rows =1414 resource variants +20 grouped contexts;96 plural rows",
+    "xml_attributes_and_markup": "All element tags and attributes match corresponding pt starting files; only text adaptations",
+    "input_hashes": "All current input hashes matched after final technical checks"
+  }
+}

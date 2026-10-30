@@ -1,6 +1,8 @@
 package com.finnvek.knittools.ui.screens.counter
 
 import com.finnvek.knittools.ProjectSourceFiles
+import com.finnvek.knittools.ui.navigation.Screen
+import com.finnvek.knittools.ui.navigation.showsTopLevelNavigation
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -263,23 +265,34 @@ class CounterWorkspaceSourceTest {
     }
 
     @Test
-    fun `counter route keeps bottom navigation visible`() {
-        val navGraph = ProjectSourceFiles.read(NAV_GRAPH)
-
-        val hiddenRoutesBlock =
-            navGraph
-                .substringAfter("private val HIDE_BOTTOM_BAR_ROUTES =")
-                .substringBefore(")")
-        assertFalse(hiddenRoutesBlock.contains("Screen.Counter.route"))
+    fun `counter route keeps shared navigation visible`() {
+        assertTrue(showsTopLevelNavigation(Screen.Counter.route))
     }
 
     @Test
     fun `counter launch resolves requested project before rendering and rejects stale target`() {
         val navGraph = ProjectSourceFiles.read(NAV_GRAPH)
+        val destination = ProjectSourceFiles.read(COUNTER_DESTINATION)
 
-        assertTrue(navGraph.contains("if (counterLaunchRequest != null) return@composable"))
-        assertTrue(navGraph.contains("counterLaunchProjectMissing = !loaded"))
-        assertTrue(navGraph.contains("counterLaunchProjectMissing || counterState.shouldLeaveCounter"))
+        assertTrue(navGraph.contains("CounterDestination("))
+        assertTrue(
+            destination.contains(
+                "if (counterLaunchRequest != null && loadedLaunchId != counterLaunchRequest.requestId) return",
+            ),
+        )
+        assertTrue(destination.contains("currentLaunchRequest?.requestId == launchRequest.requestId"))
+        assertTrue(destination.contains("navController.currentBackStackEntry?.id == backStackEntry.id"))
+        assertTrue(destination.contains("loadedLaunchId = launchRequest.requestId.takeIf { loaded }"))
+        assertTrue(
+            destination.contains("if (!loaded || launchRequest.journeyAction == null) onCounterLaunchHandled()"),
+        )
+        assertTrue(destination.contains("currentLaunchRequest?.requestId == requestId"))
+        assertTrue(destination.contains("counterLaunchProjectMissing = !loaded"))
+        assertTrue(destination.contains("counterLaunchProjectMissing || counterState.shouldLeaveCounter"))
+        assertTrue(
+            destination.indexOf("loadedLaunchId != counterLaunchRequest.requestId") <
+                destination.indexOf("ProjectContentHost("),
+        )
     }
 
     @Test
@@ -348,9 +361,10 @@ class CounterWorkspaceSourceTest {
         assertTrue(source.workspace.contains(".height(CounterDimens.CounterControlsHeight)"))
         assertTrue(source.workspace.contains(".align(Alignment.TopStart)"))
         assertTrue(source.workspace.contains(".align(Alignment.TopEnd)"))
+        val controls = source.workspace.substringAfter("private fun CounterButtons(")
         assertTrue(
-            source.workspace.indexOf(".fillMaxWidth()") <
-                source.workspace.indexOf(".widthIn(max = CounterDimens.CounterControlsMaxWidth)"),
+            controls.indexOf(".widthIn(max = CounterDimens.CounterControlsMaxWidth)") <
+                controls.indexOf(".fillMaxWidth()"),
         )
     }
 
@@ -432,6 +446,8 @@ class CounterWorkspaceSourceTest {
             "app/src/main/java/com/finnvek/knittools/ui/screens/counter/CounterProjectContentCards.kt"
         private const val NAV_GRAPH =
             "app/src/main/java/com/finnvek/knittools/ui/navigation/NavGraph.kt"
+        private const val COUNTER_DESTINATION =
+            "app/src/main/java/com/finnvek/knittools/ui/navigation/CounterDestination.kt"
         private const val COUNTER_DIMENS =
             "app/src/main/java/com/finnvek/knittools/ui/theme/CounterDimens.kt"
         private const val COUNTER_IMAGE_BUTTON =
@@ -451,6 +467,7 @@ class CounterWorkspaceSourceTest {
                 "app/src/main/res/values-nb/strings.xml",
                 "app/src/main/res/values-nl/strings.xml",
                 "app/src/main/res/values-pt/strings.xml",
+                "app/src/main/res/values-pt-rBR/strings.xml",
                 "app/src/main/res/values-sv/strings.xml",
             )
     }

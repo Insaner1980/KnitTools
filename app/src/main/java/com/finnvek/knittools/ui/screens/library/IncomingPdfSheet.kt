@@ -16,15 +16,20 @@ import androidx.compose.ui.res.stringResource
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.domain.model.PROJECT_DOCUMENT_LABEL_MAX_LENGTH
-import com.finnvek.knittools.pro.ProStatus
+import com.finnvek.knittools.domain.model.takeWithoutSplittingSurrogatePair
+import com.finnvek.knittools.pro.ProFeature
+import com.finnvek.knittools.pro.ProState
+import com.finnvek.knittools.pro.proActionAccess
 import com.finnvek.knittools.ui.components.CancelButton
-import com.finnvek.knittools.ui.components.ProBadge
+import com.finnvek.knittools.ui.components.ProMarker
 import com.finnvek.knittools.ui.components.ProjectOptionRows
 import com.finnvek.knittools.ui.components.ProjectYarnTextField
 import com.finnvek.knittools.ui.components.SectionLabel
 import com.finnvek.knittools.ui.components.SheetContentColumn
 import com.finnvek.knittools.ui.components.SheetOptionRow
 import com.finnvek.knittools.ui.components.SheetTitle
+import com.finnvek.knittools.ui.layout.AdaptiveModalWindow
+import com.finnvek.knittools.ui.layout.ContentWidthPolicy
 import com.finnvek.knittools.ui.navigation.IncomingPdf
 
 data class IncomingPdfSheetActions(
@@ -44,21 +49,31 @@ fun IncomingPdfSheet(
     pdf: IncomingPdf,
     projects: List<CounterProject>,
     canStartProject: Boolean,
-    proStatus: ProStatus,
+    proState: ProState,
+    proAccessReady: Boolean,
     busy: Boolean,
     actions: IncomingPdfSheetActions,
 ) {
+    val createProjectAccess =
+        proActionAccess(
+            proState,
+            proAccessReady,
+            ProFeature.UNLIMITED_PROJECTS,
+            needsEntitlement = projects.isNotEmpty(),
+        )
     var name by rememberSaveable(pdf.localUri) { mutableStateOf(pdf.suggestedName) }
     ModalBottomSheet(
+        sheetMaxWidth = ContentWidthPolicy.Form.maxWidth,
         onDismissRequest = { if (!busy) actions.onDismiss() },
         containerColor = MaterialTheme.colorScheme.surface,
     ) {
+        AdaptiveModalWindow()
         SheetContentColumn {
             SheetTitle(text = stringResource(R.string.incoming_pdf_title))
             ProjectYarnTextField(
                 value = name,
                 // Nimike tallentuu projektin dokumentiksi, jonka enimmäispituus on rajattu.
-                onValueChange = { name = it.take(PROJECT_DOCUMENT_LABEL_MAX_LENGTH) },
+                onValueChange = { name = it.takeWithoutSplittingSurrogatePair(PROJECT_DOCUMENT_LABEL_MAX_LENGTH) },
                 label = stringResource(R.string.web_pattern_title_label),
                 singleLine = true,
             )
@@ -76,7 +91,7 @@ fun IncomingPdfSheet(
                 title = stringResource(R.string.incoming_pdf_new_project),
                 onClick = { actions.onStartProject(name.trim()) },
                 enabled = !busy && canStartProject,
-                badge = if (canStartProject) null else ({ ProBadge(status = proStatus) }),
+                badge = { ProMarker(createProjectAccess) },
             )
             SheetOptionRow(
                 title = stringResource(R.string.incoming_pdf_library_only),

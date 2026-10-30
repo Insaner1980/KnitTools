@@ -60,7 +60,7 @@ class AuditPart15LaunchTest {
         val expectedContent =
             listOf(
                 "Launch target",
-                app.getString(R.string.pro_prompt_widget_title),
+                app.getString(R.string.pro_prompt_widget_pin_title),
                 app.getString(R.string.web_pattern_confirm_details),
             )
         for ((index, intent) in intents.withIndex()) {
@@ -101,7 +101,7 @@ class AuditPart15LaunchTest {
                         "Expected launch content: ${expectedContent[index]}",
                         containsText(checkNotNull(root), expectedContent[index]),
                     )
-                    assertFalse(containsText(checkNotNull(root), app.getString(R.string.pro_trial_ended_title)))
+                    assertFalse(containsText(checkNotNull(root), app.getString(R.string.trial_ended_screen_title)))
                     scenario.onActivity { activity ->
                         assertTrue(
                             MainActivity::class.java

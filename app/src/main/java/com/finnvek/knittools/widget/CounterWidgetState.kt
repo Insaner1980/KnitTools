@@ -18,7 +18,9 @@ import androidx.glance.state.PreferencesGlanceStateDefinition
 import com.finnvek.knittools.R
 import com.finnvek.knittools.data.datastore.safePreferencesData
 import com.finnvek.knittools.data.datastore.updatePreferencesSafely
+import com.finnvek.knittools.domain.calculator.CounterValueFormatter
 import com.finnvek.knittools.domain.model.CounterProject
+import com.finnvek.knittools.domain.model.MainCounterLabelType
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.first
 
@@ -36,6 +38,8 @@ data class WidgetData(
     val currentStitch: Int = 0,
     val totalStitches: Int? = null,
     val stitchTrackingEnabled: Boolean = false,
+    val labelType: MainCounterLabelType = MainCounterLabelType.ROWS,
+    val customLabel: String? = null,
 )
 
 // Widgetit eivät ole projektisidonnaisia per instanssi, vaan kaikki instanssit
@@ -49,6 +53,8 @@ object CounterWidgetState {
     val KEY_CURRENT_STITCH = intPreferencesKey("current_stitch")
     val KEY_TOTAL_STITCHES = intPreferencesKey("total_stitches")
     val KEY_STITCH_TRACKING = booleanPreferencesKey("stitch_tracking")
+    val KEY_LABEL_TYPE = stringPreferencesKey("label_type")
+    val KEY_CUSTOM_LABEL = stringPreferencesKey("custom_label")
     private val KEY_REVISION = intPreferencesKey("rev")
 
     fun defaultData(context: Context): WidgetData =
@@ -151,6 +157,10 @@ object CounterWidgetState {
             currentStitch = prefs[KEY_CURRENT_STITCH] ?: 0,
             totalStitches = prefs[KEY_TOTAL_STITCHES]?.takeIf { it > 0 },
             stitchTrackingEnabled = prefs[KEY_STITCH_TRACKING] ?: false,
+            labelType =
+                MainCounterLabelType.entries.firstOrNull { it.name == prefs[KEY_LABEL_TYPE] }
+                    ?: MainCounterLabelType.ROWS,
+            customLabel = prefs[KEY_CUSTOM_LABEL]?.takeIf { it.isNotBlank() },
         )
 
     private fun MutablePreferences.applyWidgetData(data: WidgetData) {
@@ -162,11 +172,14 @@ object CounterWidgetState {
         this[KEY_CURRENT_STITCH] = data.currentStitch
         data.totalStitches?.let { this[KEY_TOTAL_STITCHES] = it } ?: remove(KEY_TOTAL_STITCHES)
         this[KEY_STITCH_TRACKING] = data.stitchTrackingEnabled
+        this[KEY_LABEL_TYPE] = data.labelType.name
+        data.customLabel?.let { this[KEY_CUSTOM_LABEL] = it } ?: remove(KEY_CUSTOM_LABEL)
     }
 }
 
-fun CounterProject.toWidgetData(): WidgetData =
-    WidgetData(
+fun CounterProject.toWidgetData(): WidgetData {
+    val label = CounterValueFormatter.mainCounterLabel(craftType, mainCounterLabelType, mainCounterCustomLabel)
+    return WidgetData(
         projectName = name,
         count = count,
         projectId = id,
@@ -175,4 +188,7 @@ fun CounterProject.toWidgetData(): WidgetData =
         currentStitch = currentStitch,
         totalStitches = stitchCount,
         stitchTrackingEnabled = stitchTrackingEnabled,
+        labelType = label.labelType,
+        customLabel = label.customLabel,
     )
+}

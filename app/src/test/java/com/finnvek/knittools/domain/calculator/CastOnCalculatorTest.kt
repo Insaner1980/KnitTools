@@ -245,4 +245,17 @@ class CastOnCalculatorTest {
         assertNull(withoutEdges.adjustedDown)
         assertNull(withoutEdges.adjustedUp)
     }
+
+    @Test
+    fun `repeat selection uses the unrounded body count around the midpoint`() {
+        for ((width, expected) in listOf(11.6 to 8, 12.0 to 8, 12.4 to 16)) {
+            val result = requireNotNull(CastOnCalculator.calculate(width, 10.0, patternRepeat = 8))
+            assertEquals(expected, result.stitches)
+            assertEquals(expected.toDouble(), result.actualWidth, 0.000001)
+            val edges = requireNotNull(CastOnCalculator.calculate(width, 10.0, patternRepeat = 8, edgeStitches = 2))
+            assertEquals(expected + 2, edges.stitches)
+            val imperial = requireNotNull(CastOnCalculator.calculate(width, 4.0, useInches = true, patternRepeat = 8))
+            assertEquals(expected, imperial.stitches)
+        }
+    }
 }

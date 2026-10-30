@@ -31,6 +31,25 @@ object ReminderLogic {
         }
     }
 
+    fun isUpcoming(
+        reminder: RowReminder,
+        currentRow: Int,
+        window: Int,
+    ): Boolean {
+        if (reminder.isCompleted || reminder.targetRow <= 0 || window < 0) return false
+        val current = currentRow.toLong()
+        val target = reminder.targetRow.toLong()
+        val interval = reminder.repeatInterval
+        val next =
+            when {
+                interval == null -> target
+                interval <= 0 -> return false
+                current < target -> target
+                else -> target + ((current - target) / interval + 1) * interval
+            }
+        return next in current..minOf(current + window, Int.MAX_VALUE.toLong())
+    }
+
     fun repeatCount(
         reminder: RowReminder,
         currentRow: Int,

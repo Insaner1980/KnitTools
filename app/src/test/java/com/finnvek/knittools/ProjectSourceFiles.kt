@@ -5,6 +5,7 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import org.junit.Assert.assertTrue
 import org.w3c.dom.Element
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
@@ -45,8 +46,57 @@ internal object ProjectSourceFiles {
         return (0 until locales.length)
             .map { index ->
                 val language = (locales.item(index) as Element).getAttribute("android:name")
-                if (language == "en") "values" else "values-$language"
+                when (language) {
+                    "en" -> "values"
+                    "pt-BR" -> "values-pt-rBR"
+                    else -> "values-$language"
+                }
             }.toSet()
+    }
+
+    fun textResources(directory: String): Map<String, Element> {
+        val resources = linkedMapOf<String, Element>()
+        Files.list(file("app/src/main/res/$directory")).use { files ->
+            files.filter { it.toString().endsWith(".xml") }.forEach { file ->
+                val children =
+                    DocumentBuilderFactory
+                        .newInstance()
+                        .newDocumentBuilder()
+                        .parse(file.toFile())
+                        .documentElement.childNodes
+                (0 until children.length).forEach { index ->
+                    val element = children.item(index)
+                    if (element is Element && element.tagName in setOf("string", "plurals", "string-array", "array")) {
+                        val name = element.getAttribute("name")
+                        assertTrue("$directory duplicate resource $name", name !in resources)
+                        resources[name] = element
+                    }
+                }
+            }
+        }
+        return resources
+    }
+
+    fun deferredOnboardingTranslationNames(): Set<String> {
+        val root =
+            DocumentBuilderFactory
+                .newInstance()
+                .apply { isNamespaceAware = true }
+                .newDocumentBuilder()
+                .parse(file("app/src/main/res/values/strings_onboarding.xml").toFile())
+                .documentElement
+        val ignoredIssues =
+            root.getAttributeNS("http://schemas.android.com/tools", "ignore").split(',').map { it.trim() }
+        if ("MissingTranslation" !in ignoredIssues) return emptySet()
+
+        val children = root.childNodes
+        return (0 until children.length)
+            .mapNotNull { children.item(it) as? Element }
+            .filter {
+                it.tagName in setOf("string", "plurals", "string-array", "array") &&
+                    it.getAttribute("translatable") != "false"
+            }.map { it.getAttribute("name") }
+            .toSet()
     }
 
     fun schemaEntities(version: Int): Map<String, JsonElement> =

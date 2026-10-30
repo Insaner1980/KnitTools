@@ -1,9 +1,6 @@
 package com.finnvek.knittools.ui.screens.counter
 
-import android.Manifest
-import android.app.Activity
 import android.content.ActivityNotFoundException
-import android.content.Context
 import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -20,12 +17,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -56,26 +53,29 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.core.app.ActivityCompat
 import androidx.core.net.toUri
 import coil3.compose.AsyncImage
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.model.ProgressPhoto
 import com.finnvek.knittools.domain.model.takeWithoutSplittingSurrogatePair
-import com.finnvek.knittools.pro.ProStatus
+import com.finnvek.knittools.pro.ProFeature
+import com.finnvek.knittools.pro.ProState
+import com.finnvek.knittools.pro.proActionAccess
 import com.finnvek.knittools.ui.components.CancelButton
 import com.finnvek.knittools.ui.components.CollectWithLifecycleEffect
 import com.finnvek.knittools.ui.components.CrossStitchEmptyState
 import com.finnvek.knittools.ui.components.CrossStitchGlyph
 import com.finnvek.knittools.ui.components.LabeledCounterImageButton
-import com.finnvek.knittools.ui.components.ProBadge
+import com.finnvek.knittools.ui.components.ProMarker
 import com.finnvek.knittools.ui.components.ProPromptRequest
 import com.finnvek.knittools.ui.components.ProPromptSheet
 import com.finnvek.knittools.ui.components.ProPromptSource
+import com.finnvek.knittools.ui.components.ScrollableFormDialog
 import com.finnvek.knittools.ui.components.dialogTextFieldColors
-import com.finnvek.knittools.ui.components.proBadgeDescription
+import com.finnvek.knittools.ui.components.proMarkerDescription
 import com.finnvek.knittools.ui.components.rememberLocaleDateFormat
 import com.finnvek.knittools.ui.components.withExtraBottom
+import com.finnvek.knittools.ui.layout.PhotoGridCells
 import com.finnvek.knittools.ui.theme.ProjectListDimens
 import com.finnvek.knittools.ui.theme.knitToolsColors
 import kotlinx.coroutines.flow.Flow
@@ -102,14 +102,17 @@ fun PhotoGalleryScreen(
     photos: List<ProgressPhoto>,
     projectId: Long?,
     canCreatePhoto: Boolean,
-    proStatus: ProStatus,
+    proState: ProState,
+    proAccessReady: Boolean,
     onBack: () -> Unit,
     onSeePro: () -> Unit,
     actions: PhotoGalleryActions,
     errorsProvider: () -> Flow<Unit> = { emptyFlow() },
 ) {
+    val photoAccess = proActionAccess(proState, proAccessReady, ProFeature.PROGRESS_PHOTOS)
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
+    val gridState = rememberLazyGridState()
     val errorMessage = stringResource(R.string.generic_error_unknown)
     CollectWithLifecycleEffect({ errorsProvider() }) {
         snackbarHostState.showSnackbar(errorMessage)
@@ -117,13 +120,10 @@ fun PhotoGalleryScreen(
     var pendingPhotoUriString by rememberSaveable { mutableStateOf<String?>(null) }
     var pendingPhotoFilePath by rememberSaveable { mutableStateOf<String?>(null) }
     var pendingPhotoProjectId by rememberSaveable { mutableStateOf<Long?>(null) }
-    var pendingPermissionProjectId by rememberSaveable { mutableStateOf<Long?>(null) }
     var renamingPhotoId by rememberSaveable { mutableStateOf<Long?>(null) }
     var viewingPhotoId by rememberSaveable { mutableStateOf<Long?>(null) }
     val renamingPhoto = remember(renamingPhotoId, photos) { photos.firstOrNull { it.id == renamingPhotoId } }
     val viewingPhoto = remember(viewingPhotoId, photos) { photos.firstOrNull { it.id == viewingPhotoId } }
-    val cameraPermissionDeniedMessage = stringResource(R.string.camera_permission_denied)
-    val cameraPermissionDeniedPermanentMessage = stringResource(R.string.camera_permission_denied_permanent)
     var pendingProAction by rememberSaveable { mutableStateOf<PendingPhotoProAction?>(null) }
 
     fun clearPendingCapture() {
@@ -150,6 +150,7 @@ fun PhotoGalleryScreen(
                 actions.deletePendingPhotoFile(captureTarget.filePath)
                 actions.cancelPhotoCreation()
                 clearPendingCapture()
+                Toast.makeText(context, errorMessage, Toast.LENGTH_SHORT).show()
             }
 
             pendingPhotoUriString = captureTarget.uri.toString()
@@ -167,33 +168,12 @@ fun PhotoGalleryScreen(
         }
     }
 
-    val permissionLauncher =
-        rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-            val ownerProjectId = pendingPermissionProjectId
-            pendingPermissionProjectId = null
-            handleCameraPermissionResult(
-                granted = granted,
-                context = context,
-                deniedMessage = cameraPermissionDeniedMessage,
-                permanentlyDeniedMessage = cameraPermissionDeniedPermanentMessage,
-                onGranted = {
-                    if (ownerProjectId != null && (projectId == ownerProjectId || projectId == null)) {
-                        startCameraCapture(ownerProjectId)
-                    } else {
-                        actions.cancelPhotoCreation()
-                    }
-                },
-            )
-            if (!granted) actions.cancelPhotoCreation()
-        }
-
     fun launchCamera() {
-        requestPhotoCapturePermission(
+        requestPhotoCapture(
             canCreatePhoto = canCreatePhoto,
             actions = actions,
             onAuthorized = {
-                pendingPermissionProjectId = projectId
-                permissionLauncher.launch(Manifest.permission.CAMERA)
+                startCameraCapture(projectId)
             },
             onProRequired = { pendingProAction = PendingPhotoProAction.Capture },
         )
@@ -209,8 +189,7 @@ fun PhotoGalleryScreen(
             onTrialStarted = {
                 pendingProAction = null
                 actions.authorizePhotoCreation()
-                pendingPermissionProjectId = projectId
-                permissionLauncher.launch(Manifest.permission.CAMERA)
+                startCameraCapture(projectId)
             },
             onSeePro = onSeePro,
         )
@@ -270,15 +249,15 @@ fun PhotoGalleryScreen(
         floatingActionButton = {
             // Sama lisäyspilleri kuin New Project, Add Yarn ja Add web pattern.
             val photoLabel = stringResource(R.string.take_photo)
-            val proDescription = proBadgeDescription(proStatus)
+            val proDescription = proMarkerDescription(photoAccess)
             LabeledCounterImageButton(
                 imageRes = R.drawable.counter_plus_button,
                 label = photoLabel,
                 visualSize = ProjectListDimens.CreateButtonVisualSize,
                 onClick = { launchCamera() },
                 modifier = Modifier.onSizeChanged { actionHeight = with(density) { it.height.toDp() } },
-                contentDescription = listOfNotNull(photoLabel, proDescription).joinToString(", "),
-                badge = proDescription?.let { { ProBadge(status = proStatus) } },
+                badgeContentDescription = proDescription,
+                badge = proDescription?.let { { ProMarker(photoAccess) } },
             )
         },
     ) { padding ->
@@ -288,11 +267,12 @@ fun PhotoGalleryScreen(
                 padding.withExtraBottom(actionHeight + 32.dp, LocalLayoutDirection.current),
             onPhotoClick = { viewingPhotoId = it.id },
             onPhotoLongClick = { renamingPhotoId = it.id },
+            gridState = gridState,
         )
     }
 }
 
-private fun requestPhotoCapturePermission(
+private fun requestPhotoCapture(
     canCreatePhoto: Boolean,
     actions: PhotoGalleryActions,
     onAuthorized: () -> Unit,
@@ -339,44 +319,13 @@ private fun requestCameraCaptureTarget(
     }
 }
 
-private fun handleCameraPermissionResult(
-    granted: Boolean,
-    context: Context,
-    deniedMessage: String,
-    permanentlyDeniedMessage: String,
-    onGranted: () -> Unit,
-) {
-    if (granted) {
-        onGranted()
-    } else {
-        showCameraPermissionDeniedToast(context, deniedMessage, permanentlyDeniedMessage)
-    }
-}
-
-private fun showCameraPermissionDeniedToast(
-    context: Context,
-    deniedMessage: String,
-    permanentlyDeniedMessage: String,
-) {
-    val activity = context as? Activity
-    val permanentlyDenied =
-        activity != null &&
-            !ActivityCompat.shouldShowRequestPermissionRationale(activity, Manifest.permission.CAMERA)
-    val message =
-        if (permanentlyDenied) {
-            permanentlyDeniedMessage
-        } else {
-            deniedMessage
-        }
-    Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
-}
-
 @Composable
 private fun PhotoGalleryContent(
     photos: List<ProgressPhoto>,
     padding: PaddingValues,
     onPhotoClick: (ProgressPhoto) -> Unit,
     onPhotoLongClick: (ProgressPhoto) -> Unit,
+    gridState: LazyGridState,
 ) {
     if (photos.isEmpty()) {
         EmptyPhotoGallery(padding)
@@ -386,6 +335,7 @@ private fun PhotoGalleryContent(
             padding = padding,
             onPhotoClick = onPhotoClick,
             onPhotoLongClick = onPhotoLongClick,
+            gridState = gridState,
         )
     }
 }
@@ -408,9 +358,11 @@ private fun PhotoGalleryGrid(
     padding: PaddingValues,
     onPhotoClick: (ProgressPhoto) -> Unit,
     onPhotoLongClick: (ProgressPhoto) -> Unit,
+    gridState: LazyGridState,
 ) {
     LazyVerticalGrid(
-        columns = GridCells.Fixed(2),
+        columns = PhotoGridCells,
+        state = gridState,
         modifier =
             Modifier
                 .fillMaxSize()
@@ -498,7 +450,7 @@ private fun RenamePhotoDialog(
 ) {
     var text by rememberSaveable(currentNote) { mutableStateOf(currentNote) }
 
-    AlertDialog(
+    ScrollableFormDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.rename_photo)) },
         text = {

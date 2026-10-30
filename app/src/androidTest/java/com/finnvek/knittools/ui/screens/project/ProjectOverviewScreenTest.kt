@@ -33,6 +33,8 @@ import com.finnvek.knittools.ui.screens.counter.CounterScreenActions
 import com.finnvek.knittools.ui.screens.counter.CounterUiState
 import com.finnvek.knittools.ui.theme.KnitToolsTheme
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import java.io.File
@@ -52,7 +54,13 @@ class ProjectOverviewScreenTest {
         rule.setContent {
             KnitToolsTheme(isDarkTheme = false) {
                 ProjectOverviewScreen(
-                    CounterUiState(projectId = 8, projectName = "Linen Market Bag", targetRows = 42),
+                    CounterUiState(
+                        proAccessReady = true,
+                        projectsLoaded = true,
+                        projectId = 8,
+                        projectName = "Linen Market Bag",
+                        targetRows = 42,
+                    ),
                     CounterScreenActions(onOpenCounter = { counter++ }, onNotesEditor = { notes++ }),
                     contentActions(onYarn = { yarn++ }),
                     SnackbarHostState(),
@@ -80,25 +88,45 @@ class ProjectOverviewScreenTest {
     @Test
     fun completedOverviewOffersReactivationAndNoCounter() {
         var reactivated = 0
+        var blocked = true
+        val showOverview = mutableStateOf(true)
         rule.setContent {
             KnitToolsTheme(isDarkTheme = true) {
-                ProjectOverviewScreen(
-                    CounterUiState(projectId = 8, projectName = "Linen Market Bag", isCompleted = true),
-                    CounterScreenActions(),
-                    contentActions(onReactivate = { reactivated++ }),
-                    SnackbarHostState(),
-                    emptyList(),
-                    YarnUsageUnit.METERS,
-                )
+                if (showOverview.value) {
+                    ProjectOverviewScreen(
+                        CounterUiState(
+                            proAccessReady = true,
+                            projectsLoaded = true,
+                            projectId = 8,
+                            projectName = "Linen Market Bag",
+                            isCompleted = true,
+                        ),
+                        CounterScreenActions(),
+                        contentActions(onReactivate = { reactivated++ }),
+                        SnackbarHostState(),
+                        emptyList(),
+                        YarnUsageUnit.METERS,
+                        onBlockingSurfaceChanged = { blocked = it },
+                    )
+                }
             }
         }
+        rule.runOnIdle { assertFalse(blocked) }
         rule
             .onNodeWithContentDescription(
                 context.getString(R.string.project_continue_content_description, "Linen Market Bag"),
             ).assertDoesNotExist()
         rule.onNodeWithContentDescription(text(R.string.project_actions_title)).performClick()
+        rule.runOnIdle { assertTrue(blocked) }
         rule.onNodeWithText(text(R.string.reactivate_project)).performClick()
         assertEquals(1, reactivated)
+        rule.runOnIdle { assertFalse(blocked) }
+        rule.onNodeWithContentDescription(text(R.string.project_actions_title)).performClick()
+        rule.runOnIdle {
+            assertTrue(blocked)
+            showOverview.value = false
+        }
+        rule.runOnIdle { assertFalse(blocked) }
     }
 
     @Test
@@ -129,6 +157,8 @@ class ProjectOverviewScreenTest {
                 Column {
                     ProjectOverviewPattern(
                         CounterUiState(
+                            proAccessReady = true,
+                            projectsLoaded = true,
                             projectId = 8,
                             projectDocuments = listOf(document),
                             projectDocumentAvailability = mapOf(12L to true),
@@ -215,7 +245,15 @@ class ProjectOverviewScreenTest {
         width: Dp,
         fontScale: Float,
     ) {
-        val state = mutableStateOf(CounterUiState(projectId = 8, projectName = "Linen Market Bag"))
+        val state =
+            mutableStateOf(
+                CounterUiState(
+                    proAccessReady = true,
+                    projectsLoaded = true,
+                    projectId = 8,
+                    projectName = "Linen Market Bag",
+                ),
+            )
         var openedProject: Long? = null
         rule.setContent {
             val density = LocalDensity.current
@@ -253,6 +291,8 @@ class ProjectOverviewScreenTest {
             KnitToolsTheme(isDarkTheme = dark) {
                 ProjectOverviewScreen(
                     CounterUiState(
+                        proAccessReady = true,
+                        projectsLoaded = true,
                         projectId = 8,
                         projectName = "Linen Market Bag",
                         sectionName = "Mesh body",

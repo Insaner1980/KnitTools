@@ -19,6 +19,7 @@ import com.finnvek.knittools.pro.TrialManager
 import com.finnvek.knittools.pro.TrialStartResult
 import com.finnvek.knittools.pro.TrialState
 import com.finnvek.knittools.ui.screens.pro.ProUpgradeViewModel
+import com.finnvek.knittools.ui.screens.pro.TrialJourneyCoordinator
 import com.finnvek.knittools.ui.screens.settings.SettingsViewModel
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -89,7 +90,7 @@ class BillingRecoveryTest {
         pro = ProManager(trial, billing)
         billing.initialize()
         pro.initialize()
-        viewModel = ProUpgradeViewModel(pro, billing)
+        viewModel = ProUpgradeViewModel(pro, billing, TrialJourneyCoordinator())
         viewModels.put("pro", viewModel)
     }
 
@@ -322,7 +323,7 @@ class BillingRecoveryTest {
             connection.onBillingSetupFinished(result(BillingClient.BillingResponseCode.OK))
             val preferences = mockk<PreferencesManager>()
             every { preferences.preferences } returns MutableStateFlow(AppPreferences())
-            val settings = SettingsViewModel(preferences, billing, pro)
+            val settings = SettingsViewModel(preferences, billing, pro, tipSession = mockk())
             viewModels.put("settings", settings)
             coEvery { client.queryPurchasesAsync(any()) } returns
                 purchases(BillingClient.BillingResponseCode.OK, listOf(purchased()))

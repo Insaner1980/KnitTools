@@ -11,6 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import com.finnvek.knittools.R
+import com.finnvek.knittools.ui.layout.AdaptiveModalWindow
 
 /**
  * Yhtenäinen vahvistusdialogi destruktiivisille ja muille toiminnoille.
@@ -36,7 +37,10 @@ fun ConfirmationDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         modifier = modifier,
-        title = { Text(title) },
+        title = {
+            AdaptiveModalWindow()
+            Text(title)
+        },
         text = {
             Text(
                 text = message,

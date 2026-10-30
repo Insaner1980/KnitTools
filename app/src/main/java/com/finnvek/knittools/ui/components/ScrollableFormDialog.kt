@@ -22,15 +22,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
+import com.finnvek.knittools.ui.layout.AdaptiveModalWindow
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun ScrollableFormDialog(
     onDismissRequest: () -> Unit,
     title: @Composable () -> Unit,
-    text: @Composable () -> Unit,
     confirmButton: @Composable () -> Unit,
     modifier: Modifier = Modifier,
+    text: @Composable () -> Unit = {},
     dismissButton: @Composable () -> Unit = {},
 ) {
     BasicAlertDialog(
@@ -38,6 +39,7 @@ internal fun ScrollableFormDialog(
         modifier = modifier.safeDrawingPadding().imePadding(),
         properties = DialogProperties(decorFitsSystemWindows = false),
     ) {
+        AdaptiveModalWindow()
         Surface(
             shape = AlertDialogDefaults.shape,
             color = AlertDialogDefaults.containerColor,

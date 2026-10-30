@@ -31,6 +31,8 @@ class ProManager
         val proState: StateFlow<ProState> = _proState.asStateFlow()
         private val _initialStateReady = MutableStateFlow(false)
         val initialStateReady: StateFlow<Boolean> = _initialStateReady.asStateFlow()
+        private val _initialControlsReady = MutableStateFlow(false)
+        val initialControlsReady: StateFlow<Boolean> = _initialControlsReady.asStateFlow()
         private var initialized = false
 
         @Suppress("TooGenericExceptionCaught")
@@ -38,6 +40,7 @@ class ProManager
             if (initialized) return
             initialized = true
             _initialStateReady.value = false
+            _initialControlsReady.value = false
             scope.launch {
                 try {
                     trialManager.initialize()
@@ -47,7 +50,8 @@ class ProManager
                         ProPolicyTestControl.trialState(trialManager.trialState),
                         ProPolicyTestControl.purchased(billingManager.isProPurchased),
                         ProPolicyTestControl.purchaseStateReady(billingManager.purchaseStateReady),
-                    ) { trial, isPurchased, purchaseStateReady ->
+                        billingManager.purchaseQueryFailed,
+                    ) { trial, isPurchased, purchaseStateReady, purchaseQueryFailed ->
                         val state =
                             when {
                                 isPurchased -> {
@@ -79,15 +83,17 @@ class ProManager
                                     )
                                 }
                             }
-                        state to purchaseStateReady
-                    }.collect { (state, purchaseStateReady) ->
+                        Triple(state, purchaseStateReady, purchaseStateReady || purchaseQueryFailed)
+                    }.collect { (state, purchaseStateReady, controlsReady) ->
                         _proState.value = state
                         _initialStateReady.value = purchaseStateReady
+                        _initialControlsReady.value = controlsReady
                     }
                 } catch (e: CancellationException) {
                     throw e
                 } catch (_: Exception) {
                     _initialStateReady.value = false
+                    _initialControlsReady.value = false
                     initialized = false
                 }
             }

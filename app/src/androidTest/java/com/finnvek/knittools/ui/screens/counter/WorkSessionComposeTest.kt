@@ -19,6 +19,8 @@ import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextReplacement
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
+import androidx.test.platform.app.InstrumentationRegistry
+import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.model.ActiveSessionRecoveryReason
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -45,11 +47,15 @@ class WorkSessionComposeTest {
             }
         }
 
-        composeRule.onNodeWithText("Stop work session?").assertIsDisplayed()
-        composeRule.onNodeWithText("Duration: 1:01:01").assertIsDisplayed()
-        composeRule.onNodeWithText("12 rows").assertIsDisplayed()
-        composeRule.onNodeWithText("Save session").assertHeightIsAtLeast(48.dp).performClick()
+        composeRule.onNodeWithText(text(R.string.work_session_stop_summary_title)).assertIsDisplayed()
+        composeRule.onNodeWithText(text(R.string.work_session_duration_format, "1:01:01")).assertIsDisplayed()
+        composeRule.onNodeWithText(text(R.string.counter_progress_format, 12)).assertIsDisplayed()
+        composeRule.onNodeWithText(text(R.string.work_session_save)).assertHeightIsAtLeast(48.dp).performClick()
         assertEquals("save", action)
+        composeRule.onNodeWithText(text(R.string.work_session_discard)).assertHeightIsAtLeast(48.dp).performClick()
+        assertEquals("discard", action)
+        composeRule.onNodeWithText(text(R.string.cancel)).assertHeightIsAtLeast(48.dp).performClick()
+        assertEquals("cancel", action)
     }
 
     @Test
@@ -69,7 +75,11 @@ class WorkSessionComposeTest {
             }
         }
 
-        assertButtonsDoNotOverlap("Save session", "Discard session", "Cancel")
+        assertButtonsDoNotOverlap(
+            text(R.string.work_session_save),
+            text(R.string.work_session_discard),
+            text(R.string.cancel),
+        )
     }
 
     @Test
@@ -93,25 +103,25 @@ class WorkSessionComposeTest {
         }
 
         composeRule
-            .onNodeWithText("Review session time")
+            .onNodeWithText(text(R.string.work_session_recovery_title))
             .assertIsDisplayed()
             .assertIsFocused()
         composeRule
-            .onNodeWithText("Add and continue")
+            .onNodeWithText(text(R.string.work_session_add_and_continue))
             .assertIsEnabled()
             .assertHeightIsAtLeast(48.dp)
             .performClick()
         assertEquals(120L, addedSeconds)
 
-        composeRule.onNodeWithText("Edit duration").performClick()
-        composeRule.onNodeWithText("Minutes").performTextReplacement("60")
+        composeRule.onNodeWithText(text(R.string.work_session_edit_duration)).performClick()
+        composeRule.onNodeWithText(text(R.string.work_session_minutes)).performTextReplacement("60")
         composeRule
             .onNodeWithText(
-                "Invalid duration. Enter nonnegative hours and minutes from 0 to 59.",
+                text(R.string.work_session_invalid_duration),
             ).performScrollTo()
             .assertIsDisplayed()
-        composeRule.onNodeWithText("Save edited duration and stop").assertIsNotEnabled()
-        composeRule.onNodeWithText("Discard pending and stop").assertHeightIsAtLeast(48.dp)
+        composeRule.onNodeWithText(text(R.string.work_session_save_edited_and_stop)).assertIsNotEnabled()
+        composeRule.onNodeWithText(text(R.string.work_session_discard_pending)).assertHeightIsAtLeast(48.dp)
     }
 
     @Test
@@ -136,10 +146,10 @@ class WorkSessionComposeTest {
         }
 
         assertButtonsDoNotOverlap(
-            "Add and continue",
-            "Edit duration",
-            "Discard pending and stop",
-            "Cancel",
+            text(R.string.work_session_add_and_continue),
+            text(R.string.work_session_edit_duration),
+            text(R.string.work_session_discard_pending),
+            text(R.string.cancel),
         )
     }
 
@@ -163,9 +173,10 @@ class WorkSessionComposeTest {
         }
 
         composeRule
-            .onNodeWithContentDescription("Work session for A very long cardigan project name, 0:01:30 elapsed")
-            .assertIsDisplayed()
-        composeRule.onNodeWithText("Stop work session").assertIsDisplayed().assertHeightIsAtLeast(48.dp)
+            .onNodeWithContentDescription(
+                text(R.string.work_session_active_description, "A very long cardigan project name", "0:01:30"),
+            ).assertIsDisplayed()
+        composeRule.onNodeWithText(text(R.string.work_session_stop)).assertIsDisplayed().assertHeightIsAtLeast(48.dp)
     }
 
     @Test
@@ -183,7 +194,7 @@ class WorkSessionComposeTest {
         }
 
         composeRule.onNodeWithText("Could not save session").assertIsDisplayed()
-        composeRule.onNodeWithText("Retry").assertHeightIsAtLeast(48.dp).performClick()
+        composeRule.onNodeWithText(text(R.string.work_session_retry)).assertHeightIsAtLeast(48.dp).performClick()
         assertEquals(true, retried)
     }
 
@@ -200,13 +211,13 @@ class WorkSessionComposeTest {
                 )
             }
         }
-        composeRule.onNodeWithText("Return to active project").assertHeightIsAtLeast(48.dp)
-        composeRule.onNodeWithText("Stop, save and start here").assertHeightIsAtLeast(48.dp)
-        composeRule.onNodeWithText("Stop, discard and start here").assertHeightIsAtLeast(48.dp)
+        composeRule.onNodeWithText(text(R.string.work_session_return_to_active)).assertHeightIsAtLeast(48.dp)
+        composeRule.onNodeWithText(text(R.string.work_session_save_then_start)).assertHeightIsAtLeast(48.dp)
+        composeRule.onNodeWithText(text(R.string.work_session_discard_then_start)).assertHeightIsAtLeast(48.dp)
         assertButtonsDoNotOverlap(
-            "Stop, save and start here",
-            "Stop, discard and start here",
-            "Cancel",
+            text(R.string.work_session_save_then_start),
+            text(R.string.work_session_discard_then_start),
+            text(R.string.cancel),
         )
     }
 
@@ -217,9 +228,13 @@ class WorkSessionComposeTest {
                 ActiveSessionCompletionDialog(onSave = {}, onDiscard = {}, onCancel = {})
             }
         }
-        composeRule.onNodeWithText("Save session and complete").assertHeightIsAtLeast(48.dp)
-        composeRule.onNodeWithText("Discard session and complete").assertHeightIsAtLeast(48.dp)
-        assertButtonsDoNotOverlap("Save session and complete", "Discard session and complete", "Cancel")
+        composeRule.onNodeWithText(text(R.string.work_session_save_and_complete)).assertHeightIsAtLeast(48.dp)
+        composeRule.onNodeWithText(text(R.string.work_session_discard_and_complete)).assertHeightIsAtLeast(48.dp)
+        assertButtonsDoNotOverlap(
+            text(R.string.work_session_save_and_complete),
+            text(R.string.work_session_discard_and_complete),
+            text(R.string.cancel),
+        )
     }
 
     @Test
@@ -229,9 +244,14 @@ class WorkSessionComposeTest {
                 ActiveSessionDeletionDialog(onDiscardAndDelete = {}, onCancel = {})
             }
         }
-        composeRule.onNodeWithText("Discard session and delete").assertHeightIsAtLeast(48.dp)
-        assertButtonsDoNotOverlap("Discard session and delete", "Cancel")
+        composeRule.onNodeWithText(text(R.string.work_session_discard_and_delete)).assertHeightIsAtLeast(48.dp)
+        assertButtonsDoNotOverlap(text(R.string.work_session_discard_and_delete), text(R.string.cancel))
     }
+
+    private fun text(
+        id: Int,
+        vararg args: Any,
+    ): String = InstrumentationRegistry.getInstrumentation().targetContext.getString(id, *args)
 
     private fun assertButtonsDoNotOverlap(vararg labels: String) {
         val bounds = labels.map { composeRule.onNodeWithText(it).fetchSemanticsNode().boundsInRoot }

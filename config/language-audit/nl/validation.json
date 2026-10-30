@@ -1,0 +1,73 @@
+{
+  "date": "2026-10-19",
+  "resource_keys": 1349,
+  "resource_variants": 1380,
+  "resource_files": 4,
+  "changed_keys": 69,
+  "changed_variants": 70,
+  "xml_key_type_alias_placeholder_check": "PASS",
+  "gradle_resource_compilation": "PASS",
+  "test_suites": [
+    {
+      "name": "com.finnvek.knittools.ReferenceResourceLocalizationTest",
+      "tests": "2",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "timestamp": "2026-10-19T10:03:09.153Z",
+      "time": "0.871"
+    },
+    {
+      "name": "com.finnvek.knittools.ui.CountPluralResourcesSourceTest",
+      "tests": "1",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "timestamp": "2026-10-19T10:03:10.915Z",
+      "time": "0.183"
+    }
+  ],
+  "unrelated_input_changes_since_entry": [],
+  "runtime": "NOT_RUN: no named concrete language question requires device execution",
+  "native_review": "NOT_REQUESTED",
+  "coverage_rows": 1816,
+  "coverage_primary_variants": 1380,
+  "coverage_dimensions": {
+    "T": {
+      "PASS": 1816
+    },
+    "F": {
+      "PASS": 1814,
+      "NOT_APPLICABLE": 2
+    },
+    "L": {
+      "PASS": 1816
+    },
+    "C": {
+      "PASS": 1816
+    },
+    "R": {
+      "PASS": 1382,
+      "NOT_APPLICABLE": 434
+    },
+    "V": {
+      "": 1816
+    }
+  },
+  "final_input_hashes": 145,
+  "final_input_hash_check": "PASS",
+  "git_diff_check": "PASS; existing CRLF warnings only",
+  "acceptance": "AUDIT_PASS",
+  "shared_handoffs": [],
+  "unresolved_language_questions": [],
+  "process_closeout": {
+    "gradle_single_use_daemon_pid": 8044,
+    "running_at_closeout": false,
+    "gradle_session": 40738,
+    "gradle_session_exit": 0,
+    "temporary_python_preservation_session": 90272,
+    "python_session_exit": 0,
+    "emulator_server_watcher_started": false,
+    "unrelated_processes_stopped": false
+  }
+}

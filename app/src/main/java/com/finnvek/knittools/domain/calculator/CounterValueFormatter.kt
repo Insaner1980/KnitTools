@@ -1,6 +1,7 @@
 package com.finnvek.knittools.domain.calculator
 
 import com.finnvek.knittools.domain.model.CounterProject
+import com.finnvek.knittools.domain.model.CraftType
 import com.finnvek.knittools.domain.model.MainCounterLabelType
 import com.finnvek.knittools.domain.model.ProjectCounter
 import com.finnvek.knittools.domain.model.ProjectCounterType
@@ -74,17 +75,35 @@ data class MainCounterTargetSlot(
  * hajallaan olleet näyttölogiikat (lisälaskurit, toistojaksot, muistutukset).
  */
 object CounterValueFormatter {
-    fun forMainCounter(project: CounterProject): MainCounterValueDisplay {
-        val customLabel = sanitizeMainCounterCustomLabel(project.mainCounterCustomLabel)
-        val labelType =
+    /** Päälaskurin yksikkö käsityötyypin ja oman nimikkeen mukaan; sama laskurissa ja widgetissä. */
+    fun mainCounterLabel(
+        craftType: CraftType,
+        labelType: MainCounterLabelType,
+        customLabel: String?,
+    ): MainCounterLabelSlot {
+        val sanitizedLabel = sanitizeMainCounterCustomLabel(customLabel)
+        val resolvedType =
             resolvedMainCounterLabelType(
+                craftType = craftType,
+                labelType = labelType,
+                customLabel = sanitizedLabel,
+            )
+        return MainCounterLabelSlot(
+            labelType = resolvedType,
+            customLabel = sanitizedLabel.takeIf { resolvedType == MainCounterLabelType.CUSTOM },
+        )
+    }
+
+    fun forMainCounter(project: CounterProject): MainCounterValueDisplay {
+        val labelSlot =
+            mainCounterLabel(
                 craftType = project.craftType,
                 labelType = project.mainCounterLabelType,
-                customLabel = customLabel,
+                customLabel = project.mainCounterCustomLabel,
             )
-        val resolvedCustomLabel = customLabel.takeIf { labelType == MainCounterLabelType.CUSTOM }
+        val labelType = labelSlot.labelType
+        val resolvedCustomLabel = labelSlot.customLabel
         val target = project.targetRows?.takeIf { it > 0 }
-        val labelSlot = MainCounterLabelSlot(labelType = labelType, customLabel = resolvedCustomLabel)
         val countSlot =
             MainCounterCountSlot(
                 count = project.count,

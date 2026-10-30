@@ -30,6 +30,31 @@ class ReminderLogicTest {
         message = "Test",
     )
 
+    @Test
+    fun `upcoming one-time reminders include the window edges and exclude overdue or completed rows`() {
+        assertTrue(ReminderLogic.isUpcoming(oneTime(10), 10, 5))
+        assertTrue(ReminderLogic.isUpcoming(oneTime(15), 10, 5))
+        assertFalse(ReminderLogic.isUpcoming(oneTime(9), 10, 5))
+        assertFalse(ReminderLogic.isUpcoming(oneTime(16), 10, 5))
+        assertFalse(ReminderLogic.isUpcoming(oneTime(12, isCompleted = true), 10, 5))
+    }
+
+    @Test
+    fun `upcoming repeating reminders use the next occurrence after the current row`() {
+        assertTrue(ReminderLogic.isUpcoming(repeating(8, 8), 11, 5))
+        assertFalse(ReminderLogic.isUpcoming(repeating(8, 8), 16, 5))
+        assertTrue(ReminderLogic.isUpcoming(repeating(8, 8), 19, 5))
+        assertFalse(ReminderLogic.isUpcoming(repeating(8, 0), 9, 5))
+        assertTrue(ReminderLogic.isUpcoming(repeating(8, 8), 3, 5))
+        assertFalse(ReminderLogic.isUpcoming(oneTime(0), 0, 5))
+    }
+
+    @Test
+    fun `upcoming window arithmetic does not wrap at the counter limit`() {
+        assertTrue(ReminderLogic.isUpcoming(oneTime(Int.MAX_VALUE), Int.MAX_VALUE - 2, 5))
+        assertFalse(ReminderLogic.isUpcoming(repeating(1, Int.MAX_VALUE), Int.MAX_VALUE, 5))
+    }
+
     // Kertaluonteiset
     @Test
     fun `one-time triggers at exact target row`() {

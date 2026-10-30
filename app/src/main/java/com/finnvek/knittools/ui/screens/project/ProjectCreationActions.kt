@@ -3,11 +3,14 @@ package com.finnvek.knittools.ui.screens.project
 import androidx.lifecycle.SavedStateHandle
 import com.finnvek.knittools.analytics.UsageAnalytics
 import com.finnvek.knittools.analytics.UsageEvent
+import com.finnvek.knittools.data.datastore.PreferencesManager
+import com.finnvek.knittools.domain.calculator.ProjectStartValues
 import com.finnvek.knittools.domain.model.CraftType
 import com.finnvek.knittools.domain.model.MainCounterLabelType
 import com.finnvek.knittools.pro.ProFeature
 import com.finnvek.knittools.pro.ProManager
 import com.finnvek.knittools.repository.CounterRepository
+import com.finnvek.knittools.repository.OnboardingStateRepository
 import com.finnvek.knittools.repository.ProjectCreationResult
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -27,6 +30,9 @@ internal data class PendingProjectCreation(
     val mainCounterLabelType: MainCounterLabelType,
     val mainCounterCustomLabel: String?,
     val targetFolderId: Long?,
+    val initialCount: Int = 0,
+    val targetRows: Int? = null,
+    val payloadVersion: Int = 2,
 ) : Serializable {
     private companion object {
         const val serialVersionUID = 1L
@@ -38,6 +44,8 @@ internal class ProjectCreationActions(
     private val proManager: ProManager,
     private val savedStateHandle: SavedStateHandle,
     private val scope: CoroutineScope,
+    private val preferencesManager: PreferencesManager,
+    private val onboardingStateRepository: OnboardingStateRepository,
     private val analytics: UsageAnalytics = UsageAnalytics.NONE,
     private val onFailure: (Throwable) -> Unit,
     private val onCreated: suspend (Long) -> Unit,
@@ -53,7 +61,15 @@ internal class ProjectCreationActions(
     val showCreateProjectDialog = showCreateProjectDialogChannel.receiveAsFlow()
 
     private var pendingProjectCreation: PendingProjectCreation?
-        get() = savedStateHandle[PENDING_PROJECT_CREATION_KEY]
+        get() {
+            val restored = savedStateHandle.get<PendingProjectCreation>(PENDING_PROJECT_CREATION_KEY) ?: return null
+            // Java-UID pysyy samana: vanhan luonnoksen uusi versiokenttä purkautuu nollaksi ennen getterin kutsua.
+            if (restored.payloadVersion != 2) {
+                savedStateHandle.remove<PendingProjectCreation>(PENDING_PROJECT_CREATION_KEY)
+                return null
+            }
+            return restored
+        }
         set(value) {
             savedStateHandle[PENDING_PROJECT_CREATION_KEY] = value
         }
@@ -152,6 +168,7 @@ internal class ProjectCreationActions(
         try {
             runCatching {
                 _projectCreationError.value = null
+                val wasFirstProject = !repository.hasAnyProject()
                 val result =
                     repository.createProject(
                         name = request.name,
@@ -160,9 +177,10 @@ internal class ProjectCreationActions(
                         mainCounterCustomLabel = request.mainCounterCustomLabel,
                         canCreateAdditionalProjects = isPro,
                         targetFolderId = request.targetFolderId,
+                        startValues = ProjectStartValues(request.initialCount, request.targetRows),
                     )
                 if (pendingProjectCreation != request) return
-                limited = handleCreationResult(request, result)
+                limited = handleCreationResult(request, result, wasFirstProject)
             }.onFailure { failure ->
                 if (failure is CancellationException) throw failure
                 if (pendingProjectCreation == request) {
@@ -186,12 +204,14 @@ internal class ProjectCreationActions(
     private suspend fun handleCreationResult(
         request: PendingProjectCreation,
         result: ProjectCreationResult,
+        wasFirstProject: Boolean,
     ): Boolean {
         when (result) {
             is ProjectCreationResult.Created -> {
                 analytics.track(UsageEvent.PROJECT_CREATED)
                 pendingProjectCreation = null
                 _projectCreationPromptCount.value = null
+                persistCreationPreferences(request, result.projectId, wasFirstProject)
                 onCreated(result.projectId)
             }
             ProjectCreationResult.LimitReached -> {
@@ -210,6 +230,29 @@ internal class ProjectCreationActions(
             }
         }
         return false
+    }
+
+    private suspend fun persistCreationPreferences(
+        request: PendingProjectCreation,
+        projectId: Long,
+        wasFirstProject: Boolean,
+    ) {
+        try {
+            preferencesManager.setLastProjectCraftType(request.craftType)
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (_: Exception) {
+            // Projekti on jo tallennettu: oletusvalinnan virhe ei saa tarjota uutta luontiyritystä.
+        }
+        if (wasFirstProject) {
+            try {
+                onboardingStateRepository.setStarterProject(projectId)
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                // Opastuksen tallennus ei muuta onnistunutta projektin luontia epäonnistumiseksi.
+            }
+        }
     }
 
     private companion object {

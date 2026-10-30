@@ -27,6 +27,7 @@ import com.finnvek.knittools.domain.model.CraftType
 import com.finnvek.knittools.domain.model.KnittingAbbreviation
 import com.finnvek.knittools.ui.components.SearchTextField
 import com.finnvek.knittools.ui.components.ToolScreenScaffold
+import com.finnvek.knittools.ui.layout.ContentWidthPolicy
 import com.finnvek.knittools.ui.theme.knitToolsColors
 
 @Composable
@@ -40,6 +41,7 @@ fun AbbreviationsScreen(
     val results = remember(query, context, craftType) { AbbreviationData.search(context, query, craftType) }
 
     ToolScreenScaffold(
+        contentWidthPolicy = ContentWidthPolicy.ListDetail,
         title = stringResource(R.string.abbreviations_title),
         onBack = onBack,
     ) { padding ->

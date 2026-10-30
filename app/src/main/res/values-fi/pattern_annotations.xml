@@ -75,4 +75,5 @@
     <string name="pattern_annotation_export_filename">%1$s-merkinnöillä.pdf</string>
     <string name="pattern_annotation_edit_text">Muokkaa tekstiä</string>
     <string name="pattern_annotation_write_failed">Tekstiä ei voitu tallentaa. Merkintä on saattanut muuttua. Sulje muokkain ja yritä uudelleen.</string>
+    <string name="pattern_annotation_command_failed">Merkinnän muutosta ei tallennettu. Sulje tämä ilmoitus ja yritä toimintoa uudelleen merkintätyökaluilla.</string>
 </resources>

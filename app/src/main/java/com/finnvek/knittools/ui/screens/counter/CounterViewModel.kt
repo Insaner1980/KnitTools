@@ -4,6 +4,7 @@ import android.content.ContentResolver
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.util.Log
 import androidx.annotation.MainThread
 import androidx.core.net.toUri
 import androidx.lifecycle.DefaultLifecycleObserver
@@ -23,6 +24,7 @@ import com.finnvek.knittools.di.ApplicationScope
 import com.finnvek.knittools.di.IoDispatcher
 import com.finnvek.knittools.domain.calculator.CounterLogic
 import com.finnvek.knittools.domain.calculator.CounterState
+import com.finnvek.knittools.domain.calculator.CounterValueFormatter
 import com.finnvek.knittools.domain.calculator.MAX_MAIN_COUNTER_STEP_SIZE
 import com.finnvek.knittools.domain.calculator.ReadingLineResolutionKind
 import com.finnvek.knittools.domain.calculator.RepeatSectionLogic
@@ -51,12 +53,15 @@ import com.finnvek.knittools.domain.model.isWebPatternCompatible
 import com.finnvek.knittools.domain.model.parseYarnCardIds
 import com.finnvek.knittools.domain.model.sanitizeReadingGuideFraction
 import com.finnvek.knittools.domain.model.sanitizeReadingLineYFraction
+import com.finnvek.knittools.domain.tips.TipSignal
 import com.finnvek.knittools.pro.InAppReviewManager
 import com.finnvek.knittools.pro.ProFeature
 import com.finnvek.knittools.pro.ProManager
+import com.finnvek.knittools.pro.ProState
 import com.finnvek.knittools.pro.ProStatus
 import com.finnvek.knittools.repository.ActiveSessionCompletionChoice
 import com.finnvek.knittools.repository.CounterRepository
+import com.finnvek.knittools.repository.OnboardingStateRepository
 import com.finnvek.knittools.repository.ProgressPhotoRepository
 import com.finnvek.knittools.repository.ProjectCompletionResult
 import com.finnvek.knittools.repository.ProjectCounterMutationResult
@@ -76,6 +81,9 @@ import com.finnvek.knittools.repository.SavedPatternRepository
 import com.finnvek.knittools.repository.StartSessionResult
 import com.finnvek.knittools.repository.StopSessionResult
 import com.finnvek.knittools.repository.YarnCardRepository
+import com.finnvek.knittools.ui.screens.project.ProjectCompletionCelebration
+import com.finnvek.knittools.ui.screens.project.ProjectSetupVisit
+import com.finnvek.knittools.ui.tips.TipSession
 import com.finnvek.knittools.widget.CounterWidgetState
 import com.finnvek.knittools.widget.WidgetData
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -142,6 +150,8 @@ data class CounterUiState(
     val keepScreenAwake: Boolean = false,
     val isPro: Boolean = false,
     val proStatus: ProStatus = ProStatus.TRIAL_NOT_STARTED,
+    val proState: ProState = ProState(),
+    val proAccessReady: Boolean = false,
     val canCreateNotes: Boolean = false,
     val canUseNotes: Boolean = false,
     val canCreateSecondaryCounter: Boolean = false,
@@ -153,6 +163,13 @@ data class CounterUiState(
     val canUseYarnCards: Boolean = false,
     val projects: List<CounterProject> = emptyList(),
     val projectsLoaded: Boolean = false,
+    val preferencesLoaded: Boolean = false,
+    val proStateLoaded: Boolean = false,
+    val activeSessionLoaded: Boolean = false,
+    val initialSessionRefreshFinished: Boolean = false,
+    val remindersLoadedProjectId: Long? = null,
+    val countersLoadedProjectId: Long? = null,
+    val documentsLoadedProjectId: Long? = null,
     val isRestoringProject: Boolean = false,
     val sectionName: String? = null,
     val stitchCount: Int? = null,
@@ -182,6 +199,19 @@ data class CounterUiState(
     val totalRows: Int? = null,
     val targetRows: Int? = null,
 ) {
+    val startupReady: Boolean
+        get() =
+            projectId != null &&
+                projectsLoaded &&
+                !isRestoringProject &&
+                preferencesLoaded &&
+                proStateLoaded &&
+                activeSessionLoaded &&
+                initialSessionRefreshFinished &&
+                remindersLoadedProjectId == projectId &&
+                countersLoadedProjectId == projectId &&
+                documentsLoadedProjectId == projectId
+
     val primaryDocument: ProjectDocument?
         get() = primaryProjectDocument(projectDocuments)
 }
@@ -275,6 +305,8 @@ class CounterViewModel
         @param:ApplicationContext private val context: Context,
         @param:IoDispatcher private val ioDispatcher: CoroutineDispatcher,
         @param:ApplicationScope private val applicationScope: CoroutineScope,
+        private val tipSession: TipSession,
+        private val onboardingStateRepository: OnboardingStateRepository,
         private val analytics: UsageAnalytics = UsageAnalytics.NONE,
     ) : ViewModel() {
         private val _uiState =
@@ -284,6 +316,12 @@ class CounterViewModel
                 ),
             )
         val uiState: StateFlow<CounterUiState> = _uiState.asStateFlow()
+        val onboardingState = onboardingStateRepository.state
+        private val _projectSetupCelebration = MutableStateFlow<ProjectSetupVisit?>(null)
+        val projectSetupCelebration: StateFlow<ProjectSetupVisit?> = _projectSetupCelebration.asStateFlow()
+        private val _patternImportInProgress = MutableStateFlow(false)
+        val patternImportInProgress: StateFlow<Boolean> = _patternImportInProgress.asStateFlow()
+        private var patternImportsInFlight = 0
         private val _viewerEvents = MutableSharedFlow<CounterViewerEvent>(extraBufferCapacity = 1)
         val viewerEvents: SharedFlow<CounterViewerEvent> = _viewerEvents.asSharedFlow()
         private val _stepFeedback = MutableSharedFlow<MainCounterStepFeedback>(extraBufferCapacity = 1)
@@ -294,6 +332,12 @@ class CounterViewModel
         private val notesSaveMutex = Mutex()
         private val projectClosedEventChannel = Channel<Long>(Channel.CONFLATED)
         val projectClosedEvents = projectClosedEventChannel.receiveAsFlow()
+        private val _pendingCompletion = MutableStateFlow<ProjectCompletionCelebration?>(null)
+        val pendingCompletion: StateFlow<ProjectCompletionCelebration?> = _pendingCompletion.asStateFlow()
+
+        fun consumeCompletion(eventId: Long) {
+            _pendingCompletion.update { if (it?.snapshot?.eventId == eventId) null else it }
+        }
 
         @MainThread
         fun consumeProjectClosedEvent(
@@ -388,6 +432,7 @@ class CounterViewModel
                     _uiState.update {
                         it.copy(
                             hapticFeedback = prefs.hapticFeedback,
+                            preferencesLoaded = true,
                             keepScreenAwake = prefs.keepScreenAwake,
                         )
                     }
@@ -397,12 +442,21 @@ class CounterViewModel
 
         private fun observeProState() {
             viewModelScope.launch {
-                proManager.proState.collect { proState ->
+                combine(
+                    proManager.proState,
+                    proManager.initialControlsReady,
+                    proManager.initialStateReady,
+                ) { state, controlsReady, accessReady ->
+                    Triple(state, controlsReady, accessReady)
+                }.collect { (proState, controlsReady, accessReady) ->
                     _uiState.update {
                         val canCreateNotes = proState.hasFeature(ProFeature.NOTES)
                         val canCreateSecondaryCounter = proState.hasFeature(ProFeature.SECONDARY_COUNTER)
                         it.copy(
                             isPro = proState.isPro,
+                            proStateLoaded = controlsReady,
+                            proState = proState,
+                            proAccessReady = accessReady,
                             proStatus = proState.status,
                             canCreateNotes = canCreateNotes,
                             canUseNotes = it.notesCreated || canCreateNotes,
@@ -795,6 +849,7 @@ class CounterViewModel
                         _uiState.update { state ->
                             state.copy(
                                 projectDocuments = documents,
+                                documentsLoadedProjectId = projectId,
                                 projectDocumentAvailability = availability,
                                 patternUri = primary?.localPdfUri,
                                 patternName = primary?.label,
@@ -890,6 +945,7 @@ class CounterViewModel
                     _uiState.update { state ->
                         state.copy(
                             activeSession = session,
+                            activeSessionLoaded = true,
                             sessionSeconds = session?.let(repository::activeSessionDurationSeconds) ?: 0L,
                             showSessionRecoveryPrompt =
                                 session?.let { it.needsRecoveryReview && !it.recoveryPromptShown } == true,
@@ -910,6 +966,8 @@ class CounterViewModel
                         throw cancelled
                     } catch (_: Exception) {
                         return@launch
+                    } finally {
+                        _uiState.update { it.copy(initialSessionRefreshFinished = true) }
                     }
                 _uiState.update {
                     if (it.activeSession != expectedSession) return@update it
@@ -1043,6 +1101,9 @@ class CounterViewModel
                         )
                 ) {
                     is StopSessionResult.Saved -> {
+                        if (result.completedSessionId != null) {
+                            tipSession.onSignal(TipSignal.SessionSaved(result.wasFirstCompletedSession))
+                        }
                         analytics.track(UsageEvent.WORK_SESSION_SAVED)
                         loadTotalSessionMinutes(projectId)
                         clearSessionStopSummary(summary.sessionToken)
@@ -1365,9 +1426,19 @@ class CounterViewModel
         ) {
             if (requestVersion != projectCompletionVersion || _uiState.value.projectId != projectId) return
             when (result) {
-                ProjectCompletionResult.Completed -> {
+                ProjectCompletionResult.Completed,
+                is ProjectCompletionResult.CompletedNow,
+                -> {
                     if (selectionVersion != projectSelectionVersion) return
-                    val closedCurrentProject = _uiState.value.projectId == projectId
+                    if (result is ProjectCompletionResult.CompletedNow) {
+                        _pendingCompletion.value =
+                            ProjectCompletionCelebration(
+                                result.snapshot,
+                                _uiState.value.latestPhotos
+                                    .firstOrNull()
+                                    ?.photoUri,
+                            )
+                    }
                     _uiState.update { state ->
                         when {
                             state.projectId == projectId ->
@@ -1380,9 +1451,7 @@ class CounterViewModel
                             else -> state
                         }
                     }
-                    if (closedCurrentProject) {
-                        closeSelectedProject(selectionVersion)
-                    }
+                    closeSelectedProject(selectionVersion)
                 }
                 is ProjectCompletionResult.NeedsActiveSessionChoice ->
                     _uiState.update { it.copy(pendingProjectCompletionSession = result.session) }
@@ -1625,6 +1694,7 @@ class CounterViewModel
             val updatedCounter = CounterLogic.increment(state.counter)
             analytics.track(UsageEvent.COUNTER_INCREMENTED)
             if (updatedCounter.count == state.counter.count) return
+            val incrementTimestampMillis = System.nanoTime() / 1_000_000
             if (state.counter.stepSize > 1) {
                 _stepFeedback.tryEmit(
                     MainCounterStepFeedback(
@@ -1641,7 +1711,39 @@ class CounterViewModel
                 // CPD-ON
                 previousValue = state.counter.count,
                 newValue = updatedCounter.count,
+                incrementTimestampMillis = incrementTimestampMillis,
             )
+        }
+
+        fun enableKeepScreenAwake() {
+            viewModelScope.launch { preferencesManager.setKeepScreenAwake(true) }
+        }
+
+        fun hideProjectSetup() {
+            persistProjectSetup { onboardingStateRepository.hideProjectSetup() }
+        }
+
+        fun celebrateProjectSetup(
+            projectId: Long,
+            routeEntryGeneration: Long,
+        ) {
+            val visit = ProjectSetupVisit(projectId, routeEntryGeneration)
+            if (_uiState.value.projectId != projectId || _projectSetupCelebration.value == visit) return
+            // Muistijälki säilyy kierrossa, mutta ei siirry seuraavalle käynnille tai uuteen prosessiin.
+            _projectSetupCelebration.value = visit
+            persistProjectSetup { onboardingStateRepository.markProjectSetupCelebrated() }
+        }
+
+        private fun persistProjectSetup(action: suspend () -> Unit) {
+            applicationScope.launch {
+                try {
+                    action()
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (_: Exception) {
+                    Log.w("CounterViewModel", "Unable to persist setup guidance state")
+                }
+            }
         }
 
         // CPD-OFF: Laskuritoiminnon paikallinen tila- ja tallennusketju pidetaan yhtenaisena.
@@ -1786,6 +1888,7 @@ class CounterViewModel
                             persist = persistSync,
                         )
                         persistSync = true
+                        _uiState.update { it.copy(countersLoadedProjectId = projectId) }
                     }
                 }
         }
@@ -1909,7 +2012,7 @@ class CounterViewModel
             reminderCollectionJob =
                 viewModelScope.launch {
                     reminderRepository.getRemindersForProject(projectId).collect { reminders ->
-                        _uiState.update { it.withReminderList(reminders) }
+                        _uiState.update { it.withReminderList(reminders).copy(remindersLoadedProjectId = projectId) }
                     }
                 }
         }
@@ -2106,6 +2209,7 @@ class CounterViewModel
                     discardUnclaimedPhotoTarget(target)
                     return@launch
                 }
+                if (target == null) photoErrorsChannel.send(Unit)
                 onCreated(target)
             }
         }
@@ -2282,47 +2386,57 @@ class CounterViewModel
             }
 
             viewModelScope.launch {
-                if (restoredExternalResultState(projectId) == null) {
-                    onResult(ProjectDocumentMutationResult.StaleAction)
-                    return@launch
+                patternImportsInFlight++
+                _patternImportInProgress.value = true
+                try {
+                    onResult(importPattern(projectId, uri, name))
+                } finally {
+                    patternImportsInFlight--
+                    _patternImportInProgress.value = patternImportsInFlight > 0
                 }
-                analytics.track(UsageEvent.PDF_IMPORT_STARTED)
-                val sourceUri = uri.toUri()
-                val sanitizedName =
-                    withContext(ioDispatcher) {
-                        takePersistableReadPermission(sourceUri)
-                        resolvePatternName(sourceUri, name)
-                    }
-                val attachment =
-                    preparePatternAttachment(
-                        sourceUriString = uri,
-                        projectId = projectId,
-                        sanitizedName = sanitizedName,
-                    )
-                if (attachment == null) {
-                    analytics.track(UsageEvent.PDF_IMPORT_FAILED)
-                    onResult(ProjectDocumentMutationResult.PersistenceFailure)
-                    return@launch
-                }
-
-                val result =
-                    persistPatternAttachment(
-                        projectId = projectId,
-                        // Tiedosto säilyttää alkuperäisen nimensä, nimikkeeksi luettava ohjeen nimi.
-                        patternName = PatternDisplayNames.documentLabel(sanitizedName),
-                        attachment = attachment,
-                    )
-                analytics.track(
-                    if (result is ProjectDocumentMutationResult.Added ||
-                        result == ProjectDocumentMutationResult.AlreadyAttached
-                    ) {
-                        UsageEvent.PDF_IMPORT_SUCCEEDED
-                    } else {
-                        UsageEvent.PDF_IMPORT_FAILED
-                    },
-                )
-                onResult(result)
             }
+        }
+
+        private suspend fun importPattern(
+            projectId: Long,
+            uri: String,
+            name: String,
+        ): ProjectDocumentMutationResult {
+            if (restoredExternalResultState(projectId) == null) return ProjectDocumentMutationResult.StaleAction
+            analytics.track(UsageEvent.PDF_IMPORT_STARTED)
+            val sourceUri = uri.toUri()
+            val sanitizedName =
+                withContext(ioDispatcher) {
+                    takePersistableReadPermission(sourceUri)
+                    resolvePatternName(sourceUri, name)
+                }
+            val attachment =
+                preparePatternAttachment(
+                    sourceUriString = uri,
+                    projectId = projectId,
+                    sanitizedName = sanitizedName,
+                )
+            if (attachment == null) {
+                analytics.track(UsageEvent.PDF_IMPORT_FAILED)
+                return ProjectDocumentMutationResult.PersistenceFailure
+            }
+            val result =
+                persistPatternAttachment(
+                    projectId = projectId,
+                    // Tiedosto säilyttää alkuperäisen nimensä, nimikkeeksi luettava ohjeen nimi.
+                    patternName = PatternDisplayNames.documentLabel(sanitizedName),
+                    attachment = attachment,
+                )
+            analytics.track(
+                if (result is ProjectDocumentMutationResult.Added ||
+                    result == ProjectDocumentMutationResult.AlreadyAttached
+                ) {
+                    UsageEvent.PDF_IMPORT_SUCCEEDED
+                } else {
+                    UsageEvent.PDF_IMPORT_FAILED
+                },
+            )
+            return result
         }
 
         private fun takePersistableReadPermission(uri: Uri) {
@@ -2569,17 +2683,13 @@ class CounterViewModel
 
         fun detachPattern() {
             val projectId = _uiState.value.projectId ?: return
-            _uiState.update {
-                it.copy(
-                    linkedPattern = null,
-                    patternUri = null,
-                    patternName = null,
-                    currentPatternPage = 0,
-                    patternRowMapping = null,
-                )
-            }
-            viewModelScope.launch {
-                repository.detachPattern(projectId)
+            launchProjectContentMutation {
+                when (repository.detachPattern(projectId)) {
+                    is ProjectDocumentMutationResult.Removed,
+                    ProjectDocumentMutationResult.MissingDocument,
+                    -> true
+                    else -> false
+                }
             }
         }
 
@@ -2788,14 +2898,14 @@ class CounterViewModel
             change: MainCounterChange,
             previousValue: Int,
             newValue: Int,
+            incrementTimestampMillis: Long? = null,
         ) {
             if (newValue == previousValue) return
             val state = _uiState.value
             val projectId = state.projectId ?: return
             val selectionVersion = projectSelectionVersion
             viewModelScope.launch {
-                val changed = tryProjectWrite { repository.applyMainCounterChange(projectId, change) }
-                if (!changed) projectContentErrorsChannel.send(Unit)
+                val changed = applyCountChangeAndRecordSignals(projectId, change, incrementTimestampMillis)
                 val persisted = loadProjectAfterCountChange(projectId, changed) ?: return@launch
                 if (selectionVersion != projectSelectionVersion || _uiState.value.projectId != projectId) return@launch
                 _uiState.update {
@@ -2810,6 +2920,30 @@ class CounterViewModel
                     syncWidget(projectId, persisted.name, persisted.count)
                 }
             }
+        }
+
+        private suspend fun applyCountChangeAndRecordSignals(
+            projectId: Long,
+            change: MainCounterChange,
+            incrementTimestampMillis: Long?,
+        ): Boolean {
+            val committed =
+                try {
+                    repository.applyMainCounterChangeWithResult(projectId, change)
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (_: Exception) {
+                    null
+                }
+            val changed = committed != null
+            if (!changed) projectContentErrorsChannel.send(Unit)
+            if (changed && incrementTimestampMillis != null) {
+                tipSession.onSignal(TipSignal.Increment(projectId, incrementTimestampMillis))
+            }
+            if (committed?.crossedTarget == true) {
+                tipSession.onSignal(TipSignal.TargetReached(projectId))
+            }
+            return changed
         }
 
         private suspend fun loadProjectAfterCountChange(
@@ -2832,6 +2966,12 @@ class CounterViewModel
         ) {
             val resolvedProjectId = projectId ?: return
             val state = _uiState.value
+            val label =
+                CounterValueFormatter.mainCounterLabel(
+                    craftType = state.craftType,
+                    labelType = state.mainCounterLabelType,
+                    customLabel = state.mainCounterCustomLabel,
+                )
             val widgetData =
                 WidgetData(
                     projectName = projectName,
@@ -2842,6 +2982,8 @@ class CounterViewModel
                     currentStitch = state.currentStitch,
                     totalStitches = state.stitchCount?.takeIf { it > 0 },
                     stitchTrackingEnabled = state.stitchTrackingEnabled,
+                    labelType = label.labelType,
+                    customLabel = label.customLabel,
                 )
             try {
                 CounterWidgetState.syncAll(context, widgetData)

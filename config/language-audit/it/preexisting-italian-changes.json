@@ -1,0 +1,76 @@
+[
+  {
+    "path": "app/src/main/res/values-it/pattern_annotations.xml",
+    "preexisting_changed_keys": []
+  },
+  {
+    "path": "app/src/main/res/values-it/pattern_reading_assistance.xml",
+    "preexisting_changed_keys": [
+      "pattern_follow_current_row_on",
+      "pattern_return_to_current_row",
+      "pattern_follow_resumed",
+      "pattern_follow_resumed_uncalibrated",
+      "pattern_set_row_marker_here",
+      "pattern_follow_page_announcement",
+      "pattern_bookmark_jump_announcement",
+      "pattern_row_following_paused",
+      "pattern_row_following_active",
+      "pattern_reading_line_following_state",
+      "pattern_reading_line_manual_state"
+    ]
+  },
+  {
+    "path": "app/src/main/res/values-it/reference_strings.xml",
+    "preexisting_changed_keys": [
+      "size_row_child_s",
+      "size_row_child_m",
+      "size_row_child_l",
+      "size_row_age_0_3m",
+      "size_row_age_3_6m",
+      "size_row_age_6_12m",
+      "size_row_age_12_18m",
+      "size_row_age_18_24m",
+      "size_row_women_xs_2_4",
+      "size_row_women_s_6_8",
+      "size_row_women_m_10_12",
+      "size_row_women_l_14_16",
+      "size_row_women_xl_18_20",
+      "size_row_women_2xl_22_24",
+      "size_row_women_3xl_26_28",
+      "size_row_women_4xl_30_32",
+      "size_row_women_5xl_34_36",
+      "size_row_men_s_34_36",
+      "size_row_men_m_38_40",
+      "size_row_men_l_42_44",
+      "size_row_men_xl_46_48",
+      "size_row_men_2xl_50_52",
+      "size_row_men_3xl_54_56",
+      "size_row_men_4xl_58_60",
+      "size_row_men_5xl_62_64",
+      "size_row_tween"
+    ]
+  },
+  {
+    "path": "app/src/main/res/values-it/strings.xml",
+    "preexisting_changed_keys": [
+      "pattern_clear_row_mark",
+      "pattern_calibrate_rows",
+      "pattern_calibration_first_row",
+      "pattern_calibration_last_row",
+      "pattern_calibration_invalid_row",
+      "session_row_range",
+      "session_row_single",
+      "reminder_repeat_occurrence_format",
+      "increase_decrease_error_not_enough_bars",
+      "row_number",
+      "repeat_every_rows",
+      "shape_every_n",
+      "repeat_section_start_row",
+      "repeat_section_end_row",
+      "repeat_section_progress_format",
+      "row_label_format",
+      "work_session_pending_rows_format",
+      "counter_progress_format"
+    ]
+  }
+]

@@ -30,5 +30,5 @@ sealed interface IncreaseDecreaseMessage {
 
     data object TotalStitchesOutOfRange : IncreaseDecreaseMessage
 
-    data object IncreaseMoreThanCurrent : IncreaseDecreaseMessage
+    data object NotEnoughBarsForIncrease : IncreaseDecreaseMessage
 }

@@ -5,11 +5,11 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.BasicText
@@ -41,8 +41,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.finnvek.knittools.R
-
-private val MAX_CONTENT_WIDTH = 600.dp
+import com.finnvek.knittools.ui.layout.AdaptiveContent
+import com.finnvek.knittools.ui.layout.ContentWidthPolicy
+import com.finnvek.knittools.ui.layout.contentWidth
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -50,6 +51,7 @@ fun ToolScreenScaffold(
     title: String,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
+    contentWidthPolicy: ContentWidthPolicy = ContentWidthPolicy.Form,
     onSettings: (() -> Unit)? = null,
     snackbarHost: @Composable () -> Unit = {},
     wrapTitle: Boolean = false,
@@ -143,10 +145,10 @@ fun ToolScreenScaffold(
         },
     ) { scaffoldPadding ->
         Box(
-            modifier = Modifier.fillMaxSize().padding(scaffoldPadding),
+            modifier = Modifier.fillMaxSize().padding(scaffoldPadding).consumeWindowInsets(scaffoldPadding),
             contentAlignment = Alignment.TopCenter,
         ) {
-            Box(modifier = Modifier.widthIn(max = MAX_CONTENT_WIDTH)) {
+            AdaptiveContent(modifier = Modifier.contentWidth(contentWidthPolicy)) {
                 content(PaddingValues())
             }
         }

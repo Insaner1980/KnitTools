@@ -40,6 +40,7 @@ class GaugeScreenParsingTest {
         val pro = mockk<ProManager>()
         every { preferences.preferences } returns flowOf(AppPreferences())
         every { pro.proState } returns MutableStateFlow(ProState(status = ProStatus.PRO_PURCHASED))
+        every { pro.initialStateReady } returns MutableStateFlow(true)
         viewModel = GaugeViewModel(SavedStateHandle(), preferences, mockk<CounterRepository>(), pro)
         store.put("gauge", viewModel)
     }

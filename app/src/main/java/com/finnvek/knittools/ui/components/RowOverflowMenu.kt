@@ -5,9 +5,12 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 
@@ -25,8 +28,13 @@ data class RowMenuAction(
 fun RowOverflowMenu(
     actions: List<RowMenuAction>,
     modifier: Modifier = Modifier,
+    onExpandedChange: (Boolean) -> Unit = {},
 ) {
     var expanded by remember { mutableStateOf(false) }
+    val currentOnExpandedChange by rememberUpdatedState(onExpandedChange)
+    val blockingSurfaceOpen = expanded
+    SideEffect { currentOnExpandedChange(blockingSurfaceOpen) }
+    DisposableEffect(Unit) { onDispose { currentOnExpandedChange(false) } }
     Box(modifier = modifier) {
         MoreOptionsIconButton(onClick = { expanded = true })
         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {

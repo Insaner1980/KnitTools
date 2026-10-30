@@ -18,6 +18,8 @@ import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.platform.app.InstrumentationRegistry
 import com.finnvek.knittools.App
+import com.finnvek.knittools.R
+import com.finnvek.knittools.domain.model.MainCounterLabelType
 import com.finnvek.knittools.pro.ProPolicyTestControl
 import com.finnvek.knittools.repository.ProjectCreationResult
 import dagger.hilt.android.EntryPointAccessors
@@ -37,18 +39,23 @@ class WidgetHostRuntimeTest {
             val instrumentation = InstrumentationRegistry.getInstrumentation()
             val repository = EntryPointAccessors.fromApplication(app, WidgetEntryPoint::class.java).counterRepository()
             ProPolicyTestControl.setPurchased(true)
-            val created = repository.createProject("Synthetic long widget project", canCreateAdditionalProjects = true)
+            // Pahin tapaus: pisin yksikkösana (Repeats, esim. "WIEDERHOLUNGEN") ja nelinumeroinen tavoite.
+            val created =
+                repository.createProject(
+                    PROJECT_NAME,
+                    mainCounterLabelType = MainCounterLabelType.REPEATS,
+                    canCreateAdditionalProjects = true,
+                )
             check(created is ProjectCreationResult.Created)
             val projectId = created.projectId
+            repository.setTargetRows(projectId, WORST_CASE_TARGET)
             val host = AppWidgetHost(app, 110013)
             val manager = AppWidgetManager.getInstance(app)
             val ids = mutableListOf<Int>()
             val scenario = ActivityScenario.launch(ComponentActivity::class.java)
             try {
-                CounterWidgetState.save(
-                    app,
-                    WidgetData(projectName = "Synthetic long widget project", projectId = projectId),
-                )
+                val widgetData = checkNotNull(repository.getProject(projectId)).toWidgetData()
+                CounterWidgetState.save(app, widgetData)
                 instrumentation.uiAutomation.adoptShellPermissionIdentity("android.permission.BIND_APPWIDGET")
                 host.startListening()
                 for ((width, height) in listOf(120 to 48, 120 to 80, 160 to 160, 300 to 160)) {
@@ -79,10 +86,7 @@ class WidgetHostRuntimeTest {
                         )
                         activity.setContentView(container)
                     }
-                    CounterWidgetState.syncAll(
-                        app,
-                        WidgetData(projectName = "Synthetic long widget project", projectId = projectId),
-                    )
+                    CounterWidgetState.syncAll(app, widgetData)
                     await {
                         var found = false
                         scenario.onActivity {
@@ -104,34 +108,41 @@ class WidgetHostRuntimeTest {
                         count.paint.getTextBounds(count.text.toString(), 0, count.length(), ink)
                         assertTrue("Counter glyph top is visible", count.baseline + ink.top >= 0)
                         assertTrue("Counter glyph bottom is visible", count.baseline + ink.bottom <= count.height)
-                        if (width >= 160) {
-                            val plus =
-                                descendants(
-                                    view,
-                                ).filterIsInstance<TextView>().single { it.text.toString() == "+" }
-                            var action: View = plus
-                            while (!action.isClickable && action.parent is View) action = action.parent as View
-                            assertTrue("Visible increment action", action.isShown)
-                            assertFullyVisible(action)
-                            assertTrue(
-                                "Increment target remains 48 dp",
-                                action.height >= 48 * activity.resources.displayMetrics.density - 1,
-                            )
-                            assertTrue("Increment click", action.performClick())
-                        }
-                    }
-                    if (width >= 160) {
-                        await {
-                            runBlocking {
-                                app.database
-                                    .get()
-                                    .counterProjectDao()
-                                    .getProject(projectId)
-                                    ?.count == 1
+                        // Käännetyt tekstit (yksikkö, "of 9999") mahtuvat kokonaan; vain käyttäjän
+                        // projektinimi saa katketa.
+                        descendants(view)
+                            .filterIsInstance<TextView>()
+                            .filter { it.isShown && it.text.toString() != PROJECT_NAME }
+                            .forEach { text ->
+                                val available = text.width - text.totalPaddingLeft - text.totalPaddingRight
+                                assertTrue(
+                                    "Text fits without truncation in ${width}x$height: ${text.text}",
+                                    text.paint.measureText(text.text.toString()) <= available + 1,
+                                )
                             }
-                        }
-                        repository.applyWidgetCountChange(projectId, false)
+                        // Plus on kaikissa koissa laskurin 3D-kuva, joten se löytyy saavutettavasta nimestä.
+                        val increase = activity.getString(R.string.counter_increase)
+                        val plus = descendants(view).first { it.contentDescription?.toString() == increase }
+                        var action: View = plus
+                        while (!action.isClickable && action.parent is View) action = action.parent as View
+                        assertTrue("Visible increment action", action.isShown)
+                        assertFullyVisible(action)
+                        assertTrue(
+                            "Increment target remains 48 dp",
+                            action.height >= 48 * activity.resources.displayMetrics.density - 1,
+                        )
+                        assertTrue("Increment click", action.performClick())
                     }
+                    await {
+                        runBlocking {
+                            app.database
+                                .get()
+                                .counterProjectDao()
+                                .getProject(projectId)
+                                ?.count == 1
+                        }
+                    }
+                    repository.applyWidgetCountChange(projectId, false)
                     host.deleteAppWidgetId(id)
                     ids.remove(id)
                 }
@@ -171,5 +182,10 @@ class WidgetHostRuntimeTest {
             "Widget element is not vertically clipped: ${visible.height()}/${view.height}",
             visible.height() >= view.height - 1,
         )
+    }
+
+    private companion object {
+        const val PROJECT_NAME = "Synthetic long widget project"
+        const val WORST_CASE_TARGET = 9999
     }
 }

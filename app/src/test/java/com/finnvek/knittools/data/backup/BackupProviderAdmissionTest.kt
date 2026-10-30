@@ -203,7 +203,7 @@ class BackupProviderAdmissionTest {
                     backgroundScope,
                     io,
                 )
-            val viewModel = BackupViewModel(repository)
+            val viewModel = BackupViewModel(repository, mockk(relaxed = true))
             val store = ViewModelStore().apply { put("backup", viewModel) }
             val staging = File(root, "manual-backup")
             try {

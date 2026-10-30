@@ -1,0 +1,402 @@
+file	key	variant	pt_starting_text	pt_BR_final_text	batch
+pattern_annotations.xml	pattern_annotation_page_limit	default	Esta página contém demasiadas anotações ou anotações demasiado complexas para serem apresentadas em segurança. As suas anotações foram preservadas.	Esta página contém anotações demais ou muito complexas para serem exibidas com segurança. Suas anotações foram preservadas.	B11
+pattern_annotations.xml	pattern_annotations_master	default	Notas do padrão	Notas da receita	B11
+pattern_annotations.xml	pattern_annotations_read_only	default	Só de leitura	Somente leitura	B11
+pattern_annotations.xml	pattern_annotation_tool_highlighter	default	Marcador	Marca-texto	B11
+pattern_annotations.xml	pattern_annotation_delete	default	Eliminar	Excluir	B11
+pattern_annotations.xml	pattern_annotation_export_progress	default	A exportar %1$d/%2$d	Exportando %1$d/%2$d	B11
+pattern_annotations.xml	pattern_annotation_export_default_name	default	padrão	receita	B11
+pattern_annotations.xml	pattern_annotation_write_failed	default	Não foi possível guardar o texto. A anotação pode ter sido alterada. Feche o editor e tente novamente.	Não foi possível salvar o texto. A anotação pode ter sido alterada. Feche o editor e tente novamente.	B11
+pattern_reading_assistance.xml	pattern_bookmark_rename	default	Mudar o nome do marcador	Renomear marcador	B10
+pattern_reading_assistance.xml	pattern_bookmark_rename_title	default	Mudar o nome do marcador	Renomear marcador	B10
+pattern_reading_assistance.xml	pattern_bookmark_delete_title	default	Eliminar marcador?	Excluir marcador?	B10
+pattern_reading_assistance.xml	pattern_bookmark_delete_message	default	Eliminar «%1$s»?	Excluir “%1$s”?	B10
+pattern_reading_assistance.xml	pattern_bookmark_loading	default	A carregar marcadores…	Carregando marcadores…	B10
+pattern_reading_assistance.xml	pattern_bookmark_next	default	Marcador seguinte	Próximo marcador	B10
+pattern_reading_assistance.xml	pattern_bookmark_stale_document	default	Este marcador já não pertence a este modelo.	Este marcador não pertence mais a esta receita.	B10
+pattern_reading_assistance.xml	pattern_bookmark_save_failed	default	Não foi possível guardar o marcador.	Não foi possível salvar o marcador.	B10
+pattern_reading_assistance.xml	pattern_bookmark_rename_failed	default	Não foi possível mudar o nome do marcador.	Não foi possível renomear o marcador.	B10
+pattern_reading_assistance.xml	pattern_bookmark_delete_failed	default	Não foi possível eliminar o marcador.	Não foi possível excluir o marcador.	B10
+pattern_reading_assistance.xml	pattern_center_vertical_guide	default	Centrar guia vertical	Centralizar guia vertical	B10
+pattern_reading_assistance.xml	pattern_follow_resumed	default	Seguimento retomado no valor atual.	Acompanhamento retomado no valor atual.	B10
+pattern_reading_assistance.xml	pattern_follow_resumed_uncalibrated	default	A posição do contador não está calibrada. Seguimento retomado a partir da posição atual.	A posição do contador não está calibrada. Acompanhamento retomado a partir da posição atual.	B10
+pattern_reading_assistance.xml	pattern_bookmark_jump_announcement	default	%1$s, página %2$d de %3$d. Seguimento do contador em pausa.	%1$s, página %2$d de %3$d. Acompanhamento do contador pausado.	B10
+pattern_reading_assistance.xml	pattern_row_following_paused	default	Seguimento do contador em pausa.	Acompanhamento do contador pausado.	B10
+pattern_reading_assistance.xml	pattern_row_following_active	default	A seguir o contador principal.	Seguindo o contador principal.	B10
+pattern_reading_assistance.xml	pattern_reading_line_following_state	default	%1$d%% a partir do topo. A seguir o contador principal.	%1$d%% a partir do topo. Seguindo o contador principal.	B10
+pattern_reading_assistance.xml	pattern_reading_line_manual_state	default	%1$d%% a partir do topo. Seguimento do contador em pausa.	%1$d%% a partir do topo. Acompanhamento do contador pausado.	B10
+reference_strings.xml	size_row_women_2xl_22_24	default	2GG	2XL	B17
+reference_strings.xml	size_row_women_3xl_26_28	default	3GG	3XL	B17
+reference_strings.xml	size_row_women_5xl_34_36	default	5GG	5XL	B17
+reference_strings.xml	size_row_men_xl_46_48	default	GG	XL	B17
+reference_strings.xml	size_row_men_2xl_50_52	default	2GG	2XL	B17
+reference_strings.xml	size_row_men_3xl_54_56	default	3GG	3XL	B17
+reference_strings.xml	size_row_men_4xl_58_60	default	4GG	4XL	B17
+reference_strings.xml	size_row_men_5xl_62_64	default	5GG	5XL	B17
+reference_strings.xml	abbr_p_meaning	default	Tricotar em liga	Tricotar em tricô	B18
+reference_strings.xml	abbr_p_desc	default	Introduza a agulha como para tricotar em liga, passe o fio à volta e puxe-o através da malha	Introduza a agulha como para tricotar em tricô, passe o fio ao redor e puxe através do ponto	B18
+reference_strings.xml	abbr_ws_desc	default	O lado privado/verso da obra	O lado de trás do trabalho	B18
+reference_strings.xml	abbr_pwise_meaning	default	Como para tricotar em liga	Como para tricotar em tricô	B18
+reference_strings.xml	abbr_pwise_desc	default	Introduza a agulha como para tricotar em liga	Introduza a agulha como para tricotar em tricô	B18
+reference_strings.xml	abbr_k2tog_meaning	default	Tricotar 2 juntas em meia	Tricotar 2 pontos juntos em meia	B18
+reference_strings.xml	abbr_p2tog_meaning	default	Tricotar 2 malhas juntas em liga	Tricotar 2 pontos juntos em tricô	B18
+reference_strings.xml	abbr_p2tog_desc	default	Tricote duas malhas juntas em liga para obter uma só	Tricote dois pontos juntos em tricô para obter um só	B18
+reference_strings.xml	abbr_ssp_meaning	default	Deslizar, deslizar, tricotar em liga	Deslizar, deslizar, tricotar em tricô	B18
+reference_strings.xml	abbr_ssp_desc	default	Diminuição em liga inclinada para a esquerda	Diminuição em tricô inclinada para a esquerda	B18
+reference_strings.xml	abbr_k3tog_meaning	default	Tricotar 3 juntas em meia	Tricotar 3 pontos juntos em meia	B18
+reference_strings.xml	abbr_p3tog_meaning	default	Tricotar 3 malhas juntas em liga	Tricotar 3 pontos juntos em tricô	B18
+reference_strings.xml	abbr_p3tog_desc	default	Tricote três malhas juntas em liga	Tricote três pontos juntos em tricô	B18
+reference_strings.xml	abbr_s2kp_meaning	default	Deslize 2 juntas como para meia, tricote 1 em meia e passe as malhas deslizadas por cima	Deslize 2 pontos juntos como para meia, tricote 1 em meia e passe os pontos deslizados por cima	B18
+reference_strings.xml	abbr_s2kp_desc	default	Dupla diminuição centrada	Diminuição dupla centralizada	B18
+reference_strings.xml	abbr_sk2p_meaning	default	Deslizar 1 como para meia, tricotar 2 malhas juntas em meia e passar o ponto deslizado por cima	Deslizar 1 como para meia, tricotar 2 pontos juntos em meia e passar o ponto deslizado por cima	B18
+reference_strings.xml	abbr_cdd_desc	default	Deslize duas malhas juntas como para tricotar em meia, tricote uma em meia e passe as duas malhas deslizadas por cima	Deslize dois pontos juntos como para tricotar em meia, tricote um em meia e passe os dois pontos deslizados por cima	B18
+reference_strings.xml	abbr_m1r_meaning	default	Aumentar uma malha para a direita	Aumentar um ponto para a direita	B18
+reference_strings.xml	abbr_kfb_meaning	default	Tricotar em meia pela frente e por trás da malha	Tricotar em meia pela frente e por trás do ponto	B18
+reference_strings.xml	abbr_pfb_meaning	default	Tricotar em liga pela frente e por trás da malha	Tricotar em tricô pela frente e por trás do ponto	B18
+reference_strings.xml	abbr_pfb_desc	default	Tricote a mesma malha em liga pela frente e por trás para aumentar	Tricote o mesmo ponto em tricô pela frente e por trás para aumentar	B18
+reference_strings.xml	abbr_sl_meaning	default	Deslizamento	Passar sem fazer	B18
+reference_strings.xml	abbr_sl1k_meaning	default	Deslizar uma malha como para meia	Passar um ponto sem fazer como para meia	B18
+reference_strings.xml	abbr_sl1k_desc	default	Deslize um ponto como se fosse tricotar	Deslize um ponto como para tricotar em meia, sem tricotar	B18
+reference_strings.xml	abbr_sl1p_meaning	default	Deslizar uma malha como para liga	Passar um ponto sem fazer como para tricô	B18
+reference_strings.xml	abbr_sl1p_desc	default	Deslize uma malha como para tricotar em liga, sem a tricotar	Deslize um ponto como para tricotar em tricô, sem tricotar	B18
+reference_strings.xml	abbr_co_meaning	default	Montar malhas	Montar pontos	B18
+reference_strings.xml	abbr_bo_desc	default	Feche as malhas para impedir que o trabalho se desfaça	Feche os pontos para impedir que o trabalho se desfaça	B18
+reference_strings.xml	abbr_pu_meaning	default	Pegue	Levantar pontos	B18
+reference_strings.xml	abbr_pu_desc	default	Pegue pontos ao longo de uma borda	Levante pontos ao longo de uma borda	B18
+reference_strings.xml	abbr_rnd_meaning	default	Rodada	Volta	B18
+reference_strings.xml	abbr_eor_desc	default	Trabalhe em linhas alternadas	Trabalhe em carreiras alternadas	B18
+reference_strings.xml	abbr_cn_meaning	default	Agulha auxiliar para torcidos	Agulha auxiliar para tranças	B18
+reference_strings.xml	abbr_cn_desc	default	Agulha curta usada para segurar os pontos ao trabalhar os torcidos	Agulha curta usada para segurar os pontos ao trabalhar as tranças	B18
+reference_strings.xml	abbr_tbl_meaning	default	Através do loop traseiro	Pela alça de trás	B18
+reference_strings.xml	abbr_ptbl_meaning	default	Tricotar em liga pela alça de trás	Tricotar em tricô pela alça de trás	B18
+reference_strings.xml	abbr_ptbl_desc	default	Malha de liga torcida	Ponto tricô torcido	B18
+reference_strings.xml	abbr_c4f_meaning	default	Torcido de 4 malhas, à frente	Trança de 4 pontos, à frente	B18
+reference_strings.xml	abbr_c4f_desc	default	Deslizar 2 para CN e segurar na frente, 2M, 2M do CN	Passe 2 pontos para a agulha auxiliar e segure à frente, tricote 2 em meia e depois os 2 da agulha auxiliar em meia	B18
+reference_strings.xml	abbr_c4b_meaning	default	Torcido de 4 malhas, atrás	Trança de 4 pontos, atrás	B18
+reference_strings.xml	abbr_c4b_desc	default	Deslize 2 para CN e segure atrás, K2, K2 de CN	Passe 2 pontos para a agulha auxiliar e segure atrás, tricote 2 em meia e depois os 2 da agulha auxiliar em meia	B18
+reference_strings.xml	abbr_c6f_meaning	default	Torcido de 6 malhas, à frente	Trança de 6 pontos, à frente	B18
+reference_strings.xml	abbr_c6f_desc	default	Deslizar 3 para CN e segurar na frente, 3M, 3M do CN	Passe 3 pontos para a agulha auxiliar e segure à frente, tricote 3 em meia e depois os 3 da agulha auxiliar em meia	B18
+reference_strings.xml	abbr_c6b_meaning	default	Torcido de 6 malhas, atrás	Trança de 6 pontos, atrás	B18
+reference_strings.xml	abbr_c6b_desc	default	Deslize 3 para CN e segure atrás, K3, K3 de CN	Passe 3 pontos para a agulha auxiliar e segure atrás, tricote 3 em meia e depois os 3 da agulha auxiliar em meia	B18
+reference_strings.xml	abbr_wt_desc	default	Enrole o fio à volta do próximo ponto e vire o trabalho para formar carreiras encurtadas	Enrole o fio ao redor do próximo ponto e vire o trabalho para formar carreiras encurtadas	B18
+reference_strings.xml	abbr_st_st_desc	default	Tricote em meia pelo direito e em liga pelo avesso; em circular, tricote todas as voltas em meia	Tricote em meia pelo direito e em tricô pelo avesso; em circular, tricote todas as voltas em meia	B18
+reference_strings.xml	abbr_rev_st_st_meaning	default	Meia reversa	Ponto meia pelo avesso	B18
+reference_strings.xml	abbr_rev_st_st_desc	default	Tricote em liga pelo direito e em meia pelo avesso	Tricote em tricô pelo direito e em meia pelo avesso	B18
+reference_strings.xml	abbr_g_st_meaning	default	Ponto jarreteira	Cordões de tricô	B18
+reference_strings.xml	abbr_g_st_desc	default	Tricote todas as carreiras em meia; em circular, alterne uma volta em meia e uma em liga	Tricote todas as carreiras em meia; em circular, alterne uma volta em meia e uma em tricô	B18
+reference_strings.xml	abbr_seed_st_meaning	default	Ponto semente	Ponto arroz	B18
+reference_strings.xml	abbr_seed_st_desc	default	Alternando K1, P1 com deslocamento em cada carreira	Alterne 1 meia e 1 tricô, invertendo os pontos a cada carreira	B18
+reference_strings.xml	abbr_beg_desc	default	Início da linha ou rodada	Início da carreira ou volta	B18
+reference_strings.xml	abbr_foll_desc	default	A próxima linha, rodada ou instrução	A próxima carreira, volta ou instrução	B18
+reference_strings.xml	abbr_prev_desc	default	A linha, volta ou ponto antes do atual	A carreira, volta ou ponto anterior ao atual	B18
+reference_strings.xml	abbr_sk_desc	default	Salte a malha seguinte	Pule o próximo ponto	B18
+reference_strings.xml	abbr_selvage_meaning	default	Ponto de ourela	Ponto de borda	B18
+reference_strings.xml	abbr_gauge_meaning	default	Tensão da amostra	Amostra	B18
+reference_strings.xml	abbr_tink_meaning	default	Desfazer malha a malha	Desfazer ponto a ponto	B18
+reference_strings.xml	abbr_tink_desc	default	Desfaça uma malha de cada vez; «tink» é a palavra inglesa «knit» escrita ao contrário	Desfaça um ponto de cada vez; “tink” é a palavra inglesa “knit” escrita ao contrário	B18
+reference_strings.xml	sym_knit_desc	default	Meia pelo direito, liga pelo avesso	Meia pelo direito, tricô pelo avesso	B19
+reference_strings.xml	sym_purl_name	default	Liga	Tricô	B19
+reference_strings.xml	sym_purl_desc	default	Liga pelo direito, meia pelo avesso	Tricô pelo direito, meia pelo avesso	B19
+reference_strings.xml	sym_purl_tbl_name	default	Liga pela alça de trás	Tricô pela alça de trás	B19
+reference_strings.xml	sym_purl_tbl_desc	default	Tricote em liga pela alça de trás para torcer a malha	Tricote em tricô pela alça de trás para torcer o ponto	B19
+reference_strings.xml	sym_slip_knitwise_name	default	Deslizar como para meia	Passar sem fazer como para meia	B19
+reference_strings.xml	sym_slip_knitwise_desc	default	Deslize a malha como para tricotar em meia, sem a tricotar	Deslize o ponto como para tricotar em meia, sem tricotar	B19
+reference_strings.xml	sym_slip_purlwise_name	default	Deslizar como para liga	Passar sem fazer como para tricô	B19
+reference_strings.xml	sym_slip_purlwise_desc	default	Deslize a malha como para tricotar em liga, sem a tricotar e com o fio atrás	Deslize o ponto como para tricotar em tricô, sem tricotar e com o fio atrás	B19
+reference_strings.xml	sym_ssk_desc	default	Escorregar, deslizar, tricotar em meia – diminuição inclinada para a esquerda	Deslizar, deslizar, tricotar em meia – diminuição inclinada para a esquerda	B19
+reference_strings.xml	sym_p2tog_desc	default	Tricote 2 malhas juntas em liga	Tricote 2 pontos juntos em tricô	B19
+reference_strings.xml	sym_s2kp_desc	default	Dupla diminuição centrada	Diminuição dupla centralizada	B19
+reference_strings.xml	sym_cable_2_2_left_name	default	Torcido 2/2 à esquerda	Trança 2/2 à esquerda	B19
+reference_strings.xml	sym_cable_2_2_left_desc	default	Cruze 2 malhas sobre 2 malhas para a esquerda	Cruze 2 pontos sobre 2 pontos para a esquerda	B19
+reference_strings.xml	sym_cable_2_2_right_name	default	Torcido 2/2 à direita	Trança 2/2 à direita	B19
+reference_strings.xml	sym_cable_2_2_right_desc	default	Cruze 2 malhas sobre 2 malhas para a direita	Cruze 2 pontos sobre 2 pontos para a direita	B19
+reference_strings.xml	sym_cable_3_3_left_name	default	Torcido 3/3 à esquerda	Trança 3/3 à esquerda	B19
+reference_strings.xml	sym_cable_3_3_left_desc	default	Cruze 3 malhas sobre 3 malhas para a esquerda	Cruze 3 pontos sobre 3 pontos para a esquerda	B19
+reference_strings.xml	sym_cable_3_3_right_name	default	Torcido 3/3 à direita	Trança 3/3 à direita	B19
+reference_strings.xml	sym_cable_3_3_right_desc	default	Cruze 3 malhas sobre 3 malhas para a direita	Cruze 3 pontos sobre 3 pontos para a direita	B19
+reference_strings.xml	sym_repeat_name	default	Repetir	Repetição	B19
+reference_strings.xml	sym_repeat_desc	default	Parênteses retos que delimitam a repetição do motivo	Colchetes que delimitam a repetição do motivo	B19
+strings.xml	notes_save_failed	default	Não foi possível guardar as notas. As suas alterações continuam aqui. Tente novamente.	Não foi possível salvar as notas. Suas alterações continuam aqui. Tente novamente.	B12
+strings.xml	notes_discard_title	default	Descartar notas não guardadas?	Descartar notas não salvas?	B12
+strings.xml	notes_discard_message	default	Não foi possível guardar as suas alterações. Se sair agora, as alterações não guardadas serão descartadas.	Não foi possível salvar suas alterações. Se sair agora, as alterações não salvas serão descartadas.	B12
+strings.xml	delete	default	Eliminar	Excluir	B01
+strings.xml	reset	default	Repor	Zerar	B03
+strings.xml	save	default	Guardar	Salvar	B01
+strings.xml	settings	default	Definições	Configurações	B20
+strings.xml	tool_gauge_converter	default	Medidas e tensão	Medidas e amostra	B13
+strings.xml	tab_settings	default	Definições	Configurações	B01
+strings.xml	saved_patterns_title	default	Receitas guardadas	Receitas salvas	B08
+strings.xml	my_yarn_title	default	O meu fio	Meus fios	B06
+strings.xml	continue_knitting	default	Continuar a tricotar	Continuar tricotando	B02
+strings.xml	continue_crocheting	default	Continuar o croché	Continuar o crochê	B02
+strings.xml	craft_type_crochet	default	Croché	Crochê	B02
+strings.xml	main_counter_label	default	Etiqueta do contador principal	Nome do contador principal	B03
+strings.xml	main_counter_custom	default	Personalizada	Personalizado	B03
+strings.xml	main_counter_custom_label	default	Etiqueta personalizada	Nome personalizado	B03
+strings.xml	main_counter_custom_label_error	default	Introduza uma etiqueta.	Digite um nome.	B03
+strings.xml	delete_project	default	Eliminar	Excluir	B02
+strings.xml	delete_project_message	default	Eliminar %s? Esta ação não pode ser anulada.	Excluir %s? Esta ação não pode ser desfeita.	B02
+strings.xml	delete_n_projects	one	Eliminar %d projeto? Esta ação não pode ser anulada.	Excluir %d projeto? Esta ação não pode ser desfeita.	B02
+strings.xml	delete_n_projects	many	Eliminar %d projetos? Esta ação não pode ser anulada.	Excluir %d projetos? Esta ação não pode ser desfeita.	B02
+strings.xml	delete_n_projects	other	Eliminar %d projetos? Esta ação não pode ser anulada.	Excluir %d projetos? Esta ação não pode ser desfeita.	B02
+strings.xml	track_stitches	default	Seguir pontos	Acompanhar pontos	B03
+strings.xml	pattern_loading	default	A carregar receita…	Carregando receita…	B10
+strings.xml	pattern_calibration_save_first	default	Guardar primeiro valor	Salvar primeiro valor	B10
+strings.xml	pattern_calibration_save_last	default	Guardar último valor	Salvar último valor	B10
+strings.xml	pattern_next_page	default	Página seguinte	Próxima página	B10
+strings.xml	pattern_picker_saved_patterns	default	Receitas guardadas	Receitas salvas	B08
+strings.xml	pattern_image_import_title	default	Rever páginas da receita	Revisar páginas da receita	B09
+strings.xml	pattern_image_conversion_progress	default	A criar página %1$d de %2$d	Criando página %1$d de %2$d	B09
+strings.xml	pattern_image_attaching	default	A anexar PDF da receita	Anexando PDF da receita	B09
+strings.xml	pattern_image_error_unsupported	default	Remova a imagem não suportada antes de criar o PDF.	Remova a imagem incompatível antes de criar o PDF.	B09
+strings.xml	pattern_image_error_animated	default	Imagens animadas não são suportadas.	Imagens animadas não são compatíveis.	B09
+strings.xml	unlink_yarn	default	Desligar fio	Desvincular fio	B07
+strings.xml	linked_yarn_title	default	Fio ligado	Fio vinculado	B07
+strings.xml	no_linked_yarn	default	Ainda não há fio ligado	Ainda não há fio vinculado	B07
+strings.xml	choose_from_my_yarn	default	Escolher de «O meu fio»	Escolher de Meus fios	B16
+strings.xml	choose_from_my_yarn_body	default	Escolha um fio guardado	Escolha um fio salvo	B07
+strings.xml	add_yarn_to_project_body	default	Guarde uma nota rápida de fio apenas para este projeto	Salve uma nota rápida sobre o fio apenas para este projeto	B07
+strings.xml	save_to_my_yarn	default	Guardar em «O meu fio»	Salvar em Meus fios	B07
+strings.xml	saved_to_my_yarn	default	Guardado em «O meu fio»	Salvo em Meus fios	B07
+strings.xml	save_to_my_yarn_explanation	default	Copia o nome do fio, a descrição e a quantidade para uma ficha na secção O meu fio ligada a este projeto. Esta entrada mantém-se aqui; as notas não são copiadas.	Copia o nome do fio, a descrição e a quantidade para uma ficha em Meus fios vinculada a este projeto. Esta entrada permanece aqui; as notas não são copiadas.	B07
+strings.xml	saved_to_my_yarn_explanation	default	Esta entrada do projeto mantém-se separada. As notas não foram copiadas para a ficha na secção O meu fio.	Esta entrada do projeto permanece separada. As notas não foram copiadas para a ficha em Meus fios.	B07
+strings.xml	linked_project_label	default	Projeto ligado	Projeto vinculado	B06
+strings.xml	remove_project_link	default	Remover ligação	Remover vínculo	B06
+strings.xml	status_in_stash	default	Em stock	Em estoque	B06
+strings.xml	status_finished	default	Terminado	Esgotado	B06
+strings.xml	delete_yarn_card_message	default	Eliminar esta ficha de fio? Esta ação não pode ser anulada.	Excluir esta ficha de fio? Esta ação não pode ser desfeita.	B06
+strings.xml	no_sessions	default	Ainda não há sessões registadas. Abra um projeto e inicie uma sessão de trabalho para registar o seu tempo aqui.	Ainda não há sessões registradas. Abra um projeto e inicie uma sessão de trabalho para registrar seu tempo aqui.	B05
+strings.xml	delete_session_title	default	Eliminar sessão?	Excluir sessão?	B05
+strings.xml	delete_session_message	default	Eliminar esta sessão do histórico? Esta ação não pode ser anulada.	Excluir esta sessão do histórico? Esta ação não pode ser desfeita.	B05
+strings.xml	default_project_name	default	O meu projeto	Meu projeto	B02
+strings.xml	reset_counter	default	Repor contador	Zerar contador	B03
+strings.xml	reset_counter_message	default	Repor o contador para 0?	Zerar o contador?	B03
+strings.xml	counter_undo_last_change	default	Anular última alteração	Desfazer última alteração	B03
+strings.xml	increase_decrease_error_total_out_of_range	default	O resultado é demasiado grande. Use contagens de pontos menores.	O resultado é grande demais. Use contagens de pontos menores.	B14
+strings.xml	pattern_gauge	default	Tensão da receita	Amostra da receita	B13
+strings.xml	desired_width	default	Largura pretendida	Largura desejada	B15
+strings.xml	edge_stitches_optional	default	Total de pontos de ourela	Total de pontos de borda	B15
+strings.xml	edge_stitches_total_format	default	Total de pontos de ourela: %1$d	Total de pontos de borda: %1$d	B15
+strings.xml	search_size	default	Procurar tamanho…	Buscar tamanho…	B17
+strings.xml	settings_language	default	Idioma da app	Idioma do aplicativo	B20
+strings.xml	haptic_feedback	default	Resposta háptica	Vibração ao tocar	B20
+strings.xml	keep_screen_awake	default	Manter o ecrã ativo	Manter a tela ativa	B20
+strings.xml	upgrade_to_pro	default	Atualizar para Pro	Obter Pro	B22
+strings.xml	privacy_summary	default	Os dados dos seus projetos ficam no dispositivo. O Ravelry e o Google Play usam serviços de rede. O Firebase Crashlytics envia relatórios de falhas para a Google. As estatísticas de utilização são opcionais. Sem sincronização na nuvem.	Os dados dos seus projetos ficam no dispositivo. O Ravelry e o Google Play usam serviços de rede. O Firebase Crashlytics envia relatórios de falhas para o Google. As estatísticas de uso são opcionais. Sem sincronização na nuvem.	B20
+strings.xml	usage_analytics	default	Partilhar estatísticas de utilização	Compartilhar estatísticas de uso	B20
+strings.xml	usage_analytics_description	default	Quando ativada, esta opção envia nomes de ecrãs, utilização de funcionalidades, duração de utilização e informações da aplicação e do dispositivo para o PostHog na UE. O conteúdo dos projetos é excluído. Pode desativar a recolha a qualquer momento.	Quando ativada, esta opção envia nomes de telas, uso de recursos, tempo de uso e informações do aplicativo e do dispositivo para o PostHog na UE. O conteúdo dos projetos é excluído. Você pode desativar a coleta a qualquer momento.	B20
+strings.xml	one_time_purchase	default	Compra única. Sem subscrição.	Compra única. Sem assinatura.	B22
+strings.xml	loading_price	default	A carregar preço…	Carregando preço…	B22
+strings.xml	billing_purchase_network_error	default	Não foi possível ligar ao Google Play. Verifique a ligação à internet e tente novamente.	Não foi possível conectar ao Google Play. Verifique a conexão com a internet e tente novamente.	B22
+strings.xml	gauge_label	default	Tensão	Amostra	B13
+strings.xml	no_saved_yarns	default	Ainda não há fichas de fio guardadas	Ainda não há fichas de fio salvas	B06
+strings.xml	parsing_instruction	default	A analisar…	Analisando…	B14
+strings.xml	generic_error_unknown	default	Algo correu mal — tente novamente	Algo deu errado — tente novamente	B01
+strings.xml	camera_permission_denied	default	É necessária autorização da câmara para tirar fotografias	É necessário permitir o acesso à câmera para tirar fotos	B09
+strings.xml	camera_permission_denied_permanent	default	Autorização da câmara negada — ative-a nas Definições	Permissão da câmera negada — ative nas Configurações	B09
+strings.xml	widget_pro_required	default	Atualize para Pro para usar o widget	Obtenha o Pro para usar o widget	B03
+strings.xml	desc_gauge_calculator	default	Converta comprimentos e calcule tensão, quantidades e medidas	Converta comprimentos e calcule amostras, quantidades e medidas	B13
+strings.xml	library_my_collection	default	A minha coleção	Minha coleção	B01
+strings.xml	desc_saved_patterns	default	Receitas guardadas a partir de sites e ficheiros PDF	Receitas salvas de sites e arquivos PDF	B08
+strings.xml	empty_saved_patterns	default	Ainda não há receitas guardadas.\nAdicione uma receita online ou importe um ficheiro PDF.	Ainda não há receitas salvas.\nAdicione uma receita online ou importe um arquivo PDF.	B08
+strings.xml	empty_my_yarn	default	Ainda não há notas de fio guardadas.	Ainda não há notas de fio salvas.	B06
+strings.xml	insights_craft_verb_crocheting	default	fazer croché	fazer crochê	B05
+strings.xml	insights_no_tracked_activity	default	Nenhuma atividade registada	Nenhuma atividade registrada	B05
+strings.xml	insights_chart_a11y_daily	default	Tempo diário a %1$s, %2$s, %3$s, mais longo %4$s	Tempo diário dedicado a %1$s, %2$s, %3$s, mais longo %4$s	B05
+strings.xml	insights_chart_a11y_weekly	default	Tempo semanal a %1$s, %2$s, %3$s, mais longo %4$s	Tempo semanal dedicado a %1$s, %2$s, %3$s, mais longo %4$s	B05
+strings.xml	insights_chart_a11y_monthly	default	Tempo mensal a %1$s, %2$s, %3$s, mais longo %4$s	Tempo mensal dedicado a %1$s, %2$s, %3$s, mais longo %4$s	B05
+strings.xml	insights_chart_a11y_next	default	Barra seguinte	Próxima barra	B05
+strings.xml	insights_empty_body	default	Abra um projeto e inicie uma sessão de trabalho para registar o seu tempo aqui.	Abra um projeto e inicie uma sessão de trabalho para registrar seu tempo aqui.	B05
+strings.xml	insights_pro_chart_body	default	O Pro agrupa o tempo registado em gráficos diários, semanais ou mensais e adiciona a sua sequência de atividade.	O Pro agrupa o tempo registrado em gráficos diários, semanais ou mensais e adiciona sua sequência de atividade.	B05
+strings.xml	your_gauge_section	default	A sua tensão	Sua amostra	B13
+strings.xml	enter_directly	default	Introduzir diretamente	Digitar diretamente	B13
+strings.xml	category_baby	default	Bebé (0–24 meses)	Bebê (0–24 meses)	B17
+strings.xml	search_abbreviation	default	Procurar abreviaturas…	Buscar abreviaturas…	B18
+strings.xml	category_cables	default	Torcidos	Tranças	B19
+strings.xml	update_downloaded	default	Atualização descarregada — reinicie para aplicar	Atualização baixada — reinicie para aplicar	B20
+strings.xml	delete_reminder_title	default	Eliminar lembrete?	Excluir lembrete?	B04
+strings.xml	delete_reminder_confirm	default	"Eliminar o lembrete \""%1$s\""?"	"Excluir o lembrete \""%1$s\""?"	B04
+strings.xml	linked_counter	default	Contador ligado	Contador vinculado	B04
+strings.xml	shaping	default	Moldagem	Modelagem	B04
+strings.xml	repeat_section	default	Secção de repetição	Seção de repetição	B04
+strings.xml	shape_every_n	default	Moldar a cada N incrementos	Modelar a cada N incrementos	B04
+strings.xml	rename_counter	default	Mudar nome	Renomear	B04
+strings.xml	reset_counter_name	default	Repor	Zerar	B03
+strings.xml	delete_counter	default	Eliminar	Excluir	B04
+strings.xml	delete_counter_title	default	Eliminar contador?	Excluir contador?	B04
+strings.xml	delete_counter_message	default	"\""%1$s\"" será eliminado permanentemente."	"\""%1$s\"" será excluído permanentemente."	B04
+strings.xml	counters_list_empty	default	Sem contadores extra	Sem contadores extras	B04
+strings.xml	share_photo	default	Partilhar	Compartilhar	B12
+strings.xml	photo_share_failed	default	Não foi possível partilhar a foto.	Não foi possível compartilhar a foto.	B12
+strings.xml	delete_photo	default	Eliminar foto	Excluir foto	B12
+strings.xml	delete_photo_confirm	default	Eliminar esta foto?	Excluir esta foto?	B12
+strings.xml	delete_photos_confirm	one	Eliminar %1$d foto?	Excluir %1$d foto?	B12
+strings.xml	delete_photos_confirm	many	Eliminar %1$d fotos?	Excluir %1$d fotos?	B12
+strings.xml	delete_photos_confirm	other	Eliminar %1$d fotos?	Excluir %1$d fotos?	B12
+strings.xml	delete_patterns_confirm	one	Eliminar %1$d receita da biblioteca?\n\nSe existirem anotações em PDF criadas na biblioteca para esta receita, também serão eliminadas e deixarão de aparecer nos projetos. Os PDF já anexados aos projetos e as anotações em PDF criadas nos projetos serão mantidos.	Excluir %1$d receita da biblioteca?\n\nSe houver anotações em PDF criadas na biblioteca para esta receita, elas também serão excluídas e deixarão de aparecer nos projetos. Os PDFs já anexados aos projetos e as anotações em PDF criadas nos projetos serão mantidos.	B08
+strings.xml	delete_patterns_confirm	many	Eliminar %1$d receitas da biblioteca?\n\nSe existirem anotações em PDF criadas na biblioteca para as receitas selecionadas, também serão eliminadas e deixarão de aparecer nos projetos. Os PDF já anexados aos projetos e as anotações em PDF criadas nos projetos serão mantidos.	Excluir %1$d receitas da biblioteca?\n\nSe houver anotações em PDF criadas na biblioteca para as receitas selecionadas, elas também serão excluídas e deixarão de aparecer nos projetos. Os PDFs já anexados aos projetos e as anotações em PDF criadas nos projetos serão mantidos.	B08
+strings.xml	delete_patterns_confirm	other	Eliminar %1$d receitas da biblioteca?\n\nSe existirem anotações em PDF criadas na biblioteca para as receitas selecionadas, também serão eliminadas e deixarão de aparecer nos projetos. Os PDF já anexados aos projetos e as anotações em PDF criadas nos projetos serão mantidos.	Excluir %1$d receitas da biblioteca?\n\nSe houver anotações em PDF criadas na biblioteca para as receitas selecionadas, elas também serão excluídas e deixarão de aparecer nos projetos. Os PDFs já anexados aos projetos e as anotações em PDF criadas nos projetos serão mantidos.	B08
+strings.xml	delete_pattern	default	Eliminar receita	Excluir receita	B08
+strings.xml	delete_yarn_cards_confirm	one	Eliminar %d ficha de fio?	Excluir %d ficha de fio?	B06
+strings.xml	delete_yarn_cards_confirm	many	Eliminar %d fichas de fio?	Excluir %d fichas de fio?	B06
+strings.xml	delete_yarn_cards_confirm	other	Eliminar %d fichas de fio?	Excluir %d fichas de fio?	B06
+strings.xml	delete_yarn_card	default	Eliminar ficha de fio	Excluir ficha de fio	B06
+strings.xml	rename_photo	default	Mudar nome da foto	Renomear foto	B12
+strings.xml	desc_ravelry	default	Explore receitas e guarde os PDF no KnitTools	Explore receitas e salve os PDFs no KnitTools	B08
+strings.xml	saved_pattern_detail_no_pdf_explanation	default	Os detalhes do modelo estão guardados. Não há nenhum PDF anexado para leitura offline.	Os detalhes da receita estão salvos. Não há nenhum PDF anexado para leitura offline.	B08
+strings.xml	saved_pattern_detail_remove_confirm	default	Remover esta receita guardada da biblioteca?\n\nSe existirem anotações em PDF criadas na biblioteca para esta receita, também serão eliminadas e deixarão de aparecer nos projetos. Os PDF já anexados aos projetos e as anotações em PDF criadas nos projetos serão mantidos.	Remover esta receita salva da biblioteca?\n\nSe houver anotações em PDF criadas na biblioteca para esta receita, elas também serão excluídas e deixarão de aparecer nos projetos. Os PDFs já anexados aos projetos e as anotações em PDF criadas nos projetos serão mantidos.	B08
+strings.xml	tip_pattern_repeat_desc	default	Se o seu motivo se repete a cada X pontos (por exemplo, um torcido a cada 8 pontos), introduza esse número aqui. A calculadora arredonda os pontos do corpo, antes dos pontos de ourela, para o múltiplo mais próximo para que o motivo fique alinhado.	Se o motivo se repete a cada X pontos (por exemplo, uma trança a cada 8 pontos), digite esse número aqui. A calculadora arredonda os pontos do corpo, antes dos pontos de borda, para o múltiplo mais próximo para que o motivo fique alinhado.	B15
+strings.xml	tip_edge_stitches_title	default	Pontos de ourela	Pontos de borda	B15
+strings.xml	tip_edge_stitches_desc	default	Os pontos de ourela são pontos extra fora da repetição do motivo. Introduza o total de pontos de ourela a montar; a calculadora adiciona-os depois de calcular a largura pretendida, por exemplo 2 para um ponto em cada lado.	Os pontos de borda são pontos extras fora da repetição do motivo. Digite o total de pontos de borda a montar; a calculadora os adiciona depois de calcular a largura desejada, por exemplo 2 para um ponto de cada lado.	B15
+strings.xml	tip_flat_vs_circular_desc	default	Tricô plano: trabalha de ida e volta em agulhas direitas ou circulares, virando no fim de cada carreira.\n\nTricô circular: trabalha numa volta contínua. Os aumentos/diminuições distribuem-se uniformemente ao longo da volta.\n\nNos resultados, K = tricotar em meia, M1 = aumentar uma malha entre pontos e K2tog = tricotar duas malhas juntas em meia. × indica o número de repetições.	Tricô plano: trabalhe em carreiras de ida e volta com agulhas retas ou circulares, virando no fim de cada carreira.\n\nTricô circular: trabalhe em voltas contínuas. Os aumentos e as diminuições são distribuídos uniformemente ao longo da volta.\n\nNos resultados, K = tricotar em meia, M1 = aumentar um ponto entre pontos e K2tog = tricotar dois pontos juntos em meia. × indica o número de repetições.	B14
+strings.xml	tip_imperial_units_desc	default	Usa polegadas em vez de centímetros e jardas em vez de metros como unidades predefinidas. A tensão é indicada por 4 polegadas em vez de por 10 cm. Em Medidas e tensão, pode escolher outras unidades.	Usa polegadas em vez de centímetros e jardas em vez de metros como unidades padrão. A amostra é indicada por 4 polegadas em vez de por 10 cm. Em Medidas e amostra, você pode escolher outras unidades.	B20
+strings.xml	restore_purchases_checking	default	A verificar compras…	Verificando compras…	B22
+strings.xml	extra_counters_title	default	Contadores extra	Contadores extras	B04
+strings.xml	pro_prompt_reactivation_trial_body	default	Inicie o seu período de teste gratuito do Pro de 14 dias para reativar este projeto e trabalhar em vários projetos ao mesmo tempo. Pode guardar e consultar projetos concluídos gratuitamente. Os seus projetos continuam disponíveis após o teste.	Inicie seu período de teste gratuito do Pro de 14 dias para reativar este projeto e trabalhar em vários projetos ao mesmo tempo. Você pode salvar e consultar projetos concluídos gratuitamente. Seus projetos continuam disponíveis após o teste.	B22
+strings.xml	pro_prompt_reactivation_body	default	O Pro permite reativar este projeto e trabalhar em vários projetos ao mesmo tempo. Pode guardar e consultar projetos concluídos gratuitamente. Os seus projetos existentes continuam disponíveis.	O Pro permite reativar este projeto e trabalhar em vários projetos ao mesmo tempo. Você pode salvar e consultar projetos concluídos gratuitamente. Seus projetos existentes continuam disponíveis.	B22
+strings.xml	pro_prompt_yarn_body	default	Criar um novo cartão de fio requer o Pro. Os seus cartões atuais continuarão disponíveis e editáveis.	Criar uma nova ficha de fio requer o Pro. Suas fichas atuais continuarão disponíveis e editáveis.	B22
+strings.xml	pro_prompt_save_yarn_title	default	Guarde este fio com o Pro	Salve este fio com o Pro	B22
+strings.xml	pro_prompt_save_yarn_body	default	Guardar este fio do projeto em O meu fio cria um novo cartão e requer o Pro. A nota de fio do projeto continuará disponível.	Salvar este fio do projeto em Meus fios cria uma nova ficha e requer o Pro. A nota de fio do projeto continuará disponível.	B22
+strings.xml	pro_prompt_pattern_camera_title	default	Transforme fotos do padrão em PDF com o Pro	Transforme fotos da receita em PDF com o Pro	B22
+strings.xml	pro_prompt_pattern_camera_body	default	Criar um novo PDF a partir de fotos do padrão requer o Pro. Os seus padrões e PDF atuais continuarão disponíveis.	Criar um novo PDF a partir de fotos da receita requer o Pro. Suas receitas e PDFs atuais continuarão disponíveis.	B22
+strings.xml	pro_prompt_widget_title	default	Use o widget do ecrã inicial com o Pro	Use o widget da tela inicial com o Pro	B22
+strings.xml	pro_prompt_widget_body	default	O widget do ecrã inicial é uma vista avançada do Pro. Os dados dos seus projetos e contadores continuarão disponíveis no KnitTools.	O widget da tela inicial é uma visualização avançada do Pro. Os dados dos seus projetos e contadores continuarão disponíveis no KnitTools.	B22
+strings.xml	pro_badge_locked_description	default	Funcionalidade Pro	Recurso Pro	B22
+strings.xml	pro_badge_trial_description	default	Funcionalidade Pro, disponível durante a avaliação	Recurso Pro, disponível durante a avaliação	B22
+strings.xml	pro_trial_ended_body	default	Tudo o que criou continua disponível. Pode continuar a usar e editar. O Pro só é necessário para novos itens Pro e vistas avançadas.	Tudo o que você criou continua disponível. Você pode continuar a usar e editar. O Pro só é necessário para novos itens Pro e visualizações avançadas.	B22
+strings.xml	pro_group_projects_body	default	Trabalhe em vários projetos ativos e crie a primeira nota do projeto, fotos de progresso e cartões de fio.	Trabalhe em vários projetos ativos e crie a primeira nota do projeto, fotos de progresso e fichas de fio.	B22
+strings.xml	pro_group_workflow_body	default	Use o contador compacto de repetições, contadores adicionais, de repetição, modelagem e secção, lembretes de carreira, fotos do padrão como PDF e o widget do ecrã inicial.	Use o contador compacto de repetições, contadores adicionais, de repetição, modelagem e seção, lembretes de carreira, fotos da receita como PDF e o widget da tela inicial.	B22
+strings.xml	work_session_recovery_needed	default	É necessário rever o tempo da sessão	É necessário revisar o tempo da sessão	B05
+strings.xml	work_session_recovery_title	default	Rever tempo da sessão	Revisar tempo da sessão	B05
+strings.xml	work_session_save_then_start	default	Parar, guardar e iniciar aqui	Parar, salvar e iniciar aqui	B05
+strings.xml	work_session_complete_project_body	default	Guarde ou descarte a sessão ativa antes de concluir o projeto.	Salve ou descarte a sessão ativa antes de concluir o projeto.	B05
+strings.xml	work_session_save_and_complete	default	Guardar sessão e concluir	Salvar sessão e concluir	B05
+strings.xml	work_session_delete_project_title	default	Descartar sessão ativa e eliminar projeto?	Descartar sessão ativa e excluir projeto?	B05
+strings.xml	work_session_delete_project_body	default	Eliminar o projeto também elimina as sessões guardadas. A sessão ativa tem de ser descartada primeiro.	Excluir o projeto também exclui as sessões salvas. A sessão ativa precisa ser descartada primeiro.	B05
+strings.xml	work_session_discard_and_delete	default	Descartar sessão e eliminar	Descartar sessão e excluir	B05
+strings.xml	work_session_edit_total_duration	default	Edite a duração total. Guardar termina a sessão.	Edite a duração total. Salvar encerra a sessão.	B05
+strings.xml	work_session_invalid_duration	default	Duração inválida. Introduza horas não negativas e minutos de 0 a 59.	Duração inválida. Digite horas não negativas e minutos de 0 a 59.	B05
+strings.xml	work_session_save_edited_and_stop	default	Guardar duração editada e terminar	Salvar duração editada e encerrar	B05
+strings.xml	work_session_save	default	Guardar sessão	Salvar sessão	B05
+strings.xml	work_session_could_not_save	default	Não foi possível guardar a sessão	Não foi possível salvar a sessão	B05
+strings.xml	work_session_history_full	default	O histórico de sessões está cheio. As sessões existentes continuam guardadas.	O histórico de sessões está cheio. As sessões existentes continuam salvas.	B05
+strings.xml	project_documents_primary	default	Modelo principal	Receita principal	B09
+strings.xml	project_documents_rename	default	Mudar nome	Renomear	B09
+strings.xml	project_documents_rename_title	default	Mudar o nome do documento	Renomear documento	B09
+strings.xml	project_documents_error_invalid_label	default	Introduza um nome com 1–50 caracteres.	Digite um nome com 1–50 caracteres.	B09
+strings.xml	project_documents_error_unavailable	default	Este PDF já não está disponível. Remova-o ou adicione novamente o ficheiro.	Este PDF não está mais disponível. Remova ou adicione o arquivo novamente.	B09
+strings.xml	project_documents_error_generic	default	Não foi possível guardar a alteração ao documento.	Não foi possível salvar a alteração no documento.	B09
+strings.xml	project_documents_pattern_information	default	Informações do modelo	Informações da receita	B09
+strings.xml	project_documents_remove_last_message	default	Remover %1$s? O projeto deixará de ter um modelo legível associado.	Remover %1$s? O projeto deixará de ter uma receita disponível para leitura.	B09
+strings.xml	folder_loading	default	A carregar pastas	Carregando pastas	B02
+strings.xml	folder_rename	default	Mudar nome da pasta	Renomear pasta	B02
+strings.xml	folder_delete	default	Eliminar pasta	Excluir pasta	B02
+strings.xml	folder_deleted	default	Pasta eliminada. Os projetos foram mantidos.	Pasta excluída. Os projetos foram mantidos.	B02
+strings.xml	folder_rename_error	default	Não foi possível mudar o nome da pasta.	Não foi possível renomear a pasta.	B02
+strings.xml	folder_delete_error	default	Não foi possível eliminar a pasta.	Não foi possível excluir a pasta.	B02
+strings.xml	folder_name_required	default	Introduza um nome de pasta.	Digite um nome de pasta.	B02
+strings.xml	folder_name_invalid	default	Os nomes das pastas não podem conter caracteres de controlo.	Os nomes das pastas não podem conter caracteres de controle.	B02
+strings.xml	folder_delete_title	default	Eliminar pasta?	Excluir pasta?	B02
+strings.xml	folder_delete_message	default	Eliminar %1$s?	Excluir %1$s?	B02
+strings.xml	folder_all_projects_description	default	Todos os projetos. Vista virtual de todos os projetos.	Todos os projetos. Visualização virtual de todos os projetos.	B02
+strings.xml	folder_rename_description	default	Mudar nome da pasta %1$s	Renomear pasta %1$s	B02
+strings.xml	folder_delete_description	default	Eliminar a pasta %1$s	Excluir a pasta %1$s	B02
+strings.xml	measurement_title	default	Medidas e tensão	Medidas e amostra	B13
+strings.xml	measurement_measure_gauge	default	Medir a tensão	Medir a amostra	B13
+strings.xml	measurement_calculate	default	Calcular a partir da tensão	Calcular a partir da amostra	B13
+strings.xml	measurement_target_width	default	Largura pretendida	Largura desejada	B13
+strings.xml	measurement_target_height	default	Altura pretendida	Altura desejada	B13
+strings.xml	measurement_gauge_difference	default	Diferença de tensão	Diferença de densidade	B13
+strings.xml	measurement_invalid_number	default	Introduza um número válido.	Digite um número válido.	B13
+strings.xml	measurement_positive_required	default	Introduza um valor superior a zero.	Digite um valor maior que zero.	B13
+strings.xml	measurement_estimate	default	Estimativa baseada na tensão introduzida.	Estimativa baseada na amostra informada.	B13
+strings.xml	measurement_adjust_warning	default	Estimativa matemática baseada na tensão introduzida. A modelagem e a construção não são reescritas. A folga, as repetições do motivo, as bordas, as cavas, os decotes e as mangas podem precisar de ajustes separados. Meça uma amostra lavada ou bloqueada para uma estimativa mais útil.	Estimativa matemática baseada na amostra informada. A modelagem e a construção não são reescritas. A folga, as repetições do motivo, as bordas, as cavas, os decotes e as mangas podem precisar de ajustes separados. Meça uma amostra lavada ou blocada para uma estimativa mais útil.	B13
+strings.xml	measurement_swatch_hint	default	Para uma estimativa mais útil, meça a amostra depois de a lavar ou bloquear.	Para uma estimativa mais útil, meça a amostra depois de lavar ou blocar.	B13
+strings.xml	yarn_usage_title	default	Utilização do fio	Uso do fio	B07
+strings.xml	yarn_usage_scope	default	Regista o fio planeado, reservado e utilizado neste projeto. As quantidades em O meu fio não mudam.	Registra o fio planejado, reservado e usado neste projeto. As quantidades em Meus fios não mudam.	B07
+strings.xml	yarn_usage_skeins	default	Meadas	Novelos	B07
+strings.xml	yarn_usage_planned	default	Planeado	Planejado	B07
+strings.xml	yarn_usage_length	default	Comprimento por meada	Comprimento por novelo	B07
+strings.xml	yarn_usage_weight	default	Peso por meada	Peso por novelo	B07
+strings.xml	yarn_usage_add_conversion	default	Adicionar conversão por meada	Adicionar conversão por novelo	B07
+strings.xml	yarn_usage_remove_conversion	default	Remover conversão por meada	Remover conversão por novelo	B07
+strings.xml	yarn_usage_conversion_required	default	Introduza um comprimento e um peso positivos por meada para usar gramas ou meadas.	Digite um comprimento e um peso positivos por novelo para usar gramas ou novelos.	B07
+strings.xml	yarn_usage_delete	default	Eliminar acompanhamento	Excluir acompanhamento	B07
+strings.xml	yarn_usage_delete_named	default	Eliminar acompanhamento de %1$s	Excluir acompanhamento de %1$s	B07
+strings.xml	yarn_usage_delete_title	default	Eliminar acompanhamento?	Excluir acompanhamento?	B07
+strings.xml	yarn_usage_delete_body	default	Apenas o acompanhamento da utilização de %1$s será eliminado. A ficha do fio, a nota de fio do projeto e os restantes dados do projeto serão mantidos.	Apenas o acompanhamento do uso de %1$s será excluído. A ficha do fio, a nota de fio do projeto e os demais dados do projeto serão mantidos.	B07
+strings.xml	yarn_usage_invalid_amount	default	Introduza uma quantidade válida.	Digite uma quantidade válida.	B07
+strings.xml	yarn_usage_positive	default	Introduza um valor superior a zero.	Digite um valor maior que zero.	B07
+strings.xml	yarn_usage_save_failed	default	Não foi possível guardar a utilização. Os seus dados foram mantidos. Tente novamente.	Não foi possível salvar o uso. Seus dados foram mantidos. Tente novamente.	B07
+strings.xml	yarn_usage_delete_failed	default	Não foi possível eliminar o acompanhamento. Tente novamente.	Não foi possível excluir o acompanhamento. Tente novamente.	B07
+strings.xml	yarn_usage_exists	default	Já existe um acompanhamento para este fio. Feche o editor e abra o acompanhamento guardado.	Já existe um acompanhamento para este fio. Feche o editor e abra o acompanhamento salvo.	B07
+strings.xml	yarn_usage_track	default	Registar utilização	Registrar uso	B07
+strings.xml	yarn_usage_edit	default	Editar utilização	Editar uso	B07
+strings.xml	yarn_usage_track_named	default	Registar utilização de %1$s	Registrar uso de %1$s	B07
+strings.xml	yarn_usage_edit_named	default	Editar utilização de %1$s	Editar uso de %1$s	B07
+strings.xml	yarn_usage_unlinked	default	A origem já não está ligada a este projeto	A origem não está mais vinculada a este projeto	B07
+strings.xml	yarn_usage_skeins_format	one	%1$s meada	%1$s novelo	B07
+strings.xml	yarn_usage_skeins_format	many	%1$s meadas	%1$s novelos	B07
+strings.xml	yarn_usage_skeins_format	other	%1$s meadas	%1$s novelos	B07
+strings.xml	web_pattern_add	default	Adicionar modelo online	Adicionar receita online	B08
+strings.xml	web_pattern_label	default	Modelo online	Receita online	B08
+strings.xml	web_pattern_title_label	default	Nome do modelo	Nome da receita	B08
+strings.xml	web_pattern_edit	default	Editar modelo online	Editar receita online	B08
+strings.xml	web_pattern_edit_title	default	Editar modelo online	Editar receita online	B08
+strings.xml	web_pattern_delete	default	Eliminar modelo online	Excluir receita online	B08
+strings.xml	web_pattern_delete_confirm_title	default	Eliminar o modelo online?	Excluir a receita online?	B08
+strings.xml	web_pattern_delete_confirm_message	default	Eliminar %1$s das Receitas guardadas na biblioteca?\n\nSe existirem anotações em PDF criadas na biblioteca para esta receita, também serão eliminadas e deixarão de aparecer nos projetos. Os PDF já anexados aos projetos e as anotações em PDF criadas nos projetos serão mantidos.	Excluir %1$s das Receitas salvas na biblioteca?\n\nSe houver anotações em PDF criadas na biblioteca para esta receita, elas também serão excluídas e deixarão de aparecer nos projetos. Os PDFs já anexados aos projetos e as anotações em PDF criadas nos projetos serão mantidos.	B08
+strings.xml	incoming_pdf_title	default	Guardar modelo	Salvar receita	B09
+strings.xml	incoming_pdf_library_only	default	Guardar apenas na Biblioteca	Salvar apenas na Biblioteca	B09
+strings.xml	incoming_pdf_save_failed	default	Não foi possível guardar o modelo	Não foi possível salvar a receita	B09
+strings.xml	ravelry_browser_hint	default	Abra um modelo e toque em Download PDF para o guardar no KnitTools.	Abra uma receita e toque em Download PDF para salvar no KnitTools.	B08
+strings.xml	ravelry_purchase_in_browser	default	O pagamento abre no navegador. Depois da compra, transfira a receita aqui a partir da sua biblioteca do Ravelry.	O pagamento abre no navegador. Depois da compra, baixe a receita aqui a partir da sua biblioteca do Ravelry.	B08
+strings.xml	incoming_pdf_downloading	default	A transferir o modelo…	Baixando a receita…	B09
+strings.xml	incoming_pdf_not_pdf	default	Só é possível guardar modelos PDF	Só é possível salvar receitas em PDF	B09
+strings.xml	web_pattern_unlink	default	Desassociar as informações do modelo	Desvincular as informações da receita	B08
+strings.xml	web_pattern_replace_confirm_title	default	Substituir as informações do modelo?	Substituir as informações da receita?	B08
+strings.xml	web_pattern_replace_confirm_message	default	Substituir as informações atuais do modelo por %1$s?	Substituir as informações atuais da receita por %1$s?	B08
+strings.xml	web_pattern_edit_description	default	Editar o modelo online %1$s	Editar a receita online %1$s	B08
+strings.xml	web_pattern_attach_description	default	Associar o modelo online %1$s	Associar a receita online %1$s	B08
+strings.xml	web_pattern_unlink_description	default	Desassociar as informações do modelo %1$s	Desvincular as informações da receita %1$s	B08
+strings.xml	web_pattern_shared_link	default	Ligação partilhada	Link compartilhado	B08
+strings.xml	web_pattern_confirm_details	default	Confirmar os detalhes do modelo	Confirmar os detalhes da receita	B08
+strings.xml	web_pattern_error_title_required	default	O nome do modelo é obrigatório	O nome da receita é obrigatório	B08
+strings.xml	web_pattern_http_warning	default	Este endereço utiliza HTTP. A ligação pode não ser segura.	Este endereço usa HTTP. A conexão pode não ser segura.	B08
+strings.xml	web_pattern_already_saved	default	Este modelo já está guardado	Esta receita já está salva	B08
+strings.xml	web_pattern_save_failed	default	Não foi possível guardar o modelo online	Não foi possível salvar a receita online	B08
+strings.xml	web_pattern_update_failed	default	Não foi possível atualizar o modelo online	Não foi possível atualizar a receita online	B08
+strings.xml	web_pattern_delete_failed	default	Não foi possível eliminar o modelo online	Não foi possível excluir a receita online	B08
+strings.xml	web_pattern_source_controlled	default	A origem controla a disponibilidade do modelo	A origem controla a disponibilidade da receita	B08
+strings.xml	web_pattern_not_offline	default	A página não está guardada para utilização offline	A página não está salva para uso offline	B08
+strings.xml	web_pattern_opens_original	default	Esta ligação abre o site original	Este link abre o site original	B08
+strings.xml	web_pattern_use_shared_link	default	Usar a ligação partilhada	Usar o link compartilhado	B08
+strings.xml	web_pattern_share_ambiguous	default	Foi partilhado mais de um endereço de site	Foi compartilhado mais de um endereço de site	B08
+strings.xml	backup_title	default	Cópia de segurança e restauro	Backup e restauração	B21
+strings.xml	backup_description	default	Guarde projetos, notas, padrões e fotografias locais num ficheiro de cópia de segurança.	Salve projetos, notas, receitas e fotos locais em um arquivo de backup.	B21
+strings.xml	backup_privacy	default	A cópia não está encriptada. Pode conter notas privadas, fotografias e padrões PDF. Guarde-a num local de confiança.	O backup não é criptografado. Pode conter notas privadas, fotos e receitas em PDF. Salve em um local confiável.	B21
+strings.xml	backup_exclusions	default	As definições e o idioma do dispositivo não mudam. Períodos de teste, compras, sessões de conta e widgets não são transferidos. Uma sessão de trabalho ativa terá de ser revista após o restauro.	As configurações e o idioma do dispositivo não mudam. Períodos de teste, compras, sessões de conta e widgets não são transferidos. Uma sessão de trabalho ativa precisará ser revisada após a restauração.	B21
+strings.xml	backup_export	default	Exportar cópia de segurança	Exportar backup	B21
+strings.xml	backup_restore	default	Restaurar cópia de segurança	Restaurar backup	B21
+strings.xml	backup_preview_date	default	Data da cópia: %1$s	Data do backup: %1$s	B21
+strings.xml	backup_preview_patterns	default	Padrões guardados: %1$d	Receitas salvas: %1$d	B21
+strings.xml	backup_preview_files	default	Ficheiros: %1$d	Arquivos: %1$d	B21
+strings.xml	backup_confirm_message	default	O restauro substitui todos os projetos, notas, padrões, fotografias e outros conteúdos locais atuais do KnitTools. Não é possível anular esta ação. Exporte primeiro uma cópia se quiser manter o conteúdo atual.	A restauração substitui todos os projetos, notas, receitas, fotos e outros conteúdos locais atuais do KnitTools. Não é possível desfazer esta ação. Exporte um backup primeiro se quiser manter o conteúdo atual.	B21
+strings.xml	backup_exporting	default	A criar cópia de segurança…	Criando backup…	B21
+strings.xml	backup_validating	default	A verificar cópia de segurança…	Verificando backup…	B21
+strings.xml	backup_restoring	default	A restaurar dados. Aguarde…	Restaurando dados. Aguarde…	B21
+strings.xml	backup_restored	default	Cópia de segurança restaurada.	Backup restaurado.	B21
+strings.xml	backup_exported	default	Cópia de segurança exportada.	Backup exportado.	B21
+strings.xml	backup_error_unsupported	default	Esta versão da cópia não é suportada. Atualize o KnitTools e tente novamente.	Esta versão do backup não é compatível. Atualize o KnitTools e tente novamente.	B21
+strings.xml	backup_error_invalid	default	Este ficheiro não é uma cópia do KnitTools. Escolha uma cópia do KnitTools.	Este arquivo não é um backup do KnitTools. Escolha um backup do KnitTools.	B21
+strings.xml	backup_error_corrupt	default	A cópia está danificada ou contém dados inválidos. Escolha outra. Os dados atuais não foram substituídos.	O backup está danificado ou contém dados inválidos. Escolha outro. Os dados atuais não foram substituídos.	B21
+strings.xml	backup_error_space	default	Não existe espaço livre suficiente. Liberte espaço e tente novamente.	Não há espaço livre suficiente. Libere espaço e tente novamente.	B21
+strings.xml	backup_error_read	default	Não foi possível ler a origem. Verifique se o ficheiro está disponível e tente novamente.	Não foi possível ler a origem. Verifique se o arquivo está disponível e tente novamente.	B21
+strings.xml	backup_error_write	default	Não foi possível guardar a cópia. Verifique o destino e tente novamente. Elimine qualquer ficheiro de destino incompleto.	Não foi possível salvar o backup. Verifique o destino e tente novamente. Exclua qualquer arquivo de destino incompleto.	B21
+strings.xml	backup_error_restore	default	O restauro falhou. O conteúdo anterior foi mantido. Tente novamente.	A restauração falhou. O conteúdo anterior foi mantido. Tente novamente.	B21
+strings.xml	counter_history_reset	default	Reposição a zero	Contador zerado	B03
+strings.xml	project_overview_yarn_planned	default	Planeado	Planejado	B07
+strings.xml	counter_step_invalid	default	Introduza um número inteiro entre 1 e %1$d.	Digite um número inteiro entre 1 e %1$d.	B03
+strings.xml	counter_step_save_failed	default	Não foi possível guardar o incremento. Tente novamente.	Não foi possível salvar o incremento. Tente novamente.	B03
+strings.xml	project_yarn_edit_invalid	default	Introduza um nome para o fio.	Digite um nome para o fio.	B07
+strings.xml	project_yarn_edit_failed	default	Não foi possível guardar as alterações. O rascunho continua aqui. Tente novamente.	Não foi possível salvar as alterações. O rascunho continua aqui. Tente novamente.	B07

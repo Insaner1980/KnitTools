@@ -12,15 +12,21 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.platform.app.InstrumentationRegistry
+import com.finnvek.knittools.App
 import com.finnvek.knittools.data.local.CounterProjectEntity
 import com.finnvek.knittools.data.local.KnitToolsDatabase
 import com.finnvek.knittools.data.storage.PatternDocumentStorage
 import com.finnvek.knittools.data.storage.PdfPageRenderer
+import com.finnvek.knittools.repository.MemoryOnboardingPreferences
+import com.finnvek.knittools.repository.OnboardingStateRepository
 import com.finnvek.knittools.repository.counterHistoryTestRepository
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
@@ -31,7 +37,12 @@ import java.io.File
 
 class AuditPart16RestoreTest {
     private val context = ApplicationProvider.getApplicationContext<Context>()
+    private val applicationScope = CoroutineScope(Dispatchers.IO)
+    private val onboardingStateRepository = OnboardingStateRepository(MemoryOnboardingPreferences())
     private val checkpoint get() = File(context.filesDir, "audit16-state.bin")
+
+    @After
+    fun closeScope() = applicationScope.cancel()
 
     @Test
     fun prepareBeforeProcessDeath() =
@@ -194,6 +205,9 @@ class AuditPart16RestoreTest {
         context,
         Dispatchers.IO,
         handle,
+        (context.applicationContext as App).proManager.get(),
+        onboardingStateRepository,
+        applicationScope,
     )
 
     private suspend fun awaitReady(vm: PatternImageImportViewModel) {

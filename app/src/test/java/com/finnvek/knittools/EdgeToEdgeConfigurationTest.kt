@@ -51,9 +51,29 @@ class EdgeToEdgeConfigurationTest {
     fun `root scaffold owns app snackbar host`() {
         val mainActivity = ProjectSourceFiles.read("app/src/main/java/com/finnvek/knittools/MainActivity.kt")
         val navGraph = ProjectSourceFiles.read("app/src/main/java/com/finnvek/knittools/ui/navigation/NavGraph.kt")
+        val navigationScaffold =
+            ProjectSourceFiles.read(
+                "app/src/main/java/com/finnvek/knittools/ui/navigation/KnitToolsNavigationScaffold.kt",
+            )
 
-        assertTrue(mainActivity.contains("snackbarHostState = snackbarHostState"))
-        assertTrue(navGraph.contains("snackbarHostState?.let { SnackbarHost(hostState = it) }"))
+        assertTrue(
+            "MainActivity must forward its snackbar state to KnitToolsNavHost",
+            mainActivity
+                .substringAfter("KnitToolsNavHost(", "")
+                .substringBefore("actions =")
+                .contains("snackbarHostState = snackbarHostState"),
+        )
+        assertTrue(
+            "KnitToolsNavHost must forward the app snackbar state to the shared scaffold",
+            navGraph
+                .substringAfter("KnitToolsNavigationScaffold(", "")
+                .substringBefore(") {")
+                .contains("snackbarHostState = snackbarHostState"),
+        )
+        assertTrue(
+            "The shared scaffold must provide the app SnackbarHost in its snackbarHost slot",
+            navigationScaffold.contains("snackbarHost = { snackbarHostState?.let { SnackbarHost(it) } }"),
+        )
     }
 
     private companion object {

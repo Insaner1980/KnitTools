@@ -8,6 +8,31 @@ import org.junit.Test
 
 class RavelryLinksTest {
     @Test
+    fun `restoration accepts eligible pages but rejects checkout redirects credentials and oversized metadata`() {
+        val page = "https://www.ravelry.com/patterns/library/cozy-hat"
+        assertEquals(page, restorableRavelryPageOrNull(page))
+        listOf(
+            null,
+            "not a url",
+            "http://www.ravelry.com/patterns/search",
+            "https://www.ravelry.com/carts/123/checkout",
+            "https://checkout.ravelry.com/",
+            "https://www.paypal.com/checkoutnow",
+            "https://downloads.example-cdn.com/pattern.pdf",
+            "intent://www.ravelry.com/",
+            "https://user:password@www.ravelry.com/",
+            "$page?q=${"x".repeat(2048)}",
+        ).forEach { assertNull(it, restorableRavelryPageOrNull(it)) }
+        val longPage = "$page?q=${"x".repeat(2048)}"
+        assertEquals(longPage, eligibleRavelryPageOrNull(longPage))
+        // Live redirects remain eligible for the download listener, not saved page restoration.
+        assertEquals(
+            RavelryNavigation.InApp,
+            ravelryNavigation("https", "downloads.example-cdn.com", "/pattern.pdf", true, true),
+        )
+    }
+
+    @Test
     fun `ravelry page URL accepts https ravelry pattern page`() {
         assertEquals(
             "https://www.ravelry.com/patterns/library/cozy-hat",

@@ -61,6 +61,8 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.finnvek.knittools.R
 import com.finnvek.knittools.data.datastore.PreferencesManager
 import com.finnvek.knittools.domain.model.MeasurementUnit
+import com.finnvek.knittools.pro.ProState
+import com.finnvek.knittools.pro.ProStatus
 import com.finnvek.knittools.ui.theme.KnitToolsTheme
 import com.finnvek.knittools.widget.WidgetEntryPoint
 import dagger.hilt.android.EntryPointAccessors
@@ -422,8 +424,19 @@ class GaugeScreenTest {
             }
         }
         val pasteLabel = localized.getString(R.string.paste_instruction)
-        composeRule.onNodeWithText(pasteLabel).assertDoesNotExist()
-        composeRule.runOnIdle { state.value = state.value.copy(isPro = true) }
+        composeRule.onNodeWithText(pasteLabel).performScrollTo().assertIsDisplayed()
+        composeRule
+            .onNodeWithContentDescription(localized.getString(R.string.pro_badge_locked_description))
+            .assertDoesNotExist()
+        composeRule.runOnIdle { state.value = state.value.copy(proAccessReady = true) }
+        composeRule
+            .onNodeWithContentDescription(
+                localized.getString(R.string.pro_badge_locked_description),
+                substring = true,
+            ).assertIsDisplayed()
+        composeRule.runOnIdle {
+            state.value = state.value.copy(proState = ProState(status = ProStatus.PRO_PURCHASED))
+        }
         composeRule.onNodeWithText(pasteLabel).performScrollTo().performClick()
         composeRule
             .onNode(

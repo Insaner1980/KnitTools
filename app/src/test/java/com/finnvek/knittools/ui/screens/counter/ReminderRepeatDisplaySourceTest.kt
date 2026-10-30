@@ -8,9 +8,8 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * Varmistaa, että toistuvan muistutuksen rivi (CounterValueDisplay.ReminderRepeat)
- * ei enää näytä murtolukumuotoa "Repeat 11/3", vaan käyttää selkeää
- * monikkoresurssia "Repeat #11 every 3 rows".
+ * Verifies that ReminderRepeat separates occurrence and interval using a
+ * unit-neutral plural resource instead of the ambiguous fraction "Repeat 11/3".
  */
 class ReminderRepeatDisplaySourceTest {
     @Test
@@ -47,18 +46,18 @@ class ReminderRepeatDisplaySourceTest {
     }
 
     @Test
-    fun `occurrence 11 every 3 rows renders the new copy and never the fraction`() {
+    fun `occurrence 11 with interval 3 renders unit neutral copy and never the fraction`() {
         val strings = ProjectSourceFiles.read(DEFAULT_STRINGS)
         val other = pluralItem(strings, "reminder_repeat_occurrence_format", "other")
         val one = pluralItem(strings, "reminder_repeat_occurrence_format", "one")
 
         val rendered = String.format(other, 11, 3)
 
-        assertEquals("Repeat #11 every 3 rows", rendered)
+        assertEquals("Repeat #11, interval 3", rendered)
         assertNotEquals("Repeat 11/3", rendered)
         assertFalse("New copy must not contain a slash", rendered.contains("/"))
         assertFalse("New copy must not contain a middle dot", rendered.contains(" · "))
-        assertEquals("Repeat #11 every row", String.format(one, 11))
+        assertEquals("Repeat #11, interval 1", String.format(one, 11, 1))
     }
 
     private fun pluralItem(

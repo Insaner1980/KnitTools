@@ -6,6 +6,18 @@ import org.junit.Test
 
 class NeedleSizeDataTest {
     @Test
+    fun `JP numbered sizes retain exact Clover diameters instead of nearest metric sizes`() {
+        val diameters = listOf(2.1, 2.4, 2.7, 3.0, 3.3, 3.6, 3.9, 4.2, 4.5, 4.8, 5.1, 5.4, 5.7, 6.0, 6.3, 6.6)
+        val numbered = NeedleSizeData.sizes.filter { it.japanese != "—" }
+        assertEquals(16, numbered.size)
+        diameters.forEachIndexed { number, diameter ->
+            assertEquals(diameter, numbered.single { it.japanese == number.toString() }.metricMm, 0.0)
+        }
+        assertEquals("—", NeedleSizeData.sizes.single { it.metricMm == 2.0 }.japanese)
+        assertEquals("—", NeedleSizeData.sizes.single { it.metricMm == 4.0 }.japanese)
+    }
+
+    @Test
     fun `sizes list is not empty`() {
         assertTrue(NeedleSizeData.sizes.isNotEmpty())
     }

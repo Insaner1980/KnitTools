@@ -1,0 +1,75 @@
+ M AGENTS.md
+ M CLAUDE.md
+ M CODEX.md
+ M app/src/androidTest/java/com/finnvek/knittools/ui/AuditPart08RuntimeMatrixTest.kt
+ M app/src/androidTest/java/com/finnvek/knittools/ui/AuditPart14ToolsRuntimeTest.kt
+ M app/src/androidTest/java/com/finnvek/knittools/ui/MentalModelClarityRuntimeTest.kt
+ M app/src/androidTest/java/com/finnvek/knittools/ui/screens/counter/WorkSessionComposeTest.kt
+ M app/src/main/java/com/finnvek/knittools/domain/calculator/CastOnCalculator.kt
+ M app/src/main/java/com/finnvek/knittools/domain/calculator/ChartSymbolData.kt
+ M app/src/main/java/com/finnvek/knittools/domain/calculator/IncreaseDecreaseCalculator.kt
+ M app/src/main/java/com/finnvek/knittools/domain/calculator/NeedleSizeData.kt
+ M app/src/main/java/com/finnvek/knittools/domain/calculator/SizeChartData.kt
+ M app/src/main/java/com/finnvek/knittools/domain/model/IncreaseDecreaseResult.kt
+ M app/src/main/java/com/finnvek/knittools/domain/model/SizeChartEntry.kt
+ M app/src/main/java/com/finnvek/knittools/domain/model/StandardYarnWeight.kt
+ M app/src/main/java/com/finnvek/knittools/ui/components/BadgePill.kt
+ M app/src/main/java/com/finnvek/knittools/ui/components/care/CareSymbolIcon.kt
+ M app/src/main/java/com/finnvek/knittools/ui/screens/chartsymbols/ChartSymbolScreen.kt
+ M app/src/main/java/com/finnvek/knittools/ui/screens/counter/CounterScreen.kt
+ M app/src/main/java/com/finnvek/knittools/ui/screens/counter/CounterWorkspaceSections.kt
+ M app/src/main/java/com/finnvek/knittools/ui/screens/increase/IncreaseDecreaseScreen.kt
+ M app/src/main/java/com/finnvek/knittools/ui/screens/insights/InsightsSections.kt
+ M app/src/main/java/com/finnvek/knittools/ui/screens/insights/InsightsSessionAccumulator.kt
+ M app/src/main/java/com/finnvek/knittools/ui/screens/insights/InsightsViewModel.kt
+ M app/src/main/java/com/finnvek/knittools/ui/screens/library/YarnWeightField.kt
+ M app/src/main/java/com/finnvek/knittools/ui/screens/pattern/PatternViewerScreen.kt
+ M app/src/main/java/com/finnvek/knittools/ui/screens/yarn/YarnEstimatorScreen.kt
+ M app/src/main/java/com/finnvek/knittools/ui/screens/yarncard/YarnCardDetailScreen.kt
+ M app/src/main/java/com/finnvek/knittools/widget/CounterWidget.kt
+ M app/src/main/res/values-da/pattern_reading_assistance.xml
+ M app/src/main/res/values-da/reference_strings.xml
+ M app/src/main/res/values-da/strings.xml
+ M app/src/main/res/values-de/pattern_reading_assistance.xml
+ M app/src/main/res/values-de/reference_strings.xml
+ M app/src/main/res/values-de/strings.xml
+ M app/src/main/res/values-es/pattern_reading_assistance.xml
+ M app/src/main/res/values-es/reference_strings.xml
+ M app/src/main/res/values-es/strings.xml
+ M app/src/main/res/values-fi/pattern_reading_assistance.xml
+ M app/src/main/res/values-fi/strings.xml
+ M app/src/main/res/values-fr/pattern_reading_assistance.xml
+ M app/src/main/res/values-fr/reference_strings.xml
+ M app/src/main/res/values-fr/strings.xml
+ M app/src/main/res/values-it/pattern_reading_assistance.xml
+ M app/src/main/res/values-it/reference_strings.xml
+ M app/src/main/res/values-it/strings.xml
+ M app/src/main/res/values-nb/pattern_reading_assistance.xml
+ M app/src/main/res/values-nb/reference_strings.xml
+ M app/src/main/res/values-nb/strings.xml
+ M app/src/main/res/values-nl/pattern_reading_assistance.xml
+ M app/src/main/res/values-nl/reference_strings.xml
+ M app/src/main/res/values-nl/strings.xml
+ M app/src/main/res/values-pt/pattern_reading_assistance.xml
+ M app/src/main/res/values-pt/reference_strings.xml
+ M app/src/main/res/values-pt/strings.xml
+ M app/src/main/res/values-sv/pattern_reading_assistance.xml
+ M app/src/main/res/values-sv/reference_strings.xml
+ M app/src/main/res/values-sv/strings.xml
+ M app/src/main/res/values/pattern_reading_assistance.xml
+ M app/src/main/res/values/strings.xml
+ M app/src/test/java/com/finnvek/knittools/domain/calculator/CastOnCalculatorTest.kt
+ M app/src/test/java/com/finnvek/knittools/domain/calculator/IncreaseDecreaseCalculatorTest.kt
+ M app/src/test/java/com/finnvek/knittools/domain/calculator/NeedleSizeDataTest.kt
+ M app/src/test/java/com/finnvek/knittools/domain/calculator/SizeChartDataTest.kt
+ M app/src/test/java/com/finnvek/knittools/ui/CountPluralResourcesSourceTest.kt
+ M app/src/test/java/com/finnvek/knittools/ui/screens/counter/CounterStringResourcesSourceTest.kt
+ M app/src/test/java/com/finnvek/knittools/ui/screens/insights/InsightsRedesignSourceTest.kt
+ M app/src/test/java/com/finnvek/knittools/ui/screens/insights/InsightsRowTotalsViewModelTest.kt
+ M app/src/test/java/com/finnvek/knittools/ui/screens/insights/InsightsViewModelTest.kt
+?? LANGUAGE_AUDIT.md
+?? app/src/androidTest/java/com/finnvek/knittools/ui/SharedAuditSymbolsRuntimeTest.kt
+?? app/src/androidTest/java/com/finnvek/knittools/ui/screens/insights/InsightsCounterUnitsRuntimeTest.kt
+?? app/src/test/java/com/finnvek/knittools/ui/screens/insights/InsightsCounterUnitsTest.kt
+?? app/src/test/java/com/finnvek/knittools/ui/screens/insights/InsightsSessionZoneRangeTest.kt
+?? config/language-audit/

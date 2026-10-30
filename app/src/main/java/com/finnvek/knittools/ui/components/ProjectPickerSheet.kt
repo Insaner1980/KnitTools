@@ -9,6 +9,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.model.CounterProject
+import com.finnvek.knittools.ui.layout.ContentWidthPolicy
 
 /** Projektit valintariveinä: aktiiviset ensin, valmiit omana osionaan. */
 @Composable
@@ -39,6 +40,7 @@ fun ProjectPickerSheet(
     onDismiss: () -> Unit,
 ) {
     ModalBottomSheet(
+        sheetMaxWidth = ContentWidthPolicy.Form.maxWidth,
         onDismissRequest = onDismiss,
         containerColor = MaterialTheme.colorScheme.surface,
     ) {

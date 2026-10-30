@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
@@ -27,19 +28,18 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.core.net.toUri
-import coil3.compose.AsyncImage
 import com.finnvek.knittools.R
 import com.finnvek.knittools.data.storage.AppFileStorage
 import com.finnvek.knittools.domain.model.ProgressPhoto
 import com.finnvek.knittools.ui.components.ConfirmationDialog
 import com.finnvek.knittools.ui.components.rememberLocaleDateFormat
+import com.finnvek.knittools.ui.layout.AdaptiveModalWindow
 import com.finnvek.knittools.ui.theme.knitToolsColors
 import java.util.Date
 
@@ -70,23 +70,21 @@ fun PhotoViewer(
 
     Dialog(
         onDismissRequest = onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false),
+        properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false),
     ) {
+        AdaptiveModalWindow()
         Box(
             modifier =
                 Modifier
                     .fillMaxSize()
                     // Täysin peittävä: 90 %:n peitolla alla näkyivät otsikko, alanavigaatio ja Ota kuva -pilleri.
-                    .background(MaterialTheme.colorScheme.scrim),
+                    .background(MaterialTheme.colorScheme.scrim)
+                    .safeDrawingPadding(),
         ) {
-            AsyncImage(
-                model = photo.photoUri.toUri(),
-                contentDescription = stringResource(R.string.progress_photos),
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .align(Alignment.Center),
-                contentScale = ContentScale.Fit,
+            PhotoViewport(
+                uri = photo.photoUri,
+                description = stringResource(R.string.progress_photos),
+                modifier = Modifier.fillMaxSize(),
             )
 
             // Yläpalkki: sulje + jakaa + poista

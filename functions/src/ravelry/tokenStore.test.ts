@@ -6,6 +6,31 @@ import type { Firestore } from "firebase-admin/firestore";
 import { createTokenStore, type StoredRavelryToken } from "./tokenStore";
 import { getRavelryCurrentUser } from "./authCore";
 
+interface FixtureSetOptions {
+  readonly merge?: boolean;
+  readonly mergeFields?: readonly string[];
+}
+
+function applyFixtureSet(
+  previous: Record<string, unknown>,
+  data: Record<string, unknown>,
+  options?: FixtureSetOptions,
+): Record<string, unknown> {
+  if (!options?.merge && !options?.mergeFields) return data;
+  const result = { ...previous };
+  for (const field of options.mergeFields ?? Object.keys(data)) {
+    assert.ok(field in data);
+    const value = data[field];
+    const old = previous[field];
+    result[field] = !options.mergeFields && value != null && old != null &&
+      typeof value === "object" && typeof old === "object" &&
+      !Array.isArray(value) && !Array.isArray(old)
+      ? applyFixtureSet(old as Record<string, unknown>, value as Record<string, unknown>, { merge: true })
+      : value;
+  }
+  return result;
+}
+
 describe("Ravelry token Firestore store", () => {
   for (const operation of ["login", "refresh"] as const) {
     it(`binds current-user responses to the owning login during ${operation}`, async () => {
@@ -21,8 +46,8 @@ describe("Ravelry token Firestore store", () => {
         async runTransaction<T>(operation: (transaction: unknown) => Promise<T>): Promise<T> {
           return operation({
             get: reference.get,
-            set(_ref: unknown, data: Record<string, unknown>, options?: { merge?: boolean }) {
-              stored = options?.merge ? { ...stored, ...data } : data;
+            set(_ref: unknown, data: Record<string, unknown>, options?: FixtureSetOptions) {
+              stored = applyFixtureSet(stored, data, options);
             },
             update(_ref: unknown, data: Record<string, unknown>) {
               stored = { ...stored, ...data };
@@ -128,9 +153,9 @@ describe("Ravelry token Firestore store", () => {
           set(
             _reference: unknown,
             data: Record<string, unknown>,
-            options?: { readonly merge?: boolean },
+            options?: FixtureSetOptions,
           ) {
-            stored = options?.merge ? { ...stored, ...data } : data;
+            stored = applyFixtureSet(stored, data, options);
           },
         });
       },
@@ -163,6 +188,44 @@ describe("Ravelry token Firestore store", () => {
     assert.equal(stored.accessToken, "new-access-token");
     assert.equal(stored.pending, undefined);
     assert.equal(await tokenStore.activatePendingToken("uid", "state", "proof-hash", 1_500), false);
+  });
+
+  it("replaces pending credentials without retaining omitted fields or replacing the active login", async () => {
+    let stored: Record<string, unknown> = {
+      uid: "uid", accessToken: "synthetic-active", connectionGeneration: 3, lastVerifiedAtMillis: 42,
+    };
+    const reference = {};
+    const firestore = {
+      collection: () => ({ doc: () => reference }),
+      async runTransaction<T>(operation: (transaction: unknown) => Promise<T>): Promise<T> {
+        return operation({
+          get: async () => ({ data: () => stored }),
+          set(_ref: unknown, data: Record<string, unknown>, options?: FixtureSetOptions) {
+            stored = applyFixtureSet(stored, data, options);
+          },
+        });
+      },
+    } as unknown as Firestore;
+    const store = createTokenStore(firestore);
+    const token: StoredRavelryToken = {
+      uid: "uid", authType: "oauth2", accessToken: "synthetic-first",
+      createdAtMillis: 100, updatedAtMillis: 100, connectionGeneration: 3,
+    };
+    assert.equal(await store.savePendingTokenIfGenerationCurrent({
+      token: { ...token, refreshToken: "synthetic-obsolete-refresh", expiresAtMillis: 500 },
+      state: "first-state", completionProofHash: "first-proof", expiresAtMillis: 1_000,
+    }, 3), true);
+    assert.equal(await store.savePendingTokenIfGenerationCurrent({
+      token: { ...token, accessToken: "synthetic-second" },
+      state: "second-state", completionProofHash: "second-proof", expiresAtMillis: 2_000,
+    }, 3), true);
+    assert.deepEqual(stored, {
+      uid: "uid", accessToken: "synthetic-active", connectionGeneration: 3, lastVerifiedAtMillis: 42,
+      pending: {
+        token: { ...token, accessToken: "synthetic-second" },
+        state: "second-state", completionProofHash: "second-proof", expiresAtMillis: 2_000,
+      },
+    });
   });
 
   it("updates only current-user metadata fields after validating generation", async () => {

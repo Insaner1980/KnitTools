@@ -31,7 +31,7 @@
     <string name="pattern_annotation_tool_callout">Nota</string>
     <string name="pattern_annotation_undo">Deshacer</string>
     <string name="pattern_annotation_redo">Rehacer</string>
-    <string name="pattern_annotation_clear_page">Borrar página</string>
+    <string name="pattern_annotation_clear_page">Borrar anotaciones de la página</string>
     <string name="pattern_annotation_move_left">Izquierda</string>
     <string name="pattern_annotation_move_right">Derecha</string>
     <string name="pattern_annotation_move_up">Arriba</string>
@@ -75,4 +75,5 @@
     <string name="pattern_annotation_export_filename">%1$s-anotado.pdf</string>
     <string name="pattern_annotation_edit_text">Editar texto</string>
     <string name="pattern_annotation_write_failed">No se pudo guardar el texto. Puede que la anotación haya cambiado. Cierra el editor e inténtalo de nuevo.</string>
+    <string name="pattern_annotation_command_failed">No se ha guardado un cambio en una anotación. Cierra este mensaje y vuelve a intentarlo con las herramientas de anotación.</string>
 </resources>

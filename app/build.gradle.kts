@@ -51,6 +51,8 @@ val posthogTokenValid = posthogProjectToken.map { it.matches(Regex("phc_[A-Za-z0
 // Erillinen, verkkoluvaton testipaketti laitetesteille, jotka tyhjentävät tietokannan tai ohjaavat Pro-tilaa.
 // Käyttö: -Pknittools.isolatedTest=activepolicy|notes. Koskee vain debugia; ilman ominaisuutta build ei muutu.
 val baseApplicationId = "com.finnvek.knittools"
+val optimizedSmoke = providers.gradleProperty("knittools.optimizedSmoke").orNull == "true"
+val isolatedProfileVariants = setOf("benchmarkRelease", "nonMinifiedRelease")
 val isolatedTestProfile: String? = providers.gradleProperty("knittools.isolatedTest").orNull
 val isolatedTestPackageSuffix: String? =
     when (isolatedTestProfile) {
@@ -240,6 +242,8 @@ android {
 
     sourceSets {
         getByName("androidTest").assets.directories.add("$projectDir/schemas")
+        getByName("androidTest").kotlin.directories.add("src/sharedTest/kotlin")
+        getByName("test").kotlin.directories.add("src/sharedTest/kotlin")
         getByName("debug").kotlin.directories.add("src/debugShared/kotlin")
     }
 
@@ -255,6 +259,9 @@ android {
     }
 
     buildTypes {
+        debug {
+            isPseudoLocalesEnabled = true
+        }
         configureEach {
             configure<CrashlyticsExtension> {
                 mappingFileUploadEnabled = name == "release"
@@ -323,7 +330,15 @@ androidComponents {
         variant.manifestPlaceholders.put("crashlyticsCollectionEnabled", (variant.name == "release").toString())
         variant.buildConfigFields?.put(
             "POSTHOG_PROJECT_TOKEN",
-            posthogProjectToken.map { token ->
+            (
+                if (optimizedSmoke &&
+                    variant.name in isolatedProfileVariants
+                ) {
+                    providers.provider { "" }
+                } else {
+                    posthogProjectToken
+                }
+            ).map { token ->
                 val safeToken = token.takeIf { it.matches(Regex("phc_[A-Za-z0-9]+")) }.orEmpty()
                 BuildConfigField("String", "\"$safeToken\"", null)
             },
@@ -332,6 +347,20 @@ androidComponents {
             "POSTHOG_ENABLED",
             BuildConfigField("boolean", (variant.name == "release").toString(), null),
         )
+    }
+    onVariants { variant ->
+        if (optimizedSmoke && variant.name in isolatedProfileVariants) {
+            val target = android.buildTypes.getByName(variant.name)
+            check(!target.isDebuggable) { "Profile targets must not be debuggable." }
+            if (variant.name == "benchmarkRelease") {
+                check(target.isMinifyEnabled && target.isShrinkResources) {
+                    "Optimized smoke requires minification and resource shrinking."
+                }
+            }
+            check(target.signingConfig?.name == "debug") { "Optimized smoke requires nonproduction signing." }
+            variant.applicationId.set("$baseApplicationId.optimizedtest")
+            variant.sources.manifests.addStaticManifestFile("$projectDir/src/optimizedSmoke/AndroidManifest.xml")
+        }
     }
     onVariants(selector().withBuildType("debug")) { variant ->
         val buildConfigFields =
@@ -459,6 +488,12 @@ tasks.withType<org.owasp.dependencycheck.gradle.tasks.ConfiguredTask>().configur
     data.directory.set(dependencyCheckDataDirectory)
 }
 
+// The shared checker expects reports at the root of the shared report archive.
+// Always run the analysis without snapshotting unrelated reports or broken links.
+tasks.matching { it.name in setOf("dependencyCheckAnalyze", "dependencyCheckAggregate") }.configureEach {
+    doNotTrackState("Dependency-Check shares its output directory with unrelated report archives")
+}
+
 gradle.taskGraph.whenReady {
     val appReleaseArtifactTasks =
         setOf(
@@ -571,6 +606,38 @@ val writeGoogleServicesPlaceholderTasks =
         }
     }
 
+// Only the opt-in, non-distributable benchmark and profile-collection artifacts use this file.
+val optimizedSmokeGoogleServices = layout.buildDirectory.file("generated/optimizedSmoke/google-services.json")
+val writeOptimizedSmokeGoogleServices =
+    tasks.register("writeOptimizedSmokeGoogleServices") {
+        group = "build setup"
+        description = "Creates placeholder Firebase configuration for optimized smoke-test artifacts."
+        val config = googleServicesPlaceholderJson.replace(baseApplicationId, "$baseApplicationId.optimizedtest")
+        val output = optimizedSmokeGoogleServices
+        inputs.property("placeholder", config)
+        outputs.file(output)
+        doLast {
+            output.get().asFile.apply {
+                parentFile.mkdirs()
+                writeText(config)
+            }
+        }
+    }
+
+if (optimizedSmoke) {
+    gradle.projectsEvaluated {
+        tasks
+            .withType<GoogleServicesTask>()
+            .matching {
+                it.name in
+                    setOf("processBenchmarkReleaseGoogleServices", "processNonMinifiedReleaseGoogleServices")
+            }.configureEach {
+                googleServicesJsonFiles.set(optimizedSmokeGoogleServices.map { listOf(it.asFile) })
+                dependsOn(writeOptimizedSmokeGoogleServices)
+            }
+    }
+}
+
 val verifyGoogleServicesJson =
     tasks.register("verifyGoogleServicesJson") {
         group = "verification"
@@ -612,7 +679,10 @@ val verifyPostHogConfig =
 
 tasks.configureEach {
     if (name.startsWith("process") && name.endsWith("GoogleServices")) {
-        dependsOn(writeGoogleServicesJsonFromEnv)
+        val smokeTask =
+            optimizedSmoke &&
+                name in setOf("processBenchmarkReleaseGoogleServices", "processNonMinifiedReleaseGoogleServices")
+        if (!smokeTask) dependsOn(writeGoogleServicesJsonFromEnv)
 
         // processBenchmarkReleaseGoogleServices -> benchmarkRelease
         val variantName =
@@ -620,7 +690,7 @@ tasks.configureEach {
                 .removePrefix("process")
                 .removeSuffix("GoogleServices")
                 .replaceFirstChar { it.lowercaseChar() }
-        writeGoogleServicesPlaceholderTasks[variantName]?.let { dependsOn(it) }
+        if (!smokeTask) writeGoogleServicesPlaceholderTasks[variantName]?.let { dependsOn(it) }
     }
 
     if (name in firebaseConfiguredArtifactTaskNames) {
@@ -633,12 +703,18 @@ room {
     schemaDirectory("$projectDir/schemas")
 }
 
+baselineProfile {
+    saveInSrc = true
+    automaticGenerationDuringBuild = false
+}
+
 hilt {
     enableAggregatingTask = true
 }
 
 ktlint {
     android.set(true)
+    coloredOutput.set(false)
     ignoreFailures.set(false)
 
     filter {
@@ -783,6 +859,7 @@ dependencies {
 
     // Navigation
     implementation(libs.navigation.compose)
+    implementation(libs.window)
 
     // Lifecycle
     implementation(libs.lifecycle.process)
@@ -815,6 +892,7 @@ dependencies {
     implementation(libs.core.ktx)
     implementation(libs.activity.compose)
     implementation(libs.appcompat)
+    implementation(libs.webkit)
 
     // SplashScreen
     implementation(libs.splashscreen)
@@ -869,6 +947,7 @@ dependencies {
     androidTestImplementation(libs.androidx.test.espresso.core)
     androidTestImplementation(composeBom)
     androidTestImplementation(libs.compose.ui.test.junit4)
+    androidTestImplementation(libs.window.testing)
     androidTestImplementation(libs.ktor.client.mock)
     androidTestImplementation(libs.room.testing)
     debugImplementation(libs.compose.ui.test.manifest)

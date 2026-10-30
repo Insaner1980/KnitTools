@@ -13,9 +13,9 @@ class ProPromptSourceTest {
                 "app/src/main/java/com/finnvek/knittools/ui/components/ProPromptSheet.kt",
             )
 
-        assertTrue(source.contains("var pendingActionResumed by remember(request)"))
+        assertTrue(source.contains("var pendingActionResumed by rememberSaveable(request)"))
         assertTrue(source.contains("if (!pendingActionResumed)"))
-        assertTrue(source.contains("if (proState.isPro) resumePendingAction()"))
+        assertTrue(source.contains("if (proState.isPro && !isStartingTrial) resumePendingAction()"))
         assertTrue(source.contains("TrialStartResult.Started"))
         assertTrue(source.contains("TrialStartResult.AlreadyActive"))
         assertTrue(source.contains("TrialStartResult.AlreadyExpired"))
@@ -47,5 +47,11 @@ class ProPromptSourceTest {
 
         assertTrue(viewModel.contains("MutableSharedFlow<TrialStartResult>(extraBufferCapacity = 1)"))
         assertFalse(viewModel.contains("Channel<TrialStartResult>"))
+        val start = viewModel.substringAfter("fun startTrial()")
+        assertTrue(start.contains("if (_isStartingTrial.value) return"))
+        assertTrue(
+            start.contains("if (result == TrialStartResult.Started) trialJourneyCoordinator.requestStartedJourney()"),
+        )
+        assertTrue(start.indexOf("requestStartedJourney()") < start.indexOf("_trialStartResults.emit(result)"))
     }
 }

@@ -1,10 +1,12 @@
 package com.finnvek.knittools.ui.navigation
 
+import com.finnvek.knittools.pro.TrialJourneyAction
 import java.util.UUID
 
 data class CounterLaunchRequest(
     val requestId: String = UUID.randomUUID().toString(),
     val projectId: Long? = null,
+    val journeyAction: TrialJourneyAction? = null,
 ) {
     companion object {
         fun fromIntentData(
@@ -18,6 +20,7 @@ data class CounterLaunchRequest(
             return CounterLaunchRequest(
                 requestId = requestId,
                 projectId = intentData.projectId,
+                journeyAction = null,
             )
         }
 

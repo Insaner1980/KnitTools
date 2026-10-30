@@ -450,6 +450,7 @@ class NotesEditorViewModelTest {
             advanceUntilIdle()
 
             assertTrue(viewModel.uiState.value.canEditNotes)
+            assertTrue(viewModel.uiState.value.notesCreated)
             viewModel.onNotesChanged("New text in existing notes")
             viewModel.saveImmediately()
             advanceUntilIdle()

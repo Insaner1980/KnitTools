@@ -75,4 +75,5 @@
     <string name="pattern_annotation_export_filename">%1$s-mit-anmerkungen.pdf</string>
     <string name="pattern_annotation_edit_text">Text bearbeiten</string>
     <string name="pattern_annotation_write_failed">Der Text konnte nicht gespeichert werden. Die Anmerkung wurde möglicherweise geändert. Schließe den Editor und versuche es erneut.</string>
+    <string name="pattern_annotation_command_failed">Eine Änderung an einer Anmerkung wurde nicht gespeichert. Schließe diese Meldung und versuche die Aktion mit den Markierungswerkzeugen erneut.</string>
 </resources>

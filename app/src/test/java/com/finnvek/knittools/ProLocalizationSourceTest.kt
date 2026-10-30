@@ -5,6 +5,7 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.w3c.dom.Element
+import java.nio.file.Files
 import javax.xml.parsers.DocumentBuilderFactory
 
 class ProLocalizationSourceTest {
@@ -19,28 +20,18 @@ class ProLocalizationSourceTest {
         val directories =
             (0 until locales.length).map {
                 val language = (locales.item(it) as Element).getAttribute("android:name")
-                if (language == "en") "values" else "values-$language"
+                when (language) {
+                    "en" -> "values"
+                    "pt-BR" -> "values-pt-rBR"
+                    else -> "values-$language"
+                }
             }
         assertEquals(allResourceDirectories.toSet(), directories.toSet())
-        val activeWords =
-            mapOf(
-                "values" to "active",
-                "values-fi" to "aktiivi",
-                "values-sv" to "aktiv",
-                "values-de" to "aktiv",
-                "values-fr" to "actif",
-                "values-es" to "activo",
-                "values-pt" to "ativo",
-                "values-it" to "attiv",
-                "values-nb" to "aktiv",
-                "values-da" to "aktiv",
-                "values-nl" to "actie",
-            )
-        directories.forEach { directory -> assertActiveProjectCopy(directory, activeWords.getValue(directory)) }
+        directories.forEach(::assertActiveProjectCopy)
         val prompt = ProjectSourceFiles.read("app/src/main/java/com/finnvek/knittools/ui/components/ProPromptSheet.kt")
-        assertTrue(prompt.contains("ProPromptSource.ProjectReactivation -> R.string.pro_prompt_reactivation_title"))
-        assertTrue(prompt.contains("R.string.pro_prompt_reactivation_trial_body"))
-        assertTrue(prompt.contains("R.string.pro_prompt_reactivation_body"))
+        assertTrue(prompt.contains("ProPromptSource.ProjectReactivation -> R.string.onboarding_pro_reactivation_title"))
+        assertTrue(prompt.contains("R.string.onboarding_pro_reactivation_body"))
+        assertTrue(prompt.contains("R.string.onboarding_pro_retention_projects"))
         assertFalse(
             ProjectSourceFiles.read("app/src/main/res/values/strings.xml").contains("Completed projects also count."),
         )
@@ -48,28 +39,35 @@ class ProLocalizationSourceTest {
 
     @Test
     fun `user visible locale resources reject the middle dot separator`() {
-        allResourceDirectories.forEach { directory ->
-            val source =
-                ProjectSourceFiles
-                    .file("app/src/main/res/$directory/strings.xml")
-                    .toFile()
-                    .readText()
-            assertFalse("Literal middle dot found in $directory", source.contains('\u00b7'))
-            assertFalse("Escaped middle dot found in $directory", escapedMiddleDot.containsMatchIn(source))
+        Files.walk(ProjectSourceFiles.file("app/src/main/res")).use { files ->
+            files
+                .filter { file ->
+                    val name = file.fileName.toString()
+                    file.parent.fileName
+                        .toString()
+                        .startsWith("values") &&
+                        (
+                            name.startsWith(
+                                "strings",
+                            ) &&
+                                name.endsWith(".xml") ||
+                                name == "pattern_reading_assistance.xml"
+                        )
+                }.forEach { file ->
+                    val source = ProjectSourceFiles.read(file)
+                    assertFalse("Literal middle dot found in $file", source.contains('\u00b7'))
+                    assertFalse("Escaped middle dot found in $file", escapedMiddleDot.containsMatchIn(source))
 
-            val document =
-                DocumentBuilderFactory
-                    .newInstance()
-                    .newDocumentBuilder()
-                    .parse(ProjectSourceFiles.file("app/src/main/res/$directory/strings.xml").toFile())
-            val strings = document.getElementsByTagName("string")
-            repeat(strings.length) { index ->
-                val element = strings.item(index) as Element
-                assertFalse(
-                    "Rendered middle dot found in ${element.getAttribute("name")} in $directory",
-                    element.textContent.contains('\u00b7'),
-                )
-            }
+                    val document =
+                        DocumentBuilderFactory
+                            .newInstance()
+                            .newDocumentBuilder()
+                            .parse(file.toFile())
+                    assertFalse(
+                        "Rendered middle dot found in $file",
+                        document.documentElement.textContent.contains('\u00b7'),
+                    )
+                }
         }
     }
 
@@ -95,56 +93,48 @@ class ProLocalizationSourceTest {
         }
     }
 
-    private fun assertActiveProjectCopy(
-        directory: String,
-        activeWord: String,
-    ) {
+    private fun assertActiveProjectCopy(directory: String) {
         val document =
             DocumentBuilderFactory
                 .newInstance()
                 .newDocumentBuilder()
-                .parse(ProjectSourceFiles.file("app/src/main/res/$directory/strings.xml").toFile())
+                .parse(ProjectSourceFiles.file("app/src/main/res/$directory/strings_onboarding.xml").toFile())
         val resources = document.documentElement.childNodes
         val elements =
             (0 until resources.length)
                 .mapNotNull { resources.item(it) as? Element }
                 .associateBy { it.getAttribute("name") }
         val expectedQuantities =
-            if (directory in setOf("values-fr", "values-es", "values-it", "values-pt")) {
+            if (directory in setOf("values-fr", "values-es", "values-it", "values-pt", "values-pt-rBR")) {
                 setOf("one", "many", "other")
             } else {
                 setOf("one", "other")
             }
-        for (key in listOf("pro_prompt_projects_trial_body", "pro_prompt_projects_body")) {
-            val items = elements.getValue(key).getElementsByTagName("item")
-            val quantities =
-                (0 until items.length)
-                    .map {
-                        (
-                            items.item(
-                                it,
-                            ) as Element
-                        ).getAttribute("quantity")
-                    }.toSet()
-            assertEquals(directory, expectedQuantities, quantities)
-            repeat(items.length) { index ->
-                val text = items.item(index).textContent
-                assertEquals(
-                    "$directory/$key",
-                    listOf("%1\$d"),
-                    placeholderRegex.findAll(text).map { it.value }.toList(),
-                )
-                assertTrue("$directory/$key", text.contains(activeWord))
-            }
+        val items = elements.getValue("onboarding_pro_active_projects").getElementsByTagName("item")
+        val quantities = List(items.length) { (items.item(it) as Element).getAttribute("quantity") }.toSet()
+        assertEquals(directory, expectedQuantities, quantities)
+        repeat(items.length) { index ->
+            assertEquals(
+                "$directory/onboarding_pro_active_projects",
+                listOf("%1\$d"),
+                placeholderRegex.findAll(items.item(index).textContent).map { it.value }.toList(),
+            )
         }
-        assertTrue(
-            directory,
-            elements.getValue("pro_group_projects_body").textContent.contains(activeWord),
-        )
+        if (directory == "values") {
+            for (key in listOf("onboarding_pro_projects_trial_body", "onboarding_pro_projects_body")) {
+                assertTrue(elements.getValue(key).textContent.contains("one project in progress at a time"))
+            }
+            assertTrue(
+                elements
+                    .getValue("onboarding_pro_retention_projects")
+                    .textContent
+                    .contains("Completed projects don\\'t count toward the free limit"),
+            )
+        }
         assertFalse(
             directory,
-            elements.getValue("pro_prompt_reactivation_title").textContent ==
-                elements.getValue("pro_prompt_projects_title").textContent,
+            elements.getValue("onboarding_pro_reactivation_title").textContent ==
+                elements.getValue("onboarding_pro_projects_title").textContent,
         )
     }
 
@@ -199,29 +189,6 @@ class ProLocalizationSourceTest {
                 "pro_trial_start_failed",
                 "pro_prompt_not_now",
                 "pro_prompt_see_pro",
-                "pro_prompt_trial_body",
-                "pro_prompt_projects_title",
-                "pro_prompt_reactivation_title",
-                "pro_prompt_reactivation_trial_body",
-                "pro_prompt_reactivation_body",
-                "pro_prompt_projects_trial_body",
-                "pro_prompt_projects_body",
-                "pro_prompt_photos_title",
-                "pro_prompt_photos_body",
-                "pro_prompt_notes_title",
-                "pro_prompt_notes_body",
-                "pro_prompt_yarn_title",
-                "pro_prompt_yarn_body",
-                "pro_prompt_save_yarn_title",
-                "pro_prompt_save_yarn_body",
-                "pro_prompt_counters_title",
-                "pro_prompt_counters_body",
-                "pro_prompt_reminders_title",
-                "pro_prompt_reminders_body",
-                "pro_prompt_pattern_camera_title",
-                "pro_prompt_pattern_camera_body",
-                "pro_prompt_widget_title",
-                "pro_prompt_widget_body",
                 "pro_badge",
                 "pro_badge_locked_description",
                 "pro_badge_trial_description",
@@ -230,17 +197,8 @@ class ProLocalizationSourceTest {
                 "pro_status_trial_days",
                 "pro_status_trial_ended",
                 "pro_status_purchased",
-                "pro_trial_ended_title",
                 "pro_trial_ended_body",
                 "pro_continue_free",
-                "pro_page_intro",
-                "pro_page_trust",
-                "pro_group_projects_title",
-                "pro_group_projects_body",
-                "pro_group_workflow_title",
-                "pro_group_workflow_body",
-                "pro_group_insights_title",
-                "pro_group_insights_body",
                 "pro_page_purchased",
                 "pro_buy_for_price",
                 "pro_price_unavailable",
@@ -257,6 +215,7 @@ class ProLocalizationSourceTest {
                 "values-nb",
                 "values-nl",
                 "values-pt",
+                "values-pt-rBR",
                 "values-sv",
             )
         val allResourceDirectories = listOf("values") + supportedResourceDirectories

@@ -7,6 +7,7 @@
 /native/
 /notifications/
 /local.properties
+/.local/signing/
 /debug.credentials.properties
 .idea/
 /build/

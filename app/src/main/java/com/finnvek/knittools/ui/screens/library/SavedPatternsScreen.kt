@@ -14,8 +14,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.outlined.Circle
@@ -40,12 +45,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.model.SavedPattern
@@ -58,7 +63,8 @@ import com.finnvek.knittools.ui.components.LabeledCounterImageButton
 import com.finnvek.knittools.ui.components.SelectionAction
 import com.finnvek.knittools.ui.components.SelectionActionBar
 import com.finnvek.knittools.ui.components.cardContainerColor
-import com.finnvek.knittools.ui.components.withExtraBottom
+import com.finnvek.knittools.ui.layout.ContentWidthPolicy
+import com.finnvek.knittools.ui.layout.contentWidth
 import com.finnvek.knittools.ui.screens.ravelry.PatternCard
 import com.finnvek.knittools.ui.screens.ravelry.PatternCardState
 import com.finnvek.knittools.ui.theme.ProjectListDimens
@@ -88,6 +94,7 @@ fun SavedPatternsScreen(
     state: SavedPatternsState,
     actions: SavedPatternsActions,
 ) {
+    val listState = rememberLazyListState()
     var showDeleteConfirmDialog by rememberSaveable { mutableStateOf(false) }
     var lastHandledDeleteErrorId by rememberSaveable { mutableLongStateOf(state.deleteErrorId) }
     val snackbarHostState = remember { SnackbarHostState() }
@@ -118,6 +125,7 @@ fun SavedPatternsScreen(
     val density = LocalDensity.current
     var actionHeight by remember { mutableStateOf(0.dp) }
     Scaffold(
+        modifier = Modifier.fillMaxSize().wrapContentWidth().contentWidth(ContentWidthPolicy.ListDetail),
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             SavedPatternsTopBar(
@@ -149,7 +157,12 @@ fun SavedPatternsScreen(
     ) { padding ->
         if (state.patterns.isEmpty()) {
             Column(
-                modifier = Modifier.fillMaxSize().padding(padding),
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .padding(padding)
+                        .verticalScroll(rememberScrollState())
+                        .padding(16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center,
             ) {
@@ -169,10 +182,11 @@ fun SavedPatternsScreen(
             }
         } else {
             SavedPatternsList(
+                listState = listState,
                 state = state,
                 actions = actions,
-                padding =
-                    padding.withExtraBottom(actionHeight + 32.dp, LocalLayoutDirection.current),
+                padding = padding,
+                bottomContentPadding = actionHeight + 32.dp,
             )
         }
     }
@@ -181,13 +195,17 @@ fun SavedPatternsScreen(
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun SavedPatternsList(
+    listState: LazyListState,
     state: SavedPatternsState,
     actions: SavedPatternsActions,
     padding: PaddingValues,
+    bottomContentPadding: Dp,
 ) {
     LazyColumn(
+        state = listState,
         modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
+        contentPadding = PaddingValues(bottom = bottomContentPadding),
     ) {
         item { Spacer(modifier = Modifier.height(4.dp)) }
         items(state.patterns, key = { it.id }) { pattern ->

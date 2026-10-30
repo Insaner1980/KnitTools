@@ -37,11 +37,16 @@ import com.finnvek.knittools.domain.model.YarnCard
 import com.finnvek.knittools.domain.model.YarnUsageAmounts
 import com.finnvek.knittools.domain.model.YarnUsageUnit
 import com.finnvek.knittools.domain.model.isWebPatternCompatible
+import com.finnvek.knittools.domain.tips.TipId
+import com.finnvek.knittools.pro.ProActionAccess
+import com.finnvek.knittools.pro.ProFeature
+import com.finnvek.knittools.pro.proActionAccess
 import com.finnvek.knittools.ui.components.CrossStitchGlyph
 import com.finnvek.knittools.ui.components.OverviewEmptyText
 import com.finnvek.knittools.ui.components.OverviewLinkRow
 import com.finnvek.knittools.ui.components.OverviewSectionHeader
 import com.finnvek.knittools.ui.components.OverviewTextAction
+import com.finnvek.knittools.ui.components.ProMarker
 import com.finnvek.knittools.ui.components.YarnThumbnail
 import com.finnvek.knittools.ui.components.durationText
 import com.finnvek.knittools.ui.components.mainCounterCountText
@@ -50,6 +55,7 @@ import com.finnvek.knittools.ui.screens.counter.CounterUiState
 import com.finnvek.knittools.ui.screens.counter.yarnUsageAmount
 import com.finnvek.knittools.ui.theme.ProjectListDimens
 import com.finnvek.knittools.ui.theme.ProjectOverviewDimens
+import com.finnvek.knittools.ui.tips.tipAnchor
 
 @Composable
 internal fun ProjectOverviewYarn(
@@ -223,11 +229,18 @@ internal fun ProjectOverviewNotes(
     state: CounterUiState,
     onEdit: () -> Unit,
 ) {
-    OverviewSectionHeader(
-        R.string.notes,
-        if (state.notes.isBlank()) R.string.project_overview_add else R.string.project_overview_edit,
-        onEdit,
-    )
+    val notesAccess =
+        proActionAccess(state.proState, state.proAccessReady, ProFeature.NOTES, alreadyUnlocked = state.notesCreated)
+    OverviewSectionHeader(R.string.notes, trailingContent = {
+        OverviewTextAction(
+            stringResource(
+                if (state.notes.isBlank()) R.string.project_overview_add else R.string.project_overview_edit,
+            ),
+            onEdit,
+            enabled = notesAccess != ProActionAccess.Unknown || state.canUseNotes,
+            trailingContent = { if (state.notes.isBlank()) ProMarker(notesAccess) },
+        )
+    })
     if (state.notes.isBlank()) {
         OverviewEmptyText(R.string.project_overview_notes_empty)
     } else {
@@ -253,11 +266,15 @@ internal fun ProjectOverviewPhotos(
     state: CounterUiState,
     onOpen: () -> Unit,
 ) {
-    OverviewSectionHeader(
-        R.string.project_content_photos,
-        if (state.latestPhotos.size > 3) R.string.project_overview_see_all else R.string.project_overview_add,
-        onOpen,
-    )
+    val photoAccess = proActionAccess(state.proState, state.proAccessReady, ProFeature.PROGRESS_PHOTOS)
+    val showAll = state.latestPhotos.size > 3
+    OverviewSectionHeader(R.string.project_content_photos, trailingContent = {
+        OverviewTextAction(
+            stringResource(if (showAll) R.string.project_overview_see_all else R.string.project_overview_add),
+            onOpen,
+            trailingContent = { if (!showAll) ProMarker(photoAccess) },
+        )
+    })
     Row(horizontalArrangement = Arrangement.spacedBy(ProjectOverviewDimens.ContentGap)) {
         state.latestPhotos.take(3).forEach { photo ->
             AsyncImage(
@@ -290,7 +307,15 @@ internal fun ProjectOverviewReminders(
     if (hasHidden) {
         OverviewSectionHeader(R.string.reminders, R.string.project_overview_see_all, actions.onReminders)
     } else {
-        OverviewSectionHeader(R.string.reminders, R.string.project_overview_add, actions.onAddReminder)
+        val reminderAccess = proActionAccess(state.proState, state.proAccessReady, ProFeature.ROW_REMINDERS)
+        OverviewSectionHeader(R.string.reminders, trailingContent = {
+            OverviewTextAction(
+                stringResource(R.string.project_overview_add),
+                actions.onAddReminder,
+                enabled = reminderAccess != ProActionAccess.Unknown || state.canUseRowReminders,
+                trailingContent = { ProMarker(reminderAccess) },
+            )
+        })
     }
     if (next == null) {
         OverviewEmptyText(R.string.no_reminders)
@@ -314,7 +339,7 @@ internal fun ProjectOverviewSessions(
     // Historia-linkki on arvon rinnalla eikä otsikkorivillä: pitkä linkki painoi otsikkoa enemmän.
     // Kokonaisaika on titleLarge, jottei se kilpaile laskurin lukeman kanssa.
     OverviewSectionHeader(R.string.project_overview_section_sessions)
-    Row(verticalAlignment = Alignment.Bottom) {
+    Row(modifier = Modifier.tipAnchor(TipId.FIRST_SESSION_SAVED), verticalAlignment = Alignment.Bottom) {
         // Nollakestoisilla istunnoilla ei näytetä "0 min" -kokonaisaikaa, vain historian linkki.
         Column(Modifier.weight(1f)) {
             if (state.totalSessionMinutes > 0) {

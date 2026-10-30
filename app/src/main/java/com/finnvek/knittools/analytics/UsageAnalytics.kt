@@ -23,4 +23,10 @@ enum class UsageEvent(
     COUNTER_DECREMENTED("counter decremented"),
     WORK_SESSION_START_REQUESTED("work session start requested"),
     WORK_SESSION_SAVED("work session saved"),
+    WELCOME_DEMO_USED("welcome demo used"),
+    WELCOME_TOOLS_CHOSEN("welcome tools chosen"),
+    WELCOME_DISMISSED("welcome dismissed"),
+    GUIDE_OPENED("guide opened"),
+    TIP_ACTED("tip acted"),
+    TIP_DISMISSED("tip dismissed"),
 }

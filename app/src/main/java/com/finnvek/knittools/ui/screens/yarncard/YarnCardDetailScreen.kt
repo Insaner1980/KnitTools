@@ -64,6 +64,7 @@ import com.finnvek.knittools.ui.components.care.CareSymbolIcon
 import com.finnvek.knittools.ui.components.care.hasCareSymbol
 import com.finnvek.knittools.ui.components.rememberScrollTitleState
 import com.finnvek.knittools.ui.components.skeinCountText
+import com.finnvek.knittools.ui.layout.ContentWidthPolicy
 import com.finnvek.knittools.ui.screens.library.ManualYarnCardSheet
 import com.finnvek.knittools.ui.screens.library.yarnStatusOptions
 import com.finnvek.knittools.ui.screens.library.yarnStatusUi
@@ -125,6 +126,7 @@ fun YarnCardDetailScreen(
     if (showManualDetailsSheet) {
         ManualYarnCardSheet(
             initialInput = form.toManualYarnCardInput(),
+            showQuantity = false,
             titleRes = R.string.edit_yarn_details,
             bodyRes = null,
             onSave = { input ->
@@ -182,6 +184,7 @@ fun YarnCardDetailScreen(
             onEditManualDetails = { showManualDetailsSheet = true },
         )
     ToolScreenScaffold(
+        contentWidthPolicy = ContentWidthPolicy.ListDetail,
         title = form.yarnName.ifBlank { stringResource(R.string.yarn_card_fallback_name) },
         onBack = actions.onBack,
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -477,11 +480,14 @@ private fun YarnCareSection(careSymbols: Long) {
                 shape = MaterialTheme.shapes.medium,
                 color = MaterialTheme.knitToolsColors.cardContainer,
             ) {
-                CareSymbolIcon(
-                    symbol = symbol,
-                    modifier = Modifier.padding(ProjectOverviewDimens.ContentGap),
-                    tint = MaterialTheme.colorScheme.onSurface,
-                )
+                Column(
+                    modifier = Modifier.width(144.dp).padding(ProjectOverviewDimens.ContentGap),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    CareSymbolIcon(symbol = symbol, tint = MaterialTheme.colorScheme.onSurface)
+                    Text(text = stringResource(symbol.labelRes), style = MaterialTheme.typography.bodySmall)
+                }
             }
         }
     }
@@ -498,6 +504,7 @@ private fun LinkedProjectSheet(
     onDismiss: () -> Unit,
 ) {
     ModalBottomSheet(
+        sheetMaxWidth = ContentWidthPolicy.Form.maxWidth,
         onDismissRequest = onDismiss,
         containerColor = MaterialTheme.colorScheme.surface,
     ) {

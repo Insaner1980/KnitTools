@@ -5,6 +5,7 @@ import com.finnvek.knittools.billing.RestorePurchasesResult
 import com.finnvek.knittools.data.datastore.PreferencesManager
 import com.finnvek.knittools.data.datastore.ThemeMode
 import com.finnvek.knittools.pro.ProManager
+import com.finnvek.knittools.ui.tips.TipSession
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -33,6 +34,7 @@ class SettingsViewModelTest {
     private lateinit var preferencesManager: PreferencesManager
     private lateinit var billingManager: BillingManager
     private lateinit var proManager: ProManager
+    private val tipSession = mockk<TipSession>()
 
     @Before
     fun setup() {
@@ -52,7 +54,28 @@ class SettingsViewModelTest {
         Dispatchers.resetMain()
     }
 
-    private fun createViewModel() = SettingsViewModel(preferencesManager, billingManager, proManager)
+    private fun createViewModel() = SettingsViewModel(preferencesManager, billingManager, proManager, tipSession)
+
+    @Test
+    fun `tips reset waits for persistence before success message`() =
+        runTest {
+            val result = CompletableDeferred<Boolean>()
+            every { tipSession.resetTips() } returns result
+            val vm = createViewModel()
+            vm.showTipsAgain()
+            assertEquals(null, withTimeoutOrNull(1) { vm.messages.first() })
+            result.complete(true)
+            assertEquals(com.finnvek.knittools.R.string.settings_tips_reset_done, vm.messages.first())
+        }
+
+    @Test
+    fun `failed tips reset reports an error`() =
+        runTest {
+            every { tipSession.resetTips() } returns CompletableDeferred(false)
+            val vm = createViewModel()
+            vm.showTipsAgain()
+            assertEquals(com.finnvek.knittools.R.string.generic_error_unknown, vm.messages.first())
+        }
 
     @Test
     fun `analytics consent is persisted through preferences`() =

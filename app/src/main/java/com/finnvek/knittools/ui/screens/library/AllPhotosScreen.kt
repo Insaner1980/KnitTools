@@ -13,9 +13,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -51,6 +52,7 @@ import com.finnvek.knittools.ui.components.ProjectFilterOption
 import com.finnvek.knittools.ui.components.ProjectFilterPill
 import com.finnvek.knittools.ui.components.cardContainerColor
 import com.finnvek.knittools.ui.components.rememberLocaleDateFormat
+import com.finnvek.knittools.ui.layout.PhotoGridCells
 import com.finnvek.knittools.ui.screens.counter.PhotoViewer
 import java.util.Date
 
@@ -87,6 +89,7 @@ fun AllPhotosScreen(
     var showDeleteConfirmDialog by rememberSaveable { mutableStateOf(false) }
     var lastHandledDeleteErrorId by rememberSaveable { mutableLongStateOf(state.deleteErrorId) }
     val snackbarHostState = remember { SnackbarHostState() }
+    val gridState = rememberLazyGridState()
     val deleteFailedMessage = stringResource(R.string.generic_error_unknown)
     val viewingPhoto = remember(viewingPhotoId, state.photos) { state.photos.firstOrNull { it.id == viewingPhotoId } }
 
@@ -180,6 +183,7 @@ fun AllPhotosScreen(
                 onProjectFilterClick = { selectedProjectId = it },
                 onPhotoClick = { viewingPhotoId = it.id },
                 padding = padding,
+                gridState = gridState,
             )
         }
     }
@@ -210,6 +214,7 @@ private fun AllPhotosContent(
     onProjectFilterClick: (Long?) -> Unit,
     onPhotoClick: (ProgressPhoto) -> Unit,
     padding: PaddingValues,
+    gridState: LazyGridState,
 ) {
     val projectMap = remember(state.projects) { state.projects.associateBy { it.id } }
     val projectsWithPhotos = remember(state.photos) { state.photos.map { it.projectId }.distinct() }
@@ -240,6 +245,7 @@ private fun AllPhotosContent(
             actions = actions,
             projectMap = projectMap,
             onPhotoClick = onPhotoClick,
+            gridState = gridState,
         )
     }
 }
@@ -251,9 +257,11 @@ private fun PhotoGrid(
     actions: AllPhotosActions,
     projectMap: Map<Long, CounterProject>,
     onPhotoClick: (ProgressPhoto) -> Unit,
+    gridState: LazyGridState,
 ) {
     LazyVerticalGrid(
-        columns = GridCells.Fixed(2),
+        columns = PhotoGridCells,
+        state = gridState,
         contentPadding = PaddingValues(horizontal = 16.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),

@@ -7,8 +7,8 @@ import javax.xml.parsers.DocumentBuilderFactory
 
 class ProjectDocumentLocalizationTest {
     @Test
-    fun `all eleven locales contain every project document string`() {
-        assertEquals(11, localeDirectories.size)
+    fun `all twelve locales contain every project document string`() {
+        assertEquals(12, localeDirectories.size)
         localeDirectories.forEach { directory ->
             val names = stringNames(directory)
             requiredNames.forEach { name ->
@@ -45,6 +45,7 @@ class ProjectDocumentLocalizationTest {
                 "values-fr",
                 "values-es",
                 "values-pt",
+                "values-pt-rBR",
                 "values-it",
                 "values-nb",
                 "values-da",

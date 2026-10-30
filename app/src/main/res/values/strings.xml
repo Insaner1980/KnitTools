@@ -147,14 +147,14 @@
     <string name="pattern_open_failed">Pattern could not be opened.</string>
     <string name="pattern_show_reading_line">Show reading line</string>
     <string name="pattern_hide_reading_line">Hide reading line</string>
-    <string name="pattern_clear_row_mark">Clear row mark</string>
+    <string name="pattern_clear_row_mark">Clear counter marker</string>
     <string name="pattern_clear_page_marks">Clear page marks</string>
-    <string name="pattern_calibrate_rows">Calibrate rows</string>
-    <string name="pattern_calibration_first_row">First row</string>
-    <string name="pattern_calibration_last_row">Last row</string>
+    <string name="pattern_calibrate_rows">Calibrate counter positions</string>
+    <string name="pattern_calibration_first_row">First count</string>
+    <string name="pattern_calibration_last_row">Last count</string>
     <string name="pattern_calibration_save_first">Save first</string>
     <string name="pattern_calibration_save_last">Save last</string>
-    <string name="pattern_calibration_invalid_row">Use two different row numbers</string>
+    <string name="pattern_calibration_invalid_row">Use two different counter values</string>
     <string name="pattern_page_jump">Page jump</string>
     <string name="pattern_page_number">Page number</string>
     <string name="pattern_page_indicator">Page %1$d of %2$d</string>
@@ -245,8 +245,8 @@
     <!-- Session History -->
     <string name="session_history_title">Session History</string>
     <string name="no_sessions">No sessions recorded yet. Open a project and start a work session to record your time here.</string>
-    <string name="session_row_range">Rows %1$d \u2192 %2$d</string>
-    <string name="session_row_single">Row %1$d</string>
+    <string name="session_row_range">Counter: %1$d → %2$d</string>
+    <string name="session_row_single">Count %1$d</string>
     <string name="delete_session_title">Delete session?</string>
     <string name="delete_session_message">Delete this session from history? This cannot be undone.</string>
 
@@ -279,8 +279,8 @@
     <string name="project_content_add_pattern">Add Pattern</string>
     <string name="stitch_tracker_label">Stitches</string>
     <plurals name="reminder_repeat_occurrence_format">
-        <item quantity="one">Repeat #%1$d every row</item>
-        <item quantity="other">Repeat #%1$d every %2$d rows</item>
+        <item quantity="one">Repeat #%1$d, interval %2$d</item>
+        <item quantity="other">Repeat #%1$d, interval %2$d</item>
     </plurals>
 
     <!-- Increase / Decrease -->
@@ -291,11 +291,11 @@
     <string name="current_stitches">Current stitches</string>
     <string name="increase_by">Increase by</string>
     <string name="decrease_by">Decrease by</string>
-    <string name="increase_result_placeholder">Fill in both fields to see where to increase</string>
-    <string name="decrease_result_placeholder">Fill in both fields to see where to decrease</string>
+    <string name="increase_result_placeholder">Enter valid stitch counts to see where to increase</string>
+    <string name="decrease_result_placeholder">Enter valid stitch counts to see where to decrease</string>
     <string name="cast_on_result_placeholder">Fill in width and gauge to see how many stitches to cast on</string>
     <string name="yarn_result_placeholder">Fill in the fields to see how many skeins you need</string>
-    <string name="tool_result_placeholder">Fill in the fields to see the result</string>
+    <string name="tool_result_placeholder">Enter valid values to see the result</string>
     <string name="invalid_input">Invalid input</string>
     <string name="easy_to_remember">Easy to remember</string>
     <string name="balanced">Balanced</string>
@@ -305,7 +305,7 @@
     <string name="increase_decrease_error_cannot_decrease">Available stitch count: %2$d. Requested decrease: %1$d.</string>
     <string name="increase_decrease_error_not_enough_decrease">Required stitch count: %1$d. Requested decreases: %2$d.</string>
     <string name="increase_decrease_error_total_out_of_range">Result is too large. Use smaller stitch counts.</string>
-    <string name="increase_decrease_warning_increase_more_than_current">Increasing more than current stitch count - some sections will have no knit stitches between increases</string>
+    <string name="increase_decrease_error_not_enough_bars">Not enough spaces between stitches for these M1 increases. Use at least two starting stitches and reduce the number of increases if needed.</string>
 
     <!-- Gauge Converter -->
     <string name="pattern_gauge">Pattern gauge</string>
@@ -314,7 +314,7 @@
     <string name="rows_in_pattern">Rows in pattern</string>
 
     <!-- Cast On Calculator -->
-    <string name="desired_width">Desired width</string>
+    <string name="desired_width">Desired body width</string>
     <string name="stitch_gauge">Stitch gauge</string>
     <string name="pattern_repeat_optional">Pattern repeat (optional)</string>
     <string name="edge_stitches_optional">Edge stitches total</string>
@@ -331,9 +331,9 @@
     <string name="total_yarn_needed">Total yarn needed</string>
     <string name="length_per_skein">Length per skein</string>
     <string name="weight_per_skein">Weight per skein</string>
-    <string name="total_weight">Total weight: %s g</string>
+    <string name="total_weight">Weight of whole skeins: %s g</string>
     <string name="estimated_skeins">Estimated: about %s skeins</string>
-    <string name="extra_skein_note">Always buy one extra skein — dye lots may vary</string>
+    <string name="extra_skein_note">Allow for extra yarn if needed, and check that the dye lots match.</string>
 
     <!-- Needle Sizes -->
     <string name="search_size">Search size…</string>
@@ -362,6 +362,7 @@
     <string name="settings_language_french">Français</string>
     <string name="settings_language_spanish">Español</string>
     <string name="settings_language_portuguese">Português</string>
+    <string name="settings_language_brazilian_portuguese">Português (Brasil)</string>
     <string name="settings_language_italian">Italiano</string>
     <string name="settings_language_norwegian">Norsk</string>
     <string name="settings_language_danish">Dansk</string>
@@ -399,7 +400,6 @@
     <string name="yarn_dye_lot_short">Lot %1$s</string>
     <string name="weight_category">Weight category</string>
     <string name="yarn_weight_other">Other</string>
-    <string name="yarn_weight_ply_format">%1$s ply</string>
     <string name="care_symbols">Care</string>
     <string name="no_saved_yarns">No saved yarn cards yet</string>
 
@@ -414,14 +414,12 @@
     <string name="generic_error_unknown">Something went wrong — try again</string>
 
     <!-- Camera permission -->
-    <string name="camera_permission_denied">Camera permission is needed to take photos</string>
-    <string name="camera_permission_denied_permanent">Camera permission denied — enable it in Settings</string>
     <string name="retry">Retry</string>
 
     <!-- Care symbol categories -->
-    <string name="care_wash_30">30°</string>
-    <string name="care_wash_40">40°</string>
-    <string name="care_wash_60">60°</string>
+    <string name="care_wash_30">30°C</string>
+    <string name="care_wash_40">40°C</string>
+    <string name="care_wash_60">60°C</string>
     <string name="care_wash_hand">Hand wash</string>
     <string name="care_wash_do_not">Do not wash</string>
     <string name="care_bleach_any">Any bleach</string>
@@ -436,8 +434,8 @@
     <string name="care_iron_high">Iron high</string>
     <string name="care_iron_do_not">Do not iron</string>
     <string name="care_dryclean_any">Any solvent</string>
-    <string name="care_dryclean_p">P solvent</string>
-    <string name="care_dryclean_f">F solvent</string>
+    <string name="care_dryclean_p">Dry clean (P)</string>
+    <string name="care_dryclean_f">Dry clean (F)</string>
     <string name="care_dryclean_do_not">Do not dry clean</string>
 
     <!-- Defaults -->
@@ -445,12 +443,11 @@
     <string name="yarn_card_number_fallback">Yarn #%1$d</string>
 
     <!-- Widget -->
-    <string name="widget_name">Row Counter</string>
-    <string name="widget_description">Row counter widget for active project</string>
+    <string name="widget_name">Project Counter</string>
+    <string name="widget_description">Counter widget for the active project</string>
     <string name="widget_pro_required">Upgrade to Pro to use the widget</string>
     <string name="target_rows_dialog_title">Set target</string>
     <string name="target_rows_remove">Remove target</string>
-    <string name="row_label_with_target">Row %1$d / %2$d</string>
 
     <!-- Hubs -->
     <string name="desc_increase_decrease">Evenly space increases or decreases across a row</string>
@@ -530,7 +527,7 @@
     <string name="insights_chart_a11y_next">Next bar</string>
     <string name="insights_chart_a11y_previous">Previous bar</string>
     <string name="insights_project_sub_format">%1$s, %2$s</string>
-    <string name="insights_empty_title">No time on the needles yet.</string>
+    <string name="insights_empty_title">No work sessions yet.</string>
     <string name="insights_empty_body">Open a project and start a work session to record your time here.</string>
     <string name="insights_nothing_yet_week">Nothing yet this week.</string>
     <string name="insights_nothing_yet_month">Nothing yet this month.</string>
@@ -541,16 +538,15 @@
     <string name="insights_all_time">All Time</string>
     <string name="insights_this_week">This Week</string>
     <string name="insights_this_month">This Month</string>
-    <plurals name="insights_rows_count">
-        <item quantity="one">%1$d row</item>
-        <item quantity="other">%1$d rows</item>
-    </plurals>
     <!-- Alaviitteet näkyvät myös virkkaajalle: ei puikkoja eikä neulontaverbejä -->
     <string name="relative_time_today">today</string>
     <string name="relative_time_yesterday">yesterday</string>
     <string name="relative_time_days_ago">%1$dd ago</string>
     <string name="relative_time_weeks_ago">%1$dw ago</string>
-    <string name="relative_time_months_ago">%1$dmo ago</string>
+    <plurals name="relative_time_months_ago">
+        <item quantity="one">%1$dmo ago</item>
+        <item quantity="other">%1$dmo ago</item>
+    </plurals>
 
     <!-- Settings -->
     <string name="help_and_guide">Help &amp; Guide</string>
@@ -577,10 +573,8 @@
     <string name="size_col_chest">Chest</string>
     <string name="size_col_waist">Waist</string>
     <string name="size_col_hips">Hips</string>
-    <string name="size_col_head">Head</string>
     <string name="size_col_length">Length</string>
-    <string name="size_col_height">Height</string>
-    <string name="size_col_arm">Arm</string>
+    <string name="size_col_arm">Arm length to underarm</string>
     <string name="size_col_bust">Bust</string>
     <string name="size_col_circumference">Circumference</string>
     <!-- Size chart row labels -->
@@ -588,18 +582,14 @@
     <string name="size_row_baby">Baby</string>
     <string name="size_row_toddler">Toddler</string>
     <string name="size_row_child">Child</string>
-    <string name="size_row_adult_s">Adult S</string>
-    <string name="size_row_adult_m">Adult M</string>
-    <string name="size_row_adult_l">Adult L</string>
-    <string name="size_row_adult_xl">Adult XL</string>
-    <string name="size_row_child_s">Child S</string>
-    <string name="size_row_child_m">Child M</string>
-    <string name="size_row_child_l">Child L</string>
-    <string name="size_row_age_0_3m">0–3m</string>
-    <string name="size_row_age_3_6m">3–6m</string>
-    <string name="size_row_age_6_12m">6–12m</string>
-    <string name="size_row_age_12_18m">12–18m</string>
-    <string name="size_row_age_18_24m">18–24m</string>
+    <string name="size_row_child_s">2–4 years</string>
+    <string name="size_row_child_m">4–6 years</string>
+    <string name="size_row_child_l">6–8 years</string>
+    <string name="size_row_age_0_3m">3m</string>
+    <string name="size_row_age_3_6m">6m</string>
+    <string name="size_row_age_6_12m">12m</string>
+    <string name="size_row_age_12_18m">18m</string>
+    <string name="size_row_age_18_24m">24m</string>
     <string name="size_row_child_2">2</string>
     <string name="size_row_child_4">4</string>
     <string name="size_row_child_6">6</string>
@@ -608,24 +598,23 @@
     <string name="size_row_child_12">12</string>
     <string name="size_row_child_14">14</string>
     <string name="size_row_child_16">16</string>
-    <string name="size_row_women_xs_2_4">XS (2–4)</string>
-    <string name="size_row_women_s_6_8">S (6–8)</string>
-    <string name="size_row_women_m_10_12">M (10–12)</string>
-    <string name="size_row_women_l_14_16">L (14–16)</string>
-    <string name="size_row_women_xl_18_20">XL (18–20)</string>
-    <string name="size_row_women_2xl_22_24">2XL (22–24)</string>
-    <string name="size_row_women_3xl_26_28">3XL (26–28)</string>
-    <string name="size_row_women_4xl_30_32">4XL (30–32)</string>
-    <string name="size_row_women_5xl_34_36">5XL (34–36)</string>
-    <string name="size_row_men_xs_30_32">XS (30–32)</string>
-    <string name="size_row_men_s_34_36">S (34–36)</string>
-    <string name="size_row_men_m_38_40">M (38–40)</string>
-    <string name="size_row_men_l_42_44">L (42–44)</string>
-    <string name="size_row_men_xl_46_48">XL (46–48)</string>
-    <string name="size_row_men_2xl_50_52">2XL (50–52)</string>
-    <string name="size_row_men_3xl_54_56">3XL (54–56)</string>
-    <string name="size_row_men_4xl_58_60">4XL (58–60)</string>
-    <string name="size_row_men_5xl_62_64">5XL (62–64)</string>
+    <string name="size_row_women_xs_2_4">XS</string>
+    <string name="size_row_women_s_6_8">S</string>
+    <string name="size_row_women_m_10_12">M</string>
+    <string name="size_row_women_l_14_16">L</string>
+    <string name="size_row_women_xl_18_20">XL</string>
+    <string name="size_row_women_2xl_22_24">2XL</string>
+    <string name="size_row_women_3xl_26_28">3XL</string>
+    <string name="size_row_women_4xl_30_32">4XL</string>
+    <string name="size_row_women_5xl_34_36">5XL</string>
+    <string name="size_row_men_s_34_36">S</string>
+    <string name="size_row_men_m_38_40">M</string>
+    <string name="size_row_men_l_42_44">L</string>
+    <string name="size_row_men_xl_46_48">XL</string>
+    <string name="size_row_men_2xl_50_52">2XL</string>
+    <string name="size_row_men_3xl_54_56">3XL</string>
+    <string name="size_row_men_4xl_58_60">4XL</string>
+    <string name="size_row_men_5xl_62_64">5XL</string>
 
     <!-- Abbreviations -->
     <string name="abbreviations_title">Abbreviations</string>
@@ -653,7 +642,7 @@
     <string name="abbr_p2tog_meaning">Purl 2 together</string>
     <string name="abbr_p2tog_desc">Purl two stitches together as one</string>
     <string name="abbr_ssk_meaning">Slip, slip, knit</string>
-    <string name="abbr_ssk_desc">Left-leaning decrease: slip 2 stitches knitwise, knit them together through back loops</string>
+    <string name="abbr_ssk_desc">Left-leaning decrease: slip 2 stitches knitwise one at a time, then knit them together through their back loops</string>
     <string name="abbr_ssp_meaning">Slip, slip, purl</string>
     <string name="abbr_ssp_desc">Left-leaning purl decrease</string>
     <string name="abbr_skp_meaning">Slip, knit, pass slipped stitch over</string>
@@ -663,7 +652,7 @@
     <string name="abbr_p3tog_meaning">Purl 3 together</string>
     <string name="abbr_p3tog_desc">Purl three stitches together</string>
     <string name="abbr_s2kp_meaning">Slip 2, knit 1, pass slipped stitches over</string>
-    <string name="abbr_s2kp_desc">Centered double decrease</string>
+    <string name="abbr_s2kp_desc">Centered double decrease: slip 2 together knitwise, knit 1, then pass both slipped stitches over the knitted stitch</string>
     <string name="abbr_sk2p_meaning">Slip 1, knit 2 together, pass slipped stitch over</string>
     <string name="abbr_sk2p_desc">Left-leaning double decrease</string>
     <string name="abbr_cdd_meaning">Central double decrease</string>
@@ -673,7 +662,7 @@
     <string name="abbr_dec_meaning">Decrease</string>
     <string name="abbr_dec_desc">Reduce the number of stitches</string>
     <string name="abbr_m1_meaning">Make 1</string>
-    <string name="abbr_m1_desc">Pick up bar between stitches and knit through back loop to increase</string>
+    <string name="abbr_m1_desc">For a left-leaning M1, lift the bar between stitches from front to back and knit through its back loop. Follow the pattern if it specifies a different method.</string>
     <string name="abbr_m1l_meaning">Make 1 left</string>
     <string name="abbr_m1l_desc">Left-leaning increase using the bar between stitches</string>
     <string name="abbr_m1r_meaning">Make 1 right</string>
@@ -727,9 +716,9 @@
     <string name="abbr_c6b_meaning">Cable 6 back</string>
     <string name="abbr_c6b_desc">Slip 3 to CN and hold in back, K3, K3 from CN</string>
     <string name="abbr_wyif_meaning">With yarn in front</string>
-    <string name="abbr_wyif_desc">Hold yarn to the front (purl side) of work</string>
+    <string name="abbr_wyif_desc">Hold yarn in front of the work, on the side facing you</string>
     <string name="abbr_wyib_meaning">With yarn in back</string>
-    <string name="abbr_wyib_desc">Hold yarn to the back (knit side) of work</string>
+    <string name="abbr_wyib_desc">Hold yarn behind the work, on the side facing away from you</string>
     <string name="abbr_wt_meaning">Wrap and turn</string>
     <string name="abbr_wt_desc">Wrap the next stitch and turn work for short row shaping</string>
     <string name="abbr_st_st_meaning">Stockinette stitch</string>
@@ -789,7 +778,7 @@
 
     <!-- Chart Symbols -->
     <string name="chart_symbols_title">Chart Symbols</string>
-    <string name="chart_symbols_disclaimer">Symbols follow standard conventions. Always check your pattern\'s symbol key.</string>
+    <string name="chart_symbols_disclaimer">Symbols describe stitches as seen from the right side of the work. Always check your pattern\'s symbol key.</string>
     <string name="category_basic">Basic Stitches</string>
     <string name="category_decreases">Decreases</string>
     <string name="category_increases">Increases</string>
@@ -806,8 +795,6 @@
     <string name="sym_knit_tbl_desc">Knit through the back loop (twisted)</string>
     <string name="sym_purl_tbl_name">Purl TBL</string>
     <string name="sym_purl_tbl_desc">Purl through the back loop (twisted)</string>
-    <string name="sym_slip_knitwise_name">Slip Knitwise</string>
-    <string name="sym_slip_knitwise_desc">Slip stitch as if to knit</string>
     <string name="sym_slip_purlwise_name">Slip Purlwise</string>
     <string name="sym_slip_purlwise_desc">Slip stitch as if to purl</string>
     <string name="sym_k2tog_name">K2tog</string>
@@ -857,13 +844,13 @@
     <string name="no_reminders">No reminders yet</string>
     <string name="delete_reminder_title">Delete reminder?</string>
     <string name="delete_reminder_confirm">Delete reminder \"%1$s\"?</string>
-    <string name="row_number">Row number</string>
+    <string name="row_number">Counter value</string>
     <string name="reminder_message">Message</string>
     <string name="reminder_message_hint">e.g. Switch to heel flap</string>
     <string name="one_time">One-time</string>
     <string name="repeating">Repeating</string>
     <string name="repeat_every">Repeat every</string>
-    <string name="repeat_every_rows">rows</string>
+    <string name="repeat_every_rows">counts</string>
     <string name="dismiss">Dismiss</string>
 
     <!-- Multiple Counters -->
@@ -879,11 +866,11 @@
     <string name="repeat_section">Repeat section</string>
     <string name="starting_stitches">Starting stitch count</string>
     <string name="stitch_change">Stitches to add/remove</string>
-    <string name="shape_every_n">Shape every N rows</string>
-    <string name="repeat_section_start_row">Start row</string>
-    <string name="repeat_section_end_row">End row</string>
+    <string name="shape_every_n">Shape every N counts</string>
+    <string name="repeat_section_start_row">Start count</string>
+    <string name="repeat_section_end_row">End count</string>
     <string name="total_repeats">Total repeats</string>
-    <string name="repeat_section_progress_format">Repeat %1$d/%2$d, Row %3$d/%4$d</string>
+    <string name="repeat_section_progress_format">Repeat %1$d/%2$d, count %3$d/%4$d</string>
     <string name="repeat_section_complete">Complete</string>
     <string name="rename_counter">Rename</string>
     <string name="reset_counter_name">Reset</string>
@@ -895,7 +882,7 @@
     <string name="take_photo">Take photo</string>
     <string name="progress_photos">Progress Photos</string>
     <string name="counters_list_empty">No extra counters</string>
-    <string name="row_label_format" tools:ignore="PluralsCandidate">Row %d</string>
+    <string name="row_label_format" tools:ignore="PluralsCandidate">Count %d</string>
     <string name="share_photo">Share</string>
     <string name="photo_share_failed">Photo could not be shared.</string>
     <string name="delete_photo">Delete photo</string>
@@ -946,9 +933,9 @@
     <string name="tip_flat_vs_circular_title">Flat vs. circular</string>
     <string name="tip_flat_vs_circular_desc">Flat knitting: you work back and forth on straight or circular needles, turning at the end of each row.\n\nCircular knitting: you work in a continuous round. Increases/decreases are evenly spaced around the round.</string>
     <string name="tip_needle_sizes_title">Needle size systems</string>
-    <string name="tip_needle_sizes_desc">Metric (mm) is the universal standard. US sizes use a numbered system (0–50). UK/Canadian sizes use a different numbered system. Japanese sizes have their own numbering. Always check the mm size to be sure.</string>
+    <string name="tip_needle_sizes_desc">Needle numbering varies by system and manufacturer. Compare the diameter in millimeters (mm), and check your gauge.</string>
     <string name="tip_imperial_units_title">Imperial units</string>
-    <string name="tip_imperial_units_desc">When enabled, all calculators use inches instead of centimeters and yards instead of meters. Gauge is measured per 4 inches instead of per 10 cm.</string>
+    <string name="tip_imperial_units_desc">Sets inches and yards as the default calculator units. Gauge defaults to measurements per 4 inches instead of per 10 cm. You can change units in Measurements and Gauge.</string>
 
     <!-- Counter screen redesign: bottom sheet -->
     <string name="project_actions_title">Project actions</string>
@@ -1037,35 +1024,6 @@
     <string name="pro_trial_start_failed">The trial could not be started. Please try again.</string>
     <string name="pro_prompt_not_now">Not now</string>
     <string name="pro_prompt_see_pro">See Pro</string>
-    <string name="pro_prompt_trial_body">Start your free 14-day Pro trial. No payment method is required. Anything you create stays available after the trial.</string>
-    <string name="pro_prompt_reactivation_title">Reactivate this project with Pro</string>
-    <string name="pro_prompt_reactivation_trial_body">Start your free 14-day Pro trial to reactivate this project and work on multiple projects at a time. You can keep and view completed projects for free. Your projects stay available after the trial.</string>
-    <string name="pro_prompt_reactivation_body">Pro lets you reactivate this project and work on multiple projects at a time. You can keep and view completed projects for free. Your existing projects stay available.</string>
-    <string name="pro_prompt_projects_title">Create another active project with Pro</string>
-    <plurals name="pro_prompt_projects_trial_body">
-        <item quantity="one">You have %1$d active project. Start your free 14-day Pro trial to create another and work on multiple projects at a time. Completed projects don’t count toward the free limit. Your projects stay available after the trial.</item>
-        <item quantity="other">You have %1$d active projects. Start your free 14-day Pro trial to create another and work on multiple projects at a time. Completed projects don’t count toward the free limit. Your projects stay available after the trial.</item>
-    </plurals>
-    <plurals name="pro_prompt_projects_body">
-        <item quantity="one">You have %1$d active project. Pro lets you create another and work on multiple projects at a time. Completed projects don’t count toward the free limit. Your existing projects stay available.</item>
-        <item quantity="other">You have %1$d active projects. Pro lets you create another and work on multiple projects at a time. Completed projects don’t count toward the free limit. Your existing projects stay available.</item>
-    </plurals>
-    <string name="pro_prompt_photos_title">Add progress photos with Pro</string>
-    <string name="pro_prompt_photos_body">Creating a new progress photo requires Pro. Your existing photos stay available.</string>
-    <string name="pro_prompt_notes_title">Add project notes with Pro</string>
-    <string name="pro_prompt_notes_body">Creating the first note for this project requires Pro. Notes you have already created stay editable.</string>
-    <string name="pro_prompt_yarn_title">Add yarn with Pro</string>
-    <string name="pro_prompt_yarn_body">Creating a new yarn card requires Pro. Your existing yarn cards stay available and editable.</string>
-    <string name="pro_prompt_save_yarn_title">Save this yarn with Pro</string>
-    <string name="pro_prompt_save_yarn_body">Saving this project yarn to My Yarn creates a new yarn card and requires Pro. Your project yarn note stays available.</string>
-    <string name="pro_prompt_counters_title">Add a counter with Pro</string>
-    <string name="pro_prompt_counters_body">Creating a new extra counter requires Pro. Your existing counters stay available and editable.</string>
-    <string name="pro_prompt_reminders_title">Add a row reminder with Pro</string>
-    <string name="pro_prompt_reminders_body">Creating a new row reminder requires Pro. Your existing reminders keep working and stay editable.</string>
-    <string name="pro_prompt_pattern_camera_title">Turn pattern photos into PDF with Pro</string>
-    <string name="pro_prompt_pattern_camera_body">Creating a new PDF from pattern photos requires Pro. Your existing patterns and PDFs stay available.</string>
-    <string name="pro_prompt_widget_title">Use the home-screen widget with Pro</string>
-    <string name="pro_prompt_widget_body">The home-screen widget is an advanced Pro view. Your project and counter data stay available in KnitTools.</string>
     <string name="pro_badge">PRO</string>
     <string name="pro_badge_locked_description">Pro feature</string>
     <string name="pro_badge_trial_description">Pro feature, available during trial</string>
@@ -1077,17 +1035,8 @@
     </plurals>
     <string name="pro_status_trial_ended">Trial ended</string>
     <string name="pro_status_purchased">Purchased</string>
-    <string name="pro_trial_ended_title">Your Pro trial has ended</string>
     <string name="pro_trial_ended_body">Everything you created is still available. You can keep using and editing it. Pro is required only for new Pro items and advanced views.</string>
     <string name="pro_continue_free">Continue free</string>
-    <string name="pro_page_intro">Make more room for every project and keep your workflow together.</string>
-    <string name="pro_page_trust">Everything you create remains available, even if your trial ends.</string>
-    <string name="pro_group_projects_title">Projects and materials</string>
-    <string name="pro_group_projects_body">Work on multiple active projects and create first project notes, progress photos and yarn cards.</string>
-    <string name="pro_group_workflow_title">Counting and workflow</string>
-    <string name="pro_group_workflow_body">Use the compact repeat counter; extra, repeating, shaping and section counters; row reminders; pattern photos as PDF; and the home-screen widget.</string>
-    <string name="pro_group_insights_title">Insights</string>
-    <string name="pro_group_insights_body">See daily, weekly and monthly activity charts and your activity streak.</string>
     <string name="pro_page_purchased">Pro purchased</string>
     <string name="pro_buy_for_price">Buy Pro for %1$s</string>
     <string name="pro_price_unavailable">Price unavailable</string>
@@ -1098,7 +1047,7 @@
     <string name="work_session_recovery_needed">Session time needs review</string>
     <string name="work_session_resolve">Resolve</string>
     <string name="work_session_recovery_title">Review session time</string>
-    <string name="work_session_pending_rows_format">Pending row progress: %1$d</string>
+    <string name="work_session_pending_rows_format">Pending counter progress: %1$d</string>
     <string name="work_session_hours">Hours</string>
     <string name="work_session_minutes">Minutes</string>
     <string name="work_session_add_and_continue">Add and continue</string>
@@ -1484,4 +1433,7 @@
     <string name="project_yarn_edit_missing">This yarn note is no longer in this project. Close the editor.</string>
     <string name="project_yarn_edit_invalid">Enter a yarn name.</string>
     <string name="project_yarn_edit_failed">Could not save your changes. Your draft is still here. Try again.</string>
+    <string name="size_row_tween">Tween</string>
+    <string name="counter_progress_format">Counter progress: %1$d</string>
+    <string name="pattern_annotation_command_failed">An annotation change was not saved. Dismiss this message, then try the action again with the markup tools.</string>
 </resources>

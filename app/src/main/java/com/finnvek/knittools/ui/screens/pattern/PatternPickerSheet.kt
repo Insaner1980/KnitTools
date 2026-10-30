@@ -1,10 +1,9 @@
 package com.finnvek.knittools.ui.screens.pattern
 
-import android.Manifest
 import android.content.ActivityNotFoundException
-import android.content.Context
 import android.net.Uri
 import android.widget.Toast
+import androidx.activity.compose.LocalActivityResultRegistryOwner
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -27,8 +26,10 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -39,22 +40,27 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.core.app.ActivityCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.repeatOnLifecycle
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.model.SavedPattern
 import com.finnvek.knittools.domain.model.isWebPatternCompatible
-import com.finnvek.knittools.pro.ProStatus
+import com.finnvek.knittools.pro.ProActionAccess
+import com.finnvek.knittools.pro.ProFeature
+import com.finnvek.knittools.pro.ProState
+import com.finnvek.knittools.pro.proActionAccess
 import com.finnvek.knittools.ui.components.ConfirmationDialog
-import com.finnvek.knittools.ui.components.ProBadge
+import com.finnvek.knittools.ui.components.ProMarker
 import com.finnvek.knittools.ui.components.ProPromptRequest
 import com.finnvek.knittools.ui.components.ProPromptSheet
 import com.finnvek.knittools.ui.components.ProPromptSource
 import com.finnvek.knittools.ui.components.SectionLabel
 import com.finnvek.knittools.ui.components.SheetOptionRow
 import com.finnvek.knittools.ui.components.SheetTitle
-import com.finnvek.knittools.ui.findActivity
+import com.finnvek.knittools.ui.layout.AdaptiveModalWindow
 import com.finnvek.knittools.ui.theme.knitToolsColors
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.isActive
@@ -89,7 +95,8 @@ fun PatternPickerSheet(
     projectId: Long?,
     savedPatterns: List<SavedPattern>,
     canUseCameraScan: Boolean,
-    proStatus: ProStatus,
+    proState: ProState,
+    proAccessReady: Boolean,
     hasExistingPattern: Boolean,
     mode: PatternPickerMode = PatternPickerMode.INITIAL_PROJECT_PATTERN,
     isRestoringProject: Boolean = false,
@@ -100,9 +107,18 @@ fun PatternPickerSheet(
     onAddWebPattern: () -> Unit = {},
     onSeePro: () -> Unit,
     onDismiss: () -> Unit,
-) {
-    val imageImportViewModel: PatternImageImportViewModel = hiltViewModel()
+    initialCameraRequestId: String? = null,
+) = key(projectId) {
+    val imageImportViewModel: PatternImageImportViewModel =
+        hiltViewModel(key = patternImageImportViewModelKey(projectId))
     val imageImportState by imageImportViewModel.uiState.collectAsStateWithLifecycle()
+    val sessionId = imageImportState.sessionId
+    val completedBeforeOpening =
+        remember(imageImportViewModel) {
+            imageImportViewModel.uiState.value
+                .takeIf { it.closeReady }
+                ?.sessionId
+        }
     var pendingProAction by rememberSaveable { mutableStateOf<PendingPatternProAction?>(null) }
     var showDiscardConfirmation by rememberSaveable { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState()
@@ -125,9 +141,27 @@ fun PatternPickerSheet(
             onDismiss = onDismiss,
         )
 
-    LaunchedEffect(imageImportState.closeReady) {
-        if (imageImportState.closeReady) {
-            imageImportViewModel.consumeCloseRequest()
+    var handledCameraRequestId by rememberSaveable { mutableStateOf<String?>(null) }
+    val lifecycleOwner = LocalLifecycleOwner.current
+    val currentCameraAction by rememberUpdatedState(actions.startCameraScan)
+    LaunchedEffect(initialCameraRequestId, projectId, isRestoringProject, proAccessReady, imageImportState.isBusy) {
+        val requestId = initialCameraRequestId ?: return@LaunchedEffect
+        if (handledCameraRequestId == requestId || projectId == null || isRestoringProject) return@LaunchedEffect
+        if (!proAccessReady || imageImportState.isBusy) return@LaunchedEffect
+        lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+            if (handledCameraRequestId != requestId) {
+                handledCameraRequestId = requestId
+                currentCameraAction()
+            }
+        }
+    }
+
+    LaunchedEffect(sessionId, imageImportState.closeReady) {
+        if (
+            imageImportState.closeReady &&
+            imageImportViewModel.consumeCloseRequest(sessionId) &&
+            sessionId != completedBeforeOpening
+        ) {
             onDismiss()
         }
     }
@@ -163,13 +197,14 @@ fun PatternPickerSheet(
         sheetState = sheetState,
         onDismissRequest = {
             when {
-                imageImportState.isBusy -> imageImportViewModel.cancelImport()
+                imageImportState.isBusy -> imageImportViewModel.cancelImport(sessionId)
                 imageImportState.selection.pages.isNotEmpty() -> showDiscardConfirmation = true
                 else -> onDismiss()
             }
         },
         containerColor = MaterialTheme.colorScheme.surface,
     ) {
+        AdaptiveModalWindow()
         val showImageImport =
             imageImportState.selection.pages.isNotEmpty() ||
                 imageImportState.isBusy ||
@@ -177,25 +212,25 @@ fun PatternPickerSheet(
         if (showImageImport) {
             PatternImageImportSurface(
                 state = imageImportState,
-                onAddMore = actions.chooseImages,
-                onMoveEarlier = imageImportViewModel::moveEarlier,
-                onMoveLater = imageImportViewModel::moveLater,
-                onRemove = imageImportViewModel::removePage,
+                onAddMore = { if (imageImportViewModel.isCurrentSession(sessionId)) actions.chooseImages() },
+                onMoveEarlier = { imageImportViewModel.moveEarlier(it, sessionId) },
+                onMoveLater = { imageImportViewModel.moveLater(it, sessionId) },
+                onRemove = { imageImportViewModel.removePage(it, sessionId) },
                 onCreate = {
                     if (imageImportState.replacementConfirmationPending) {
-                        imageImportViewModel.confirmReplacement()
+                        imageImportViewModel.confirmReplacement(sessionId)
                     } else {
-                        imageImportViewModel.createPatternPdf(hasExistingPattern)
+                        imageImportViewModel.createPatternPdf(hasExistingPattern, sessionId)
                     }
                 },
                 onCancel = {
                     if (imageImportState.replacementConfirmationPending) {
-                        imageImportViewModel.dismissReplacement()
+                        imageImportViewModel.dismissReplacement(sessionId)
                     } else {
-                        imageImportViewModel.cancelImport()
+                        imageImportViewModel.cancelImport(sessionId)
                     }
                 },
-                onPreviewFailed = imageImportViewModel::markPreviewFailed,
+                onPreviewFailed = { imageImportViewModel.markPreviewFailed(it, sessionId) },
             )
         } else {
             PatternPickerSheetContent(
@@ -207,7 +242,8 @@ fun PatternPickerSheet(
                     } else {
                         savedPatterns
                     },
-                proStatus = proStatus,
+                proState = proState,
+                proAccessReady = proAccessReady,
                 projectId = projectId,
                 mode = mode,
                 actions = actions,
@@ -229,7 +265,7 @@ fun PatternPickerSheet(
             isDestructive = true,
             onConfirm = {
                 showDiscardConfirmation = false
-                imageImportViewModel.cancelImport()
+                imageImportViewModel.cancelImport(sessionId)
             },
             onDismiss = keepSelectedImages,
         )
@@ -256,30 +292,47 @@ private fun rememberPatternPickerActions(
     val currentCanUseCameraScan by rememberUpdatedState(canUseCameraScan)
     var pendingDocumentProjectId by rememberSaveable { mutableStateOf<Long?>(null) }
     var pendingDocumentUriString by rememberSaveable { mutableStateOf<String?>(null) }
-    var pendingGalleryRequestId by rememberSaveable { mutableStateOf<String?>(null) }
+    val imageImportState by imageImportViewModel.uiState.collectAsStateWithLifecycle()
     var pendingCaptureImageUriString by rememberSaveable { mutableStateOf<String?>(null) }
     var pendingCaptureFilePath by rememberSaveable { mutableStateOf<String?>(null) }
     var pendingCaptureAuthorized by rememberSaveable { mutableStateOf(false) }
     var pendingCaptureProjectId by rememberSaveable { mutableStateOf<Long?>(null) }
-    var pendingCaptureGranted by rememberSaveable { mutableStateOf(false) }
+    var pendingCaptureSessionId by rememberSaveable { mutableStateOf<String?>(null) }
+    var pendingCaptureLaunch by rememberSaveable { mutableStateOf(false) }
     var pendingCaptureResult by rememberSaveable { mutableStateOf<Boolean?>(null) }
     val clearPendingCapture = {
         pendingCaptureImageUriString = null
         pendingCaptureFilePath = null
         pendingCaptureAuthorized = false
         pendingCaptureProjectId = null
-        pendingCaptureGranted = false
+        pendingCaptureSessionId = null
+        pendingCaptureLaunch = false
         pendingCaptureResult = null
     }
 
-    val imagePickerLauncher =
-        rememberLauncherForActivityResult(
-            PatternImagePickerContract(),
-        ) { uris ->
-            val requestId = pendingGalleryRequestId
-            pendingGalleryRequestId = null
-            imageImportViewModel.onGalleryPickerResult(requestId, uris)
+    val registry = checkNotNull(LocalActivityResultRegistryOwner.current).activityResultRegistry
+    val requestId = imageImportState.pickerRequestId
+    DisposableEffect(registry, imageImportViewModel, requestId) {
+        // The stable request key also receives a pending result after this project's sheet is reopened.
+        val launcher =
+            requestId?.let {
+                registry.register("pattern-images-$requestId", PatternImagePickerContract()) { uris ->
+                    imageImportViewModel.onGalleryPickerResult(requestId, uris)
+                }
+            }
+        if (requestId != null && launcher != null && imageImportViewModel.markGalleryPickerLaunched(requestId)) {
+            try {
+                launcher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+            } catch (_: ActivityNotFoundException) {
+                imageImportViewModel.onGalleryPickerLaunchFailed(requestId)
+            } catch (_: IllegalStateException) {
+                imageImportViewModel.onGalleryPickerLaunchFailed(requestId)
+            } catch (_: SecurityException) {
+                imageImportViewModel.onGalleryPickerLaunchFailed(requestId)
+            }
         }
+        onDispose { launcher?.unregister() }
+    }
 
     val openDocumentLauncher =
         rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
@@ -298,9 +351,22 @@ private fun rememberPatternPickerActions(
             onDismiss()
         }
     }
+    val captureSessionId = pendingCaptureSessionId
+    LaunchedEffect(imageImportState.sessionId, captureSessionId) {
+        if (imageImportState.cameraCapturePending && captureSessionId == null) {
+            imageImportViewModel.onCameraCaptureStateLost(imageImportState.sessionId)
+        }
+    }
     val cameraLauncher =
-        rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { success ->
-            if (pendingCaptureImageUriString != null) pendingCaptureResult = success
+        key(captureSessionId) {
+            rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { success ->
+                if (captureSessionId != null &&
+                    captureSessionId == pendingCaptureSessionId &&
+                    pendingCaptureImageUriString != null
+                ) {
+                    pendingCaptureResult = success
+                }
+            }
         }
     LaunchedEffect(pendingCaptureResult, projectId, isRestoringProject) {
         val success = pendingCaptureResult ?: return@LaunchedEffect
@@ -308,6 +374,7 @@ private fun rememberPatternPickerActions(
         val imageUri = pendingCaptureImageUriString?.let(Uri::parse)
         val imageFile = pendingCaptureFilePath?.let(::File)
         val owner = pendingCaptureProjectId
+        val session = pendingCaptureSessionId
         val authorized = pendingCaptureAuthorized
         clearPendingCapture()
         if (imageUri == null || imageFile == null) return@LaunchedEffect
@@ -316,57 +383,57 @@ private fun rememberPatternPickerActions(
                 it == currentProjectId && canStartPatternCameraScan(it, currentCanUseCameraScan || authorized)
             }
         if (success && acceptedOwner != null) {
-            imageImportViewModel.acceptCameraCapture(acceptedOwner, imageUri, imageFile)
+            imageImportViewModel.acceptCameraCapture(acceptedOwner, imageUri, imageFile, session)
         } else {
-            imageImportViewModel.discardCameraCapture(imageUri, imageFile)
+            imageImportViewModel.discardCameraCapture(imageUri, imageFile, session)
         }
     }
-    val permissionLauncher =
-        rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-            if (!granted) {
-                clearPendingCapture()
-                showCameraPermissionDeniedToast(context)
-                return@rememberLauncherForActivityResult
-            }
-            if (pendingCaptureProjectId != null) pendingCaptureGranted = true
-        }
-    LaunchedEffect(pendingCaptureGranted, projectId, isRestoringProject) {
-        if (!pendingCaptureGranted || isRestoringProject) return@LaunchedEffect
+    LaunchedEffect(pendingCaptureLaunch, captureSessionId, projectId, isRestoringProject) {
+        if (!pendingCaptureLaunch || isRestoringProject) return@LaunchedEffect
         val owner = pendingCaptureProjectId
+        val session = captureSessionId ?: return@LaunchedEffect
         if (owner == null ||
             owner != currentProjectId ||
             !canStartPatternCameraScan(owner, currentCanUseCameraScan || pendingCaptureAuthorized)
         ) {
+            imageImportViewModel.cancelCameraCaptureRequest(session)
             clearPendingCapture()
             return@LaunchedEffect
         }
         try {
             // Retain the created target even if this sheet closes while its bounded file write finishes.
-            val target = withContext(NonCancellable) { imageImportViewModel.createCameraCaptureTarget(owner) }
+            val target = withContext(NonCancellable) { imageImportViewModel.createCameraCaptureTarget(owner, session) }
             if (target != null) {
                 val (file, uri) = target
-                if (!isActive || owner != currentProjectId || owner != pendingCaptureProjectId) {
-                    imageImportViewModel.discardCameraCapture(uri, file)
-                    clearPendingCapture()
+                if (!isActive ||
+                    owner != currentProjectId ||
+                    owner != pendingCaptureProjectId ||
+                    session != pendingCaptureSessionId
+                ) {
+                    imageImportViewModel.discardCameraCapture(uri, file, session)
+                    if (session == pendingCaptureSessionId) clearPendingCapture()
                     return@LaunchedEffect
                 }
                 pendingCaptureImageUriString = uri.toString()
                 pendingCaptureFilePath = file.absolutePath
+
+                fun abandonCapture() {
+                    imageImportViewModel.discardCameraCapture(uri, file, session)
+                    clearPendingCapture()
+                    Toast.makeText(context, R.string.generic_error_unknown, Toast.LENGTH_SHORT).show()
+                }
                 try {
                     cameraLauncher.launch(uri)
                 } catch (_: ActivityNotFoundException) {
-                    imageImportViewModel.discardCameraCapture(uri, file)
-                    clearPendingCapture()
+                    abandonCapture()
                 } catch (_: IllegalStateException) {
-                    imageImportViewModel.discardCameraCapture(uri, file)
-                    clearPendingCapture()
+                    abandonCapture()
                 } catch (_: SecurityException) {
-                    imageImportViewModel.discardCameraCapture(uri, file)
-                    clearPendingCapture()
+                    abandonCapture()
                 }
             }
         } finally {
-            pendingCaptureGranted = false
+            if (session == pendingCaptureSessionId) pendingCaptureLaunch = false
         }
     }
 
@@ -379,23 +446,23 @@ private fun rememberPatternPickerActions(
     val launchGalleryPicker = {
         val pendingProjectId = currentProjectId
         if (pendingProjectId != null) {
-            pendingGalleryRequestId = imageImportViewModel.authorizeGalleryPicker(pendingProjectId)
-            imagePickerLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+            imageImportViewModel.authorizeGalleryPicker(pendingProjectId)
         }
     }
     val launchCameraScan: () -> Unit = {
         currentProjectId?.let { authorizedProjectId ->
-            imageImportViewModel.authorizeCameraCapture(authorizedProjectId)
+            val session = imageImportViewModel.authorizeCameraCapture(authorizedProjectId) ?: return@let
+            pendingCaptureSessionId = session
             pendingCaptureProjectId = authorizedProjectId
             pendingCaptureAuthorized = true
-            permissionLauncher.launch(Manifest.permission.CAMERA)
+            pendingCaptureLaunch = true
         }
     }
 
     return remember(
-        imagePickerLauncher,
+        imageImportViewModel,
         openDocumentLauncher,
-        permissionLauncher,
+        cameraLauncher,
         onDismiss,
         onAddWebPattern,
         onImportFromRavelry,
@@ -437,12 +504,16 @@ private fun rememberPatternPickerActions(
 @Composable
 private fun PatternPickerSheetContent(
     savedPatterns: List<SavedPattern>,
-    proStatus: ProStatus,
+    proState: ProState,
+    proAccessReady: Boolean,
     projectId: Long?,
     mode: PatternPickerMode,
     actions: PatternPickerActions,
     onSavedPatternSelected: (SavedPattern) -> Unit,
 ) {
+    val cameraAccess = proActionAccess(proState, proAccessReady, ProFeature.PATTERN_CAMERA_SCAN)
+    val cameraActionReady =
+        cameraAccess != ProActionAccess.Unknown || proState.hasFeature(ProFeature.PATTERN_CAMERA_SCAN)
     Column(
         modifier =
             Modifier
@@ -483,14 +554,14 @@ private fun PatternPickerSheetContent(
         PickerAction(
             label = stringResource(R.string.pattern_picker_choose_images),
             onClick = actions.chooseImages,
-            enabled = projectId != null,
-            badge = { ProBadge(status = proStatus) },
+            enabled = projectId != null && cameraActionReady,
+            badge = { ProMarker(access = cameraAccess) },
         )
         PickerAction(
             label = stringResource(R.string.pattern_picker_camera_scan),
             onClick = actions.startCameraScan,
-            enabled = projectId != null,
-            badge = { ProBadge(status = proStatus) },
+            enabled = projectId != null && cameraActionReady,
+            badge = { ProMarker(access = cameraAccess) },
         )
         if (mode == PatternPickerMode.INITIAL_PROJECT_PATTERN) {
             PickerAction(
@@ -558,20 +629,6 @@ internal fun canStartPatternCameraScan(
 ): Boolean = canUseCameraScan && projectId != null
 
 private fun pdfMimeTypes(): Array<String> = arrayOf(PATTERN_PDF_MIME_TYPE)
-
-private fun showCameraPermissionDeniedToast(context: Context) {
-    val activity = context.findActivity()
-    val permanentlyDenied =
-        activity != null &&
-            !ActivityCompat.shouldShowRequestPermissionRationale(activity, Manifest.permission.CAMERA)
-    val messageRes =
-        if (permanentlyDenied) {
-            R.string.camera_permission_denied_permanent
-        } else {
-            R.string.camera_permission_denied
-        }
-    Toast.makeText(context, context.getString(messageRes), Toast.LENGTH_SHORT).show()
-}
 
 private const val PATTERN_PDF_MIME_TYPE = "application/pdf"
 

@@ -104,21 +104,25 @@ internal fun PatternAnnotationInputOverlay(
         modifier =
             modifier.pointerInput(activeTool, coordinateTransform, viewportScale, pressureEnabled) {
                 val simplificationTolerance = 1f / (minOf(size.width, size.height) * viewportScale).coerceAtLeast(1f)
-                awaitEachGesture {
-                    var gestureState = PatternAnnotationPointerGestureState()
-                    while (!gestureState.finished) {
-                        val event = awaitPointerEvent()
-                        gestureState =
-                            processAnnotationPointerEvent(
-                                event = event,
-                                state = gestureState,
-                                activeTool = activeTool,
-                                coordinateTransform = coordinateTransform,
-                                pressureEnabled = pressureEnabled,
-                                simplificationTolerance = simplificationTolerance,
-                                actions = actions,
-                            )
+                try {
+                    awaitEachGesture {
+                        var gestureState = PatternAnnotationPointerGestureState()
+                        while (!gestureState.finished) {
+                            val event = awaitPointerEvent()
+                            gestureState =
+                                processAnnotationPointerEvent(
+                                    event = event,
+                                    state = gestureState,
+                                    activeTool = activeTool,
+                                    coordinateTransform = coordinateTransform,
+                                    pressureEnabled = pressureEnabled,
+                                    simplificationTolerance = simplificationTolerance,
+                                    actions = actions,
+                                )
+                        }
                     }
+                } finally {
+                    actions.onCancelStroke()
                 }
             },
     ) {}

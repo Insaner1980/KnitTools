@@ -13,14 +13,20 @@ class RavelryBrowserSourceTest {
     @Test
     fun `ravelry opens inside the app and pdf downloads go to the save sheet`() {
         val browser = ProjectSourceFiles.read(BROWSER)
+        val browserState = ProjectSourceFiles.read(BROWSER_STATE)
         val navGraph = ProjectSourceFiles.read(NAV_GRAPH)
         val mainActivity = ProjectSourceFiles.read(MAIN_ACTIVITY)
 
         assertTrue(browser.contains("setDownloadListener"))
         assertTrue(browser.contains("settings.allowFileAccess = false"))
-        assertTrue(browser.contains("val startPage = startUrl?.let(::ravelryPageUrlOrNull)"))
-        assertTrue(browser.contains("if (startPage != null && isRavelryPurchasePage(startPage))"))
-        assertTrue(browser.contains("loadUrl(startPage ?: RAVELRY_PATTERN_SEARCH_URL)"))
+        assertTrue(browserState.contains("val startPage = startUrl?.let(::ravelryPageUrlOrNull)"))
+        assertTrue(browserState.contains("if (startPage != null && isRavelryPurchasePage(startPage))"))
+        assertTrue(
+            browserState.contains(
+                "fallbackUrl = restorableRavelryPageOrNull(startPage) ?: RAVELRY_PATTERN_SEARCH_URL",
+            ),
+        )
+        assertTrue(browser.contains("browserState.restoreOrLoad(this, startUrl) { openOutside(it, purchaseMessage) }"))
         // Kassa ja maksu avautuvat käyttäjän selaimessa, ei sovelluksen sisällä.
         assertTrue(browser.contains("ravelryNavigation("))
         assertTrue(browser.contains("return navigation != RavelryNavigation.InApp"))
@@ -40,7 +46,9 @@ class RavelryBrowserSourceTest {
         // Tuo Ravelrysta, jaettu linkki, verkko-ohjeen linkki ja tallennettu ohje.
         assertTrue(navGraph.contains("navController.navigateSingleTopTo(Screen.RavelryBrowser.route)"))
         assertTrue(
-            navGraph.contains("navController.navigateSingleTopTo(Screen.RavelryBrowser.createRoute(payload.url))"),
+            navGraph.contains(
+                "navController.navigateSingleTopTo(Screen.RavelryBrowser.createRoute(payload.url, request.requestId))",
+            ),
         )
         assertEquals(
             2,
@@ -64,6 +72,7 @@ class RavelryBrowserSourceTest {
 
     private companion object {
         const val BROWSER = "app/src/main/java/com/finnvek/knittools/ui/screens/ravelry/RavelryBrowserScreen.kt"
+        const val BROWSER_STATE = "app/src/main/java/com/finnvek/knittools/ui/screens/ravelry/RavelryBrowserState.kt"
         const val DOWNLOADER = "app/src/main/java/com/finnvek/knittools/data/remote/WebPdfDownloader.kt"
         const val NAV_GRAPH = "app/src/main/java/com/finnvek/knittools/ui/navigation/NavGraph.kt"
         const val MAIN_ACTIVITY = "app/src/main/java/com/finnvek/knittools/MainActivity.kt"

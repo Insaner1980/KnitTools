@@ -40,6 +40,7 @@ import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.calculator.MeasurementNumberError
 import com.finnvek.knittools.domain.calculator.MeasurementNumberParser
 import com.finnvek.knittools.ui.theme.knitToolsColors
+import com.finnvek.knittools.ui.tips.tipBlockWhenFocused
 import java.text.DecimalFormatSymbols
 import java.util.Locale
 
@@ -133,6 +134,7 @@ fun NumberInputField(
             },
             modifier =
                 inputModifier
+                    .tipBlockWhenFocused()
                     .fillMaxWidth()
                     .heightIn(min = 48.dp)
                     .then(
@@ -195,6 +197,10 @@ fun LabeledTextField(
     label: String,
     modifier: Modifier = Modifier,
     placeholder: String? = null,
+    inputModifier: Modifier = Modifier,
+    keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
+    keyboardActions: KeyboardActions = KeyboardActions.Default,
+    errorMessage: String? = null,
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isFocused by interactionSource.collectIsFocusedAsState()
@@ -205,16 +211,24 @@ fun LabeledTextField(
             value = value,
             onValueChange = onValueChange,
             modifier =
-                Modifier
+                inputModifier
+                    .tipBlockWhenFocused()
                     .fillMaxWidth()
                     .heightIn(min = 48.dp)
                     .inputFieldBorder(isFocused)
-                    .semantics { contentDescription = label },
+                    .semantics {
+                        contentDescription = label
+                        errorMessage?.let { error(it) }
+                    },
             placeholder =
                 placeholder?.let { example ->
                     { Text(example, color = MaterialTheme.knitToolsColors.fieldPlaceholderText) }
                 },
             textStyle = MaterialTheme.typography.titleSmall,
+            keyboardOptions = keyboardOptions,
+            keyboardActions = keyboardActions,
+            isError = errorMessage != null,
+            supportingText = errorMessage?.let { message -> { Text(message) } },
             singleLine = true,
             shape = InputFieldShape,
             colors = inputFieldColors(),

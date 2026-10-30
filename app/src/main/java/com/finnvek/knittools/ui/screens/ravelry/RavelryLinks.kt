@@ -5,6 +5,19 @@ import java.util.Locale
 
 private const val RAVELRY_SCHEME = "https"
 private val RAVELRY_HOSTS = setOf("ravelry.com", "www.ravelry.com")
+internal const val RAVELRY_PATTERN_SEARCH_URL = "https://www.ravelry.com/patterns/search"
+
+/** Restoration and app-driven Back are page loads, never download redirects. */
+internal fun restorableRavelryPageOrNull(url: String?): String? =
+    url?.takeIf { it.length <= MAX_RESTORABLE_URL_LENGTH }?.let(::eligibleRavelryPageOrNull)
+
+internal fun eligibleRavelryPageOrNull(url: String?): String? =
+    url
+        ?.let(::ravelryPageUrlOrNull)
+        ?.takeUnless(::isRavelryPurchasePage)
+        ?.takeIf { URI(it).rawUserInfo == null }
+
+private const val MAX_RESTORABLE_URL_LENGTH = 2048
 
 /** Hyväksyy vain Ravelryn HTTPS-sivun; sovelluksen Ravelry-selain avaa muut osoitteet kaavahakuun. */
 internal fun ravelryPageUrlOrNull(url: String): String? {

@@ -143,14 +143,14 @@
     <string name="pattern_open_failed">Die Anleitung konnte nicht geöffnet werden.</string>
     <string name="pattern_show_reading_line">Leselinie anzeigen</string>
     <string name="pattern_hide_reading_line">Leselinie ausblenden</string>
-    <string name="pattern_clear_row_mark">Reihenmarkierung entfernen</string>
+    <string name="pattern_clear_row_mark">Zählermarkierung entfernen</string>
     <string name="pattern_clear_page_marks">Seitenmarkierungen entfernen</string>
-    <string name="pattern_calibrate_rows">Reihen kalibrieren</string>
-    <string name="pattern_calibration_first_row">Erste Reihe</string>
-    <string name="pattern_calibration_last_row">Letzte Reihe</string>
+    <string name="pattern_calibrate_rows">Zählerpositionen kalibrieren</string>
+    <string name="pattern_calibration_first_row">Erster Zählerstand</string>
+    <string name="pattern_calibration_last_row">Letzter Zählerstand</string>
     <string name="pattern_calibration_save_first">Erste speichern</string>
     <string name="pattern_calibration_save_last">Letzte speichern</string>
-    <string name="pattern_calibration_invalid_row">Verwende zwei unterschiedliche Reihennummern</string>
+    <string name="pattern_calibration_invalid_row">Verwende zwei unterschiedliche Zählerstände</string>
     <string name="pattern_page_jump">Zu Seite springen</string>
     <string name="pattern_page_number">Seitennummer</string>
     <string name="pattern_page_indicator">Seite %1$d von %2$d</string>
@@ -235,8 +235,8 @@
     <!-- Session History -->
     <string name="session_history_title">Arbeitsverlauf</string>
     <string name="no_sessions">Noch keine Sitzungen aufgezeichnet. Öffne ein Projekt und starte eine Arbeitssitzung, um deine Zeit hier zu erfassen.</string>
-    <string name="session_row_range">Reihen %1$d \u2192 %2$d</string>
-    <string name="session_row_single">Reihe %1$d</string>
+    <string name="session_row_range">Zähler: %1$d → %2$d</string>
+    <string name="session_row_single">Zählerstand %1$d</string>
     <string name="delete_session_title">Sitzung löschen?</string>
     <string name="delete_session_message">Diese Sitzung aus dem Verlauf löschen? Dies kann nicht rückgängig gemacht werden.</string>
 
@@ -268,8 +268,8 @@
     <string name="project_content_add_pattern">Anleitung hinzufügen</string>
     <string name="stitch_tracker_label">Maschen</string>
     <plurals name="reminder_repeat_occurrence_format">
-        <item quantity="one">Wiederholung #%1$d jede Reihe</item>
-        <item quantity="other">Wiederholung #%1$d alle %2$d Reihen</item>
+        <item quantity="one">Wiederholung #%1$d, Intervall %2$d</item>
+        <item quantity="other">Wiederholung #%1$d, Intervall %2$d</item>
     </plurals>
 
     <!-- Increase / Decrease -->
@@ -294,7 +294,7 @@
     <string name="increase_decrease_error_cannot_decrease">Verfügbare Maschenzahl: %2$d. Angeforderte Abnahme: %1$d.</string>
     <string name="increase_decrease_error_not_enough_decrease">Erforderliche Maschenzahl: %1$d. Angeforderte Abnahmen: %2$d.</string>
     <string name="increase_decrease_error_total_out_of_range">Das Ergebnis ist zu groß. Verwende kleinere Maschenzahlen.</string>
-    <string name="increase_decrease_warning_increase_more_than_current">Es werden mehr Maschen zugenommen als aktuell vorhanden - einige Abschnitte haben keine Maschen zwischen den Zunahmen</string>
+    <string name="increase_decrease_error_not_enough_bars">Für diese M1-Zunahmen sind nicht genügend Zwischenräume zwischen den Maschen vorhanden. Verringere die Anzahl der Zunahmen.</string>
 
     <!-- Gauge Converter -->
     <string name="pattern_gauge">Maschenprobe der Anleitung</string>
@@ -320,9 +320,9 @@
     <string name="total_yarn_needed">Gesamter Garnbedarf</string>
     <string name="length_per_skein">Länge pro Knäuel</string>
     <string name="weight_per_skein">Gewicht pro Knäuel</string>
-    <string name="total_weight">Gesamtgewicht: %s g</string>
+    <string name="total_weight">Gewicht ganzer Knäuel: %s g</string>
     <string name="estimated_skeins">Geschätzt: etwa %s Knäuel</string>
-    <string name="extra_skein_note">Kaufe immer ein zusätzliches Knäuel — Farbpartien können variieren</string>
+    <string name="extra_skein_note">Kaufe bei Bedarf ein zusätzliches Knäuel — Farbpartien können variieren</string>
 
     <!-- Needle Sizes -->
     <string name="search_size">Größe suchen…</string>
@@ -351,6 +351,7 @@
     <string name="settings_language_french">Français</string>
     <string name="settings_language_spanish">Español</string>
     <string name="settings_language_portuguese">Português</string>
+    <string name="settings_language_brazilian_portuguese">Português (Brasil)</string>
     <string name="settings_language_italian">Italiano</string>
     <string name="settings_language_norwegian">Norsk</string>
     <string name="settings_language_danish">Dansk</string>
@@ -387,7 +388,6 @@
     <string name="yarn_dye_lot_short">Partie %1$s</string>
     <string name="weight_category">Stärkenkategorie</string>
     <string name="yarn_weight_other">Andere</string>
-    <string name="yarn_weight_ply_format">%1$s-fädig</string>
     <string name="care_symbols">Pflege</string>
     <string name="no_saved_yarns">Noch keine Garnkarten gespeichert</string>
 
@@ -402,8 +402,6 @@
     <string name="generic_error_unknown">Etwas ist schiefgelaufen — versuche es erneut</string>
 
     <!-- Camera permission -->
-    <string name="camera_permission_denied">Die Kameraberechtigung wird benötigt, um Fotos aufzunehmen</string>
-    <string name="camera_permission_denied_permanent">Kameraberechtigung verweigert — aktiviere sie in den Einstellungen</string>
 
     <!-- Care symbol categories -->
     <string name="care_wash_30">30°</string>
@@ -441,7 +439,7 @@
     <string name="desc_cast_on">Maschen für die gewünschte Breite berechnen</string>
     <string name="desc_needle_sizes">Nadelstärken in metrischen, US-, UK- und japanischen Systemen</string>
     <string name="desc_size_charts">Standard-Körpermaße für Kleidergrößen</string>
-    <string name="desc_abbreviations">Nachschlagewerk für gängige Strickabkürzungen</string>
+    <string name="desc_abbreviations">Nachschlagewerk für gängige englische Strickabkürzungen</string>
     <string name="desc_chart_symbols">Leitfaden für gängige Strickchart-Symbole</string>
 
     <!-- Library — My Collection -->
@@ -524,15 +522,14 @@
     <string name="insights_all_time">Gesamte Zeit</string>
     <string name="insights_this_week">Diese Woche</string>
     <string name="insights_this_month">Diesen Monat</string>
-    <plurals name="insights_rows_count">
-        <item quantity="one">%1$d Reihe</item>
-        <item quantity="other">%1$d Reihen</item>
-    </plurals>
     <string name="relative_time_today">heute</string>
     <string name="relative_time_yesterday">gestern</string>
     <string name="relative_time_days_ago">vor %1$d T</string>
     <string name="relative_time_weeks_ago">vor %1$d W</string>
-    <string name="relative_time_months_ago">vor %1$d Mon</string>
+    <plurals name="relative_time_months_ago">
+        <item quantity="one">vor %1$d Mon</item>
+        <item quantity="other">vor %1$d Mon</item>
+    </plurals>
 
     <!-- Settings -->
     <string name="help_and_guide">Hilfe und Anleitung</string>
@@ -556,13 +553,13 @@
     <string name="category_hand">Hand</string>
 
     <!-- Abbreviations -->
-    <string name="abbreviations_title">Abkürzungen</string>
+    <string name="abbreviations_title">Englische Abkürzungen</string>
     <string name="search_abbreviation">Abkürzungen suchen…</string>
     <string name="no_results_found">Keine Ergebnisse gefunden</string>
 
     <!-- Chart Symbols -->
     <string name="chart_symbols_title">Chart-Symbole</string>
-    <string name="chart_symbols_disclaimer">Die Symbole folgen gängigen Konventionen. Prüfe immer die Zeichenerklärung deiner Anleitung.</string>
+    <string name="chart_symbols_disclaimer">Die Symbole zeigen die Ansicht von der rechten Seite der Arbeit. Die Beschreibungen gelten für diese Seite, sofern nichts anderes angegeben ist. Prüfe immer die Zeichenerklärung deiner Anleitung.</string>
     <string name="category_basic">Grundmaschen</string>
     <string name="category_decreases">Abnahmen</string>
     <string name="category_increases">Zunahmen</string>
@@ -579,13 +576,13 @@
     <string name="no_reminders">Noch keine Erinnerungen</string>
     <string name="delete_reminder_title">Erinnerung löschen?</string>
     <string name="delete_reminder_confirm">Erinnerung „%1$s“ löschen?</string>
-    <string name="row_number">Reihennummer</string>
+    <string name="row_number">Zählerstand</string>
     <string name="reminder_message">Nachricht</string>
     <string name="reminder_message_hint">z. B. Zur Fersenwand wechseln</string>
     <string name="one_time">Einmalig</string>
     <string name="repeating">Wiederholend</string>
     <string name="repeat_every">Wiederholen alle</string>
-    <string name="repeat_every_rows">Reihen</string>
+    <string name="repeat_every_rows">Zählschritte</string>
     <string name="dismiss">Ausblenden</string>
 
     <!-- Multiple Counters -->
@@ -601,11 +598,11 @@
     <string name="repeat_section">Rapportabschnitt</string>
     <string name="starting_stitches">Anfangsmaschenzahl</string>
     <string name="stitch_change">Hinzugefügte/entfernte Maschen</string>
-    <string name="shape_every_n">Alle N Reihen formen</string>
-    <string name="repeat_section_start_row">Startreihe</string>
-    <string name="repeat_section_end_row">Endreihe</string>
+    <string name="shape_every_n">Alle N Zählschritte formen</string>
+    <string name="repeat_section_start_row">Anfangswert</string>
+    <string name="repeat_section_end_row">Endwert</string>
     <string name="total_repeats">Gesamtzahl der Wiederholungen</string>
-    <string name="repeat_section_progress_format">Wiederholung %1$d/%2$d, Reihe %3$d/%4$d</string>
+    <string name="repeat_section_progress_format">Wiederholung %1$d/%2$d, Zählerstand %3$d/%4$d</string>
     <string name="repeat_section_complete">Fertig</string>
     <string name="rename_counter">Umbenennen</string>
     <string name="reset_counter_name">Zurücksetzen</string>
@@ -617,7 +614,7 @@
     <string name="take_photo">Foto aufnehmen</string>
     <string name="progress_photos">Fortschrittsfotos</string>
     <string name="counters_list_empty">Keine zusätzlichen Zähler</string>
-    <string name="row_label_format">Reihe %d</string>
+    <string name="row_label_format">Zählerstand %d</string>
     <string name="share_photo">Teilen</string>
     <string name="photo_share_failed">Das Foto konnte nicht geteilt werden.</string>
     <string name="delete_photo">Foto löschen</string>
@@ -665,17 +662,16 @@
     <string name="tip_edge_stitches_title">Randmaschen</string>
     <string name="tip_edge_stitches_desc">Randmaschen sind zusätzliche Maschen außerhalb des Rapports. Gib die Gesamtzahl der anzuschlagenden Randmaschen ein; der Rechner fügt sie nach der Berechnung der gewünschten Breite hinzu, z. B. 2 für eine Masche an jeder Seite.</string>
     <string name="tip_flat_vs_circular_title">Flach vs. rund</string>
-    <string name="tip_flat_vs_circular_desc">Flach gestrickt: Du arbeitest hin und her auf geraden oder Rundnadeln und wendest am Ende jeder Reihe.\n\nRund gestrickt: Du arbeitest in einer fortlaufenden Runde. Zu- und Abnahmen werden gleichmäßig über die Runde verteilt.</string>
+    <string name="tip_flat_vs_circular_desc">Flach gestrickt: Du arbeitest hin und her auf geraden oder Rundnadeln und wendest am Ende jeder Reihe.\n\nRund gestrickt: Du arbeitest in einer fortlaufenden Runde. Zu- und Abnahmen werden gleichmäßig über die Runde verteilt.\n\nDie Ergebnisse verwenden englische Abkürzungen: K = rechts stricken, M1 = eine Masche aus dem Querfaden verschränkt zunehmen, K2tog = zwei Maschen rechts zusammenstricken. Die Zahl nach K gibt die Maschenzahl an, × die Anzahl der Wiederholungen.</string>
     <string name="tip_needle_sizes_title">Systeme für Nadelstärken</string>
-    <string name="tip_needle_sizes_desc">Metrisch (mm) ist der universelle Standard. US-Größen verwenden ein nummeriertes System (0–50). UK/Kanada nutzen ein anderes Nummernsystem. Japanische Größen haben eine eigene Nummerierung. Prüfe sicherheitshalber immer die mm-Angabe.</string>
+    <string name="tip_needle_sizes_desc">Metrisch (mm) ist der universelle Standard. US-Größen verwenden ein nummeriertes System. UK/Kanada nutzen ein anderes Nummernsystem. Japanische Größen haben eine eigene Nummerierung. Prüfe sicherheitshalber immer die mm-Angabe.</string>
     <string name="tip_imperial_units_title">Imperiale Einheiten</string>
-    <string name="tip_imperial_units_desc">Wenn aktiviert, verwenden alle Rechner Zoll statt Zentimeter und Yard statt Meter. Die Maschenprobe wird dann pro 4 Zoll statt pro 10 cm gemessen.</string>
+    <string name="tip_imperial_units_desc">Wenn aktiviert, werden Zoll statt Zentimeter und Yard statt Meter voreingestellt. Die Maschenprobe wird dann pro 4 Zoll statt pro 10 cm gemessen. Unter Maße und Maschenprobe kannst du die Einheiten separat wählen.</string>
     <string name="open_notes_editor">Notizen öffnen</string>
     <string name="restore_purchases_checking">Käufe werden geprüft…</string>
     <string name="retry">Erneut versuchen</string>
     <string name="target_rows_dialog_title">Ziel festlegen</string>
     <string name="target_rows_remove">Ziel entfernen</string>
-    <string name="row_label_with_target">Reihe %1$d / %2$d</string>
     <string name="project_actions_title">Projektaktionen</string>
     <string name="project_actions_section_counter_tools">Zählerwerkzeuge</string>
     <string name="project_content_title">Projekt</string>
@@ -690,31 +686,25 @@
     <string name="yarn_card_number_fallback">Garn #%1$d</string>
     <string name="show_more">Mehr anzeigen</string>
     <string name="pro_start_free_trial">Kostenlose Testphase starten</string><string name="pro_start_14_day_trial">14-tägige kostenlose Testphase starten</string><string name="pro_trial_start_failed">Die Testphase konnte nicht gestartet werden. Versuche es erneut.</string>
-    <string name="pro_prompt_not_now">Nicht jetzt</string><string name="pro_prompt_see_pro">Pro ansehen</string><string name="pro_prompt_trial_body">Starte deine kostenlose 14-tägige Pro-Testphase. Es ist keine Zahlungsmethode erforderlich. Alles, was du erstellst, bleibt nach der Testphase verfügbar.</string>
-    <string name="pro_prompt_reactivation_title">Reaktiviere dieses Projekt mit Pro</string>
-    <string name="pro_prompt_reactivation_trial_body">Starte deinen kostenlosen 14-tägigen Pro-Test, um dieses Projekt zu reaktivieren und an mehreren Projekten gleichzeitig zu arbeiten. Abgeschlossene Projekte kannst du kostenlos behalten und ansehen. Deine Projekte bleiben nach dem Test verfügbar.</string>
-    <string name="pro_prompt_reactivation_body">Mit Pro kannst du dieses Projekt reaktivieren und an mehreren Projekten gleichzeitig arbeiten. Abgeschlossene Projekte kannst du kostenlos behalten und ansehen. Deine bestehenden Projekte bleiben verfügbar.</string>
-    <string name="pro_prompt_projects_title">Erstelle ein weiteres aktives Projekt mit Pro</string>
-    <plurals name="pro_prompt_projects_trial_body">
-        <item quantity="one">Du hast %1$d aktives Projekt. Starte deinen kostenlosen 14-tägigen Pro-Test, um ein weiteres Projekt zu erstellen und an mehreren Projekten gleichzeitig zu arbeiten. Abgeschlossene Projekte zählen nicht zum kostenlosen Limit. Deine Projekte bleiben nach dem Test verfügbar.</item>
-        <item quantity="other">Du hast %1$d aktive Projekte. Starte deinen kostenlosen 14-tägigen Pro-Test, um ein weiteres Projekt zu erstellen und an mehreren Projekten gleichzeitig zu arbeiten. Abgeschlossene Projekte zählen nicht zum kostenlosen Limit. Deine Projekte bleiben nach dem Test verfügbar.</item>
-    </plurals>
-    <plurals name="pro_prompt_projects_body">
-        <item quantity="one">Du hast %1$d aktives Projekt. Mit Pro kannst du ein weiteres Projekt erstellen und an mehreren Projekten gleichzeitig arbeiten. Abgeschlossene Projekte zählen nicht zum kostenlosen Limit. Deine bestehenden Projekte bleiben verfügbar.</item>
-        <item quantity="other">Du hast %1$d aktive Projekte. Mit Pro kannst du ein weiteres Projekt erstellen und an mehreren Projekten gleichzeitig arbeiten. Abgeschlossene Projekte zählen nicht zum kostenlosen Limit. Deine bestehenden Projekte bleiben verfügbar.</item>
-    </plurals>
-    <string name="pro_prompt_photos_title">Fortschrittsfotos mit Pro hinzufügen</string><string name="pro_prompt_photos_body">Ein neues Fortschrittsfoto erfordert Pro. Deine bestehenden Fotos bleiben verfügbar.</string>
-    <string name="pro_prompt_notes_title">Projektnotizen mit Pro hinzufügen</string><string name="pro_prompt_notes_body">Die erste Notiz dieses Projekts erfordert Pro. Bereits erstellte Notizen bleiben bearbeitbar.</string>
-    <string name="pro_prompt_yarn_title">Garn mit Pro hinzufügen</string><string name="pro_prompt_yarn_body">Eine neue Garnkarte erfordert Pro. Deine bestehenden Garnkarten bleiben verfügbar und bearbeitbar.</string>
-    <string name="pro_prompt_save_yarn_title">Dieses Garn mit Pro speichern</string><string name="pro_prompt_save_yarn_body">Beim Speichern dieses Projektgarns unter „Mein Garn“ wird eine neue Garnkarte erstellt. Dafür ist Pro erforderlich. Die Garnnotiz des Projekts bleibt verfügbar.</string>
-    <string name="pro_prompt_counters_title">Zähler mit Pro hinzufügen</string><string name="pro_prompt_counters_body">Ein neuer zusätzlicher Zähler erfordert Pro. Deine bestehenden Zähler bleiben verfügbar und bearbeitbar.</string>
-    <string name="pro_prompt_reminders_title">Reihenerinnerung mit Pro hinzufügen</string><string name="pro_prompt_reminders_body">Eine neue Reihenerinnerung erfordert Pro. Deine bestehenden Erinnerungen funktionieren weiter und bleiben bearbeitbar.</string>
-    <string name="pro_prompt_pattern_camera_title">Musterfotos mit Pro in PDF umwandeln</string><string name="pro_prompt_pattern_camera_body">Das Erstellen einer neuen PDF aus Musterfotos erfordert Pro. Deine bestehenden Muster und PDFs bleiben verfügbar.</string>
-    <string name="pro_prompt_widget_title">Startbildschirm-Widget mit Pro nutzen</string><string name="pro_prompt_widget_body">Das Startbildschirm-Widget ist eine erweiterte Pro-Ansicht. Deine Projekt- und Zählerdaten bleiben in KnitTools verfügbar.</string>
+    <string name="pro_prompt_not_now">Nicht jetzt</string><string name="pro_prompt_see_pro">Pro ansehen</string>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     <string name="pro_badge">PRO</string><string name="pro_badge_locked_description">Pro-Funktion</string><string name="pro_badge_trial_description">Pro-Funktion, während der Testphase verfügbar</string><string name="knittools_pro">KnitTools Pro</string><string name="pro_content_stays_available">Alles, was du erstellst, bleibt verfügbar.</string>
     <plurals name="pro_status_trial_days"><item quantity="one">Testphase, noch %1$d Tag</item><item quantity="other">Testphase, noch %1$d Tage</item></plurals>
-    <string name="pro_status_trial_ended">Testphase beendet</string><string name="pro_status_purchased">Gekauft</string><string name="pro_trial_ended_title">Deine Pro-Testphase ist beendet</string><string name="pro_trial_ended_body">Alles, was du erstellt hast, ist weiterhin verfügbar. Du kannst es weiter nutzen und bearbeiten. Pro ist nur für neue Pro-Inhalte und erweiterte Ansichten erforderlich.</string><string name="pro_continue_free">Kostenlos fortfahren</string>
-    <string name="pro_page_intro">Schaffe mehr Platz für jedes Projekt und halte deinen Arbeitsablauf zusammen.</string><string name="pro_page_trust">Alles, was du erstellst, bleibt verfügbar, auch wenn deine Testphase endet.</string><string name="pro_group_projects_title">Projekte und Materialien</string><string name="pro_group_projects_body">Arbeite an mehreren aktiven Projekten und erstelle die erste Projektnotiz, Fortschrittsfotos und Garnkarten.</string><string name="pro_group_workflow_title">Zählen und Arbeitsablauf</string><string name="pro_group_workflow_body">Nutze den kompakten Wiederholungszähler, zusätzliche, Wiederholungs-, Formungs- und Abschnittszähler, Reihenerinnerungen, Musterfotos als PDF und das Startbildschirm-Widget.</string><string name="pro_group_insights_title">Einblicke</string><string name="pro_group_insights_body">Sieh Tages-, Wochen- und Monatsdiagramme deiner Aktivität sowie deine Aktivitätsserie.</string>
+    <string name="pro_status_trial_ended">Testphase beendet</string><string name="pro_status_purchased">Gekauft</string><string name="pro_trial_ended_body">Alles, was du erstellt hast, ist weiterhin verfügbar. Du kannst es weiter nutzen und bearbeiten. Pro ist nur für neue Pro-Inhalte und erweiterte Ansichten erforderlich.</string><string name="pro_continue_free">Kostenlos fortfahren</string>
+
     <string name="pro_page_purchased">Pro gekauft</string><string name="pro_buy_for_price">Pro für %1$s kaufen</string><string name="pro_price_unavailable">Preis nicht verfügbar</string><string name="billing_purchase_pending">Dein Kauf steht noch aus. Pro wird verfügbar, sobald Google Play die Zahlung abgeschlossen hat.</string>
     <string name="project_updated_format">Aktualisiert %1$s</string>
     <string name="project_completed_format">Abgeschlossen %1$s</string>
@@ -726,7 +716,7 @@
     <string name="work_session_recovery_needed">Sitzungszeit muss geprüft werden</string>
     <string name="work_session_resolve">Klären</string>
     <string name="work_session_recovery_title">Sitzungszeit prüfen</string>
-    <string name="work_session_pending_rows_format">Ausstehender Reihenfortschritt: %1$d</string>
+    <string name="work_session_pending_rows_format">Ausstehender Zählerfortschritt: %1$d</string>
     <string name="work_session_hours">Stunden</string>
     <string name="work_session_minutes">Minuten</string>
     <string name="work_session_add_and_continue">Hinzufügen und fortfahren</string>
@@ -803,8 +793,8 @@
     <string name="folder_name">Ordnername</string>
     <string name="folder_rename">Ordner umbenennen</string>
     <string name="folder_delete">Ordner löschen</string>
-    <string name="folder_move_earlier">Früher verschieben</string>
-    <string name="folder_move_later">Später verschieben</string>
+    <string name="folder_move_earlier">Nach oben verschieben</string>
+    <string name="folder_move_later">Nach unten verschieben</string>
     <string name="folder_move_to">In Ordner verschieben</string>
     <string name="folder_remove_from">Aus Ordner entfernen</string>
     <string name="selection_action_move">Verschieben</string>
@@ -825,7 +815,7 @@
     <string name="folder_rename_error">Ordner konnte nicht umbenannt werden.</string>
     <string name="folder_delete_error">Ordner konnte nicht gelöscht werden.</string>
     <string name="folder_move_error">Projekt konnte nicht verschoben werden.</string>
-    <string name="folder_name_required">Geben Sie einen Ordnernamen ein.</string>
+    <string name="folder_name_required">Gib einen Ordnernamen ein.</string>
     <string name="folder_name_max_length">Maximal 50 Zeichen</string>
     <string name="folder_name_duplicate">Ordnername wird bereits verwendet.</string>
     <string name="folder_name_invalid">Ordnernamen dürfen keine Steuerzeichen enthalten.</string>
@@ -847,8 +837,8 @@
     </plurals>
     <string name="folder_move_project_to">%1$s in Ordner verschieben</string>
     <string name="folder_rename_description">Ordner %1$s umbenennen</string>
-    <string name="folder_move_earlier_description">Ordner %1$s früher verschieben</string>
-    <string name="folder_move_later_description">Ordner %1$s später verschieben</string>
+    <string name="folder_move_earlier_description">Ordner %1$s nach oben verschieben</string>
+    <string name="folder_move_later_description">Ordner %1$s nach unten verschieben</string>
     <string name="folder_delete_description">Ordner %1$s löschen</string>
     <plurals name="folder_move_selected_projects_count">
     <item quantity="one">%d ausgewähltes Projekt verschieben</item>
@@ -966,17 +956,17 @@
         <item quantity="one">%1$s Strang</item>
         <item quantity="other">%1$s Stränge</item>
     </plurals>
-    <string name="web_pattern_add">Webmuster hinzufügen</string>
-    <string name="web_pattern_label">Webmuster</string>
+    <string name="web_pattern_add">Webanleitung hinzufügen</string>
+    <string name="web_pattern_label">Webanleitung</string>
     <string name="pattern_source_pdf">PDF</string>
     <string name="web_pattern_title_label">Mustername</string>
     <string name="web_pattern_designer_label">Designer</string>
     <string name="web_pattern_url_label">Website-Adresse</string>
     <string name="web_pattern_website_label">Website</string>
-    <string name="web_pattern_edit">Webmuster bearbeiten</string>
-    <string name="web_pattern_edit_title">Webmuster bearbeiten</string>
-    <string name="web_pattern_delete">Webmuster löschen</string>
-    <string name="web_pattern_delete_confirm_title">Webmuster löschen?</string>
+    <string name="web_pattern_edit">Webanleitung bearbeiten</string>
+    <string name="web_pattern_edit_title">Webanleitung bearbeiten</string>
+    <string name="web_pattern_delete">Webanleitung löschen</string>
+    <string name="web_pattern_delete_confirm_title">Webanleitung löschen?</string>
     <string name="web_pattern_delete_confirm_message">%1$s aus den gespeicherten Anleitungen in der Bibliothek löschen?\n\nFalls für diese Anleitung PDF-Anmerkungen in der Bibliothek erstellt wurden, werden sie ebenfalls gelöscht und nicht mehr in Projekten angezeigt. Bereits an Projekte angehängte PDFs und innerhalb von Projekten erstellte PDF-Anmerkungen bleiben erhalten.</string>
     <string name="web_pattern_attach">Mit Projekt verknüpfen</string>
     <string name="pattern_mark_up">Markieren</string>
@@ -996,8 +986,8 @@
     <string name="web_pattern_replace_confirm_message">Die aktuellen Musterinformationen durch %1$s ersetzen?</string>
     <string name="web_pattern_open_website">Website öffnen</string>
     <string name="web_pattern_open_website_description">Website für %1$s unter %2$s öffnen</string>
-    <string name="web_pattern_edit_description">Webmuster %1$s bearbeiten</string>
-    <string name="web_pattern_attach_description">Webmuster %1$s verknüpfen</string>
+    <string name="web_pattern_edit_description">Webanleitung %1$s bearbeiten</string>
+    <string name="web_pattern_attach_description">Webanleitung %1$s verknüpfen</string>
     <string name="web_pattern_unlink_description">Musterinformationen für %1$s entfernen</string>
     <string name="web_pattern_shared_link">Geteilter Link</string>
     <string name="web_pattern_confirm_details">Musterdetails bestätigen</string>
@@ -1009,9 +999,9 @@
     <string name="web_pattern_error_url_web_only">Nur Website-Adressen werden unterstützt</string>
     <string name="web_pattern_http_warning">Diese Adresse verwendet HTTP. Die Verbindung ist möglicherweise nicht sicher.</string>
     <string name="web_pattern_already_saved">Dieses Muster ist bereits gespeichert</string>
-    <string name="web_pattern_save_failed">Webmuster konnte nicht gespeichert werden</string>
-    <string name="web_pattern_update_failed">Webmuster konnte nicht aktualisiert werden</string>
-    <string name="web_pattern_delete_failed">Webmuster konnte nicht gelöscht werden</string>
+    <string name="web_pattern_save_failed">Webanleitung konnte nicht gespeichert werden</string>
+    <string name="web_pattern_update_failed">Webanleitung konnte nicht aktualisiert werden</string>
+    <string name="web_pattern_delete_failed">Webanleitung konnte nicht gelöscht werden</string>
     <string name="web_pattern_open_failed">Website konnte nicht geöffnet werden</string>
     <string name="web_pattern_no_browser">Kein Browser verfügbar</string>
     <string name="web_pattern_source_controlled">Die Quelle bestimmt die Verfügbarkeit dieses Musters</string>
@@ -1108,4 +1098,5 @@
     <string name="project_yarn_edit_missing">Diese Garnnotiz gehört nicht mehr zu diesem Projekt. Schließe den Editor.</string>
     <string name="project_yarn_edit_invalid">Gib einen Garnnamen ein.</string>
     <string name="project_yarn_edit_failed">Die Änderungen konnten nicht gespeichert werden. Dein Entwurf bleibt erhalten. Versuche es erneut.</string>
+    <string name="counter_progress_format">Zählerfortschritt: %1$d</string>
 </resources>

@@ -1,16 +1,45 @@
 package com.finnvek.knittools.data.local
 
+import android.net.Uri
 import androidx.sqlite.db.SupportSQLiteDatabase
 import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
+import io.mockk.mockkStatic
+import io.mockk.unmockkStatic
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class KnitToolsDatabaseMigrationSourceTest {
+    @Test
+    fun `legacy document labels strip storage prefixes and preserve filename colons`() {
+        val provider = "content://com.android.externalstorage.documents/document/"
+        val cases =
+            listOf(
+                "file:///patterns/chart:v2.pdf" to "file:///patterns/chart:v2.pdf",
+                "${provider}primary%3APatterns%2Fchart%3Av2.pdf" to "${provider}primary:Patterns/chart:v2.pdf",
+                "${provider}primary%3Achart%3Av2.pdf" to "${provider}primary:chart:v2.pdf",
+                "file:///patterns/document/chart:v2.pdf" to "file:///patterns/document/chart:v2.pdf",
+                "content://other/document/chart:v2.pdf" to "content://other/document/chart:v2.pdf",
+            )
+        val label =
+            ProjectDocumentMigration22::class.java.getDeclaredMethod("decodedFileName", String::class.java).apply {
+                isAccessible = true
+            }
+        mockkStatic(Uri::class)
+        try {
+            cases.forEach { (encoded, decoded) ->
+                every { Uri.decode(encoded) } returns decoded
+                assertEquals("chart:v2.pdf", label.invoke(ProjectDocumentMigration22, encoded))
+            }
+        } finally {
+            unmockkStatic(Uri::class)
+        }
+    }
+
     @Test
     fun `migration 3 to 4 does not duplicate legacy secondary counter into project counters`() {
         val db = mockk<SupportSQLiteDatabase>(relaxed = true)

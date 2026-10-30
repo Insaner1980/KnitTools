@@ -24,6 +24,17 @@ class CountPluralResourcesSourceTest {
                     .containsMatchIn(ProjectSourceFiles.read(sourceFile)),
             )
         }
+        // Main-counter deltas can be rounds, repeats or custom units; their neutral
+        // progress label has no quantity-dependent noun. Keep actual row plurals elsewhere.
+        listOf(
+            "counter/CounterScreen.kt",
+            "counter/CounterWorkspaceSections.kt",
+            "insights/InsightsSections.kt",
+        ).forEach {
+            val source = ProjectSourceFiles.read("app/src/main/java/com/finnvek/knittools/ui/screens/$it")
+            assertTrue("$it must retain neutral counter progress", source.contains("R.string.counter_progress_format"))
+            assertFalse("$it must not relabel counter deltas as rows", source.contains("R.plurals.rows_format"))
+        }
     }
 
     private fun hasStringResource(
@@ -35,22 +46,18 @@ class CountPluralResourcesSourceTest {
         val COUNT_PLURAL_KEYS =
             listOf(
                 "rows_format",
-                "insights_rows_count",
                 "delete_photos_confirm",
                 "delete_patterns_confirm",
                 "complete_n_projects",
                 "delete_n_projects",
                 "delete_yarn_cards_confirm",
                 "stitches_result",
+                "relative_time_months_ago",
             )
         val SOURCE_USAGES =
             listOf(
-                "app/src/main/java/com/finnvek/knittools/ui/screens/counter/CounterScreen.kt" to
-                    "rows_format",
-                "app/src/main/java/com/finnvek/knittools/ui/screens/counter/CounterWorkspaceSections.kt" to
-                    "rows_format",
                 "app/src/main/java/com/finnvek/knittools/ui/screens/insights/InsightsSections.kt" to
-                    "insights_rows_count",
+                    "relative_time_months_ago",
                 "app/src/main/java/com/finnvek/knittools/ui/screens/library/AllPhotosScreen.kt" to
                     "delete_photos_confirm",
                 "app/src/main/java/com/finnvek/knittools/ui/screens/library/SavedPatternsScreen.kt" to

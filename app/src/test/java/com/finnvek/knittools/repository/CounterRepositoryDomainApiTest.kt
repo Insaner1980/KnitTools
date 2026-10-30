@@ -82,6 +82,17 @@ class CounterRepositoryDomainApiTest {
         )
 
     @Test
+    fun `project existence uses unfiltered queries for active or completed projects`() =
+        runTest {
+            coEvery { projectDao.hasAnyProject() } returns true
+            every { projectDao.observeHasAnyProject() } returns flowOf(true)
+            coEvery { projectDao.getActiveProjectCount() } returns 0
+            assertTrue(repository.hasAnyProject())
+            assertTrue(repository.observeHasAnyProject().first())
+            assertEquals(0, repository.getActiveProjectCount())
+        }
+
+    @Test
     fun `saving stitch count for requested activation enables tracking in one write`() =
         runTest {
             coEvery { projectDao.getProject(7L) } returns CounterProjectEntity(id = 7L, name = "Project")
@@ -625,6 +636,17 @@ class CounterRepositoryDomainApiTest {
                 projectDocumentRepository.getPrimary(7L)
                 projectDocumentRepository.remove(7L, document.id)
             }
+        }
+
+    @Test
+    fun `detachPattern preserves the document repository failure result`() =
+        runTest {
+            val document = projectDocument("content://pattern/7", "Pattern")
+            coEvery { projectDocumentRepository.getPrimary(7L) } returns document
+            coEvery { projectDocumentRepository.remove(7L, document.id) } returns
+                ProjectDocumentMutationResult.PersistenceFailure
+
+            assertEquals(ProjectDocumentMutationResult.PersistenceFailure, repository.detachPattern(7L))
         }
 
     @Test

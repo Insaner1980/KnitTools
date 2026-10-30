@@ -15,6 +15,9 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 
 @Composable
@@ -23,7 +26,8 @@ fun CareSymbolIcon(
     modifier: Modifier = Modifier,
     tint: Color = MaterialTheme.colorScheme.onSurface,
 ) {
-    Canvas(modifier = modifier.size(28.dp)) {
+    val label = stringResource(symbol.labelRes)
+    Canvas(modifier = modifier.size(28.dp).semantics { contentDescription = label }) {
         val stroke = Stroke(width = 1.5.dp.toPx(), cap = StrokeCap.Round)
         when (symbol) {
             CareSymbol.WASH_30 -> drawWashTub(tint, stroke, "30")
@@ -70,10 +74,38 @@ private fun DrawScope.drawWashTubHand(
 ) {
     val w = size.width
     val h = size.height
-    drawPath(tubPath(w, h), color, style = stroke)
-    // Small hand symbol above water line
-    drawLine(color, Offset(w * 0.35f, h * 0.25f), Offset(w * 0.5f, h * 0.15f), stroke.width)
-    drawLine(color, Offset(w * 0.5f, h * 0.15f), Offset(w * 0.65f, h * 0.25f), stroke.width)
+    // Hand entering the wash water: wrist, thumb, palm and four fingers.
+    val tub =
+        Path().apply {
+            moveTo(w * 0.08f, h * 0.35f)
+            lineTo(w * 0.2f, h * 0.85f)
+            lineTo(w * 0.8f, h * 0.85f)
+            lineTo(w * 0.92f, h * 0.35f)
+            moveTo(w * 0.08f, h * 0.42f)
+            lineTo(w * 0.3f, h * 0.42f)
+            moveTo(w * 0.68f, h * 0.42f)
+            lineTo(w * 0.9f, h * 0.42f)
+        }
+    drawPath(tub, color, style = stroke)
+    val hand =
+        Path().apply {
+            moveTo(w * 0.72f, h * 0.1f)
+            lineTo(w * 0.49f, h * 0.25f)
+            lineTo(w * 0.32f, h * 0.35f)
+            quadraticTo(w * 0.25f, h * 0.43f, w * 0.36f, h * 0.43f)
+            lineTo(w * 0.43f, h * 0.4f)
+            lineTo(w * 0.36f, h * 0.65f)
+            quadraticTo(w * 0.35f, h * 0.72f, w * 0.42f, h * 0.67f)
+            lineTo(w * 0.5f, h * 0.48f)
+            lineTo(w * 0.46f, h * 0.69f)
+            quadraticTo(w * 0.47f, h * 0.76f, w * 0.53f, h * 0.69f)
+            lineTo(w * 0.58f, h * 0.5f)
+            lineTo(w * 0.56f, h * 0.66f)
+            quadraticTo(w * 0.58f, h * 0.73f, w * 0.63f, h * 0.64f)
+            lineTo(w * 0.68f, h * 0.42f)
+            lineTo(w * 0.85f, h * 0.22f)
+        }
+    drawPath(hand, color, style = Stroke(width = 1.dp.toPx(), cap = StrokeCap.Round))
 }
 
 private fun DrawScope.drawWashTubCrossed(
@@ -151,8 +183,10 @@ private fun DrawScope.drawSquareCircle(
     drawRect(color, topLeft = Offset(rect.left, rect.top), size = Size(rect.width, rect.height), style = stroke)
     drawCircle(color, radius = w * 0.25f, center = Offset(w * 0.5f, h * 0.5f), style = stroke)
     // Dots for temperature
-    if (dots >= 1) drawCircle(color, radius = 2.dp.toPx(), center = Offset(w * 0.5f, h * 0.5f))
-    if (dots >= 2) drawCircle(color, radius = 2.dp.toPx(), center = Offset(w * 0.5f, h * 0.38f))
+    repeat(dots) { index ->
+        val x = w * (0.5f + (index - (dots - 1) / 2f) * 0.2f)
+        drawCircle(color, radius = w * 0.055f, center = Offset(x, h * 0.5f))
+    }
 }
 
 private fun DrawScope.drawSquareHorizontal(

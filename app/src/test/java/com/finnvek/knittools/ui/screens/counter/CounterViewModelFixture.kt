@@ -10,13 +10,17 @@ import com.finnvek.knittools.data.local.ProjectDocumentEntity
 import com.finnvek.knittools.data.storage.PatternDocumentStorage
 import com.finnvek.knittools.domain.calculator.RowMarker
 import com.finnvek.knittools.domain.calculator.serializeMapping
+import com.finnvek.knittools.domain.model.CommittedMainCounterChange
 import com.finnvek.knittools.domain.model.CounterProject
+import com.finnvek.knittools.domain.model.MainCounterChange
 import com.finnvek.knittools.domain.model.PatternAnnotationLayer
 import com.finnvek.knittools.domain.model.PatternAnnotationOwner
 import com.finnvek.knittools.domain.model.SavedPattern
 import com.finnvek.knittools.pro.ProManager
 import com.finnvek.knittools.pro.ProState
 import com.finnvek.knittools.repository.CounterRepository
+import com.finnvek.knittools.repository.OnboardingState
+import com.finnvek.knittools.repository.OnboardingStateRepository
 import com.finnvek.knittools.repository.PatternAnnotationLayerRepository
 import com.finnvek.knittools.repository.ProgressPhotoRepository
 import com.finnvek.knittools.repository.ProjectCounterRepository
@@ -26,12 +30,16 @@ import com.finnvek.knittools.repository.ProjectYarnNoteRepository
 import com.finnvek.knittools.repository.ReminderRepository
 import com.finnvek.knittools.repository.SavedPatternRepository
 import com.finnvek.knittools.repository.YarnCardRepository
+import com.finnvek.knittools.ui.tips.TipSession
 import com.finnvek.knittools.widget.CounterWidgetState
 import io.mockk.coEvery
+import io.mockk.coVerify
+import io.mockk.confirmVerified
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.unmockkObject
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -54,25 +62,43 @@ abstract class CounterViewModelFixture {
     protected val photoRepository = mockk<ProgressPhotoRepository>()
     protected val layers = MutableStateFlow(listOf(layer(41L, active = true), layer(42L, active = false)))
     protected val observedProject = MutableStateFlow(CounterProject(id = 7L, name = "Project"))
+    protected val tipSession = mockk<TipSession>()
+    protected val onboardingStateRepository = mockk<OnboardingStateRepository>()
+    protected val onboardingState = MutableStateFlow(OnboardingState(initializedVersion = 1, starterProjectId = 7L))
 
     @Before
     fun setUp() {
         Dispatchers.setMain(dispatcher)
-        mockkObject(ProcessLifecycleOwner.Companion, CounterWidgetState)
-        every { ProcessLifecycleOwner.get() } returns mockk<LifecycleOwner>(relaxed = true)
-        coEvery { CounterWidgetState.syncAll(any(), any()) } returns Unit
+        mockCounterProcessAndWidget()
         val project = CounterProject(id = 7L, name = "Project")
         observedProject.value = project
         every { repository.getActiveProjects() } returns flowOf(listOf(project))
         every { repository.observeProject(7L) } returns observedProject
         every { repository.observeActiveSession() } returns flowOf(null)
         coEvery { repository.refreshActiveSession() } returns null
+        every { tipSession.onSignal(any()) } returns Unit
+        every { onboardingStateRepository.state } returns onboardingState
     }
 
     @After
     fun tearDown() {
         unmockkObject(ProcessLifecycleOwner.Companion, CounterWidgetState)
         Dispatchers.resetMain()
+    }
+
+    protected fun pendingIncrement(count: Int): CompletableDeferred<CommittedMainCounterChange?> {
+        val result = CompletableDeferred<CommittedMainCounterChange?>()
+        coEvery { repository.applyMainCounterChangeWithResult(7L, MainCounterChange.Increment) } coAnswers {
+            result.await()
+        }
+        coEvery { repository.getProject(7L) } returns observedProject.value.copy(count = count)
+        return result
+    }
+
+    protected fun observeOtherProject(count: Int): CounterProject {
+        val project = CounterProject(id = 8L, name = "Other", count = count)
+        every { repository.observeProject(project.id) } returns flowOf(project)
+        return project
     }
 
     protected fun TestScope.viewModel(
@@ -87,10 +113,15 @@ abstract class CounterViewModelFixture {
         savedPatternsOverride: SavedPatternRepository? = null,
         patternStorageOverride: PatternDocumentStorage? = null,
         contextOverride: Context? = null,
+        startupPreferences: Flow<com.finnvek.knittools.data.datastore.AppPreferences> = emptyFlow(),
+        startupControlsReady: kotlinx.coroutines.flow.StateFlow<Boolean> = MutableStateFlow(true),
+        startupProAccessReady: kotlinx.coroutines.flow.StateFlow<Boolean> = MutableStateFlow(true),
     ): CounterViewModel {
         val preferences = mockk<PreferencesManager>()
-        every { preferences.preferences } returns emptyFlow()
+        every { preferences.preferences } returns startupPreferences
         val proManager = proManagerOverride ?: mockk<ProManager>()
+        every { proManager.initialControlsReady } returns startupControlsReady
+        every { proManager.initialStateReady } returns startupProAccessReady
         if (proManagerOverride == null) {
             every { proManager.proState } returns MutableStateFlow(ProState())
             every { proManager.hasFeature(any()) } returns false
@@ -136,6 +167,8 @@ abstract class CounterViewModelFixture {
             context = contextOverride ?: mockk<Context>(relaxed = true),
             ioDispatcher = dispatcher,
             applicationScope = backgroundScope,
+            tipSession = tipSession,
+            onboardingStateRepository = onboardingStateRepository,
         )
     }
 
@@ -175,4 +208,29 @@ abstract class CounterViewModelFixture {
         id: Long,
         active: Boolean,
     ) = PatternAnnotationLayer(id, PatternAnnotationOwner.Project(7L, "local:$id"), active, 1L, 1L)
+}
+
+internal fun mockCounterProcessAndWidget() {
+    mockkObject(ProcessLifecycleOwner.Companion, CounterWidgetState)
+    every { ProcessLifecycleOwner.get() } returns mockk<LifecycleOwner>(relaxed = true)
+    coEvery { CounterWidgetState.syncAll(any(), any()) } returns Unit
+}
+
+internal fun CounterRepository.assertRestorationOnlyReads() {
+    coVerify(atLeast = 0) {
+        getActiveProjects()
+        observeProject(any())
+        observeActiveSession()
+        observeHasSessionsForProject(any())
+        refreshActiveSession()
+        getTotalMinutesForProject(any())
+    }
+    confirmVerified(this)
+}
+
+internal fun CounterRepository.stubSessionReads() {
+    every { observeActiveSession() } returns flowOf(null)
+    every { observeHasSessionsForProject(any()) } returns flowOf(true)
+    coEvery { refreshActiveSession() } returns null
+    coEvery { getTotalMinutesForProject(any()) } answers { firstArg<Long>().toInt() * 10 }
 }

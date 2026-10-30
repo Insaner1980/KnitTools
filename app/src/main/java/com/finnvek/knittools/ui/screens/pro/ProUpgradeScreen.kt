@@ -23,6 +23,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -37,8 +38,12 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.finnvek.knittools.R
 import com.finnvek.knittools.billing.BillingProductStatus
+import com.finnvek.knittools.domain.model.CraftType
 import com.finnvek.knittools.pro.ProState
 import com.finnvek.knittools.pro.ProStatus
+import com.finnvek.knittools.pro.TrialJourneyAction
+import com.finnvek.knittools.pro.TrialJourneyStep
+import com.finnvek.knittools.ui.components.SectionLabel
 import com.finnvek.knittools.ui.components.StatusMessage
 import com.finnvek.knittools.ui.components.StatusMessageType
 import com.finnvek.knittools.ui.components.ToolScreenScaffold
@@ -51,6 +56,11 @@ fun ProUpgradeScreen(
     onBack: () -> Unit,
     onPurchase: (Activity) -> Unit,
     viewModelProvider: @Composable () -> ProUpgradeViewModel = { hiltViewModel() },
+    onStartupReady: (Boolean) -> Unit = {},
+    personalLine: String? = null,
+    journeySteps: List<TrialJourneyStep> = emptyList(),
+    journeyCraft: CraftType = CraftType.KNITTING,
+    onJourneyAction: (TrialJourneyAction) -> Unit = {},
 ) {
     val viewModel = viewModelProvider()
     val proState by viewModel.proState.collectAsStateWithLifecycle()
@@ -61,7 +71,13 @@ fun ProUpgradeScreen(
     val purchaseFlowInFlight by viewModel.purchaseFlowInFlight.collectAsStateWithLifecycle()
     val statusMessageRes by viewModel.statusMessageRes.collectAsStateWithLifecycle()
     val isRestoring by viewModel.isRestoring.collectAsStateWithLifecycle()
+    val isStartingTrial by viewModel.isStartingTrial.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    SideEffect {
+        onStartupReady(
+            (proStateReady || purchaseQueryFailed) && productStatus != BillingProductStatus.Loading,
+        )
+    }
 
     // Sama läpinäkyvä yläpalkki kuin muissa näytöissä; oma TopAppBar sai vierittäessä sävytetyn pohjan.
     ToolScreenScaffold(
@@ -77,8 +93,11 @@ fun ProUpgradeScreen(
                     .padding(horizontal = 24.dp, vertical = 20.dp),
             verticalArrangement = Arrangement.spacedBy(20.dp),
         ) {
-            ProIntroduction()
+            ProIntroduction(personalLine)
+            ProFreeFeatures()
+            SectionLabel(stringResource(R.string.onboarding_pro_adds_title))
             ProBenefits()
+            TrialJourneyContent(journeySteps, journeyCraft, onJourneyAction)
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
             ProPurchaseSection(
                 proState = proState,
@@ -88,6 +107,7 @@ fun ProUpgradeScreen(
                 productStatusProvider = { productStatus },
                 purchaseFlowInFlight = purchaseFlowInFlight,
                 isRestoring = isRestoring,
+                isStartingTrial = isStartingTrial,
                 onPurchase = { context.findActivity()?.let(onPurchase) },
                 onRestore = viewModel::restorePurchases,
                 onRetry = viewModel::retryProductDetails,
@@ -100,33 +120,50 @@ fun ProUpgradeScreen(
 }
 
 @Composable
-private fun ProIntroduction() {
+private fun ProIntroduction(personalLine: String?) {
     Text(
-        text = stringResource(R.string.pro_page_intro),
+        text = stringResource(R.string.onboarding_pro_intro),
         style = MaterialTheme.typography.headlineMedium,
         fontWeight = FontWeight.SemiBold,
     )
-    Text(
-        text = stringResource(R.string.pro_page_trust),
-        style = MaterialTheme.typography.bodyLarge,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-    )
+    personalLine?.let {
+        Text(it, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+}
+
+@Composable
+private fun ProFreeFeatures() {
+    Column(verticalArrangement = Arrangement.spacedBy(ComponentDimens.StandardSpacing)) {
+        SectionLabel(stringResource(R.string.onboarding_pro_free_title))
+        listOf(
+            R.string.onboarding_pro_free_project,
+            R.string.onboarding_pro_free_counter,
+            R.string.onboarding_pro_free_pdf,
+            R.string.onboarding_pro_free_web,
+            R.string.onboarding_pro_free_yarn,
+            R.string.onboarding_pro_free_time,
+            R.string.onboarding_pro_free_tools,
+            R.string.onboarding_pro_free_backup,
+        ).forEach { resource ->
+            Text(stringResource(resource), style = MaterialTheme.typography.bodyMedium)
+        }
+    }
 }
 
 @Composable
 private fun ProBenefits() {
     Column(verticalArrangement = Arrangement.spacedBy(18.dp)) {
         ProBenefitGroup(
-            title = stringResource(R.string.pro_group_projects_title),
-            body = stringResource(R.string.pro_group_projects_body),
+            title = stringResource(R.string.onboarding_pro_group_projects_title),
+            body = stringResource(R.string.onboarding_pro_group_projects_body),
         )
         ProBenefitGroup(
-            title = stringResource(R.string.pro_group_workflow_title),
-            body = stringResource(R.string.pro_group_workflow_body),
+            title = stringResource(R.string.onboarding_pro_group_workflow_title),
+            body = stringResource(R.string.onboarding_pro_group_workflow_body),
         )
         ProBenefitGroup(
-            title = stringResource(R.string.pro_group_insights_title),
-            body = stringResource(R.string.pro_group_insights_body),
+            title = stringResource(R.string.onboarding_pro_group_insights_title),
+            body = stringResource(R.string.onboarding_pro_group_insights_body),
         )
     }
 }
@@ -160,6 +197,7 @@ private fun ProPurchaseSection(
     productStatusProvider: @Composable () -> BillingProductStatus,
     purchaseFlowInFlight: Boolean,
     isRestoring: Boolean,
+    isStartingTrial: Boolean,
     onPurchase: () -> Unit,
     onRestore: () -> Unit,
     onRetry: () -> Unit,
@@ -180,7 +218,7 @@ private fun ProPurchaseSection(
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         when (proState.status) {
             ProStatus.TRIAL_NOT_STARTED -> {
-                Button(onClick = onStartTrial, modifier = Modifier.fillMaxWidth()) {
+                Button(onClick = onStartTrial, modifier = Modifier.fillMaxWidth(), enabled = !isStartingTrial) {
                     Text(stringResource(R.string.pro_start_14_day_trial))
                 }
             }

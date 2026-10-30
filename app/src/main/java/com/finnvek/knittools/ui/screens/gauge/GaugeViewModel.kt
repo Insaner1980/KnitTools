@@ -11,6 +11,7 @@ import com.finnvek.knittools.domain.calculator.MeasurementNumberParser
 import com.finnvek.knittools.domain.calculator.ParsedInstruction
 import com.finnvek.knittools.domain.model.GaugeBasis
 import com.finnvek.knittools.domain.model.MeasurementUnit
+import com.finnvek.knittools.pro.ProFeature
 import com.finnvek.knittools.pro.ProManager
 import com.finnvek.knittools.repository.CounterRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -18,6 +19,7 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
@@ -55,7 +57,8 @@ class GaugeViewModel
                 }
             }
             viewModelScope.launch {
-                proManager.proState.collect { pro -> mutableState.update { it.copy(isPro = pro.isPro) } }
+                combine(proManager.proState, proManager.initialStateReady) { pro, ready -> pro to ready }
+                    .collect { (pro, ready) -> mutableState.update { it.copy(proState = pro, proAccessReady = ready) } }
             }
             val argument = savedStateHandle.get<Any?>("projectId")
             val projectId = optionalGaugeProjectId(argument)
@@ -234,7 +237,7 @@ class GaugeViewModel
         }
 
         private fun paste(instruction: ParsedInstruction) {
-            if (!state.value.isPro) return
+            if (!state.value.proState.hasFeature(ProFeature.INSTRUCTION_PASTE)) return
             when (instruction) {
                 is ParsedInstruction.Gauge -> {
                     val basisMm =

@@ -24,6 +24,7 @@ class YarnCardDetailSourceTest {
         assertTrue(source.contains("showManualDetailsSheet"))
         assertTrue(source.contains("ManualYarnCardSheet("))
         assertTrue(source.contains("initialInput = form.toManualYarnCardInput()"))
+        assertTrue(source.contains("showQuantity = false,"))
         assertTrue(source.contains("titleRes = R.string.edit_yarn_details"))
         assertTrue(source.contains("viewModel.updateManualDetails(input)"))
         assertTrue(source.contains("onEditManualDetails = { showManualDetailsSheet = true }"))

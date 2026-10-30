@@ -95,6 +95,10 @@ private fun buildRepository(dao: FakeCounterProjectDao): CounterRepository {
 private class FakeCounterProjectDao(
     private val latestHistory: CounterHistoryEntity?,
 ) : StubCounterProjectDao() {
+    override fun observeHasAnyProject(): Flow<Boolean> = flowOf(true)
+
+    override suspend fun hasAnyProject(): Boolean = true
+
     var lastUpdateCount: Int? = null
     var lastDeletedHistoryId: Long? = null
     var lastTargetRows: Int? = null

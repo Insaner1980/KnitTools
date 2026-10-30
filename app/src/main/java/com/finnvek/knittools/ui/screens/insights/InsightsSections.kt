@@ -192,7 +192,7 @@ internal fun allTimeBestStreakTrend(
 internal fun InsightsStatsRow(state: InsightsUiState) {
     val locale = rememberCurrentLocale()
     val streakDisplay = streakStatDisplay(state.currentStreak, state.bestStreak)
-    val showsRows = state.totalRows > 0
+    val showsRows = state.rowMetricsAvailable && state.totalRows > 0
     val showsPace = showsRows && state.minutesPerRow != MinutesPerRowDisplay.Unavailable
     val showsStreak = state.canUseStreak && streakDisplay.value > MINIMUM_MEANINGFUL_STREAK
     // Nollasarake ei kerro mitään, joten koko rivi jää pois kun mikään sarake ei
@@ -413,11 +413,7 @@ internal fun InsightsProjectRow(
                 text =
                     stringResource(
                         R.string.insights_project_sub_format,
-                        pluralStringResource(
-                            R.plurals.insights_rows_count,
-                            insightsRowPluralQuantity(project.totalRows),
-                            project.totalRows,
-                        ),
+                        stringResource(R.string.counter_progress_format, project.totalRows),
                         relativeDayText(project.lastSessionAt, today),
                     ),
                 style = MaterialTheme.typography.insightsProjectSub,
@@ -552,7 +548,10 @@ internal fun relativeDayText(
         days == 1 -> stringResource(R.string.relative_time_yesterday)
         days < 7 -> stringResource(R.string.relative_time_days_ago, days)
         days < 30 -> stringResource(R.string.relative_time_weeks_ago, days / 7)
-        else -> stringResource(R.string.relative_time_months_ago, days / 30)
+        else -> {
+            val months = days / 30
+            pluralStringResource(R.plurals.relative_time_months_ago, months, months)
+        }
     }
 }
 

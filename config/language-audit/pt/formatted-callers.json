@@ -1,0 +1,1135 @@
+[
+  [
+    "pattern_annotations_count",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/pattern/PatternAnnotationLayerPanel.kt:83 text = stringResource(R.string.pattern_annotations_count, title, annotationCount),"
+    ]
+  ],
+  [
+    "pattern_annotation_color_option",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/pattern/PatternAnnotationToolbar.kt:524 R.string.pattern_annotation_color_option, stringResource(annotationColorLabel(argb)),"
+    ]
+  ],
+  [
+    "pattern_annotation_stroke_width",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/pattern/PatternAnnotationToolbar.kt:551 text = stringResource(R.string.pattern_annotation_stroke_width, strokeWidth),"
+    ]
+  ],
+  [
+    "pattern_annotation_export_progress",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/pattern/PatternViewerScreen.kt:1953 R.string.pattern_annotation_export_progress, state.annotationState.exportCompletedPages, state.annotationState.exportTotalPages, ),"
+    ]
+  ],
+  [
+    "pattern_annotation_export_filename",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/pattern/PatternViewerScreen.kt:1919 val exportFilename = stringResource(R.string.pattern_annotation_export_filename, exportBaseName) CollectWithLifecycleEffect({ annotationActions.exportDestinationRequestsProvider() }) { source -> if (source.toString() == state.patternUri) { pendingExportSource = source.toString() exportLauncher.launch(exportFilename) }"
+    ]
+  ],
+  [
+    "pattern_bookmark_delete_message",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/pattern/PatternBookmarkSheet.kt:190 message = stringResource(R.string.pattern_bookmark_delete_message, bookmark.name),"
+    ]
+  ],
+  [
+    "pattern_bookmark_accessibility_description",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/pattern/PatternBookmarkSheet.kt:214 R.string.pattern_bookmark_accessibility_description, bookmark.name, bookmark.pageIndex + 1, ) val moreOptionsDescription = stringResource("
+    ]
+  ],
+  [
+    "pattern_bookmark_action_accessibility_description",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/pattern/PatternBookmarkSheet.kt:220 R.string.pattern_bookmark_action_accessibility_description, stringResource(R.string.more_options),",
+      "app/src/main/java/com/finnvek/knittools/ui/screens/pattern/PatternBookmarkSheet.kt:226 R.string.pattern_bookmark_action_accessibility_description, stringResource(R.string.pattern_bookmark_rename),",
+      "app/src/main/java/com/finnvek/knittools/ui/screens/pattern/PatternBookmarkSheet.kt:232 R.string.pattern_bookmark_action_accessibility_description, stringResource(R.string.delete),"
+    ]
+  ],
+  [
+    "pattern_bookmark_name_limit",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/pattern/PatternBookmarkSheet.kt:337 R.string.pattern_bookmark_name_limit, PATTERN_BOOKMARK_NAME_MAX_LENGTH, ) } }, )"
+    ]
+  ],
+  [
+    "pattern_set_row_marker_here",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/pattern/PatternViewerScreen.kt:1762 text = { Text(stringResource(R.string.pattern_set_row_marker_here, currentRow)) }, onClick = { closeOverflowMenu() actions.onSaveReadingLineAsCurrentRow() }, )"
+    ]
+  ],
+  [
+    "pattern_follow_page_announcement",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/pattern/PatternViewerScreen.kt:245 R.string.pattern_follow_page_announcement, event.row, event.page + 1, renderState.renderer?.pageCount ?: (event.page + 1),"
+    ]
+  ],
+  [
+    "pattern_bookmark_jump_announcement",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/pattern/PatternViewerScreen.kt:275 R.string.pattern_bookmark_jump_announcement, event.bookmark.name, event.bookmark.pageIndex + 1, renderState.renderer?.pageCount ?: (event.bookmark.pageIndex + 1),"
+    ]
+  ],
+  [
+    "pattern_reading_line_position_state",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/pattern/PatternViewerScreen.kt:2176 null -> R.string.pattern_reading_line_position_state }, (sanitizedYFraction * 100).toInt(),"
+    ]
+  ],
+  [
+    "pattern_vertical_guide_position_state",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/pattern/PatternViewerScreen.kt:2291 val stateText = stringResource(R.string.pattern_vertical_guide_position_state, (sanitizedXFraction * 100).toInt()) val moveLeft = stringResource(R.string.pattern_vertical_guide_move_left) val moveRight = stringResource(R.string.pattern_vertical_guide_move_right) val centerAction = stringResource(R.string.pattern_center"
+    ]
+  ],
+  [
+    "pattern_reading_line_following_state",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/pattern/PatternViewerScreen.kt:2174 true -> R.string.pattern_reading_line_following_state false -> R.string.pattern_reading_line_manual_state null -> R.string.pattern_reading_line_position_state }, (sanitizedYFraction * 100).toInt(),"
+    ]
+  ],
+  [
+    "pattern_reading_line_manual_state",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/pattern/PatternViewerScreen.kt:2175 false -> R.string.pattern_reading_line_manual_state null -> R.string.pattern_reading_line_position_state }, (sanitizedYFraction * 100).toInt(),"
+    ]
+  ],
+  [
+    "measurement_with_unit_format",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/sizecharts/SizeChartScreen.kt:160 text = stringResource(R.string.measurement_with_unit_format, measurementValue, unit),"
+    ]
+  ],
+  [
+    "new_project_name_format",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/insights/InsightsCompletionSection.kt:96 ?: stringResource(R.string.new_project_name_format, event.projectId),",
+      "app/src/main/java/com/finnvek/knittools/ui/screens/insights/InsightsScreen.kt:243 ?: stringResource(R.string.new_project_name_format, selectedProjectId),",
+      "app/src/main/java/com/finnvek/knittools/ui/screens/insights/InsightsScreen.kt:387 projectNames[projectId] ?: stringResource(R.string.new_project_name_format, projectId) } Text( text = names.joinToString().ifEmpty { stringResource(R.string.insights_no_tracked_activity) }, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,",
+      "app/src/main/java/com/finnvek/knittools/ui/screens/insights/InsightsSections.kt:406 ?: stringResource(R.string.new_project_name_format, project.projectId),",
+      "app/src/main/java/com/finnvek/knittools/ui/screens/library/AllPhotosScreen.kt:228 ?: stringResource(R.string.new_project_name_format, projectId),",
+      "app/src/main/java/com/finnvek/knittools/ui/screens/library/AllPhotosScreen.kt:263 projectMap[photo.projectId]?.name ?: stringResource(R.string.new_project_name_format, photo.projectId) PhotoGridItem( photo = photo, projectName = projectName, isSelectMode = state.isSelectMode, isSelected = photo.id in state.selectedPhotoIds,",
+      "app/src/main/java/com/finnvek/knittools/ui/screens/project/ProjectListViewModel.kt:397 name = context.getString(R.string.new_project_name_format, count + 1),"
+    ]
+  ],
+  [
+    "rounds_format",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/components/MainCounterDisplayText.kt:101 MainCounterLabelType.ROUNDS -> pluralStringResource(R.plurals.rounds_format, slot.count, slot.count) MainCounterLabelType.REPEATS -> pluralStringResource(R.plurals.repeats_format, slot.count, slot.count) MainCounterLabelType.CUSTOM -> stringResource( R.string.main_counter_custom_count_format, slot.count,"
+    ]
+  ],
+  [
+    "repeats_format",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/components/MainCounterDisplayText.kt:102 MainCounterLabelType.REPEATS -> pluralStringResource(R.plurals.repeats_format, slot.count, slot.count) MainCounterLabelType.CUSTOM -> stringResource( R.string.main_counter_custom_count_format, slot.count, slot.customLabel ?: stringResource(R.string.main_counter_custom),"
+    ]
+  ],
+  [
+    "main_counter_custom_count_format",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/components/MainCounterDisplayText.kt:105 R.string.main_counter_custom_count_format, slot.count, slot.customLabel ?: stringResource(R.string.main_counter_custom),"
+    ]
+  ],
+  [
+    "current_round_short",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/components/MainCounterDisplayText.kt:70 MainCounterLabelType.ROUNDS -> stringResource(R.string.current_round_short, slot.count) MainCounterLabelType.REPEATS -> stringResource(R.string.current_repeat_short, slot.count) MainCounterLabelType.CUSTOM -> stringResource( R.string.main_counter_custom_current_format, slot.customLabel ?: stringResource(R.string.main_counter_custom),"
+    ]
+  ],
+  [
+    "current_repeat_short",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/components/MainCounterDisplayText.kt:71 MainCounterLabelType.REPEATS -> stringResource(R.string.current_repeat_short, slot.count) MainCounterLabelType.CUSTOM -> stringResource( R.string.main_counter_custom_current_format, slot.customLabel ?: stringResource(R.string.main_counter_custom),"
+    ]
+  ],
+  [
+    "counter_round_value_of_target_format",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/components/MainCounterDisplayText.kt:85 stringResource(R.string.counter_round_value_of_target_format, slot.count, slot.target) MainCounterLabelType.REPEATS -> stringResource(R.string.counter_repeat_value_of_target_format, slot.count, slot.target) MainCounterLabelType.CUSTOM -> stringResource( R.string.counter_custom_value_of_target_format,"
+    ]
+  ],
+  [
+    "counter_repeat_value_of_target_format",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/components/MainCounterDisplayText.kt:87 stringResource(R.string.counter_repeat_value_of_target_format, slot.count, slot.target) MainCounterLabelType.CUSTOM -> stringResource( R.string.counter_custom_value_of_target_format, slot.customLabel ?: stringResource(R.string.main_counter_custom),"
+    ]
+  ],
+  [
+    "main_counter_custom_current_format",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/components/MainCounterDisplayText.kt:74 R.string.main_counter_custom_current_format, slot.customLabel ?: stringResource(R.string.main_counter_custom),"
+    ]
+  ],
+  [
+    "counter_custom_value_of_target_format",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/components/MainCounterDisplayText.kt:90 R.string.counter_custom_value_of_target_format, slot.customLabel ?: stringResource(R.string.main_counter_custom),"
+    ]
+  ],
+  [
+    "counter_add_custom",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/components/MainCounterDisplayText.kt:125 R.string.counter_add_custom, slot.customLabel ?: stringResource(R.string.main_counter_custom),"
+    ]
+  ],
+  [
+    "counter_decrease_custom",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/components/MainCounterDisplayText.kt:145 R.string.counter_decrease_custom, slot.customLabel ?: stringResource(R.string.main_counter_custom),"
+    ]
+  ],
+  [
+    "delete_project_message",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/counter/CounterScreen.kt:1551 message = stringResource(R.string.delete_project_message, state.projectName),",
+      "app/src/main/java/com/finnvek/knittools/ui/screens/project/ProjectListScreen.kt:1132 message = stringResource(R.string.delete_project_message, projectName),"
+    ]
+  ],
+  [
+    "complete_project_message",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/counter/CounterScreen.kt:1542 message = stringResource(R.string.complete_project_message, state.projectName),"
+    ]
+  ],
+  [
+    "n_selected",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/library/LibraryTopBar.kt:34 text = stringResource(R.string.n_selected, selectedCount),",
+      "app/src/main/java/com/finnvek/knittools/ui/screens/project/ProjectListScreen.kt:693 text = stringResource(R.string.n_selected, state.selectedCount),"
+    ]
+  ],
+  [
+    "complete_n_projects",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/project/ProjectListScreen.kt:625 text = { Text(pluralStringResource(R.plurals.complete_n_projects, selectedCount, selectedCount)) }, confirmButton = { TextButton(onClick = onConfirm) { Text(stringResource(R.string.complete_project)) } },"
+    ]
+  ],
+  [
+    "delete_n_projects",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/project/ProjectListScreen.kt:645 message = pluralStringResource(R.plurals.delete_n_projects, selectedCount, selectedCount),"
+    ]
+  ],
+  [
+    "rows_format",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/components/MainCounterDisplayText.kt:100 MainCounterLabelType.ROWS -> pluralStringResource(R.plurals.rows_format, slot.count, slot.count) MainCounterLabelType.ROUNDS -> pluralStringResource(R.plurals.rounds_format, slot.count, slot.count) MainCounterLabelType.REPEATS -> pluralStringResource(R.plurals.repeats_format, slot.count, slot.count) MainCounterLabelTyp"
+    ]
+  ],
+  [
+    "stitch_counter_compact_format",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/components/StitchCounter.kt:59 text = stringResource(R.string.stitch_counter_compact_format, currentStitch, totalStitches),"
+    ]
+  ],
+  [
+    "pattern_page_indicator",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/pattern/PatternBookmarkSheet.kt:253 R.string.pattern_page_indicator, bookmark.pageIndex + 1, totalPages.coerceAtLeast(bookmark.pageIndex + 1),",
+      "app/src/main/java/com/finnvek/knittools/ui/screens/pattern/PatternViewerScreen.kt:1822 R.string.pattern_page_indicator, currentPage + 1, totalPages.coerceAtLeast(1),",
+      "app/src/main/java/com/finnvek/knittools/ui/screens/pattern/PatternViewerScreen.kt:1874 R.string.pattern_page_indicator, currentPage + 1, totalPages.coerceAtLeast(1),",
+      "app/src/main/java/com/finnvek/knittools/ui/screens/pattern/PatternViewerScreen.kt:2515 R.string.pattern_page_indicator, state.currentPage + 1, state.totalPages.coerceAtLeast(1),"
+    ]
+  ],
+  [
+    "pattern_images_selected",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/pattern/PatternImageImportSurface.kt:73 R.plurals.pattern_images_selected, state.selection.pages.size, state.selection.pages.size, ),"
+    ]
+  ],
+  [
+    "pattern_image_page_position",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/pattern/PatternImageImportSurface.kt:212 text = stringResource(R.string.pattern_image_page_position, index + 1, totalPages),"
+    ]
+  ],
+  [
+    "pattern_image_move_earlier",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/pattern/PatternImageImportSurface.kt:229 contentDescription = stringResource(R.string.pattern_image_move_earlier, index + 1),"
+    ]
+  ],
+  [
+    "pattern_image_move_later",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/pattern/PatternImageImportSurface.kt:239 contentDescription = stringResource(R.string.pattern_image_move_later, index + 1),"
+    ]
+  ],
+  [
+    "pattern_image_remove_page",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/pattern/PatternImageImportSurface.kt:249 contentDescription = stringResource(R.string.pattern_image_remove_page, index + 1),"
+    ]
+  ],
+  [
+    "pattern_image_conversion_progress",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/pattern/PatternImageImportSurface.kt:275 R.string.pattern_image_conversion_progress, progress.currentPage, progress.totalPages, ),"
+    ]
+  ],
+  [
+    "pattern_image_duplicates_ignored",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/pattern/PatternImageImportSurface.kt:94 R.plurals.pattern_image_duplicates_ignored, state.duplicatesIgnored, state.duplicatesIgnored, ),"
+    ]
+  ],
+  [
+    "current_row_short",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/components/MainCounterDisplayText.kt:69 MainCounterLabelType.ROWS -> stringResource(R.string.current_row_short, slot.count) MainCounterLabelType.ROUNDS -> stringResource(R.string.current_round_short, slot.count) MainCounterLabelType.REPEATS -> stringResource(R.string.current_repeat_short, slot.count) MainCounterLabelType.CUSTOM -> stringResource( R.string.ma"
+    ]
+  ],
+  [
+    "project_yarn_quantity_format",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/counter/YarnManagementSheet.kt:356 val quantity = stringResource(R.string.project_yarn_quantity_format, quantity) val details = listOf( quantity, description.takeIf(String::isNotBlank),"
+    ]
+  ],
+  [
+    "yarn_card_project_format",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/library/MyYarnScreen.kt:497 val projectLine = linkedProjectName?.let { stringResource(R.string.yarn_card_project_format, it) }  Row( modifier = Modifier.padding(yarnCardContentPadding),"
+    ]
+  ],
+  [
+    "skein_count",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/components/SkeinCountText.kt:8 fun skeinCountText(quantity: Int): String = pluralStringResource(R.plurals.skein_count, quantity, quantity)"
+    ]
+  ],
+  [
+    "session_row_range",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/components/SessionItem.kt:50 stringResource(R.string.session_row_range, startRow, endRow) } else { stringResource(R.string.session_row_single, startRow) }, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.knitToolsColors.onSurfaceMuted,"
+    ]
+  ],
+  [
+    "session_row_single",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/components/SessionItem.kt:52 stringResource(R.string.session_row_single, startRow) }, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.knitToolsColors.onSurfaceMuted, ) }"
+    ]
+  ],
+  [
+    "counter_value_of_target_format",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/components/MainCounterDisplayText.kt:83 MainCounterLabelType.ROWS -> stringResource(R.string.counter_value_of_target_format, slot.count, slot.target) MainCounterLabelType.ROUNDS -> stringResource(R.string.counter_round_value_of_target_format, slot.count, slot.target) MainCounterLabelType.REPEATS -> stringResource(R.string.counter_repeat_value_of_target_forma"
+    ]
+  ],
+  [
+    "repeating_counter_value_format",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/counter/MultiCounterComponents.kt:229 stringResource(R.string.repeating_counter_value_format, current, length) }  is CounterValueDisplay.Section -> { stringResource( R.string.repeat_section_progress_format,"
+    ]
+  ],
+  [
+    "counter_decrease_named",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/components/StitchCounter.kt:54 contentDescription = stringResource(R.string.counter_decrease_named, label),",
+      "app/src/main/java/com/finnvek/knittools/ui/screens/counter/MultiCounterComponents.kt:156 contentDescription = stringResource(R.string.counter_decrease_named, counter.name),"
+    ]
+  ],
+  [
+    "counter_increase_named",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/components/StitchCounter.kt:67 contentDescription = stringResource(R.string.counter_increase_named, label),",
+      "app/src/main/java/com/finnvek/knittools/ui/screens/counter/MultiCounterComponents.kt:164 contentDescription = stringResource(R.string.counter_increase_named, counter.name),"
+    ]
+  ],
+  [
+    "counter_actions",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/counter/MultiCounterComponents.kt:272 contentDescription = stringResource(R.string.counter_actions, counterName),"
+    ]
+  ],
+  [
+    "counter_target_remaining_format",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/components/ProjectCardText.kt:14 R.string.counter_target_remaining_format, formatIntegerForDisplay(status.countSlot.count.toLong(),",
+      "app/src/main/java/com/finnvek/knittools/ui/screens/counter/CounterWorkspaceSections.kt:633 R.string.counter_target_remaining_format, mainCounterProjectCardCountText(status.countSlot),"
+    ]
+  ],
+  [
+    "counter_target_of_format",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/counter/CounterWorkspaceSections.kt:611 text = stringResource(R.string.counter_target_of_format, targetLine.target),"
+    ]
+  ],
+  [
+    "counter_target_past_format",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/components/ProjectCardText.kt:20 R.string.counter_target_past_format, formatIntegerForDisplay(status.countSlot.count.toLong(),",
+      "app/src/main/java/com/finnvek/knittools/ui/screens/counter/CounterWorkspaceSections.kt:639 R.string.counter_target_past_format, mainCounterProjectCardCountText(status.countSlot),"
+    ]
+  ],
+  [
+    "reminder_repeat_occurrence_format",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/counter/MultiCounterComponents.kt:248 R.plurals.reminder_repeat_occurrence_format, intervalRows, occurrence, intervalRows, ) }"
+    ]
+  ],
+  [
+    "total_stitches_format",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/increase/IncreaseDecreaseScreen.kt:180 stringResource(R.string.total_stitches_format, result.totalStitches, unit) }, )  Spacer(modifier = Modifier.height(8.dp)) "
+    ]
+  ],
+  [
+    "increase_decrease_error_cannot_decrease",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/increase/IncreaseDecreaseScreen.kt:236 stringResource(R.string.increase_decrease_error_cannot_decrease, changeBy, currentStitches)  is IncreaseDecreaseMessage.NotEnoughStitchesForDecrease -> stringResource(R.string.increase_decrease_error_not_enough_decrease, requiredStitches, changeBy)  IncreaseDecreaseMessage.TotalStitchesOutOfRange ->"
+    ]
+  ],
+  [
+    "increase_decrease_error_not_enough_decrease",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/increase/IncreaseDecreaseScreen.kt:239 stringResource(R.string.increase_decrease_error_not_enough_decrease, requiredStitches, changeBy)  IncreaseDecreaseMessage.TotalStitchesOutOfRange -> stringResource(R.string.increase_decrease_error_total_out_of_range)  IncreaseDecreaseMessage.NotEnoughBarsForIncrease ->"
+    ]
+  ],
+  [
+    "edge_stitches_total_format",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/caston/CastOnScreen.kt:226 InfoNote(text = stringResource(R.string.edge_stitches_total_format, edgeCount)) } }  @Composable private fun AdjustedWidthText("
+    ]
+  ],
+  [
+    "stitches_result",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/caston/CastOnScreen.kt:201 targetValue = pluralStringResource(R.plurals.stitches_result, result.stitches, result.stitches),"
+    ]
+  ],
+  [
+    "actual_width",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/caston/CastOnScreen.kt:211 text = stringResource(R.string.actual_width, actualWidth, unit),"
+    ]
+  ],
+  [
+    "adjusted_down",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/caston/CastOnScreen.kt:217 AdjustedWidthText(R.string.adjusted_down, down, adjustedWidth, unit, locale) } result.adjustedUp?.let { up -> val adjustedWidth = result.adjustedUpWidth ?: return@let AdjustedWidthText(R.string.adjusted_up, up, adjustedWidth, unit, locale) }"
+    ]
+  ],
+  [
+    "adjusted_up",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/caston/CastOnScreen.kt:221 AdjustedWidthText(R.string.adjusted_up, up, adjustedWidth, unit, locale) } } if (edgeCount > 0) { Spacer(modifier = Modifier.height(8.dp)) InfoNote(text = stringResource(R.string.edge_stitches_total_format, edgeCount))"
+    ]
+  ],
+  [
+    "total_weight",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/yarn/YarnEstimatorScreen.kt:201 R.string.total_weight, formatDecimalForDisplay(result.totalWeight, locale, 0, 0),"
+    ]
+  ],
+  [
+    "estimated_skeins",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/yarn/YarnEstimatorScreen.kt:209 R.string.estimated_skeins, formatSkeinsEstimateForDisplay(result.exactSkeins, locale),"
+    ]
+  ],
+  [
+    "version_format",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/settings/SettingsScreen.kt:218 text = stringResource(R.string.version_format, BuildConfig.VERSION_NAME),"
+    ]
+  ],
+  [
+    "yarn_color_number_short",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/library/MyYarnScreen.kt:568 stringResource(R.string.yarn_color_number_short, it) } val dyeLot = card.dyeLot.takeIf { it.isNotBlank() }?.let { stringResource(R.string.yarn_dye_lot_short, it) } val colorSummary = listOfNotNull(card.colorName.takeIf { it.isNotBlank() }, colorNumber, dyeLot) .joinToString(YARN_CARD_SUMMARY_SEPARATOR)"
+    ]
+  ],
+  [
+    "yarn_dye_lot_short",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/library/MyYarnScreen.kt:570 val dyeLot = card.dyeLot.takeIf { it.isNotBlank() }?.let { stringResource(R.string.yarn_dye_lot_short, it) } val colorSummary = listOfNotNull(card.colorName.takeIf { it.isNotBlank() }, colorNumber, dyeLot) .joinToString(YARN_CARD_SUMMARY_SEPARATOR) .takeIf { it.isNotBlank() } ?: return "
+    ]
+  ],
+  [
+    "yarn_weight_ply_format",
+    []
+  ],
+  [
+    "insights_duration_minutes",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/components/DurationText.kt:193 resources.getQuantityString(R.plurals.insights_duration_minutes, display.minutes ?: 0)  DurationShape.WHOLE_HOURS -> resources.getQuantityString(R.plurals.insights_duration_hours, display.hours ?: 0)  DurationShape.HOURS_AND_MINUTES ->"
+    ]
+  ],
+  [
+    "insights_duration_hours",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/components/DurationText.kt:196 resources.getQuantityString(R.plurals.insights_duration_hours, display.hours ?: 0)  DurationShape.HOURS_AND_MINUTES -> resources.getString(R.string.insights_duration_hours_minutes) } }"
+    ]
+  ],
+  [
+    "insights_duration_hours_minutes",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/components/DurationText.kt:199 resources.getString(R.string.insights_duration_hours_minutes) } }  private fun durationArguments(display: DurationDisplay): List<Int> = when (display.shape) {"
+    ]
+  ],
+  [
+    "insights_range_format",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/insights/InsightsScreen.kt:351 return stringResource(R.string.insights_range_format, labels.first, labels.second) }  internal fun projectFabricRangeDateLabels( startDate: LocalDate, endDate: LocalDate,",
+      "app/src/main/java/com/finnvek/knittools/ui/screens/insights/InsightsScreen.kt:598 R.string.insights_range_format, first.format(monthFormatter),",
+      "app/src/main/java/com/finnvek/knittools/ui/screens/insights/InsightsScreen.kt:614 stringResource(R.string.insights_range_format, startLabel, end.format(dayMonthFormatter)) } }  @Suppress(\"kotlin:S3776\") // Lokalisoitu päivämääräkuvio jäsennetään merkkitasolla lainaukset huomioiden. internal fun datePatternPlacesDayBeforeMonth(pattern: String): Boolean {"
+    ]
+  ],
+  [
+    "insights_hero_trailing_projects",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/insights/InsightsSections.kt:132 R.plurals.insights_hero_trailing_projects, projectCount, projectCount, ) } "
+    ]
+  ],
+  [
+    "insights_trend_more_week",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/insights/InsightsSections.kt:276 if (isWeek) R.string.insights_trend_more_week else R.string.insights_trend_more_month, percent, ) }  InsightsTrendDirection.DOWN -> {"
+    ]
+  ],
+  [
+    "insights_trend_less_week",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/insights/InsightsSections.kt:283 if (isWeek) R.string.insights_trend_less_week else R.string.insights_trend_less_month, percent, ) }  InsightsTrendDirection.FLAT -> {"
+    ]
+  ],
+  [
+    "insights_trend_more_month",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/insights/InsightsSections.kt:276 if (isWeek) R.string.insights_trend_more_week else R.string.insights_trend_more_month, percent, ) }  InsightsTrendDirection.DOWN -> {"
+    ]
+  ],
+  [
+    "insights_trend_less_month",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/insights/InsightsSections.kt:283 if (isWeek) R.string.insights_trend_less_week else R.string.insights_trend_less_month, percent, ) }  InsightsTrendDirection.FLAT -> {"
+    ]
+  ],
+  [
+    "insights_best_streak",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/insights/InsightsSections.kt:267 pluralStringResource(R.plurals.insights_best_streak, bestStreak, bestStreak) } } val trend = state.trend ?: return null val percent = formatPercentForDisplay(trend.percentChange / 100.0, locale) val isWeek = state.timeRange == TimeRange.THIS_WEEK"
+    ]
+  ],
+  [
+    "insights_project_fabric_a11y_summary",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/insights/InsightsScreen.kt:308 R.plurals.insights_project_fabric_a11y_summary, model.activeDayCount, visibleRange, model.activeDayCount, ),"
+    ]
+  ],
+  [
+    "insights_last_worked_format",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/insights/InsightsSections.kt:452 R.string.insights_last_worked_format, relativeDayText(project.lastSessionAt, today),"
+    ]
+  ],
+  [
+    "insights_days_meta_format",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/insights/InsightsScreen.kt:565 R.plurals.insights_days_meta_format, uiState.daysInRange, uiState.activeDays, uiState.daysInRange, ) "
+    ]
+  ],
+  [
+    "insights_chart_a11y_daily",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/insights/InsightsScreen.kt:556 PaceGroupingInterval.DAY -> R.string.insights_chart_a11y_daily PaceGroupingInterval.WEEK -> R.string.insights_chart_a11y_weekly PaceGroupingInterval.MONTH -> R.string.insights_chart_a11y_monthly }  /** \"19 / 28 päivää\" — näytön informatiivisin luku. */"
+    ]
+  ],
+  [
+    "insights_chart_a11y_weekly",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/insights/InsightsScreen.kt:557 PaceGroupingInterval.WEEK -> R.string.insights_chart_a11y_weekly PaceGroupingInterval.MONTH -> R.string.insights_chart_a11y_monthly }  /** \"19 / 28 päivää\" — näytön informatiivisin luku. */ @Composable"
+    ]
+  ],
+  [
+    "insights_chart_a11y_monthly",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/insights/InsightsScreen.kt:558 PaceGroupingInterval.MONTH -> R.string.insights_chart_a11y_monthly }  /** \"19 / 28 päivää\" — näytön informatiivisin luku. */ @Composable private fun daysMetaText(uiState: InsightsUiState): String ="
+    ]
+  ],
+  [
+    "insights_project_sub_format",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/insights/InsightsScreen.kt:463 R.string.insights_project_sub_format, label, durationText(DurationDisplayFormatter.fromMinutes(bucket.totalMinutes)),",
+      "app/src/main/java/com/finnvek/knittools/ui/screens/insights/InsightsSections.kt:415 R.string.insights_project_sub_format, stringResource(R.string.counter_progress_format, project.totalRows),"
+    ]
+  ],
+  [
+    "insights_rows_count",
+    []
+  ],
+  [
+    "relative_time_days_ago",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/insights/InsightsSections.kt:549 days < 7 -> stringResource(R.string.relative_time_days_ago, days) days < 30 -> stringResource(R.string.relative_time_weeks_ago, days / 7) else -> { val months = days / 30 pluralStringResource(R.plurals.relative_time_months_ago, months, months) }"
+    ]
+  ],
+  [
+    "relative_time_weeks_ago",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/insights/InsightsSections.kt:550 days < 30 -> stringResource(R.string.relative_time_weeks_ago, days / 7) else -> { val months = days / 30 pluralStringResource(R.plurals.relative_time_months_ago, months, months) } }"
+    ]
+  ],
+  [
+    "relative_time_months_ago",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/insights/InsightsSections.kt:553 pluralStringResource(R.plurals.relative_time_months_ago, months, months) } } }  /** Käyttäjä ei ole koskaan tallentanut istuntoa: ei kaaviota, ei nollatilastoja. */"
+    ]
+  ],
+  [
+    "delete_reminder_confirm",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/counter/ReminderComponents.kt:186 message = stringResource(R.string.delete_reminder_confirm, reminder.message),"
+    ]
+  ],
+  [
+    "repeat_section_progress_format",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/counter/MultiCounterComponents.kt:234 R.string.repeat_section_progress_format, repeat, totalRepeats, rowInRepeat, rowsInRepeat, )"
+    ]
+  ],
+  [
+    "delete_counter_message",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/counter/MultiCounterComponents.kt:200 message = stringResource(R.string.delete_counter_message, counter.name),",
+      "app/src/main/java/com/finnvek/knittools/ui/screens/counter/MultiCounterComponents.kt:775 message = stringResource(R.string.delete_counter_message, counter.name),"
+    ]
+  ],
+  [
+    "row_label_format",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/counter/PhotoComponents.kt:150 text = stringResource(R.string.row_label_format, photo.rowNumber),",
+      "app/src/main/java/com/finnvek/knittools/ui/screens/counter/PhotoGalleryScreen.kt:440 val displayName = photo.note ?: stringResource(R.string.row_label_format, photo.rowNumber)  Card( modifier = Modifier .fillMaxWidth()",
+      "app/src/main/java/com/finnvek/knittools/ui/screens/counter/ReminderComponents.kt:217 stringResource(R.string.row_label_format, reminder.targetRow),",
+      "app/src/main/java/com/finnvek/knittools/ui/screens/library/AllPhotosScreen.kt:336 text = photo.note ?: stringResource(R.string.row_label_format, photo.rowNumber),",
+      "app/src/main/java/com/finnvek/knittools/ui/screens/pattern/PatternViewerScreen.kt:2423 text = stringResource(R.string.row_label_format, currentRow),",
+      "app/src/main/java/com/finnvek/knittools/ui/screens/pattern/PatternViewerScreen.kt:2479 text = stringResource(R.string.row_label_format, state.currentRow),",
+      "app/src/main/java/com/finnvek/knittools/ui/screens/project/ProjectOverviewSections.kt:265 contentDescription = stringResource(R.string.row_label_format, photo.rowNumber),"
+    ]
+  ],
+  [
+    "delete_photos_confirm",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/library/AllPhotosScreen.kt:196 message = pluralStringResource(R.plurals.delete_photos_confirm, selectedCount, selectedCount),"
+    ]
+  ],
+  [
+    "delete_patterns_confirm",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/library/SavedPatternsScreen.kt:224 message = pluralStringResource(R.plurals.delete_patterns_confirm, selectedCount, selectedCount),"
+    ]
+  ],
+  [
+    "delete_yarn_cards_confirm",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/library/MyYarnScreen.kt:335 message = pluralStringResource(R.plurals.delete_yarn_cards_confirm, selectedCount, selectedCount),"
+    ]
+  ],
+  [
+    "difficulty_format",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/ravelry/PatternCard.kt:140 text = stringResource(R.string.difficulty_format, difficulty),"
+    ]
+  ],
+  [
+    "row_label_with_target",
+    [
+      "app/src/main/java/com/finnvek/knittools/widget/CounterWidget.kt:478 text = context.getString(R.string.row_label_with_target, data.count, target),"
+    ]
+  ],
+  [
+    "yarn_card_number_fallback",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/counter/CounterScreen.kt:1908 val fallbackYarnName = stringResource(R.string.yarn_card_number_fallback, card.id) val name = card.displayName { fallbackYarnName } Column( modifier = Modifier .fillMaxWidth()",
+      "app/src/main/java/com/finnvek/knittools/ui/screens/counter/CounterViewModel.kt:643 private fun fallbackYarnCardName(id: Long): String = context.getString(R.string.yarn_card_number_fallback, id)  private fun observeProjectYarnNotes(projectId: Long) { projectYarnNoteCollectionJob?.cancel() projectYarnNoteCollectionJob = viewModelScope.launch {",
+      "app/src/main/java/com/finnvek/knittools/ui/screens/counter/YarnUsageRow.kt:48 R.string.yarn_card_number_fallback, item.source.yarnCardId ?: item.usage?.id ?: 0, ) } val focus = remember { FocusRequester() } val bring = remember { BringIntoViewRequester() }",
+      "app/src/main/java/com/finnvek/knittools/ui/screens/library/MyYarnScreen.kt:493 val fallbackName = stringResource(R.string.yarn_card_number_fallback, card.id) val displayName = card.displayName { fallbackName } // Projektirivi vain linkitetylle langalle ja nimikkeen kanssa: pelkkä nimi tai \"Not linked\" ei kertonut, // mitä rivi tarkoittaa. val projectLine = linkedProjectName?.let { stringResource("
+    ]
+  ],
+  [
+    "pro_prompt_projects_trial_body",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/components/ProPromptSheet.kt:186 R.plurals.pro_prompt_projects_trial_body } else { R.plurals.pro_prompt_projects_body }, existingProjectCount, existingProjectCount,"
+    ]
+  ],
+  [
+    "pro_prompt_projects_body",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/components/ProPromptSheet.kt:188 R.plurals.pro_prompt_projects_body }, existingProjectCount, existingProjectCount, ) }"
+    ]
+  ],
+  [
+    "pro_status_trial_days",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/pro/ProUpgradeScreen.kt:192 R.plurals.pro_status_trial_days, proState.trialDaysRemaining, proState.trialDaysRemaining, ),",
+      "app/src/main/java/com/finnvek/knittools/ui/screens/settings/SettingsScreen.kt:245 R.plurals.pro_status_trial_days, trialDaysRemaining, trialDaysRemaining, ) } "
+    ]
+  ],
+  [
+    "pro_buy_for_price",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/pro/ProUpgradeScreen.kt:230 Text(stringResource(R.string.pro_buy_for_price, price)) } if (proState.status == ProStatus.TRIAL_NOT_STARTED) { OutlinedButton( onClick = onPurchase, modifier = purchaseButtonModifier,"
+    ]
+  ],
+  [
+    "project_updated_format",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/components/ProjectCardText.kt:62 if (isCompleted) R.string.project_completed_format else R.string.project_updated_format, relativeTime, ) }  /** Aktiivisen työskentelyistunnon kompakti tilarivi projektikortissa ja jatka-kortissa. */"
+    ]
+  ],
+  [
+    "project_completed_format",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/components/ProjectCardText.kt:62 if (isCompleted) R.string.project_completed_format else R.string.project_updated_format, relativeTime, ) }  /** Aktiivisen työskentelyistunnon kompakti tilarivi projektikortissa ja jatka-kortissa. */"
+    ]
+  ],
+  [
+    "project_section_count_format",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/project/ProjectListScreen.kt:1115 text = stringResource(R.string.project_section_count_format, text, count),"
+    ]
+  ],
+  [
+    "project_continue_content_description",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/components/ContinueProjectCard.kt:123 contentDescription = stringResource(R.string.project_continue_content_description, project.name),",
+      "app/src/main/java/com/finnvek/knittools/ui/screens/project/ProjectOverviewScreen.kt:292 onClickLabel = stringResource(R.string.project_continue_content_description, state.projectName),"
+    ]
+  ],
+  [
+    "work_session_pending_rows_format",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/counter/CounterScreen.kt:1180 Text(stringResource(R.string.work_session_pending_rows_format, pendingRowsWorked)) } if (editing) { Text(stringResource(R.string.work_session_edit_total_duration)) Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) { TextField("
+    ]
+  ],
+  [
+    "work_session_conflict_body",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/counter/CounterScreen.kt:1267 text = stringResource(R.string.work_session_conflict_body, activeProjectName),"
+    ]
+  ],
+  [
+    "work_session_duration_format",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/counter/CounterScreen.kt:1359 Text(stringResource(R.string.work_session_duration_format, formatWorkSessionDuration(durationSeconds))) Text(stringResource(R.string.counter_progress_format, rowsWorked)) } }, confirmButton = { Column(horizontalAlignment = Alignment.End) {"
+    ]
+  ],
+  [
+    "work_session_confirmed_time_format",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/counter/CounterScreen.kt:1165 R.string.work_session_confirmed_time_format, formatWorkSessionDuration(trustedDurationSeconds),"
+    ]
+  ],
+  [
+    "work_session_time_while_away_format",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/counter/CounterScreen.kt:1172 R.string.work_session_time_while_away_format, formatWorkSessionDuration(suggestedDurationSeconds),"
+    ]
+  ],
+  [
+    "work_session_active_description",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/counter/CounterWorkspaceSections.kt:250 val sessionDescription = stringResource(R.string.work_session_active_description, projectName, duration) val label = stringResource( if (needsRecoveryReview) { R.string.work_session_recovery_needed } else {"
+    ]
+  ],
+  [
+    "project_documents_actions",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/pattern/PatternViewerScreen.kt:979 val actionsDescription = stringResource(R.string.project_documents_actions, document.label) val accessibilityActions = buildList { if (isAvailable) { add( CustomAccessibilityAction(openLabel) {"
+    ]
+  ],
+  [
+    "project_documents_remove_message",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/pattern/PatternViewerScreen.kt:941 else -> R.string.project_documents_remove_message }, document.label, ),"
+    ]
+  ],
+  [
+    "project_documents_position",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/pattern/PatternViewerScreen.kt:1042 Text(stringResource(R.string.project_documents_position, index + 1, documentCount)) if (isSelected) Text(stringResource(R.string.project_documents_open)) if (isAvailable) { Text(stringResource(R.string.project_documents_available)) } else { Text("
+    ]
+  ],
+  [
+    "project_documents_remove_primary_message",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/pattern/PatternViewerScreen.kt:940 document.isPrimary -> R.string.project_documents_remove_primary_message else -> R.string.project_documents_remove_message }, document.label, ),"
+    ]
+  ],
+  [
+    "project_documents_remove_last_message",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/pattern/PatternViewerScreen.kt:939 state.documents.size == 1 -> R.string.project_documents_remove_last_message document.isPrimary -> R.string.project_documents_remove_primary_message else -> R.string.project_documents_remove_message }, document.label, ),"
+    ]
+  ],
+  [
+    "folder_empty",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/project/ProjectFolderComponents.kt:479 stringResource(R.string.folder_empty, folder?.name.orEmpty()) }  ProjectFolderFilter.AllProjects -> { error(\"Handled above\") }"
+    ]
+  ],
+  [
+    "folder_project_creation_destination",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/project/ProjectListScreen.kt:297 R.string.folder_project_creation_destination, creationFolderName ?: stringResource(R.string.folder_unfiled),"
+    ]
+  ],
+  [
+    "folder_delete_message",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/project/ProjectFolderComponents.kt:312 stringResource(R.string.folder_delete_message, folder.name),"
+    ]
+  ],
+  [
+    "folder_selected_description",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/project/ProjectFolderComponents.kt:731 return if (selected) stringResource(R.string.folder_selected_description, base) else base }  @Composable private fun validationErrorMessage(validation: ProjectFolderNameValidationResult): String? = when (validation) {"
+    ]
+  ],
+  [
+    "folder_user_description",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/project/ProjectFolderComponents.kt:435 description = stringResource(R.string.folder_user_description, folder.name),",
+      "app/src/main/java/com/finnvek/knittools/ui/screens/project/ProjectFolderComponents.kt:726 R.string.folder_user_description, folders.firstOrNull { it.id == filter.folderId }?.name.orEmpty(),"
+    ]
+  ],
+  [
+    "folder_actions_description",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/project/ProjectFolderComponents.kt:555 contentDescription = stringResource(R.string.folder_actions_description, folder.name),"
+    ]
+  ],
+  [
+    "folder_current_destination",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/project/ProjectFolderComponents.kt:634 if (selected) stringResource(R.string.folder_current_destination, label) else description TextButton( onClick = onClick, enabled = enabled, modifier = Modifier"
+    ]
+  ],
+  [
+    "folder_affected_projects",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/project/ProjectFolderComponents.kt:316 R.plurals.folder_affected_projects, assignedProjectCount, assignedProjectCount, ),"
+    ]
+  ],
+  [
+    "folder_moved_projects",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/project/ProjectListScreen.kt:175 resources.getQuantityString(R.plurals.folder_moved_projects, count, count),"
+    ]
+  ],
+  [
+    "folder_move_project_to",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/project/ProjectFolderComponents.kt:378 stringResource(R.string.folder_move_project_to, projectName) }  projectCount == 1 -> { stringResource(R.string.folder_move_to) }"
+    ]
+  ],
+  [
+    "folder_rename_description",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/project/ProjectFolderComponents.kt:607 R.string.folder_rename -> R.string.folder_rename_description R.string.folder_move_earlier -> R.string.folder_move_earlier_description R.string.folder_move_later -> R.string.folder_move_later_description R.string.folder_delete -> R.string.folder_delete_description else -> error(\"Unsupported folder action\") },"
+    ]
+  ],
+  [
+    "folder_move_earlier_description",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/project/ProjectFolderComponents.kt:608 R.string.folder_move_earlier -> R.string.folder_move_earlier_description R.string.folder_move_later -> R.string.folder_move_later_description R.string.folder_delete -> R.string.folder_delete_description else -> error(\"Unsupported folder action\") }, folderName,"
+    ]
+  ],
+  [
+    "folder_move_later_description",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/project/ProjectFolderComponents.kt:609 R.string.folder_move_later -> R.string.folder_move_later_description R.string.folder_delete -> R.string.folder_delete_description else -> error(\"Unsupported folder action\") }, folderName, )"
+    ]
+  ],
+  [
+    "folder_delete_description",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/project/ProjectFolderComponents.kt:610 R.string.folder_delete -> R.string.folder_delete_description else -> error(\"Unsupported folder action\") }, folderName, ) DropdownMenuItem("
+    ]
+  ],
+  [
+    "folder_move_selected_projects_count",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/project/ProjectFolderComponents.kt:387 R.plurals.folder_move_selected_projects_count, projectCount, projectCount, ) } }"
+    ]
+  ],
+  [
+    "folder_move_projects_error",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/project/ProjectListScreen.kt:414 R.plurals.folder_move_projects_error, selectedProjectIds.size, selectedProjectIds.size, ) } "
+    ]
+  ],
+  [
+    "measurement_project_context",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/gauge/GaugePresentation.kt:43 state.projectName?.let { add(context.getString(R.string.measurement_project_context, it)) } sections.forEach { section -> add(\"\") add(section.title) (section.inputs + section.results).forEach { line -> add(context.getString(R.string.measurement_result_line, line.label, line.value))",
+      "app/src/main/java/com/finnvek/knittools/ui/screens/gauge/GaugeScreen.kt:151 text = stringResource(R.string.measurement_project_context, name),"
+    ]
+  ],
+  [
+    "measurement_value_unit_format",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/gauge/GaugePresentation.kt:259 value = context.getString(R.string.measurement_value_unit_format, number, text(unit.shortResource())),"
+    ]
+  ],
+  [
+    "measurement_gauge_format",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/gauge/GaugePresentation.kt:235 R.string.measurement_gauge_format, MeasurementNumberFormatter.format(value, locale),"
+    ]
+  ],
+  [
+    "measurement_result_line",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/gauge/GaugePresentation.kt:48 add(context.getString(R.string.measurement_result_line, line.label, line.value)) } } if (state.task != GaugeTask.CONVERT) { add(\"\") add(context.getString(state.task.warningResource()))",
+      "app/src/main/java/com/finnvek/knittools/ui/screens/gauge/GaugePresentation.kt:260 spokenValue = context.getString(R.string.measurement_result_line, text(unit.titleResource()),"
+    ]
+  ],
+  [
+    "measurement_field_with_unit",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/counter/ProjectYarnUsageSheet.kt:251 label = stringResource(R.string.measurement_field_with_unit, label, stringResource(unit.titleResource())),",
+      "app/src/main/java/com/finnvek/knittools/ui/screens/gauge/GaugeComponents.kt:108 (basisLabel ?: visibleUnit)?.let { stringResource(R.string.measurement_field_with_unit, fieldLabel, it) } ?: fieldLabel val spokenLabel = (basisLabel ?: fullUnit)?.let { stringResource(R.string.measurement_field_with_unit, fieldLabel, it) } ?: fieldLabel val error = if (input.touched) input.error?.let { stringResource(",
+      "app/src/main/java/com/finnvek/knittools/ui/screens/gauge/GaugeComponents.kt:111 (basisLabel ?: fullUnit)?.let { stringResource(R.string.measurement_field_with_unit, fieldLabel, it) } ?: fieldLabel val error = if (input.touched) input.error?.let { stringResource(it.messageResource()) } else null key(field) { NumberInputField( value = input.text,"
+    ]
+  ],
+  [
+    "measurement_stitches",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/gauge/GaugePresentation.kt:218 if (axis == GaugeAxis.STITCHES) R.plurals.measurement_stitches else R.plurals.measurement_rows, count, count, ),"
+    ]
+  ],
+  [
+    "measurement_rows",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/gauge/GaugePresentation.kt:218 if (axis == GaugeAxis.STITCHES) R.plurals.measurement_stitches else R.plurals.measurement_rows, count, count, ),"
+    ]
+  ],
+  [
+    "yarn_usage_remaining_format",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/counter/YarnUsagePresentation.kt:71 if (remaining < 0.0) R.string.yarn_usage_over_format else R.string.yarn_usage_remaining_format, formatted, ) } }"
+    ]
+  ],
+  [
+    "yarn_usage_over_format",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/counter/YarnUsagePresentation.kt:71 if (remaining < 0.0) R.string.yarn_usage_over_format else R.string.yarn_usage_remaining_format, formatted, ) } }",
+      "app/src/main/java/com/finnvek/knittools/ui/screens/project/ProjectOverviewSections.kt:145 stringResource(R.string.yarn_usage_over_format, formatted) } else { formatted ?: stringResource(R.string.project_overview_amount_unknown) }, style = MaterialTheme.typography.titleMedium, )"
+    ]
+  ],
+  [
+    "yarn_usage_used_format",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/counter/YarnUsageRow.kt:79 stringResource(R.string.yarn_usage_used_format, value),"
+    ]
+  ],
+  [
+    "yarn_usage_meters_format",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/counter/YarnUsagePresentation.kt:36 YarnUsageUnit.METERS -> stringResource(R.string.yarn_usage_meters_format, formatted) YarnUsageUnit.YARDS -> stringResource(R.string.yarn_usage_yards_format, formatted) YarnUsageUnit.GRAMS -> stringResource(R.string.yarn_usage_grams_format, formatted) YarnUsageUnit.SKEINS -> pluralStringResource( R.plurals.yarn_usage_sk"
+    ]
+  ],
+  [
+    "yarn_usage_yards_format",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/counter/YarnUsagePresentation.kt:37 YarnUsageUnit.YARDS -> stringResource(R.string.yarn_usage_yards_format, formatted) YarnUsageUnit.GRAMS -> stringResource(R.string.yarn_usage_grams_format, formatted) YarnUsageUnit.SKEINS -> pluralStringResource( R.plurals.yarn_usage_skeins_format, skeinPluralQuantity(formatted, locale),"
+    ]
+  ],
+  [
+    "yarn_usage_grams_format",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/counter/YarnUsagePresentation.kt:38 YarnUsageUnit.GRAMS -> stringResource(R.string.yarn_usage_grams_format, formatted) YarnUsageUnit.SKEINS -> pluralStringResource( R.plurals.yarn_usage_skeins_format, skeinPluralQuantity(formatted, locale),"
+    ]
+  ],
+  [
+    "yarn_usage_delete_named",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/counter/ProjectYarnUsageSheet.kt:162 val description = stringResource(R.string.yarn_usage_delete_named, draft.name) TextButton( onClick = { confirmDelete = true }, enabled = !state.busy, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag(\"yarn_usage_delete\").semantics {",
+      "app/src/main/java/com/finnvek/knittools/ui/screens/counter/YarnUsageRow.kt:114 val deleteLabel = stringResource(R.string.yarn_usage_delete_named, name) TextButton( onClick = { onUsage(YarnUsageOpenRequest(item, name, delete = true)) }, contentPadding = actionPadding, modifier = Modifier"
+    ]
+  ],
+  [
+    "yarn_usage_delete_body",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/counter/ProjectYarnUsageSheet.kt:193 message = stringResource(R.string.yarn_usage_delete_body, draft.name),"
+    ]
+  ],
+  [
+    "yarn_usage_track_named",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/counter/YarnUsageRow.kt:90 R.string.yarn_usage_track_named } else { R.string.yarn_usage_edit_named }, name, )"
+    ]
+  ],
+  [
+    "yarn_usage_edit_named",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/counter/YarnUsageRow.kt:92 R.string.yarn_usage_edit_named }, name, ) // Langan kortin sisällä (inCard) toiminto on nimen alla vasemmassa reunassa, muuten oikeassa // reunassa kuten osioiden tekstitoiminnot. Keskitettynä se irtosi rivistä, jota se koskee."
+    ]
+  ],
+  [
+    "yarn_usage_skeins_format",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/counter/YarnUsagePresentation.kt:41 R.plurals.yarn_usage_skeins_format, skeinPluralQuantity(formatted, locale),"
+    ]
+  ],
+  [
+    "web_pattern_delete_confirm_message",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/library/SavedPatternDetailScreen.kt:162 stringResource(R.string.web_pattern_delete_confirm_message, pattern.name) } else { stringResource(R.string.saved_pattern_detail_remove_confirm) }, confirmText = stringResource("
+    ]
+  ],
+  [
+    "web_pattern_replace_confirm_message",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/counter/CounterScreen.kt:394 R.string.web_pattern_replace_confirm_message, pendingWebPatternName.orEmpty(),",
+      "app/src/main/java/com/finnvek/knittools/ui/screens/library/SavedPatternDetailScreen.kt:203 message = stringResource(R.string.web_pattern_replace_confirm_message, pattern.name),",
+      "app/src/main/java/com/finnvek/knittools/ui/screens/library/WebPatternEditorScreen.kt:179 text = { Text(stringResource(R.string.web_pattern_replace_confirm_message, state.title)) }, confirmButton = { TextButton(onClick = onConfirmReplacement, enabled = !state.isSaving) { Text(stringResource(R.string.web_pattern_attach),"
+    ]
+  ],
+  [
+    "web_pattern_open_website_description",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/library/SavedPatternDetailScreen.kt:274 stringResource(R.string.web_pattern_open_website_description, pattern.name, webUrl.host),",
+      "app/src/main/java/com/finnvek/knittools/ui/screens/pattern/PatternViewerScreen.kt:779 R.string.web_pattern_open_website_description, webPattern.name, webUrl?.host.orEmpty(),"
+    ]
+  ],
+  [
+    "web_pattern_edit_description",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/pattern/PatternViewerScreen.kt:783 val editDescription = stringResource(R.string.web_pattern_edit_description, webPattern.name) val unlinkDescription = stringResource(R.string.web_pattern_unlink_description, webPattern.name) // Linkkirivit kuten projektinäkymässä; pinotut tekstipainikkeet lukivat irrallisina. OverviewLinkRow( title = stringResource(R.string.web_pattern_open_website),"
+    ]
+  ],
+  [
+    "web_pattern_attach_description",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/library/SavedPatternDetailScreen.kt:279 description = stringResource(R.string.web_pattern_attach_description, pattern.name),"
+    ]
+  ],
+  [
+    "web_pattern_unlink_description",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/pattern/PatternViewerScreen.kt:784 val unlinkDescription = stringResource(R.string.web_pattern_unlink_description, webPattern.name) // Linkkirivit kuten projektinäkymässä; pinotut tekstipainikkeet lukivat irrallisina. OverviewLinkRow( title = stringResource(R.string.web_pattern_open_website),",
+      "app/src/main/java/com/finnvek/knittools/ui/screens/pattern/PatternViewerScreen.kt:884 text = { Text(stringResource(R.string.web_pattern_unlink_description, patternName)) }, confirmButton = { TextButton( onClick = { showUnlinkConfirmation = false coroutineScope.launch {"
+    ]
+  ],
+  [
+    "insights_completions_period",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/insights/InsightsCompletionSection.kt:136 R.string.insights_completions_period, completionDate(bucket.start),"
+    ]
+  ],
+  [
+    "insights_completion_count",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/insights/InsightsCompletionSection.kt:149 pluralStringResource(R.plurals.insights_completion_count, count, count)  @Composable private fun completionDate(date: LocalDate): String { val locale = rememberCurrentLocale() val formatter = remember(locale) { DateTimeFormatter.ofPattern(localizedDateTimePattern(locale, \"yMMMd\"),"
+    ]
+  ],
+  [
+    "backup_preview_date",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/backup/BackupScreen.kt:127 R.string.backup_preview_date, rememberLocaleDateFormat(\"yMMMd\", includeTime = true).format(Date(preview.createdAt)),"
+    ]
+  ],
+  [
+    "backup_preview_version",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/backup/BackupScreen.kt:131 Text(stringResource(R.string.backup_preview_version, preview.versionName)) Text(stringResource(R.string.backup_preview_projects, preview.projects)) Text(stringResource(R.string.backup_preview_patterns, preview.patterns)) Text(stringResource(R.string.backup_preview_yarn, preview.yarnCards)) Text(stringResource(R.string."
+    ]
+  ],
+  [
+    "backup_preview_projects",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/backup/BackupScreen.kt:132 Text(stringResource(R.string.backup_preview_projects, preview.projects)) Text(stringResource(R.string.backup_preview_patterns, preview.patterns)) Text(stringResource(R.string.backup_preview_yarn, preview.yarnCards)) Text(stringResource(R.string.backup_preview_files, preview.files)) Button({ confirm = true }, Modifier.f"
+    ]
+  ],
+  [
+    "backup_preview_patterns",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/backup/BackupScreen.kt:133 Text(stringResource(R.string.backup_preview_patterns, preview.patterns)) Text(stringResource(R.string.backup_preview_yarn, preview.yarnCards)) Text(stringResource(R.string.backup_preview_files, preview.files)) Button({ confirm = true }, Modifier.fillMaxWidth().heightIn(min = 48.dp)) { Text(stringResource(R.string.backu"
+    ]
+  ],
+  [
+    "backup_preview_yarn",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/backup/BackupScreen.kt:134 Text(stringResource(R.string.backup_preview_yarn, preview.yarnCards)) Text(stringResource(R.string.backup_preview_files, preview.files)) Button({ confirm = true }, Modifier.fillMaxWidth().heightIn(min = 48.dp)) { Text(stringResource(R.string.backup_restore)) } CancelButton(onCancel, Modifier.heightIn(min = 48.dp))"
+    ]
+  ],
+  [
+    "backup_preview_files",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/backup/BackupScreen.kt:135 Text(stringResource(R.string.backup_preview_files, preview.files)) Button({ confirm = true }, Modifier.fillMaxWidth().heightIn(min = 48.dp)) { Text(stringResource(R.string.backup_restore)) } CancelButton(onCancel, Modifier.heightIn(min = 48.dp)) }"
+    ]
+  ],
+  [
+    "counter_history_event_description",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/counterhistory/CounterHistoryScreen.kt:134 R.string.counter_history_event_description, action, row.previousValue, row.newValue, row.date, row.time,"
+    ]
+  ],
+  [
+    "counter_history_transition",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/counterhistory/CounterHistoryScreen.kt:148 stringResource(R.string.counter_history_transition, row.previousValue, row.newValue),"
+    ]
+  ],
+  [
+    "project_overview_pdf_page_format",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/project/ProjectOverviewSections.kt:177 R.string.project_overview_pdf_page_format, primary.currentPage.toLong() + 1L, ) } else { stringResource(R.string.project_documents_unavailable) },"
+    ]
+  ],
+  [
+    "counter_step_custom_title",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/components/MainCounterDisplayText.kt:162 R.string.counter_step_custom_title, mainCounterLabelText(labelType, customLabel),"
+    ]
+  ],
+  [
+    "counter_step_invalid",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/counter/MainCounterStepSheet.kt:99 stringResource(R.string.counter_step_invalid, MAX_MAIN_COUNTER_STEP_SIZE) } else { null }, inputModifier = Modifier.testTag(\"main-step-input\"),"
+    ]
+  ],
+  [
+    "counter_step_change_description",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/counter/CounterWorkspaceSections.kt:734 val description = stringResource(R.string.counter_step_change_description, title, stepSize) val ringColor = if (stepSize > 1) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant val textColor = if (stepSize > 1) MaterialTheme.knitToolsColors.primaryReadable else ringColor Box( modifier = m"
+    ]
+  ],
+  [
+    "counter_step_increase",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/components/MainCounterDisplayText.kt:117 stringResource(R.string.counter_step_increase, stepSize, mainCounterLabelText(slot.labelType, slot.customLabel)) } else { when (slot.labelType) { MainCounterLabelType.ROWS -> stringResource(R.string.counter_add_row) MainCounterLabelType.ROUNDS -> stringResource(R.string.counter_add_round) MainCounterLabelType.REPEATS -"
+    ]
+  ],
+  [
+    "counter_step_decrease",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/components/MainCounterDisplayText.kt:137 stringResource(R.string.counter_step_decrease, stepSize, mainCounterLabelText(slot.labelType, slot.customLabel)) } else { when (slot.labelType) { MainCounterLabelType.ROWS -> stringResource(R.string.counter_decrease_row) MainCounterLabelType.ROUNDS -> stringResource(R.string.counter_decrease_round) MainCounterLabelType"
+    ]
+  ],
+  [
+    "counter_step_multiplier",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/counter/CounterWorkspaceSections.kt:654 val ringText = stringResource(R.string.counter_step_multiplier, state.counter.stepSize) val textStyle = MaterialTheme.typography.labelLarge val measured = rememberTextMeasurer().measure(ringText, textStyle, maxLines = 1, softWrap = false) val ringSize = with(LocalDensity.current) { measured.size.width.toDp() + CounterD"
+    ]
+  ],
+  [
+    "counter_step_delta",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/counter/CounterWorkspaceSections.kt:540 text = stringResource(R.string.counter_step_delta, stepDelta),"
+    ]
+  ],
+  [
+    "counter_progress_format",
+    [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/counter/CounterScreen.kt:1360 Text(stringResource(R.string.counter_progress_format, rowsWorked)) } }, confirmButton = { Column(horizontalAlignment = Alignment.End) { TextButton(onClick = onSave, modifier = Modifier.defaultMinSize(minHeight = 48.dp)) {",
+      "app/src/main/java/com/finnvek/knittools/ui/screens/counter/CounterWorkspaceSections.kt:267 val rowsText = stringResource(R.string.counter_progress_format, rowsWorked) val fontScale = LocalDensity.current.fontScale BoxWithConstraints( modifier = Modifier .fillMaxWidth()",
+      "app/src/main/java/com/finnvek/knittools/ui/screens/insights/InsightsSections.kt:416 stringResource(R.string.counter_progress_format, project.totalRows),"
+    ]
+  ]
+]

@@ -23,6 +23,7 @@ fun BadgePill(
     modifier: Modifier = Modifier,
     containerColor: Color = MaterialTheme.knitToolsColors.actionContainer,
     contentColor: Color = MaterialTheme.knitToolsColors.primaryReadable,
+    uppercase: Boolean = true,
 ) {
     Box(
         modifier =
@@ -32,7 +33,7 @@ fun BadgePill(
                 .padding(horizontal = 8.dp, vertical = 4.dp),
     ) {
         Text(
-            text = text.localizedUppercase(),
+            text = if (uppercase) text.localizedUppercase() else text,
             style = MaterialTheme.typography.labelSmall,
             color = contentColor,
         )

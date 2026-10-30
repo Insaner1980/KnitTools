@@ -97,7 +97,8 @@ class ProFeatureGateSourceTest {
         assertFalse(yarnManagementSheet.contains("canSaveToMyYarn: Boolean"))
         // Tallennettu muistiinpano näyttää tilamerkin, joten tallennustoiminto näkyy vain tallentamattomalle.
         assertTrue(yarnManagementSheet.contains("if (note.savedYarnCardId == null) {"))
-        assertTrue(yarnManagementSheet.contains("ProBadge(status = proStatus)"))
+        assertTrue(yarnManagementSheet.contains("proActionAccess(proState, proAccessReady, ProFeature.UNLIMITED_YARN)"))
+        assertTrue(yarnManagementSheet.contains("ProMarker(access = yarnAccess)"))
 
         assertTrue(viewModel.contains("fun addReminder("))
         assertTrue(viewModel.contains("if (!proManager.hasFeature(ProFeature.ROW_REMINDERS)) return"))
@@ -154,15 +155,15 @@ class ProFeatureGateSourceTest {
     @Test
     fun `pro upgrade copy lists only implemented feature groups`() {
         val upgradeScreen = ProjectSourceFiles.read(PRO_UPGRADE_SCREEN)
-        val strings = ProjectSourceFiles.read(STRINGS)
+        val strings = ProjectSourceFiles.read(STRINGS) + ProjectSourceFiles.read(ONBOARDING_STRINGS)
 
         listOf(
-            "pro_group_projects_title",
-            "pro_group_projects_body",
-            "pro_group_workflow_title",
-            "pro_group_workflow_body",
-            "pro_group_insights_title",
-            "pro_group_insights_body",
+            "onboarding_pro_group_projects_title",
+            "onboarding_pro_group_projects_body",
+            "onboarding_pro_group_workflow_title",
+            "onboarding_pro_group_workflow_body",
+            "onboarding_pro_group_insights_title",
+            "onboarding_pro_group_insights_body",
         ).forEach { key ->
             assertTrue(upgradeScreen.contains("R.string.$key"))
             assertTrue(strings.contains("""<string name="$key">"""))
@@ -177,8 +178,11 @@ class ProFeatureGateSourceTest {
     fun `trial end notice waits for loaded state and yields to explicit launch requests`() {
         val mainActivity = ProjectSourceFiles.read(MAIN_ACTIVITY)
 
-        assertTrue(mainActivity.contains("proStateReady &&"))
-        assertTrue(mainActivity.contains("proState.status == ProStatus.TRIAL_EXPIRED"))
+        assertTrue(mainActivity.contains("noticeDataReady = proStateReady && currentTrialFacts != null"))
+        assertTrue(
+            mainActivity.contains("if (noticeCanClaim && checkedResumeGeneration != trialNoticeResumeGeneration)"),
+        )
+        assertTrue(mainActivity.contains("ProStatus.TRIAL_EXPIRED -> {"))
         assertTrue(mainActivity.contains("trialManager.claimTrialEndNotice()"))
         assertTrue(mainActivity.contains("openProUpgradeRequest ||"))
         assertTrue(mainActivity.contains("openWidgetProPromptRequest ||"))
@@ -225,6 +229,7 @@ class ProFeatureGateSourceTest {
         const val PRO_UPGRADE_SCREEN =
             "app/src/main/java/com/finnvek/knittools/ui/screens/pro/ProUpgradeScreen.kt"
         const val STRINGS = "app/src/main/res/values/strings.xml"
+        const val ONBOARDING_STRINGS = "app/src/main/res/values/strings_onboarding.xml"
         const val AGENTS = "AGENTS.md"
         const val CODEX = "CODEX.md"
     }

@@ -3,6 +3,9 @@ package com.finnvek.knittools.ui.screens.library
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.saveable.LocalSaveableStateRegistry
+import androidx.compose.runtime.saveable.SaveableStateRegistry
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
@@ -11,6 +14,9 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.lifecycle.ViewModelStore
+import androidx.lifecycle.ViewModelStoreOwner
+import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
 import androidx.test.platform.app.InstrumentationRegistry
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.model.CounterProject
@@ -28,6 +34,83 @@ class SavedPatternDetailWebScreenTest {
     val composeRule = createAndroidComposeRule<ComponentActivity>()
 
     private val context = InstrumentationRegistry.getInstrumentation().targetContext
+
+    @Test
+    fun restoredReplacementWithoutOwnerStaysHiddenAndReselectionStartsWithoutOldLink() {
+        var store = ViewModelStore()
+        var registry = SaveableStateRegistry(null) { true }
+        val requests = mutableListOf<Pair<Long, Long?>>()
+        val callbacks = mutableListOf<(SavedPatternMetadataMutationResult) -> Unit>()
+        var attached = 0
+
+        fun mount() {
+            composeRule.runOnUiThread {
+                composeRule.activity.setContent {
+                    CompositionLocalProvider(
+                        LocalSaveableStateRegistry provides registry,
+                        LocalViewModelStoreOwner provides
+                            object : ViewModelStoreOwner {
+                                override val viewModelStore = store
+                            },
+                    ) {
+                        KnitToolsTheme {
+                            SavedPatternDetailScreen(
+                                pattern = webPattern(),
+                                onBack = {},
+                                onOpenPattern = {},
+                                onAttachToProject = { _, _ -> },
+                                projects = listOf(PROJECT),
+                                onAttachWebPattern = { project, expected, callback ->
+                                    requests += project to expected
+                                    callbacks += callback
+                                },
+                                onOpenProject = { attached += 1 },
+                                onRemove = {},
+                            )
+                        }
+                    }
+                }
+            }
+            composeRule.waitForIdle()
+        }
+        val attach = context.getString(R.string.web_pattern_attach)
+        val title = context.getString(R.string.web_pattern_replace_confirm_title)
+        try {
+            mount()
+            composeRule.onNodeWithText(attach).performScrollTo().performClick()
+            chooseProject()
+            composeRule.runOnIdle { callbacks.single()(SavedPatternMetadataMutationResult.ReplacementRequired(88L)) }
+            composeRule.onNodeWithText(title).assertIsDisplayed()
+            composeRule.runOnUiThread {
+                val saved = registry.performSave()
+                composeRule.activity.setContent { }
+                store.clear()
+                store = ViewModelStore()
+                registry = SaveableStateRegistry(saved) { true }
+            }
+            composeRule.waitForIdle()
+            mount()
+            composeRule.onNodeWithText(title).assertDoesNotExist()
+            assertEquals(1, requests.size)
+            composeRule.onNodeWithText(attach).performScrollTo().performClick()
+            chooseProject()
+            composeRule.onNodeWithText(title).assertDoesNotExist()
+            assertEquals(listOf(PROJECT.id to null, PROJECT.id to null), requests)
+            composeRule.runOnIdle { callbacks.last()(SavedPatternMetadataMutationResult.ReplacementRequired(99L)) }
+            composeRule.onNodeWithText(title).assertIsDisplayed()
+            composeRule.onAllNodesWithText(attach)[1].performClick()
+            composeRule.runOnIdle {
+                assertEquals(PROJECT.id to 99L, requests.last())
+                callbacks.last()(SavedPatternMetadataMutationResult.Attached(7L))
+            }
+            composeRule.runOnIdle { assertEquals(1, attached) }
+        } finally {
+            composeRule.runOnUiThread {
+                composeRule.activity.setContent { }
+                store.clear()
+            }
+        }
+    }
 
     @Test
     fun attachmentSuccessAfterRestorationIsHandledOnce() =

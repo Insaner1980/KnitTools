@@ -86,6 +86,7 @@ class RavelryLocalizationSourceTest {
                 "app/src/main/res/values-nb/strings.xml",
                 "app/src/main/res/values-nl/strings.xml",
                 "app/src/main/res/values-pt/strings.xml",
+                "app/src/main/res/values-pt-rBR/strings.xml",
                 "app/src/main/res/values-sv/strings.xml",
             )
         private val RAVELRY_COPY_STRINGS =

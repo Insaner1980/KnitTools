@@ -1,5 +1,6 @@
 package com.finnvek.knittools.ui.components
 
+import androidx.annotation.StringRes
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -55,13 +56,18 @@ fun craftTypeLabel(craftType: CraftType): String =
 fun mainCounterLabelText(
     labelType: MainCounterLabelType,
     customLabel: String?,
-): String =
-    when (labelType) {
-        MainCounterLabelType.ROWS -> stringResource(R.string.main_counter_rows)
-        MainCounterLabelType.ROUNDS -> stringResource(R.string.main_counter_rounds)
-        MainCounterLabelType.REPEATS -> stringResource(R.string.main_counter_repeats)
-        MainCounterLabelType.CUSTOM -> customLabel ?: stringResource(R.string.main_counter_custom)
-    }
+): String = customLabel.takeIf { labelType == MainCounterLabelType.CUSTOM } ?: stringResource(labelType.labelRes)
+
+/** Yksikön nimike resurssina, jotta Compose-näkymät ja Glance-widget käyttävät samaa tekstiä. */
+@get:StringRes
+val MainCounterLabelType.labelRes: Int
+    get() =
+        when (this) {
+            MainCounterLabelType.ROWS -> R.string.main_counter_rows
+            MainCounterLabelType.ROUNDS -> R.string.main_counter_rounds
+            MainCounterLabelType.REPEATS -> R.string.main_counter_repeats
+            MainCounterLabelType.CUSTOM -> R.string.main_counter_custom
+        }
 
 @Composable
 fun mainCounterCountText(slot: MainCounterCountSlot): String =

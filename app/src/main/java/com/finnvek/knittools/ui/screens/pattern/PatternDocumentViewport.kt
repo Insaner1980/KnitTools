@@ -16,11 +16,14 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.ImageBitmap
@@ -93,82 +96,87 @@ internal fun PatternDocumentViewport(
     interactionOverlay: @Composable BoxScope.(PatternViewportLayout) -> Unit = {},
 ) {
     val renderedBitmap = renderedBitmapProvider()
-    var viewportState by remember { mutableStateOf(PatternViewportState()) }
+    var scale by rememberSaveable { mutableFloatStateOf(1f) }
+    var panX by rememberSaveable { mutableFloatStateOf(0f) }
+    var panY by rememberSaveable { mutableFloatStateOf(0f) }
+    var scrollFraction by rememberSaveable { mutableFloatStateOf(0f) }
     val scrollState = rememberScrollState()
     var viewportHeightPx by remember { mutableIntStateOf(0) }
     var pageHeightPx by remember { mutableIntStateOf(0) }
-    val transformableState =
-        rememberTransformableState { _, zoomChange, panChange, _ ->
-            viewportState = viewportState.applyTransform(zoomChange, panChange)
+    BoxWithConstraints(modifier = modifier.clipToBounds()) {
+        val aspectRatio = patternBitmapAspectRatio(renderedBitmap.width, renderedBitmap.height)
+        val pageHeight = maxWidth / aspectRatio
+        val pageSize =
+            with(LocalDensity.current) {
+                Size(maxWidth.toPx(), (maxWidth / aspectRatio).toPx())
+            }
+        val viewportState = PatternViewportState(scale, Offset(panX * pageSize.width, panY * pageSize.height))
+
+        fun updateViewport(next: PatternViewportState) {
+            scale = next.scale
+            panX = next.offset.x / pageSize.width.coerceAtLeast(1f)
+            panY = next.offset.y / pageSize.height.coerceAtLeast(1f)
         }
-
-    val eligibleFocusRequest =
-        eligiblePatternViewportFocusRequest(
-            currentPage = currentPage,
-            renderedPageReady = renderedBitmap.width > 0 && renderedBitmap.height > 0,
-            request = focusRequest,
-        )
-    LaunchedEffect(
-        eligibleFocusRequest?.requestId,
-        viewportHeightPx,
-        pageHeightPx,
-        scrollState.maxValue,
-    ) {
-        val request = eligibleFocusRequest ?: return@LaunchedEffect
-        if (viewportHeightPx <= 0 || pageHeightPx <= 0) return@LaunchedEffect
-        val target =
-            patternViewportFocusScrollOffset(
-                pageHeightPx = pageHeightPx,
-                viewportHeightPx = viewportHeightPx,
-                yFraction = request.yFraction,
-                scale = viewportState.scale,
-                translationY = viewportState.offset.y,
-            ).coerceIn(0, scrollState.maxValue)
-        scrollState.animateScrollTo(target)
-        onFocusRequestConsumed(request.requestId)
-    }
-
-    Column(
-        modifier =
-            modifier
-                .onSizeChanged { viewportHeightPx = it.height }
-                .verticalScroll(scrollState),
-    ) {
-        BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
-            val aspectRatio = patternBitmapAspectRatio(renderedBitmap.width, renderedBitmap.height)
-            val density = LocalDensity.current
-            val pageSize =
-                with(density) {
-                    Size(
-                        width = maxWidth.toPx(),
-                        height = (maxWidth / aspectRatio).toPx(),
-                    )
-                }
-            val layout =
-                PatternViewportLayout(
-                    state = viewportState,
-                    coordinateTransform = viewportState.toPageCoordinateTransform(pageSize),
-                )
+        val transformableState =
+            rememberTransformableState { _, zoomChange, panChange, _ ->
+                updateViewport(viewportState.applyTransform(zoomChange, panChange))
+            }
+        val layout = PatternViewportLayout(viewportState, viewportState.toPageCoordinateTransform(pageSize))
+        // Keep the page-relative top anchor; pixel offsets from another viewport are not portable.
+        LaunchedEffect(pageHeightPx, viewportHeightPx, scrollState.maxValue) {
+            if (pageHeightPx <= 0 || viewportHeightPx <= 0) return@LaunchedEffect
+            scrollState.scrollTo((scrollFraction * pageHeightPx).toInt().coerceIn(0, scrollState.maxValue))
+            snapshotFlow { scrollState.value to scrollState.isScrollInProgress }.collect { (value, scrolling) ->
+                // Layout clamping during a resize must not overwrite the saved reading position.
+                if (scrolling) scrollFraction = value.toFloat() / pageHeightPx
+            }
+        }
+        val eligibleFocusRequest =
+            eligiblePatternViewportFocusRequest(
+                currentPage = currentPage,
+                renderedPageReady = renderedBitmap.width > 0 && renderedBitmap.height > 0,
+                request = focusRequest,
+            )
+        LaunchedEffect(eligibleFocusRequest?.requestId, viewportHeightPx, pageHeightPx, scrollState.maxValue) {
+            val request = eligibleFocusRequest ?: return@LaunchedEffect
+            if (viewportHeightPx <= 0 || pageHeightPx <= 0) return@LaunchedEffect
+            val target =
+                patternViewportFocusScrollOffset(
+                    pageHeightPx = pageHeightPx,
+                    viewportHeightPx = viewportHeightPx,
+                    yFraction = request.yFraction,
+                    scale = viewportState.scale,
+                    translationY = viewportState.offset.y,
+                ).coerceIn(0, scrollState.maxValue)
+            scrollState.animateScrollTo(target)
+            scrollFraction = target.toFloat() / pageHeightPx
+            onFocusRequestConsumed(request.requestId)
+        }
+        Column(
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .onSizeChanged { viewportHeightPx = it.height }
+                    .verticalScroll(scrollState),
+        ) {
             Box(
                 modifier =
                     Modifier
                         .fillMaxWidth()
-                        .height(maxWidth / aspectRatio)
+                        .height(pageHeight)
                         .onSizeChanged { pageHeightPx = it.height }
                         .pointerInput(Unit) {
-                            detectTapGestures(onDoubleTap = { viewportState = viewportState.reset() })
+                            detectTapGestures(onDoubleTap = { updateViewport(viewportState.reset()) })
                         }.transformable(state = transformableState, canPan = { viewportState.scale > 1f }),
             ) {
                 Box(
                     modifier =
-                        Modifier
-                            .fillMaxSize()
-                            .graphicsLayer(
-                                scaleX = viewportState.scale,
-                                scaleY = viewportState.scale,
-                                translationX = viewportState.offset.x,
-                                translationY = viewportState.offset.y,
-                            ),
+                        Modifier.fillMaxSize().graphicsLayer(
+                            scaleX = viewportState.scale,
+                            scaleY = viewportState.scale,
+                            translationX = viewportState.offset.x,
+                            translationY = viewportState.offset.y,
+                        ),
                 ) {
                     Image(
                         bitmap = renderedBitmap,

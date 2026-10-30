@@ -1,0 +1,23 @@
+[
+  {
+    "key": "folder_selected_description",
+    "text": "%1$s Ausgewählt.",
+    "classification": "NOT_A_DEFECT",
+    "state": "NOT_APPLIED",
+    "reason": "Caller inserts a complete sentence ending in a period; original separation is correct."
+  },
+  {
+    "key": "abbr_g_st_meaning",
+    "text": "Krausstich",
+    "classification": "NOT_A_DEFECT",
+    "state": "NOT_APPLIED",
+    "reason": "Krausstich is used in German knitting publications including the yarn manufacturer Lopi; kraus rechts is an alternative, not a necessary correction."
+  },
+  {
+    "key": "size_row_tween",
+    "text": "Preteen",
+    "classification": "NOT_A_DEFECT",
+    "state": "NOT_APPLIED",
+    "reason": "Preteen is an intelligible age-category loan and matches the CYC tween category. An expanded paraphrase is optional; no numeric age range is asserted."
+  }
+]

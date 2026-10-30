@@ -1,6 +1,7 @@
 package com.finnvek.knittools.data.storage
 
 import android.content.Context
+import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.storage.StorageManager
 import androidx.core.net.toUri
@@ -36,6 +37,7 @@ class YarnPhotoStorage
                         copyYarnPhotoWithLimit(stream, output)
                     }
                 }
+                validateYarnPhoto(targetFile)
                 copied = true
                 return targetFile.toUri().toString()
             } finally {
@@ -76,6 +78,14 @@ class YarnPhotoStorage
 
         private fun yarnPhotoRoot(context: Context): File = File(context.filesDir, YARN_PHOTO_ROOT)
 
+        private fun validateYarnPhoto(file: File) {
+            val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+            BitmapFactory.decodeFile(file.path, bounds)
+            if (bounds.outWidth <= 0 || bounds.outHeight <= 0) {
+                throw IOException("Yarn photo is not a readable image")
+            }
+        }
+
         private fun hasYarnPhotoSpace(context: Context): Boolean =
             try {
                 val storageManager = context.getSystemService(StorageManager::class.java)
@@ -113,14 +123,24 @@ internal fun copyYarnPhotoWithLimit(
     val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
     var copied = 0L
     while (true) {
-        if (Thread.currentThread().isInterrupted) {
-            throw IOException("Yarn photo import cancelled")
+        val read = readYarnPhotoChunk(input, buffer)
+        if (read < 0) {
+            if (copied == 0L) throw IOException("Yarn photo is empty")
+            return copied
         }
-        val read = input.read(buffer)
-        if (read < 0) return copied
         val nextTotal = copied + read
         if (nextTotal > maxBytes) throw IOException("Yarn photo exceeds size limit")
         output.write(buffer, 0, read)
         copied = nextTotal
     }
+}
+
+private fun readYarnPhotoChunk(
+    input: InputStream,
+    buffer: ByteArray,
+): Int {
+    if (Thread.currentThread().isInterrupted) {
+        throw IOException("Yarn photo import cancelled")
+    }
+    return input.read(buffer)
 }

@@ -11,6 +11,7 @@ import com.finnvek.knittools.data.remote.WebPdfDownloader
 import com.finnvek.knittools.data.storage.PatternDocumentStorage
 import com.finnvek.knittools.pro.ProManager
 import com.finnvek.knittools.pro.ProState
+import com.finnvek.knittools.pro.ProStatus
 import com.finnvek.knittools.repository.CounterRepository
 import com.finnvek.knittools.repository.ProjectCreationResult
 import com.finnvek.knittools.repository.ProjectDocumentMutationResult
@@ -46,6 +47,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import java.io.File
+import java.io.IOException
 import java.net.URI
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -70,6 +72,7 @@ class IncomingPdfViewModelTest {
         counterRepository = mockk()
         savedPatternRepository = mockk(relaxed = true)
         proManager = mockk(relaxed = true)
+        every { proManager.initialControlsReady } returns MutableStateFlow(true)
         val resolver = mockk<ContentResolver>()
         every { context.filesDir } returns temporaryFolder.root
         every { context.contentResolver } returns resolver
@@ -102,6 +105,33 @@ class IncomingPdfViewModelTest {
     }
 
     @Test
+    fun `PDF choices preserve controls readiness separately from marker readiness`() =
+        runTest {
+            val controlsReady = MutableStateFlow(false)
+            val accessReady = MutableStateFlow(false)
+            val pro = ProState(status = ProStatus.TRIAL_ACTIVE, trialDaysRemaining = 5)
+            every { proManager.initialControlsReady } returns controlsReady
+            every { proManager.initialStateReady } returns accessReady
+            every { proManager.proState } returns MutableStateFlow(pro)
+            val model = viewModel(SavedStateHandle())
+            backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { model.choices.collect {} }
+            runCurrent()
+            assertNull(model.choices.value)
+
+            controlsReady.value = true
+            runCurrent()
+            assertTrue(model.choices.value!!.canStartProject)
+            assertEquals(pro, model.choices.value!!.proState)
+            assertFalse(model.proAccessReady.value)
+
+            accessReady.value = true
+            assertTrue(model.proAccessReady.value)
+            controlsReady.value = false
+            runCurrent()
+            assertNull(model.choices.value)
+        }
+
+    @Test
     fun `clearing the owner during downloaded pdf staging removes the download cache file`() =
         runTest {
             val cacheFile = temporaryFolder.newFile("download.pdf")
@@ -131,6 +161,29 @@ class IncomingPdfViewModelTest {
 
             assertFalse(cacheFile.exists())
             assertEquals(stagedUri, model.pending.value?.localUri)
+        }
+
+    @Test
+    fun `null download preserves pending pdf until deliberate retry and explicit library save`() =
+        runTest { assertDownloadFailureThenRetry(failure = null) }
+
+    @Test
+    fun `download IOException preserves pending pdf until deliberate retry and explicit library save`() =
+        runTest { assertDownloadFailureThenRetry(IOException("Controlled download failure")) }
+
+    @Test
+    fun `project attachment does not split a surrogate pair at the label limit`() =
+        runTest {
+            coEvery { counterRepository.attachPattern(7L, stagedUri, any(), 0, null) } returns
+                ProjectDocumentMutationResult.Added(mockk())
+            val model = viewModel(handle(stagedUri))
+
+            model.attachToProject(7L, "a".repeat(49) + "\uD83E\uDDF6")
+            advanceUntilIdle()
+
+            coVerify(exactly = 1) {
+                counterRepository.attachPattern(7L, stagedUri, "a".repeat(49), 0, null)
+            }
         }
 
     @Test
@@ -331,6 +384,116 @@ class IncomingPdfViewModelTest {
             assertNull(model.pending.value)
             coVerify(exactly = 0) { savedPatternRepository.deleteLocalPatternFileIfUnused(stagedUri) }
         }
+
+    private suspend fun TestScope.assertDownloadFailureThenRetry(failure: IOException?) {
+        val download = WebPdfDownload("https://example.invalid/retry.pdf", "test", null, "application/pdf") { null }
+        val downloader = mockk<WebPdfDownloader>()
+        coEvery { downloader.download(download) } coAnswers {
+            if (failure != null) throw failure
+            null
+        }
+        mockkStatic(URLUtil::class)
+        every { URLUtil.guessFileName(download.url, download.contentDisposition, download.mimeType) } returns
+            "Retry.pdf"
+        val savedState = handle(stagedUri)
+        val model = viewModel(savedState, downloader)
+        val originalPending = IncomingPdf(stagedUri, "A")
+        val outcomes = mutableListOf<IncomingPdfOutcome>()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { model.outcomes.collect { outcomes.add(it) } }
+
+        model.receiveDownload(download)
+        advanceUntilIdle()
+
+        val failureOutcomes = listOf(IncomingPdfOutcome.Downloading, IncomingPdfOutcome.OpenFailed)
+        assertEquals(failureOutcomes, outcomes)
+        assertEquals(originalPending, model.pending.value)
+        assertEquals(stagedUri, savedState.get<String>("incoming_pdf_local_uri"))
+        assertEquals("A", savedState.get<String>("incoming_pdf_name"))
+        assertEquals("PDF", File(URI(stagedUri)).readText())
+        assertFalse(model.busy.value)
+        coVerify(exactly = 1) { downloader.download(download) }
+        coVerify(exactly = 0) { storage.copyPdfToInternal(any(), any(), any(), any()) }
+        coVerify(exactly = 0) { savedPatternRepository.saveImportedPatternIfMissing(any(), any()) }
+        coVerify(exactly = 0) { savedPatternRepository.deleteLocalPatternFileIfUnused(any()) }
+
+        val cacheFile = temporaryFolder.newFile("retry-download.pdf")
+        val cacheUri = mockk<Uri>()
+        every { Uri.fromFile(cacheFile) } returns cacheUri
+        val retryFile = File(temporaryFolder.root, "pattern_pdfs/0/Retry.pdf").also { it.writeText("Retry fixture") }
+        val retryUri = retryFile.toURI().toString()
+        val validatedCopy = CompletableDeferred<String?>()
+        coEvery { downloader.download(download) } returns cacheFile
+        coEvery { storage.copyPdfToInternal(context, 0L, cacheUri, "Retry.pdf") } coAnswers { validatedCopy.await() }
+
+        model.receiveDownload(download)
+        runCurrent()
+
+        val retryOutcomes = failureOutcomes + IncomingPdfOutcome.Downloading
+        assertEquals(retryOutcomes, outcomes)
+        assertEquals(originalPending, model.pending.value)
+        coVerify(exactly = 2) { downloader.download(download) }
+        coVerify(exactly = 1) { storage.copyPdfToInternal(context, 0L, cacheUri, "Retry.pdf") }
+        coVerify(exactly = 0) { savedPatternRepository.saveImportedPatternIfMissing(any(), any()) }
+        coVerify(exactly = 0) { savedPatternRepository.deleteLocalPatternFileIfUnused(any()) }
+
+        validatedCopy.complete(retryUri)
+        advanceUntilIdle()
+
+        val retriedPending = IncomingPdf(retryUri, "Retry")
+        assertEquals(retriedPending, model.pending.value)
+        assertEquals(retryUri, savedState.get<String>("incoming_pdf_local_uri"))
+        assertEquals("Retry", savedState.get<String>("incoming_pdf_name"))
+        assertEquals(retryOutcomes, outcomes)
+        assertFalse(model.busy.value)
+        coVerify(exactly = 0) { savedPatternRepository.saveImportedPatternIfMissing(any(), any()) }
+        coVerify(exactly = 1) { savedPatternRepository.deleteLocalPatternFileIfUnused(stagedUri) }
+
+        assertRetriedDownloadSavedOnce(model, savedState, retryUri, retryOutcomes, outcomes)
+    }
+
+    private fun TestScope.assertRetriedDownloadSavedOnce(
+        model: IncomingPdfViewModel,
+        savedState: SavedStateHandle,
+        retryUri: String,
+        retryOutcomes: List<IncomingPdfOutcome>,
+        outcomes: List<IncomingPdfOutcome>,
+    ) {
+        val retriedPending = IncomingPdf(retryUri, "Retry")
+        val releaseSave = CompletableDeferred<Unit>()
+        var completedWrites = 0
+        coEvery { savedPatternRepository.saveImportedPatternIfMissing(retryUri, "Retried pattern") } coAnswers {
+            releaseSave.await()
+            completedWrites++
+            23L
+        }
+        model.saveToLibrary("Retried pattern")
+        runCurrent()
+        model.saveToLibrary("Ignored duplicate")
+        runCurrent()
+
+        coVerify(exactly = 1) { savedPatternRepository.saveImportedPatternIfMissing(any(), any()) }
+        assertEquals(0, completedWrites)
+        assertTrue(model.busy.value)
+        assertEquals(retriedPending, model.pending.value)
+        assertEquals(retryOutcomes, outcomes)
+
+        releaseSave.complete(Unit)
+        advanceUntilIdle()
+        model.saveToLibrary("Already consumed")
+        advanceUntilIdle()
+
+        assertEquals(1, completedWrites)
+        coVerify(exactly = 1) { savedPatternRepository.saveImportedPatternIfMissing(retryUri, "Retried pattern") }
+        coVerify(exactly = 1) { savedPatternRepository.saveImportedPatternIfMissing(any(), any()) }
+        assertEquals(retryOutcomes + IncomingPdfOutcome.OpenSavedPattern(23L), outcomes)
+        assertNull(model.pending.value)
+        assertNull(savedState.get<String>("incoming_pdf_local_uri"))
+        assertNull(savedState.get<String>("incoming_pdf_name"))
+        assertFalse(model.busy.value)
+        coVerify(exactly = 0) { savedPatternRepository.deleteLocalPatternFileIfUnused(retryUri) }
+        coVerify(exactly = 0) { counterRepository.attachPattern(any(), any(), any(), any(), any()) }
+        coVerify(exactly = 0) { counterRepository.createProjectWithImportedPdf(any(), any(), any(), any()) }
+    }
 
     private fun mockPublication(
         attach: Boolean,

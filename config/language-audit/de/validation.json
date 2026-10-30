@@ -1,0 +1,117 @@
+{
+  "date": "2026-10-19",
+  "command": ".\\gradlew.bat :app:processDebugResources :app:testDebugUnitTest --tests com.finnvek.knittools.ReferenceResourceLocalizationTest --tests com.finnvek.knittools.ui.CountPluralResourcesSourceTest --tests com.finnvek.knittools.ProLocalizationSourceTest --console=plain --no-daemon",
+  "exit_code": 0,
+  "gradle": "9.8.1",
+  "jdk": "Eclipse Adoptium17",
+  "daemon_build_started": "2026-10-19T12:18:26.075+03:00",
+  "daemon_log_last_write": "2026-10-19T12:19:35+03:00",
+  "daemon_cleanup": "PID26080 absent after completion",
+  "elapsed_reported": "1m29s",
+  "tasks": {
+    "executed": 8,
+    "up_to_date": 30
+  },
+  "resources": "processDebugResources executed PASS",
+  "tests": [
+    {
+      "name": "com.finnvek.knittools.ProLocalizationSourceTest",
+      "tests": "3",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "timestamp": "2026-10-19T09:19:29.078Z",
+      "report": "app/build/test-results/testDebugUnitTest/TEST-com.finnvek.knittools.ProLocalizationSourceTest.xml",
+      "sha256": "139ba683deb2bd02808c95652caf71a437b6ae659259afe8783897d30c4dce94"
+    },
+    {
+      "name": "com.finnvek.knittools.ReferenceResourceLocalizationTest",
+      "tests": "2",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "timestamp": "2026-10-19T09:19:29.714Z",
+      "report": "app/build/test-results/testDebugUnitTest/TEST-com.finnvek.knittools.ReferenceResourceLocalizationTest.xml",
+      "sha256": "d08d1c31121236dd1a7c1685c2b6c6b683bd4c9338e628e01aa49e1d342b99b6"
+    },
+    {
+      "name": "com.finnvek.knittools.ui.CountPluralResourcesSourceTest",
+      "tests": "1",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "timestamp": "2026-10-19T09:19:29.935Z",
+      "report": "app/build/test-results/testDebugUnitTest/TEST-com.finnvek.knittools.ui.CountPluralResourcesSourceTest.xml",
+      "sha256": "1b021a2df98df75bd04211a531646573e548dce21169996a6bde89dc8f4200d3"
+    }
+  ],
+  "static_resource_validation": {
+    "keys": 1349,
+    "variants": 1380,
+    "strings": 1318,
+    "plurals": 31,
+    "arrays": 0,
+    "default_key_type_parity": "PASS",
+    "normalized_placeholder_signatures": "PASS (fresh XML comparison, all translatable variants)",
+    "plural_categories": "one/other; all31 match default",
+    "aliases": {
+      "web_pattern_error_designer_too_long": "web_pattern_error_title_too_long"
+    },
+    "default_nontranslatable_excluded": [
+      "widget_preview_primary_count=42",
+      "counter_step_custom_placeholder=10"
+    ]
+  },
+  "coverage_rows": 1619,
+  "counts_by_kind": {
+    "string": 1318,
+    "plural": 62,
+    "code_text": 85,
+    "reference_data": 84,
+    "symbol": 44,
+    "generated_output": 26
+  },
+  "counts_by_batch": {
+    "B11": 78,
+    "B10": 69,
+    "B17": 157,
+    "B18": 234,
+    "B19": 82,
+    "B12": 31,
+    "B01": 27,
+    "B03": 80,
+    "B20": 36,
+    "B13": 78,
+    "B16": 13,
+    "B15": 20,
+    "B14": 32,
+    "B08": 76,
+    "B06": 88,
+    "B02": 104,
+    "B09": 77,
+    "B07": 68,
+    "B05": 127,
+    "B04": 42,
+    "B22": 66,
+    "B21": 28,
+    "B23": 6
+  },
+  "changes": 73,
+  "finding_groups": 29,
+  "runtime": "NOT_RUN; source/context and valid shared evidence resolved named questions",
+  "native_review": "NOT_REQUESTED",
+  "preservation": {
+    "entry_hashed_files": 1161,
+    "changed_existing_files": [
+      "app/src/main/res/values-de/reference_strings.xml",
+      "app/src/main/res/values-de/strings.xml"
+    ],
+    "unrelated_hashes_unchanged": true,
+    "entry_hash_inventory_omission": {
+      "path": "ui-insights-päivitys.md",
+      "reason": "git quoted Unicode path omitted by entry hash collection; file is tracked and absent from entry dirty status",
+      "verification": "current content equals HEAD blob",
+      "blob": "9c3702367f4d6949bd124069879fde8a297a8636"
+    }
+  }
+}

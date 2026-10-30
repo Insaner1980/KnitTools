@@ -11,6 +11,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -53,9 +54,11 @@ fun WebPatternEditorScreen(
     onOpenProject: (Long) -> Unit,
     onOpenRavelry: (String) -> Unit,
     viewModelProvider: @Composable () -> WebPatternEditorViewModel = { hiltViewModel() },
+    onStartupReady: (Boolean) -> Unit = {},
 ) {
     val viewModel = viewModelProvider()
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    SideEffect { onStartupReady(request == null && !state.isLoading) }
 
     LaunchedEffect(request?.requestId, state.pendingIncomingShare?.requestId, state.isLoading, state.isSaving) {
         val currentRequest = request ?: return@LaunchedEffect
@@ -331,10 +334,11 @@ private fun titleSupportingText(
         {
             Text(
                 stringResource(
-                    if (state.title.isBlank()) {
-                        R.string.web_pattern_error_title_required
-                    } else {
-                        R.string.web_pattern_error_title_too_long
+                    when {
+                        state.title.isBlank() -> R.string.web_pattern_error_title_required
+                        state.title.trim().length > WEB_PATTERN_TEXT_MAX_LENGTH ->
+                            R.string.web_pattern_error_title_too_long
+                        else -> R.string.generic_error_unknown
                     },
                 ),
             )

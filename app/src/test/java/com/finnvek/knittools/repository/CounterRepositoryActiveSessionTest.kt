@@ -39,7 +39,7 @@ class CounterRepositoryActiveSessionTest : CounterRepositoryActiveSessionFixture
 
             val stopped = stopReviewedSession(started.session.sessionToken)
 
-            assertEquals(StopSessionResult.Saved(1L), stopped)
+            assertEquals(StopSessionResult.Saved(1L, wasFirstCompletedSession = true), stopped)
             assertEquals(null, active)
             assertEquals(65L, completed.single().durationSeconds)
             assertEquals(1_000L, completed.single().startedAt)
@@ -196,26 +196,24 @@ class CounterRepositoryActiveSessionTest : CounterRepositoryActiveSessionFixture
                 ProjectCompletionResult.NeedsActiveSessionChoice(discardedSession.session),
                 repository.completeProjectWithSessionChoice(7L, choice = null),
             )
-            assertEquals(
-                ProjectCompletionResult.Completed,
+            assertTrue(
                 repository.completeProjectWithSessionChoice(
                     7L,
                     choice = ActiveSessionCompletionChoice.DISCARD,
                     expectedSession = discardedSession.session,
-                ),
+                ) is ProjectCompletionResult.CompletedNow,
             )
             assertTrue(completed.isEmpty())
 
             val savedSession = repository.startSession(7L) as StartSessionResult.Started
             timeSource.advance(seconds = 60L)
 
-            assertEquals(
-                ProjectCompletionResult.Completed,
+            assertTrue(
                 repository.completeProjectWithSessionChoice(
                     7L,
                     choice = ActiveSessionCompletionChoice.SAVE,
                     expectedSession = savedSession.session,
-                ),
+                ) is ProjectCompletionResult.CompletedNow,
             )
             assertEquals(60L, completed.single().durationSeconds)
             coVerify(exactly = 1) { sessionDao.deleteActiveSession(discardedSession.session.sessionToken) }
@@ -304,9 +302,8 @@ class CounterRepositoryActiveSessionTest : CounterRepositoryActiveSessionFixture
         runTest {
             val otherSession = repository.startSession(8L) as StartSessionResult.Started
 
-            assertEquals(
-                ProjectCompletionResult.Completed,
-                repository.completeProjectWithSessionChoice(7L, choice = null),
+            assertTrue(
+                repository.completeProjectWithSessionChoice(7L, choice = null) is ProjectCompletionResult.CompletedNow,
             )
             assertEquals(otherSession.session.sessionToken, active?.sessionToken)
             coVerify(exactly = 1) { projectDao.archiveProject(7L, 12, any(), any()) }
@@ -588,7 +585,7 @@ class CounterRepositoryActiveSessionTest : CounterRepositoryActiveSessionFixture
                     reviewedEndRow = reviewed.trustedLastObservedRow,
                 )
 
-            assertEquals(StopSessionResult.Saved(1L), stopped)
+            assertEquals(StopSessionResult.Saved(1L, wasFirstCompletedSession = true), stopped)
             assertEquals(10L, completed.single().durationSeconds)
             assertEquals(11_000L, completed.single().endedAt)
         }
@@ -728,6 +725,10 @@ abstract class CounterRepositoryActiveSessionFixture {
         coEvery { sessionDao.insert(any()) } answers {
             completed += firstArg<SessionEntity>()
             completed.size.toLong()
+        }
+        coEvery { sessionDao.countCompletedSessions() } answers { completed.size.toLong() }
+        coEvery { sessionDao.getTotalMinutes(any()) } answers {
+            completed.filter { it.projectId == firstArg<Long>() }.sumOf { it.durationMinutes }
         }
         repository = buildRepository(mockk<ProjectCounterDao>(relaxed = true))
     }

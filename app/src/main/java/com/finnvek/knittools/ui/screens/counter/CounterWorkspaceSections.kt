@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -37,7 +38,6 @@ import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -49,6 +49,7 @@ import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.TextUnit
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.calculator.CounterState
@@ -60,13 +61,17 @@ import com.finnvek.knittools.domain.model.CraftType
 import com.finnvek.knittools.domain.model.MainCounterLabelType
 import com.finnvek.knittools.domain.model.ProjectCounter
 import com.finnvek.knittools.domain.model.ProjectCounterType
-import com.finnvek.knittools.pro.ProStatus
+import com.finnvek.knittools.domain.tips.TipId
+import com.finnvek.knittools.pro.ProActionAccess
+import com.finnvek.knittools.pro.ProFeature
+import com.finnvek.knittools.pro.ProState
+import com.finnvek.knittools.pro.proActionAccess
 import com.finnvek.knittools.ui.components.CounterImageButton
 import com.finnvek.knittools.ui.components.CounterStepButtonFace
 import com.finnvek.knittools.ui.components.CounterStepButtonFaceAppearance
 import com.finnvek.knittools.ui.components.CounterStepSymbol
 import com.finnvek.knittools.ui.components.MainCounterTargetStatus
-import com.finnvek.knittools.ui.components.ProBadge
+import com.finnvek.knittools.ui.components.ProMarker
 import com.finnvek.knittools.ui.components.ProjectProgressBar
 import com.finnvek.knittools.ui.components.RollingCounter
 import com.finnvek.knittools.ui.components.SectionLabel
@@ -82,8 +87,14 @@ import com.finnvek.knittools.ui.components.mainCounterTargetFraction
 import com.finnvek.knittools.ui.components.mainCounterTargetStatus
 import com.finnvek.knittools.ui.components.mainCounterTargetText
 import com.finnvek.knittools.ui.components.rememberCurrentLocale
+import com.finnvek.knittools.ui.layout.AdaptiveContent
+import com.finnvek.knittools.ui.layout.ContentWidthPolicy
+import com.finnvek.knittools.ui.layout.LocalAdaptiveContentSize
+import com.finnvek.knittools.ui.layout.contentWidth
 import com.finnvek.knittools.ui.theme.CounterDimens
 import com.finnvek.knittools.ui.theme.knitToolsColors
+import com.finnvek.knittools.ui.tips.tipAnchor
+import com.finnvek.knittools.ui.tips.tipProtected
 import java.util.Locale
 
 data class ProjectCountersSectionActions(
@@ -152,85 +163,107 @@ fun CounterWorkspace(
     projectCountersActions: ProjectCountersSectionActions,
     actions: CounterWorkspaceActions,
     stepDelta: Int? = null,
+    onBlockingCounterChanged: (Long, Boolean) -> Unit = { _, _ -> },
 ) {
-    BoxWithConstraints(modifier = Modifier.fillMaxSize().padding(scaffoldPadding)) {
-        val heroMinimumHeight =
-            (maxHeight - CounterDimens.ContentBottomPadding).coerceAtLeast(CounterDimens.HeroMinimumHeight)
-        LazyColumn(
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .clipToBounds(),
-            contentPadding =
-                PaddingValues(
-                    start = CounterDimens.ScreenHorizontalPadding,
-                    end = CounterDimens.ScreenHorizontalPadding,
-                    bottom = CounterDimens.ContentBottomPadding,
-                ),
-            verticalArrangement = Arrangement.spacedBy(CounterDimens.WorkspaceSectionSpacing),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            item(key = "counter-hero") {
-                CounterHero(
-                    state = state.toCounterHeroState(),
-                    stepDelta = stepDelta,
-                    actions = actions,
-                    modifier = Modifier.heightIn(min = heroMinimumHeight),
-                )
-            }
-            state.activeSession?.takeIf { it.projectId == state.projectId }?.let { activeSession ->
-                item(key = "active-work-session") {
-                    ActiveWorkSessionRow(
-                        projectName = state.projectName,
-                        durationSeconds = state.sessionSeconds,
-                        rowsWorked =
-                            (activeSession.trustedRowsWorked.toLong() + activeSession.pendingRowsWorked.toLong())
-                                .coerceAtMost(Int.MAX_VALUE.toLong())
-                                .toInt(),
-                        needsRecoveryReview = activeSession.needsRecoveryReview,
-                        onStop = actions.onStopSession,
-                        onResolve = actions.onResolveSessionRecovery,
+    Box(Modifier.fillMaxSize().padding(scaffoldPadding).consumeWindowInsets(scaffoldPadding), Alignment.TopCenter) {
+        AdaptiveContent(Modifier.contentWidth(ContentWidthPolicy.Form).fillMaxSize()) {
+            val available = LocalAdaptiveContentSize.current
+            val heroMinimumHeight =
+                if (available.isCompactHeight) {
+                    0.dp
+                } else {
+                    (available.height - CounterDimens.ContentBottomPadding).coerceAtLeast(
+                        CounterDimens.HeroMinimumHeight,
                     )
                 }
-            }
-            item(key = "counter-hero-reveal-gap") {
-                Spacer(modifier = Modifier.height(CounterDimens.CounterProjectRevealGap))
-            }
-            item(key = "project-content") {
-                ProjectContentCards(
-                    onCardClick = { kind -> actions.onProjectContentClick(kind, state) },
-                    hasPattern =
-                        hasProjectPatternContent(
-                            hasMetadataLink = state.linkedPattern != null,
-                            hasDocuments = state.projectDocuments.isNotEmpty(),
-                        ),
-                )
-            }
-            if (state.projectCounters.isNotEmpty()) {
-                item(key = "extra-counters-title") {
-                    WorkspaceSectionTitle(
-                        title = stringResource(R.string.extra_counters_title),
-                        actionLabel = stringResource(R.string.add_counter),
-                        onAction = actions.onShowAddCounter,
-                        proStatus = state.proStatus,
+            LazyColumn(
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .clipToBounds(),
+                contentPadding =
+                    PaddingValues(
+                        start = CounterDimens.ScreenHorizontalPadding,
+                        end = CounterDimens.ScreenHorizontalPadding,
+                        bottom = CounterDimens.ContentBottomPadding,
+                    ),
+                verticalArrangement = Arrangement.spacedBy(CounterDimens.WorkspaceSectionSpacing),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                item(key = "counter-hero") {
+                    CounterHero(
+                        state = state.toCounterHeroState(),
+                        stepDelta = stepDelta,
+                        actions = actions,
+                        compactHeight = available.isCompactHeight,
+                        modifier = Modifier.heightIn(min = heroMinimumHeight),
                     )
                 }
-                items(items = state.projectCounters, key = { counter -> counter.id }) { counter ->
-                    ProjectCounterWorkspaceItem(
-                        counter = counter,
-                        mainRowCount = state.counter.count,
-                        actions = projectCountersActions,
-                    )
-                }
-            }
-            if (state.activeAlert != null) {
-                state.activeAlert.let { reminder ->
-                    item(key = "active-reminder-alert") {
-                        ReminderAlertCard(
-                            reminder = reminder,
-                            currentRow = state.counter.count,
-                            onDismiss = actions.onDismissReminder,
+                state.activeSession?.takeIf { it.projectId == state.projectId }?.let { activeSession ->
+                    item(key = "active-work-session") {
+                        ActiveWorkSessionRow(
+                            projectName = state.projectName,
+                            durationSeconds = state.sessionSeconds,
+                            rowsWorked =
+                                (activeSession.trustedRowsWorked.toLong() + activeSession.pendingRowsWorked.toLong())
+                                    .coerceAtMost(Int.MAX_VALUE.toLong())
+                                    .toInt(),
+                            needsRecoveryReview = activeSession.needsRecoveryReview,
+                            onStop = actions.onStopSession,
+                            onResolve = actions.onResolveSessionRecovery,
                         )
+                    }
+                }
+                item(key = "counter-hero-reveal-gap") {
+                    Spacer(
+                        modifier =
+                            Modifier.height(
+                                if (available.isCompactHeight) {
+                                    CounterDimens.WorkspaceGroupSpacing
+                                } else {
+                                    CounterDimens.CounterProjectRevealGap
+                                },
+                            ),
+                    )
+                }
+                item(key = "project-content") {
+                    ProjectContentCards(
+                        onCardClick = { kind -> actions.onProjectContentClick(kind, state) },
+                        hasPattern =
+                            hasProjectPatternContent(
+                                hasMetadataLink = state.linkedPattern != null,
+                                hasDocuments = state.projectDocuments.isNotEmpty(),
+                            ),
+                    )
+                }
+                if (state.projectCounters.isNotEmpty()) {
+                    item(key = "extra-counters-title") {
+                        WorkspaceSectionTitle(
+                            title = stringResource(R.string.extra_counters_title),
+                            actionLabel = stringResource(R.string.add_counter),
+                            onAction = actions.onShowAddCounter,
+                            proState = state.proState,
+                            proAccessReady = state.proAccessReady,
+                        )
+                    }
+                    items(items = state.projectCounters, key = { counter -> counter.id }) { counter ->
+                        ProjectCounterWorkspaceItem(
+                            counter = counter,
+                            mainRowCount = state.counter.count,
+                            actions = projectCountersActions,
+                            onBlockingSurfaceChanged = { onBlockingCounterChanged(counter.id, it) },
+                        )
+                    }
+                }
+                if (state.activeAlert != null) {
+                    state.activeAlert.let { reminder ->
+                        item(key = "active-reminder-alert") {
+                            ReminderAlertCard(
+                                reminder = reminder,
+                                currentRow = state.counter.count,
+                                onDismiss = actions.onDismissReminder,
+                            )
+                        }
                     }
                 }
             }
@@ -265,7 +298,7 @@ internal fun ActiveWorkSessionRow(
                 R.string.work_session_stop
             },
         )
-    val rowsText = pluralStringResource(R.plurals.rows_format, rowsWorked, rowsWorked)
+    val rowsText = stringResource(R.string.counter_progress_format, rowsWorked)
     val fontScale = LocalDensity.current.fontScale
     BoxWithConstraints(
         modifier =
@@ -386,9 +419,10 @@ private fun CounterHero(
     state: CounterHeroState,
     stepDelta: Int?,
     actions: CounterWorkspaceActions,
+    compactHeight: Boolean,
     modifier: Modifier = Modifier,
 ) {
-    val useCompactStitchLayout = state.canUseSecondaryCounter && state.visibleStitchTotal != null
+    val useCompactStitchLayout = compactHeight || (state.canUseSecondaryCounter && state.visibleStitchTotal != null)
     val heroButtonSpacing =
         if (useCompactStitchLayout) {
             CounterDimens.HeroButtonCompactSpacing
@@ -405,8 +439,8 @@ private fun CounterHero(
     Column(
         modifier =
             modifier
+                .widthIn(max = CounterDimens.CounterControlsMaxWidth)
                 .fillMaxWidth()
-                .heightIn(min = CounterDimens.HeroMinimumHeight)
                 .counterClickWithoutIndication(actions.onSurfaceIncrement),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Top,
@@ -535,6 +569,7 @@ private fun CounterMainNumber(
             count = state.counter.count,
             textStyle = baseTextStyle.copy(fontSize = fittedFontSize),
             contentDescription = counterDescription,
+            modifier = Modifier.tipAnchor(TipId.TARGET_REACHED),
         )
         if (stepDelta != null && state.counter.stepSize > 1) {
             Text(
@@ -661,8 +696,8 @@ private fun CounterButtons(
     BoxWithConstraints(
         modifier =
             Modifier
-                .fillMaxWidth()
                 .widthIn(max = CounterDimens.CounterControlsMaxWidth)
+                .fillMaxWidth()
                 .height(CounterDimens.CounterControlsHeight),
     ) {
         val buttonWidth =
@@ -682,7 +717,8 @@ private fun CounterButtons(
                 Modifier
                     .width(buttonWidth)
                     .size(CounterDimens.CounterMinusTouchSize)
-                    .align(Alignment.TopStart),
+                    .align(Alignment.TopStart)
+                    .tipProtected(),
         )
         CounterImageButton(
             imageRes = R.drawable.counter_plus_button,
@@ -697,7 +733,9 @@ private fun CounterButtons(
                 Modifier
                     .width(buttonWidth)
                     .size(CounterDimens.CounterPrimaryTouchSize)
-                    .align(Alignment.TopEnd),
+                    .align(Alignment.TopEnd)
+                    .tipAnchor(TipId.FIRST_ROW)
+                    .tipProtected(),
         )
         MainCounterStepButton(
             stepSize = state.counter.stepSize,
@@ -718,7 +756,9 @@ private fun CounterButtons(
             modifier =
                 Modifier
                     .size(CounterDimens.CounterUndoTouchSize)
-                    .align(Alignment.BottomCenter),
+                    .align(Alignment.BottomCenter)
+                    .tipAnchor(TipId.UNDO)
+                    .tipProtected(),
         )
     }
 }
@@ -740,6 +780,8 @@ private fun MainCounterStepButton(
             modifier
                 .size(size)
                 .testTag("main-counter-step")
+                .tipAnchor(TipId.STEP_SIZE)
+                .tipProtected()
                 .clickable(interactionSource = null, indication = null, role = Role.Button, onClick = onClick)
                 .semantics { contentDescription = description },
         contentAlignment = Alignment.Center,
@@ -883,7 +925,8 @@ private fun WorkspaceSectionTitle(
     title: String,
     actionLabel: String,
     onAction: () -> Unit,
-    proStatus: ProStatus,
+    proState: ProState,
+    proAccessReady: Boolean,
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -894,7 +937,8 @@ private fun WorkspaceSectionTitle(
         WorkspaceSectionAction(
             label = actionLabel,
             onClick = onAction,
-            proStatus = proStatus,
+            proState = proState,
+            proAccessReady = proAccessReady,
         )
     }
 }
@@ -903,9 +947,14 @@ private fun WorkspaceSectionTitle(
 private fun WorkspaceSectionAction(
     label: String,
     onClick: () -> Unit,
-    proStatus: ProStatus,
+    proState: ProState,
+    proAccessReady: Boolean,
 ) {
-    TextButton(onClick = onClick) {
+    val counterAccess = proActionAccess(proState, proAccessReady, ProFeature.MULTIPLE_COUNTERS)
+    TextButton(
+        onClick = onClick,
+        enabled = counterAccess != ProActionAccess.Unknown || proState.hasFeature(ProFeature.MULTIPLE_COUNTERS),
+    ) {
         Icon(
             imageVector = Icons.Filled.Add,
             contentDescription = null,
@@ -914,7 +963,7 @@ private fun WorkspaceSectionAction(
         Spacer(modifier = Modifier.width(CounterDimens.WorkspaceSectionActionIconSpacing))
         Text(label)
         Spacer(modifier = Modifier.width(CounterDimens.WorkspaceSectionActionIconSpacing))
-        ProBadge(status = proStatus)
+        ProMarker(access = counterAccess)
     }
 }
 
@@ -923,16 +972,19 @@ internal fun ProjectCounterWorkspaceItem(
     counter: ProjectCounter,
     mainRowCount: Int,
     actions: ProjectCountersSectionActions,
+    onBlockingSurfaceChanged: (Boolean) -> Unit = {},
 ) {
     if (counter.counterType == ProjectCounterType.REPEAT_SECTION) {
         RepeatSectionItem(
             counter = counter,
             mainRowCount = mainRowCount,
             onDelete = { actions.onDeleteCounter(counter.id) },
+            onBlockingSurfaceChanged = onBlockingSurfaceChanged,
         )
     } else {
         CounterListItem(
             counter = counter,
+            onBlockingSurfaceChanged = onBlockingSurfaceChanged,
             actions =
                 CounterItemActions(
                     onIncrement = { actions.onIncrementCounter(counter) },

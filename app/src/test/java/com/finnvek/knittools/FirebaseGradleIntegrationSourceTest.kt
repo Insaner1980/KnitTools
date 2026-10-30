@@ -96,7 +96,10 @@ class FirebaseGradleIntegrationSourceTest {
                 """
                 tasks.configureEach {
                     if (name.startsWith("process") && name.endsWith("GoogleServices")) {
-                        dependsOn(writeGoogleServicesJsonFromEnv)
+                        val smokeTask =
+                            optimizedSmoke &&
+                                name in setOf("processBenchmarkReleaseGoogleServices", "processNonMinifiedReleaseGoogleServices")
+                        if (!smokeTask) dependsOn(writeGoogleServicesJsonFromEnv)
 
                         // processBenchmarkReleaseGoogleServices -> benchmarkRelease
                         val variantName =
@@ -104,7 +107,7 @@ class FirebaseGradleIntegrationSourceTest {
                                 .removePrefix("process")
                                 .removeSuffix("GoogleServices")
                                 .replaceFirstChar { it.lowercaseChar() }
-                        writeGoogleServicesPlaceholderTasks[variantName]?.let { dependsOn(it) }
+                        if (!smokeTask) writeGoogleServicesPlaceholderTasks[variantName]?.let { dependsOn(it) }
                     }
 
                     if (name in firebaseConfiguredArtifactTaskNames) {

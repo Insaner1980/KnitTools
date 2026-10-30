@@ -1,5 +1,6 @@
 package com.finnvek.knittools.ui.screens.counter
 
+import com.finnvek.knittools.domain.model.CommittedMainCounterChange
 import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.domain.model.MainCounterChange
 import io.mockk.coEvery
@@ -40,7 +41,8 @@ class MainCounterStepViewModelTest : CounterViewModelFixture() {
                     true
                 }
             }
-            coEvery { repository.applyMainCounterChange(7L, any()) } returns true
+            coEvery { repository.applyMainCounterChangeWithResult(7L, any()) } returns
+                CommittedMainCounterChange(0, 1, null, MainCounterChange.Increment)
             val model = viewModel()
             advanceUntilIdle()
             val preset = async { model.awaitStepSize(5) }
@@ -55,7 +57,7 @@ class MainCounterStepViewModelTest : CounterViewModelFixture() {
             model.increment()
             runCurrent()
             coVerify(exactly = 2) {
-                repository.applyMainCounterChange(7L, MainCounterChange.Increment)
+                repository.applyMainCounterChangeWithResult(7L, MainCounterChange.Increment)
             }
             release.complete(true)
             assertTrue(preset.await())

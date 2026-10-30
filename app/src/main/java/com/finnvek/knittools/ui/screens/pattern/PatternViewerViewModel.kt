@@ -31,6 +31,7 @@ enum class PatternBookmarkError {
     INVALID_LOCATION,
     STALE_DOCUMENT,
     NOT_FOUND,
+    JUMP_FAILURE,
     SAVE_FAILURE,
     RENAME_FAILURE,
     DELETE_FAILURE,
@@ -80,10 +81,12 @@ sealed interface PatternViewerEvent {
     data class BookmarkJumped(
         val requestId: Long,
         val bookmark: PatternBookmark,
+        val documentSelectionVersion: Long,
     ) : PatternViewerEvent
 }
 
 private data class PatternBookmarkOperationState(
+    val documentKey: String? = null,
     val isMutating: Boolean = false,
     val error: PatternBookmarkError? = null,
 )
@@ -115,12 +118,13 @@ class PatternViewerViewModel
                 )
         val uiState: StateFlow<PatternBookmarkUiState> =
             combine(observedBookmarks, selectedBookmarkId, operationState) { observed, selectedId, operation ->
+                val currentOperation = operation.takeIf { it.documentKey == observed?.documentKey }
                 if (observed == null) {
                     return@combine PatternBookmarkUiState(
                         selectedBookmarkId = selectedId,
                         isLoading = true,
-                        isMutating = operation.isMutating,
-                        error = operation.error,
+                        isMutating = currentOperation?.isMutating == true,
+                        error = currentOperation?.error,
                     )
                 }
                 PatternBookmarkUiState(
@@ -128,8 +132,8 @@ class PatternViewerViewModel
                     bookmarks = observed.bookmarks,
                     selectedBookmarkId = selectedId?.takeIf { id -> observed.bookmarks.any { it.id == id } },
                     isLoading = false,
-                    isMutating = operation.isMutating,
-                    error = operation.error,
+                    isMutating = currentOperation?.isMutating == true,
+                    error = currentOperation?.error,
                 )
             }.stateIn(
                 scope = viewModelScope,
@@ -168,12 +172,14 @@ class PatternViewerViewModel
             eventChannel.receiveAsFlow().filter { event ->
                 when (event) {
                     is PatternViewerEvent.BookmarkJumped ->
-                        documents.value?.any {
-                            it.id == selectedDocumentId.value && it.documentKey == event.bookmark.documentKey
-                        } == true
+                        event.documentSelectionVersion == bookmarkDocumentSelectionVersion &&
+                            documents.value?.any {
+                                it.id == selectedDocumentId.value && it.documentKey == event.bookmark.documentKey
+                            } == true
                 }
             }
         private var nextRequestId = 1L
+        private var bookmarkDocumentSelectionVersion = 0L
         private var initialDocumentSelectionApplied = false
 
         init {
@@ -214,8 +220,7 @@ class PatternViewerViewModel
             runDocumentMutation(
                 mutation = { documentRepository.select(projectId, document.id) },
                 onSuccess = { _ ->
-                    selectedDocumentId.value = document.id
-                    savedStateHandle[SELECTED_DOCUMENT_ID_KEY] = document.id
+                    updateSelectedDocument(document.id)
                 },
             )
         }
@@ -324,6 +329,7 @@ class PatternViewerViewModel
 
         fun jumpToBookmark(bookmarkId: Long) {
             val documentKey = uiState.value.documentKey ?: return setError(PatternBookmarkError.STALE_DOCUMENT)
+            val documentSelectionVersion = bookmarkDocumentSelectionVersion
             runMutation(
                 mutation = { bookmarkRepository.jumpTo(projectId, documentKey, bookmarkId) },
                 onSuccess = { bookmark ->
@@ -332,10 +338,11 @@ class PatternViewerViewModel
                         PatternViewerEvent.BookmarkJumped(
                             requestId = nextRequestId++,
                             bookmark = bookmark,
+                            documentSelectionVersion = documentSelectionVersion,
                         ),
                     )
                 },
-                failureError = PatternBookmarkError.NOT_FOUND,
+                failureError = PatternBookmarkError.JUMP_FAILURE,
             )
         }
 
@@ -358,10 +365,20 @@ class PatternViewerViewModel
             onSuccess: suspend (PatternBookmark) -> Unit,
             failureError: PatternBookmarkError,
         ) {
-            operationState.value = PatternBookmarkOperationState(isMutating = true)
+            if (operationState.value.isMutating) return
+            val documentKey = uiState.value.documentKey
+            val documentSelectionVersion = bookmarkDocumentSelectionVersion
+
+            fun isCurrentDocument(): Boolean =
+                documentSelectionVersion == bookmarkDocumentSelectionVersion &&
+                    documentKey == observedBookmarks.value?.documentKey
+
+            operationState.value = PatternBookmarkOperationState(documentKey = documentKey, isMutating = true)
             viewModelScope.launch {
                 try {
-                    when (val result = mutation()) {
+                    val result = mutation()
+                    if (!isCurrentDocument()) return@launch
+                    when (result) {
                         is PatternBookmarkMutationResult.Success -> onSuccess(result.bookmark)
                         PatternBookmarkMutationResult.EmptyName -> setError(PatternBookmarkError.EMPTY_NAME)
                         PatternBookmarkMutationResult.NameTooLong -> setError(PatternBookmarkError.NAME_TOO_LONG)
@@ -372,21 +389,36 @@ class PatternViewerViewModel
                 } catch (cancellation: CancellationException) {
                     throw cancellation
                 } catch (_: Exception) {
-                    setError(failureError)
+                    if (isCurrentDocument()) setError(failureError)
                 } finally {
-                    operationState.update { it.copy(isMutating = false) }
+                    if (documentSelectionVersion == bookmarkDocumentSelectionVersion) {
+                        operationState.update { it.copy(isMutating = false) }
+                    }
                 }
             }
         }
 
         private fun setError(error: PatternBookmarkError) {
-            operationState.update { it.copy(error = error) }
+            operationState.update { it.copy(documentKey = uiState.value.documentKey, error = error) }
+        }
+
+        private fun updateSelectedDocument(documentId: Long?) {
+            if (selectedDocumentId.value != documentId) {
+                bookmarkDocumentSelectionVersion++
+                selectedBookmarkId.value = null
+                operationState.value = PatternBookmarkOperationState()
+            }
+            selectedDocumentId.value = documentId
+            if (documentId == null) {
+                savedStateHandle.remove<Long>(SELECTED_DOCUMENT_ID_KEY)
+            } else {
+                savedStateHandle[SELECTED_DOCUMENT_ID_KEY] = documentId
+            }
         }
 
         private fun reconcileDocumentSelection(observed: List<ProjectDocument>) {
             if (observed.isEmpty()) {
-                selectedDocumentId.value = null
-                savedStateHandle.remove<Long>(SELECTED_DOCUMENT_ID_KEY)
+                updateSelectedDocument(null)
                 initialDocumentSelectionApplied = true
                 return
             }
@@ -407,8 +439,7 @@ class PatternViewerViewModel
                 if (documentAvailability.value[fallback.id] == true) {
                     selectDocument(fallback.id)
                 } else {
-                    selectedDocumentId.value = fallback.id
-                    savedStateHandle[SELECTED_DOCUMENT_ID_KEY] = fallback.id
+                    updateSelectedDocument(fallback.id)
                     setDocumentError(ProjectDocumentError.UNAVAILABLE)
                 }
             }

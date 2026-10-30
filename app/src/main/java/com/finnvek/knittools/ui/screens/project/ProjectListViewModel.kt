@@ -20,6 +20,7 @@ import com.finnvek.knittools.pro.ProFeature
 import com.finnvek.knittools.pro.ProManager
 import com.finnvek.knittools.repository.ActiveSessionCompletionChoice
 import com.finnvek.knittools.repository.CounterRepository
+import com.finnvek.knittools.repository.OnboardingStateRepository
 import com.finnvek.knittools.repository.ProgressPhotoRepository
 import com.finnvek.knittools.repository.ProjectCompletionResult
 import com.finnvek.knittools.repository.ProjectDeletionResult
@@ -39,6 +40,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
@@ -46,6 +48,7 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 
 data class ContinueKnittingProject(
@@ -62,6 +65,7 @@ data class ContinueKnittingProject(
 data class PendingProjectListSessionAction(
     val session: ActiveWorkSession,
     val projectIds: Set<Long>,
+    val celebrateCompletion: Boolean = false,
 )
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -79,6 +83,7 @@ class ProjectListViewModel
         @param:ApplicationContext private val context: Context,
         private val folderRepository: ProjectFolderRepository,
         private val savedStateHandle: SavedStateHandle,
+        private val onboardingStateRepository: OnboardingStateRepository,
         private val analytics: UsageAnalytics = UsageAnalytics.NONE,
     ) : ViewModel() {
         private val _selectedFolderFilter =
@@ -96,37 +101,62 @@ class ProjectListViewModel
 
         // === Preferences ===
 
-        val showCompleted: StateFlow<Boolean> =
+        private val initialSessionRefreshFinished = MutableStateFlow(false)
+        val proState get() = proManager.proState
+        val proAccessReady get() = proManager.initialStateReady
+
+        val content: StateFlow<ProjectListContent> =
             preferencesManager.preferences
-                .map { it.showCompletedProjects }
+                .flatMapLatest { prefs ->
+                    combine(
+                        repository.getActiveProjects(prefs.projectSortOrder),
+                        if (prefs.showCompletedProjects) {
+                            repository.getCompletedProjects(prefs.projectSortOrder)
+                        } else {
+                            flowOf(emptyList())
+                        },
+                        repository.observeActiveSession(),
+                        combine(folderState, selectedFolderFilter) { folders, filter -> folders to filter },
+                        combine(
+                            initialSessionRefreshFinished,
+                            repository.observeHasAnyProject(),
+                            onboardingStateRepository.state,
+                        ) { refreshed, hasAny, onboarding ->
+                            Triple(refreshed, hasAny, onboarding.welcomeDismissed)
+                        },
+                    ) { active, completed, session, organization, readiness ->
+                        val (folders, filter) = organization
+                        val (sessionRefreshed, hasAnyProject, welcomeDismissed) = readiness
+                        ProjectListContent(
+                            isLoading = folders.isLoading || !sessionRefreshed,
+                            hasAnyProject = hasAnyProject,
+                            activeProjectCount = active.size,
+                            welcomeDismissed = welcomeDismissed,
+                            preferences = prefs,
+                            active = filterProjects(active, folders, filter),
+                            completed = filterProjects(completed, folders, filter),
+                            activeSession = session,
+                        )
+                    }
+                }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), ProjectListContent())
+
+        val showCompleted: StateFlow<Boolean> =
+            content
+                .map { it.preferences.showCompletedProjects }
                 .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
         val sortOrder: StateFlow<ProjectSortOrder> =
-            preferencesManager.preferences
-                .map { it.projectSortOrder }
+            content
+                .map { it.preferences.projectSortOrder }
                 .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), ProjectSortOrder.DEFAULT)
 
         // === Lajittelutietoiset projektilistaukset ===
 
         val activeProjects: StateFlow<List<CounterProject>> =
-            combine(
-                sortOrder.flatMapLatest(repository::getActiveProjects),
-                folderState,
-                selectedFolderFilter,
-            ) { projects, folders, filter ->
-                filterProjects(projects, folders, filter)
-            }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+            content.map { it.active }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
         val completedProjects: StateFlow<List<CounterProject>> =
-            combine(
-                showCompleted.flatMapLatest { shouldShow ->
-                    if (shouldShow) sortOrder.flatMapLatest(repository::getCompletedProjects) else flowOf(emptyList())
-                },
-                folderState,
-                selectedFolderFilter,
-            ) { projects, folders, filter ->
-                filterProjects(projects, folders, filter)
-            }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+            content.map { it.completed }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
         val hasHiddenCompletedProjects: StateFlow<Boolean> =
             combine(folderState, selectedFolderFilter, showCompleted) { folders, filter, show ->
@@ -138,9 +168,9 @@ class ProjectListViewModel
             }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
         val activeSession: StateFlow<ActiveWorkSession?> =
-            repository
-                .observeActiveSession()
-                .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+            content
+                .map { it.activeSession }
+                .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
         val isPro: Boolean get() = proManager.hasFeature(ProFeature.UNLIMITED_PROJECTS)
 
@@ -157,6 +187,15 @@ class ProjectListViewModel
         private val _selectedProjectIds = MutableStateFlow<Set<Long>>(emptySet())
         val selectedProjectIds: StateFlow<Set<Long>> = _selectedProjectIds.asStateFlow()
 
+        // CPD-OFF: Laskurin ja projektilistan erilliset valmistumistapahtumat kuitataan samalla eventId-sopimuksella.
+        private val _pendingCompletion = MutableStateFlow<ProjectCompletionCelebration?>(null)
+        val pendingCompletion: StateFlow<ProjectCompletionCelebration?> = _pendingCompletion.asStateFlow()
+
+        fun consumeCompletion(eventId: Long) {
+            _pendingCompletion.update { if (it?.snapshot?.eventId == eventId) null else it }
+        }
+        // CPD-ON
+
         private val _pendingCompletionSessionAction = MutableStateFlow<PendingProjectListSessionAction?>(null)
         val pendingCompletionSessionAction: StateFlow<PendingProjectListSessionAction?> =
             _pendingCompletionSessionAction.asStateFlow()
@@ -167,8 +206,8 @@ class ProjectListViewModel
 
         // === Jatka neulomista ===
 
-        private val _continueKnittingProject = MutableStateFlow<ContinueKnittingProject?>(null)
-        val continueKnittingProject: StateFlow<ContinueKnittingProject?> = _continueKnittingProject.asStateFlow()
+        val continueKnittingProject: StateFlow<ContinueKnittingProject?> =
+            content.map { it.continueKnitting }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
         private val _projectPatternNames = MutableStateFlow<Map<Long, String>>(emptyMap())
         val projectPatternNames: StateFlow<Map<Long, String>> = _projectPatternNames.asStateFlow()
@@ -182,6 +221,8 @@ class ProjectListViewModel
                 proManager,
                 savedStateHandle,
                 viewModelScope,
+                preferencesManager,
+                onboardingStateRepository,
                 onCreated = { navigateToProjectChannel.send(it) },
                 onFailure = { sessionErrorChannel.trySend(R.string.generic_error_unknown) },
                 analytics = analytics,
@@ -200,6 +241,8 @@ class ProjectListViewModel
                     throw cancelled
                 } catch (_: Exception) {
                     sessionErrorChannel.send(R.string.generic_error_unknown)
+                } finally {
+                    initialSessionRefreshFinished.value = true
                 }
             }
             viewModelScope.launch {
@@ -228,13 +271,36 @@ class ProjectListViewModel
                             .observeDocuments(projects.map(CounterProject::id))
                             .map { documents -> projects to documents }
                     }.collect { (projects, documentsByProject) ->
-                        updateContinueKnitting(projects)
-                        updatePatternNames(projects, documentsByProject)
+                        _projectPatternNames.value =
+                            resolveProjectPatternNames(projects, documentsByProject, savedPatternRepository)
                     }
             }
         }
 
         // === Preferences-toiminnot ===
+
+        fun dismissWelcome() {
+            viewModelScope.launch {
+                onboardingStateRepository.dismissWelcome()
+                analytics.track(UsageEvent.WELCOME_DISMISSED)
+            }
+        }
+
+        fun chooseWelcomeTools(onNavigate: () -> Unit) {
+            viewModelScope.launch {
+                onboardingStateRepository.dismissWelcome()
+                analytics.track(UsageEvent.WELCOME_TOOLS_CHOSEN)
+                onNavigate()
+            }
+        }
+
+        fun recordWelcomeDemoUsed() {
+            if (welcomeDemoTracked.compareAndSet(false, true)) analytics.track(UsageEvent.WELCOME_DEMO_USED)
+        }
+
+        private companion object {
+            val welcomeDemoTracked = AtomicBoolean(false)
+        }
 
         fun toggleShowCompleted() {
             if (showCompleted.value) {
@@ -287,11 +353,15 @@ class ProjectListViewModel
             launchSelectedProjectAction { selectedIds, active ->
                 val activeIds = activeProjects.value.map { it.id }.toSet()
                 val ids = selectedIds.intersect(_selectedProjectIds.value).intersect(activeIds)
+                val celebrateCompletion = selectedIds.size == 1 && ids.size == 1
                 if (active != null && active.projectId in ids) {
-                    _pendingCompletionSessionAction.value = PendingProjectListSessionAction(active, ids)
+                    _pendingCompletionSessionAction.value =
+                        PendingProjectListSessionAction(active, ids, celebrateCompletion)
                     return@launchSelectedProjectAction
                 }
-                if (ids.isNotEmpty() && completeProjects(ids, choice = null, selectedOnly = true)) {
+                if (ids.isNotEmpty() &&
+                    completeProjects(ids, choice = null, selectedOnly = true, celebrateCompletion = celebrateCompletion)
+                ) {
                     exitMultiSelectMode()
                 }
             }
@@ -329,60 +399,6 @@ class ProjectListViewModel
 
         // === Projektitoiminnot ===
 
-        private fun updateContinueKnitting(projects: List<CounterProject>) {
-            val candidate = projects.firstOrNull { it.count > 0 }
-            _continueKnittingProject.value =
-                if (candidate != null) {
-                    ContinueKnittingProject(
-                        projectId = candidate.id,
-                        name = candidate.name,
-                        count = candidate.count,
-                        sectionName = candidate.sectionName,
-                        targetRows = candidate.targetRows,
-                        craftType = candidate.craftType,
-                        mainCounterLabelType = candidate.mainCounterLabelType,
-                        mainCounterCustomLabel = candidate.mainCounterCustomLabel,
-                    )
-                } else {
-                    null
-                }
-        }
-
-        private suspend fun updatePatternNames(
-            projects: List<CounterProject>,
-            documentsByProject: Map<Long, List<ProjectDocument>>,
-        ) {
-            val nameMap = mutableMapOf<Long, String>()
-            val linkedPatternIds =
-                projects
-                    .filter { project ->
-                        documentsByProject[project.id].isNullOrEmpty() &&
-                            project.patternName.isNullOrBlank()
-                    }.mapNotNull { it.linkedPatternId }
-                    .distinct()
-            val patternsById =
-                if (linkedPatternIds.isEmpty()) {
-                    emptyMap()
-                } else {
-                    savedPatternRepository.getByIds(linkedPatternIds).associateBy { it.id }
-                }
-            projects.forEach { p ->
-                documentsByProject[p.id]
-                    ?.firstOrNull { it.isPrimary }
-                    ?.let { primary ->
-                        nameMap[p.id] = primary.label
-                        return@forEach
-                    }
-                p.patternName?.takeIf { it.isNotBlank() }?.let {
-                    nameMap[p.id] = it
-                    return@forEach
-                }
-                val patternId = p.linkedPatternId ?: return@forEach
-                patternsById[patternId]?.let { nameMap[p.id] = it.name }
-            }
-            _projectPatternNames.value = nameMap
-        }
-
         fun requestProjectCreation() = creationActions.requestProjectCreation()
 
         fun projectCreationDismissed() = analytics.track(UsageEvent.PROJECT_CREATION_CANCELLED)
@@ -392,11 +408,12 @@ class ProjectListViewModel
         fun createProject() {
             viewModelScope.launch {
                 val count = repository.getProjectCount()
+                val craftType = preferencesManager.preferences.first().lastProjectCraftType
                 val request =
                     PendingProjectCreation(
                         name = context.getString(R.string.new_project_name_format, count + 1),
-                        craftType = CraftType.KNITTING,
-                        mainCounterLabelType = CraftType.KNITTING.defaultMainCounterLabelType(),
+                        craftType = craftType,
+                        mainCounterLabelType = craftType.defaultMainCounterLabelType(),
                         mainCounterCustomLabel = null,
                         targetFolderId = (selectedFolderFilter.value as? ProjectFolderFilter.Folder)?.folderId,
                     )
@@ -410,6 +427,8 @@ class ProjectListViewModel
             mainCounterLabelType: MainCounterLabelType,
             mainCounterCustomLabel: String?,
             targetFolderId: Long? = (selectedFolderFilter.value as? ProjectFolderFilter.Folder)?.folderId,
+            initialCount: Int = 0,
+            targetRows: Int? = null,
         ) {
             val request =
                 PendingProjectCreation(
@@ -418,6 +437,8 @@ class ProjectListViewModel
                     mainCounterLabelType = mainCounterLabelType,
                     mainCounterCustomLabel = mainCounterCustomLabel,
                     targetFolderId = targetFolderId,
+                    initialCount = initialCount,
+                    targetRows = targetRows,
                 )
             creationActions.create(request)
         }
@@ -443,6 +464,7 @@ class ProjectListViewModel
                             PendingProjectListSessionAction(result.session, setOf(id))
                     }
                     ProjectCompletionResult.Completed,
+                    is ProjectCompletionResult.CompletedNow,
                     ProjectCompletionResult.PersistenceFailure,
                     ProjectCompletionResult.ProjectUnavailable,
                     -> Unit
@@ -480,6 +502,7 @@ class ProjectListViewModel
                         projectIds = pending.projectIds,
                         expectedSession = pending.session,
                         selectedOnly = selectedOnly,
+                        celebrateCompletion = pending.celebrateCompletion,
                         choice =
                             if (saveSession) {
                                 ActiveSessionCompletionChoice.SAVE
@@ -518,6 +541,7 @@ class ProjectListViewModel
             choice: ActiveSessionCompletionChoice?,
             expectedSession: ActiveWorkSession? = null,
             selectedOnly: Boolean = false,
+            celebrateCompletion: Boolean = false,
         ): Boolean {
             projectIds.forEach { id ->
                 val project = repository.getProject(id) ?: return false
@@ -529,14 +553,12 @@ class ProjectListViewModel
                             choice = choice.takeIf { expectedSession?.projectId == id },
                             expectedSession = expectedSession,
                         )
-                    if (selectedOnly &&
-                        id !in selectedProjectIds.value &&
-                        result != ProjectCompletionResult.Completed
-                    ) {
-                        return false
+                    val successful =
+                        result == ProjectCompletionResult.Completed || result is ProjectCompletionResult.CompletedNow
+                    if (successful || !selectedOnly || id in selectedProjectIds.value) {
+                        handleProjectCompletionResult(result, projectIds, id, celebrateCompletion)
                     }
-                    handleProjectCompletionResult(result, projectIds, id)
-                    if (result != ProjectCompletionResult.Completed) return false
+                    if (!successful) return false
                 }
                 _selectedProjectIds.update { it - id }
                 _pendingCompletionSessionAction.update { it?.copy(projectIds = it.projectIds - id) }
@@ -548,7 +570,12 @@ class ProjectListViewModel
             result: ProjectCompletionResult,
             projectIds: Set<Long>,
             id: Long,
+            celebrateCompletion: Boolean,
         ) {
+            if (result is ProjectCompletionResult.CompletedNow && celebrateCompletion) {
+                _pendingCompletion.value =
+                    ProjectCompletionCelebration(result.snapshot, projectLatestPhotoUris.value[id])
+            }
             val session =
                 when (result) {
                     is ProjectCompletionResult.NeedsActiveSessionChoice -> result.session
@@ -567,6 +594,7 @@ class ProjectListViewModel
                 PendingProjectListSessionAction(
                     session,
                     projectIds.intersect(selectedProjectIds.value) + id,
+                    celebrateCompletion,
                 )
         }
 
@@ -689,6 +717,42 @@ class ProjectListViewModel
             }
         }
     }
+
+private suspend fun resolveProjectPatternNames(
+    projects: List<CounterProject>,
+    documentsByProject: Map<Long, List<ProjectDocument>>,
+    savedPatternRepository: SavedPatternRepository,
+): Map<Long, String> {
+    val nameMap = mutableMapOf<Long, String>()
+    val linkedPatternIds =
+        projects
+            .filter { project ->
+                documentsByProject[project.id].isNullOrEmpty() &&
+                    project.patternName.isNullOrBlank()
+            }.mapNotNull { it.linkedPatternId }
+            .distinct()
+    val patternsById =
+        if (linkedPatternIds.isEmpty()) {
+            emptyMap()
+        } else {
+            savedPatternRepository.getByIds(linkedPatternIds).associateBy { it.id }
+        }
+    projects.forEach { p ->
+        documentsByProject[p.id]
+            ?.firstOrNull { it.isPrimary }
+            ?.let { primary ->
+                nameMap[p.id] = primary.label
+                return@forEach
+            }
+        p.patternName?.takeIf { it.isNotBlank() }?.let {
+            nameMap[p.id] = it
+            return@forEach
+        }
+        val patternId = p.linkedPatternId ?: return@forEach
+        patternsById[patternId]?.let { nameMap[p.id] = it.name }
+    }
+    return nameMap
+}
 
 private fun restoreFolderFilter(value: String?): ProjectFolderFilter =
     when {

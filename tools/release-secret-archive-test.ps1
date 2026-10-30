@@ -54,8 +54,9 @@ try {
         }
     }
     New-Archive 'clean.apk' 'clean synthetic content' 'Optimal'
-    New-Archive 'unicode.aab' 'synthetic-ää-秘密-value' 'Optimal'
-    if (-not (Test-BinaryFileContainsSecret 'unicode.aab' @('synthetic-ää-秘密-value'))) { throw 'UTF-8 matching failed' }
+    $unicodeSecret = 'synthetic-' + [char]0x00e4 + [char]0x00e4 + '-' + [char]0x79d8 + [char]0x5bc6 + '-value'
+    New-Archive 'unicode.aab' $unicodeSecret 'Optimal'
+    if (-not (Test-BinaryFileContainsSecret 'unicode.aab' @($unicodeSecret))) { throw 'UTF-8 matching failed' }
     if (Test-BinaryFileContainsSecret 'clean.apk' @($secret)) { throw 'False match: clean.apk' }
     Write-Output 'PASS: no match in clean.apk'
     $script:checkedFile = 'missing.aab'

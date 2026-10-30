@@ -1,0 +1,39 @@
+{
+  "keys": 1350,
+  "strings": 1318,
+  "plurals": 32,
+  "variants": 1414,
+  "file_variants": {
+    "pattern_annotations.xml": 75,
+    "pattern_reading_assistance.xml": 49,
+    "reference_strings.xml": 257,
+    "strings.xml": 1033
+  },
+  "adapted_variants": 401,
+  "adapted_keys": 391,
+  "batches": {
+    "B01": 27,
+    "B02": 110,
+    "B03": 81,
+    "B04": 42,
+    "B05": 133,
+    "B06": 62,
+    "B07": 68,
+    "B08": 76,
+    "B09": 78,
+    "B10": 68,
+    "B11": 77,
+    "B12": 32,
+    "B13": 78,
+    "B14": 30,
+    "B15": 20,
+    "B16": 12,
+    "B17": 72,
+    "B18": 157,
+    "B19": 58,
+    "B20": 36,
+    "B21": 28,
+    "B22": 69
+  },
+  "missing_extra_type_placeholder_alias_unicode_errors": 0
+}

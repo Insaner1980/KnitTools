@@ -36,6 +36,7 @@ import com.finnvek.knittools.data.storage.ProgressPhotoStorage
 import com.finnvek.knittools.data.storage.photoNoteEmojiCases
 import com.finnvek.knittools.data.storage.photoNoteTestDatabase
 import com.finnvek.knittools.data.storage.writeTestBitmap
+import com.finnvek.knittools.pro.ProState
 import com.finnvek.knittools.pro.ProStatus
 import com.finnvek.knittools.repository.ProgressPhotoRepository
 import com.finnvek.knittools.ui.localeThemeCases
@@ -111,7 +112,8 @@ class AuditPart12PhotoNoteUiTest(
                             photos = listOf(photo),
                             projectId = projectId,
                             canCreatePhoto = true,
-                            proStatus = ProStatus.PRO_PURCHASED,
+                            proState = ProState(status = ProStatus.PRO_PURCHASED),
+                            proAccessReady = true,
                             onBack = {},
                             onSeePro = {},
                             actions =

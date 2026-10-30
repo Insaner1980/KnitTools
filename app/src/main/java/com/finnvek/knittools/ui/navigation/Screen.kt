@@ -9,6 +9,7 @@ import androidx.compose.material.icons.outlined.Build
 import androidx.compose.material.icons.outlined.FolderOpen
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.lifecycle.Lifecycle
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.model.CraftType
 
@@ -50,6 +51,17 @@ sealed class Screen(
 
     data object Settings : Screen("settings")
 
+    data object Guide : Screen("guide")
+
+    data class GuideTopic(
+        val topicKey: String,
+    ) : Screen("guide/${Uri.encode(topicKey)}") {
+        companion object {
+            const val ARG_TOPIC = "topic"
+            const val ROUTE = "guide/{$ARG_TOPIC}"
+        }
+    }
+
     data object Backup : Screen("backup")
 
     data object ProUpgrade : Screen("pro_upgrade")
@@ -65,11 +77,21 @@ sealed class Screen(
     // Ravelry sovelluksen sisällä: Download PDF tallentuu suoraan KnitToolsiin.
     data object RavelryBrowser : Screen("ravelry_browser") {
         const val ARG_URL = "url"
-        const val ROUTE = "ravelry_browser?url={$ARG_URL}"
+        const val ARG_REQUEST_ID = "requestId"
+        const val ROUTE = "ravelry_browser?url={$ARG_URL}&requestId={$ARG_REQUEST_ID}"
 
         /** Jaettu tai tallennettu Ravelry-linkki avautuu suoraan; ilman osoitetta näkyy kaavahaku. */
-        fun createRoute(url: String? = null): String =
-            url?.takeIf { it.isNotBlank() }?.let { "$route?url=${Uri.encode(it)}" } ?: route
+        fun createRoute(
+            url: String? = null,
+            requestId: Long? = null,
+        ): String {
+            val pageRoute = url?.takeIf { it.isNotBlank() }?.let { "$route?url=${Uri.encode(it)}" } ?: route
+            return if (requestId == null) {
+                pageRoute
+            } else {
+                "$pageRoute${if ('?' in pageRoute) '&' else '?'}requestId=$requestId"
+            }
+        }
     }
 
     data object ProjectList : Screen("project_list")
@@ -235,4 +257,23 @@ enum class TopLevelDestination(
     Tools("tools_tab", R.string.tab_tools, Icons.Outlined.Build, Screen.Tools.route),
     Insights("insights_tab", R.string.tab_insights, Icons.Outlined.BarChart, Screen.Insights.route),
     Settings("settings_tab", R.string.tab_settings, Icons.Outlined.Settings, Screen.Settings.route),
+}
+
+internal fun isStartupDestinationReady(
+    route: String?,
+    entryId: String?,
+    readyEntryId: String?,
+    lifecycle: Lifecycle.State?,
+): Boolean {
+    if (route == null || entryId == null) return false
+    return when (route) {
+        Screen.ProjectList.route,
+        Screen.Counter.route,
+        Screen.ProjectOverview.ROUTE,
+        Screen.ProUpgrade.route,
+        Screen.RavelryBrowser.ROUTE,
+        Screen.WebPatternEditor.ROUTE,
+        -> entryId == readyEntryId
+        else -> lifecycle == Lifecycle.State.RESUMED
+    }
 }

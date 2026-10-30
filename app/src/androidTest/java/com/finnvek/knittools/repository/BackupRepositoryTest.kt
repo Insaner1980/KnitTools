@@ -89,6 +89,7 @@ class BackupRepositoryTest {
     private lateinit var patternFiles: PatternFileReferenceCoordinator
     private lateinit var yarnCards: YarnCardRepository
     private var processProbe: BackupRestoreProcessProbe? = null
+    private var retainProcessFixture = false
     private var beforeSql: (String) -> Unit = {}
     private var selectionId = UUID.randomUUID()
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -113,12 +114,17 @@ class BackupRepositoryTest {
             check(directory.exists() == verifying)
             processProbe = BackupRestoreProcessProbe(directory)
         }
+        retainProcessFixture = InstrumentationRegistry.getArguments().getString("backupCrashRetain") == "true"
+        if (retainProcessFixture) checkNotNull(BackupRestoreProcessProbe.recoveryStage())
         directory.mkdirs()
         context =
             object : ContextWrapper(app) {
                 override fun getApplicationContext(): Context = this
 
-                override fun getFilesDir() = File(directory, "files").apply { mkdirs() }
+                override fun getFilesDir(): File {
+                    processProbe?.beforeFilesAccess()
+                    return File(directory, "files").apply { mkdirs() }
+                }
 
                 override fun getNoBackupFilesDir() = File(directory, "private").apply { mkdirs() }
             }
@@ -145,7 +151,7 @@ class BackupRepositoryTest {
     @After fun tearDown() {
         db.close()
         scope.cancel()
-        directory.deleteRecursively()
+        if (!retainProcessFixture) directory.deleteRecursively()
     }
 
     private fun faultInjectingFactory() =
@@ -375,6 +381,7 @@ class BackupRepositoryTest {
             assertEquals(4, preview.files)
             processProbe?.arm(db.openHelper.writableDatabase, context)
             repository.restore(selectionId)
+            processProbe?.resumeFileAccess()
             BackupFormat.tables.forEach {
                 assertEquals(
                     when (it) {
@@ -448,6 +455,11 @@ class BackupRepositoryTest {
             ).use {
                 assertEquals(1, it.pageCount)
             }
+            if (BackupRestoreProcessProbe.phase() == "cleanup") {
+                checkNotNull(processProbe).armCleanup(db.openHelper.writableDatabase, context)
+                repository.recoverInterruptedOperations()
+                error("Recovery must stop at the partial-cleanup checkpoint")
+            }
             assertTrue(File(context.noBackupFilesDir, "manual-backup").listFiles().orEmpty().isEmpty())
         }
 
@@ -457,7 +469,7 @@ class BackupRepositoryTest {
             val checkpoint = File(directory, "checkpoint.txt").readText().split(" ")
             assertFalse(checkpoint[0].toInt() == android.os.Process.myPid())
             assertEquals(phase, checkpoint[1])
-            assertEquals((phase == "precommit").toString(), checkpoint[2])
+            assertEquals((phase != "postcommit").toString(), checkpoint[2])
             repository.recoverInterruptedOperations()
             val sql = db.openHelper.writableDatabase
             assertEquals("ok", text("PRAGMA quick_check"))
@@ -508,8 +520,14 @@ class BackupRepositoryTest {
             assertTrue(File(context.noBackupFilesDir, "manual-backup").listFiles().orEmpty().isEmpty())
             val app = ApplicationProvider.getApplicationContext<Context>()
             val processRun = InstrumentationRegistry.getArguments().getString("backupCrashRun").orEmpty()
-            val proof = File(app.cacheDir, "backup-process-proof-$phase$processRun")
+            val proofRoot = File(app.cacheDir, "backup-process-proof-$phase$processRun")
+            val stage = BackupRestoreProcessProbe.recoveryStage()
+            val proof = stage?.let { File(proofRoot, it) } ?: proofRoot
             check(!proof.exists())
+            if (stage != null) {
+                checkNotNull(processProbe).recordRecovery(sql, context, after, File(proofRoot, "first/after"), stage)
+            }
+            if (phase == "cleanup") checkNotNull(processProbe).verifyCleanupRecovery(sql, context, after)
             File(directory, "before").copyRecursively(File(proof, "before"))
             after.copyRecursively(File(proof, "after"))
             File(directory, "checkpoint.txt").copyTo(File(proof, "checkpoint.txt"))

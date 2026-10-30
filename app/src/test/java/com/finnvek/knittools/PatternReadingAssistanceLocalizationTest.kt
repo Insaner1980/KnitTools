@@ -49,6 +49,7 @@ class PatternReadingAssistanceLocalizationTest {
                 "values-fr",
                 "values-es",
                 "values-pt",
+                "values-pt-rBR",
                 "values-it",
                 "values-nb",
                 "values-da",

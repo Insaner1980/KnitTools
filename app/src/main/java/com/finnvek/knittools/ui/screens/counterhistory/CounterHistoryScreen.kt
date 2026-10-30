@@ -30,6 +30,7 @@ import com.finnvek.knittools.ui.components.ProjectNameLabel
 import com.finnvek.knittools.ui.components.ToolScreenScaffold
 import com.finnvek.knittools.ui.components.localizedDateTimePattern
 import com.finnvek.knittools.ui.components.rememberCurrentLocale
+import com.finnvek.knittools.ui.layout.ContentWidthPolicy
 import com.finnvek.knittools.ui.theme.CounterDimens
 import java.time.ZoneId
 
@@ -67,6 +68,7 @@ internal fun CounterHistoryContent(
     modifier: Modifier = Modifier,
 ) {
     ToolScreenScaffold(
+        contentWidthPolicy = ContentWidthPolicy.ListDetail,
         title = stringResource(R.string.counter_history_title),
         onBack = onBack,
         modifier = modifier,

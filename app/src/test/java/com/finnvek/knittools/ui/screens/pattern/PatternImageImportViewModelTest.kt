@@ -9,7 +9,11 @@ import com.finnvek.knittools.data.storage.PatternImageStageBatch
 import com.finnvek.knittools.data.storage.PatternImageStageException
 import com.finnvek.knittools.data.storage.PatternImageStageFailure
 import com.finnvek.knittools.domain.model.CounterProject
+import com.finnvek.knittools.pro.ProManager
+import com.finnvek.knittools.pro.ProState
+import com.finnvek.knittools.pro.ProStatus
 import com.finnvek.knittools.repository.CounterRepository
+import com.finnvek.knittools.repository.OnboardingStateRepository
 import com.finnvek.knittools.repository.ProjectDocumentMutationResult
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -17,8 +21,11 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
@@ -37,6 +44,9 @@ import java.io.File
 @OptIn(ExperimentalCoroutinesApi::class)
 class PatternImageImportViewModelTest {
     private val dispatcher = StandardTestDispatcher()
+    private val applicationScope = CoroutineScope(dispatcher)
+    private val proManager = mockk<ProManager>()
+    private val onboardingStateRepository = mockk<OnboardingStateRepository>(relaxed = true)
     private lateinit var storage: PatternDocumentStorage
     private lateinit var repository: CounterRepository
     private lateinit var context: Context
@@ -45,6 +55,7 @@ class PatternImageImportViewModelTest {
     @Before
     fun setUp() {
         Dispatchers.setMain(dispatcher)
+        every { proManager.initialStateReady } returns MutableStateFlow(false)
         storage = mockk(relaxed = true)
         repository = mockk(relaxed = true)
         context = mockk()
@@ -54,10 +65,29 @@ class PatternImageImportViewModelTest {
 
     @After
     fun tearDown() {
+        applicationScope.cancel()
         Dispatchers.resetMain()
     }
 
     // CPD-OFF: Tuontitestien skenaariokohtainen asetelma pidetaan testien yhteydessa.
+    @Test
+    fun `another owner cannot adopt or discard the retained draft`() =
+        runTest {
+            val vm = viewModel()
+            val firstUri = uri("content://first")
+            val request = vm.authorizeGalleryPicker(7L)
+            coEvery { storage.stageSelectedImages(any(), 7L, any(), any(), listOf(firstUri)) } returns
+                PatternImageStageBatch(listOf(page("first")), duplicatesIgnored = 0)
+            vm.onGalleryPickerResult(request, listOf(firstUri))
+            advanceUntilIdle()
+            val draftA = vm.uiState.value
+
+            // The old B/Add more action silently replaced A's retained session.
+            assertEquals(null, vm.authorizeGalleryPicker(8L))
+            assertEquals(draftA, vm.uiState.value)
+            verify(exactly = 0) { storage.deleteImportSession(any(), any(), any()) }
+        }
+
     @Test
     fun `authorized picker result is staged once and stale result cannot append later`() =
         runTest {
@@ -478,6 +508,90 @@ class PatternImageImportViewModelTest {
             assertEquals(PatternImageImportPhase.SUCCESS, vm.uiState.value.phase)
         }
 
+    @Test
+    fun `successful camera and gallery pdfs mark the active trial after attachment`() =
+        runTest {
+            every { proManager.initialStateReady } returns MutableStateFlow(true)
+            every { proManager.proState } returns
+                MutableStateFlow(ProState(ProStatus.TRIAL_ACTIVE, trialStartTimestamp = 100L))
+            listOf(PatternImageImportOrigin.CAMERA, PatternImageImportOrigin.GALLERY).forEach { origin ->
+                val vm = readyTrialImport(origin)
+                vm.createPatternPdf(replaceExisting = false)
+                advanceUntilIdle()
+                assertEquals(PatternImageImportPhase.SUCCESS, vm.uiState.value.phase)
+            }
+            coVerify(exactly = 2) { onboardingStateRepository.markTrialPhotoPdfCreated(100L) }
+        }
+
+    @Test
+    fun `failed attachment never marks a photo pdf trial step`() =
+        runTest {
+            every { proManager.initialStateReady } returns MutableStateFlow(true)
+            every { proManager.proState } returns
+                MutableStateFlow(ProState(ProStatus.TRIAL_ACTIVE, trialStartTimestamp = 100L))
+            coEvery { repository.attachPattern(any(), any(), any(), any(), any()) } throws java.io.IOException("attach")
+            coEvery { repository.isPatternDocumentAttached(any(), any()) } returns false
+            val vm = readyTrialImport(PatternImageImportOrigin.CAMERA)
+
+            vm.createPatternPdf(replaceExisting = false)
+            advanceUntilIdle()
+
+            assertEquals(PatternImageImportPhase.ERROR, vm.uiState.value.phase)
+            coVerify(exactly = 0) { onboardingStateRepository.markTrialPhotoPdfCreated(any()) }
+        }
+
+    @Test
+    fun `failed trial marker persistence preserves the committed pdf success`() =
+        runTest {
+            every { proManager.initialStateReady } returns MutableStateFlow(true)
+            every { proManager.proState } returns
+                MutableStateFlow(ProState(ProStatus.TRIAL_ACTIVE, trialStartTimestamp = 100L))
+            coEvery { onboardingStateRepository.markTrialPhotoPdfCreated(100L) } throws
+                java.io.IOException("preferences")
+            val vm = readyTrialImport(PatternImageImportOrigin.GALLERY)
+
+            vm.createPatternPdf(replaceExisting = false)
+            advanceUntilIdle()
+
+            assertEquals(PatternImageImportPhase.SUCCESS, vm.uiState.value.phase)
+            coVerify(exactly = 1) { onboardingStateRepository.markTrialPhotoPdfCreated(100L) }
+        }
+
+    @Test
+    fun `photo pdf success outside a loaded active trial has no trial marker`() =
+        runTest {
+            listOf(
+                false to ProStatus.TRIAL_ACTIVE,
+                true to ProStatus.TRIAL_EXPIRED,
+                true to ProStatus.PRO_PURCHASED,
+            ).forEach { (ready, status) ->
+                every { proManager.initialStateReady } returns MutableStateFlow(ready)
+                every { proManager.proState } returns MutableStateFlow(ProState(status, trialStartTimestamp = 100L))
+                val vm = readyTrialImport(PatternImageImportOrigin.GALLERY)
+                vm.createPatternPdf(replaceExisting = false)
+                advanceUntilIdle()
+                assertEquals(PatternImageImportPhase.SUCCESS, vm.uiState.value.phase)
+            }
+            coVerify(exactly = 0) { onboardingStateRepository.markTrialPhotoPdfCreated(any()) }
+        }
+
+    private fun readyTrialImport(origin: PatternImageImportOrigin): PatternImageImportViewModel {
+        val page = page("trial")
+        val handle =
+            SavedStateHandle(
+                mapOf(
+                    "pattern_image_project_id" to 7L,
+                    "pattern_image_session_id" to "session-a",
+                    "pattern_image_pages" to encodeStagedPatternPages(listOf(page)),
+                    "pattern_image_origin" to origin.name,
+                ),
+            )
+        every { storage.hasCreationSpace(context, page.byteCount) } returns true
+        coEvery { storage.convertImagesToPdf(any(), 7L, listOf(page), any(), any()) } returns
+            ("file:///pattern_pdfs/7/trial.pdf" to "trial.pdf")
+        return viewModel(handle)
+    }
+
     private fun viewModel(handle: SavedStateHandle = savedStateHandle) =
         PatternImageImportViewModel(
             storage = storage,
@@ -485,6 +599,9 @@ class PatternImageImportViewModelTest {
             context = context,
             ioDispatcher = dispatcher,
             savedStateHandle = handle,
+            proManager = proManager,
+            onboardingStateRepository = onboardingStateRepository,
+            applicationScope = applicationScope,
         )
 
     private fun page(id: String) =

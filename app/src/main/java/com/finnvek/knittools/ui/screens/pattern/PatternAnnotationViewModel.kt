@@ -8,6 +8,7 @@ import com.finnvek.knittools.data.storage.PATTERN_PDF_EXPORT_MAX_ANNOTATIONS
 import com.finnvek.knittools.data.storage.PATTERN_PDF_EXPORT_MAX_ANNOTATION_PAYLOAD_BYTES
 import com.finnvek.knittools.data.storage.PatternAnnotationRenderStyle
 import com.finnvek.knittools.data.storage.PatternPdfExportBudget
+import com.finnvek.knittools.data.storage.PatternPdfExportProgress
 import com.finnvek.knittools.data.storage.PatternPdfExporter
 import com.finnvek.knittools.domain.calculator.ChartTrackerHighlight
 import com.finnvek.knittools.domain.calculator.resolveChartTrackerHighlight
@@ -35,6 +36,7 @@ import com.finnvek.knittools.domain.model.PatternAnnotationLimits
 import com.finnvek.knittools.domain.model.PatternAnnotationOwner
 import com.finnvek.knittools.domain.model.PatternAnnotationPageLimitException
 import com.finnvek.knittools.domain.model.PatternAnnotationPayload
+import com.finnvek.knittools.domain.model.PatternAnnotationPayloadCodec
 import com.finnvek.knittools.domain.model.PatternCalloutSymbol
 import com.finnvek.knittools.domain.model.ProjectCounter
 import com.finnvek.knittools.domain.model.ShapePayload
@@ -49,7 +51,9 @@ import com.finnvek.knittools.ui.theme.PatternAnnotationTokens
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -66,7 +70,9 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.util.UUID
 import javax.inject.Inject
+import kotlin.coroutines.coroutineContext
 
 enum class PatternAnnotationLoadError {
     NONE,
@@ -110,6 +116,26 @@ data class PatternAnnotationTextEdit(
     val owner: PatternAnnotationOwner,
     val annotation: PatternAnnotation,
 )
+
+data class PatternPdfExportContext(
+    val sourceUri: Uri,
+    val owner: PatternAnnotationOwner,
+    val projectDocumentId: Long? = null,
+)
+
+private data class PatternPdfExportRequest(
+    val id: String = UUID.randomUUID().toString(),
+    val context: PatternPdfExportContext,
+    val layerIds: List<Long>,
+    val generation: Long,
+)
+
+private enum class PatternPdfExportPhase {
+    PREFLIGHT,
+    READY,
+    DESTINATION,
+    EXPORTING,
+}
 
 data class PatternAnnotationUiState(
     val owner: PatternAnnotationOwner,
@@ -172,9 +198,16 @@ class PatternAnnotationViewModel
         private val layerReadFailed = MutableStateFlow(false)
         private val annotationReadFailed = MutableStateFlow(false)
         private val interaction = MutableStateFlow(PatternAnnotationInteractionState())
-        private val exportDestinationChannel = Channel<Uri>(Channel.BUFFERED)
-        val exportDestinationRequests: Flow<Uri> = exportDestinationChannel.receiveAsFlow()
+        private val exportDestinationChannel = Channel<String>(Channel.BUFFERED)
+        val exportDestinationRequests: Flow<String> = exportDestinationChannel.receiveAsFlow()
+        private var exportContext: PatternPdfExportContext? = null
+        private var exportGeneration = 0L
+        private var exportSelection: AnnotationLayerSelection? = null
+        private var exportRequest: PatternPdfExportRequest? = null
+        private var exportPhase = PatternPdfExportPhase.PREFLIGHT
+        private var exportJob: Job? = null
         private var editContext: AnnotationEditContext? = null
+        private var editContextGeneration = 0L
         private val pendingStrokes = ArrayDeque<PendingAnnotationStroke>()
         private var savingStroke: PendingAnnotationStroke? = null
         private val counterContext =
@@ -297,11 +330,14 @@ class PatternAnnotationViewModel
                     highlighterAxisLock = feedback.interaction.highlighterAxisLock,
                     draftStroke = feedback.interaction.draftStroke,
                     inProgressAnnotation =
-                        feedback.interaction.draftStroke?.takeUnless { annotations.limitExceeded }?.toAnnotation(
-                            layerId = selection.editableLayerId,
-                            page = page,
-                            zIndex = topZIndex,
-                        ),
+                        feedback.interaction.draftStroke
+                            ?.takeUnless {
+                                annotations.limitExceeded || it === feedback.interaction.failedStroke
+                            }?.toAnnotation(
+                                layerId = selection.editableLayerId,
+                                page = page,
+                                zIndex = topZIndex,
+                            ),
                     isSaving = feedback.interaction.isSaving,
                     writeError = feedback.interaction.writeError,
                     selectedAnnotationId = feedback.interaction.selectedAnnotationId,
@@ -345,7 +381,17 @@ class PatternAnnotationViewModel
 
         fun setActiveTool(tool: PatternAnnotationTool) {
             if (tool != interaction.value.activeTool && interaction.value.draftStroke != null) cancelStroke()
-            interaction.update { it.copy(activeTool = tool, writeError = PatternAnnotationWriteError.NONE) }
+            interaction.update { it.copy(activeTool = tool) }
+        }
+
+        fun dismissWriteError() {
+            interaction.update { state ->
+                state.copy(
+                    writeError = PatternAnnotationWriteError.NONE,
+                    draftStroke = state.draftStroke.takeUnless { it === state.failedStroke },
+                    failedStroke = null,
+                )
+            }
         }
 
         fun setHighlighterAxisLock(axisLock: PatternHighlighterAxisLock) {
@@ -425,11 +471,17 @@ class PatternAnnotationViewModel
                     page = currentPage.value,
                     zIndex = nextEditableZIndex(),
                 ) ?: return
-            if (!interactionState.isSaving) {
-                interaction.update { it.copy(writeError = PatternAnnotationWriteError.NONE) }
+            if (!interactionState.isSaving && interactionState.failedStroke === originalDraft) {
+                interaction.update { it.copy(writeError = PatternAnnotationWriteError.NONE, failedStroke = null) }
             }
-            pendingStrokes.addLast(PendingAnnotationStroke(originalDraft, annotation, layers.value.editContext))
-            persistNextStroke()
+            if (PatternAnnotationPayloadCodec.encode(annotation.kind, annotation.payload) == null) {
+                interaction.update { state ->
+                    if (state.draftStroke === originalDraft) state.copy(draftStroke = null) else state
+                }
+            } else {
+                pendingStrokes.addLast(PendingAnnotationStroke(originalDraft, annotation, currentEditContext()))
+                persistNextStroke()
+            }
         }
 
         private fun persistNextStroke() {
@@ -589,7 +641,13 @@ class PatternAnnotationViewModel
         }
 
         fun cancelTextEdit(edit: PatternAnnotationTextEdit) {
-            interaction.update { if (it.textEdit === edit && !it.isSaving) it.copy(textEdit = null) else it }
+            interaction.update {
+                if (it.textEdit === edit && !it.isSaving) {
+                    it.copy(textEdit = null, writeError = PatternAnnotationWriteError.NONE)
+                } else {
+                    it
+                }
+            }
         }
 
         fun saveTextEdit(
@@ -668,60 +726,151 @@ class PatternAnnotationViewModel
             executeHistoryCommand(isUndo = false)
         }
 
-        fun requestAnnotatedPdfExport(sourceUri: Uri) {
+        fun setExportContext(context: PatternPdfExportContext?) {
+            if (exportContext == context) return
+            exportContext = context
+            invalidateExport()
+        }
+
+        fun requestAnnotatedPdfExport(context: PatternPdfExportContext) {
             val exporter = pdfExporter ?: return
-            if (interaction.value.isExporting) return
-            val layerIds = visibleExportLayerIds()
+            if (exportRequest != null || context != exportContext || !matchesExportLayers(context)) return
+            val request =
+                PatternPdfExportRequest(
+                    context = context,
+                    layerIds = visibleExportLayerIds(),
+                    generation = exportGeneration,
+                )
+            exportRequest = request
+            exportPhase = PatternPdfExportPhase.PREFLIGHT
             markExportStarted()
-            viewModelScope.launch {
-                runCatching {
-                    val annotations = loadExportAnnotations(layerIds)
-                    val trackerHighlights = resolveTrackerHighlights(annotations, counterContext.value)
-                    exporter.preflight(sourceUri, annotations, trackerHighlights)
-                }.onSuccess {
-                    interaction.update { it.copy(isExporting = false) }
-                    exportDestinationChannel.trySend(sourceUri)
-                }.onFailure(::handleExportFailure)
+            exportJob =
+                viewModelScope.launch {
+                    runCatching {
+                        val annotations = loadExportAnnotations(request.layerIds)
+                        coroutineContext.ensureActive()
+                        if (!isCurrentExport(request)) return@launch
+                        val trackerHighlights = resolveTrackerHighlights(annotations, counterContext.value)
+                        exporter.preflight(request.context.sourceUri, annotations, trackerHighlights)
+                        coroutineContext.ensureActive()
+                    }.onSuccess {
+                        if (isCurrentExport(request)) {
+                            exportPhase = PatternPdfExportPhase.READY
+                            interaction.update { it.copy(isExporting = false) }
+                            exportDestinationChannel.trySend(request.id)
+                        }
+                    }.onFailure { handleExportFailure(request, it) }
+                }
+        }
+
+        fun launchExportDestination(
+            requestId: String,
+            context: PatternPdfExportContext?,
+        ): Boolean {
+            val request = exportRequest ?: return false
+            if (
+                request.id != requestId ||
+                context != request.context ||
+                !isCurrentExport(request) ||
+                exportPhase != PatternPdfExportPhase.READY
+            ) {
+                return false
             }
+            exportPhase = PatternPdfExportPhase.DESTINATION
+            return true
         }
 
         fun exportAnnotatedPdf(
-            sourceUri: Uri,
-            destinationUri: Uri,
+            requestId: String,
+            context: PatternPdfExportContext?,
+            destinationUri: Uri?,
             style: PatternAnnotationRenderStyle,
         ) {
             val exporter = pdfExporter ?: return
-            if (interaction.value.isExporting) return
-            val layerIds = visibleExportLayerIds()
+            val request = exportRequest ?: return
+            if (request.id != requestId || !isCurrentExport(request)) return
+            if (exportPhase != PatternPdfExportPhase.DESTINATION && exportPhase != PatternPdfExportPhase.READY) return
+            if (destinationUri == null || context != request.context) {
+                invalidateExport()
+                return
+            }
+            if (exportPhase != PatternPdfExportPhase.DESTINATION) return
+            exportPhase = PatternPdfExportPhase.EXPORTING
             markExportStarted()
-            viewModelScope.launch {
-                runCatching {
-                    val annotations = loadExportAnnotations(layerIds)
-                    exporter.export(
-                        sourceUri = sourceUri,
-                        destinationUri = destinationUri,
-                        annotations = annotations,
-                        trackerHighlights = resolveTrackerHighlights(annotations, counterContext.value),
-                        style = style,
-                    ) { progress ->
-                        interaction.update {
-                            it.copy(
-                                exportCompletedPages = progress.completedPages,
-                                exportTotalPages = progress.totalPages,
-                            )
+            exportJob =
+                viewModelScope.launch {
+                    runCatching {
+                        val annotations = loadExportAnnotations(request.layerIds)
+                        coroutineContext.ensureActive()
+                        if (!isCurrentExport(request)) return@launch
+                        exporter.export(
+                            sourceUri = request.context.sourceUri,
+                            destinationUri = destinationUri,
+                            annotations = annotations,
+                            trackerHighlights = resolveTrackerHighlights(annotations, counterContext.value),
+                            style = style,
+                        ) { progress ->
+                            updateExportProgress(request, progress)
                         }
+                        coroutineContext.ensureActive()
+                    }.onSuccess {
+                        if (isCurrentExport(request)) {
+                            exportRequest = null
+                            interaction.update { it.copy(isExporting = false) }
+                        }
+                    }.onFailure { handleExportFailure(request, it) }
+                }
+        }
+
+        private fun updateExportProgress(
+            request: PatternPdfExportRequest,
+            progress: PatternPdfExportProgress,
+        ) {
+            viewModelScope.launch {
+                if (isCurrentExport(request)) {
+                    interaction.update {
+                        it.copy(
+                            exportCompletedPages = progress.completedPages,
+                            exportTotalPages = progress.totalPages,
+                        )
                     }
-                }.onSuccess {
-                    interaction.update { it.copy(isExporting = false) }
-                }.onFailure(::handleExportFailure)
+                }
+            }
+        }
+
+        private fun matchesExportLayers(context: PatternPdfExportContext): Boolean {
+            val selection = layers.value
+            if (context.owner != selection.owner || selection.editableLayerId == null) return false
+            return when (context.owner) {
+                is PatternAnnotationOwner.SavedPattern ->
+                    context.owner == routeOwner && context.projectDocumentId == null
+                is PatternAnnotationOwner.Project ->
+                    context.projectDocumentId == selection.projectDocumentId &&
+                        context.sourceUri.toString() == selection.sourceUri
+            }
+        }
+
+        private fun isCurrentExport(request: PatternPdfExportRequest): Boolean =
+            exportRequest === request &&
+                request.generation == exportGeneration &&
+                request.context == exportContext &&
+                matchesExportLayers(request.context)
+
+        private fun invalidateExport() {
+            exportGeneration++
+            exportRequest = null
+            exportJob?.cancel()
+            exportJob = null
+            interaction.update {
+                it.copy(isExporting = false, exportFailed = false, exportCompletedPages = 0, exportTotalPages = 0)
             }
         }
 
         private fun visibleExportLayerIds(): List<Long> {
-            val state = uiState.value
+            val selection = layers.value
             return buildList {
-                if (state.masterLayerVisible) state.masterLayerId?.let(::add)
-                if (state.projectLayerVisible) state.projectLayerId?.let(::add)
+                if (masterLayerVisible.value) selection.masterLayer?.id?.let(::add)
+                if (projectLayerVisible.value) selection.projectLayer?.id?.let(::add)
             }
         }
 
@@ -747,12 +896,15 @@ class PatternAnnotationViewModel
             }
         }
 
-        private fun handleExportFailure(failure: Throwable) {
-            if (failure is CancellationException) {
-                interaction.update { it.copy(isExporting = false) }
-                throw failure
+        private fun handleExportFailure(
+            request: PatternPdfExportRequest,
+            failure: Throwable,
+        ) {
+            if (isCurrentExport(request)) {
+                exportRequest = null
+                interaction.update { it.copy(isExporting = false, exportFailed = failure !is CancellationException) }
             }
-            interaction.update { it.copy(isExporting = false, exportFailed = true) }
+            if (failure is CancellationException) throw failure
         }
 
         private fun editableAnnotations(): List<PatternAnnotation> =
@@ -795,7 +947,7 @@ class PatternAnnotationViewModel
             onSuccess: (PatternAnnotationInteractionState) -> PatternAnnotationInteractionState = { it },
         ) {
             if (interaction.value.isSaving || uiState.value.loadError == PatternAnnotationLoadError.PAGE_LIMIT) return
-            val commandContext = layers.value.editContext
+            val commandContext = currentEditContext()
             interaction.update { it.copy(isSaving = true, writeError = PatternAnnotationWriteError.NONE) }
             persistCommand(command, commandContext, onSuccess)
         }
@@ -809,7 +961,7 @@ class PatternAnnotationViewModel
                 runCatching { command.apply(annotationRepository) }
                     .onSuccess { inverse ->
                         interaction.update { state ->
-                            if (layers.value.editContext == commandContext) {
+                            if (currentEditContext() == commandContext) {
                                 onSuccess(state).copy(
                                     undoStack = (state.undoStack + inverse).takeLast(HISTORY_LIMIT),
                                     redoStack = emptyList(),
@@ -826,15 +978,15 @@ class PatternAnnotationViewModel
                             throw failure
                         }
                         interaction.update { state ->
-                            state.copy(
-                                isSaving = false,
-                                writeError =
-                                    if (layers.value.editContext == commandContext) {
-                                        PatternAnnotationWriteError.WRITE_FAILED
-                                    } else {
-                                        state.writeError
-                                    },
-                            )
+                            if (currentEditContext() == commandContext) {
+                                state.copy(
+                                    isSaving = false,
+                                    writeError = PatternAnnotationWriteError.WRITE_FAILED,
+                                    failedStroke = savingStroke?.draft ?: state.failedStroke,
+                                )
+                            } else {
+                                state.copy(isSaving = false)
+                            }
                         }
                     }
                 savingStroke = null
@@ -847,7 +999,7 @@ class PatternAnnotationViewModel
             if (state.isSaving) return
             val source = if (isUndo) state.undoStack else state.redoStack
             val command = source.lastOrNull() ?: return
-            val commandContext = layers.value.editContext
+            val commandContext = currentEditContext()
             interaction.value = state.copy(isSaving = true, writeError = PatternAnnotationWriteError.NONE)
             viewModelScope.launch {
                 runCatching { command.apply(annotationRepository) }
@@ -864,7 +1016,7 @@ class PatternAnnotationViewModel
                             current.copy(
                                 isSaving = false,
                                 writeError =
-                                    if (layers.value.editContext == commandContext) {
+                                    if (currentEditContext() == commandContext) {
                                         PatternAnnotationWriteError.WRITE_FAILED
                                     } else {
                                         current.writeError
@@ -882,7 +1034,7 @@ class PatternAnnotationViewModel
             isUndo: Boolean,
             commandContext: AnnotationEditContext,
         ): PatternAnnotationInteractionState {
-            if (layers.value.editContext != commandContext) {
+            if (currentEditContext() != commandContext) {
                 return current.copy(isSaving = false)
             }
             return if (isUndo) {
@@ -900,14 +1052,23 @@ class PatternAnnotationViewModel
             }
         }
 
+        private fun currentEditContext(): AnnotationEditContext =
+            layers.value.editContext.copy(generation = editContextGeneration)
+
         private fun handleLayerSelection(selection: AnnotationLayerSelection) {
+            if (exportSelection != selection) {
+                exportSelection = selection
+                invalidateExport()
+            }
             val nextContext = selection.editContext
             val previousContext = editContext
             editContext = nextContext
             if (previousContext != null && previousContext != nextContext) {
+                editContextGeneration++
                 interaction.update { state ->
                     state.copy(
                         draftStroke = null,
+                        failedStroke = null,
                         writeError = PatternAnnotationWriteError.NONE,
                         selectedAnnotationId = null,
                         textEdit = null,
@@ -968,6 +1129,8 @@ class PatternAnnotationViewModel
                                 owner = projectLayer.owner,
                                 masterLayer = masterLayer,
                                 projectLayer = projectLayer,
+                                projectDocumentId = document.id,
+                                sourceUri = document.localPdfUri,
                             )
                         }
                     }
@@ -993,6 +1156,8 @@ private data class AnnotationLayerSelection(
     val owner: PatternAnnotationOwner,
     val masterLayer: PatternAnnotationLayer? = null,
     val projectLayer: PatternAnnotationLayer? = null,
+    val projectDocumentId: Long? = null,
+    val sourceUri: String? = null,
 ) {
     val editableLayerId: Long?
         get() =
@@ -1008,6 +1173,7 @@ private data class AnnotationLayerSelection(
 private data class AnnotationEditContext(
     val owner: PatternAnnotationOwner,
     val editableLayerId: Long?,
+    val generation: Long = 0L,
 )
 
 private data class PendingAnnotationStroke(
@@ -1043,6 +1209,7 @@ private data class PatternAnnotationInteractionState(
     val highlighterStrokeWidth: Float = PatternAnnotationTokens.HIGHLIGHTER_DEFAULT_WIDTH,
     val highlighterAxisLock: PatternHighlighterAxisLock = PatternHighlighterAxisLock.FREE,
     val draftStroke: PatternStrokeDraft? = null,
+    val failedStroke: PatternStrokeDraft? = null,
     val isSaving: Boolean = false,
     val writeError: PatternAnnotationWriteError = PatternAnnotationWriteError.NONE,
     val selectedAnnotationId: Long? = null,

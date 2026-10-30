@@ -1,6 +1,5 @@
 package com.finnvek.knittools.ui.screens.counter
 
-import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModelStore
@@ -17,10 +16,8 @@ import com.finnvek.knittools.widget.CounterWidgetState
 import io.mockk.clearMocks
 import io.mockk.coEvery
 import io.mockk.coVerify
-import io.mockk.confirmVerified
 import io.mockk.every
 import io.mockk.mockk
-import io.mockk.mockkObject
 import io.mockk.unmockkObject
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
@@ -63,19 +60,14 @@ class CounterViewModelRestorationTest {
     @Before
     fun setUp() {
         Dispatchers.setMain(dispatcher)
-        mockkObject(ProcessLifecycleOwner.Companion, CounterWidgetState)
-        every { ProcessLifecycleOwner.get() } returns mockk<LifecycleOwner>(relaxed = true)
-        coEvery { CounterWidgetState.syncAll(any(), any()) } returns Unit
+        mockCounterProcessAndWidget()
         // CPD-ON
         every { repository.getActiveProjects() } returns activeRows
         every { repository.observeProject(7L) } returns flowOf(completed)
         every { repository.observeProject(8L) } returns flowOf(active)
         coEvery { repository.getProject(7L) } returns completed
         coEvery { repository.getProject(8L) } returns active
-        every { repository.observeActiveSession() } returns flowOf(null)
-        every { repository.observeHasSessionsForProject(any()) } returns flowOf(true)
-        coEvery { repository.refreshActiveSession() } returns null
-        coEvery { repository.getTotalMinutesForProject(any()) } answers { firstArg<Long>().toInt() * 10 }
+        repository.stubSessionReads()
         every { counters.getCountersForProject(any()) } returns flowOf(emptyList())
     }
 
@@ -101,7 +93,7 @@ class CounterViewModelRestorationTest {
             assertFalse(states.any { it.projectId == 8L })
             assertEquals(70, vm.uiState.value.totalSessionMinutes)
             assertEquals(listOf(7L), vm.allPhotos.value.map { it.projectId })
-            assertRestorationOnlyReads()
+            repository.assertRestorationOnlyReads()
         }
 
     @Test
@@ -157,7 +149,7 @@ class CounterViewModelRestorationTest {
             assertEquals(7L, vm.uiState.value.projectId)
             assertTrue(vm.uiState.value.isCompleted)
             assertFalse(states.any { it.shouldLeaveCounter })
-            assertRestorationOnlyReads()
+            repository.assertRestorationOnlyReads()
         }
 
     @Test
@@ -185,14 +177,14 @@ class CounterViewModelRestorationTest {
         assertEquals(7L, restored.get<Long>("counter.selected_project_id"))
         assertTrue(states.all { it.projectId == null && !it.shouldLeaveCounter })
         assertTrue(closed.isEmpty())
-        assertRestorationOnlyReads()
+        repository.assertRestorationOnlyReads()
         result.complete(completed)
         runCurrent()
         assertEquals(7L, vm.uiState.value.projectId)
         assertTrue(vm.uiState.value.isCompleted)
         assertEquals(42, vm.uiState.value.counter.count)
         assertTrue(closed.isEmpty())
-        assertRestorationOnlyReads()
+        repository.assertRestorationOnlyReads()
     }
 
     @Test
@@ -210,7 +202,7 @@ class CounterViewModelRestorationTest {
             runCurrent()
             assertTrue(vm.uiState.value.projectsLoaded)
             assertFalse(states.any { it.projectId == 8L || it.shouldLeaveCounter })
-            assertRestorationOnlyReads()
+            repository.assertRestorationOnlyReads()
         }
 
     @Test
@@ -299,7 +291,7 @@ class CounterViewModelRestorationTest {
             assertFalse(vm.uiState.value.isRestoringProject)
             assertTrue(states.all { it.projectId == null })
             assertEquals(1, closed.size)
-            assertRestorationOnlyReads()
+            repository.assertRestorationOnlyReads()
         }
 
     @Test
@@ -390,7 +382,7 @@ class CounterViewModelRestorationTest {
             assertEquals(1, closed.size)
             assertNull(vm.uiState.value.projectId)
             assertNull(restored.get<Long>("counter.selected_project_id"))
-            assertRestorationOnlyReads()
+            repository.assertRestorationOnlyReads()
         }
 
     @Test
@@ -516,7 +508,7 @@ class CounterViewModelRestorationTest {
             assertEquals(7L, vm.uiState.value.projectId)
             assertFalse(states.any { it.shouldLeaveCounter })
             assertTrue(closed.isEmpty())
-            assertRestorationOnlyReads()
+            repository.assertRestorationOnlyReads()
         }
 
     @Test
@@ -530,7 +522,7 @@ class CounterViewModelRestorationTest {
             assertEquals(8L, vm.uiState.value.projectId)
             assertFalse(vm.uiState.value.isCompleted)
             assertFalse(states.any { it.projectId == 9L })
-            assertRestorationOnlyReads()
+            repository.assertRestorationOnlyReads()
         }
 
     @Test
@@ -569,7 +561,7 @@ class CounterViewModelRestorationTest {
                     .single()
             assertEquals(2, restoredCounter.count)
             coVerify(exactly = 0) { counters.updateRepeatSectionState(any(), any()) }
-            assertRestorationOnlyReads()
+            repository.assertRestorationOnlyReads()
         }
 
     private fun TestScope.completedSelectionSnapshot(): SavedStateHandle {
@@ -584,18 +576,6 @@ class CounterViewModelRestorationTest {
         store.clear()
         clearMocks(repository, answers = false)
         return restored
-    }
-
-    private fun assertRestorationOnlyReads() {
-        coVerify(atLeast = 0) {
-            repository.getActiveProjects()
-            repository.observeProject(any())
-            repository.observeActiveSession()
-            repository.observeHasSessionsForProject(any())
-            repository.refreshActiveSession()
-            repository.getTotalMinutesForProject(any())
-        }
-        confirmVerified(repository)
     }
 
     private fun TestScope.recordClosedEvents(vm: CounterViewModel): List<Unit> {

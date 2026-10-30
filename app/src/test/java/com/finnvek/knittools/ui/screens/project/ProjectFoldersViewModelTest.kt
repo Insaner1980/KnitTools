@@ -96,6 +96,7 @@ class ProjectFoldersViewModelTest {
         every { proManager.hasFeature(any()) } returns true
         every { proManager.proState } returns MutableStateFlow(ProState())
         every { repository.observeActiveSession() } returns flowOf(null)
+        every { repository.observeHasAnyProject() } returns flowOf(true)
         every { repository.getActiveProjects(ProjectSortOrder.UPDATED) } returns
             flowOf(listOf(active[3], active[1], active[0], active[2]))
         every { repository.getActiveProjects(ProjectSortOrder.NAME) } returns
@@ -171,6 +172,7 @@ class ProjectFoldersViewModelTest {
             val vm = viewModel()
             vm.selectFolder(ProjectFolderFilter.Folder(3))
             assertTrue(vm.activeProjects.value.isEmpty())
+            assertEquals(4, vm.content.value.activeProjectCount)
             assertNull(vm.continueKnittingProject.value)
             assertFalse(vm.hasHiddenCompletedProjects.value)
             assertEquals(ProjectFolderFilter.Folder(3), vm.selectedFolderFilter.value)
@@ -190,6 +192,7 @@ class ProjectFoldersViewModelTest {
             )
             vm.selectFolder(ProjectFolderFilter.Folder(2))
             assertTrue(vm.activeProjects.value.isEmpty())
+            assertEquals(4, vm.content.value.activeProjectCount)
             assertTrue(vm.hasHiddenCompletedProjects.value)
             vm.toggleShowCompleted()
             assertFalse(vm.hasHiddenCompletedProjects.value)
@@ -420,6 +423,14 @@ class ProjectFoldersViewModelTest {
                 context = context,
                 folderRepository = folderRepository,
                 savedStateHandle = state,
+                onboardingStateRepository =
+                    mockk(relaxed = true) {
+                        every { this@mockk.state } returns
+                            flowOf(
+                                com.finnvek.knittools.repository
+                                    .OnboardingState(),
+                            )
+                    },
             )
         ViewModelStore().also {
             it.put("folders", vm)

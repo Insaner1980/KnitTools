@@ -195,6 +195,7 @@ private fun YarnResultCard(result: YarnEstimate) {
         }
         Spacer(modifier = Modifier.height(8.dp))
         BadgePill(
+            uppercase = false,
             text =
                 stringResource(
                     R.string.total_weight,

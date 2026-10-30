@@ -25,6 +25,7 @@ import javax.inject.Inject
 data class NotesEditorUiState(
     val projectName: String = "",
     val notes: String = "",
+    val notesCreated: Boolean = false,
     val isLoaded: Boolean = false,
     val canEditNotes: Boolean = false,
     val isMissingProject: Boolean = false,
@@ -41,6 +42,7 @@ class NotesEditorViewModel
         private val savedStateHandle: SavedStateHandle,
     ) : ViewModel() {
         val proState = proManager.proState
+        val proAccessReady get() = proManager.initialStateReady
         private val projectId: Long? = savedStateHandle.get<Long>("projectId")?.toPositiveRouteIdOrNull()
 
         private val _uiState = MutableStateFlow(NotesEditorUiState())
@@ -72,6 +74,7 @@ class NotesEditorViewModel
                         _uiState.update { state ->
                             state.copy(
                                 projectName = project.name,
+                                notesCreated = project.notesCreated,
                                 isLoaded = true,
                                 canEditNotes = false,
                                 isMissingProject = false,
@@ -106,6 +109,7 @@ class NotesEditorViewModel
                     _uiState.update { state ->
                         state.copy(
                             projectName = project.name,
+                            notesCreated = project.notesCreated,
                             notes =
                                 when {
                                     hasRestoredDraft -> restoredDraft.orEmpty()
@@ -214,6 +218,7 @@ class NotesEditorViewModel
             _uiState.update { state ->
                 state.copy(
                     projectName = savedProject.name,
+                    notesCreated = savedProject.notesCreated,
                     notes = if (shouldApplySavedNotes) savedProject.notes else state.notes,
                     isMissingProject = false,
                     saveFailed = false,

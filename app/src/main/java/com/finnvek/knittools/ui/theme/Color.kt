@@ -151,3 +151,16 @@ val PrimaryReadable = Color(0xFFE8823A)
 // Neutraali lankatilkku, kun langasta ei ole kuvaa: langan oikeaa väriä ei tiedetä, joten sävy on teeman oma.
 val LightYarnSwatchNeutral = Color(0xFFBDB69A)
 val YarnSwatchNeutral = Color(0xFF4A4A38)
+
+// Esimerkin ohjesivu pysyy vaaleana myös tummassa teemassa kuten PDF-sivu.
+val PaperSurface = Color(0xFFECE8D8)
+val LightPaperSurface = Color(0xFFF7F4E8)
+val PaperInk = Color(0xFFB9B29A)
+
+// Kudotun Pro-merkin värit; pieni teksti säilyttää kontrastin myös läpinäkyvällä kokeilumerkillä.
+val ProMarkerContainer = Color(0xFF3A3520)
+val ProMarkerContent = Color(0xFFE3C766)
+val ProMarkerStitch = Color(0xFFC9A435)
+val LightProMarkerContainer = Color(0xFFE8DFB5)
+val LightProMarkerContent = Color(0xFF6B5410)
+val LightProMarkerStitch = Color(0xFF9A7B18)

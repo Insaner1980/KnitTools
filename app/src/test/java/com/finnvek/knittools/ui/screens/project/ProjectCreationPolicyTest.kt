@@ -43,6 +43,8 @@ class ProjectCreationPolicyTest : ProjectListViewModelFixture() {
                     proManager,
                     SavedStateHandle(),
                     backgroundScope,
+                    preferencesManager,
+                    onboardingStateRepository,
                     analytics = UsageAnalytics { events += it },
                     onFailure = { throw it },
                     onCreated = {},
@@ -207,6 +209,8 @@ class ProjectCreationPolicyTest : ProjectListViewModelFixture() {
                         proManager,
                         pendingDraftHandle(),
                         scope,
+                        preferencesManager,
+                        onboardingStateRepository,
                         onFailure = { reportedFailures += it },
                     ) { error("Unexpected creation") }
                 runCurrent()
@@ -340,7 +344,15 @@ class ProjectCreationPolicyTest : ProjectListViewModelFixture() {
         val navigated = mutableListOf<Long>()
         try {
             val actions =
-                ProjectCreationActions(repository, proManager, handle, scope, onFailure = { reportedFailures += it }) {
+                ProjectCreationActions(
+                    repository,
+                    proManager,
+                    handle,
+                    scope,
+                    preferencesManager,
+                    onboardingStateRepository,
+                    onFailure = { reportedFailures += it },
+                ) {
                     navigated += it
                 }
             runCurrent()
@@ -362,12 +374,7 @@ class ProjectCreationPolicyTest : ProjectListViewModelFixture() {
             coVerify(exactly = 1) { repository.createProject(any(), any(), any(), any(), any(), any()) }
             val created = result is ProjectCreationResult.Created && !dismiss && failure == null
             assertEquals(if (created) listOf(42L) else emptyList<Long>(), navigated)
-            val expectedPrompt =
-                when {
-                    dismiss || created -> null
-                    failure == null -> 0
-                    else -> 1
-                }
+            val expectedPrompt = expectedPromptCount(dismiss, created, failure)
             assertEquals(expectedPrompt, actions.projectCreationPromptCount.value)
             assertEquals(dismiss || created, handle.get<Any>("pending_project_creation") == null)
             val expectedErrors =
@@ -378,6 +385,17 @@ class ProjectCreationPolicyTest : ProjectListViewModelFixture() {
             scope.cancel()
         }
     }
+
+    private fun expectedPromptCount(
+        dismiss: Boolean,
+        created: Boolean,
+        failure: Throwable?,
+    ): Int? =
+        when {
+            dismiss || created -> null
+            failure == null -> 0
+            else -> 1
+        }
 
     private fun pendingDraftHandle() =
         SavedStateHandle(

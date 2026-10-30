@@ -75,4 +75,5 @@
     <string name="pattern_annotation_export_filename">%1$s-med-noter.pdf</string>
     <string name="pattern_annotation_edit_text">Rediger tekst</string>
     <string name="pattern_annotation_write_failed">Teksten kunne ikke gemmes. Markeringen kan være ændret. Luk editoren, og prøv igen.</string>
+    <string name="pattern_annotation_command_failed">En ændring af en markering blev ikke gemt. Luk beskeden, og prøv handlingen igen med markeringsværktøjerne.</string>
 </resources>

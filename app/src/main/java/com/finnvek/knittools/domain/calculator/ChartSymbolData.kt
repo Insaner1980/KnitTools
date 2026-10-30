@@ -7,7 +7,8 @@ import com.finnvek.knittools.domain.model.ChartSymbolCategory
 /**
  * Lähteet: Craft Yarn Council knit chart symbols ja cable symbols:
  * https://www.craftyarncouncil.com/standards/knit-chart-symbols
- * https://www.craftyarncouncil.com/standards/cable-symbols
+ * CYC right-side symbols; cables use version 1, scaled to four/six stitch cells.
+ * No CYC knitwise-slip symbol is specified, so that unsupported entry is omitted.
  */
 object ChartSymbolData {
     val symbols: List<ChartSymbol> =
@@ -31,12 +32,6 @@ object ChartSymbolData {
                 "purl_tbl",
                 R.string.sym_purl_tbl_name,
                 R.string.sym_purl_tbl_desc,
-                ChartSymbolCategory.BASIC,
-            ),
-            ChartSymbol(
-                "slip_knitwise",
-                R.string.sym_slip_knitwise_name,
-                R.string.sym_slip_knitwise_desc,
                 ChartSymbolCategory.BASIC,
             ),
             ChartSymbol(

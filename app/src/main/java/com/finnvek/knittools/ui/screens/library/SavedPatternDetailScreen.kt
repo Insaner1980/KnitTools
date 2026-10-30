@@ -57,6 +57,7 @@ import com.finnvek.knittools.ui.components.ProjectPickerSheet
 import com.finnvek.knittools.ui.components.RemotePatternImage
 import com.finnvek.knittools.ui.components.ToolScreenScaffold
 import com.finnvek.knittools.ui.components.rememberScrollTitleState
+import com.finnvek.knittools.ui.layout.ContentWidthPolicy
 import com.finnvek.knittools.ui.platform.ExternalWebLinkOpenResult
 import com.finnvek.knittools.ui.platform.openExternalWebLink
 import com.finnvek.knittools.ui.screens.ravelry.PatternAvailabilityBadge
@@ -186,6 +187,7 @@ fun SavedPatternDetailScreen(
             projects = projects,
             onSelect = { projectId ->
                 showProjectPicker = false
+                pendingReplacementId = null
                 if (isWebPattern) {
                     startWebAttach(projectId, null)
                 } else {
@@ -197,17 +199,18 @@ fun SavedPatternDetailScreen(
             onDismiss = { showProjectPicker = false },
         )
     }
-    pendingReplacementId?.let { expectedExistingId ->
-        ConfirmationDialog(
-            title = stringResource(R.string.web_pattern_replace_confirm_title),
-            message = stringResource(R.string.web_pattern_replace_confirm_message, pattern.name),
-            confirmText = stringResource(R.string.web_pattern_attach),
-            isDestructive = true,
-            onConfirm = {
-                attachmentState.projectId?.let { projectId -> startWebAttach(projectId, expectedExistingId) }
-            },
-            onDismiss = { pendingReplacementId = null },
-        )
+    val replacementProjectId = attachmentState.projectId
+    if (replacementProjectId != null) {
+        pendingReplacementId?.let { expectedExistingId ->
+            ConfirmationDialog(
+                title = stringResource(R.string.web_pattern_replace_confirm_title),
+                message = stringResource(R.string.web_pattern_replace_confirm_message, pattern.name),
+                confirmText = stringResource(R.string.web_pattern_attach),
+                isDestructive = true,
+                onConfirm = { startWebAttach(replacementProjectId, expectedExistingId) },
+                onDismiss = { pendingReplacementId = null },
+            )
+        }
     }
 
     // Nimi on sisällön otsikkona; yläpalkki näyttää sen vasta kun nimi on vieritetty pois.
@@ -233,6 +236,7 @@ fun SavedPatternDetailScreen(
         ravelryUrl?.let(onOpenRavelry)
     }
     ToolScreenScaffold(
+        contentWidthPolicy = ContentWidthPolicy.ListDetail,
         title = pattern.name,
         onBack = onBack,
         modifier = modifier,

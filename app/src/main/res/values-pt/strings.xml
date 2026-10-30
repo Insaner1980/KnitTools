@@ -115,7 +115,7 @@
     <string name="show_completed">Mostrar concluídos</string>
 
     <!-- Multi-select -->
-    <string name="n_selected">%d selecionados</string>
+    <string name="n_selected">Seleção: %d</string>
     <string name="select_all">Selecionar tudo</string>
     <string name="select_photo">Selecionar foto</string>
     <plurals name="complete_n_projects">
@@ -148,14 +148,14 @@
     <string name="pattern_open_failed">Não foi possível abrir a receita.</string>
     <string name="pattern_show_reading_line">Mostrar linha de leitura</string>
     <string name="pattern_hide_reading_line">Ocultar linha de leitura</string>
-    <string name="pattern_clear_row_mark">Limpar marcador da carreira</string>
+    <string name="pattern_clear_row_mark">Limpar marcador do contador</string>
     <string name="pattern_clear_page_marks">Limpar marcadores da página</string>
-    <string name="pattern_calibrate_rows">Calibrar carreiras</string>
-    <string name="pattern_calibration_first_row">Primeira carreira</string>
-    <string name="pattern_calibration_last_row">Última carreira</string>
-    <string name="pattern_calibration_save_first">Guardar primeira</string>
-    <string name="pattern_calibration_save_last">Guardar última</string>
-    <string name="pattern_calibration_invalid_row">Use dois números de carreira diferentes</string>
+    <string name="pattern_calibrate_rows">Calibrar posições do contador</string>
+    <string name="pattern_calibration_first_row">Primeiro valor</string>
+    <string name="pattern_calibration_last_row">Último valor</string>
+    <string name="pattern_calibration_save_first">Guardar primeiro valor</string>
+    <string name="pattern_calibration_save_last">Guardar último valor</string>
+    <string name="pattern_calibration_invalid_row">Use dois valores diferentes do contador</string>
     <string name="pattern_page_jump">Ir para a página</string>
     <string name="pattern_page_number">Número da página</string>
     <string name="pattern_page_indicator">Página %1$d de %2$d</string>
@@ -241,8 +241,8 @@
     <!-- Session History -->
     <string name="session_history_title">Histórico de sessões</string>
     <string name="no_sessions">Ainda não há sessões registadas. Abra um projeto e inicie uma sessão de trabalho para registar o seu tempo aqui.</string>
-    <string name="session_row_range">Carreiras %1$d \u2192 %2$d</string>
-    <string name="session_row_single">Carreira %1$d</string>
+    <string name="session_row_range">Contador: %1$d → %2$d</string>
+    <string name="session_row_single">Valor %1$d</string>
     <string name="delete_session_title">Eliminar sessão?</string>
     <string name="delete_session_message">Eliminar esta sessão do histórico? Esta ação não pode ser anulada.</string>
 
@@ -274,9 +274,9 @@
     <string name="project_content_add_pattern">Adicionar receita</string>
     <string name="stitch_tracker_label">Pontos</string>
     <plurals name="reminder_repeat_occurrence_format">
-        <item quantity="one">Repetir #%1$d a cada carreira</item>
-        <item quantity="many">Repetir #%1$d a cada %2$d carreiras</item>
-        <item quantity="other">Repetir #%1$d a cada %2$d carreiras</item>
+        <item quantity="one">Repetição #%1$d, intervalo %2$d</item>
+        <item quantity="many">Repetição #%1$d, intervalo %2$d</item>
+        <item quantity="other">Repetição #%1$d, intervalo %2$d</item>
     </plurals>
 
     <!-- Increase / Decrease -->
@@ -301,7 +301,7 @@
     <string name="increase_decrease_error_cannot_decrease">Contagem de pontos disponível: %2$d. Diminuição solicitada: %1$d.</string>
     <string name="increase_decrease_error_not_enough_decrease">Contagem de pontos necessária: %1$d. Diminuições solicitadas: %2$d.</string>
     <string name="increase_decrease_error_total_out_of_range">O resultado é demasiado grande. Use contagens de pontos menores.</string>
-    <string name="increase_decrease_warning_increase_more_than_current">Está a aumentar mais do que os pontos atuais - algumas secções não terão pontos tricotados entre aumentos</string>
+    <string name="increase_decrease_error_not_enough_bars">Não há espaços suficientes entre os pontos para estes aumentos M1. Reduza o número de aumentos.</string>
 
     <!-- Gauge Converter -->
     <string name="pattern_gauge">Tensão da receita</string>
@@ -328,9 +328,9 @@
     <string name="total_yarn_needed">Quantidade total de fio necessária</string>
     <string name="length_per_skein">Comprimento por novelo</string>
     <string name="weight_per_skein">Peso por novelo</string>
-    <string name="total_weight">Peso total: %s g</string>
-    <string name="estimated_skeins">Estimativa: cerca de %s novelos</string>
-    <string name="extra_skein_note">Compre sempre um novelo extra — os lotes de tingimento podem variar</string>
+    <string name="total_weight">Peso dos novelos inteiros: %s g</string>
+    <string name="estimated_skeins">Quantidade estimada de novelos: %s</string>
+    <string name="extra_skein_note">Considere fio extra — os lotes de tingimento podem variar</string>
 
     <!-- Needle Sizes -->
     <string name="search_size">Procurar tamanho…</string>
@@ -359,6 +359,7 @@
     <string name="settings_language_french">Français</string>
     <string name="settings_language_spanish">Español</string>
     <string name="settings_language_portuguese">Português</string>
+    <string name="settings_language_brazilian_portuguese">Português (Brasil)</string>
     <string name="settings_language_italian">Italiano</string>
     <string name="settings_language_norwegian">Norsk</string>
     <string name="settings_language_danish">Dansk</string>
@@ -395,7 +396,6 @@
     <string name="yarn_dye_lot_short">Lote %1$s</string>
     <string name="weight_category">Categoria de espessura</string>
     <string name="yarn_weight_other">Outro</string>
-    <string name="yarn_weight_ply_format">%1$s fios</string>
     <string name="care_symbols">Cuidados</string>
     <string name="no_saved_yarns">Ainda não há fichas de fio guardadas</string>
 
@@ -410,8 +410,6 @@
     <string name="generic_error_unknown">Algo correu mal — tente novamente</string>
 
     <!-- Camera permission -->
-    <string name="camera_permission_denied">É necessária autorização da câmara para tirar fotografias</string>
-    <string name="camera_permission_denied_permanent">Autorização da câmara negada — ative-a nas Definições</string>
 
     <!-- Care symbol categories -->
     <string name="care_wash_30">30°</string>
@@ -430,9 +428,9 @@
     <string name="care_iron_medium">Passar a ferro em temperatura média</string>
     <string name="care_iron_high">Passar a ferro em temperatura alta</string>
     <string name="care_iron_do_not">Não passar a ferro</string>
-    <string name="care_dryclean_any">Qualquer solvente</string>
-    <string name="care_dryclean_p">Solvente P</string>
-    <string name="care_dryclean_f">Solvente F</string>
+    <string name="care_dryclean_any">Limpeza a seco com solventes usuais</string>
+    <string name="care_dryclean_p">Limpeza a seco com percloroetileno e hidrocarbonetos (P)</string>
+    <string name="care_dryclean_f">Limpeza a seco com hidrocarbonetos (F)</string>
     <string name="care_dryclean_do_not">Não limpar a seco</string>
 
     <!-- Defaults -->
@@ -449,7 +447,7 @@
     <string name="desc_cast_on">Calcule quantos pontos montar para a largura desejada</string>
     <string name="desc_needle_sizes">Tamanhos de agulhas nos sistemas métrico, US, UK e japonês</string>
     <string name="desc_size_charts">Medidas corporais padrão para tamanhos de peças</string>
-    <string name="desc_abbreviations">Referência de abreviaturas comuns de tricô</string>
+    <string name="desc_abbreviations">Referência de abreviaturas de tricô em inglês</string>
     <string name="desc_chart_symbols">Guia padrão de símbolos de gráficos de tricô</string>
 
     <!-- Library — My Collection -->
@@ -538,16 +536,15 @@
     <string name="insights_all_time">Sempre</string>
     <string name="insights_this_week">Esta semana</string>
     <string name="insights_this_month">Este mês</string>
-    <plurals name="insights_rows_count">
-        <item quantity="one">%1$d carreira</item>
-        <item quantity="many">%1$d carreiras</item>
-        <item quantity="other">%1$d carreiras</item>
-    </plurals>
     <string name="relative_time_today">hoje</string>
     <string name="relative_time_yesterday">ontem</string>
     <string name="relative_time_days_ago">há %1$d d</string>
     <string name="relative_time_weeks_ago">há %1$d sem</string>
-    <string name="relative_time_months_ago">há %1$d m</string>
+    <plurals name="relative_time_months_ago">
+        <item quantity="one">há %1$d m</item>
+        <item quantity="many">há %1$d m</item>
+        <item quantity="other">há %1$d m</item>
+    </plurals>
 
     <!-- Settings -->
     <string name="help_and_guide">Ajuda e guia</string>
@@ -577,7 +574,7 @@
 
     <!-- Chart Symbols -->
     <string name="chart_symbols_title">Símbolos de gráficos</string>
-    <string name="chart_symbols_disclaimer">Os símbolos seguem convenções padrão. Verifique sempre a legenda de símbolos da sua receita.</string>
+    <string name="chart_symbols_disclaimer">Os símbolos representam os pontos vistos pelo direito do trabalho. Verifique sempre a legenda de símbolos da sua receita.</string>
     <string name="category_basic">Pontos básicos</string>
     <string name="category_decreases">Diminuições</string>
     <string name="category_increases">Aumentos</string>
@@ -594,13 +591,13 @@
     <string name="no_reminders">Ainda não há lembretes</string>
     <string name="delete_reminder_title">Eliminar lembrete?</string>
     <string name="delete_reminder_confirm">Eliminar o lembrete \"%1$s\"?</string>
-    <string name="row_number">Número da carreira</string>
+    <string name="row_number">Valor do contador</string>
     <string name="reminder_message">Mensagem</string>
     <string name="reminder_message_hint">ex.: Passar para a aba do calcanhar</string>
     <string name="one_time">Uma vez</string>
     <string name="repeating">Repetitivo</string>
     <string name="repeat_every">Repetir a cada</string>
-    <string name="repeat_every_rows">carreiras</string>
+    <string name="repeat_every_rows">incrementos</string>
     <string name="dismiss">Dispensar</string>
 
     <!-- Multiple Counters -->
@@ -616,11 +613,11 @@
     <string name="repeat_section">Secção de repetição</string>
     <string name="starting_stitches">Número inicial de pontos</string>
     <string name="stitch_change">Pontos a adicionar/remover</string>
-    <string name="shape_every_n">Moldar a cada N carreiras</string>
-    <string name="repeat_section_start_row">Carreira inicial</string>
-    <string name="repeat_section_end_row">Carreira final</string>
+    <string name="shape_every_n">Moldar a cada N incrementos</string>
+    <string name="repeat_section_start_row">Valor inicial</string>
+    <string name="repeat_section_end_row">Valor final</string>
     <string name="total_repeats">Total de repetições</string>
-    <string name="repeat_section_progress_format">Repetição %1$d/%2$d, carreira %3$d/%4$d</string>
+    <string name="repeat_section_progress_format">Repetição %1$d/%2$d, valor %3$d/%4$d</string>
     <string name="repeat_section_complete">Concluído</string>
     <string name="rename_counter">Mudar nome</string>
     <string name="reset_counter_name">Repor</string>
@@ -632,7 +629,7 @@
     <string name="take_photo">Tirar foto</string>
     <string name="progress_photos">Fotos de progresso</string>
     <string name="counters_list_empty">Sem contadores extra</string>
-    <string name="row_label_format">Carreira %d</string>
+    <string name="row_label_format">Valor %d</string>
     <string name="share_photo">Partilhar</string>
     <string name="photo_share_failed">Não foi possível partilhar a foto.</string>
     <string name="delete_photo">Eliminar foto</string>
@@ -683,17 +680,16 @@
     <string name="tip_edge_stitches_title">Pontos de ourela</string>
     <string name="tip_edge_stitches_desc">Os pontos de ourela são pontos extra fora da repetição do motivo. Introduza o total de pontos de ourela a montar; a calculadora adiciona-os depois de calcular a largura pretendida, por exemplo 2 para um ponto em cada lado.</string>
     <string name="tip_flat_vs_circular_title">Plano vs. circular</string>
-    <string name="tip_flat_vs_circular_desc">Tricô plano: trabalha de ida e volta em agulhas direitas ou circulares, virando no fim de cada carreira.\n\nTricô circular: trabalha numa volta contínua. Os aumentos/diminuições distribuem-se uniformemente ao longo da volta.</string>
+    <string name="tip_flat_vs_circular_desc">Tricô plano: trabalha de ida e volta em agulhas direitas ou circulares, virando no fim de cada carreira.\n\nTricô circular: trabalha numa volta contínua. Os aumentos/diminuições distribuem-se uniformemente ao longo da volta.\n\nNos resultados, K = tricotar em meia, M1 = aumentar uma malha entre pontos e K2tog = tricotar duas malhas juntas em meia. × indica o número de repetições.</string>
     <string name="tip_needle_sizes_title">Sistemas de tamanhos de agulhas</string>
-    <string name="tip_needle_sizes_desc">O sistema métrico (mm) é o padrão universal. Os tamanhos US usam um sistema numerado (0–50). UK/Canadá usam outro sistema numerado. Os tamanhos japoneses têm a sua própria numeração. Verifique sempre o tamanho em mm para ter a certeza.</string>
+    <string name="tip_needle_sizes_desc">O sistema métrico (mm) é o padrão universal. Os tamanhos US usam um sistema numerado. UK/Canadá usam outro sistema numerado. Os tamanhos japoneses têm a sua própria numeração. Verifique sempre o tamanho em mm para ter a certeza.</string>
     <string name="tip_imperial_units_title">Unidades imperiais</string>
-    <string name="tip_imperial_units_desc">Quando ativado, todas as calculadoras usam polegadas em vez de centímetros e jardas em vez de metros. A tensão passa a ser medida por 4 polegadas em vez de por 10 cm.</string>
+    <string name="tip_imperial_units_desc">Usa polegadas em vez de centímetros e jardas em vez de metros como unidades predefinidas. A tensão é indicada por 4 polegadas em vez de por 10 cm. Em Medidas e tensão, pode escolher outras unidades.</string>
     <string name="open_notes_editor">Abrir editor de notas</string>
     <string name="restore_purchases_checking">A verificar compras…</string>
     <string name="retry">Tentar novamente</string>
     <string name="target_rows_dialog_title">Definir objetivo</string>
     <string name="target_rows_remove">Remover objetivo</string>
-    <string name="row_label_with_target">%1$d / %2$d</string>
     <string name="project_actions_title">Ações do projeto</string>
     <string name="project_actions_section_counter_tools">Ferramentas de contadores</string>
     <string name="project_content_title">Projeto</string>
@@ -708,33 +704,25 @@
     <string name="yarn_card_number_fallback">Fio #%1$d</string>
     <string name="show_more">Mostrar mais</string>
     <string name="pro_start_free_trial">Iniciar avaliação gratuita</string><string name="pro_start_14_day_trial">Iniciar avaliação gratuita de 14 dias</string><string name="pro_trial_start_failed">Não foi possível iniciar a avaliação. Tente novamente.</string>
-    <string name="pro_prompt_not_now">Agora não</string><string name="pro_prompt_see_pro">Ver Pro</string><string name="pro_prompt_trial_body">Inicie a sua avaliação gratuita de 14 dias do Pro. Não é necessário um método de pagamento. Tudo o que criar continuará disponível após a avaliação.</string>
-    <string name="pro_prompt_reactivation_title">Reative este projeto com o Pro</string>
-    <string name="pro_prompt_reactivation_trial_body">Inicie o seu período de teste gratuito do Pro de 14 dias para reativar este projeto e trabalhar em vários projetos ao mesmo tempo. Pode guardar e consultar projetos concluídos gratuitamente. Os seus projetos continuam disponíveis após o teste.</string>
-    <string name="pro_prompt_reactivation_body">O Pro permite reativar este projeto e trabalhar em vários projetos ao mesmo tempo. Pode guardar e consultar projetos concluídos gratuitamente. Os seus projetos existentes continuam disponíveis.</string>
-    <string name="pro_prompt_projects_title">Crie outro projeto ativo com o Pro</string>
-    <plurals name="pro_prompt_projects_trial_body">
-        <item quantity="one">Tem %1$d projeto ativo. Inicie o seu período de teste gratuito do Pro de 14 dias para criar outro e trabalhar em vários projetos ao mesmo tempo. Os projetos concluídos não contam para o limite gratuito. Os seus projetos continuam disponíveis após o teste.</item>
-        <item quantity="many">Tem %1$d projetos ativos. Inicie o seu período de teste gratuito do Pro de 14 dias para criar outro e trabalhar em vários projetos ao mesmo tempo. Os projetos concluídos não contam para o limite gratuito. Os seus projetos continuam disponíveis após o teste.</item>
-        <item quantity="other">Tem %1$d projetos ativos. Inicie o seu período de teste gratuito do Pro de 14 dias para criar outro e trabalhar em vários projetos ao mesmo tempo. Os projetos concluídos não contam para o limite gratuito. Os seus projetos continuam disponíveis após o teste.</item>
-    </plurals>
-    <plurals name="pro_prompt_projects_body">
-        <item quantity="one">Tem %1$d projeto ativo. O Pro permite criar outro e trabalhar em vários projetos ao mesmo tempo. Os projetos concluídos não contam para o limite gratuito. Os seus projetos existentes continuam disponíveis.</item>
-        <item quantity="many">Tem %1$d projetos ativos. O Pro permite criar outro e trabalhar em vários projetos ao mesmo tempo. Os projetos concluídos não contam para o limite gratuito. Os seus projetos existentes continuam disponíveis.</item>
-        <item quantity="other">Tem %1$d projetos ativos. O Pro permite criar outro e trabalhar em vários projetos ao mesmo tempo. Os projetos concluídos não contam para o limite gratuito. Os seus projetos existentes continuam disponíveis.</item>
-    </plurals>
-    <string name="pro_prompt_photos_title">Adicione fotos de progresso com o Pro</string><string name="pro_prompt_photos_body">Criar uma nova foto de progresso requer o Pro. As suas fotos atuais continuarão disponíveis.</string>
-    <string name="pro_prompt_notes_title">Adicione notas de projeto com o Pro</string><string name="pro_prompt_notes_body">Criar a primeira nota deste projeto requer o Pro. As notas que já criou continuarão editáveis.</string>
-    <string name="pro_prompt_yarn_title">Adicione fio com o Pro</string><string name="pro_prompt_yarn_body">Criar um novo cartão de fio requer o Pro. Os seus cartões atuais continuarão disponíveis e editáveis.</string>
-    <string name="pro_prompt_save_yarn_title">Guarde este fio com o Pro</string><string name="pro_prompt_save_yarn_body">Guardar este fio do projeto em O meu fio cria um novo cartão e requer o Pro. A nota de fio do projeto continuará disponível.</string>
-    <string name="pro_prompt_counters_title">Adicione um contador com o Pro</string><string name="pro_prompt_counters_body">Criar um novo contador adicional requer o Pro. Os seus contadores atuais continuarão disponíveis e editáveis.</string>
-    <string name="pro_prompt_reminders_title">Adicione um lembrete de carreira com o Pro</string><string name="pro_prompt_reminders_body">Criar um novo lembrete de carreira requer o Pro. Os seus lembretes atuais continuarão a funcionar e poderão ser editados.</string>
-    <string name="pro_prompt_pattern_camera_title">Transforme fotos do padrão em PDF com o Pro</string><string name="pro_prompt_pattern_camera_body">Criar um novo PDF a partir de fotos do padrão requer o Pro. Os seus padrões e PDF atuais continuarão disponíveis.</string>
-    <string name="pro_prompt_widget_title">Use o widget do ecrã inicial com o Pro</string><string name="pro_prompt_widget_body">O widget do ecrã inicial é uma vista avançada do Pro. Os dados dos seus projetos e contadores continuarão disponíveis no KnitTools.</string>
+    <string name="pro_prompt_not_now">Agora não</string><string name="pro_prompt_see_pro">Ver Pro</string>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     <string name="pro_badge">PRO</string><string name="pro_badge_locked_description">Funcionalidade Pro</string><string name="pro_badge_trial_description">Funcionalidade Pro, disponível durante a avaliação</string><string name="knittools_pro">KnitTools Pro</string><string name="pro_content_stays_available">Tudo o que criar continuará disponível.</string>
     <plurals name="pro_status_trial_days"><item quantity="one">Avaliação, falta %1$d dia</item><item quantity="many">Avaliação, faltam %1$d dias</item><item quantity="other">Avaliação, faltam %1$d dias</item></plurals>
-    <string name="pro_status_trial_ended">Avaliação terminada</string><string name="pro_status_purchased">Comprado</string><string name="pro_trial_ended_title">A sua avaliação do Pro terminou</string><string name="pro_trial_ended_body">Tudo o que criou continua disponível. Pode continuar a usar e editar. O Pro só é necessário para novos itens Pro e vistas avançadas.</string><string name="pro_continue_free">Continuar gratuitamente</string>
-    <string name="pro_page_intro">Dê mais espaço a cada projeto e mantenha o seu fluxo de trabalho unido.</string><string name="pro_page_trust">Tudo o que criar continuará disponível, mesmo que a avaliação termine.</string><string name="pro_group_projects_title">Projetos e materiais</string><string name="pro_group_projects_body">Trabalhe em vários projetos ativos e crie a primeira nota do projeto, fotos de progresso e cartões de fio.</string><string name="pro_group_workflow_title">Contagem e fluxo de trabalho</string><string name="pro_group_workflow_body">Use o contador compacto de repetições, contadores adicionais, de repetição, modelagem e secção, lembretes de carreira, fotos do padrão como PDF e o widget do ecrã inicial.</string><string name="pro_group_insights_title">Estatísticas</string><string name="pro_group_insights_body">Veja gráficos de atividade diários, semanais e mensais e a sua sequência de atividade.</string>
+    <string name="pro_status_trial_ended">Avaliação terminada</string><string name="pro_status_purchased">Comprado</string><string name="pro_trial_ended_body">Tudo o que criou continua disponível. Pode continuar a usar e editar. O Pro só é necessário para novos itens Pro e vistas avançadas.</string><string name="pro_continue_free">Continuar gratuitamente</string>
+
     <string name="pro_page_purchased">Pro comprado</string><string name="pro_buy_for_price">Comprar Pro por %1$s</string><string name="pro_price_unavailable">Preço indisponível</string><string name="billing_purchase_pending">A sua compra está pendente. O Pro ficará disponível quando o Google Play concluir o pagamento.</string>
     <string name="project_updated_format">Atualizado %1$s</string>
     <string name="project_completed_format">Concluído %1$s</string>
@@ -746,7 +734,7 @@
     <string name="work_session_recovery_needed">É necessário rever o tempo da sessão</string>
     <string name="work_session_resolve">Resolver</string>
     <string name="work_session_recovery_title">Rever tempo da sessão</string>
-    <string name="work_session_pending_rows_format">Progresso pendente: %1$d carreiras</string>
+    <string name="work_session_pending_rows_format">Progresso pendente do contador: %1$d</string>
     <string name="work_session_hours">Horas</string>
     <string name="work_session_minutes">Minutos</string>
     <string name="work_session_add_and_continue">Adicionar e continuar</string>
@@ -951,7 +939,7 @@
         <item quantity="other">%1$d carreiras</item>
     </plurals>
     <string name="yarn_usage_title">Utilização do fio</string>
-    <string name="yarn_usage_scope">Regista apenas o fio reservado para este projeto. As quantidades em O meu fio não mudam.</string>
+    <string name="yarn_usage_scope">Regista o fio planeado, reservado e utilizado neste projeto. As quantidades em O meu fio não mudam.</string>
     <string name="yarn_usage_unit">Unidade de quantidade</string>
     <string name="yarn_usage_grams">Gramas</string>
     <string name="yarn_usage_skeins">Meadas</string>
@@ -1136,4 +1124,5 @@
     <string name="project_yarn_edit_missing">Esta nota de fio já não pertence a este projeto. Feche o editor.</string>
     <string name="project_yarn_edit_invalid">Introduza um nome para o fio.</string>
     <string name="project_yarn_edit_failed">Não foi possível guardar as alterações. O rascunho continua aqui. Tente novamente.</string>
+    <string name="counter_progress_format">Progresso do contador: %1$d</string>
 </resources>

@@ -1,6 +1,7 @@
 package com.finnvek.knittools
 
 import android.app.Application
+import android.util.Log
 import androidx.lifecycle.ProcessLifecycleOwner
 import com.finnvek.knittools.analytics.PostHogAnalytics
 import com.finnvek.knittools.billing.BillingManager
@@ -13,6 +14,8 @@ import com.finnvek.knittools.di.IoDispatcher
 import com.finnvek.knittools.pro.ProFeature
 import com.finnvek.knittools.pro.ProManager
 import com.finnvek.knittools.repository.BackupRepository
+import com.finnvek.knittools.repository.CounterRepository
+import com.finnvek.knittools.repository.OnboardingStateRepository
 import com.finnvek.knittools.repository.ProjectCounterRepository
 import com.finnvek.knittools.repository.YarnCardRepository
 import com.finnvek.knittools.widget.CounterWidgetState
@@ -25,6 +28,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import java.time.LocalDate
 import javax.inject.Inject
 
 @HiltAndroidApp
@@ -46,6 +50,12 @@ class App : Application() {
 
     @Inject
     lateinit var backupRepository: dagger.Lazy<BackupRepository>
+
+    @Inject
+    lateinit var counterRepository: dagger.Lazy<CounterRepository>
+
+    @Inject
+    lateinit var onboardingStateRepository: dagger.Lazy<OnboardingStateRepository>
 
     @Inject
     lateinit var projectCounterRepository: dagger.Lazy<ProjectCounterRepository>
@@ -72,18 +82,19 @@ class App : Application() {
         SentryInit.init(this)
         if (BuildConfig.POSTHOG_ENABLED && BuildConfig.POSTHOG_PROJECT_TOKEN.isNotBlank()) {
             ProcessLifecycleOwner.get().lifecycle.addObserver(analytics)
-            applicationScope.launch {
+            applicationScope.launch(ioDispatcher) {
                 preferencesManager
                     .get()
                     .preferences
-                    .map { it.usageAnalyticsEnabled }
+                    .map { it.usageAnalyticsEnabled to it.usageAnalyticsGeneration }
                     .distinctUntilChanged()
-                    .collect(analytics::setEnabled)
+                    .collect { (enabled, generation) -> analytics.setEnabled(enabled, generation) }
             }
         }
         applicationScope.launch {
             preferencesManager.get().applyStoredAppLanguage()
         }
+        initializeOnboarding()
         applicationScope.launch {
             try {
                 backupRepository.get().recoverInterruptedOperations()
@@ -114,6 +125,22 @@ class App : Application() {
         billingManager.get().initialize()
         proManager.get().initialize()
         observeWidgetProState()
+    }
+
+    private fun initializeOnboarding() {
+        applicationScope.launch(ioDispatcher) {
+            try {
+                onboardingStateRepository.get().initializeIfNeeded(
+                    hasAnyProject = counterRepository.get().hasAnyProject(),
+                    today = LocalDate.now().toEpochDay(),
+                )
+            } catch (failure: CancellationException) {
+                throw failure
+            } catch (_: Exception) {
+                // Opastuksen alustuksen virhe ei estä sovelluksen käyttöä.
+                Log.w("App", "Onboarding initialization failed")
+            }
+        }
     }
 
     private fun observeWidgetProState() {

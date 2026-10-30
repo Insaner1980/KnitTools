@@ -1,0 +1,30 @@
+{
+  "date": "2026-10-19",
+  "xml_parse": "PASS",
+  "translatable_key_type_parity": "PASS",
+  "plural_variants": "PASS: 31 one/other pairs",
+  "placeholder_signature_parity": "PASS: all 1380 variants resolved",
+  "aliases": "PASS: web_pattern_error_designer_too_long -> web_pattern_error_title_too_long",
+  "coverage": "PASS: 1349 keys / 1380 variants / 1626 total rows",
+  "current_input_hashes": "PASS: 455",
+  "entry_files_checked": 1142,
+  "entry_files_missing": [],
+  "entry_files_changed": [
+    "app/src/main/res/values-nb/reference_strings.xml",
+    "app/src/main/res/values-nb/strings.xml"
+  ],
+  "original_resource_bytes_reconstructed": {
+    "app/src/main/res/values-nb/reference_strings.xml": true,
+    "app/src/main/res/values-nb/strings.xml": true
+  },
+  "git_diff_check": "PASS",
+  "git_line_ending_warning": "Existing CRLF files will normalize if Git writes them; no whitespace errors. Original bytes reconstruct exactly.",
+  "gradle_logs": {
+    "resource-processing.log": true,
+    "resource-processing-final.log": true
+  },
+  "final_gradle_result": "BUILD SUCCESSFUL in 14s; 19 actionable tasks: 7 executed, 12 up-to-date",
+  "fresh_runtime": "NOT_RUN: no unresolved device-only language question",
+  "native_review": "NOT_REQUESTED",
+  "temporary_processes": "Both task-owned --no-daemon Gradle commands exited. No emulator/server/watcher started."
+}

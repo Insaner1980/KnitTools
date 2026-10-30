@@ -1,6 +1,7 @@
 package com.finnvek.knittools.ui.screens.pattern
 
 import com.finnvek.knittools.ProjectSourceFiles
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -21,12 +22,7 @@ class PatternViewerSourceTest {
         assertTrue(source.contains("readingLineEnabled = selectedDocument?.readingLineEnabled == true"))
         assertTrue(source.contains("readingLineYFraction = readingLinePreviewYFraction"))
         assertTrue(source.contains("counterViewModel.setReadingLineEnabled(enabled, selectedDocument?.id)"))
-        assertTrue(
-            source.contains(
-                "counterViewModel.commitManualReadingLinePosition(" +
-                    "sanitizedYFraction, selectedDocument?.id)",
-            ),
-        )
+        assertTrue(manualReadingLineCommit.containsMatchIn(source))
     }
 
     @Test
@@ -84,7 +80,7 @@ class PatternViewerSourceTest {
     }
 
     @Test
-    fun `reading line label uses current row and localized theme styling`() {
+    fun `reading line label uses current count and localized theme styling`() {
         val source = ProjectSourceFiles.read(PATTERN_VIEWER_SCREEN)
         val documentBlock =
             source.blockBetween(
@@ -101,13 +97,14 @@ class PatternViewerSourceTest {
         assertTrue(overlayBlock.contains("currentRow: Int?"))
         assertTrue(overlayBlock.contains("currentRow?.let { currentRow ->"))
         assertTrue(overlayBlock.contains("ReadingLineRowLabel("))
-        assertTrue(overlayBlock.contains("stringResource(R.string.current_row_short, currentRow)"))
+        assertTrue(overlayBlock.contains("stringResource(R.string.row_label_format, currentRow)"))
+        assertFalse(overlayBlock.contains("R.string.current_row_short"))
         assertTrue(overlayBlock.contains("MaterialTheme.colorScheme.primaryContainer"))
         assertTrue(overlayBlock.contains("MaterialTheme.colorScheme.onPrimaryContainer"))
     }
 
     @Test
-    fun `reading line label does not hardcode visible row text`() {
+    fun `reading line label does not hardcode visible counter text`() {
         val source = ProjectSourceFiles.read(PATTERN_VIEWER_SCREEN)
         val overlayBlock =
             source.blockBetween(
@@ -118,7 +115,7 @@ class PatternViewerSourceTest {
         assertFalse(overlayBlock.contains("\"Row "))
         assertFalse(overlayBlock.contains("\"Kerros "))
         assertFalse(overlayBlock.contains("Text(\""))
-        assertTrue(overlayBlock.contains("stringResource(R.string.current_row_short, currentRow)"))
+        assertTrue(overlayBlock.contains("stringResource(R.string.row_label_format, currentRow)"))
     }
 
     // CPD-OFF: Testin skenaariokohtainen asetelma pidetaan paikallisena ja luettavana.
@@ -139,11 +136,7 @@ class PatternViewerSourceTest {
         assertTrue(projectViewer.contains("onReadingLineYFractionCommit = { yFraction ->"))
         // CPD-ON
         assertTrue(projectViewer.contains("val sanitizedYFraction = sanitizeReadingLineYFraction(yFraction)"))
-        assertTrue(
-            projectViewer.contains(
-                "counterViewModel.commitManualReadingLinePosition(sanitizedYFraction, selectedDocument?.id)",
-            ),
-        )
+        assertTrue(manualReadingLineCommit.containsMatchIn(projectViewer))
         assertFalse(
             projectViewer
                 .blockBetween(
@@ -235,6 +228,43 @@ class PatternViewerSourceTest {
             )
 
         assertTrue(jumpBlock.contains("pageIndex = event.bookmark.pageIndex"))
+    }
+
+    @Test
+    fun `bookmark jump entry points keep feedback sheet open until success`() {
+        val source = ProjectSourceFiles.read(PATTERN_VIEWER_SCREEN)
+        val sheet = source.blockBetween("if (showBookmarkSheet) {", "if (showDocumentSheet) {")
+        val success = source.blockBetween("is PatternViewerEvent.BookmarkJumped -> {", "accessibilityAnnouncement =")
+
+        assertTrue(sheet.contains("onJump = patternViewerViewModel::jumpToBookmark"))
+        assertTrue(sheet.contains("onPrevious = patternViewerViewModel::jumpToPreviousBookmark"))
+        assertTrue(sheet.contains("onNext = patternViewerViewModel::jumpToNextBookmark"))
+        assertTrue(sheet.contains("onDismiss = { showBookmarkSheet = false }"))
+        assertTrue(sheet.contains("onClearError = patternViewerViewModel::clearError"))
+        assertFalse(sheet.substringAfter("onAdd =").contains("showBookmarkSheet = false"))
+        assertTrue(success.contains("showBookmarkSheet = false"))
+        assertTrue(success.contains("requestId = event.requestId"))
+        assertTrue(success.contains("yFraction = event.bookmark.yFraction"))
+        assertTrue(source.contains("if (viewportFocusRequest?.requestId == requestId)"))
+        assertTrue(source.contains("viewportFocusRequest = null"))
+    }
+
+    @Test
+    fun `bookmark failure surface localizes errors and retains jump retry and dismissal`() {
+        val sheet =
+            ProjectSourceFiles.read(
+                "app/src/main/java/com/finnvek/knittools/ui/screens/pattern/PatternBookmarkSheet.kt",
+            )
+
+        assertTrue(sheet.contains("state.error?.let { stringResource(it.messageRes()) }"))
+        assertTrue(sheet.contains("PatternBookmarkError.JUMP_FAILURE -> R.string.generic_error_unknown"))
+        assertTrue(sheet.contains("PatternBookmarkError.STALE_DOCUMENT -> R.string.pattern_bookmark_stale_document"))
+        assertTrue(sheet.contains("PatternBookmarkError.NOT_FOUND -> R.string.pattern_bookmark_not_found"))
+        assertTrue(sheet.contains("onClick = actions.onClearError"))
+        assertTrue(sheet.contains("onDismissRequest = actions.onDismiss"))
+        assertTrue(sheet.contains("onJump = { actions.onJump(bookmark.id) }"))
+        assertTrue(sheet.contains("enabled = state.canGoPrevious && !state.isMutating"))
+        assertTrue(sheet.contains("enabled = state.canGoNext && !state.isMutating"))
     }
 
     @Test
@@ -564,27 +594,65 @@ class PatternViewerSourceTest {
     fun `annotated export preflights before opening SAF destination`() {
         val viewer = ProjectSourceFiles.read(PATTERN_VIEWER_SCREEN)
         val viewModel = ProjectSourceFiles.read(PATTERN_ANNOTATION_VIEW_MODEL)
-        val request = viewModel.blockBetween("fun requestAnnotatedPdfExport(sourceUri: Uri)", "fun exportAnnotatedPdf(")
+        val request =
+            viewModel.blockBetween(
+                "fun requestAnnotatedPdfExport(context: PatternPdfExportContext)",
+                "fun launchExportDestination(",
+            )
         val preflightIndex = request.indexOf("exporter.preflight(")
-        val destinationRequestIndex = request.indexOf("exportDestinationChannel.trySend(sourceUri)")
+        val destinationRequestIndex = request.indexOf("exportDestinationChannel.trySend(request.id)")
 
         assertTrue(preflightIndex >= 0)
         assertTrue(destinationRequestIndex > preflightIndex)
         assertTrue(request.contains("}.onSuccess {"))
         // Vienti käynnistyy lukijan valikosta; kohde avataan vasta esitarkistuksen jälkeen.
-        assertTrue(viewer.contains("annotationViewModel.requestAnnotatedPdfExport(it.toUri())"))
+        assertEquals(
+            2,
+            Regex("exportContext\\?\\.let\\(annotationViewModel::requestAnnotatedPdfExport\\)").findAll(viewer).count(),
+        )
+        assertTrue(viewer.contains("CollectWithLifecycleEffect({ exportRequests }) { requestId ->"))
+        assertTrue(viewer.contains("annotationActions.onLaunchExportDestination(requestId, state.exportContext)"))
+        assertTrue(viewer.contains("exportLauncher.launch(exportFilename)"))
+        assertTrue(viewer.contains("pendingExportRequestId by rememberSaveable"))
+    }
+
+    @Test
+    fun `shared SAF callback captures request registration identity and consumes nullable destination`() {
+        val viewer = ProjectSourceFiles.read(PATTERN_VIEWER_SCREEN)
+        val callback = viewer.blockBetween("key(requestId) {", "val viewportFocusRequester")
+        assertTrue(callback.contains("rememberLauncherForActivityResult("))
+        assertTrue(callback.contains("ActivityResultContracts.CreateDocument(\"application/pdf\")"))
+        assertTrue(callback.contains("if (pendingExportRequestId == requestId) pendingExportRequestId = null"))
         assertTrue(
-            viewer.contains(
-                "CollectWithLifecycleEffect({ annotationActions.exportDestinationRequestsProvider() }) { source ->",
+            callback.contains("annotationActions.onExport(requestId, state.exportContext, destination, exportStyle)"),
+        )
+        assertFalse(callback.contains("val requestId = pendingExportRequestId"))
+        assertFalse(callback.contains("destination != null"))
+        assertFalse(viewer.contains("pendingExportSource"))
+        assertTrue(viewer.contains("SideEffect { annotationActions.onExportContextChanged(state.exportContext) }"))
+        val disposal = viewer.blockBetween("DisposableEffect(exportRequests, activity)", "var pendingExportRequestId")
+        assertTrue(disposal.contains("onDispose {"))
+        assertTrue(
+            disposal.contains(
+                "if (activity?.isChangingConfigurations != true) annotationActions.onExportContextChanged(null)",
             ),
         )
-        assertTrue(viewer.contains("if (source.toString() == state.patternUri)"))
-        assertTrue(viewer.contains("exportLauncher.launch(exportFilename)"))
-        assertTrue(viewer.contains("val source = pendingExportSource?.toUri()"))
-        assertTrue(viewer.contains("pendingExportSource by rememberSaveable"))
+        assertTrue(callback.contains("destinationLaunched by rememberSaveable"))
+        assertTrue(callback.contains("if (requestId != null && !destinationLaunched)"))
+        val launchedIndex = callback.indexOf("destinationLaunched = true")
+        assertTrue(launchedIndex >= 0)
+        assertTrue(callback.indexOf("exportLauncher.launch(exportFilename)") > launchedIndex)
+        assertTrue(viewer.contains("owner = PatternAnnotationOwner.Project(document.projectId, document.documentKey)"))
+        assertTrue(viewer.contains("projectDocumentId = document.id"))
+        assertTrue(viewer.contains("PatternPdfExportContext(it.toUri(), annotationState.owner)"))
     }
 
     private companion object {
+        val manualReadingLineCommit =
+            Regex(
+                """counterViewModel\.commitManualReadingLinePosition\(\s*""" +
+                    """sanitizedYFraction,\s*selectedDocument\?\.id,?\s*\)""",
+            )
         const val PATTERN_VIEWER_SCREEN =
             "app/src/main/java/com/finnvek/knittools/ui/screens/pattern/PatternViewerScreen.kt"
         const val PATTERN_ANNOTATION_VIEW_MODEL =

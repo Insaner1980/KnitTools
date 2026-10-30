@@ -16,6 +16,21 @@ import java.time.LocalDate
  */
 class InsightsChartSelectionTest {
     @Test
+    fun `touch coordinates follow the current width and clamp at both ends`() {
+        for (width in listOf(328, 568, 800, 1168)) {
+            for (count in listOf(2, 7, 31, 60)) {
+                repeat(count) { index ->
+                    assertEquals(index, chartBucketIndexAt((index + 0.5f) * width / count, width, count))
+                }
+                assertEquals(0, chartBucketIndexAt(-1f, width, count))
+                assertEquals(count - 1, chartBucketIndexAt(width + 1f, width, count))
+            }
+        }
+        assertNull(chartBucketIndexAt(10f, 0, 7))
+        assertNull(chartBucketIndexAt(10f, 100, 0))
+    }
+
+    @Test
     fun `empty chart cannot move and never selects anything`() {
         val result = move(emptyList(), selectedIndex = null, step = STEP_NEXT)
 

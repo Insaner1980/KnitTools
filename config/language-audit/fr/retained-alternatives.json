@@ -1,0 +1,12 @@
+{
+  "retained_after_second_read": [
+    "abbr_ptbl_meaning",
+    "abbr_tbl_meaning",
+    "pattern_calibration_save_first",
+    "pattern_calibration_save_last",
+    "sym_knit_tbl_name",
+    "sym_purl_tbl_name",
+    "work_session_active_description"
+  ],
+  "reason": "Originals admit a correct contextual reading: calibration saves a repère; TBL is established English notation with a French explanation; boucle arrière is understandable; elapsed clock implicitly describes temps. Do not impose a stylistic alternative."
+}

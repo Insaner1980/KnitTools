@@ -353,6 +353,150 @@ class LibraryViewModelTest {
         }
 
     @Test
+    fun `manual yarn retry without input reports no submission from a fresh owner`() =
+        runTest {
+            val viewModel = createViewModel()
+
+            val submitted = viewModel.retryCreateManualYarnCard()
+            advanceUntilIdle()
+
+            coVerify(exactly = 0) { yarnCardRepository.saveCard(any()) }
+            assertEquals(0L, viewModel.yarnSaveErrorId.value)
+            assertFalse(submitted)
+        }
+
+    @Test
+    fun `manual yarn retry submits the exact retained denied draft after entitlement arrives`() =
+        runTest {
+            yarnCardsFeature.value = false
+            coEvery { yarnCardRepository.saveCard(any()) } returns 9L
+            val viewModel = createViewModel()
+            backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+                viewModel.canUseYarnCards.collect()
+            }
+            val input =
+                ManualYarnCardInput(
+                    yarnName = "  Blue sock yarn  ",
+                    brand = "  Regia  ",
+                    quantity = 3,
+                    weightCategory = "  Fingering  ",
+                    colorName = "  Blue  ",
+                    colorNumber = "  123  ",
+                    dyeLot = "  A7  ",
+                )
+
+            assertFalse(viewModel.createManualYarnCard(input))
+            assertFalse(viewModel.retryCreateManualYarnCard())
+            runCurrent()
+            coVerify(exactly = 0) { yarnCardRepository.saveCard(any()) }
+
+            yarnCardsFeature.value = true
+            runCurrent()
+            assertTrue(viewModel.canUseYarnCards.value)
+            coVerify(exactly = 0) { yarnCardRepository.saveCard(any()) }
+
+            assertTrue(viewModel.retryCreateManualYarnCard())
+            runCurrent()
+
+            val savedCard = slot<YarnCard>()
+            coVerify(exactly = 1) { yarnCardRepository.saveCard(capture(savedCard)) }
+            assertEquals(
+                YarnCard(
+                    yarnName = "Blue sock yarn",
+                    brand = "Regia",
+                    quantityInStash = 3,
+                    weightCategory = "Fingering",
+                    colorName = "Blue",
+                    colorNumber = "123",
+                    dyeLot = "A7",
+                    status = YarnCardStatus.IN_STASH,
+                    createdAt = savedCard.captured.createdAt,
+                ),
+                savedCard.captured,
+            )
+        }
+
+    @Test
+    fun `manual yarn retry consumes input before persistence and cannot submit it twice`() =
+        runTest {
+            yarnCardsFeature.value = false
+            val persistence = CompletableDeferred<Long?>()
+            coEvery { yarnCardRepository.saveCard(any()) } coAnswers { persistence.await() }
+            val viewModel = createViewModel()
+            backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+                viewModel.canUseYarnCards.collect()
+            }
+            assertFalse(viewModel.createManualYarnCard(ManualYarnCardInput(yarnName = "Blue")))
+            yarnCardsFeature.value = true
+            runCurrent()
+
+            assertTrue(viewModel.retryCreateManualYarnCard())
+            assertFalse(viewModel.retryCreateManualYarnCard())
+            runCurrent()
+            assertFalse(persistence.isCompleted)
+            assertFalse(viewModel.retryCreateManualYarnCard())
+            coVerify(exactly = 1) { yarnCardRepository.saveCard(any()) }
+
+            persistence.complete(9L)
+            runCurrent()
+
+            assertFalse(viewModel.retryCreateManualYarnCard())
+            runCurrent()
+            coVerify(exactly = 1) { yarnCardRepository.saveCard(any()) }
+            assertEquals(0L, viewModel.yarnSaveErrorId.value)
+        }
+
+    @Test
+    fun `manual yarn retry without input permits deliberate resubmission of the recovered draft`() =
+        runTest {
+            coEvery { yarnCardRepository.saveCard(any()) } returns 9L
+            val viewModel = createViewModel()
+            val recoveredInput = ManualYarnCardInput(yarnName = "Recovered yarn", quantity = 4, dyeLot = "B2")
+
+            assertFalse(viewModel.retryCreateManualYarnCard())
+            runCurrent()
+            coVerify(exactly = 0) { yarnCardRepository.saveCard(any()) }
+
+            assertTrue(viewModel.createManualYarnCard(recoveredInput))
+            runCurrent()
+
+            val savedCard = slot<YarnCard>()
+            coVerify(exactly = 1) { yarnCardRepository.saveCard(capture(savedCard)) }
+            assertEquals("Recovered yarn", savedCard.captured.yarnName)
+            assertEquals(4, savedCard.captured.quantityInStash)
+            assertEquals("B2", savedCard.captured.dyeLot)
+            assertFalse(viewModel.retryCreateManualYarnCard())
+            runCurrent()
+            coVerify(exactly = 1) { yarnCardRepository.saveCard(any()) }
+        }
+
+    @Test
+    fun `manual yarn retry rejects and consumes invalid retained input`() =
+        runTest {
+            val invalidInputs =
+                listOf(
+                    ManualYarnCardInput(yarnName = " "),
+                    ManualYarnCardInput(yarnName = "Blue", quantity = 0),
+                )
+            for (input in invalidInputs) {
+                yarnCardsFeature.value = false
+                val viewModel = createViewModel()
+                backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+                    viewModel.canUseYarnCards.collect()
+                }
+                assertFalse(viewModel.createManualYarnCard(input))
+                yarnCardsFeature.value = true
+                runCurrent()
+
+                assertFalse(viewModel.retryCreateManualYarnCard())
+                assertFalse(viewModel.retryCreateManualYarnCard())
+                runCurrent()
+                assertEquals(0L, viewModel.yarnSaveErrorId.value)
+            }
+            coVerify(exactly = 0) { yarnCardRepository.saveCard(any()) }
+        }
+
+    @Test
     fun `rejected yarn deletion reports an error and permits retry`() =
         runTest {
             coEvery { yarnCardRepository.deleteCards(listOf(3L)) } returns false

@@ -219,8 +219,14 @@ internal object ProjectDocumentMigration22 {
         localPdfUri
             .substringBefore('?')
             .substringBefore('#')
-            .substringAfterLast('/')
             .let(Uri::decode)
+            .let { decoded ->
+                if (decoded.startsWith("content://com.android.externalstorage.documents/")) {
+                    decoded.substringAfter("/document/").substringAfter(':')
+                } else {
+                    decoded
+                }
+            }.substringAfterLast('/')
             .trim()
             .takeIf(String::isNotEmpty)
 

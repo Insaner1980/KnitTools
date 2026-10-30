@@ -10,13 +10,16 @@ import io.mockk.mockk
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.job
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.File
@@ -24,6 +27,102 @@ import java.io.IOException
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class CounterPhotoMutationsTest : CounterViewModelFixture() {
+    @Test
+    fun `capture target failure reports once without writes and permits authorized retry`() =
+        runTest {
+            val viewModel = viewModel()
+            val errors = collectErrors(viewModel.photoErrors)
+            advanceUntilIdle()
+            val stateBefore = viewModel.uiState.value
+            val photosBefore = viewModel.allPhotos.value
+            val callbacks = mutableListOf<PhotoCaptureTarget?>()
+            coEvery { photoRepository.createPhotoCaptureTarget(7L) } throws IOException("synthetic target failure")
+            viewModel.authorizeProgressPhotoCreation()
+
+            viewModel.createPhotoCaptureTarget(7L) { callbacks += it }
+            advanceUntilIdle()
+
+            assertEquals(listOf<PhotoCaptureTarget?>(null), callbacks)
+            assertEquals(1, errors.size)
+            assertEquals(stateBefore, viewModel.uiState.value)
+            assertEquals(photosBefore, viewModel.allPhotos.value)
+            coVerify(exactly = 0) { photoRepository.savePhoto(any(), any(), any(), any()) }
+            coVerify(exactly = 0) { photoRepository.deletePendingPhotoFile(any()) }
+            coVerify(exactly = 0) { photoRepository.deletePhoto(any()) }
+            coVerify(exactly = 0) { photoRepository.updatePhotoNote(any(), any()) }
+
+            viewModel.cancelProgressPhotoCreation()
+            viewModel.createPhotoCaptureTarget(7L) { callbacks += it }
+            advanceUntilIdle()
+            assertEquals(listOf<PhotoCaptureTarget?>(null, null), callbacks)
+            coVerify(exactly = 1) { photoRepository.createPhotoCaptureTarget(any()) }
+
+            val uri = mockk<Uri>()
+            val file = File("retry.jpg")
+            coEvery { photoRepository.createPhotoCaptureTarget(7L) } returns (file to uri)
+            viewModel.authorizeProgressPhotoCreation()
+            viewModel.createPhotoCaptureTarget(7L) { callbacks += it }
+            advanceUntilIdle()
+
+            assertEquals(listOf(null, null, PhotoCaptureTarget(uri, file.absolutePath)), callbacks)
+            assertEquals(1, errors.size)
+            coVerify(exactly = 2) { photoRepository.createPhotoCaptureTarget(7L) }
+            coVerify(exactly = 0) { photoRepository.savePhoto(any(), any(), any(), any()) }
+        }
+
+    @Test
+    fun `missing or wrong capture owner is refused without error or storage work`() =
+        runTest {
+            val viewModel = viewModel()
+            val errors = collectErrors(viewModel.photoErrors)
+            val callbacks = mutableListOf<PhotoCaptureTarget?>()
+            viewModel.authorizeProgressPhotoCreation()
+            viewModel.createPhotoCaptureTarget(7L) { callbacks += it }
+            advanceUntilIdle()
+
+            viewModel.authorizeProgressPhotoCreation()
+            viewModel.createPhotoCaptureTarget(8L) { callbacks += it }
+            advanceUntilIdle()
+
+            assertEquals(listOf<PhotoCaptureTarget?>(null, null), callbacks)
+            assertTrue(errors.isEmpty())
+            coVerify(exactly = 0) { photoRepository.createPhotoCaptureTarget(any()) }
+            coVerify(exactly = 0) { photoRepository.savePhoto(any(), any(), any(), any()) }
+        }
+
+    @Test
+    fun `delayed capture target failure stays quiet on another project`() =
+        runTest { assertStaleCaptureFailure(returnToOwner = false) }
+
+    @Test
+    fun `delayed capture target failure stays quiet after returning to the same project`() =
+        runTest { assertStaleCaptureFailure(returnToOwner = true) }
+
+    @Test
+    fun `capture target cancellation propagates without feedback or callback`() =
+        runTest {
+            val viewModel = viewModel()
+            val errors = collectErrors(viewModel.photoErrors)
+            advanceUntilIdle()
+            val cancellation = CancellationException("synthetic target cancellation")
+            var completionCause: Throwable? = null
+            coEvery { photoRepository.createPhotoCaptureTarget(7L) } coAnswers {
+                currentCoroutineContext().job.invokeOnCompletion { completionCause = it }
+                throw cancellation
+            }
+            val callbacks = mutableListOf<PhotoCaptureTarget?>()
+            viewModel.authorizeProgressPhotoCreation()
+
+            viewModel.createPhotoCaptureTarget(7L) { callbacks += it }
+            advanceUntilIdle()
+
+            assertSame(cancellation, completionCause)
+            assertTrue(callbacks.isEmpty())
+            assertTrue(errors.isEmpty())
+            coVerify(exactly = 0) { photoRepository.savePhoto(any(), any(), any(), any()) }
+            coVerify(exactly = 0) { photoRepository.deletePendingPhotoFile(any()) }
+        }
+
     @Test
     fun `camera result cannot save under a different selected project`() =
         runTest {
@@ -34,10 +133,7 @@ class CounterPhotoMutationsTest : CounterViewModelFixture() {
             viewModel.authorizeProgressPhotoCreation()
             viewModel.createPhotoCaptureTarget(7L) {}
             advanceUntilIdle()
-            val other = CounterProject(id = 8L, name = "Other")
-            every { repository.observeProject(8L) } returns MutableStateFlow(other)
-            viewModel.selectProject(other)
-            advanceUntilIdle()
+            selectOtherProject(viewModel)
 
             viewModel.savePhoto(uri)
             advanceUntilIdle()
@@ -59,10 +155,7 @@ class CounterPhotoMutationsTest : CounterViewModelFixture() {
             viewModel.authorizeProgressPhotoCreation()
             viewModel.createPhotoCaptureTarget(7L) { callbacks += it }
             runCurrent()
-            val other = CounterProject(id = 8L, name = "Other")
-            every { repository.observeProject(8L) } returns MutableStateFlow(other)
-            viewModel.selectProject(other)
-            advanceUntilIdle()
+            selectOtherProject(viewModel)
             reply.complete(file to uri)
             advanceUntilIdle()
 
@@ -171,6 +264,52 @@ class CounterPhotoMutationsTest : CounterViewModelFixture() {
 
             assertEquals(0, errors.size)
         }
+
+    private fun TestScope.selectOtherProject(viewModel: CounterViewModel) {
+        val other = CounterProject(id = 8L, name = "Other")
+        every { repository.observeProject(8L) } returns MutableStateFlow(other)
+        viewModel.selectProject(other)
+        advanceUntilIdle()
+    }
+
+    private fun TestScope.assertStaleCaptureFailure(returnToOwner: Boolean) {
+        val viewModel = viewModel()
+        val errors = collectErrors(viewModel.photoErrors)
+        advanceUntilIdle()
+        val reply = CompletableDeferred<Pair<File, Uri>>()
+        coEvery { photoRepository.createPhotoCaptureTarget(7L) } coAnswers { reply.await() }
+        val callbacks = mutableListOf<PhotoCaptureTarget?>()
+        viewModel.authorizeProgressPhotoCreation()
+        viewModel.createPhotoCaptureTarget(7L) { callbacks += it }
+        runCurrent()
+
+        selectOtherProject(viewModel)
+        if (returnToOwner) {
+            viewModel.selectProject(observedProject.value)
+            advanceUntilIdle()
+        }
+        viewModel.authorizeProgressPhotoCreation()
+        val selectedProjectId = if (returnToOwner) 7L else 8L
+        val stateBefore = viewModel.uiState.value
+        reply.completeExceptionally(IOException("delayed target failure"))
+        advanceUntilIdle()
+
+        assertTrue(callbacks.isEmpty())
+        assertTrue(errors.isEmpty())
+        assertEquals(stateBefore, viewModel.uiState.value)
+        coVerify(exactly = 0) { photoRepository.savePhoto(any(), any(), any(), any()) }
+        coVerify(exactly = 0) { photoRepository.deletePendingPhotoFile(any()) }
+
+        val uri = mockk<Uri>()
+        val file = File("current-owner.jpg")
+        coEvery { photoRepository.createPhotoCaptureTarget(selectedProjectId) } returns (file to uri)
+        viewModel.createPhotoCaptureTarget(selectedProjectId) { callbacks += it }
+        advanceUntilIdle()
+
+        assertEquals(listOf(PhotoCaptureTarget(uri, file.absolutePath)), callbacks)
+        assertTrue(errors.isEmpty())
+        coVerify(exactly = 2) { photoRepository.createPhotoCaptureTarget(any()) }
+    }
 
     private fun TestScope.assertPhotoSaveRetry(stubFailure: (Uri) -> Unit) {
         val viewModel = viewModel()

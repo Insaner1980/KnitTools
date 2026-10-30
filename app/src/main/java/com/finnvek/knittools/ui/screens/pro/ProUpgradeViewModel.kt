@@ -23,6 +23,7 @@ class ProUpgradeViewModel
     constructor(
         private val proManager: ProManager,
         private val billingManager: BillingManager,
+        private val trialJourneyCoordinator: TrialJourneyCoordinator,
     ) : ViewModel() {
         val proState: StateFlow<ProState> = proManager.proState
         val proStateReady: StateFlow<Boolean> = proManager.initialStateReady
@@ -36,6 +37,8 @@ class ProUpgradeViewModel
 
         private val _isRestoring = MutableStateFlow(false)
         val isRestoring: StateFlow<Boolean> = _isRestoring.asStateFlow()
+        private val _isStartingTrial = MutableStateFlow(false)
+        val isStartingTrial: StateFlow<Boolean> = _isStartingTrial.asStateFlow()
 
         init {
             viewModelScope.launch {
@@ -63,13 +66,21 @@ class ProUpgradeViewModel
         }
 
         fun startTrial() {
+            if (_isStartingTrial.value) return
+            _isStartingTrial.value = true
             viewModelScope.launch {
-                _statusMessageRes.value =
-                    if (proManager.startTrial() == TrialStartResult.Failed) {
-                        com.finnvek.knittools.R.string.pro_trial_start_failed
-                    } else {
-                        null
-                    }
+                try {
+                    val result = proManager.startTrial()
+                    if (result == TrialStartResult.Started) trialJourneyCoordinator.requestStartedJourney()
+                    _statusMessageRes.value =
+                        if (result == TrialStartResult.Failed) {
+                            com.finnvek.knittools.R.string.pro_trial_start_failed
+                        } else {
+                            null
+                        }
+                } finally {
+                    _isStartingTrial.value = false
+                }
             }
         }
 

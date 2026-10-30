@@ -20,6 +20,12 @@ interface CounterProjectDao {
     @Query("SELECT * FROM counter_projects ORDER BY updatedAt DESC")
     fun getAllProjects(): Flow<List<CounterProjectEntity>>
 
+    @Query("SELECT EXISTS(SELECT 1 FROM counter_projects)")
+    fun observeHasAnyProject(): Flow<Boolean>
+
+    @Query("SELECT EXISTS(SELECT 1 FROM counter_projects)")
+    suspend fun hasAnyProject(): Boolean
+
     @Query("SELECT * FROM counter_projects")
     suspend fun getAllProjectsOnce(): List<CounterProjectEntity>
 

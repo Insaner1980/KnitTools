@@ -27,6 +27,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -66,9 +67,9 @@ fun CounterImageButton(
 
 /**
  * Kolmiulotteinen nappi, jonka vieressä on teksti. Koko pilleri on yksi kosketuskohde, ja
- * ruudunlukija kuulee vain [contentDescription]-tekstin. Painallus näkyy napissa samoin kuin
+ * ruudunlukija kuulee [contentDescription]-tekstin ja mahdollisen merkin kuvauksen. Painallus näkyy napissa samoin kuin
  * laskurissa. [badge] (esim. Pro-merkki) piirretään tekstin ja napin väliin; sen merkitys
- * kuuluu sisällyttää [contentDescription]-tekstiin, koska pilleri tyhjentää lastensa semantiikan.
+ * annetaan erikseen [badgeContentDescription]-kuvauksena, koska pilleri tyhjentää lastensa semantiikan.
  */
 @Composable
 fun LabeledCounterImageButton(
@@ -80,6 +81,7 @@ fun LabeledCounterImageButton(
     enabled: Boolean = true,
     contentDescription: String = label,
     badge: (@Composable () -> Unit)? = null,
+    badgeContentDescription: String? = null,
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     Surface(
@@ -97,7 +99,8 @@ fun LabeledCounterImageButton(
                     role = Role.Button,
                     onClick = onClick,
                 ).clearAndSetSemantics {
-                    this.contentDescription = contentDescription
+                    this[SemanticsProperties.ContentDescription] =
+                        listOfNotNull(contentDescription, badgeContentDescription)
                 },
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {

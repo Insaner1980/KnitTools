@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.finnvek.knittools.ReferenceResourceLocalizationTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-19T10:03:09.153Z" hostname="DESKTOP-V7H2VNQ" time="0.871">
+  <properties/>
+  <testcase name="text aliases resolve and plurals include other in every supported locale" classname="com.finnvek.knittools.ReferenceResourceLocalizationTest" time="0.697"/>
+  <testcase name="supported locales define all translatable text resources with matching types" classname="com.finnvek.knittools.ReferenceResourceLocalizationTest" time="0.167"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

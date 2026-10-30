@@ -1,6 +1,7 @@
 package com.finnvek.knittools.ui.screens.project
 
 import com.finnvek.knittools.ProjectSourceFiles
+import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.ui.components.normalizedContinueKnittingSectionName
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -15,8 +16,15 @@ class ProjectListWorkspaceSourceTest {
 
         assertTrue(viewModel.contains("val sectionName: String?"))
         assertTrue(viewModel.contains("val targetRows: Int?"))
-        assertTrue(viewModel.contains("sectionName = candidate.sectionName"))
-        assertTrue(viewModel.contains("targetRows = candidate.targetRows"))
+        val hero =
+            ProjectListContent(
+                active =
+                    listOf(
+                        CounterProject(id = 7, name = "Cardigan", count = 12, sectionName = "Sleeve", targetRows = 40),
+                    ),
+            ).continueKnitting
+        assertEquals("Sleeve", hero?.sectionName)
+        assertEquals(40, hero?.targetRows)
         assertFalse(viewModel.contains("val totalMinutes: Int"))
         assertFalse(viewModel.contains("getTotalMinutesForProject"))
     }
@@ -89,18 +97,18 @@ class ProjectListWorkspaceSourceTest {
         val dimens = ProjectSourceFiles.read(PROJECT_LIST_DIMENS)
 
         // Plus-napin vieressä on teksti: sama plus tarkoittaa laskurissa rivin lisäämistä.
+        assertTrue(screenFunction.contains("val newProjectLabel = stringResource(R.string.new_project)"))
         assertTrue(
-            normalizeWhitespace(screenFunction).contains("if (!isMultiSelectMode) { LabeledCounterImageButton("),
+            normalizeWhitespace(
+                screenFunction,
+            ).contains("if (!isMultiSelectMode && !showFullWelcome) { LabeledCounterImageButton("),
         )
         assertTokensInOrder(
             createAction,
             "imageRes = R.drawable.counter_plus_button",
-            "label = stringResource(R.string.new_project)",
+            "label = newProjectLabel",
             "visualSize = ProjectListDimens.CreateButtonVisualSize",
-            "onClick = {",
-            "creationFolderId = (selectedFolderFilter as? ProjectFolderFilter.Folder)?.folderId",
-            "creationFolderName = folders.firstOrNull { it.id == creationFolderId }?.name",
-            "viewModel.requestProjectCreation()",
+            "onClick = requestProjectCreation",
             "modifier =",
             ".align(Alignment.BottomEnd)",
             ".padding(ProjectListDimens.CreateButtonMargin)",
@@ -123,7 +131,10 @@ class ProjectListWorkspaceSourceTest {
         )
         assertFalse(screen.contains("FloatingActionButton"))
         assertFalse(screen.contains("ProBadge"))
-        assertFalse(screen.contains("viewModel.proState.collectAsStateWithLifecycle()"))
+        assertTrue(screen.contains("viewModel.proState.collectAsStateWithLifecycle()"))
+        assertTrue(screen.contains("viewModel.proAccessReady.collectAsStateWithLifecycle()"))
+        assertTrue(screen.contains("ready = proAccessReady && !content.isLoading"))
+        assertTrue(screen.contains("needsEntitlement = content.activeProjectCount >= 1"))
         assertFalse(screen.contains("viewModel.projectCount.collectAsStateWithLifecycle()"))
     }
 
@@ -131,6 +142,32 @@ class ProjectListWorkspaceSourceTest {
     fun `continue knitting section name is normalized before localized formatting`() {
         assertEquals("Sleeve", normalizedContinueKnittingSectionName(" Sleeve "))
         assertEquals(null, normalizedContinueKnittingSectionName(" "))
+    }
+
+    @Test
+    fun `welcome uses loaded unfiltered state and shares creation with the floating action`() {
+        val screen = ProjectSourceFiles.read(PROJECT_LIST_SCREEN)
+        val nav = ProjectSourceFiles.read(NAV_GRAPH)
+        assertTrue(screen.contains("isLoading = content.isLoading"))
+        assertTrue(screen.contains("hasAnyProject = content.hasAnyProject"))
+        assertTrue(screen.contains("compact = state.welcomeDismissed"))
+        assertTrue(screen.contains("onCreateProject = requestProjectCreation"))
+        assertTokensInOrder(
+            screen,
+            "val requestProjectCreation = {",
+            "creationFolderId = (selectedFolderFilter as? ProjectFolderFilter.Folder)?.folderId",
+            "creationFolderName = folders.firstOrNull { it.id == creationFolderId }?.name",
+            "viewModel.requestProjectCreation()",
+        )
+        assertTokensInOrder(
+            screen,
+            "if (state.isLoading)",
+            "if (!state.hasAnyProject && !state.isMultiSelectMode)",
+            "ProjectsStartState(",
+            "if (state.selectedFolderFilter != ProjectFolderFilter.AllProjects",
+            "ProjectFolderEmptyState(",
+        )
+        assertTrue(nav.contains("onOpenTools = { navController.navigateToTopLevel(TopLevelDestination.Tools) }"))
     }
 
     @Test

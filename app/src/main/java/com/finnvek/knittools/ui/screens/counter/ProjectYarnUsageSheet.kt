@@ -44,6 +44,7 @@ import com.finnvek.knittools.ui.components.NumberInputOptions
 import com.finnvek.knittools.ui.components.SegmentedToggle
 import com.finnvek.knittools.ui.components.SheetTitle
 import com.finnvek.knittools.ui.components.rememberCurrentLocale
+import com.finnvek.knittools.ui.layout.ContentWidthPolicy
 import com.finnvek.knittools.ui.theme.ComponentDimens
 import java.util.Locale
 
@@ -72,6 +73,7 @@ fun ProjectYarnUsageSheet(
         onDismissRequest = { if (!state.busy) actions.onDismiss() },
         sheetState = sheetState,
         containerColor = MaterialTheme.colorScheme.surface,
+        sheetMaxWidth = ContentWidthPolicy.Form.maxWidth,
     ) {
         LaunchedEffect(Unit) {
             headingFocus.requestFocus()

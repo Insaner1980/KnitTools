@@ -1,0 +1,12 @@
+{
+  "review.md": "a13700761018d76d243bf957e30204a5eca7b967979c1cc9d0d34a5e7277a30e",
+  "coverage.tsv": "eb1d2faf0d44cabc73c0fba8723b4eda71c5a41abb2a2af9540ef76dfc835991",
+  "corrections.md": "380eafa089774afeee4fd070ea4b52b53edbd5c90b9b9d6d87d778ae244b7758",
+  "corrections.json": "4c4b84e8ef41303f75f2f8be5d0c4f773c9747de2dbb15bba514e3af76590c46",
+  "input-hashes.json": "e0b8392db3c5efcef42349578a6e92520634020a76fca47bc553b9614014246c",
+  "shared-evidence-reconciliation.tsv": "35ccb2a12804594b5b1b68d3bb2ca757dcf24173c2150a034480fe4205c61d6b",
+  "validation.json": "359019dc4b8e1682958ade3d9af6cbf48250cb9a3aedc60b2b72d8eeab9cbc51",
+  "validation-gradle.log": "54bb69242d7877e0b73e9c2d5c74a18949971d6aa51320f1f7993217720b3677",
+  "TEST-com.finnvek.knittools.ReferenceResourceLocalizationTest.xml": "6c15254e3471dbc3ce9709babde8b62788296fc8cc11c2df3db745c0f7041ee3",
+  "TEST-com.finnvek.knittools.ui.CountPluralResourcesSourceTest.xml": "3fb256663584db9a726ca0a29df0a061668ee724ac384b25c8e70fd0b14811ec"
+}

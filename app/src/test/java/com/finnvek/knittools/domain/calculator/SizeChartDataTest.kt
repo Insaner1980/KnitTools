@@ -10,6 +10,67 @@ import java.util.Locale
 
 class SizeChartDataTest {
     @Test
+    fun `corrected source categories and cells retain CYC body measurements`() {
+        fun values(
+            category: SizeChartData.Category,
+            row: Int,
+        ) = SizeChartData.entries(category)[row].measurements.map { it.cm }
+
+        assertEquals(listOf(5, 8, 9, 8, 7, 9), SizeChartData.Category.entries.map { SizeChartData.entries(it).size })
+        assertEquals(listOf(40.5, 45.5, 48.0), values(SizeChartData.Category.BABY, 0))
+        assertEquals(listOf(45.5, 50.5, 50.5), values(SizeChartData.Category.BABY, 2))
+        assertEquals(listOf(82.5, 69.5, 90.0, 42.0), values(SizeChartData.Category.CHILD_YOUTH, 7))
+        assertEquals(listOf(18.0, 16.0), values(SizeChartData.Category.HAND, 3))
+        assertEquals(listOf(23.5, 21.5), values(SizeChartData.Category.HAND, 8))
+        assertEquals(
+            listOf(23.0 to 30.5, 35.5 to 40.5, 40.5 to 46.0, 45.5 to 51.0, 51.0 to 56.0, 53.0 to 58.5, 56.0 to 61.0),
+            SizeChartData.entries(SizeChartData.Category.HEAD).map {
+                it.measurements.single().let { m ->
+                    m.cm to m.maxCm
+                }
+            },
+        )
+        assertEquals(
+            listOf(
+                152.0,
+                158.0,
+            ),
+            SizeChartData.entries(SizeChartData.Category.WOMEN).last().measurements.first().let {
+                listOf(it.cm, it.maxCm)
+            },
+        )
+        assertEquals(
+            listOf(
+                86.0,
+                91.5,
+            ),
+            SizeChartData.entries(SizeChartData.Category.MEN).first().measurements.first().let {
+                listOf(it.cm, it.maxCm)
+            },
+        )
+        val hands = SizeChartData.entries(SizeChartData.Category.HAND)
+        assertEquals(R.string.category_women, (hands[3].sizeLabel as SizeLabel.Resource).groupResId)
+        assertEquals(R.string.category_men, (hands[6].sizeLabel as SizeLabel.Resource).groupResId)
+    }
+
+    @Test
+    fun `range formatter retains both endpoints in either unit and locale`() {
+        val range =
+            SizeChartData
+                .entries(SizeChartData.Category.HEAD)
+                .first()
+                .measurements
+                .single()
+        assertEquals("23–30.5", SizeChartData.formatMeasurementValue(range, false, Locale.US))
+        assertEquals("23–30,5", SizeChartData.formatMeasurementValue(range, false, Locale.GERMANY))
+        assertEquals("9.1–12.0", SizeChartData.formatMeasurementValue(range, true, Locale.US))
+        SizeChartData.Category.entries.flatMap(SizeChartData::entries).flatMap { it.measurements }.forEach {
+            assertTrue(it.maxCm >= it.cm)
+            assertEquals(it.maxCm / 2.54, it.maxInches, 0.000001)
+        }
+    }
+
+    @Test
     fun `all categories return non-empty entries`() {
         SizeChartData.Category.entries.forEach { category ->
             val entries = SizeChartData.entries(category)
@@ -126,7 +187,7 @@ class SizeChartDataTest {
     @Test
     fun `baby sizes are in chronological order`() {
         val sizes = SizeChartData.entries(SizeChartData.Category.BABY).map { it.sizeLabel }
-        assertEquals(SizeLabel.Resource(R.string.size_row_preemie), sizes.first())
+        assertEquals(SizeLabel.Resource(R.string.size_row_age_0_3m), sizes.first())
         assertEquals(SizeLabel.Resource(R.string.size_row_age_18_24m), sizes.last())
     }
 

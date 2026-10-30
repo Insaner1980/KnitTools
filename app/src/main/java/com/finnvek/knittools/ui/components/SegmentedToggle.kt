@@ -38,6 +38,7 @@ fun SegmentedToggle(
     onSelect: (Int) -> Unit,
     modifier: Modifier = Modifier,
     itemTestTagPrefix: String? = null,
+    optionTrailingContent: @Composable (Int) -> Unit = {},
 ) {
     val isGrid = options.size > 3
     val expandedLabels = LocalDensity.current.fontScale >= 1.5f
@@ -61,6 +62,7 @@ fun SegmentedToggle(
                 onSelect = onSelect,
                 itemShape = itemShape,
                 itemTestTagPrefix = itemTestTagPrefix,
+                optionTrailingContent = optionTrailingContent,
             )
         } else {
             SegmentedTogglePill(
@@ -69,6 +71,7 @@ fun SegmentedToggle(
                 onSelect = onSelect,
                 itemShape = itemShape,
                 itemTestTagPrefix = itemTestTagPrefix,
+                optionTrailingContent = optionTrailingContent,
             )
         }
     }
@@ -81,6 +84,7 @@ private fun SegmentedToggleGrid(
     onSelect: (Int) -> Unit,
     itemShape: Shape,
     itemTestTagPrefix: String?,
+    optionTrailingContent: @Composable (Int) -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(ComponentDimens.CompactSpacing)) {
         for (rowStart in options.indices step 2) {
@@ -91,6 +95,7 @@ private fun SegmentedToggleGrid(
                 onSelect = onSelect,
                 itemShape = itemShape,
                 itemTestTagPrefix = itemTestTagPrefix,
+                optionTrailingContent = optionTrailingContent,
             )
         }
     }
@@ -104,26 +109,23 @@ private fun SegmentedToggleGridRow(
     onSelect: (Int) -> Unit,
     itemShape: Shape,
     itemTestTagPrefix: String?,
+    optionTrailingContent: @Composable (Int) -> Unit,
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(ComponentDimens.CompactSpacing),
     ) {
-        SegmentedToggleItem(
-            label = options[rowStart],
-            isSelected = rowStart == selectedIndex,
-            onClick = { onSelect(rowStart) },
-            shape = itemShape,
-            modifier = Modifier.weight(1f).itemTestTag(itemTestTagPrefix, rowStart),
-        )
-        if (rowStart + 1 < options.size) {
+        for (index in rowStart until minOf(rowStart + 2, options.size)) {
+            // CPD-OFF: Jaettu valintaelementti saa samat argumentit ruudukossa ja pillissä; rivien asettelu eroaa.
             SegmentedToggleItem(
-                label = options[rowStart + 1],
-                isSelected = rowStart + 1 == selectedIndex,
-                onClick = { onSelect(rowStart + 1) },
+                label = options[index],
+                isSelected = index == selectedIndex,
+                onClick = { onSelect(index) },
                 shape = itemShape,
-                modifier = Modifier.weight(1f).itemTestTag(itemTestTagPrefix, rowStart + 1),
+                modifier = Modifier.weight(1f).itemTestTag(itemTestTagPrefix, index),
+                trailingContent = { optionTrailingContent(index) },
             )
+            // CPD-ON
         }
     }
 }
@@ -135,6 +137,7 @@ private fun SegmentedTogglePill(
     onSelect: (Int) -> Unit,
     itemShape: Shape,
     itemTestTagPrefix: String?,
+    optionTrailingContent: @Composable (Int) -> Unit,
 ) {
     Row(modifier = Modifier.fillMaxWidth()) {
         options.forEachIndexed { index, label ->
@@ -144,6 +147,7 @@ private fun SegmentedTogglePill(
                 onClick = { onSelect(index) },
                 shape = itemShape,
                 modifier = Modifier.weight(1f).itemTestTag(itemTestTagPrefix, index),
+                trailingContent = { optionTrailingContent(index) },
             )
         }
     }
@@ -156,8 +160,9 @@ private fun SegmentedToggleItem(
     onClick: () -> Unit,
     shape: Shape,
     modifier: Modifier = Modifier,
+    trailingContent: @Composable () -> Unit,
 ) {
-    Box(
+    Row(
         modifier =
             modifier
                 .heightIn(min = ComponentDimens.SegmentedItemMinHeight)
@@ -174,7 +179,7 @@ private fun SegmentedToggleItem(
                     onClick = onClick,
                     role = Role.RadioButton,
                 ),
-        contentAlignment = Alignment.Center,
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         val labelStyle =
             if (isSelected) {
@@ -190,7 +195,7 @@ private fun SegmentedToggleItem(
             }
         BasicText(
             modifier =
-                Modifier.padding(
+                Modifier.weight(1f).padding(
                     horizontal = ComponentDimens.SegmentedItemTextInset,
                     vertical = ComponentDimens.CompactSpacing,
                 ),
@@ -207,6 +212,7 @@ private fun SegmentedToggleItem(
                 ),
             maxLines = 3,
         )
+        trailingContent()
     }
 }
 

@@ -4,7 +4,6 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LifecycleRegistry
 import com.posthog.PostHogInterface
-import dagger.Lazy
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -34,9 +33,9 @@ class AuditPart15AnalyticsTest {
             } as PostHogInterface
         val analytics =
             PostHogAnalytics(
-                Lazy {
+                PostHogClientFactory {
                     initializations++
-                    client
+                    PostHogConsentClient(client, AnalyticsDeliveryGate()) {}
                 },
             )
         val owner =

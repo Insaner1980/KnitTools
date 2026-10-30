@@ -2,10 +2,12 @@ package com.finnvek.knittools.data.storage
 
 import com.finnvek.knittools.domain.calculator.ChartCell
 import com.finnvek.knittools.domain.calculator.ChartTrackerHighlight
+import com.finnvek.knittools.domain.model.NormalizedPatternBounds
 import com.finnvek.knittools.domain.model.NormalizedPatternPoint
 import com.finnvek.knittools.domain.model.PatternAnnotation
 import com.finnvek.knittools.domain.model.PatternAnnotationKind
 import com.finnvek.knittools.domain.model.ShapePayload
+import com.finnvek.knittools.domain.model.TextBoxPayload
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -121,6 +123,64 @@ class PatternPdfExportBudgetTest {
                 trackerHighlights = mapOf(1L to highlight(threeCells)),
                 limits = limits,
             )
+        }
+    }
+
+    @Test
+    fun `default annotation work accepts 249999 and 250000 but rejects 250001`() {
+        assertEquals(250_000L, DEFAULT_PATTERN_PDF_EXPORT_LIMITS.maxAnnotationWork)
+
+        for (totalWork in listOf(249_999, 250_000, 250_001)) {
+            val annotations =
+                List(125) { index ->
+                    PatternAnnotation(
+                        id = index.toLong() + 1L,
+                        layerId = 1L,
+                        page = 0,
+                        kind = PatternAnnotationKind.TEXT_BOX,
+                        payload =
+                            TextBoxPayload(
+                                bounds = NormalizedPatternBounds(0.1f, 0.1f, 0.9f, 0.9f),
+                                text = "a".repeat(if (index < 124) 2_000 else totalWork - 248_000),
+                                textSizeSp = 12f,
+                                textArgb = 0xFF000000.toInt(),
+                            ),
+                        zIndex = index.toLong(),
+                    )
+                }
+            assertEquals(totalWork, annotations.sumOf { (it.payload as TextBoxPayload).text.length })
+
+            if (totalWork <= 250_000) {
+                PatternPdfExportBudget.validateAnnotations(annotations, emptyMap())
+            } else {
+                assertLimit(PatternPdfExportLimitReason.ANNOTATION_WORK) {
+                    PatternPdfExportBudget.validateAnnotations(annotations, emptyMap())
+                }
+            }
+        }
+    }
+
+    @Test
+    fun `default tracker highlight work accepts 19999 and 20000 but rejects 20001`() {
+        assertEquals(20_000L, DEFAULT_PATTERN_PDF_EXPORT_LIMITS.maxTrackerHighlightCells)
+        val fullGrid = (0 until 10_000).mapTo(linkedSetOf()) { ChartCell(it / 100, it % 100) }
+
+        for (totalCells in listOf(19_999, 20_000, 20_001)) {
+            val highlights =
+                mapOf(
+                    1L to highlight(fullGrid),
+                    2L to highlight(fullGrid.take(totalCells - 10_001).toSet()),
+                    3L to highlight(setOf(ChartCell(0, 0))),
+                )
+            assertEquals(totalCells, highlights.values.sumOf { it.cells.size })
+
+            if (totalCells <= 20_000) {
+                PatternPdfExportBudget.validateAnnotations(emptyList(), highlights)
+            } else {
+                assertLimit(PatternPdfExportLimitReason.TRACKER_HIGHLIGHT_WORK) {
+                    PatternPdfExportBudget.validateAnnotations(emptyList(), highlights)
+                }
+            }
         }
     }
 

@@ -1,0 +1,17 @@
+{
+  "keys": 1349,
+  "strings": 1317,
+  "plurals": 32,
+  "variants": 1413,
+  "changed_variants": 54,
+  "changed_keys": 52,
+  "aliases": [
+    [
+      "web_pattern_error_designer_too_long",
+      "web_pattern_error_title_too_long"
+    ]
+  ],
+  "default_key_type_placeholder_parity": "PASS",
+  "exact_entry_to_corrections_reconciliation": "PASS",
+  "xml_parse_duplicates_and_unicode": "PASS"
+}

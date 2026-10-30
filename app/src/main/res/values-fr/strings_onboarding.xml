@@ -1,0 +1,447 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Aloituksen paikallinen esimerkkilaskuri; käyttäjän oikean projektin tiedot eivät muutu. -->
+    <string name="welcome_example_label">Exemple</string>
+    <!-- Aloituksen paikallinen esimerkkilaskuri; käyttäjän oikean projektin tiedot eivät muutu. -->
+    <string name="welcome_demo_try">Essayez : touchez + quand vous terminez un rang.</string>
+    <!-- Aloituksen paikallinen esimerkkilaskuri; käyttäjän oikean projektin tiedot eivät muutu. -->
+    <string name="welcome_demo_after_first">Le rang %1$d est enregistré. Un appui par erreur ? Annuler revient en arrière.</string>
+    <!-- Aloituksen paikallinen esimerkkilaskuri; käyttäjän oikean projektin tiedot eivät muutu. -->
+    <string name="welcome_demo_after_second">C’est tout. KnitTools se souvient où vous en êtes, pour vous.</string>
+    <!-- Aloituksen paikallinen esimerkkilaskuri; käyttäjän oikean projektin tiedot eivät muutu. -->
+    <string name="welcome_demo_undo">Annuler</string>
+    <!-- Aloituksen paikallinen esimerkkilaskuri; käyttäjän oikean projektin tiedot eivät muutu. -->
+    <string name="welcome_demo_a11y">Compteur d’exemple au rang %1$d. La ligne de lecture du modèle d’exemple se déplace avec lui.</string>
+    <!-- Aloituksen paikallinen esimerkkilaskuri; käyttäjän oikean projektin tiedot eivät muutu. -->
+    <string name="welcome_plus_a11y">Ajouter un rang à l’exemple</string>
+    <!-- Tyhjän Projektit-näkymän aloitusteksti; puhuttele käyttäjää luontevasti. -->
+    <string name="welcome_screen_title">Reprenez là où vous en étiez</string>
+    <!-- Tyhjän Projektit-näkymän aloitusteksti; puhuttele käyttäjää luontevasti. -->
+    <string name="welcome_body">KnitTools réunit votre compteur, votre position dans le modèle et les détails du projet. Posez votre ouvrage à tout moment et reprenez exactement au bon endroit.</string>
+    <!-- Tyhjän Projektit-näkymän aloitusteksti; puhuttele käyttäjää luontevasti. -->
+    <string name="welcome_trust">Aucun compte nécessaire. Vos projets restent sur ce téléphone.</string>
+    <!-- Tyhjän Projektit-näkymän aloitusteksti; puhuttele käyttäjää luontevasti. -->
+    <string name="welcome_tools_only">Je veux seulement les outils</string>
+    <!-- Tyhjän Projektit-näkymän aloitusteksti; puhuttele käyttäjää luontevasti. -->
+    <string name="welcome_dismiss_a11y">Masquer la présentation</string>
+    <!-- Neuletyön aloitusotsikko; puikoilla oleva työ ilmaistaan kielelle luontevasti. -->
+    <string name="start_compact_title_knitting">Que tricotez-vous ?</string>
+    <!-- Virkkaustyön aloitusotsikko; koukulla oleva työ ilmaistaan kielelle luontevasti. -->
+    <string name="start_compact_title_crochet">Que crochetez-vous ?</string>
+    <!-- Tyhjän Projektit-näkymän aloitusteksti; puhuttele käyttäjää luontevasti. -->
+    <string name="start_compact_body">Ajoutez le projet sur lequel vous travaillez ou commencez-en un nouveau.</string>
+    <!-- Uuden projektin esimerkkinimi; ei käyttäjän tallentama projektin nimi. -->
+    <string name="project_name_placeholder_knitting">Chaussettes à rayures</string>
+    <!-- Uuden projektin esimerkkinimi; ei käyttäjän tallentama projektin nimi. -->
+    <string name="project_name_placeholder_crochet">Couverture en carrés granny</string>
+    <!-- Uuden projektin aloitusmäärä; käytä nykyisiä kerros-, kierros- ja toistotermejä. -->
+    <string name="project_start_count_label_rows">Rangs déjà terminés</string>
+    <!-- Uuden projektin aloitusmäärä; käytä nykyisiä kerros-, kierros- ja toistotermejä. -->
+    <string name="project_start_count_label_rounds">Tours déjà terminés</string>
+    <!-- Uuden projektin aloitusmäärä; käytä nykyisiä kerros-, kierros- ja toistotermejä. -->
+    <string name="project_start_count_label_repeats">Répétitions déjà terminées</string>
+    <!-- Uuden projektin aloitusmäärä; käytä nykyisiä kerros-, kierros- ja toistotermejä. -->
+    <string name="project_start_count_label_custom">Total jusqu’ici</string>
+    <!-- Uuden projektin aloitusmäärä; käytä nykyisiä kerros-, kierros- ja toistotermejä. -->
+    <string name="project_start_count_help_new">Laissez 0 pour un nouveau projet.</string>
+    <!-- Uuden projektin aloitusmäärä; käytä nykyisiä kerros-, kierros- ja toistotermejä. -->
+    <string name="project_start_count_next_rows">À suivre : rang %1$d</string>
+    <!-- Uuden projektin aloitusmäärä; käytä nykyisiä kerros-, kierros- ja toistotermejä. -->
+    <string name="project_start_count_next_rounds">À suivre : tour %1$d</string>
+    <!-- Uuden projektin aloitusmäärä; käytä nykyisiä kerros-, kierros- ja toistotermejä. -->
+    <string name="project_start_count_next_repeats">À suivre : répétition %1$d</string>
+    <!-- Uuden projektin aloitusmäärä; käytä nykyisiä kerros-, kierros- ja toistotermejä. -->
+    <string name="project_start_count_next_custom">À suivre : %1$d</string>
+    <!-- Uuden projektin aloitusmäärä; käytä nykyisiä kerros-, kierros- ja toistotermejä. -->
+    <string name="project_start_count_error">Saisissez un nombre entre 0 et %1$s.</string>
+    <!-- Projektin vapaaehtoinen tavoite; tyhjä kenttä tarkoittaa, ettei tavoitetta ole. -->
+    <string name="project_target_label">Objectif (facultatif)</string>
+    <!-- Projektin vapaaehtoinen tavoite; tyhjä kenttä tarkoittaa, ettei tavoitetta ole. -->
+    <string name="project_target_help">Voyez combien il en reste au fil de votre avancée.</string>
+    <!-- Projektin vapaaehtoinen tavoite; tyhjä kenttä tarkoittaa, ettei tavoitetta ole. -->
+    <string name="project_target_error">Saisissez un nombre entre 1 et %1$s.</string>
+    <!-- Uuden projektin esikatselun saavutettava kuvaus; %1$s sisältää laskuriarvon nimikkeineen. -->
+    <string name="project_create_preview_a11y">Aperçu : %1$s</string>
+    <!-- Tilannekohtainen vihje nykyisessä näkymässä; toimintojen nimet vastaavat sovelluksen nykyisiä nimiä. -->
+    <string name="tip_got_it">Compris</string>
+    <!-- Tilannekohtainen vihje nykyisessä näkymässä; toimintojen nimet vastaavat sovelluksen nykyisiä nimiä. -->
+    <string name="tip_first_row_rows">Quand vous terminez un rang, touchez +. Toucher le grand nombre fonctionne aussi.</string>
+    <!-- Tilannekohtainen vihje nykyisessä näkymässä; toimintojen nimet vastaavat sovelluksen nykyisiä nimiä. -->
+    <string name="tip_first_row_rounds">Quand vous terminez un tour, touchez +. Toucher le grand nombre fonctionne aussi.</string>
+    <!-- Tilannekohtainen vihje nykyisessä näkymässä; toimintojen nimet vastaavat sovelluksen nykyisiä nimiä. -->
+    <string name="tip_first_row_repeats">Quand vous terminez une répétition, touchez +. Toucher le grand nombre fonctionne aussi.</string>
+    <!-- Tilannekohtainen vihje nykyisessä näkymässä; toimintojen nimet vastaavat sovelluksen nykyisiä nimiä. -->
+    <string name="tip_first_row_custom">Touchez + chaque fois que vous terminez une unité. Toucher le grand nombre fonctionne aussi.</string>
+    <!-- Tilannekohtainen vihje nykyisessä näkymässä; toimintojen nimet vastaavat sovelluksen nykyisiä nimiä. -->
+    <string name="tip_undo">Enregistré. Un appui par erreur ? Annuler revient sur la dernière modification.</string>
+    <!-- Tilannekohtainen vihje nykyisessä näkymässä; toimintojen nimet vastaavat sovelluksen nykyisiä nimiä. -->
+    <string name="tip_step_size">Vous comptez plusieurs unités à la fois ? Réglez ici la quantité ajoutée à chaque appui.</string>
+    <!-- Työajan seuranta käynnistetään itse; ajastin ei käynnisty automaattisesti. -->
+    <string name="tip_work_session">Vous voulez savoir combien de temps ce projet vous prend ? Démarrez une session de travail depuis ce menu. Le suivi du temps ne démarre jamais tout seul.</string>
+    <!-- Tilannekohtainen vihje nykyisessä näkymässä; toimintojen nimet vastaavat sovelluksen nykyisiä nimiä. -->
+    <string name="tip_overview_intro">Voici tout votre projet : modèle, fil, notes et photos. Continuer vous ramène au compteur.</string>
+    <!-- Tilannekohtainen vihje nykyisessä näkymässä; toimintojen nimet vastaavat sovelluksen nykyisiä nimiä. -->
+    <string name="tip_pattern_tile">Joignez votre modèle pour le garder avec ce projet.</string>
+    <!-- PDF-lukijan vihje; seuraa päälaskuria -asetuksen nimen on vastattava nykyistä käyttöliittymää. -->
+    <string name="tip_reading_line">Activez Suivre le compteur principal et la ligne de lecture se déplacera pendant que vous comptez.</string>
+    <!-- Tilannekohtainen vihje nykyisessä näkymässä; toimintojen nimet vastaavat sovelluksen nykyisiä nimiä. -->
+    <string name="tip_keep_screen_on">L’écran s’éteint pendant votre travail ? Gardez-le allumé pendant que vous comptez.</string>
+    <!-- Tilannekohtainen vihje nykyisessä näkymässä; toimintojen nimet vastaavat sovelluksen nykyisiä nimiä. -->
+    <string name="tip_keep_screen_on_action">Garder l’écran allumé</string>
+    <!-- Tilannekohtainen vihje nykyisessä näkymässä; toimintojen nimet vastaavat sovelluksen nykyisiä nimiä. -->
+    <string name="tip_target_reached">Objectif atteint. Continuez à compter ou marquez le projet comme terminé depuis le menu de sa page.</string>
+    <!-- Tilannekohtainen vihje nykyisessä näkymässä; toimintojen nimet vastaavat sovelluksen nykyisiä nimiä. -->
+    <string name="tip_first_session_saved">Votre première session de travail est enregistrée. Le temps total consacré à ce projet se trouve ici.</string>
+    <!-- Tilannekohtainen vihje nykyisessä näkymässä; toimintojen nimet vastaavat sovelluksen nykyisiä nimiä. -->
+    <string name="tip_backup">Vos projets sont uniquement sur ce téléphone. Faites une sauvegarde pour les conserver si vous changez de téléphone.</string>
+    <!-- Tilannekohtainen vihje nykyisessä näkymässä; toimintojen nimet vastaavat sovelluksen nykyisiä nimiä. -->
+    <string name="tip_backup_action">Sauvegarder</string>
+    <!-- Tilannekohtainen vihje nykyisessä näkymässä; toimintojen nimet vastaavat sovelluksen nykyisiä nimiä. -->
+    <string name="tip_folders">Beaucoup de projets ? Classez-les dans des dossiers depuis le titre.</string>
+    <!-- Tilannekohtainen vihje nykyisessä näkymässä; toimintojen nimet vastaavat sovelluksen nykyisiä nimiä. -->
+    <string name="tip_widget">Comptez depuis votre écran d’accueil sans ouvrir l’application.</string>
+    <!-- Tilannekohtainen vihje nykyisessä näkymässä; toimintojen nimet vastaavat sovelluksen nykyisiä nimiä. -->
+    <string name="tip_widget_action">Ajouter un widget</string>
+    <!-- Tilannekohtainen vihje nykyisessä näkymässä; toimintojen nimet vastaavat sovelluksen nykyisiä nimiä. -->
+    <string name="tip_tools_intro">Les calculatrices fonctionnent hors ligne. Les valeurs d’exemple montrent quoi saisir.</string>
+    <!-- Asetusten toiminto tai kuittaus aiemmin nähtyjen vihjeiden näyttämiseen uudelleen. -->
+    <string name="settings_show_tips_again">Afficher à nouveau les conseils</string>
+    <!-- Asetusten toiminto tai kuittaus aiemmin nähtyjen vihjeiden näyttämiseen uudelleen. -->
+    <string name="settings_tips_reset_done">Les conseils s’afficheront à nouveau.</string>
+    <!-- Ensimmäisen projektin valmistelulista; valmis vaihe kuvaa jo tallennettua tietoa. -->
+    <string name="project_setup_title">Préparation du projet</string>
+    <!-- Ensimmäisen projektin valmistelulista; valmis vaihe kuvaa jo tallennettua tietoa. -->
+    <string name="project_setup_progress">%1$d sur %2$d</string>
+    <!-- Ensimmäisen projektin valmistelulista; valmis vaihe kuvaa jo tallennettua tietoa. -->
+    <string name="project_setup_starting_point">Définissez votre point de départ</string>
+    <!-- Ensimmäisen projektin valmistelulista; valmis vaihe kuvaa jo tallennettua tietoa. -->
+    <string name="project_setup_starting_point_done">Point de départ défini</string>
+    <!-- Ensimmäisen projektin valmistelulista; valmis vaihe kuvaa jo tallennettua tietoa. -->
+    <string name="project_setup_pattern">Joignez votre modèle</string>
+    <!-- Ensimmäisen projektin valmistelulista; valmis vaihe kuvaa jo tallennettua tietoa. -->
+    <string name="project_setup_pattern_done">Modèle joint</string>
+    <!-- Ensimmäisen projektin valmistelulista; valmis vaihe kuvaa jo tallennettua tietoa. -->
+    <string name="project_setup_yarn">Ajoutez le fil que vous utilisez</string>
+    <!-- Ensimmäisen projektin valmistelulista; valmis vaihe kuvaa jo tallennettua tietoa. -->
+    <string name="project_setup_yarn_done">Fil ajouté</string>
+    <!-- Ensimmäisen projektin valmistelulista; valmis vaihe kuvaa jo tallennettua tietoa. -->
+    <string name="project_setup_session">Enregistrez votre première session de travail</string>
+    <!-- Ensimmäisen projektin valmistelulista; valmis vaihe kuvaa jo tallennettua tietoa. -->
+    <string name="project_setup_session_done">Session de travail enregistrée</string>
+    <!-- Ensimmäisen projektin valmistelulista; valmis vaihe kuvaa jo tallennettua tietoa. -->
+    <string name="project_setup_done">Tout est prêt. Profitez de votre projet.</string>
+    <!-- Ensimmäisen projektin valmistelulista; valmis vaihe kuvaa jo tallennettua tietoa. -->
+    <string name="project_setup_hide">Masquer</string>
+    <!-- Silmukoina kuvatun edistymisen saavutettava kuvaus; valmis määrä ja vaiheiden kokonaismäärä. -->
+    <string name="stitch_progress_a11y">%1$d sur %2$d terminés</string>
+    <!-- Sovelluksen sisäisen oppaan otsikko, kuvaus tai avaamistoiminto. -->
+    <string name="guide_screen_title">Comment utiliser KnitTools</string>
+    <!-- Sovelluksen sisäisen oppaan otsikko, kuvaus tai avaamistoiminto. -->
+    <string name="guide_intro">Choisissez ce que vous faites en ce moment. Vous pourrez revenir ici à tout moment.</string>
+    <!-- Sovelluksen sisäisen oppaan otsikko, kuvaus tai avaamistoiminto. -->
+    <string name="guide_entry_settings">Comment utiliser KnitTools</string>
+    <!-- Sovelluksen sisäisen oppaan otsikko, kuvaus tai avaamistoiminto. -->
+    <string name="guide_entry_overview">Fonctionnement des outils du projet</string>
+    <!-- Sovelluksen sisäisen oppaan otsikko, kuvaus tai avaamistoiminto. -->
+    <string name="guide_try_it">Essayer</string>
+    <!-- Sovelluksen sisäisen oppaan aiheen otsikko tai kuvaus; käytä kielen tavallista otsikkokirjoitusta. -->
+    <string name="guide_topic_continue_title">Continuer un projet</string>
+    <!-- Sovelluksen sisäisen oppaan aiheen otsikko tai kuvaus; käytä kielen tavallista otsikkokirjoitusta. -->
+    <string name="guide_topic_continue_subtitle">Compteur, Annuler et page du projet</string>
+    <!-- Oppaan laskentaosio; Kumoa ja Jatka tarkoittavat olemassa olevia käyttöliittymän toimintoja. -->
+    <string name="guide_continue_count_title">Comptez au fil de votre ouvrage</string>
+    <!-- Oppaan laskentaosio; Kumoa ja Jatka tarkoittavat olemassa olevia käyttöliittymän toimintoja. -->
+    <string name="guide_continue_count_body">Touchez + quand vous terminez un rang. Toucher le grand nombre ajoute aussi une unité. Le bouton moins en retire une.</string>
+    <!-- Oppaan laskentaosio; Kumoa ja Jatka tarkoittavat olemassa olevia käyttöliittymän toimintoja. -->
+    <string name="guide_continue_undo_title">Annuler les erreurs</string>
+    <!-- Oppaan laskentaosio; Kumoa ja Jatka tarkoittavat olemassa olevia käyttöliittymän toimintoja. -->
+    <string name="guide_continue_undo_body">Annuler revient sur vos dernières modifications, une à chaque appui.</string>
+    <!-- Oppaan laskentaosio; Kumoa ja Jatka tarkoittavat olemassa olevia käyttöliittymän toimintoja. -->
+    <string name="guide_continue_step_title">Compter plusieurs unités à la fois</string>
+    <!-- Oppaan laskentaosio; Kumoa ja Jatka tarkoittavat olemassa olevia käyttöliittymän toimintoja. -->
+    <string name="guide_continue_step_body">L’anneau ×1 entre les boutons règle la quantité ajoutée à chaque appui, de 1 à 99, séparément pour chaque projet.</string>
+    <!-- Oppaan laskentaosio; Kumoa ja Jatka tarkoittavat olemassa olevia käyttöliittymän toimintoja. -->
+    <string name="guide_continue_project_page_title">Page du projet et compteur</string>
+    <!-- Oppaan laskentaosio; Kumoa ja Jatka tarkoittavat olemassa olevia käyttöliittymän toimintoja. -->
+    <string name="guide_continue_project_page_body">Toucher un projet ouvre sa page avec le modèle, le fil, les notes et les photos. Continuer ouvre le compteur.</string>
+    <!-- Oppaan laskentaosio; Kumoa ja Jatka tarkoittavat olemassa olevia käyttöliittymän toimintoja. -->
+    <string name="guide_continue_find_title">Retrouvez votre projet</string>
+    <!-- Oppaan laskentaosio; Kumoa ja Jatka tarkoittavat olemassa olevia käyttöliittymän toimintoja. -->
+    <string name="guide_continue_find_body">Un projet commencé vous attend en haut de Projets, prêt à être repris.</string>
+    <!-- Oppaan laskentaosio; Kumoa ja Jatka tarkoittavat olemassa olevia käyttöliittymän toimintoja. -->
+    <string name="guide_continue_widget_title">Comptez depuis votre écran d’accueil</string>
+    <!-- Oppaan laskentaosio; Kumoa ja Jatka tarkoittavat olemassa olevia käyttöliittymän toimintoja. -->
+    <string name="guide_continue_widget_body">Ajoutez le widget du compteur pour compter sans ouvrir l’application.</string>
+    <!-- Sovelluksen sisäisen oppaan aiheen otsikko tai kuvaus; käytä kielen tavallista otsikkokirjoitusta. -->
+    <string name="guide_topic_pattern_title">Suivez votre modèle</string>
+    <!-- Sovelluksen sisäisen oppaan aiheen otsikko tai kuvaus; käytä kielen tavallista otsikkokirjoitusta. -->
+    <string name="guide_topic_pattern_subtitle">PDF, modèles en ligne et ligne de lecture</string>
+    <!-- Oppaan ohjeosio; PDF-lukeminen on maksutonta, kuvista PDF:ksi on erillinen Pro-toiminto. -->
+    <string name="guide_pattern_attach_title">Joignez votre modèle</string>
+    <!-- Oppaan ohjeosio; PDF-lukeminen on maksutonta, kuvista PDF:ksi on erillinen Pro-toiminto. -->
+    <string name="guide_pattern_attach_body">Ajoutez un PDF depuis votre téléphone ou votre stockage cloud, ou enregistrez un lien vers un modèle en ligne.</string>
+    <!-- Oppaan ohjeosio; PDF-lukeminen on maksutonta, kuvista PDF:ksi on erillinen Pro-toiminto. -->
+    <string name="guide_pattern_documents_title">Plusieurs documents</string>
+    <!-- Oppaan ohjeosio; PDF-lukeminen on maksutonta, kuvista PDF:ksi on erillinen Pro-toiminto. -->
+    <string name="guide_pattern_documents_body">Un projet peut contenir plusieurs PDF. Chacun mémorise sa propre page.</string>
+    <!-- Oppaan ohjeosio; PDF-lukeminen on maksutonta, kuvista PDF:ksi on erillinen Pro-toiminto. -->
+    <string name="guide_pattern_markup_title">Lire et annoter</string>
+    <!-- Oppaan ohjeosio; PDF-lukeminen on maksutonta, kuvista PDF:ksi on erillinen Pro-toiminto. -->
+    <string name="guide_pattern_markup_body">Le mode lecture affiche la page en plein écran. Le mode annotation ajoute des stylos, des surligneurs, du texte et des outils pour les grilles.</string>
+    <!-- Oppaan ohjeosio; PDF-lukeminen on maksutonta, kuvista PDF:ksi on erillinen Pro-toiminto. -->
+    <string name="guide_pattern_reading_line_title">La ligne de lecture</string>
+    <!-- PDF-lukijan ohje; seuraa päälaskuria -asetuksen nimen on vastattava nykyistä käyttöliittymää. -->
+    <string name="guide_pattern_reading_line_body">Activez Suivre le compteur principal et la ligne se déplacera pendant que vous comptez. Calibrez les positions du compteur une fois si vos rangs ne correspondent pas.</string>
+    <!-- Oppaan ohjeosio; PDF-lukeminen on maksutonta, kuvista PDF:ksi on erillinen Pro-toiminto. -->
+    <string name="guide_pattern_bookmarks_title">Signets</string>
+    <!-- Oppaan ohjeosio; PDF-lukeminen on maksutonta, kuvista PDF:ksi on erillinen Pro-toiminto. -->
+    <string name="guide_pattern_bookmarks_body">Ajoutez des signets aux endroits où vous revenez souvent.</string>
+    <!-- Oppaan ohjeosio; PDF-lukeminen on maksutonta, kuvista PDF:ksi on erillinen Pro-toiminto. -->
+    <string name="guide_pattern_ravelry_title">Modèles de Ravelry</string>
+    <!-- Oppaan ohjeosio; PDF-lukeminen on maksutonta, kuvista PDF:ksi on erillinen Pro-toiminto. -->
+    <string name="guide_pattern_ravelry_body">Ouvrez Ravelry dans l’application, connectez-vous sur le site de Ravelry et téléchargez vos PDF directement dans KnitTools.</string>
+    <!-- Oppaan ohjeosio; PDF-lukeminen on maksutonta, kuvista PDF:ksi on erillinen Pro-toiminto. -->
+    <string name="guide_pattern_camera_title">Modèles sur papier</string>
+    <!-- Oppaan ohjeosio; PDF-lukeminen on maksutonta, kuvista PDF:ksi on erillinen Pro-toiminto. -->
+    <string name="guide_pattern_camera_body">Photographiez les pages et KnitTools les transforme en PDF.</string>
+    <!-- Sovelluksen sisäisen oppaan aiheen otsikko tai kuvaus; käytä kielen tavallista otsikkokirjoitusta. -->
+    <string name="guide_topic_yarn_title">Organisez vos fils</string>
+    <!-- Sovelluksen sisäisen oppaan aiheen otsikko tai kuvaus; käytä kielen tavallista otsikkokirjoitusta. -->
+    <string name="guide_topic_yarn_subtitle">Fil du projet, quantités et Mon fil</string>
+    <!-- Oppaan lankaosio; projektin lankatiedot ja My Yarn -lankakirjasto ovat eri asioita. -->
+    <string name="guide_yarn_project_title">Fil pour ce projet</string>
+    <!-- Oppaan lankaosio; projektin lankatiedot ja My Yarn -lankakirjasto ovat eri asioita. -->
+    <string name="guide_yarn_project_body">Notez le fil utilisé dans le projet, avec les quantités prévues, réservées et utilisées.</string>
+    <!-- Oppaan lankaosio; projektin lankatiedot ja My Yarn -lankakirjasto ovat eri asioita. -->
+    <string name="guide_yarn_remaining_title">Que signifie restant ?</string>
+    <!-- Jäljellä oleva määrä koskee projektin varausta; varaston määrä ei muutu automaattisesti. -->
+    <string name="guide_yarn_remaining_body">Restant désigne ce qui reste du fil réservé à ce projet. Les quantités de votre réserve ne changent pas toutes seules.</string>
+    <!-- Lankakirjaston nimi; sama käännös kuin olemassa olevassa my_yarn_title-avaimessa. -->
+    <string name="guide_yarn_my_yarn_title">Mon fil</string>
+    <!-- Oppaan lankaosio; projektin lankatiedot ja My Yarn -lankakirjasto ovat eri asioita. -->
+    <string name="guide_yarn_my_yarn_body">Enregistrez un fil une seule fois avec son numéro de couleur, son bain de teinture et ses photos, puis associez-le à n’importe quel projet.</string>
+    <!-- Sovelluksen sisäisen oppaan aiheen otsikko tai kuvaus; käytä kielen tavallista otsikkokirjoitusta. -->
+    <string name="guide_topic_details_title">Retenez les détails</string>
+    <!-- Sovelluksen sisäisen oppaan aiheen otsikko tai kuvaus; käytä kielen tavallista otsikkokirjoitusta. -->
+    <string name="guide_topic_details_subtitle">Notes, compteurs supplémentaires, rappels et photos</string>
+    <!-- Oppaan projektitiedot; Pro-merkki lisätään erikseen eikä kuulu käännettävään tekstiin. -->
+    <string name="guide_details_notes_title">Notes</string>
+    <!-- Oppaan projektitiedot; Pro-merkki lisätään erikseen eikä kuulu käännettävään tekstiin. -->
+    <string name="guide_details_notes_body">Gardez les tailles d’aiguilles, les modifications et les prochaines étapes.</string>
+    <!-- Oppaan projektitiedot; Pro-merkki lisätään erikseen eikä kuulu käännettävään tekstiin. -->
+    <string name="guide_details_counters_title">Compteurs supplémentaires</string>
+    <!-- Oppaan projektitiedot; Pro-merkki lisätään erikseen eikä kuulu käännettävään tekstiin. -->
+    <string name="guide_details_counters_body">Comptez les répétitions, les augmentations et diminutions ou une section de rangs à côté du compteur principal.</string>
+    <!-- Oppaan projektitiedot; Pro-merkki lisätään erikseen eikä kuulu käännettävään tekstiin. -->
+    <string name="guide_details_reminders_title">Rappels de rangs</string>
+    <!-- Muistutukset näkyvät vain sovelluksessa, eivät puhelimen ilmoituksina. -->
+    <string name="guide_details_reminders_body">Recevez un rappel dans l’application à un rang donné, par exemple pour la prochaine diminution. Les rappels s’affichent dans KnitTools, pas dans les notifications du téléphone.</string>
+    <!-- Oppaan projektitiedot; Pro-merkki lisätään erikseen eikä kuulu käännettävään tekstiin. -->
+    <string name="guide_details_photos_title">Photos de progression</string>
+    <!-- Oppaan projektitiedot; Pro-merkki lisätään erikseen eikä kuulu käännettävään tekstiin. -->
+    <string name="guide_details_photos_body">Prenez des photos à mesure que votre projet avance. La plus récente devient l’image du projet.</string>
+    <!-- Sovelluksen sisäisen oppaan aiheen otsikko tai kuvaus; käytä kielen tavallista otsikkokirjoitusta. -->
+    <string name="guide_topic_tools_title">Calculez, suivez et sauvegardez</string>
+    <!-- Sovelluksen sisäisen oppaan aiheen otsikko tai kuvaus; käytä kielen tavallista otsikkokirjoitusta. -->
+    <string name="guide_topic_tools_subtitle">Outils, temps de travail, Statistiques et sauvegarde</string>
+    <!-- Oppaan työkalut, työaika ja varmuuskopiointi; osioiden nimet vastaavat nykyisiä välilehtiä. -->
+    <string name="guide_tools_calculators_title">Calculatrices</string>
+    <!-- Oppaan työkalut, työaika ja varmuuskopiointi; osioiden nimet vastaavat nykyisiä välilehtiä. -->
+    <string name="guide_tools_calculators_body">Échantillon, augmentations et diminutions, montage des mailles et quantités de fil. Ces outils fonctionnent hors ligne.</string>
+    <!-- Oppaan työkalut, työaika ja varmuuskopiointi; osioiden nimet vastaavat nykyisiä välilehtiä. -->
+    <string name="guide_tools_reference_title">Références</string>
+    <!-- Oppaan työkalut, työaika ja varmuuskopiointi; osioiden nimet vastaavat nykyisiä välilehtiä. -->
+    <string name="guide_tools_reference_body">Tailles d’aiguilles, tableaux de tailles, abréviations et symboles de grilles se trouvent dans Bibliothèque.</string>
+    <!-- Oppaan työkalut, työaika ja varmuuskopiointi; osioiden nimet vastaavat nykyisiä välilehtiä. -->
+    <string name="guide_tools_work_time_title">Temps de travail</string>
+    <!-- Työskentelyjakso käynnistetään itse ja lopuksi tallennetaan tai hylätään. -->
+    <string name="guide_tools_work_time_body">Démarrez une session de travail depuis le menu du projet pour suivre votre temps. Arrêtez-la lorsque vous avez terminé pour l’enregistrer ou l’abandonner.</string>
+    <!-- Oppaan työkalut, työaika ja varmuuskopiointi; osioiden nimet vastaavat nykyisiä välilehtiä. -->
+    <string name="guide_tools_insights_title">Statistiques</string>
+    <!-- Oppaan työkalut, työaika ja varmuuskopiointi; osioiden nimet vastaavat nykyisiä välilehtiä. -->
+    <string name="guide_tools_insights_body">Consultez le temps enregistré. Pro ajoute des graphiques quotidiens, hebdomadaires et mensuels, ainsi que votre série de jours d’activité.</string>
+    <!-- Oppaan työkalut, työaika ja varmuuskopiointi; osioiden nimet vastaavat nykyisiä välilehtiä. -->
+    <string name="guide_tools_folders_title">Dossiers</string>
+    <!-- Oppaan työkalut, työaika ja varmuuskopiointi; osioiden nimet vastaavat nykyisiä välilehtiä. -->
+    <string name="guide_tools_folders_body">Regroupez les projets dans des dossiers depuis le titre Projets. Un projet en cours à la fois est gratuit et les projets terminés ne comptent pas.</string>
+    <!-- Oppaan työkalut, työaika ja varmuuskopiointi; osioiden nimet vastaavat nykyisiä välilehtiä. -->
+    <string name="guide_tools_backup_title">Sauvegarde</string>
+    <!-- Palauttaminen korvaa puhelimen nykyiset tiedot; älä lupaa yhdistämistä tai synkronointia. -->
+    <string name="guide_tools_backup_body">Créez un fichier de sauvegarde et conservez-le dans un endroit sûr, comme votre espace cloud. La restauration remplace toutes les données sur ce téléphone.</string>
+    <!-- Lyhyt kokeilumerkki kertoo toiminnon olevan käytössä kokeilun ajan. -->
+    <string name="pro_marker_trial">ESSAI</string>
+    <!-- Projektin valikon kompakti toistolaskuri; Pro-merkki esitetään erikseen. -->
+    <string name="pro_repeat_counter_row">Compteur de répétitions</string>
+    <!-- Androidin aloitusnäytön laskuripienoisohjelma; käytä kielen nykyistä widget-termiä. -->
+    <string name="widget_add_row">Ajouter un widget à l’écran d’accueil</string>
+    <!-- Androidin aloitusnäytön laskuripienoisohjelma; käytä kielen nykyistä widget-termiä. -->
+    <string name="widget_add_manual">Appuyez longuement sur votre écran d’accueil, choisissez Widgets, puis cherchez KnitTools.</string>
+    <!-- Valmistuneen neuleen juhlaotsikko; käytä paikallista silmukoiden päättelyn ilmausta. -->
+    <string name="completed_title_knitting">Mailles rabattues !</string>
+    <!-- Valmistuneen virkkaustyön juhlaotsikko; käytä paikallista työn viimeistelyn ilmausta. -->
+    <string name="completed_title_crochet">Fil arrêté !</string>
+    <!-- Valmistuneen projektin yhteenveto; arvot perustuvat tallennettuun valmistumishetkeen. -->
+    <string name="completed_time_label">Temps de travail</string>
+    <!-- Valmistuneen projektin yhteenveto; arvot perustuvat tallennettuun valmistumishetkeen. -->
+    <string name="completed_count_label">Total final</string>
+    <!-- Valmistuneen projektin yhteenveto; arvot perustuvat tallennettuun valmistumishetkeen. -->
+    <string name="completed_started_label">Début</string>
+    <!-- Valmistuneen projektin yhteenveto; arvot perustuvat tallennettuun valmistumishetkeen. -->
+    <string name="completed_finished_label">Fin</string>
+    <!-- Valmistuneen projektin yhteenveto; arvot perustuvat tallennettuun valmistumishetkeen. -->
+    <string name="completed_next_project">Commencez votre prochain projet</string>
+    <!-- Neutraali sulkemistoiminto; ei aloita uutta projektia. -->
+    <string name="completed_close">Fermer</string>
+    <!-- Pro-kehotteen tai Pro-sivun hyötyteksti; kokeilun ehdot ja sisällön säilyminen esitetään erikseen. -->
+    <string name="onboarding_pro_projects_title">Gardez tous vos projets en cours</string>
+    <!-- Pro-kehotteen tai Pro-sivun hyötyteksti; kokeilun ehdot ja sisällön säilyminen esitetään erikseen. -->
+    <string name="onboarding_pro_projects_trial_body">La version gratuite permet de garder un projet en cours à la fois. Essayez Pro gratuitement pendant 14 jours pour ajouter tous vos projets.</string>
+    <!-- Pro-kehotteen tai Pro-sivun hyötyteksti; kokeilun ehdot ja sisällön säilyminen esitetään erikseen. -->
+    <string name="onboarding_pro_projects_body">La version gratuite permet de garder un projet en cours à la fois. Pro vous permet de garder tous vos projets en cours.</string>
+    <!-- Pro-kehotteen tai Pro-sivun hyötyteksti; kokeilun ehdot ja sisällön säilyminen esitetään erikseen. -->
+    <string name="onboarding_pro_reactivation_title">Gardez ce projet en cours</string>
+    <!-- Pro-kehotteen tai Pro-sivun hyötyteksti; kokeilun ehdot ja sisällön säilyminen esitetään erikseen. -->
+    <string name="onboarding_pro_reactivation_body">Réactivez ce projet et travaillez sur plusieurs projets à la fois.</string>
+    <!-- Pro-kehotteen tai Pro-sivun hyötyteksti; kokeilun ehdot ja sisällön säilyminen esitetään erikseen. -->
+    <string name="onboarding_pro_photos_title">Gardez votre progression en photos</string>
+    <!-- Pro-kehotteen tai Pro-sivun hyötyteksti; kokeilun ehdot ja sisällön säilyminen esitetään erikseen. -->
+    <string name="onboarding_pro_photos_body">Prenez des photos de votre projet à mesure qu’il avance.</string>
+    <!-- Pro-kehotteen tai Pro-sivun hyötyteksti; kokeilun ehdot ja sisällön säilyminen esitetään erikseen. -->
+    <string name="onboarding_pro_notes_title">Laissez une note pour la prochaine fois</string>
+    <!-- Pro-kehotteen tai Pro-sivun hyötyteksti; kokeilun ehdot ja sisällön säilyminen esitetään erikseen. -->
+    <string name="onboarding_pro_notes_body">Notez les tailles d’aiguilles, les modifications et les prochaines étapes.</string>
+    <!-- Pro-kehotteen tai Pro-sivun hyötyteksti; kokeilun ehdot ja sisällön säilyminen esitetään erikseen. -->
+    <string name="onboarding_pro_yarn_title">Créez votre bibliothèque de fils</string>
+    <!-- Pro-kehotteen tai Pro-sivun hyötyteksti; kokeilun ehdot ja sisällön säilyminen esitetään erikseen. -->
+    <string name="onboarding_pro_yarn_body">Enregistrez un fil une seule fois et associez-le à n’importe quel projet.</string>
+    <!-- Pro-kehotteen tai Pro-sivun hyötyteksti; kokeilun ehdot ja sisällön säilyminen esitetään erikseen. -->
+    <string name="onboarding_pro_counters_title">Comptez les répétitions à côté des rangs</string>
+    <!-- Pro-kehotteen tai Pro-sivun hyötyteksti; kokeilun ehdot ja sisällön säilyminen esitetään erikseen. -->
+    <string name="onboarding_pro_counters_body">Ajoutez des compteurs pour les répétitions du modèle, les augmentations et diminutions ou une section de rangs.</string>
+    <!-- Pro-kehotteen tai Pro-sivun hyötyteksti; kokeilun ehdot ja sisällön säilyminen esitetään erikseen. -->
+    <string name="onboarding_pro_reminders_title">N’oubliez pas la prochaine diminution</string>
+    <!-- Pro-kehotteen tai Pro-sivun hyötyteksti; kokeilun ehdot ja sisällön säilyminen esitetään erikseen. -->
+    <string name="onboarding_pro_reminders_body">Ajoutez un rappel pour le rang où quelque chose change.</string>
+    <!-- Pro-kehotteen tai Pro-sivun hyötyteksti; kokeilun ehdot ja sisällön säilyminen esitetään erikseen. -->
+    <string name="onboarding_pro_pattern_pdf_title">Transformez un modèle papier en PDF</string>
+    <!-- Pro-kehotteen tai Pro-sivun hyötyteksti; kokeilun ehdot ja sisällön säilyminen esitetään erikseen. -->
+    <string name="onboarding_pro_pattern_pdf_body">Photographiez les pages et gardez-les avec votre projet.</string>
+    <!-- Androidin aloitusnäytön laskuripienoisohjelma; käytä kielen nykyistä widget-termiä. -->
+    <string name="pro_prompt_widget_pin_title">Comptez depuis votre écran d’accueil</string>
+    <!-- Pro-kehotteen tai Pro-sivun hyötyteksti; kokeilun ehdot ja sisällön säilyminen esitetään erikseen. -->
+    <string name="onboarding_pro_widget_body">Ajoutez le widget du compteur et comptez sans ouvrir l’application.</string>
+    <!-- Ohjetekstin liittäminen täyttää laskurin numerokenttiä; laskureita voi käyttää myös käsin. -->
+    <string name="pro_prompt_instruction_paste_title">Remplissez la calculatrice depuis votre modèle</string>
+    <!-- Ohjetekstin liittäminen täyttää laskurin numerokenttiä; laskureita voi käyttää myös käsin. -->
+    <string name="pro_prompt_instruction_paste_body">Collez une instruction et les nombres se remplissent automatiquement.</string>
+    <!-- Kokeilu kestää 14 päivää ilman maksutapaa eikä muutu automaattiseksi veloitukseksi. -->
+    <string name="onboarding_pro_trial_terms">Essayez gratuitement pendant 14 jours. Aucun moyen de paiement nécessaire et l’essai ne se transforme jamais en paiement.</string>
+    <!-- Pro on kertaostos; aiemmin luotu sisältö säilyy saatavilla. -->
+    <string name="onboarding_pro_purchase_terms">Pro est un achat unique. Tout ce que vous avez créé reste disponible.</string>
+    <!-- Valmistuneet projektit eivät kuluta maksutonta aktiivisen projektin paikkaa. -->
+    <string name="onboarding_pro_retention_projects">Les projets terminés ne comptent pas dans la limite gratuite. Vos projets existants restent disponibles.</string>
+    <!-- Pro-kehotteen sisältölupaus; aiemmin luotu sisältö säilyy saatavilla tai muokattavana tekstin mukaisesti. -->
+    <string name="onboarding_pro_retention_photos">Les photos déjà ajoutées restent disponibles.</string>
+    <!-- Pro-kehotteen sisältölupaus; aiemmin luotu sisältö säilyy saatavilla tai muokattavana tekstin mukaisesti. -->
+    <string name="onboarding_pro_retention_notes">Les notes déjà écrites restent modifiables.</string>
+    <!-- Pro-kehotteen sisältölupaus; aiemmin luotu sisältö säilyy saatavilla tai muokattavana tekstin mukaisesti. -->
+    <string name="onboarding_pro_retention_yarn">Les fiches de fil déjà créées restent disponibles et modifiables.</string>
+    <!-- Projektin lankamuistiinpano säilyy riippumatta My Yarn -kortin tallentamisesta. -->
+    <string name="onboarding_pro_retention_project_yarn">Votre note de fil du projet reste disponible.</string>
+    <!-- Pro-kehotteen sisältölupaus; aiemmin luotu sisältö säilyy saatavilla tai muokattavana tekstin mukaisesti. -->
+    <string name="onboarding_pro_retention_counters">Les compteurs déjà ajoutés restent disponibles et modifiables.</string>
+    <!-- Pro-kehotteen sisältölupaus; aiemmin luotu sisältö säilyy saatavilla tai muokattavana tekstin mukaisesti. -->
+    <string name="onboarding_pro_retention_reminders">Les rappels déjà ajoutés continuent de fonctionner et restent modifiables.</string>
+    <!-- Pro-kehotteen sisältölupaus; aiemmin luotu sisältö säilyy saatavilla tai muokattavana tekstin mukaisesti. -->
+    <string name="onboarding_pro_retention_pattern_pdf">Les modèles et PDF déjà ajoutés restent disponibles.</string>
+    <!-- Widgetin käyttöoikeus ei poista projektin tai laskurin tietoja. -->
+    <string name="onboarding_pro_retention_widget">Les données de vos projets et compteurs restent disponibles dans KnitTools.</string>
+    <!-- Ohjetekstin jäsennys on Pro-toiminto, mutta laskureiden käyttö säilyy maksuttomana. -->
+    <string name="onboarding_pro_retention_paste">Les calculatrices restent gratuites.</string>
+    <!-- Pro-kehotteen tai Pro-sivun hyötyteksti; kokeilun ehdot ja sisällön säilyminen esitetään erikseen. -->
+    <string name="onboarding_pro_intro">Plus de projets, des outils plus complets</string>
+    <!-- Pro-sivun maksuttomien ominaisuuksien luettelo; nykyisiä käyttöoikeuksia ei muuteta. -->
+    <string name="onboarding_pro_free_title">Gratuit pour toujours</string>
+    <!-- Pro-kehotteen tai Pro-sivun hyötyteksti; kokeilun ehdot ja sisällön säilyminen esitetään erikseen. -->
+    <string name="onboarding_pro_adds_title">Les avantages de Pro</string>
+    <!-- Pro-sivun maksuttomien ominaisuuksien luettelo; nykyisiä käyttöoikeuksia ei muuteta. -->
+    <string name="onboarding_pro_free_project">Un projet en cours</string>
+    <!-- Pro-sivun maksuttomien ominaisuuksien luettelo; nykyisiä käyttöoikeuksia ei muuteta. -->
+    <string name="onboarding_pro_free_counter">Compteur avec incrément réglable</string>
+    <!-- Pro-sivun maksuttomien ominaisuuksien luettelo; nykyisiä käyttöoikeuksia ei muuteta. -->
+    <string name="onboarding_pro_free_pdf">Lecteur PDF avec ligne de lecture et annotations</string>
+    <!-- Pro-sivun maksuttomien ominaisuuksien luettelo; nykyisiä käyttöoikeuksia ei muuteta. -->
+    <string name="onboarding_pro_free_web">Modèles en ligne et téléchargements Ravelry</string>
+    <!-- Pro-sivun maksuttomien ominaisuuksien luettelo; nykyisiä käyttöoikeuksia ei muuteta. -->
+    <string name="onboarding_pro_free_yarn">Fil du projet et quantités</string>
+    <!-- Pro-sivun maksuttomien ominaisuuksien luettelo; nykyisiä käyttöoikeuksia ei muuteta. -->
+    <string name="onboarding_pro_free_time">Temps de travail</string>
+    <!-- Pro-sivun maksuttomien ominaisuuksien luettelo; nykyisiä käyttöoikeuksia ei muuteta. -->
+    <string name="onboarding_pro_free_tools">Calculatrices et références</string>
+    <!-- Pro-sivun maksuttomien ominaisuuksien luettelo; nykyisiä käyttöoikeuksia ei muuteta. -->
+    <string name="onboarding_pro_free_backup">Sauvegarde</string>
+    <!-- Pro-sivun nykyisten lisäominaisuuksien ryhmä; älä lupaa uusia käyttöoikeuksia. -->
+    <string name="onboarding_pro_group_projects_title">Projets et matériaux</string>
+    <!-- Pro-sivun nykyisten lisäominaisuuksien ryhmä; älä lupaa uusia käyttöoikeuksia. -->
+    <string name="onboarding_pro_group_projects_body">Gardez plusieurs projets en cours, ajoutez des notes et des photos de progression, et créez votre bibliothèque de fils.</string>
+    <!-- Pro-sivun nykyisten lisäominaisuuksien ryhmä; älä lupaa uusia käyttöoikeuksia. -->
+    <string name="onboarding_pro_group_workflow_title">Comptage et organisation</string>
+    <!-- Pro-sivun nykyisten lisäominaisuuksien ryhmä; älä lupaa uusia käyttöoikeuksia. -->
+    <string name="onboarding_pro_group_workflow_body">Ajoutez des compteurs de répétitions, d’augmentations et diminutions et de sections, des rappels de rangs et le widget d’écran d’accueil. Transformez les photos de modèles en PDF et remplissez les calculatrices en collant des instructions.</string>
+    <!-- Pro-sivun nykyisten lisäominaisuuksien ryhmä; älä lupaa uusia käyttöoikeuksia. -->
+    <string name="onboarding_pro_group_insights_title">Statistiques</string>
+    <!-- Pro-sivun nykyisten lisäominaisuuksien ryhmä; älä lupaa uusia käyttöoikeuksia. -->
+    <string name="onboarding_pro_group_insights_body">Consultez les graphiques d’activité quotidiens, hebdomadaires et mensuels, ainsi que votre série de jours d’activité.</string>
+    <!-- Kokeilun jälkeen näytettävä yhteenveto; %1$s on lokalisoitu luettelo todellisista lisäyksistä. -->
+    <string name="trial_summary_during">Pendant votre essai, vous avez ajouté %1$s. Tout reste à vous.</string>
+    <!-- Kokeilun aikainen yhteenveto; %1$s on lokalisoitu luettelo todellisista lisäyksistä. -->
+    <string name="trial_summary_so_far">Vous avez déjà ajouté %1$s. Tout reste à vous.</string>
+    <!-- Tilailmoitus näytetään, kun kokeilua on jäljellä täsmälleen kolme päivää. -->
+    <string name="trial_three_days_left">Il reste 3 jours à votre essai.</string>
+    <!-- Pro-kokeilun tilaa tai kokeilupolkua kuvaava otsikko; Pro säilyy tuotetason nimenä. -->
+    <string name="trial_started_screen_title">Votre essai de Pro a commencé</string>
+    <!-- Pro-kokeilun tilaa tai kokeilupolkua kuvaava otsikko; Pro säilyy tuotetason nimenä. -->
+    <string name="trial_ended_screen_title">Votre essai de Pro est terminé</string>
+    <!-- Pro-kokeilun tilaa tai kokeilupolkua kuvaava otsikko; Pro säilyy tuotetason nimenä. -->
+    <string name="trial_journey_title">Votre essai de Pro</string>
+    <!-- Kokeilupolun toiminto avaa sovelluksen nykyisen toiminnon; tehty vaihe näkyy valmiina. -->
+    <string name="trial_action_widget">Ajouter un widget</string>
+    <!-- Kokeilupolun toiminto avaa sovelluksen nykyisen toiminnon; tehty vaihe näkyy valmiina. -->
+    <string name="trial_action_counter">Ajouter un compteur de répétitions</string>
+    <!-- Kokeilupolun toiminto avaa sovelluksen nykyisen toiminnon; tehty vaihe näkyy valmiina. -->
+    <string name="trial_action_project">Ajouter un autre projet</string>
+    <!-- Kokeilupolun toiminto avaa sovelluksen nykyisen toiminnon; tehty vaihe näkyy valmiina. -->
+    <string name="trial_action_chart">Voir le graphique de cette semaine</string>
+    <!-- Kokeilupolun toiminto avaa sovelluksen nykyisen toiminnon; tehty vaihe näkyy valmiina. -->
+    <string name="trial_action_pattern_pdf">Transformer un modèle papier en PDF</string>
+    <!-- Kaikkien aktiivisten projektien määrä kansiosuodattimesta riippumatta. -->
+    <plurals name="onboarding_pro_active_projects">
+        <item quantity="one">Vous avez %1$d projet en cours.</item>
+        <item quantity="many">Vous avez %1$d projets en cours.</item>
+        <item quantity="other">Vous avez %1$d projets en cours.</item>
+    </plurals>
+    <!-- Yhteenvetoluettelon osa: kokeilun aikana luotujen projektien määrä. -->
+    <plurals name="trial_summary_projects">
+        <item quantity="one">%1$d projet</item>
+        <item quantity="many">%1$d projets</item>
+        <item quantity="other">%1$d projets</item>
+    </plurals>
+    <!-- Yhteenvetoluettelon osa: kokeilun aikana luotujen lisälaskurien määrä. -->
+    <plurals name="trial_summary_counters">
+        <item quantity="one">%1$d compteur</item>
+        <item quantity="many">%1$d compteurs</item>
+        <item quantity="other">%1$d compteurs</item>
+    </plurals>
+    <!-- Yhteenvetoluettelon osa: kokeilun aikana luotujen lankakorttien määrä. -->
+    <plurals name="trial_summary_yarn">
+        <item quantity="one">%1$d fiche de fil</item>
+        <item quantity="many">%1$d fiches de fil</item>
+        <item quantity="other">%1$d fiches de fil</item>
+    </plurals>
+    <!-- Yhteenvetoluettelon osa: kokeilun aikana lisättyjen edistymiskuvien määrä. -->
+    <plurals name="trial_summary_photos">
+        <item quantity="one">%1$d photo</item>
+        <item quantity="many">%1$d photos</item>
+        <item quantity="other">%1$d photos</item>
+    </plurals>
+</resources>

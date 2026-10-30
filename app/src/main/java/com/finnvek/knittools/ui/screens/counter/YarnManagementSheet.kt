@@ -54,18 +54,22 @@ import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.model.ProjectYarnNote
 import com.finnvek.knittools.domain.model.ProjectYarnUsageItem
 import com.finnvek.knittools.domain.model.YarnUsageSourceStatus
-import com.finnvek.knittools.pro.ProStatus
+import com.finnvek.knittools.pro.ProActionAccess
+import com.finnvek.knittools.pro.ProFeature
+import com.finnvek.knittools.pro.ProState
+import com.finnvek.knittools.pro.proActionAccess
 import com.finnvek.knittools.repository.ProjectYarnNoteEditResult
 import com.finnvek.knittools.ui.components.BadgePill
 import com.finnvek.knittools.ui.components.FormSheet
 import com.finnvek.knittools.ui.components.FormSheetConfirm
-import com.finnvek.knittools.ui.components.ProBadge
+import com.finnvek.knittools.ui.components.ProMarker
 import com.finnvek.knittools.ui.components.ProjectYarnTextField
 import com.finnvek.knittools.ui.components.RowMenuAction
 import com.finnvek.knittools.ui.components.RowOverflowMenu
 import com.finnvek.knittools.ui.components.SectionLabel
 import com.finnvek.knittools.ui.components.SheetOptionRow
 import com.finnvek.knittools.ui.components.SheetTitle
+import com.finnvek.knittools.ui.layout.ContentWidthPolicy
 import com.finnvek.knittools.ui.theme.knitToolsColors
 import com.finnvek.knittools.ui.theme.yarnColorForId
 import kotlinx.coroutines.launch
@@ -76,7 +80,8 @@ import kotlinx.coroutines.launch
 fun YarnManagementSheet(
     linkedYarns: List<Pair<Long, String>>,
     projectYarnNotes: List<ProjectYarnNote>,
-    proStatus: ProStatus,
+    proState: ProState,
+    proAccessReady: Boolean,
     actions: YarnManagementSheetActions,
     usageItems: List<ProjectYarnUsageItem> = emptyList(),
     onUsage: (YarnUsageOpenRequest) -> Unit = {},
@@ -93,6 +98,7 @@ fun YarnManagementSheet(
         onDismissRequest = actions.onDismiss,
         sheetState = sheetState,
         containerColor = MaterialTheme.colorScheme.surface,
+        sheetMaxWidth = ContentWidthPolicy.Form.maxWidth,
     ) {
         val windowFocused = LocalWindowInfo.current.isWindowFocused
         val focusHeading = focusKey != null && usageItems.none { it.key == focusKey }
@@ -147,7 +153,8 @@ fun YarnManagementSheet(
 
             ProjectYarnNotesSection(
                 notes = projectYarnNotes,
-                proStatus = proStatus,
+                proState = proState,
+                proAccessReady = proAccessReady,
                 onDeleteProjectYarnNote = actions.onDeleteProjectYarnNote,
                 onEditProjectYarnNote = { editingNote = it },
                 onSaveProjectYarnNoteToMyYarn = actions.onSaveProjectYarnNoteToMyYarn,
@@ -261,7 +268,8 @@ private val LinkedYarnDotGap = 10.dp
 @Composable
 private fun ProjectYarnNotesSection(
     notes: List<ProjectYarnNote>,
-    proStatus: ProStatus,
+    proState: ProState,
+    proAccessReady: Boolean,
     onDeleteProjectYarnNote: (Long) -> Unit,
     onEditProjectYarnNote: (ProjectYarnNote) -> Unit,
     onSaveProjectYarnNoteToMyYarn: (Long) -> Unit,
@@ -277,7 +285,8 @@ private fun ProjectYarnNotesSection(
     notes.forEach { note ->
         ProjectYarnNoteRow(
             note = note,
-            proStatus = proStatus,
+            proState = proState,
+            proAccessReady = proAccessReady,
             onDeleteProjectYarnNote = onDeleteProjectYarnNote,
             onEditProjectYarnNote = onEditProjectYarnNote,
             onSaveProjectYarnNoteToMyYarn = onSaveProjectYarnNoteToMyYarn,
@@ -292,7 +301,8 @@ private fun ProjectYarnNotesSection(
 @Composable
 private fun ProjectYarnNoteRow(
     note: ProjectYarnNote,
-    proStatus: ProStatus,
+    proState: ProState,
+    proAccessReady: Boolean,
     onDeleteProjectYarnNote: (Long) -> Unit,
     onEditProjectYarnNote: (ProjectYarnNote) -> Unit,
     onSaveProjectYarnNoteToMyYarn: (Long) -> Unit,
@@ -326,10 +336,14 @@ private fun ProjectYarnNoteRow(
             overflow = TextOverflow.Ellipsis,
         )
         if (note.savedYarnCardId == null) {
-            TextButton(onClick = { onSaveProjectYarnNoteToMyYarn(note.id) }) {
+            val yarnAccess = proActionAccess(proState, proAccessReady, ProFeature.UNLIMITED_YARN)
+            TextButton(
+                onClick = { onSaveProjectYarnNoteToMyYarn(note.id) },
+                enabled = yarnAccess != ProActionAccess.Unknown || proState.hasFeature(ProFeature.UNLIMITED_YARN),
+            ) {
                 Text(modifier = Modifier.weight(1f), text = stringResource(R.string.save_to_my_yarn))
                 Spacer(modifier = Modifier.width(6.dp))
-                ProBadge(status = proStatus)
+                ProMarker(access = yarnAccess)
             }
         } else {
             // Tehty tallennus on tila eikä toiminto: harmaana käytöstä poistettuna painikkeena se näytti rikkinäiseltä.

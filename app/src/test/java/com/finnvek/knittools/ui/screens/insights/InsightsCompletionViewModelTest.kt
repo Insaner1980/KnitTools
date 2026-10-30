@@ -1,5 +1,6 @@
 package com.finnvek.knittools.ui.screens.insights
 
+import androidx.lifecycle.SavedStateHandle
 import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.domain.model.ProjectCompletion
 import com.finnvek.knittools.pro.ProFeature
@@ -13,6 +14,7 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.resetMain
@@ -50,7 +52,15 @@ class InsightsCompletionViewModelTest {
         Dispatchers.resetMain()
     }
 
-    private fun createViewModel() = InsightsViewModel(repository, proManager, testDispatcher)
+    private fun TestScope.createViewModel() =
+        InsightsViewModel(
+            repository,
+            proManager,
+            testDispatcher,
+            SavedStateHandle(),
+            mockk(relaxed = true),
+            backgroundScope,
+        )
 
     @Test
     fun `completion loading updates range and project without replacing session metrics`() =

@@ -327,6 +327,7 @@ class CounterViewModelCompletionTest : CounterViewModelFixture() {
             repository.discardActiveSession(any())
             repository.replaceActiveSession(any(), any(), any())
             repository.applyMainCounterChange(8L, any())
+            repository.applyMainCounterChangeWithResult(8L, any())
         }
     }
 

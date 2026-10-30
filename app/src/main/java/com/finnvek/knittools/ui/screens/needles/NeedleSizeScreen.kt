@@ -34,6 +34,7 @@ import com.finnvek.knittools.ui.components.InfoTip
 import com.finnvek.knittools.ui.components.SearchTextField
 import com.finnvek.knittools.ui.components.ToolScreenScaffold
 import com.finnvek.knittools.ui.components.rememberCurrentLocale
+import com.finnvek.knittools.ui.layout.ContentWidthPolicy
 import com.finnvek.knittools.ui.theme.knitToolsColors
 import java.text.DecimalFormatSymbols
 import java.util.Locale
@@ -45,6 +46,7 @@ fun NeedleSizeScreen(onBack: () -> Unit) {
     val results = remember(query) { NeedleSizeData.search(query) }
 
     ToolScreenScaffold(
+        contentWidthPolicy = ContentWidthPolicy.ListDetail,
         title = stringResource(R.string.tool_needle_sizes),
         onBack = onBack,
     ) { padding ->

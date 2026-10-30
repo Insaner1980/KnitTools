@@ -15,9 +15,14 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -49,20 +54,24 @@ import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.model.YarnCard
 import com.finnvek.knittools.domain.model.YarnCardStatus
 import com.finnvek.knittools.domain.model.displayName
-import com.finnvek.knittools.pro.ProStatus
+import com.finnvek.knittools.pro.ProFeature
+import com.finnvek.knittools.pro.ProState
+import com.finnvek.knittools.pro.proActionAccess
 import com.finnvek.knittools.ui.components.ConfirmationDialog
 import com.finnvek.knittools.ui.components.FormSheet
 import com.finnvek.knittools.ui.components.FormSheetConfirm
 import com.finnvek.knittools.ui.components.LabeledCounterImageButton
-import com.finnvek.knittools.ui.components.ProBadge
+import com.finnvek.knittools.ui.components.ProMarker
 import com.finnvek.knittools.ui.components.ProPromptRequest
 import com.finnvek.knittools.ui.components.ProPromptSheet
 import com.finnvek.knittools.ui.components.ProPromptSource
 import com.finnvek.knittools.ui.components.ProjectYarnTextField
 import com.finnvek.knittools.ui.components.YarnThumbnail
 import com.finnvek.knittools.ui.components.cardContainerColor
-import com.finnvek.knittools.ui.components.proBadgeDescription
+import com.finnvek.knittools.ui.components.proMarkerDescription
 import com.finnvek.knittools.ui.components.skeinCountText
+import com.finnvek.knittools.ui.layout.ContentWidthPolicy
+import com.finnvek.knittools.ui.layout.contentWidth
 import com.finnvek.knittools.ui.screens.yarncard.ManualYarnCardInput
 import com.finnvek.knittools.ui.screens.yarncard.parseManualYarnQuantity
 import com.finnvek.knittools.ui.theme.ProjectListDimens
@@ -79,7 +88,8 @@ data class MyYarnState(
     val isSelectMode: Boolean,
     val selectedYarnIds: Set<Long>,
     val canCreateYarnCard: Boolean,
-    val proStatus: ProStatus,
+    val proState: ProState,
+    val proAccessReady: Boolean,
     val deleteErrorId: Long = 0L,
     val saveErrorId: Long = 0L,
 )
@@ -109,6 +119,7 @@ fun MyYarnScreen(
     state: MyYarnState,
     actions: MyYarnActions,
 ) {
+    val listState = rememberLazyListState()
     var showDeleteConfirmDialog by rememberSaveable { mutableStateOf(false) }
     var showManualYarnSheet by rememberSaveable { mutableStateOf(false) }
     var pendingProAction by rememberSaveable { mutableStateOf<PendingYarnProAction?>(null) }
@@ -198,6 +209,7 @@ fun MyYarnScreen(
     }
 
     Scaffold(
+        modifier = Modifier.fillMaxSize().wrapContentWidth().contentWidth(ContentWidthPolicy.ListDetail),
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             MyYarnTopBar(
@@ -217,18 +229,20 @@ fun MyYarnScreen(
         floatingActionButton = {
             if (!state.isSelectMode && state.cards.isNotEmpty()) {
                 // Sama pilleri kuin Projects-näytön New Project: teksti + kolmiulotteinen plus.
-                AddYarnButton(proStatus = state.proStatus, onAddYarn = requestAddYarn)
+                AddYarnButton(state.proState, state.proAccessReady, requestAddYarn)
             }
         },
     ) { padding ->
         if (state.cards.isEmpty()) {
             MyYarnEmptyState(
                 padding = padding,
-                proStatus = state.proStatus,
+                proState = state.proState,
+                proAccessReady = state.proAccessReady,
                 onAddYarn = requestAddYarn,
             )
         } else {
             MyYarnList(
+                listState = listState,
                 state = state,
                 actions = actions,
                 padding = padding,
@@ -243,6 +257,7 @@ internal fun ManualYarnCardSheet(
     onSave: (ManualYarnCardInput) -> Unit,
     onDismiss: () -> Unit,
     initialInput: ManualYarnCardInput = ManualYarnCardInput(yarnName = ""),
+    showQuantity: Boolean = true,
     @StringRes titleRes: Int = R.string.add_yarn_to_my_yarn,
     // Muokkauksessa ohje jätetään pois: "Aloita nimestä" ei päde, kun nimi on jo annettu.
     @StringRes bodyRes: Int? = R.string.manual_yarn_optional_details,
@@ -255,7 +270,7 @@ internal fun ManualYarnCardSheet(
     var colorNumber by rememberSaveable { mutableStateOf(initialInput.colorNumber) }
     var dyeLot by rememberSaveable { mutableStateOf(initialInput.dyeLot) }
 
-    val validQuantity = parseManualYarnQuantity(quantity)
+    val validQuantity = if (showQuantity) parseManualYarnQuantity(quantity) else initialInput.quantity
     FormSheet(
         title = stringResource(titleRes),
         description = bodyRes?.let { stringResource(it) },
@@ -294,13 +309,15 @@ internal fun ManualYarnCardSheet(
             label = stringResource(R.string.brand_label),
             singleLine = true,
         )
-        ProjectYarnTextField(
-            value = quantity,
-            onValueChange = { quantity = it.filter(Char::isDigit) },
-            label = stringResource(R.string.quantity_label),
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-        )
+        if (showQuantity) {
+            ProjectYarnTextField(
+                value = quantity,
+                onValueChange = { quantity = it.filter(Char::isDigit) },
+                label = stringResource(R.string.quantity_label),
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            )
+        }
         // CPD-ON
         YarnWeightField(value = weightCategory, onValueChange = { weightCategory = it })
         ProjectYarnTextField(
@@ -360,11 +377,17 @@ private fun MyYarnTopBar(
 @Composable
 private fun MyYarnEmptyState(
     padding: PaddingValues,
-    proStatus: ProStatus,
+    proState: ProState,
+    proAccessReady: Boolean,
     onAddYarn: () -> Unit,
 ) {
     Column(
-        modifier = Modifier.fillMaxSize().padding(padding).padding(32.dp),
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .verticalScroll(rememberScrollState())
+                .padding(32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
@@ -375,35 +398,39 @@ private fun MyYarnEmptyState(
             textAlign = TextAlign.Center,
         )
         Spacer(modifier = Modifier.height(16.dp))
-        AddYarnButton(proStatus = proStatus, onAddYarn = onAddYarn)
+        AddYarnButton(proState, proAccessReady, onAddYarn)
     }
 }
 
 @Composable
 private fun AddYarnButton(
-    proStatus: ProStatus,
+    proState: ProState,
+    proAccessReady: Boolean,
     onAddYarn: () -> Unit,
 ) {
     val addLabel = stringResource(R.string.add_yarn_to_my_yarn)
-    val proDescription = proBadgeDescription(proStatus)
+    val yarnAccess = proActionAccess(proState, proAccessReady, ProFeature.UNLIMITED_YARN)
+    val proDescription = proMarkerDescription(yarnAccess)
     LabeledCounterImageButton(
         imageRes = R.drawable.counter_plus_button,
         label = addLabel,
         visualSize = ProjectListDimens.CreateButtonVisualSize,
         onClick = onAddYarn,
-        contentDescription = listOfNotNull(addLabel, proDescription).joinToString(", "),
-        badge = proDescription?.let { { ProBadge(status = proStatus) } },
+        badgeContentDescription = proDescription,
+        badge = proDescription?.let { { ProMarker(yarnAccess) } },
     )
 }
 
 @Composable
 private fun MyYarnList(
+    listState: LazyListState,
     state: MyYarnState,
     // CPD-OFF: Ruudun paikallinen Compose-rakenne pidetaan vastuun yhteydessa.
     actions: MyYarnActions,
     padding: PaddingValues,
 ) {
     LazyColumn(
+        state = listState,
         modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
         // Alareunan tila pitää viimeisen kortin lisäyspainikkeen yläpuolella.

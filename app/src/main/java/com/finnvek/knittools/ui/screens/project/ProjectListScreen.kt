@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
@@ -36,6 +37,8 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -55,15 +58,22 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.domain.model.CraftType
-import com.finnvek.knittools.domain.model.MainCounterLabelType
 import com.finnvek.knittools.domain.model.ProjectFolder
 import com.finnvek.knittools.domain.model.ProjectFolderFilter
 import com.finnvek.knittools.domain.model.ProjectFolderMoveDirection
 import com.finnvek.knittools.domain.model.ProjectSortOrder
+import com.finnvek.knittools.domain.tips.TipContext
+import com.finnvek.knittools.domain.tips.TipId
+import com.finnvek.knittools.domain.tips.TipScreen
+import com.finnvek.knittools.pro.ProFeature
+import com.finnvek.knittools.pro.ProState
+import com.finnvek.knittools.pro.proActionAccess
 import com.finnvek.knittools.repository.ProjectCreationResult
 import com.finnvek.knittools.repository.ProjectFolderMutationResult
 import com.finnvek.knittools.ui.components.CancelButton
@@ -71,21 +81,31 @@ import com.finnvek.knittools.ui.components.CollectWithLifecycleEffect
 import com.finnvek.knittools.ui.components.ConfirmationDialog
 import com.finnvek.knittools.ui.components.ContinueProjectCard
 import com.finnvek.knittools.ui.components.LabeledCounterImageButton
+import com.finnvek.knittools.ui.components.ProMarker
 import com.finnvek.knittools.ui.components.ProPromptRequest
 import com.finnvek.knittools.ui.components.ProPromptSheet
 import com.finnvek.knittools.ui.components.ProPromptSource
 import com.finnvek.knittools.ui.components.ProjectCard
+import com.finnvek.knittools.ui.components.ProjectDetailsMode
 import com.finnvek.knittools.ui.components.ProjectDetailsSheet
 import com.finnvek.knittools.ui.components.ProjectDetailsValues
 import com.finnvek.knittools.ui.components.ScrollableFormDialog
 import com.finnvek.knittools.ui.components.SectionLabel
 import com.finnvek.knittools.ui.components.SelectionAction
 import com.finnvek.knittools.ui.components.SelectionActionBar
+import com.finnvek.knittools.ui.components.proMarkerDescription
 import com.finnvek.knittools.ui.components.workSessionStatusText
+import com.finnvek.knittools.ui.layout.ContentWidthPolicy
+import com.finnvek.knittools.ui.layout.contentWidth
 import com.finnvek.knittools.ui.screens.counter.ActiveSessionCompletionDialog
 import com.finnvek.knittools.ui.screens.counter.ActiveSessionDeletionDialog
 import com.finnvek.knittools.ui.theme.ProjectListDimens
+import com.finnvek.knittools.ui.tips.InlineTipCard
+import com.finnvek.knittools.ui.tips.LocalTipBlocked
+import com.finnvek.knittools.ui.tips.TipHost
+import com.finnvek.knittools.ui.tips.tipAnchor
 import kotlinx.coroutines.launch
+import java.time.LocalDate
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -95,20 +115,47 @@ fun ProjectListScreen(
     onOpenOverview: (Long) -> Unit,
     onUpgradeToPro: () -> Unit = {},
     viewModelProvider: @Composable () -> ProjectListViewModel = { hiltViewModel() },
+    onStartupReady: (Boolean) -> Unit = {},
+    onOpenTools: () -> Unit = {},
+    onOpenBackup: () -> Unit = {},
+    counterCompletion: ProjectCompletionCelebration? = null,
+    onConsumeCounterCompletion: (Long) -> Unit = {},
+    createProjectRequestId: String? = null,
+    onCreateProjectRequestHandled: (String) -> Unit = {},
 ) {
     val viewModel = viewModelProvider()
-    val active by viewModel.activeProjects.collectAsStateWithLifecycle()
-    val completed by viewModel.completedProjects.collectAsStateWithLifecycle()
-    val activeSession by viewModel.activeSession.collectAsStateWithLifecycle()
+    val content by viewModel.content.collectAsStateWithLifecycle()
+    val proState by viewModel.proState.collectAsStateWithLifecycle()
+    val proAccessReady by viewModel.proAccessReady.collectAsStateWithLifecycle()
+    val listCompletion by viewModel.pendingCompletion.collectAsStateWithLifecycle()
+    val completion = counterCompletion ?: listCompletion
+    val lifecycle by LocalLifecycleOwner.current.lifecycle.currentStateFlow
+        .collectAsState()
+    var handledCreateProjectRequestId by rememberSaveable { mutableStateOf<String?>(null) }
+    val createProjectAccess =
+        proActionAccess(
+            proState = proState,
+            ready = proAccessReady && !content.isLoading,
+            feature = ProFeature.UNLIMITED_PROJECTS,
+            needsEntitlement = content.activeProjectCount >= 1,
+        )
+    val newProjectLabel = stringResource(R.string.new_project)
+    val createProjectDescription = proMarkerDescription(createProjectAccess)
+    val active = content.active
+    val completed = content.completed
+    val activeSession = content.activeSession
+    SideEffect { onStartupReady(!content.isLoading) }
     val pendingCompletionSessionAction by viewModel.pendingCompletionSessionAction.collectAsStateWithLifecycle()
     val pendingDeletionSessionAction by viewModel.pendingDeletionSessionAction.collectAsStateWithLifecycle()
-    val continueKnitting by viewModel.continueKnittingProject.collectAsStateWithLifecycle()
+    val continueKnitting = content.continueKnitting
     val latestPhotoUris by viewModel.projectLatestPhotoUris.collectAsStateWithLifecycle()
     val patternNames by viewModel.projectPatternNames.collectAsStateWithLifecycle()
-    val showCompleted by viewModel.showCompleted.collectAsStateWithLifecycle()
+    val showCompleted = content.preferences.showCompletedProjects
     val isMultiSelectMode by viewModel.isMultiSelectMode.collectAsStateWithLifecycle()
+    val showFullWelcome =
+        !content.isLoading && !content.hasAnyProject && !content.welcomeDismissed && !isMultiSelectMode
     val selectedProjectIds by viewModel.selectedProjectIds.collectAsStateWithLifecycle()
-    val sortOrder by viewModel.sortOrder.collectAsStateWithLifecycle()
+    val sortOrder = content.preferences.projectSortOrder
     val folderState by viewModel.folderState.collectAsStateWithLifecycle()
     val selectedFolderFilter by viewModel.selectedFolderFilter.collectAsStateWithLifecycle()
     val hasHiddenCompletedProjects by viewModel.hasHiddenCompletedProjects.collectAsStateWithLifecycle()
@@ -132,6 +179,28 @@ fun ProjectListScreen(
     var creationFolderId by rememberSaveable { mutableStateOf<Long?>(null) }
     var creationFolderName by rememberSaveable { mutableStateOf<String?>(null) }
     var showCreateProjectDialog by rememberSaveable { mutableStateOf(false) }
+    val requestProjectCreation = {
+        creationFolderId = (selectedFolderFilter as? ProjectFolderFilter.Folder)?.folderId
+        creationFolderName = folders.firstOrNull { it.id == creationFolderId }?.name
+        viewModel.requestProjectCreation()
+    }
+    completion?.let { celebration ->
+        val consumeCompletion = {
+            if (counterCompletion != null) {
+                onConsumeCounterCompletion(celebration.snapshot.eventId)
+            } else {
+                viewModel.consumeCompletion(celebration.snapshot.eventId)
+            }
+        }
+        ProjectCompletedSheet(
+            celebration = celebration,
+            onClose = consumeCompletion,
+            onNextProject = {
+                consumeCompletion()
+                requestProjectCreation()
+            },
+        )
+    }
     val projectPromptCount by viewModel.projectCreationPromptCount.collectAsStateWithLifecycle()
     // Kansiovalitsin on yläpalkin otsikko, jota monivalinnassa ei näytetä: fokus palautetaan vasta sen jälkeen.
     LaunchedEffect(restoreSelectorFocus, showMoveSheet, showFoldersSheet, isMultiSelectMode) {
@@ -275,10 +344,12 @@ fun ProjectListScreen(
             initialValues =
                 ProjectDetailsValues(
                     name = "",
-                    craftType = CraftType.KNITTING,
-                    mainCounterLabelType = MainCounterLabelType.ROWS,
+                    craftType = content.preferences.lastProjectCraftType,
+                    mainCounterLabelType = content.preferences.lastProjectCraftType.defaultMainCounterLabelType(),
                     mainCounterCustomLabel = null,
                 ),
+            mode = ProjectDetailsMode.Create,
+            showPreview = !content.hasAnyProject,
             onConfirm = { values ->
                 viewModel.createProject(
                     values.name,
@@ -286,6 +357,8 @@ fun ProjectListScreen(
                     values.mainCounterLabelType,
                     values.mainCounterCustomLabel,
                     targetFolderId = creationFolderId,
+                    initialCount = values.initialCount,
+                    targetRows = values.targetRows,
                 )
             },
             onDismiss = {
@@ -435,130 +508,183 @@ fun ProjectListScreen(
         )
     }
 
-    Scaffold(
-        containerColor = MaterialTheme.colorScheme.background,
-        snackbarHost = { SnackbarHost(snackbarHostState) },
-        topBar = {
-            ProjectListTopBar(
-                state =
-                    ProjectListTopBarState(
-                        isMultiSelectMode = isMultiSelectMode,
-                        selectedCount = selectedProjectIds.size,
-                        showCompleted = showCompleted,
-                        sortOrder = sortOrder,
-                        showOverflowMenu = showOverflowMenu,
-                        showSortMenu = showSortMenu,
-                    ),
-                actions =
-                    ProjectListTopBarActions(
-                        onExitMultiSelect = { viewModel.exitMultiSelectMode() },
-                        onSelectAll = { viewModel.selectAllProjects() },
-                        onShowOverflowMenu = { showOverflowMenu = true },
-                        onDismissOverflowMenu = { showOverflowMenu = false },
-                        onEnterMultiSelect = {
-                            showOverflowMenu = false
-                            viewModel.enterMultiSelectMode()
-                        },
-                        onShowSortMenu = {
-                            showOverflowMenu = false
-                            showSortMenu = true
-                        },
-                        onDismissSortMenu = { showSortMenu = false },
-                        onToggleShowCompleted = { viewModel.toggleShowCompleted() },
-                        onSortOrderChange = { order ->
-                            viewModel.setSortOrder(order)
-                            showSortMenu = false
-                        },
-                    ),
-                // Valittu kansio on näytön otsikko kuten Insightsin aikaväli: alanavigaatio kertoo jo
-                // että ollaan Projectsissa, ja erillinen linkki otsikon alla kellui irrallaan.
-                folderTitle = {
-                    ProjectFolderSelector(
-                        selectedFilter = selectedFolderFilter,
-                        folders = folders,
-                        onClick = {
-                            viewModel.clearFolderError()
-                            focusFolderId = null
-                            focusCreateFolder = false
-                            showFoldersSheet = true
-                        },
-                        enabled = !folderState.isMutating,
-                        focusRequester = folderSelectorFocus,
-                    )
-                },
-            )
-        },
-        bottomBar = {
-            MultiSelectBottomBar(
-                isMultiSelectMode = isMultiSelectMode,
-                hasSelection = selectedProjectIds.isNotEmpty(),
-                hasActiveSelection = selectedActiveCount > 0,
-                onMove = {
-                    viewModel.clearFolderError()
-                    showMoveSheet = true
-                },
-                onComplete = { showMultiCompleteDialog = true },
-                onDelete = { showMultiDeleteDialog = true },
-            )
-        },
-    ) { padding ->
-        Box(
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .padding(padding),
-        ) {
-            ProjectListContent(
-                state =
-                    ProjectListContentState(
-                        active = active,
-                        completed = completed,
-                        continueKnitting = continueKnitting,
-                        latestPhotoUris = latestPhotoUris,
-                        patternNames = patternNames,
-                        showCompleted = showCompleted,
-                        isMultiSelectMode = isMultiSelectMode,
-                        selectedProjectIds = selectedProjectIds,
-                        activeSessionProjectId = activeSession?.projectId,
-                        activeSessionNeedsReview = activeSession?.needsRecoveryReview == true,
-                        selectedFolderFilter = selectedFolderFilter,
-                        folders = folders,
-                        hasHiddenCompletedProjects = hasHiddenCompletedProjects,
-                        isLoading = folderState.isLoading && selectedFolderFilter != ProjectFolderFilter.AllProjects,
-                    ),
-                actions =
-                    ProjectListContentActions(
-                        onOpenCounter = onOpenCounter,
-                        onOpenOverview = onOpenOverview,
-                        onToggleSelection = { viewModel.toggleProjectSelection(it) },
-                        onEnterMultiSelect = { viewModel.enterMultiSelectMode(it) },
-                        onShowCompleted = viewModel::toggleShowCompleted,
-                        onDeleteSwipe = { id, name ->
-                            menuProjectId = id
-                            menuProjectName = name
-                            showDeleteDialog = true
-                        },
-                    ),
-            )
-
-            // Luontipainike ei näy multi-select-tilassa. Teksti kertoo heti, mitä nappi tekee:
-            // sama plus-nappi tarkoittaa laskurissa rivin lisäämistä.
-            if (!isMultiSelectMode) {
-                LabeledCounterImageButton(
-                    imageRes = R.drawable.counter_plus_button,
-                    label = stringResource(R.string.new_project),
-                    visualSize = ProjectListDimens.CreateButtonVisualSize,
-                    onClick = {
-                        creationFolderId = (selectedFolderFilter as? ProjectFolderFilter.Folder)?.folderId
-                        creationFolderName = folders.firstOrNull { it.id == creationFolderId }?.name
-                        viewModel.requestProjectCreation()
+    val tipContext =
+        TipContext(
+            screen = TipScreen.PROJECTS,
+            projectCount = memberships.size,
+            today = LocalDate.now().toEpochDay(),
+            screenReady = !content.isLoading,
+            blocked =
+                listOf(
+                    isMultiSelectMode,
+                    showFoldersSheet,
+                    showFolderNameDialog,
+                    deletingFolderId != null,
+                    showMoveSheet,
+                    showCreateProjectDialog,
+                    projectPromptCount != null,
+                    projectCreationError != null,
+                    pendingCompletionSessionAction != null,
+                    pendingDeletionSessionAction != null,
+                    activeSession?.needsRecoveryReview == true,
+                    showDeleteDialog,
+                    showOverflowMenu,
+                    showSortMenu,
+                    showMultiCompleteDialog,
+                    showMultiDeleteDialog,
+                    completion != null,
+                    snackbarHostState.currentSnackbarData != null,
+                ).any { it },
+        )
+    val creationDataReady = !content.isLoading && !folderState.isLoading && folderState.snapshot != null
+    val creationReady = lifecycle == Lifecycle.State.RESUMED && creationDataReady && proAccessReady
+    val creationBlocked = tipContext.blocked || LocalTipBlocked.current || folderState.isMutating
+    LaunchedEffect(createProjectRequestId, creationReady, creationBlocked) {
+        val requestId = createProjectRequestId
+        if (requestId == null || requestId == handledCreateProjectRequestId || !creationReady || creationBlocked) {
+            return@LaunchedEffect
+        }
+        handledCreateProjectRequestId = requestId
+        onCreateProjectRequestHandled(requestId)
+        requestProjectCreation()
+    }
+    TipHost(context = tipContext, onAction = {}, modifier = Modifier.fillMaxSize()) {
+        Scaffold(
+            modifier = Modifier.fillMaxSize().wrapContentWidth().contentWidth(ContentWidthPolicy.ListDetail),
+            containerColor = MaterialTheme.colorScheme.background,
+            snackbarHost = { SnackbarHost(snackbarHostState) },
+            topBar = {
+                ProjectListTopBar(
+                    state =
+                        ProjectListTopBarState(
+                            isMultiSelectMode = isMultiSelectMode,
+                            selectedCount = selectedProjectIds.size,
+                            showCompleted = showCompleted,
+                            sortOrder = sortOrder,
+                            showOverflowMenu = showOverflowMenu,
+                            showSortMenu = showSortMenu,
+                        ),
+                    actions =
+                        ProjectListTopBarActions(
+                            onExitMultiSelect = { viewModel.exitMultiSelectMode() },
+                            onSelectAll = { viewModel.selectAllProjects() },
+                            onShowOverflowMenu = { showOverflowMenu = true },
+                            onDismissOverflowMenu = { showOverflowMenu = false },
+                            onEnterMultiSelect = {
+                                showOverflowMenu = false
+                                viewModel.enterMultiSelectMode()
+                            },
+                            onShowSortMenu = {
+                                showOverflowMenu = false
+                                showSortMenu = true
+                            },
+                            onDismissSortMenu = { showSortMenu = false },
+                            onToggleShowCompleted = { viewModel.toggleShowCompleted() },
+                            onSortOrderChange = { order ->
+                                viewModel.setSortOrder(order)
+                                showSortMenu = false
+                            },
+                        ),
+                    // Valittu kansio on näytön otsikko kuten Insightsin aikaväli: alanavigaatio kertoo jo
+                    // että ollaan Projectsissa, ja erillinen linkki otsikon alla kellui irrallaan.
+                    folderTitle = {
+                        Box(Modifier.tipAnchor(TipId.FOLDERS)) {
+                            ProjectFolderSelector(
+                                selectedFilter = selectedFolderFilter,
+                                folders = folders,
+                                onClick = {
+                                    viewModel.clearFolderError()
+                                    focusFolderId = null
+                                    focusCreateFolder = false
+                                    showFoldersSheet = true
+                                },
+                                enabled = !folderState.isMutating,
+                                focusRequester = folderSelectorFocus,
+                            )
+                        }
                     },
-                    enabled = selectedFolderFilter !is ProjectFolderFilter.Folder || !folderState.isLoading,
-                    modifier =
-                        Modifier
-                            .align(Alignment.BottomEnd)
-                            .padding(ProjectListDimens.CreateButtonMargin),
                 )
+            },
+            bottomBar = {
+                MultiSelectBottomBar(
+                    isMultiSelectMode = isMultiSelectMode,
+                    hasSelection = selectedProjectIds.isNotEmpty(),
+                    hasActiveSelection = selectedActiveCount > 0,
+                    onMove = {
+                        viewModel.clearFolderError()
+                        showMoveSheet = true
+                    },
+                    onComplete = { showMultiCompleteDialog = true },
+                    onDelete = { showMultiDeleteDialog = true },
+                )
+            },
+        ) { padding ->
+            Box(
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .padding(padding),
+            ) {
+                ProjectListContent(
+                    tipContext = tipContext,
+                    state =
+                        ProjectListContentState(
+                            active = active,
+                            completed = completed,
+                            continueKnitting = continueKnitting,
+                            latestPhotoUris = latestPhotoUris,
+                            patternNames = patternNames,
+                            showCompleted = showCompleted,
+                            isMultiSelectMode = isMultiSelectMode,
+                            selectedProjectIds = selectedProjectIds,
+                            activeSessionProjectId = activeSession?.projectId,
+                            activeSessionNeedsReview = activeSession?.needsRecoveryReview == true,
+                            selectedFolderFilter = selectedFolderFilter,
+                            folders = folders,
+                            hasHiddenCompletedProjects = hasHiddenCompletedProjects,
+                            isLoading = content.isLoading,
+                            hasAnyProject = content.hasAnyProject,
+                            welcomeDismissed = content.welcomeDismissed,
+                            lastCraftType = content.preferences.lastProjectCraftType,
+                            proState = proState,
+                            proAccessReady = proAccessReady && !content.isLoading,
+                        ),
+                    actions =
+                        ProjectListContentActions(
+                            onOpenCounter = onOpenCounter,
+                            onOpenOverview = onOpenOverview,
+                            onToggleSelection = { viewModel.toggleProjectSelection(it) },
+                            onEnterMultiSelect = { viewModel.enterMultiSelectMode(it) },
+                            onShowCompleted = viewModel::toggleShowCompleted,
+                            onCreateProject = requestProjectCreation,
+                            onDismissWelcome = viewModel::dismissWelcome,
+                            onOpenTools = { viewModel.chooseWelcomeTools(onOpenTools) },
+                            onDemoUsed = viewModel::recordWelcomeDemoUsed,
+                            onOpenBackup = onOpenBackup,
+                            onDeleteSwipe = { id, name ->
+                                menuProjectId = id
+                                menuProjectName = name
+                                showDeleteDialog = true
+                            },
+                        ),
+                )
+
+                // Täysi aloitusnäkymä sisältää saman luontipainikkeen listan sisällä.
+                if (!isMultiSelectMode && !showFullWelcome) {
+                    LabeledCounterImageButton(
+                        imageRes = R.drawable.counter_plus_button,
+                        label = newProjectLabel,
+                        visualSize = ProjectListDimens.CreateButtonVisualSize,
+                        onClick = requestProjectCreation,
+                        enabled = selectedFolderFilter !is ProjectFolderFilter.Folder || !folderState.isLoading,
+                        badgeContentDescription = createProjectDescription,
+                        badge = createProjectDescription?.let { { ProMarker(createProjectAccess) } },
+                        modifier =
+                            Modifier
+                                .align(Alignment.BottomEnd)
+                                .padding(ProjectListDimens.CreateButtonMargin),
+                    )
+                }
             }
         }
     }
@@ -906,6 +1032,11 @@ data class ProjectListContentState(
     val folders: List<ProjectFolder> = emptyList(),
     val hasHiddenCompletedProjects: Boolean = false,
     val isLoading: Boolean = false,
+    val hasAnyProject: Boolean = true,
+    val welcomeDismissed: Boolean = false,
+    val lastCraftType: CraftType = CraftType.KNITTING,
+    val proState: ProState = ProState(),
+    val proAccessReady: Boolean = false,
 )
 
 // CPD-OFF: Ruudun paikallinen Compose-rakenne pidetaan vastuun yhteydessa.
@@ -917,6 +1048,11 @@ data class ProjectListContentActions(
     // CPD-ON
     val onDeleteSwipe: (Long, String) -> Unit,
     val onShowCompleted: () -> Unit = {},
+    val onCreateProject: () -> Unit = {},
+    val onDismissWelcome: () -> Unit = {},
+    val onOpenTools: () -> Unit = {},
+    val onDemoUsed: () -> Unit = {},
+    val onOpenBackup: () -> Unit = {},
 )
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -925,6 +1061,7 @@ data class ProjectListContentActions(
 private fun ProjectListContent(
     state: ProjectListContentState,
     actions: ProjectListContentActions,
+    tipContext: TipContext,
 ) {
     val isHeroVisible = !state.isMultiSelectMode && state.continueKnitting != null
     val heroProjectId = state.continueKnitting?.projectId
@@ -948,6 +1085,21 @@ private fun ProjectListContent(
             item { Text(stringResource(R.string.folder_loading)) }
             return@LazyColumn
         }
+        if (!state.hasAnyProject && !state.isMultiSelectMode) {
+            item {
+                ProjectsStartState(
+                    compact = state.welcomeDismissed,
+                    lastCraftType = state.lastCraftType,
+                    onCreateProject = actions.onCreateProject,
+                    onDismiss = actions.onDismissWelcome,
+                    onTools = actions.onOpenTools,
+                    onDemoUsed = actions.onDemoUsed,
+                    proState = state.proState,
+                    proAccessReady = state.proAccessReady,
+                )
+            }
+            return@LazyColumn
+        }
         if (state.selectedFolderFilter != ProjectFolderFilter.AllProjects &&
             state.active.isEmpty() &&
             state.completed.isEmpty()
@@ -959,6 +1111,9 @@ private fun ProjectListContent(
                     hasHiddenCompletedProjects = state.hasHiddenCompletedProjects,
                     onShowCompleted = actions.onShowCompleted,
                 )
+            }
+            item(key = "backup-tip") {
+                InlineTipCard(id = TipId.BACKUP, context = tipContext, onAction = actions.onOpenBackup)
             }
             return@LazyColumn
         }
@@ -1068,6 +1223,9 @@ private fun ProjectListContent(
                     }
                 }
             }
+        }
+        item(key = "backup-tip") {
+            InlineTipCard(id = TipId.BACKUP, context = tipContext, onAction = actions.onOpenBackup)
         }
     }
 }

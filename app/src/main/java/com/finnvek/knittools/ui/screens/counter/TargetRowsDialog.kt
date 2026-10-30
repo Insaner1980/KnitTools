@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -19,7 +18,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.finnvek.knittools.R
+import com.finnvek.knittools.domain.calculator.TargetInput
+import com.finnvek.knittools.domain.calculator.parseTargetRows
 import com.finnvek.knittools.ui.components.CancelButton
+import com.finnvek.knittools.ui.components.ScrollableFormDialog
 
 @Composable
 fun TargetRowsDialog(
@@ -30,9 +32,9 @@ fun TargetRowsDialog(
     onRemove: () -> Unit,
 ) {
     var text by rememberSaveable { mutableStateOf(currentTarget?.toString() ?: "") }
-    val parsed = text.toIntOrNull()?.takeIf { it > 0 }
+    val parsed = (parseTargetRows(text) as? TargetInput.Valid)?.value
 
-    AlertDialog(
+    ScrollableFormDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.target_rows_dialog_title)) },
         text = {

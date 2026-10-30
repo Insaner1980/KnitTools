@@ -38,7 +38,7 @@ class CounterHistoryContractTest {
                 "transition",
             )
         val files = ProjectSourceFiles.localizedStringFiles()
-        assertEquals(11, files.size)
+        assertEquals(12, files.size)
         files.forEach { file ->
             val source = ProjectSourceFiles.read(file)
             assertFalse("$file: obsolete retention copy", source.contains("name=\"counter_history_retention\""))

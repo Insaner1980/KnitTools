@@ -1,6 +1,7 @@
 package com.finnvek.knittools.repository
 
 import com.finnvek.knittools.domain.model.ActiveWorkSession
+import com.finnvek.knittools.domain.model.ProjectCompletionSnapshot
 
 sealed interface StartSessionResult {
     data class Started(
@@ -28,6 +29,7 @@ sealed interface StartSessionResult {
 sealed interface StopSessionResult {
     data class Saved(
         val completedSessionId: Long?,
+        val wasFirstCompletedSession: Boolean = false,
     ) : StopSessionResult
 
     data object Discarded : StopSessionResult
@@ -74,6 +76,10 @@ enum class ActiveSessionCompletionChoice {
 
 sealed interface ProjectCompletionResult {
     data object Completed : ProjectCompletionResult
+
+    data class CompletedNow(
+        val snapshot: ProjectCompletionSnapshot,
+    ) : ProjectCompletionResult
 
     data class NeedsActiveSessionChoice(
         val session: ActiveWorkSession,

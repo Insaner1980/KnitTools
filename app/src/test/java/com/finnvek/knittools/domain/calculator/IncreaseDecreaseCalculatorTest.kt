@@ -31,7 +31,7 @@ class IncreaseDecreaseCalculatorTest {
     fun `even increase produces clean pattern`() {
         val result = IncreaseDecreaseCalculator.calculate(80, 8, IncreaseDecreaseMode.INCREASE)
         assertTrue(result.isValid)
-        assertTrue(result.easyPattern.contains("K10"))
+        assertTrue(result.easyPattern.contains("K9"))
         assertTrue(result.easyPattern.contains("M1"))
         assertTrue(result.easyPattern.contains("× 8"))
     }
@@ -122,10 +122,10 @@ class IncreaseDecreaseCalculatorTest {
     }
 
     @Test
-    fun `increase more than current warns but still valid`() {
+    fun `increase more than available bars is invalid`() {
         val result = IncreaseDecreaseCalculator.calculate(35, 68, IncreaseDecreaseMode.INCREASE)
-        assertTrue(result.isValid)
-        assertEquals(IncreaseDecreaseMessage.IncreaseMoreThanCurrent, result.message)
+        assertFalse(result.isValid)
+        assertEquals(IncreaseDecreaseMessage.NotEnoughBarsForIncrease, result.message)
         assertNull(result.errorMessage)
     }
 
@@ -168,9 +168,9 @@ class IncreaseDecreaseCalculatorTest {
     @Test
     fun `increase more than current does not show zero-knit sections`() {
         val result = IncreaseDecreaseCalculator.calculate(3, 5, IncreaseDecreaseMode.INCREASE, KnittingStyle.CIRCULAR)
-        assertTrue(result.isValid)
-        assertEquals(8, result.totalStitches)
-        assertEquals(IncreaseDecreaseMessage.IncreaseMoreThanCurrent, result.message)
+        assertFalse(result.isValid)
+        assertEquals(0, result.totalStitches)
+        assertEquals(IncreaseDecreaseMessage.NotEnoughBarsForIncrease, result.message)
         assertFalse(result.easyPattern.contains("K0"))
         assertFalse(result.balancedPattern.contains("K0"))
     }
@@ -196,5 +196,57 @@ class IncreaseDecreaseCalculatorTest {
             IncreaseDecreaseMessage.NotEnoughStitchesForDecrease(Int.MAX_VALUE - 1, 4_294_967_292L),
             result.message,
         )
+    }
+
+    @Test
+    fun `M1 instructions use each available bar at most once`() {
+        for (style in KnittingStyle.entries) {
+            for (stitches in 2..50) {
+                val maxBars = if (style == KnittingStyle.FLAT) stitches - 1 else stitches
+                for (increases in 1..maxBars) {
+                    val result =
+                        IncreaseDecreaseCalculator.calculate(
+                            stitches,
+                            increases,
+                            IncreaseDecreaseMode.INCREASE,
+                            style,
+                        )
+                    assertTrue(result.isValid)
+                    for (pattern in listOf(result.easyPattern, result.balancedPattern)) {
+                        assertM1Pattern(pattern, stitches, increases, maxBars, style)
+                        assertEquals(stitches + increases, result.totalStitches)
+                    }
+                }
+            }
+        }
+        val flat = IncreaseDecreaseCalculator.calculate(96, 12, IncreaseDecreaseMode.INCREASE)
+        assertTrue(flat.easyPattern.endsWith("K1"))
+        assertFalse(IncreaseDecreaseCalculator.calculate(1, 3, IncreaseDecreaseMode.INCREASE).isValid)
+        assertFalse(IncreaseDecreaseCalculator.calculate(3, 3, IncreaseDecreaseMode.INCREASE).isValid)
+    }
+
+    private fun assertM1Pattern(
+        pattern: String,
+        stitches: Int,
+        increases: Int,
+        maxBars: Int,
+        style: KnittingStyle,
+    ) {
+        val expanded =
+            Regex("\\(([^)]+)\\) × (\\d+)").replace(pattern) {
+                List(it.groupValues[2].toInt()) { _ -> it.groupValues[1] }.joinToString(", ")
+            }
+        var worked = 0
+        val bars = mutableSetOf<Int>()
+        expanded.split(", ").forEach { step ->
+            if (step == "M1") {
+                assertTrue("$stitches+$increases $style: $pattern", worked in 1..maxBars)
+                assertTrue("A bar cannot be used twice: $pattern", bars.add(worked))
+            } else {
+                worked += step.removePrefix("K").toInt()
+            }
+        }
+        assertEquals(stitches, worked)
+        assertEquals(increases, bars.size)
     }
 }

@@ -110,7 +110,7 @@ class AuditPart14ToolsRuntimeTest {
                 .getString(
                     R.string.total_weight,
                     "150",
-                ).uppercase(rule.activity.resources.configuration.locales[0])
+                )
         rule.onNodeWithText(grams).performScrollTo().assertIsDisplayed()
         rule.onNodeWithText(rule.activity.getString(R.string.choose_from_my_yarn)).performScrollTo().performClick()
         assertEquals(1, chosen)
@@ -123,10 +123,10 @@ class AuditPart14ToolsRuntimeTest {
         rule.setContent { KnitToolsTheme { SizeChartScreen(onBack = {}, homeViewModel = home) } }
         val cases =
             listOf(
-                Triple(R.string.category_baby, R.string.size_col_chest, R.string.size_row_preemie),
+                Triple(R.string.category_baby, R.string.size_col_chest, R.string.size_row_age_0_3m),
                 Triple(R.string.category_child_youth, R.string.size_col_chest, R.string.size_row_child_2),
                 Triple(R.string.category_women, R.string.size_col_bust, R.string.size_row_women_xs_2_4),
-                Triple(R.string.category_men, R.string.size_col_chest, R.string.size_row_men_xs_30_32),
+                Triple(R.string.category_men, R.string.size_col_chest, R.string.size_row_men_s_34_36),
                 Triple(R.string.category_head, R.string.size_col_circumference, R.string.size_row_preemie),
                 Triple(R.string.category_hand, R.string.size_col_circumference, R.string.size_row_child_s),
             )

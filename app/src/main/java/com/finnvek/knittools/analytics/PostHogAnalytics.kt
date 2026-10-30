@@ -2,8 +2,6 @@ package com.finnvek.knittools.analytics
 
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
-import com.posthog.PostHogInterface
-import dagger.Lazy
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -11,27 +9,33 @@ import javax.inject.Singleton
 class PostHogAnalytics
     @Inject
     constructor(
-        private val client: Lazy<PostHogInterface>,
+        private val clients: PostHogClientFactory,
     ) : UsageAnalytics,
         DefaultLifecycleObserver {
         private var enabled = false
+        private var consentGeneration: String? = null
+        private var client: PostHogConsentClient? = null
         private var foreground = false
         private var screen: String? = null
         private var foregroundStarted: Long? = null
         private var screenStarted: Long? = null
 
         @Synchronized
-        fun setEnabled(allowed: Boolean) {
-            if (allowed == enabled) return
-            if (!allowed) {
-                enabled = false
-                foregroundStarted = null
-                screenStarted = null
-                safely { client.get().optOut() }
-                return
-            }
+        fun setEnabled(
+            allowed: Boolean,
+            generation: String? = null,
+        ) {
+            if (allowed == enabled && generation == consentGeneration) return
+            enabled = false
+            foregroundStarted = null
+            screenStarted = null
+            val retired = client
+            client = null
+            safely { retired?.retire() }
+            consentGeneration = generation
+            if (!allowed) return
             safely {
-                client.get().optIn()
+                client = clients.create()
                 enabled = true
                 if (foreground) startForeground()
             }
@@ -93,7 +97,7 @@ class PostHogAnalytics
             properties: Map<String, Any> = emptyMap(),
         ) {
             if (!enabled) return
-            safely { client.get().capture(event, properties = properties + ("\$geoip_disable" to true)) }
+            safely { client?.capture(event, properties = properties + ("\$geoip_disable" to true)) }
         }
 
         private fun elapsedSeconds(started: Long): Long =
@@ -108,8 +112,11 @@ class PostHogAnalytics
         }
     }
 
-internal fun screenNameForRoute(route: String?): String? =
-    route?.substringBefore('?')?.substringBefore('/')?.takeIf { it in ANALYTICS_SCREENS }
+internal fun screenNameForRoute(route: String?): String? {
+    val path = route?.substringBefore('?') ?: return null
+    val screen = if (path.startsWith("guide/")) "guide_topic" else path.substringBefore('/')
+    return screen.takeIf { it in ANALYTICS_SCREENS }
+}
 
 private val ANALYTICS_SCREENS =
     setOf(
@@ -129,6 +136,9 @@ private val ANALYTICS_SCREENS =
         "yarn_card_detail",
         "ravelry_browser",
         "project_list",
+        "project_overview",
+        "guide",
+        "guide_topic",
         "photo_gallery",
         "pattern_viewer",
         "notes_editor",

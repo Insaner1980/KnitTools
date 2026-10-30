@@ -44,8 +44,14 @@ export interface OAuthTokenRefreshOptions extends OAuthTokenRefreshRequest {
 }
 
 export class OAuthTokenExchangeError extends Error {
+  readonly code: string;
+  readonly httpStatus: number;
+
   constructor(readonly statusCode: number) {
     super(`ravelry_token_exchange_failed_${statusCode}`);
+    const rejectedCredentials = statusCode === 400 || statusCode === 401;
+    this.code = rejectedCredentials ? "ravelry_not_connected" : "ravelry_token_exchange_failed";
+    this.httpStatus = rejectedCredentials ? 412 : statusCode;
   }
 }
 

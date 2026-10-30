@@ -9,7 +9,7 @@
       "kind": "android-application",
       "required": true,
       "variants": ["debug", "release"],
-      "sourceSets": ["main", "debug", "debugShared", "release", "test", "androidTest", "isolatedTest"]
+      "sourceSets": ["main", "debug", "debugShared", "release", "test", "sharedTest", "androidTest", "isolatedTest", "optimizedSmoke"]
     },
     {
       "path": ":baselineprofile",
@@ -17,7 +17,7 @@
       "kind": "android-test",
       "required": true,
       "variants": ["benchmark"],
-      "sourceSets": ["main"]
+      "sourceSets": ["main", "benchmarkRelease"]
     }
   ],
   "buildTasks": [":app:assembleDebug", ":baselineprofile:assemble"],

@@ -1,0 +1,49 @@
+{
+  "keys": 1349,
+  "resource_variants": 1380,
+  "resource_types": {
+    "string": 1318,
+    "plural": 62
+  },
+  "coverage_rows": 1626,
+  "kinds": {
+    "string": 1318,
+    "plural": 62,
+    "reference_data": 169,
+    "symbol": 44,
+    "generated_output": 31,
+    "code_text": 2
+  },
+  "batches": {
+    "B01": 27,
+    "B02": 105,
+    "B03": 71,
+    "B04": 44,
+    "B05": 138,
+    "B06": 87,
+    "B07": 68,
+    "B08": 77,
+    "B09": 77,
+    "B10": 69,
+    "B11": 78,
+    "B12": 32,
+    "B13": 79,
+    "B14": 32,
+    "B15": 20,
+    "B16": 14,
+    "B17": 157,
+    "B18": 234,
+    "B19": 82,
+    "B20": 36,
+    "B21": 29,
+    "B22": 67,
+    "B23": 3
+  },
+  "size_measurement_cells": 123,
+  "findings": 72,
+  "changed_keys": 71,
+  "input_hashes": 455,
+  "shared_inputs_matched": 449,
+  "shared_inputs_total": 449,
+  "shared_changed": []
+}

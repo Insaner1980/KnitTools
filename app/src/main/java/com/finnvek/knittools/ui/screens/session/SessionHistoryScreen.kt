@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -30,6 +31,7 @@ import com.finnvek.knittools.ui.components.ConfirmationDialog
 import com.finnvek.knittools.ui.components.ProjectNameLabel
 import com.finnvek.knittools.ui.components.SessionItem
 import com.finnvek.knittools.ui.components.ToolScreenScaffold
+import com.finnvek.knittools.ui.layout.ContentWidthPolicy
 
 @Composable
 fun SessionHistoryScreen(onBack: () -> Unit) {
@@ -37,6 +39,7 @@ fun SessionHistoryScreen(onBack: () -> Unit) {
     val sessions by viewModel.sessions.collectAsStateWithLifecycle()
     val projectMissing by viewModel.projectMissing.collectAsStateWithLifecycle()
     val projectName by viewModel.projectName.collectAsStateWithLifecycle()
+    val listState = rememberLazyListState()
     var pendingDeleteSessionId by rememberSaveable { mutableStateOf<Long?>(null) }
     val snackbarHostState = remember { SnackbarHostState() }
     val deleteErrorMessage = stringResource(R.string.generic_error_unknown)
@@ -66,6 +69,7 @@ fun SessionHistoryScreen(onBack: () -> Unit) {
     }
 
     ToolScreenScaffold(
+        contentWidthPolicy = ContentWidthPolicy.ListDetail,
         title = stringResource(R.string.session_history_title),
         onBack = onBack,
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -99,6 +103,7 @@ fun SessionHistoryScreen(onBack: () -> Unit) {
                 }
             } else {
                 LazyColumn(
+                    state = listState,
                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
                 ) {
                     // Insightsista tullessa otsikko on pelkkä "History", joten projekti

@@ -1,0 +1,182 @@
+{
+  "resource_files": {
+    "pattern_annotations.xml": {
+      "strings": 75,
+      "plural_keys": 0,
+      "variants": 75
+    },
+    "pattern_reading_assistance.xml": {
+      "strings": 49,
+      "plural_keys": 0,
+      "variants": 49
+    },
+    "reference_strings.xml": {
+      "strings": 257,
+      "plural_keys": 0,
+      "variants": 257
+    },
+    "strings.xml": {
+      "strings": 937,
+      "plural_keys": 31,
+      "variants": 999
+    }
+  },
+  "translatable_keys": 1349,
+  "resource_variants": 1380,
+  "additional_resource_contexts": 22,
+  "non_resource_rows": 247,
+  "coverage_rows": 1649,
+  "reference_tables": {
+    "needle_rows": 38,
+    "size_rows": 46,
+    "measurement_cells": 123,
+    "range_cells": 58,
+    "abbreviation_triples": 77,
+    "chart_symbols": 24,
+    "care_symbols": 20,
+    "yarn_category_literals": 8
+  },
+  "batch_counts": {
+    "B01": 27,
+    "B02": 104,
+    "B03": 95,
+    "B04": 42,
+    "B05": 128,
+    "B06": 88,
+    "B07": 70,
+    "B08": 77,
+    "B09": 77,
+    "B10": 68,
+    "B11": 77,
+    "B12": 34,
+    "B13": 78,
+    "B14": 35,
+    "B15": 23,
+    "B16": 14,
+    "B17": 156,
+    "B18": 234,
+    "B19": 82,
+    "B20": 36,
+    "B21": 28,
+    "B22": 67,
+    "B23": 9
+  },
+  "notes": {
+    "B01": "Read Danish controls, navigation and units in their actual caller roles; imperative actions, noun headings and unchanged cm/mm/g/percent notation remain distinct.",
+    "B02": "Read project/folder create, edit, selection, completion, reopen and deletion copy; folder deletion preserves projects; virtual filters are not project states; inserted user names remain opaque.",
+    "B03": "Read ROWS/ROUNDS/REPEATS/CUSTOM, target before/at/after, ordinal position versus quantity, step one/many and widget wording against MainCounterDisplayText/CounterValueFormatter. Generic adjustment actions are not stitch shaping.",
+    "B04": "Read linked and independent extras, repeating/shaping/section counters and reminder start/interval/occurrence wording against ProjectCounterLogic/CounterValueFormatter; a repeat index is not a row within a repeat.",
+    "B05": "Read sessions, recovery, history, completion events and Insights. Checked active-date denominator, session-zone split, display duration and neutral historical counter wording; see SHARED and context cases. No fresh runtime claim.",
+    "B06": "Read yarn metadata, stash/package quantity, thickness and care labels; paired all care IDs with drawing dispatch; retained international category names, removed-ply shared repair applies. S1/S2/S3/S6/S8/S11 and SHARED.",
+    "B07": "Read planned/allocated/used, null versus zero, remainder/overage and positive conversion basis against YarnUsageCalculator/Presentation; no stash deduction; saving project yarn metadata preserves project note.",
+    "B08": "Read PDF versus web metadata, free/paid/unknown, Ravelry browser and saved-pattern actions; delete/unlink wording matches reference-aware repository behavior; designer length alias resolves to neutral limit text.",
+    "B09": "Read import/camera/gallery/document names and limits; copied local PDF, page order/primary relation, 20 pages/25 MiB image/200 MiB selection, cancellation and failure semantics; no OCR/sync promise.",
+    "B10": "Read all bookmark/reading-guide/marker/calibration/follow copy; page and counter position remain distinct, manual movement pauses follow, bookmark and guides are excluded from annotated export.",
+    "B11": "Read all annotation tools/layers/selection/history/export copy; project overlay is editable, shared master is read-only, export includes selected layers and preserves source; progress and error actions remain distinct.",
+    "B12": "Read local notes/save state and progress/photo library actions; inserted project names and dates remain data; photo counter snapshots use neutral label, delete affects selected photo scope.",
+    "B13": "Read independent stitch/row gauge axes, 10 cm versus 4 in basis, swatch/canonical values, exact/rounded outputs, warnings and Copy payload against GaugePresentation/MeasurementCalculator; localized parsing is separate from display.",
+    "B14": "Read increase/decrease error arguments, flat/circular distribution and English generated K/M1/K2tog notation; Danish help now defines it. Source arithmetic checks consume original stitches; M1 distinct bars and minimum two preserved.",
+    "B15": "Read desired/actual width, total edge stitches, gauge basis and nearest repeat; source calculations retain exact count before repeat rounding and add edges after repeat; alternatives are adjacent valid repeat totals.",
+    "B16": "Read required/package length, fractional versus whole purchased packages and mass; 450/200 gives 2.25, purchase 3, at 50 g gives 150 g; label now states whole packages and avoids universal extra-ball instruction.",
+    "B17": "Read every Danish heading/age/unit and all source table cells; body measurements not finished sizes, metric source/ranges preserved and inches derived /2.54; regional needle IDs not decimal measurements. SHARED supplies factual table receipts.",
+    "B18": "Read every English token with Danish meaning and expanded description; ret/vrang, slip orientation, stitch legs, yarn side, short rows, fabrics and cable holds checked independently using S1/S2/S3/S4/S9/S10.",
+    "B19": "Read every symbol/name/description and drawing ID; right-side convention, decrease lean, CDD and four/six-cell cables checked against source dispatch and SHARED factual geometry evidence. No fresh rendered-icon inspection.",
+    "B20": "Read settings, native language names, system default, theme, consent/privacy and app update text against PreferencesManager/PostHogAnalytics/config; opt-in and allowlisted data promises checked in source.",
+    "B21": "Read backup/export/preview/replace warnings and errors against BackupRepository/Tables; restore replaces after validation, not sync; app-owned included data versus settings/billing exclusions retained. No restore executed.",
+    "B22": "Read trial/Pro/free-limit/purchase/restore wording against ProState/ProManager/TrialManager and callers; existing-content access and debug-only override distinguished; price is supplied by billing, no invented price or purchase test.",
+    "B23": "Reconciled residual numeric/date/filename text, all current resource variants and app-owned source text; third-party pages, user documents/content, diagnostic logs and developer tooling are not Danish app copy."
+  },
+  "changed_text_variants": 96,
+  "changed_resource_keys": 95,
+  "validation": {
+    "xml_key_type_variant_placeholder_alias_parity": "PASS",
+    "coverage_exact_set_and_hash_match": "PASS",
+    "correction_original_final_reconciliation": "PASS",
+    "existing_work_preservation": "PASS",
+    "changed_preexisting_paths": [
+      "app/src/main/res/values-da/reference_strings.xml",
+      "app/src/main/res/values-da/strings.xml"
+    ],
+    "gradle_resources": "PASS: final processDebugResources executed in combined 25s build",
+    "gradle_tests": "PASS: final explicit test task --rerun in combined 25s build; 5 tests, zero failures/errors/skips",
+    "initial_test_execution": "PASS: 5 tests; initial full selected command 46s",
+    "diff_check": "PASS; CRLF normalization warnings only",
+    "runtime": "NOT_RUN; no unresolved language question required it",
+    "native_review": "NOT_REQUESTED",
+    "acceptance": "AUDIT_PASS",
+    "final_status_preserved": "PASS: short status unchanged; pre-existing untracked config/language-audit/ parent groups new Danish records. Final NUL-delimited inventory reconciled.",
+    "temporary_processes": "All three retained Gradle tool sessions completed exit0; no matching audit GradleWrapperMain process remains; no emulator/server/watcher started",
+    "snapshot_pathname_supplement": [
+      {
+        "path": "ui-insights-päivitys.md",
+        "sha256": "27913a131ec55893f188f3570def64166b9a42b5b310dbcdded4ff59ec444658",
+        "evidence": "Tracked file omitted by initial quoted-path inventory; verified byte-identical to HEAD, with no index/worktree change."
+      }
+    ],
+    "new_files_outside_danish_records": []
+  },
+  "finding_counts": {
+    "findings": 95,
+    "variants": 96,
+    "by_cause_group": {
+      "DA-01": 14,
+      "DA-02": 6,
+      "DA-03": 16,
+      "DA-04": 4,
+      "DA-05": 17,
+      "DA-06": 9,
+      "DA-07": 4,
+      "DA-08": 2,
+      "DA-09": 1,
+      "DA-10": 1,
+      "DA-11": 7,
+      "DA-12": 3,
+      "DA-13": 2,
+      "DA-14": 1,
+      "DA-15": 9
+    },
+    "by_severity": {
+      "S1": 50,
+      "S2": 37,
+      "S3": 9
+    }
+  },
+  "test_receipts": [
+    {
+      "path": "app/build/test-results/testDebugUnitTest/TEST-com.finnvek.knittools.InstructionHintLocalizationTest.xml",
+      "sha256": "29f64717201d490c6c8757b051f7438591c7747db90c47c503243c252a821ca6",
+      "name": "com.finnvek.knittools.InstructionHintLocalizationTest",
+      "tests": "2",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "timestamp": "2026-10-19T08:22:58.791Z"
+    },
+    {
+      "path": "app/build/test-results/testDebugUnitTest/TEST-com.finnvek.knittools.ReferenceResourceLocalizationTest.xml",
+      "sha256": "e6b91df9bb3754160cf83b6ad8e061f7af346235c5eb9ba240a59db6e8f4c18e",
+      "name": "com.finnvek.knittools.ReferenceResourceLocalizationTest",
+      "tests": "2",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "timestamp": "2026-10-19T08:22:59.273Z"
+    },
+    {
+      "path": "app/build/test-results/testDebugUnitTest/TEST-com.finnvek.knittools.ui.CountPluralResourcesSourceTest.xml",
+      "sha256": "2693385c74f0afb96119b2cde6eacf1b6216ab9aae6b674cdf56ae28ad497ff4",
+      "name": "com.finnvek.knittools.ui.CountPluralResourcesSourceTest",
+      "tests": "1",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "timestamp": "2026-10-19T08:22:59.518Z"
+    }
+  ],
+  "final_record_hashes": {
+    "review.md": "2a51eb50e4f7d24ba1f87f1bbca6f8a0fb3afbc24db146a88ebcf59e84f804af",
+    "coverage.tsv": "538e4c577b0808ddb5da64b1630169198d064f18f09f19d497e7413d86cc8e65",
+    "corrections.tsv": "875d2369684682075618a7075ebac52b1e54cef13f6f6b8c6992c268a3a8d6fc",
+    "input-hashes.tsv": "6ec1d89260fe38f547111026bff7c5aa19a5fa07fba42cb92225eeffc850b7cb"
+  }
+}

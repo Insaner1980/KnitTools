@@ -48,7 +48,15 @@ class ProjectOverviewSourceTest {
     fun `route is gated by selected project and reciprocal navigation reuses previous screen`() {
         val nav = ProjectSourceFiles.read("app/src/main/java/com/finnvek/knittools/ui/navigation/NavGraph.kt")
         assertTrue(nav.contains("return ready && state.projectId == projectId"))
-        assertTrue(nav.contains("navController.previousBackStackEntry?.destination?.route == Screen.Counter.route"))
+        val counterNavigation =
+            ProjectSourceFiles
+                .read(
+                    "app/src/main/java/com/finnvek/knittools/ui/navigation/ProjectWorkspaceNavigation.kt",
+                ).substringBefore("internal fun NavHostController.openCounterWithWorkSessionTip")
+        assertTrue(nav.contains("onOpenCounter = { navController.openCounterFromOverview() }"))
+        assertTrue(counterNavigation.contains("previousBackStackEntry?.destination?.route == Screen.Counter.route"))
+        assertTrue(counterNavigation.contains("popBackStack()"))
+        assertTrue(counterNavigation.contains("navigate(Screen.Counter.route) { launchSingleTop = true }"))
         assertTrue(nav.contains("previous?.destination?.route == Screen.ProjectOverview.ROUTE"))
         assertTrue(nav.contains("previous.positiveLongArgument(ARG_PROJECT_ID) == projectId"))
     }

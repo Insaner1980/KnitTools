@@ -1,0 +1,66 @@
+{
+  "date": "2026-10-19",
+  "branch": "codex/audit-korjaukset-20261018",
+  "HEAD": "e4416c7cf0a7a9ea57006a970307ee2f3d1d228f",
+  "command": ".\\gradlew.bat :app:processDebugResources :app:testDebugUnitTest --rerun --tests com.finnvek.knittools.ReferenceResourceLocalizationTest --tests com.finnvek.knittools.ui.CountPluralResourcesSourceTest --console=plain --no-daemon",
+  "result": "BUILD SUCCESSFUL; 38 actionable tasks: 11 executed, 9 from cache, 18 up-to-date; testDebugUnitTest executed",
+  "suites": [
+    {
+      "name": "com.finnvek.knittools.ReferenceResourceLocalizationTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": "2026-10-19T12:24:19.466Z",
+      "cases": [
+        "text aliases resolve and plurals include other in every supported locale",
+        "supported locales define all translatable text resources with matching types"
+      ]
+    },
+    {
+      "name": "com.finnvek.knittools.ui.CountPluralResourcesSourceTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": "2026-10-19T12:24:19.949Z",
+      "cases": [
+        "counts use plural resources in every locale"
+      ]
+    }
+  ],
+  "structural_checks": "structural-validation.json",
+  "entry_files_checked": 1226,
+  "changed_entry_files": [
+    "app/src/main/res/values-pt/pattern_annotations.xml",
+    "app/src/main/res/values-pt/reference_strings.xml",
+    "app/src/main/res/values-pt/strings.xml"
+  ],
+  "missing_entry_files": [],
+  "outside_scope_changes": [],
+  "validation_input_drift": [],
+  "runtime": "No new Android device/emulator run or screenshots. Reused two named historical Android plural tests, as documented in review.md. No 320dp/200%/TalkBack checks.",
+  "native_review": "NOT_REQUESTED",
+  "coverage_rows": 2036,
+  "coverage_keys": 1349,
+  "coverage_variants": 1413,
+  "coverage_kind_counts": {
+    "string": 1317,
+    "plural": 96,
+    "generated_output": 218,
+    "code_text": 86,
+    "reference_data": 275,
+    "symbol": 44
+  },
+  "coverage_reconciliation": "PASS; all 23 batches, all current row hashes match, no duplicate/missing item or unresolved content dimension",
+  "new_files_outside_scope": [],
+  "process_cleanup": {
+    "exec_session": 11038,
+    "exit_code": 0,
+    "single_use_gradle_daemon_pid": 41848,
+    "process_running_at_closeout": false,
+    "other_task_started_long_running_processes": []
+  },
+  "git_diff_check": "PASS",
+  "verification_notes": "The first new-path comparison used Git quoted display names and flagged the already-existing non-ASCII ui-insights filename. Repeated using NUL-delimited UTF-8 paths: no new outside-scope file. This was an audit-script comparison issue, not a project/test failure."
+}

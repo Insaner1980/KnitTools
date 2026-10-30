@@ -34,11 +34,16 @@ import androidx.compose.ui.unit.dp
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.calculator.formatIntegerForDisplay
 import com.finnvek.knittools.domain.model.CraftType
-import com.finnvek.knittools.pro.ProStatus
-import com.finnvek.knittools.ui.components.ProBadge
+import com.finnvek.knittools.pro.ProActionAccess
+import com.finnvek.knittools.pro.ProFeature
+import com.finnvek.knittools.pro.ProState
+import com.finnvek.knittools.pro.proActionAccess
+import com.finnvek.knittools.ui.components.ProMarker
 import com.finnvek.knittools.ui.components.ProjectThumbnail
 import com.finnvek.knittools.ui.components.SectionLabel
 import com.finnvek.knittools.ui.components.rememberCurrentLocale
+import com.finnvek.knittools.ui.layout.AdaptiveModalWindow
+import com.finnvek.knittools.ui.layout.ContentWidthPolicy
 import com.finnvek.knittools.ui.theme.CounterDimens
 import com.finnvek.knittools.ui.theme.ProjectOverviewDimens
 import com.finnvek.knittools.ui.theme.knitToolsColors
@@ -55,6 +60,8 @@ data class ProjectActionsSheetCallbacks(
     val onShowResetDialog: () -> Unit,
     val onMeasurements: () -> Unit = {},
     val onOpenCounterHistory: () -> Unit = {},
+    val onOpenSecondary: () -> Unit = {},
+    val onPinWidget: () -> Unit = {},
 )
 
 data class ProjectActionsSheetState(
@@ -65,7 +72,9 @@ data class ProjectActionsSheetState(
     val projectCounterCount: Int,
     val stitchTrackingEnabled: Boolean,
     val stitchCount: Int?,
-    val proStatus: ProStatus,
+    val proState: ProState,
+    val proAccessReady: Boolean,
+    val secondaryCounterUsed: Boolean,
     val isWorkSessionActiveForProject: Boolean,
     val isCompleted: Boolean,
 )
@@ -80,10 +89,12 @@ fun ProjectActionsBottomSheet(
     ModalBottomSheet(
         onDismissRequest = callbacks.onDismiss,
         sheetState = sheetState,
+        sheetMaxWidth = ContentWidthPolicy.Form.maxWidth,
         // Sama pinta ja oletusmuoto kuin muissa sheeteissä. Otsikkona toimii projektikortti
         // (ProjectOverviewLink), joten erillistä SheetTitlea ei toisteta sen yläpuolelle.
         containerColor = MaterialTheme.colorScheme.surface,
     ) {
+        AdaptiveModalWindow()
         Column(modifier = Modifier.verticalScroll(rememberScrollState()).padding(bottom = 18.dp)) {
             ProjectOverviewLink(state, callbacks)
             CounterToolActions(state, callbacks)
@@ -135,6 +146,15 @@ private fun CounterToolActions(
     state: ProjectActionsSheetState,
     callbacks: ProjectActionsSheetCallbacks,
 ) {
+    val counterAccess = proActionAccess(state.proState, state.proAccessReady, ProFeature.MULTIPLE_COUNTERS)
+    val secondaryAccess =
+        proActionAccess(
+            state.proState,
+            state.proAccessReady,
+            ProFeature.SECONDARY_COUNTER,
+            alreadyUnlocked = state.secondaryCounterUsed,
+        )
+    val widgetAccess = proActionAccess(state.proState, state.proAccessReady, ProFeature.WIDGET)
     ProjectActionsSection(title = stringResource(R.string.project_actions_section_counter_tools)) {
         ActionRow(
             label = stringResource(R.string.counters),
@@ -146,9 +166,26 @@ private fun CounterToolActions(
                 label = stringResource(R.string.add_counter),
                 onClick = callbacks.onOpenAddCounter,
                 showChevron = false,
-                proStatus = state.proStatus,
+                enabled =
+                    counterAccess != ProActionAccess.Unknown || state.proState.hasFeature(ProFeature.MULTIPLE_COUNTERS),
+                badge = { ProMarker(counterAccess) },
             )
         }
+        if (!state.isCompleted && secondaryAccess == ProActionAccess.Locked) {
+            ActionRow(
+                label = stringResource(R.string.pro_repeat_counter_row),
+                onClick = callbacks.onOpenSecondary,
+                showChevron = false,
+                badge = { ProMarker(secondaryAccess) },
+            )
+        }
+        ActionRow(
+            label = stringResource(R.string.widget_add_row),
+            onClick = callbacks.onPinWidget,
+            showChevron = false,
+            enabled = widgetAccess != ProActionAccess.Unknown,
+            badge = { ProMarker(widgetAccess) },
+        )
         ActionRow(
             label = stringResource(R.string.counter_history_title),
             onClick = callbacks.onOpenCounterHistory,
@@ -227,7 +264,8 @@ private fun ActionRow(
     onClick: () -> Unit,
     trailingCount: Int? = null,
     showChevron: Boolean = true,
-    proStatus: ProStatus? = null,
+    enabled: Boolean = true,
+    badge: @Composable () -> Unit = {},
 ) {
     val locale = rememberCurrentLocale()
     val mutedColor = MaterialTheme.colorScheme.onSurfaceVariant
@@ -236,7 +274,7 @@ private fun ActionRow(
             Modifier
                 .fillMaxWidth()
                 .defaultMinSize(minHeight = 48.dp)
-                .clickable(onClick = onClick)
+                .clickable(enabled = enabled, onClick = onClick)
                 .padding(
                     horizontal = CounterDimens.ProjectActionsHorizontalPadding,
                     vertical = CounterDimens.ProjectActionsRowVerticalPadding,
@@ -252,7 +290,7 @@ private fun ActionRow(
                 modifier = Modifier.padding(end = 8.dp),
             )
         }
-        proStatus?.let { ProBadge(status = it, modifier = Modifier.padding(end = 8.dp)) }
+        badge()
         if (showChevron) {
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,

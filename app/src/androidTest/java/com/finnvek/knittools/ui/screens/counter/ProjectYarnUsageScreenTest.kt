@@ -67,6 +67,7 @@ import com.finnvek.knittools.data.local.RoomDatabaseTransactionRunner
 import com.finnvek.knittools.data.local.YarnCardEntity
 import com.finnvek.knittools.domain.model.YarnUsageAmounts
 import com.finnvek.knittools.domain.model.YarnUsageSource
+import com.finnvek.knittools.pro.ProState
 import com.finnvek.knittools.pro.ProStatus
 import com.finnvek.knittools.repository.ProjectYarnNoteRepository
 import com.finnvek.knittools.repository.ProjectYarnUsageRepository
@@ -499,7 +500,8 @@ class ProjectYarnUsageScreenTest {
                     1,
                     cards.filter { it.linkedProjectId == 1L }.map { it.id to it.yarnName },
                     notes,
-                    ProStatus.TRIAL_EXPIRED,
+                    ProState(status = ProStatus.TRIAL_EXPIRED),
+                    true,
                     YarnManagementSheetActions(
                         onUnlinkYarn = { scope.launch { yarnRepository.updateLinkedProjectId(it, null) } },
                         onAddYarn = {},

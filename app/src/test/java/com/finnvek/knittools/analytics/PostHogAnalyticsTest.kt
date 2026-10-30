@@ -5,7 +5,6 @@ import com.finnvek.knittools.data.datastore.AppPreferences
 import com.finnvek.knittools.di.postHogConfig
 import com.posthog.PersonProfiles
 import com.posthog.PostHogInterface
-import dagger.Lazy
 import io.mockk.Called
 import io.mockk.every
 import io.mockk.mockk
@@ -13,20 +12,65 @@ import io.mockk.verify
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertSame
+import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
+import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.TemporaryFolder
 
 class PostHogAnalyticsTest {
-    private val client = mockk<PostHogInterface>(relaxed = true)
+    @get:Rule
+    val temporaryFolder = TemporaryFolder()
+
+    private val client = mockk<PostHogConsentClient>(relaxed = true)
     private val owner = mockk<LifecycleOwner>()
     private var initializations = 0
     private val analytics =
         PostHogAnalytics(
-            Lazy {
+            PostHogClientFactory {
                 initializations++
                 client
             },
         )
+
+    @Test
+    fun `SDK creation failure retires delivery and discards its queue`() {
+        val root = temporaryFolder.newFolder()
+        val failure = IllegalStateException("SDK creation failed")
+        var gate: AnalyticsDeliveryGate? = null
+        val factory =
+            postHogClientFactory("test-token", AnalyticsQueueStorage(root)) { config ->
+                gate = requireNotNull(config.httpClient).interceptors.filterIsInstance<AnalyticsDeliveryGate>().single()
+                throw failure
+            }
+
+        assertSame(failure, assertThrows(IllegalStateException::class.java) { factory.create() })
+        assertTrue(requireNotNull(gate).isRetired)
+        assertTrue(root.listFiles().orEmpty().isEmpty())
+    }
+
+    @Test
+    fun `failed opt-in retires delivery before close and discards the queue even when close fails`() {
+        val root = temporaryFolder.newFolder()
+        val sdk = mockk<PostHogInterface>()
+        val closeFailure = IllegalStateException("SDK close failed")
+        var gate: AnalyticsDeliveryGate? = null
+        every { sdk.optIn() } throws IllegalArgumentException("SDK opt-in failed")
+        every { sdk.close() } answers {
+            assertTrue(requireNotNull(gate).isRetired)
+            throw closeFailure
+        }
+        val factory =
+            postHogClientFactory("test-token", AnalyticsQueueStorage(root)) { config ->
+                gate = requireNotNull(config.httpClient).interceptors.filterIsInstance<AnalyticsDeliveryGate>().single()
+                sdk
+            }
+
+        assertSame(closeFailure, assertThrows(IllegalStateException::class.java) { factory.create() })
+        verify(exactly = 1) { sdk.close() }
+        assertTrue(root.listFiles().orEmpty().isEmpty())
+    }
 
     @Test
     fun `no SDK initialization or capture before consent`() {
@@ -49,8 +93,8 @@ class PostHogAnalyticsTest {
         analytics.setEnabled(false)
         analytics.track(UsageEvent.PDF_IMPORT_FAILED)
         analytics.onStop(owner)
-        verify(exactly = 1) { client.optIn() }
-        verify(exactly = 1) { client.optOut() }
+        assertEquals(1, initializations)
+        verify(exactly = 1) { client.retire() }
         verify(exactly = 1) {
             client.capture(
                 "\$screen",
@@ -93,12 +137,80 @@ class PostHogAnalyticsTest {
     }
 
     @Test
+    fun `onboarding routes use allowlisted names without project or topic arguments`() {
+        assertEquals("project_overview", screenNameForRoute("project_overview/123"))
+        assertEquals("guide", screenNameForRoute("guide"))
+        assertEquals("guide", screenNameForRoute("guide?projectId=123"))
+        assertEquals("guide_topic", screenNameForRoute("guide/{topic}"))
+        assertEquals("guide_topic", screenNameForRoute("guide/continue?projectId=123"))
+        assertEquals("guide_topic", screenNameForRoute("guide_topic/private-value"))
+    }
+
+    @Test
+    fun `onboarding events are predefined and contain no content properties`() {
+        val events =
+            setOf(
+                "welcome demo used",
+                "welcome tools chosen",
+                "welcome dismissed",
+                "guide opened",
+                "tip acted",
+                "tip dismissed",
+            )
+        val onboardingEvents = UsageEvent.entries.filter { it.eventName in events }
+        assertEquals(events, onboardingEvents.map { it.eventName }.toSet())
+        onboardingEvents.forEach(analytics::track)
+        verify { client wasNot Called }
+
+        analytics.setEnabled(true)
+        onboardingEvents.forEach(analytics::track)
+        events.forEach { event ->
+            verify(exactly = 1) { client.capture(event, properties = mapOf("\$geoip_disable" to true)) }
+        }
+    }
+
+    @Test
     fun `SDK failure does not interrupt user action`() {
         analytics.setEnabled(true)
         every { client.capture(any(), properties = any()) } throws IllegalStateException("SDK failure")
         analytics.track(UsageEvent.PROJECT_CREATED)
         analytics.setEnabled(false)
-        verify { client.optOut() }
+        verify { client.retire() }
+    }
+
+    @Test
+    fun `re-opt-in uses a new client and never reopens the retired client`() {
+        val next = mockk<PostHogConsentClient>(relaxed = true)
+        var creations = 0
+        val controller = PostHogAnalytics(PostHogClientFactory { if (creations++ == 0) client else next })
+        controller.setEnabled(true)
+        controller.setEnabled(false)
+        controller.setEnabled(false)
+        controller.track(UsageEvent.PDF_IMPORT_FAILED)
+        controller.setEnabled(true)
+        controller.track(UsageEvent.PROJECT_CREATED)
+        assertEquals(2, creations)
+        verify(exactly = 1) { client.retire() }
+        verify(exactly = 0) { client.capture(any(), any()) }
+        verify(exactly = 1) { next.capture("project created", mapOf("\$geoip_disable" to true)) }
+    }
+
+    @Test
+    fun `failed client creation stays disabled and a later consent can retry`() {
+        var creations = 0
+        val controller =
+            PostHogAnalytics(
+                PostHogClientFactory {
+                    if (creations++ == 0) throw IllegalStateException("Initialization failed")
+                    client
+                },
+            )
+        controller.setEnabled(true)
+        controller.track(UsageEvent.PDF_IMPORT_FAILED)
+        verify { client wasNot Called }
+        controller.setEnabled(true)
+        controller.track(UsageEvent.PROJECT_CREATED)
+        verify(exactly = 1) { client.capture("project created", mapOf("\$geoip_disable" to true)) }
     }
 
     @Test

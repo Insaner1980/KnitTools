@@ -196,7 +196,7 @@ export function createTokenStore(firestore: Firestore): RavelryTokenStore {
               expiresAtMillis: pending.expiresAtMillis,
             },
           },
-          { merge: true },
+          { mergeFields: ["uid", "connectionGeneration", "pending"] },
         );
         return true;
       });

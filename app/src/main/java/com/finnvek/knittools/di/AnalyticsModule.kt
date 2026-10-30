@@ -2,10 +2,12 @@ package com.finnvek.knittools.di
 
 import android.content.Context
 import com.finnvek.knittools.BuildConfig
+import com.finnvek.knittools.analytics.AnalyticsQueueStorage
 import com.finnvek.knittools.analytics.PostHogAnalytics
+import com.finnvek.knittools.analytics.PostHogClientFactory
 import com.finnvek.knittools.analytics.UsageAnalytics
+import com.finnvek.knittools.analytics.postHogClientFactory
 import com.posthog.PersonProfiles
-import com.posthog.PostHogInterface
 import com.posthog.android.PostHogAndroid
 import com.posthog.android.PostHogAndroidConfig
 import dagger.Module
@@ -13,6 +15,7 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import java.io.File
 import javax.inject.Singleton
 
 @Module
@@ -23,9 +26,14 @@ object AnalyticsModule {
 
     @Provides
     @Singleton
-    fun postHogClient(
+    fun postHogClients(
         @ApplicationContext context: Context,
-    ): PostHogInterface = PostHogAndroid.with(context, postHogConfig(BuildConfig.POSTHOG_PROJECT_TOKEN))
+    ): PostHogClientFactory =
+        postHogClientFactory(
+            token = BuildConfig.POSTHOG_PROJECT_TOKEN,
+            storage = AnalyticsQueueStorage(File(context.cacheDir, "knittools-usage-analytics")),
+            createSdk = { config -> PostHogAndroid.with(context, config) },
+        )
 }
 
 internal fun postHogConfig(token: String): PostHogAndroidConfig =

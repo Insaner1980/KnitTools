@@ -75,4 +75,5 @@
     <string name="pattern_annotation_export_filename">%1$s-geannoteerd.pdf</string>
     <string name="pattern_annotation_edit_text">Tekst bewerken</string>
     <string name="pattern_annotation_write_failed">De tekst kon niet worden opgeslagen. De aantekening is mogelijk gewijzigd. Sluit de editor en probeer het opnieuw.</string>
+    <string name="pattern_annotation_command_failed">Een wijziging aan een aantekening is niet opgeslagen. Sluit dit bericht en probeer de actie opnieuw met de markeergereedschappen.</string>
 </resources>

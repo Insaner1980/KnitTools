@@ -10,15 +10,17 @@ import android.view.animation.LinearInterpolator
 import android.widget.ImageView
 import android.widget.Toast
 import androidx.activity.SystemBarStyle
+import androidx.activity.compose.ReportDrawnWhen
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.ime
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
@@ -26,8 +28,10 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -36,11 +40,17 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.core.animation.doOnEnd
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.splashscreen.SplashScreenViewProvider
 import androidx.lifecycle.DEFAULT_ARGS_KEY
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewmodel.MutableCreationExtras
@@ -55,8 +65,12 @@ import com.finnvek.knittools.pro.InAppUpdateManager
 import com.finnvek.knittools.pro.ProManager
 import com.finnvek.knittools.pro.ProStatus
 import com.finnvek.knittools.pro.TrialManager
+import com.finnvek.knittools.repository.TrialJourneyStateRepository
 import com.finnvek.knittools.ui.ProvidePreferenceAwareHapticFeedback
 import com.finnvek.knittools.ui.SplashLogoDrawable
+import com.finnvek.knittools.ui.layout.LocalAdaptiveModalWindow
+import com.finnvek.knittools.ui.layout.LocalWindowFolds
+import com.finnvek.knittools.ui.layout.rememberWindowFolds
 import com.finnvek.knittools.ui.navigation.CounterLaunchIntentData
 import com.finnvek.knittools.ui.navigation.CounterLaunchRequest
 import com.finnvek.knittools.ui.navigation.IncomingPdfHost
@@ -70,7 +84,13 @@ import com.finnvek.knittools.ui.navigation.TopLevelDestination
 import com.finnvek.knittools.ui.navigation.receiveFromIntent
 import com.finnvek.knittools.ui.navigation.toPatternSharePayload
 import com.finnvek.knittools.ui.navigation.withValidatedCounterLaunchTrust
+import com.finnvek.knittools.ui.screens.pro.TrialJourneyCoordinator
+import com.finnvek.knittools.ui.screens.pro.TrialJourneyPresentation
+import com.finnvek.knittools.ui.screens.pro.trialSummaryText
 import com.finnvek.knittools.ui.theme.KnitToolsTheme
+import com.finnvek.knittools.ui.tips.LocalTipBlocked
+import com.finnvek.knittools.ui.tips.LocalTipSession
+import com.finnvek.knittools.ui.tips.TipSession
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Job
@@ -100,6 +120,15 @@ class MainActivity : AppCompatActivity() {
     lateinit var trialManager: TrialManager
 
     @Inject
+    lateinit var trialJourneyStateRepository: TrialJourneyStateRepository
+
+    @Inject
+    lateinit var trialJourneyCoordinator: TrialJourneyCoordinator
+
+    @Inject
+    lateinit var tipSession: TipSession
+
+    @Inject
     @IoDispatcher
     lateinit var ioDispatcher: CoroutineDispatcher
 
@@ -126,12 +155,16 @@ class MainActivity : AppCompatActivity() {
     private var consumedCounterLaunchRequestId: String? = null
     private var consumedPatternShareIntent = false
     private var startupThemeLoaded = false
+    private var startupSplashRemoved by mutableStateOf(false)
     private var splashExitAnimator: ValueAnimator? = null
     private var edgeToEdgeDarkTheme: Boolean? = null
     private var launchRequestJob: Job? = null
     private var launchRequestsReady by mutableStateOf(false)
     private var suppressPassiveTrialNotice by mutableStateOf(true)
     private var showTrialEndedNotice by mutableStateOf(false)
+    private var showTrialThreeDayNotice by mutableStateOf(false)
+    private var trialNoticeResumeGeneration by mutableLongStateOf(0L)
+    private var trialNoticeResolved by mutableStateOf(false)
 
     @Inject
     lateinit var analytics: PostHogAnalytics
@@ -139,6 +172,17 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         val splashScreen = installSplashScreen()
         super.onCreate(savedInstanceState)
+        // Saman prosessin uudelleenluonti ei saa uutta aloitusikkunaa; prosessin palautus odottaa oikeaa splashiä.
+        startupSplashRemoved = lastNonConfigurationInstance != null
+        // AppCompat bypasses ComponentActivity's content-view draw listener. Render the ready frame
+        // even when the final gate changes no pixels, so startup traces can pair it with this report.
+        fullyDrawnReporter.addOnReportDrawnListener { window.decorView.invalidate() }
+        showTrialEndedNotice = savedInstanceState?.getBoolean(STATE_TRIAL_ENDED_NOTICE_PENDING) == true
+        showTrialThreeDayNotice = savedInstanceState?.getBoolean(STATE_TRIAL_THREE_DAY_NOTICE_PENDING) == true
+        if (savedInstanceState?.getBoolean(STATE_TRIAL_JOURNEY_PENDING) == true) {
+            trialJourneyCoordinator.requestStartedJourney()
+        }
+        suppressPassiveTrialNotice = savedInstanceState?.getBoolean(STATE_SUPPRESS_PASSIVE_TRIAL_NOTICE) == true
         splashScreen.setKeepOnScreenCondition { !startupThemeLoaded }
         splashScreen.setOnExitAnimationListener(::animateSplashExit)
         startLaunchRequestInitialization(savedInstanceState)
@@ -149,6 +193,7 @@ class MainActivity : AppCompatActivity() {
     private fun animateSplashExit(splash: SplashScreenViewProvider) {
         if (!ValueAnimator.areAnimatorsEnabled()) {
             splash.remove()
+            startupSplashRemoved = true
             return
         }
 
@@ -171,6 +216,7 @@ class MainActivity : AppCompatActivity() {
                 doOnEnd {
                     icon.overlay.remove(logo)
                     splash.remove()
+                    startupSplashRemoved = true
                     splashExitAnimator = null
                 }
             }
@@ -186,7 +232,33 @@ class MainActivity : AppCompatActivity() {
         val prefs by preferencesManager.preferences.collectAsStateWithLifecycle(initialValue = null)
         val proState by proManager.proState.collectAsStateWithLifecycle()
         val proStateReady by proManager.initialStateReady.collectAsStateWithLifecycle()
+        val controlsReady by proManager.initialControlsReady.collectAsStateWithLifecycle()
+        val trialFacts by trialJourneyStateRepository.state.collectAsStateWithLifecycle()
+        val currentTrialFacts = trialFacts?.takeIf { it.trialStartTimestamp == proState.trialStartTimestamp }
+        val trialJourneyPending by trialJourneyCoordinator.pending.collectAsStateWithLifecycle()
+        val lifecycleState by lifecycle.currentStateFlow.collectAsState()
         val patternShareImportRequest by patternShareCoordinator.pending.collectAsStateWithLifecycle()
+        val incomingPdf by incomingPdfViewModel.pending.collectAsStateWithLifecycle()
+        val receivingPdf by incomingPdfViewModel.receiving.collectAsStateWithLifecycle()
+        val pdfBusy by incomingPdfViewModel.busy.collectAsStateWithLifecycle()
+        val purchaseFlowInFlight by billingManager.purchaseFlowInFlight.collectAsStateWithLifecycle()
+        var destinationReady by remember { mutableStateOf(false) }
+        var pdfSurfaceReady by remember { mutableStateOf(false) }
+        val startupReady =
+            storedAppLanguageApplied &&
+                prefs != null &&
+                launchRequestsReady &&
+                startupSplashRemoved &&
+                trialNoticeResolved &&
+                counterLaunchRequest == null &&
+                !openProUpgradeRequest &&
+                !openWidgetProPromptRequest &&
+                patternShareImportRequest == null &&
+                !receivingPdf &&
+                if (incomingPdf != null) pdfSurfaceReady else destinationReady
+        // Register before either asynchronous language/theme early return. This does not hold the splash.
+        val currentStartupReady by rememberUpdatedState(startupReady)
+        ReportDrawnWhen { currentStartupReady }
         if (!storedAppLanguageApplied) return
         val isDarkTheme = prefs.resolveStartupDarkTheme(isSystemInDarkTheme()) ?: return
 
@@ -207,52 +279,137 @@ class MainActivity : AppCompatActivity() {
             inAppUpdateManager.downloadedUpdatePromptId.collectAsStateWithLifecycle()
         DownloadedUpdatePromptEffect(downloadedUpdatePromptId, snackbarHostState, inAppUpdateManager::completeUpdate)
 
+        val tipsBlocked =
+            listOf(
+                !launchRequestsReady,
+                !startupSplashRemoved,
+                !trialNoticeResolved,
+                !controlsReady,
+                incomingPdf != null,
+                receivingPdf,
+                pdfBusy,
+                purchaseFlowInFlight,
+                showTrialEndedNotice,
+                showTrialThreeDayNotice,
+                patternShareImportRequest != null,
+                snackbarHostState.currentSnackbarData != null,
+            ).any { it }
+
         ProvidePreferenceAwareHapticFeedback(enabled = prefs?.hapticFeedback == true) {
-            KnitToolsTheme(isDarkTheme = isDarkTheme) {
-                LaunchedEffect(
-                    launchRequestsReady,
-                    suppressPassiveTrialNotice,
-                    proStateReady,
-                    proState.status,
-                ) {
-                    val shouldClaimTrialEndNotice =
-                        launchRequestsReady &&
-                            !suppressPassiveTrialNotice &&
-                            proStateReady &&
-                            proState.status == ProStatus.TRIAL_EXPIRED
-                    if (shouldClaimTrialEndNotice && trialManager.claimTrialEndNotice()) {
-                        showTrialEndedNotice = true
+            CompositionLocalProvider(
+                LocalAdaptiveModalWindow provides true,
+                LocalWindowFolds provides rememberWindowFolds(),
+                LocalTipSession provides tipSession,
+                LocalTipBlocked provides tipsBlocked,
+            ) {
+                KnitToolsTheme(isDarkTheme = isDarkTheme) {
+                    val noticeDataReady = proStateReady && currentTrialFacts != null
+                    val noticeSurfaceReady =
+                        listOf(
+                            launchRequestsReady,
+                            startupSplashRemoved,
+                            !suppressPassiveTrialNotice,
+                            controlsReady,
+                            incomingPdf == null,
+                            !receivingPdf,
+                            !pdfBusy,
+                            !purchaseFlowInFlight,
+                            patternShareImportRequest == null,
+                            snackbarHostState.currentSnackbarData == null,
+                            lifecycleState == Lifecycle.State.RESUMED,
+                        ).all { it }
+                    val noticeCanClaim =
+                        noticeDataReady &&
+                            noticeSurfaceReady &&
+                            LocalWindowInfo.current.isWindowFocused &&
+                            WindowInsets.ime.getBottom(LocalDensity.current) == 0
+                    var checkedResumeGeneration by remember { mutableLongStateOf(-1L) }
+                    LaunchedEffect(
+                        noticeCanClaim,
+                        noticeDataReady,
+                        proState.status,
+                        proState.trialDaysRemaining,
+                        trialNoticeResumeGeneration,
+                    ) {
+                        if (noticeDataReady) {
+                            if (proState.status != ProStatus.TRIAL_EXPIRED) showTrialEndedNotice = false
+                            if (proState.status != ProStatus.TRIAL_ACTIVE || proState.trialDaysRemaining != 3) {
+                                showTrialThreeDayNotice = false
+                            }
+                        }
+                        if (noticeCanClaim && checkedResumeGeneration != trialNoticeResumeGeneration) {
+                            // Tarkistus kuuluu käynnistykseen tai paluuseen, ei kesken käytön vaihtuvalle päivälle.
+                            checkedResumeGeneration = trialNoticeResumeGeneration
+                            when (proState.status) {
+                                ProStatus.TRIAL_EXPIRED -> {
+                                    if (!showTrialEndedNotice) showTrialEndedNotice = trialManager.claimTrialEndNotice()
+                                }
+                                ProStatus.TRIAL_ACTIVE -> {
+                                    if (!showTrialThreeDayNotice) {
+                                        showTrialThreeDayNotice = trialManager.claimTrialThreeDayNotice()
+                                    }
+                                }
+                                else -> Unit
+                            }
+                        }
                     }
-                }
-                Surface(modifier = Modifier.fillMaxSize()) {
-                    KnitToolsNavHost(
-                        onScreenViewed = analytics::screenViewed,
-                        startDestination = TopLevelDestination.Projects.route,
-                        requests =
-                            KnitToolsNavRequests(
-                                counterLaunch = counterLaunchRequest,
-                                openProUpgrade = openProUpgradeRequest,
-                                openWidgetProPrompt = openWidgetProPromptRequest,
-                                patternShareImport = patternShareImportRequest,
-                            ),
-                        snackbarHostState = snackbarHostState,
-                        actions = createNavActions(),
-                        incomingPdfHost = { onNavigate ->
-                            IncomingPdfHost(
-                                viewModelProvider = { incomingPdfViewModel },
-                                onNavigate = onNavigate,
-                            )
-                        },
-                    )
-                }
-                if (showTrialEndedNotice && proStateReady && proState.status == ProStatus.TRIAL_EXPIRED) {
-                    TrialEndedDialog(
-                        onSeePro = {
-                            showTrialEndedNotice = false
-                            openProUpgradeRequest = true
-                        },
-                        onContinueFree = { showTrialEndedNotice = false },
-                    )
+                    LaunchedEffect(launchRequestsReady, suppressPassiveTrialNotice, controlsReady) {
+                        if (launchRequestsReady && (suppressPassiveTrialNotice || controlsReady)) {
+                            trialNoticeResolved = true
+                        }
+                    }
+                    Surface(
+                        modifier =
+                            Modifier
+                                .fillMaxSize()
+                                .semantics { testTagsAsResourceId = true }
+                                .testTag(if (startupReady) "startup_ready" else "startup_loading"),
+                    ) {
+                        KnitToolsNavHost(
+                            onStartupReady = { destinationReady = it },
+                            startupGatesReady = controlsReady,
+                            onScreenViewed = analytics::screenViewed,
+                            startDestination = TopLevelDestination.Projects.route,
+                            requests =
+                                KnitToolsNavRequests(
+                                    counterLaunch = counterLaunchRequest,
+                                    openProUpgrade = openProUpgradeRequest,
+                                    openWidgetProPrompt = openWidgetProPromptRequest,
+                                    patternShareImport = patternShareImportRequest,
+                                ),
+                            snackbarHostState = snackbarHostState,
+                            actions = createNavActions(),
+                            trialJourney =
+                                TrialJourneyPresentation(
+                                    status = proState.status,
+                                    ready = proStateReady,
+                                    facts = currentTrialFacts,
+                                    pending = trialJourneyPending,
+                                ),
+                            incomingPdfHost = { onNavigate ->
+                                IncomingPdfHost(
+                                    viewModelProvider = { incomingPdfViewModel },
+                                    onNavigate = onNavigate,
+                                    onStartupReady = { pdfSurfaceReady = it },
+                                )
+                            },
+                        )
+                    }
+                    if ((showTrialEndedNotice || showTrialThreeDayNotice) && noticeDataReady && noticeSurfaceReady) {
+                        TrialEndedDialog(
+                            endingSoon = showTrialThreeDayNotice,
+                            summary = trialSummaryText(currentTrialFacts, afterTrial = showTrialEndedNotice),
+                            onSeePro = {
+                                showTrialEndedNotice = false
+                                showTrialThreeDayNotice = false
+                                openProUpgradeRequest = true
+                            },
+                            onContinueFree = {
+                                showTrialEndedNotice = false
+                                showTrialThreeDayNotice = false
+                            },
+                        )
+                    }
                 }
             }
         }
@@ -278,6 +435,7 @@ class MainActivity : AppCompatActivity() {
                 clearWidgetProPromptLaunchIntent()
             },
             onPatternShareImportHandled = patternShareCoordinator::acknowledge,
+            onTrialJourneyHandled = trialJourneyCoordinator::consume,
         )
 
     private fun startLaunchRequestInitialization(savedInstanceState: Bundle?) {
@@ -302,6 +460,7 @@ class MainActivity : AppCompatActivity() {
             counterLaunchRequest = null
         }
         suppressPassiveTrialNotice =
+            savedInstanceState?.getBoolean(STATE_SUPPRESS_PASSIVE_TRIAL_NOTICE) == true ||
             openProUpgradeRequest ||
             openWidgetProPromptRequest ||
             isShareImport ||
@@ -342,6 +501,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        trialNoticeResumeGeneration += 1L
         inAppUpdateManager.checkDownloadedOnResume()
         lifecycleScope.launch {
             preferencesManager.syncAppLanguageFromSystem()
@@ -349,6 +509,10 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
+        outState.putBoolean(STATE_TRIAL_ENDED_NOTICE_PENDING, showTrialEndedNotice)
+        outState.putBoolean(STATE_TRIAL_THREE_DAY_NOTICE_PENDING, showTrialThreeDayNotice)
+        outState.putBoolean(STATE_TRIAL_JOURNEY_PENDING, trialJourneyCoordinator.pending.value)
+        outState.putBoolean(STATE_SUPPRESS_PASSIVE_TRIAL_NOTICE, suppressPassiveTrialNotice)
         outState.putBoolean(STATE_PATTERN_SHARE_INTENT_CONSUMED, consumedPatternShareIntent)
         consumedCounterLaunchRequestId?.let {
             outState.putString(STATE_CONSUMED_COUNTER_LAUNCH_REQUEST_ID, it)
@@ -467,6 +631,10 @@ class MainActivity : AppCompatActivity() {
     }
 
     companion object {
+        private const val STATE_TRIAL_ENDED_NOTICE_PENDING = "trial_ended_notice_pending"
+        private const val STATE_TRIAL_THREE_DAY_NOTICE_PENDING = "trial_three_day_notice_pending"
+        private const val STATE_TRIAL_JOURNEY_PENDING = "trial_journey_pending"
+        private const val STATE_SUPPRESS_PASSIVE_TRIAL_NOTICE = "suppress_passive_trial_notice"
         private const val STATE_PATTERN_SHARE_INTENT_CONSUMED = "pattern_share_intent_consumed"
         private const val EXTRA_OPEN_COUNTER = "com.finnvek.knittools.extra.OPEN_COUNTER"
         private const val EXTRA_PROJECT_ID = "com.finnvek.knittools.extra.PROJECT_ID"
@@ -541,21 +709,32 @@ internal fun DownloadedUpdatePromptEffect(
 
 @Composable
 private fun TrialEndedDialog(
+    endingSoon: Boolean,
+    summary: String?,
     onSeePro: () -> Unit,
     onContinueFree: () -> Unit,
 ) {
     AlertDialog(
         onDismissRequest = onContinueFree,
-        title = { Text(stringResource(R.string.pro_trial_ended_title)) },
-        text = { Text(stringResource(R.string.pro_trial_ended_body)) },
+        title = {
+            Text(stringResource(if (endingSoon) R.string.trial_three_days_left else R.string.trial_ended_screen_title))
+        },
+        text = {
+            Text(
+                summary
+                    ?: stringResource(
+                        if (endingSoon) R.string.onboarding_pro_purchase_terms else R.string.pro_trial_ended_body,
+                    ),
+            )
+        },
         confirmButton = {
-            Button(onClick = onSeePro) {
+            TextButton(onClick = onSeePro) {
                 Text(stringResource(R.string.pro_prompt_see_pro))
             }
         },
         dismissButton = {
             TextButton(onClick = onContinueFree) {
-                Text(stringResource(R.string.pro_continue_free))
+                Text(stringResource(if (endingSoon) R.string.tip_got_it else R.string.pro_continue_free))
             }
         },
     )

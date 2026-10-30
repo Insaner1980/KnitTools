@@ -51,9 +51,11 @@ import com.finnvek.knittools.ui.screens.home.HomeViewModel
 @Composable
 fun IncreaseDecreaseScreen(
     onBack: () -> Unit,
+    onSeePro: () -> Unit = {},
     homeViewModel: HomeViewModel = hiltViewModel(),
 ) {
     val proState by homeViewModel.proState.collectAsStateWithLifecycle()
+    val proAccessReady by homeViewModel.proAccessReady.collectAsStateWithLifecycle()
     var currentStitches by rememberSaveable { mutableStateOf("") }
     var changeBy by rememberSaveable { mutableStateOf("") }
     var mode by rememberSaveable { mutableStateOf(IncreaseDecreaseMode.INCREASE) }
@@ -90,7 +92,9 @@ fun IncreaseDecreaseScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             PasteInstructionButton(
-                isPro = proState.isPro,
+                proState = proState,
+                proAccessReady = proAccessReady,
+                onSeePro = onSeePro,
                 hintText = stringResource(R.string.instruction_hint_increase),
                 onResult = { parsed ->
                     applyIncDecInstruction(parsed)?.let { (st, ch, m) ->
@@ -241,8 +245,8 @@ private fun IncreaseDecreaseMessage.localizedMessage(): String =
         IncreaseDecreaseMessage.TotalStitchesOutOfRange ->
             stringResource(R.string.increase_decrease_error_total_out_of_range)
 
-        IncreaseDecreaseMessage.IncreaseMoreThanCurrent ->
-            stringResource(R.string.increase_decrease_warning_increase_more_than_current)
+        IncreaseDecreaseMessage.NotEnoughBarsForIncrease ->
+            stringResource(R.string.increase_decrease_error_not_enough_bars)
     }
 
 private fun IncreaseDecreaseMode.resultPlaceholderRes(): Int =

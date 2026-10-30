@@ -7,6 +7,50 @@ import org.junit.Test
 
 class PatternPickerSourceTest {
     @Test
+    fun `same counter entry project transition preserves separate image drafts`() {
+        val picker = ProjectSourceFiles.read(PATTERN_PICKER)
+        val counter = ProjectSourceFiles.read(COUNTER_SCREEN)
+
+        // Hiding the sheet does not clear its route's ViewModelStore. B must not render A's model.
+        assertTrue(counter.contains("hideProjectScopedOverlays()"))
+        assertTrue(counter.contains("showPatternPicker = false"))
+        assertTrue(picker.contains("hiltViewModel(key = patternImageImportViewModelKey(projectId))"))
+        assertTrue(picker.contains("key(projectId)"))
+    }
+
+    @Test
+    fun `gallery registration captures the request and resumes its stable key without adopting a later token`() {
+        val picker = ProjectSourceFiles.read(PATTERN_PICKER)
+        val registration =
+            picker
+                .substringAfter("DisposableEffect(registry, imageImportViewModel, requestId)")
+                .substringBefore("val openDocumentLauncher")
+
+        assertTrue(picker.contains("val requestId = imageImportState.pickerRequestId"))
+        assertTrue(
+            registration.contains("registry.register(\"pattern-images-\$requestId\", PatternImagePickerContract())"),
+        )
+        assertTrue(registration.contains("imageImportViewModel.onGalleryPickerResult(requestId, uris)"))
+        assertTrue(
+            registration.indexOf("markGalleryPickerLaunched(requestId)") < registration.indexOf("launcher.launch("),
+        )
+        assertTrue(registration.contains("onDispose { launcher?.unregister() }"))
+        assertFalse(picker.contains("pendingGalleryRequestId"))
+        assertTrue(picker.contains("imageImportViewModel.consumeCloseRequest(sessionId)"))
+        val closeEffect = picker.substringAfter("LaunchedEffect(sessionId,").substringBefore("pendingProAction?.let")
+        assertTrue(
+            closeEffect.replace(Regex("\\s+"), " ").contains(
+                "imageImportState.closeReady && imageImportViewModel.consumeCloseRequest(sessionId) && " +
+                    "sessionId != completedBeforeOpening ) { onDismiss()",
+            ),
+        )
+        assertTrue(picker.contains("imageImportViewModel.createPatternPdf(hasExistingPattern, sessionId)"))
+        assertTrue(
+            picker.contains("imageImportViewModel.acceptCameraCapture(acceptedOwner, imageUri, imageFile, session)"),
+        )
+    }
+
+    @Test
     fun `pattern picker orders saved patterns import images photo and continue actions`() {
         val picker = ProjectSourceFiles.read(PATTERN_PICKER)
         val strings = ProjectSourceFiles.read(STRINGS)
@@ -76,6 +120,58 @@ class PatternPickerSourceTest {
     }
 
     @Test
+    fun `project import feedback opens the existing localized document sheet with reselection`() {
+        val screen = ProjectSourceFiles.read(COUNTER_SCREEN)
+        val viewer = ProjectSourceFiles.read(PATTERN_VIEWER_SCREEN)
+        val resultHandler =
+            screen
+                .substringAfter(
+                    "onPatternImportResult = { error ->",
+                ).substringBefore("onImportFromRavelry =")
+        val addAction = screen.substringAfter("onAdd = {").substringBefore("onClearError =")
+
+        assertTrue(
+            screen.contains("attachProjectPatternWithFeedback(viewModel, uri, name, owner, onPatternImportResult)"),
+        )
+        assertTrue(resultHandler.contains("projectDocumentError = error"))
+        assertTrue(resultHandler.contains("if (error != null)"))
+        assertTrue(resultHandler.contains("showPatternPicker = false"))
+        assertTrue(resultHandler.contains("showDocumentsSheet = true"))
+        assertTrue(screen.contains("error = projectDocumentError"))
+        assertTrue(addAction.contains("projectDocumentError = null"))
+        assertTrue(addAction.contains("showPatternPicker = true"))
+        assertTrue(viewer.contains("text = stringResource(error.messageRes())"))
+        assertTrue(viewer.contains("ProjectDocumentError.MUTATION_FAILURE -> R.string.project_documents_error_generic"))
+        ProjectSourceFiles.localizedStringFiles().forEach { file ->
+            assertTrue(
+                "$file must localize document failures",
+                ProjectSourceFiles.read(file).contains("name=\"project_documents_error_generic\""),
+            )
+        }
+    }
+
+    @Test
+    fun `cancelled PDF selection clears pending owner and cannot deliver or dismiss an import`() {
+        val picker = ProjectSourceFiles.read(PATTERN_PICKER)
+        val callback =
+            picker
+                .substringAfter("rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument())")
+                .substringBefore("LaunchedEffect(pendingDocumentUriString")
+        val delivery =
+            picker
+                .substringAfter(
+                    "LaunchedEffect(pendingDocumentUriString",
+                ).substringBefore("val cameraLauncher")
+
+        assertTrue(callback.contains("pendingDocumentUriString = uri?.toString()"))
+        assertTrue(callback.contains("if (uri == null) pendingDocumentProjectId = null"))
+        assertFalse(callback.contains("onDocumentSelected("))
+        assertFalse(callback.contains("onDismiss()"))
+        assertTrue(delivery.contains("val uri = pendingDocumentUriString ?: return@LaunchedEffect"))
+        assertTrue(delivery.indexOf("onDocumentSelected(uri, \"\", owner)") < delivery.indexOf("onDismiss()"))
+    }
+
+    @Test
     fun `gallery import uses shared picker contract without changing Room or storage permissions`() {
         val picker = ProjectSourceFiles.read(PATTERN_PICKER)
         val pickerContract = ProjectSourceFiles.read(PATTERN_IMAGE_PICKER_CONTRACT)
@@ -104,6 +200,8 @@ class PatternPickerSourceTest {
             "app/src/main/java/com/finnvek/knittools/ui/screens/counter/CounterScreen.kt"
         private const val COUNTER_VIEW_MODEL =
             "app/src/main/java/com/finnvek/knittools/ui/screens/counter/CounterViewModel.kt"
+        private const val PATTERN_VIEWER_SCREEN =
+            "app/src/main/java/com/finnvek/knittools/ui/screens/pattern/PatternViewerScreen.kt"
         private const val COUNTER_REPOSITORY =
             "app/src/main/java/com/finnvek/knittools/repository/CounterRepository.kt"
         private const val NAV_GRAPH =

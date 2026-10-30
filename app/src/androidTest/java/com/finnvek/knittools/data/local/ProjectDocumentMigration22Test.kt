@@ -13,12 +13,16 @@ import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
 import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.ExternalResource
+import org.junit.rules.RuleChain
+import org.junit.rules.TestRule
 import org.junit.runner.RunWith
+import java.util.UUID
 
 @RunWith(AndroidJUnit4::class)
 class ProjectDocumentMigration22Test {
-    @get:Rule
-    val helper =
+    private val testDb = "rw-03h-20261028-migration22-${UUID.randomUUID()}"
+    private val helper =
         MigrationTestHelper(
             InstrumentationRegistry.getInstrumentation(),
             KnitToolsDatabase::class.java,
@@ -26,9 +30,28 @@ class ProjectDocumentMigration22Test {
             FrameworkSQLiteOpenHelperFactory(),
         )
 
+    @get:Rule
+    val migrationRule: TestRule =
+        RuleChain
+            .outerRule(
+                object : ExternalResource() {
+                    override fun after() {
+                        val context = InstrumentationRegistry.getInstrumentation().targetContext
+                        context.deleteDatabase(testDb)
+                        assertFalse("Task database remains: $testDb", context.getDatabasePath(testDb).exists())
+                    }
+                },
+            ).around(helper)
+
     @Test
     fun migrate21to22BackfillsOnlyReadableDocumentsAndPreservesOwnedState() {
-        val testDb = "migration-test-v21-to-v22-project-documents"
+        val colonUris =
+            listOf(
+                "content://com.android.externalstorage.documents/document/primary%3APatterns%2Fchart%3Av2.pdf",
+                "content://com.android.externalstorage.documents/document/primary%3Achart%3Av2.pdf",
+                "file:///patterns/chart:v2.pdf",
+                "content://other/document/chart:v2.pdf",
+            )
         helper.createDatabase(testDb, 21).apply {
             insertSavedPattern(id = 20, name = "Metadata only", localPdfUri = null)
             insertSavedPattern(id = 21, name = "Saved cardigan", localPdfUri = "content://patterns/cardigan.pdf")
@@ -73,6 +96,14 @@ class ProjectDocumentMigration22Test {
             )
             insertProject(id = 8, name = "SAF", patternUri = "file:///patterns/saf-copy.pdf")
             insertProject(id = 9, name = "Missing", patternUri = "file:///patterns/missing.pdf")
+            insertProject(
+                id = 10,
+                name = "Encoded SAF path",
+                patternUri = "content://documents/document/primary%3APatterns%2Fcable%20chart.pdf",
+            )
+            colonUris.forEachIndexed { index, uri ->
+                insertProject(id = 11L + index, name = "Colon label $index", patternUri = uri, patternName = "  ")
+            }
             execSQL(
                 "INSERT INTO pattern_annotation_layers " +
                     "(id, projectId, savedPatternId, documentKey, isActive, createdAt, updatedAt) " +
@@ -149,6 +180,21 @@ class ProjectDocumentMigration22Test {
         assertDocument(db, 7, 23, "stable-saved-key", "Camera chart", 0)
         assertDocument(db, 8, null, "legacy-project:8", "saf-copy.pdf", 0)
         assertDocument(db, 9, null, "legacy-project:9", "missing.pdf", 0)
+        assertDocument(db, 10, null, "legacy-project:10", "cable chart.pdf", 0)
+        colonUris.forEachIndexed { index, uri ->
+            val projectId = 11L + index
+            assertDocument(db, projectId, null, "legacy-project:$projectId", "chart:v2.pdf", 0)
+            assertEquals(
+                uri,
+                scalarString(db, "SELECT localPdfUri FROM project_documents WHERE projectId = $projectId"),
+            )
+            assertEquals(uri, scalarString(db, "SELECT patternUri FROM counter_projects WHERE id = $projectId"))
+            assertEquals("  ", scalarString(db, "SELECT patternName FROM counter_projects WHERE id = $projectId"))
+            assertEquals(
+                "Colon label $index",
+                scalarString(db, "SELECT name FROM counter_projects WHERE id = $projectId"),
+            )
+        }
         assertEquals(
             "file:///patterns/gallery.pdf",
             scalarString(db, "SELECT localPdfUri FROM project_documents WHERE projectId = 6"),
@@ -188,7 +234,6 @@ class ProjectDocumentMigration22Test {
 
     @Test
     fun migrate21to22TruncatesLabelWithoutSplittingSurrogatePair() {
-        val testDb = "migration-test-v21-to-v22-unicode-label"
         val originalName = "A".repeat(49) + "\uD83E\uDDF6 chart"
         helper.createDatabase(testDb, 21).apply {
             insertProject(

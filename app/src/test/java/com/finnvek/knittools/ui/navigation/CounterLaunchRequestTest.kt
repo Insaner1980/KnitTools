@@ -24,6 +24,7 @@ class CounterLaunchRequestTest {
         assertEquals("launch-1", consumedLaunchId)
         assertEquals("launch-1", request?.requestId)
         assertEquals(42L, request?.projectId)
+        assertNull(request?.journeyAction)
     }
 
     @Test

@@ -1,0 +1,31 @@
+{
+  "source": "reports/language-audit/en/20261018/instrumentation.log",
+  "source_lines": "454-482",
+  "historical_input_record": "reports/language-audit/en/20261018/start-inputs.json",
+  "date": "2026-10-18",
+  "methods": [
+    "fractionalSkeinCountUsesRegionalPluralRules",
+    "roundedSkeinCountMatchesDisplayedQuantity"
+  ],
+  "fresh_device_execution": false,
+  "inputs": [
+    {
+      "path": "app/src/main/java/com/finnvek/knittools/ui/screens/counter/YarnUsagePresentation.kt",
+      "recorded_sha256": "7fe92629b6ec1f37ca5f3913a7e68c1360750dadb77f60b3dc54efcd5215c8a0",
+      "current_sha256": "7fe92629b6ec1f37ca5f3913a7e68c1360750dadb77f60b3dc54efcd5215c8a0",
+      "result": "MATCH"
+    },
+    {
+      "path": "app/src/main/java/com/finnvek/knittools/domain/calculator/MeasurementNumberFormatter.kt",
+      "recorded_sha256": "1c899cf382fbe1b3b2ab79f03c855b47858d73c6c45e1d10aca9ab10a9c1cb37",
+      "current_sha256": "1c899cf382fbe1b3b2ab79f03c855b47858d73c6c45e1d10aca9ab10a9c1cb37",
+      "result": "MATCH"
+    },
+    {
+      "path": "app/src/main/java/com/finnvek/knittools/domain/calculator/YarnUsageCalculator.kt",
+      "recorded_sha256": "2328e2cc4cdf62f32e83c8f54c46824d4be901185dbac15b4817dca11195b436",
+      "current_sha256": "2328e2cc4cdf62f32e83c8f54c46824d4be901185dbac15b4817dca11195b436",
+      "result": "MATCH"
+    }
+  ]
+}

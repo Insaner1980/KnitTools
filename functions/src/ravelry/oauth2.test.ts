@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
+import { httpsErrorFor } from "./callable";
+
 import {
   OAuthTokenExchangeError,
   exchangeOAuth2CodeForToken,
@@ -8,6 +10,20 @@ import {
 } from "./oauth2";
 
 describe("Ravelry OAuth2 token exchange", () => {
+  it("maps rejected credentials and transient token failures to the callable contract", () => {
+    for (const status of [400, 401]) {
+      const mapped = httpsErrorFor(new OAuthTokenExchangeError(status));
+      assert.equal(mapped.code, "failed-precondition");
+      assert.equal(mapped.message, "ravelry_not_connected");
+    }
+    for (const status of [503, 504]) {
+      const mapped = httpsErrorFor(new OAuthTokenExchangeError(status));
+      assert.equal(mapped.code, "unavailable");
+      assert.equal(mapped.message, "ravelry_token_exchange_failed");
+    }
+    assert.equal(httpsErrorFor(new OAuthTokenExchangeError(429)).code, "resource-exhausted");
+  });
+
   it("passes a timeout signal to the token request", async () => {
     let capturedSignal: AbortSignal | undefined;
     let capturedRedirect: RequestRedirect | undefined;

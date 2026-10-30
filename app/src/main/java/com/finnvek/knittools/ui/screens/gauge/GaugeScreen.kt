@@ -45,6 +45,7 @@ import com.finnvek.knittools.ui.components.rememberCurrentLocale
 @Composable
 fun GaugeScreen(
     onBack: () -> Unit,
+    onSeePro: () -> Unit = {},
     viewModelProvider: @Composable () -> GaugeViewModel = { hiltViewModel() },
 ) {
     val viewModel = viewModelProvider()
@@ -68,6 +69,7 @@ fun GaugeScreen(
         state = state,
         onAction = { viewModel.onAction(it, locale) },
         onBack = onBack,
+        onSeePro = onSeePro,
         snackbarHost = { SnackbarHost(snackbarHostState) },
     )
 }
@@ -78,6 +80,7 @@ fun GaugeContent(
     onAction: (GaugeAction) -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
+    onSeePro: () -> Unit = {},
     snackbarHost: @Composable () -> Unit = {},
 ) {
     val context = LocalContext.current
@@ -121,7 +124,7 @@ fun GaugeContent(
                     when (state.task) {
                         GaugeTask.MEASURE -> SwatchFields(state, onAction)
                         GaugeTask.CALCULATE -> CalculateFields(state, onAction)
-                        GaugeTask.ADJUST -> AdjustmentFields(state, onAction)
+                        GaugeTask.ADJUST -> AdjustmentFields(state, onAction, onSeePro)
                         GaugeTask.CONVERT -> Unit
                     }
                     GaugeWarning(state.task)
@@ -312,9 +315,12 @@ private fun CalculateFields(
 private fun AdjustmentFields(
     state: GaugeUiState,
     onAction: (GaugeAction) -> Unit,
+    onSeePro: () -> Unit,
 ) {
     PasteInstructionButton(
-        isPro = state.isPro,
+        proState = state.proState,
+        proAccessReady = state.proAccessReady,
+        onSeePro = onSeePro,
         hintText = stringResource(R.string.instruction_hint_gauge),
         onResult = { parsed ->
             if (parsed is ParsedInstruction.Gauge || parsed is ParsedInstruction.GaugeSwatch) {

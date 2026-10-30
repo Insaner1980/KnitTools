@@ -33,7 +33,9 @@ class RavelryShareTargetSourceTest {
         val navGraph = ProjectSourceFiles.read(NAV_GRAPH)
         val screen = ProjectSourceFiles.read(SCREEN)
 
-        assertTrue(screen.contains("const val ROUTE = \"ravelry_browser?url={\$ARG_URL}\""))
+        assertTrue(
+            screen.contains("const val ROUTE = \"ravelry_browser?url={\$ARG_URL}&requestId={\$ARG_REQUEST_ID}\""),
+        )
         assertTrue(screen.contains("Uri.encode(it)"))
         assertFalse(screen.contains("Uri.decode"))
         assertFalse(screen.contains("RavelryImport"))
@@ -41,7 +43,9 @@ class RavelryShareTargetSourceTest {
         assertTrue(navGraph.contains("LaunchedEffect(requests.patternShareImport?.requestId, currentRoute)"))
         assertTrue(navGraph.contains("is PatternSharePayload.Ravelry"))
         assertTrue(
-            navGraph.contains("navController.navigateSingleTopTo(Screen.RavelryBrowser.createRoute(payload.url))"),
+            navGraph.contains(
+                "navController.navigateSingleTopTo(Screen.RavelryBrowser.createRoute(payload.url, request.requestId))",
+            ),
         )
         assertTrue(navGraph.contains("onPatternShareImportHandled(request.requestId)"))
     }

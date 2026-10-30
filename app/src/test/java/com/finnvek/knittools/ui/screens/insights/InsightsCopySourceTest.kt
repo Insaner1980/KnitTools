@@ -60,7 +60,7 @@ class InsightsCopySourceTest {
         source: String,
         name: String,
     ): String =
-        Regex("<string name=\"$name\">(.*?)</string>", RegexOption.DOT_MATCHES_ALL)
+        Regex("<(?:string|plurals) name=\"$name\">(.*?)</(?:string|plurals)>", RegexOption.DOT_MATCHES_ALL)
             .find(source)
             ?.groupValues
             ?.get(1)

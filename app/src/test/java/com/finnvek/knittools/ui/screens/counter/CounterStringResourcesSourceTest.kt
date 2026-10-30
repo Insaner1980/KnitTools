@@ -8,6 +8,14 @@ import org.junit.Test
 
 class CounterStringResourcesSourceTest {
     @Test
+    fun `Finnish rounds target format uses kierros`() {
+        val source = ProjectSourceFiles.read("app/src/main/res/values-fi/strings.xml")
+        val format = counterString(source, "counter_round_value_of_target_format")
+        assertFalse("Round label must not use the knitting row word", format.startsWith("Kerros"))
+        assertEquals("Kierros %1\$d / %2\$d", format)
+    }
+
+    @Test
     fun `localized counter strings include target helper plurals`() {
         ProjectSourceFiles.localizedStringFiles().forEach { stringsFile ->
             val strings = ProjectSourceFiles.read(stringsFile)
@@ -92,11 +100,11 @@ class CounterStringResourcesSourceTest {
     @Test
     fun `repeat section progress format uses locked English and Finnish copy`() {
         assertEquals(
-            "Repeat %1\$d/%2\$d, Row %3\$d/%4\$d",
+            "Repeat %1\$d/%2\$d, count %3\$d/%4\$d",
             repeatSectionProgressFormat("app/src/main/res/values/strings.xml"),
         )
         assertEquals(
-            "Toisto %1\$d/%2\$d, kerros %3\$d/%4\$d",
+            "Toisto %1\$d/%2\$d, lukema %3\$d/%4\$d",
             repeatSectionProgressFormat("app/src/main/res/values-fi/strings.xml"),
         )
     }
@@ -104,7 +112,7 @@ class CounterStringResourcesSourceTest {
     @Test
     fun `repeat section progress format keeps placeholders in order in every locale`() {
         val stringFiles = ProjectSourceFiles.localizedStringFiles()
-        assertEquals("Expected repeat section progress copy in all 11 string files", 11, stringFiles.size)
+        assertEquals("Expected repeat section progress copy in all 12 string files", 12, stringFiles.size)
 
         stringFiles.forEach { stringsFile ->
             val format = counterString(ProjectSourceFiles.read(stringsFile), "repeat_section_progress_format")
@@ -181,7 +189,7 @@ class CounterStringResourcesSourceTest {
         counterString(ProjectSourceFiles.read(relativePath), "repeat_section_progress_format")
 
     private companion object {
-        val MANY_QUANTITY_LOCALES = setOf("values-es", "values-fr", "values-it", "values-pt")
+        val MANY_QUANTITY_LOCALES = setOf("values-es", "values-fr", "values-it", "values-pt", "values-pt-rBR")
         val COUNTER_PLURAL_KEYS =
             listOf(
                 "reminder_repeat_occurrence_format",

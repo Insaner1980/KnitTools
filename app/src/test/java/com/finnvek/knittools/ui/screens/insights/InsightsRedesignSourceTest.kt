@@ -38,11 +38,14 @@ class InsightsRedesignSourceTest {
     }
 
     @Test
-    fun `pace is reported as minutes per row`() {
+    fun `unknown historical units cannot produce row metrics`() {
         val viewModel = ProjectSourceFiles.read(INSIGHTS_VIEW_MODEL)
         val sections = ProjectSourceFiles.read(INSIGHTS_SECTIONS)
 
-        assertTrue(viewModel.contains("MinutesPerRowFormatter.fromSeconds"))
+        assertFalse(viewModel.contains("MinutesPerRowFormatter.fromSeconds"))
+        assertTrue(viewModel.contains("rowMetricsAvailable = false"))
+        assertTrue(viewModel.contains("minutesPerRow = MinutesPerRowDisplay.Unavailable"))
+        assertTrue(sections.contains("state.rowMetricsAvailable && state.totalRows > 0"))
         assertTrue(sections.contains("R.string.insights_stat_min_per_row"))
     }
 

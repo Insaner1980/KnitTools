@@ -38,6 +38,24 @@ function logCallEnd(content: string, openIndex: number): number {
     } else if (quote) {
       if (content[index] === "\\") index += 1;
       else if (content[index] === quote) quote = "";
+    } else if (content.startsWith("//", index)) {
+      const end = content.indexOf("\n", index + 2);
+      index = end < 0 ? content.length : end;
+    } else if (content.startsWith("/*", index)) {
+      let commentDepth = 1;
+      index += 2;
+      while (index < content.length && commentDepth > 0) {
+        if (content.startsWith("/*", index)) {
+          commentDepth += 1;
+          index += 2;
+        } else if (content.startsWith("*/", index)) {
+          commentDepth -= 1;
+          index += 2;
+        } else {
+          index += 1;
+        }
+      }
+      index -= 1;
     } else if (content.startsWith('"""', index)) {
       quote = '"""';
       index += 2;

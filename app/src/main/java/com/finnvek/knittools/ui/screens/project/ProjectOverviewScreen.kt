@@ -1,10 +1,12 @@
 package com.finnvek.knittools.ui.screens.project
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -26,16 +28,23 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.DpOffset
+import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.finnvek.knittools.R
@@ -44,20 +53,31 @@ import com.finnvek.knittools.domain.model.CraftType
 import com.finnvek.knittools.domain.model.ProjectYarnUsageItem
 import com.finnvek.knittools.domain.model.YarnCard
 import com.finnvek.knittools.domain.model.YarnUsageUnit
+import com.finnvek.knittools.domain.tips.TipId
+import com.finnvek.knittools.pro.ProActionAccess
+import com.finnvek.knittools.pro.ProFeature
+import com.finnvek.knittools.pro.proActionAccess
 import com.finnvek.knittools.ui.components.BadgePill
 import com.finnvek.knittools.ui.components.ContinueProjectCard
 import com.finnvek.knittools.ui.components.FabricKind
 import com.finnvek.knittools.ui.components.FabricPhotoPlaceholder
 import com.finnvek.knittools.ui.components.OverviewHeroPhoto
 import com.finnvek.knittools.ui.components.OverviewLinkRow
+import com.finnvek.knittools.ui.components.OverviewTextAction
+import com.finnvek.knittools.ui.components.ProMarker
 import com.finnvek.knittools.ui.components.craftTypeLabel
 import com.finnvek.knittools.ui.components.workSessionStatusText
+import com.finnvek.knittools.ui.layout.ContentWidthPolicy
+import com.finnvek.knittools.ui.layout.LocalAdaptiveContentSize
+import com.finnvek.knittools.ui.layout.LocalWindowFolds
+import com.finnvek.knittools.ui.layout.contentWidth
 import com.finnvek.knittools.ui.screens.counter.CounterScreenActions
 import com.finnvek.knittools.ui.screens.counter.CounterUiState
 import com.finnvek.knittools.ui.screens.counter.ProjectYarnUsageViewModel
 import com.finnvek.knittools.ui.theme.ProjectOverviewDimens
 import com.finnvek.knittools.ui.theme.knitToolsColors
 import com.finnvek.knittools.ui.theme.yarnColorForId
+import com.finnvek.knittools.ui.tips.tipAnchor
 
 data class ProjectOverviewContentActions(
     val onEditDetails: () -> Unit,
@@ -80,6 +100,8 @@ internal fun ProjectOverviewRouteContent(
     actions: CounterScreenActions,
     contentActions: ProjectOverviewContentActions,
     snackbarHostState: SnackbarHostState,
+    onBlockingSurfaceChanged: (Boolean) -> Unit = {},
+    projectSetup: @Composable () -> Unit = {},
 ) {
     val projectId = state.projectId ?: return
     val yarnModel: ProjectYarnUsageViewModel = hiltViewModel(key = "overview-yarn")
@@ -87,7 +109,17 @@ internal fun ProjectOverviewRouteContent(
     val yarnUnit by yarnModel.displayUnit.collectAsStateWithLifecycle()
     LaunchedEffect(projectId) { yarnModel.observe(projectId) }
     DisposableEffect(yarnModel) { onDispose { yarnModel.stopObserving() } }
-    ProjectOverviewScreen(state, actions, contentActions, snackbarHostState, yarnItems, yarnUnit, yarnCards)
+    ProjectOverviewScreen(
+        state,
+        actions,
+        contentActions,
+        snackbarHostState,
+        yarnItems,
+        yarnUnit,
+        yarnCards,
+        onBlockingSurfaceChanged = onBlockingSurfaceChanged,
+        projectSetup = projectSetup,
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -100,11 +132,17 @@ internal fun ProjectOverviewScreen(
     yarnItems: List<ProjectYarnUsageItem>?,
     yarnUnit: YarnUsageUnit,
     yarnCards: List<YarnCard> = emptyList(),
+    onBlockingSurfaceChanged: (Boolean) -> Unit = {},
+    projectSetup: @Composable () -> Unit = {},
 ) {
     val projectId = state.projectId ?: return
     val listState = rememberLazyListState()
     val showTitle by remember { derivedStateOf { listState.firstVisibleItemIndex > 1 } }
     var menuOpen by rememberSaveable(projectId) { mutableStateOf(false) }
+    val blockingSurfaceOpen = menuOpen
+    SideEffect { onBlockingSurfaceChanged(blockingSurfaceOpen) }
+    DisposableEffect(projectId) { onDispose { onBlockingSurfaceChanged(false) } }
+    var menuAnchorWidth by remember { mutableIntStateOf(0) }
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -117,10 +155,12 @@ internal fun ProjectOverviewScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = { menuOpen = true }) {
-                        Icon(Icons.Default.MoreVert, stringResource(R.string.project_actions_title))
+                    Box(Modifier.onSizeChanged { menuAnchorWidth = it.width }) {
+                        IconButton(onClick = { menuOpen = true }) {
+                            Icon(Icons.Default.MoreVert, stringResource(R.string.project_actions_title))
+                        }
+                        ProjectOverviewMenu(state, menuOpen, { menuOpen = false }, contentActions, menuAnchorWidth)
                     }
-                    ProjectOverviewMenu(state, menuOpen, { menuOpen = false }, contentActions)
                 },
                 // Läpinäkyvä kuten laskurin yläpalkki: oletuspinta piirsi taustasta eroavan kaistaleen,
                 // jonka terävä reuna sai vieritetyn sisällön näyttämään renderöintivirheeltä.
@@ -132,43 +172,51 @@ internal fun ProjectOverviewScreen(
             )
         },
     ) { padding ->
-        LazyColumn(
-            state = listState,
-            modifier = Modifier.fillMaxSize().padding(padding),
-            contentPadding =
-                PaddingValues(
-                    start = ProjectOverviewDimens.ScreenHorizontalPadding,
-                    top = ProjectOverviewDimens.TopContentGap,
-                    end = ProjectOverviewDimens.ScreenHorizontalPadding,
-                    bottom = ProjectOverviewDimens.ContentBottomPadding,
-                ),
-        ) {
-            item(key = "photo") { ProjectOverviewPhoto(state, projectId, actions.onPhotoGallery) }
-            item(key = "name") { ProjectOverviewName(state) }
-            item(key = "progress") { ProjectOverviewProgress(state, actions.onOpenCounter) }
-            // Valmistuneella projektilla ei ole jatka-korttia, joten laskurin historia avataan täältä.
-            if (state.isCompleted) {
-                item(key = "counter-history") {
-                    OverviewLinkRow(
-                        title = stringResource(R.string.counter_history_title),
-                        subtitle = null,
-                        glyph = null,
-                        onClick = { actions.onCounterHistory(projectId) },
-                    )
+        Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.TopCenter) {
+            LazyColumn(
+                state = listState,
+                modifier = Modifier.contentWidth(ContentWidthPolicy.ListDetail).fillMaxSize(),
+                contentPadding =
+                    PaddingValues(
+                        start = ProjectOverviewDimens.ScreenHorizontalPadding,
+                        top = ProjectOverviewDimens.TopContentGap,
+                        end = ProjectOverviewDimens.ScreenHorizontalPadding,
+                        bottom = ProjectOverviewDimens.ContentBottomPadding,
+                    ),
+            ) {
+                item(key = "photo") { ProjectOverviewPhoto(state, projectId, actions.onPhotoGallery) }
+                item(key = "name") { ProjectOverviewName(state) }
+                item(key = "progress") { ProjectOverviewProgress(state, actions.onOpenCounter) }
+                item(key = "project-setup") { projectSetup() }
+                // Valmistuneella projektilla ei ole jatka-korttia, joten laskurin historia avataan täältä.
+                if (state.isCompleted) {
+                    item(key = "counter-history") {
+                        OverviewLinkRow(
+                            title = stringResource(R.string.counter_history_title),
+                            subtitle = null,
+                            glyph = null,
+                            onClick = { actions.onCounterHistory(projectId) },
+                        )
+                    }
                 }
-            }
-            item(key = "yarn") {
-                ProjectOverviewYarn(yarnItems, yarnUnit, yarnCards, state.projectYarnNotes, contentActions.onYarn)
-            }
-            item(key = "pattern") { ProjectOverviewPattern(state, actions, contentActions) }
-            item(key = "notes") { ProjectOverviewNotes(state) { actions.onNotesEditor(projectId) } }
-            if (state.latestPhotos.isNotEmpty()) {
-                item(key = "photos") { ProjectOverviewPhotos(state, actions.onPhotoGallery) }
-            }
-            item(key = "reminders") { ProjectOverviewReminders(state, contentActions) }
-            // Pelkkiä rivejä sisältävät istunnot ovat nollakestoisia, joten näkyvyys seuraa olemassaoloa.
-            if (state.hasSessions) {
-                item(key = "sessions") { ProjectOverviewSessions(state) { actions.onSessionHistory(projectId) } }
+                item(key = "yarn") {
+                    ProjectOverviewYarn(yarnItems, yarnUnit, yarnCards, state.projectYarnNotes, contentActions.onYarn)
+                }
+                item(key = "pattern") { ProjectOverviewPattern(state, actions, contentActions) }
+                item(key = "notes") { ProjectOverviewNotes(state) { actions.onNotesEditor(projectId) } }
+                if (state.latestPhotos.isNotEmpty()) {
+                    item(key = "photos") { ProjectOverviewPhotos(state, actions.onPhotoGallery) }
+                }
+                item(key = "reminders") { ProjectOverviewReminders(state, contentActions) }
+                // Pelkkiä rivejä sisältävät istunnot ovat nollakestoisia, joten näkyvyys seuraa olemassaoloa.
+                if (state.hasSessions) {
+                    item(key = "sessions") { ProjectOverviewSessions(state) { actions.onSessionHistory(projectId) } }
+                }
+                item(key = "guide") {
+                    Box(Modifier.padding(top = ProjectOverviewDimens.HeaderTopGap)) {
+                        OverviewTextAction(stringResource(R.string.guide_entry_overview), actions.onGuide)
+                    }
+                }
             }
         }
     }
@@ -180,8 +228,36 @@ private fun ProjectOverviewMenu(
     expanded: Boolean,
     onDismiss: () -> Unit,
     actions: ProjectOverviewContentActions,
+    anchorWidth: Int,
 ) {
-    DropdownMenu(expanded = expanded, onDismissRequest = onDismiss) {
+    val hasActiveProjects = state.projects.any { !it.isCompleted }
+    val reactivationAccess =
+        proActionAccess(
+            state.proState,
+            state.proAccessReady && state.projectsLoaded,
+            ProFeature.UNLIMITED_PROJECTS,
+            needsEntitlement = hasActiveProjects,
+        )
+    val alreadyAllowed =
+        state.projectsLoaded && (!hasActiveProjects || state.proState.hasFeature(ProFeature.UNLIMITED_PROJECTS))
+    var menuWidth by remember { mutableIntStateOf(0) }
+    val available = LocalAdaptiveContentSize.current
+    val hasSeparatingFold = LocalWindowFolds.current.any { it.isSeparating || it.isOccluding }
+    // The platform popup sees the full window. Align its end to the action inside the selected pane.
+    val offset =
+        if (hasSeparatingFold) {
+            DpOffset(with(LocalDensity.current) { -(menuWidth - anchorWidth).coerceAtLeast(0).toDp() }, 0.dp)
+        } else {
+            DpOffset.Zero
+        }
+    DropdownMenu(
+        expanded = expanded,
+        onDismissRequest = onDismiss,
+        offset = offset,
+        modifier =
+            (if (hasSeparatingFold) Modifier.heightIn(max = available.height) else Modifier)
+                .onSizeChanged { menuWidth = it.width },
+    ) {
         listOf(
             R.string.project_overview_edit_details to actions.onEditDetails,
             R.string.folder_move_to to actions.onMoveToFolder,
@@ -193,6 +269,11 @@ private fun ProjectOverviewMenu(
             R.string.delete_project to actions.onDelete,
         ).forEach { (label, action) ->
             DropdownMenuItem(
+                enabled =
+                    label != R.string.reactivate_project ||
+                        reactivationAccess != ProActionAccess.Unknown ||
+                        alreadyAllowed,
+                trailingIcon = { if (label == R.string.reactivate_project) ProMarker(reactivationAccess) },
                 text = {
                     Text(
                         stringResource(label),
@@ -292,6 +373,6 @@ private fun ProjectOverviewProgress(
         onClickLabel = stringResource(R.string.project_continue_content_description, state.projectName),
         onOpenCounter = onOpenCounter.takeUnless { state.isCompleted },
         showName = false,
-        modifier = Modifier.padding(top = ProjectOverviewDimens.HeaderTopGap),
+        modifier = Modifier.padding(top = ProjectOverviewDimens.HeaderTopGap).tipAnchor(TipId.OVERVIEW_INTRO),
     )
 }

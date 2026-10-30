@@ -20,9 +20,11 @@ import androidx.compose.ui.text.style.TextAlign
 import com.finnvek.knittools.ui.theme.CrossStitchDimens
 import com.finnvek.knittools.ui.theme.knitToolsColors
 
+private const val CENTER_FILL_ROW = "X...o...X"
+private const val ROUNDED_END_ROW = "..XXXXX.."
 private const val EMPTY_WIDE_ROW = "X.......X"
 private const val EMPTY_NARROW_ROW = "X.....X"
-private const val REMINDER_SIDE_ROW = ".X.....X."
+private const val ROUNDED_SIDE_ROW = ".X.....X."
 
 /**
  * Projektin sisällön kuvakkeet ristipistoina. X on ääriviivan pisto, o himmeämpi täytepisto ja
@@ -38,9 +40,9 @@ enum class CrossStitchGlyph(
             "X....XX..",
             "X....X.X.",
             "X....XXXX",
-            "X...o...X",
+            CENTER_FILL_ROW,
             "X..ooo..X",
-            "X...o...X",
+            CENTER_FILL_ROW,
             EMPTY_WIDE_ROW,
             "XXXXXXXXX",
         ),
@@ -89,14 +91,40 @@ enum class CrossStitchGlyph(
     REMINDER(
         listOf(
             "....X....",
-            "..XXXXX..",
-            REMINDER_SIDE_ROW,
-            REMINDER_SIDE_ROW,
-            REMINDER_SIDE_ROW,
+            ROUNDED_END_ROW,
+            ROUNDED_SIDE_ROW,
+            ROUNDED_SIDE_ROW,
+            ROUNDED_SIDE_ROW,
             EMPTY_WIDE_ROW,
             "XXXXXXXXX",
             ".........",
             "...XXX...",
+        ),
+    ),
+    COUNTER(
+        listOf(
+            ROUNDED_END_ROW,
+            ROUNDED_SIDE_ROW,
+            CENTER_FILL_ROW,
+            CENTER_FILL_ROW,
+            "X.ooooo.X",
+            CENTER_FILL_ROW,
+            CENTER_FILL_ROW,
+            ROUNDED_SIDE_ROW,
+            ROUNDED_END_ROW,
+        ),
+    ),
+    CLOCK(
+        listOf(
+            ROUNDED_END_ROW,
+            ROUNDED_SIDE_ROW,
+            CENTER_FILL_ROW,
+            CENTER_FILL_ROW,
+            "X...ooo.X",
+            EMPTY_WIDE_ROW,
+            EMPTY_WIDE_ROW,
+            ROUNDED_SIDE_ROW,
+            ROUNDED_END_ROW,
         ),
     ),
 }
@@ -110,6 +138,8 @@ fun CrossStitchGlyph.accentColor(): Color =
         CrossStitchGlyph.NOTES -> MaterialTheme.knitToolsColors.brandWine
         CrossStitchGlyph.PHOTOS -> MaterialTheme.colorScheme.tertiary
         CrossStitchGlyph.REMINDER -> MaterialTheme.knitToolsColors.tealAccent
+        CrossStitchGlyph.COUNTER -> MaterialTheme.colorScheme.primary
+        CrossStitchGlyph.CLOCK -> MaterialTheme.knitToolsColors.tealAccent
     }
 
 /** Koristekuvake: merkitys tulee aina viereisestä tekstistä, joten sillä ei ole omaa kuvausta. */

@@ -13,6 +13,9 @@ internal val CounterUiState.shouldLeaveCounter: Boolean
 internal fun CounterUiState.withStartedProject(project: CounterProject): CounterUiState =
     copy(
         projectId = project.id,
+        remindersLoadedProjectId = null,
+        countersLoadedProjectId = null,
+        documentsLoadedProjectId = null,
         isRestoringProject = false,
         isCompleted = project.isCompleted,
         completedAt = project.completedAt,

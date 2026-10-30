@@ -31,6 +31,8 @@ import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.window.DialogWindowProvider
+import com.finnvek.knittools.ui.layout.AdaptiveModalWindow
+import com.finnvek.knittools.ui.layout.ContentWidthPolicy
 import com.finnvek.knittools.ui.theme.ComponentDimens
 
 /** Lomakesheetin vahvistus: teksti, käytettävyys ja tallennuksen aikainen latausilmaisin. */
@@ -66,6 +68,7 @@ fun FormSheet(
                 confirmValueChange = { canDismiss || it != SheetValue.Hidden },
             ),
         containerColor = MaterialTheme.colorScheme.surface,
+        sheetMaxWidth = ContentWidthPolicy.Form.maxWidth,
         modifier = modifier,
     ) {
         BackHandler(enabled = !cancelEnabled) {}
@@ -94,12 +97,28 @@ fun FormSheet(
     }
 }
 
+@Composable
+internal fun FormSheetContentColumn(content: @Composable ColumnScope.() -> Unit) {
+    Column(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .navigationBarsPadding()
+                .padding(horizontal = ComponentDimens.FormSheetHorizontalPadding)
+                .padding(bottom = ComponentDimens.FormSheetBottomPadding),
+        verticalArrangement = Arrangement.spacedBy(ComponentDimens.FormSheetItemSpacing),
+        content = content,
+    )
+}
+
 /** Sheetin otsikko: sama taso kuin dialogien otsikoissa kaikissa sheeteissä. */
 @Composable
 fun SheetTitle(
     text: String,
     modifier: Modifier = Modifier,
 ) {
+    AdaptiveModalWindow()
     Text(
         text = text,
         style = MaterialTheme.typography.headlineSmall,

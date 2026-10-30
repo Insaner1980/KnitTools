@@ -87,13 +87,6 @@ internal fun YarnWeightField(
                                 },
                         )
                     },
-                    trailingIcon = {
-                        Text(
-                            stringResource(R.string.yarn_weight_ply_format, weight.ply),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.knitToolsColors.onSurfaceMuted,
-                        )
-                    },
                     onClick = {
                         onValueChange(weight.label)
                         expanded = false

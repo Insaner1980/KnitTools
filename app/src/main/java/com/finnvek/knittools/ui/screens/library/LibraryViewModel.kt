@@ -43,6 +43,7 @@ class LibraryViewModel
         counterRepository: CounterRepository,
     ) : ViewModel() {
         val proState = proManager.proState
+        val proAccessReady get() = proManager.initialStateReady
         private var pendingManualYarnCard: ManualYarnCardInput? = null
         private val _isPhotoSelectMode = MutableStateFlow(false)
         val isPhotoSelectMode: StateFlow<Boolean> = _isPhotoSelectMode.asStateFlow()
@@ -267,22 +268,20 @@ class LibraryViewModel
         fun createManualYarnCard(input: ManualYarnCardInput): Boolean {
             pendingManualYarnCard = input
             if (!canUseYarnCards.value) return false
-            savePendingManualYarnCard()
-            return true
+            return savePendingManualYarnCard()
         }
 
         fun retryCreateManualYarnCard(): Boolean {
             if (!canUseYarnCards.value) return false
-            savePendingManualYarnCard()
-            return true
+            return savePendingManualYarnCard()
         }
 
-        private fun savePendingManualYarnCard() {
-            val input = pendingManualYarnCard ?: return
+        private fun savePendingManualYarnCard(): Boolean {
+            val input = pendingManualYarnCard ?: return false
             val yarnName = input.yarnName.trim()
             if (yarnName.isBlank() || input.quantity < 1) {
                 pendingManualYarnCard = null
-                return
+                return false
             }
             pendingManualYarnCard = null
 
@@ -308,6 +307,7 @@ class LibraryViewModel
                     _yarnSaveErrorId.value += 1
                 }
             }
+            return true
         }
 
         private fun toggleSelection(

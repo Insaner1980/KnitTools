@@ -1,0 +1,1184 @@
+[
+  {
+    "batch": "B02",
+    "finding_id": "LA-de-B02-01",
+    "key": "folder_name_required",
+    "replacement": "Gib einen Ordnernamen ein.",
+    "problem": "Formal Sie command conflicts with the established du address.",
+    "original": "Geben Sie einen Ordnernamen ein.",
+    "path": "app/src/main/res/values-de/strings.xml",
+    "variant": "default",
+    "contexts": [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/project/ProjectFolderComponents.kt:743",
+      "app/src/main/java/com/finnvek/knittools/ui/screens/project/ProjectFoldersState.kt:33"
+    ],
+    "classification": "CONFIRMED_DEFECT",
+    "state": "VERIFIED",
+    "verification": "Final German wording re-read in paired context; XML/placeholder parity and Android resource compilation PASS; targeted resource tests6/6 PASS. No device rendering claim."
+  },
+  {
+    "batch": "B02",
+    "finding_id": "LA-de-B02-02",
+    "key": "folder_move_earlier",
+    "replacement": "Nach oben verschieben",
+    "problem": "Earlier/later describes time, but these actions reorder a vertical folder list immediately.",
+    "original": "Früher verschieben",
+    "path": "app/src/main/res/values-de/strings.xml",
+    "variant": "default",
+    "contexts": [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/project/ProjectFolderComponents.kt:568",
+      "app/src/main/java/com/finnvek/knittools/ui/screens/project/ProjectFolderComponents.kt:608"
+    ],
+    "classification": "CONFIRMED_DEFECT",
+    "state": "VERIFIED",
+    "verification": "Final German wording re-read in paired context; XML/placeholder parity and Android resource compilation PASS; targeted resource tests6/6 PASS. No device rendering claim."
+  },
+  {
+    "batch": "B02",
+    "finding_id": "LA-de-B02-02",
+    "key": "folder_move_later",
+    "replacement": "Nach unten verschieben",
+    "problem": "Earlier/later describes time, but these actions reorder a vertical folder list immediately.",
+    "original": "Später verschieben",
+    "path": "app/src/main/res/values-de/strings.xml",
+    "variant": "default",
+    "contexts": [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/project/ProjectFolderComponents.kt:576",
+      "app/src/main/java/com/finnvek/knittools/ui/screens/project/ProjectFolderComponents.kt:609"
+    ],
+    "classification": "CONFIRMED_DEFECT",
+    "state": "VERIFIED",
+    "verification": "Final German wording re-read in paired context; XML/placeholder parity and Android resource compilation PASS; targeted resource tests6/6 PASS. No device rendering claim."
+  },
+  {
+    "batch": "B02",
+    "finding_id": "LA-de-B02-02",
+    "key": "folder_move_earlier_description",
+    "replacement": "Ordner %1$s nach oben verschieben",
+    "problem": "Earlier/later describes time, but these actions reorder a vertical folder list immediately.",
+    "original": "Ordner %1$s früher verschieben",
+    "path": "app/src/main/res/values-de/strings.xml",
+    "variant": "default",
+    "contexts": [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/project/ProjectFolderComponents.kt:608"
+    ],
+    "classification": "CONFIRMED_DEFECT",
+    "state": "VERIFIED",
+    "verification": "Final German wording re-read in paired context; XML/placeholder parity and Android resource compilation PASS; targeted resource tests6/6 PASS. No device rendering claim."
+  },
+  {
+    "batch": "B02",
+    "finding_id": "LA-de-B02-02",
+    "key": "folder_move_later_description",
+    "replacement": "Ordner %1$s nach unten verschieben",
+    "problem": "Earlier/later describes time, but these actions reorder a vertical folder list immediately.",
+    "original": "Ordner %1$s später verschieben",
+    "path": "app/src/main/res/values-de/strings.xml",
+    "variant": "default",
+    "contexts": [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/project/ProjectFolderComponents.kt:609"
+    ],
+    "classification": "CONFIRMED_DEFECT",
+    "state": "VERIFIED",
+    "verification": "Final German wording re-read in paired context; XML/placeholder parity and Android resource compilation PASS; targeted resource tests6/6 PASS. No device rendering claim."
+  },
+  {
+    "batch": "B03",
+    "finding_id": "LA-de-B03-01",
+    "key": "row_label_with_target",
+    "replacement": "Zählerstand %1$d / %2$d",
+    "problem": "WidgetTargetLabel receives all main-counter types without a ROWS guard; Reihe falsely labels rounds, repeats and custom counts.",
+    "original": "Reihe %1$d / %2$d",
+    "path": "app/src/main/res/values-de/strings.xml",
+    "variant": "default",
+    "contexts": [
+      "app/src/main/java/com/finnvek/knittools/widget/CounterWidget.kt:478"
+    ],
+    "classification": "CONFIRMED_DEFECT",
+    "state": "VERIFIED",
+    "verification": "Final German wording re-read in paired context; XML/placeholder parity and Android resource compilation PASS; targeted resource tests6/6 PASS. No device rendering claim."
+  },
+  {
+    "batch": "B16",
+    "finding_id": "LA-de-B16-01",
+    "key": "total_weight",
+    "replacement": "Gewicht ganzer Knäuel: %s g",
+    "problem": "The displayed mass is ceil(required length/package length)*package mass, not consumed yarn mass.",
+    "original": "Gesamtgewicht: %s g",
+    "path": "app/src/main/res/values-de/strings.xml",
+    "variant": "default",
+    "contexts": [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/yarn/YarnEstimatorScreen.kt:201"
+    ],
+    "classification": "CONFIRMED_DEFECT",
+    "state": "VERIFIED",
+    "verification": "Final German wording re-read in paired context; XML/placeholder parity and Android resource compilation PASS; targeted resource tests6/6 PASS. No device rendering claim."
+  },
+  {
+    "batch": "B16",
+    "finding_id": "LA-de-B16-02",
+    "key": "extra_skein_note",
+    "replacement": "Kaufe bei Bedarf ein zusätzliches Knäuel — Farbpartien können variieren",
+    "problem": "Always buying one extra package is unsupported regardless of project size or an existing reserve; retain dye-lot advice as conditional.",
+    "original": "Kaufe immer ein zusätzliches Knäuel — Farbpartien können variieren",
+    "path": "app/src/main/res/values-de/strings.xml",
+    "variant": "default",
+    "contexts": [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/yarn/YarnEstimatorScreen.kt:217"
+    ],
+    "classification": "CONFIRMED_DEFECT",
+    "state": "VERIFIED",
+    "verification": "Final German wording re-read in paired context; XML/placeholder parity and Android resource compilation PASS; targeted resource tests6/6 PASS. No device rendering claim."
+  },
+  {
+    "batch": "B17",
+    "finding_id": "LA-de-B17-01",
+    "key": "tip_needle_sizes_desc",
+    "replacement": "Metrisch (mm) ist der universelle Standard. US-Größen verwenden ein nummeriertes System. UK/Kanada nutzen ein anderes Nummernsystem. Japanische Größen haben eine eigene Nummerierung. Prüfe sicherheitshalber immer die mm-Angabe.",
+    "problem": "Claimed US range 0–50 omits 00/000 already shown in the actual table; remove only the false range.",
+    "original": "Metrisch (mm) ist der universelle Standard. US-Größen verwenden ein nummeriertes System (0–50). UK/Kanada nutzen ein anderes Nummernsystem. Japanische Größen haben eine eigene Nummerierung. Prüfe sicherheitshalber immer die mm-Angabe.",
+    "path": "app/src/main/res/values-de/strings.xml",
+    "variant": "default",
+    "contexts": [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/needles/NeedleSizeScreen.kt:78"
+    ],
+    "classification": "CONFIRMED_DEFECT",
+    "state": "VERIFIED",
+    "verification": "Final German wording re-read in paired context; XML/placeholder parity and Android resource compilation PASS; targeted resource tests6/6 PASS. No device rendering claim."
+  },
+  {
+    "batch": "B17",
+    "finding_id": "LA-de-B17-02",
+    "key": "size_col_arm",
+    "replacement": "Armlänge ab Achsel",
+    "problem": "The eight values are arm length from underarm to wrist, not whole arm length or circumference.",
+    "original": "Arm",
+    "path": "app/src/main/res/values-de/reference_strings.xml",
+    "variant": "default",
+    "contexts": [
+      "app/src/main/java/com/finnvek/knittools/domain/calculator/SizeChartData.kt:50"
+    ],
+    "classification": "CONFIRMED_DEFECT",
+    "state": "VERIFIED",
+    "verification": "Final German wording re-read in paired context; XML/placeholder parity and Android resource compilation PASS; targeted resource tests6/6 PASS. No device rendering claim."
+  },
+  {
+    "batch": "B17",
+    "finding_id": "LA-de-B17-03",
+    "key": "size_row_age_0_3m",
+    "replacement": "3 Monate",
+    "problem": "Lowercase m is the meter symbol in a measurement table; the row identifies an age in months.",
+    "original": "3 m",
+    "path": "app/src/main/res/values-de/reference_strings.xml",
+    "variant": "default",
+    "contexts": [
+      "app/src/main/java/com/finnvek/knittools/domain/calculator/SizeChartData.kt:122"
+    ],
+    "classification": "CONFIRMED_DEFECT",
+    "state": "VERIFIED",
+    "verification": "Final German wording re-read in paired context; XML/placeholder parity and Android resource compilation PASS; targeted resource tests6/6 PASS. No device rendering claim."
+  },
+  {
+    "batch": "B17",
+    "finding_id": "LA-de-B17-03",
+    "key": "size_row_age_3_6m",
+    "replacement": "6 Monate",
+    "problem": "Lowercase m is the meter symbol in a measurement table; the row identifies an age in months.",
+    "original": "6m",
+    "path": "app/src/main/res/values-de/reference_strings.xml",
+    "variant": "default",
+    "contexts": [
+      "app/src/main/java/com/finnvek/knittools/domain/calculator/SizeChartData.kt:123"
+    ],
+    "classification": "CONFIRMED_DEFECT",
+    "state": "VERIFIED",
+    "verification": "Final German wording re-read in paired context; XML/placeholder parity and Android resource compilation PASS; targeted resource tests6/6 PASS. No device rendering claim."
+  },
+  {
+    "batch": "B17",
+    "finding_id": "LA-de-B17-03",
+    "key": "size_row_age_6_12m",
+    "replacement": "12 Monate",
+    "problem": "Lowercase m is the meter symbol in a measurement table; the row identifies an age in months.",
+    "original": "12 m",
+    "path": "app/src/main/res/values-de/reference_strings.xml",
+    "variant": "default",
+    "contexts": [
+      "app/src/main/java/com/finnvek/knittools/domain/calculator/SizeChartData.kt:124"
+    ],
+    "classification": "CONFIRMED_DEFECT",
+    "state": "VERIFIED",
+    "verification": "Final German wording re-read in paired context; XML/placeholder parity and Android resource compilation PASS; targeted resource tests6/6 PASS. No device rendering claim."
+  },
+  {
+    "batch": "B17",
+    "finding_id": "LA-de-B17-03",
+    "key": "size_row_age_12_18m",
+    "replacement": "18 Monate",
+    "problem": "Lowercase m is the meter symbol in a measurement table; the row identifies an age in months.",
+    "original": "18 m",
+    "path": "app/src/main/res/values-de/reference_strings.xml",
+    "variant": "default",
+    "contexts": [
+      "app/src/main/java/com/finnvek/knittools/domain/calculator/SizeChartData.kt:125"
+    ],
+    "classification": "CONFIRMED_DEFECT",
+    "state": "VERIFIED",
+    "verification": "Final German wording re-read in paired context; XML/placeholder parity and Android resource compilation PASS; targeted resource tests6/6 PASS. No device rendering claim."
+  },
+  {
+    "batch": "B17",
+    "finding_id": "LA-de-B17-03",
+    "key": "size_row_age_18_24m",
+    "replacement": "24 Monate",
+    "problem": "Lowercase m is the meter symbol in a measurement table; the row identifies an age in months.",
+    "original": "24 m",
+    "path": "app/src/main/res/values-de/reference_strings.xml",
+    "variant": "default",
+    "contexts": [
+      "app/src/main/java/com/finnvek/knittools/domain/calculator/SizeChartData.kt:126"
+    ],
+    "classification": "CONFIRMED_DEFECT",
+    "state": "VERIFIED",
+    "verification": "Final German wording re-read in paired context; XML/placeholder parity and Android resource compilation PASS; targeted resource tests6/6 PASS. No device rendering claim."
+  },
+  {
+    "batch": "B20",
+    "finding_id": "LA-de-B20-01",
+    "key": "tip_imperial_units_desc",
+    "replacement": "Wenn aktiviert, werden Zoll statt Zentimeter und Yard statt Meter voreingestellt. Die Maschenprobe wird dann pro 4 Zoll statt pro 10 cm gemessen. Unter Maße und Maschenprobe kannst du die Einheiten separat wählen.",
+    "problem": "GaugeViewModel initializes from the preference but retains independently selectable/restored units; all calculators use these units is too absolute.",
+    "original": "Wenn aktiviert, verwenden alle Rechner Zoll statt Zentimeter und Yard statt Meter. Die Maschenprobe wird dann pro 4 Zoll statt pro 10 cm gemessen.",
+    "path": "app/src/main/res/values-de/strings.xml",
+    "variant": "default",
+    "contexts": [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/settings/SettingsScreen.kt:147"
+    ],
+    "classification": "CONFIRMED_DEFECT",
+    "state": "VERIFIED",
+    "verification": "Final German wording re-read in paired context; XML/placeholder parity and Android resource compilation PASS; targeted resource tests6/6 PASS. No device rendering claim."
+  },
+  {
+    "batch": "B22",
+    "finding_id": "LA-de-B22-01",
+    "key": "pro_prompt_reminders_title",
+    "replacement": "Zählererinnerung mit Pro hinzufügen",
+    "problem": "Reminders follow any selected main-counter unit, not only rows.",
+    "original": "Reihenerinnerung mit Pro hinzufügen",
+    "path": "app/src/main/res/values-de/strings.xml",
+    "variant": "default",
+    "contexts": [
+      "app/src/main/java/com/finnvek/knittools/ui/components/ProPromptSheet.kt:170"
+    ],
+    "classification": "CONFIRMED_DEFECT",
+    "state": "VERIFIED",
+    "verification": "Final German wording re-read in paired context; XML/placeholder parity and Android resource compilation PASS; targeted resource tests6/6 PASS. No device rendering claim."
+  },
+  {
+    "batch": "B22",
+    "finding_id": "LA-de-B22-01",
+    "key": "pro_prompt_reminders_body",
+    "replacement": "Eine neue Zählererinnerung erfordert Pro. Deine bestehenden Erinnerungen funktionieren weiter und bleiben bearbeitbar.",
+    "problem": "Reminders follow any selected main-counter unit, not only rows.",
+    "original": "Eine neue Reihenerinnerung erfordert Pro. Deine bestehenden Erinnerungen funktionieren weiter und bleiben bearbeitbar.",
+    "path": "app/src/main/res/values-de/strings.xml",
+    "variant": "default",
+    "contexts": [
+      "app/src/main/java/com/finnvek/knittools/ui/components/ProPromptSheet.kt:219"
+    ],
+    "classification": "CONFIRMED_DEFECT",
+    "state": "VERIFIED",
+    "verification": "Final German wording re-read in paired context; XML/placeholder parity and Android resource compilation PASS; targeted resource tests6/6 PASS. No device rendering claim."
+  },
+  {
+    "batch": "B22",
+    "finding_id": "LA-de-B22-01",
+    "key": "pro_group_workflow_body",
+    "replacement": "Nutze den kompakten Wiederholungszähler, zusätzliche, Wiederholungs-, Formungs- und Abschnittszähler, Zählererinnerungen, Musterfotos als PDF und das Startbildschirm-Widget.",
+    "problem": "Reminder unit scope also applies in the Pro feature summary.",
+    "original": "Nutze den kompakten Wiederholungszähler, zusätzliche, Wiederholungs-, Formungs- und Abschnittszähler, Reihenerinnerungen, Musterfotos als PDF und das Startbildschirm-Widget.",
+    "path": "app/src/main/res/values-de/strings.xml",
+    "variant": "default",
+    "contexts": [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/pro/ProUpgradeScreen.kt:125"
+    ],
+    "classification": "CONFIRMED_DEFECT",
+    "state": "VERIFIED",
+    "verification": "Final German wording re-read in paired context; XML/placeholder parity and Android resource compilation PASS; targeted resource tests6/6 PASS. No device rendering claim."
+  },
+  {
+    "batch": "B18",
+    "finding_id": "LA-de-B18-01",
+    "key": "abbreviations_title",
+    "replacement": "Englische Abkürzungen",
+    "problem": "The table tokens are English, not German abbreviations; disclose the notation language.",
+    "original": "Abkürzungen",
+    "path": "app/src/main/res/values-de/strings.xml",
+    "variant": "default",
+    "contexts": [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/abbreviations/AbbreviationsScreen.kt:43",
+      "app/src/main/java/com/finnvek/knittools/ui/screens/library/LibraryScreen.kt:126"
+    ],
+    "classification": "CONFIRMED_DEFECT",
+    "state": "VERIFIED",
+    "verification": "Final German wording re-read in paired context; XML/placeholder parity and Android resource compilation PASS; targeted resource tests6/6 PASS. No device rendering claim."
+  },
+  {
+    "batch": "B18",
+    "finding_id": "LA-de-B18-01",
+    "key": "desc_abbreviations",
+    "replacement": "Nachschlagewerk für gängige englische Strickabkürzungen",
+    "problem": "Library entry must identify the English notation convention it opens.",
+    "original": "Nachschlagewerk für gängige Strickabkürzungen",
+    "path": "app/src/main/res/values-de/strings.xml",
+    "variant": "default",
+    "contexts": [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/library/LibraryScreen.kt:127"
+    ],
+    "classification": "CONFIRMED_DEFECT",
+    "state": "VERIFIED",
+    "verification": "Final German wording re-read in paired context; XML/placeholder parity and Android resource compilation PASS; targeted resource tests6/6 PASS. No device rendering claim."
+  },
+  {
+    "batch": "B14",
+    "finding_id": "LA-de-B14-01",
+    "key": "tip_flat_vs_circular_desc",
+    "replacement": "Flach gestrickt: Du arbeitest hin und her auf geraden oder Rundnadeln und wendest am Ende jeder Reihe.\\n\\nRund gestrickt: Du arbeitest in einer fortlaufenden Runde. Zu- und Abnahmen werden gleichmäßig über die Runde verteilt.\\n\\nDie Ergebnisse verwenden englische Abkürzungen: K = rechts stricken, M1 = eine Masche aus dem Querfaden verschränkt zunehmen, K2tog = zwei Maschen rechts zusammenstricken. Die Zahl nach K gibt die Maschenzahl an, × die Anzahl der Wiederholungen.",
+    "problem": "Generated K/M1/K2tog sequences are untranslated notation with no explanation in the calculator; existing contextual help can explain them without shared code.",
+    "original": "Flach gestrickt: Du arbeitest hin und her auf geraden oder Rundnadeln und wendest am Ende jeder Reihe.\\n\\nRund gestrickt: Du arbeitest in einer fortlaufenden Runde. Zu- und Abnahmen werden gleichmäßig über die Runde verteilt.",
+    "path": "app/src/main/res/values-de/strings.xml",
+    "variant": "default",
+    "contexts": [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/increase/IncreaseDecreaseScreen.kt:117"
+    ],
+    "classification": "CONFIRMED_DEFECT",
+    "state": "VERIFIED",
+    "verification": "Final German wording re-read in paired context; XML/placeholder parity and Android resource compilation PASS; targeted resource tests6/6 PASS. No device rendering claim."
+  },
+  {
+    "batch": "B18",
+    "finding_id": "LA-de-B18-02",
+    "key": "abbr_yo_desc",
+    "replacement": "Wickle den Faden um die Nadel, um eine neue Masche und ein dekoratives Loch zu erzeugen",
+    "problem": "Formal Sie address is inconsistent with German app help using du; change only address and necessary verb inflection.",
+    "original": "Wickeln Sie den Faden um die Nadel, um eine neue Masche und ein dekoratives Loch zu erzeugen",
+    "path": "app/src/main/res/values-de/reference_strings.xml",
+    "variant": "default",
+    "contexts": [
+      "app/src/main/java/com/finnvek/knittools/domain/calculator/AbbreviationData.kt:21"
+    ],
+    "classification": "CONFIRMED_DEFECT",
+    "state": "VERIFIED",
+    "verification": "Final German wording re-read in paired context; XML/placeholder parity and Android resource compilation PASS; targeted resource tests6/6 PASS. No device rendering claim."
+  },
+  {
+    "batch": "B18",
+    "finding_id": "LA-de-B18-02",
+    "key": "abbr_kwise_desc",
+    "replacement": "Führe die Nadel ein, als ob du rechts stricken würdest",
+    "problem": "Formal Sie address is inconsistent with German app help using du; change only address and necessary verb inflection.",
+    "original": "Führen Sie die Nadel ein, als ob Sie rechts stricken würden",
+    "path": "app/src/main/res/values-de/reference_strings.xml",
+    "variant": "default",
+    "contexts": [
+      "app/src/main/java/com/finnvek/knittools/domain/calculator/AbbreviationData.kt:22"
+    ],
+    "classification": "CONFIRMED_DEFECT",
+    "state": "VERIFIED",
+    "verification": "Final German wording re-read in paired context; XML/placeholder parity and Android resource compilation PASS; targeted resource tests6/6 PASS. No device rendering claim."
+  },
+  {
+    "batch": "B18",
+    "finding_id": "LA-de-B18-02",
+    "key": "abbr_pwise_desc",
+    "replacement": "Führe die Nadel wie zum Linksstricken ein",
+    "problem": "Formal Sie address is inconsistent with German app help using du; change only address and necessary verb inflection.",
+    "original": "Führen Sie die Nadel wie zum Linksstricken ein",
+    "path": "app/src/main/res/values-de/reference_strings.xml",
+    "variant": "default",
+    "contexts": [
+      "app/src/main/java/com/finnvek/knittools/domain/calculator/AbbreviationData.kt:23"
+    ],
+    "classification": "CONFIRMED_DEFECT",
+    "state": "VERIFIED",
+    "verification": "Final German wording re-read in paired context; XML/placeholder parity and Android resource compilation PASS; targeted resource tests6/6 PASS. No device rendering claim."
+  },
+  {
+    "batch": "B18",
+    "finding_id": "LA-de-B18-02",
+    "key": "abbr_psso_desc",
+    "replacement": "Hebe die abgehobene Masche über die zuletzt gearbeitete Masche",
+    "problem": "Formal Sie address is inconsistent with German app help using du; change only address and necessary verb inflection.",
+    "original": "Heben Sie die abgehobene Masche über die zuletzt gearbeitete Masche",
+    "path": "app/src/main/res/values-de/reference_strings.xml",
+    "variant": "default",
+    "contexts": [
+      "app/src/main/java/com/finnvek/knittools/domain/calculator/AbbreviationData.kt:35"
+    ],
+    "classification": "CONFIRMED_DEFECT",
+    "state": "VERIFIED",
+    "verification": "Final German wording re-read in paired context; XML/placeholder parity and Android resource compilation PASS; targeted resource tests6/6 PASS. No device rendering claim."
+  },
+  {
+    "batch": "B18",
+    "finding_id": "LA-de-B18-02",
+    "key": "abbr_dec_desc",
+    "replacement": "Reduziere die Anzahl der Maschen",
+    "problem": "Formal Sie address is inconsistent with German app help using du; change only address and necessary verb inflection.",
+    "original": "Reduzieren Sie die Anzahl der Maschen",
+    "path": "app/src/main/res/values-de/reference_strings.xml",
+    "variant": "default",
+    "contexts": [
+      "app/src/main/java/com/finnvek/knittools/domain/calculator/AbbreviationData.kt:36"
+    ],
+    "classification": "CONFIRMED_DEFECT",
+    "state": "VERIFIED",
+    "verification": "Final German wording re-read in paired context; XML/placeholder parity and Android resource compilation PASS; targeted resource tests6/6 PASS. No device rendering claim."
+  },
+  {
+    "batch": "B18",
+    "finding_id": "LA-de-B18-02",
+    "key": "abbr_inc_desc",
+    "replacement": "Füge der Arbeit Maschen hinzu",
+    "problem": "Formal Sie address is inconsistent with German app help using du; change only address and necessary verb inflection.",
+    "original": "Fügen Sie der Arbeit Maschen hinzu",
+    "path": "app/src/main/res/values-de/reference_strings.xml",
+    "variant": "default",
+    "contexts": [
+      "app/src/main/java/com/finnvek/knittools/domain/calculator/AbbreviationData.kt:43"
+    ],
+    "classification": "CONFIRMED_DEFECT",
+    "state": "VERIFIED",
+    "verification": "Final German wording re-read in paired context; XML/placeholder parity and Android resource compilation PASS; targeted resource tests6/6 PASS. No device rendering claim."
+  },
+  {
+    "batch": "B18",
+    "finding_id": "LA-de-B18-02",
+    "key": "abbr_sl1k_desc",
+    "replacement": "Hebe eine Masche ab, als ob du rechts stricken würdest",
+    "problem": "Formal Sie address is inconsistent with German app help using du; change only address and necessary verb inflection.",
+    "original": "Heben Sie eine Masche ab, als ob Sie rechts stricken würden",
+    "path": "app/src/main/res/values-de/reference_strings.xml",
+    "variant": "default",
+    "contexts": [
+      "app/src/main/java/com/finnvek/knittools/domain/calculator/AbbreviationData.kt:46"
+    ],
+    "classification": "CONFIRMED_DEFECT",
+    "state": "VERIFIED",
+    "verification": "Final German wording re-read in paired context; XML/placeholder parity and Android resource compilation PASS; targeted resource tests6/6 PASS. No device rendering claim."
+  },
+  {
+    "batch": "B18",
+    "finding_id": "LA-de-B18-02",
+    "key": "abbr_sl1p_desc",
+    "replacement": "Hebe eine Masche ab, als ob du links stricken würdest",
+    "problem": "Formal Sie address is inconsistent with German app help using du; change only address and necessary verb inflection.",
+    "original": "Heben Sie eine Masche ab, als ob Sie links stricken würden",
+    "path": "app/src/main/res/values-de/reference_strings.xml",
+    "variant": "default",
+    "contexts": [
+      "app/src/main/java/com/finnvek/knittools/domain/calculator/AbbreviationData.kt:47"
+    ],
+    "classification": "CONFIRMED_DEFECT",
+    "state": "VERIFIED",
+    "verification": "Final German wording re-read in paired context; XML/placeholder parity and Android resource compilation PASS; targeted resource tests6/6 PASS. No device rendering claim."
+  },
+  {
+    "batch": "B18",
+    "finding_id": "LA-de-B18-02",
+    "key": "abbr_pu_desc",
+    "replacement": "Nimm Maschen entlang einer Kante auf",
+    "problem": "Formal Sie address is inconsistent with German app help using du; change only address and necessary verb inflection.",
+    "original": "Nehmen Sie Maschen entlang einer Kante auf",
+    "path": "app/src/main/res/values-de/reference_strings.xml",
+    "variant": "default",
+    "contexts": [
+      "app/src/main/java/com/finnvek/knittools/domain/calculator/AbbreviationData.kt:51"
+    ],
+    "classification": "CONFIRMED_DEFECT",
+    "state": "VERIFIED",
+    "verification": "Final German wording re-read in paired context; XML/placeholder parity and Android resource compilation PASS; targeted resource tests6/6 PASS. No device rendering claim."
+  },
+  {
+    "batch": "B18",
+    "finding_id": "LA-de-B18-02",
+    "key": "abbr_pm_desc",
+    "replacement": "Platziere einen Maschenmarkierer auf der Nadel",
+    "problem": "Formal Sie address is inconsistent with German app help using du; change only address and necessary verb inflection.",
+    "original": "Platzieren Sie einen Maschenmarkierer auf der Nadel",
+    "path": "app/src/main/res/values-de/reference_strings.xml",
+    "variant": "default",
+    "contexts": [
+      "app/src/main/java/com/finnvek/knittools/domain/calculator/AbbreviationData.kt:53"
+    ],
+    "classification": "CONFIRMED_DEFECT",
+    "state": "VERIFIED",
+    "verification": "Final German wording re-read in paired context; XML/placeholder parity and Android resource compilation PASS; targeted resource tests6/6 PASS. No device rendering claim."
+  },
+  {
+    "batch": "B18",
+    "finding_id": "LA-de-B18-02",
+    "key": "abbr_sm_desc",
+    "replacement": "Bewege den Markierer von der linken zur rechten Nadel",
+    "problem": "Formal Sie address is inconsistent with German app help using du; change only address and necessary verb inflection.",
+    "original": "Bewegen Sie den Markierer von der linken zur rechten Nadel",
+    "path": "app/src/main/res/values-de/reference_strings.xml",
+    "variant": "default",
+    "contexts": [
+      "app/src/main/java/com/finnvek/knittools/domain/calculator/AbbreviationData.kt:54"
+    ],
+    "classification": "CONFIRMED_DEFECT",
+    "state": "VERIFIED",
+    "verification": "Final German wording re-read in paired context; XML/placeholder parity and Android resource compilation PASS; targeted resource tests6/6 PASS. No device rendering claim."
+  },
+  {
+    "batch": "B18",
+    "finding_id": "LA-de-B18-02",
+    "key": "abbr_wt_desc",
+    "replacement": "Wickle die nächste Masche ein und wende die Arbeit, um die Reihen zu verkürzen",
+    "problem": "Formal Sie address is inconsistent with German app help using du; change only address and necessary verb inflection.",
+    "original": "Wickeln Sie die nächste Masche ein und wenden Sie die Arbeit, um die Reihen zu verkürzen",
+    "path": "app/src/main/res/values-de/reference_strings.xml",
+    "variant": "default",
+    "contexts": [
+      "app/src/main/java/com/finnvek/knittools/domain/calculator/AbbreviationData.kt:75"
+    ],
+    "classification": "CONFIRMED_DEFECT",
+    "state": "VERIFIED",
+    "verification": "Final German wording re-read in paired context; XML/placeholder parity and Android resource compilation PASS; targeted resource tests6/6 PASS. No device rendering claim."
+  },
+  {
+    "batch": "B18",
+    "finding_id": "LA-de-B18-02",
+    "key": "abbr_cont_desc",
+    "replacement": "Arbeite wie gewohnt weiter",
+    "problem": "Formal Sie address is inconsistent with German app help using du; change only address and necessary verb inflection.",
+    "original": "Arbeiten Sie wie gewohnt weiter",
+    "path": "app/src/main/res/values-de/reference_strings.xml",
+    "variant": "default",
+    "contexts": [
+      "app/src/main/java/com/finnvek/knittools/domain/calculator/AbbreviationData.kt:87"
+    ],
+    "classification": "CONFIRMED_DEFECT",
+    "state": "VERIFIED",
+    "verification": "Final German wording re-read in paired context; XML/placeholder parity and Android resource compilation PASS; targeted resource tests6/6 PASS. No device rendering claim."
+  },
+  {
+    "batch": "B18",
+    "finding_id": "LA-de-B18-02",
+    "key": "abbr_patt_desc",
+    "replacement": "Fahre im gewohnten Muster fort",
+    "problem": "Formal Sie address is inconsistent with German app help using du; change only address and necessary verb inflection.",
+    "original": "Fahren Sie im gewohnten Muster fort",
+    "path": "app/src/main/res/values-de/reference_strings.xml",
+    "variant": "default",
+    "contexts": [
+      "app/src/main/java/com/finnvek/knittools/domain/calculator/AbbreviationData.kt:90"
+    ],
+    "classification": "CONFIRMED_DEFECT",
+    "state": "VERIFIED",
+    "verification": "Final German wording re-read in paired context; XML/placeholder parity and Android resource compilation PASS; targeted resource tests6/6 PASS. No device rendering claim."
+  },
+  {
+    "batch": "B19",
+    "finding_id": "LA-de-B19-01",
+    "key": "sym_yarn_over_desc",
+    "replacement": "Wickle den Faden um die Nadel, sodass ein Loch entsteht",
+    "problem": "Same formal/informal address inconsistency in the symbol reference.",
+    "original": "Wickeln Sie den Faden um die Nadel, sodass ein Loch entsteht",
+    "path": "app/src/main/res/values-de/reference_strings.xml",
+    "variant": "default",
+    "contexts": [
+      "app/src/main/java/com/finnvek/knittools/domain/calculator/ChartSymbolData.kt:22"
+    ],
+    "classification": "CONFIRMED_DEFECT",
+    "state": "VERIFIED",
+    "verification": "Final German wording re-read in paired context; XML/placeholder parity and Android resource compilation PASS; targeted resource tests6/6 PASS. No device rendering claim."
+  },
+  {
+    "batch": "B18",
+    "finding_id": "LA-de-B18-03",
+    "key": "abbr_ws_desc",
+    "replacement": "Die Rückseite der Arbeit",
+    "problem": "Private is a mistranslation of the wrong/inner fabric side and has no craft meaning here.",
+    "original": "Die private/Rückseite der Arbeit",
+    "path": "app/src/main/res/values-de/reference_strings.xml",
+    "variant": "default",
+    "contexts": [
+      "app/src/main/java/com/finnvek/knittools/domain/calculator/AbbreviationData.kt:20"
+    ],
+    "classification": "CONFIRMED_DEFECT",
+    "state": "VERIFIED",
+    "verification": "Final German wording re-read in paired context; XML/placeholder parity and Android resource compilation PASS; targeted resource tests6/6 PASS. No device rendering claim."
+  },
+  {
+    "batch": "B18",
+    "finding_id": "LA-de-B18-04",
+    "key": "abbr_m1l_desc",
+    "replacement": "Nimm eine nach links geneigte Masche aus dem Querfaden zwischen den Maschen zu.",
+    "problem": "Leiste means strip/slat, not the strand used for M1; also correct formal address.",
+    "original": "Nehmen Sie nach links geneigte Zunahmen mit der Leiste zwischen den Maschen vor",
+    "path": "app/src/main/res/values-de/reference_strings.xml",
+    "variant": "default",
+    "contexts": [
+      "app/src/main/java/com/finnvek/knittools/domain/calculator/AbbreviationData.kt:39"
+    ],
+    "classification": "CONFIRMED_DEFECT",
+    "state": "VERIFIED",
+    "verification": "Final German wording re-read in paired context; XML/placeholder parity and Android resource compilation PASS; targeted resource tests6/6 PASS. No device rendering claim."
+  },
+  {
+    "batch": "B18",
+    "finding_id": "LA-de-B18-04",
+    "key": "abbr_m1r_desc",
+    "replacement": "Nach rechts geneigte Zunahme aus dem Querfaden zwischen den Maschen",
+    "problem": "Leiste is not the inter-stitch strand; preserve the named right lean.",
+    "original": "Rechtsgerichtete Zunahmen mit Hilfe der Leiste zwischen den Maschen",
+    "path": "app/src/main/res/values-de/reference_strings.xml",
+    "variant": "default",
+    "contexts": [
+      "app/src/main/java/com/finnvek/knittools/domain/calculator/AbbreviationData.kt:40"
+    ],
+    "classification": "CONFIRMED_DEFECT",
+    "state": "VERIFIED",
+    "verification": "Final German wording re-read in paired context; XML/placeholder parity and Android resource compilation PASS; targeted resource tests6/6 PASS. No device rendering claim."
+  },
+  {
+    "batch": "B18",
+    "finding_id": "LA-de-B18-05",
+    "key": "abbr_kfb_meaning",
+    "replacement": "Eine Masche rechts und rechts verschränkt stricken",
+    "problem": "Front/back refers to loops of one stitch, not the fabric sides.",
+    "original": "Vorder- und Rückseite stricken",
+    "path": "app/src/main/res/values-de/reference_strings.xml",
+    "variant": "default",
+    "contexts": [
+      "app/src/main/java/com/finnvek/knittools/domain/calculator/AbbreviationData.kt:41"
+    ],
+    "classification": "CONFIRMED_DEFECT",
+    "state": "VERIFIED",
+    "verification": "Final German wording re-read in paired context; XML/placeholder parity and Android resource compilation PASS; targeted resource tests6/6 PASS. No device rendering claim."
+  },
+  {
+    "batch": "B18",
+    "finding_id": "LA-de-B18-05",
+    "key": "abbr_kfb_desc",
+    "replacement": "Dieselbe Masche zuerst rechts und dann rechts verschränkt abstricken, erst danach von der Nadel gleiten lassen",
+    "problem": "Specify both knit operations on the same retained stitch; yields two stitches from one.",
+    "original": "Zum Zunehmen vorne und hinten in die gleiche Masche stricken",
+    "path": "app/src/main/res/values-de/reference_strings.xml",
+    "variant": "default",
+    "contexts": [
+      "app/src/main/java/com/finnvek/knittools/domain/calculator/AbbreviationData.kt:41"
+    ],
+    "classification": "CONFIRMED_DEFECT",
+    "state": "VERIFIED",
+    "verification": "Final German wording re-read in paired context; XML/placeholder parity and Android resource compilation PASS; targeted resource tests6/6 PASS. No device rendering claim."
+  },
+  {
+    "batch": "B18",
+    "finding_id": "LA-de-B18-05",
+    "key": "abbr_pfb_desc",
+    "replacement": "Dieselbe Masche zuerst links und dann links verschränkt abstricken, erst danach von der Nadel gleiten lassen",
+    "problem": "Front/back refers to loops of the same stitch; avoid fabric-side interpretation.",
+    "original": "Zum Zunehmen links in die Vorder- und Rückseite derselben Masche stricken",
+    "path": "app/src/main/res/values-de/reference_strings.xml",
+    "variant": "default",
+    "contexts": [
+      "app/src/main/java/com/finnvek/knittools/domain/calculator/AbbreviationData.kt:42"
+    ],
+    "classification": "CONFIRMED_DEFECT",
+    "state": "VERIFIED",
+    "verification": "Final German wording re-read in paired context; XML/placeholder parity and Android resource compilation PASS; targeted resource tests6/6 PASS. No device rendering claim."
+  },
+  {
+    "batch": "B19",
+    "finding_id": "LA-de-B19-02",
+    "key": "sym_kfb_desc",
+    "replacement": "Dieselbe Masche rechts und rechts verschränkt stricken – eine Zunahme",
+    "problem": "Original says knit fabric front/back and plural increases; symbol is one KFB increase.",
+    "original": "Vorder- und Rückseite stricken – Zunahmen",
+    "path": "app/src/main/res/values-de/reference_strings.xml",
+    "variant": "default",
+    "contexts": [
+      "app/src/main/java/com/finnvek/knittools/domain/calculator/ChartSymbolData.kt:53"
+    ],
+    "classification": "CONFIRMED_DEFECT",
+    "state": "VERIFIED",
+    "verification": "Final German wording re-read in paired context; XML/placeholder parity and Android resource compilation PASS; targeted resource tests6/6 PASS. No device rendering claim."
+  },
+  {
+    "batch": "B18",
+    "finding_id": "LA-de-B18-06",
+    "key": "abbr_tbl_desc",
+    "replacement": "Arbeite durch das hintere Maschenglied",
+    "problem": "Hinteres Bein/einarbeiten is a calque that fails to identify the needle insertion point; use the craft term and du.",
+    "original": "Arbeiten Sie in das hintere Bein der Masche ein",
+    "path": "app/src/main/res/values-de/reference_strings.xml",
+    "variant": "default",
+    "contexts": [
+      "app/src/main/java/com/finnvek/knittools/domain/calculator/AbbreviationData.kt:63"
+    ],
+    "classification": "CONFIRMED_DEFECT",
+    "state": "VERIFIED",
+    "verification": "Final German wording re-read in paired context; XML/placeholder parity and Android resource compilation PASS; targeted resource tests6/6 PASS. No device rendering claim."
+  },
+  {
+    "batch": "B18",
+    "finding_id": "LA-de-B18-07",
+    "key": "abbr_wyif_desc",
+    "replacement": "Halte den Faden vor der Arbeit, unabhängig davon, welche Seite zu dir zeigt",
+    "problem": "Front yarn position is not necessarily the wrong fabric side; remove the false equivalence.",
+    "original": "Halten Sie den Faden an der Vorderseite (der linken Seite) der Arbeit",
+    "path": "app/src/main/res/values-de/reference_strings.xml",
+    "variant": "default",
+    "contexts": [
+      "app/src/main/java/com/finnvek/knittools/domain/calculator/AbbreviationData.kt:72"
+    ],
+    "classification": "CONFIRMED_DEFECT",
+    "state": "VERIFIED",
+    "verification": "Final German wording re-read in paired context; XML/placeholder parity and Android resource compilation PASS; targeted resource tests6/6 PASS. No device rendering claim."
+  },
+  {
+    "batch": "B18",
+    "finding_id": "LA-de-B18-07",
+    "key": "abbr_wyib_meaning",
+    "replacement": "Mit Garn hinter der Arbeit",
+    "problem": "Rückseite can mean the fixed wrong fabric side; WYIB is relative yarn position.",
+    "original": "Mit Garn auf der Rückseite",
+    "path": "app/src/main/res/values-de/reference_strings.xml",
+    "variant": "default",
+    "contexts": [
+      "app/src/main/java/com/finnvek/knittools/domain/calculator/AbbreviationData.kt:73"
+    ],
+    "classification": "CONFIRMED_DEFECT",
+    "state": "VERIFIED",
+    "verification": "Final German wording re-read in paired context; XML/placeholder parity and Android resource compilation PASS; targeted resource tests6/6 PASS. No device rendering claim."
+  },
+  {
+    "batch": "B18",
+    "finding_id": "LA-de-B18-07",
+    "key": "abbr_wyib_desc",
+    "replacement": "Halte den Faden hinter der Arbeit, unabhängig davon, welche Seite zu dir zeigt",
+    "problem": "Back yarn position is not necessarily the knit/right fabric side.",
+    "original": "Halten Sie den Faden auf der Rückseite (Strickseite) der Arbeit",
+    "path": "app/src/main/res/values-de/reference_strings.xml",
+    "variant": "default",
+    "contexts": [
+      "app/src/main/java/com/finnvek/knittools/domain/calculator/AbbreviationData.kt:73"
+    ],
+    "classification": "CONFIRMED_DEFECT",
+    "state": "VERIFIED",
+    "verification": "Final German wording re-read in paired context; XML/placeholder parity and Android resource compilation PASS; targeted resource tests6/6 PASS. No device rendering claim."
+  },
+  {
+    "batch": "B18",
+    "finding_id": "LA-de-B18-08",
+    "key": "abbr_eor_desc",
+    "replacement": "Arbeite in jeder zweiten Reihe",
+    "problem": "An abwechselnden Reihen is an unclear calque and formal address; explain alternate rows directly.",
+    "original": "Arbeiten Sie an abwechselnden Reihen",
+    "path": "app/src/main/res/values-de/reference_strings.xml",
+    "variant": "default",
+    "contexts": [
+      "app/src/main/java/com/finnvek/knittools/domain/calculator/AbbreviationData.kt:57"
+    ],
+    "classification": "CONFIRMED_DEFECT",
+    "state": "VERIFIED",
+    "verification": "Final German wording re-read in paired context; XML/placeholder parity and Android resource compilation PASS; targeted resource tests6/6 PASS. No device rendering claim."
+  },
+  {
+    "batch": "B18",
+    "finding_id": "LA-de-B18-09",
+    "key": "abbr_s2kp_meaning",
+    "replacement": "2 Maschen zusammen wie zum Rechtsstricken abheben, 1 rechts stricken, die abgehobenen Maschen überziehen",
+    "problem": "Simultaneous knitwise slip is essential to the stated centered double decrease; sequential/purlwise slipping differs.",
+    "original": "2 Maschen abheben, 1 rechts stricken, die abgehobenen Maschen überziehen",
+    "path": "app/src/main/res/values-de/reference_strings.xml",
+    "variant": "default",
+    "contexts": [
+      "app/src/main/java/com/finnvek/knittools/domain/calculator/AbbreviationData.kt:32"
+    ],
+    "classification": "CONFIRMED_DEFECT",
+    "state": "VERIFIED",
+    "verification": "Final German wording re-read in paired context; XML/placeholder parity and Android resource compilation PASS; targeted resource tests6/6 PASS. No device rendering claim."
+  },
+  {
+    "batch": "B18",
+    "finding_id": "LA-de-B18-09",
+    "key": "abbr_ssp_desc",
+    "replacement": "2 Maschen einzeln wie zum Rechtsstricken abheben, zurück auf die linke Nadel setzen und links verschränkt zusammenstricken",
+    "problem": "Slip orientation and twisted purl-together step are missing from the name/description pair; plain p2tog is a different decrease.",
+    "original": "Nach links geneigte linke Abnahme",
+    "path": "app/src/main/res/values-de/reference_strings.xml",
+    "variant": "default",
+    "contexts": [
+      "app/src/main/java/com/finnvek/knittools/domain/calculator/AbbreviationData.kt:28"
+    ],
+    "classification": "CONFIRMED_DEFECT",
+    "state": "VERIFIED",
+    "verification": "Final German wording re-read in paired context; XML/placeholder parity and Android resource compilation PASS; targeted resource tests6/6 PASS. No device rendering claim."
+  },
+  {
+    "batch": "B18",
+    "finding_id": "LA-de-B18-09",
+    "key": "abbr_skp_meaning",
+    "replacement": "Wie zum Rechtsstricken abheben, rechts stricken, die abgehobene Masche überziehen",
+    "problem": "Knitwise slipping is required for this left-leaning decrease; unspecified slipping is otherwise commonly purlwise.",
+    "original": "Abheben, rechts stricken, die abgehobene Masche überziehen",
+    "path": "app/src/main/res/values-de/reference_strings.xml",
+    "variant": "default",
+    "contexts": [
+      "app/src/main/java/com/finnvek/knittools/domain/calculator/AbbreviationData.kt:29"
+    ],
+    "classification": "CONFIRMED_DEFECT",
+    "state": "VERIFIED",
+    "verification": "Final German wording re-read in paired context; XML/placeholder parity and Android resource compilation PASS; targeted resource tests6/6 PASS. No device rendering claim."
+  },
+  {
+    "batch": "B18",
+    "finding_id": "LA-de-B18-09",
+    "key": "abbr_sk2p_meaning",
+    "replacement": "1 Masche wie zum Rechtsstricken abheben, 2 Maschen rechts zusammenstricken, die abgehobene Masche überziehen",
+    "problem": "Identify the knitwise slip required for SK2P.",
+    "original": "1 Masche abheben, 2 Maschen rechts zusammenstricken, die abgehobene Masche überziehen",
+    "path": "app/src/main/res/values-de/reference_strings.xml",
+    "variant": "default",
+    "contexts": [
+      "app/src/main/java/com/finnvek/knittools/domain/calculator/AbbreviationData.kt:33"
+    ],
+    "classification": "CONFIRMED_DEFECT",
+    "state": "VERIFIED",
+    "verification": "Final German wording re-read in paired context; XML/placeholder parity and Android resource compilation PASS; targeted resource tests6/6 PASS. No device rendering claim."
+  },
+  {
+    "batch": "B19",
+    "finding_id": "LA-de-B19-03",
+    "key": "sym_sk2p_desc",
+    "replacement": "1 Masche wie zum Rechtsstricken abheben, 2 re zusammenstricken, die abgehobene Masche überziehen",
+    "problem": "Same SK2P slip-orientation omission in the symbol explanation.",
+    "original": "1 Masche abheben, 2 re zusammenstricken, die abgehobene Masche überziehen",
+    "path": "app/src/main/res/values-de/reference_strings.xml",
+    "variant": "default",
+    "contexts": [
+      "app/src/main/java/com/finnvek/knittools/domain/calculator/ChartSymbolData.kt:49"
+    ],
+    "classification": "CONFIRMED_DEFECT",
+    "state": "VERIFIED",
+    "verification": "Final German wording re-read in paired context; XML/placeholder parity and Android resource compilation PASS; targeted resource tests6/6 PASS. No device rendering claim."
+  },
+  {
+    "batch": "B18",
+    "finding_id": "LA-de-B18-10",
+    "key": "abbr_st_st_desc",
+    "replacement": "Von der Vorderseite rechts stricken, von der Rückseite links stricken (oder in Runden alle Maschen rechts stricken)",
+    "problem": "The circular alternative omits the required knit operation; just stricken does not define stockinette.",
+    "original": "Von der Vorderseite rechts stricken, von der Rückseite links stricken (oder jede Runde im Kreis stricken)",
+    "path": "app/src/main/res/values-de/reference_strings.xml",
+    "variant": "default",
+    "contexts": [
+      "app/src/main/java/com/finnvek/knittools/domain/calculator/AbbreviationData.kt:77"
+    ],
+    "classification": "CONFIRMED_DEFECT",
+    "state": "VERIFIED",
+    "verification": "Final German wording re-read in paired context; XML/placeholder parity and Android resource compilation PASS; targeted resource tests6/6 PASS. No device rendering claim."
+  },
+  {
+    "batch": "B18",
+    "finding_id": "LA-de-B18-11",
+    "key": "abbr_wpi_meaning",
+    "replacement": "Wicklungen pro Zoll",
+    "problem": "Translate the ordinary English word Wraps; WPI token remains unchanged.",
+    "original": "Wraps pro Zoll",
+    "path": "app/src/main/res/values-de/reference_strings.xml",
+    "variant": "default",
+    "contexts": [
+      "app/src/main/java/com/finnvek/knittools/domain/calculator/AbbreviationData.kt:99"
+    ],
+    "classification": "CONFIRMED_DEFECT",
+    "state": "VERIFIED",
+    "verification": "Final German wording re-read in paired context; XML/placeholder parity and Android resource compilation PASS; targeted resource tests6/6 PASS. No device rendering claim."
+  },
+  {
+    "batch": "B18",
+    "finding_id": "LA-de-B18-11",
+    "key": "abbr_wpi_desc",
+    "replacement": "Zur Bestimmung der Garnstärke die nebeneinanderliegenden Wicklungen auf 2,54 cm eines Lineals zählen",
+    "problem": "Original neither supplies a grammatical instruction nor states what to count; WPI counts adjacent wraps in one inch.",
+    "original": "Messung der Garnstärke: Umwickelt ein Lineal pro Zoll",
+    "path": "app/src/main/res/values-de/reference_strings.xml",
+    "variant": "default",
+    "contexts": [
+      "app/src/main/java/com/finnvek/knittools/domain/calculator/AbbreviationData.kt:99"
+    ],
+    "classification": "CONFIRMED_DEFECT",
+    "state": "VERIFIED",
+    "verification": "Final German wording re-read in paired context; XML/placeholder parity and Android resource compilation PASS; targeted resource tests6/6 PASS. No device rendering claim."
+  },
+  {
+    "batch": "B19",
+    "finding_id": "LA-de-B19-04",
+    "key": "chart_symbols_disclaimer",
+    "replacement": "Die Symbole zeigen die Ansicht von der rechten Seite der Arbeit. Die Beschreibungen gelten für diese Seite, sofern nichts anderes angegeben ist. Prüfe immer die Zeichenerklärung deiner Anleitung.",
+    "problem": "Current CYC-based symbols use a right-side convention; generic common conventions does not settle how to work reverse-side rows.",
+    "original": "Die Symbole folgen gängigen Konventionen. Prüfe immer die Zeichenerklärung deiner Anleitung.",
+    "path": "app/src/main/res/values-de/strings.xml",
+    "variant": "default",
+    "contexts": [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/chartsymbols/ChartSymbolScreen.kt:64"
+    ],
+    "classification": "CONFIRMED_DEFECT",
+    "state": "VERIFIED",
+    "verification": "Final German wording re-read in paired context; XML/placeholder parity and Android resource compilation PASS; targeted resource tests6/6 PASS. No device rendering claim."
+  },
+  {
+    "batch": "B19",
+    "finding_id": "LA-de-B19-05",
+    "key": "sym_k2tog_name",
+    "replacement": "K2tog",
+    "problem": "K/P plus German zus forms an invented hybrid token, inconsistent with the actual English abbreviation table and generated notation.",
+    "original": "K2zus",
+    "path": "app/src/main/res/values-de/reference_strings.xml",
+    "variant": "default",
+    "contexts": [
+      "app/src/main/java/com/finnvek/knittools/domain/calculator/ChartSymbolData.kt:44"
+    ],
+    "classification": "CONFIRMED_DEFECT",
+    "state": "VERIFIED",
+    "verification": "Final German wording re-read in paired context; XML/placeholder parity and Android resource compilation PASS; targeted resource tests6/6 PASS. No device rendering claim."
+  },
+  {
+    "batch": "B19",
+    "finding_id": "LA-de-B19-05",
+    "key": "sym_p2tog_name",
+    "replacement": "P2tog",
+    "problem": "K/P plus German zus forms an invented hybrid token, inconsistent with the actual English abbreviation table and generated notation.",
+    "original": "P2zus",
+    "path": "app/src/main/res/values-de/reference_strings.xml",
+    "variant": "default",
+    "contexts": [
+      "app/src/main/java/com/finnvek/knittools/domain/calculator/ChartSymbolData.kt:46"
+    ],
+    "classification": "CONFIRMED_DEFECT",
+    "state": "VERIFIED",
+    "verification": "Final German wording re-read in paired context; XML/placeholder parity and Android resource compilation PASS; targeted resource tests6/6 PASS. No device rendering claim."
+  },
+  {
+    "batch": "B19",
+    "finding_id": "LA-de-B19-05",
+    "key": "sym_k3tog_name",
+    "replacement": "K3tog",
+    "problem": "K/P plus German zus forms an invented hybrid token, inconsistent with the actual English abbreviation table and generated notation.",
+    "original": "K3zus",
+    "path": "app/src/main/res/values-de/reference_strings.xml",
+    "variant": "default",
+    "contexts": [
+      "app/src/main/java/com/finnvek/knittools/domain/calculator/ChartSymbolData.kt:48"
+    ],
+    "classification": "CONFIRMED_DEFECT",
+    "state": "VERIFIED",
+    "verification": "Final German wording re-read in paired context; XML/placeholder parity and Android resource compilation PASS; targeted resource tests6/6 PASS. No device rendering claim."
+  },
+  {
+    "batch": "B19",
+    "finding_id": "LA-de-B19-06",
+    "key": "sym_slip_purlwise_desc",
+    "replacement": "Die Masche wie zum Linksstricken abheben, ohne sie zu stricken; der Faden liegt hinter der Arbeit",
+    "problem": "The adopted CYC V symbol specifies yarn in back on the right side; omission permits a different visible float.",
+    "original": "Die Masche wie zum Linksstricken abheben, ohne sie zu stricken",
+    "path": "app/src/main/res/values-de/reference_strings.xml",
+    "variant": "default",
+    "contexts": [
+      "app/src/main/java/com/finnvek/knittools/domain/calculator/ChartSymbolData.kt:40"
+    ],
+    "classification": "CONFIRMED_DEFECT",
+    "state": "VERIFIED",
+    "verification": "Final German wording re-read in paired context; XML/placeholder parity and Android resource compilation PASS; targeted resource tests6/6 PASS. No device rendering claim."
+  },
+  {
+    "batch": "B08",
+    "finding_id": "LA-de-B08-01",
+    "key": "web_pattern_add",
+    "replacement": "Webanleitung hinzufügen",
+    "problem": "Webmuster means a woven pattern, whereas this feature saves a knitting/crochet instruction website link; use the existing German Webanleitung term.",
+    "original": "Webmuster hinzufügen",
+    "path": "app/src/main/res/values-de/strings.xml",
+    "variant": "default",
+    "contexts": [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/library/SavedPatternsScreen.kt:136",
+      "app/src/main/java/com/finnvek/knittools/ui/screens/library/SavedPatternsScreen.kt:165",
+      "app/src/main/java/com/finnvek/knittools/ui/screens/library/WebPatternEditorScreen.kt:320",
+      "app/src/main/java/com/finnvek/knittools/ui/screens/pattern/PatternPickerSheet.kt:476"
+    ],
+    "classification": "CONFIRMED_DEFECT",
+    "state": "VERIFIED",
+    "verification": "Final German wording re-read in paired context; XML/placeholder parity and Android resource compilation PASS; targeted resource tests6/6 PASS. No device rendering claim."
+  },
+  {
+    "batch": "B08",
+    "finding_id": "LA-de-B08-01",
+    "key": "web_pattern_label",
+    "replacement": "Webanleitung",
+    "problem": "Webmuster means a woven pattern, whereas this feature saves a knitting/crochet instruction website link; use the existing German Webanleitung term.",
+    "original": "Webmuster",
+    "path": "app/src/main/res/values-de/strings.xml",
+    "variant": "default",
+    "contexts": [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/library/SavedPatternsScreen.kt:394",
+      "app/src/main/java/com/finnvek/knittools/ui/screens/pattern/PatternViewerScreen.kt:766",
+      "app/src/main/java/com/finnvek/knittools/ui/screens/project/ProjectOverviewSections.kt:209"
+    ],
+    "classification": "CONFIRMED_DEFECT",
+    "state": "VERIFIED",
+    "verification": "Final German wording re-read in paired context; XML/placeholder parity and Android resource compilation PASS; targeted resource tests6/6 PASS. No device rendering claim."
+  },
+  {
+    "batch": "B08",
+    "finding_id": "LA-de-B08-01",
+    "key": "web_pattern_edit",
+    "replacement": "Webanleitung bearbeiten",
+    "problem": "Webmuster means a woven pattern, whereas this feature saves a knitting/crochet instruction website link; use the existing German Webanleitung term.",
+    "original": "Webmuster bearbeiten",
+    "path": "app/src/main/res/values-de/strings.xml",
+    "variant": "default",
+    "contexts": [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/library/SavedPatternDetailScreen.kt:325",
+      "app/src/main/java/com/finnvek/knittools/ui/screens/pattern/PatternViewerScreen.kt:800"
+    ],
+    "classification": "CONFIRMED_DEFECT",
+    "state": "VERIFIED",
+    "verification": "Final German wording re-read in paired context; XML/placeholder parity and Android resource compilation PASS; targeted resource tests6/6 PASS. No device rendering claim."
+  },
+  {
+    "batch": "B08",
+    "finding_id": "LA-de-B08-01",
+    "key": "web_pattern_edit_title",
+    "replacement": "Webanleitung bearbeiten",
+    "problem": "Webmuster means a woven pattern, whereas this feature saves a knitting/crochet instruction website link; use the existing German Webanleitung term.",
+    "original": "Webmuster bearbeiten",
+    "path": "app/src/main/res/values-de/strings.xml",
+    "variant": "default",
+    "contexts": [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/library/WebPatternEditorScreen.kt:313"
+    ],
+    "classification": "CONFIRMED_DEFECT",
+    "state": "VERIFIED",
+    "verification": "Final German wording re-read in paired context; XML/placeholder parity and Android resource compilation PASS; targeted resource tests6/6 PASS. No device rendering claim."
+  },
+  {
+    "batch": "B08",
+    "finding_id": "LA-de-B08-01",
+    "key": "web_pattern_delete",
+    "replacement": "Webanleitung löschen",
+    "problem": "Webmuster means a woven pattern, whereas this feature saves a knitting/crochet instruction website link; use the existing German Webanleitung term.",
+    "original": "Webmuster löschen",
+    "path": "app/src/main/res/values-de/strings.xml",
+    "variant": "default",
+    "contexts": [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/library/SavedPatternDetailScreen.kt:168",
+      "app/src/main/java/com/finnvek/knittools/ui/screens/library/SavedPatternDetailScreen.kt:245"
+    ],
+    "classification": "CONFIRMED_DEFECT",
+    "state": "VERIFIED",
+    "verification": "Final German wording re-read in paired context; XML/placeholder parity and Android resource compilation PASS; targeted resource tests6/6 PASS. No device rendering claim."
+  },
+  {
+    "batch": "B08",
+    "finding_id": "LA-de-B08-01",
+    "key": "web_pattern_delete_confirm_title",
+    "replacement": "Webanleitung löschen?",
+    "problem": "Webmuster means a woven pattern, whereas this feature saves a knitting/crochet instruction website link; use the existing German Webanleitung term.",
+    "original": "Webmuster löschen?",
+    "path": "app/src/main/res/values-de/strings.xml",
+    "variant": "default",
+    "contexts": [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/library/SavedPatternDetailScreen.kt:158"
+    ],
+    "classification": "CONFIRMED_DEFECT",
+    "state": "VERIFIED",
+    "verification": "Final German wording re-read in paired context; XML/placeholder parity and Android resource compilation PASS; targeted resource tests6/6 PASS. No device rendering claim."
+  },
+  {
+    "batch": "B08",
+    "finding_id": "LA-de-B08-01",
+    "key": "web_pattern_edit_description",
+    "replacement": "Webanleitung %1$s bearbeiten",
+    "problem": "Webmuster means a woven pattern, whereas this feature saves a knitting/crochet instruction website link; use the existing German Webanleitung term.",
+    "original": "Webmuster %1$s bearbeiten",
+    "path": "app/src/main/res/values-de/strings.xml",
+    "variant": "default",
+    "contexts": [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/pattern/PatternViewerScreen.kt:783"
+    ],
+    "classification": "CONFIRMED_DEFECT",
+    "state": "VERIFIED",
+    "verification": "Final German wording re-read in paired context; XML/placeholder parity and Android resource compilation PASS; targeted resource tests6/6 PASS. No device rendering claim."
+  },
+  {
+    "batch": "B08",
+    "finding_id": "LA-de-B08-01",
+    "key": "web_pattern_attach_description",
+    "replacement": "Webanleitung %1$s verknüpfen",
+    "problem": "Webmuster means a woven pattern, whereas this feature saves a knitting/crochet instruction website link; use the existing German Webanleitung term.",
+    "original": "Webmuster %1$s verknüpfen",
+    "path": "app/src/main/res/values-de/strings.xml",
+    "variant": "default",
+    "contexts": [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/library/SavedPatternDetailScreen.kt:279"
+    ],
+    "classification": "CONFIRMED_DEFECT",
+    "state": "VERIFIED",
+    "verification": "Final German wording re-read in paired context; XML/placeholder parity and Android resource compilation PASS; targeted resource tests6/6 PASS. No device rendering claim."
+  },
+  {
+    "batch": "B08",
+    "finding_id": "LA-de-B08-01",
+    "key": "web_pattern_save_failed",
+    "replacement": "Webanleitung konnte nicht gespeichert werden",
+    "problem": "Webmuster means a woven pattern, whereas this feature saves a knitting/crochet instruction website link; use the existing German Webanleitung term.",
+    "original": "Webmuster konnte nicht gespeichert werden",
+    "path": "app/src/main/res/values-de/strings.xml",
+    "variant": "default",
+    "contexts": [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/counter/CounterScreen.kt:206",
+      "app/src/main/java/com/finnvek/knittools/ui/screens/library/SavedPatternDetailScreen.kt:104",
+      "app/src/main/java/com/finnvek/knittools/ui/screens/library/WebPatternEditorScreen.kt:389",
+      "app/src/main/java/com/finnvek/knittools/ui/screens/pattern/PatternViewerScreen.kt:634"
+    ],
+    "classification": "CONFIRMED_DEFECT",
+    "state": "VERIFIED",
+    "verification": "Final German wording re-read in paired context; XML/placeholder parity and Android resource compilation PASS; targeted resource tests6/6 PASS. No device rendering claim."
+  },
+  {
+    "batch": "B08",
+    "finding_id": "LA-de-B08-01",
+    "key": "web_pattern_update_failed",
+    "replacement": "Webanleitung konnte nicht aktualisiert werden",
+    "problem": "Webmuster means a woven pattern, whereas this feature saves a knitting/crochet instruction website link; use the existing German Webanleitung term.",
+    "original": "Webmuster konnte nicht aktualisiert werden",
+    "path": "app/src/main/res/values-de/strings.xml",
+    "variant": "default",
+    "contexts": [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/library/WebPatternEditorScreen.kt:393"
+    ],
+    "classification": "CONFIRMED_DEFECT",
+    "state": "VERIFIED",
+    "verification": "Final German wording re-read in paired context; XML/placeholder parity and Android resource compilation PASS; targeted resource tests6/6 PASS. No device rendering claim."
+  },
+  {
+    "batch": "B08",
+    "finding_id": "LA-de-B08-01",
+    "key": "web_pattern_delete_failed",
+    "replacement": "Webanleitung konnte nicht gelöscht werden",
+    "problem": "Webmuster means a woven pattern, whereas this feature saves a knitting/crochet instruction website link; use the existing German Webanleitung term.",
+    "original": "Webmuster konnte nicht gelöscht werden",
+    "path": "app/src/main/res/values-de/strings.xml",
+    "variant": "default",
+    "contexts": [
+      "app/src/main/java/com/finnvek/knittools/ui/screens/library/SavedPatternDetailScreen.kt:102"
+    ],
+    "classification": "CONFIRMED_DEFECT",
+    "state": "VERIFIED",
+    "verification": "Final German wording re-read in paired context; XML/placeholder parity and Android resource compilation PASS; targeted resource tests6/6 PASS. No device rendering claim."
+  }
+]

@@ -14,6 +14,7 @@ import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -38,6 +39,17 @@ class ProjectCounterRepositoryTest {
         every { proManager.hasFeature(any()) } returns true
         repository = ProjectCounterRepository(fakeDao, projectDao, proManager, ImmediateDatabaseTransactionRunner)
     }
+
+    @Test
+    fun `all counters include each project and retain creation timestamps`() =
+        runTest {
+            val first = ProjectCounter(id = 1L, projectId = 7L, name = "Repeat", createdAt = 100L)
+            val second = ProjectCounter(id = 2L, projectId = 8L, name = "Sleeve", createdAt = 200L)
+            fakeDao.store(first)
+            fakeDao.store(second)
+
+            assertEquals(listOf(second, first), repository.getAllCounters().first())
+        }
 
     @Test
     fun `addCounter truncates name to 50 chars`() =
@@ -307,6 +319,13 @@ class ProjectCounterRepositoryTest {
         var lastRenamedId: Long = -1
         var lastRenamedName: String? = null
         var failDelete = false
+
+        override fun getAllCounters(): Flow<List<ProjectCounterEntity>> =
+            flowOf(
+                storedCounters.values.sortedWith(
+                    compareByDescending<ProjectCounterEntity> { it.createdAt }.thenByDescending { it.id },
+                ),
+            )
 
         override fun getCountersForProject(projectId: Long): Flow<List<ProjectCounterEntity>> = flowOf(emptyList())
 

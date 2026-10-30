@@ -29,8 +29,10 @@ import com.finnvek.knittools.ui.screens.insights.InsightsViewModel
 import com.finnvek.knittools.ui.screens.pattern.PatternImageImportPhase
 import com.finnvek.knittools.ui.screens.pattern.PatternImageImportViewModel
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -53,6 +55,8 @@ class AuditPart15RoomTest {
     private lateinit var db: KnitToolsDatabase
     private lateinit var fixture: RoomCounterTestFixture
     private val models = ViewModelStore()
+    private val applicationScope = CoroutineScope(Dispatchers.IO)
+    private val onboardingStateRepository = OnboardingStateRepository(MemoryOnboardingPreferences())
 
     @Before fun setup() =
         runBlocking {
@@ -64,6 +68,7 @@ class AuditPart15RoomTest {
 
     @After fun close() =
         runBlocking {
+            applicationScope.cancel()
             withContext(Dispatchers.Main) { models.clear() }
             db.close()
         }
@@ -104,6 +109,9 @@ class AuditPart15RoomTest {
                         app,
                         Dispatchers.IO,
                         SavedStateHandle(),
+                        pro,
+                        onboardingStateRepository,
+                        applicationScope,
                     ).also {
                         models.put("camera", it)
                     }
@@ -287,6 +295,9 @@ class AuditPart15RoomTest {
                         fixture.counterRepository(),
                         pro,
                         Dispatchers.IO,
+                        SavedStateHandle(),
+                        onboardingStateRepository,
+                        applicationScope,
                     ).also { models.put("insights", it) }
                 }
             val collection = launch { model.uiState.collect() }

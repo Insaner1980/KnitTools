@@ -12,12 +12,15 @@ import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.domain.model.GaugeBasis
 import com.finnvek.knittools.domain.model.MeasurementUnit
 import com.finnvek.knittools.pro.ProManager
+import com.finnvek.knittools.pro.ProPolicyTestControl
 import com.finnvek.knittools.pro.ProState
 import com.finnvek.knittools.pro.ProStatus
 import com.finnvek.knittools.repository.CounterRepository
 import io.mockk.confirmVerified
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkObject
+import io.mockk.unmockkObject
 import io.mockk.verify
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -40,6 +43,7 @@ import java.util.Locale
 class GaugeViewModelTest {
     private val preferences = MutableStateFlow(AppPreferences())
     private val pro = MutableStateFlow(ProState())
+    private val proReady = MutableStateFlow(false)
     private val project = MutableStateFlow<CounterProject?>(CounterProject(id = 7, name = "Measurement fixture"))
     private val manager = mockk<PreferencesManager>()
     private val repository = mockk<CounterRepository>()
@@ -49,14 +53,18 @@ class GaugeViewModelTest {
     @Before
     fun setUp() {
         Dispatchers.setMain(UnconfinedTestDispatcher())
+        mockkObject(ProPolicyTestControl)
+        every { ProPolicyTestControl.isActive } returns true
         every { manager.preferences } returns preferences
         every { proManager.proState } returns pro
+        every { proManager.initialStateReady } returns proReady
         every { repository.observeProject(7) } returns project
     }
 
     @After
     fun tearDown() {
         stores.forEach { it.clear() }
+        unmockkObject(ProPolicyTestControl)
         Dispatchers.resetMain()
     }
 
@@ -343,6 +351,21 @@ class GaugeViewModelTest {
         vm.edit(GaugeField.ACTUAL_STITCHES, "22")
         val restored = model(SavedStateHandle(handle.keys().associateWith { handle.get<Any?>(it) }))
         assertEquals(0.22, restored.state.value.stitchDensity ?: 0.0, 0.0)
+    }
+
+    @Test
+    fun `paste accepts active trial but rejects expired trial while marker readiness stays separate`() {
+        val vm = model()
+        val paste = GaugeAction.Paste(ParsedInstruction.Gauge(20.0, 28.0))
+        pro.value = ProState(status = ProStatus.TRIAL_ACTIVE)
+        vm.onAction(paste)
+        assertEquals(0.2, vm.state.value.stitchDensity ?: 0.0, 0.0)
+        assertFalse(vm.state.value.proAccessReady)
+        proReady.value = true
+        assertTrue(vm.state.value.proAccessReady)
+        pro.value = ProState(status = ProStatus.TRIAL_EXPIRED)
+        vm.onAction(GaugeAction.Paste(ParsedInstruction.Gauge(30.0, 40.0)))
+        assertEquals(0.2, vm.state.value.stitchDensity ?: 0.0, 0.0)
     }
 
     @Test

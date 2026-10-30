@@ -7,11 +7,40 @@ import org.junit.Test
 
 class ProgressPhotoGallerySourceTest {
     @Test
-    fun `photo gallery requests camera permission before capture`() {
+    fun `capture failure uses localized feedback and null target cannot launch the camera`() {
+        val source = ProjectSourceFiles.read(PHOTO_GALLERY_SCREEN)
+        val navigation = ProjectSourceFiles.read("app/src/main/java/com/finnvek/knittools/ui/navigation/NavGraph.kt")
+
+        assertTrue(navigation.contains("errorsProvider = { counterViewModel.photoErrors }"))
+        assertTrue(navigation.contains("createPhotoCaptureTarget = counterViewModel::createPhotoCaptureTarget"))
+        assertTrue(navigation.contains("cancelPhotoCreation = counterViewModel::cancelProgressPhotoCreation"))
+        assertTrue(source.contains("val errorMessage = stringResource(R.string.generic_error_unknown)"))
+        assertTrue(
+            source.contains(
+                "CollectWithLifecycleEffect({ errorsProvider() }) {\n" +
+                    "        snackbarHostState.showSnackbar(errorMessage)",
+            ),
+        )
+        assertTrue(
+            source.contains(
+                "if (captureTarget == null) {\n" +
+                    "            actions.cancelPhotoCreation()\n" +
+                    "        } else {\n" +
+                    "            onCaptureTargetReady(captureTarget)\n" +
+                    "        }",
+            ),
+        )
+        assertTrue(source.contains("requestCameraCaptureTarget(ownerProjectId, actions) { captureTarget ->"))
+        assertTrue(source.contains("cameraLauncher.launch(captureTarget.uri)"))
+    }
+
+    @Test
+    fun `photo gallery delegates capture without requesting camera permission`() {
         val source = ProjectSourceFiles.read(PHOTO_GALLERY_SCREEN)
 
-        assertTrue(source.contains("ActivityResultContracts.RequestPermission()"))
-        assertTrue(source.contains("permissionLauncher.launch(Manifest.permission.CAMERA)"))
+        assertTrue(source.contains("ActivityResultContracts.TakePicture()"))
+        assertFalse(source.contains("ActivityResultContracts.RequestPermission"))
+        assertFalse(source.contains("Manifest.permission.CAMERA"))
     }
 
     @Test

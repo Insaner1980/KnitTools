@@ -1,6 +1,7 @@
 buildscript {
     configurations.configureEach {
         resolutionStrategy.force(
+            "com.google.guava:guava:33.7.2-jre",
             "com.fasterxml.jackson.core:jackson-core:2.22.3",
             "com.fasterxml.jackson.core:jackson-databind:2.22.3",
             "org.jsoup:jsoup:1.23.2",
@@ -29,10 +30,16 @@ plugins {
 }
 
 val turvallinenWireRuntime = libs.wire.runtime.get()
+val safeGuavaVersion = libs.versions.guava.get().removeSuffix("-android")
 
 subprojects {
     configurations.configureEach {
         resolutionStrategy.eachDependency {
+            if (requested.group == "com.google.guava" && requested.name == "guava") {
+                val flavor = if (requested.version?.endsWith("-android") == true) "android" else "jre"
+                useVersion("$safeGuavaVersion-$flavor")
+                because("Guava 33.7.2 fixes deserialization memory exhaustion (CVE-2026-102554)")
+            }
             if (
                 requested.group == turvallinenWireRuntime.module.group &&
                 requested.name == turvallinenWireRuntime.module.name

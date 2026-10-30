@@ -1,0 +1,442 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Kääntäjälle: aloituksen esittely tai tallentamaton esimerkkilaskuri. KnitTools säilyy tuotenimenä. -->
+    <string name="welcome_example_label">Eksempel</string>
+    <!-- Kääntäjälle: aloituksen esittely tai tallentamaton esimerkkilaskuri. KnitTools säilyy tuotenimenä. -->
+    <string name="welcome_demo_try">Prøv det: tryk på +, når du er færdig med en række.</string>
+    <!-- Kääntäjälle: aloituksen esittely tai tallentamaton esimerkkilaskuri. KnitTools säilyy tuotenimenä. Säilytä paikkamerkit %1$d muuttumattomina. -->
+    <string name="welcome_demo_after_first">Række %1$d er gemt. Trykkede du forkert? Fortryd går et trin tilbage.</string>
+    <!-- Kääntäjälle: aloituksen esittely tai tallentamaton esimerkkilaskuri. KnitTools säilyy tuotenimenä. -->
+    <string name="welcome_demo_after_second">Sådan. KnitTools husker, hvor du er nået til, så du ikke behøver det.</string>
+    <!-- Kääntäjälle: aloituksen esittely tai tallentamaton esimerkkilaskuri. KnitTools säilyy tuotenimenä. -->
+    <string name="welcome_demo_undo">Fortryd</string>
+    <!-- Kääntäjälle: aloituksen esittely tai tallentamaton esimerkkilaskuri. KnitTools säilyy tuotenimenä. Säilytä paikkamerkit %1$d muuttumattomina. -->
+    <string name="welcome_demo_a11y">Eksempeltælleren står på række %1$d. Læselinjen i eksempelmønstret følger med.</string>
+    <!-- Kääntäjälle: aloituksen esittely tai tallentamaton esimerkkilaskuri. KnitTools säilyy tuotenimenä. -->
+    <string name="welcome_plus_a11y">Føj en række til eksemplet</string>
+    <!-- Kääntäjälle: aloituksen esittely tai tallentamaton esimerkkilaskuri. KnitTools säilyy tuotenimenä. -->
+    <string name="welcome_screen_title">Fortsæt, hvor du slap</string>
+    <!-- Kääntäjälle: aloituksen esittely tai tallentamaton esimerkkilaskuri. KnitTools säilyy tuotenimenä. -->
+    <string name="welcome_body">KnitTools samler din tæller, din plads i mønstret og dine projektoplysninger. Læg arbejdet fra dig når som helst, og fortsæt lige der, hvor du slap.</string>
+    <!-- Kääntäjälle: aloituksen esittely tai tallentamaton esimerkkilaskuri. KnitTools säilyy tuotenimenä. -->
+    <string name="welcome_trust">Ingen konto nødvendig. Dine projekter bliver på denne telefon.</string>
+    <!-- Kääntäjälle: aloituksen esittely tai tallentamaton esimerkkilaskuri. KnitTools säilyy tuotenimenä. -->
+    <string name="welcome_tools_only">Jeg har kun brug for værktøjerne</string>
+    <!-- Kääntäjälle: aloituksen esittely tai tallentamaton esimerkkilaskuri. KnitTools säilyy tuotenimenä. -->
+    <string name="welcome_dismiss_a11y">Skjul introduktion</string>
+    <!-- Kääntäjälle: käsityön keskeneräisyyttä kuvaava luonteva kysymys, ei sanatarkkaa englannin idiomia. -->
+    <string name="start_compact_title_knitting">Hvad har du på pindene?</string>
+    <!-- Kääntäjälle: käsityön keskeneräisyyttä kuvaava luonteva kysymys, ei sanatarkkaa englannin idiomia. -->
+    <string name="start_compact_title_crochet">Hvad har du på hæklenålen?</string>
+    <!-- Kääntäjälle: aloituksen esittely tai tallentamaton esimerkkilaskuri. KnitTools säilyy tuotenimenä. -->
+    <string name="start_compact_body">Tilføj det projekt, du arbejder på, eller start et nyt.</string>
+    <!-- Kääntäjälle: esimerkkiprojektin nimi, ei tallennettava oletusnimi. -->
+    <string name="project_name_placeholder_knitting">Stribede sokker</string>
+    <!-- Kääntäjälle: esimerkkiprojektin nimi, ei tallennettava oletusnimi. -->
+    <string name="project_name_placeholder_crochet">Tæppe af oldemorfirkanter</string>
+    <!-- Kääntäjälle: projektin luontilomake. Aloitusmäärä tarkoittaa jo tehtyä työtä; tavoite on vapaaehtoinen. -->
+    <string name="project_start_count_label_rows">Rækker, du allerede har lavet</string>
+    <!-- Kääntäjälle: projektin luontilomake. Aloitusmäärä tarkoittaa jo tehtyä työtä; tavoite on vapaaehtoinen. -->
+    <string name="project_start_count_label_rounds">Runder, du allerede har lavet</string>
+    <!-- Kääntäjälle: projektin luontilomake. Aloitusmäärä tarkoittaa jo tehtyä työtä; tavoite on vapaaehtoinen. -->
+    <string name="project_start_count_label_repeats">Gentagelser, du allerede har lavet</string>
+    <!-- Kääntäjälle: projektin luontilomake. Aloitusmäärä tarkoittaa jo tehtyä työtä; tavoite on vapaaehtoinen. -->
+    <string name="project_start_count_label_custom">Antal indtil nu</string>
+    <!-- Kääntäjälle: projektin luontilomake. Aloitusmäärä tarkoittaa jo tehtyä työtä; tavoite on vapaaehtoinen. -->
+    <string name="project_start_count_help_new">Lad værdien være 0 for et nyt projekt.</string>
+    <!-- Kääntäjälle: projektin luontilomake. Aloitusmäärä tarkoittaa jo tehtyä työtä; tavoite on vapaaehtoinen. Säilytä paikkamerkit %1$d muuttumattomina. -->
+    <string name="project_start_count_next_rows">Næste: række %1$d</string>
+    <!-- Kääntäjälle: projektin luontilomake. Aloitusmäärä tarkoittaa jo tehtyä työtä; tavoite on vapaaehtoinen. Säilytä paikkamerkit %1$d muuttumattomina. -->
+    <string name="project_start_count_next_rounds">Næste: runde %1$d</string>
+    <!-- Kääntäjälle: projektin luontilomake. Aloitusmäärä tarkoittaa jo tehtyä työtä; tavoite on vapaaehtoinen. Säilytä paikkamerkit %1$d muuttumattomina. -->
+    <string name="project_start_count_next_repeats">Næste: gentagelse %1$d</string>
+    <!-- Kääntäjälle: projektin luontilomake. Aloitusmäärä tarkoittaa jo tehtyä työtä; tavoite on vapaaehtoinen. Säilytä paikkamerkit %1$d muuttumattomina. -->
+    <string name="project_start_count_next_custom">Næste: %1$d</string>
+    <!-- Kääntäjälle: projektin luontilomake. Aloitusmäärä tarkoittaa jo tehtyä työtä; tavoite on vapaaehtoinen. Säilytä paikkamerkit %1$s muuttumattomina. -->
+    <string name="project_start_count_error">Angiv et tal fra 0 til %1$s.</string>
+    <!-- Kääntäjälle: projektin luontilomake. Aloitusmäärä tarkoittaa jo tehtyä työtä; tavoite on vapaaehtoinen. -->
+    <string name="project_target_label">Mål (valgfrit)</string>
+    <!-- Kääntäjälle: projektin luontilomake. Aloitusmäärä tarkoittaa jo tehtyä työtä; tavoite on vapaaehtoinen. -->
+    <string name="project_target_help">Se undervejs, hvor mange der er tilbage.</string>
+    <!-- Kääntäjälle: projektin luontilomake. Aloitusmäärä tarkoittaa jo tehtyä työtä; tavoite on vapaaehtoinen. Säilytä paikkamerkit %1$s muuttumattomina. -->
+    <string name="project_target_error">Angiv et tal fra 1 til %1$s.</string>
+    <!-- Kääntäjälle: projektin luontilomake. Aloitusmäärä tarkoittaa jo tehtyä työtä; tavoite on vapaaehtoinen. Säilytä paikkamerkit %1$s muuttumattomina. -->
+    <string name="project_create_preview_a11y">Forhåndsvisning: %1$s</string>
+    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
+    <string name="tip_got_it">Forstået</string>
+    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
+    <string name="tip_first_row_rows">Tryk på +, når du er færdig med en række. Du kan også trykke på det store tal.</string>
+    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
+    <string name="tip_first_row_rounds">Tryk på +, når du er færdig med en runde. Du kan også trykke på det store tal.</string>
+    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
+    <string name="tip_first_row_repeats">Tryk på +, når du er færdig med en gentagelse. Du kan også trykke på det store tal.</string>
+    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
+    <string name="tip_first_row_custom">Tryk på +, hver gang du er færdig med en. Du kan også trykke på det store tal.</string>
+    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
+    <string name="tip_undo">Gemt. Trykkede du forkert? Fortryd annullerer den seneste ændring.</string>
+    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
+    <string name="tip_step_size">Tæller du mere end én ad gangen? Her ændrer du, hvor meget hvert tryk lægger til.</string>
+    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
+    <string name="tip_work_session">Vil du vide, hvor lang tid projektet tager? Start en arbejdssession fra denne menu. Tiden starter aldrig af sig selv.</string>
+    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
+    <string name="tip_overview_intro">Her er hele dit projekt: mønster, garn, noter og billeder. Fortsæt fører dig tilbage til tælleren.</string>
+    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
+    <string name="tip_pattern_tile">Vedhæft dit mønster, så du har det sammen med projektet.</string>
+    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
+    <string name="tip_reading_line">Slå Følg hovedtælleren til, så flytter læselinjen sig, når du tæller.</string>
+    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
+    <string name="tip_keep_screen_on">Bliver skærmen mørk, mens du arbejder? Hold den tændt, mens du tæller.</string>
+    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
+    <string name="tip_keep_screen_on_action">Hold skærmen tændt</string>
+    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
+    <string name="tip_target_reached">Målet er nået. Tæl videre, eller markér projektet som færdigt i menuen på projektsiden.</string>
+    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
+    <string name="tip_first_session_saved">Din første arbejdssession er gemt. Her er den samlede tid for projektet.</string>
+    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
+    <string name="tip_backup">Dine projekter findes kun på denne telefon. Lav en sikkerhedskopi, så du har dem, hvis du skifter telefon.</string>
+    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
+    <string name="tip_backup_action">Sikkerhedskopiér</string>
+    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
+    <string name="tip_folders">Mange projekter? Sortér dem i mapper via titlen.</string>
+    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
+    <string name="tip_widget">Tæl fra din startskærm uden at åbne appen.</string>
+    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
+    <string name="tip_widget_action">Tilføj widget</string>
+    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
+    <string name="tip_tools_intro">Beregnerne virker offline. Eksempelværdierne viser, hvad du skal indtaste.</string>
+    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
+    <string name="settings_show_tips_again">Vis tips igen</string>
+    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
+    <string name="settings_tips_reset_done">Tips bliver vist igen.</string>
+    <!-- Kääntäjälle: projektin neljän kohdan aloituslista tai sen valmistumisilmoitus. -->
+    <string name="project_setup_title">Projektopsætning</string>
+    <!-- Kääntäjälle: projektin neljän kohdan aloituslista tai sen valmistumisilmoitus. Säilytä paikkamerkit %1$d, %2$d muuttumattomina. -->
+    <string name="project_setup_progress">%1$d af %2$d</string>
+    <!-- Kääntäjälle: projektin neljän kohdan aloituslista tai sen valmistumisilmoitus. -->
+    <string name="project_setup_starting_point">Angiv dit udgangspunkt</string>
+    <!-- Kääntäjälle: projektin neljän kohdan aloituslista tai sen valmistumisilmoitus. -->
+    <string name="project_setup_starting_point_done">Udgangspunkt angivet</string>
+    <!-- Kääntäjälle: projektin neljän kohdan aloituslista tai sen valmistumisilmoitus. -->
+    <string name="project_setup_pattern">Vedhæft dit mønster</string>
+    <!-- Kääntäjälle: projektin neljän kohdan aloituslista tai sen valmistumisilmoitus. -->
+    <string name="project_setup_pattern_done">Mønster vedhæftet</string>
+    <!-- Kääntäjälle: projektin neljän kohdan aloituslista tai sen valmistumisilmoitus. -->
+    <string name="project_setup_yarn">Tilføj det garn, du bruger</string>
+    <!-- Kääntäjälle: projektin neljän kohdan aloituslista tai sen valmistumisilmoitus. -->
+    <string name="project_setup_yarn_done">Garn tilføjet</string>
+    <!-- Kääntäjälle: projektin neljän kohdan aloituslista tai sen valmistumisilmoitus. -->
+    <string name="project_setup_session">Gem din første arbejdssession</string>
+    <!-- Kääntäjälle: projektin neljän kohdan aloituslista tai sen valmistumisilmoitus. -->
+    <string name="project_setup_session_done">Arbejdssession gemt</string>
+    <!-- Kääntäjälle: projektin neljän kohdan aloituslista tai sen valmistumisilmoitus. -->
+    <string name="project_setup_done">Alt er klar. God fornøjelse med projektet.</string>
+    <!-- Kääntäjälle: projektin neljän kohdan aloituslista tai sen valmistumisilmoitus. -->
+    <string name="project_setup_hide">Skjul</string>
+    <!-- Kääntäjälle: projektin neljän kohdan aloituslista tai sen valmistumisilmoitus. Säilytä paikkamerkit %1$d, %2$d muuttumattomina. -->
+    <string name="stitch_progress_a11y">%1$d af %2$d færdige</string>
+    <!-- Kääntäjälle: paikallinen käyttöopas. Toimintojen ja välilehtien nimet vastaavat muuta käyttöliittymää. -->
+    <string name="guide_screen_title">Sådan bruger du KnitTools</string>
+    <!-- Kääntäjälle: paikallinen käyttöopas. Toimintojen ja välilehtien nimet vastaavat muuta käyttöliittymää. -->
+    <string name="guide_intro">Vælg det, du er i gang med lige nu. Du kan altid vende tilbage hertil.</string>
+    <!-- Kääntäjälle: paikallinen käyttöopas. Toimintojen ja välilehtien nimet vastaavat muuta käyttöliittymää. -->
+    <string name="guide_entry_settings">Sådan bruger du KnitTools</string>
+    <!-- Kääntäjälle: paikallinen käyttöopas. Toimintojen ja välilehtien nimet vastaavat muuta käyttöliittymää. -->
+    <string name="guide_entry_overview">Sådan virker projektværktøjerne</string>
+    <!-- Kääntäjälle: paikallinen käyttöopas. Toimintojen ja välilehtien nimet vastaavat muuta käyttöliittymää. -->
+    <string name="guide_try_it">Prøv det</string>
+    <!-- Kääntäjälle: paikallinen käyttöopas. Toimintojen ja välilehtien nimet vastaavat muuta käyttöliittymää. -->
+    <string name="guide_topic_continue_title">Fortsæt et projekt</string>
+    <!-- Kääntäjälle: paikallinen käyttöopas. Toimintojen ja välilehtien nimet vastaavat muuta käyttöliittymää. -->
+    <string name="guide_topic_continue_subtitle">Tæller, Fortryd og din projektside</string>
+    <!-- Kääntäjälle: paikallinen käyttöopas. Toimintojen ja välilehtien nimet vastaavat muuta käyttöliittymää. -->
+    <string name="guide_continue_count_title">Tæl undervejs</string>
+    <!-- Kääntäjälle: paikallinen käyttöopas. Toimintojen ja välilehtien nimet vastaavat muuta käyttöliittymää. -->
+    <string name="guide_continue_count_body">Tryk på +, når du er færdig med en række. Et tryk på det store tal lægger også én til. Minus trækker én fra.</string>
+    <!-- Kääntäjälle: paikallinen käyttöopas. Toimintojen ja välilehtien nimet vastaavat muuta käyttöliittymää. -->
+    <string name="guide_continue_undo_title">Fortryd fejl</string>
+    <!-- Kääntäjälle: paikallinen käyttöopas. Toimintojen ja välilehtien nimet vastaavat muuta käyttöliittymää. -->
+    <string name="guide_continue_undo_body">Fortryd går tilbage gennem dine seneste ændringer, ét tryk ad gangen.</string>
+    <!-- Kääntäjälle: paikallinen käyttöopas. Toimintojen ja välilehtien nimet vastaavat muuta käyttöliittymää. -->
+    <string name="guide_continue_step_title">Tæl mere end én</string>
+    <!-- Kääntäjälle: paikallinen käyttöopas. Toimintojen ja välilehtien nimet vastaavat muuta käyttöliittymää. -->
+    <string name="guide_continue_step_body">Ringen ×1 mellem knapperne bestemmer, hvor meget hvert tryk lægger til, fra 1 til 99, særskilt for hvert projekt.</string>
+    <!-- Kääntäjälle: paikallinen käyttöopas. Toimintojen ja välilehtien nimet vastaavat muuta käyttöliittymää. -->
+    <string name="guide_continue_project_page_title">Projektside og tæller</string>
+    <!-- Kääntäjälle: paikallinen käyttöopas. Toimintojen ja välilehtien nimet vastaavat muuta käyttöliittymää. -->
+    <string name="guide_continue_project_page_body">Et tryk på et projekt åbner projektsiden med mønster, garn, noter og billeder. Fortsæt åbner tælleren.</string>
+    <!-- Kääntäjälle: paikallinen käyttöopas. Toimintojen ja välilehtien nimet vastaavat muuta käyttöliittymää. -->
+    <string name="guide_continue_find_title">Find det igen</string>
+    <!-- Kääntäjälle: paikallinen käyttöopas. Toimintojen ja välilehtien nimet vastaavat muuta käyttöliittymää. -->
+    <string name="guide_continue_find_body">Et projekt, du har startet, venter øverst i Projekter, klar til at fortsætte.</string>
+    <!-- Kääntäjälle: paikallinen käyttöopas. Toimintojen ja välilehtien nimet vastaavat muuta käyttöliittymää. -->
+    <string name="guide_continue_widget_title">Tæl fra din startskærm</string>
+    <!-- Kääntäjälle: paikallinen käyttöopas. Toimintojen ja välilehtien nimet vastaavat muuta käyttöliittymää. -->
+    <string name="guide_continue_widget_body">Tilføj tællerwidgetten for at tælle uden at åbne appen.</string>
+    <!-- Kääntäjälle: paikallinen käyttöopas. Toimintojen ja välilehtien nimet vastaavat muuta käyttöliittymää. -->
+    <string name="guide_topic_pattern_title">Følg dit mønster</string>
+    <!-- Kääntäjälle: paikallinen käyttöopas. Toimintojen ja välilehtien nimet vastaavat muuta käyttöliittymää. -->
+    <string name="guide_topic_pattern_subtitle">PDF-filer, webmønstre og læselinjen</string>
+    <!-- Kääntäjälle: paikallinen käyttöopas. Toimintojen ja välilehtien nimet vastaavat muuta käyttöliittymää. -->
+    <string name="guide_pattern_attach_title">Vedhæft dit mønster</string>
+    <!-- Kääntäjälle: paikallinen käyttöopas. Toimintojen ja välilehtien nimet vastaavat muuta käyttöliittymää. -->
+    <string name="guide_pattern_attach_body">Tilføj en PDF fra din telefon eller dit skylager, eller gem et link til et webmønster.</string>
+    <!-- Kääntäjälle: paikallinen käyttöopas. Toimintojen ja välilehtien nimet vastaavat muuta käyttöliittymää. -->
+    <string name="guide_pattern_documents_title">Flere dokumenter</string>
+    <!-- Kääntäjälle: paikallinen käyttöopas. Toimintojen ja välilehtien nimet vastaavat muuta käyttöliittymää. -->
+    <string name="guide_pattern_documents_body">Et projekt kan have flere PDF-filer. Hver fil husker sin egen side.</string>
+    <!-- Kääntäjälle: paikallinen käyttöopas. Toimintojen ja välilehtien nimet vastaavat muuta käyttöliittymää. -->
+    <string name="guide_pattern_markup_title">Læs og annotér</string>
+    <!-- Kääntäjälle: paikallinen käyttöopas. Toimintojen ja välilehtien nimet vastaavat muuta käyttöliittymää. -->
+    <string name="guide_pattern_markup_body">I læsetilstand fylder siden hele skærmen. I annotationstilstand får du penne, overstregning, tekst og diagramværktøjer.</string>
+    <!-- Kääntäjälle: paikallinen käyttöopas. Toimintojen ja välilehtien nimet vastaavat muuta käyttöliittymää. -->
+    <string name="guide_pattern_reading_line_title">Læselinjen</string>
+    <!-- Kääntäjälle: paikallinen käyttöopas. Toimintojen ja välilehtien nimet vastaavat muuta käyttöliittymää. -->
+    <string name="guide_pattern_reading_line_body">Slå Følg hovedtælleren til, så flytter linjen sig, når du tæller. Kalibrér tællerpositionerne én gang, hvis dine rækker ikke passer.</string>
+    <!-- Kääntäjälle: paikallinen käyttöopas. Toimintojen ja välilehtien nimet vastaavat muuta käyttöliittymää. -->
+    <string name="guide_pattern_bookmarks_title">Bogmærker</string>
+    <!-- Kääntäjälle: paikallinen käyttöopas. Toimintojen ja välilehtien nimet vastaavat muuta käyttöliittymää. -->
+    <string name="guide_pattern_bookmarks_body">Sæt bogmærker ved de steder, du ofte vender tilbage til.</string>
+    <!-- Kääntäjälle: paikallinen käyttöopas. Toimintojen ja välilehtien nimet vastaavat muuta käyttöliittymää. -->
+    <string name="guide_pattern_ravelry_title">Mønstre fra Ravelry</string>
+    <!-- Kääntäjälle: paikallinen käyttöopas. Toimintojen ja välilehtien nimet vastaavat muuta käyttöliittymää. -->
+    <string name="guide_pattern_ravelry_body">Åbn Ravelry i appen, log ind på Ravelrys egen side, og hent de PDF-filer, du ejer, direkte til KnitTools.</string>
+    <!-- Kääntäjälle: paikallinen käyttöopas. Toimintojen ja välilehtien nimet vastaavat muuta käyttöliittymää. -->
+    <string name="guide_pattern_camera_title">Papirmønstre</string>
+    <!-- Kääntäjälle: paikallinen käyttöopas. Toimintojen ja välilehtien nimet vastaavat muuta käyttöliittymää. -->
+    <string name="guide_pattern_camera_body">Tag billeder af siderne, så laver KnitTools dem om til en PDF.</string>
+    <!-- Kääntäjälle: paikallinen käyttöopas. Toimintojen ja välilehtien nimet vastaavat muuta käyttöliittymää. -->
+    <string name="guide_topic_yarn_title">Hold styr på garnet</string>
+    <!-- Kääntäjälle: paikallinen käyttöopas. Toimintojen ja välilehtien nimet vastaavat muuta käyttöliittymää. -->
+    <string name="guide_topic_yarn_subtitle">Projektgarn, mængder og Mit garn</string>
+    <!-- Kääntäjälle: paikallinen käyttöopas. Toimintojen ja välilehtien nimet vastaavat muuta käyttöliittymää. -->
+    <string name="guide_yarn_project_title">Garn til dette projekt</string>
+    <!-- Kääntäjälle: paikallinen käyttöopas. Toimintojen ja välilehtien nimet vastaavat muuta käyttöliittymää. -->
+    <string name="guide_yarn_project_body">Notér det garn, du bruger i projektet, med planlagte, afsatte og brugte mængder.</string>
+    <!-- Kääntäjälle: paikallinen käyttöopas. Toimintojen ja välilehtien nimet vastaavat muuta käyttöliittymää. -->
+    <string name="guide_yarn_remaining_title">Hvad betyder resterende?</string>
+    <!-- Kääntäjälle: paikallinen käyttöopas. Toimintojen ja välilehtien nimet vastaavat muuta käyttöliittymää. -->
+    <string name="guide_yarn_remaining_body">Resterende er det, der er tilbage af garnet afsat til dette projekt. Mængderne i dit garnlager ændres ikke af sig selv.</string>
+    <!-- Kääntäjälle: paikallinen käyttöopas. Toimintojen ja välilehtien nimet vastaavat muuta käyttöliittymää. -->
+    <string name="guide_yarn_my_yarn_title">Mit garn</string>
+    <!-- Kääntäjälle: paikallinen käyttöopas. Toimintojen ja välilehtien nimet vastaavat muuta käyttöliittymää. -->
+    <string name="guide_yarn_my_yarn_body">Gem garn én gang med farvenummer, indfarvningsparti og billeder, og knyt det derefter til et hvilket som helst projekt.</string>
+    <!-- Kääntäjälle: paikallinen käyttöopas. Toimintojen ja välilehtien nimet vastaavat muuta käyttöliittymää. -->
+    <string name="guide_topic_details_title">Husk detaljerne</string>
+    <!-- Kääntäjälle: paikallinen käyttöopas. Toimintojen ja välilehtien nimet vastaavat muuta käyttöliittymää. -->
+    <string name="guide_topic_details_subtitle">Noter, ekstra tællere, påmindelser og billeder</string>
+    <!-- Kääntäjälle: paikallinen käyttöopas. Toimintojen ja välilehtien nimet vastaavat muuta käyttöliittymää. -->
+    <string name="guide_details_notes_title">Noter</string>
+    <!-- Kääntäjälle: paikallinen käyttöopas. Toimintojen ja välilehtien nimet vastaavat muuta käyttöliittymää. -->
+    <string name="guide_details_notes_body">Gem pindestørrelser, ændringer og det næste, du skal gøre.</string>
+    <!-- Kääntäjälle: paikallinen käyttöopas. Toimintojen ja välilehtien nimet vastaavat muuta käyttöliittymää. -->
+    <string name="guide_details_counters_title">Ekstra tællere</string>
+    <!-- Kääntäjälle: paikallinen käyttöopas. Toimintojen ja välilehtien nimet vastaavat muuta käyttöliittymää. -->
+    <string name="guide_details_counters_body">Tæl gentagelser, formgivning eller en sektion af rækker ved siden af hovedtælleren.</string>
+    <!-- Kääntäjälle: paikallinen käyttöopas. Toimintojen ja välilehtien nimet vastaavat muuta käyttöliittymää. -->
+    <string name="guide_details_reminders_title">Rækkepåmindelser</string>
+    <!-- Kääntäjälle: paikallinen käyttöopas. Toimintojen ja välilehtien nimet vastaavat muuta käyttöliittymää. -->
+    <string name="guide_details_reminders_body">Få en påmindelse i appen, når du når en række, for eksempel næste indtagning. Påmindelser vises inde i KnitTools, ikke som telefonnotifikationer.</string>
+    <!-- Kääntäjälle: paikallinen käyttöopas. Toimintojen ja välilehtien nimet vastaavat muuta käyttöliittymää. -->
+    <string name="guide_details_photos_title">Billeder af fremskridt</string>
+    <!-- Kääntäjälle: paikallinen käyttöopas. Toimintojen ja välilehtien nimet vastaavat muuta käyttöliittymää. -->
+    <string name="guide_details_photos_body">Tag billeder, efterhånden som projektet vokser. Det nyeste bliver projektets billede.</string>
+    <!-- Kääntäjälle: paikallinen käyttöopas. Toimintojen ja välilehtien nimet vastaavat muuta käyttöliittymää. -->
+    <string name="guide_topic_tools_title">Beregn, følg med og sikkerhedskopiér</string>
+    <!-- Kääntäjälle: paikallinen käyttöopas. Toimintojen ja välilehtien nimet vastaavat muuta käyttöliittymää. -->
+    <string name="guide_topic_tools_subtitle">Værktøjer, arbejdstid, Indsigt og sikkerhedskopiering</string>
+    <!-- Kääntäjälle: paikallinen käyttöopas. Toimintojen ja välilehtien nimet vastaavat muuta käyttöliittymää. -->
+    <string name="guide_tools_calculators_title">Beregnere</string>
+    <!-- Kääntäjälle: paikallinen käyttöopas. Toimintojen ja välilehtien nimet vastaavat muuta käyttöliittymää. -->
+    <string name="guide_tools_calculators_body">Strikkefasthed, udtagninger og indtagninger, opslag og garnmængder. De virker offline.</string>
+    <!-- Kääntäjälle: paikallinen käyttöopas. Toimintojen ja välilehtien nimet vastaavat muuta käyttöliittymää. -->
+    <string name="guide_tools_reference_title">Opslagsværk</string>
+    <!-- Kääntäjälle: paikallinen käyttöopas. Toimintojen ja välilehtien nimet vastaavat muuta käyttöliittymää. -->
+    <string name="guide_tools_reference_body">Pindestørrelser, størrelsesskemaer, forkortelser og diagramsymboler findes i Bibliotek.</string>
+    <!-- Kääntäjälle: paikallinen käyttöopas. Toimintojen ja välilehtien nimet vastaavat muuta käyttöliittymää. -->
+    <string name="guide_tools_work_time_title">Arbejdstid</string>
+    <!-- Kääntäjälle: paikallinen käyttöopas. Toimintojen ja välilehtien nimet vastaavat muuta käyttöliittymää. -->
+    <string name="guide_tools_work_time_body">Start en arbejdssession fra projektmenuen for at registrere din tid. Stop, når du er færdig, for at gemme eller kassere den.</string>
+    <!-- Kääntäjälle: paikallinen käyttöopas. Toimintojen ja välilehtien nimet vastaavat muuta käyttöliittymää. -->
+    <string name="guide_tools_insights_title">Indsigt</string>
+    <!-- Kääntäjälle: paikallinen käyttöopas. Toimintojen ja välilehtien nimet vastaavat muuta käyttöliittymää. -->
+    <string name="guide_tools_insights_body">Se den tid, du har registreret. Pro tilføjer daglige, ugentlige og månedlige diagrammer samt din aktivitetsstime.</string>
+    <!-- Kääntäjälle: paikallinen käyttöopas. Toimintojen ja välilehtien nimet vastaavat muuta käyttöliittymää. -->
+    <string name="guide_tools_folders_title">Mapper</string>
+    <!-- Kääntäjälle: paikallinen käyttöopas. Toimintojen ja välilehtien nimet vastaavat muuta käyttöliittymää. -->
+    <string name="guide_tools_folders_body">Gruppér projekter i mapper via titlen Projekter. Ét igangværende projekt ad gangen er gratis, og færdige projekter tæller ikke med.</string>
+    <!-- Kääntäjälle: paikallinen käyttöopas. Toimintojen ja välilehtien nimet vastaavat muuta käyttöliittymää. -->
+    <string name="guide_tools_backup_title">Sikkerhedskopiering</string>
+    <!-- Kääntäjälle: paikallinen käyttöopas. Toimintojen ja välilehtien nimet vastaavat muuta käyttöliittymää. -->
+    <string name="guide_tools_backup_body">Lav en sikkerhedskopi, og opbevar den et sikkert sted, for eksempel på dit skydrev. Gendannelse erstatter alt på denne telefon.</string>
+    <!-- Kääntäjälle: lyhyt, isoilla kirjaimilla esitettävä Pro-kokeilun merkki. -->
+    <string name="pro_marker_trial">PRØVE</string>
+    <!-- Kääntäjälle: Pro-ominaisuuden hyöty tai käyttöoikeuden kuvaus. Pro on kertamaksu; kokeilu ei muutu veloitukseksi. -->
+    <string name="pro_repeat_counter_row">Gentagelsestæller</string>
+    <!-- Kääntäjälle: puhelimen aloitusnäytön widget. Käytä järjestelmälle luontevaa toimintanimeä. -->
+    <string name="widget_add_row">Tilføj widget til startskærmen</string>
+    <!-- Kääntäjälle: puhelimen aloitusnäytön widget. Käytä järjestelmälle luontevaa toimintanimeä. -->
+    <string name="widget_add_manual">Tryk og hold på startskærmen, vælg Widgets, og find derefter KnitTools.</string>
+    <!-- Kääntäjälle: valmistuneen projektin yhteenveto. Otsikko käyttää käsityölle luontevaa päättelytermiä. -->
+    <string name="completed_title_knitting">Lukket af!</string>
+    <!-- Kääntäjälle: valmistuneen projektin yhteenveto. Otsikko käyttää käsityölle luontevaa päättelytermiä. -->
+    <string name="completed_title_crochet">Hæklet færdigt!</string>
+    <!-- Kääntäjälle: valmistuneen projektin yhteenveto. Otsikko käyttää käsityölle luontevaa päättelytermiä. -->
+    <string name="completed_time_label">Arbejdstid</string>
+    <!-- Kääntäjälle: valmistuneen projektin yhteenveto. Otsikko käyttää käsityölle luontevaa päättelytermiä. -->
+    <string name="completed_count_label">Endeligt antal</string>
+    <!-- Kääntäjälle: valmistuneen projektin yhteenveto. Otsikko käyttää käsityölle luontevaa päättelytermiä. -->
+    <string name="completed_started_label">Startet</string>
+    <!-- Kääntäjälle: valmistuneen projektin yhteenveto. Otsikko käyttää käsityölle luontevaa päättelytermiä. -->
+    <string name="completed_finished_label">Afsluttet</string>
+    <!-- Kääntäjälle: valmistuneen projektin yhteenveto. Otsikko käyttää käsityölle luontevaa päättelytermiä. -->
+    <string name="completed_next_project">Start dit næste projekt</string>
+    <!-- Kääntäjälle: valmistuneen projektin yhteenveto. Otsikko käyttää käsityölle luontevaa päättelytermiä. -->
+    <string name="completed_close">Luk</string>
+    <!-- Kääntäjälle: Pro-ominaisuuden hyöty tai käyttöoikeuden kuvaus. Pro on kertamaksu; kokeilu ei muutu veloitukseksi. -->
+    <string name="onboarding_pro_projects_title">Hav alle dine projekter i gang</string>
+    <!-- Kääntäjälle: Pro-ominaisuuden hyöty tai käyttöoikeuden kuvaus. Pro on kertamaksu; kokeilu ei muutu veloitukseksi. -->
+    <string name="onboarding_pro_projects_trial_body">Gratisversionen giver dig ét igangværende projekt ad gangen. Prøv Pro gratis i 14 dage for at tilføje alle dine projekter.</string>
+    <!-- Kääntäjälle: Pro-ominaisuuden hyöty tai käyttöoikeuden kuvaus. Pro on kertamaksu; kokeilu ei muutu veloitukseksi. -->
+    <string name="onboarding_pro_projects_body">Gratisversionen giver dig ét igangværende projekt ad gangen. Med Pro kan du have alle dine projekter i gang.</string>
+    <!-- Kääntäjälle: Pro-ominaisuuden hyöty tai käyttöoikeuden kuvaus. Pro on kertamaksu; kokeilu ei muutu veloitukseksi. -->
+    <string name="onboarding_pro_reactivation_title">Hold dette projekt i gang</string>
+    <!-- Kääntäjälle: Pro-ominaisuuden hyöty tai käyttöoikeuden kuvaus. Pro on kertamaksu; kokeilu ei muutu veloitukseksi. -->
+    <string name="onboarding_pro_reactivation_body">Genaktivér projektet, og arbejd på flere projekter ad gangen.</string>
+    <!-- Kääntäjälle: Pro-ominaisuuden hyöty tai käyttöoikeuden kuvaus. Pro on kertamaksu; kokeilu ei muutu veloitukseksi. -->
+    <string name="onboarding_pro_photos_title">Gem dine fremskridt i billeder</string>
+    <!-- Kääntäjälle: Pro-ominaisuuden hyöty tai käyttöoikeuden kuvaus. Pro on kertamaksu; kokeilu ei muutu veloitukseksi. -->
+    <string name="onboarding_pro_photos_body">Tag billeder af dit projekt, efterhånden som det vokser.</string>
+    <!-- Kääntäjälle: Pro-ominaisuuden hyöty tai käyttöoikeuden kuvaus. Pro on kertamaksu; kokeilu ei muutu veloitukseksi. -->
+    <string name="onboarding_pro_notes_title">Skriv en note til næste gang</string>
+    <!-- Kääntäjälle: Pro-ominaisuuden hyöty tai käyttöoikeuden kuvaus. Pro on kertamaksu; kokeilu ei muutu veloitukseksi. -->
+    <string name="onboarding_pro_notes_body">Notér pindestørrelser, ændringer og det næste, du skal gøre.</string>
+    <!-- Kääntäjälle: Pro-ominaisuuden hyöty tai käyttöoikeuden kuvaus. Pro on kertamaksu; kokeilu ei muutu veloitukseksi. -->
+    <string name="onboarding_pro_yarn_title">Opbyg dit garnbibliotek</string>
+    <!-- Kääntäjälle: Pro-ominaisuuden hyöty tai käyttöoikeuden kuvaus. Pro on kertamaksu; kokeilu ei muutu veloitukseksi. -->
+    <string name="onboarding_pro_yarn_body">Gem garn én gang, og knyt det til et hvilket som helst projekt.</string>
+    <!-- Kääntäjälle: Pro-ominaisuuden hyöty tai käyttöoikeuden kuvaus. Pro on kertamaksu; kokeilu ei muutu veloitukseksi. -->
+    <string name="onboarding_pro_counters_title">Tæl gentagelser ved siden af dine rækker</string>
+    <!-- Kääntäjälle: Pro-ominaisuuden hyöty tai käyttöoikeuden kuvaus. Pro on kertamaksu; kokeilu ei muutu veloitukseksi. -->
+    <string name="onboarding_pro_counters_body">Tilføj tællere til mønstergentagelser, formgivning eller en sektion af rækker.</string>
+    <!-- Kääntäjälle: Pro-ominaisuuden hyöty tai käyttöoikeuden kuvaus. Pro on kertamaksu; kokeilu ei muutu veloitukseksi. -->
+    <string name="onboarding_pro_reminders_title">Husk den næste indtagning</string>
+    <!-- Kääntäjälle: Pro-ominaisuuden hyöty tai käyttöoikeuden kuvaus. Pro on kertamaksu; kokeilu ei muutu veloitukseksi. -->
+    <string name="onboarding_pro_reminders_body">Tilføj en påmindelse til den række, hvor noget ændrer sig.</string>
+    <!-- Kääntäjälle: Pro-ominaisuuden hyöty tai käyttöoikeuden kuvaus. Pro on kertamaksu; kokeilu ei muutu veloitukseksi. -->
+    <string name="onboarding_pro_pattern_pdf_title">Lav et papirmønster om til en PDF</string>
+    <!-- Kääntäjälle: Pro-ominaisuuden hyöty tai käyttöoikeuden kuvaus. Pro on kertamaksu; kokeilu ei muutu veloitukseksi. -->
+    <string name="onboarding_pro_pattern_pdf_body">Tag billeder af siderne, og gem dem sammen med projektet.</string>
+    <!-- Kääntäjälle: Pro-ominaisuuden hyöty tai käyttöoikeuden kuvaus. Pro on kertamaksu; kokeilu ei muutu veloitukseksi. -->
+    <string name="pro_prompt_widget_pin_title">Tæl fra din startskærm</string>
+    <!-- Kääntäjälle: Pro-ominaisuuden hyöty tai käyttöoikeuden kuvaus. Pro on kertamaksu; kokeilu ei muutu veloitukseksi. -->
+    <string name="onboarding_pro_widget_body">Tilføj tællerwidgetten, og tæl uden at åbne appen.</string>
+    <!-- Kääntäjälle: Pro-ominaisuuden hyöty tai käyttöoikeuden kuvaus. Pro on kertamaksu; kokeilu ei muutu veloitukseksi. -->
+    <string name="pro_prompt_instruction_paste_title">Udfyld beregneren fra dit mønster</string>
+    <!-- Kääntäjälle: Pro-ominaisuuden hyöty tai käyttöoikeuden kuvaus. Pro on kertamaksu; kokeilu ei muutu veloitukseksi. -->
+    <string name="pro_prompt_instruction_paste_body">Indsæt en instruktion, så bliver tallene udfyldt for dig.</string>
+    <!-- Kääntäjälle: Pro-ominaisuuden hyöty tai käyttöoikeuden kuvaus. Pro on kertamaksu; kokeilu ei muutu veloitukseksi. -->
+    <string name="onboarding_pro_trial_terms">Prøv gratis i 14 dage. Ingen betalingsmetode nødvendig, og der bliver aldrig trukket penge, når prøveperioden slutter.</string>
+    <!-- Kääntäjälle: Pro-ominaisuuden hyöty tai käyttöoikeuden kuvaus. Pro on kertamaksu; kokeilu ei muutu veloitukseksi. -->
+    <string name="onboarding_pro_purchase_terms">Pro er et engangskøb. Alt, du har oprettet, forbliver tilgængeligt.</string>
+    <!-- Kääntäjälle: Pro-ominaisuuden hyöty tai käyttöoikeuden kuvaus. Pro on kertamaksu; kokeilu ei muutu veloitukseksi. -->
+    <string name="onboarding_pro_retention_projects">Færdige projekter tæller ikke med i gratisgrænsen. Dine eksisterende projekter forbliver tilgængelige.</string>
+    <!-- Kääntäjälle: Pro-ominaisuuden hyöty tai käyttöoikeuden kuvaus. Pro on kertamaksu; kokeilu ei muutu veloitukseksi. -->
+    <string name="onboarding_pro_retention_photos">Billeder, du allerede har tilføjet, forbliver tilgængelige.</string>
+    <!-- Kääntäjälle: Pro-ominaisuuden hyöty tai käyttöoikeuden kuvaus. Pro on kertamaksu; kokeilu ei muutu veloitukseksi. -->
+    <string name="onboarding_pro_retention_notes">Noter, du allerede har skrevet, kan stadig redigeres.</string>
+    <!-- Kääntäjälle: Pro-ominaisuuden hyöty tai käyttöoikeuden kuvaus. Pro on kertamaksu; kokeilu ei muutu veloitukseksi. -->
+    <string name="onboarding_pro_retention_yarn">Garnkort, du allerede har oprettet, forbliver tilgængelige og kan redigeres.</string>
+    <!-- Kääntäjälle: Pro-ominaisuuden hyöty tai käyttöoikeuden kuvaus. Pro on kertamaksu; kokeilu ei muutu veloitukseksi. -->
+    <string name="onboarding_pro_retention_project_yarn">Din garnnote til projektet forbliver tilgængelig.</string>
+    <!-- Kääntäjälle: Pro-ominaisuuden hyöty tai käyttöoikeuden kuvaus. Pro on kertamaksu; kokeilu ei muutu veloitukseksi. -->
+    <string name="onboarding_pro_retention_counters">Tællere, du allerede har tilføjet, forbliver tilgængelige og kan redigeres.</string>
+    <!-- Kääntäjälle: Pro-ominaisuuden hyöty tai käyttöoikeuden kuvaus. Pro on kertamaksu; kokeilu ei muutu veloitukseksi. -->
+    <string name="onboarding_pro_retention_reminders">Påmindelser, du allerede har tilføjet, virker fortsat og kan redigeres.</string>
+    <!-- Kääntäjälle: Pro-ominaisuuden hyöty tai käyttöoikeuden kuvaus. Pro on kertamaksu; kokeilu ei muutu veloitukseksi. -->
+    <string name="onboarding_pro_retention_pattern_pdf">Mønstre og PDF-filer, du allerede har tilføjet, forbliver tilgængelige.</string>
+    <!-- Kääntäjälle: Pro-ominaisuuden hyöty tai käyttöoikeuden kuvaus. Pro on kertamaksu; kokeilu ei muutu veloitukseksi. -->
+    <string name="onboarding_pro_retention_widget">Dine projekt- og tællerdata forbliver tilgængelige i KnitTools.</string>
+    <!-- Kääntäjälle: Pro-ominaisuuden hyöty tai käyttöoikeuden kuvaus. Pro on kertamaksu; kokeilu ei muutu veloitukseksi. -->
+    <string name="onboarding_pro_retention_paste">Beregnerne er fortsat gratis at bruge.</string>
+    <!-- Kääntäjälle: Pro-ominaisuuden hyöty tai käyttöoikeuden kuvaus. Pro on kertamaksu; kokeilu ei muutu veloitukseksi. -->
+    <string name="onboarding_pro_intro">Flere projekter, flere muligheder</string>
+    <!-- Kääntäjälle: Pro-ominaisuuden hyöty tai käyttöoikeuden kuvaus. Pro on kertamaksu; kokeilu ei muutu veloitukseksi. -->
+    <string name="onboarding_pro_free_title">Gratis for altid</string>
+    <!-- Kääntäjälle: Pro-ominaisuuden hyöty tai käyttöoikeuden kuvaus. Pro on kertamaksu; kokeilu ei muutu veloitukseksi. -->
+    <string name="onboarding_pro_adds_title">Med Pro får du</string>
+    <!-- Kääntäjälle: Pro-ominaisuuden hyöty tai käyttöoikeuden kuvaus. Pro on kertamaksu; kokeilu ei muutu veloitukseksi. -->
+    <string name="onboarding_pro_free_project">Ét igangværende projekt</string>
+    <!-- Kääntäjälle: Pro-ominaisuuden hyöty tai käyttöoikeuden kuvaus. Pro on kertamaksu; kokeilu ei muutu veloitukseksi. -->
+    <string name="onboarding_pro_free_counter">Tæller med trinstørrelse</string>
+    <!-- Kääntäjälle: Pro-ominaisuuden hyöty tai käyttöoikeuden kuvaus. Pro on kertamaksu; kokeilu ei muutu veloitukseksi. -->
+    <string name="onboarding_pro_free_pdf">PDF-læser med læselinje og annotationer</string>
+    <!-- Kääntäjälle: Pro-ominaisuuden hyöty tai käyttöoikeuden kuvaus. Pro on kertamaksu; kokeilu ei muutu veloitukseksi. -->
+    <string name="onboarding_pro_free_web">Webmønstre og downloads fra Ravelry</string>
+    <!-- Kääntäjälle: Pro-ominaisuuden hyöty tai käyttöoikeuden kuvaus. Pro on kertamaksu; kokeilu ei muutu veloitukseksi. -->
+    <string name="onboarding_pro_free_yarn">Projektgarn og mængder</string>
+    <!-- Kääntäjälle: Pro-ominaisuuden hyöty tai käyttöoikeuden kuvaus. Pro on kertamaksu; kokeilu ei muutu veloitukseksi. -->
+    <string name="onboarding_pro_free_time">Arbejdstid</string>
+    <!-- Kääntäjälle: Pro-ominaisuuden hyöty tai käyttöoikeuden kuvaus. Pro on kertamaksu; kokeilu ei muutu veloitukseksi. -->
+    <string name="onboarding_pro_free_tools">Beregnere og opslagsværk</string>
+    <!-- Kääntäjälle: Pro-ominaisuuden hyöty tai käyttöoikeuden kuvaus. Pro on kertamaksu; kokeilu ei muutu veloitukseksi. -->
+    <string name="onboarding_pro_free_backup">Sikkerhedskopiering</string>
+    <!-- Kääntäjälle: Pro-ominaisuuden hyöty tai käyttöoikeuden kuvaus. Pro on kertamaksu; kokeilu ei muutu veloitukseksi. -->
+    <string name="onboarding_pro_group_projects_title">Projekter og materialer</string>
+    <!-- Kääntäjälle: Pro-ominaisuuden hyöty tai käyttöoikeuden kuvaus. Pro on kertamaksu; kokeilu ei muutu veloitukseksi. -->
+    <string name="onboarding_pro_group_projects_body">Hav flere projekter i gang, tilføj projektnoter og billeder af fremskridt, og opbyg dit garnbibliotek.</string>
+    <!-- Kääntäjälle: Pro-ominaisuuden hyöty tai käyttöoikeuden kuvaus. Pro on kertamaksu; kokeilu ei muutu veloitukseksi. -->
+    <string name="onboarding_pro_group_workflow_title">Tælling og arbejdsgang</string>
+    <!-- Kääntäjälle: Pro-ominaisuuden hyöty tai käyttöoikeuden kuvaus. Pro on kertamaksu; kokeilu ei muutu veloitukseksi. -->
+    <string name="onboarding_pro_group_workflow_body">Tilføj tællere til gentagelser, formgivning og sektioner, rækkepåmindelser og en widget til startskærmen. Lav billeder af mønstre om til en PDF, og udfyld beregnere fra indsatte instruktioner.</string>
+    <!-- Kääntäjälle: Pro-ominaisuuden hyöty tai käyttöoikeuden kuvaus. Pro on kertamaksu; kokeilu ei muutu veloitukseksi. -->
+    <string name="onboarding_pro_group_insights_title">Indsigt</string>
+    <!-- Kääntäjälle: Pro-ominaisuuden hyöty tai käyttöoikeuden kuvaus. Pro on kertamaksu; kokeilu ei muutu veloitukseksi. -->
+    <string name="onboarding_pro_group_insights_body">Se daglige, ugentlige og månedlige aktivitetsdiagrammer og din aktivitetsstime.</string>
+    <!-- Kääntäjälle: kokeilun aikana lisättyjen tietojen yhteenveto. Tiedot säilyvät kokeilun jälkeen. Säilytä paikkamerkit %1$s muuttumattomina. -->
+    <string name="trial_summary_during">I din prøveperiode tilføjede du %1$s. Det hele forbliver dit.</string>
+    <!-- Kääntäjälle: kokeilun aikana lisättyjen tietojen yhteenveto. Tiedot säilyvät kokeilun jälkeen. Säilytä paikkamerkit %1$s muuttumattomina. -->
+    <string name="trial_summary_so_far">Indtil nu har du tilføjet %1$s. Det hele forbliver dit.</string>
+    <!-- Kääntäjälle: käyttäjän käynnistämä 14 päivän Pro-kokeilu tai sen suora kokeilutoiminto. -->
+    <string name="trial_three_days_left">Der er 3 dage tilbage af din prøveperiode.</string>
+    <!-- Kääntäjälle: käyttäjän käynnistämä 14 päivän Pro-kokeilu tai sen suora kokeilutoiminto. -->
+    <string name="trial_started_screen_title">Din Pro-prøveperiode er startet</string>
+    <!-- Kääntäjälle: käyttäjän käynnistämä 14 päivän Pro-kokeilu tai sen suora kokeilutoiminto. -->
+    <string name="trial_ended_screen_title">Din Pro-prøveperiode er slut</string>
+    <!-- Kääntäjälle: käyttäjän käynnistämä 14 päivän Pro-kokeilu tai sen suora kokeilutoiminto. -->
+    <string name="trial_journey_title">Din Pro-prøveperiode</string>
+    <!-- Kääntäjälle: käyttäjän käynnistämä 14 päivän Pro-kokeilu tai sen suora kokeilutoiminto. -->
+    <string name="trial_action_widget">Tilføj widget</string>
+    <!-- Kääntäjälle: käyttäjän käynnistämä 14 päivän Pro-kokeilu tai sen suora kokeilutoiminto. -->
+    <string name="trial_action_counter">Tilføj en gentagelsestæller</string>
+    <!-- Kääntäjälle: käyttäjän käynnistämä 14 päivän Pro-kokeilu tai sen suora kokeilutoiminto. -->
+    <string name="trial_action_project">Tilføj et projekt mere</string>
+    <!-- Kääntäjälle: käyttäjän käynnistämä 14 päivän Pro-kokeilu tai sen suora kokeilutoiminto. -->
+    <string name="trial_action_chart">Se denne uges diagram</string>
+    <!-- Kääntäjälle: käyttäjän käynnistämä 14 päivän Pro-kokeilu tai sen suora kokeilutoiminto. -->
+    <string name="trial_action_pattern_pdf">Lav et papirmønster om til en PDF</string>
+    <!-- Kääntäjälle: lukumäärän yksikkö- ja monikkomuoto. Säilytä kokonaisluvun paikkamerkki %1$d. -->
+    <plurals name="onboarding_pro_active_projects">
+        <item quantity="one">Du har %1$d igangværende projekt.</item>
+        <item quantity="other">Du har %1$d igangværende projekter.</item>
+    </plurals>
+    <!-- Kääntäjälle: lukumäärän yksikkö- ja monikkomuoto. Säilytä kokonaisluvun paikkamerkki %1$d. -->
+    <plurals name="trial_summary_projects">
+        <item quantity="one">%1$d projekt</item>
+        <item quantity="other">%1$d projekter</item>
+    </plurals>
+    <!-- Kääntäjälle: lukumäärän yksikkö- ja monikkomuoto. Säilytä kokonaisluvun paikkamerkki %1$d. -->
+    <plurals name="trial_summary_counters">
+        <item quantity="one">%1$d tæller</item>
+        <item quantity="other">%1$d tællere</item>
+    </plurals>
+    <!-- Kääntäjälle: lukumäärän yksikkö- ja monikkomuoto. Säilytä kokonaisluvun paikkamerkki %1$d. -->
+    <plurals name="trial_summary_yarn">
+        <item quantity="one">%1$d garnkort</item>
+        <item quantity="other">%1$d garnkort</item>
+    </plurals>
+    <!-- Kääntäjälle: lukumäärän yksikkö- ja monikkomuoto. Säilytä kokonaisluvun paikkamerkki %1$d. -->
+    <plurals name="trial_summary_photos">
+        <item quantity="one">%1$d billede</item>
+        <item quantity="other">%1$d billeder</item>
+    </plurals>
+</resources>

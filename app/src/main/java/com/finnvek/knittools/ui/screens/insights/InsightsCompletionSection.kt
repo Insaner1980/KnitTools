@@ -21,6 +21,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -32,6 +33,8 @@ import com.finnvek.knittools.R
 import com.finnvek.knittools.ui.components.SheetTitle
 import com.finnvek.knittools.ui.components.localizedDateTimePattern
 import com.finnvek.knittools.ui.components.rememberCurrentLocale
+import com.finnvek.knittools.ui.layout.AdaptiveModalWindow
+import com.finnvek.knittools.ui.layout.ContentWidthPolicy
 import com.finnvek.knittools.ui.theme.InsightsDimens
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -40,14 +43,16 @@ internal fun LazyListScope.completionSection(state: InsightsUiState) {
     // Osio jätetään kokonaan pois ilman valmistumisia, kuten Insightsin muutkin tyhjät osiot:
     // pelkkä "ei valmistumisia" -lause oli kohinaa jokaisella aikavälillä.
     if (state.completions.events.isEmpty()) return
-    item(key = "completion_heading") {
-        InsightsSectionHeader(title = stringResource(R.string.insights_completions_title))
-        Text(completionCount(state.completions.events.size), style = MaterialTheme.typography.titleMedium)
+    insightsItem("completion_heading") {
+        Column {
+            InsightsSectionHeader(title = stringResource(R.string.insights_completions_title))
+            Text(completionCount(state.completions.events.size), style = MaterialTheme.typography.titleMedium)
+        }
     }
     if (state.completions.buckets.isNotEmpty()) {
-        item(key = "completion_timeline") { CompletionTimeline(state.completions.buckets) }
+        insightsItem("completion_timeline", ContentWidthPolicy.Chart) { CompletionTimeline(state.completions.buckets) }
     }
-    item(key = "completion_events") { CompletionHistory(state) }
+    insightsItem("completion_events", ContentWidthPolicy.ListDetail) { CompletionHistory(state) }
 }
 
 private const val COMPLETION_PREVIEW_LIMIT = 3
@@ -55,7 +60,7 @@ private const val COMPLETION_PREVIEW_LIMIT = 3
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CompletionHistory(state: InsightsUiState) {
-    var expanded by remember(state.timeRange, state.selectedProjectId) { mutableStateOf(false) }
+    var expanded by rememberSaveable(state.timeRange, state.selectedProjectId) { mutableStateOf(false) }
     Column {
         state.completions.events
             .take(COMPLETION_PREVIEW_LIMIT)
@@ -69,6 +74,7 @@ private fun CompletionHistory(state: InsightsUiState) {
             onDismissRequest = { expanded = false },
             containerColor = MaterialTheme.colorScheme.surface,
         ) {
+            AdaptiveModalWindow()
             LazyColumn(
                 Modifier.testTag("completion_history").padding(horizontal = InsightsDimens.ScreenHorizontalPadding),
             ) {

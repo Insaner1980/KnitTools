@@ -4,7 +4,9 @@ import android.content.Context
 import android.net.Uri
 import com.finnvek.knittools.data.storage.AppFileStorage
 import com.finnvek.knittools.data.storage.PatternDocumentStorage
+import com.finnvek.knittools.repository.ProjectDocumentMutationResult
 import com.finnvek.knittools.repository.SavedPatternRepository
+import com.finnvek.knittools.ui.screens.pattern.ProjectDocumentError
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -18,6 +20,8 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.IOException
 
@@ -31,6 +35,38 @@ class CounterPatternAttachmentFailureTest : CounterViewModelFixture() {
 
     @Test
     fun `committed attachment retains the imported copy after cancellation`() = verifyCleanup(true)
+
+    @Test
+    fun `failed detachment retains the displayed pattern and reports an error`() = verifyDetachFailure(throws = true)
+
+    @Test
+    fun `typed detachment failure retains the displayed pattern and reports an error`() =
+        verifyDetachFailure(throws = false)
+
+    private fun verifyDetachFailure(throws: Boolean) =
+        runTest {
+            val project = observedProject.value.copy(patternUri = "content://pattern/41", patternName = "Pattern")
+            observedProject.value = project
+            val model = viewModel()
+            model.selectProject(project)
+            advanceUntilIdle()
+            val before = model.uiState.value
+            val errors = collectErrors(model.projectContentErrors)
+            if (throws) {
+                coEvery { repository.detachPattern(7L) } throws IOException("Synthetic write failure")
+            } else {
+                coEvery { repository.detachPattern(7L) } returns ProjectDocumentMutationResult.PersistenceFailure
+            }
+
+            model.detachPattern()
+            advanceUntilIdle()
+
+            assertEquals(before.patternUri, model.uiState.value.patternUri)
+            assertEquals(before.patternName, model.uiState.value.patternName)
+            assertEquals(before.currentPatternPage, model.uiState.value.currentPatternPage)
+            assertEquals(before.patternRowMapping, model.uiState.value.patternRowMapping)
+            assertEquals(1, errors.size)
+        }
 
     private fun verifyCleanup(attached: Boolean?) =
         runTest {
@@ -65,9 +101,11 @@ class CounterPatternAttachmentFailureTest : CounterViewModelFixture() {
                     )
                 advanceUntilIdle()
 
-                viewModel.attachPattern(source, "pattern.pdf")
+                val feedback = mutableListOf<ProjectDocumentError?>()
+                attachProjectPatternWithFeedback(viewModel, source, "pattern.pdf", 7L) { feedback.add(it) }
                 advanceUntilIdle()
 
+                assertTrue(feedback.isEmpty())
                 coVerify(exactly = 1) { repository.attachPattern(7L, copied, any(), 0, null) }
                 coVerify(exactly = 1) { repository.isPatternDocumentAttached(7L, copied) }
                 verify(exactly = 0) { AppFileStorage.deleteIfAppOwned(context, copied) }

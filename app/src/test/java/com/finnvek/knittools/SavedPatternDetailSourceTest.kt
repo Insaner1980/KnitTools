@@ -12,6 +12,52 @@ import javax.xml.parsers.DocumentBuilderFactory
 
 class SavedPatternDetailSourceTest {
     @Test
+    fun `restored replacement prompt requires an admitted project owner`() {
+        val detail = ProjectSourceFiles.read(SAVED_PATTERN_DETAIL_SCREEN)
+        assertTrue(detail.contains("rememberSaveable(pattern.id) { mutableStateOf<Long?>(null) }"))
+        assertTrue(detail.contains("val replacementProjectId = attachmentState.projectId"))
+        assertTrue(
+            "A restored prompt must not render with a fresh ownerless attachment ViewModel",
+            Regex(
+                """if \(replacementProjectId != null\) \{\s*pendingReplacementId\?\.let \{ expectedExistingId ->\s*ConfirmationDialog\(""",
+            ).containsMatchIn(detail),
+        )
+        val confirmation =
+            detail
+                .substringAfter("val replacementProjectId = attachmentState.projectId")
+                .substringBefore("val scrollTitle")
+        assertTrue(confirmation.contains("startWebAttach(replacementProjectId, expectedExistingId)"))
+        assertTrue(confirmation.contains("onDismiss = { pendingReplacementId = null }"))
+        assertFalse(confirmation.contains("attachmentState.projectId?.let"))
+    }
+
+    @Test
+    fun `explicit project reselection clears the restored prompt before admitting another owner`() {
+        val detail = ProjectSourceFiles.read(SAVED_PATTERN_DETAIL_SCREEN)
+        val selection =
+            detail
+                .substringAfter("ProjectPickerSheet(")
+                .substringAfter("onSelect = { projectId ->")
+                .substringBefore("onDismiss =")
+        val discard = selection.indexOf("pendingReplacementId = null")
+        val admission = selection.indexOf("startWebAttach(projectId, null)")
+        assertTrue(
+            "Discard the old expected link before the new owner can emit state",
+            discard >= 0 && discard < admission,
+        )
+        assertTrue(detail.contains("onAttach = { showProjectPicker = true }"))
+        assertTrue(detail.contains("viewModel(key = \"web-attachment-${'$'}{pattern.id}\")"))
+        val resultEffect =
+            detail
+                .substringAfter("LaunchedEffect(attachmentState.result)")
+                .substringBefore("LaunchedEffect(deleteErrorId)")
+        assertTrue(
+            Regex("""attachmentViewModel\.consumeResult\(\)\s*handleWebAttachResult\(result\)""")
+                .containsMatchIn(resultEffect),
+        )
+    }
+
+    @Test
     fun `confirmation messages scroll by default and saved pattern deletion opts in explicitly`() {
         val dialog =
             ProjectSourceFiles.read(
@@ -166,7 +212,9 @@ class SavedPatternDetailSourceTest {
             }
         }
         val expectedQuantities =
-            if (file.parent.fileName.toString() in setOf("values-es", "values-fr", "values-it", "values-pt")) {
+            if (file.parent.fileName.toString() in
+                setOf("values-es", "values-fr", "values-it", "values-pt", "values-pt-rBR")
+            ) {
                 setOf("one", "many", "other")
             } else {
                 setOf("one", "other")

@@ -1,0 +1,103 @@
+{
+  "suites": [
+    {
+      "suite": "com.finnvek.knittools.ReferenceResourceLocalizationTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": "2026-10-19T03:00:18.218Z",
+      "methods": [
+        "text aliases resolve and plurals include other in every supported locale",
+        "supported locales define all translatable text resources with matching types"
+      ]
+    },
+    {
+      "suite": "com.finnvek.knittools.ui.CountPluralResourcesSourceTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": "2026-10-19T03:00:18.853Z",
+      "methods": [
+        "counts use plural resources in every locale"
+      ]
+    }
+  ],
+  "preservation": {
+    "entry_files": 1137,
+    "changed_existing_paths": [
+      "app/src/main/res/values-sv/pattern_reading_assistance.xml",
+      "app/src/main/res/values-sv/reference_strings.xml",
+      "app/src/main/res/values-sv/strings.xml"
+    ],
+    "reverse_all_edited_values_matches_entry_sha256": true,
+    "shared_english_input_hashes_unchanged": 449,
+    "new_paths": [
+      "config/language-audit/sv/coverage.tsv",
+      "config/language-audit/sv/entry-status.txt",
+      "config/language-audit/sv/entry-worktree-hashes.json",
+      "config/language-audit/sv/input-hashes.json",
+      "config/language-audit/sv/review.md",
+      "config/language-audit/sv/validation.json"
+    ],
+    "only_new_swedish_audit_records": true
+  },
+  "coverage": {
+    "rows": 1826,
+    "translatable_keys": 1349,
+    "translatable_variants": 1380,
+    "unique_ids": true,
+    "final_texts_match_xml": true,
+    "all_row_input_hashes_current": true,
+    "all_content_dimensions_resolved": true,
+    "V_blank_not_claimed": true,
+    "finding_ids_resolve_to_report": true
+  },
+  "date": "2026-10-19",
+  "branch": "codex/audit-korjaukset-20261018",
+  "head": "e4416c7cf0a7a9ea57006a970307ee2f3d1d228f",
+  "gradle": {
+    "command": ".\\gradlew.bat :app:processDebugResources :app:testDebugUnitTest --tests com.finnvek.knittools.ReferenceResourceLocalizationTest --tests com.finnvek.knittools.ui.CountPluralResourcesSourceTest --console=plain --no-daemon",
+    "exit_code": 0,
+    "result": "BUILD SUCCESSFUL",
+    "duration_seconds": 55,
+    "executed_tasks": 8,
+    "up_to_date_tasks": 30,
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped_tests": 0,
+    "log": "validation-gradle.log"
+  },
+  "resource_checks": {
+    "xml_parse": true,
+    "default_translatable_key_type_parity": true,
+    "plural_one_other": true,
+    "indexed_placeholder_type_parity": true,
+    "alias_resolution": true,
+    "array_keys": 0,
+    "translatable_aliases": 1
+  },
+  "git_diff_check": {
+    "exit_code": 0,
+    "note": "CRLF-to-LF configuration warnings only; no whitespace errors."
+  },
+  "corrections": {
+    "keys": 88,
+    "variants": 89,
+    "state": "VERIFIED"
+  },
+  "runtime": {
+    "new_android_execution": false,
+    "reason": "No named language question remained after source/context review.",
+    "reused_images": [
+      "reports/language-audit/shared/20261018-followup/shared-corrected-KFB.png",
+      "reports/language-audit/shared/20261018-followup/shared-corrected-P2tog.png"
+    ],
+    "image_limit": "Existing shared glyph geometry only; not Swedish rendering."
+  },
+  "native_speaker_review": "NOT_REQUESTED",
+  "temporary_processes": "One-shot Gradle --no-daemon completed with exit 0; no emulator, server, watcher or other persistent process started.",
+  "final_input_manifest_paths": 468
+}

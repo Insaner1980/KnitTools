@@ -7,13 +7,11 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
@@ -35,10 +33,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.calculator.SizeChartData
 import com.finnvek.knittools.domain.model.SizeChartEntry
-import com.finnvek.knittools.domain.model.SizeLabel
 import com.finnvek.knittools.ui.components.SegmentedToggle
 import com.finnvek.knittools.ui.components.ToolScreenScaffold
 import com.finnvek.knittools.ui.components.rememberCurrentLocale
+import com.finnvek.knittools.ui.layout.ContentWidthPolicy
 import com.finnvek.knittools.ui.screens.home.HomeViewModel
 import com.finnvek.knittools.ui.theme.knitToolsColors
 
@@ -64,47 +62,42 @@ fun SizeChartScreen(
         )
 
     ToolScreenScaffold(
+        contentWidthPolicy = ContentWidthPolicy.Chart,
         title = stringResource(R.string.size_charts_title),
         onBack = onBack,
     ) { padding ->
         BoxWithConstraints(Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp)) {
             val tableWidth = maxOf(maxWidth, 112.dp * LocalDensity.current.fontScale * headers.size)
-            Column {
-                // Kaikki kategoriat näkyvät kerralla ja vaihto on yksi napautus; pudotusvalikko piilotti ne.
-                val categories = SizeChartData.Category.entries
-                SegmentedToggle(
-                    options = categories.map { categoryLabels.getValue(it) },
-                    selectedIndex = categories.indexOf(selectedCategory),
-                    onSelect = { selectedCategory = categories[it] },
-                    modifier = Modifier.padding(vertical = 8.dp),
-                )
-
-                Box(Modifier.weight(1f).horizontalScroll(rememberScrollState())) {
-                    LazyColumn(
-                        Modifier.width(tableWidth).fillMaxHeight(),
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        item { SizeChartHeaderRow(headers) }
-
-                        // Data-rivit
-                        items(entries, key = { entry -> entry.lazyListKey(selectedCategory) }) { entry ->
-                            SizeChartDataRow(entry, useImperial)
-                            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+            LazyColumn(
+                Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                item(key = "categories") {
+                    val categories = SizeChartData.Category.entries
+                    SegmentedToggle(
+                        options = categories.map { categoryLabels.getValue(it) },
+                        selectedIndex = categories.indexOf(selectedCategory),
+                        onSelect = { selectedCategory = categories[it] },
+                        modifier = Modifier.padding(vertical = 8.dp),
+                    )
+                }
+                item(key = "table") {
+                    Box(Modifier.horizontalScroll(rememberScrollState())) {
+                        Column(
+                            Modifier.width(tableWidth),
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            SizeChartHeaderRow(headers)
+                            entries.forEach { entry ->
+                                SizeChartDataRow(entry, useImperial)
+                                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                            }
                         }
                     }
                 }
             }
         }
     }
-}
-
-private fun SizeChartEntry.lazyListKey(category: SizeChartData.Category): String {
-    val labelKey =
-        when (val label = sizeLabel) {
-            is SizeLabel.Resource -> "res:${label.resId}"
-        }
-
-    return "${category.name}:$labelKey"
 }
 
 @Composable

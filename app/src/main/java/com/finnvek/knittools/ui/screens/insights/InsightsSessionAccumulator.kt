@@ -71,7 +71,12 @@ internal class InsightsSessionAccumulator(
         }
         val daily = SessionMetrics.dailyActivitySeconds(one, previousStart ?: LocalDate.MIN, params.zone)
         daily.forEach { (date, seconds) ->
-            if (rangeDate == null || !date.isBefore(rangeDate)) activeDates.add(date)
+            // Count dates in the displayed calendar range, even when a past instant has a later stored-zone date.
+            if ((rangeDate == null || !date.isBefore(rangeDate)) &&
+                !date.isAfter(params.currentDate)
+            ) {
+                activeDates.add(date)
+            }
             if (previousStart != null && date.isBefore(requireNotNull(rangeDate))) {
                 previousSeconds[date] = addSessionSeconds(previousSeconds[date] ?: 0L, seconds)
             }

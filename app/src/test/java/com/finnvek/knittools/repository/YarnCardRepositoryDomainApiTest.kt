@@ -416,41 +416,43 @@ class YarnCardRepositoryDomainApiTest {
     @Test
     fun `yarn card save preserves existing detail-only fields when editing same card`() =
         runTest {
-            val existingYarnCard = detailedYarnCardEntity()
-            val yarnDao =
-                FakeYarnCardDao(
-                    yarnCards = listOf(existingYarnCard),
-                )
-            val projectDao =
-                RepositoryDomainFakeCounterProjectDao(
-                    projects =
-                        listOf(
-                            CounterProjectEntity(id = 10L, yarnCardIds = "5"),
-                        ),
-                )
-            val repository =
-                YarnCardRepository(
-                    yarnDao,
-                    projectDao,
-                    context,
-                    ImmediateDatabaseTransactionRunner,
-                    UnconfinedTestDispatcher(testScheduler),
-                )
+            for (quantity in listOf(0, 3)) {
+                val existingYarnCard = detailedYarnCardEntity().copy(quantityInStash = quantity)
+                val yarnDao =
+                    FakeYarnCardDao(
+                        yarnCards = listOf(existingYarnCard),
+                    )
+                val projectDao =
+                    RepositoryDomainFakeCounterProjectDao(
+                        projects =
+                            listOf(
+                                CounterProjectEntity(id = 10L, yarnCardIds = "5"),
+                            ),
+                    )
+                val repository =
+                    YarnCardRepository(
+                        yarnDao,
+                        projectDao,
+                        context,
+                        ImmediateDatabaseTransactionRunner,
+                        UnconfinedTestDispatcher(testScheduler),
+                    )
 
-            val savedId = repository.saveCard(editedYarnCard())
+                val savedId = repository.saveCard(editedYarnCard())
 
-            assertEquals(5L, savedId)
-            assertEquals(
-                existingYarnCard.copy(
-                    brand = "New brand",
-                    yarnName = "New yarn",
-                    colorName = "New color",
-                    colorNumber = "34",
-                    dyeLot = "B",
-                    weightCategory = "Fingering",
-                ),
-                yarnDao.lastUpserted,
-            )
-            assertEquals(emptyMap<Long, String>(), projectDao.updatedYarnCardIds)
+                assertEquals(5L, savedId)
+                assertEquals(
+                    existingYarnCard.copy(
+                        brand = "New brand",
+                        yarnName = "New yarn",
+                        colorName = "New color",
+                        colorNumber = "34",
+                        dyeLot = "B",
+                        weightCategory = "Fingering",
+                    ),
+                    yarnDao.lastUpserted,
+                )
+                assertEquals(emptyMap<Long, String>(), projectDao.updatedYarnCardIds)
+            }
         }
 }

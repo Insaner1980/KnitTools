@@ -171,6 +171,25 @@ Log.i(TAG, """raw ( ) " text""")`;
   assert.deepEqual(sensitiveAndroidLog.match(content, productionPath), []);
 });
 
+for (const comment of [
+  "/* don't extend the call */",
+  "/* outer /* nested */ don't extend the call */",
+  "// don't extend the call\n",
+]) {
+  test(`safe log boundaries ignore comment apostrophes: ${comment}`, () => {
+    const content = `Log.d(TAG, ${comment} "ready")\nval password = "synthetic-only"`;
+    assert.deepEqual(sensitiveAndroidLog.match(content, productionPath), []);
+  });
+}
+
+test("FirebaseAuth identifiers pass the callable boundary pre-filter", () => {
+  const matches = ravelryFirebaseCallableSurface.match(
+    "val auth = FirebaseAuth.getInstance()",
+    productionPath,
+  );
+  assert.deepEqual(matches.map((match) => match.matchedPattern), ["Firebase Auth boundary"]);
+});
+
 test("flags Android Kotlin entry points without scanning test files", () => {
   const content = `
 class MainActivity : AppCompatActivity() {

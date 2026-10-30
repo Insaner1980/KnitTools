@@ -80,6 +80,7 @@ class PatternAnnotationAccessibilitySourceTest {
                 "values-nb",
                 "values-nl",
                 "values-pt",
+                "values-pt-rBR",
                 "values-sv",
             )
     }

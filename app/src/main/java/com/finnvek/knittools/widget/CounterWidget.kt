@@ -1,17 +1,20 @@
 package com.finnvek.knittools.widget
 
 import android.content.Context
+import android.os.Build
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.datastore.preferences.core.Preferences
+import androidx.glance.ColorFilter
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import androidx.glance.GlanceTheme
+import androidx.glance.Image
+import androidx.glance.ImageProvider
 import androidx.glance.LocalContext
 import androidx.glance.LocalSize
 import androidx.glance.action.clickable
@@ -20,6 +23,7 @@ import androidx.glance.appwidget.LinearProgressIndicator
 import androidx.glance.appwidget.SizeMode
 import androidx.glance.appwidget.action.actionSendBroadcast
 import androidx.glance.appwidget.action.actionStartActivity
+import androidx.glance.appwidget.appWidgetBackground
 import androidx.glance.appwidget.cornerRadius
 import androidx.glance.appwidget.provideContent
 import androidx.glance.background
@@ -28,6 +32,7 @@ import androidx.glance.layout.Alignment
 import androidx.glance.layout.Box
 import androidx.glance.layout.Column
 import androidx.glance.layout.ColumnScope
+import androidx.glance.layout.ContentScale
 import androidx.glance.layout.Row
 import androidx.glance.layout.Spacer
 import androidx.glance.layout.fillMaxSize
@@ -44,21 +49,30 @@ import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextAlign
 import androidx.glance.text.TextStyle
+import androidx.glance.unit.ColorProvider
 import com.finnvek.knittools.MainActivity
 import com.finnvek.knittools.R
+import com.finnvek.knittools.domain.model.MainCounterLabelType
 import com.finnvek.knittools.pro.ProFeature
+import com.finnvek.knittools.ui.components.labelRes
+import com.finnvek.knittools.ui.theme.CounterWidgetDimens
 import com.finnvek.knittools.ui.theme.LightSurface
 import com.finnvek.knittools.ui.theme.LightTextMuted
 import com.finnvek.knittools.ui.theme.LightTextPrimary
 import com.finnvek.knittools.ui.theme.LightTextSecondary
+import com.finnvek.knittools.ui.theme.LightYarnColors
 import com.finnvek.knittools.ui.theme.OnPrimary
 import com.finnvek.knittools.ui.theme.Primary
 import com.finnvek.knittools.ui.theme.PrimaryContainer
+import com.finnvek.knittools.ui.theme.ProjectListDimens
 import com.finnvek.knittools.ui.theme.Surface
 import com.finnvek.knittools.ui.theme.TextMuted
 import com.finnvek.knittools.ui.theme.TextPrimary
 import com.finnvek.knittools.ui.theme.TextSecondary
+import com.finnvek.knittools.ui.theme.YarnColors
+import com.finnvek.knittools.ui.theme.yarnColorForId
 import dagger.hilt.android.EntryPointAccessors
+import androidx.glance.color.ColorProvider as DayNightColorProvider
 
 class CounterWidget : GlanceAppWidget() {
     override val stateDefinition = PreferencesGlanceStateDefinition
@@ -179,8 +193,8 @@ private fun ProRequiredWidget() {
     WidgetCard(
         projectId = null,
         openProUpgrade = true,
-        horizontalPadding = 12.dp,
-        verticalPadding = 4.dp,
+        horizontalPadding = CounterWidgetDimens.HorizontalPadding,
+        verticalPadding = CounterWidgetDimens.SectionSpacing,
     ) {
         Box(
             modifier = GlanceModifier.fillMaxSize(),
@@ -191,7 +205,7 @@ private fun ProRequiredWidget() {
                 modifier = GlanceModifier.semantics { contentDescription = description },
                 style =
                     TextStyle(
-                        fontSize = 12.sp,
+                        fontSize = CounterWidgetDimens.ProPromptSize,
                         color = GlanceTheme.colors.onSurfaceVariant,
                     ),
             )
@@ -199,197 +213,136 @@ private fun ProRequiredWidget() {
     }
 }
 
+/**
+ * Pieni widget on yhden napautuksen rivilaskuri: nimi ja luku vasemmalla, laskurin oma
+ * 3D-plus oikealla. Miinus ja tavoite jäävät isompiin kokoihin.
+ */
 @androidx.compose.runtime.Composable
 private fun SmallWidget(
     data: WidgetData,
     projectId: Long?,
 ) {
     val stacked = LocalSize.current.height >= CounterWidget.STACKED_SMALL_SIZE.height
-    val largeFont = LocalContext.current.resources.configuration.fontScale > 1.3f
     WidgetCard(
         projectId = projectId,
-        horizontalPadding = if (stacked) 8.dp else 14.dp,
-        verticalPadding = if (stacked || largeFont) 0.dp else 4.dp,
-        frame =
-            WidgetCardFrame(
-                outerPadding = if (largeFont) 0.dp else 2.dp,
-                borderWidth = if (largeFont) 1.dp else 2.dp,
-                cornerRadius = 18.dp,
-            ),
+        horizontalPadding = CounterWidgetDimens.SmallHorizontalPadding,
+        verticalPadding = 0.dp,
     ) {
-        if (stacked) {
-            Column(
-                modifier = GlanceModifier.fillMaxSize(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                SmallWidgetProjectName(data, GlanceModifier.fillMaxWidth(), TextAlign.Center)
-                SmallWidgetCount(data)
+        Row(
+            modifier = GlanceModifier.fillMaxSize(),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            // 48 dp:n rivissä nimi ja luku eivät mahdu päällekkäin, joten ne ovat rinnakkain.
+            if (stacked) {
+                Column(modifier = GlanceModifier.defaultWeight()) {
+                    WidgetProjectName(
+                        data = data,
+                        fontSize = CounterWidgetDimens.SmallNameSize,
+                        textAlign = TextAlign.Start,
+                    )
+                    WidgetCount(data = data, fontSize = CounterWidgetDimens.StackedCountSize)
+                }
+            } else {
+                Box(modifier = GlanceModifier.defaultWeight()) {
+                    WidgetProjectName(
+                        data = data,
+                        fontSize = CounterWidgetDimens.SmallNameSize,
+                        textAlign = TextAlign.Start,
+                    )
+                }
+                Spacer(modifier = GlanceModifier.width(CounterWidgetDimens.SectionSpacing))
+                WidgetCount(data = data, fontSize = CounterWidgetDimens.SmallCountSize)
+                Spacer(modifier = GlanceModifier.width(CounterWidgetDimens.SectionSpacing))
             }
-        } else {
-            Row(
-                modifier = GlanceModifier.fillMaxSize(),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                SmallWidgetProjectName(data, GlanceModifier.defaultWeight(), TextAlign.Start)
-                Spacer(modifier = GlanceModifier.width(4.dp))
-                SmallWidgetCount(data)
-            }
+            WidgetCountButton(
+                action = WidgetCountAction.INCREMENT,
+                size = CounterWidgetDimens.SmallButtonTouchSize,
+                imageInset = CounterWidgetDimens.SmallButtonInset,
+            )
         }
     }
 }
 
-@androidx.compose.runtime.Composable
-private fun SmallWidgetProjectName(
-    data: WidgetData,
-    modifier: GlanceModifier,
-    textAlign: TextAlign,
-) {
-    Text(
-        text = data.projectName,
-        modifier = modifier,
-        style =
-            TextStyle(
-                fontSize = 11.sp,
-                textAlign = textAlign,
-                fontWeight = FontWeight.Medium,
-                color = GlanceTheme.colors.onSurface,
-            ),
-        maxLines = 1,
-    )
-}
-
-@androidx.compose.runtime.Composable
-private fun SmallWidgetCount(data: WidgetData) {
-    Text(
-        text = formatPrimaryCount(data),
-        style =
-            TextStyle(
-                fontSize = 22.sp,
-                fontWeight = FontWeight.Bold,
-                color = GlanceTheme.colors.onSurface,
-            ),
-        maxLines = 1,
-    )
-}
-
+/**
+ * Neliö: nimi, luku, tavoitepalkki ja sen alla täysleveä yksikkörivi, napit alhaalla reunoissa.
+ * Yksikkö ei mahdu nappien väliin: 160 dp:n leveydestä jää sinne vain noin 36 dp, ja esimerkiksi
+ * "KERROKSET" ja "yhteensä 72" katkesivat.
+ */
 @androidx.compose.runtime.Composable
 private fun MediumWidget(
     data: WidgetData,
     projectId: Long?,
 ) {
-    val largeFont = LocalContext.current.resources.configuration.fontScale > 1.3f
-    WidgetCard(
-        projectId = projectId,
-        horizontalPadding = 16.dp,
-        verticalPadding = if (largeFont) 0.dp else 6.dp,
-    ) {
-        WidgetHeader(data = data, fontSize = 13.sp, centered = true, maxLines = 1)
-        WidgetTargetLabel(data = data, fontSize = 11.sp)
+    WidgetCard(projectId = projectId) {
+        WidgetProjectName(data = data, fontSize = CounterWidgetDimens.NameSize, textAlign = TextAlign.Center)
         Spacer(modifier = GlanceModifier.defaultWeight())
-        Box(
+        WidgetCount(
+            data = data,
+            fontSize = CounterWidgetDimens.CountSize,
             modifier = GlanceModifier.fillMaxWidth(),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text(
-                text = formatPrimaryCount(data),
-                style =
-                    TextStyle(
-                        fontSize = 32.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = GlanceTheme.colors.onSurface,
-                    ),
-                maxLines = 1,
-            )
-        }
-        WidgetProgressBar(data = data, topSpacing = 4.dp)
-        Spacer(modifier = GlanceModifier.height(if (largeFont) 0.dp else 6.dp))
+        )
+        WidgetTargetBar(data = data)
+        WidgetCaptionRow(data = data)
+        Spacer(modifier = GlanceModifier.defaultWeight())
         Row(
             modifier = GlanceModifier.fillMaxWidth(),
-            horizontalAlignment = Alignment.CenterHorizontally,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            WidgetActionButton(
-                text = "−",
-                size = 48.dp,
-                action = WidgetCountAction.DECREMENT,
-            )
-            Spacer(modifier = GlanceModifier.width(16.dp))
-            WidgetActionButton(
-                text = "+",
-                size = 48.dp,
-                action = WidgetCountAction.INCREMENT,
-            )
+            WidgetCountButton(action = WidgetCountAction.DECREMENT, size = CounterWidgetDimens.ButtonSize)
+            Spacer(modifier = GlanceModifier.defaultWeight())
+            WidgetCountButton(action = WidgetCountAction.INCREMENT, size = CounterWidgetDimens.ButtonSize)
         }
     }
 }
 
+/** Leveä: miinus ja plus luvun molemmin puolin kuten laskurissa, tavoitepalkki alla. */
 @androidx.compose.runtime.Composable
 private fun LargeWidget(
     data: WidgetData,
     projectId: Long?,
 ) {
-    val largeFont = LocalContext.current.resources.configuration.fontScale > 1.3f
-    WidgetCard(
-        projectId = projectId,
-        horizontalPadding = 18.dp,
-        verticalPadding = if (largeFont) 0.dp else 6.dp,
-    ) {
-        WidgetHeader(data = data, fontSize = 14.sp, centered = true, maxLines = 1)
-        WidgetTargetLabel(data = data, fontSize = 12.sp)
-        Spacer(modifier = GlanceModifier.defaultWeight())
-        // CPD-OFF: Widget-koon itsenainen rakenne pidetaan lahdekoodisopimuksen tarkistettavana.
-        Box(
-            modifier = GlanceModifier.fillMaxWidth(),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text(
-                text = formatPrimaryCount(data),
-                style =
-                    TextStyle(
-                        fontSize = 34.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = GlanceTheme.colors.onSurface,
-                    ),
-                maxLines = 1,
-            )
+    WidgetCard(projectId = projectId) {
+        WidgetProjectName(data = data, fontSize = CounterWidgetDimens.NameSize, textAlign = TextAlign.Center)
+        data.sectionName?.let { section ->
+            WidgetCaption(text = section, modifier = GlanceModifier.fillMaxWidth(), textAlign = TextAlign.Center)
         }
-        WidgetProgressBar(data = data, topSpacing = 4.dp)
-        Spacer(modifier = GlanceModifier.height(if (largeFont) 0.dp else 6.dp))
+        Spacer(modifier = GlanceModifier.defaultWeight())
         Row(
             modifier = GlanceModifier.fillMaxWidth(),
-            horizontalAlignment = Alignment.CenterHorizontally,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            WidgetActionButton(
-                text = "−",
-                size = 48.dp,
-                action = WidgetCountAction.DECREMENT,
+            WidgetCountButton(action = WidgetCountAction.DECREMENT, size = CounterWidgetDimens.LargeButtonSize)
+            WidgetCount(
+                data = data,
+                fontSize = CounterWidgetDimens.LargeCountSize,
+                modifier = GlanceModifier.defaultWeight(),
             )
-            Spacer(modifier = GlanceModifier.width(18.dp))
-            WidgetActionButton(
-                text = "+",
-                size = 48.dp,
-                action = WidgetCountAction.INCREMENT,
-            )
+            WidgetCountButton(action = WidgetCountAction.INCREMENT, size = CounterWidgetDimens.LargeButtonSize)
         }
-        // CPD-ON
+        WidgetTargetBar(data = data)
+        WidgetCaptionRow(data = data)
+        Spacer(modifier = GlanceModifier.defaultWeight())
     }
 }
 
-data class WidgetCardFrame(
-    val outerPadding: Dp = 2.dp,
-    val borderWidth: Dp = 3.dp,
-    val cornerRadius: Dp = 24.dp,
-)
+@androidx.compose.runtime.Composable
+private fun widgetVerticalPadding(): Dp =
+    if (LocalContext.current.resources.configuration.fontScale > LARGE_FONT_SCALE) {
+        CounterWidgetDimens.LargeFontVerticalPadding
+    } else {
+        CounterWidgetDimens.VerticalPadding
+    }
 
+/**
+ * Reunaton pinta, jonka taustalla on projektin lankavärinen sileäneule. Kulmat seuraavat
+ * käynnistimen widget-kulmia (Android 12+), ja koko pinta avaa projektin laskurin.
+ */
 @androidx.compose.runtime.Composable
 private fun WidgetCard(
     projectId: Long?,
     openProUpgrade: Boolean = false,
-    horizontalPadding: Dp,
-    verticalPadding: Dp,
-    frame: WidgetCardFrame = WidgetCardFrame(),
+    horizontalPadding: Dp = CounterWidgetDimens.HorizontalPadding,
+    verticalPadding: Dp = widgetVerticalPadding(),
     content: @androidx.compose.runtime.Composable ColumnScope.() -> Unit,
 ) {
     val context = LocalContext.current
@@ -403,20 +356,22 @@ private fun WidgetCard(
         modifier =
             GlanceModifier
                 .fillMaxSize()
-                .padding(frame.outerPadding)
-                .cornerRadius(frame.cornerRadius)
-                .background(GlanceTheme.colors.surfaceVariant)
-                .clickable(
-                    actionStartActivity(launchIntent),
-                ).padding(frame.borderWidth),
-        contentAlignment = Alignment.Center,
+                .appWidgetBackground()
+                .then(systemWidgetCorners())
+                .background(GlanceTheme.colors.surface)
+                .clickable(actionStartActivity(launchIntent)),
     ) {
+        Image(
+            provider = ImageProvider(R.drawable.widget_knit_texture),
+            contentDescription = null,
+            modifier = GlanceModifier.fillMaxSize(),
+            contentScale = ContentScale.FillBounds,
+            colorFilter = ColorFilter.tint(widgetYarnColor(projectId)),
+        )
         Column(
             modifier =
                 GlanceModifier
                     .fillMaxSize()
-                    .cornerRadius(frame.cornerRadius - frame.borderWidth)
-                    .background(GlanceTheme.colors.surface)
                     .padding(horizontal = horizontalPadding, vertical = verticalPadding),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
@@ -425,19 +380,31 @@ private fun WidgetCard(
     }
 }
 
+private fun systemWidgetCorners(): GlanceModifier =
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        GlanceModifier.cornerRadius(android.R.dimen.system_app_widget_background_radius)
+    } else {
+        GlanceModifier
+    }
+
+/** Sama projektikohtainen lankaväri kuin projektikortin tilkussa, teemakohtaisesta paletista. */
+private fun widgetYarnColor(projectId: Long?): ColorProvider {
+    val id = projectId ?: 0L
+    return DayNightColorProvider(
+        day = yarnColorForId(id, LightYarnColors),
+        night = yarnColorForId(id, YarnColors),
+    )
+}
+
 @androidx.compose.runtime.Composable
-private fun WidgetHeader(
+private fun WidgetProjectName(
     data: WidgetData,
     fontSize: TextUnit,
-    centered: Boolean = false,
-    maxLines: Int = 1,
-    showSection: Boolean = true,
+    textAlign: TextAlign,
 ) {
-    val textAlign = if (centered) TextAlign.Center else TextAlign.Start
-    val modifier = if (centered) GlanceModifier.fillMaxWidth() else GlanceModifier
     Text(
         text = data.projectName,
-        modifier = modifier,
+        modifier = GlanceModifier.fillMaxWidth(),
         style =
             TextStyle(
                 fontSize = fontSize,
@@ -445,72 +412,108 @@ private fun WidgetHeader(
                 color = GlanceTheme.colors.onSurface,
                 textAlign = textAlign,
             ),
-        maxLines = maxLines,
+        maxLines = 1,
     )
-    if (showSection) {
-        data.sectionName?.let { section ->
-            Text(
-                text = section,
-                modifier = modifier,
-                style =
-                    TextStyle(
-                        fontSize = (fontSize.value - 2f).sp,
-                        color = GlanceTheme.colors.onSurfaceVariant,
-                        textAlign = textAlign,
-                    ),
-                maxLines = 1,
-            )
-        }
-    }
 }
 
-private fun formatPrimaryCount(data: WidgetData): String = data.count.toString()
-
 @androidx.compose.runtime.Composable
-private fun WidgetTargetLabel(
+private fun WidgetCount(
     data: WidgetData,
     fontSize: TextUnit,
+    modifier: GlanceModifier = GlanceModifier,
 ) {
-    val context = LocalContext.current
-    val target = data.targetRows ?: return
-    if (target <= 0) return
     Text(
-        text = context.getString(R.string.row_label_with_target, data.count, target),
-        modifier = GlanceModifier.fillMaxWidth(),
+        text = data.count.toString(),
+        modifier = modifier,
         style =
             TextStyle(
                 fontSize = fontSize,
-                color = GlanceTheme.colors.onSurfaceVariant,
+                fontWeight = FontWeight.Bold,
+                color = GlanceTheme.colors.onSurface,
                 textAlign = TextAlign.Center,
             ),
-        maxLines = 3,
+        maxLines = 1,
     )
 }
 
 @androidx.compose.runtime.Composable
-private fun WidgetProgressBar(
-    data: WidgetData,
-    topSpacing: Dp,
-) {
-    val target = data.targetRows ?: return
-    if (target <= 0) return
-    val fraction = (data.count.toFloat() / target.toFloat()).coerceIn(0f, 1f)
-    val completed = data.count >= target
-    val fillColor = if (completed) GlanceTheme.colors.tertiary else GlanceTheme.colors.primary
-    Spacer(modifier = GlanceModifier.height(topSpacing))
-    LinearProgressIndicator(
-        progress = fraction,
-        modifier = GlanceModifier.fillMaxWidth().height(4.dp),
-        color = fillColor,
-        backgroundColor = GlanceTheme.colors.surfaceVariant,
-    )
-}
-
-@androidx.compose.runtime.Composable
-private fun WidgetActionButton(
+private fun WidgetCaption(
     text: String,
-    size: Dp,
+    modifier: GlanceModifier = GlanceModifier,
+    textAlign: TextAlign = TextAlign.Start,
+) {
+    Text(
+        text = text,
+        modifier = modifier,
+        style =
+            TextStyle(
+                fontSize = CounterWidgetDimens.CaptionSize,
+                color = GlanceTheme.colors.onSurfaceVariant,
+                textAlign = textAlign,
+            ),
+        maxLines = 1,
+    )
+}
+
+/** Laskurin yksikkö versaalein kuten osio-otsikoissa ("ROWS"). */
+@androidx.compose.runtime.Composable
+private fun widgetUnitLabel(data: WidgetData): String {
+    val context = LocalContext.current
+    val label =
+        data.customLabel.takeIf { data.labelType == MainCounterLabelType.CUSTOM }
+            ?: context.getString(data.labelType.labelRes)
+    return label.uppercase(context.resources.configuration.locales[0])
+}
+
+/** "of 72" kuten laskurin tavoiterivillä, tai null ilman tavoitetta. */
+@androidx.compose.runtime.Composable
+private fun widgetTargetLabel(data: WidgetData): String? {
+    val target = data.targetRows?.takeIf { it > 0 } ?: return null
+    return LocalContext.current.getString(R.string.counter_target_of_format, target)
+}
+
+/** Tavoitteen palkki luvun alla; pohja on onSurfacen alfa kuten ProjectProgressBarissa. */
+@androidx.compose.runtime.Composable
+private fun WidgetTargetBar(data: WidgetData) {
+    val target = data.targetRows?.takeIf { it > 0 } ?: return
+    val completed = data.count >= target
+    Spacer(modifier = GlanceModifier.height(CounterWidgetDimens.ProgressTopSpacing))
+    LinearProgressIndicator(
+        progress = (data.count.toFloat() / target).coerceIn(0f, 1f),
+        modifier = GlanceModifier.fillMaxWidth().height(CounterWidgetDimens.ProgressHeight),
+        color = if (completed) GlanceTheme.colors.tertiary else GlanceTheme.colors.primary,
+        backgroundColor = WidgetProgressTrack,
+    )
+}
+
+/** Palkin alla täysleveänä: yksikkö vasemmalla ja "of 72" oikealla, ilman tavoitetta keskellä. */
+@androidx.compose.runtime.Composable
+private fun WidgetCaptionRow(data: WidgetData) {
+    val unit = widgetUnitLabel(data)
+    val target = widgetTargetLabel(data)
+    if (target == null) {
+        WidgetCaption(text = unit, modifier = GlanceModifier.fillMaxWidth(), textAlign = TextAlign.Center)
+        return
+    }
+    Spacer(modifier = GlanceModifier.height(CounterWidgetDimens.SectionSpacing))
+    Row(modifier = GlanceModifier.fillMaxWidth()) {
+        WidgetCaption(text = unit, modifier = GlanceModifier.defaultWeight())
+        WidgetCaption(text = target, textAlign = TextAlign.End)
+    }
+}
+
+private val WidgetProgressTrack =
+    DayNightColorProvider(
+        day = LightTextPrimary.copy(alpha = ProjectListDimens.ProgressTrackAlpha),
+        night = TextPrimary.copy(alpha = ProjectListDimens.ProgressTrackAlpha),
+    )
+
+/** Laskurinäytön 3D-nappi sellaisenaan; kosketusalue on vähintään 48 dp. */
+@androidx.compose.runtime.Composable
+private fun WidgetCountButton(
     action: WidgetCountAction,
+    size: Dp,
+    imageInset: Dp = 0.dp,
 ) {
     val context = LocalContext.current
     val onClick =
@@ -527,34 +530,24 @@ private fun WidgetActionButton(
                 WidgetCountAction.INCREMENT -> R.string.counter_increase
             },
         )
+    // Nimi on kuvassa: RemoteViews ei välitä Boxin semantiikkaa, ja TalkBack lukee napautettavan
+    // laatikon nimen sen sisällöstä.
     Box(
-        modifier =
-            GlanceModifier
-                .size(size)
-                .cornerRadius(size / 2)
-                .background(GlanceTheme.colors.primary)
-                .semantics { contentDescription = actionDescription }
-                .clickable(onClick),
+        modifier = GlanceModifier.size(size).clickable(onClick),
         contentAlignment = Alignment.Center,
     ) {
-        Box(
-            modifier =
-                GlanceModifier
-                    .size(size - 2.dp)
-                    .cornerRadius((size - 2.dp) / 2)
-                    .background(GlanceTheme.colors.tertiary),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text(
-                text = text,
-                style =
-                    TextStyle(
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = GlanceTheme.colors.onPrimary,
-                    ),
-            )
-        }
+        Image(
+            provider =
+                ImageProvider(
+                    when (action) {
+                        WidgetCountAction.DECREMENT -> R.drawable.counter_minus_button
+                        WidgetCountAction.INCREMENT -> R.drawable.counter_plus_button
+                    },
+                ),
+            contentDescription = actionDescription,
+            modifier = GlanceModifier.fillMaxSize().padding(imageInset),
+            contentScale = ContentScale.Fit,
+        )
     }
 }
 
@@ -562,3 +555,5 @@ private enum class WidgetCountAction {
     DECREMENT,
     INCREMENT,
 }
+
+private const val LARGE_FONT_SCALE = 1.3f

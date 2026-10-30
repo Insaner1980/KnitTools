@@ -79,6 +79,7 @@ class ProjectLocalizationSourceTest {
                 "values-nb",
                 "values-nl",
                 "values-pt",
+                "values-pt-rBR",
                 "values-sv",
             )
         private val PROJECT_FORMATS =

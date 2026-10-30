@@ -1,5 +1,6 @@
 package com.finnvek.knittools.ui.screens.insights
 
+import androidx.lifecycle.SavedStateHandle
 import com.finnvek.knittools.domain.calculator.MinutesPerRowDisplay
 import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.domain.model.KnitSession
@@ -19,6 +20,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -71,7 +73,15 @@ class InsightsViewModelTest {
         Dispatchers.resetMain()
     }
 
-    private fun createViewModel() = InsightsViewModel(repository, proManager, testDispatcher)
+    private fun TestScope.createViewModel() =
+        InsightsViewModel(
+            repository,
+            proManager,
+            testDispatcher,
+            SavedStateHandle(),
+            mockk(relaxed = true),
+            backgroundScope,
+        )
 
     @Test
     fun `isPro uses insights charts feature gate`() =
@@ -244,8 +254,9 @@ class InsightsViewModelTest {
     // CPD-ON
 
     @Test
-    fun `minutes per row replaces rows per hour in the stats row`() =
+    fun `unknown session units do not produce a row pace`() =
         runTest {
+            every { repository.getAllProjects() } returns flowOf(listOf(CounterProject(id = 1)))
             val zone = ZoneId.systemDefault()
             val today = LocalDate.now(zone)
             val session = sessionAt(date = today, hour = 10, minute = 0, rows = 10, minutes = 90, zone = zone)
@@ -254,12 +265,16 @@ class InsightsViewModelTest {
             val viewModel = createViewModel()
             val state = viewModel.uiState.first { it.hasSessionData }
 
-            assertEquals(MinutesPerRowDisplay.Minutes(9), state.minutesPerRow)
+            assertEquals(MinutesPerRowDisplay.Unavailable, state.minutesPerRow)
+            assertFalse(state.rowMetricsAvailable)
+            assertEquals(90, state.totalMinutes)
+            assertEquals(10L, state.totalRows)
         }
 
     @Test
-    fun `minutes per row uses exact session seconds`() =
+    fun `unknown units preserve established time rounding without producing a row pace`() =
         runTest {
+            every { repository.getAllProjects() } returns flowOf(listOf(CounterProject(id = 1)))
             val zone = ZoneId.systemDefault()
             val startedAt = instantMillis(LocalDate.now(zone), 10, 0, zone)
             val session =
@@ -278,7 +293,10 @@ class InsightsViewModelTest {
 
             val state = createViewModel().uiState.first { !it.isLoading }
 
-            assertEquals(MinutesPerRowDisplay.Minutes(1), state.minutesPerRow)
+            assertEquals(MinutesPerRowDisplay.Unavailable, state.minutesPerRow)
+            assertFalse(state.rowMetricsAvailable)
+            assertEquals(2, state.totalMinutes)
+            assertEquals(1L, state.totalRows)
         }
 
     @Test

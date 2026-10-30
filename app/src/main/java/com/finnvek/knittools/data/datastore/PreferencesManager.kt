@@ -13,6 +13,7 @@ import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.finnvek.knittools.domain.model.CraftType
 import com.finnvek.knittools.domain.model.ProjectSortOrder
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
@@ -45,6 +46,8 @@ data class AppPreferences(
     val showCompletedProjects: Boolean = false,
     val projectSortOrder: ProjectSortOrder = ProjectSortOrder.DEFAULT,
     val usageAnalyticsEnabled: Boolean = false,
+    val usageAnalyticsGeneration: String? = null,
+    val lastProjectCraftType: CraftType = CraftType.KNITTING,
 )
 
 @Singleton
@@ -69,12 +72,14 @@ class PreferencesManager
                     useImperial = prefs[KEY_USE_IMPERIAL] ?: false,
                     showCompletedProjects = prefs[KEY_SHOW_COMPLETED] ?: false,
                     projectSortOrder = ProjectSortOrder.fromPersistedValue(prefs[KEY_SORT_ORDER]),
-                    usageAnalyticsEnabled = prefs[KEY_USAGE_ANALYTICS] ?: false,
+                    usageAnalyticsEnabled = prefs[USAGE_ANALYTICS_ENABLED] ?: false,
+                    usageAnalyticsGeneration = prefs[USAGE_ANALYTICS_GENERATION],
+                    lastProjectCraftType = CraftType.fromPersistedValue(prefs[KEY_LAST_PROJECT_CRAFT]),
                 )
             }
 
         suspend fun setUsageAnalyticsEnabled(enabled: Boolean): Boolean =
-            context.dataStore.editPreferencesSafely { it[KEY_USAGE_ANALYTICS] = enabled }
+            context.dataStore.writeUsageAnalyticsConsent(enabled)
 
         suspend fun setThemeMode(mode: ThemeMode) {
             context.dataStore.editPreferencesSafely {
@@ -120,6 +125,12 @@ class PreferencesManager
         suspend fun setProjectSortOrder(order: ProjectSortOrder) {
             context.dataStore.editPreferencesSafely {
                 it[KEY_SORT_ORDER] = order.persistedValue
+            }
+        }
+
+        suspend fun setLastProjectCraftType(type: CraftType) {
+            context.dataStore.editPreferencesSafely {
+                it[KEY_LAST_PROJECT_CRAFT] = type.name
             }
         }
 
@@ -195,7 +206,6 @@ class PreferencesManager
 
         private companion object {
             val KEY_THEME_MODE = intPreferencesKey("theme_mode")
-            val KEY_USAGE_ANALYTICS = booleanPreferencesKey("usage_analytics_enabled")
             val KEY_APP_LANGUAGE = stringPreferencesKey("app_language")
             val KEY_APP_LANGUAGE_MIGRATED_TO_SYSTEM =
                 booleanPreferencesKey("app_language_migrated_to_system")
@@ -204,5 +214,6 @@ class PreferencesManager
             val KEY_USE_IMPERIAL = booleanPreferencesKey("use_imperial")
             val KEY_SHOW_COMPLETED = booleanPreferencesKey("show_completed_projects")
             val KEY_SORT_ORDER = stringPreferencesKey("project_sort_order")
+            val KEY_LAST_PROJECT_CRAFT = stringPreferencesKey("last_project_craft_type")
         }
     }

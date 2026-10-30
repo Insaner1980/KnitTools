@@ -3,6 +3,8 @@ package com.finnvek.knittools.ui.screens.pattern
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
+internal fun patternImageImportViewModelKey(projectId: Long?): String = "pattern-image-import:$projectId"
+
 internal object PatternImageImportLimits {
     const val MAX_PAGES = 20
     const val MAX_BYTES_PER_IMAGE = 25L * 1024L * 1024L
@@ -123,6 +125,8 @@ internal data class PatternImageImportUiState(
     val error: PatternImageImportError? = null,
     val duplicatesIgnored: Int = 0,
     val pickerRequestId: String? = null,
+    val pickerLaunched: Boolean = false,
+    val cameraCapturePending: Boolean = false,
     val replacementConfirmationPending: Boolean = false,
     val closeReady: Boolean = false,
     val invalidPageIds: Set<String> = emptySet(),

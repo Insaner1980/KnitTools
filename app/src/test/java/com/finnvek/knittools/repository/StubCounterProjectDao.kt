@@ -16,6 +16,10 @@ open class StubCounterProjectDao(
 
     override fun getAllProjects(): Flow<List<CounterProjectEntity>> = flowOf(projects)
 
+    override fun observeHasAnyProject(): Flow<Boolean> = flowOf(projects.isNotEmpty())
+
+    override suspend fun hasAnyProject(): Boolean = projects.isNotEmpty()
+
     override suspend fun getAllProjectsOnce(): List<CounterProjectEntity> = projects
 
     override suspend fun getProject(id: Long): CounterProjectEntity? = getProjectSync(id)

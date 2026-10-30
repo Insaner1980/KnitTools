@@ -143,14 +143,14 @@
     <string name="pattern_open_failed">Kunne ikke åpne oppskriften.</string>
     <string name="pattern_show_reading_line">Vis leselinje</string>
     <string name="pattern_hide_reading_line">Skjul leselinje</string>
-    <string name="pattern_clear_row_mark">Fjern radmarkør</string>
+    <string name="pattern_clear_row_mark">Fjern tellermarkør</string>
     <string name="pattern_clear_page_marks">Fjern sidemarkører</string>
-    <string name="pattern_calibrate_rows">Kalibrer rader</string>
-    <string name="pattern_calibration_first_row">Første rad</string>
-    <string name="pattern_calibration_last_row">Siste rad</string>
+    <string name="pattern_calibrate_rows">Kalibrer tellerposisjoner</string>
+    <string name="pattern_calibration_first_row">Første verdi</string>
+    <string name="pattern_calibration_last_row">Siste verdi</string>
     <string name="pattern_calibration_save_first">Lagre første</string>
     <string name="pattern_calibration_save_last">Lagre siste</string>
-    <string name="pattern_calibration_invalid_row">Bruk to ulike radnumre</string>
+    <string name="pattern_calibration_invalid_row">Bruk to ulike tellerverdier</string>
     <string name="pattern_page_jump">Gå til side</string>
     <string name="pattern_page_number">Sidenummer</string>
     <string name="pattern_page_indicator">Side %1$d av %2$d</string>
@@ -235,8 +235,8 @@
     <!-- Session History -->
     <string name="session_history_title">Økthistorikk</string>
     <string name="no_sessions">Ingen økter registrert ennå. Åpne et prosjekt og start en arbeidsøkt for å registrere tiden din her.</string>
-    <string name="session_row_range">Rader %1$d \u2192 %2$d</string>
-    <string name="session_row_single">Rad %1$d</string>
+    <string name="session_row_range">Teller: %1$d → %2$d</string>
+    <string name="session_row_single">Verdi %1$d</string>
     <string name="delete_session_title">Slette økt?</string>
     <string name="delete_session_message">Slette denne økten fra historikken? Dette kan ikke angres.</string>
 
@@ -251,11 +251,11 @@
 
 
 
-    <string name="counter_decrease">Fell</string>
+    <string name="counter_decrease">Reduser</string>
     <string name="counter_increase">Øk</string>
     <string name="counter_value_of_target_format">Rad %1$d / %2$d</string>
     <string name="repeating_counter_value_format">%1$d av %2$d</string>
-    <string name="counter_decrease_named">Fell %1$s</string>
+    <string name="counter_decrease_named">Reduser %1$s</string>
     <string name="counter_increase_named">Øk %1$s</string>
     <string name="counter_actions">Handlinger for %1$s</string>
     <string name="counter_add_row">Legg til rad</string>
@@ -268,8 +268,8 @@
     <string name="project_content_add_pattern">Legg til oppskrift</string>
     <string name="stitch_tracker_label">Masker</string>
     <plurals name="reminder_repeat_occurrence_format">
-        <item quantity="one">Gjenta #%1$d hver rad</item>
-        <item quantity="other">Gjenta #%1$d hver %2$d. rad</item>
+        <item quantity="one">Repetisjon #%1$d, intervall %2$d</item>
+        <item quantity="other">Repetisjon #%1$d, intervall %2$d</item>
     </plurals>
 
     <!-- Increase / Decrease -->
@@ -294,7 +294,7 @@
     <string name="increase_decrease_error_cannot_decrease">Tilgjengelig maskeantall: %2$d. Ønsket felling: %1$d.</string>
     <string name="increase_decrease_error_not_enough_decrease">Nødvendig maskeantall: %1$d. Ønskede fellinger: %2$d.</string>
     <string name="increase_decrease_error_total_out_of_range">Resultatet er for stort. Bruk lavere masketall.</string>
-    <string name="increase_decrease_warning_increase_more_than_current">Du øker mer enn nåværende masketall - noen seksjoner får ingen strikkede masker mellom økningene</string>
+    <string name="increase_decrease_error_not_enough_bars">Det er ikke nok mellomrom mellom maskene til disse M1-økningene. Bruk minst to startmasker og reduser antall økninger om nødvendig.</string>
 
     <!-- Gauge Converter -->
     <string name="pattern_gauge">Oppskriftens fasthet</string>
@@ -303,7 +303,7 @@
     <string name="rows_in_pattern">Rader i oppskriften</string>
 
     <!-- Cast On Calculator -->
-    <string name="desired_width">Ønsket bredde</string>
+    <string name="desired_width">Ønsket bredde uten kantmasker</string>
     <string name="stitch_gauge">Maskefasthet</string>
     <string name="pattern_repeat_optional">Mønsterrapport (valgfritt)</string>
     <string name="edge_stitches_optional">Kantmasker totalt</string>
@@ -320,9 +320,9 @@
     <string name="total_yarn_needed">Totalt garnbehov</string>
     <string name="length_per_skein">Lengde per nøste</string>
     <string name="weight_per_skein">Vekt per nøste</string>
-    <string name="total_weight">Total vekt: %s g</string>
+    <string name="total_weight">Vekt av hele nøster: %s g</string>
     <string name="estimated_skeins">Anslag: ca. %s nøster</string>
-    <string name="extra_skein_note">Kjøp alltid ett ekstra nøste — innfargingspartier kan variere</string>
+    <string name="extra_skein_note">Kjøp ekstra garn ved behov — sjekk at innfargingspartiene er like</string>
 
     <!-- Needle Sizes -->
     <string name="search_size">Søk etter størrelse…</string>
@@ -351,6 +351,7 @@
     <string name="settings_language_french">Français</string>
     <string name="settings_language_spanish">Español</string>
     <string name="settings_language_portuguese">Português</string>
+    <string name="settings_language_brazilian_portuguese">Português (Brasil)</string>
     <string name="settings_language_italian">Italiano</string>
     <string name="settings_language_norwegian">Norsk</string>
     <string name="settings_language_danish">Dansk</string>
@@ -387,7 +388,6 @@
     <string name="yarn_dye_lot_short">Parti %1$s</string>
     <string name="weight_category">Tykkelseskategori</string>
     <string name="yarn_weight_other">Annen</string>
-    <string name="yarn_weight_ply_format">%1$s-tråds</string>
     <string name="care_symbols">Vedlikehold</string>
     <string name="no_saved_yarns">Ingen garnkort lagret ennå</string>
 
@@ -402,8 +402,6 @@
     <string name="generic_error_unknown">Noe gikk galt — prøv igjen</string>
 
     <!-- Camera permission -->
-    <string name="camera_permission_denied">Kameratillatelse trengs for å ta bilder</string>
-    <string name="camera_permission_denied_permanent">Kameratillatelse avslått — aktiver den i Innstillinger</string>
 
     <!-- Care symbol categories -->
     <string name="care_wash_30">30°</string>
@@ -423,16 +421,16 @@
     <string name="care_iron_high">Strykes ved høy varme</string>
     <string name="care_iron_do_not">Må ikke strykes</string>
     <string name="care_dryclean_any">Alle løsemidler</string>
-    <string name="care_dryclean_p">P-løsemiddel</string>
-    <string name="care_dryclean_f">F-løsemiddel</string>
+    <string name="care_dryclean_p">Rens (P)</string>
+    <string name="care_dryclean_f">Rens (F)</string>
     <string name="care_dryclean_do_not">Må ikke renses</string>
 
     <!-- Defaults -->
     <string name="yarn_card_fallback_name">Garnkort</string>
 
     <!-- Widget -->
-    <string name="widget_name">Radteller</string>
-    <string name="widget_description">Radteller-widget for aktivt prosjekt</string>
+    <string name="widget_name">Prosjektteller</string>
+    <string name="widget_description">Teller-widget for aktivt prosjekt</string>
     <string name="widget_pro_required">Oppgrader til Pro for å bruke widgeten</string>
 
     <!-- Hubs -->
@@ -513,7 +511,7 @@
     <string name="insights_chart_a11y_next">Neste stolpe</string>
     <string name="insights_chart_a11y_previous">Forrige stolpe</string>
     <string name="insights_project_sub_format">%1$s, %2$s</string>
-    <string name="insights_empty_title">Ingen tid på pinnene ennå.</string>
+    <string name="insights_empty_title">Ingen arbeidsøkter ennå.</string>
     <string name="insights_empty_body">Åpne et prosjekt og start en arbeidsøkt for å registrere tiden din her.</string>
     <string name="insights_nothing_yet_week">Ingenting ennå denne uken.</string>
     <string name="insights_nothing_yet_month">Ingenting ennå denne måneden.</string>
@@ -524,15 +522,14 @@
     <string name="insights_all_time">Hele tiden</string>
     <string name="insights_this_week">Denne uken</string>
     <string name="insights_this_month">Denne måneden</string>
-    <plurals name="insights_rows_count">
-        <item quantity="one">%1$d rad</item>
-        <item quantity="other">%1$d rader</item>
-    </plurals>
     <string name="relative_time_today">i dag</string>
     <string name="relative_time_yesterday">i går</string>
     <string name="relative_time_days_ago">for %1$dd siden</string>
     <string name="relative_time_weeks_ago">for %1$du siden</string>
-    <string name="relative_time_months_ago">for %1$dmnd siden</string>
+    <plurals name="relative_time_months_ago">
+        <item quantity="one">for %1$dmnd siden</item>
+        <item quantity="other">for %1$dmnd siden</item>
+    </plurals>
 
     <!-- Settings -->
     <string name="help_and_guide">Hjelp og veiledning</string>
@@ -562,7 +559,7 @@
 
     <!-- Chart Symbols -->
     <string name="chart_symbols_title">Diagramsymboler</string>
-    <string name="chart_symbols_disclaimer">Symbolene følger standardkonvensjoner. Sjekk alltid symbolforklaringen i oppskriften.</string>
+    <string name="chart_symbols_disclaimer">Symbolene viser maskene sett fra rettsiden av arbeidet. Sjekk alltid symbolforklaringen i oppskriften.</string>
     <string name="category_basic">Grunnmasker</string>
     <string name="category_decreases">Fellinger</string>
     <string name="category_increases">Økninger</string>
@@ -579,13 +576,13 @@
     <string name="no_reminders">Ingen påminnelser ennå</string>
     <string name="delete_reminder_title">Slette påminnelse?</string>
     <string name="delete_reminder_confirm">Slette påminnelsen \"%1$s\"?</string>
-    <string name="row_number">Radnummer</string>
+    <string name="row_number">Tellerverdi</string>
     <string name="reminder_message">Melding</string>
     <string name="reminder_message_hint">f.eks. Bytt til hælflapp</string>
     <string name="one_time">Én gang</string>
     <string name="repeating">Gjenta</string>
     <string name="repeat_every">Gjenta hver</string>
-    <string name="repeat_every_rows">rader</string>
+    <string name="repeat_every_rows">tellersteg</string>
     <string name="dismiss">Avvis</string>
 
     <!-- Multiple Counters -->
@@ -601,11 +598,11 @@
     <string name="repeat_section">Repeter seksjon</string>
     <string name="starting_stitches">Startantall masker</string>
     <string name="stitch_change">Masker å legge til/fjerne</string>
-    <string name="shape_every_n">Form hver N. rad</string>
-    <string name="repeat_section_start_row">Startrad</string>
-    <string name="repeat_section_end_row">Sluttrad</string>
+    <string name="shape_every_n">Form hvert N. tellersteg</string>
+    <string name="repeat_section_start_row">Startverdi</string>
+    <string name="repeat_section_end_row">Sluttverdi</string>
     <string name="total_repeats">Totalt antall repetisjoner</string>
-    <string name="repeat_section_progress_format">Repetisjon %1$d/%2$d, rad %3$d/%4$d</string>
+    <string name="repeat_section_progress_format">Repetisjon %1$d/%2$d, verdi %3$d/%4$d</string>
     <string name="repeat_section_complete">Fullført</string>
     <string name="rename_counter">Gi nytt navn</string>
     <string name="reset_counter_name">Tilbakestill</string>
@@ -617,7 +614,7 @@
     <string name="take_photo">Ta bilde</string>
     <string name="progress_photos">Fremdriftsbilder</string>
     <string name="counters_list_empty">Ingen ekstra tellere</string>
-    <string name="row_label_format">Rad %d</string>
+    <string name="row_label_format">Verdi %d</string>
     <string name="share_photo">Del</string>
     <string name="photo_share_failed">Bildet kunne ikke deles.</string>
     <string name="delete_photo">Slett bilde</string>
@@ -661,21 +658,20 @@
 
     <!-- Info tips -->
     <string name="tip_pattern_repeat_title">Mønsterrapport</string>
-    <string name="tip_pattern_repeat_desc">Hvis mønsteret ditt gjentas hver X masker (f.eks. en flette hver 8. maske), skriver du inn tallet her. Kalkulatoren avrunder maskene i selve mønsteret, før kantmasker, til nærmeste multiplum slik at mønsteret passer.</string>
+    <string name="tip_pattern_repeat_desc">Hvis mønsteret ditt gjentas hver X. maske (f.eks. en flette hver 8. maske), skriver du inn tallet her. Kalkulatoren avrunder maskene i selve mønsteret, før kantmasker, til nærmeste multiplum slik at mønsteret passer.</string>
     <string name="tip_edge_stitches_title">Kantmasker</string>
     <string name="tip_edge_stitches_desc">Kantmasker er ekstra masker utenfor mønsterrepetisjonen. Skriv inn det totale antallet kantmasker som skal legges opp; kalkulatoren legger dem til etter at ønsket bredde er beregnet, for eksempel 2 for én maske i hver side.</string>
     <string name="tip_flat_vs_circular_title">Flatstrikk vs. rundstrikk</string>
     <string name="tip_flat_vs_circular_desc">Ved flatstrikk strikker du frem og tilbake på rette eller rundpinner og snur ved slutten av hver rad.\n\nVed rundstrikk strikker du i en sammenhengende omgang. Økninger og fellinger fordeles jevnt rundt omgangen.</string>
     <string name="tip_needle_sizes_title">Systemer for pinnestørrelser</string>
-    <string name="tip_needle_sizes_desc">Metrisk (mm) er den universelle standarden. US-størrelser bruker et nummersystem (0–50). UK/Canada bruker et annet nummersystem. Japanske størrelser har sin egen nummerering. Sjekk alltid mm-størrelsen for å være sikker.</string>
+    <string name="tip_needle_sizes_desc">Nummereringen varierer mellom størrelsessystemer og produsenter. Sammenlign diameteren i millimeter (mm), og sjekk strikkefastheten.</string>
     <string name="tip_imperial_units_title">Britiske/amerikanske enheter</string>
-    <string name="tip_imperial_units_desc">Når dette er aktivert, bruker alle kalkulatorer tommer i stedet for centimeter og yard i stedet for meter. Fastheten måles da per 4 tommer i stedet for per 10 cm.</string>
+    <string name="tip_imperial_units_desc">Angir tommer og yard som standardenheter i kalkulatorene, med strikkefasthet per 4 tommer i stedet for per 10 cm. Du kan endre enhetene i Mål og strikkefasthet.</string>
     <string name="open_notes_editor">Åpne notatredigering</string>
     <string name="restore_purchases_checking">Sjekker kjøp…</string>
     <string name="retry">Prøv igjen</string>
     <string name="target_rows_dialog_title">Sett mål</string>
     <string name="target_rows_remove">Fjern mål</string>
-    <string name="row_label_with_target">Rad %1$d / %2$d</string>
     <string name="project_actions_title">Prosjekthandlinger</string>
     <string name="project_actions_section_counter_tools">Telleverktøy</string>
     <string name="project_content_title">Prosjekt</string>
@@ -683,38 +679,32 @@
     <string name="project_content_notes">Notater</string>
     <string name="project_content_photos">Bilder</string>
     <string name="extra_counters_title">Ekstra tellere</string>
-    <string name="counter_repeat_label">Gjenta</string>
+    <string name="counter_repeat_label">Repetisjon</string>
     <string name="counters_list_title">Tellere</string>
 
     <!-- Täydennetyt lokalisoidut käyttöliittymätekstit -->
     <string name="yarn_card_number_fallback">Garn #%1$d</string>
     <string name="show_more">Vis mer</string>
     <string name="pro_start_free_trial">Start gratis prøveperiode</string><string name="pro_start_14_day_trial">Start 14 dagers gratis prøveperiode</string><string name="pro_trial_start_failed">Prøveperioden kunne ikke startes. Prøv igjen.</string>
-    <string name="pro_prompt_not_now">Ikke nå</string><string name="pro_prompt_see_pro">Se Pro</string><string name="pro_prompt_trial_body">Start en gratis 14-dagers prøveperiode med Pro. Ingen betalingsmåte er nødvendig. Alt du oppretter, forblir tilgjengelig etter prøveperioden.</string>
-    <string name="pro_prompt_reactivation_title">Gjenaktiver dette prosjektet med Pro</string>
-    <string name="pro_prompt_reactivation_trial_body">Start din gratis 14-dagers Pro-prøveperiode for å gjenaktivere dette prosjektet og arbeide med flere prosjekter samtidig. Du kan beholde og se fullførte prosjekter gratis. Prosjektene dine er fortsatt tilgjengelige etter prøveperioden.</string>
-    <string name="pro_prompt_reactivation_body">Med Pro kan du gjenaktivere dette prosjektet og arbeide med flere prosjekter samtidig. Du kan beholde og se fullførte prosjekter gratis. De eksisterende prosjektene dine er fortsatt tilgjengelige.</string>
-    <string name="pro_prompt_projects_title">Opprett et nytt aktivt prosjekt med Pro</string>
-    <plurals name="pro_prompt_projects_trial_body">
-        <item quantity="one">Du har %1$d aktivt prosjekt. Start din gratis 14-dagers Pro-prøveperiode for å opprette et nytt prosjekt og arbeide med flere prosjekter samtidig. Fullførte prosjekter teller ikke med i gratisgrensen. Prosjektene dine er fortsatt tilgjengelige etter prøveperioden.</item>
-        <item quantity="other">Du har %1$d aktive prosjekter. Start din gratis 14-dagers Pro-prøveperiode for å opprette et nytt prosjekt og arbeide med flere prosjekter samtidig. Fullførte prosjekter teller ikke med i gratisgrensen. Prosjektene dine er fortsatt tilgjengelige etter prøveperioden.</item>
-    </plurals>
-    <plurals name="pro_prompt_projects_body">
-        <item quantity="one">Du har %1$d aktivt prosjekt. Med Pro kan du opprette et nytt prosjekt og arbeide med flere prosjekter samtidig. Fullførte prosjekter teller ikke med i gratisgrensen. De eksisterende prosjektene dine er fortsatt tilgjengelige.</item>
-        <item quantity="other">Du har %1$d aktive prosjekter. Med Pro kan du opprette et nytt prosjekt og arbeide med flere prosjekter samtidig. Fullførte prosjekter teller ikke med i gratisgrensen. De eksisterende prosjektene dine er fortsatt tilgjengelige.</item>
-    </plurals>
-    <string name="pro_prompt_photos_title">Legg til fremdriftsbilder med Pro</string><string name="pro_prompt_photos_body">Et nytt fremdriftsbilde krever Pro. De eksisterende bildene dine forblir tilgjengelige.</string>
-    <string name="pro_prompt_notes_title">Legg til prosjektnotater med Pro</string><string name="pro_prompt_notes_body">Det første notatet i prosjektet krever Pro. Notater du allerede har opprettet, kan fortsatt redigeres.</string>
-    <string name="pro_prompt_yarn_title">Legg til garn med Pro</string><string name="pro_prompt_yarn_body">Et nytt garnkort krever Pro. De eksisterende garnkortene dine forblir tilgjengelige og kan redigeres.</string>
-    <string name="pro_prompt_save_yarn_title">Lagre dette garnet med Pro</string><string name="pro_prompt_save_yarn_body">Når prosjektgarnet lagres i Mitt garn, opprettes et nytt garnkort, og det krever Pro. Prosjektets garnnotat forblir tilgjengelig.</string>
-    <string name="pro_prompt_counters_title">Legg til en teller med Pro</string><string name="pro_prompt_counters_body">En ny ekstrateller krever Pro. De eksisterende tellerne dine forblir tilgjengelige og kan redigeres.</string>
-    <string name="pro_prompt_reminders_title">Legg til en radpåminnelse med Pro</string><string name="pro_prompt_reminders_body">En ny radpåminnelse krever Pro. De eksisterende påminnelsene fortsetter å virke og kan redigeres.</string>
-    <string name="pro_prompt_pattern_camera_title">Gjør mønsterbilder om til PDF med Pro</string><string name="pro_prompt_pattern_camera_body">En ny PDF fra mønsterbilder krever Pro. De eksisterende mønstrene og PDF-filene dine forblir tilgjengelige.</string>
-    <string name="pro_prompt_widget_title">Bruk startskjermwidgeten med Pro</string><string name="pro_prompt_widget_body">Startskjermwidgeten er en avansert Pro-visning. Prosjekt- og tellerdataene dine forblir tilgjengelige i KnitTools.</string>
+    <string name="pro_prompt_not_now">Ikke nå</string><string name="pro_prompt_see_pro">Se Pro</string>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     <string name="pro_badge">PRO</string><string name="pro_badge_locked_description">Pro-funksjon</string><string name="pro_badge_trial_description">Pro-funksjon, tilgjengelig i prøveperioden</string><string name="knittools_pro">KnitTools Pro</string><string name="pro_content_stays_available">Alt du oppretter, forblir tilgjengelig.</string>
     <plurals name="pro_status_trial_days"><item quantity="one">Prøveperiode, %1$d dag igjen</item><item quantity="other">Prøveperiode, %1$d dager igjen</item></plurals>
-    <string name="pro_status_trial_ended">Prøveperioden er avsluttet</string><string name="pro_status_purchased">Kjøpt</string><string name="pro_trial_ended_title">Pro-prøveperioden din er avsluttet</string><string name="pro_trial_ended_body">Alt du har opprettet, er fortsatt tilgjengelig. Du kan fortsette å bruke og redigere det. Pro kreves bare for nye Pro-elementer og avanserte visninger.</string><string name="pro_continue_free">Fortsett gratis</string>
-    <string name="pro_page_intro">Gi hvert prosjekt mer plass og hold arbeidsflyten samlet.</string><string name="pro_page_trust">Alt du oppretter, forblir tilgjengelig selv om prøveperioden avsluttes.</string><string name="pro_group_projects_title">Prosjekter og materialer</string><string name="pro_group_projects_body">Arbeid med flere aktive prosjekter og opprett det første prosjektnotatet, fremdriftsbilder og garnkort.</string><string name="pro_group_workflow_title">Telling og arbeidsflyt</string><string name="pro_group_workflow_body">Bruk den kompakte repetisjonstelleren, ekstra-, repetisjons-, formings- og seksjonstellere, radpåminnelser, mønsterbilder som PDF og startskjermwidgeten.</string><string name="pro_group_insights_title">Innsikt</string><string name="pro_group_insights_body">Se daglige, ukentlige og månedlige aktivitetsdiagrammer og aktivitetsrekken din.</string>
+    <string name="pro_status_trial_ended">Prøveperioden er avsluttet</string><string name="pro_status_purchased">Kjøpt</string><string name="pro_trial_ended_body">Alt du har opprettet, er fortsatt tilgjengelig. Du kan fortsette å bruke og redigere det. Pro kreves bare for nye Pro-elementer og avanserte visninger.</string><string name="pro_continue_free">Fortsett gratis</string>
+
     <string name="pro_page_purchased">Pro kjøpt</string><string name="pro_buy_for_price">Kjøp Pro for %1$s</string><string name="pro_price_unavailable">Prisen er ikke tilgjengelig</string><string name="billing_purchase_pending">Kjøpet ditt venter. Pro blir tilgjengelig når Google Play har fullført betalingen.</string>
     <string name="project_updated_format">Oppdatert %1$s</string>
     <string name="project_completed_format">Fullført %1$s</string>
@@ -726,7 +716,7 @@
     <string name="work_session_recovery_needed">Økttiden må gjennomgås</string>
     <string name="work_session_resolve">Løs</string>
     <string name="work_session_recovery_title">Gjennomgå økttid</string>
-    <string name="work_session_pending_rows_format">Ventende radfremdrift: %1$d</string>
+    <string name="work_session_pending_rows_format">Ventende tellerfremdrift: %1$d</string>
     <string name="work_session_hours">Timer</string>
     <string name="work_session_minutes">Minutter</string>
     <string name="work_session_add_and_continue">Legg til og fortsett</string>
@@ -1090,7 +1080,7 @@
     <string name="project_actions_overview_subtitle">Garn, oppskrift, notater og detaljer</string>
     <string name="project_actions_section_work_session">Arbeidsøkt</string>
     <string name="project_overview_amount_unknown">Ukjent</string>
-    <string name="counter_step_rows_title">Pinner per trykk</string>
+    <string name="counter_step_rows_title">Rader per trykk</string>
     <string name="counter_step_rounds_title">Omganger per trykk</string>
     <string name="counter_step_repeats_title">Gjentakelser per trykk</string>
     <string name="counter_step_custom_title">%1$s per trykk</string>
@@ -1108,4 +1098,5 @@
     <string name="project_yarn_edit_missing">Garnnotatet tilhører ikke lenger dette prosjektet. Lukk redigeringen.</string>
     <string name="project_yarn_edit_invalid">Skriv inn et garnnavn.</string>
     <string name="project_yarn_edit_failed">Kunne ikke lagre endringene. Utkastet ditt er fortsatt her. Prøv igjen.</string>
+    <string name="counter_progress_format">Tellerfremdrift: %1$d</string>
 </resources>

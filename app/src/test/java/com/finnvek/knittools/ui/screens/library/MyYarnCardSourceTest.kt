@@ -73,6 +73,61 @@ class MyYarnCardSourceTest {
     }
 
     @Test
+    fun `restored yarn retry waits for entitlement and closes the form only on submission`() {
+        val screen = ProjectSourceFiles.read(MY_YARN_SCREEN)
+        val navGraph = ProjectSourceFiles.read(NAV_GRAPH)
+        val effect =
+            screen
+                .substringAfter("LaunchedEffect(state.canCreateYarnCard, actionAwaitingEntitlement) {")
+                .substringBefore("BackHandler")
+        val retryBranch = effect.substringAfter("PendingYarnProAction.RetryCreation -> {")
+
+        assertTrue(screen.contains("var showManualYarnSheet by rememberSaveable"))
+        assertTrue(screen.contains("var pendingProAction by rememberSaveable"))
+        assertTrue(screen.contains("var actionAwaitingEntitlement by rememberSaveable"))
+        listOf("yarnName", "brand", "quantity", "weightCategory", "colorName", "colorNumber", "dyeLot").forEach {
+            assertTrue(screen.contains("var $it by rememberSaveable"))
+        }
+        assertTrue(effect.contains("if (!state.canCreateYarnCard) return@LaunchedEffect"))
+        assertTrue(effect.contains("actionAwaitingEntitlement = null"))
+        assertTrue(
+            effect.indexOf("actionAwaitingEntitlement = null") < effect.indexOf("when (action)"),
+        )
+        assertTrue(
+            retryBranch.trim().replace(Regex("\\s+"), " ") ==
+                "if (actions.onRetryCreateYarnCard()) showManualYarnSheet = false } } }",
+        )
+        assertTrue(screen.contains("if (actions.onCreateYarnCard(input)) {"))
+        assertTrue(screen.contains("onDismiss = { showManualYarnSheet = false }"))
+        assertTrue(navGraph.contains("onRetryCreateYarnCard = libraryViewModel::retryCreateManualYarnCard"))
+        assertTrue(navGraph.contains("onCreateYarnCard = libraryViewModel::createManualYarnCard"))
+    }
+
+    @Test
+    fun `manual yarn quantity field and positive validation are creation only`() {
+        val screen = ProjectSourceFiles.read(MY_YARN_SCREEN)
+        val sheet =
+            screen
+                .substringAfter(
+                    "internal fun ManualYarnCardSheet(",
+                ).substringBefore("private fun MyYarnDeleteDialog(")
+        val quantityField = sheet.substringAfter("if (showQuantity) {").substringBefore("// CPD-ON")
+
+        assertTrue(sheet.contains("showQuantity: Boolean = true"))
+        assertTrue(sheet.contains("if (showQuantity) {"))
+        assertTrue(quantityField.contains("value = quantity,"))
+        assertTrue(quantityField.contains("label = stringResource(R.string.quantity_label)"))
+        assertTrue(
+            sheet.contains(
+                "val validQuantity = if (showQuantity) parseManualYarnQuantity(quantity) else initialInput.quantity",
+            ),
+        )
+        assertTrue(sheet.contains("enabled = yarnName.isNotBlank() && validQuantity != null"))
+        assertTrue(sheet.contains("validQuantity?.let {"))
+        assertTrue(sheet.contains("quantity = it,"))
+    }
+
+    @Test
     fun `yarn color row uses short number and lot forms so it fits one line`() {
         val screen = ProjectSourceFiles.read(MY_YARN_SCREEN)
 

@@ -29,8 +29,8 @@ class IncomingPdfSourceTest {
         val sheet = ProjectSourceFiles.read(SHEET)
 
         assertTrue(viewModel.contains("PatternDisplayNames.documentLabel(fileName)"))
-        assertTrue(viewModel.contains(".take(PROJECT_DOCUMENT_LABEL_MAX_LENGTH)"))
-        assertTrue(sheet.contains("name = it.take(PROJECT_DOCUMENT_LABEL_MAX_LENGTH)"))
+        assertTrue(viewModel.contains(".takeWithoutSplittingSurrogatePair(PROJECT_DOCUMENT_LABEL_MAX_LENGTH)"))
+        assertTrue(sheet.contains("name = it.takeWithoutSplittingSurrogatePair(PROJECT_DOCUMENT_LABEL_MAX_LENGTH)"))
     }
 
     @Test

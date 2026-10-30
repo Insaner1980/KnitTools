@@ -10,15 +10,20 @@ import com.finnvek.knittools.data.storage.PatternImageFailureReason
 import com.finnvek.knittools.data.storage.PatternImageStageException
 import com.finnvek.knittools.data.storage.PatternImageStageFailure
 import com.finnvek.knittools.data.storage.PatternImageValidationException
+import com.finnvek.knittools.di.ApplicationScope
 import com.finnvek.knittools.di.IoDispatcher
+import com.finnvek.knittools.pro.ProManager
+import com.finnvek.knittools.pro.ProStatus
 import com.finnvek.knittools.repository.CounterRepository
+import com.finnvek.knittools.repository.OnboardingStateRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
-import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -40,30 +45,76 @@ internal class PatternImageImportViewModel
         @param:ApplicationContext private val context: Context,
         @param:IoDispatcher private val ioDispatcher: CoroutineDispatcher,
         private val savedStateHandle: SavedStateHandle,
+        private val proManager: ProManager,
+        private val onboardingStateRepository: OnboardingStateRepository,
+        @param:ApplicationScope private val applicationScope: CoroutineScope,
     ) : ViewModel() {
         private val _uiState = MutableStateFlow(restoredState(savedStateHandle))
         val uiState: StateFlow<PatternImageImportUiState> = _uiState.asStateFlow()
 
         private var operationJob: Job? = null
+        private var ownerProjectId = _uiState.value.projectId
 
-        fun authorizeGalleryPicker(projectId: Long): String {
-            ensureSession(projectId, PatternImageImportOrigin.GALLERY)
+        @Volatile
+        private var activeOperationId: String? = null
+
+        fun authorizeGalleryPicker(projectId: Long): String? {
+            if (!ensureSession(projectId, PatternImageImportOrigin.GALLERY)) return null
             val requestId = UUID.randomUUID().toString()
-            _uiState.update { it.copy(pickerRequestId = requestId, closeReady = false) }
+            _uiState.update { it.copy(pickerRequestId = requestId, pickerLaunched = false, closeReady = false) }
             persistState()
             return requestId
         }
 
-        fun authorizeCameraCapture(projectId: Long): String {
-            ensureSession(projectId, PatternImageImportOrigin.CAMERA)
+        fun markGalleryPickerLaunched(requestId: String): Boolean {
+            val state = _uiState.value
+            if (state.pickerRequestId != requestId || state.pickerLaunched) return false
+            if (state.projectId == null || state.sessionId == null) return false
+            _uiState.update { it.copy(pickerLaunched = true) }
+            persistState()
+            return true
+        }
+
+        fun onGalleryPickerLaunchFailed(requestId: String) {
+            if (_uiState.value.pickerRequestId != requestId) return
+            _uiState.update {
+                it.copy(
+                    pickerRequestId = null,
+                    pickerLaunched = false,
+                    phase = PatternImageImportPhase.ERROR,
+                    error = PatternImageImportError.UNREADABLE,
+                )
+            }
+            persistState()
+        }
+
+        fun authorizeCameraCapture(projectId: Long): String? {
+            if (!ensureSession(projectId, PatternImageImportOrigin.CAMERA)) return null
+            if (_uiState.value.selection.pages
+                    .isNotEmpty() ||
+                _uiState.value.cameraCapturePending
+            ) {
+                return null
+            }
+            _uiState.update { it.copy(sessionId = UUID.randomUUID().toString(), cameraCapturePending = true) }
+            persistState()
             return _uiState.value.sessionId.orEmpty()
         }
 
         @Suppress("kotlin:S6313") // Activity tarvitsee FileProvider-kohteen ennen kamerasopimusta.
-        suspend fun createCameraCaptureTarget(projectId: Long): Pair<File, Uri>? {
+        suspend fun createCameraCaptureTarget(
+            projectId: Long,
+            sessionId: String? = _uiState.value.sessionId,
+        ): Pair<File, Uri>? {
             val state = _uiState.value
-            if (state.projectId != projectId || state.origin != PatternImageImportOrigin.CAMERA) return null
-            val sessionId = state.sessionId ?: return null
+            if (state.projectId != projectId ||
+                state.origin != PatternImageImportOrigin.CAMERA ||
+                !isCurrentSession(sessionId) ||
+                !state.cameraCapturePending
+            ) {
+                return null
+            }
+            sessionId ?: return null
             return withContext(ioDispatcher) {
                 storage.createCaptureImageFile(context, projectId, sessionId)
             }
@@ -72,8 +123,27 @@ internal class PatternImageImportViewModel
         fun discardCameraCapture(
             imageUri: Uri,
             imageFile: File,
+            sessionId: String? = _uiState.value.sessionId,
         ) {
+            cancelCameraCaptureRequest(sessionId)
             viewModelScope.launch(ioDispatcher) { storage.deleteStagedPage(cameraPage(imageUri, imageFile)) }
+        }
+
+        fun cancelCameraCaptureRequest(sessionId: String?) {
+            if (!isCurrentSession(sessionId) || !_uiState.value.cameraCapturePending) return
+            _uiState.update { it.copy(cameraCapturePending = false) }
+            persistState()
+        }
+
+        fun onCameraCaptureStateLost(sessionId: String?) {
+            if (!isCurrentSession(sessionId) || !_uiState.value.cameraCapturePending) return
+            // Keep the owned session until the user explicitly cancels an unrestorable capture.
+            _uiState.update {
+                it.copy(
+                    phase = PatternImageImportPhase.ERROR,
+                    error = PatternImageImportError.UNREADABLE,
+                )
+            }
         }
 
         @Suppress("SwallowedException")
@@ -82,44 +152,49 @@ internal class PatternImageImportViewModel
             sourceUris: List<Uri>,
         ) {
             val state = _uiState.value
-            if (requestId == null || requestId != state.pickerRequestId || state.isBusy) return
-            _uiState.update { it.copy(pickerRequestId = null) }
+            if (requestId == null ||
+                requestId != state.pickerRequestId ||
+                state.isBusy ||
+                activeOperationId != null
+            ) {
+                return
+            }
+            _uiState.update { it.copy(pickerRequestId = null, pickerLaunched = false) }
             persistState()
             if (sourceUris.isEmpty()) return
             val projectId = state.projectId ?: return
             val sessionId = state.sessionId ?: return
-            operationJob =
-                viewModelScope.launch {
-                    _uiState.update { it.copy(phase = PatternImageImportPhase.STAGING, error = null) }
-                    try {
-                        @Suppress("kotlin:S6311") // Tiedostoputki kuuluu projektin injektoidulle IO-dispatcherille.
-                        val batch =
-                            withContext(ioDispatcher) {
-                                storage.stageSelectedImages(
-                                    context = context,
-                                    projectId = projectId,
-                                    sessionId = sessionId,
-                                    existingSelection = state.selection,
-                                    sourceUris = sourceUris,
-                                )
-                            }
-                        val accepted = state.selection.append(batch.pages) as? PatternImageAppendResult.Accepted
-                        val selection = accepted?.selection ?: state.selection
-                        val duplicateCount = batch.duplicatesIgnored + (accepted?.duplicatesIgnored ?: 0)
-                        _uiState.update {
-                            it.copy(
-                                selection = selection,
-                                phase = selectionPhase(selection.pages),
-                                duplicatesIgnored = duplicateCount,
+            launchOperation { operationId ->
+                updateOperation(operationId) { it.copy(phase = PatternImageImportPhase.STAGING, error = null) }
+                try {
+                    @Suppress("kotlin:S6311") // Tiedostoputki kuuluu projektin injektoidulle IO-dispatcherille.
+                    val batch =
+                        withContext(ioDispatcher) {
+                            storage.stageSelectedImages(
+                                context = context,
+                                projectId = projectId,
+                                sessionId = sessionId,
+                                existingSelection = state.selection,
+                                sourceUris = sourceUris,
                             )
                         }
-                        persistState()
-                    } catch (failure: CancellationException) {
-                        finishCancelled(projectId, sessionId)
-                    } catch (failure: PatternImageStageException) {
-                        showRecoverableError(failure.reason.toImportError())
+                    val accepted = state.selection.append(batch.pages) as? PatternImageAppendResult.Accepted
+                    val selection = accepted?.selection ?: state.selection
+                    val duplicateCount = batch.duplicatesIgnored + (accepted?.duplicatesIgnored ?: 0)
+                    updateOperation(operationId) {
+                        it.copy(
+                            selection = selection,
+                            phase = selectionPhase(selection.pages),
+                            duplicatesIgnored = duplicateCount,
+                        )
                     }
+                    persistState()
+                } catch (failure: CancellationException) {
+                    finishCancelled(projectId, sessionId, operationId)
+                } catch (failure: PatternImageStageException) {
+                    showRecoverableError(failure.reason.toImportError(), operationId)
                 }
+            }
         }
 
         @Suppress("SwallowedException")
@@ -127,56 +202,77 @@ internal class PatternImageImportViewModel
             projectId: Long,
             imageUri: Uri,
             imageFile: File,
+            sessionId: String? = _uiState.value.sessionId,
         ) {
-            ensureSession(projectId, PatternImageImportOrigin.CAMERA)
-            operationJob =
-                viewModelScope.launch {
-                    _uiState.update { it.copy(phase = PatternImageImportPhase.STAGING, error = null) }
-                    try {
-                        val info = withContext(ioDispatcher) { storage.inspectCameraCapture(imageFile) }
-                        val page =
-                            StagedPatternPage(
-                                id = UUID.randomUUID().toString(),
-                                sourceUri = imageUri.toString(),
-                                stagedPath = imageFile.absolutePath,
-                                byteCount = imageFile.length(),
-                                width = info.width,
-                                height = info.height,
-                            )
-                        _uiState.update {
-                            it.copy(
-                                selection = PatternImageSelection(listOf(page)),
-                                phase = PatternImageImportPhase.READY,
-                            )
-                        }
-                        persistState()
-                    } catch (failure: CancellationException) {
-                        finishCancelled(projectId, _uiState.value.sessionId.orEmpty())
-                    } catch (failure: PatternImageValidationException) {
-                        withContext(ioDispatcher) { storage.deleteStagedPage(cameraPage(imageUri, imageFile)) }
-                        showRecoverableFailure(PatternImageImportError.UNSUPPORTED, failure)
-                    } catch (failure: PatternImageStageException) {
-                        withContext(ioDispatcher) { storage.deleteStagedPage(cameraPage(imageUri, imageFile)) }
-                        showRecoverableError(failure.reason.toImportError())
+            val state = _uiState.value
+            if (state.projectId != projectId ||
+                state.origin != PatternImageImportOrigin.CAMERA ||
+                !isCurrentSession(sessionId)
+            ) {
+                return
+            }
+            if (!state.cameraCapturePending || activeOperationId != null) return
+            sessionId ?: return
+            _uiState.update { it.copy(cameraCapturePending = false) }
+            persistState()
+            launchOperation { operationId ->
+                updateOperation(operationId) { it.copy(phase = PatternImageImportPhase.STAGING, error = null) }
+                try {
+                    val info = withContext(ioDispatcher) { storage.inspectCameraCapture(imageFile) }
+                    val page =
+                        StagedPatternPage(
+                            id = UUID.randomUUID().toString(),
+                            sourceUri = imageUri.toString(),
+                            stagedPath = imageFile.absolutePath,
+                            byteCount = imageFile.length(),
+                            width = info.width,
+                            height = info.height,
+                        )
+                    updateOperation(operationId) {
+                        it.copy(
+                            selection = PatternImageSelection(listOf(page)),
+                            phase = PatternImageImportPhase.READY,
+                        )
                     }
+                    persistState()
+                } catch (failure: CancellationException) {
+                    finishCancelled(projectId, sessionId, operationId)
+                } catch (failure: PatternImageValidationException) {
+                    withContext(ioDispatcher) { storage.deleteStagedPage(cameraPage(imageUri, imageFile)) }
+                    showRecoverableFailure(PatternImageImportError.UNSUPPORTED, failure, operationId)
+                } catch (failure: PatternImageStageException) {
+                    withContext(ioDispatcher) { storage.deleteStagedPage(cameraPage(imageUri, imageFile)) }
+                    showRecoverableError(failure.reason.toImportError(), operationId)
                 }
-        }
-
-        fun moveEarlier(pageId: String) {
-            updateSelection { selection ->
-                val index = selection.pages.indexOfFirst { it.id == pageId }
-                selection.moveEarlier(index)
             }
         }
 
-        fun moveLater(pageId: String) {
+        fun moveEarlier(
+            pageId: String,
+            sessionId: String? = _uiState.value.sessionId,
+        ) = movePage(pageId, sessionId, PatternImageSelection::moveEarlier)
+
+        fun moveLater(
+            pageId: String,
+            sessionId: String? = _uiState.value.sessionId,
+        ) = movePage(pageId, sessionId, PatternImageSelection::moveLater)
+
+        private fun movePage(
+            pageId: String,
+            sessionId: String?,
+            move: PatternImageSelection.(Int) -> PatternImageSelection,
+        ) {
+            if (!isCurrentSession(sessionId) || activeOperationId != null) return
             updateSelection { selection ->
-                val index = selection.pages.indexOfFirst { it.id == pageId }
-                selection.moveLater(index)
+                selection.move(selection.pages.indexOfFirst { it.id == pageId })
             }
         }
 
-        fun removePage(pageId: String) {
+        fun removePage(
+            pageId: String,
+            sessionId: String? = _uiState.value.sessionId,
+        ) {
+            if (!isCurrentSession(sessionId) || activeOperationId != null) return
             val page =
                 _uiState.value.selection.pages
                     .firstOrNull { it.id == pageId } ?: return
@@ -185,7 +281,11 @@ internal class PatternImageImportViewModel
             viewModelScope.launch(ioDispatcher) { storage.deleteStagedPage(page) }
         }
 
-        fun markPreviewFailed(pageId: String) {
+        fun markPreviewFailed(
+            pageId: String,
+            sessionId: String? = _uiState.value.sessionId,
+        ) {
+            if (!isCurrentSession(sessionId)) return
             val pageExists =
                 _uiState.value.selection.pages
                     .any { it.id == pageId }
@@ -199,7 +299,12 @@ internal class PatternImageImportViewModel
             }
         }
 
-        fun createPatternPdf(replaceExisting: Boolean) {
+        fun createPatternPdf(
+            replaceExisting: Boolean,
+            sessionId: String? = _uiState.value.sessionId,
+        ) {
+            if (!isCurrentSession(sessionId) || activeOperationId != null) return
+            if (_uiState.value.pickerRequestId != null || _uiState.value.cameraCapturePending) return
             if (replaceExisting) {
                 _uiState.update { it.copy(replacementConfirmationPending = true) }
             } else {
@@ -207,41 +312,48 @@ internal class PatternImageImportViewModel
             }
         }
 
-        fun confirmReplacement() {
-            startCreation()
+        fun confirmReplacement(sessionId: String? = _uiState.value.sessionId) {
+            if (isCurrentSession(sessionId)) startCreation()
         }
 
-        fun dismissReplacement() {
-            _uiState.update { it.copy(replacementConfirmationPending = false) }
+        fun dismissReplacement(sessionId: String? = _uiState.value.sessionId) {
+            if (isCurrentSession(sessionId)) _uiState.update { it.copy(replacementConfirmationPending = false) }
         }
 
-        fun consumeCloseRequest() {
+        fun consumeCloseRequest(sessionId: String? = _uiState.value.sessionId): Boolean {
+            if (!isCurrentSession(sessionId) || !_uiState.value.closeReady) return false
             _uiState.update { it.copy(closeReady = false) }
+            return true
         }
 
-        fun cancelImport() {
-            val activeJob = operationJob
-            if (activeJob?.isActive == true) {
-                viewModelScope.launch {
-                    activeJob.cancelAndJoin()
-                }
+        fun cancelImport(sessionId: String? = _uiState.value.sessionId) {
+            if (!isCurrentSession(sessionId)) return
+            if (_uiState.value.phase == PatternImageImportPhase.SUCCESS ||
+                _uiState.value.phase == PatternImageImportPhase.CANCELLED
+            ) {
+                return
+            }
+            if (activeOperationId != null) {
+                operationJob?.cancel()
                 return
             }
             val projectId = _uiState.value.projectId ?: return
-            val sessionId = _uiState.value.sessionId ?: return
-            operationJob = viewModelScope.launch { finishCancelled(projectId, sessionId) }
+            sessionId ?: return
+            _uiState.update { it.copy(pickerRequestId = null, pickerLaunched = false, cameraCapturePending = false) }
+            persistState()
+            launchOperation { operationId -> finishCancelled(projectId, sessionId, operationId) }
         }
 
         private fun startCreation() {
-            if (operationJob?.isActive == true) return
+            if (activeOperationId != null) return
+            if (_uiState.value.pickerRequestId != null || _uiState.value.cameraCapturePending) return
             val startState = _uiState.value.beginConversion() ?: return
             val projectId = startState.projectId ?: return
             val sessionId = startState.sessionId ?: return
             _uiState.value = startState
-            operationJob =
-                viewModelScope.launch {
-                    createAndAttachPattern(startState, projectId, sessionId)
-                }
+            launchOperation { operationId ->
+                createAndAttachPattern(startState, projectId, sessionId, operationId)
+            }
         }
 
         @Suppress("SwallowedException", "TooGenericExceptionCaught")
@@ -249,33 +361,50 @@ internal class PatternImageImportViewModel
             startState: PatternImageImportUiState,
             projectId: Long,
             sessionId: String,
+            operationId: String,
         ) {
             var uncommittedOutputUri: String? = null
             try {
                 if (!hasCreationSpace(startState)) {
-                    showRecoverableError(PatternImageImportError.LOW_STORAGE)
+                    showRecoverableError(PatternImageImportError.LOW_STORAGE, operationId)
                     return
                 }
-                val output = convertImages(startState, projectId)
+                val output = convertImages(startState, projectId, operationId)
                 uncommittedOutputUri = output.first
-                _uiState.update { it.copy(phase = PatternImageImportPhase.ATTACHING, progress = null) }
+                updateOperation(operationId) { it.copy(phase = PatternImageImportPhase.ATTACHING, progress = null) }
                 val attached = attachGeneratedPattern(projectId, output)
                 if (attached != true) {
                     if (attached == false) deleteGeneratedPdf(uncommittedOutputUri)
                     uncommittedOutputUri = null
-                    showRecoverableError(PatternImageImportError.ATTACHMENT)
+                    showRecoverableError(PatternImageImportError.ATTACHMENT, operationId)
                     return
                 }
                 uncommittedOutputUri = null
-                completeSuccessfulImport(projectId, sessionId)
+                recordTrialPhotoPdfCreated()
+                finishImport(projectId, sessionId, PatternImageImportPhase.SUCCESS, operationId)
             } catch (failure: CancellationException) {
                 withContext(NonCancellable) {
                     deleteGeneratedPdf(uncommittedOutputUri)
-                    finishCancelled(projectId, sessionId)
+                    finishCancelled(projectId, sessionId, operationId)
                 }
             } catch (failure: Exception) {
                 deleteGeneratedPdf(uncommittedOutputUri)
-                showRecoverableFailure(PatternImageImportError.CONVERSION, failure)
+                showRecoverableFailure(PatternImageImportError.CONVERSION, failure, operationId)
+            }
+        }
+
+        private fun recordTrialPhotoPdfCreated() {
+            if (!proManager.initialStateReady.value) return
+            val proState = proManager.proState.value
+            if (proState.status != ProStatus.TRIAL_ACTIVE || proState.trialStartTimestamp <= 0L) return
+            applicationScope.launch {
+                try {
+                    onboardingStateRepository.markTrialPhotoPdfCreated(proState.trialStartTimestamp)
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (_: Exception) {
+                    // Kokeilulistan kirjausvirhe ei muuta onnistunutta PDF-tuontia virheeksi.
+                }
             }
         }
 
@@ -287,6 +416,7 @@ internal class PatternImageImportViewModel
         private suspend fun convertImages(
             state: PatternImageImportUiState,
             projectId: Long,
+            operationId: String,
         ): Pair<String, String> =
             withContext(ioDispatcher) {
                 storage.convertImagesToPdf(
@@ -295,7 +425,7 @@ internal class PatternImageImportViewModel
                     pages = state.selection.pages,
                     fileName = "pattern-images-${System.currentTimeMillis()}.pdf",
                 ) { current, total ->
-                    _uiState.update { it.withProgress(current, total) }
+                    updateOperation(operationId) { it.withProgress(current, total) }
                 }
             }
 
@@ -327,11 +457,6 @@ internal class PatternImageImportViewModel
             return false
         }
 
-        private suspend fun completeSuccessfulImport(
-            projectId: Long,
-            sessionId: String,
-        ) = finishImport(projectId, sessionId, PatternImageImportPhase.SUCCESS)
-
         private suspend fun deleteGeneratedPdf(uri: String?) {
             uri ?: return
             withContext(ioDispatcher) { storage.deleteGeneratedPdf(context, uri) }
@@ -340,16 +465,26 @@ internal class PatternImageImportViewModel
         private suspend fun finishCancelled(
             projectId: Long,
             sessionId: String,
-        ) = finishImport(projectId, sessionId, PatternImageImportPhase.CANCELLED)
+            operationId: String,
+        ) = finishImport(projectId, sessionId, PatternImageImportPhase.CANCELLED, operationId)
 
         private suspend fun finishImport(
             projectId: Long,
             sessionId: String,
             phase: PatternImageImportPhase,
+            operationId: String,
         ) = withContext(NonCancellable) {
             withContext(ioDispatcher) { storage.deleteImportSession(context, projectId, sessionId) }
-            clearSavedState()
-            _uiState.value = PatternImageImportUiState(phase = phase, closeReady = true)
+            if (activeOperationId == operationId && isCurrentSession(sessionId)) {
+                clearSavedState()
+                _uiState.value =
+                    PatternImageImportUiState(
+                        projectId = projectId,
+                        sessionId = sessionId,
+                        phase = phase,
+                        closeReady = true,
+                    )
+            }
         }
 
         private fun updateSelection(transform: (PatternImageSelection) -> PatternImageSelection) {
@@ -364,13 +499,19 @@ internal class PatternImageImportViewModel
             persistState()
         }
 
-        private fun showRecoverableError(error: PatternImageImportError) {
-            _uiState.update { it.copy(phase = PatternImageImportPhase.ERROR, error = error, progress = null) }
+        private fun showRecoverableError(
+            error: PatternImageImportError,
+            operationId: String,
+        ) {
+            updateOperation(
+                operationId,
+            ) { it.copy(phase = PatternImageImportPhase.ERROR, error = error, progress = null) }
         }
 
         private fun showRecoverableFailure(
             fallback: PatternImageImportError,
             failure: Exception,
+            operationId: String,
         ) {
             val error =
                 if (failure is PatternImageValidationException) {
@@ -378,15 +519,28 @@ internal class PatternImageImportViewModel
                 } else {
                     fallback
                 }
-            showRecoverableError(error)
+            showRecoverableError(error, operationId)
         }
 
         private fun ensureSession(
             projectId: Long,
             origin: PatternImageImportOrigin,
-        ) {
+        ): Boolean {
             val current = _uiState.value
-            if (current.projectId == projectId && current.sessionId != null && current.origin == origin) return
+            if (ownerProjectId != null && ownerProjectId != projectId) return false
+            if (activeOperationId != null) return false
+            val finished =
+                current.phase == PatternImageImportPhase.SUCCESS || current.phase == PatternImageImportPhase.CANCELLED
+            if (!finished && current.sessionId != null) {
+                if (current.origin == origin) return true
+                if (current.selection.pages.isNotEmpty() ||
+                    current.pickerRequestId != null ||
+                    current.cameraCapturePending
+                ) {
+                    return false
+                }
+            }
+            ownerProjectId = projectId
             _uiState.value =
                 PatternImageImportUiState(
                     projectId = projectId,
@@ -395,6 +549,29 @@ internal class PatternImageImportViewModel
                     phase = PatternImageImportPhase.IDLE,
                 )
             persistState()
+            return true
+        }
+
+        fun isCurrentSession(sessionId: String?): Boolean = sessionId != null && _uiState.value.sessionId == sessionId
+
+        private fun launchOperation(block: suspend (String) -> Unit) {
+            val operationId = UUID.randomUUID().toString()
+            activeOperationId = operationId
+            operationJob =
+                viewModelScope.launch(start = CoroutineStart.UNDISPATCHED) {
+                    try {
+                        block(operationId)
+                    } finally {
+                        if (activeOperationId == operationId) activeOperationId = null
+                    }
+                }
+        }
+
+        private fun updateOperation(
+            operationId: String,
+            transform: (PatternImageImportUiState) -> PatternImageImportUiState,
+        ) {
+            _uiState.update { if (activeOperationId == operationId) transform(it) else it }
         }
 
         private fun persistState() {
@@ -404,6 +581,8 @@ internal class PatternImageImportViewModel
             savedStateHandle[KEY_PAGES] = encodeStagedPatternPages(state.selection.pages)
             savedStateHandle[KEY_ORIGIN] = state.origin.name
             savedStateHandle[KEY_PICKER_REQUEST_ID] = state.pickerRequestId
+            savedStateHandle[KEY_PICKER_LAUNCHED] = state.pickerLaunched
+            savedStateHandle[KEY_CAMERA_PENDING] = state.cameraCapturePending
         }
 
         private fun clearSavedState() {
@@ -412,6 +591,8 @@ internal class PatternImageImportViewModel
             savedStateHandle.remove<String>(KEY_PAGES)
             savedStateHandle.remove<String>(KEY_ORIGIN)
             savedStateHandle.remove<String>(KEY_PICKER_REQUEST_ID)
+            savedStateHandle.remove<Boolean>(KEY_PICKER_LAUNCHED)
+            savedStateHandle.remove<Boolean>(KEY_CAMERA_PENDING)
         }
 
         private fun cameraPage(
@@ -432,6 +613,8 @@ internal class PatternImageImportViewModel
             const val KEY_PAGES = "pattern_image_pages"
             const val KEY_ORIGIN = "pattern_image_origin"
             const val KEY_PICKER_REQUEST_ID = "pattern_image_picker_request_id"
+            const val KEY_PICKER_LAUNCHED = "pattern_image_picker_launched"
+            const val KEY_CAMERA_PENDING = "pattern_image_camera_pending"
 
             fun restoredState(handle: SavedStateHandle): PatternImageImportUiState {
                 val projectId = handle.get<Long>(KEY_PROJECT_ID)
@@ -446,6 +629,11 @@ internal class PatternImageImportViewModel
                     sessionId = sessionId,
                     origin = origin,
                     pickerRequestId = handle.get<String>(KEY_PICKER_REQUEST_ID),
+                    pickerLaunched =
+                        handle.get<Boolean>(KEY_PICKER_LAUNCHED) ?: (handle.get<String>(KEY_PICKER_REQUEST_ID) != null),
+                    cameraCapturePending =
+                        handle.get<Boolean>(KEY_CAMERA_PENDING)
+                            ?: (origin == PatternImageImportOrigin.CAMERA && pages.isEmpty()),
                     selection = PatternImageSelection(pages),
                     phase = selectionPhase(pages),
                 )
@@ -469,6 +657,7 @@ private fun PatternImageStageFailure.toImportError(): PatternImageImportError =
 private fun PatternImageFailureReason.toImportError(): PatternImageImportError =
     when (this) {
         PatternImageFailureReason.ANIMATED -> PatternImageImportError.ANIMATED
+
         PatternImageFailureReason.UNSUPPORTED,
         PatternImageFailureReason.INVALID_DIMENSIONS,
         -> PatternImageImportError.UNSUPPORTED

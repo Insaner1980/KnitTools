@@ -12,7 +12,7 @@ Tama vahti tarkistaa vain KnitToolsissa tarkoituksella paatettyja release- ja ar
 Se ei ole yleinen tietoturvaskanneri, eika se lue tai tulosta credential-arvoja.
 
 Odotetut sopimusarvot, varmistettu nykyisista lahdetiedostoista:
-- Manifest permissions: android.permission.INTERNET, android.permission.VIBRATE, android.permission.CAMERA.
+- Manifest permissions: android.permission.INTERNET, android.permission.VIBRATE.
 - android.permission.RECORD_AUDIO on kielletty, koska voice/microphone-ominaisuudet on poistettu tuote-/turvapaattoksella.
 - Application flags: usesCleartextTraffic=false, allowBackup=false, dataExtractionRules=@xml/data_extraction_rules,
   fullBackupContent=@xml/backup_rules, localeConfig=@xml/locales_config.
@@ -260,8 +260,7 @@ function Test-ManifestPermissions {
         )
         $expected = @(
             "android.permission.INTERNET",
-            "android.permission.VIBRATE",
-            "android.permission.CAMERA"
+            "android.permission.VIBRATE"
         )
         $comparison = Compare-SetValues -Actual $actual -Expected $expected
 
@@ -1133,11 +1132,7 @@ function Test-RoomSchema {
         $edges = @($edges | Sort-Object From, To -Unique)
         $startVersion = [int]($schemaVersions | Measure-Object -Minimum).Minimum
         if ($startVersion -gt 1) {
-            if ($problems.Count -gt 0) {
-                Add-Fail -Check $check -Message ($problems -join "; ") -RelativePath $firstPath -Line $firstLine
-            }
             Add-Warn -Check $check -Message "schema history starts at $startVersion; path checked from first exported schema only" -RelativePath $schemaRelativeDir
-            return
         }
 
         if (-not (Test-MigrationPath -Start $startVersion -Target $version -Edges $edges)) {
@@ -1226,7 +1221,7 @@ function Convert-ValuesDirectoryToLocale {
     $qualifier = $DirectoryName.Substring("values-".Length)
     if ($qualifier -match '^([a-z]{2,3})(-r([A-Z]{2}))?$') {
         if ($Matches[3]) {
-            return "$($Matches[1])-r$($Matches[3])"
+            return "$($Matches[1])-$($Matches[3])"
         }
         return $Matches[1]
     }

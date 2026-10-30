@@ -9,6 +9,7 @@ import androidx.compose.material.icons.outlined.Build
 import androidx.compose.material.icons.outlined.FolderOpen
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.lifecycle.Lifecycle
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.model.CraftType
 
@@ -256,4 +257,23 @@ enum class TopLevelDestination(
     Tools("tools_tab", R.string.tab_tools, Icons.Outlined.Build, Screen.Tools.route),
     Insights("insights_tab", R.string.tab_insights, Icons.Outlined.BarChart, Screen.Insights.route),
     Settings("settings_tab", R.string.tab_settings, Icons.Outlined.Settings, Screen.Settings.route),
+}
+
+internal fun isStartupDestinationReady(
+    route: String?,
+    entryId: String?,
+    readyEntryId: String?,
+    lifecycle: Lifecycle.State?,
+): Boolean {
+    if (route == null || entryId == null) return false
+    return when (route) {
+        Screen.ProjectList.route,
+        Screen.Counter.route,
+        Screen.ProjectOverview.ROUTE,
+        Screen.ProUpgrade.route,
+        Screen.RavelryBrowser.ROUTE,
+        Screen.WebPatternEditor.ROUTE,
+        -> entryId == readyEntryId
+        else -> lifecycle == Lifecycle.State.RESUMED
+    }
 }

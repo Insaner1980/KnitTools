@@ -2122,6 +2122,19 @@ class PatternAnnotationExportOwnershipTest {
         }
 
     @Test
+    fun `recreated viewer rebinds the same context and completes its existing picker request once`() =
+        runTest {
+            val fixture = ExportFixture(this)
+            val request = fixture.ready()
+            fixture.vm.setExportContext(fixture.context)
+            fixture.deliver(request)
+            runCurrent()
+            fixture.deliver(request)
+            runCurrent()
+            assertEquals(1, fixture.exports.size)
+        }
+
+    @Test
     fun `leaving viewer declines saved callback even after same context reenters`() =
         runTest {
             val fixture = ExportFixture(this)

@@ -3,6 +3,7 @@ package com.finnvek.knittools.ui.screens.pattern
 import android.graphics.Bitmap
 import android.net.Uri
 import android.widget.Toast
+import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Canvas
@@ -2041,9 +2042,12 @@ private fun PatternViewerContent(
     val renderedImage = remember(state.renderedBitmap) { state.renderedBitmap?.asImageBitmap() }
     val exportStyle = rememberPatternAnnotationRenderStyle()
     val exportRequests = annotationActions.exportDestinationRequestsProvider()
+    val activity = LocalActivity.current
     SideEffect { annotationActions.onExportContextChanged(state.exportContext) }
-    DisposableEffect(exportRequests) {
-        onDispose { annotationActions.onExportContextChanged(null) }
+    DisposableEffect(exportRequests, activity) {
+        onDispose {
+            if (activity?.isChangingConfigurations != true) annotationActions.onExportContextChanged(null)
+        }
     }
     var pendingExportRequestId by rememberSaveable { mutableStateOf<String?>(null) }
     val editableLayerVisible =
@@ -2056,6 +2060,7 @@ private fun PatternViewerContent(
     val exportFilename = stringResource(R.string.pattern_annotation_export_filename, exportBaseName)
     val requestId = pendingExportRequestId
     key(requestId) {
+        var destinationLaunched by rememberSaveable { mutableStateOf(false) }
         val exportLauncher =
             rememberLauncherForActivityResult(
                 ActivityResultContracts.CreateDocument("application/pdf"),
@@ -2066,8 +2071,9 @@ private fun PatternViewerContent(
                 }
             }
         LaunchedEffect(requestId) {
-            if (requestId != null) {
+            if (requestId != null && !destinationLaunched) {
                 if (annotationActions.onLaunchExportDestination(requestId, state.exportContext)) {
+                    destinationLaunched = true
                     exportLauncher.launch(exportFilename)
                 } else {
                     if (pendingExportRequestId == requestId) pendingExportRequestId = null

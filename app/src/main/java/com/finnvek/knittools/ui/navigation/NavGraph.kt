@@ -150,6 +150,12 @@ fun KnitToolsNavHost(
 
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
+    val destinationLifecycle =
+        navBackStackEntry
+            ?.lifecycle
+            ?.currentStateFlow
+            ?.collectAsState()
+            ?.value
     val lifecycle by LocalLifecycleOwner.current.lifecycle.currentStateFlow
         .collectAsState()
     val widgetInstalled = rememberCounterWidgetInstalled()
@@ -189,8 +195,7 @@ fun KnitToolsNavHost(
             if (showWidgetProPrompt) {
                 startupGatesReady
             } else {
-                readyEntryId != null &&
-                    readyEntryId == navBackStackEntry?.id
+                isStartupDestinationReady(currentRoute, navBackStackEntry?.id, readyEntryId, destinationLifecycle)
             }
         onStartupReady(
             surfaceReady &&

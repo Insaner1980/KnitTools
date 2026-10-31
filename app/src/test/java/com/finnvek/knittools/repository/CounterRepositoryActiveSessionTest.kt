@@ -20,6 +20,7 @@ import com.finnvek.knittools.domain.model.SessionTimeSnapshot
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
@@ -752,6 +753,8 @@ abstract class CounterRepositoryActiveSessionFixture {
     protected fun buildRepository(
         counterDao: ProjectCounterDao,
         transactionRunner: DatabaseTransactionRunner = ImmediateDatabaseTransactionRunner,
+        ioDispatcher: CoroutineDispatcher = Dispatchers.Unconfined,
+        sessionTimeSource: SessionTimeSource = timeSource,
     ): CounterRepository =
         CounterRepository(
             dao = projectDao,
@@ -765,8 +768,8 @@ abstract class CounterRepositoryActiveSessionFixture {
             projectDocumentRepository = mockk(relaxed = true),
             projectFolderDao = mockk(relaxed = true),
             transactionRunner = transactionRunner,
-            ioDispatcher = Dispatchers.Unconfined,
-            sessionTimeSource = timeSource,
+            ioDispatcher = ioDispatcher,
+            sessionTimeSource = sessionTimeSource,
         )
     // CPD-ON
 

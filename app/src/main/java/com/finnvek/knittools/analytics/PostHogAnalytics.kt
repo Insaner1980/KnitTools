@@ -13,32 +13,72 @@ class PostHogAnalytics
     ) : UsageAnalytics,
         DefaultLifecycleObserver {
         private var enabled = false
+        private var requestedEnabled = false
         private var consentGeneration: String? = null
+        private var consentRevision = 0L
         private var client: PostHogConsentClient? = null
+        private val retiredClients = mutableListOf<PostHogConsentClient>()
+        private val clientWorkLock = Any()
         private var foreground = false
         private var screen: String? = null
         private var foregroundStarted: Long? = null
         private var screenStarted: Long? = null
 
-        @Synchronized
         fun setEnabled(
             allowed: Boolean,
             generation: String? = null,
         ) {
-            if (allowed == enabled && generation == consentGeneration) return
-            enabled = false
-            foregroundStarted = null
-            screenStarted = null
-            val retired = client
-            client = null
-            safely { retired?.retire() }
-            consentGeneration = generation
-            if (!allowed) return
-            safely {
-                client = clients.create()
-                enabled = true
-                if (foreground) startForeground()
+            val revision =
+                synchronized(this) {
+                    if (allowed == requestedEnabled && generation == consentGeneration) return
+                    requestedEnabled = allowed
+                    consentGeneration = generation
+                    consentRevision++
+                    enabled = false
+                    foregroundStarted = null
+                    screenStarted = null
+                    client?.let {
+                        it.blockDelivery()
+                        retiredClients.add(it)
+                    }
+                    client = null
+                    // Revoking an unfinished initialization must not wait for it.
+                    if (!allowed && retiredClients.isEmpty()) return
+                    consentRevision
+                }
+
+            // Only consent workers take this lock; callbacks need only the short state monitor.
+            // Serialize queue sweeps and SDK lifetimes, including superseded requests.
+            synchronized(clientWorkLock) {
+                val retired = synchronized(this) { retiredClients.toList().also { retiredClients.clear() } }
+                retired.forEach { safely { it.retire() } }
+                if (synchronized(this) { revision != consentRevision || !requestedEnabled }) return
+                initializeClient(revision)
             }
+        }
+
+        private fun initializeClient(revision: Long) {
+            val initialized =
+                try {
+                    clients.create()
+                } catch (_: RuntimeException) {
+                    synchronized(this) {
+                        if (revision == consentRevision) requestedEnabled = false
+                    }
+                    return
+                }
+            val accepted =
+                synchronized(this) {
+                    if (revision != consentRevision) {
+                        false
+                    } else {
+                        client = initialized
+                        enabled = true
+                        if (foreground) startForeground()
+                        true
+                    }
+                }
+            if (!accepted) safely { initialized.retire() }
         }
 
         @Synchronized

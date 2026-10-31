@@ -18,11 +18,13 @@ import androidx.glance.state.PreferencesGlanceStateDefinition
 import com.finnvek.knittools.R
 import com.finnvek.knittools.data.datastore.safePreferencesData
 import com.finnvek.knittools.data.datastore.updatePreferencesSafely
+import com.finnvek.knittools.di.AppDispatchers
 import com.finnvek.knittools.domain.calculator.CounterValueFormatter
 import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.domain.model.MainCounterLabelType
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withContext
 
 private val Context.widgetDataStore by preferencesDataStore(
     name = "counter_widget",
@@ -126,8 +128,12 @@ object CounterWidgetState {
         beforeUpdate: suspend (GlanceId) -> Unit,
     ) {
         val widget = CounterWidget()
-        val manager = GlanceAppWidgetManager(context)
-        manager.getGlanceIds(CounterWidget::class.java).forEach { glanceId ->
+        val glanceIds =
+            withContext(AppDispatchers.IO) {
+                // Glance 1.1.1 queries AppWidgetManager synchronously, even in its suspend API.
+                GlanceAppWidgetManager(context).getGlanceIds(CounterWidget::class.java)
+            }
+        glanceIds.forEach { glanceId ->
             try {
                 beforeUpdate(glanceId)
                 widget.update(context, glanceId)

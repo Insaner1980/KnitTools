@@ -62,7 +62,7 @@ internal fun rememberCounterWidgetInstalled(): Boolean {
     val focused = LocalWindowInfo.current.isWindowFocused
     var installed by remember { mutableStateOf(false) }
     LaunchedEffect(host, lifecycle, focused) {
-        if (lifecycle == Lifecycle.State.RESUMED && focused) installed = host.hasInstalledWidgets
+        if (lifecycle == Lifecycle.State.RESUMED && focused) installed = host.hasInstalledWidgets()
     }
     return installed
 }

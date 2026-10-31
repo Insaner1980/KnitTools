@@ -14,6 +14,7 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.unmockkObject
 import io.mockk.verify
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -58,6 +59,62 @@ class CounterViewModelLifecycleTest {
     }
 
     @Test
+    fun `switching projects cancels the previous widget sync without replacing the new selection`() =
+        runTest {
+            val vm = viewModel()
+            runCurrent()
+            val previous = CounterProject(id = 9L, name = "Previous", count = 2)
+            val current = CounterProject(id = 10L, name = "Current", count = 5)
+            every { repository.observeProject(9L) } returns flowOf(previous)
+            every { repository.observeProject(10L) } returns flowOf(current)
+            val finishSync = CompletableDeferred<Unit>()
+            var syncCancelled = false
+            coEvery { CounterWidgetState.syncAll(any(), match { it.projectId == 9L }) } coAnswers {
+                try {
+                    finishSync.await()
+                } catch (cancelled: CancellationException) {
+                    syncCancelled = true
+                    throw cancelled
+                }
+            }
+
+            vm.selectProject(previous)
+            runCurrent()
+            assertEquals(9L, vm.uiState.value.projectId)
+            vm.selectProject(current)
+            runCurrent()
+            finishSync.complete(Unit)
+            runCurrent()
+
+            assertTrue(syncCancelled)
+            assertEquals(10L, vm.uiState.value.projectId)
+            assertEquals(5, vm.uiState.value.counter.count)
+            coVerify(exactly = 1) { CounterWidgetState.syncAll(any(), match { it.projectId == 10L }) }
+            coVerify(exactly = 0) { repository.getTotalMinutesForProject(9L) }
+        }
+
+    @Test
+    fun `widget metadata failure does not fail project selection`() =
+        runTest {
+            val vm = viewModel()
+            runCurrent()
+            val project = CounterProject(id = 9L, name = "Selected", count = 2)
+            coEvery { repository.getProject(9L) } returns project
+            every { repository.observeProject(9L) } returns flowOf(project)
+            coEvery { CounterWidgetState.syncAll(any(), match { it.projectId == 9L }) } throws
+                IllegalStateException("Widget service unavailable")
+            var loaded = false
+
+            vm.selectProjectByIdForLaunch(9L) { loaded = it }
+            runCurrent()
+
+            assertTrue(loaded)
+            assertEquals(9L, vm.uiState.value.projectId)
+            assertEquals(2, vm.uiState.value.counter.count)
+            coVerify(exactly = 1) { repository.getTotalMinutesForProject(9L) }
+        }
+
+    @Test
     fun `process observer callbacks belong only to each live view model across recreation`() =
         runTest {
             val owner = ProcessLifecycleOwner.get()
@@ -78,7 +135,7 @@ class CounterViewModelLifecycleTest {
                 verify(exactly = 1) { lifecycle.addObserver(refEq(observer)) }
                 runCurrent()
                 coVerify(exactly = 1) { repository.refreshActiveSession() }
-                verify(atLeast = 1) { repository.activeSessionDurationSeconds(session) }
+                coVerify(atLeast = 1) { repository.activeSessionDurationSeconds(session) }
                 repository.assertRestorationOnlyReads()
                 assertEquals(session, vm.uiState.value.activeSession)
                 assertNull(vm.uiState.value.sessionStopSummary)
@@ -96,7 +153,7 @@ class CounterViewModelLifecycleTest {
                 runCurrent()
                 coVerify(exactly = 1) { repository.checkpointActiveSession() }
                 coVerify(exactly = 1) { repository.refreshActiveSession() }
-                verify(exactly = 1) { repository.activeSessionDurationSeconds(session) }
+                coVerify(exactly = 1) { repository.activeSessionDurationSeconds(session) }
                 confirmVerified(repository)
                 assertEquals(session, vm.uiState.value.activeSession)
                 assertNull(vm.uiState.value.sessionStopSummary)

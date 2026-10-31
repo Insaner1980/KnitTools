@@ -106,6 +106,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.receiveAsFlow
@@ -367,6 +368,8 @@ class CounterViewModel
         private var selectedProjectJob: Job? = null
         private var projectSelectionJob: Job? = null
         private var workSessionActionJob: Job? = null
+        private var sessionPresentationJob: Job? = null
+        private var sessionStopSummaryJob: Job? = null
         private var pendingWorkSessionRetry: (() -> Unit)? = null
         private var reminderCollectionJob: Job? = null
         private var counterCollectionJob: Job? = null
@@ -941,12 +944,13 @@ class CounterViewModel
 
         private fun observeActiveSession() {
             viewModelScope.launch {
-                repository.observeActiveSession().collect { session ->
+                repository.observeActiveSession().collectLatest { session ->
+                    val sessionSeconds = session?.let { repository.activeSessionDurationSeconds(it) } ?: 0L
                     _uiState.update { state ->
                         state.copy(
                             activeSession = session,
                             activeSessionLoaded = true,
-                            sessionSeconds = session?.let(repository::activeSessionDurationSeconds) ?: 0L,
+                            sessionSeconds = sessionSeconds,
                             showSessionRecoveryPrompt =
                                 session?.let { it.needsRecoveryReview && !it.recoveryPromptShown } == true,
                         )
@@ -969,11 +973,12 @@ class CounterViewModel
                     } finally {
                         _uiState.update { it.copy(initialSessionRefreshFinished = true) }
                     }
+                val sessionSeconds = session?.let { repository.activeSessionDurationSeconds(it) } ?: 0L
                 _uiState.update {
                     if (it.activeSession != expectedSession) return@update it
                     it.copy(
                         activeSession = session,
-                        sessionSeconds = session?.let(repository::activeSessionDurationSeconds) ?: 0L,
+                        sessionSeconds = sessionSeconds,
                         showSessionRecoveryPrompt =
                             session?.needsRecoveryReview == true && !session.recoveryPromptShown,
                     )
@@ -982,18 +987,23 @@ class CounterViewModel
         }
 
         fun refreshSessionPresentationTime() {
+            if (sessionPresentationJob?.isActive == true) return
             val session = _uiState.value.activeSession ?: return
-            if (!session.needsRecoveryReview && repository.activeSessionNeedsRecovery(session)) {
-                refreshActiveSession()
-                return
-            }
-            _uiState.update { state ->
-                if (state.activeSession?.sessionToken == session.sessionToken) {
-                    state.copy(sessionSeconds = repository.activeSessionDurationSeconds(session))
-                } else {
-                    state
+            sessionPresentationJob =
+                viewModelScope.launch {
+                    if (!session.needsRecoveryReview && repository.activeSessionNeedsRecovery(session)) {
+                        if (_uiState.value.activeSession == session) refreshActiveSession()
+                        return@launch
+                    }
+                    val sessionSeconds = repository.activeSessionDurationSeconds(session)
+                    _uiState.update { state ->
+                        if (state.activeSession == session) {
+                            state.copy(sessionSeconds = sessionSeconds)
+                        } else {
+                            state
+                        }
+                    }
                 }
-            }
         }
 
         fun startWorkSession() {
@@ -1068,22 +1078,31 @@ class CounterViewModel
 
         fun stopWorkSession() {
             val active = _uiState.value.activeSession ?: return
+            sessionStopSummaryJob?.cancel()
             if (active.needsRecoveryReview) {
                 _uiState.update { it.copy(showSessionRecoveryPrompt = true) }
                 return
             }
-            _uiState.update { state ->
-                state.copy(
-                    sessionStopSummary =
-                        SessionStopSummary(
-                            sessionToken = active.sessionToken,
-                            projectName = state.projectName,
-                            durationSeconds = repository.activeSessionDurationSeconds(active),
-                            rowsWorked = active.trustedRowsWorked,
-                            endRow = active.trustedLastObservedRow,
-                        ),
-                )
-            }
+            val selectionVersion = projectSelectionVersion
+            sessionStopSummaryJob =
+                viewModelScope.launch {
+                    val durationSeconds = repository.activeSessionDurationSeconds(active)
+                    _uiState.update { state ->
+                        if (state.activeSession != active || selectionVersion != projectSelectionVersion) {
+                            return@update state
+                        }
+                        state.copy(
+                            sessionStopSummary =
+                                SessionStopSummary(
+                                    sessionToken = active.sessionToken,
+                                    projectName = state.projectName,
+                                    durationSeconds = durationSeconds,
+                                    rowsWorked = active.trustedRowsWorked,
+                                    endRow = active.trustedLastObservedRow,
+                                ),
+                        )
+                    }
+                }
         }
 
         fun saveStoppedWorkSession() {
@@ -1155,20 +1174,24 @@ class CounterViewModel
         }
 
         fun cancelSessionStop() {
+            sessionStopSummaryJob?.cancel()
             _uiState.update { it.copy(sessionStopSummary = null) }
         }
 
-        private fun handleStopRecoveryReview(
+        private suspend fun handleStopRecoveryReview(
             summary: SessionStopSummary,
             expectedSession: ActiveWorkSession,
             recovery: ActiveWorkSession,
         ) {
+            if (_uiState.value.sessionStopSummary !== summary) return
+            val recoverySeconds = repository.activeSessionDurationSeconds(recovery)
             _uiState.update { state ->
                 if (state.sessionStopSummary !== summary) return@update state
                 val currentSession = if (state.activeSession == expectedSession) recovery else state.activeSession
                 state.copy(
                     activeSession = currentSession,
-                    sessionSeconds = currentSession?.let(repository::activeSessionDurationSeconds) ?: 0L,
+                    sessionSeconds =
+                        if (state.activeSession == expectedSession) recoverySeconds else state.sessionSeconds,
                     sessionStopSummary = null,
                     showSessionRecoveryPrompt =
                         state.showSessionRecoveryPrompt ||

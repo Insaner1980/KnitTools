@@ -232,13 +232,22 @@ fun ProjectContentHost(
             containsText = true,
         ) ?: CONTENT_ERROR_TIP_BLOCK_MILLIS
     val widgetPinHost = remember(context) { CounterWidgetPinHost(context) }
+    var widgetPinSupported by remember(widgetPinHost) { mutableStateOf(false) }
+    val widgetLifecycleOwner = LocalLifecycleOwner.current
+    LaunchedEffect(widgetPinHost, widgetLifecycleOwner) {
+        widgetLifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+            widgetPinSupported = widgetPinHost.isSupported()
+        }
+    }
     val widgetAccess = proActionAccess(state.proState, state.proAccessReady, ProFeature.WIDGET)
     val counterAccess = proActionAccess(state.proState, state.proAccessReady, ProFeature.MULTIPLE_COUNTERS)
     val notesAccess =
         proActionAccess(state.proState, state.proAccessReady, ProFeature.NOTES, alreadyUnlocked = state.notesCreated)
     val pinWidget = {
-        if (!requestCounterWidgetPin(widgetPinHost)) {
-            coroutineScope.launch { snackbarHostState.showSnackbar(resources.getString(R.string.widget_add_manual)) }
+        coroutineScope.launch {
+            if (!requestCounterWidgetPin(widgetPinHost)) {
+                snackbarHostState.showSnackbar(resources.getString(R.string.widget_add_manual))
+            }
         }
         Unit
     }
@@ -1163,7 +1172,7 @@ fun ProjectContentHost(
                     isCompleted = state.isCompleted,
                     projectCount = state.projects.size,
                     keepScreenAwake = state.keepScreenAwake,
-                    widgetPinSupported = state.proAccessReady && widgetPinHost.isSupported,
+                    widgetPinSupported = state.proAccessReady && widgetPinSupported,
                     screenReady = state.startupReady,
                 ),
             onAction = {

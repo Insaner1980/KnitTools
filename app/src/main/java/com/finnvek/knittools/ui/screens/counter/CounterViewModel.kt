@@ -1079,28 +1079,37 @@ class CounterViewModel
         fun stopWorkSession() {
             val active = _uiState.value.activeSession ?: return
             sessionStopSummaryJob?.cancel()
-            if (active.needsRecoveryReview) {
-                _uiState.update { it.copy(showSessionRecoveryPrompt = true) }
-                return
-            }
             val selectionVersion = projectSelectionVersion
             sessionStopSummaryJob =
                 viewModelScope.launch {
-                    val durationSeconds = repository.activeSessionDurationSeconds(active)
-                    _uiState.update { state ->
-                        if (state.activeSession != active || selectionVersion != projectSelectionVersion) {
-                            return@update state
+                    while (isActive && selectionVersion == projectSelectionVersion) {
+                        val current = _uiState.value.activeSession ?: return@launch
+                        if (current.sessionToken != active.sessionToken) return@launch
+                        if (current.needsRecoveryReview) {
+                            _uiState.update { it.copy(showSessionRecoveryPrompt = true) }
+                            return@launch
                         }
-                        state.copy(
-                            sessionStopSummary =
-                                SessionStopSummary(
-                                    sessionToken = active.sessionToken,
-                                    projectName = state.projectName,
-                                    durationSeconds = durationSeconds,
-                                    rowsWorked = active.trustedRowsWorked,
-                                    endRow = active.trustedLastObservedRow,
+                        val durationSeconds = repository.activeSessionDurationSeconds(current)
+                        if (selectionVersion != projectSelectionVersion) return@launch
+                        val state = _uiState.value
+                        if (state.activeSession != current) continue
+                        if (
+                            _uiState.compareAndSet(
+                                state,
+                                state.copy(
+                                    sessionStopSummary =
+                                        SessionStopSummary(
+                                            sessionToken = current.sessionToken,
+                                            projectName = state.projectName,
+                                            durationSeconds = durationSeconds,
+                                            rowsWorked = current.trustedRowsWorked,
+                                            endRow = current.trustedLastObservedRow,
+                                        ),
                                 ),
-                        )
+                            )
+                        ) {
+                            return@launch
+                        }
                     }
                 }
         }

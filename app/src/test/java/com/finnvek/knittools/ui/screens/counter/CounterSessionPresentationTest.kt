@@ -1,5 +1,6 @@
 package com.finnvek.knittools.ui.screens.counter
 
+import com.finnvek.knittools.domain.model.ActiveSessionRecoveryReason
 import com.finnvek.knittools.domain.model.ActiveWorkSession
 import io.mockk.clearMocks
 import io.mockk.coEvery
@@ -105,6 +106,83 @@ class CounterSessionPresentationTest : CounterViewModelFixture() {
 
             assertNull(vm.uiState.value.sessionStopSummary)
             coVerify(exactly = 0) { repository.stopSession(any(), any(), any(), any()) }
+        }
+
+    @Test
+    fun `stop retries updated anchors and row totals for the same session`() =
+        runTest {
+            val original = activeSession()
+            val active = stubActiveSession(original)
+            val vm = viewModel()
+            runCurrent()
+            val pending = CompletableDeferred<Long>()
+            coEvery { repository.activeSessionDurationSeconds(original) } coAnswers { pending.await() }
+
+            vm.stopWorkSession()
+            runCurrent()
+            val updated =
+                original.copy(
+                    timingAnchors = original.timingAnchors.copy(checkpointedDurationSeconds = 20L),
+                    trustedRowsWorked = 3,
+                    trustedLastObservedRow = 8,
+                )
+            coEvery { repository.activeSessionDurationSeconds(updated) } returns 25L
+            active.value = updated
+            runCurrent()
+            pending.complete(10L)
+            runCurrent()
+
+            val summary = vm.uiState.value.sessionStopSummary
+            assertEquals(updated.sessionToken, summary?.sessionToken)
+            assertEquals(25L, summary?.durationSeconds)
+            assertEquals(3, summary?.rowsWorked)
+            assertEquals(8, summary?.endRow)
+            coVerify(exactly = 0) { repository.stopSession(any(), any(), any(), any()) }
+        }
+
+    @Test
+    fun `stop retry opens recovery instead of a summary when updated session needs review`() =
+        runTest {
+            val original = activeSession()
+            val active = stubActiveSession(original)
+            val vm = viewModel()
+            runCurrent()
+            val pending = CompletableDeferred<Long>()
+            coEvery { repository.activeSessionDurationSeconds(original) } coAnswers { pending.await() }
+
+            vm.stopWorkSession()
+            runCurrent()
+            active.value =
+                original.copy(
+                    recoveryReason = ActiveSessionRecoveryReason.REBOOTED,
+                    recoveryPromptShown = true,
+                )
+            runCurrent()
+            pending.complete(30L)
+            runCurrent()
+
+            assertTrue(vm.uiState.value.showSessionRecoveryPrompt)
+            assertNull(vm.uiState.value.sessionStopSummary)
+        }
+
+    @Test
+    fun `stop read cannot publish after changing the selected project`() =
+        runTest {
+            val session = activeSession()
+            stubActiveSession(session)
+            val vm = viewModel()
+            runCurrent()
+            val pending = CompletableDeferred<Long>()
+            coEvery { repository.activeSessionDurationSeconds(session) } coAnswers { pending.await() }
+
+            vm.stopWorkSession()
+            runCurrent()
+            vm.selectProject(observeOtherProject(count = 0))
+            runCurrent()
+            pending.complete(30L)
+            runCurrent()
+
+            assertNull(vm.uiState.value.sessionStopSummary)
         }
 
     @Test

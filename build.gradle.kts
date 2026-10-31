@@ -2,8 +2,8 @@ buildscript {
     configurations.configureEach {
         resolutionStrategy.force(
             "com.google.guava:guava:33.7.2-jre",
-            "com.fasterxml.jackson.core:jackson-core:2.22.3",
-            "com.fasterxml.jackson.core:jackson-databind:2.22.3",
+            "com.fasterxml.jackson.core:jackson-core:2.22.4",
+            "com.fasterxml.jackson.core:jackson-databind:2.22.4",
             "org.jsoup:jsoup:1.23.2",
             "org.bitbucket.b_c:jose4j:0.9.7",
             "org.jdom:jdom2:2.0.6.1",

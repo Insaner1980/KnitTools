@@ -2,7 +2,7 @@
 <suppressions xmlns="https://jeremylong.github.io/DependencyCheck/dependency-suppression.1.4.xsd"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:schemaLocation="https://jeremylong.github.io/DependencyCheck/dependency-suppression.1.4.xsd https://jeremylong.github.io/DependencyCheck/dependency-suppression.1.4.xsd">
-    <suppress until="2026-10-31Z">
+    <suppress until="2026-11-30Z">
         <notes><![CDATA[
         AndroidX Browser matchautuu virheellisesti geneeriseen android_browser-tuotteeseen.
         Tämä ei kuvaa sovelluksen todellista hyökkäyspintaa.
@@ -11,7 +11,7 @@
         <cve>CVE-2008-7298</cve>
     </suppress>
 
-    <suppress until="2026-10-31Z">
+    <suppress until="2026-11-30Z">
         <notes><![CDATA[
         AndroidX SQLite -wrapperit eivät ole sama asia kuin geneerinen upstream SQLite.
         Suppressoidaan virheellinen CPE-osuma kokonaan, jotta uusi SQLite-CVE ei riko auditia
@@ -21,7 +21,7 @@
         <cpe>cpe:/a:sqlite:sqlite</cpe>
     </suppress>
 
-    <suppress until="2026-10-31Z">
+    <suppress until="2026-11-30Z">
         <notes><![CDATA[
         AndroidX legacy-support-core-utils matchautuu geneeriseen utils_project:utils-tuotteeseen.
         Kyseessä on Maven-artefaktin nimen aiheuttama false positive, ei sama upstream-tuote.
@@ -30,7 +30,7 @@
         <cpe>cpe:/a:utils_project:utils</cpe>
     </suppress>
 
-    <suppress until="2026-10-31Z">
+    <suppress until="2026-11-30Z">
         <notes><![CDATA[
         Ktor utils ei ole fredsmith/utils screenshot_sync -projekti.
         Tämä on artefaktin nimen aiheuttama CPE/CVE false positive.
@@ -39,19 +39,19 @@
         <cve>CVE-2021-4277</cve>
     </suppress>
 
-    <suppress until="2026-10-31Z">
+    <suppress until="2026-11-30Z">
         <notes><![CDATA[
         Compose Stability Analyzer julkaistaan com.github.skydoves-ryhmällä, mutta artefakti
         ei ole GitHub Enterprise Server. Nämä CVE:t ovat geneerisen github-CPE:n false positiveja.
         ]]></notes>
-        <packageUrl regex="true">^pkg:maven/com\.github\.skydoves/compose-stability-runtime-android@0\.12\.0$</packageUrl>
+        <packageUrl regex="true">^pkg:maven/com\.github\.skydoves/compose-stability-runtime-android@0\.15\.0$</packageUrl>
         <cve>CVE-2020-10518</cve>
         <cve>CVE-2020-10519</cve>
         <cve>CVE-2012-2055</cve>
         <cve>CVE-2020-10517</cve>
     </suppress>
 
-    <suppress until="2026-10-31Z">
+    <suppress until="2026-11-30Z">
         <notes><![CDATA[
         Daggerin lint-AAR käyttää artifact-kuvauksessa sanaa distribution, mutta artefakti ei ole
         OCI registry distribution -palvelin. Nämä ovat väärän distribution-CPE:n false positiveja.
@@ -61,7 +61,7 @@
         <cpe>cpe:/a:distribution_project:distribution</cpe>
     </suppress>
 
-    <suppress until="2026-10-31Z">
+    <suppress until="2026-11-30Z">
         <notes><![CDATA[
         Kotlin stdlib jdk8 runtime -JAR matchautuu JetBrains Kotlin -tuotteen CPE:hen.
         CVE-2026-53914 koskee build cache -metadataa, ja CVE-2020-29582 koski ennen 1.4.21
@@ -72,7 +72,7 @@
         <cve>CVE-2020-29582</cve>
     </suppress>
 
-    <suppress until="2026-10-31Z">
+    <suppress until="2026-11-30Z">
         <notes><![CDATA[
         kotlinx-coroutines-play-services integroi coroutine-continuationit Play Services Task -APIin,
         mutta se ei ole Tasks.org Android-sovellus. Nämä ovat väärän tasks-CPE:n false positiveja.
@@ -81,16 +81,16 @@
         <cpe>cpe:/a:tasks:tasks</cpe>
     </suppress>
 
-    <suppress until="2026-10-31Z">
+    <suppress until="2026-11-30Z">
         <notes><![CDATA[
         PostHog Android SDK ei ole CVE-2024-9710:n PostHog-palvelin. CVE koskee palvelimen
         database_schema-metodia, jota tässä Android-artefaktissa ei ole.
         ]]></notes>
-        <packageUrl regex="true">^pkg:maven/com\.posthog/posthog-android@3\.72\.1$</packageUrl>
+        <packageUrl regex="true">^pkg:maven/com\.posthog/posthog-android@3\.72\.3$</packageUrl>
         <cve>CVE-2024-9710</cve>
     </suppress>
 
-    <suppress until="2026-10-31Z">
+    <suppress until="2026-11-30Z">
         <notes><![CDATA[
         PostHog JVM SDK:n ydinkirjasto ei ole CVE-2024-9710:n PostHog-palvelin. CVE koskee
         palvelimen database_schema-metodia, jota tässä SDK-artefaktissa ei ole.
@@ -99,7 +99,7 @@
         <cve>CVE-2024-9710</cve>
     </suppress>
 
-    <suppress until="2026-10-31Z">
+    <suppress until="2026-11-30Z">
         <notes><![CDATA[
         Compose Runtimein Android-artefaktit eivät ole JetBrains Runtime -JDK. CVE-2025-29903
         koskee JetBrains Runtimen macOS-latausasetuksia, ei Compose Android -runtimea.
@@ -108,7 +108,7 @@
         <cve>CVE-2025-29903</cve>
     </suppress>
 
-    <suppress until="2026-10-31Z">
+    <suppress until="2026-11-30Z">
         <notes><![CDATA[
         Kotlin stdlib jdk8 runtime -JAR ei ole haavoittuva kotlin-gradle-plugin. CVE-2026-53914
         koskee Gradle build cache -metadatan deserialisointia, ei sovelluksen stdlib-artefaktia.

@@ -28,6 +28,7 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -97,7 +98,7 @@ class TrialManager
             var startResult: TrialStartResult? = null
             val didWrite =
                 dataStore.editPreferencesSafely { preferences ->
-                    val now = sessionTimeSource.snapshot()
+                    val now = withContext(ioDispatcher) { sessionTimeSource.snapshot() }
                     val startTimestamp = preferences[KEY_TRIAL_START] ?: 0L
                     val lastKnownTimestamp = preferences[KEY_LAST_KNOWN_TIMESTAMP] ?: 0L
                     val clockTamperedAlready = preferences[KEY_CLOCK_TAMPERED] ?: false
@@ -164,7 +165,8 @@ class TrialManager
             var evaluatedState: TrialState? = null
             val didWrite =
                 dataStore.editPreferencesSafely { preferences ->
-                    val state = preferences.evaluateAndPersistTrialState(sessionTimeSource.snapshot())
+                    val now = withContext(ioDispatcher) { sessionTimeSource.snapshot() }
+                    val state = preferences.evaluateAndPersistTrialState(now)
                     evaluatedState = state
                     if (state.isActive &&
                         !state.clockTampered &&
@@ -191,7 +193,7 @@ class TrialManager
             var refreshedState: TrialState? = null
             val didWrite =
                 dataStore.editPreferencesSafely { preferences ->
-                    val now = sessionTimeSource.snapshot()
+                    val now = withContext(ioDispatcher) { sessionTimeSource.snapshot() }
                     refreshedState = preferences.evaluateAndPersistTrialState(now)
                 }
             if (didWrite) {

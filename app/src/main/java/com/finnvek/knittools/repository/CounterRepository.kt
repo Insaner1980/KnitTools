@@ -1254,22 +1254,26 @@ class CounterRepository
                 synchronizeActiveSession(sessionTimeSource.snapshot())?.toDomain()
             }
 
-        fun activeSessionDurationSeconds(session: ActiveWorkSession): Long =
-            when (val evaluation = evaluateActiveSessionTime(session.timingAnchors, sessionTimeSource.snapshot())) {
-                is ActiveSessionTimeEvaluation.Trusted -> evaluation.totalDurationSeconds
-                is ActiveSessionTimeEvaluation.NeedsReview ->
-                    saturatingAdd(
-                        session.timingAnchors.checkpointedDurationSeconds,
-                        session.recoverySuggestedDurationSeconds ?: 0L,
-                    )
+        suspend fun activeSessionDurationSeconds(session: ActiveWorkSession): Long =
+            withContext(ioDispatcher) {
+                when (val evaluation = evaluateActiveSessionTime(session.timingAnchors, sessionTimeSource.snapshot())) {
+                    is ActiveSessionTimeEvaluation.Trusted -> evaluation.totalDurationSeconds
+                    is ActiveSessionTimeEvaluation.NeedsReview ->
+                        saturatingAdd(
+                            session.timingAnchors.checkpointedDurationSeconds,
+                            session.recoverySuggestedDurationSeconds ?: 0L,
+                        )
+                }
             }
 
-        fun activeSessionNeedsRecovery(session: ActiveWorkSession): Boolean =
-            session.needsRecoveryReview ||
-                evaluateActiveSessionTime(
-                    session.timingAnchors,
-                    sessionTimeSource.snapshot(),
-                ) is ActiveSessionTimeEvaluation.NeedsReview
+        suspend fun activeSessionNeedsRecovery(session: ActiveWorkSession): Boolean =
+            withContext(ioDispatcher) {
+                session.needsRecoveryReview ||
+                    evaluateActiveSessionTime(
+                        session.timingAnchors,
+                        sessionTimeSource.snapshot(),
+                    ) is ActiveSessionTimeEvaluation.NeedsReview
+            }
 
         suspend fun startSession(projectId: Long): StartSessionResult =
             runSessionMutation(StartSessionResult.PersistenceFailure, StartSessionResult.HistoryLimitReached) {

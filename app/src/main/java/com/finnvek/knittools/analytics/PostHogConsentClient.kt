@@ -29,6 +29,8 @@ class PostHogConsentClient internal constructor(
         if (!gate.isRetired) sdk.capture(event, properties = properties)
     }
 
+    internal fun blockDelivery() = gate.blockDelivery()
+
     fun retire() {
         // close() flushes in core 6.47.1, so delivery must be retired first.
         gate.retire()
@@ -74,6 +76,11 @@ internal class AnalyticsDeliveryGate : Interceptor {
         } finally {
             synchronized(lock) { inFlight.remove(call) }
         }
+    }
+
+    fun blockDelivery() {
+        // Admission closes synchronously, without SDK, filesystem, or transport work.
+        synchronized(lock) { isRetired = true }
     }
 
     fun retire() {

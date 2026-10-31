@@ -38,13 +38,14 @@ class CounterMainWriteResultTest : CounterViewModelFixture() {
                 )
             every { repository.observeActiveSession() } returns flowOf(original)
             coEvery { repository.refreshActiveSession() } returns original
-            every { repository.activeSessionDurationSeconds(any()) } returns 60L
+            coEvery { repository.activeSessionDurationSeconds(any()) } returns 60L
             coEvery { repository.stopSession(original.sessionToken, 60L, 0, 0) } returns
                 StopSessionResult.NeedsRecoveryReview(recovery)
             val viewModel = viewModel()
             advanceUntilIdle()
 
             viewModel.stopWorkSession()
+            runCurrent()
             viewModel.saveStoppedWorkSession()
             advanceUntilIdle()
 
@@ -104,6 +105,7 @@ class CounterMainWriteResultTest : CounterViewModelFixture() {
                 active.value = original.copy(trustedRowsWorked = 1, trustedLastObservedRow = 1)
                 runCurrent()
                 viewModel.stopWorkSession()
+                runCurrent()
                 reply.complete(outcome)
                 advanceUntilIdle()
 
@@ -163,19 +165,21 @@ class CounterMainWriteResultTest : CounterViewModelFixture() {
             val original = activeSession().copy(projectId = 7L)
             val active = MutableStateFlow(original)
             observeSession(active)
-            every { repository.activeSessionDurationSeconds(any()) } returns 60L
+            coEvery { repository.activeSessionDurationSeconds(any()) } returns 60L
             val reply = CompletableDeferred<StopSessionResult>()
             coEvery { repository.discardActiveSession(original.sessionToken) } coAnswers { reply.await() }
             val viewModel = viewModel()
             advanceUntilIdle()
 
             viewModel.stopWorkSession()
+            runCurrent()
             viewModel.discardStoppedWorkSession()
             runCurrent()
             // A replacement can be observed before the committed operation's UI continuation resumes.
             active.value = original.copy(sessionToken = "new-session")
             runCurrent()
             viewModel.stopWorkSession()
+            runCurrent()
             reply.complete(StopSessionResult.Discarded)
             advanceUntilIdle()
 
@@ -250,13 +254,14 @@ class CounterMainWriteResultTest : CounterViewModelFixture() {
             val active = activeSession().copy(projectId = 7L)
             every { repository.observeActiveSession() } returns flowOf(active)
             coEvery { repository.refreshActiveSession() } returns active
-            every { repository.activeSessionDurationSeconds(active) } returns 60L
+            coEvery { repository.activeSessionDurationSeconds(active) } returns 60L
             coEvery { repository.stopSession(active.sessionToken, 60L, 0, 0) } returns StopSessionResult.Saved(1L)
             val viewModel = viewModel()
             advanceUntilIdle()
             coEvery { repository.getTotalMinutesForProject(7L) } throws IOException("synthetic total read failure")
 
             viewModel.stopWorkSession()
+            runCurrent()
             viewModel.saveStoppedWorkSession()
             advanceUntilIdle()
 
@@ -273,7 +278,7 @@ class CounterMainWriteResultTest : CounterViewModelFixture() {
             val original = activeSession().copy(projectId = 7L)
             val active = MutableStateFlow(original)
             observeSession(active)
-            every { repository.activeSessionDurationSeconds(any()) } returns 60L
+            coEvery { repository.activeSessionDurationSeconds(any()) } returns 60L
             coEvery { repository.stopSession(original.sessionToken, 60L, 0, 0) } returns StopSessionResult.Saved(1L)
             val viewModel = viewModel()
             advanceUntilIdle()
@@ -284,11 +289,13 @@ class CounterMainWriteResultTest : CounterViewModelFixture() {
             }
 
             viewModel.stopWorkSession()
+            runCurrent()
             viewModel.saveStoppedWorkSession()
             runCurrent()
             active.value = original.copy(sessionToken = "new-session")
             runCurrent()
             viewModel.stopWorkSession()
+            runCurrent()
             release.complete(Unit)
             advanceUntilIdle()
 
@@ -395,13 +402,14 @@ class CounterMainWriteResultTest : CounterViewModelFixture() {
         active: MutableStateFlow<ActiveWorkSession>,
     ): Pair<CounterViewModel, CompletableDeferred<StopSessionResult>> {
         observeSession(active)
-        every { repository.activeSessionDurationSeconds(any()) } returns 60L
+        coEvery { repository.activeSessionDurationSeconds(any()) } returns 60L
         val reply = CompletableDeferred<StopSessionResult>()
         val sessionToken = active.value.sessionToken
         coEvery { repository.stopSession(sessionToken, 60L, 0, 0) } coAnswers { reply.await() }
         val viewModel = viewModel()
         advanceUntilIdle()
         viewModel.stopWorkSession()
+        runCurrent()
         viewModel.saveStoppedWorkSession()
         runCurrent()
         return viewModel to reply

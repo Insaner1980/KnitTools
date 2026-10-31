@@ -98,7 +98,7 @@ class CounterCelebrationSignalsTest : CounterViewModelFixture() {
             val session = activeSession().copy(projectId = 7L)
             every { repository.observeActiveSession() } returns flowOf(session)
             coEvery { repository.refreshActiveSession() } returns session
-            every { repository.activeSessionDurationSeconds(any()) } returns 60L
+            coEvery { repository.activeSessionDurationSeconds(any()) } returns 60L
             val signals = mutableListOf<TipSignal>()
             every { tipSession.onSignal(capture(signals)) } returns Unit
             val vm = viewModel()
@@ -111,6 +111,7 @@ class CounterCelebrationSignalsTest : CounterViewModelFixture() {
             ).forEach { result ->
                 coEvery { repository.stopSession(session.sessionToken, 60L, 0, 0) } returns result
                 vm.stopWorkSession()
+                advanceUntilIdle()
                 vm.saveStoppedWorkSession()
                 advanceUntilIdle()
             }

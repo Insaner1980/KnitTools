@@ -380,6 +380,7 @@
     <string name="one_time_purchase">Achat unique. Aucun abonnement.</string>
     <string name="loading_price">Chargement du prix…</string>
     <string name="billing_purchase_cancelled">Achat annulé</string>
+    <string name="billing_price_refreshing">Vérification du prix actuel. Réessayez votre achat dans un instant.</string>
     <string name="billing_purchase_unavailable">Cet achat est indisponible sur Google Play pour le moment.</string>
     <string name="billing_purchase_network_error">Impossible de joindre Google Play. Vérifiez votre connexion Internet et réessayez.</string>
     <string name="billing_purchase_failed">Impossible de terminer l’achat. Réessayez.</string>

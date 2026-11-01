@@ -74,7 +74,9 @@ class BillingPriceRefreshTest {
                 manager.retryProductDetails()
                 assertEquals(BillingProductStatus.Available, manager.productStatus.value)
                 assertEquals(quote, manager.selectedOffer.value)
+                val refreshMessage = async(UnconfinedTestDispatcher(testScheduler)) { manager.purchaseMessages.first() }
                 manager.launchPurchaseFlow(activity)
+                assertEquals(BillingUserMessage.PRICE_REFRESHING, refreshMessage.await())
                 verify(exactly = 0) { client.launchBillingFlow(any(), any()) }
 
                 val amount = if (changed) 14_990_000L else 9_990_000L

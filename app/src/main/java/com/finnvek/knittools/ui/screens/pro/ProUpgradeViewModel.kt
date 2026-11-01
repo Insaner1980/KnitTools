@@ -91,6 +91,7 @@ class ProUpgradeViewModel
 
 internal fun BillingUserMessage.toMessageRes(): Int =
     when (this) {
+        BillingUserMessage.PRICE_REFRESHING -> com.finnvek.knittools.R.string.billing_price_refreshing
         BillingUserMessage.PRICE_CHANGED_REVIEW -> com.finnvek.knittools.R.string.pro_price_changed_review
         BillingUserMessage.PURCHASE_CANCELLED -> com.finnvek.knittools.R.string.billing_purchase_cancelled
         BillingUserMessage.PURCHASE_PENDING -> com.finnvek.knittools.R.string.billing_purchase_pending

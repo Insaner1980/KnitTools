@@ -384,6 +384,7 @@
     <string name="one_time_purchase">One-time purchase. No subscription.</string>
     <string name="loading_price">Loading price…</string>
     <string name="billing_purchase_cancelled">Purchase cancelled</string>
+    <string name="billing_price_refreshing">Checking the current price. Please try buying again in a moment.</string>
     <string name="billing_purchase_unavailable">This purchase is not available from Google Play right now.</string>
     <string name="billing_purchase_network_error">Could not reach Google Play. Check your internet connection and try again.</string>
     <string name="billing_purchase_failed">Purchase could not be completed. Try again.</string>

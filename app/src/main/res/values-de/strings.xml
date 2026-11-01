@@ -372,6 +372,7 @@
     <string name="one_time_purchase">Einmalkauf. Kein Abo.</string>
     <string name="loading_price">Preis wird geladen…</string>
     <string name="billing_purchase_cancelled">Kauf abgebrochen</string>
+    <string name="billing_price_refreshing">Der aktuelle Preis wird geprüft. Versuche den Kauf gleich noch einmal.</string>
     <string name="billing_purchase_unavailable">Dieser Kauf ist derzeit nicht bei Google Play verfügbar.</string>
     <string name="billing_purchase_network_error">Google Play konnte nicht erreicht werden. Prüfe deine Internetverbindung und versuche es erneut.</string>
     <string name="billing_purchase_failed">Der Kauf konnte nicht abgeschlossen werden. Versuche es erneut.</string>

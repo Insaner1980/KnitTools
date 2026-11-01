@@ -341,6 +341,7 @@ private fun Int.statusMessageType(): StatusMessageType =
     when (this) {
         R.string.pro_restored -> StatusMessageType.Success
         R.string.no_purchases_found,
+        R.string.billing_price_refreshing,
         R.string.billing_purchase_cancelled,
         R.string.billing_purchase_pending,
         -> StatusMessageType.Info

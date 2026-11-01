@@ -372,6 +372,7 @@
     <string name="one_time_purchase">Engångsköp. Ingen prenumeration.</string>
     <string name="loading_price">Laddar pris…</string>
     <string name="billing_purchase_cancelled">Köp avbrutet</string>
+    <string name="billing_price_refreshing">Det aktuella priset kontrolleras. Försök köpa igen om en stund.</string>
     <string name="billing_purchase_unavailable">Det här köpet är inte tillgängligt i Google Play just nu.</string>
     <string name="billing_purchase_network_error">Det gick inte att nå Google Play. Kontrollera internetanslutningen och försök igen.</string>
     <string name="billing_purchase_failed">Köpet kunde inte slutföras. Försök igen.</string>

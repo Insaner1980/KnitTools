@@ -148,7 +148,11 @@ class BillingManager
         }
 
         fun launchPurchaseFlow(activity: Activity) {
-            if (_purchaseFlowInFlight.value || productQueryJob?.isActive == true) return
+            if (_purchaseFlowInFlight.value) return
+            if (productQueryJob?.isActive == true) {
+                emitPurchaseMessage(BillingUserMessage.PRICE_REFRESHING)
+                return
+            }
             val launch = _selectedOffer.value?.launchDetails
             val now = System.currentTimeMillis()
             if (launch != null && (now < launch.startsAtMillis || now >= launch.endsAtMillis)) {
@@ -585,6 +589,7 @@ enum class RestorePurchasesResult {
 }
 
 enum class BillingUserMessage {
+    PRICE_REFRESHING,
     PRICE_CHANGED_REVIEW,
     PURCHASE_CANCELLED,
     PURCHASE_PENDING,

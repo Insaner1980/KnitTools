@@ -1,6 +1,6 @@
 package com.finnvek.knittools.domain.calculator
 
-enum class ProjectSetupItem { STARTING_POINT, PATTERN, YARN, WORK_TIME }
+enum class ProjectSetupItem { TARGET, PATTERN, YARN, WORK_TIME }
 
 data class ProjectSetupProgress(
     val completed: Set<ProjectSetupItem>,
@@ -12,7 +12,6 @@ data class ProjectSetupProgress(
 }
 
 fun projectSetupProgress(
-    count: Int,
     targetRows: Int?,
     hasPattern: Boolean,
     hasYarn: Boolean,
@@ -20,7 +19,7 @@ fun projectSetupProgress(
 ): ProjectSetupProgress =
     ProjectSetupProgress(
         listOfNotNull(
-            ProjectSetupItem.STARTING_POINT.takeIf { count > 0 || targetRows != null },
+            ProjectSetupItem.TARGET.takeIf { targetRows != null },
             ProjectSetupItem.PATTERN.takeIf { hasPattern },
             ProjectSetupItem.YARN.takeIf { hasYarn },
             ProjectSetupItem.WORK_TIME.takeIf { hasSessions },

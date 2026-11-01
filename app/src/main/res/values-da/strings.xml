@@ -372,6 +372,7 @@
     <string name="one_time_purchase">Engangskøb. Intet abonnement.</string>
     <string name="loading_price">Indlæser pris…</string>
     <string name="billing_purchase_cancelled">Køb annulleret</string>
+    <string name="billing_price_refreshing">Den aktuelle pris kontrolleres. Prøv at købe igen om et øjeblik.</string>
     <string name="billing_purchase_unavailable">Dette køb er ikke tilgængeligt i Google Play lige nu.</string>
     <string name="billing_purchase_network_error">Kunne ikke få forbindelse til Google Play. Tjek internetforbindelsen, og prøv igen.</string>
     <string name="billing_purchase_failed">Købet kunne ikke gennemføres. Prøv igen.</string>

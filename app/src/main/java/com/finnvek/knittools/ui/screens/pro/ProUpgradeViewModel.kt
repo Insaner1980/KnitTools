@@ -87,18 +87,20 @@ class ProUpgradeViewModel
         fun retryProductDetails() {
             billingManager.retryProductDetails()
         }
+    }
 
-        private fun BillingUserMessage.toMessageRes(): Int =
-            when (this) {
-                BillingUserMessage.PURCHASE_CANCELLED -> com.finnvek.knittools.R.string.billing_purchase_cancelled
-                BillingUserMessage.PURCHASE_PENDING -> com.finnvek.knittools.R.string.billing_purchase_pending
-                BillingUserMessage.PURCHASE_UNAVAILABLE -> com.finnvek.knittools.R.string.billing_purchase_unavailable
-                BillingUserMessage.PURCHASE_NETWORK_ERROR -> {
-                    com.finnvek.knittools.R.string.billing_purchase_network_error
-                }
-                BillingUserMessage.PURCHASE_FAILED -> com.finnvek.knittools.R.string.billing_purchase_failed
-                BillingUserMessage.ALREADY_OWNED_RESTORE_FAILED -> {
-                    com.finnvek.knittools.R.string.billing_already_owned_restore_failed
-                }
-            }
+internal fun BillingUserMessage.toMessageRes(): Int =
+    when (this) {
+        BillingUserMessage.PRICE_REFRESHING -> com.finnvek.knittools.R.string.billing_price_refreshing
+        BillingUserMessage.PRICE_CHANGED_REVIEW -> com.finnvek.knittools.R.string.pro_price_changed_review
+        BillingUserMessage.PURCHASE_CANCELLED -> com.finnvek.knittools.R.string.billing_purchase_cancelled
+        BillingUserMessage.PURCHASE_PENDING -> com.finnvek.knittools.R.string.billing_purchase_pending
+        BillingUserMessage.PURCHASE_UNAVAILABLE -> com.finnvek.knittools.R.string.billing_purchase_unavailable
+        BillingUserMessage.PURCHASE_NETWORK_ERROR -> {
+            com.finnvek.knittools.R.string.billing_purchase_network_error
+        }
+        BillingUserMessage.PURCHASE_FAILED -> com.finnvek.knittools.R.string.billing_purchase_failed
+        BillingUserMessage.ALREADY_OWNED_RESTORE_FAILED -> {
+            com.finnvek.knittools.R.string.billing_already_owned_restore_failed
+        }
     }

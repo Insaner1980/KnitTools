@@ -24,6 +24,7 @@ import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.model.CraftType
 import com.finnvek.knittools.pro.ProFeature
 import com.finnvek.knittools.pro.ProState
+import com.finnvek.knittools.pro.ProStatus
 import com.finnvek.knittools.pro.proActionAccess
 import com.finnvek.knittools.ui.components.FabricKind
 import com.finnvek.knittools.ui.components.FabricSwatch
@@ -48,11 +49,21 @@ fun ProjectsStartState(
     modifier: Modifier = Modifier,
     proState: ProState = ProState(),
     proAccessReady: Boolean = false,
+    onOpenPro: () -> Unit = {},
 ) {
     if (compact) {
         CompactProjectsStartState(lastCraftType, modifier)
     } else {
-        FullProjectsStartState(onCreateProject, onDismiss, onTools, onDemoUsed, modifier, proState, proAccessReady)
+        FullProjectsStartState(
+            onCreateProject,
+            onDismiss,
+            onTools,
+            onDemoUsed,
+            modifier,
+            proState,
+            proAccessReady,
+            onOpenPro,
+        )
     }
 }
 
@@ -66,6 +77,7 @@ private fun FullProjectsStartState(
     modifier: Modifier = Modifier,
     proState: ProState = ProState(),
     proAccessReady: Boolean = false,
+    onOpenPro: () -> Unit = {},
 ) {
     // CPD-ON
     val createProjectAccess =
@@ -107,6 +119,22 @@ private fun FullProjectsStartState(
             badgeContentDescription = createProjectDescription,
             badge = createProjectDescription?.let { { ProMarker(createProjectAccess) } },
         )
+        if (proAccessReady && proState.status != ProStatus.PRO_PURCHASED) {
+            Text(
+                stringResource(
+                    if (proState.status == ProStatus.TRIAL_NOT_STARTED) {
+                        R.string.welcome_free_pro_trial
+                    } else {
+                        R.string.welcome_free_pro_general
+                    },
+                ),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            TextButton(onClick = onOpenPro, modifier = Modifier.align(Alignment.CenterHorizontally)) {
+                Text(stringResource(R.string.welcome_learn_pro))
+            }
+        }
         TextButton(onClick = onTools, modifier = Modifier.align(Alignment.CenterHorizontally)) {
             Text(stringResource(R.string.welcome_tools_only))
         }

@@ -380,6 +380,7 @@
     <string name="one_time_purchase">Compra única. Sin suscripción.</string>
     <string name="loading_price">Cargando precio…</string>
     <string name="billing_purchase_cancelled">Compra cancelada</string>
+    <string name="billing_price_refreshing">Se está comprobando el precio actual. Intenta comprar de nuevo en un momento.</string>
     <string name="billing_purchase_unavailable">Esta compra no está disponible en Google Play ahora mismo.</string>
     <string name="billing_purchase_network_error">No se pudo conectar con Google Play. Comprueba tu conexión e inténtalo de nuevo.</string>
     <string name="billing_purchase_failed">No se pudo completar la compra. Inténtalo de nuevo.</string>

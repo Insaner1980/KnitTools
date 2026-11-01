@@ -372,6 +372,7 @@
     <string name="one_time_purchase">Kertaostos. Ei tilausta.</string>
     <string name="loading_price">Ladataan hintaa…</string>
     <string name="billing_purchase_cancelled">Osto peruttu</string>
+    <string name="billing_price_refreshing">Tarkistetaan nykyistä hintaa. Yritä ostoa hetken kuluttua uudelleen.</string>
     <string name="billing_purchase_unavailable">Tätä ostoa ei voi tehdä Google Playssa juuri nyt.</string>
     <string name="billing_purchase_network_error">Google Playhin ei saatu yhteyttä. Tarkista internetyhteys ja yritä uudelleen.</string>
     <string name="billing_purchase_failed">Ostoa ei voitu viimeistellä. Yritä uudelleen.</string>

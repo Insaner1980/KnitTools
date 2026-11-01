@@ -2,6 +2,7 @@ package com.finnvek.knittools.ui.screens.pro
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.finnvek.knittools.billing.BillingManager
 import com.finnvek.knittools.pro.ProManager
 import com.finnvek.knittools.pro.TrialManager
 import com.finnvek.knittools.pro.TrialStartResult
@@ -20,8 +21,13 @@ class ProPromptViewModel
         private val proManager: ProManager,
         private val trialManager: TrialManager,
         private val trialJourneyCoordinator: TrialJourneyCoordinator,
+        private val billingManager: BillingManager,
     ) : ViewModel() {
         val proState = proManager.proState
+        val selectedOffer = billingManager.selectedOffer
+        val productStatus = billingManager.productStatus
+
+        fun retryProductDetails() = billingManager.retryProductDetails()
 
         private val _trialStartResults = MutableSharedFlow<TrialStartResult>(extraBufferCapacity = 1)
         val trialStartResults = _trialStartResults.asSharedFlow()

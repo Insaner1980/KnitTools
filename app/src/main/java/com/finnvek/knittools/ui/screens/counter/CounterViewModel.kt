@@ -1082,36 +1082,43 @@ class CounterViewModel
             val selectionVersion = projectSelectionVersion
             sessionStopSummaryJob =
                 viewModelScope.launch {
-                    while (isActive && selectionVersion == projectSelectionVersion) {
-                        val current = _uiState.value.activeSession ?: return@launch
-                        if (current.sessionToken != active.sessionToken) return@launch
-                        if (current.needsRecoveryReview) {
-                            _uiState.update { it.copy(showSessionRecoveryPrompt = true) }
-                            return@launch
-                        }
-                        val durationSeconds = repository.activeSessionDurationSeconds(current)
-                        if (selectionVersion != projectSelectionVersion) return@launch
-                        val state = _uiState.value
-                        if (state.activeSession != current) continue
-                        if (
-                            _uiState.compareAndSet(
-                                state,
-                                state.copy(
-                                    sessionStopSummary =
-                                        SessionStopSummary(
-                                            sessionToken = current.sessionToken,
-                                            projectName = state.projectName,
-                                            durationSeconds = durationSeconds,
-                                            rowsWorked = current.trustedRowsWorked,
-                                            endRow = current.trustedLastObservedRow,
-                                        ),
-                                ),
-                            )
-                        ) {
-                            return@launch
-                        }
-                    }
+                    prepareSessionStopSummary(active.sessionToken, selectionVersion)
                 }
+        }
+
+        private suspend fun prepareSessionStopSummary(
+            sessionToken: String,
+            selectionVersion: Long,
+        ) {
+            while (currentCoroutineContext().isActive && selectionVersion == projectSelectionVersion) {
+                val current = _uiState.value.activeSession ?: return
+                if (current.sessionToken != sessionToken) return
+                if (current.needsRecoveryReview) {
+                    _uiState.update { it.copy(showSessionRecoveryPrompt = true) }
+                    return
+                }
+                val durationSeconds = repository.activeSessionDurationSeconds(current)
+                if (selectionVersion != projectSelectionVersion) return
+                val state = _uiState.value
+                if (state.activeSession != current) continue
+                if (
+                    _uiState.compareAndSet(
+                        state,
+                        state.copy(
+                            sessionStopSummary =
+                                SessionStopSummary(
+                                    sessionToken = current.sessionToken,
+                                    projectName = state.projectName,
+                                    durationSeconds = durationSeconds,
+                                    rowsWorked = current.trustedRowsWorked,
+                                    endRow = current.trustedLastObservedRow,
+                                ),
+                        ),
+                    )
+                ) {
+                    return
+                }
+            }
         }
 
         fun saveStoppedWorkSession() {

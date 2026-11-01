@@ -372,6 +372,7 @@
     <string name="one_time_purchase">Eenmalige aankoop. Geen abonnement.</string>
     <string name="loading_price">Prijs laden…</string>
     <string name="billing_purchase_cancelled">Aankoop geannuleerd</string>
+    <string name="billing_price_refreshing">De huidige prijs wordt gecontroleerd. Probeer de aankoop zo opnieuw.</string>
     <string name="billing_purchase_unavailable">Deze aankoop is nu niet beschikbaar in Google Play.</string>
     <string name="billing_purchase_network_error">Kan Google Play niet bereiken. Controleer je internetverbinding en probeer opnieuw.</string>
     <string name="billing_purchase_failed">Aankoop kon niet worden voltooid. Probeer opnieuw.</string>

@@ -62,7 +62,8 @@ class TrialJourneyUiTest {
     @Test
     fun promptQueuesStartedJourneyBeforeResumingItsPendingActionOnce() {
         val coordinator = TrialJourneyCoordinator()
-        val viewModel = ProPromptViewModel(manager, TrialManager(app, Dispatchers.IO), coordinator)
+        val viewModel =
+            ProPromptViewModel(manager, TrialManager(app, Dispatchers.IO), coordinator, app.billingManager.get())
         store.put("prompt", viewModel)
         val visible = mutableStateOf(true)
         var resumed = 0

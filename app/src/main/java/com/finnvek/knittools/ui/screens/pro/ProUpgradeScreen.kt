@@ -3,7 +3,6 @@ package com.finnvek.knittools.ui.screens.pro
 import android.app.Activity
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -35,14 +34,17 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.finnvek.knittools.R
 import com.finnvek.knittools.billing.BillingProductStatus
+import com.finnvek.knittools.billing.SelectedOneTimeOffer
 import com.finnvek.knittools.domain.model.CraftType
 import com.finnvek.knittools.pro.ProState
 import com.finnvek.knittools.pro.ProStatus
 import com.finnvek.knittools.pro.TrialJourneyAction
 import com.finnvek.knittools.pro.TrialJourneyStep
+import com.finnvek.knittools.ui.components.ProPriceDetails
 import com.finnvek.knittools.ui.components.SectionLabel
 import com.finnvek.knittools.ui.components.StatusMessage
 import com.finnvek.knittools.ui.components.StatusMessageType
@@ -73,9 +75,13 @@ fun ProUpgradeScreen(
     val isRestoring by viewModel.isRestoring.collectAsStateWithLifecycle()
     val isStartingTrial by viewModel.isStartingTrial.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    LifecycleResumeEffect(viewModel) {
+        viewModel.retryProductDetails()
+        onPauseOrDispose { }
+    }
     SideEffect {
         onStartupReady(
-            (proStateReady || purchaseQueryFailed) && productStatus != BillingProductStatus.Loading,
+            proStateReady || purchaseQueryFailed,
         )
     }
 
@@ -103,7 +109,7 @@ fun ProUpgradeScreen(
                 proState = proState,
                 proStateReady = proStateReady,
                 purchaseQueryFailed = purchaseQueryFailed,
-                price = selectedOffer?.formattedPrice,
+                offer = selectedOffer,
                 productStatusProvider = { productStatus },
                 purchaseFlowInFlight = purchaseFlowInFlight,
                 isRestoring = isRestoring,
@@ -193,7 +199,7 @@ private fun ProPurchaseSection(
     proState: ProState,
     proStateReady: Boolean,
     purchaseQueryFailed: Boolean,
-    price: String?,
+    offer: SelectedOneTimeOffer?,
     productStatusProvider: @Composable () -> BillingProductStatus,
     purchaseFlowInFlight: Boolean,
     isRestoring: Boolean,
@@ -204,6 +210,7 @@ private fun ProPurchaseSection(
     onStartTrial: () -> Unit,
 ) {
     val productStatus = productStatusProvider()
+    val price = offer?.formattedPrice
     if (!proStateReady) {
         if (purchaseQueryFailed) {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -216,12 +223,11 @@ private fun ProPurchaseSection(
         return
     }
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        if (proState.status != ProStatus.PRO_PURCHASED) {
+            ProPriceDetails(offer, productStatus, proState.status == ProStatus.TRIAL_NOT_STARTED, onRetry)
+        }
         when (proState.status) {
-            ProStatus.TRIAL_NOT_STARTED -> {
-                Button(onClick = onStartTrial, modifier = Modifier.fillMaxWidth(), enabled = !isStartingTrial) {
-                    Text(stringResource(R.string.pro_start_14_day_trial))
-                }
-            }
+            ProStatus.TRIAL_NOT_STARTED -> Text(stringResource(R.string.onboarding_pro_trial_terms))
 
             ProStatus.TRIAL_ACTIVE -> {
                 Text(
@@ -254,6 +260,12 @@ private fun ProPurchaseSection(
         }
 
         if (proState.status != ProStatus.PRO_PURCHASED) {
+            Text(stringResource(R.string.pro_trial_ended_body), style = MaterialTheme.typography.bodyMedium)
+            if (proState.status == ProStatus.TRIAL_NOT_STARTED) {
+                Button(onClick = onStartTrial, modifier = Modifier.fillMaxWidth(), enabled = !isStartingTrial) {
+                    Text(stringResource(R.string.pro_start_14_day_trial))
+                }
+            }
             when {
                 productStatus == BillingProductStatus.Available && price != null -> {
                     val purchaseButtonModifier =
@@ -284,30 +296,8 @@ private fun ProPurchaseSection(
                     }
                 }
 
-                productStatus is BillingProductStatus.Unavailable -> {
-                    Text(
-                        text = stringResource(R.string.pro_price_unavailable),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    TextButton(onClick = onRetry, contentPadding = ComponentDimens.FlushTextButtonPadding) {
-                        Text(stringResource(R.string.retry))
-                    }
-                }
-
-                else -> {
-                    Row {
-                        CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Text(stringResource(R.string.loading_price))
-                    }
-                }
+                else -> Unit
             }
-            Text(
-                text = stringResource(R.string.one_time_purchase),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
         }
 
         ProRestoreButton(isRestoring = isRestoring, onRestore = onRestore)
@@ -351,6 +341,7 @@ private fun Int.statusMessageType(): StatusMessageType =
     when (this) {
         R.string.pro_restored -> StatusMessageType.Success
         R.string.no_purchases_found,
+        R.string.billing_price_refreshing,
         R.string.billing_purchase_cancelled,
         R.string.billing_purchase_pending,
         -> StatusMessageType.Info

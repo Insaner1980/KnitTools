@@ -82,7 +82,7 @@ class OptimizedSmokeTest {
             find(By.descStartsWith(string("new_project"))).click()
             text(string("onboarding_pro_projects_title"))
             capture("R11-free-gate")
-            tap("Not now")
+            scrollTo(string("pro_prompt_not_now")).click()
             startTrial()
             createProject("Trial project")
             tapDesc("Add row")

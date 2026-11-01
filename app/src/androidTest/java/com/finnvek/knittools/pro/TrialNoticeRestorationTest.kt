@@ -15,6 +15,8 @@ import androidx.lifecycle.Lifecycle
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.platform.app.InstrumentationRegistry
+import com.android.billingclient.api.BillingClient
+import com.android.billingclient.api.BillingResult
 import com.finnvek.knittools.App
 import com.finnvek.knittools.MainActivity
 import com.finnvek.knittools.R
@@ -107,6 +109,28 @@ class TrialNoticeRestorationTest {
         recreate()
         waitText(R.string.trial_ended_screen_title)
         assertFalse(runBlocking { trialManager.claimTrialEndNotice() })
+    }
+
+    @Test
+    fun purchaseFeedbackSurvivesTheNoticeBeingHiddenDuringCheckout() {
+        launch()
+        waitText(R.string.trial_ended_screen_title)
+        checkNotNull(scenario).onActivity { activity ->
+            val field = activity.billingManager.javaClass.getDeclaredField("_purchaseFlowInFlight")
+            field.isAccessible = true
+            @Suppress("UNCHECKED_CAST")
+            val inFlight = field.get(activity.billingManager) as MutableStateFlow<Boolean>
+            inFlight.value = true
+        }
+        waitUntil("Notice hidden during checkout") { findText(text(R.string.trial_ended_screen_title)) == null }
+        checkNotNull(scenario).onActivity { activity ->
+            activity.billingManager.onPurchasesUpdated(
+                BillingResult.newBuilder().setResponseCode(BillingClient.BillingResponseCode.USER_CANCELED).build(),
+                null,
+            )
+        }
+        waitText(R.string.billing_purchase_cancelled)
+        waitText(R.string.pro_continue_free)
     }
 
     @Test

@@ -6,6 +6,7 @@ import android.content.pm.PackageManager
 import android.content.res.Configuration
 import android.graphics.Color
 import android.graphics.Paint
+import android.graphics.Rect
 import android.graphics.pdf.PdfDocument
 import android.net.Uri
 import android.os.SystemClock
@@ -62,6 +63,7 @@ internal class SmokeDevice : TestWatcher() {
         assertFalse(permissions.contains("android.permission.INTERNET"))
         assertFalse(permissions.contains("com.android.vending.BILLING"))
         assertFalse(permissions.contains("android.permission.CAMERA"))
+        recoverSystemStartupDialog()
         assertEquals("Success", shell("pm clear $PACKAGE").trim())
         shell("wm size 720x1600")
         shell("wm density 320")
@@ -72,6 +74,22 @@ internal class SmokeDevice : TestWatcher() {
         tapDesc(string("welcome_dismiss_a11y"))
         text("Projects")
         find(By.descStartsWith(string("new_project")))
+    }
+
+    private fun recoverSystemStartupDialog() {
+        val isFirstReset = firstReset
+        firstReset = false
+        val systemAnr =
+            By.pkg("android").res("android:id/alertTitle").text(
+                Pattern.compile("Process system isn't responding|System UI isn't responding"),
+            )
+        if (!device.hasObject(systemAnr)) return
+        check(isFirstReset) { "Android system ANR after smoke tests started" }
+        // Cold-boot dialogs can outlive a recovered system_server or System UI. Preserve
+        // the exact system dialog and dismiss it once, before launching the target app.
+        capture("startup-system-anr")
+        find(By.pkg("android").res("android:id/aerr_wait")).click()
+        assertTrue("Android system did not recover", device.wait(Until.gone(systemAnr), 15_000))
     }
 
     fun shell(command: String): String = device.executeShellCommand(command)
@@ -203,11 +221,14 @@ internal class SmokeDevice : TestWatcher() {
     fun scrollTo(value: String): UiObject2 {
         repeat(8) {
             label(value)?.let { return it }
+            val bounds =
+                device.findObject(By.pkg(PACKAGE).scrollable(true))?.visibleBounds
+                    ?: Rect(0, 0, device.displayWidth, device.displayHeight)
             device.swipe(
-                device.displayWidth / 2,
-                device.displayHeight * 3 / 4,
-                device.displayWidth / 2,
-                device.displayHeight / 3,
+                bounds.centerX(),
+                bounds.top + bounds.height() * 3 / 4,
+                bounds.centerX(),
+                bounds.top + bounds.height() / 3,
                 35,
             )
             // Let the scrolling node settle before using its on-screen coordinates.
@@ -244,7 +265,7 @@ internal class SmokeDevice : TestWatcher() {
     fun startTrial() {
         // Exercise the real local trial action from the second-project gate.
         find(By.descStartsWith(string("new_project"))).click()
-        tap("Start free trial")
+        scrollTo(string("pro_start_free_trial")).click()
         find(By.clazz("android.widget.EditText"))
         tapDesc("Close sheet")
         // This billing-disabled package cannot load the purchase state required by the journey sheet.
@@ -306,5 +327,6 @@ internal class SmokeDevice : TestWatcher() {
 
     companion object {
         const val PACKAGE = "com.finnvek.knittools.optimizedtest"
+        private var firstReset = true
     }
 }

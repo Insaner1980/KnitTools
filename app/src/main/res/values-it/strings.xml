@@ -380,6 +380,7 @@
     <string name="one_time_purchase">Acquisto una tantum. Nessun abbonamento.</string>
     <string name="loading_price">Caricamento prezzo…</string>
     <string name="billing_purchase_cancelled">Acquisto annullato</string>
+    <string name="billing_price_refreshing">Verifica del prezzo attuale in corso. Riprova ad acquistare tra un momento.</string>
     <string name="billing_purchase_unavailable">Questo acquisto non è disponibile su Google Play al momento.</string>
     <string name="billing_purchase_network_error">Impossibile raggiungere Google Play. Controlla la connessione internet e riprova.</string>
     <string name="billing_purchase_failed">Impossibile completare l’acquisto. Riprova.</string>

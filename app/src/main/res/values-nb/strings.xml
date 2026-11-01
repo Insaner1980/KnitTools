@@ -372,6 +372,7 @@
     <string name="one_time_purchase">Engangskjøp. Ingen abonnement.</string>
     <string name="loading_price">Laster pris…</string>
     <string name="billing_purchase_cancelled">Kjøp avbrutt</string>
+    <string name="billing_price_refreshing">Gjeldende pris sjekkes. Prøv å kjøpe igjen om et øyeblikk.</string>
     <string name="billing_purchase_unavailable">Dette kjøpet er ikke tilgjengelig i Google Play akkurat nå.</string>
     <string name="billing_purchase_network_error">Fikk ikke kontakt med Google Play. Sjekk internettilkoblingen og prøv igjen.</string>
     <string name="billing_purchase_failed">Kjøpet kunne ikke fullføres. Prøv igjen.</string>

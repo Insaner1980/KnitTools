@@ -6,6 +6,7 @@ import android.content.pm.PackageManager
 import android.content.res.Configuration
 import android.graphics.Color
 import android.graphics.Paint
+import android.graphics.Rect
 import android.graphics.pdf.PdfDocument
 import android.net.Uri
 import android.os.SystemClock
@@ -203,11 +204,14 @@ internal class SmokeDevice : TestWatcher() {
     fun scrollTo(value: String): UiObject2 {
         repeat(8) {
             label(value)?.let { return it }
+            val bounds =
+                device.findObject(By.pkg(PACKAGE).scrollable(true))?.visibleBounds
+                    ?: Rect(0, 0, device.displayWidth, device.displayHeight)
             device.swipe(
-                device.displayWidth / 2,
-                device.displayHeight * 3 / 4,
-                device.displayWidth / 2,
-                device.displayHeight / 3,
+                bounds.centerX(),
+                bounds.top + bounds.height() * 3 / 4,
+                bounds.centerX(),
+                bounds.top + bounds.height() / 3,
                 35,
             )
             // Let the scrolling node settle before using its on-screen coordinates.
@@ -244,7 +248,7 @@ internal class SmokeDevice : TestWatcher() {
     fun startTrial() {
         // Exercise the real local trial action from the second-project gate.
         find(By.descStartsWith(string("new_project"))).click()
-        tap("Start free trial")
+        scrollTo(string("pro_start_free_trial")).click()
         find(By.clazz("android.widget.EditText"))
         tapDesc("Close sheet")
         // This billing-disabled package cannot load the purchase state required by the journey sheet.

@@ -208,7 +208,7 @@ fun ProjectDetailsSheet(
                 labelType = labelType,
                 moreOptionsExpanded = moreOptionsExpanded,
                 startFocus = startFocus,
-                targetFocus = targetFocus,
+                nextFocus = if (labelType == MainCounterLabelType.CUSTOM) customLabelFocus else targetFocus,
                 nameFocus = nameFocus,
             )
             ProjectMoreOptionsButton(
@@ -252,7 +252,7 @@ private fun ProjectStartingCountField(
     labelType: MainCounterLabelType,
     moreOptionsExpanded: Boolean,
     startFocus: FocusRequester,
-    targetFocus: FocusRequester,
+    nextFocus: FocusRequester,
     nameFocus: FocusRequester,
 ) {
     val locale = rememberCurrentLocale()
@@ -274,8 +274,8 @@ private fun ProjectStartingCountField(
             inputModifier =
                 Modifier.focusRequester(startFocus).focusProperties {
                     if (moreOptionsExpanded) {
-                        next = targetFocus
-                        down = targetFocus
+                        next = nextFocus
+                        down = nextFocus
                     }
                     previous = nameFocus
                 },

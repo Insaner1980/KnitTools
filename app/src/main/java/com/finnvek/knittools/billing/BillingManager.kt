@@ -213,7 +213,7 @@ class BillingManager
                     return
                 }
             val generation = ++productQueryGeneration
-            _productStatus.value = BillingProductStatus.Loading
+            if (_selectedOffer.value == null) _productStatus.value = BillingProductStatus.Loading
             productQueryJob = scope.launch(start = CoroutineStart.LAZY) { queryProductDetails(client, generation) }
             productQueryJob?.start()
         }

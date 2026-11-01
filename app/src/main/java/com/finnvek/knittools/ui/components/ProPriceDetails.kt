@@ -29,6 +29,7 @@ internal fun ProPriceDetails(
     modifier: Modifier = Modifier,
 ) {
     Column(modifier, verticalArrangement = Arrangement.spacedBy(ComponentDimens.StandardSpacing)) {
+        Text(stringResource(R.string.one_time_purchase), style = MaterialTheme.typography.bodySmall)
         when {
             productStatus == BillingProductStatus.Available && offer != null -> {
                 val launch = offer.launchDetails
@@ -39,7 +40,6 @@ internal fun ProPriceDetails(
                     ),
                     style = MaterialTheme.typography.titleMedium,
                 )
-                Text(stringResource(R.string.one_time_purchase), style = MaterialTheme.typography.bodySmall)
                 if (launch != null) {
                     val dateFormat = rememberLocaleDateFormat("yMMMdssz", includeTime = true)
                     Text(stringResource(R.string.pro_launch_ends_at, dateFormat.format(Date(launch.endsAtMillis))))

@@ -173,6 +173,21 @@ class ProjectDetailsSheetTest {
     }
 
     @Test
+    fun expandedCustomStartingCountKeyboardMovesToCustomLabel() {
+        showSheet(
+            ProjectDetailsMode.Create,
+            initialValues =
+                ProjectDetailsValues("Scarf", CraftType.KNITTING, MainCounterLabelType.CUSTOM, "Sections"),
+        )
+        compose
+            .onNodeWithContentDescription(label(R.string.project_start_count_label_custom))
+            .performScrollTo()
+            .performClick()
+            .performImeAction()
+        compose.onNodeWithText("Sections").assertIsFocused()
+    }
+
+    @Test
     fun restoredCollapsedAdvancedDraftReopensWithoutLosingValues() {
         val restoration = StateRestorationTester(compose)
         showSheet(

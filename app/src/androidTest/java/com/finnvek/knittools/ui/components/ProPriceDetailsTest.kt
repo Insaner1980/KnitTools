@@ -26,6 +26,7 @@ class ProPriceDetailsTest {
             KnitToolsTheme { ProPriceDetails(offer.value, BillingProductStatus.Available, true, {}) }
         }
         compose.onNodeWithText(context.getString(R.string.pro_current_price, "US$9.99")).assertExists()
+        compose.onNodeWithText(context.getString(R.string.one_time_purchase)).assertExists()
         compose.onNodeWithText(context.getString(R.string.pro_trial_does_not_reserve_price)).assertDoesNotExist()
         compose.runOnIdle {
             offer.value = offer.value.copy(launchDetails = LaunchOfferDetails(1, 1_800_000_000_000, null))
@@ -52,8 +53,10 @@ class ProPriceDetailsTest {
         var retries = 0
         compose.setContent { KnitToolsTheme { ProPriceDetails(null, status.value, true, { retries++ }) } }
         compose.onNodeWithText(context.getString(R.string.loading_price)).assertExists()
+        compose.onNodeWithText(context.getString(R.string.one_time_purchase)).assertExists()
         compose.runOnIdle { status.value = BillingProductStatus.Unavailable(BillingUserMessage.PURCHASE_NETWORK_ERROR) }
         compose.onNodeWithText(context.getString(R.string.pro_price_unavailable_trial)).assertExists()
+        compose.onNodeWithText(context.getString(R.string.one_time_purchase)).assertExists()
         compose.onNodeWithText("9.99", substring = true).assertDoesNotExist()
         compose.onNodeWithText(context.getString(R.string.retry)).performClick()
         assertEquals(1, retries)

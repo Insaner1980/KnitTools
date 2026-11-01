@@ -327,6 +327,17 @@ android {
 
 androidComponents {
     onVariants { variant ->
+        val compileTaskName = "compile${variant.name.replaceFirstChar { it.uppercaseChar() }}Kotlin"
+        // Analyzer 0.15.0 realizes unrelated AGP Preview tasks through tasks.matching.
+        afterEvaluate {
+            listOf("${variant.name}StabilityCheck", "${variant.name}StabilityDump").forEach { taskName ->
+                tasks.named(taskName) {
+                    setDependsOn(listOf(compileTaskName))
+                }
+            }
+        }
+    }
+    onVariants { variant ->
         variant.manifestPlaceholders.put("crashlyticsCollectionEnabled", (variant.name == "release").toString())
         variant.buildConfigFields?.put(
             "POSTHOG_PROJECT_TOKEN",

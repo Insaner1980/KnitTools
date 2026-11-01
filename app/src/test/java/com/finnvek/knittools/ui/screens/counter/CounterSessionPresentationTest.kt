@@ -9,6 +9,7 @@ import io.mockk.every
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -114,12 +115,7 @@ class CounterSessionPresentationTest : CounterViewModelFixture() {
             val original = activeSession()
             val active = stubActiveSession(original)
             val vm = viewModel()
-            runCurrent()
-            val pending = CompletableDeferred<Long>()
-            coEvery { repository.activeSessionDurationSeconds(original) } coAnswers { pending.await() }
-
-            vm.stopWorkSession()
-            runCurrent()
+            val pending = startPendingStop(vm, original)
             val updated =
                 original.copy(
                     timingAnchors = original.timingAnchors.copy(checkpointedDurationSeconds = 20L),
@@ -146,12 +142,7 @@ class CounterSessionPresentationTest : CounterViewModelFixture() {
             val original = activeSession()
             val active = stubActiveSession(original)
             val vm = viewModel()
-            runCurrent()
-            val pending = CompletableDeferred<Long>()
-            coEvery { repository.activeSessionDurationSeconds(original) } coAnswers { pending.await() }
-
-            vm.stopWorkSession()
-            runCurrent()
+            val pending = startPendingStop(vm, original)
             active.value =
                 original.copy(
                     recoveryReason = ActiveSessionRecoveryReason.REBOOTED,
@@ -191,12 +182,7 @@ class CounterSessionPresentationTest : CounterViewModelFixture() {
             val original = activeSession()
             val active = stubActiveSession(original)
             val vm = viewModel()
-            runCurrent()
-            val pending = CompletableDeferred<Long>()
-            coEvery { repository.activeSessionDurationSeconds(original) } coAnswers { pending.await() }
-
-            vm.stopWorkSession()
-            runCurrent()
+            val pending = startPendingStop(vm, original)
             val newer = original.copy(sessionToken = "new-session")
             active.value = newer
             runCurrent()
@@ -206,6 +192,18 @@ class CounterSessionPresentationTest : CounterViewModelFixture() {
             assertEquals(newer, vm.uiState.value.activeSession)
             assertNull(vm.uiState.value.sessionStopSummary)
         }
+
+    private fun TestScope.startPendingStop(
+        vm: CounterViewModel,
+        session: ActiveWorkSession,
+    ): CompletableDeferred<Long> {
+        runCurrent()
+        val pending = CompletableDeferred<Long>()
+        coEvery { repository.activeSessionDurationSeconds(session) } coAnswers { pending.await() }
+        vm.stopWorkSession()
+        runCurrent()
+        return pending
+    }
 
     private fun stubActiveSession(session: ActiveWorkSession): MutableStateFlow<ActiveWorkSession> {
         val active = MutableStateFlow(session)

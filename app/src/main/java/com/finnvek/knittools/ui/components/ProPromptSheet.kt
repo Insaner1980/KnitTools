@@ -13,6 +13,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -24,6 +25,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.finnvek.knittools.R
 import com.finnvek.knittools.pro.ProStatus
@@ -65,6 +67,12 @@ fun ProPromptSheet(
 ) {
     val viewModel = viewModelProvider()
     val proState by viewModel.proState.collectAsStateWithLifecycle()
+    val offer by viewModel.selectedOffer.collectAsStateWithLifecycle()
+    val productStatus by viewModel.productStatus.collectAsStateWithLifecycle()
+    LifecycleResumeEffect(viewModel) {
+        viewModel.retryProductDetails()
+        onPauseOrDispose { }
+    }
     val isStartingTrial by viewModel.isStartingTrial.collectAsStateWithLifecycle()
     var startFailed by remember(request) { mutableStateOf(false) }
     var pendingActionResumed by rememberSaveable(request) { mutableStateOf(false) }
@@ -111,61 +119,92 @@ fun ProPromptSheet(
         onDismissRequest = onDismiss,
         containerColor = MaterialTheme.colorScheme.surface,
     ) {
-        Column(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .navigationBarsPadding()
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = ComponentDimens.FormSheetHorizontalPadding)
-                    .padding(bottom = ComponentDimens.FormSheetBottomPadding),
-            verticalArrangement = Arrangement.spacedBy(ComponentDimens.FormSheetItemSpacing),
+        ProPromptContent(
+            request,
+            proState.status,
+            offer,
+            productStatus,
+            isStartingTrial,
+            startFailed,
+            onDismiss,
+            onSeePro,
+            viewModel::startTrial,
+            viewModel::retryProductDetails,
+        )
+    }
+}
+
+@Composable
+internal fun ProPromptContent(
+    request: ProPromptRequest,
+    status: ProStatus,
+    offer: com.finnvek.knittools.billing.SelectedOneTimeOffer?,
+    productStatus: com.finnvek.knittools.billing.BillingProductStatus,
+    isStartingTrial: Boolean,
+    startFailed: Boolean,
+    onDismiss: () -> Unit,
+    onSeePro: () -> Unit,
+    onStartTrial: () -> Unit,
+    onRetry: () -> Unit,
+) {
+    Column(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .navigationBarsPadding()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = ComponentDimens.FormSheetHorizontalPadding)
+                .padding(bottom = ComponentDimens.FormSheetBottomPadding),
+        verticalArrangement = Arrangement.spacedBy(ComponentDimens.FormSheetItemSpacing),
+    ) {
+        SheetTitle(text = request.title())
+        Text(
+            text = request.body(status),
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Text(
+            text = request.retention(),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        ProPriceDetails(offer, productStatus, status == ProStatus.TRIAL_NOT_STARTED, onRetry)
+        Text(
+            text =
+                stringResource(
+                    if (status == ProStatus.TRIAL_NOT_STARTED) {
+                        R.string.onboarding_pro_trial_terms
+                    } else {
+                        R.string.onboarding_pro_purchase_terms
+                    },
+                ),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        if (status == ProStatus.TRIAL_NOT_STARTED) {
+            TextButton(onClick = onSeePro) { Text(stringResource(R.string.welcome_learn_pro)) }
+        }
+        if (startFailed) {
+            Text(
+                text = stringResource(R.string.pro_trial_start_failed),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.error,
+            )
+        }
+        FlowRow(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(ComponentDimens.StandardSpacing, Alignment.End),
+            verticalArrangement = Arrangement.spacedBy(ComponentDimens.StandardSpacing),
         ) {
-            SheetTitle(text = request.title())
-            Text(
-                text = request.body(proState.status),
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Text(
-                text = request.retention(),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Text(
-                text =
-                    stringResource(
-                        if (proState.status == ProStatus.TRIAL_NOT_STARTED) {
-                            R.string.onboarding_pro_trial_terms
-                        } else {
-                            R.string.onboarding_pro_purchase_terms
-                        },
-                    ),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            if (startFailed) {
+            // Neutraali peruutus, jotta kokeilun aloitus on ainoa oranssi toiminto.
+            CancelButton(onClick = onDismiss, text = stringResource(R.string.pro_prompt_not_now))
+            val canStartTrial = status == ProStatus.TRIAL_NOT_STARTED
+            Button(onClick = if (canStartTrial) onStartTrial else onSeePro, enabled = !isStartingTrial) {
                 Text(
-                    text = stringResource(R.string.pro_trial_start_failed),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.error,
+                    stringResource(
+                        if (canStartTrial) R.string.pro_start_free_trial else R.string.pro_prompt_see_pro,
+                    ),
                 )
-            }
-            FlowRow(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(ComponentDimens.StandardSpacing, Alignment.End),
-                verticalArrangement = Arrangement.spacedBy(ComponentDimens.StandardSpacing),
-            ) {
-                // Neutraali peruutus, jotta kokeilun aloitus on ainoa oranssi toiminto.
-                CancelButton(onClick = onDismiss, text = stringResource(R.string.pro_prompt_not_now))
-                val canStartTrial = proState.status == ProStatus.TRIAL_NOT_STARTED
-                Button(onClick = if (canStartTrial) viewModel::startTrial else onSeePro, enabled = !isStartingTrial) {
-                    Text(
-                        stringResource(
-                            if (canStartTrial) R.string.pro_start_free_trial else R.string.pro_prompt_see_pro,
-                        ),
-                    )
-                }
             }
         }
     }

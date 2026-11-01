@@ -7,10 +7,9 @@ import org.junit.Test
 
 class ProjectSetupProgressTest {
     @Test
-    fun `starting point accepts a count or a target`() {
-        assertFalse(progress().isDone(ProjectSetupItem.STARTING_POINT))
-        assertTrue(progress(count = 37).isDone(ProjectSetupItem.STARTING_POINT))
-        assertTrue(progress(target = 120).isDone(ProjectSetupItem.STARTING_POINT))
+    fun `only an actual target completes the optional target suggestion`() {
+        assertFalse(progress().isDone(ProjectSetupItem.TARGET))
+        assertTrue(progress(target = 120).isDone(ProjectSetupItem.TARGET))
     }
 
     @Test
@@ -24,22 +23,24 @@ class ProjectSetupProgressTest {
     fun `unfinished items precede finished items in their original order`() {
         assertEquals(
             listOf(
-                ProjectSetupItem.STARTING_POINT,
+                ProjectSetupItem.TARGET,
                 ProjectSetupItem.YARN,
                 ProjectSetupItem.PATTERN,
                 ProjectSetupItem.WORK_TIME,
             ),
             progress(pattern = true, session = true).items,
         )
-        assertEquals(ProjectSetupItem.entries, progress(count = 1, pattern = true, yarn = true, session = true).items)
-        assertEquals(4, progress(count = 1, pattern = true, yarn = true, session = true).doneCount)
+        assertEquals(
+            ProjectSetupItem.entries,
+            progress(target = 120, pattern = true, yarn = true, session = true).items,
+        )
+        assertEquals(4, progress(target = 120, pattern = true, yarn = true, session = true).doneCount)
     }
 
     private fun progress(
-        count: Int = 0,
         target: Int? = null,
         pattern: Boolean = false,
         yarn: Boolean = false,
         session: Boolean = false,
-    ) = projectSetupProgress(count, target, pattern, yarn, session)
+    ) = projectSetupProgress(target, pattern, yarn, session)
 }

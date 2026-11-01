@@ -6,6 +6,7 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -80,6 +81,7 @@ fun ProjectDetailsSheet(
     val nameFocus = remember { FocusRequester() }
     val startFocus = remember { FocusRequester() }
     val targetFocus = remember { FocusRequester() }
+    val customLabelFocus = remember { FocusRequester() }
     val focusManager = LocalFocusManager.current
     val isCreate = mode == ProjectDetailsMode.Create
     val startCount = parseProjectStartCount(startText)
@@ -95,6 +97,27 @@ fun ProjectDetailsSheet(
     val sanitizedCustomLabel = sanitizeMainCounterCustomLabel(customLabel)
     val hasValidCustomLabel =
         labelType != MainCounterLabelType.CUSTOM || sanitizedCustomLabel != null
+    var moreOptionsExpanded by rememberSaveable {
+        mutableStateOf(
+            labelType != craftType.defaultMainCounterLabelType() ||
+                customLabel.isNotBlank() ||
+                targetText.isNotBlank(),
+        )
+    }
+    LaunchedEffect(isCreate) {
+        if (isCreate &&
+            (
+                labelType != craftType.defaultMainCounterLabelType() ||
+                    customLabel.isNotBlank() ||
+                    targetText.isNotBlank()
+            )
+        ) {
+            moreOptionsExpanded = true
+        }
+    }
+    LaunchedEffect(isCreate, hasValidCustomLabel, target) {
+        if (isCreate && (!hasValidCustomLabel || target == TargetInput.Invalid)) moreOptionsExpanded = true
+    }
     val canConfirm =
         name.trim().isNotEmpty() &&
             hasValidCustomLabel &&
@@ -177,60 +200,150 @@ fun ProjectDetailsSheet(
                 labelType = updatedLabelTypeForCraftChange(labelType, previousCraftType, selected)
             },
         )
-        LabelWithInfo(label = stringResource(R.string.main_counter_label), info = null)
-        MainCounterLabelToggle(selected = labelType, onSelect = { labelType = it })
-        if (labelType == MainCounterLabelType.CUSTOM) {
-            CustomMainCounterLabelField(
-                value = customLabel,
-                sanitizedValue = sanitizedCustomLabel,
-                onValueChange = { customLabel = it },
+        if (isCreate) {
+            ProjectStartingCountField(
+                value = startText,
+                onValueChange = { startText = it },
+                startCount = startCount,
+                labelType = labelType,
+                moreOptionsExpanded = moreOptionsExpanded,
+                startFocus = startFocus,
+                targetFocus = targetFocus,
+                nameFocus = nameFocus,
+            )
+            ProjectMoreOptionsButton(
+                expanded = moreOptionsExpanded,
+                hasValidCustomLabel = hasValidCustomLabel,
+                isTargetInvalid = target == TargetInput.Invalid,
+                customLabelFocus = customLabelFocus,
+                targetFocus = targetFocus,
+                onToggle = { moreOptionsExpanded = !moreOptionsExpanded },
             )
         }
-        if (isCreate) {
-            val locale = rememberCurrentLocale()
-            Column {
-                NumberInputField(
-                    value = startText,
-                    onValueChange = { startText = it },
-                    label = projectStartCountLabel(labelType),
-                    options = NumberInputOptions(placeholder = "0"),
-                    errorMessage =
-                        if (startCount == null) {
-                            stringResource(
-                                R.string.project_start_count_error,
-                                formatIntegerForDisplay(MAX_PROJECT_START_COUNT.toLong(), locale),
-                            )
-                        } else {
-                            null
-                        },
-                    inputModifier =
-                        Modifier.focusRequester(startFocus).focusProperties {
-                            next = targetFocus
-                            down = targetFocus
-                            previous = nameFocus
-                        },
+        if (!isCreate || moreOptionsExpanded) {
+            LabelWithInfo(label = stringResource(R.string.main_counter_label), info = null)
+            MainCounterLabelToggle(selected = labelType, onSelect = { labelType = it })
+            if (labelType == MainCounterLabelType.CUSTOM) {
+                CustomMainCounterLabelField(
+                    value = customLabel,
+                    sanitizedValue = sanitizedCustomLabel,
+                    onValueChange = { customLabel = it },
+                    modifier = Modifier.focusRequester(customLabelFocus),
                 )
-                if (startCount != null) ProjectDetailsHelper(projectStartCountHelp(startCount, labelType))
             }
-            Column {
-                NumberInputField(
+            if (isCreate) {
+                ProjectTargetField(
                     value = targetText,
                     onValueChange = { targetText = it },
-                    label = stringResource(R.string.project_target_label),
-                    options = NumberInputOptions(isLast = true, allowZero = false),
-                    errorMessage =
-                        if (target == TargetInput.Invalid) {
-                            stringResource(
-                                R.string.project_target_error,
-                                formatIntegerForDisplay(MAX_TARGET_ROWS.toLong(), locale),
-                            )
-                        } else {
-                            null
-                        },
-                    inputModifier = Modifier.focusRequester(targetFocus).focusProperties { previous = startFocus },
+                    isTargetInvalid = target == TargetInput.Invalid,
+                    targetFocus = targetFocus,
+                    startFocus = startFocus,
                 )
-                if (target != TargetInput.Invalid) ProjectDetailsHelper(stringResource(R.string.project_target_help))
             }
+        }
+    }
+}
+
+@Composable
+private fun ProjectStartingCountField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    startCount: Int?,
+    labelType: MainCounterLabelType,
+    moreOptionsExpanded: Boolean,
+    startFocus: FocusRequester,
+    targetFocus: FocusRequester,
+    nameFocus: FocusRequester,
+) {
+    val locale = rememberCurrentLocale()
+    Column {
+        NumberInputField(
+            value = value,
+            onValueChange = onValueChange,
+            label = projectStartCountLabel(labelType),
+            options = NumberInputOptions(placeholder = "0", isLast = !moreOptionsExpanded),
+            errorMessage =
+                if (startCount == null) {
+                    stringResource(
+                        R.string.project_start_count_error,
+                        formatIntegerForDisplay(MAX_PROJECT_START_COUNT.toLong(), locale),
+                    )
+                } else {
+                    null
+                },
+            inputModifier =
+                Modifier.focusRequester(startFocus).focusProperties {
+                    if (moreOptionsExpanded) {
+                        next = targetFocus
+                        down = targetFocus
+                    }
+                    previous = nameFocus
+                },
+        )
+        if (startCount != null) ProjectDetailsHelper(projectStartCountHelp(startCount, labelType))
+    }
+}
+
+@Composable
+private fun ProjectMoreOptionsButton(
+    expanded: Boolean,
+    hasValidCustomLabel: Boolean,
+    isTargetInvalid: Boolean,
+    customLabelFocus: FocusRequester,
+    targetFocus: FocusRequester,
+    onToggle: () -> Unit,
+) {
+    val focusManager = LocalFocusManager.current
+    TextButton(
+        onClick = {
+            if (expanded && (!hasValidCustomLabel || isTargetInvalid)) {
+                if (!hasValidCustomLabel) customLabelFocus.requestFocus() else targetFocus.requestFocus()
+            } else {
+                focusManager.clearFocus()
+                onToggle()
+            }
+        },
+    ) {
+        Text(
+            stringResource(
+                if (expanded) {
+                    R.string.project_create_fewer_options
+                } else {
+                    R.string.project_create_more_options
+                },
+            ),
+        )
+    }
+}
+
+@Composable
+private fun ProjectTargetField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    isTargetInvalid: Boolean,
+    targetFocus: FocusRequester,
+    startFocus: FocusRequester,
+) {
+    val locale = rememberCurrentLocale()
+    Column {
+        NumberInputField(
+            value = value,
+            onValueChange = onValueChange,
+            label = stringResource(R.string.project_target_label),
+            options = NumberInputOptions(isLast = true, allowZero = false),
+            errorMessage =
+                if (isTargetInvalid) {
+                    stringResource(
+                        R.string.project_target_error,
+                        formatIntegerForDisplay(MAX_TARGET_ROWS.toLong(), locale),
+                    )
+                } else {
+                    null
+                },
+            inputModifier = Modifier.focusRequester(targetFocus).focusProperties { previous = startFocus },
+        )
+        if (!isTargetInvalid) {
+            ProjectDetailsHelper(stringResource(R.string.project_target_help))
         }
     }
 }
@@ -311,11 +424,13 @@ private fun CustomMainCounterLabelField(
     value: String,
     sanitizedValue: String?,
     onValueChange: (String) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val showError = value.isNotBlank() && sanitizedValue == null
     LabeledTextField(
         value = value,
         onValueChange = onValueChange,
+        inputModifier = modifier,
         label = stringResource(R.string.main_counter_custom_label),
         errorMessage =
             if (showError) {

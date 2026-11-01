@@ -17,9 +17,13 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHostState
@@ -37,6 +41,7 @@ import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
@@ -51,11 +56,14 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.splashscreen.SplashScreenViewProvider
 import androidx.lifecycle.DEFAULT_ARGS_KEY
 import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewmodel.MutableCreationExtras
 import com.finnvek.knittools.analytics.PostHogAnalytics
 import com.finnvek.knittools.billing.BillingManager
+import com.finnvek.knittools.billing.BillingProductStatus
+import com.finnvek.knittools.billing.SelectedOneTimeOffer
 import com.finnvek.knittools.data.datastore.PreferencesManager
 import com.finnvek.knittools.data.storage.CounterLaunchTokenStore
 import com.finnvek.knittools.di.IoDispatcher
@@ -68,6 +76,7 @@ import com.finnvek.knittools.pro.TrialManager
 import com.finnvek.knittools.repository.TrialJourneyStateRepository
 import com.finnvek.knittools.ui.ProvidePreferenceAwareHapticFeedback
 import com.finnvek.knittools.ui.SplashLogoDrawable
+import com.finnvek.knittools.ui.components.ProPriceDetails
 import com.finnvek.knittools.ui.layout.LocalAdaptiveModalWindow
 import com.finnvek.knittools.ui.layout.LocalWindowFolds
 import com.finnvek.knittools.ui.layout.rememberWindowFolds
@@ -86,7 +95,9 @@ import com.finnvek.knittools.ui.navigation.toPatternSharePayload
 import com.finnvek.knittools.ui.navigation.withValidatedCounterLaunchTrust
 import com.finnvek.knittools.ui.screens.pro.TrialJourneyCoordinator
 import com.finnvek.knittools.ui.screens.pro.TrialJourneyPresentation
+import com.finnvek.knittools.ui.screens.pro.toMessageRes
 import com.finnvek.knittools.ui.screens.pro.trialSummaryText
+import com.finnvek.knittools.ui.theme.ComponentDimens
 import com.finnvek.knittools.ui.theme.KnitToolsTheme
 import com.finnvek.knittools.ui.tips.LocalTipBlocked
 import com.finnvek.knittools.ui.tips.LocalTipSession
@@ -242,6 +253,14 @@ class MainActivity : AppCompatActivity() {
         val receivingPdf by incomingPdfViewModel.receiving.collectAsStateWithLifecycle()
         val pdfBusy by incomingPdfViewModel.busy.collectAsStateWithLifecycle()
         val purchaseFlowInFlight by billingManager.purchaseFlowInFlight.collectAsStateWithLifecycle()
+        var noticePurchaseMessage by rememberSaveable { mutableStateOf<Int?>(null) }
+        LaunchedEffect(billingManager) {
+            billingManager.purchaseMessages.collect {
+                if (showTrialEndedNotice) noticePurchaseMessage = it.toMessageRes()
+            }
+        }
+        val selectedOffer by billingManager.selectedOffer.collectAsStateWithLifecycle()
+        val productStatus by billingManager.productStatus.collectAsStateWithLifecycle()
         var destinationReady by remember { mutableStateOf(false) }
         var pdfSurfaceReady by remember { mutableStateOf(false) }
         val startupReady =
@@ -399,12 +418,23 @@ class MainActivity : AppCompatActivity() {
                         TrialEndedDialog(
                             endingSoon = showTrialThreeDayNotice,
                             summary = trialSummaryText(currentTrialFacts, afterTrial = showTrialEndedNotice),
+                            offer = selectedOffer,
+                            productStatus = productStatus,
+                            purchaseInFlight = purchaseFlowInFlight,
+                            onRetry = billingManager::retryProductDetails,
+                            onPurchase = {
+                                noticePurchaseMessage = null
+                                billingManager.launchPurchaseFlow(this@MainActivity)
+                            },
+                            purchaseMessage = noticePurchaseMessage,
                             onSeePro = {
+                                noticePurchaseMessage = null
                                 showTrialEndedNotice = false
                                 showTrialThreeDayNotice = false
                                 openProUpgradeRequest = true
                             },
                             onContinueFree = {
+                                noticePurchaseMessage = null
                                 showTrialEndedNotice = false
                                 showTrialThreeDayNotice = false
                             },
@@ -708,28 +738,48 @@ internal fun DownloadedUpdatePromptEffect(
 }
 
 @Composable
-private fun TrialEndedDialog(
+internal fun TrialEndedDialog(
     endingSoon: Boolean,
     summary: String?,
     onSeePro: () -> Unit,
     onContinueFree: () -> Unit,
+    offer: SelectedOneTimeOffer?,
+    productStatus: BillingProductStatus,
+    purchaseInFlight: Boolean,
+    onRetry: () -> Unit,
+    onPurchase: () -> Unit,
+    purchaseMessage: Int?,
 ) {
+    LifecycleResumeEffect(endingSoon) {
+        if (!endingSoon) onRetry()
+        onPauseOrDispose { }
+    }
+    val canBuy = !endingSoon && offer != null && productStatus == BillingProductStatus.Available
     AlertDialog(
         onDismissRequest = onContinueFree,
         title = {
             Text(stringResource(if (endingSoon) R.string.trial_three_days_left else R.string.trial_ended_screen_title))
         },
         text = {
-            Text(
-                summary
-                    ?: stringResource(
-                        if (endingSoon) R.string.onboarding_pro_purchase_terms else R.string.pro_trial_ended_body,
-                    ),
-            )
+            Column(
+                modifier = Modifier.verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(ComponentDimens.StandardSpacing),
+            ) {
+                summary?.let { Text(it) }
+                Text(stringResource(R.string.pro_trial_ended_body))
+                if (!endingSoon) ProPriceDetails(offer, productStatus, false, onRetry)
+                purchaseMessage?.let { Text(stringResource(it)) }
+            }
         },
         confirmButton = {
-            TextButton(onClick = onSeePro) {
-                Text(stringResource(R.string.pro_prompt_see_pro))
+            TextButton(onClick = if (canBuy) onPurchase else onSeePro, enabled = !purchaseInFlight) {
+                Text(
+                    if (canBuy) {
+                        stringResource(R.string.pro_buy_for_price, offer.formattedPrice)
+                    } else {
+                        stringResource(R.string.pro_prompt_see_pro)
+                    },
+                )
             }
         },
         dismissButton = {

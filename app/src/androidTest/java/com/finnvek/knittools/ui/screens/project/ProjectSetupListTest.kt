@@ -93,16 +93,19 @@ class ProjectSetupListTest {
 
     @Test
     fun unfinishedRowsInvokeTheirActionsAndCompletedRowsDoNotClick() {
+        state.value = readyState().copy(counter = CounterState(count = 37))
         render()
+        compose.onNodeWithText(text(R.string.project_setup_optional_body)).assertIsDisplayed()
+        compose.onNodeWithText("0/4").assertDoesNotExist()
         listOf(
-            R.string.project_setup_starting_point,
+            R.string.project_setup_target,
             R.string.project_setup_pattern,
             R.string.project_setup_yarn,
             R.string.project_setup_session,
         ).forEach { compose.onNodeWithText(text(it)).performClick() }
         assertEquals(ProjectSetupItem.entries, clickedItems)
         compose.runOnIdle { state.value = state.value.copy(targetRows = 120) }
-        val done = compose.onNodeWithText(text(R.string.project_setup_starting_point_done))
+        val done = compose.onNodeWithText(text(R.string.project_setup_target_done))
         done.assertHasNoClickAction()
         val workTime = compose.onNodeWithText(text(R.string.project_setup_session)).fetchSemanticsNode().boundsInRoot
         assertTrue(done.fetchSemanticsNode().boundsInRoot.top > workTime.top)
@@ -112,14 +115,14 @@ class ProjectSetupListTest {
     fun completionStaysForThisVisitAndHidesOnReturnOrNewProcess() {
         state.value = threeStepsDone()
         render()
-        compose.onNodeWithText(text(R.string.project_setup_done)).assertDoesNotExist()
+        compose.onNodeWithText(text(R.string.project_setup_optional_body)).assertIsDisplayed()
         compose.runOnIdle { state.value = state.value.copy(hasSessions = true) }
         compose.waitUntil { celebrations.get() == 1 }
-        compose.onNodeWithText(text(R.string.project_setup_done)).assertIsDisplayed()
+        title().assertIsDisplayed()
         assertTrue(runBlocking { repository.state.first().projectSetupCelebrated })
         compose.runOnIdle { showSection.value = false }
         compose.runOnIdle { showSection.value = true }
-        compose.onNodeWithText(text(R.string.project_setup_done)).assertIsDisplayed()
+        title().assertIsDisplayed()
         assertEquals(1, celebrations.get())
         compose.runOnIdle { visit.value = ProjectSetupVisit(7L, 3L) }
         title().assertDoesNotExist()
@@ -181,6 +184,7 @@ class ProjectSetupListTest {
     private fun threeStepsDone() =
         readyState().copy(
             counter = CounterState(count = 37),
+            targetRows = 120,
             projectDocuments = listOf(document()),
             linkedYarns = listOf(11L to "Project yarn"),
         )

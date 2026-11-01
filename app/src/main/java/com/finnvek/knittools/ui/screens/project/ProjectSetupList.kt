@@ -1,8 +1,6 @@
 package com.finnvek.knittools.ui.screens.project
 
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
@@ -11,7 +9,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.Lifecycle
@@ -21,7 +18,6 @@ import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.calculator.ProjectSetupItem
 import com.finnvek.knittools.domain.calculator.ProjectSetupProgress
 import com.finnvek.knittools.domain.calculator.projectSetupProgress
-import com.finnvek.knittools.domain.model.CraftType
 import com.finnvek.knittools.domain.model.isWebPatternCompatible
 import com.finnvek.knittools.repository.OnboardingState
 import com.finnvek.knittools.ui.components.CrossStitchGlyph
@@ -29,12 +25,9 @@ import com.finnvek.knittools.ui.components.OverviewLinkRow
 import com.finnvek.knittools.ui.components.OverviewSectionHeader
 import com.finnvek.knittools.ui.components.RowMenuAction
 import com.finnvek.knittools.ui.components.RowOverflowMenu
-import com.finnvek.knittools.ui.components.StitchProgressRow
 import com.finnvek.knittools.ui.screens.counter.CounterUiState
 import com.finnvek.knittools.ui.screens.counter.CounterViewModel
 import com.finnvek.knittools.ui.theme.ProjectOverviewDimens
-import com.finnvek.knittools.ui.theme.knitToolsColors
-import com.finnvek.knittools.ui.theme.yarnColorForId
 import com.finnvek.knittools.ui.tips.LocalTipRouteKey
 import com.finnvek.knittools.ui.tips.LocalTipSession
 
@@ -100,7 +93,6 @@ internal fun ProjectSetupSection(
     if (onboarding.projectSetupCelebrated && celebratedVisit != currentVisit) return
     val progress =
         projectSetupProgress(
-            state.counter.count,
             state.targetRows,
             state.projectDocuments.isNotEmpty() || state.linkedPattern?.isWebPatternCompatible == true,
             state.projectYarnNotes.isNotEmpty() || state.linkedYarns.isNotEmpty(),
@@ -113,56 +105,32 @@ internal fun ProjectSetupSection(
     }
     ProjectSetupList(
         progress = progress,
-        craft = state.craftType,
-        projectId = projectId,
         actions = actions,
         onBlockingSurfaceChanged = onBlockingSurfaceChanged,
-        animateLastOnEntry =
-            progress.doneCount == ProjectSetupItem.entries.size &&
-                !onboarding.projectSetupCelebrated &&
-                celebratedVisit != currentVisit,
     )
 }
 
 @Composable
 private fun ProjectSetupList(
     progress: ProjectSetupProgress,
-    craft: CraftType,
-    projectId: Long,
     actions: ProjectSetupActions,
     onBlockingSurfaceChanged: (Boolean) -> Unit,
-    animateLastOnEntry: Boolean,
 ) {
     Column {
         OverviewSectionHeader(
             title = R.string.project_setup_title,
             trailingContent = {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(ProjectOverviewDimens.ContentGap),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    StitchProgressRow(
-                        total = ProjectSetupItem.entries.size,
-                        done = progress.doneCount,
-                        craft = craft,
-                        color = yarnColorForId(projectId, MaterialTheme.knitToolsColors.yarnPalette),
-                        animateLastOnEntry = animateLastOnEntry,
-                    )
-                    Text(
-                        stringResource(
-                            R.string.project_setup_progress,
-                            progress.doneCount,
-                            ProjectSetupItem.entries.size,
-                        ),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    RowOverflowMenu(
-                        actions = listOf(RowMenuAction(stringResource(R.string.project_setup_hide), actions.onHide)),
-                        onExpandedChange = onBlockingSurfaceChanged,
-                    )
-                }
+                RowOverflowMenu(
+                    actions = listOf(RowMenuAction(stringResource(R.string.project_setup_hide), actions.onHide)),
+                    onExpandedChange = onBlockingSurfaceChanged,
+                )
             },
+        )
+        Text(
+            stringResource(R.string.project_setup_optional_body),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(vertical = ProjectOverviewDimens.ContentGap),
         )
         progress.items.forEach { item ->
             OverviewLinkRow(
@@ -174,20 +142,13 @@ private fun ProjectSetupList(
             )
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
         }
-        if (progress.doneCount == ProjectSetupItem.entries.size) {
-            Text(
-                stringResource(R.string.project_setup_done),
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.padding(vertical = ProjectOverviewDimens.ContentGap),
-            )
-        }
     }
 }
 
 private fun ProjectSetupItem.title(done: Boolean): Int =
     when (this) {
-        ProjectSetupItem.STARTING_POINT ->
-            if (done) R.string.project_setup_starting_point_done else R.string.project_setup_starting_point
+        ProjectSetupItem.TARGET ->
+            if (done) R.string.project_setup_target_done else R.string.project_setup_target
         ProjectSetupItem.PATTERN -> if (done) R.string.project_setup_pattern_done else R.string.project_setup_pattern
         ProjectSetupItem.YARN -> if (done) R.string.project_setup_yarn_done else R.string.project_setup_yarn
         ProjectSetupItem.WORK_TIME -> if (done) R.string.project_setup_session_done else R.string.project_setup_session
@@ -195,7 +156,7 @@ private fun ProjectSetupItem.title(done: Boolean): Int =
 
 private fun ProjectSetupItem.glyph(): CrossStitchGlyph =
     when (this) {
-        ProjectSetupItem.STARTING_POINT -> CrossStitchGlyph.COUNTER
+        ProjectSetupItem.TARGET -> CrossStitchGlyph.COUNTER
         ProjectSetupItem.PATTERN -> CrossStitchGlyph.PATTERN
         ProjectSetupItem.YARN -> CrossStitchGlyph.YARN
         ProjectSetupItem.WORK_TIME -> CrossStitchGlyph.CLOCK

@@ -80,7 +80,7 @@ class StitchProgressRowTest {
     @Test
     fun doneOverviewRowIsNotClickableAndPendingRowKeepsItsAction() {
         var clicks = 0
-        val doneLabel = context.getString(R.string.project_setup_starting_point_done)
+        val doneLabel = context.getString(R.string.project_setup_target_done)
         val pendingLabel = context.getString(R.string.project_setup_session)
         compose.setContent {
             KnitToolsTheme {

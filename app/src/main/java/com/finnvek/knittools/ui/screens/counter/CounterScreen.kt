@@ -1204,7 +1204,7 @@ fun ProjectContentHost(
                             onItemClick = { item ->
                                 openProjectContent {
                                     when (item) {
-                                        ProjectSetupItem.STARTING_POINT -> showTargetDialog = true
+                                        ProjectSetupItem.TARGET -> showTargetDialog = true
                                         ProjectSetupItem.PATTERN -> {
                                             patternPickerMode = PatternPickerMode.INITIAL_PROJECT_PATTERN
                                             showPatternPicker = true

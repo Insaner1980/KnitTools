@@ -108,14 +108,6 @@
     <string name="settings_show_tips_again">Näytä vihjeet uudelleen</string>
     <!-- Vihjeiden onnistuneen nollauksen palaute. -->
     <string name="settings_tips_reset_done">Vihjeet näytetään uudelleen.</string>
-    <!-- Aloitusprojektin valmistelulistan otsikko. -->
-    <string name="project_setup_title">Projektin valmistelu</string>
-    <!-- Valmistelun edistyminen. %1$d on valmiiden vaiheiden määrä ja %2$d kaikkien vaiheiden määrä. -->
-    <string name="project_setup_progress">%1$d/%2$d</string>
-    <!-- Valmistelulistan aloituskohta; toiminto avaa laskurin aloitusarvon. -->
-    <string name="project_setup_starting_point">Aseta aloituskohta</string>
-    <!-- Valmistelulistan aloituskohta on asetettu. -->
-    <string name="project_setup_starting_point_done">Aloituskohta asetettu</string>
     <!-- Valmistelulistan ohjeen liittämistoiminto; pattern on ohje. -->
     <string name="project_setup_pattern">Liitä ohje</string>
     <!-- Valmistelulistan ohje on liitetty. -->
@@ -124,12 +116,8 @@
     <string name="project_setup_yarn">Lisää käyttämäsi lanka</string>
     <!-- Valmistelulistan projektikohtainen lanka on lisätty. -->
     <string name="project_setup_yarn_done">Lanka lisätty</string>
-    <!-- Valmistelulistan ensimmäisen työskentelyistunnon tallennus. -->
-    <string name="project_setup_session">Tallenna ensimmäinen työskentelyistunto</string>
     <!-- Valmistelulistan ensimmäinen työskentelyistunto on tallennettu. -->
     <string name="project_setup_session_done">Työskentelyistunto tallennettu</string>
-    <!-- Valmistelulistan lyhyt valmistumisviesti. -->
-    <string name="project_setup_done">Kaikki valmista. Mukavia hetkiä projektin parissa.</string>
     <!-- Valmistelulistan piilottava neutraali toiminto. -->
     <string name="project_setup_hide">Piilota</string>
     <!-- Edistymisen saavutettavuuskuvaus. %1$d on valmiiden ja %2$d kaikkien vaiheiden määrä. -->
@@ -439,4 +427,38 @@
         <item quantity="one">%1$d kuva</item>
         <item quantity="other">%1$d kuvaa</item>
     </plurals>
+    <!-- Vapaaehtoisten projektivinkkien otsikko; nämä eivät ole pakollisia vaiheita. -->
+    <string name="project_setup_title">Tee projektista omasi</string>
+    <!-- Laskuria voi käyttää heti ilman lisäyksiä. -->
+    <string name="project_setup_optional_body">Lisää vain tarvitsemasi. Voit käyttää laskuria heti.</string>
+    <!-- Avaa tavoitearvon dialogin, ei aloituslukemaa. -->
+    <string name="project_setup_target">Aseta tavoite</string>
+    <!-- Projektilla on tavoite; laskurin lukema ei vaikuta tähän. -->
+    <string name="project_setup_target_done">Tavoite asetettu</string>
+    <!-- Avaa ohjeen käyttäjän itse aloittamalle ajan seurannalle. -->
+    <string name="project_setup_session">Seuraa työskentelyaikaa</string>
+    <!-- Projektin luonnin vapaaehtoisten yksikkö- ja tavoitekenttien näyttö tai piilotus; arvot säilyvät. -->
+    <string name="project_create_more_options">Lisävalinnat</string>
+    <!-- Projektin luonnin vapaaehtoisten yksikkö- ja tavoitekenttien näyttö tai piilotus; arvot säilyvät. -->
+    <string name="project_create_fewer_options">Vähemmän valintoja</string>
+    <!-- Perustoiminnot ovat ilmaisia; kokeilua tarjotaan vain, jos sitä ei ole aloitettu. -->
+    <string name="welcome_free_pro_trial">Perustoiminnot ovat ilmaisia. Kokeile Prota maksutta 14 päivää.</string>
+    <!-- Yleinen Free/Pro-kuvaus aktiivisen tai päättyneen kokeilun aikana. -->
+    <string name="welcome_free_pro_general">Perustoiminnot ovat ilmaisia. Pro tarjoaa lisää projekteja ja edistyneitä työkaluja.</string>
+    <!-- Avaa Pro-sivun; ei aloita kokeilua. -->
+    <string name="welcome_learn_pro">Tutustu Prohon</string>
+    <!-- Playn palauttama koko nykyhinta, %1$s sisältää valuutan. -->
+    <string name="pro_launch_price">Julkaisuhinta: %1$s</string>
+    <!-- Playn palauttama koko nykyhinta, %1$s sisältää valuutan. -->
+    <string name="pro_current_price">Pro: %1$s</string>
+    <!-- Tarjouksen tarkka päättymishetki, %1$s on paikallinen päivä, aika ja aikavyöhyke. -->
+    <string name="pro_launch_ends_at">Julkaisuhinta päättyy: %1$s</string>
+    <!-- Playn vahvistama tuleva normaalihinta samassa valuutassa; %1$s on koko hinta. -->
+    <string name="pro_price_after_launch">Hinta sen jälkeen: %1$s</string>
+    <!-- Henkilökohtainen kokeilu ja yhteinen hintakampanja päättyvät eri aikaan; kokeilu ei varaa hintaa. -->
+    <string name="pro_trial_does_not_reserve_price">Kokeilun aloittaminen ei varaa julkaisuhintaa. Saat tämän hinnan ostamalla Pron ennen julkaisutarjouksen päättymistä.</string>
+    <!-- Hintahaku epäonnistui mutta käyttäjä voi aloittaa vapaaehtoisen maksuttoman kokeilun. -->
+    <string name="pro_price_unavailable_trial">Ostohinta ei ole juuri nyt saatavilla. Voit silti aloittaa maksuttoman kokeilun.</string>
+    <!-- Hinta vaihtui; osto ei käynnisty ennen hinnan tarkistamista ja uutta napautusta. -->
+    <string name="pro_price_changed_review">Hinta on muuttunut. Tarkista nykyinen hinta ennen ostamista.</string>
 </resources>

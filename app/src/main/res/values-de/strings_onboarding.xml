@@ -109,14 +109,6 @@
     <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
     <string name="settings_tips_reset_done">Tipps werden wieder angezeigt.</string>
     <!-- Kääntäjälle: projektin neljän kohdan aloituslista tai sen valmistumisilmoitus. -->
-    <string name="project_setup_title">Projekt einrichten</string>
-    <!-- Kääntäjälle: projektin neljän kohdan aloituslista tai sen valmistumisilmoitus. Säilytä paikkamerkit %1$d, %2$d muuttumattomina. -->
-    <string name="project_setup_progress">%1$d von %2$d</string>
-    <!-- Kääntäjälle: projektin neljän kohdan aloituslista tai sen valmistumisilmoitus. -->
-    <string name="project_setup_starting_point">Lege deinen Ausgangspunkt fest</string>
-    <!-- Kääntäjälle: projektin neljän kohdan aloituslista tai sen valmistumisilmoitus. -->
-    <string name="project_setup_starting_point_done">Ausgangspunkt festgelegt</string>
-    <!-- Kääntäjälle: projektin neljän kohdan aloituslista tai sen valmistumisilmoitus. -->
     <string name="project_setup_pattern">Füge deine Anleitung hinzu</string>
     <!-- Kääntäjälle: projektin neljän kohdan aloituslista tai sen valmistumisilmoitus. -->
     <string name="project_setup_pattern_done">Anleitung hinzugefügt</string>
@@ -125,11 +117,7 @@
     <!-- Kääntäjälle: projektin neljän kohdan aloituslista tai sen valmistumisilmoitus. -->
     <string name="project_setup_yarn_done">Garn hinzugefügt</string>
     <!-- Kääntäjälle: projektin neljän kohdan aloituslista tai sen valmistumisilmoitus. -->
-    <string name="project_setup_session">Speichere deine erste Arbeitssitzung</string>
-    <!-- Kääntäjälle: projektin neljän kohdan aloituslista tai sen valmistumisilmoitus. -->
     <string name="project_setup_session_done">Arbeitssitzung gespeichert</string>
-    <!-- Kääntäjälle: projektin neljän kohdan aloituslista tai sen valmistumisilmoitus. -->
-    <string name="project_setup_done">Alles bereit. Viel Freude mit deinem Projekt.</string>
     <!-- Kääntäjälle: projektin neljän kohdan aloituslista tai sen valmistumisilmoitus. -->
     <string name="project_setup_hide">Ausblenden</string>
     <!-- Kääntäjälle: projektin neljän kohdan aloituslista tai sen valmistumisilmoitus. Säilytä paikkamerkit %1$d, %2$d muuttumattomina. -->
@@ -439,4 +427,38 @@
         <item quantity="one">%1$d Foto</item>
         <item quantity="other">%1$d Fotos</item>
     </plurals>
+    <!-- Vapaaehtoisten projektivinkkien otsikko; nämä eivät ole pakollisia vaiheita. -->
+    <string name="project_setup_title">Gestalte dein Projekt</string>
+    <!-- Laskuria voi käyttää heti ilman lisäyksiä. -->
+    <string name="project_setup_optional_body">Füge nur hinzu, was du brauchst. Du kannst den Zähler sofort nutzen.</string>
+    <!-- Avaa tavoitearvon dialogin, ei aloituslukemaa. -->
+    <string name="project_setup_target">Ziel festlegen</string>
+    <!-- Projektilla on tavoite; laskurin lukema ei vaikuta tähän. -->
+    <string name="project_setup_target_done">Ziel festgelegt</string>
+    <!-- Avaa ohjeen käyttäjän itse aloittamalle ajan seurannalle. -->
+    <string name="project_setup_session">Arbeitszeit erfassen</string>
+    <!-- Projektin luonnin vapaaehtoisten yksikkö- ja tavoitekenttien näyttö tai piilotus; arvot säilyvät. -->
+    <string name="project_create_more_options">Weitere Optionen</string>
+    <!-- Projektin luonnin vapaaehtoisten yksikkö- ja tavoitekenttien näyttö tai piilotus; arvot säilyvät. -->
+    <string name="project_create_fewer_options">Weniger Optionen</string>
+    <!-- Perustoiminnot ovat ilmaisia; kokeilua tarjotaan vain, jos sitä ei ole aloitettu. -->
+    <string name="welcome_free_pro_trial">Die Grundfunktionen sind kostenlos. Teste Pro 14 Tage kostenlos.</string>
+    <!-- Yleinen Free/Pro-kuvaus aktiivisen tai päättyneen kokeilun aikana. -->
+    <string name="welcome_free_pro_general">Die Grundfunktionen sind kostenlos. Pro bietet mehr Projekte und erweiterte Werkzeuge.</string>
+    <!-- Avaa Pro-sivun; ei aloita kokeilua. -->
+    <string name="welcome_learn_pro">Mehr über Pro</string>
+    <!-- Playn palauttama koko nykyhinta, %1$s sisältää valuutan. -->
+    <string name="pro_launch_price">Einführungspreis: %1$s</string>
+    <!-- Playn palauttama koko nykyhinta, %1$s sisältää valuutan. -->
+    <string name="pro_current_price">Pro: %1$s</string>
+    <!-- Tarjouksen tarkka päättymishetki, %1$s on paikallinen päivä, aika ja aikavyöhyke. -->
+    <string name="pro_launch_ends_at">Einführungspreis endet: %1$s</string>
+    <!-- Playn vahvistama tuleva normaalihinta samassa valuutassa; %1$s on koko hinta. -->
+    <string name="pro_price_after_launch">Preis danach: %1$s</string>
+    <!-- Henkilökohtainen kokeilu ja yhteinen hintakampanja päättyvät eri aikaan; kokeilu ei varaa hintaa. -->
+    <string name="pro_trial_does_not_reserve_price">Der Start einer Testphase reserviert den Einführungspreis nicht. Kaufe vor Ende des Einführungsangebots, um diesen Preis zu erhalten.</string>
+    <!-- Hintahaku epäonnistui mutta käyttäjä voi aloittaa vapaaehtoisen maksuttoman kokeilun. -->
+    <string name="pro_price_unavailable_trial">Der Kaufpreis ist derzeit nicht verfügbar. Du kannst deine kostenlose Testphase trotzdem starten.</string>
+    <!-- Hinta vaihtui; osto ei käynnisty ennen hinnan tarkistamista ja uutta napautusta. -->
+    <string name="pro_price_changed_review">Der Preis hat sich geändert. Prüfe vor dem Kauf den aktuellen Preis.</string>
 </resources>

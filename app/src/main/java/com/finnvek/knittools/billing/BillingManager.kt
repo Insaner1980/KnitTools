@@ -19,6 +19,7 @@ import com.android.billingclient.api.queryPurchasesAsync
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
@@ -70,6 +71,10 @@ class BillingManager
 
         private var billingClient: BillingClient? = null
         private var purchaseQueryGeneration = 0L
+        private var productQueryGeneration = 0L
+        private var productQueryJob: Job? = null
+        private var offerExpiryJob: Job? = null
+        private var priceNeedsReview = false
         private val acknowledgementsInFlight = mutableSetOf<String>()
         private val acknowledgedPurchaseTokens = mutableSetOf<String>()
         private val pendingAcknowledgementRetries = mutableSetOf<String>()
@@ -111,7 +116,7 @@ class BillingManager
                             connectionRetryJob = null
                             scope.launch {
                                 queryPurchases()
-                                queryProductDetails()
+                                retryProductDetails()
                             }
                         } else {
                             if (scheduleConnectionRetry()) {
@@ -144,6 +149,18 @@ class BillingManager
 
         fun launchPurchaseFlow(activity: Activity) {
             if (_purchaseFlowInFlight.value) return
+            val launch = _selectedOffer.value?.launchDetails
+            val now = System.currentTimeMillis()
+            if (launch != null && (now < launch.startsAtMillis || now >= launch.endsAtMillis)) {
+                resetProductDetails()
+                priceNeedsReview = true
+                retryProductDetails()
+            }
+            if (priceNeedsReview) {
+                priceNeedsReview = false
+                emitPurchaseMessage(BillingUserMessage.PRICE_CHANGED_REVIEW)
+                return
+            }
             val details =
                 _productDetails.value
                     ?: run {
@@ -189,8 +206,16 @@ class BillingManager
         }
 
         fun retryProductDetails() {
+            if (productQueryJob?.isActive == true) return
+            val client =
+                billingClient ?: run {
+                    applyProductUnavailable(BillingUserMessage.PURCHASE_UNAVAILABLE)
+                    return
+                }
+            val generation = ++productQueryGeneration
             _productStatus.value = BillingProductStatus.Loading
-            scope.launch { queryProductDetails() }
+            productQueryJob = scope.launch(start = CoroutineStart.LAZY) { queryProductDetails(client, generation) }
+            productQueryJob?.start()
         }
 
         suspend fun restorePurchasesWithResult(): RestorePurchasesResult {
@@ -250,6 +275,8 @@ class BillingManager
         }
 
         fun destroy() {
+            resetProductDetails()
+            priceNeedsReview = false
             scope.coroutineContext.cancelChildren()
             connectionRetryJob?.cancel()
             connectionRetryJob = null
@@ -333,8 +360,10 @@ class BillingManager
         }
 
         @Suppress("TooGenericExceptionCaught")
-        private suspend fun queryProductDetails() {
-            val client = billingClient ?: return
+        private suspend fun queryProductDetails(
+            client: BillingClient,
+            generation: Long,
+        ) {
             val product =
                 QueryProductDetailsParams.Product
                     .newBuilder()
@@ -354,10 +383,12 @@ class BillingManager
                 } catch (e: CancellationException) {
                     throw e
                 } catch (_: Exception) {
-                    if (billingClient === client) applyProductUnavailable(BillingUserMessage.PURCHASE_FAILED)
+                    if (billingClient === client && generation == productQueryGeneration) {
+                        applyProductUnavailable(BillingUserMessage.PURCHASE_FAILED)
+                    }
                     return
                 }
-            if (billingClient !== client) return
+            if (billingClient !== client || generation != productQueryGeneration) return
             applyProductDetailsResult(result)
         }
 
@@ -368,13 +399,35 @@ class BillingManager
             }
 
             val details = result.productDetailsList?.firstOrNull()
-            val selectedOffer = details?.let(::selectOneTimePurchaseOffer)
+            val selectedOffer = details?.let { selectOneTimePurchaseOffer(it) }
             if (details == null || selectedOffer == null) {
                 applyProductUnavailable(BillingUserMessage.PURCHASE_UNAVAILABLE)
             } else {
+                val previous = _selectedOffer.value
+                if (previous != null &&
+                    (
+                        previous.formattedPrice != selectedOffer.formattedPrice ||
+                            previous.priceCurrencyCode != selectedOffer.priceCurrencyCode ||
+                            previous.priceAmountMicros != selectedOffer.priceAmountMicros
+                    )
+                ) {
+                    priceNeedsReview = true
+                }
                 _productDetails.value = details
                 _selectedOffer.value = selectedOffer
                 _productStatus.value = BillingProductStatus.Available
+                offerExpiryJob?.cancel()
+                offerExpiryJob =
+                    selectedOffer.launchDetails?.let { launch ->
+                        scope.launch {
+                            delay((launch.endsAtMillis - System.currentTimeMillis()).coerceAtLeast(0L))
+                            // Detach this job before reset cancels the superseded quote's jobs.
+                            offerExpiryJob = null
+                            resetProductDetails()
+                            priceNeedsReview = true
+                            retryProductDetails()
+                        }
+                    }
             }
         }
 
@@ -462,12 +515,16 @@ class BillingManager
         }
 
         private fun applyProductUnavailable(message: BillingUserMessage) {
-            _productDetails.value = null
-            _selectedOffer.value = null
+            resetProductDetails()
             _productStatus.value = BillingProductStatus.Unavailable(message)
         }
 
         private fun resetProductDetails() {
+            productQueryGeneration++
+            productQueryJob?.cancel()
+            productQueryJob = null
+            offerExpiryJob?.cancel()
+            offerExpiryJob = null
             _productDetails.value = null
             _selectedOffer.value = null
             _productStatus.value = BillingProductStatus.Loading
@@ -528,6 +585,7 @@ enum class RestorePurchasesResult {
 }
 
 enum class BillingUserMessage {
+    PRICE_CHANGED_REVIEW,
     PURCHASE_CANCELLED,
     PURCHASE_PENDING,
     PURCHASE_UNAVAILABLE,
@@ -539,31 +597,58 @@ enum class BillingUserMessage {
 data class SelectedOneTimeOffer(
     val formattedPrice: String,
     val offerToken: String,
+    val priceAmountMicros: Long = 0L,
+    val priceCurrencyCode: String = "",
+    val purchaseOptionId: String? = null,
+    val offerId: String? = null,
+    val launchDetails: LaunchOfferDetails? = null,
 )
 
-internal fun selectOneTimePurchaseOffer(productDetails: ProductDetails): SelectedOneTimeOffer? {
+data class LaunchOfferDetails(
+    val startsAtMillis: Long,
+    val endsAtMillis: Long,
+    val fullPriceMicros: Long?,
+)
+
+internal fun selectOneTimePurchaseOffer(
+    productDetails: ProductDetails,
+    nowMillis: Long = System.currentTimeMillis(),
+): SelectedOneTimeOffer? {
     val currentOffers = productDetails.oneTimePurchaseOfferDetailsList.orEmpty()
+    val permanentOffers =
+        (if (currentOffers.isEmpty()) listOfNotNull(productDetails.oneTimePurchaseOfferDetails) else currentOffers)
+            .filter { it.rentalDetails == null && it.preorderDetails == null }
+    val ordering =
+        compareByDescending<ProductDetails.OneTimePurchaseOfferDetails> { it.offerId == null }
+            .thenByDescending { it.limitedQuantityInfo == null }
+            .thenBy { it.purchaseOptionId.orEmpty() }
+            .thenBy { it.offerId.orEmpty() }
+            .thenBy { it.priceAmountMicros }
+            .thenBy { it.offerToken.orEmpty() }
+    val launch = permanentOffers.filter { it.launchDetails(nowMillis) != null }.minWithOrNull(ordering)
     val selected =
-        if (currentOffers.isEmpty()) {
-            productDetails.oneTimePurchaseOfferDetails
-        } else {
-            currentOffers
-                .filter { it.rentalDetails == null && it.preorderDetails == null }
-                .sortedWith(
-                    compareByDescending<ProductDetails.OneTimePurchaseOfferDetails> { it.offerId == null }
-                        .thenByDescending { it.validTimeWindow == null }
-                        .thenByDescending { it.limitedQuantityInfo == null }
-                        .thenBy { it.purchaseOptionId.orEmpty() }
-                        .thenBy { it.offerId.orEmpty() }
-                        .thenBy { it.priceAmountMicros },
-                ).firstOrNull()
-        }
+        launch ?: permanentOffers
+            .filter { it.offerId != "launch" && it.validTimeWindow == null }
+            .minWithOrNull(ordering)
     return selected?.let {
         SelectedOneTimeOffer(
             formattedPrice = it.formattedPrice,
             offerToken = it.offerToken.orEmpty(),
+            priceAmountMicros = it.priceAmountMicros,
+            priceCurrencyCode = it.priceCurrencyCode,
+            purchaseOptionId = it.purchaseOptionId,
+            offerId = it.offerId,
+            launchDetails = it.launchDetails(nowMillis),
         )
     }
+}
+
+private fun ProductDetails.OneTimePurchaseOfferDetails.launchDetails(nowMillis: Long): LaunchOfferDetails? {
+    if (offerId != "launch" || offerToken.isNullOrBlank()) return null
+    val start = validTimeWindow?.startTimeMillis ?: return null
+    val end = validTimeWindow?.endTimeMillis ?: return null
+    if (start >= end || nowMillis < start || nowMillis >= end) return null
+    return LaunchOfferDetails(start, end, fullPriceMicros?.takeIf { it > priceAmountMicros })
 }
 
 sealed interface BillingProductStatus {

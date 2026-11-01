@@ -660,6 +660,7 @@ fun ProjectListScreen(
                             onDismissWelcome = viewModel::dismissWelcome,
                             onOpenTools = { viewModel.chooseWelcomeTools(onOpenTools) },
                             onDemoUsed = viewModel::recordWelcomeDemoUsed,
+                            onOpenPro = onUpgradeToPro,
                             onOpenBackup = onOpenBackup,
                             onDeleteSwipe = { id, name ->
                                 menuProjectId = id
@@ -1052,6 +1053,7 @@ data class ProjectListContentActions(
     val onDismissWelcome: () -> Unit = {},
     val onOpenTools: () -> Unit = {},
     val onDemoUsed: () -> Unit = {},
+    val onOpenPro: () -> Unit = {},
     val onOpenBackup: () -> Unit = {},
 )
 
@@ -1094,6 +1096,7 @@ private fun ProjectListContent(
                     onDismiss = actions.onDismissWelcome,
                     onTools = actions.onOpenTools,
                     onDemoUsed = actions.onDemoUsed,
+                    onOpenPro = actions.onOpenPro,
                     proState = state.proState,
                     proAccessReady = state.proAccessReady,
                 )

@@ -10,6 +10,7 @@ import com.android.billingclient.api.ProductDetails
 import com.android.billingclient.api.ProductDetailsResult
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchasesResult
+import com.android.billingclient.api.queryProductDetails
 import com.android.billingclient.api.queryPurchasesAsync
 import com.finnvek.knittools.ProjectSourceFiles
 import io.mockk.coEvery
@@ -19,11 +20,13 @@ import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.unmockkStatic
 import io.mockk.verify
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runCurrent
@@ -247,7 +250,7 @@ class BillingManagerTest {
         every { product.oneTimePurchaseOfferDetails } returns permanent
 
         assertEquals(
-            SelectedOneTimeOffer(formattedPrice = "regular", offerToken = "base-token"),
+            SelectedOneTimeOffer("regular", "base-token", 2_000_000L, "USD", "permanent"),
             selectOneTimePurchaseOffer(product),
         )
     }
@@ -263,6 +266,178 @@ class BillingManagerTest {
         assertNull(selectOneTimePurchaseOffer(product))
     }
 
+    @Test
+    fun `active launch offer wins over its permanent base offer`() {
+        val product = mockk<ProductDetails>()
+        val permanent = oneTimeOffer("$14.99", "base-token", null, 14_990_000L)
+        val launch = oneTimeOffer("$9.99", "launch-token", "launch", 9_990_000L)
+        val window = mockk<ProductDetails.OneTimePurchaseOfferDetails.ValidTimeWindow>()
+        every { window.startTimeMillis } returns System.currentTimeMillis() - 60_000L
+        every { window.endTimeMillis } returns System.currentTimeMillis() + 60_000L
+        every { launch.validTimeWindow } returns window
+        every { product.oneTimePurchaseOfferDetailsList } returns listOf(permanent, launch)
+        every { product.oneTimePurchaseOfferDetails } returns permanent
+
+        assertEquals("launch-token", selectOneTimePurchaseOffer(product)?.offerToken)
+    }
+
+    @Test
+    fun `launch boundaries are start inclusive and end exclusive`() {
+        val product = launchProduct(1_000L, 2_000L)
+        listOf(999L to "base-token", 1_000L to "launch-token", 1_999L to "launch-token", 2_000L to "base-token")
+            .forEach { (now, token) -> assertEquals(token, selectOneTimePurchaseOffer(product, now)?.offerToken) }
+    }
+
+    @Test
+    fun `regional amounts and currencies come directly from the selected offer`() {
+        listOf(
+            Triple("USD", 9_990_000L, 14_990_000L),
+            Triple("EUR", 9_990_000L, 14_990_000L),
+            Triple("BRL", 24_900_000L, 32_900_000L),
+        ).forEach { (currency, amount, full) ->
+            val selected = selectOneTimePurchaseOffer(launchProduct(1_000, 2_000, currency, amount, full), 1_500)
+            assertEquals(currency, selected?.priceCurrencyCode)
+            assertEquals(amount, selected?.priceAmountMicros)
+            assertEquals(full, selected?.launchDetails?.fullPriceMicros)
+            assertEquals("Play price", selected?.formattedPrice)
+        }
+    }
+
+    @Test
+    fun `missing and reversed windows and blank token never fall back to launch`() {
+        listOf(null to 2_000L, 1_000L to null, 2_000L to 1_000L, 1_000L to 1_000L).forEach { (start, end) ->
+            assertEquals("base-token", selectOneTimePurchaseOffer(launchProduct(start, end), 1_500)?.offerToken)
+        }
+        assertEquals(
+            "base-token",
+            selectOneTimePurchaseOffer(launchProduct(1_000, 2_000, token = ""), 1_500)?.offerToken,
+        )
+    }
+
+    @Test
+    fun `unknown or non-increasing full price omits only future price`() {
+        listOf(null, 9_990_000L, 5_000_000L).forEach { full ->
+            val selected = selectOneTimePurchaseOffer(launchProduct(1_000, 2_000, full = full), 1_500)
+            assertEquals("launch-token", selected?.offerToken)
+            assertEquals(2_000L, selected?.launchDetails?.endsAtMillis)
+            assertNull(selected?.launchDetails?.fullPriceMicros)
+        }
+    }
+
+    @Test
+    fun `legacy fallback permits permanent purchases and rejects rentals and preorders`() {
+        val product = mockk<ProductDetails>()
+        val base = oneTimeOffer("Legacy", "", null, 14_990_000L)
+        every { product.oneTimePurchaseOfferDetailsList } returns emptyList()
+        every { product.oneTimePurchaseOfferDetails } returns base
+        assertEquals("Legacy", selectOneTimePurchaseOffer(product, 1_500)?.formattedPrice)
+        every { base.rentalDetails } returns mockk()
+        assertNull(selectOneTimePurchaseOffer(product, 1_500))
+        every { base.rentalDetails } returns null
+        every { base.preorderDetails } returns mockk()
+        assertNull(selectOneTimePurchaseOffer(product, 1_500))
+        every { product.oneTimePurchaseOfferDetailsList } returns listOf(base)
+        assertNull(selectOneTimePurchaseOffer(product, 1_500))
+    }
+
+    @Test
+    fun `expired cached quote refreshes without launching the higher price on the same tap`() =
+        runTest {
+            mockkStatic(TextUtils::class)
+            every { TextUtils.isEmpty(any()) } answers { firstArg<CharSequence?>().isNullOrEmpty() }
+            mockkStatic("com.android.billingclient.api.BillingClientKotlinKt")
+            val client = mockk<BillingClient>(relaxed = true)
+            val activity = mockk<Activity>(relaxed = true)
+            every { client.launchBillingFlow(activity, any()) } returns
+                billingResult(BillingClient.BillingResponseCode.OK)
+            val manager = createManager(client)
+            val product = launchProduct(1_000, 2_000)
+            coEvery { client.queryProductDetails(any()) } returns productResult(product)
+            manager.applyProductDetailsResult(productResult(product))
+            // Simulate a cached timed snapshot whose wall-clock deadline has passed.
+            val selected = BillingManager::class.java.getDeclaredField("_selectedOffer").apply { isAccessible = true }
+
+            @Suppress("UNCHECKED_CAST")
+            val quote = selected.get(manager) as kotlinx.coroutines.flow.MutableStateFlow<SelectedOneTimeOffer?>
+            quote.value =
+                SelectedOneTimeOffer(
+                    "$9.99",
+                    "launch-token",
+                    9_990_000,
+                    "USD",
+                    launchDetails = LaunchOfferDetails(1, 2, 14_990_000),
+                )
+            val message = async(UnconfinedTestDispatcher(testScheduler)) { manager.purchaseMessages.first() }
+            manager.launchPurchaseFlow(activity)
+            assertEquals(BillingUserMessage.PRICE_CHANGED_REVIEW, message.await())
+            verify(exactly = 0) { client.launchBillingFlow(any(), any()) }
+            runCurrent()
+            assertEquals("base-token", manager.selectedOffer.value?.offerToken)
+            manager.launchPurchaseFlow(activity)
+            verify(exactly = 1) { client.launchBillingFlow(activity, any()) }
+            manager.destroy()
+        }
+
+    @Test
+    fun `overlapping price refreshes coalesce and destroy rejects a late response`() =
+        runTest {
+            mockkStatic("com.android.billingclient.api.BillingClientKotlinKt")
+            val client = mockk<BillingClient>(relaxed = true)
+            val response = CompletableDeferred<ProductDetailsResult>()
+            coEvery { client.queryProductDetails(any()) } coAnswers { response.await() }
+            val manager = createManager(client)
+            manager.retryProductDetails()
+            manager.retryProductDetails()
+            coVerify(exactly = 1) { client.queryProductDetails(any()) }
+            manager.destroy()
+            response.complete(productResult(launchProduct(1_000, 2_000)))
+            runCurrent()
+            assertNull(manager.selectedOffer.value)
+        }
+
+    @Test
+    fun `deadline invalidation clears the quote before a failed refresh`() =
+        runTest {
+            mockkStatic("com.android.billingclient.api.BillingClientKotlinKt")
+            val client = mockk<BillingClient>(relaxed = true)
+            coEvery { client.queryProductDetails(any()) } returns
+                ProductDetailsResult(billingResult(BillingClient.BillingResponseCode.NETWORK_ERROR), emptyList())
+            val manager = createManager(client)
+            val now = System.currentTimeMillis()
+            manager.applyProductDetailsResult(productResult(launchProduct(now - 10_000, now + 10_000)))
+            assertEquals("launch-token", manager.selectedOffer.value?.offerToken)
+            advanceTimeBy(10_001)
+            runCurrent()
+            assertNull(manager.selectedOffer.value)
+            assertTrue(manager.productStatus.value is BillingProductStatus.Unavailable)
+            manager.destroy()
+        }
+
+    private fun productResult(product: ProductDetails) =
+        ProductDetailsResult(billingResult(BillingClient.BillingResponseCode.OK), listOf(product))
+
+    private fun launchProduct(
+        start: Long?,
+        end: Long?,
+        currency: String = "USD",
+        amount: Long = 9_990_000L,
+        full: Long? = 14_990_000L,
+        token: String = "launch-token",
+    ): ProductDetails {
+        val base = oneTimeOffer("Regular", "base-token", null, 14_990_000L)
+        val launch = oneTimeOffer("Play price", token, "launch", amount)
+        val window = mockk<ProductDetails.OneTimePurchaseOfferDetails.ValidTimeWindow>()
+        every { window.startTimeMillis } returns start
+        every { window.endTimeMillis } returns end
+        every { launch.validTimeWindow } returns window
+        every { launch.priceCurrencyCode } returns currency
+        every { launch.fullPriceMicros } returns full
+        return mockk<ProductDetails>(relaxed = true).also {
+            every { it.oneTimePurchaseOfferDetailsList } returns listOf(base, launch)
+            every { it.oneTimePurchaseOfferDetails } returns base
+        }
+    }
+
     private fun oneTimeOffer(
         formattedPrice: String,
         offerToken: String,
@@ -275,6 +450,8 @@ class BillingManagerTest {
             every { offer.offerId } returns offerId
             every { offer.purchaseOptionId } returns "permanent"
             every { offer.priceAmountMicros } returns priceMicros
+            every { offer.priceCurrencyCode } returns "USD"
+            every { offer.fullPriceMicros } returns null
             every { offer.rentalDetails } returns null
             every { offer.preorderDetails } returns null
             every { offer.validTimeWindow } returns null

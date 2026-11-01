@@ -63,7 +63,7 @@ class TrialJourneyStartViewModelTest {
         runTest {
             val result = CompletableDeferred<TrialStartResult>()
             coEvery { manager.startTrial() } coAnswers { result.await() }
-            val viewModel = ProPromptViewModel(manager, trialManager, coordinator)
+            val viewModel = ProPromptViewModel(manager, trialManager, coordinator, billing)
             store.put("prompt", viewModel)
             val received = mutableListOf<Pair<TrialStartResult, Boolean>>()
             val observer =
@@ -92,7 +92,7 @@ class TrialJourneyStartViewModelTest {
     @Test
     fun `prompt non-start results never request a journey`() =
         runTest {
-            val viewModel = ProPromptViewModel(manager, trialManager, coordinator)
+            val viewModel = ProPromptViewModel(manager, trialManager, coordinator, billing)
             store.put("prompt", viewModel)
             TrialStartResult.entries.filter { it != TrialStartResult.Started }.forEach { result ->
                 coEvery { manager.startTrial() } returns result

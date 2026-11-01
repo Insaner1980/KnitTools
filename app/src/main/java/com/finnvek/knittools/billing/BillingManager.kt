@@ -148,7 +148,7 @@ class BillingManager
         }
 
         fun launchPurchaseFlow(activity: Activity) {
-            if (_purchaseFlowInFlight.value) return
+            if (_purchaseFlowInFlight.value || productQueryJob?.isActive == true) return
             val launch = _selectedOffer.value?.launchDetails
             val now = System.currentTimeMillis()
             if (launch != null && (now < launch.startsAtMillis || now >= launch.endsAtMillis)) {

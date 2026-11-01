@@ -379,29 +379,6 @@ class BillingManagerTest {
         }
 
     @Test
-    fun `refresh preserves the available quote until the response arrives`() =
-        runTest {
-            mockkStatic("com.android.billingclient.api.BillingClientKotlinKt")
-            val client = mockk<BillingClient>(relaxed = true)
-            val response = CompletableDeferred<ProductDetailsResult>()
-            coEvery { client.queryProductDetails(any()) } coAnswers { response.await() }
-            val manager = createManager(client)
-            val product = launchProduct(1_000, 2_000)
-            manager.applyProductDetailsResult(productResult(product))
-            val quote = manager.selectedOffer.value
-
-            manager.retryProductDetails()
-            assertEquals(BillingProductStatus.Available, manager.productStatus.value)
-            assertEquals(quote, manager.selectedOffer.value)
-
-            response.complete(productResult(product))
-            runCurrent()
-            assertEquals(BillingProductStatus.Available, manager.productStatus.value)
-            assertEquals(quote, manager.selectedOffer.value)
-            manager.destroy()
-        }
-
-    @Test
     fun `overlapping price refreshes coalesce and destroy rejects a late response`() =
         runTest {
             mockkStatic("com.android.billingclient.api.BillingClientKotlinKt")

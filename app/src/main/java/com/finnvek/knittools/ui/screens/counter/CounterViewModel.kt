@@ -127,6 +127,7 @@ private data class PendingProjectReactivation(
 data class CounterUiState(
     val projectName: String = "",
     val counter: CounterState = CounterState(),
+    val canUndo: Boolean = false,
     val craftType: CraftType = CraftType.KNITTING,
     val mainCounterLabelType: MainCounterLabelType = MainCounterLabelType.ROWS,
     val mainCounterCustomLabel: String? = null,
@@ -552,6 +553,17 @@ class CounterViewModel
             selectedProjectJob?.cancel()
             selectedProjectJob =
                 viewModelScope.launch {
+                    launch {
+                        repository.observeCanUndo(projectId).collect { canUndo ->
+                            _uiState.update { state ->
+                                if (state.projectId == projectId && selectionVersion == projectSelectionVersion) {
+                                    state.copy(canUndo = canUndo)
+                                } else {
+                                    state
+                                }
+                            }
+                        }
+                    }
                     launch {
                         repository.observeHasSessionsForProject(projectId).collect { hasSessions ->
                             _uiState.update { state ->

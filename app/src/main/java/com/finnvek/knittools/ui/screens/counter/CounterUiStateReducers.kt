@@ -22,6 +22,7 @@ internal fun CounterUiState.withStartedProject(project: CounterProject): Counter
         projectName = project.name,
         // CPD-OFF: Ruudun paikallinen Compose-rakenne pidetaan vastuun yhteydessa.
         counter = CounterState(count = project.count, stepSize = project.stepSize),
+        canUndo = false,
         craftType = project.craftType,
         mainCounterLabelType = project.mainCounterLabelType,
         mainCounterCustomLabel = project.mainCounterCustomLabel,

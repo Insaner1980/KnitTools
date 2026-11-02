@@ -1,5 +1,6 @@
 package com.finnvek.knittools.data.backup
 
+import com.finnvek.knittools.data.local.KNITTOOLS_DATABASE_VERSION
 import kotlinx.serialization.encodeToString
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -20,7 +21,7 @@ class BackupArchiveTest {
 
     @Test fun roundTripChecksAllTablesAndFileBytes() {
         val (source, manifest) = fixture()
-        assertEquals(25, manifest.schemaVersion)
+        assertEquals(KNITTOOLS_DATABASE_VERSION, manifest.schemaVersion)
         assertEquals(1, manifest.formatVersion)
         assertEquals(1, manifest.dataVersion)
         val archive = temporary.newFile()
@@ -28,6 +29,16 @@ class BackupArchiveTest {
         val target = temporary.newFolder()
         assertEquals(manifest, BackupArchive.extract(archive, target))
         manifest.entries.forEach { assertEquals(it.sha256, BackupFormat.digest(File(target, it.path))) }
+    }
+
+    @Test fun schema25BackupRetainsEveryTableAndFileOnExtraction() {
+        val (source, current) = fixture()
+        val legacy = current.copy(schemaVersion = 25)
+        val archive = temporary.newFile()
+        BackupArchive.write(source, archive, legacy)
+        val target = temporary.newFolder()
+        assertEquals(legacy, BackupArchive.extract(archive, target))
+        legacy.entries.forEach { assertEquals(it.sha256, BackupFormat.digest(File(target, it.path))) }
     }
 
     @Test fun changedBytesAndHashAndSizeAreRejected() {
@@ -48,7 +59,7 @@ class BackupArchiveTest {
             manifest.copy(formatVersion = 2),
             manifest.copy(dataVersion = 2),
             manifest.copy(schemaVersion = 24),
-            manifest.copy(schemaVersion = 26),
+            manifest.copy(schemaVersion = KNITTOOLS_DATABASE_VERSION + 1),
         ).forEach {
             val error = rejected(source, it)
             assertEquals(BackupError.UNSUPPORTED, error.error)

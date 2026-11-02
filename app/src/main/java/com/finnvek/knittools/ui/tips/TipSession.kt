@@ -94,6 +94,8 @@ data class TipSessionState(
         context.copy(
             screenReady = context.screenReady && loaded && onboarding.initializedVersion > 0,
             isStarter = context.projectId != null && context.projectId == onboarding.starterProjectId,
+            onboardingPatternReady =
+                context.projectId != null && context.projectId == onboarding.guidedPatternProjectId,
             tipsSeen = seenTipsFor(context),
             shownThisProcess = shownThisProcess,
             firstUseEpochDay = onboarding.firstUseEpochDay,

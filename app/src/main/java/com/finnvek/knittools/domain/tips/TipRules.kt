@@ -56,9 +56,7 @@ object TipRules {
             TipId.WORK_SESSION.takeIf {
                 context.counterOpenDays >= WORK_SESSION_OPEN_DAYS && !context.hasSessions && !context.hasActiveSession
             },
-            TipId.PATTERN_TILE.takeIf {
-                context.counterOpenCount >= PATTERN_OPEN_COUNT && !context.hasDocuments && !context.hasWebPattern
-            },
+            TipId.PATTERN_TILE.takeIf { shouldShowPatternTip(context) },
             TipId.KEEP_SCREEN_ON.takeIf {
                 context.counterOpenCount >= KEEP_SCREEN_OPEN_COUNT && !context.keepScreenAwake
             },
@@ -77,6 +75,10 @@ object TipRules {
             },
         )
     }
+
+    private fun shouldShowPatternTip(context: TipContext): Boolean =
+        (context.onboardingPatternReady && context.hasDocuments) ||
+            (context.counterOpenCount >= PATTERN_OPEN_COUNT && !context.hasDocuments && !context.hasWebPattern)
 
     private fun countedManyTimes(context: TipContext): Boolean {
         if (context.incrementsInProject >= STEP_INCREMENT_THRESHOLD) return true

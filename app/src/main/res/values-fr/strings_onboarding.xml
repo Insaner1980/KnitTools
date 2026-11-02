@@ -466,4 +466,184 @@
     <string name="pro_price_unavailable_trial">Le prix d’achat est indisponible pour le moment. Vous pouvez tout de même commencer votre essai gratuit.</string>
     <!-- Hinta vaihtui; osto ei käynnisty ennen hinnan tarkistamista ja uutta napautusta. -->
     <string name="pro_price_changed_review">Le prix a changé. Vérifiez le prix actuel avant d’acheter.</string>
+    <!-- Aloituspolku: Kerroslasku ei enää mene sekaisin -->
+    <string name="journey_welcome_title">Ne perdez plus le compte</string>
+    <!-- Aloituspolku: KnitTools muistaa kerrokset, ohjeen kohdan ja langat. Sinä voit keskittyä käsityöhön. -->
+    <string name="journey_welcome_body">KnitTools garde en mémoire vos rangs, votre place dans le patron et votre fil. À vous le plaisir de créer.</string>
+    <!-- Aloituspolku: Aloitetaan -->
+    <string name="journey_begin">C\'est parti</string>
+    <!-- Aloituspolku: Ohita -->
+    <string name="journey_skip">Passer</string>
+    <!-- Eteneminen: %1$d on nykyinen vaihe, %2$d kaikkien vaiheiden määrä. -->
+    <string name="journey_progress">Étape %1$d sur %2$d</string>
+    <!-- Aloituspolku: Mikä käsitöissä harmittaa? -->
+    <string name="journey_needs_title">Qu\'est-ce qui vous complique la vie ?</string>
+    <!-- Aloituspolku: Valitse kaikki, jotka sopivat. -->
+    <string name="journey_needs_help">Choisissez tout ce qui vous parle.</string>
+    <!-- Aloituspolku: Kerroslasku menee sekaisin -->
+    <string name="journey_need_counting">Je perds le compte des rangs</string>
+    <!-- Aloituspolku: Ohjeen kohta hukkuu -->
+    <string name="journey_need_pattern">Je perds ma place dans le patron</string>
+    <!-- Aloituspolku: Tauon jälkeen paikka on hukassa -->
+    <string name="journey_need_returning">J\'oublie où je me suis arrêté après une pause</string>
+    <!-- Aloituspolku: Lanka loppuu kesken -->
+    <string name="journey_need_yarn">Je manque de fil pour terminer</string>
+    <!-- Aloituspolku: Keskeneräisiä töitä on monta -->
+    <string name="journey_need_projects">J\'ai plusieurs ouvrages en cours</string>
+    <!-- Aloituspolku: Neulotko vai virkkaatko? -->
+    <string name="journey_craft_question">Vous tricotez ou vous crochetez ?</string>
+    <!-- Aloituspolku: Neulon -->
+    <string name="journey_knit">Je tricote</string>
+    <!-- Aloituspolku: Virkkaan -->
+    <string name="journey_crochet">Je crochète</string>
+    <!-- Aloituspolku: Molempia -->
+    <string name="journey_both">Les deux</string>
+    <!-- Aloituspolku: Kokeile laskuria -->
+    <string name="journey_try_counter">Essayer le compteur</string>
+    <!-- Aloituspolku: Napauta, kun kerros on valmis -->
+    <string name="journey_counter_title">Un rang terminé ? Touchez pour compter</string>
+    <!-- Aloituspolku: Napauta, kun kierros on valmis -->
+    <string name="journey_counter_crochet_title">Un tour terminé ? Touchez pour compter</string>
+    <!-- Aloituspolku: Vähennä esimerkin lukemaa yhdellä -->
+    <string name="journey_demo_decrease">Diminuer le compteur d\'exemple d\'une unité</string>
+    <!-- Aloituspolku: Lisää esimerkin lukemaa yhdellä -->
+    <string name="journey_demo_increase">Augmenter le compteur d\'exemple d\'une unité</string>
+    <!-- Aloituspolku: Lukema tallentuu, vaikka sulkisit sovelluksen. -->
+    <string name="journey_demo_saved">Le compte est enregistré, même si vous fermez l\'application.</string>
+    <!-- Aloituspolku: Näytä lisää -->
+    <string name="journey_show_more">En voir plus</string>
+    <!-- Aloituspolku: Tiedät aina, missä menet -->
+    <string name="journey_benefits_title">Retrouvez toujours le fil</string>
+    <!-- Aloituspolku: Ohjeen kohta löytyy -->
+    <string name="journey_pattern_benefit">Gardez votre place dans le patron</string>
+    <!-- Aloituspolku: Lanka riittää loppuun asti -->
+    <string name="journey_yarn_benefit">Assez de fil jusqu\'au bout</string>
+    <!-- Aloituspolku: Tarve 600 m Kerässä 150 m / 50 g -->
+    <string name="journey_yarn_example">Besoin : 600 m\nPar pelote : 150 m / 50 g</string>
+    <!-- Aloituspolku: 4 kerää -->
+    <string name="journey_yarn_result">4 pelotes</string>
+    <!-- Aloituspolku: Yhteensä 200 g -->
+    <string name="journey_yarn_total">200 g au total</string>
+    <!-- Aloituspolku: Jokaisella työllä on oma paikkansa -->
+    <string name="journey_projects_benefit">Chaque ouvrage à sa place</string>
+    <!-- Aloituspolku: Pidä kunkin työn lukema, ohje ja tiedot yhdessä. Pron avulla voit pitää useita töitä kesken yhtä aikaa. -->
+    <string name="journey_projects_body">Regroupez compteur, patron et détails pour chaque ouvrage. Pro vous permet d\'en garder plusieurs en cours à la fois.</string>
+    <!-- Aloituspolku: 1. krs: kaikki oikein -->
+    <string name="journey_knit_row_one">Rang 1 : toutes les mailles à l\'endroit</string>
+    <!-- Aloituspolku: 2. krs: 2 o, 2 n, toista -->
+    <string name="journey_knit_row_two">Rang 2 : répéter 2 endroit, 2 envers</string>
+    <!-- Aloituspolku: 3. krs: kaikki oikein -->
+    <string name="journey_knit_row_three">Rang 3 : toutes les mailles à l\'endroit</string>
+    <!-- Virkkausesimerkin ensimmäinen kierros. Englanti käyttää eksplisiittisesti US-termejä; muut kielet paikallisia termejä. -->
+    <string name="journey_crochet_row_one">Tour 1 : mailles serrées</string>
+    <!-- Virkkausesimerkin toinen kierros: kaksi kiinteää silmukkaa, lisäys, toista. Englanti US-termein. -->
+    <string name="journey_crochet_row_two">Tour 2 : répéter 2 ms, 1 augmentation</string>
+    <!-- Virkkausesimerkin kolmas kierros. Englanti US-termein. -->
+    <string name="journey_crochet_row_three">Tour 3 : mailles serrées</string>
+    <!-- Aloituspolku: Aloitetaan oma projekti -->
+    <string name="journey_start_project">Ajoutons votre ouvrage</string>
+    <!-- Aloituspolku: Mitä neulot nyt? -->
+    <string name="journey_project_title">Que tricotez-vous en ce moment ?</string>
+    <!-- Aloituspolku: Mitä virkkaat nyt? -->
+    <string name="journey_project_crochet_title">Que crochetez-vous en ce moment ?</string>
+    <!-- Aloituspolku: Villasukat -->
+    <string name="journey_example_name">Chaussettes en laine</string>
+    <!-- Tyhjän nimikentän paikkamerkki. %1$s on paikallinen esimerkkinimi, ei tallennettava oletusarvo. -->
+    <string name="journey_name_placeholder">Ex. : %1$s</string>
+    <!-- Aloituspolku: Lisävalinnat -->
+    <string name="journey_options">Plus d\'options</string>
+    <!-- Aloituspolku: Liitä PDF-ohje (valinnainen) -->
+    <string name="journey_attach_pdf">Joindre un patron PDF (facultatif)</string>
+    <!-- Aloituspolku: Vaihda ohje -->
+    <string name="journey_change_pdf">Changer de patron</string>
+    <!-- Aloituspolku: Oman projektisi esikatselu -->
+    <string name="journey_preview">Aperçu de votre projet</string>
+    <!-- Aloituspolku: Luo projekti -->
+    <string name="journey_create_project">Créer le projet</string>
+    <!-- Vahvistetun tallennuksen henkilökohtainen rivi. %1$s on käyttäjän antama nimi. -->
+    <string name="journey_project_saved">Votre projet est enregistré : %1$s.</string>
+    <!-- Aloituspolku: Kokeile kaikkea 14 päivää ilmaiseksi -->
+    <string name="journey_trial_title">Essayez tout gratuitement pendant 14 jours</string>
+    <!-- Aloituspolku: Ei maksutapaa. Ei automaattista veloitusta. -->
+    <string name="journey_trial_terms">Aucun moyen de paiement requis. Aucun prélèvement automatique.</string>
+    <!-- Aloituspolku: Pro -->
+    <string name="journey_pro">Pro</string>
+    <!-- Aloituspolku: rajattomasti -->
+    <string name="journey_unlimited">illimités</string>
+    <!-- Aloituspolku: Sisältyy -->
+    <string name="journey_included">Inclus</string>
+    <!-- Aloituspolku: Ei sisälly -->
+    <string name="journey_not_included">Non inclus</string>
+    <!-- Aloituspolku: Laskuri ja PDF-ohjeet -->
+    <string name="journey_compare_counter_pdf">Compteur et patrons PDF</string>
+    <!-- Aloituspolku: Laskimet ja taulukot -->
+    <string name="journey_compare_tools">Calculateurs et tableaux</string>
+    <!-- Aloituspolku: Töitä kesken yhtä aikaa -->
+    <string name="journey_compare_projects">Projets en cours simultanément</string>
+    <!-- Aloituspolku: Lankakortit -->
+    <string name="journey_compare_yarn">Fiches de fil</string>
+    <!-- Aloituspolku: Lisälaskurit -->
+    <string name="journey_compare_counters">Compteurs supplémentaires</string>
+    <!-- Aloituspolku: Muistiinpanot ja kuvat -->
+    <string name="journey_compare_notes_photos">Notes et photos</string>
+    <!-- Aloituspolku: Widget ja tilastokaaviot -->
+    <string name="journey_compare_widgets_charts">Widget et graphiques statistiques</string>
+    <!-- Vertailun saavutettava arvo: %1$s on Ilmainen tai Pro, %2$s ominaisuuden saatavuus tai määrä. -->
+    <string name="journey_compare_value">%1$s : %2$s</string>
+    <!-- Aloituspolku: Näin kokeilu etenee -->
+    <string name="journey_timeline_title">Comment se déroule l\'essai</string>
+    <!-- Aloituspolku: Tänään -->
+    <string name="journey_today">Aujourd\'hui</string>
+    <!-- Aloituspolku: Kaikki Pro-toiminnot käytössäsi. -->
+    <string name="journey_today_body">Toutes les fonctions Pro sont à votre disposition.</string>
+    <!-- Aloituspolku: 3 päivää jäljellä -->
+    <string name="journey_three_days">Plus que 3 jours</string>
+    <!-- Aloituspolku: Näet muistutuksen sovelluksessa. -->
+    <string name="journey_three_days_body">Un rappel s\'affiche dans l\'application.</string>
+    <!-- Aloituspolku: Päivä 14 -->
+    <string name="journey_day_fourteen">Jour 14</string>
+    <!-- Aloituspolku: Kokeilu päättyy. Mitään ei veloiteta. -->
+    <string name="journey_day_fourteen_body">L\'essai se termine. Rien ne vous est facturé.</string>
+    <!-- Aloituspolku: Kaikki tekemäsi jää sinulle, myös kokeilun aikana aloitetut projektit. -->
+    <string name="journey_keep_content">Tout ce que vous avez créé reste disponible, y compris les projets commencés pendant l\'essai.</string>
+    <!-- Aloituspolku: Sen jälkeen jatkat ilmaisella versiolla tai ostat Pron kertamaksulla. -->
+    <string name="journey_after_trial">Continuez ensuite avec la version gratuite, ou achetez Pro en un seul paiement.</string>
+    <!-- Aloituspolku: Tai osta heti julkaisuhintaan -->
+    <string name="journey_buy_launch_title">Ou achetez dès maintenant au prix de lancement</string>
+    <!-- Aloituspolku: Tai osta Pro heti -->
+    <string name="journey_buy_title">Ou achetez Pro dès maintenant</string>
+    <!-- Kertaoston julkaisutarjous. %1$s on tarjouksen loppupäivä, %2$s vahvistettu tavallinen hinta. Kokeilu ei pidennä tarjousta. -->
+    <string name="journey_launch_terms">Prix de lancement jusqu\'au %1$s, même pendant l\'essai. Ensuite : %2$s.</string>
+    <!-- Aloituspolku: Maksat kerran. Ei tilausta, ei kuukausimaksuja. -->
+    <string name="journey_one_time">Un seul paiement. Aucun abonnement ni frais mensuels.</string>
+    <!-- Google Play -ostovahvistuksen avaava toiminto. %1$s on vahvistettu paikallinen hinta valuuttoineen. -->
+    <string name="journey_buy_price">Acheter à %1$s</string>
+    <!-- Aloituspolku: Aloita ilmainen kokeilu -->
+    <string name="journey_start_trial">Démarrer l\'essai gratuit</string>
+    <!-- Aloituspolku: Jatka ilmaisella versiolla -->
+    <string name="journey_continue_free">Continuer avec la version gratuite</string>
+    <!-- Aloituspolku: Jatka sovellukseen -->
+    <string name="journey_continue_app">Accéder à l\'application</string>
+    <!-- Aloituspolku: Jatka KnitToolsin käyttöä -->
+    <string name="journey_continue_title">Continuez avec KnitTools</string>
+    <!-- Aloituspolku: Tarkistetaan käyttöoikeutta… -->
+    <string name="journey_loading">Vérification de votre accès…</string>
+    <!-- Aloituspolku: Ilmainen kokeilu on jo käytetty. -->
+    <string name="journey_trial_used">Vous avez déjà utilisé votre essai gratuit.</string>
+    <!-- Aloituspolku: Kokeilua ei voi aloittaa tällä laitteella. -->
+    <string name="journey_trial_unavailable">L\'essai n\'est pas disponible sur cet appareil.</string>
+    <!-- Aloituspolku: Tallennus ei onnistunut. Yritä uudelleen. -->
+    <string name="journey_save_failed">L\'enregistrement a échoué. Réessayez.</string>
+    <!-- Aloituspolku: Tarkista projektin nimi, lukemat ja liitetty PDF. -->
+    <string name="journey_project_invalid">Vérifiez le nom du projet, les compteurs et le PDF joint.</string>
+    <!-- Aloituspolku: Ilmaisessa versiossa voi olla yksi keskeneräinen työ. Voit jatkaa nykyiseen työhösi. -->
+    <string name="journey_project_limit">La version gratuite permet un seul projet en cours. Vous pouvez continuer votre projet existant.</string>
+    <!-- Aloituspolku: PDF-ohjetta ei voitu tuoda. Aiempi liite säilyi. -->
+    <string name="journey_pdf_failed">L\'importation du PDF a échoué. La pièce jointe précédente est conservée.</string>
+    <!-- Aloituspolku: Luo ensimmäinen projekti -->
+    <string name="journey_first_project">Créer votre premier projet</string>
+    <!-- Aloituspolun jälkeen: ohjelaattaan ankkuroitu vihje vain luodulle projektille, johon käyttäjä liitti PDF-ohjeen. -->
+    <string name="journey_open_pattern_tip">Ouvrez ici le modèle que vous avez ajouté à ce projet.</string>
+    <!-- Vahvistetun Pro-oston jälkeen näytettävä kuittaus sovellukseen siirryttäessä. -->
+    <string name="journey_pro_active">Pro est activé.</string>
 </resources>

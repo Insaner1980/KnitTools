@@ -10,6 +10,11 @@ import kotlinx.coroutines.flow.flowOf
 open class StubCounterProjectDao(
     private val projects: List<CounterProjectEntity> = emptyList(),
 ) : CounterProjectDao {
+    override suspend fun findOnboardingProjectId(draftId: String): Long? = null
+
+    override suspend fun insertOnboardingProject(receipt: com.finnvek.knittools.data.local.OnboardingProjectEntity) =
+        Unit
+
     override suspend fun insertCompletion(event: ProjectCompletionEntity): Long = 0L
 
     override fun observeCompletions(projectId: Long?): Flow<List<ProjectCompletionEntity>> = flowOf(emptyList())

@@ -25,7 +25,14 @@ internal fun tipText(
             TipId.STEP_SIZE -> R.string.tip_step_size
             TipId.WORK_SESSION -> R.string.tip_work_session
             TipId.OVERVIEW_INTRO -> R.string.tip_overview_intro
-            TipId.PATTERN_TILE -> R.string.tip_pattern_tile
+            TipId.PATTERN_TILE ->
+                if (context.onboardingPatternReady &&
+                    context.hasDocuments
+                ) {
+                    R.string.journey_open_pattern_tip
+                } else {
+                    R.string.tip_pattern_tile
+                }
             TipId.READING_LINE -> R.string.tip_reading_line
             TipId.KEEP_SCREEN_ON -> R.string.tip_keep_screen_on
             TipId.TARGET_REACHED -> R.string.tip_target_reached

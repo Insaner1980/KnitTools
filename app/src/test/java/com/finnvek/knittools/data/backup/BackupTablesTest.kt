@@ -2,6 +2,7 @@ package com.finnvek.knittools.data.backup
 
 import androidx.sqlite.db.SupportSQLiteDatabase
 import androidx.sqlite.db.SupportSQLiteStatement
+import com.finnvek.knittools.data.local.KNITTOOLS_DATABASE_VERSION
 import com.finnvek.knittools.data.local.MAX_COMPLETED_SESSIONS
 import com.finnvek.knittools.domain.model.YARN_CARD_IDS_MAX_CHARACTERS
 import io.mockk.every
@@ -138,7 +139,7 @@ class BackupTablesTest {
 
     private fun database(): SupportSQLiteDatabase =
         mockk(relaxed = true) {
-            every { version } returns 25
+            every { version } returns KNITTOOLS_DATABASE_VERSION
             every { compileStatement(any()) } returns statement
             every { query(any<String>()) } answers {
                 when {
@@ -323,9 +324,9 @@ class BackupTablesTest {
 
     @Test fun unsupportedDatabaseAndBinaryValuesCannotBeExported() {
         val db = database()
-        every { db.version } returns 26
+        every { db.version } returns KNITTOOLS_DATABASE_VERSION + 1
         assertThrows(BackupException::class.java) { BackupTables.export(db, temporary.newFolder(), { _, _ -> }) {} }
-        every { db.version } returns 25
+        every { db.version } returns KNITTOOLS_DATABASE_VERSION
         every { db.query(match<String> { it.startsWith("SELECT *") }) } answers {
             backupCursor(listOf(listOf(byteArrayOf(1)))).also {
                 every { it.getColumnIndexOrThrow(any()) } returns 0

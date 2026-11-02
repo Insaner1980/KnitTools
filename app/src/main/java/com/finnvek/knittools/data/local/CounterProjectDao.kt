@@ -9,6 +9,12 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface CounterProjectDao {
+    @Query("SELECT projectId FROM onboarding_projects WHERE draftId = :draftId")
+    suspend fun findOnboardingProjectId(draftId: String): Long?
+
+    @Insert
+    suspend fun insertOnboardingProject(receipt: OnboardingProjectEntity)
+
     @Insert
     suspend fun insertCompletion(event: ProjectCompletionEntity): Long
 

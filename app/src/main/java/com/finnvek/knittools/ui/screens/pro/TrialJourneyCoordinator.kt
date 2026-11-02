@@ -12,8 +12,11 @@ class TrialJourneyCoordinator
     constructor() {
         private val _pending = MutableStateFlow(false)
         val pending = _pending.asStateFlow()
+        private val _fromOnboarding = MutableStateFlow(false)
+        val fromOnboarding = _fromOnboarding.asStateFlow()
 
-        fun requestStartedJourney() {
+        fun requestStartedJourney(fromOnboarding: Boolean = false) {
+            _fromOnboarding.value = fromOnboarding
             _pending.value = true
         }
 

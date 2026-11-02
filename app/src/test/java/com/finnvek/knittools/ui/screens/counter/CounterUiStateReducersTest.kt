@@ -46,7 +46,7 @@ class CounterUiStateReducersTest {
     @Test
     fun `started project copies target rows immediately`() {
         val result =
-            CounterUiState(targetRows = 12).withStartedProject(
+            CounterUiState(targetRows = 12, canUndo = true).withStartedProject(
                 CounterProject(
                     id = 2L,
                     name = "Sukat",
@@ -60,6 +60,7 @@ class CounterUiStateReducersTest {
         assertEquals(40, result.targetRows)
         assertEquals(60, result.totalRows)
         assertEquals(CounterState(count = 8, stepSize = 2), result.counter)
+        assertFalse(result.canUndo)
         assertNull(result.activeAlert)
     }
 
@@ -93,6 +94,7 @@ class CounterUiStateReducersTest {
 
         assertEquals(state.toCounterHeroState(), nextSecond.toCounterHeroState())
         assertNotEquals(state.toCounterHeroState(), nextRow.toCounterHeroState())
+        assertNotEquals(state.toCounterHeroState(), state.copy(canUndo = true).toCounterHeroState())
     }
 
     @Test

@@ -45,6 +45,7 @@ fun ContinueProjectCard(
     onOpenCounter: (() -> Unit)?,
     modifier: Modifier = Modifier,
     showName: Boolean = true,
+    enabled: Boolean = true,
 ) {
     val display = CounterValueFormatter.forMainCounter(project)
     val targetStatus = mainCounterTargetStatus(display.targetLine)
@@ -54,7 +55,13 @@ fun ContinueProjectCard(
     Card(
         modifier =
             modifier.fillMaxWidth().then(
-                if (onClick != null) Modifier.clickable(onClickLabel = onClickLabel, onClick = onClick) else Modifier,
+                if (onClick !=
+                    null
+                ) {
+                    Modifier.clickable(enabled = enabled, onClickLabel = onClickLabel, onClick = onClick)
+                } else {
+                    Modifier
+                },
             ),
         shape = MaterialTheme.shapes.large,
         colors =
@@ -123,6 +130,7 @@ fun ContinueProjectCard(
                     contentDescription = stringResource(R.string.project_continue_content_description, project.name),
                     visualSize = ProjectListDimens.HeroActionVisualSize,
                     onClick = it,
+                    enabled = enabled,
                     modifier = Modifier.size(ProjectListDimens.HeroActionTouchSize),
                 )
             }

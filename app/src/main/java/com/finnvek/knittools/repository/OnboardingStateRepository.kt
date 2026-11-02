@@ -13,6 +13,7 @@ import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.finnvek.knittools.data.datastore.editPreferencesSafely
 import com.finnvek.knittools.data.datastore.safePreferencesData
+import com.finnvek.knittools.domain.model.OnboardingDraft
 import com.finnvek.knittools.domain.tips.BASIC_TIPS
 import com.finnvek.knittools.domain.tips.TipId
 import com.finnvek.knittools.domain.tips.TipRules
@@ -20,6 +21,9 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
+import kotlinx.serialization.SerializationException
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -34,6 +38,7 @@ data class OnboardingState(
     val initializedVersion: Int = 0,
     val welcomeDismissed: Boolean = false,
     val starterProjectId: Long? = null,
+    val guidedPatternProjectId: Long? = null,
     val projectSetupHidden: Boolean = false,
     val projectSetupCelebrated: Boolean = false,
     val tipsSeen: Set<TipId> = emptySet(),
@@ -59,6 +64,31 @@ class OnboardingStateRepository internal constructor(
         @ApplicationContext context: Context,
     ) : this(context.onboardingDataStore)
 
+    val draft: Flow<OnboardingDraft?> =
+        dataStore.data
+            .map { prefs ->
+                prefs[KEY_JOURNEY_DRAFT]?.let {
+                    try {
+                        draftJson.decodeFromString<OnboardingDraft>(it)
+                    } catch (_: SerializationException) {
+                        null
+                    }
+                }
+            }.distinctUntilChanged()
+
+    suspend fun saveDraft(draft: OnboardingDraft): Boolean =
+        dataStore.editPreferencesSafely { prefs ->
+            prefs[KEY_JOURNEY_DRAFT] = draftJson.encodeToString(draft)
+            if (draft.projectId != null) prefs[KEY_STARTER_PROJECT_ID] = draft.projectId
+            if (draft.completed) {
+                prefs[KEY_WELCOME_DISMISSED] = true
+                if (draft.projectId != null) {
+                    prefs[KEY_TIPS_SEEN] = prefs[KEY_TIPS_SEEN].orEmpty() + setOf(TipId.FIRST_ROW.key, TipId.UNDO.key)
+                    if (draft.pdfUri != null) prefs[KEY_GUIDED_PATTERN_PROJECT_ID] = draft.projectId
+                }
+            }
+        }
+
     val state: Flow<OnboardingState> =
         dataStore.safePreferencesData
             .map { prefs ->
@@ -66,6 +96,7 @@ class OnboardingStateRepository internal constructor(
                     initializedVersion = prefs[KEY_INITIALIZED_VERSION] ?: 0,
                     welcomeDismissed = prefs[KEY_WELCOME_DISMISSED] ?: false,
                     starterProjectId = prefs[KEY_STARTER_PROJECT_ID],
+                    guidedPatternProjectId = prefs[KEY_GUIDED_PATTERN_PROJECT_ID],
                     projectSetupHidden = prefs[KEY_PROJECT_SETUP_HIDDEN] ?: false,
                     projectSetupCelebrated = prefs[KEY_PROJECT_SETUP_CELEBRATED] ?: false,
                     tipsSeen = TipId.entries.filterTo(mutableSetOf()) { it.key in prefs[KEY_TIPS_SEEN].orEmpty() },
@@ -197,10 +228,13 @@ class OnboardingStateRepository internal constructor(
     }
 
     private companion object {
+        val draftJson = Json { ignoreUnknownKeys = true }
+        val KEY_JOURNEY_DRAFT = stringPreferencesKey("journey_draft_v1")
         const val MAX_TARGET_CELEBRATIONS = 200
         val KEY_INITIALIZED_VERSION = intPreferencesKey("initialized_version")
         val KEY_WELCOME_DISMISSED = booleanPreferencesKey("welcome_dismissed")
         val KEY_STARTER_PROJECT_ID = longPreferencesKey("starter_project_id")
+        val KEY_GUIDED_PATTERN_PROJECT_ID = longPreferencesKey("guided_pattern_project_id")
         val KEY_PROJECT_SETUP_HIDDEN = booleanPreferencesKey("project_setup_hidden")
         val KEY_PROJECT_SETUP_CELEBRATED = booleanPreferencesKey("project_setup_celebrated")
         val KEY_TIPS_SEEN = stringSetPreferencesKey("tips_seen")

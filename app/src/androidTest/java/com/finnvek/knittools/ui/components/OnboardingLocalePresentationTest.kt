@@ -1,6 +1,5 @@
 package com.finnvek.knittools.ui.components
 
-import android.content.res.Configuration
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
@@ -24,6 +23,7 @@ import com.finnvek.knittools.domain.model.MainCounterLabelType
 import com.finnvek.knittools.pro.ProState
 import com.finnvek.knittools.pro.ProStatus
 import com.finnvek.knittools.repository.OnboardingState
+import com.finnvek.knittools.ui.localizedTestContext
 import com.finnvek.knittools.ui.screens.counter.CounterUiState
 import com.finnvek.knittools.ui.screens.project.ProjectSetupActions
 import com.finnvek.knittools.ui.screens.project.ProjectSetupSection
@@ -43,16 +43,8 @@ class OnboardingLocalePresentationTest(
     private val language: String,
 ) {
     @get:Rule val compose = createComposeRule()
-    private val configuration =
-        Configuration(
-            InstrumentationRegistry
-                .getInstrumentation()
-                .targetContext.resources.configuration,
-        ).apply { setLocale(Locale.forLanguageTag(language)) }
-    private val context =
-        InstrumentationRegistry.getInstrumentation().targetContext.createConfigurationContext(
-            configuration,
-        )
+    private val context = InstrumentationRegistry.getInstrumentation().targetContext.localizedTestContext(language)
+    private val configuration = context.resources.configuration
     private val currency =
         when (language) {
             "pt" -> "BRL"

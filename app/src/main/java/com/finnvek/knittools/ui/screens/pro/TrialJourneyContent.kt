@@ -30,6 +30,7 @@ fun TrialJourneyContent(
     craft: CraftType,
     onAction: (TrialJourneyAction) -> Unit,
     modifier: Modifier = Modifier,
+    firstProject: Boolean = false,
 ) {
     if (steps.isEmpty()) return
     Column(modifier, verticalArrangement = Arrangement.spacedBy(ComponentDimens.ContentSpacing)) {
@@ -44,7 +45,14 @@ fun TrialJourneyContent(
         Column {
             steps.forEach { step ->
                 OverviewLinkRow(
-                    title = stringResource(step.action.titleResource()),
+                    title =
+                        stringResource(
+                            if (firstProject && step.action == TrialJourneyAction.AnotherProject) {
+                                R.string.journey_first_project
+                            } else {
+                                step.action.titleResource()
+                            },
+                        ),
                     subtitle = null,
                     glyph = null,
                     done = step.done,
@@ -63,6 +71,7 @@ fun TrialJourneySheet(
     craft: CraftType,
     onAction: (TrialJourneyAction) -> Unit,
     onDismiss: () -> Unit,
+    firstProject: Boolean = false,
 ) {
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -75,6 +84,7 @@ fun TrialJourneySheet(
             TrialJourneyContent(
                 steps = steps,
                 craft = craft,
+                firstProject = firstProject,
                 onAction = {
                     onDismiss()
                     onAction(it)

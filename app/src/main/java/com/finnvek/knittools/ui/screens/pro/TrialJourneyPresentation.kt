@@ -22,6 +22,7 @@ data class TrialJourneyPresentation(
     val ready: Boolean = false,
     val facts: TrialJourneyFacts? = null,
     val pending: Boolean = false,
+    val fromOnboarding: Boolean = false,
 )
 
 @Composable

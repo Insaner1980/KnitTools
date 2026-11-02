@@ -7,6 +7,8 @@ import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.PreferencesSerializer
 import androidx.datastore.preferences.core.emptyPreferences
+import androidx.datastore.preferences.core.preferencesOf
+import androidx.datastore.preferences.core.stringPreferencesKey
 import com.finnvek.knittools.domain.tips.BASIC_TIPS
 import com.finnvek.knittools.domain.tips.TipId
 import kotlinx.coroutines.CancellationException
@@ -18,6 +20,7 @@ import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.runBlocking
 import okio.FileSystem
 import okio.Path.Companion.toPath
@@ -37,6 +40,65 @@ import java.time.LocalDate
 import java.time.ZoneId
 
 class OnboardingStateRepositoryTest {
+    @Test
+    fun `unknown draft fields remain readable and invalid drafts are absent`() =
+        runBlocking {
+            val key = stringPreferencesKey("journey_draft_v1")
+            val values =
+                listOf(
+                    """{"id":"saved","futureField":true}""" to "saved",
+                    """{"id":"saved","step":"RemovedStep"}""" to null,
+                    "{broken" to null,
+                    "{}" to null,
+                )
+            values.forEach { (json, expectedId) ->
+                val dataStore =
+                    object : DataStore<Preferences> {
+                        override val data = flowOf(preferencesOf(key to json))
+
+                        override suspend fun updateData(transform: suspend (Preferences) -> Preferences): Preferences =
+                            transform(data.first())
+                    }
+                assertEquals(expectedId, OnboardingStateRepository(dataStore).draft.first()?.id)
+            }
+        }
+
+    @Test
+    fun `journey completion stores the draft destination and tip suppression together`() =
+        runBlocking {
+            val repository = repository()
+            val draft =
+                com.finnvek.knittools.domain.model.OnboardingDraft(
+                    "stable",
+                    name = "My socks",
+                    projectId = 7L,
+                    pdfUri = "file:///example.pdf",
+                    completed = true,
+                    exitPending = true,
+                )
+            assertTrue(repository.saveDraft(draft))
+            assertEquals(draft, repository.draft.first())
+            val state = repository.state.first()
+            assertTrue(state.welcomeDismissed)
+            assertEquals(7L, state.starterProjectId)
+            assertEquals(7L, state.guidedPatternProjectId)
+            assertTrue(state.tipsSeen.containsAll(setOf(TipId.FIRST_ROW, TipId.UNDO)))
+            assertFalse(TipId.PATTERN_TILE in state.tipsSeen)
+        }
+
+    @Test
+    fun `failed draft persistence is reported and draft reads do not hide IO failure`() =
+        runBlocking {
+            val repository = OnboardingStateRepository(failingStore(IOException("unavailable")))
+            assertFalse(
+                repository.saveDraft(
+                    com.finnvek.knittools.domain.model
+                        .OnboardingDraft("stable"),
+                ),
+            )
+            assertTrue(runCatching { repository.draft.first() }.exceptionOrNull() is IOException)
+        }
+
     @get:Rule
     val temporaryFolder = TemporaryFolder()
 

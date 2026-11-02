@@ -69,6 +69,9 @@ class BillingManager
         private val _purchaseFlowInFlight = MutableStateFlow(false)
         val purchaseFlowInFlight: StateFlow<Boolean> = _purchaseFlowInFlight.asStateFlow()
 
+        private val _purchasePending = MutableStateFlow(false)
+        val purchasePending: StateFlow<Boolean> = _purchasePending.asStateFlow()
+
         private var billingClient: BillingClient? = null
         private var purchaseQueryGeneration = 0L
         private var productQueryGeneration = 0L
@@ -149,6 +152,10 @@ class BillingManager
 
         fun launchPurchaseFlow(activity: Activity) {
             if (_purchaseFlowInFlight.value) return
+            if (_purchasePending.value) {
+                emitPurchaseMessage(BillingUserMessage.PURCHASE_PENDING)
+                return
+            }
             if (productQueryJob?.isActive == true) {
                 emitPurchaseMessage(BillingUserMessage.PRICE_REFRESHING)
                 return
@@ -165,18 +172,12 @@ class BillingManager
                 emitPurchaseMessage(BillingUserMessage.PRICE_CHANGED_REVIEW)
                 return
             }
-            val details =
-                _productDetails.value
-                    ?: run {
-                        emitPurchaseMessage(productUnavailableMessage())
-                        return
-                    }
-            val offer =
-                _selectedOffer.value
-                    ?: run {
-                        emitPurchaseMessage(productUnavailableMessage())
-                        return
-                    }
+            val details = _productDetails.value
+            val offer = _selectedOffer.value
+            if (details == null || offer == null) {
+                emitPurchaseMessage(productUnavailableMessage())
+                return
+            }
 
             val productDetailsParams =
                 BillingFlowParams.ProductDetailsParams
@@ -217,6 +218,7 @@ class BillingManager
                     return
                 }
             val generation = ++productQueryGeneration
+            if (_purchasePending.value) scope.launch { queryPurchases() }
             if (_selectedOffer.value == null) _productStatus.value = BillingProductStatus.Loading
             productQueryJob = scope.launch(start = CoroutineStart.LAZY) { queryProductDetails(client, generation) }
             productQueryJob?.start()
@@ -251,6 +253,7 @@ class BillingManager
                         if (purchase.products.contains(PRODUCT_ID)) {
                             when (purchase.purchaseState) {
                                 Purchase.PurchaseState.PURCHASED -> {
+                                    _purchasePending.value = false
                                     purchaseQueryGeneration++
                                     _isProPurchased.value = true
                                     _purchaseStateReady.value = true
@@ -259,6 +262,8 @@ class BillingManager
                                 }
 
                                 Purchase.PurchaseState.PENDING -> {
+                                    purchaseQueryGeneration++
+                                    _purchasePending.value = true
                                     emitPurchaseMessage(BillingUserMessage.PURCHASE_PENDING)
                                 }
 
@@ -279,6 +284,7 @@ class BillingManager
         }
 
         fun destroy() {
+            _purchasePending.value = false
             resetProductDetails()
             priceNeedsReview = false
             scope.coroutineContext.cancelChildren()
@@ -357,6 +363,10 @@ class BillingManager
                         it.purchaseState == Purchase.PurchaseState.PURCHASED
                 }
             _isProPurchased.value = proPurchases.isNotEmpty()
+            _purchasePending.value =
+                result.purchasesList.any {
+                    PRODUCT_ID in it.products && it.purchaseState == Purchase.PurchaseState.PENDING
+                }
             _purchaseStateReady.value = true
             _purchaseQueryFailed.value = false
             proPurchases.filter { !it.isAcknowledged }.forEach { acknowledgePurchase(it) }

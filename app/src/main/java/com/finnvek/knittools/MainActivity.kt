@@ -191,7 +191,9 @@ class MainActivity : AppCompatActivity() {
         showTrialEndedNotice = savedInstanceState?.getBoolean(STATE_TRIAL_ENDED_NOTICE_PENDING) == true
         showTrialThreeDayNotice = savedInstanceState?.getBoolean(STATE_TRIAL_THREE_DAY_NOTICE_PENDING) == true
         if (savedInstanceState?.getBoolean(STATE_TRIAL_JOURNEY_PENDING) == true) {
-            trialJourneyCoordinator.requestStartedJourney()
+            trialJourneyCoordinator.requestStartedJourney(
+                fromOnboarding = savedInstanceState.getBoolean(STATE_TRIAL_JOURNEY_ONBOARDING),
+            )
         }
         suppressPassiveTrialNotice = savedInstanceState?.getBoolean(STATE_SUPPRESS_PASSIVE_TRIAL_NOTICE) == true
         splashScreen.setKeepOnScreenCondition { !startupThemeLoaded }
@@ -247,6 +249,7 @@ class MainActivity : AppCompatActivity() {
         val trialFacts by trialJourneyStateRepository.state.collectAsStateWithLifecycle()
         val currentTrialFacts = trialFacts?.takeIf { it.trialStartTimestamp == proState.trialStartTimestamp }
         val trialJourneyPending by trialJourneyCoordinator.pending.collectAsStateWithLifecycle()
+        val trialJourneyFromOnboarding by trialJourneyCoordinator.fromOnboarding.collectAsStateWithLifecycle()
         val lifecycleState by lifecycle.currentStateFlow.collectAsState()
         val patternShareImportRequest by patternShareCoordinator.pending.collectAsStateWithLifecycle()
         val incomingPdf by incomingPdfViewModel.pending.collectAsStateWithLifecycle()
@@ -262,6 +265,7 @@ class MainActivity : AppCompatActivity() {
         val selectedOffer by billingManager.selectedOffer.collectAsStateWithLifecycle()
         val productStatus by billingManager.productStatus.collectAsStateWithLifecycle()
         var destinationReady by remember { mutableStateOf(false) }
+        var onboardingVisible by remember { mutableStateOf(true) }
         var pdfSurfaceReady by remember { mutableStateOf(false) }
         val startupReady =
             storedAppLanguageApplied &&
@@ -300,6 +304,7 @@ class MainActivity : AppCompatActivity() {
 
         val tipsBlocked =
             listOf(
+                onboardingVisible,
                 !launchRequestsReady,
                 !startupSplashRemoved,
                 !trialNoticeResolved,
@@ -325,6 +330,7 @@ class MainActivity : AppCompatActivity() {
                     val noticeDataReady = proStateReady && currentTrialFacts != null
                     val noticeSurfaceReady =
                         listOf(
+                            !onboardingVisible,
                             launchRequestsReady,
                             startupSplashRemoved,
                             !suppressPassiveTrialNotice,
@@ -385,6 +391,9 @@ class MainActivity : AppCompatActivity() {
                                 .testTag(if (startupReady) "startup_ready" else "startup_loading"),
                     ) {
                         KnitToolsNavHost(
+                            launchRequestsReady = launchRequestsReady,
+                            externalEntryActive = incomingPdf != null || receivingPdf,
+                            onOnboardingVisible = { onboardingVisible = it },
                             onStartupReady = { destinationReady = it },
                             startupGatesReady = controlsReady,
                             onScreenViewed = analytics::screenViewed,
@@ -404,6 +413,7 @@ class MainActivity : AppCompatActivity() {
                                     ready = proStateReady,
                                     facts = currentTrialFacts,
                                     pending = trialJourneyPending,
+                                    fromOnboarding = trialJourneyFromOnboarding,
                                 ),
                             incomingPdfHost = { onNavigate ->
                                 IncomingPdfHost(
@@ -542,6 +552,7 @@ class MainActivity : AppCompatActivity() {
         outState.putBoolean(STATE_TRIAL_ENDED_NOTICE_PENDING, showTrialEndedNotice)
         outState.putBoolean(STATE_TRIAL_THREE_DAY_NOTICE_PENDING, showTrialThreeDayNotice)
         outState.putBoolean(STATE_TRIAL_JOURNEY_PENDING, trialJourneyCoordinator.pending.value)
+        outState.putBoolean(STATE_TRIAL_JOURNEY_ONBOARDING, trialJourneyCoordinator.fromOnboarding.value)
         outState.putBoolean(STATE_SUPPRESS_PASSIVE_TRIAL_NOTICE, suppressPassiveTrialNotice)
         outState.putBoolean(STATE_PATTERN_SHARE_INTENT_CONSUMED, consumedPatternShareIntent)
         consumedCounterLaunchRequestId?.let {
@@ -664,6 +675,7 @@ class MainActivity : AppCompatActivity() {
         private const val STATE_TRIAL_ENDED_NOTICE_PENDING = "trial_ended_notice_pending"
         private const val STATE_TRIAL_THREE_DAY_NOTICE_PENDING = "trial_three_day_notice_pending"
         private const val STATE_TRIAL_JOURNEY_PENDING = "trial_journey_pending"
+        private const val STATE_TRIAL_JOURNEY_ONBOARDING = "trial_journey_onboarding"
         private const val STATE_SUPPRESS_PASSIVE_TRIAL_NOTICE = "suppress_passive_trial_notice"
         private const val STATE_PATTERN_SHARE_INTENT_CONSUMED = "pattern_share_intent_consumed"
         private const val EXTRA_OPEN_COUNTER = "com.finnvek.knittools.extra.OPEN_COUNTER"

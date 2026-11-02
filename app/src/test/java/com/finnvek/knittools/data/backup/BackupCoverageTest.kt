@@ -5,14 +5,14 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertThrows
 import org.junit.Test
 import java.io.File
 
 class BackupCoverageTest {
-    @Test fun formatCoversEveryCurrentRoomTable() {
-        assertEquals(25, KNITTOOLS_DATABASE_VERSION)
-        val schema = File("schemas/com.finnvek.knittools.data.local.KnitToolsDatabase/25.json")
+    @Test fun formatCoversEveryDurableRoomTable() {
+        val schema = File("schemas/com.finnvek.knittools.data.local.KnitToolsDatabase/$KNITTOOLS_DATABASE_VERSION.json")
         val root =
             BackupFormat.json
                 .parseToJsonElement(schema.readText())
@@ -28,7 +28,10 @@ class BackupCoverageTest {
                         .getValue("tableName")
                         .jsonPrimitive.content
                 }.toSet()
-        assertEquals(tables, BackupFormat.tables.toSet())
+        // Draft receipts belong to the installation-local onboarding state, not backed-up project content.
+        assertEquals(setOf("onboarding_projects"), tables - BackupFormat.tables.toSet())
+        assertEquals(tables - "onboarding_projects", BackupFormat.tables.toSet())
+        assertFalse(BackupFormat.allowedPath("tables/onboarding_projects.jsonl"))
     }
 
     @Test fun deeplyNestedInputIsRejectedBeforeDeserialization() {

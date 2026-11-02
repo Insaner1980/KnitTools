@@ -153,6 +153,15 @@ class CounterRepository
                 }.retryOnRepositoryReadFailure()
                 .flowOn(ioDispatcher)
 
+        fun observeCanUndo(projectId: Long): Flow<Boolean> =
+            dao
+                .observeProject(projectId)
+                .map { project ->
+                    project != null &&
+                        dao.getLatestHistory(projectId)?.isReversibleFor(projectId, project.count) == true
+                }.retryOnRepositoryReadFailure()
+                .flowOn(ioDispatcher)
+
         fun observeCompletions(projectId: Long? = null): Flow<List<ProjectCompletion>> =
             dao
                 .observeCompletions(projectId)
@@ -213,6 +222,63 @@ class CounterRepository
                 .observeProject(id)
                 .map { it?.toDomain() }
                 .retryOnRepositoryReadFailure()
+
+        suspend fun findOnboardingProject(draftId: String): Long? = dao.findOnboardingProjectId(draftId)
+
+        suspend fun createOnboardingProject(
+            draft: com.finnvek.knittools.domain.model.OnboardingDraft,
+            canCreateAdditionalProjects: Boolean,
+        ): ProjectCreationResult =
+            withContext(ioDispatcher) {
+                fileReferenceCoordinator.withReferenceLock {
+                    dao.findOnboardingProjectId(draft.id)?.let {
+                        return@withReferenceLock ProjectCreationResult.Created(it)
+                    }
+                    val count =
+                        draft.initialCount.ifBlank { "0" }.toIntOrNull()
+                            ?: return@withReferenceLock ProjectCreationResult.InvalidProject
+                    val target = draft.targetRows.takeIf { it.isNotBlank() }?.toIntOrNull()
+                    if (draft.id.isBlank() || draft.targetRows.isNotBlank() && target == null) {
+                        return@withReferenceLock ProjectCreationResult.InvalidProject
+                    }
+                    val pdfUri = draft.pdfUri
+                    val pdfName = draft.pdfName.orEmpty()
+                    if (pdfUri != null && projectDocumentRepository.preflightImportedPdf(pdfUri, pdfName) != null) {
+                        return@withReferenceLock ProjectCreationResult.InvalidProject
+                    }
+                    transactionRunner.run {
+                        dao.findOnboardingProjectId(draft.id)?.let { return@run ProjectCreationResult.Created(it) }
+                        val result =
+                            insertProjectInCurrentTransaction(
+                                name = draft.name,
+                                craftType = draft.craftType,
+                                mainCounterLabelType = draft.craftType.defaultMainCounterLabelType(),
+                                mainCounterCustomLabel = null,
+                                canCreateAdditionalProjects = canCreateAdditionalProjects,
+                                targetFolderId = null,
+                                startValues = ProjectStartValues(count, target),
+                            )
+                        if (result !is ProjectCreationResult.Created) return@run result
+                        pdfUri?.let { uri ->
+                            val added =
+                                projectDocumentRepository.addImportedPdfInCurrentTransaction(
+                                    result.projectId,
+                                    uri,
+                                    pdfName,
+                                )
+                            check(
+                                added is ProjectDocumentMutationResult.Added,
+                            ) { "Onboarding PDF attachment failed" }
+                            linkPrimaryDocumentPatternInTransaction(result.projectId, null, added)
+                        }
+                        dao.insertOnboardingProject(
+                            com.finnvek.knittools.data.local
+                                .OnboardingProjectEntity(draft.id, result.projectId),
+                        )
+                        result
+                    }
+                }
+            }
 
         suspend fun createProject(
             name: String,

@@ -27,15 +27,18 @@ data class TrialJourneyFacts(
     val chartSeen: Boolean,
     val photoPdfCreated: Boolean,
 ) {
-    fun steps(widgetInstalled: Boolean): List<TrialJourneyStep> =
+    fun steps(
+        widgetInstalled: Boolean,
+        fromOnboarding: Boolean = false,
+    ): List<TrialJourneyStep> =
         buildList {
             if (latestActiveProject != null) {
                 add(TrialJourneyStep(TrialJourneyAction.Widget, widgetInstalled))
                 add(TrialJourneyStep(TrialJourneyAction.RepeatCounter, repeatCounterAdded))
             }
             add(TrialJourneyStep(TrialJourneyAction.AnotherProject, projectsAdded > 0))
-            add(TrialJourneyStep(TrialJourneyAction.WeeklyChart, chartSeen))
-            if (latestActiveProject != null) {
+            if (!fromOnboarding) add(TrialJourneyStep(TrialJourneyAction.WeeklyChart, chartSeen))
+            if (latestActiveProject != null && !fromOnboarding) {
                 add(TrialJourneyStep(TrialJourneyAction.PatternCamera, photoPdfCreated))
             }
         }

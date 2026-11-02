@@ -2,6 +2,7 @@ package com.finnvek.knittools.data.storage
 
 import android.content.ContentResolver
 import android.content.Context
+import android.database.Cursor
 import android.net.Uri
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -36,6 +37,18 @@ class OnboardingPdfStorageTest {
     }
 
     @After fun teardown() = unmockkStatic(Uri::class)
+
+    @Test fun `provider name is used for copying and trimmed for the label while closing the cursor`() =
+        runTest {
+            val cursor = mockk<Cursor>(relaxed = true)
+            every { resolver.query(uri, any(), null, null, null) } returns cursor
+            every { cursor.moveToFirst() } returns true
+            every { cursor.getString(0) } returns "  Scarf.pdf  "
+            coEvery { documents.copyPdfToInternal(context, 0L, uri, "  Scarf.pdf  ") } returns "file:///copy.pdf"
+            val storage = OnboardingPdfStorage(context, documents, StandardTestDispatcher(testScheduler))
+            assertEquals("file:///copy.pdf" to "Scarf.pdf", storage.copy("content://provider/pattern"))
+            verify(exactly = 1) { cursor.close() }
+        }
 
     @Test fun `temporary read grant allows a copy when persistence is denied`() =
         runTest {

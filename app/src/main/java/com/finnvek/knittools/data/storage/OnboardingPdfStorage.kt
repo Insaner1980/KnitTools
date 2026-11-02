@@ -2,6 +2,7 @@ package com.finnvek.knittools.data.storage
 
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.provider.OpenableColumns
 import androidx.core.net.toUri
 import com.finnvek.knittools.di.IoDispatcher
@@ -34,12 +35,7 @@ class OnboardingPdfStorage
                     } catch (_: SecurityException) {
                         // A temporary read grant is sufficient for the immediate app-owned copy.
                     }
-                    val name =
-                        resolver
-                            .query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)
-                            ?.use {
-                                if (it.moveToFirst()) it.getString(0) else null
-                            }?.takeIf { it.isNotBlank() } ?: "pattern.pdf"
+                    val name = readDisplayName(uri)
                     val copied = documents.copyPdfToInternal(context, 0L, uri, name) ?: return@withContext null
                     copied to name.trim().takeWithoutSplittingSurrogatePair(PROJECT_DOCUMENT_LABEL_MAX_LENGTH)
                 } catch (cancelled: CancellationException) {
@@ -56,4 +52,11 @@ class OnboardingPdfStorage
                     }
                 }
             }
+
+        private fun readDisplayName(uri: Uri): String =
+            context.contentResolver
+                .query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)
+                ?.use {
+                    if (it.moveToFirst()) it.getString(0) else null
+                }?.takeIf { it.isNotBlank() } ?: "pattern.pdf"
     }

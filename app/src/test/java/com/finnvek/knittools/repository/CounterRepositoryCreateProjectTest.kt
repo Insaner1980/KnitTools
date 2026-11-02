@@ -11,6 +11,8 @@ import com.finnvek.knittools.domain.calculator.MAX_PROJECT_START_COUNT
 import com.finnvek.knittools.domain.calculator.MAX_TARGET_ROWS
 import com.finnvek.knittools.domain.calculator.ProjectStartValues
 import com.finnvek.knittools.domain.model.MainCounterChange
+import com.finnvek.knittools.domain.model.OnboardingDraft
+import com.finnvek.knittools.domain.model.ProjectDocument
 import com.finnvek.knittools.pro.ProFeature
 import com.finnvek.knittools.pro.ProManager
 import io.mockk.Called
@@ -29,6 +31,58 @@ import org.junit.Before
 import org.junit.Test
 
 class CounterRepositoryCreateProjectTest {
+    @Test
+    fun `onboarding validates draft and PDF before writing and honors project quota`() =
+        runTest {
+            coEvery { dao.findOnboardingProjectId(any()) } returns null
+            val repository = repository()
+            val draft = OnboardingDraft("draft", name = "Socks", initialCount = "")
+            for (invalid in listOf(draft.copy(id = ""), draft.copy(targetRows = "bad"))) {
+                assertEquals(ProjectCreationResult.InvalidProject, repository.createOnboardingProject(invalid, false))
+            }
+            coEvery { documents.preflightImportedPdf(any(), any(), any()) } returns
+                ProjectDocumentMutationResult.PdfUnavailable
+            assertEquals(
+                ProjectCreationResult.InvalidProject,
+                repository.createOnboardingProject(draft.copy(pdfUri = "file:///missing.pdf"), false),
+            )
+            coEvery { dao.getActiveProjectCount() } returns 1
+            assertEquals(ProjectCreationResult.LimitReached, repository.createOnboardingProject(draft, false))
+            coVerify(exactly = 0) { dao.insert(any()) }
+            coVerify(exactly = 0) { dao.insertOnboardingProject(any()) }
+        }
+
+    @Test
+    fun `PDF attachment and receipt are written inside the project transaction`() =
+        runTest {
+            val transaction = TrackingTransactionRunner()
+            val document = mockk<ProjectDocument>(relaxed = true)
+            every { document.isPrimary } returns true
+            every { document.label } returns "pattern.pdf"
+            coEvery { dao.findOnboardingProjectId(any()) } returns null
+            coEvery { dao.insert(any()) } returns 7L
+            coEvery { documents.preflightImportedPdf(any(), any(), any()) } returns null
+            coEvery { documents.addImportedPdfInCurrentTransaction(any(), any(), any(), any()) } coAnswers {
+                assertTrue(transaction.inTransaction)
+                ProjectDocumentMutationResult.Added(document)
+            }
+            coEvery { dao.insertOnboardingProject(any()) } coAnswers { assertTrue(transaction.inTransaction) }
+            val draft = OnboardingDraft("pdf", name = "Socks", pdfUri = "file:///pattern.pdf", pdfName = "pattern.pdf")
+            assertEquals(ProjectCreationResult.Created(7), repository(transaction).createOnboardingProject(draft, true))
+            coVerify(exactly = 1) { dao.updatePatternInformation(7L, any(), "pattern.pdf", any()) }
+            coVerify(exactly = 1) { dao.insertOnboardingProject(any()) }
+        }
+
+    @Test
+    fun `receipt created before transaction starts prevents a second insertion`() =
+        runTest {
+            coEvery { dao.findOnboardingProjectId("race") } returnsMany listOf(null, 7L)
+            val draft = OnboardingDraft("race", name = "Socks", targetRows = "120")
+            assertEquals(ProjectCreationResult.Created(7), repository().createOnboardingProject(draft, false))
+            coVerify(exactly = 0) { dao.insert(any()) }
+            coVerify(exactly = 0) { dao.insertOnboardingProject(any()) }
+        }
+
     @Test
     fun `onboarding replay returns the receipt even after the free slot is used`() =
         runTest {
@@ -77,6 +131,7 @@ class CounterRepositoryCreateProjectTest {
     private val counterDao = mockk<ProjectCounterDao>(relaxed = true)
     private val sessionDao = mockk<SessionDao>(relaxed = true)
     private val proManager = mockk<ProManager>()
+    private val documents = mockk<ProjectDocumentRepository>(relaxed = true)
 
     @Before
     fun prepare() {
@@ -199,7 +254,7 @@ class CounterRepositoryCreateProjectTest {
             context = mockk<Context>(relaxed = true),
             yarnCardRepository = mockk(relaxed = true),
             savedPatternRepository = mockk(relaxed = true),
-            projectDocumentRepository = mockk(relaxed = true),
+            projectDocumentRepository = documents,
             projectFolderDao = mockk(relaxed = true),
             transactionRunner = transactionRunner,
             ioDispatcher = Dispatchers.Unconfined,

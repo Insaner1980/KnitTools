@@ -71,7 +71,8 @@ internal class SmokeDevice : TestWatcher() {
         shell("settings put system accelerometer_rotation 0")
         shell("settings put system user_rotation 0")
         launch()
-        tapDesc(string("welcome_dismiss_a11y"))
+        tap(string("journey_skip"))
+        tap(string("journey_continue_free"))
         text("Projects")
         find(By.descStartsWith(string("new_project")))
     }

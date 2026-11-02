@@ -28,8 +28,12 @@ class OnboardingPdfStorage
                 var acquiredGrant = false
                 try {
                     val hadGrant = resolver.persistedUriPermissions.any { it.uri == uri && it.isReadPermission }
-                    resolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                    acquiredGrant = !hadGrant
+                    try {
+                        resolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                        acquiredGrant = !hadGrant
+                    } catch (_: SecurityException) {
+                        // A temporary read grant is sufficient for the immediate app-owned copy.
+                    }
                     val name =
                         resolver
                             .query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)

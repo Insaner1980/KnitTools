@@ -31,6 +31,16 @@ class BackupArchiveTest {
         manifest.entries.forEach { assertEquals(it.sha256, BackupFormat.digest(File(target, it.path))) }
     }
 
+    @Test fun schema25BackupRetainsEveryTableAndFileOnExtraction() {
+        val (source, current) = fixture()
+        val legacy = current.copy(schemaVersion = 25)
+        val archive = temporary.newFile()
+        BackupArchive.write(source, archive, legacy)
+        val target = temporary.newFolder()
+        assertEquals(legacy, BackupArchive.extract(archive, target))
+        legacy.entries.forEach { assertEquals(it.sha256, BackupFormat.digest(File(target, it.path))) }
+    }
+
     @Test fun changedBytesAndHashAndSizeAreRejected() {
         val (source, manifest) = fixture()
         val first = manifest.entries.first()
@@ -48,7 +58,7 @@ class BackupArchiveTest {
         listOf(
             manifest.copy(formatVersion = 2),
             manifest.copy(dataVersion = 2),
-            manifest.copy(schemaVersion = KNITTOOLS_DATABASE_VERSION - 1),
+            manifest.copy(schemaVersion = 24),
             manifest.copy(schemaVersion = KNITTOOLS_DATABASE_VERSION + 1),
         ).forEach {
             val error = rejected(source, it)

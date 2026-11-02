@@ -46,6 +46,7 @@ import com.finnvek.knittools.ui.components.ContinueProjectCard
 import com.finnvek.knittools.ui.components.CounterImageButton
 import com.finnvek.knittools.ui.components.SegmentedToggle
 import com.finnvek.knittools.ui.components.StitchProgressRow
+import com.finnvek.knittools.ui.components.cardContainerColor
 import com.finnvek.knittools.ui.components.mainCounterLabelText
 import com.finnvek.knittools.ui.components.rememberCurrentLocale
 import com.finnvek.knittools.ui.screens.pattern.ReadingLineOverlay
@@ -77,13 +78,8 @@ internal fun JourneyNeeds(
                 Modifier
                     .fillMaxWidth()
                     .clip(MaterialTheme.shapes.medium)
-                    .background(
-                        if (selected) {
-                            MaterialTheme.knitToolsColors.actionContainer
-                        } else {
-                            MaterialTheme.knitToolsColors.cardContainer
-                        },
-                    ).toggleable(
+                    .background(cardContainerColor(selected))
+                    .toggleable(
                         selected,
                         enabled = !busy,
                         role = Role.Checkbox,

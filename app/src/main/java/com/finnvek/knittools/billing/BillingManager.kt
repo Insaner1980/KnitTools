@@ -218,6 +218,7 @@ class BillingManager
                     return
                 }
             val generation = ++productQueryGeneration
+            if (_purchasePending.value) scope.launch { queryPurchases() }
             if (_selectedOffer.value == null) _productStatus.value = BillingProductStatus.Loading
             productQueryJob = scope.launch(start = CoroutineStart.LAZY) { queryProductDetails(client, generation) }
             productQueryJob?.start()
@@ -283,6 +284,7 @@ class BillingManager
         }
 
         fun destroy() {
+            _purchasePending.value = false
             resetProductDetails()
             priceNeedsReview = false
             scope.coroutineContext.cancelChildren()

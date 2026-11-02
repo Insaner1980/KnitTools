@@ -26,6 +26,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
@@ -263,7 +264,7 @@ class OnboardingViewModel
 
         private suspend fun deleteUnusedPdf(uri: String) {
             try {
-                patterns.deleteLocalPatternFileIfUnused(uri)
+                withContext(NonCancellable) { patterns.deleteLocalPatternFileIfUnused(uri) }
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (_: Exception) {

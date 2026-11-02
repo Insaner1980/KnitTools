@@ -7,6 +7,27 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class OnboardingDraftTest {
+    @Test fun `forward steps stop at price and project while preserving entered values`() {
+        val welcome = OnboardingDraft("draft")
+        assertEquals(welcome, welcome.previous())
+        assertEquals(CraftType.KNITTING, welcome.craftType)
+        assertEquals(CraftType.KNITTING, welcome.copy(craft = OnboardingCraft.Both).craftType)
+        val needs = welcome.next()
+        val counter = needs.next()
+        val benefits = counter.next()
+        val project = benefits.next()
+        assertEquals(OnboardingStep.Needs, needs.step)
+        assertEquals(OnboardingStep.Counter, counter.step)
+        assertEquals(OnboardingStep.Benefits, benefits.step)
+        assertEquals(OnboardingStep.Project, project.step)
+        assertEquals(project, project.next())
+        val price = project.copy(step = OnboardingStep.Price)
+        assertEquals(price, price.next())
+        assertEquals(price, price.previous())
+        val maximum = welcome.copy(demoCount = 99_999)
+        assertEquals(maximum, maximum.changeDemo(1))
+    }
+
     @Test fun `example is never a project name and demo has no initial undo`() {
         val draft = OnboardingDraft("draft")
         assertEquals("", draft.name)

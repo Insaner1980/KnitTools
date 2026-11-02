@@ -25,10 +25,13 @@ import io.mockk.mockk
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
@@ -44,6 +47,26 @@ import java.io.IOException
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class OnboardingViewModelTest {
+    @Test
+    fun `cancelling draft persistence still finishes cleanup of the new PDF`() =
+        runTest {
+            preparePdfReplacement()
+            var deleted = false
+            coEvery { state.saveDraft(match { it.pdfUri == "copied-uri" }) } coAnswers { awaitCancellation() }
+            coEvery { patterns.deleteLocalPatternFileIfUnused("copied-uri") } coAnswers {
+                delay(1)
+                deleted = true
+            }
+            val vm = viewModel()
+            vm.selectPdf("new-uri")
+            runCurrent()
+            store.clear()
+            advanceUntilIdle()
+            assertTrue(deleted)
+            assertEquals("old-uri", saved.value?.pdfUri)
+            coVerify(exactly = 0) { patterns.deleteLocalPatternFileIfUnused("old-uri") }
+        }
+
     private val dispatcher = StandardTestDispatcher()
     private val store = ViewModelStore()
     private val state = mockk<OnboardingStateRepository>()

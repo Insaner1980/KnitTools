@@ -21,6 +21,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import javax.inject.Inject
@@ -66,12 +67,18 @@ class OnboardingStateRepository internal constructor(
     val draft: Flow<OnboardingDraft?> =
         dataStore.data
             .map { prefs ->
-                prefs[KEY_JOURNEY_DRAFT]?.let { Json.decodeFromString<OnboardingDraft>(it) }
+                prefs[KEY_JOURNEY_DRAFT]?.let {
+                    try {
+                        draftJson.decodeFromString<OnboardingDraft>(it)
+                    } catch (_: SerializationException) {
+                        null
+                    }
+                }
             }.distinctUntilChanged()
 
     suspend fun saveDraft(draft: OnboardingDraft): Boolean =
         dataStore.editPreferencesSafely { prefs ->
-            prefs[KEY_JOURNEY_DRAFT] = Json.encodeToString(draft)
+            prefs[KEY_JOURNEY_DRAFT] = draftJson.encodeToString(draft)
             if (draft.projectId != null) prefs[KEY_STARTER_PROJECT_ID] = draft.projectId
             if (draft.completed) {
                 prefs[KEY_WELCOME_DISMISSED] = true
@@ -221,6 +228,7 @@ class OnboardingStateRepository internal constructor(
     }
 
     private companion object {
+        val draftJson = Json { ignoreUnknownKeys = true }
         val KEY_JOURNEY_DRAFT = stringPreferencesKey("journey_draft_v1")
         const val MAX_TARGET_CELEBRATIONS = 200
         val KEY_INITIALIZED_VERSION = intPreferencesKey("initialized_version")

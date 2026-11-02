@@ -115,6 +115,10 @@ class OnboardingScreenTest(
             compose.onNodeWithTag("onboarding_next").assertIsNotEnabled()
             capture("project", isDark)
             compose.onNodeWithTag("onboarding_project_name").performTextInput("My project")
+            compose.runOnIdle { draft.value = draft.value.copy(targetRows = "100000", showOptions = false) }
+            compose.onNodeWithTag("onboarding_project_target").performScrollTo().assertIsDisplayed()
+            compose.onNodeWithTag("onboarding_next").assertIsNotEnabled()
+            compose.runOnIdle { draft.value = draft.value.copy(targetRows = "") }
             compose.onNodeWithTag("onboarding_next").assertIsEnabled().performClick()
             compose.runOnIdle {
                 assertEquals(if (isDark) 2 else 1, created)

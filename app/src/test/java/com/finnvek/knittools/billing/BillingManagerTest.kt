@@ -42,6 +42,26 @@ import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class BillingManagerTest {
+    @Test
+    fun `price refresh reconciles a cancelled pending purchase and destroy clears pending state`() =
+        runTest {
+            mockkStatic("com.android.billingclient.api.BillingClientKotlinKt")
+            val client = mockk<BillingClient>(relaxed = true)
+            val ok = billingResult(BillingClient.BillingResponseCode.OK)
+            coEvery { client.queryPurchasesAsync(any()) } returns PurchasesResult(ok, emptyList())
+            coEvery { client.queryProductDetails(any()) } returns ProductDetailsResult(ok, emptyList())
+            val manager = createManager(client)
+            manager.onPurchasesUpdated(ok, listOf(proPurchase(purchaseState = 4)))
+            assertTrue(manager.purchasePending.value)
+            manager.retryProductDetails()
+            runCurrent()
+            assertFalse(manager.purchasePending.value)
+            coVerify(exactly = 1) { client.queryPurchasesAsync(any()) }
+            manager.onPurchasesUpdated(ok, listOf(proPurchase(purchaseState = 4)))
+            manager.destroy()
+            assertFalse(manager.purchasePending.value)
+        }
+
     private val testDispatcher = UnconfinedTestDispatcher()
     private val context = mockk<Context>(relaxed = true)
 

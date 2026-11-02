@@ -78,7 +78,7 @@ internal fun JourneyProject(
     TextButton(onClick = { actions.edit { it.copy(showOptions = !it.showOptions) } }, enabled = !busy) {
         Text(stringResource(R.string.journey_options), style = MaterialTheme.typography.titleMedium)
     }
-    if (draft.showOptions) {
+    if (draft.showOptions || target == TargetInput.Invalid) {
         NumberInputField(
             value = draft.targetRows,
             onValueChange = { value -> actions.edit { it.copy(targetRows = value) } },

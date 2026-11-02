@@ -23,6 +23,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
@@ -80,6 +81,8 @@ import com.finnvek.knittools.ui.screens.library.SavedPatternsState
 import com.finnvek.knittools.ui.screens.library.WebPatternEditorScreen
 import com.finnvek.knittools.ui.screens.needles.NeedleSizeScreen
 import com.finnvek.knittools.ui.screens.notes.NotesEditorScreen
+import com.finnvek.knittools.ui.screens.onboarding.OnboardingRoute
+import com.finnvek.knittools.ui.screens.onboarding.OnboardingViewModel
 import com.finnvek.knittools.ui.screens.pattern.LibraryPatternViewerScreen
 import com.finnvek.knittools.ui.screens.pattern.PatternAnnotationViewModel
 import com.finnvek.knittools.ui.screens.pattern.PatternViewerScreen
@@ -123,7 +126,14 @@ data class KnitToolsNavRequests(
     val openProUpgrade: Boolean = false,
     val openWidgetProPrompt: Boolean = false,
     val patternShareImport: PatternShareImportRequest? = null,
-)
+) {
+    fun hasExternalEntry(externalEntryActive: Boolean): Boolean =
+        externalEntryActive ||
+            counterLaunch != null ||
+            openProUpgrade ||
+            openWidgetProPrompt ||
+            patternShareImport != null
+}
 
 @Composable
 fun KnitToolsNavHost(
@@ -135,6 +145,9 @@ fun KnitToolsNavHost(
     onScreenViewed: (String?) -> Unit = {},
     onStartupReady: (Boolean) -> Unit = {},
     startupGatesReady: Boolean = false,
+    launchRequestsReady: Boolean = true,
+    externalEntryActive: Boolean = false,
+    onOnboardingVisible: (Boolean) -> Unit = {},
     trialJourney: TrialJourneyPresentation = TrialJourneyPresentation(),
     // Toisesta sovelluksesta avattu PDF-ohje: isäntä näyttää sheetin ja pyytää navigoinnin tallennuksen jälkeen.
     incomingPdfHost: @Composable (onNavigate: (IncomingPdfOutcome) -> Unit) -> Unit = {},
@@ -150,6 +163,42 @@ fun KnitToolsNavHost(
 
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
+    val onboardingViewModel: OnboardingViewModel = hiltViewModel()
+    val onboarding by onboardingViewModel.state.collectAsStateWithLifecycle()
+    val completionMessage = onboarding.completionMessageRes?.let { stringResource(it) }
+    LaunchedEffect(onboarding.required, completionMessage) {
+        if (onboarding.required == false && completionMessage != null) {
+            snackbarHostState?.showSnackbar(completionMessage)
+            onboardingViewModel.acknowledgeCompletionMessage()
+        }
+    }
+    var deferOnboarding by rememberSaveable { mutableStateOf(false) }
+    val externalEntry = requests.hasExternalEntry(externalEntryActive)
+    SideEffect {
+        if (externalEntry) deferOnboarding = true
+    }
+    val showOnboarding =
+        launchRequestsReady &&
+            !externalEntry &&
+            !deferOnboarding &&
+            effectiveCounterLaunch == null &&
+            (currentRoute == null || currentRoute == Screen.ProjectList.route) &&
+            onboarding.required != false
+    SideEffect { onOnboardingVisible(showOnboarding) }
+    LaunchedEffect(onboarding.draft?.exitPending, onboarding.required) {
+        val draft = onboarding.draft
+        if (onboarding.required == false && draft?.exitPending == true && draft.projectId != null) {
+            internalCounterLaunch = CounterLaunchRequest(projectId = draft.projectId)
+        }
+    }
+    if (!launchRequestsReady) {
+        SideEffect { onStartupReady(false) }
+        return
+    }
+    if (showOnboarding) {
+        OnboardingRoute(onboardingViewModel, actions.onPurchasePro, onStartupReady)
+        return
+    }
     val destinationLifecycle =
         navBackStackEntry
             ?.lifecycle
@@ -281,6 +330,7 @@ fun KnitToolsNavHost(
                     onCounterLaunchHandled = {
                         actions.onCounterLaunchHandled()
                         internalCounterLaunch = null
+                        if (onboarding.draft?.exitPending == true) onboardingViewModel.acknowledgeExit()
                     },
                     // Tuo Ravelrysta avaa Ravelryn sovelluksen sisällä, jotta PDF tallentuu suoraan.
                     onImportFromRavelry = {
@@ -407,8 +457,14 @@ fun KnitToolsNavHost(
 
     if (showTrialJourney) {
         TrialJourneySheet(
-            steps = journeySteps,
+            steps =
+                if (trialJourney.fromOnboarding) {
+                    trialJourney.facts?.steps(widgetInstalled, fromOnboarding = true).orEmpty()
+                } else {
+                    journeySteps
+                },
             craft = journeyCraft,
+            firstProject = trialJourney.fromOnboarding && trialJourney.facts?.latestActiveProject == null,
             onAction = onJourneyAction,
             onDismiss = actions.onTrialJourneyHandled,
         )

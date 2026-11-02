@@ -141,6 +141,7 @@ internal data class CounterHeroState(
     val secondaryCount: Int,
     val visibleStitchTotal: Int?,
     val currentStitch: Int,
+    val canUndo: Boolean = false,
 )
 
 internal fun CounterUiState.toCounterHeroState(): CounterHeroState =
@@ -154,6 +155,7 @@ internal fun CounterUiState.toCounterHeroState(): CounterHeroState =
         secondaryCount = secondaryCount,
         visibleStitchTotal = stitchCount?.takeIf { stitchTrackingEnabled && it > 0 },
         currentStitch = currentStitch,
+        canUndo = canUndo,
     )
 
 @Composable
@@ -753,6 +755,7 @@ private fun CounterButtons(
             contentDescription = stringResource(R.string.counter_undo_last_change),
             visualSize = CounterDimens.CounterUndoVisualSize,
             onClick = onUndo,
+            enabled = state.canUndo,
             modifier =
                 Modifier
                     .size(CounterDimens.CounterUndoTouchSize)

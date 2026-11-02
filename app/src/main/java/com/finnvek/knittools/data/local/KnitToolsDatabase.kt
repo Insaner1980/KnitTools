@@ -6,7 +6,7 @@ import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 
-const val KNITTOOLS_DATABASE_VERSION = 25
+const val KNITTOOLS_DATABASE_VERSION = 26
 
 @Database(
     entities = [
@@ -28,6 +28,7 @@ const val KNITTOOLS_DATABASE_VERSION = 25
         ProjectFolderAssignmentEntity::class,
         ProjectYarnUsageEntity::class,
         ProjectCompletionEntity::class,
+        OnboardingProjectEntity::class,
     ],
     version = KNITTOOLS_DATABASE_VERSION,
     exportSchema = true,
@@ -728,6 +729,21 @@ abstract class KnitToolsDatabase : RoomDatabase() {
 
         val MIGRATION_24_25: Migration = ProjectCompletionMigration25.migration
 
+        val MIGRATION_25_26 =
+            object : Migration(25, 26) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    db.execSQL(
+                        "CREATE TABLE IF NOT EXISTS `onboarding_projects` (" +
+                            "`draftId` TEXT NOT NULL, `projectId` INTEGER NOT NULL, PRIMARY KEY(`draftId`), " +
+                            "FOREIGN KEY(`projectId`) REFERENCES `counter_projects`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE)",
+                    )
+                    db.execSQL(
+                        "CREATE UNIQUE INDEX IF NOT EXISTS `index_onboarding_projects_projectId` " +
+                            "ON `onboarding_projects` (`projectId`)",
+                    )
+                }
+            }
+
         val ALL_MANUAL_MIGRATIONS: Array<Migration>
             get() =
                 arrayOf(
@@ -753,6 +769,7 @@ abstract class KnitToolsDatabase : RoomDatabase() {
                     MIGRATION_22_23,
                     MIGRATION_23_24,
                     MIGRATION_24_25,
+                    MIGRATION_25_26,
                 )
     }
 }

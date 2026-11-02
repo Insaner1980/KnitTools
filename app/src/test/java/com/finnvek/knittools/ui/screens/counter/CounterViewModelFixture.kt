@@ -75,6 +75,7 @@ abstract class CounterViewModelFixture {
         every { repository.getActiveProjects() } returns flowOf(listOf(project))
         every { repository.observeProject(7L) } returns observedProject
         every { repository.observeActiveSession() } returns flowOf(null)
+        every { repository.observeCanUndo(any()) } returns flowOf(false)
         coEvery { repository.refreshActiveSession() } returns null
         every { tipSession.onSignal(any()) } returns Unit
         every { onboardingStateRepository.state } returns onboardingState
@@ -222,6 +223,7 @@ internal fun CounterRepository.assertRestorationOnlyReads() {
         observeProject(any())
         observeActiveSession()
         observeHasSessionsForProject(any())
+        observeCanUndo(any())
         refreshActiveSession()
         getTotalMinutesForProject(any())
     }

@@ -21,6 +21,43 @@ import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class ProjectFolderMigration23Test {
+    @Test
+    fun migrate25to26PreservesExistingTablesAndAddsEmptyOnboardingReceipts() {
+        val testDb = "migration-onboarding-v26"
+        lateinit var before: DatabaseSnapshot
+        helper.createDatabase(testDb, 25).apply {
+            insertProject(1, "Active", updatedAt = 101)
+            insertProject(2, "Completed", isCompleted = true, updatedAt = 202)
+            insertSavedPattern(30)
+            insertCompletedSession(2)
+            insertActiveSession(1, false)
+            insertProjectDocument(1)
+            insertAnnotationAndBookmark(1)
+            insertProjectOwnedRows(1)
+            execSQL(
+                "INSERT INTO project_completions (projectId, completedAt, zoneId) VALUES (2, 202, 'Europe/Helsinki')",
+            )
+            before = snapshotExistingState(this)
+            close()
+        }
+        helper.runMigrationsAndValidate(testDb, 26, true, KnitToolsDatabase.MIGRATION_25_26).use { db ->
+            assertEquals(before, snapshotExistingState(db, before.tables.keys))
+            assertEquals(0L, scalarLong(db, "SELECT COUNT(*) FROM onboarding_projects"))
+            db.execSQL("INSERT INTO onboarding_projects (draftId, projectId) VALUES ('stable', 1)")
+            assertTrue(
+                runCatching {
+                    db.execSQL("INSERT INTO onboarding_projects (draftId, projectId) VALUES ('stable', 2)")
+                }.isFailure,
+            )
+            assertTrue(
+                runCatching {
+                    db.execSQL("INSERT INTO onboarding_projects (draftId, projectId) VALUES ('other', 1)")
+                }.isFailure,
+            )
+            assertTrue(db.query("PRAGMA foreign_key_check").use { !it.moveToFirst() })
+        }
+    }
+
     @get:Rule
     val helper =
         MigrationTestHelper(

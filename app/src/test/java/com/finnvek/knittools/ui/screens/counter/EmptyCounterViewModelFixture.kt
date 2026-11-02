@@ -31,6 +31,7 @@ internal fun TestScope.emptyCounterViewModel(
     counters: ProjectCounterRepository = emptyProjectCounters(),
     photos: ProgressPhotoRepository = emptyProgressPhotos(),
 ): CounterViewModel {
+    every { repository.observeCanUndo(any()) } returns flowOf(false)
     val preferences = mockk<PreferencesManager>()
     every { preferences.preferences } returns emptyFlow()
     val proManager = mockk<ProManager>()

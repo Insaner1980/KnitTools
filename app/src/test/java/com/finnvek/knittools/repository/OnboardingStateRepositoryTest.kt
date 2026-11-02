@@ -37,6 +37,42 @@ import java.time.LocalDate
 import java.time.ZoneId
 
 class OnboardingStateRepositoryTest {
+    @Test
+    fun `journey completion stores the draft destination and tip suppression together`() =
+        runBlocking {
+            val repository = repository()
+            val draft =
+                com.finnvek.knittools.domain.model.OnboardingDraft(
+                    "stable",
+                    name = "My socks",
+                    projectId = 7L,
+                    pdfUri = "file:///example.pdf",
+                    completed = true,
+                    exitPending = true,
+                )
+            assertTrue(repository.saveDraft(draft))
+            assertEquals(draft, repository.draft.first())
+            val state = repository.state.first()
+            assertTrue(state.welcomeDismissed)
+            assertEquals(7L, state.starterProjectId)
+            assertEquals(7L, state.guidedPatternProjectId)
+            assertTrue(state.tipsSeen.containsAll(setOf(TipId.FIRST_ROW, TipId.UNDO)))
+            assertFalse(TipId.PATTERN_TILE in state.tipsSeen)
+        }
+
+    @Test
+    fun `failed draft persistence is reported and draft reads do not hide IO failure`() =
+        runBlocking {
+            val repository = OnboardingStateRepository(failingStore(IOException("unavailable")))
+            assertFalse(
+                repository.saveDraft(
+                    com.finnvek.knittools.domain.model
+                        .OnboardingDraft("stable"),
+                ),
+            )
+            assertTrue(runCatching { repository.draft.first() }.exceptionOrNull() is IOException)
+        }
+
     @get:Rule
     val temporaryFolder = TemporaryFolder()
 

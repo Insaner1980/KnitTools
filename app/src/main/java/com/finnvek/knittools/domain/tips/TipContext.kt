@@ -19,6 +19,7 @@ data class TipContext(
     val stepSize: Int = 1,
     val mainCounterLabelType: MainCounterLabelType = MainCounterLabelType.ROWS,
     val hasDocuments: Boolean = false,
+    val onboardingPatternReady: Boolean = false,
     val hasWebPattern: Boolean = false,
     val hasSessions: Boolean = false,
     val hasActiveSession: Boolean = false,

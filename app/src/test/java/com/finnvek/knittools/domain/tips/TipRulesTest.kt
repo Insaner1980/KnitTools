@@ -5,6 +5,25 @@ import org.junit.Assert.assertNull
 import org.junit.Test
 
 class TipRulesTest {
+    @Test
+    fun `attached onboarding pattern is eligible only on its ready visible route`() {
+        val context =
+            TipContext(
+                screen = TipScreen.COUNTER,
+                projectId = 7,
+                millisSinceEntry = 2_000,
+                hasDocuments = true,
+                onboardingPatternReady = true,
+                tipsSeen = setOf(TipId.FIRST_ROW, TipId.UNDO),
+            )
+        assertEquals(TipId.PATTERN_TILE, TipRules.next(context))
+        assertNull(TipRules.next(context.copy(hasDocuments = false)))
+        assertNull(TipRules.next(context.copy(onboardingPatternReady = false)))
+        assertNull(TipRules.next(context.copy(blocked = true)))
+        assertNull(TipRules.next(context.copy(screenReady = false)))
+        assertNull(TipRules.next(context.copy(tipsSeen = context.tipsSeen + TipId.PATTERN_TILE)))
+    }
+
     private val counter = TipContext(screen = TipScreen.COUNTER, projectId = 7L, millisSinceEntry = 2_000L)
 
     @Test

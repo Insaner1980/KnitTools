@@ -3,6 +3,13 @@ package com.finnvek.knittools.ui.theme
 import androidx.compose.ui.unit.dp
 
 object OnboardingDimens {
+    val JourneyProgressHeight = 6.dp
+    val JourneyProgressGap = 5.dp
+    val JourneyToolbarHeight = 48.dp
+    val JourneyDemoUndoSize = 64.dp
+    val JourneyDemoCounterSize = 80.dp
+    val JourneySectionGap = 24.dp
+    val JourneyStackedBreakpoint = 320.dp
     val ExampleCardPadding = 16.dp
     val SketchWidth = 132.dp
     val SketchHeight = 176.dp

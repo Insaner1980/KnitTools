@@ -29,6 +29,50 @@ import org.junit.Before
 import org.junit.Test
 
 class CounterRepositoryCreateProjectTest {
+    @Test
+    fun `onboarding replay returns the receipt even after the free slot is used`() =
+        runTest {
+            var receipt: Long? = null
+            val transaction = TrackingTransactionRunner()
+            coEvery { dao.findOnboardingProjectId("stable") } answers { receipt }
+            coEvery { dao.insert(any()) } answers {
+                assertTrue(transaction.inTransaction)
+                7L
+            }
+            coEvery { dao.insertOnboardingProject(any()) } answers {
+                assertTrue(transaction.inTransaction)
+                receipt = firstArg<com.finnvek.knittools.data.local.OnboardingProjectEntity>().projectId
+            }
+            val repository = repository(transaction)
+            val draft =
+                com.finnvek.knittools.domain.model
+                    .OnboardingDraft("stable", name = "My socks", initialCount = "47")
+            assertEquals(ProjectCreationResult.Created(7), repository.createOnboardingProject(draft, false))
+            coEvery { dao.getActiveProjectCount() } returns 1
+            assertEquals(ProjectCreationResult.Created(7), repository.createOnboardingProject(draft, false))
+            coVerify(exactly = 1) { dao.insert(any()) }
+            coVerify(exactly = 1) { dao.insertOnboardingProject(any()) }
+        }
+
+    @Test
+    fun `invalid onboarding form never creates a receipt or project`() =
+        runTest {
+            coEvery { dao.findOnboardingProjectId(any()) } returns null
+            val repository = repository()
+            val draft =
+                com.finnvek.knittools.domain.model
+                    .OnboardingDraft("stable")
+            listOf(
+                draft,
+                draft.copy(name = "My socks", initialCount = "bad"),
+                draft.copy(name = "My socks", targetRows = "-1"),
+            ).forEach {
+                assertEquals(ProjectCreationResult.InvalidProject, repository.createOnboardingProject(it, false))
+            }
+            coVerify(exactly = 0) { dao.insert(any()) }
+            coVerify(exactly = 0) { dao.insertOnboardingProject(any()) }
+        }
+
     private val dao = mockk<CounterProjectDao>(relaxed = true)
     private val counterDao = mockk<ProjectCounterDao>(relaxed = true)
     private val sessionDao = mockk<SessionDao>(relaxed = true)
@@ -108,20 +152,9 @@ class CounterRepositoryCreateProjectTest {
     @Test
     fun `quota is checked first inside transaction even for invalid input`() =
         runTest {
-            var inTransaction = false
-            val transaction =
-                object : DatabaseTransactionRunner {
-                    override suspend fun <T> run(block: suspend () -> T): T {
-                        inTransaction = true
-                        return try {
-                            block()
-                        } finally {
-                            inTransaction = false
-                        }
-                    }
-                }
+            val transaction = TrackingTransactionRunner()
             coEvery { dao.getActiveProjectCount() } answers {
-                assertTrue(inTransaction)
+                assertTrue(transaction.inTransaction)
                 1
             }
 
@@ -138,6 +171,20 @@ class CounterRepositoryCreateProjectTest {
             coVerify(exactly = 0) { dao.insert(any()) }
             coVerify(exactly = 0) { dao.getAllProjectsOnce() }
         }
+
+    private class TrackingTransactionRunner : DatabaseTransactionRunner {
+        var inTransaction = false
+            private set
+
+        override suspend fun <T> run(block: suspend () -> T): T {
+            inTransaction = true
+            return try {
+                block()
+            } finally {
+                inTransaction = false
+            }
+        }
+    }
 
     private fun repository(
         transactionRunner: DatabaseTransactionRunner = ImmediateDatabaseTransactionRunner,

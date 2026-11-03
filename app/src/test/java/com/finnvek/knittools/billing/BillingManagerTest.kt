@@ -321,10 +321,7 @@ class BillingManagerTest {
                     "USD",
                     launchDetails = LaunchOfferDetails(1, 2, 14_990_000),
                 )
-            val message = async(UnconfinedTestDispatcher(testScheduler)) { manager.purchaseMessages.first() }
-            manager.launchPurchaseFlow(activity)
-            assertEquals(BillingUserMessage.PRICE_CHANGED_REVIEW, message.await())
-            verify(exactly = 0) { client.launchBillingFlow(any(), any()) }
+            assertPurchaseBlocked(manager, client, activity, BillingUserMessage.PRICE_CHANGED_REVIEW)
             runCurrent()
             assertEquals("base-token", manager.selectedOffer.value?.offerToken)
             manager.launchPurchaseFlow(activity)

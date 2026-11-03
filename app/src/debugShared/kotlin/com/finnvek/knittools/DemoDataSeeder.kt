@@ -20,8 +20,8 @@ object DemoDataSeeder {
         projectCounterRepository: Lazy<ProjectCounterRepository>,
         yarnCardRepository: Lazy<YarnCardRepository>,
     ) {
-        // Policy-testipaketti tyhjentää tietokannan ja testaa Pro-portit, joten demodataa ei luoda.
-        if (ProPolicyTestControl.isActive) return
+        // Onboarding and policy tests must start without sample projects.
+        if (BuildConfig.ONBOARDING_TEST || ProPolicyTestControl.isActive) return
         DebugDemoDataSeeder.seedIfNeeded(
             applicationScope = applicationScope,
             ioDispatcher = ioDispatcher,

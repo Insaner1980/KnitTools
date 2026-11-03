@@ -3680,6 +3680,13 @@ internal fun com.finnvek.knittools.ui.screens.onboarding.JourneyNeeds(draft: com
     - edit: STABLE (function type)
 
 @Composable
+private fun com.finnvek.knittools.ui.screens.onboarding.JourneyOfferDetails(offer: com.finnvek.knittools.billing.SelectedOneTimeOffer): kotlin.Unit
+  skippable: true
+  restartable: true
+  params:
+    - offer: STABLE (class with no mutable properties)
+
+@Composable
 private fun com.finnvek.knittools.ui.screens.onboarding.JourneyPatternExample(craft: com.finnvek.knittools.domain.model.CraftType): kotlin.Unit
   skippable: true
   restartable: true
@@ -3696,14 +3703,12 @@ internal fun com.finnvek.knittools.ui.screens.onboarding.JourneyPriceActions(pri
     - actions: STABLE (class with no mutable properties)
 
 @Composable
-internal fun com.finnvek.knittools.ui.screens.onboarding.JourneyPriceContent(draft: com.finnvek.knittools.domain.model.OnboardingDraft, price: com.finnvek.knittools.ui.screens.onboarding.OnboardingPriceState, onPurchase: kotlin.Function0<kotlin.Unit>, busy: kotlin.Boolean): kotlin.Unit
+internal fun com.finnvek.knittools.ui.screens.onboarding.JourneyPriceContent(draft: com.finnvek.knittools.domain.model.OnboardingDraft, price: com.finnvek.knittools.ui.screens.onboarding.OnboardingPriceState): kotlin.Unit
   skippable: true
   restartable: true
   params:
     - draft: RUNTIME (requires runtime check)
     - price: UNKNOWN (interface or non-final class; concrete implementation unknown)
-    - onPurchase: STABLE (function type)
-    - busy: STABLE (primitive type)
 
 @Composable
 internal fun com.finnvek.knittools.ui.screens.onboarding.JourneyPrimaryButton(label: kotlin.String, enabled: kotlin.Boolean, onClick: kotlin.Function0<kotlin.Unit>, modifier: androidx.compose.ui.Modifier): kotlin.Unit
@@ -3745,6 +3750,21 @@ internal fun com.finnvek.knittools.ui.screens.onboarding.JourneyWelcome(draft: c
   restartable: true
   params:
     - draft: RUNTIME (requires runtime check)
+
+@Composable
+public fun com.finnvek.knittools.ui.screens.onboarding.OnboardingPreview.Notice(): kotlin.Unit
+  skippable: true
+  restartable: true
+  params:
+
+@Composable
+public fun com.finnvek.knittools.ui.screens.onboarding.OnboardingPreview.PurchaseDialog(price: kotlin.String, onDismiss: kotlin.Function0<kotlin.Unit>, onContinue: kotlin.Function0<kotlin.Unit>): kotlin.Unit
+  skippable: true
+  restartable: true
+  params:
+    - price: STABLE (String is immutable)
+    - onDismiss: STABLE (function type)
+    - onContinue: STABLE (function type)
 
 @Composable
 public fun com.finnvek.knittools.ui.screens.onboarding.OnboardingRoute(viewModel: com.finnvek.knittools.ui.screens.onboarding.OnboardingViewModel, onPurchase: kotlin.Function1<android.app.Activity, kotlin.Unit>, onStartupReady: kotlin.Function1<kotlin.Boolean, kotlin.Unit>): kotlin.Unit
@@ -4385,12 +4405,13 @@ public fun com.finnvek.knittools.ui.screens.pro.TrialJourneySheet(steps: kotlin.
     - firstProject: STABLE (primitive type)
 
 @Composable
-internal fun com.finnvek.knittools.ui.screens.pro.rememberTrialJourneyVisible(presentation: com.finnvek.knittools.ui.screens.pro.TrialJourneyPresentation, eligible: kotlin.Boolean, onConsume: kotlin.Function0<kotlin.Unit>): kotlin.Boolean
+internal fun com.finnvek.knittools.ui.screens.pro.rememberTrialJourneyVisible(presentation: com.finnvek.knittools.ui.screens.pro.TrialJourneyPresentation, eligible: kotlin.Boolean, actionVersion: kotlin.Int, onConsume: kotlin.Function0<kotlin.Unit>): kotlin.Boolean
   skippable: false
   restartable: false
   params:
     - presentation: STABLE (class with no mutable properties)
     - eligible: STABLE (primitive type)
+    - actionVersion: STABLE (primitive type)
     - onConsume: STABLE (function type)
 
 @Composable

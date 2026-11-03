@@ -85,10 +85,7 @@ fun TrialJourneySheet(
                 steps = steps,
                 craft = craft,
                 firstProject = firstProject,
-                onAction = {
-                    onDismiss()
-                    onAction(it)
-                },
+                onAction = onAction,
             )
             CancelButton(
                 onClick = onDismiss,

@@ -4,7 +4,6 @@ import android.accessibilityservice.AccessibilityServiceInfo
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
-import android.os.SystemClock
 import android.view.KeyEvent
 import android.view.accessibility.AccessibilityNodeInfo
 import androidx.datastore.core.DataStore
@@ -36,7 +35,6 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotSame
-import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -122,7 +120,7 @@ class TrialNoticeRestorationTest {
             val inFlight = field.get(activity.billingManager) as MutableStateFlow<Boolean>
             inFlight.value = true
         }
-        waitUntil("Notice hidden during checkout") { findText(text(R.string.trial_ended_screen_title)) == null }
+        waitForTrialUi("Notice hidden during checkout") { findText(text(R.string.trial_ended_screen_title)) == null }
         checkNotNull(scenario).onActivity { activity ->
             activity.billingManager.onPurchasesUpdated(
                 BillingResult.newBuilder().setResponseCode(BillingClient.BillingResponseCode.USER_CANCELED).build(),
@@ -156,7 +154,7 @@ class TrialNoticeRestorationTest {
         assertNoNotice()
         instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK)
         waitRootReady()
-        waitUntil("Upgrade destination closed") { findText(text(R.string.onboarding_pro_intro)) == null }
+        waitForTrialUi("Upgrade destination closed") { findText(text(R.string.onboarding_pro_intro)) == null }
         assertNoNotice()
     }
 
@@ -407,7 +405,7 @@ class TrialNoticeRestorationTest {
     private fun waitText(id: Int) = waitText(text(id))
 
     private fun waitText(value: String) {
-        waitUntil("Visible text: $value") { findText(value)?.isVisibleToUser == true }
+        waitForTrialUi("Visible text: $value") { findText(value)?.isVisibleToUser == true }
     }
 
     private fun assertNoNotice() {
@@ -417,7 +415,7 @@ class TrialNoticeRestorationTest {
     }
 
     private fun waitRootReady() {
-        waitUntil("Projects root after splash and startup gates") {
+        waitForTrialUi("Projects root after splash and startup gates") {
             instrumentation.uiAutomation.rootInActiveWindow?.let(::hasVisibleStartupReady) == true
         }
     }
@@ -431,42 +429,9 @@ class TrialNoticeRestorationTest {
         return false
     }
 
-    private fun click(id: Int) {
-        waitText(id)
-        var node = checkNotNull(findText(text(id)))
-        while (!node.isClickable) node = checkNotNull(node.parent)
-        assertTrue(node.performAction(AccessibilityNodeInfo.ACTION_CLICK))
-    }
+    private fun click(id: Int) = instrumentation.clickTrialText(text(id), includeContentDescription = true)
 
-    private fun findText(value: String): AccessibilityNodeInfo? {
-        val root = instrumentation.uiAutomation.rootInActiveWindow ?: return null
-        if (root.packageName?.toString() != app.packageName) return null
-        return findText(root, value)
-    }
-
-    private fun findText(
-        node: AccessibilityNodeInfo,
-        value: String,
-    ): AccessibilityNodeInfo? {
-        if ((node.text?.toString() == value || node.contentDescription?.toString() == value) && node.isVisibleToUser) {
-            return node
-        }
-        for (index in 0 until node.childCount) {
-            node.getChild(index)?.let { child -> findText(child, value)?.let { return it } }
-        }
-        return null
-    }
-
-    private fun waitUntil(
-        message: String,
-        condition: () -> Boolean,
-    ) {
-        val deadline = SystemClock.uptimeMillis() + 15_000
-        while (!condition()) {
-            check(SystemClock.uptimeMillis() < deadline) { message }
-            SystemClock.sleep(50)
-        }
-    }
+    private fun findText(value: String) = instrumentation.findTrialText(value, includeContentDescription = true)
 
     @Suppress("UNCHECKED_CAST")
     private fun trialDataStore(): DataStore<Preferences> =

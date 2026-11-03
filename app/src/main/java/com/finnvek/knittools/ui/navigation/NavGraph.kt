@@ -15,6 +15,7 @@ import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -210,9 +211,11 @@ fun KnitToolsNavHost(
     val widgetInstalled = rememberCounterWidgetInstalled()
     val journeySteps = trialJourney.facts?.steps(widgetInstalled).orEmpty()
     val journeyCraft = trialJourney.facts?.latestActiveProject?.craftType ?: CraftType.KNITTING
+    var journeyActionVersion by rememberSaveable { mutableIntStateOf(0) }
     val showTrialJourney =
         rememberTrialJourneyVisible(
             presentation = trialJourney,
+            actionVersion = journeyActionVersion,
             eligible =
                 listOf(
                     trialJourney.ready,
@@ -229,7 +232,7 @@ fun KnitToolsNavHost(
             onConsume = actions.onTrialJourneyHandled,
         )
     val onJourneyAction: (TrialJourneyAction) -> Unit = { action ->
-        actions.onTrialJourneyHandled()
+        journeyActionVersion++
         navController.navigateFromTrialJourney(action, trialJourney.facts) { internalCounterLaunch = it }
     }
     var readyEntryId by remember { mutableStateOf<String?>(null) }

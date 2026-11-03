@@ -86,6 +86,22 @@ internal fun JourneyPriceActions(
             )
         OnboardingPriceMode.Skip -> Unit
     }
+    if (price.mode == OnboardingPriceMode.Trial || price.mode == OnboardingPriceMode.Continue) {
+        price.confirmedOffer?.let { offer ->
+            OutlinedButton(
+                onClick = actions.purchase,
+                enabled = !busy && !price.purchaseBusy && !price.pending,
+                modifier = Modifier.fillMaxWidth().testTag("onboarding_buy_inline"),
+                shape = MaterialTheme.shapes.medium,
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.onSurface),
+            ) {
+                Text(
+                    stringResource(R.string.journey_buy_price, offer.formattedPrice),
+                    style = MaterialTheme.typography.titleMedium,
+                )
+            }
+        }
+    }
     if (price.mode != OnboardingPriceMode.Continue) {
         CancelButton(
             onClick = actions.finish,
@@ -100,8 +116,6 @@ internal fun JourneyPriceActions(
 internal fun JourneyPriceContent(
     draft: OnboardingDraft,
     price: OnboardingPriceState,
-    onPurchase: () -> Unit,
-    busy: Boolean = false,
 ) {
     if (!price.ready || price.mode == OnboardingPriceMode.Skip) {
         JourneyTitle(stringResource(R.string.journey_continue_title))
@@ -125,6 +139,8 @@ internal fun JourneyPriceContent(
     if (price.mode == OnboardingPriceMode.Trial) {
         Text(stringResource(R.string.journey_trial_terms), style = MaterialTheme.typography.bodyLarge)
     }
+    OnboardingPreview.Notice()
+    price.confirmedOffer?.let { offer -> JourneyOfferDetails(offer) }
     JourneyComparison()
     if (price.mode == OnboardingPriceMode.Trial) {
         Text(stringResource(R.string.journey_timeline_title), style = MaterialTheme.typography.titleLarge)
@@ -158,52 +174,33 @@ internal fun JourneyPriceContent(
             style = MaterialTheme.typography.bodyLarge,
         )
     }
-    price.confirmedOffer?.let { offer ->
-        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+}
+
+@Composable
+private fun JourneyOfferDetails(offer: SelectedOneTimeOffer) {
+    Text(
+        stringResource(
+            if (offer.launchDetails != null) R.string.journey_buy_launch_title else R.string.journey_buy_title,
+        ),
+        style = MaterialTheme.typography.titleLarge,
+    )
+    Text(
+        offer.formattedPrice,
+        style = MaterialTheme.typography.displaySmall,
+        color = MaterialTheme.colorScheme.onSurface,
+    )
+    Text(stringResource(R.string.journey_one_time), style = MaterialTheme.typography.bodyLarge)
+    offer.launchDetails?.let { launch ->
+        val date = rememberLocaleDateFormat("yMMMd").format(Date(launch.endsAtMillis))
+        val fullPrice = formatOfferFullPrice(offer, rememberCurrentLocale())
         Text(
-            stringResource(
-                if (offer.launchDetails !=
-                    null
-                ) {
-                    R.string.journey_buy_launch_title
-                } else {
-                    R.string.journey_buy_title
-                },
-            ),
-            style = MaterialTheme.typography.titleLarge,
+            if (fullPrice != null) {
+                stringResource(R.string.journey_launch_terms, date, fullPrice)
+            } else {
+                stringResource(R.string.pro_launch_ends_at, date)
+            },
+            style = MaterialTheme.typography.bodyLarge,
         )
-        Text(
-            offer.formattedPrice,
-            style = MaterialTheme.typography.displaySmall,
-            color = MaterialTheme.colorScheme.onSurface,
-        )
-        offer.launchDetails?.let { launch ->
-            val date = rememberLocaleDateFormat("yMMMd").format(Date(launch.endsAtMillis))
-            val fullPrice = formatOfferFullPrice(offer, rememberCurrentLocale())
-            Text(
-                if (fullPrice != null) {
-                    stringResource(R.string.journey_launch_terms, date, fullPrice)
-                } else {
-                    stringResource(R.string.pro_launch_ends_at, date)
-                },
-                style = MaterialTheme.typography.bodyLarge,
-            )
-        }
-        Text(stringResource(R.string.journey_one_time), style = MaterialTheme.typography.bodyLarge)
-        if (price.mode != OnboardingPriceMode.Purchase) {
-            OutlinedButton(
-                onClick = onPurchase,
-                enabled = !busy && !price.purchaseBusy && !price.pending,
-                modifier = Modifier.fillMaxWidth().testTag("onboarding_buy_inline"),
-                shape = MaterialTheme.shapes.medium,
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.onSurface),
-            ) {
-                Text(
-                    stringResource(R.string.journey_buy_price, offer.formattedPrice),
-                    style = MaterialTheme.typography.titleMedium,
-                )
-            }
-        }
     }
 }
 

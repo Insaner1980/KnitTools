@@ -49,7 +49,7 @@ val posthogProjectToken =
 val posthogTokenValid = posthogProjectToken.map { it.matches(Regex("phc_[A-Za-z0-9]+")) }
 
 // Erillinen, verkkoluvaton testipaketti laitetesteille, jotka tyhjentävät tietokannan tai ohjaavat Pro-tilaa.
-// Käyttö: -Pknittools.isolatedTest=activepolicy|notes. Koskee vain debugia; ilman ominaisuutta build ei muutu.
+// Use -Pknittools.isolatedTest=activepolicy|notes|onboarding for isolated debug builds.
 val baseApplicationId = "com.finnvek.knittools"
 val optimizedSmoke = providers.gradleProperty("knittools.optimizedSmoke").orNull == "true"
 val isolatedProfileVariants = setOf("benchmarkRelease", "nonMinifiedRelease")
@@ -59,9 +59,16 @@ val isolatedTestPackageSuffix: String? =
         null -> null
         "activepolicy" -> ".activepolicytest"
         "notes" -> ".notestest"
-        else -> error("Tuntematon knittools.isolatedTest=$isolatedTestProfile (sallitut: activepolicy, notes)")
+        "onboarding" -> ".onboardingpreview"
+        else ->
+            error(
+                "Tuntematon knittools.isolatedTest=$isolatedTestProfile (sallitut: activepolicy, notes, onboarding)",
+            )
     }
 val isolatedTestManifest = layout.projectDirectory.file("src/isolatedTest/AndroidManifest.xml")
+if (isolatedTestProfile == "onboarding") {
+    layout.buildDirectory.set(layout.projectDirectory.dir("build/onboarding"))
+}
 
 // Variantit, jotka eivät päädy jakeluun ja joille riittää paikallinen placeholder-config.
 // benchmarkRelease ja nonMinifiedRelease tulevat baselineprofile-pluginista.
@@ -261,6 +268,9 @@ android {
     buildTypes {
         debug {
             isPseudoLocalesEnabled = true
+            if (isolatedTestProfile == "onboarding") {
+                resValue("string", "onboarding_test_app_name", "KnitTools Preview")
+            }
         }
         configureEach {
             configure<CrashlyticsExtension> {
@@ -289,6 +299,7 @@ android {
     buildFeatures {
         compose = true
         buildConfig = true
+        resValues = isolatedTestProfile == "onboarding"
     }
 
     lint {
@@ -340,6 +351,14 @@ androidComponents {
     onVariants { variant ->
         variant.manifestPlaceholders.put("crashlyticsCollectionEnabled", (variant.name == "release").toString())
         variant.buildConfigFields?.put(
+            "ONBOARDING_TEST",
+            BuildConfigField(
+                "boolean",
+                (variant.name == "debug" && isolatedTestProfile == "onboarding").toString(),
+                null,
+            ),
+        )
+        variant.buildConfigFields?.put(
             "POSTHOG_PROJECT_TOKEN",
             (
                 if (optimizedSmoke &&
@@ -388,6 +407,10 @@ androidComponents {
         )
         isolatedTestPackageSuffix?.let { suffix ->
             variant.applicationId.set(baseApplicationId + suffix)
+            variant.manifestPlaceholders.put(
+                "isolatedTestAppLabel",
+                if (isolatedTestProfile == "onboarding") "@string/onboarding_test_app_name" else "@string/app_name",
+            )
             // Poistaa INTERNET- ja BILLING-oikeudet: testipaketti ei voi tavoittaa verkkoa eikä Play-laskutusta.
             variant.sources.manifests.addStaticManifestFile(isolatedTestManifest.asFile.path)
         }

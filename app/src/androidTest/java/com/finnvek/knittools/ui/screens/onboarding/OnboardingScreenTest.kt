@@ -135,9 +135,10 @@ class OnboardingScreenTest(
             }
             intactText(R.string.journey_trial_title)
             compose.onNodeWithTag("onboarding_start_trial").assertIsDisplayed().assertIsEnabled()
+            compose.onNodeWithTag("onboarding_buy_inline").assertIsDisplayed().assertIsEnabled()
             intactText(R.string.journey_today_body)
             capture("price", isDark)
-            compose.onNodeWithTag("onboarding_buy_inline").performScrollTo().assertIsEnabled()
+            compose.onNodeWithTag("onboarding_buy_inline").assertIsDisplayed().assertIsEnabled()
             compose.runOnIdle {
                 price.value = price.value.copy(pro = ProState(status = ProStatus.TRIAL_EXPIRED))
             }

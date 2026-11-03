@@ -98,7 +98,7 @@ class TrialJourneyUiTest {
     }
 
     @Test
-    fun sharedJourneyShowsProgressAndDismissesBeforeDispatchInBothThemes() {
+    fun sharedJourneyShowsProgressAndAllowsMultipleActionsUntilDismissedInBothThemes() {
         val dark = mutableStateOf(false)
         val visible = mutableStateOf(true)
         val events = mutableListOf<String>()
@@ -136,7 +136,12 @@ class TrialJourneyUiTest {
         compose.runOnIdle { dark.value = true }
         captureIfRequested("phase9-journey-dark", dialog = true)
         compose.onNodeWithText(app.getString(R.string.trial_action_counter)).performScrollTo().performClick()
-        compose.runOnIdle { assertEquals(listOf("dismiss", "RepeatCounter"), events) }
+        compose.runOnIdle { assertEquals(listOf("RepeatCounter"), events) }
+        compose.onNodeWithText(app.getString(R.string.trial_started_screen_title)).assertIsDisplayed()
+        compose.onNodeWithText(app.getString(R.string.trial_action_project)).performScrollTo().performClick()
+        compose.runOnIdle { assertEquals(listOf("RepeatCounter", "AnotherProject"), events) }
+        compose.onNodeWithText(app.getString(R.string.completed_close)).performScrollTo().performClick()
+        compose.runOnIdle { assertEquals(listOf("RepeatCounter", "AnotherProject", "dismiss"), events) }
         compose.onNodeWithText(app.getString(R.string.trial_started_screen_title)).assertDoesNotExist()
     }
 

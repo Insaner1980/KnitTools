@@ -4,6 +4,7 @@ import android.content.res.Configuration
 import android.icu.text.ListFormatter
 import androidx.compose.material3.Text
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -169,6 +170,52 @@ class TrialJourneyPresentationTest {
         compose.onNodeWithText("Hidden").assertExists()
         advance(2_500)
         compose.runOnIdle { assertEquals(1, consumed) }
+    }
+
+    @Test
+    fun chartStaysUnobstructedAcrossRestorationAndJourneyReturnsAfterLeaving() {
+        compose.mainClock.autoAdvance = false
+        val entryId = mutableStateOf<String?>("projects")
+        val actionVersion = mutableIntStateOf(0)
+        lateinit var deferredEntry: MutableState<String?>
+        var consumed = 0
+        val restoration = StateRestorationTester(compose)
+        restoration.setContent {
+            deferredEntry = rememberTrialJourneyDeferredEntry(entryId.value)
+            val visible =
+                rememberTrialJourneyVisible(
+                    activePresentation(),
+                    eligible = entryId.value != null && deferredEntry.value == null,
+                    actionVersion = actionVersion.intValue,
+                    onConsume = { consumed++ },
+                )
+            Text(if (visible) "Visible" else "Hidden")
+        }
+        advance(2_500)
+        compose.onNodeWithText("Visible").assertExists()
+        compose.runOnIdle {
+            actionVersion.intValue++
+            entryId.value = "insights"
+            deferredEntry.value = "insights"
+        }
+        advance(5_000)
+        compose.onNodeWithText("Hidden").assertExists()
+        restoration.emulateSavedInstanceStateRestore()
+        advance(5_000)
+        compose.onNodeWithText("Hidden").assertExists()
+        compose.runOnIdle { entryId.value = null }
+        advance(100)
+        compose.runOnIdle { assertEquals("insights", deferredEntry.value) }
+        compose.runOnIdle { entryId.value = "projects" }
+        advance(2_500)
+        compose.onNodeWithText("Visible").assertExists()
+        compose.runOnIdle {
+            assertEquals(null, deferredEntry.value)
+            assertEquals(0, consumed)
+            entryId.value = "insights"
+        }
+        advance(2_500)
+        compose.onNodeWithText("Visible").assertExists()
     }
 
     @Test

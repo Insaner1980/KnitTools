@@ -3,6 +3,7 @@ package com.finnvek.knittools.ui.screens.pro
 import android.icu.text.ListFormatter
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -104,3 +105,15 @@ internal fun rememberTrialJourneyVisible(
 }
 
 private const val TRIAL_JOURNEY_SETTLE_MILLIS = 2_000L
+
+/** Keeps a requested chart unobstructed until its navigation entry is left. */
+@Composable
+internal fun rememberTrialJourneyDeferredEntry(currentEntryId: String?): MutableState<String?> {
+    val deferredEntry = rememberSaveable { mutableStateOf<String?>(null) }
+    LaunchedEffect(currentEntryId, deferredEntry.value) {
+        if (currentEntryId != null && currentEntryId != deferredEntry.value) {
+            deferredEntry.value = null
+        }
+    }
+    return deferredEntry
+}

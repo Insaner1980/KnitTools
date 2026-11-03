@@ -79,9 +79,11 @@ Nämä eivät tarvitse Google Play Consolea tai julkista julkaisua. Käytetään
 ### P1. Kamera: tallennus ja peruutus — myöhemmin raportoitu tehdyksi
 
 29.10. myöhemmän Pixel 9 -testichatin yhteenvedossa kamera- ja PDF-toiminnot raportoitiin hyväksytyiksi uusimmalla allekirjoitetulla APK:lla, jonka vastaavuus laitteen asennukseen tarkistettiin. Testi käytti omaa testiprojektia. Tämä on chatin yhteenvedon tieto, ei 3.11. uudelleen luettu alkuperäinen laiteloki tai jokaisen askeleen erillinen kuitti. Lähde ja rajaus: luku 10.4. Pelkän tämän koonnin vanhan avoimen merkinnän vuoksi testiä ei tilata uudelleen.
+
 ### P2. Kotinäytön widget: oikeat painikkeet — myöhemmin raportoitu tehdyksi
 
 Saman 29.10. Pixel 9 -testichatin mukaan widgetin käyttö ja synkronointi läpäisivät. Tulos täydentää aiempaa käynnistystestiä, joka ei kattanut widgetin käyttöä. Kooste ei yksilöi kaikkia painalluksia alkuperäisestä lokista; tuloksen näyttötaso on chatin yhteenveto. Lähde ja rajaus: luku 10.4. Ei automaattista uusintaa.
+
 ### P3. Värinäasetus — tekninen havainto tehty, tuntuma vahvistamatta
 
 29.10. myöhemmässä Pixel 9 -testissä `dumpsys vibrator_manager` kirjasi KnitToolsin värinän asetuksen ollessa päällä eikä uusia pyyntöjä pois päältä. Alkuperäinen asetus palautettiin. Tämä tekninen havainto ei yksin vahvista alla tarkoitettua käyttäjän tuntemaa värinää.

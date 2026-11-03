@@ -4405,6 +4405,13 @@ public fun com.finnvek.knittools.ui.screens.pro.TrialJourneySheet(steps: kotlin.
     - firstProject: STABLE (primitive type)
 
 @Composable
+internal fun com.finnvek.knittools.ui.screens.pro.rememberTrialJourneyDeferredEntry(currentEntryId: kotlin.String?): androidx.compose.runtime.MutableState<kotlin.String?>
+  skippable: false
+  restartable: false
+  params:
+    - currentEntryId: STABLE (class with no mutable properties)
+
+@Composable
 internal fun com.finnvek.knittools.ui.screens.pro.rememberTrialJourneyVisible(presentation: com.finnvek.knittools.ui.screens.pro.TrialJourneyPresentation, eligible: kotlin.Boolean, actionVersion: kotlin.Int, onConsume: kotlin.Function0<kotlin.Unit>): kotlin.Boolean
   skippable: false
   restartable: false

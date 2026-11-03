@@ -91,6 +91,7 @@ import com.finnvek.knittools.ui.screens.pattern.PatternViewerViewModel
 import com.finnvek.knittools.ui.screens.pro.ProUpgradeScreen
 import com.finnvek.knittools.ui.screens.pro.TrialJourneyPresentation
 import com.finnvek.knittools.ui.screens.pro.TrialJourneySheet
+import com.finnvek.knittools.ui.screens.pro.rememberTrialJourneyDeferredEntry
 import com.finnvek.knittools.ui.screens.pro.rememberTrialJourneyVisible
 import com.finnvek.knittools.ui.screens.pro.trialPersonalLine
 import com.finnvek.knittools.ui.screens.project.ProjectListScreen
@@ -212,6 +213,7 @@ fun KnitToolsNavHost(
     val journeySteps = trialJourney.facts?.steps(widgetInstalled).orEmpty()
     val journeyCraft = trialJourney.facts?.latestActiveProject?.craftType ?: CraftType.KNITTING
     var journeyActionVersion by rememberSaveable { mutableIntStateOf(0) }
+    var journeyDeferredEntry by rememberTrialJourneyDeferredEntry(navBackStackEntry?.id)
     val showTrialJourney =
         rememberTrialJourneyVisible(
             presentation = trialJourney,
@@ -222,6 +224,7 @@ fun KnitToolsNavHost(
                     trialJourney.facts != null,
                     startupGatesReady,
                     isTrialJourneyRoute(currentRoute),
+                    journeyDeferredEntry == null,
                     lifecycle == Lifecycle.State.RESUMED,
                     LocalWindowInfo.current.isWindowFocused,
                     WindowInsets.ime.getBottom(LocalDensity.current) == 0,
@@ -234,6 +237,9 @@ fun KnitToolsNavHost(
     val onJourneyAction: (TrialJourneyAction) -> Unit = { action ->
         journeyActionVersion++
         navController.navigateFromTrialJourney(action, trialJourney.facts) { internalCounterLaunch = it }
+        if (action == TrialJourneyAction.WeeklyChart) {
+            journeyDeferredEntry = navController.currentBackStackEntry?.id
+        }
     }
     var readyEntryId by remember { mutableStateOf<String?>(null) }
     val destinationReady: (NavBackStackEntry, Boolean) -> Unit = { entry, ready ->

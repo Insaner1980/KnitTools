@@ -102,3 +102,6 @@ app/src/*/google-services.json
 !/app/stability/app-debug.stability
 .worktrees/
 /posthog.properties
+
+# Private recovery backups retained during report cleanup.
+/.local/report-recovery-backups/

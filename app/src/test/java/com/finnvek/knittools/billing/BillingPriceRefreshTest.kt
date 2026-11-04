@@ -17,8 +17,6 @@ import io.mockk.verify
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.async
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runCurrent
@@ -74,10 +72,7 @@ class BillingPriceRefreshTest {
                 manager.retryProductDetails()
                 assertEquals(BillingProductStatus.Available, manager.productStatus.value)
                 assertEquals(quote, manager.selectedOffer.value)
-                val refreshMessage = async(UnconfinedTestDispatcher(testScheduler)) { manager.purchaseMessages.first() }
-                manager.launchPurchaseFlow(activity)
-                assertEquals(BillingUserMessage.PRICE_REFRESHING, refreshMessage.await())
-                verify(exactly = 0) { client.launchBillingFlow(any(), any()) }
+                assertPurchaseBlocked(manager, client, activity, BillingUserMessage.PRICE_REFRESHING)
 
                 val amount = if (changed) 14_990_000L else 9_990_000L
                 response.complete(ProductDetailsResult(ok, listOf(product(amount))))
@@ -85,10 +80,7 @@ class BillingPriceRefreshTest {
                 assertEquals(BillingProductStatus.Available, manager.productStatus.value)
                 assertEquals(amount, manager.selectedOffer.value?.priceAmountMicros)
                 if (changed) {
-                    val message = async(UnconfinedTestDispatcher(testScheduler)) { manager.purchaseMessages.first() }
-                    manager.launchPurchaseFlow(activity)
-                    assertEquals(BillingUserMessage.PRICE_CHANGED_REVIEW, message.await())
-                    verify(exactly = 0) { client.launchBillingFlow(any(), any()) }
+                    assertPurchaseBlocked(manager, client, activity, BillingUserMessage.PRICE_CHANGED_REVIEW)
                 } else {
                     assertEquals(quote, manager.selectedOffer.value)
                 }

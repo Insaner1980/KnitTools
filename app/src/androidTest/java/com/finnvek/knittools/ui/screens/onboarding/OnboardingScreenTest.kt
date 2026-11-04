@@ -1,7 +1,10 @@
 package com.finnvek.knittools.ui.screens.onboarding
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
@@ -22,6 +25,7 @@ import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.text.TextLayoutResult
+import androidx.compose.ui.unit.dp
 import androidx.test.platform.app.InstrumentationRegistry
 import com.finnvek.knittools.R
 import com.finnvek.knittools.billing.BillingProductStatus
@@ -53,6 +57,49 @@ class OnboardingScreenTest(
     private var created = 0
     private var finished = 0
     private val quote = SelectedOneTimeOffer("9,99 €", "test-offer", 9_990_000, "EUR")
+
+    @Test fun priceActionsRemainReachableInShortWindows() {
+        val windowHeight = mutableStateOf(240.dp)
+        val clicked = mutableListOf<String>()
+        val tags = listOf("onboarding_start_trial", "onboarding_buy_inline", "onboarding_continue_free")
+        compose.setContent {
+            CompositionLocalProvider(LocalContext provides context, LocalConfiguration provides configuration) {
+                KnitToolsTheme {
+                    Box(Modifier.height(windowHeight.value)) {
+                        OnboardingScreen(
+                            draft = OnboardingDraft("price", step = OnboardingStep.Price),
+                            price =
+                                OnboardingPriceState(
+                                    ready = true,
+                                    offer = quote,
+                                    productStatus = BillingProductStatus.Available,
+                                ),
+                            busy = false,
+                            messageRes = null,
+                            actions =
+                                OnboardingActions(
+                                    startTrial = { clicked += "trial" },
+                                    purchase = { clicked += "purchase" },
+                                    finish = { clicked += "free" },
+                                ),
+                        )
+                    }
+                }
+            }
+        }
+        listOf(240.dp, 600.dp).forEach { height ->
+            compose.runOnIdle { windowHeight.value = height }
+            tags.forEach { tag ->
+                if (height == 600.dp) compose.onNodeWithTag(tag).assertIsDisplayed()
+                compose
+                    .onNodeWithTag(tag)
+                    .performScrollTo()
+                    .assertIsDisplayed()
+                    .performClick()
+            }
+        }
+        compose.runOnIdle { assertEquals(List(2) { listOf("trial", "purchase", "free") }.flatten(), clicked) }
+    }
 
     @Test fun allStepsAndPriceActionsUseLocalizedCopyInBothThemes() {
         compose.setContent {
@@ -135,9 +182,10 @@ class OnboardingScreenTest(
             }
             intactText(R.string.journey_trial_title)
             compose.onNodeWithTag("onboarding_start_trial").assertIsDisplayed().assertIsEnabled()
+            compose.onNodeWithTag("onboarding_buy_inline").assertIsDisplayed().assertIsEnabled()
             intactText(R.string.journey_today_body)
             capture("price", isDark)
-            compose.onNodeWithTag("onboarding_buy_inline").performScrollTo().assertIsEnabled()
+            compose.onNodeWithTag("onboarding_buy_inline").assertIsDisplayed().assertIsEnabled()
             compose.runOnIdle {
                 price.value = price.value.copy(pro = ProState(status = ProStatus.TRIAL_EXPIRED))
             }

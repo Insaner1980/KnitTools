@@ -15,6 +15,7 @@ import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -90,6 +91,7 @@ import com.finnvek.knittools.ui.screens.pattern.PatternViewerViewModel
 import com.finnvek.knittools.ui.screens.pro.ProUpgradeScreen
 import com.finnvek.knittools.ui.screens.pro.TrialJourneyPresentation
 import com.finnvek.knittools.ui.screens.pro.TrialJourneySheet
+import com.finnvek.knittools.ui.screens.pro.rememberTrialJourneyDeferredEntry
 import com.finnvek.knittools.ui.screens.pro.rememberTrialJourneyVisible
 import com.finnvek.knittools.ui.screens.pro.trialPersonalLine
 import com.finnvek.knittools.ui.screens.project.ProjectListScreen
@@ -208,17 +210,24 @@ fun KnitToolsNavHost(
     val lifecycle by LocalLifecycleOwner.current.lifecycle.currentStateFlow
         .collectAsState()
     val widgetInstalled = rememberCounterWidgetInstalled()
-    val journeySteps = trialJourney.facts?.steps(widgetInstalled).orEmpty()
+    val journeySteps =
+        trialJourney.facts
+            ?.steps(widgetInstalled, fromOnboarding = trialJourney.fromOnboarding)
+            .orEmpty()
     val journeyCraft = trialJourney.facts?.latestActiveProject?.craftType ?: CraftType.KNITTING
+    var journeyActionVersion by rememberSaveable { mutableIntStateOf(0) }
+    var journeyDeferredEntry by rememberTrialJourneyDeferredEntry(navBackStackEntry?.id)
     val showTrialJourney =
         rememberTrialJourneyVisible(
             presentation = trialJourney,
+            actionVersion = journeyActionVersion,
             eligible =
                 listOf(
                     trialJourney.ready,
                     trialJourney.facts != null,
                     startupGatesReady,
                     isTrialJourneyRoute(currentRoute),
+                    journeyDeferredEntry == null,
                     lifecycle == Lifecycle.State.RESUMED,
                     LocalWindowInfo.current.isWindowFocused,
                     WindowInsets.ime.getBottom(LocalDensity.current) == 0,
@@ -229,8 +238,11 @@ fun KnitToolsNavHost(
             onConsume = actions.onTrialJourneyHandled,
         )
     val onJourneyAction: (TrialJourneyAction) -> Unit = { action ->
-        actions.onTrialJourneyHandled()
+        journeyActionVersion++
         navController.navigateFromTrialJourney(action, trialJourney.facts) { internalCounterLaunch = it }
+        if (action == TrialJourneyAction.WeeklyChart) {
+            journeyDeferredEntry = navController.currentBackStackEntry?.id
+        }
     }
     var readyEntryId by remember { mutableStateOf<String?>(null) }
     val destinationReady: (NavBackStackEntry, Boolean) -> Unit = { entry, ready ->
@@ -457,12 +469,7 @@ fun KnitToolsNavHost(
 
     if (showTrialJourney) {
         TrialJourneySheet(
-            steps =
-                if (trialJourney.fromOnboarding) {
-                    trialJourney.facts?.steps(widgetInstalled, fromOnboarding = true).orEmpty()
-                } else {
-                    journeySteps
-                },
+            steps = journeySteps,
             craft = journeyCraft,
             firstProject = trialJourney.fromOnboarding && trialJourney.facts?.latestActiveProject == null,
             onAction = onJourneyAction,

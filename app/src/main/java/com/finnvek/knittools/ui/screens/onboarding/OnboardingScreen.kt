@@ -7,6 +7,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -39,6 +40,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -54,6 +56,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.finnvek.knittools.R
+import com.finnvek.knittools.billing.BillingProductStatus
 import com.finnvek.knittools.domain.calculator.TargetInput
 import com.finnvek.knittools.domain.calculator.parseProjectStartCount
 import com.finnvek.knittools.domain.calculator.parseTargetRows
@@ -61,6 +64,7 @@ import com.finnvek.knittools.domain.model.OnboardingDraft
 import com.finnvek.knittools.domain.model.OnboardingStep
 import com.finnvek.knittools.pro.ProStatus
 import com.finnvek.knittools.ui.components.CancelButton
+import com.finnvek.knittools.ui.components.rememberCurrentLocale
 import com.finnvek.knittools.ui.findActivity
 import com.finnvek.knittools.ui.layout.ContentWidthPolicy
 import com.finnvek.knittools.ui.layout.contentWidth
@@ -95,6 +99,9 @@ fun OnboardingRoute(
     val purchaseBusy by viewModel.purchaseInFlight.collectAsStateWithLifecycle()
     val pending by viewModel.purchasePending.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    val locale = rememberCurrentLocale()
+    val previewOffer = remember(locale) { OnboardingPreview.offer(locale) }
+    var previewPurchaseVisible by rememberSaveable { mutableStateOf(false) }
     val pdfPicker =
         rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
             uri?.let { viewModel.selectPdf(it.toString()) }
@@ -104,8 +111,8 @@ fun OnboardingRoute(
             ready = ready,
             pro = pro,
             trialUnavailable = state.trialUnavailable || trial.clockTampered,
-            offer = offer,
-            productStatus = productStatus,
+            offer = previewOffer ?: offer,
+            productStatus = if (previewOffer != null) BillingProductStatus.Available else productStatus,
             purchaseBusy = purchaseBusy,
             pending = pending,
         )
@@ -152,9 +159,25 @@ fun OnboardingRoute(
                     removePdf = viewModel::removePdf,
                     startTrial = viewModel::startTrial,
                     finish = viewModel::finish,
-                    purchase = { context.findActivity()?.let(onPurchase) },
+                    purchase = {
+                        if (previewOffer != null) {
+                            previewPurchaseVisible = true
+                        } else {
+                            context.findActivity()?.let(onPurchase)
+                        }
+                    },
                 ),
         )
+        if (previewPurchaseVisible && previewOffer != null) {
+            OnboardingPreview.PurchaseDialog(
+                price = previewOffer.formattedPrice,
+                onDismiss = { previewPurchaseVisible = false },
+                onContinue = {
+                    previewPurchaseVisible = false
+                    viewModel.finish()
+                },
+            )
+        }
     }
 }
 
@@ -180,9 +203,13 @@ fun OnboardingScreen(
             }
         },
         bottomBar = {
-            Box(Modifier.fillMaxWidth().navigationBarsPadding(), contentAlignment = Alignment.Center) {
+            BoxWithConstraints(Modifier.fillMaxWidth().navigationBarsPadding(), contentAlignment = Alignment.Center) {
                 Column(
-                    Modifier.contentWidth(ContentWidthPolicy.Form).padding(ComponentDimens.ContentPadding),
+                    Modifier
+                        .contentWidth(ContentWidthPolicy.Form)
+                        .heightIn(max = maxHeight / 2)
+                        .verticalScroll(rememberScrollState())
+                        .padding(ComponentDimens.ContentPadding),
                     verticalArrangement = Arrangement.spacedBy(ComponentDimens.CompactSpacing),
                 ) {
                     if (draft.step == OnboardingStep.Price) {
@@ -225,7 +252,7 @@ fun OnboardingScreen(
                         OnboardingStep.Counter -> JourneyCounter(draft, busy, actions.edit)
                         OnboardingStep.Benefits -> JourneyBenefits(draft)
                         OnboardingStep.Project -> JourneyProject(draft, busy, actions)
-                        OnboardingStep.Price -> JourneyPriceContent(draft, price, actions.purchase, busy)
+                        OnboardingStep.Price -> JourneyPriceContent(draft, price)
                     }
                 }
             }

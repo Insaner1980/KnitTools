@@ -3,6 +3,7 @@ package com.finnvek.knittools.ui.screens.pro
 import android.icu.text.ListFormatter
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -78,9 +79,11 @@ internal fun trialSummaryText(
 internal fun rememberTrialJourneyVisible(
     presentation: TrialJourneyPresentation,
     eligible: Boolean,
+    actionVersion: Int = 0,
     onConsume: () -> Unit,
 ): Boolean {
-    var visible by rememberSaveable { mutableStateOf(false) }
+    // Actions temporarily hide the sheet; only an explicit dismissal consumes the journey.
+    var visible by rememberSaveable(actionVersion) { mutableStateOf(false) }
     val consume by rememberUpdatedState(onConsume)
     val active = presentation.status == ProStatus.TRIAL_ACTIVE
     val finished = presentation.status == ProStatus.TRIAL_EXPIRED || presentation.status == ProStatus.PRO_PURCHASED
@@ -91,7 +94,7 @@ internal fun rememberTrialJourneyVisible(
             consume()
         }
     }
-    LaunchedEffect(presentation.pending, eligible, active, visible) {
+    LaunchedEffect(presentation.pending, eligible, active, visible, actionVersion) {
         if (presentation.pending && eligible && active && !visible) {
             // Alkuperäisen lomakkeen tai ulkoisen toiminnon annetaan avautua ensin.
             delay(TRIAL_JOURNEY_SETTLE_MILLIS)
@@ -102,3 +105,19 @@ internal fun rememberTrialJourneyVisible(
 }
 
 private const val TRIAL_JOURNEY_SETTLE_MILLIS = 2_000L
+
+/** Keeps a requested chart unobstructed until its navigation entry is left. */
+@Composable
+internal fun rememberTrialJourneyDeferredEntry(currentEntryId: String?): MutableState<String?> {
+    val deferredEntry = rememberSaveable { mutableStateOf<String?>(null) }
+    var deferredEntryObserved by rememberSaveable(deferredEntry.value) { mutableStateOf(false) }
+    LaunchedEffect(currentEntryId, deferredEntry.value) {
+        if (currentEntryId == null) return@LaunchedEffect
+        if (currentEntryId == deferredEntry.value) {
+            deferredEntryObserved = true
+        } else if (deferredEntryObserved) {
+            deferredEntry.value = null
+        }
+    }
+    return deferredEntry
+}

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="onboarding_preview_notice" translatable="false">Test preview: planned prices and example campaign dates. No real purchases.</string>
+    <string name="onboarding_preview_purchase_title" translatable="false">Purchase preview</string>
+    <string name="onboarding_preview_purchase_message" translatable="false">In the published app, Google Play opens here to confirm the one-time purchase of %1$s. This preview does not open checkout, take payment or record a purchase.</string>
+</resources>

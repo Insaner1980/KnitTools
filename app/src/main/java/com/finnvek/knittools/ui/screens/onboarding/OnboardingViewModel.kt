@@ -135,7 +135,7 @@ class OnboardingViewModel
             applicationScope.launch(start = CoroutineStart.UNDISPATCHED) {
                 writes.withLock {
                     try {
-                        withContext(ioDispatcher) { persist(draft) }
+                        persist(draft)
                     } catch (cancelled: CancellationException) {
                         throw cancelled
                     } catch (_: Exception) {
@@ -192,7 +192,7 @@ class OnboardingViewModel
 
         fun selectPdf(source: String) =
             operate { draft ->
-                val copied = pdfStorage.copy(source)
+                val copied: Pair<String, String>? = pdfStorage.copy(source)
                 if (copied == null) {
                     _state.update { it.copy(messageRes = R.string.journey_pdf_failed) }
                     return@operate
@@ -278,7 +278,7 @@ class OnboardingViewModel
                     val draft = _state.value.draft?.takeIf { it.completed && it.exitPending } ?: return@withLock
                     val next = draft.copy(exitPending = false)
                     try {
-                        withContext(ioDispatcher) { persist(next) }
+                        persist(next)
                         _state.update { it.copy(draft = next) }
                     } catch (cancelled: CancellationException) {
                         throw cancelled
@@ -301,7 +301,7 @@ class OnboardingViewModel
             _state.update { it.copy(busy = true, messageRes = null) }
             viewModelScope.launch {
                 try {
-                    writes.withLock { withContext(ioDispatcher) { action(current.draft) } }
+                    writes.withLock { action(current.draft) }
                 } catch (cancelled: CancellationException) {
                     throw cancelled
                 } catch (_: Exception) {

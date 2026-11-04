@@ -287,6 +287,32 @@ class OnboardingViewModelTest {
             assertFalse(vm.state.value.required!!)
         }
 
+    @Test fun `exit acknowledgement finishes persistence after ViewModel is cleared`() =
+        runTest {
+            saved.value = OnboardingDraft("completed", completed = true, exitPending = true, projectId = 7L)
+            val vm = viewModel()
+            val writeStarted = CompletableDeferred<Unit>()
+            val finishWrite = CompletableDeferred<Unit>()
+            coEvery { state.saveDraft(match { !it.exitPending }) } coAnswers {
+                writeStarted.complete(Unit)
+                finishWrite.await()
+                saved.value = firstArg()
+                true
+            }
+
+            vm.acknowledgeExit()
+            runCurrent()
+            assertTrue(writeStarted.isCompleted)
+            store.clear()
+            finishWrite.complete(Unit)
+            runCurrent()
+
+            assertEquals(false, saved.value?.exitPending)
+            assertEquals(true, saved.value?.completed)
+            assertEquals(7L, saved.value?.projectId)
+            coVerify(exactly = 1) { state.saveDraft(match { !it.exitPending }) }
+        }
+
     @Test fun `read failure never starts a fresh draft`() =
         runTest {
             coEvery { projects.hasAnyProject() } throws IOException("unavailable")

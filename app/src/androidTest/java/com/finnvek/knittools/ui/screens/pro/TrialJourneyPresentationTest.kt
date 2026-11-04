@@ -4,19 +4,26 @@ import android.content.res.Configuration
 import android.icu.text.ListFormatter
 import androidx.compose.material3.Text
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.LocalWindowInfo
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.StateRestorationTester
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.test.platform.app.InstrumentationRegistry
 import com.finnvek.knittools.R
+import com.finnvek.knittools.domain.model.CraftType
 import com.finnvek.knittools.pro.ProStatus
+import com.finnvek.knittools.pro.TrialJourneyAction
 import com.finnvek.knittools.pro.TrialJourneyFacts
+import com.finnvek.knittools.pro.TrialJourneyStep
 import com.finnvek.knittools.ui.components.FormSheet
 import com.finnvek.knittools.ui.components.FormSheetConfirm
 import com.finnvek.knittools.ui.layout.LocalAdaptiveModalWindow
@@ -68,7 +75,7 @@ class TrialJourneyPresentationTest {
         compose.mainClock.autoAdvance = false
         val eligible = mutableStateOf(true)
         compose.setContent {
-            val visible = rememberTrialJourneyVisible(activePresentation(), eligible.value, {})
+            val visible = rememberTrialJourneyVisible(activePresentation(), eligible.value, onConsume = {})
             Text(if (visible) "Visible" else "Hidden")
         }
         advance(1_000)
@@ -163,6 +170,157 @@ class TrialJourneyPresentationTest {
         compose.onNodeWithText("Hidden").assertExists()
         advance(2_500)
         compose.runOnIdle { assertEquals(1, consumed) }
+    }
+
+    @Test
+    fun chartStaysUnobstructedAcrossRestorationAndJourneyReturnsAfterLeaving() {
+        compose.mainClock.autoAdvance = false
+        val entryId = mutableStateOf<String?>("projects")
+        val actionVersion = mutableIntStateOf(0)
+        lateinit var deferredEntry: MutableState<String?>
+        var consumed = 0
+        val restoration = StateRestorationTester(compose)
+        restoration.setContent {
+            deferredEntry = rememberTrialJourneyDeferredEntry(entryId.value)
+            val visible =
+                rememberTrialJourneyVisible(
+                    activePresentation(),
+                    eligible = entryId.value != null && deferredEntry.value == null,
+                    actionVersion = actionVersion.intValue,
+                    onConsume = { consumed++ },
+                )
+            Text(if (visible) "Visible" else "Hidden")
+        }
+        advance(2_500)
+        compose.onNodeWithText("Visible").assertExists()
+        compose.runOnIdle {
+            actionVersion.intValue++
+            deferredEntry.value = "insights"
+        }
+        advance(5_000)
+        compose.onNodeWithText("Hidden").assertExists()
+        restoration.emulateSavedInstanceStateRestore()
+        advance(100)
+        compose.runOnIdle {
+            assertEquals("insights", deferredEntry.value)
+            entryId.value = "insights"
+        }
+        advance(5_000)
+        compose.onNodeWithText("Hidden").assertExists()
+        restoration.emulateSavedInstanceStateRestore()
+        advance(5_000)
+        compose.onNodeWithText("Hidden").assertExists()
+        compose.runOnIdle { entryId.value = null }
+        advance(100)
+        compose.runOnIdle { assertEquals("insights", deferredEntry.value) }
+        compose.runOnIdle { entryId.value = "projects" }
+        advance(2_500)
+        compose.onNodeWithText("Visible").assertExists()
+        compose.runOnIdle {
+            assertEquals(null, deferredEntry.value)
+            assertEquals(0, consumed)
+            entryId.value = "insights"
+        }
+        advance(2_500)
+        compose.onNodeWithText("Visible").assertExists()
+    }
+
+    @Test
+    fun newDeferredEntryWaitsForItsOwnArrivalBeforeClearing() {
+        val entryId = mutableStateOf("first-chart")
+        lateinit var deferredEntry: MutableState<String?>
+        compose.setContent { deferredEntry = rememberTrialJourneyDeferredEntry(entryId.value) }
+        compose.runOnIdle { deferredEntry.value = "first-chart" }
+        compose.waitForIdle()
+        compose.runOnIdle { deferredEntry.value = "second-chart" }
+        compose.waitForIdle()
+        compose.runOnIdle {
+            assertEquals("second-chart", deferredEntry.value)
+            entryId.value = "second-chart"
+        }
+        compose.waitForIdle()
+        compose.runOnIdle {
+            assertEquals("second-chart", deferredEntry.value)
+            entryId.value = "projects"
+        }
+        compose.waitForIdle()
+        compose.runOnIdle { assertEquals(null, deferredEntry.value) }
+    }
+
+    @Test
+    fun actionsReturnToJourneyAfterTheirFormClosesUntilExplicitDismissal() {
+        val resources = InstrumentationRegistry.getInstrumentation().targetContext.resources
+        val presentation = mutableStateOf(activePresentation())
+        val actionVersion = mutableIntStateOf(0)
+        val form = mutableStateOf<TrialJourneyAction?>(null)
+        val actions = mutableListOf<TrialJourneyAction>()
+        var consumed = 0
+        compose.setContent {
+            KnitToolsTheme {
+                val visible =
+                    rememberTrialJourneyVisible(
+                        presentation.value,
+                        eligible = form.value == null && LocalWindowInfo.current.isWindowFocused,
+                        actionVersion = actionVersion.intValue,
+                        onConsume = {
+                            consumed++
+                            presentation.value = presentation.value.copy(pending = false)
+                        },
+                    )
+                if (visible) {
+                    TrialJourneySheet(
+                        steps = TrialJourneyAction.entries.map { TrialJourneyStep(it, false) },
+                        craft = CraftType.KNITTING,
+                        onAction = {
+                            actions += it
+                            actionVersion.intValue++
+                            form.value = it
+                        },
+                        onDismiss = {
+                            consumed++
+                            presentation.value = presentation.value.copy(pending = false)
+                        },
+                    )
+                }
+                if (form.value != null) {
+                    FormSheet(
+                        title = "Journey action form",
+                        confirm = FormSheetConfirm("Finish action", { form.value = null }),
+                        onDismiss = { form.value = null },
+                    ) { Text("Action contents") }
+                }
+            }
+        }
+        val title = resources.getString(R.string.trial_started_screen_title)
+        val actionRows =
+            listOf(
+                R.string.trial_action_widget to TrialJourneyAction.Widget,
+                R.string.trial_action_counter to TrialJourneyAction.RepeatCounter,
+                R.string.trial_action_project to TrialJourneyAction.AnotherProject,
+            )
+        actionRows.forEach { (label, action) ->
+            compose.waitUntil(5_000) { compose.onAllNodes(hasText(title)).fetchSemanticsNodes().isNotEmpty() }
+            compose.onNodeWithText(resources.getString(label)).performScrollTo().performClick()
+            compose.onNodeWithText("Journey action form").assertExists()
+            compose.mainClock.autoAdvance = false
+            advance(2_500)
+            compose.onNodeWithText(title).assertDoesNotExist()
+            compose.runOnIdle {
+                assertEquals(action, actions.last())
+                assertEquals(0, consumed)
+            }
+            compose.mainClock.autoAdvance = true
+            compose.onNodeWithText("Finish action").performClick()
+        }
+        compose.waitUntil(5_000) { compose.onAllNodes(hasText(title)).fetchSemanticsNodes().isNotEmpty() }
+        compose.onNodeWithText(resources.getString(R.string.completed_close)).performScrollTo().performClick()
+        compose.mainClock.autoAdvance = false
+        advance(2_500)
+        compose.onNodeWithText(title).assertDoesNotExist()
+        compose.runOnIdle {
+            assertEquals(actionRows.map { it.second }, actions)
+            assertEquals(1, consumed)
+        }
     }
 
     @Test

@@ -27,6 +27,8 @@ object OnboardingPreview {
                 .getCurrencyInstance(locale)
                 .apply {
                     currency = Currency.getInstance("EUR")
+                    minimumFractionDigits = 2
+                    maximumFractionDigits = 2
                 }.format(9.99)
         return SelectedOneTimeOffer(
             formattedPrice = formattedPrice,

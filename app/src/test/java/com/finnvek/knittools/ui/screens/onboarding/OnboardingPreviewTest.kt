@@ -2,9 +2,7 @@ package com.finnvek.knittools.ui.screens.onboarding
 
 import com.finnvek.knittools.BuildConfig
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
-import org.junit.Assert.assertTrue
 import org.junit.Assume.assumeTrue
 import org.junit.Test
 import java.time.Instant
@@ -20,13 +18,20 @@ class OnboardingPreviewTest {
     @Test
     fun `preview shows the agreed prices in the same currency across app languages`() {
         assumeTrue(BuildConfig.ONBOARDING_TEST)
-        listOf(Locale.US, Locale.forLanguageTag("fi")).forEach { locale ->
+        listOf(
+            Locale.US to "€9.99",
+            Locale.forLanguageTag("fi") to "9,99€",
+            Locale.JAPAN to "€9.99",
+        ).forEach { (locale, expectedPrice) ->
             val offer = requireNotNull(OnboardingPreview.offer(locale))
             assertEquals(9_990_000L, offer.priceAmountMicros)
             assertEquals("EUR", offer.priceCurrencyCode)
             assertEquals(14_990_000L, offer.launchDetails?.fullPriceMicros)
-            assertTrue(offer.formattedPrice.contains("9"))
-            assertFalse(offer.formattedPrice.isBlank())
+            assertEquals(
+                "Incorrect price for $locale",
+                expectedPrice,
+                offer.formattedPrice.filterNot(Char::isWhitespace),
+            )
             assertEquals("preview-only-no-checkout", offer.offerToken)
         }
     }

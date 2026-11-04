@@ -7,6 +7,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -202,9 +203,13 @@ fun OnboardingScreen(
             }
         },
         bottomBar = {
-            Box(Modifier.fillMaxWidth().navigationBarsPadding(), contentAlignment = Alignment.Center) {
+            BoxWithConstraints(Modifier.fillMaxWidth().navigationBarsPadding(), contentAlignment = Alignment.Center) {
                 Column(
-                    Modifier.contentWidth(ContentWidthPolicy.Form).padding(ComponentDimens.ContentPadding),
+                    Modifier
+                        .contentWidth(ContentWidthPolicy.Form)
+                        .heightIn(max = maxHeight / 2)
+                        .verticalScroll(rememberScrollState())
+                        .padding(ComponentDimens.ContentPadding),
                     verticalArrangement = Arrangement.spacedBy(ComponentDimens.CompactSpacing),
                 ) {
                     if (draft.step == OnboardingStep.Price) {

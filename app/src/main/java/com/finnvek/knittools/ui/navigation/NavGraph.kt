@@ -210,7 +210,10 @@ fun KnitToolsNavHost(
     val lifecycle by LocalLifecycleOwner.current.lifecycle.currentStateFlow
         .collectAsState()
     val widgetInstalled = rememberCounterWidgetInstalled()
-    val journeySteps = trialJourney.facts?.steps(widgetInstalled).orEmpty()
+    val journeySteps =
+        trialJourney.facts
+            ?.steps(widgetInstalled, fromOnboarding = trialJourney.fromOnboarding)
+            .orEmpty()
     val journeyCraft = trialJourney.facts?.latestActiveProject?.craftType ?: CraftType.KNITTING
     var journeyActionVersion by rememberSaveable { mutableIntStateOf(0) }
     var journeyDeferredEntry by rememberTrialJourneyDeferredEntry(navBackStackEntry?.id)
@@ -466,12 +469,7 @@ fun KnitToolsNavHost(
 
     if (showTrialJourney) {
         TrialJourneySheet(
-            steps =
-                if (trialJourney.fromOnboarding) {
-                    trialJourney.facts?.steps(widgetInstalled, fromOnboarding = true).orEmpty()
-                } else {
-                    journeySteps
-                },
+            steps = journeySteps,
             craft = journeyCraft,
             firstProject = trialJourney.fromOnboarding && trialJourney.facts?.latestActiveProject == null,
             onAction = onJourneyAction,

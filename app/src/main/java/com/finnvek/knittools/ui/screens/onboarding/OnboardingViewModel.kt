@@ -192,7 +192,7 @@ class OnboardingViewModel
 
         fun selectPdf(source: String) =
             operate { draft ->
-                val copied = pdfStorage.copy(source)
+                val copied: Pair<String, String>? = pdfStorage.copy(source)
                 if (copied == null) {
                     _state.update { it.copy(messageRes = R.string.journey_pdf_failed) }
                     return@operate

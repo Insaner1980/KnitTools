@@ -239,7 +239,10 @@ class TrialJourneyPresentationTest {
             entryId.value = "second-chart"
         }
         compose.waitForIdle()
-        compose.runOnIdle { entryId.value = "projects" }
+        compose.runOnIdle {
+            assertEquals("second-chart", deferredEntry.value)
+            entryId.value = "projects"
+        }
         compose.waitForIdle()
         compose.runOnIdle { assertEquals(null, deferredEntry.value) }
     }

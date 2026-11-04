@@ -110,8 +110,12 @@ private const val TRIAL_JOURNEY_SETTLE_MILLIS = 2_000L
 @Composable
 internal fun rememberTrialJourneyDeferredEntry(currentEntryId: String?): MutableState<String?> {
     val deferredEntry = rememberSaveable { mutableStateOf<String?>(null) }
+    var deferredEntryObserved by rememberSaveable(deferredEntry.value) { mutableStateOf(false) }
     LaunchedEffect(currentEntryId, deferredEntry.value) {
-        if (currentEntryId != null && currentEntryId != deferredEntry.value) {
+        if (currentEntryId == null) return@LaunchedEffect
+        if (currentEntryId == deferredEntry.value) {
+            deferredEntryObserved = true
+        } else if (deferredEntryObserved) {
             deferredEntry.value = null
         }
     }

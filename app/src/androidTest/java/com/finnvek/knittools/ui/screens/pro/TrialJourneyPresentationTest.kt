@@ -195,8 +195,15 @@ class TrialJourneyPresentationTest {
         compose.onNodeWithText("Visible").assertExists()
         compose.runOnIdle {
             actionVersion.intValue++
-            entryId.value = "insights"
             deferredEntry.value = "insights"
+        }
+        advance(5_000)
+        compose.onNodeWithText("Hidden").assertExists()
+        restoration.emulateSavedInstanceStateRestore()
+        advance(100)
+        compose.runOnIdle {
+            assertEquals("insights", deferredEntry.value)
+            entryId.value = "insights"
         }
         advance(5_000)
         compose.onNodeWithText("Hidden").assertExists()
@@ -216,6 +223,25 @@ class TrialJourneyPresentationTest {
         }
         advance(2_500)
         compose.onNodeWithText("Visible").assertExists()
+    }
+
+    @Test
+    fun newDeferredEntryWaitsForItsOwnArrivalBeforeClearing() {
+        val entryId = mutableStateOf("first-chart")
+        lateinit var deferredEntry: MutableState<String?>
+        compose.setContent { deferredEntry = rememberTrialJourneyDeferredEntry(entryId.value) }
+        compose.runOnIdle { deferredEntry.value = "first-chart" }
+        compose.waitForIdle()
+        compose.runOnIdle { deferredEntry.value = "second-chart" }
+        compose.waitForIdle()
+        compose.runOnIdle {
+            assertEquals("second-chart", deferredEntry.value)
+            entryId.value = "second-chart"
+        }
+        compose.waitForIdle()
+        compose.runOnIdle { entryId.value = "projects" }
+        compose.waitForIdle()
+        compose.runOnIdle { assertEquals(null, deferredEntry.value) }
     }
 
     @Test

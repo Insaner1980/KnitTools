@@ -154,7 +154,7 @@ class ProFeatureGateSourceTest {
 
     @Test
     fun `pro upgrade copy lists only implemented feature groups`() {
-        val upgradeScreen = ProjectSourceFiles.read(PRO_UPGRADE_SCREEN)
+        val upgradeScreen = ProjectSourceFiles.read(PRO_FEATURE_SECTIONS)
         val strings = ProjectSourceFiles.read(STRINGS) + ProjectSourceFiles.read(ONBOARDING_STRINGS)
 
         listOf(
@@ -226,8 +226,8 @@ class ProFeatureGateSourceTest {
             "app/src/main/java/com/finnvek/knittools/pro/ProManager.kt"
         const val BILLING_MANAGER =
             "app/src/main/java/com/finnvek/knittools/billing/BillingManager.kt"
-        const val PRO_UPGRADE_SCREEN =
-            "app/src/main/java/com/finnvek/knittools/ui/screens/pro/ProUpgradeScreen.kt"
+        const val PRO_FEATURE_SECTIONS =
+            "app/src/main/java/com/finnvek/knittools/ui/screens/pro/ProFeatureSections.kt"
         const val STRINGS = "app/src/main/res/values/strings.xml"
         const val ONBOARDING_STRINGS = "app/src/main/res/values/strings_onboarding.xml"
         const val AGENTS = "AGENTS.md"

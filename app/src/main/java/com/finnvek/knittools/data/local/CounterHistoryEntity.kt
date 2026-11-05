@@ -27,4 +27,5 @@ data class CounterHistoryEntity(
     val previousValue: Int,
     val newValue: Int,
     val timestamp: Long = System.currentTimeMillis(),
+    val linkedCounterDeltasJson: String? = null,
 )

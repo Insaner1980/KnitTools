@@ -72,7 +72,7 @@
     <string name="main_counter_repeats">Ripetizioni</string>
     <string name="main_counter_custom">Personalizzata</string>
     <string name="main_counter_custom_label">Etichetta personalizzata</string>
-    <string name="main_counter_custom_label_error">Inserisci una etichetta.</string>
+    <string name="main_counter_custom_label_error">Inserisci un’etichetta.</string>
     <plurals name="rounds_format">
         <item quantity="one">%1$d giro</item>
         <item quantity="many">%1$d giri</item>
@@ -226,7 +226,7 @@
     <string name="quantity_label">Quantità</string>
     <string name="status_in_stash">In scorta</string>
     <string name="status_in_use">In uso</string>
-    <string name="status_finished">Terminato</string>
+    <string name="status_finished">Esaurito</string>
     <string name="yarn_not_linked">Non collegato</string>
     <string name="yarn_card_project_format">Progetto: %1$s</string>
     <string name="yarn_details_title">Dettagli</string>
@@ -284,7 +284,7 @@
     <string name="mode_decrease">Diminuisci</string>
     <string name="style_flat">In piano</string>
     <string name="style_circular">In tondo</string>
-    <string name="current_stitches">Maglie attuali</string>
+    <string name="current_stitches">Numero attuale di maglie</string>
     <string name="increase_by">Aumenta di</string>
     <string name="decrease_by">Diminuisci di</string>
     <string name="increase_result_placeholder">Compila entrambi i campi per vedere dove aumentare</string>
@@ -296,12 +296,12 @@
     <string name="easy_to_remember">Facile da ricordare</string>
     <string name="balanced">Bilanciato</string>
     <string name="total_stitches_format">Totale: %1$d %2$s</string>
-    <string name="increase_decrease_error_current_positive">Le maglie attuali devono essere maggiori di 0</string>
+    <string name="increase_decrease_error_current_positive">Il numero attuale di maglie deve essere maggiore di 0</string>
     <string name="increase_decrease_error_change_positive">Il numero di maglie da modificare deve essere maggiore di 0</string>
     <string name="increase_decrease_error_cannot_decrease">Numero di maglie disponibile: %2$d. Diminuzione richiesta: %1$d.</string>
     <string name="increase_decrease_error_not_enough_decrease">Numero di maglie richiesto: %1$d. Diminuzioni richieste: %2$d.</string>
     <string name="increase_decrease_error_total_out_of_range">Il risultato è troppo grande. Usa numeri di maglie più piccoli.</string>
-    <string name="increase_decrease_error_not_enough_bars">Non ci sono abbastanza spazi tra le maglie per questi aumenti M1. Riduci il numero di aumenti.</string>
+    <string name="increase_decrease_error_not_enough_bars">Non ci sono abbastanza spazi tra le maglie per questi aumenti M1. Parti da almeno 2 maglie e riduci il numero di aumenti, se necessario.</string>
 
     <!-- Gauge Converter -->
     <string name="pattern_gauge">Campione del modello</string>
@@ -449,7 +449,7 @@
     <string name="desc_needle_sizes">Misure ferri nei sistemi metrico, US, UK e giapponese</string>
     <string name="desc_size_charts">Misure corporee standard per le taglie dei capi</string>
     <string name="desc_abbreviations">Riferimento per le abbreviazioni più comuni della maglia</string>
-    <string name="desc_chart_symbols">Guida ai simboli standard dei grafici</string>
+    <string name="desc_chart_symbols">Guida ai simboli degli schemi di maglia</string>
 
     <!-- Library — My Collection -->
     <string name="library_my_collection">La mia collezione</string>
@@ -542,9 +542,9 @@
     <string name="relative_time_days_ago">%1$d g fa</string>
     <string name="relative_time_weeks_ago">%1$d sett fa</string>
     <plurals name="relative_time_months_ago">
-        <item quantity="one">%1$d m fa</item>
-        <item quantity="many">%1$d m fa</item>
-        <item quantity="other">%1$d m fa</item>
+        <item quantity="one">%1$d mese fa</item>
+        <item quantity="many">%1$d mesi fa</item>
+        <item quantity="other">%1$d mesi fa</item>
     </plurals>
 
     <!-- Settings -->
@@ -574,7 +574,7 @@
     <string name="no_results_found">Nessun risultato trovato</string>
 
     <!-- Chart Symbols -->
-    <string name="chart_symbols_title">Simboli dei grafici</string>
+    <string name="chart_symbols_title">Simboli degli schemi</string>
     <string name="chart_symbols_disclaimer">I simboli descrivono le maglie viste dal diritto del lavoro. Controlla sempre la legenda del tuo modello.</string>
     <string name="category_basic">Punti base</string>
     <string name="category_decreases">Diminuzioni</string>

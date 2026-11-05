@@ -159,7 +159,9 @@ class CounterRepositoryCreateProjectTest {
             assertEquals(ProjectCreationResult.Created(7L), result)
             assertEquals(37, row.captured.count)
             assertEquals(120, row.captured.targetRows)
-            coVerify(exactly = 0) { dao.updateCounterStateWithHistory(any(), any(), any(), any(), any(), any(), any()) }
+            coVerify(
+                exactly = 0,
+            ) { dao.updateCounterStateWithHistory(any(), any(), any(), any(), any(), any(), any()) }
             verify { counterDao wasNot Called }
             verify { sessionDao wasNot Called }
             assertFalse(repository.applyMainCounterChange(7L, MainCounterChange.Undo))

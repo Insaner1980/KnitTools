@@ -17,6 +17,7 @@ import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
@@ -36,6 +37,7 @@ import com.finnvek.knittools.pro.ProState
 import com.finnvek.knittools.pro.ProStatus
 import com.finnvek.knittools.ui.localizedTestContext
 import com.finnvek.knittools.ui.theme.KnitToolsTheme
+import com.finnvek.knittools.ui.theme.OnboardingDimens
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -131,8 +133,20 @@ class OnboardingScreenTest(
             intactText(R.string.journey_welcome_title)
             capture("welcome", isDark)
             compose.onNodeWithTag("onboarding_next").performClick()
+            intactText(R.string.journey_craft_title)
+            compose.onNodeWithTag("onboarding_next").assertDoesNotExist()
+            capture("craft", isDark)
+            compose.onNodeWithTag("onboarding_craft_knitting").performClick()
+            // Laatta etenee lyhyen viiveen jälkeen; testikello ei ohita viivettä itsestään.
+            compose.mainClock.advanceTimeBy(
+                OnboardingDimens.CRAFT_ADVANCE_DELAY_MILLIS + OnboardingDimens.STEP_TRANSITION_MILLIS,
+            )
+            compose.waitUntil(5_000) {
+                compose.onAllNodesWithText(text(R.string.journey_needs_title)).fetchSemanticsNodes().isNotEmpty()
+            }
             intactText(R.string.journey_needs_title)
             compose.onNodeWithText(text(R.string.journey_need_yarn)).performScrollTo().performClick()
+            intactText(R.string.journey_needs_reaction)
             compose.onNodeWithTag("onboarding_next").performClick()
             intactText(R.string.journey_counter_title)
             compose.onNodeWithTag("onboarding_demo_undo").performScrollTo().assertIsNotEnabled()
@@ -142,10 +156,13 @@ class OnboardingScreenTest(
                 .performScrollTo()
                 .assertIsEnabled()
                 .performClick()
-            compose.onNodeWithTag("onboarding_demo_count").assertTextEquals("47")
-            compose.onNodeWithTag("onboarding_next").performClick()
-            intactText(R.string.journey_benefits_title)
-            intactText(R.string.journey_yarn_benefit)
+            compose.onNodeWithTag("onboarding_demo_count").assertTextEquals("0")
+            compose.onNodeWithTag("onboarding_demo_return").assertDoesNotExist()
+            compose.onNodeWithTag("onboarding_demo_plus").performScrollTo().performClick()
+            compose.onNodeWithTag("onboarding_demo_plus").performScrollTo().performClick()
+            compose.onNodeWithTag("onboarding_demo_count").assertTextEquals("2")
+            compose.onNodeWithTag("onboarding_demo_return").performScrollTo().assertIsDisplayed()
+            capture("counter", isDark)
             compose.onNodeWithTag("onboarding_next").performClick()
             intactText(R.string.journey_project_title)
             compose.onNodeWithTag("onboarding_project_name").assert(
@@ -169,7 +186,15 @@ class OnboardingScreenTest(
             compose.onNodeWithTag("onboarding_next").assertIsEnabled().performClick()
             compose.runOnIdle {
                 assertEquals(if (isDark) 2 else 1, created)
-                draft.value = draft.value.copy(step = OnboardingStep.Price)
+                draft.value = draft.value.copy(step = OnboardingStep.Ready, projectId = 1)
+            }
+            intactText(R.string.journey_ready_title)
+            intactText(R.string.journey_ready_body)
+            compose.onNodeWithTag("onboarding_back").assertDoesNotExist()
+            capture("ready", isDark)
+            compose.onNodeWithTag("onboarding_next").assertIsEnabled().performClick()
+            compose.runOnIdle {
+                assertEquals(OnboardingStep.Price, draft.value.step)
                 price.value =
                     OnboardingPriceState(ready = false, offer = quote, productStatus = BillingProductStatus.Available)
             }

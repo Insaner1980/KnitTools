@@ -163,6 +163,7 @@ data class PatternAnnotationUiState(
     val selectedAnnotationIsEditable: Boolean = false,
     val selectedAnnotationIsText: Boolean = false,
     val textEdit: PatternAnnotationTextEdit? = null,
+    val savedDraftId: String? = null,
     val selectedAnnotationSupportsChartTracker: Boolean = false,
     val canUndo: Boolean = false,
     val canRedo: Boolean = false,
@@ -343,6 +344,7 @@ class PatternAnnotationViewModel
                     selectedAnnotationId = feedback.interaction.selectedAnnotationId,
                     selectedAnnotationIsText = selectedAnnotation?.payload is TextBoxPayload,
                     textEdit = feedback.interaction.textEdit,
+                    savedDraftId = feedback.interaction.savedDraftId,
                     selectedAnnotationIsEditable =
                         selectedAnnotation != null &&
                             selectedAnnotation.layerId == selection.editableLayerId,
@@ -530,7 +532,10 @@ class PatternAnnotationViewModel
             interaction.update { it.copy(selectedAnnotationId = selected?.id) }
         }
 
-        fun addChartTrackerFromSelected(draft: PatternChartTrackerDraft) {
+        fun addChartTrackerFromSelected(
+            draft: PatternChartTrackerDraft,
+            draftId: String? = null,
+        ) {
             val selectedId = interaction.value.selectedAnnotationId ?: return
             val selected =
                 (uiState.value.masterAnnotations + uiState.value.projectAnnotations)
@@ -564,6 +569,7 @@ class PatternAnnotationViewModel
                         highlightAlpha = PatternAnnotationTokens.CHART_HIGHLIGHT_ALPHA,
                         c2cOrigin = draft.c2cOrigin,
                     ),
+                draftId = draftId,
             )
         }
 
@@ -673,6 +679,7 @@ class PatternAnnotationViewModel
         fun addTextBox(
             text: String,
             bounds: NormalizedPatternBounds = DEFAULT_EDITOR_BOUNDS,
+            draftId: String? = null,
         ) {
             if (text.isBlank()) return
             insertPayload(
@@ -686,6 +693,7 @@ class PatternAnnotationViewModel
                         backgroundArgb = PatternAnnotationTokens.TEXT_BACKGROUND_ARGB,
                         backgroundAlpha = PatternAnnotationTokens.TEXT_BACKGROUND_ALPHA,
                     ),
+                draftId = draftId,
             )
         }
 
@@ -694,6 +702,7 @@ class PatternAnnotationViewModel
             description: String,
             symbol: PatternCalloutSymbol,
             bounds: NormalizedPatternBounds = DEFAULT_EDITOR_BOUNDS,
+            draftId: String? = null,
         ) {
             if (title.isBlank() && description.isBlank()) return
             insertPayload(
@@ -706,6 +715,7 @@ class PatternAnnotationViewModel
                         description = description,
                         argb = PatternAnnotationTokens.CALLOUT_DEFAULT_ARGB,
                     ),
+                draftId = draftId,
             )
         }
 
@@ -927,7 +937,9 @@ class PatternAnnotationViewModel
         private fun insertPayload(
             kind: PatternAnnotationKind,
             payload: PatternAnnotationPayload,
+            draftId: String? = null,
         ) {
+            if (draftId != null && interaction.value.savedDraftId == draftId) return
             val layerId = uiState.value.editableLayerId ?: return
             executeCommand(
                 PatternAnnotationCommand.Insert(
@@ -939,7 +951,9 @@ class PatternAnnotationViewModel
                         zIndex = nextEditableZIndex(),
                     ),
                 ),
-            )
+            ) { state ->
+                if (draftId != null) state.copy(savedDraftId = draftId) else state
+            }
         }
 
         private fun executeCommand(
@@ -1201,6 +1215,7 @@ private data class LayerVisibility(
 
 private data class PatternAnnotationInteractionState(
     val textEdit: PatternAnnotationTextEdit? = null,
+    val savedDraftId: String? = null,
     val activeTool: PatternAnnotationTool = PatternAnnotationTool.BROWSE,
     val penArgb: Int = PatternAnnotationTokens.PEN_DEFAULT_ARGB,
     val penStrokeWidth: Float = PatternAnnotationTokens.PEN_DEFAULT_WIDTH,

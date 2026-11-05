@@ -7,6 +7,7 @@ import android.graphics.Rect
 import android.graphics.pdf.PdfDocument
 import android.net.ConnectivityManager
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.os.SystemClock
 import android.view.InputDevice
@@ -628,7 +629,9 @@ class PatternNotesNavigationRuntimeTest {
         visibleOnly: Boolean = true,
         matches: (AccessibilityNodeInfo) -> Boolean,
     ): AccessibilityNodeInfo? {
-        if (android.os.Build.VERSION.SDK_INT >= 33) automation.clearCache()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            automation.clearCache()
+        }
         val root = automation.rootInActiveWindow ?: return null
 
         fun visit(node: AccessibilityNodeInfo): AccessibilityNodeInfo? {

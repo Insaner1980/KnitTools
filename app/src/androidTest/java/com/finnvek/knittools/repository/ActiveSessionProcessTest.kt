@@ -4,6 +4,7 @@ import android.content.Context
 import android.os.Process
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
+import androidx.test.platform.app.InstrumentationRegistry
 import com.finnvek.knittools.data.local.ActiveSessionSchemaConstraints
 import com.finnvek.knittools.data.local.CounterProjectEntity
 import com.finnvek.knittools.data.local.KnitToolsDatabase
@@ -19,6 +20,7 @@ import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import org.junit.Assume.assumeTrue
 import org.junit.Test
 import java.io.File
 
@@ -62,8 +64,10 @@ class ActiveSessionProcessTest {
 
     @Test fun seedSessionBeforeSeparateProcessRestart() =
         runBlocking {
+            assumeTrue(InstrumentationRegistry.getArguments().getString("activeSessionProcessStage") == "seed")
             check(!expectedRow.exists()) { "Previous process fixture must be resolved before seeding" }
             val database = open()
+            var seeded = false
             try {
                 val project =
                     database.counterProjectDao().insert(
@@ -81,13 +85,16 @@ class ActiveSessionProcessTest {
                 assertEquals(14, active.trustedLastObservedRow)
                 expectedRow.writeText(active.toString())
                 seedPid.writeText(Process.myPid().toString())
+                seeded = true
             } finally {
                 database.close()
+                if (!seeded) directory.deleteRecursively()
             }
         }
 
     @Test fun restartedProcessKeepsEveryAnchorAndRecoveryFinalizesAtMostOnce() =
         runBlocking {
+            assumeTrue(InstrumentationRegistry.getArguments().getString("activeSessionProcessStage") == "verify")
             check(expectedRow.isFile) { "Run seed, stop its isolated process, then run verification" }
             val database = open()
             try {

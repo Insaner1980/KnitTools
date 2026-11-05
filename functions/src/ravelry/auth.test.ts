@@ -1,8 +1,10 @@
 import assert from "node:assert/strict";
 import { afterEach, beforeEach, describe, it, mock } from "node:test";
+import timers from "node:timers/promises";
 
 import { ravelryClientId, ravelryClientSecret } from "../config";
 import { ravelryCallback } from "./auth";
+import { BROWSER_AUTH_COOKIE, browserSecretFromCookie, browserSecretHash } from "./browserAuth";
 import type { StoredOAuthState } from "./oauthStateStore";
 import { disabledRavelryRateLimiter, RavelryRateLimitError } from "./rateLimit";
 import * as stores from "./stores";
@@ -20,6 +22,7 @@ describe("production Ravelry HTTP callback with local responses", () => {
   let fetchResponse: () => Promise<Response>;
   let fetchCalls: number;
   let globalCalls: number;
+  let uidCalls: number;
   let stateReads: number;
   let browserBinds: number;
   let status: number;
@@ -30,6 +33,7 @@ describe("production Ravelry HTTP callback with local responses", () => {
   let limit: boolean;
   let failLimiter: boolean;
   let logs: unknown[][];
+  let responseCookie: string | undefined;
 
   beforeEach(() => {
     stored = {
@@ -43,6 +47,7 @@ describe("production Ravelry HTTP callback with local responses", () => {
     generation = 3;
     fetchCalls = 0;
     globalCalls = 0;
+    uidCalls = 0;
     stateReads = 0;
     browserBinds = 0;
     status = 200;
@@ -53,6 +58,7 @@ describe("production Ravelry HTTP callback with local responses", () => {
     limit = false;
     failLimiter = false;
     logs = [];
+    responseCookie = undefined;
     mock.method(Date, "now", () => now);
     for (const method of ["log", "warn", "error", "info", "debug"] as const) {
       mock.method(console, method, (...args: unknown[]) => { logs.push(args); });
@@ -97,6 +103,11 @@ describe("production Ravelry HTTP callback with local responses", () => {
           return key === state ? stored : null;
         },
         async markStateUsed() { return consumeState(); },
+        async saveBrowserResult(key: string, _bindingHash: string, result: string) {
+          if (key !== state || !stored || stored.usedAtMillis == null) return false;
+          stored = { ...stored, browserResult: result };
+          return true;
+        },
       },
       tokenStore: {
         async getConnectionGeneration() { return generation; },
@@ -114,6 +125,7 @@ describe("production Ravelry HTTP callback with local responses", () => {
           if (failLimiter) throw new Error(rawError);
         },
         async consumeUid() {
+          uidCalls++;
           if (limit) throw new RavelryRateLimitError("callback", "uid", 10, 60_000);
         },
       },
@@ -122,11 +134,14 @@ describe("production Ravelry HTTP callback with local responses", () => {
 
   afterEach(() => { mock.restoreAll(); });
 
-  async function invoke(query: Record<string, unknown> = { state, code: "synthetic-code" }, method = "GET") {
+  async function invoke(query: Record<string, unknown> = { state, code: "synthetic-code" }, method = "GET", cookie?: string) {
     await ravelryCallback(
-      { query, body: query, method, ip: "127.0.0.1", headers: {} } as Parameters<typeof ravelryCallback>[0],
+      { query, body: query, method, ip: "127.0.0.1", headers: { cookie } } as Parameters<typeof ravelryCallback>[0],
       {
-        set() { return this; },
+        set(name: string, value: string) {
+          if (name === "Set-Cookie") responseCookie = value;
+          return this;
+        },
         redirect(code: number, url: string) { status = code; redirect = url; },
         status(code: number) { status = code; return this; },
         json(value: unknown) { body = value; return this; },
@@ -146,6 +161,89 @@ describe("production Ravelry HTTP callback with local responses", () => {
     assert.equal(body, undefined);
     assert.equal(pending, undefined);
   }
+
+  it("preserves the browser binding across overlapping login starts", async () => {
+    await invoke({ state, start: "t".repeat(43) });
+    assert.equal(status, 302);
+    const firstSecret = browserSecretFromCookie(responseCookie);
+    const firstBinding = stored?.browserBindingHash;
+    assert.equal(firstBinding, browserSecretHash(firstSecret));
+    globalCalls = 0;
+    await invoke({ state, start: "u".repeat(43) }, "GET", responseCookie);
+    assert.equal(status, 302);
+    assert.equal(browserSecretFromCookie(responseCookie), firstSecret);
+    assert.equal(stored?.browserBindingHash, firstBinding);
+    await invoke({ state, code: "synthetic-code" }, "GET", responseCookie);
+    assert.equal(status, 302);
+    assert.ok(pending);
+  });
+
+  it("replaces malformed or duplicate browser cookies when starting login", async () => {
+    for (const cookie of [
+      `${BROWSER_AUTH_COOKIE}=invalid`,
+      `${BROWSER_AUTH_COOKIE}=${"b".repeat(43)}; ${BROWSER_AUTH_COOKIE}=${"c".repeat(43)}`,
+    ]) {
+      globalCalls = 0;
+      await invoke({ state, start: "t".repeat(43) }, "GET", cookie);
+      assert.equal(status, 302);
+      assert.equal(stored?.browserBindingHash, browserSecretHash(browserSecretFromCookie(responseCookie)));
+    }
+  });
+
+  it("charges one UID admission for an error-only browser callback and one for its duplicate", async () => {
+    const secret = "b".repeat(43);
+    assert.ok(stored);
+    stored = { ...stored, browserBindingHash: browserSecretHash(secret) };
+    mock.method(timers, "setTimeout", async () => {});
+    const cookie = `${BROWSER_AUTH_COOKIE}=${secret}`;
+
+    await invoke({ state, error: "access_denied" }, "GET", cookie);
+    expectRedirect("access_denied");
+    assert.equal(uidCalls, 1);
+    assert.equal(globalCalls, 1);
+    assert.equal(fetchCalls, 0);
+
+    await invoke({ state, error: "access_denied" }, "GET", cookie);
+    expectRedirect("access_denied");
+    assert.equal(uidCalls, 2);
+    assert.equal(globalCalls, 2);
+    assert.equal(fetchCalls, 0);
+  });
+
+  it("admits a browser code callback and its cached duplicate once each", async () => {
+    const secret = "b".repeat(43);
+    assert.ok(stored);
+    stored = { ...stored, browserBindingHash: browserSecretHash(secret) };
+    const cookie = `${BROWSER_AUTH_COOKIE}=${secret}`;
+
+    await invoke({ state, code: "synthetic-code" }, "GET", cookie);
+    assert.equal(status, 302);
+    assert.ok(redirect && new URL(redirect).searchParams.get("proof"));
+    const originalRedirect = redirect;
+    assert.equal(uidCalls, 1);
+    assert.equal(fetchCalls, 1);
+
+    await invoke({ state, error: "access_denied" }, "GET", cookie);
+    assert.equal(redirect, originalRedirect);
+    assert.equal(uidCalls, 2);
+    assert.equal(globalCalls, 2);
+    assert.equal(fetchCalls, 1);
+  });
+
+  it("rejects a browser callback at UID admission before consuming its state", async () => {
+    const secret = "b".repeat(43);
+    assert.ok(stored);
+    stored = { ...stored, browserBindingHash: browserSecretHash(secret) };
+    limit = true;
+
+    await invoke({ state, code: "synthetic-code" }, "GET", `${BROWSER_AUTH_COOKIE}=${secret}`);
+
+    assert.equal(status, 429);
+    assert.equal(uidCalls, 1);
+    assert.equal(fetchCalls, 0);
+    assert.equal(stored.usedAtMillis, null);
+    assert.equal(pending, undefined);
+  });
 
   for (const query of [
     {}, { state: "bad-state", code: "synthetic-code" }, { state: [state], code: "synthetic-code" },

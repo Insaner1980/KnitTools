@@ -50,8 +50,8 @@ class CounterRepositoryWidgetActionTest {
                     stepSize = 5,
                     action = "increment",
                     previousValue = 10,
-                    newValue = 15,
                     updatedAt = any(),
+                    linkedCounterDeltasJson = any(),
                 )
                 dao.updateCurrentStitch(7L, 0, any())
             }

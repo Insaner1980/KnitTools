@@ -34,6 +34,7 @@ import com.finnvek.knittools.data.local.ActiveSessionSchemaConstraints
 import com.finnvek.knittools.data.local.CounterHistoryEntity
 import com.finnvek.knittools.data.local.CounterProjectEntity
 import com.finnvek.knittools.data.local.KnitToolsDatabase
+import com.finnvek.knittools.data.local.LinkedCounterDeltas
 import com.finnvek.knittools.data.local.MAX_COMPLETED_SESSIONS
 import com.finnvek.knittools.data.local.PatternAnnotationSchemaConstraints
 import com.finnvek.knittools.data.local.ProjectDocumentSchemaConstraints
@@ -271,6 +272,40 @@ class BackupRepositoryTest {
             assertTrue(stopped is StopSessionResult.Saved)
             assertEquals(null, db.sessionDao().getActiveSession())
             assertEquals(12, db.counterProjectDao().getProject(restoredProject.id)?.count)
+        }
+
+    @Test fun linkedCounterUndoSurvivesBackupIdentityRebasing() =
+        runBlocking {
+            seed()
+            val sql = db.openHelper.writableDatabase
+            sql.execSQL("DELETE FROM active_sessions")
+            sql.execSQL("UPDATE counter_projects SET count = 0")
+            sql.execSQL("UPDATE project_counters SET count = 0, linkedToMainCounter = 1, counterType = 'COUNT_UP'")
+            val oldCounterId = number("SELECT id FROM project_counters")
+            sql.execSQL(
+                "UPDATE counter_history SET action = 'reset', previousValue = 7, newValue = 0, " +
+                    "linkedCounterDeltasJson = ?",
+                arrayOf(LinkedCounterDeltas.encode(mapOf(oldCounterId to -2))),
+            )
+            val archive = File(directory, "linked-undo-backup")
+            repository.export(archive.toUri())
+            prepare(archive.toUri())
+            repository.restore(selectionId)
+            val restoredCounterId = number("SELECT id FROM project_counters")
+            assertTrue(restoredCounterId > oldCounterId)
+            assertEquals(
+                mapOf(restoredCounterId to -2),
+                LinkedCounterDeltas.decode(text("SELECT linkedCounterDeltasJson FROM counter_history")),
+            )
+            val projectId =
+                db
+                    .counterProjectDao()
+                    .getAllProjectsOnce()
+                    .single()
+                    .id
+            RoomCounterTestFixture(db, context).counterRepository().undoLastChange(projectId)
+            assertEquals(7, db.counterProjectDao().getProject(projectId)?.count)
+            assertEquals(2L, number("SELECT count FROM project_counters"))
         }
 
     @Test fun restoredSharedCardCannotStealAnotherNotesUsage() =

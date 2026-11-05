@@ -28,10 +28,62 @@ import org.junit.Test
 
 class CounterRepositoryMainCounterChangeTest {
     @Test
+    fun `undo restores actual linked changes across clamping and repository recreation`() =
+        runTest {
+            for (change in listOf(MainCounterChange.Reset, MainCounterChange.Decrement, MainCounterChange.Increment)) {
+                val initialLinkedCount = if (change == MainCounterChange.Increment) Int.MAX_VALUE else 2
+                var project = CounterProjectEntity(id = 7L, name = "Undo", count = 7, stepSize = 5)
+                var linked =
+                    ProjectCounterEntity(
+                        id = 20L,
+                        projectId = 7L,
+                        name = "Linked",
+                        count = initialLinkedCount,
+                        linkedToMainCounter = true,
+                    )
+                var history: CounterHistoryEntity? = null
+                val projectDao = mockk<CounterProjectDao>(relaxed = true)
+                val counterDao = mockk<ProjectCounterDao>(relaxed = true)
+                coEvery { projectDao.getProject(7L) } answers { project }
+                every { counterDao.getCountersForProject(7L) } answers { flowOf(listOf(linked)) }
+                coEvery { counterDao.updateCount(20L, any()) } answers { linked = linked.copy(count = secondArg()) }
+                coEvery {
+                    projectDao.updateCounterStateWithHistory(7L, any(), any(), any(), any(), any(), any())
+                } answers {
+                    project = project.copy(count = secondArg())
+                    history =
+                        CounterHistoryEntity(
+                            id = 1L,
+                            projectId = 7L,
+                            action = arg(3),
+                            previousValue = arg(4),
+                            newValue = secondArg(),
+                            linkedCounterDeltasJson = arg(6),
+                        )
+                }
+                coEvery { projectDao.getLatestHistory(7L) } answers { history }
+                coEvery { projectDao.updateCount(7L, any(), any()) } answers
+                    { project = project.copy(count = secondArg()) }
+
+                assertTrue(buildRepository(projectDao, counterDao).applyMainCounterChange(7L, change))
+                val addedLater = linked.copy(id = 21L, count = 9)
+                every { counterDao.getCountersForProject(7L) } answers { flowOf(listOf(linked, addedLater)) }
+                val manualDelta = if (change == MainCounterChange.Reset) 1 else 0
+                linked = linked.copy(count = linked.count + manualDelta)
+
+                assertTrue(buildRepository(projectDao, counterDao).applyMainCounterChange(7L, MainCounterChange.Undo))
+
+                assertEquals(7, project.count)
+                assertEquals(initialLinkedCount + manualDelta, linked.count)
+                coVerify(exactly = 0) { counterDao.updateCount(21L, any()) }
+            }
+        }
+
+    @Test
     fun `step size update validates and targets only the existing project step`() =
         runTest {
             val dao = mockk<CounterProjectDao>(relaxed = true)
-            val transaction = RecordingTransactionRunner()
+            val transaction = MainCounterRecordingTransactionRunner()
             coEvery { dao.getProject(7L) } returns CounterProjectEntity(id = 7L, name = "Step", count = 42)
             coEvery { dao.getProject(8L) } returns null
             val repository = buildRepository(dao, mockk(relaxed = true), transaction)
@@ -47,7 +99,7 @@ class CounterRepositoryMainCounterChangeTest {
     @Test
     fun `applyMainCounterChange increments linked counters by the real main-counter delta`() =
         runTest {
-            val transactionRunner = RecordingTransactionRunner()
+            val transactionRunner = MainCounterRecordingTransactionRunner()
             val projectDao = mockk<CounterProjectDao>(relaxed = true)
             val counterDao = linkedCounterDao(projectId = 7L, linkedCount = 5, unlinkedCount = 9)
             coEvery { projectDao.getProject(7L) } returns
@@ -73,8 +125,8 @@ class CounterRepositoryMainCounterChangeTest {
                     stepSize = 2,
                     action = "increment",
                     previousValue = 10,
-                    newValue = 12,
                     updatedAt = any(),
+                    linkedCounterDeltasJson = any(),
                 )
                 projectDao.updateCurrentStitch(7L, 0, any())
                 counterDao.updateCount(20L, 7)
@@ -123,8 +175,8 @@ class CounterRepositoryMainCounterChangeTest {
                     stepSize = 3,
                     action = "decrement",
                     previousValue = 1,
-                    newValue = 0,
                     updatedAt = any(),
+                    linkedCounterDeltasJson = any(),
                 )
                 counterDao.updateCount(20L, 2)
             }
@@ -149,8 +201,8 @@ class CounterRepositoryMainCounterChangeTest {
                     stepSize = 1,
                     action = "reset",
                     previousValue = 30,
-                    newValue = 0,
                     updatedAt = any(),
+                    linkedCounterDeltasJson = any(),
                 )
                 counterDao.updateCount(20L, 0)
             }
@@ -263,8 +315,8 @@ class CounterRepositoryMainCounterChangeTest {
                     stepSize = 1,
                     action = "increment",
                     previousValue = 5,
-                    newValue = 6,
                     updatedAt = any(),
+                    linkedCounterDeltasJson = any(),
                 )
                 counterDao.updateCount(20L, 1)
             }
@@ -403,6 +455,30 @@ class CounterRepositoryMainCounterChangeTest {
             coVerify { projectDao.updateCurrentStitch(7L, Int.MAX_VALUE, any()) }
         }
 
+    @Test
+    fun `transaction cancellation propagates`() =
+        runTest {
+            val repository =
+                buildRepository(
+                    mockk(relaxed = true),
+                    mockk(relaxed = true),
+                    transactionRunner =
+                        object : DatabaseTransactionRunner {
+                            override suspend fun <T> run(block: suspend () -> T): T =
+                                throw CancellationException("cancelled")
+                        },
+                )
+
+            try {
+                repository.applyMainCounterChange(7L, MainCounterChange.Increment)
+                fail("CancellationException expected")
+            } catch (_: CancellationException) {
+                // Peruutus kuuluu välittää kutsujalle muuttamatta sitä tavalliseksi virheeksi.
+            }
+        }
+}
+
+class CounterRepositoryReadingGuideTest {
     @Test
     fun `follow moves hidden reading line to exact marker in the counter transaction`() =
         runTest {
@@ -580,129 +656,107 @@ class CounterRepositoryMainCounterChangeTest {
                 )
             }
         }
+}
 
-    @Test
-    fun `transaction cancellation propagates`() =
-        runTest {
-            val repository =
-                buildRepository(
-                    mockk(relaxed = true),
-                    mockk(relaxed = true),
-                    transactionRunner =
-                        object : DatabaseTransactionRunner {
-                            override suspend fun <T> run(block: suspend () -> T): T =
-                                throw CancellationException("cancelled")
-                        },
-                )
-
-            try {
-                repository.applyMainCounterChange(7L, MainCounterChange.Increment)
-                fail("CancellationException expected")
-            } catch (_: CancellationException) {
-                // Peruutus kuuluu välittää kutsujalle muuttamatta sitä tavalliseksi virheeksi.
-            }
-        }
-
-    private fun linkedCounterDao(
-        projectId: Long,
-        linkedCount: Int,
-        unlinkedCount: Int,
-        repeatSectionLinked: Boolean = false,
-    ): ProjectCounterDao =
-        mockk<ProjectCounterDao>(relaxed = true).also { dao ->
-            every { dao.getCountersForProject(projectId) } returns
-                flowOf(
-                    listOf(
-                        ProjectCounterEntity(
-                            id = 20L,
-                            projectId = projectId,
-                            name = "Linked",
-                            count = linkedCount,
-                            linkedToMainCounter = true,
-                        ),
-                        ProjectCounterEntity(
-                            id = 21L,
-                            projectId = projectId,
-                            name = "Manual",
-                            count = unlinkedCount,
-                            linkedToMainCounter = false,
-                        ),
-                        ProjectCounterEntity(
-                            id = 22L,
-                            projectId = projectId,
-                            name = "Repeat section",
-                            count = 0,
-                            counterType = "REPEAT_SECTION",
-                            linkedToMainCounter = repeatSectionLinked,
-                        ),
+private fun linkedCounterDao(
+    projectId: Long,
+    linkedCount: Int,
+    unlinkedCount: Int,
+    repeatSectionLinked: Boolean = false,
+): ProjectCounterDao =
+    mockk<ProjectCounterDao>(relaxed = true).also { dao ->
+        every { dao.getCountersForProject(projectId) } returns
+            flowOf(
+                listOf(
+                    ProjectCounterEntity(
+                        id = 20L,
+                        projectId = projectId,
+                        name = "Linked",
+                        count = linkedCount,
+                        linkedToMainCounter = true,
                     ),
-                )
-        }
-
-    private fun buildRepository(
-        projectDao: CounterProjectDao,
-        projectCounterDao: ProjectCounterDao,
-        transactionRunner: DatabaseTransactionRunner = ImmediateRecordingTransactionRunner,
-        projectDocumentRepository: ProjectDocumentRepository = emptyProjectDocumentRepository(),
-    ): CounterRepository =
-        CounterRepository(
-            dao = projectDao,
-            // CPD-OFF: Testin skenaariokohtainen asetelma pidetaan paikallisena ja luettavana.
-            projectCounterDao = projectCounterDao,
-            sessionDao = mockk<SessionDao>(relaxed = true),
-            photoStorage = mockk<ProgressPhotoStorage>(relaxed = true),
-            patternDocumentStorage = mockk<PatternDocumentStorage>(relaxed = true),
-            context = mockk<Context>(relaxed = true),
-            yarnCardRepository = mockk(relaxed = true),
-            savedPatternRepository = mockk(relaxed = true),
-            projectDocumentRepository = projectDocumentRepository,
-            projectFolderDao = mockk(relaxed = true),
-            transactionRunner = transactionRunner,
-            ioDispatcher = Dispatchers.Unconfined,
-        )
-
-    private fun emptyProjectDocumentRepository(): ProjectDocumentRepository =
-        mockk<ProjectDocumentRepository>(relaxed = true).also { repository ->
-            coEvery { repository.getActiveDocument(any()) } returns null
-        }
-
-    private fun projectDocument(
-        currentPage: Int = 0,
-        rowMapping: String? = null,
-        readingLineYFraction: Float = 0.5f,
-        readingLineFollowCurrentRow: Boolean = true,
-    ): ProjectDocument =
-        ProjectDocument(
-            id = 21L,
-            projectId = 7L,
-            savedPatternId = null,
-            documentKey = "import:21",
-            label = "Pattern",
-            localPdfUri = "content://pattern",
-            sortOrder = 0,
-            isPrimary = true,
-            currentPage = currentPage,
-            rowMapping = rowMapping,
-            readingLineEnabled = false,
-            readingLineYFraction = readingLineYFraction,
-            readingLineFollowCurrentRow = readingLineFollowCurrentRow,
-            verticalReadingGuideEnabled = false,
-            verticalReadingGuideXFraction = 0.5f,
-            createdAt = 1L,
-            updatedAt = 1L,
-        )
-
-    private object ImmediateRecordingTransactionRunner : DatabaseTransactionRunner {
-        // CPD-ON
-        override suspend fun <T> run(block: suspend () -> T): T = block()
+                    ProjectCounterEntity(
+                        id = 21L,
+                        projectId = projectId,
+                        name = "Manual",
+                        count = unlinkedCount,
+                        linkedToMainCounter = false,
+                    ),
+                    ProjectCounterEntity(
+                        id = 22L,
+                        projectId = projectId,
+                        name = "Repeat section",
+                        count = 0,
+                        counterType = "REPEAT_SECTION",
+                        linkedToMainCounter = repeatSectionLinked,
+                    ),
+                ),
+            )
     }
 
-    private class RecordingTransactionRunner : DatabaseTransactionRunner {
-        var runCount: Int = 0
+private fun buildRepository(
+    projectDao: CounterProjectDao,
+    projectCounterDao: ProjectCounterDao,
+    transactionRunner: DatabaseTransactionRunner = ImmediateRecordingTransactionRunner,
+    projectDocumentRepository: ProjectDocumentRepository = emptyProjectDocumentRepository(),
+): CounterRepository =
+    CounterRepository(
+        dao = projectDao,
+        // CPD-OFF: Testin skenaariokohtainen asetelma pidetaan paikallisena ja luettavana.
+        projectCounterDao = projectCounterDao,
+        sessionDao = mockk<SessionDao>(relaxed = true),
+        photoStorage = mockk<ProgressPhotoStorage>(relaxed = true),
+        patternDocumentStorage = mockk<PatternDocumentStorage>(relaxed = true),
+        context = mockk<Context>(relaxed = true),
+        yarnCardRepository = mockk(relaxed = true),
+        savedPatternRepository = mockk(relaxed = true),
+        projectDocumentRepository = projectDocumentRepository,
+        projectFolderDao = mockk(relaxed = true),
+        transactionRunner = transactionRunner,
+        ioDispatcher = Dispatchers.Unconfined,
+    )
 
-        override suspend fun <T> run(block: suspend () -> T): T {
-            runCount += 1
-            return block()
-        }
+private fun emptyProjectDocumentRepository(): ProjectDocumentRepository =
+    mockk<ProjectDocumentRepository>(relaxed = true).also { repository ->
+        coEvery { repository.getActiveDocument(any()) } returns null
+    }
+
+private fun projectDocument(
+    currentPage: Int = 0,
+    rowMapping: String? = null,
+    readingLineYFraction: Float = 0.5f,
+    readingLineFollowCurrentRow: Boolean = true,
+): ProjectDocument =
+    ProjectDocument(
+        id = 21L,
+        projectId = 7L,
+        savedPatternId = null,
+        documentKey = "import:21",
+        label = "Pattern",
+        localPdfUri = "content://pattern",
+        sortOrder = 0,
+        isPrimary = true,
+        currentPage = currentPage,
+        rowMapping = rowMapping,
+        readingLineEnabled = false,
+        readingLineYFraction = readingLineYFraction,
+        readingLineFollowCurrentRow = readingLineFollowCurrentRow,
+        verticalReadingGuideEnabled = false,
+        verticalReadingGuideXFraction = 0.5f,
+        createdAt = 1L,
+        updatedAt = 1L,
+    )
+
+private object ImmediateRecordingTransactionRunner : DatabaseTransactionRunner {
+    // CPD-ON
+    override suspend fun <T> run(block: suspend () -> T): T = block()
+}
+
+private class MainCounterRecordingTransactionRunner : DatabaseTransactionRunner {
+    var runCount: Int = 0
+
+    override suspend fun <T> run(block: suspend () -> T): T {
+        runCount += 1
+        return block()
     }
 }

@@ -269,22 +269,26 @@ export async function importPatternByUrl(options: ImportPatternByUrlOptions): Pr
     );
   }
 
-  const response = await searchPatternsForUser({
-    uid: options.uid,
-    tokenStore: options.tokenStore,
-    client: options.client,
-    rateLimiter: options.rateLimiter,
-    refresh: options.refresh,
-    nowMillis: options.nowMillis,
-    query: {
-      query: parsedUrl.patternSlug ?? parsedUrl.canonicalUrl,
-      page: 1,
-      pageSize: 10,
-    },
-  });
-  const matchedPattern = response.patterns.find(
-    (pattern) => pattern.canonicalUrl === parsedUrl.canonicalUrl,
-  );
+  let matchedPattern: SanitizedPattern | undefined;
+  for (let page = 1; ; page++) {
+    const response = await searchPatternsForUser({
+      uid: options.uid,
+      tokenStore: options.tokenStore,
+      client: options.client,
+      rateLimiter: options.rateLimiter,
+      refresh: options.refresh,
+      nowMillis: options.nowMillis,
+      query: {
+        query: parsedUrl.patternSlug ?? parsedUrl.canonicalUrl,
+        page,
+        pageSize: 10,
+      },
+    });
+    matchedPattern = response.patterns.find(
+      (pattern) => pattern.canonicalUrl === parsedUrl.canonicalUrl,
+    );
+    if (matchedPattern || page >= response.pagination.pageCount) break;
+  }
   if (!matchedPattern) {
     throw new RavelryPatternImportError("pattern_not_found", 404);
   }

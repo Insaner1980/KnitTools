@@ -64,18 +64,27 @@ class OnboardingNavigationTest {
                 ).fetchSemanticsNodes(atLeastOneRootRequired = false)
                 .isNotEmpty()
         }
-        nextTo(R.string.journey_needs_title)
+        nextTo(R.string.journey_craft_title)
+        compose.onNodeWithTag("onboarding_craft_knitting").performClick()
+        waitForStep(R.string.journey_needs_title)
         nextTo(R.string.journey_counter_title)
         compose.onNodeWithTag("onboarding_demo_plus").performScrollTo().performClick()
-        nextTo(R.string.journey_benefits_title)
         nextTo(R.string.journey_project_title)
         compose.onNodeWithTag("onboarding_next").assertIsNotEnabled()
         compose.onNodeWithTag("onboarding_project_name").performTextInput("Onboarding test")
         compose.onNodeWithTag("onboarding_next").performClick()
-        compose.waitUntil(
-            15_000,
-        ) { compose.onAllNodesWithTag("onboarding_continue_free").fetchSemanticsNodes().isNotEmpty() }
+        waitForText(R.string.journey_ready_title)
+        // Keskeytynyt Ready-vaihe palautuu Readyyn eikä luo projektia uudelleen.
         compose.activityRule.scenario.recreate()
+        waitForText(R.string.journey_ready_title)
+        // Luonnos latautuu uudelleenluonnin jälkeen; painike on käytössä vasta latauksen jälkeen.
+        compose.waitUntil(15_000) {
+            compose
+                .onAllNodes(hasTestTag("onboarding_next") and isEnabled())
+                .fetchSemanticsNodes(atLeastOneRootRequired = false)
+                .isNotEmpty()
+        }
+        compose.onNodeWithTag("onboarding_next").performClick()
         compose.waitUntil(15_000) {
             compose
                 .onAllNodes(
@@ -112,6 +121,19 @@ class OnboardingNavigationTest {
 
     private fun nextTo(title: Int) {
         compose.onNodeWithTag("onboarding_next").performClick()
+        waitForStep(title)
+    }
+
+    private fun waitForText(text: Int) {
+        compose.waitUntil(15_000) {
+            compose
+                .onAllNodesWithText(compose.activity.getString(text))
+                .fetchSemanticsNodes(atLeastOneRootRequired = false)
+                .isNotEmpty()
+        }
+    }
+
+    private fun waitForStep(title: Int) {
         compose.waitUntil(15_000) {
             compose.onAllNodesWithText(compose.activity.getString(title)).fetchSemanticsNodes().isNotEmpty() &&
                 compose

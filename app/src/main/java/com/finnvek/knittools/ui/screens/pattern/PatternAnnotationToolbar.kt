@@ -26,6 +26,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
@@ -57,6 +58,7 @@ import com.finnvek.knittools.ui.components.ScrollableFormDialog
 import com.finnvek.knittools.ui.components.SegmentedToggle
 import com.finnvek.knittools.ui.components.dialogTextFieldColors
 import com.finnvek.knittools.ui.theme.PatternAnnotationTokens
+import java.util.UUID
 
 internal data class PatternAnnotationToolbarActions(
     val onToolSelected: (PatternAnnotationTool) -> Unit,
@@ -72,12 +74,12 @@ internal data class PatternAnnotationToolbarActions(
     val onDeleteSelected: () -> Unit,
     val onBringSelectedForward: () -> Unit,
     val onSendSelectedBackward: () -> Unit,
-    val onAddTextBox: (String) -> Unit,
-    val onAddCallout: (String, String, PatternCalloutSymbol) -> Unit,
+    val onAddTextBox: (String, String) -> Unit,
+    val onAddCallout: (String, String, PatternCalloutSymbol, String) -> Unit,
     val onUndo: () -> Unit,
     val onRedo: () -> Unit,
     val onClearPage: () -> Unit,
-    val onAddChartTracker: (PatternChartTrackerDraft) -> Unit,
+    val onAddChartTracker: (PatternChartTrackerDraft, String) -> Unit,
     val onEditText: () -> Unit,
     val onCancelTextEdit: (PatternAnnotationTextEdit) -> Unit,
     val onSaveTextEdit: (PatternAnnotationTextEdit, String) -> Unit,
@@ -104,6 +106,16 @@ internal fun PatternAnnotationToolbar(
         state.selectedAnnotationId,
         state.chartCounterOptions.map { it.type to it.extraCounterId },
     ) { mutableStateOf(false) }
+    var editorDraftId by rememberSaveable(state.owner, state.editableLayerId, state.currentPage) {
+        mutableStateOf(UUID.randomUUID().toString())
+    }
+    LaunchedEffect(state.savedDraftId, editorDraftId) {
+        if (state.savedDraftId == editorDraftId) {
+            showTextEditor = false
+            showCalloutEditor = false
+            showChartTrackerEditor = false
+        }
+    }
     Column(
         verticalArrangement = Arrangement.spacedBy(PatternAnnotationTokens.TOOLBAR_ITEM_SPACING),
         modifier =
@@ -123,8 +135,14 @@ internal fun PatternAnnotationToolbar(
             TOOL_ITEMS.forEach { item ->
                 val onClick: () -> Unit = {
                     when (item.tool) {
-                        PatternAnnotationTool.TEXT -> showTextEditor = true
-                        PatternAnnotationTool.CALLOUT -> showCalloutEditor = true
+                        PatternAnnotationTool.TEXT -> {
+                            editorDraftId = UUID.randomUUID().toString()
+                            showTextEditor = true
+                        }
+                        PatternAnnotationTool.CALLOUT -> {
+                            editorDraftId = UUID.randomUUID().toString()
+                            showCalloutEditor = true
+                        }
                         else -> actions.onToolSelected(item.tool)
                     }
                     hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
@@ -176,7 +194,10 @@ internal fun PatternAnnotationToolbar(
         }
         AnnotationHistoryControls(state, actions)
         if (state.selectedAnnotationSupportsChartTracker && state.chartCounterOptions.isNotEmpty()) {
-            TextButton(onClick = { showChartTrackerEditor = true }) {
+            TextButton(onClick = {
+                editorDraftId = UUID.randomUUID().toString()
+                showChartTrackerEditor = true
+            }) {
                 Text(stringResource(R.string.pattern_annotation_link_chart))
             }
         }
@@ -191,10 +212,11 @@ internal fun PatternAnnotationToolbar(
     }
     if (showTextEditor) {
         PatternTextEditorDialog(
+            isSaving = state.isSaving,
+            writeFailed = state.writeError == PatternAnnotationWriteError.WRITE_FAILED,
             onDismiss = { showTextEditor = false },
             onConfirm = { text ->
-                actions.onAddTextBox(text)
-                showTextEditor = false
+                actions.onAddTextBox(text, editorDraftId)
             },
         )
     }
@@ -212,20 +234,22 @@ internal fun PatternAnnotationToolbar(
     }
     if (showCalloutEditor) {
         PatternCalloutEditorDialog(
+            isSaving = state.isSaving,
+            writeFailed = state.writeError == PatternAnnotationWriteError.WRITE_FAILED,
             onDismiss = { showCalloutEditor = false },
             onConfirm = { title, description ->
-                actions.onAddCallout(title, description, PatternCalloutSymbol.NOTE)
-                showCalloutEditor = false
+                actions.onAddCallout(title, description, PatternCalloutSymbol.NOTE, editorDraftId)
             },
         )
     }
     if (showChartTrackerEditor && state.chartCounterOptions.isNotEmpty()) {
         PatternChartTrackerDialog(
             counterOptions = state.chartCounterOptions,
+            isSaving = state.isSaving,
+            writeFailed = state.writeError == PatternAnnotationWriteError.WRITE_FAILED,
             onDismiss = { showChartTrackerEditor = false },
             onConfirm = { draft ->
-                actions.onAddChartTracker(draft)
-                showChartTrackerEditor = false
+                actions.onAddChartTracker(draft, editorDraftId)
             },
         )
     }
@@ -331,11 +355,13 @@ private fun PatternTextEditorDialog(
 private fun PatternCalloutEditorDialog(
     onDismiss: () -> Unit,
     onConfirm: (String, String) -> Unit,
+    isSaving: Boolean,
+    writeFailed: Boolean,
 ) {
     var title by rememberSaveable { mutableStateOf("") }
     var description by rememberSaveable { mutableStateOf("") }
     ScrollableFormDialog(
-        onDismissRequest = onDismiss,
+        onDismissRequest = { if (!isSaving) onDismiss() },
         title = { Text(stringResource(R.string.pattern_annotation_callout_editor_title)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -343,24 +369,27 @@ private fun PatternCalloutEditorDialog(
                     value = title,
                     onValueChange = { title = it },
                     label = { Text(stringResource(R.string.pattern_annotation_callout_title_label)) },
+                    enabled = !isSaving,
                 )
                 OutlinedTextField(
                     value = description,
                     onValueChange = { description = it },
                     label = { Text(stringResource(R.string.pattern_annotation_callout_description_label)) },
+                    enabled = !isSaving,
                 )
+                if (writeFailed) Text(stringResource(R.string.pattern_annotation_write_failed))
             }
         },
         confirmButton = {
             TextButton(
                 onClick = { onConfirm(title, description) },
-                enabled = title.isNotBlank() || description.isNotBlank(),
+                enabled = (title.isNotBlank() || description.isNotBlank()) && !isSaving,
             ) {
                 Text(stringResource(R.string.save))
             }
         },
         dismissButton = {
-            CancelButton(onClick = onDismiss)
+            CancelButton(onClick = onDismiss, enabled = !isSaving)
         },
     )
 }
@@ -370,6 +399,8 @@ private fun PatternChartTrackerDialog(
     counterOptions: List<PatternChartCounterOption>,
     onDismiss: () -> Unit,
     onConfirm: (PatternChartTrackerDraft) -> Unit,
+    isSaving: Boolean,
+    writeFailed: Boolean,
 ) {
     var rows by rememberSaveable { mutableStateOf(DEFAULT_CHART_DIMENSION.toString()) }
     var columns by rememberSaveable { mutableStateOf(DEFAULT_CHART_DIMENSION.toString()) }
@@ -388,13 +419,14 @@ private fun PatternChartTrackerDialog(
             PatternAnnotationLimits.isValidChartDimensions(validRows, validColumns)
     val validGridStart = gridStartIndex.toIntOrNull()
     ScrollableFormDialog(
-        onDismissRequest = onDismiss,
+        onDismissRequest = { if (!isSaving) onDismiss() },
         title = { Text(stringResource(R.string.pattern_annotation_chart_setup_title)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedTextField(
                         value = rows,
+                        enabled = !isSaving,
                         onValueChange = { rows = it },
                         label = { Text(stringResource(R.string.pattern_annotation_chart_rows)) },
                         isError = !validDimensions,
@@ -403,6 +435,7 @@ private fun PatternChartTrackerDialog(
                     )
                     OutlinedTextField(
                         value = columns,
+                        enabled = !isSaving,
                         onValueChange = { columns = it },
                         label = { Text(stringResource(R.string.pattern_annotation_chart_columns)) },
                         isError = !validDimensions,
@@ -420,28 +453,29 @@ private fun PatternChartTrackerDialog(
                             stringResource(R.string.pattern_annotation_chart_top_to_bottom)
                         }
                     },
-                    onSelected = { rowDirection = it },
+                    onSelected = { if (!isSaving) rowDirection = it },
                 )
                 ChartChoiceRow(
                     choices = ChartColumnDirection.entries,
                     selected = columnDirection,
                     label = { direction -> stringResource(direction.columnDirectionLabel()) },
-                    onSelected = { columnDirection = it },
+                    onSelected = { if (!isSaving) columnDirection = it },
                 )
                 ChartChoiceRow(
                     choices = ChartTrackingMode.entries,
                     selected = trackingMode,
                     label = { mode -> stringResource(mode.trackingModeLabel()) },
-                    onSelected = { trackingMode = it },
+                    onSelected = { if (!isSaving) trackingMode = it },
                 )
                 ChartChoiceRow(
                     choices = counterOptions.indices.toList(),
                     selected = selectedCounterIndex.coerceIn(counterOptions.indices),
                     label = { index -> counterOptions[index].name },
-                    onSelected = { selectedCounterIndex = it },
+                    onSelected = { if (!isSaving) selectedCounterIndex = it },
                 )
                 OutlinedTextField(
                     value = gridStartIndex,
+                    enabled = !isSaving,
                     onValueChange = { gridStartIndex = it },
                     label = { Text(stringResource(R.string.pattern_annotation_chart_grid_start)) },
                     isError = validGridStart == null,
@@ -449,21 +483,22 @@ private fun PatternChartTrackerDialog(
                 )
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(stringResource(R.string.pattern_annotation_chart_wrap), modifier = Modifier.weight(1f))
-                    Switch(checked = wrapAtEnd, onCheckedChange = { wrapAtEnd = it })
+                    Switch(checked = wrapAtEnd, onCheckedChange = { wrapAtEnd = it }, enabled = !isSaving)
                 }
                 if (trackingMode == ChartTrackingMode.C2C_DIAGONAL) {
                     ChartChoiceRow(
                         choices = ChartCorner.entries,
                         selected = c2cOrigin,
                         label = { corner -> stringResource(corner.cornerLabel()) },
-                        onSelected = { c2cOrigin = it },
+                        onSelected = { if (!isSaving) c2cOrigin = it },
                     )
                 }
+                if (writeFailed) Text(stringResource(R.string.pattern_annotation_write_failed))
             }
         },
         confirmButton = {
             TextButton(
-                enabled = validDimensions && validGridStart != null,
+                enabled = validDimensions && validGridStart != null && !isSaving,
                 onClick = {
                     onConfirm(
                         PatternChartTrackerDraft(
@@ -483,7 +518,7 @@ private fun PatternChartTrackerDialog(
                 Text(stringResource(R.string.save))
             }
         },
-        dismissButton = { CancelButton(onClick = onDismiss) },
+        dismissButton = { CancelButton(onClick = onDismiss, enabled = !isSaving) },
     )
 }
 

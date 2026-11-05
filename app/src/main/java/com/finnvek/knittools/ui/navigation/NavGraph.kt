@@ -214,7 +214,6 @@ fun KnitToolsNavHost(
         trialJourney.facts
             ?.steps(widgetInstalled, fromOnboarding = trialJourney.fromOnboarding)
             .orEmpty()
-    val journeyCraft = trialJourney.facts?.latestActiveProject?.craftType ?: CraftType.KNITTING
     var journeyActionVersion by rememberSaveable { mutableIntStateOf(0) }
     var journeyDeferredEntry by rememberTrialJourneyDeferredEntry(navBackStackEntry?.id)
     val showTrialJourney =
@@ -406,7 +405,6 @@ fun KnitToolsNavHost(
                         onStartupReady = { destinationReady(entry, it) },
                         personalLine = trialPersonalLine(trialJourney.status, trialJourney.facts),
                         journeySteps = journeySteps.takeIf { trialJourney.status == ProStatus.TRIAL_ACTIVE }.orEmpty(),
-                        journeyCraft = journeyCraft,
                         onJourneyAction = onJourneyAction,
                     )
                 }
@@ -470,7 +468,6 @@ fun KnitToolsNavHost(
     if (showTrialJourney) {
         TrialJourneySheet(
             steps = journeySteps,
-            craft = journeyCraft,
             firstProject = trialJourney.fromOnboarding && trialJourney.facts?.latestActiveProject == null,
             onAction = onJourneyAction,
             onDismiss = actions.onTrialJourneyHandled,

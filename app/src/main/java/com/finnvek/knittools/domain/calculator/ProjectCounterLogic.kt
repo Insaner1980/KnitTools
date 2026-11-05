@@ -121,7 +121,7 @@ object ProjectCounterLogic {
                 repeatAt > 0 &&
                 newCount >= repeatAt.toLong()
             ) {
-                (newCount % repeatAt.toLong()).toInt()
+                ((newCount - 1L) % repeatAt.toLong() + 1L).toInt()
             } else {
                 newCount.coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
             }

@@ -3,6 +3,7 @@ package com.finnvek.knittools.data.backup
 import android.database.Cursor
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.finnvek.knittools.data.local.KNITTOOLS_DATABASE_VERSION
+import com.finnvek.knittools.data.local.LinkedCounterDeltas
 import com.finnvek.knittools.domain.model.PatternAnnotationKind
 import com.finnvek.knittools.domain.model.PatternAnnotationPayloadCodec
 import com.finnvek.knittools.domain.model.ProjectFolderNameValidationResult
@@ -186,7 +187,12 @@ internal object BackupTables {
             val headerText = input.boundedLine(budget.limits.maxRowCharacters) ?: ""
             BackupFormat.requireJsonDepth(headerText, 1)
             val expectedHeader = JsonArray(columns.map(::JsonPrimitive)).toString()
-            BackupFormat.requireValid(headerText == expectedHeader, BackupError.VALIDATION)
+            val legacyColumns = columns - "linkedCounterDeltasJson"
+            val legacyHistory =
+                table == "counter_history" &&
+                    headerText == JsonArray(legacyColumns.map(::JsonPrimitive)).toString()
+            BackupFormat.requireValid(headerText == expectedHeader || legacyHistory, BackupError.VALIDATION)
+            val inputColumns = if (legacyHistory) legacyColumns else columns
             while (true) {
                 check()
                 val line = input.boundedLine(budget.limits.maxRowCharacters) ?: break
@@ -194,10 +200,11 @@ internal object BackupTables {
                 BackupFormat.requireJsonDepth(line, 1)
                 val values = BackupFormat.json.parseToJsonElement(line).jsonArray
                 BackupFormat.requireValid(
-                    values.size == columns.size && values.all { it is JsonPrimitive },
+                    values.size == inputColumns.size && values.all { it is JsonPrimitive },
                     BackupError.VALIDATION,
                 )
-                val row = columns.zip(values).toMap().toMutableMap()
+                val row = inputColumns.zip(values).toMap().toMutableMap()
+                if (legacyHistory && "linkedCounterDeltasJson" in columns) row["linkedCounterDeltasJson"] = JsonNull
                 validateFields(table, row, budget)
                 validateYarnCardIds(table, row)
                 budget.observeRow(table, row)
@@ -360,6 +367,15 @@ internal object BackupTables {
     ) {
         row.values.forEach { value ->
             if (value is JsonPrimitive && value.isString) budget.requireFieldLength(value.content.length)
+        }
+        if (table == "counter_history") {
+            row["linkedCounterDeltasJson"]?.takeUnless { it == JsonNull }?.let { value ->
+                BackupFormat.requireJsonDepth(value.jsonPrimitive.content, 1)
+                BackupFormat.requireValid(
+                    runCatching { LinkedCounterDeltas.decode(value.jsonPrimitive.content) }.isSuccess,
+                    BackupError.VALIDATION,
+                )
+            }
         }
         if (table == "pattern_annotations") {
             val payload = row["payloadJson"] as? JsonPrimitive

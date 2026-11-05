@@ -24,6 +24,10 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
@@ -39,18 +43,21 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.finnvek.knittools.R
 import com.finnvek.knittools.billing.BillingProductStatus
 import com.finnvek.knittools.billing.SelectedOneTimeOffer
-import com.finnvek.knittools.domain.model.CraftType
 import com.finnvek.knittools.pro.ProState
 import com.finnvek.knittools.pro.ProStatus
 import com.finnvek.knittools.pro.TrialJourneyAction
 import com.finnvek.knittools.pro.TrialJourneyStep
+import com.finnvek.knittools.ui.components.BadgePill
+import com.finnvek.knittools.ui.components.CraftIllustration
 import com.finnvek.knittools.ui.components.ProPriceDetails
-import com.finnvek.knittools.ui.components.SectionLabel
 import com.finnvek.knittools.ui.components.StatusMessage
 import com.finnvek.knittools.ui.components.StatusMessageType
 import com.finnvek.knittools.ui.components.ToolScreenScaffold
+import com.finnvek.knittools.ui.components.rememberCurrentLocale
 import com.finnvek.knittools.ui.findActivity
+import com.finnvek.knittools.ui.screens.onboarding.OnboardingPreview
 import com.finnvek.knittools.ui.theme.ComponentDimens
+import com.finnvek.knittools.ui.theme.IllustrationDimens
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -61,7 +68,6 @@ fun ProUpgradeScreen(
     onStartupReady: (Boolean) -> Unit = {},
     personalLine: String? = null,
     journeySteps: List<TrialJourneyStep> = emptyList(),
-    journeyCraft: CraftType = CraftType.KNITTING,
     onJourneyAction: (TrialJourneyAction) -> Unit = {},
 ) {
     val viewModel = viewModelProvider()
@@ -75,6 +81,10 @@ fun ProUpgradeScreen(
     val isRestoring by viewModel.isRestoring.collectAsStateWithLifecycle()
     val isStartingTrial by viewModel.isStartingTrial.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    val locale = rememberCurrentLocale()
+    // Erillinen esikatselupaketti näyttää saman testihinnan kuin onboarding; julkaisussa arvo on null.
+    val previewOffer = remember(locale) { OnboardingPreview.offer(locale) }
+    var previewPurchaseVisible by rememberSaveable { mutableStateOf(false) }
     LifecycleResumeEffect(viewModel) {
         viewModel.retryProductDetails()
         onPauseOrDispose { }
@@ -99,98 +109,77 @@ fun ProUpgradeScreen(
                     .padding(horizontal = 24.dp, vertical = 20.dp),
             verticalArrangement = Arrangement.spacedBy(20.dp),
         ) {
+            // Hinta ja päätoiminto otsikon alla, sitten Pron lisäykset; ilmainen osa tiivistettynä lopussa.
+            CraftIllustration(R.drawable.onboarding_pro_hero, height = IllustrationDimens.ProPageHeight)
             ProIntroduction(personalLine)
-            ProFreeFeatures()
-            SectionLabel(stringResource(R.string.onboarding_pro_adds_title))
-            ProBenefits()
-            TrialJourneyContent(journeySteps, journeyCraft, onJourneyAction)
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
             ProPurchaseSection(
                 proState = proState,
                 proStateReady = proStateReady,
                 purchaseQueryFailed = purchaseQueryFailed,
-                offer = selectedOffer,
-                productStatusProvider = { productStatus },
+                offer = previewOffer ?: selectedOffer,
+                productStatusProvider = { if (previewOffer != null) BillingProductStatus.Available else productStatus },
                 purchaseFlowInFlight = purchaseFlowInFlight,
                 isRestoring = isRestoring,
                 isStartingTrial = isStartingTrial,
-                onPurchase = { context.findActivity()?.let(onPurchase) },
+                onPurchase = {
+                    if (previewOffer != null) {
+                        previewPurchaseVisible = true
+                    } else {
+                        context.findActivity()?.let(onPurchase)
+                    }
+                },
                 onRestore = viewModel::restorePurchases,
                 onRetry = viewModel::retryProductDetails,
                 onStartTrial = viewModel::startTrial,
             )
             statusMessageRes?.let { ProStatusMessage(messageRes = it) }
+            ProAddsSection()
+            TrialJourneyContent(journeySteps, onJourneyAction)
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+            ProFreeForeverSection()
+            if (proStateReady) ProRestoreButton(isRestoring = isRestoring, onRestore = viewModel::restorePurchases)
             Spacer(modifier = Modifier.height(8.dp))
         }
+    }
+    if (previewPurchaseVisible && previewOffer != null) {
+        OnboardingPreview.PurchaseDialog(
+            price = previewOffer.formattedPrice,
+            onDismiss = { previewPurchaseVisible = false },
+            onContinue = { previewPurchaseVisible = false },
+        )
     }
 }
 
 @Composable
 private fun ProIntroduction(personalLine: String?) {
-    Text(
-        text = stringResource(R.string.onboarding_pro_intro),
-        style = MaterialTheme.typography.headlineMedium,
-        fontWeight = FontWeight.SemiBold,
-    )
-    personalLine?.let {
-        Text(it, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
-    }
-}
-
-@Composable
-private fun ProFreeFeatures() {
     Column(verticalArrangement = Arrangement.spacedBy(ComponentDimens.StandardSpacing)) {
-        SectionLabel(stringResource(R.string.onboarding_pro_free_title))
-        listOf(
-            R.string.onboarding_pro_free_project,
-            R.string.onboarding_pro_free_counter,
-            R.string.onboarding_pro_free_pdf,
-            R.string.onboarding_pro_free_web,
-            R.string.onboarding_pro_free_yarn,
-            R.string.onboarding_pro_free_time,
-            R.string.onboarding_pro_free_tools,
-            R.string.onboarding_pro_free_backup,
-        ).forEach { resource ->
-            Text(stringResource(resource), style = MaterialTheme.typography.bodyMedium)
+        Text(
+            text = stringResource(R.string.onboarding_pro_intro),
+            style = MaterialTheme.typography.headlineMedium,
+            fontWeight = FontWeight.SemiBold,
+        )
+        personalLine?.let {
+            Text(it, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
 
+/** Kokeilun tai oston tila yhtenä pillerinä otsikon alla; ennen kokeilua pilleriä ei tarvita. */
 @Composable
-private fun ProBenefits() {
-    Column(verticalArrangement = Arrangement.spacedBy(18.dp)) {
-        ProBenefitGroup(
-            title = stringResource(R.string.onboarding_pro_group_projects_title),
-            body = stringResource(R.string.onboarding_pro_group_projects_body),
-        )
-        ProBenefitGroup(
-            title = stringResource(R.string.onboarding_pro_group_workflow_title),
-            body = stringResource(R.string.onboarding_pro_group_workflow_body),
-        )
-        ProBenefitGroup(
-            title = stringResource(R.string.onboarding_pro_group_insights_title),
-            body = stringResource(R.string.onboarding_pro_group_insights_body),
-        )
-    }
-}
-
-@Composable
-private fun ProBenefitGroup(
-    title: String,
-    body: String,
-) {
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold,
-        )
-        Text(
-            text = body,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-    }
+private fun ProStatusPill(proState: ProState) {
+    val text =
+        when (proState.status) {
+            ProStatus.TRIAL_NOT_STARTED -> return
+            ProStatus.TRIAL_ACTIVE ->
+                pluralStringResource(
+                    R.plurals.pro_status_trial_days,
+                    proState.trialDaysRemaining,
+                    proState.trialDaysRemaining,
+                )
+            ProStatus.TRIAL_EXPIRED -> stringResource(R.string.pro_status_trial_ended)
+            ProStatus.PRO_PURCHASED -> stringResource(R.string.pro_page_purchased)
+        }
+    BadgePill(text = text, uppercase = false)
 }
 
 @Composable
@@ -223,84 +212,54 @@ private fun ProPurchaseSection(
         return
     }
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        if (proState.status != ProStatus.PRO_PURCHASED) {
-            ProPriceDetails(offer, productStatus, proState.status == ProStatus.TRIAL_NOT_STARTED, onRetry)
-        }
-        when (proState.status) {
-            ProStatus.TRIAL_NOT_STARTED -> Text(stringResource(R.string.onboarding_pro_trial_terms))
-
-            ProStatus.TRIAL_ACTIVE -> {
-                Text(
-                    text =
-                        pluralStringResource(
-                            R.plurals.pro_status_trial_days,
-                            proState.trialDaysRemaining,
-                            proState.trialDaysRemaining,
-                        ),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                )
-            }
-
-            ProStatus.TRIAL_EXPIRED -> {
-                Text(
-                    text = stringResource(R.string.pro_status_trial_ended),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                )
-            }
-
-            ProStatus.PRO_PURCHASED -> {
-                Text(
-                    text = stringResource(R.string.pro_page_purchased),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                )
-            }
-        }
-
-        if (proState.status != ProStatus.PRO_PURCHASED) {
+        ProStatusPill(proState)
+        if (proState.status == ProStatus.PRO_PURCHASED) return@Column
+        ProPriceDetails(
+            offer = offer,
+            productStatus = productStatus,
+            trialAvailable = proState.status == ProStatus.TRIAL_NOT_STARTED,
+            onRetry = onRetry,
+            prominent = true,
+        )
+        // Sisällön säilymisestä kerrotaan vain päättyneelle kokeilulle; ennen kokeilua teksti hämmensi.
+        if (proState.status == ProStatus.TRIAL_EXPIRED) {
             Text(stringResource(R.string.pro_trial_ended_body), style = MaterialTheme.typography.bodyMedium)
-            if (proState.status == ProStatus.TRIAL_NOT_STARTED) {
-                Button(onClick = onStartTrial, modifier = Modifier.fillMaxWidth(), enabled = !isStartingTrial) {
-                    Text(stringResource(R.string.pro_start_14_day_trial))
-                }
-            }
-            when {
-                productStatus == BillingProductStatus.Available && price != null -> {
-                    val purchaseButtonModifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .semantics { liveRegion = LiveRegionMode.Polite }
-                    val purchaseButtonContent: @Composable RowScope.() -> Unit = {
-                        if (purchaseFlowInFlight) {
-                            CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
-                            Spacer(modifier = Modifier.width(8.dp))
-                        }
-                        Text(stringResource(R.string.pro_buy_for_price, price))
-                    }
-                    if (proState.status == ProStatus.TRIAL_NOT_STARTED) {
-                        OutlinedButton(
-                            onClick = onPurchase,
-                            modifier = purchaseButtonModifier,
-                            enabled = !purchaseFlowInFlight,
-                            content = purchaseButtonContent,
-                        )
-                    } else {
-                        Button(
-                            onClick = onPurchase,
-                            modifier = purchaseButtonModifier,
-                            enabled = !purchaseFlowInFlight,
-                            content = purchaseButtonContent,
-                        )
-                    }
-                }
-
-                else -> Unit
+        }
+        if (proState.status == ProStatus.TRIAL_NOT_STARTED) {
+            Text(stringResource(R.string.onboarding_pro_trial_terms), style = MaterialTheme.typography.bodyMedium)
+            Button(onClick = onStartTrial, modifier = Modifier.fillMaxWidth(), enabled = !isStartingTrial) {
+                Text(stringResource(R.string.pro_start_14_day_trial))
             }
         }
-
-        ProRestoreButton(isRestoring = isRestoring, onRestore = onRestore)
+        if (productStatus == BillingProductStatus.Available && price != null) {
+            val purchaseButtonModifier =
+                Modifier
+                    .fillMaxWidth()
+                    .semantics { liveRegion = LiveRegionMode.Polite }
+            val purchaseButtonContent: @Composable RowScope.() -> Unit = {
+                if (purchaseFlowInFlight) {
+                    CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                    Spacer(modifier = Modifier.width(8.dp))
+                }
+                Text(stringResource(R.string.pro_buy_for_price, price))
+            }
+            // Kokeilun ollessa tarjolla osto on toissijainen; muuten se on sivun ainoa päätoiminto.
+            if (proState.status == ProStatus.TRIAL_NOT_STARTED) {
+                OutlinedButton(
+                    onClick = onPurchase,
+                    modifier = purchaseButtonModifier,
+                    enabled = !purchaseFlowInFlight,
+                    content = purchaseButtonContent,
+                )
+            } else {
+                Button(
+                    onClick = onPurchase,
+                    modifier = purchaseButtonModifier,
+                    enabled = !purchaseFlowInFlight,
+                    content = purchaseButtonContent,
+                )
+            }
+        }
     }
 }
 

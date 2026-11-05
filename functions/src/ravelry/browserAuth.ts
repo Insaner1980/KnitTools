@@ -25,6 +25,15 @@ export function browserSecretFromCookie(header: string | undefined): string {
   return requireBrowserValue(values.length === 1 ? values[0] : undefined);
 }
 
+export function browserSecretForStart(header: string | undefined): string {
+  try {
+    return browserSecretFromCookie(header);
+  } catch (error) {
+    if (!(error instanceof RavelryAuthFlowError)) throw error;
+    return randomBytes(32).toString("base64url");
+  }
+}
+
 export async function startBrowserOAuth(options: Parameters<typeof startRavelryOAuth>[0]) {
   const ticket = randomBytes(32).toString("base64url");
   const result = await startRavelryOAuth({
@@ -65,6 +74,7 @@ export async function completeBrowserOAuthCallback(
   const secret = requireBrowserValue(options.browserSecret);
   const now = options.nowMillis ?? Date.now;
   const stored = requireBoundState(await options.stateStore.getState(state), secret, now());
+  await options.rateLimiter.consumeUid(stored.uid, "callback");
 
   async function savedResult() {
     const current = requireBoundState(await options.stateStore.getState(state), secret, now());
@@ -96,14 +106,17 @@ export async function completeBrowserOAuthCallback(
   }
 
   if (stored.usedAtMillis != null || options.query.error != null) {
-    await options.rateLimiter.consumeUid(stored.uid, "callback");
     const result = await awaitResult();
     if (result) return result;
     if (stored.usedAtMillis != null) throw new RavelryAuthFlowError("callback_in_progress", 409);
   }
 
   try {
-    const result = await completeRavelryOAuthCallback({ ...options, randomString: () => completionProof(secret, stored) });
+    const result = await completeRavelryOAuthCallback({
+      ...options,
+      rateLimiter: { ...options.rateLimiter, consumeUid: async () => {} },
+      randomString: () => completionProof(secret, stored),
+    });
     const redirect = new URL(result.redirectUrl);
     const outcome = redirect.searchParams.has("proof") ? "proof_ready" : redirect.searchParams.get("error");
     if (!outcome) throw new RavelryAuthFlowError("invalid_completion", 400);
@@ -114,7 +127,6 @@ export async function completeBrowserOAuthCallback(
     return result;
   } catch (error) {
     if (!(error instanceof RavelryAuthFlowError) || error.code !== "used_state") throw error;
-    await options.rateLimiter.consumeUid(stored.uid, "callback");
     const result = await awaitResult();
     if (!result) throw new RavelryAuthFlowError("callback_in_progress", 409);
     return result;

@@ -201,14 +201,13 @@ class ActiveProjectPolicyRoomTest {
                     null,
                 ) is ProjectCompletionResult.NeedsActiveSessionChoice,
             )
-            assertEquals(
-                ProjectCompletionResult.Completed,
+            assertTrue(
                 repository.completeProjectWithSessionChoice(
                     id,
                     ActiveSessionCompletionChoice.DISCARD,
                     completedAtMillis = 200L,
                     expectedSession = started.session,
-                ),
+                ) is ProjectCompletionResult.CompletedNow,
             )
             assertEquals(ProjectReactivationResult.Reactivated, repository.reactivateProject(id, 200L, true))
             val before = repository.getProject(id)
@@ -231,9 +230,8 @@ class ActiveProjectPolicyRoomTest {
             val first = seed("Cycles")
             val second = seed("Other")
             assertTrue(repository.observeCompletions().first().isEmpty())
-            assertEquals(
-                ProjectCompletionResult.Completed,
-                repository.completeProjectWithSessionChoice(first, null, 200L),
+            assertTrue(
+                repository.completeProjectWithSessionChoice(first, null, 200L) is ProjectCompletionResult.CompletedNow,
             )
             repository.archiveProject(first, 300L)
             assertEquals(1, repository.observeCompletions(first).first().size)
@@ -294,7 +292,7 @@ class ActiveProjectPolicyRoomTest {
                     first,
                     999L,
                 ).map { repository.completeProjectWithSessionChoice(it, null) }
-            assertEquals(ProjectCompletionResult.Completed, results[0])
+            assertTrue(results[0] is ProjectCompletionResult.CompletedNow)
             assertTrue(results[1] is ProjectCompletionResult.NeedsActiveSessionChoice)
             assertEquals(ProjectCompletionResult.ProjectUnavailable, results[3])
             assertEquals(listOf(first), repository.observeCompletions().first().map { it.projectId })
@@ -374,7 +372,7 @@ class ActiveProjectPolicyRoomTest {
             attempted.await()
             assertFalse(second.isCompleted)
             resume.complete(Unit)
-            assertEquals(ProjectCompletionResult.Completed, first.await())
+            assertTrue(first.await() is ProjectCompletionResult.CompletedNow)
             assertEquals(ProjectCompletionResult.Completed, second.await())
             assertEquals(
                 before.copy(isCompleted = true, completedAt = 200L, totalRows = before.count, updatedAt = 200L),

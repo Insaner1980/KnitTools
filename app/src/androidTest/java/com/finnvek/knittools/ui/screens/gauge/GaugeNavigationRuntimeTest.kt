@@ -79,6 +79,7 @@ class GaugeNavigationRuntimeTest {
 
     @Test
     fun legacyToolsEntryDefaultsToAdjustmentAndReturnsWithoutDatabaseWrites() {
+        runBlocking { app.onboardingStateRepository.get().dismissWelcome() }
         launchActivity()
         clickText(text(R.string.tab_tools))
         assertTabSelected(R.string.tab_tools)

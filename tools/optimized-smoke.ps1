@@ -16,10 +16,23 @@ $output = [IO.Path]::GetFullPath((Join-Path $root $OutputDirectory))
 New-Item -ItemType Directory -Force -Path $output | Out-Null
 if (Test-Path (Join-Path $output 'instrumentation.txt')) { throw 'Choose a fresh evidence directory.' }
 
+function Invoke-NativeCommand([string]$FilePath, [string[]]$Arguments) {
+    $command = Get-Command $FilePath -CommandType Application -ErrorAction Stop
+    $previousPreference = $ErrorActionPreference
+    try {
+        $ErrorActionPreference = 'Continue'
+        $nativeOutput = @(& $command.Source @Arguments 2>&1)
+        $exitCode = $LASTEXITCODE
+        return [pscustomobject]@{ Output = $nativeOutput; ExitCode = $exitCode }
+    } finally {
+        $ErrorActionPreference = $previousPreference
+    }
+}
+
 function Invoke-Adb([string[]]$Arguments) {
-    $result = & adb -s $Serial @Arguments 2>&1
-    if ($LASTEXITCODE -ne 0) { throw "adb failed: $($result -join "`n")" }
-    return ($result -join "`n")
+    $result = Invoke-NativeCommand 'adb' (@('-s', $Serial) + $Arguments)
+    if ($result.ExitCode -ne 0) { throw "adb failed: $($result.Output -join "`n")" }
+    return ($result.Output -join "`n")
 }
 
 if ((Invoke-Adb @('shell', 'getprop', 'ro.kernel.qemu')).Trim() -ne '1') {
@@ -42,8 +55,9 @@ $sdk = if ($env:ANDROID_HOME) { $env:ANDROID_HOME } elseif ($env:ANDROID_SDK_ROO
 }
 $suffix = if ([Environment]::OSVersion.Platform -eq [PlatformID]::Win32NT) { '.exe' } else { '' }
 $aapt = Join-Path $sdk "build-tools/37.0.0/aapt2$suffix"
-$manifest = & $aapt dump xmltree $app --file AndroidManifest.xml 2>&1
-if ($LASTEXITCODE -ne 0) { throw 'Cannot inspect the packaged manifest.' }
+$manifestResult = Invoke-NativeCommand $aapt @('dump', 'xmltree', $app, '--file', 'AndroidManifest.xml')
+if ($manifestResult.ExitCode -ne 0) { throw 'Cannot inspect the packaged manifest.' }
+$manifest = $manifestResult.Output
 $manifestText = $manifest -join "`n"
 $manifest | Set-Content (Join-Path $output 'packaged-manifest.txt')
 if ($manifestText -notmatch 'android:testOnly[^\r\n]*=true' -or $manifestText -match 'android:debuggable[^\r\n]*=true') {
@@ -52,8 +66,9 @@ if ($manifestText -notmatch 'android:testOnly[^\r\n]*=true' -or $manifestText -m
 if ($manifestText -match '"(android\.permission\.INTERNET|com\.android\.vending\.BILLING|android\.permission\.CAMERA)"') {
     throw 'Unexpected target permission.'
 }
-$configurations = & $aapt dump configurations $app 2>&1
-if ($LASTEXITCODE -ne 0 -or ($configurations -join "`n") -match 'en-rXA|ar-rXB') {
+$configurationResult = Invoke-NativeCommand $aapt @('dump', 'configurations', $app)
+$configurations = $configurationResult.Output
+if ($configurationResult.ExitCode -ne 0 -or ($configurations -join "`n") -match 'en-rXA|ar-rXB') {
     throw 'Unexpected pseudolocale or resource inspection failure.'
 }
 $configurations | Set-Content (Join-Path $output 'packaged-configurations.txt')
@@ -89,9 +104,17 @@ try {
         throw 'Optimized smoke did not execute every expected test successfully. See instrumentation.txt.'
     }
 } finally {
-    & adb -s $Serial logcat -d -t 5000 2>&1 | Set-Content (Join-Path $output 'logcat.txt')
-    if ($LASTEXITCODE -ne 0) { Write-Warning 'Logcat capture was incomplete; preserving its partial output.' }
-    & adb -s $Serial pull '/sdcard/Android/data/com.finnvek.knittools.baselineprofile/files/optimized-smoke' $output 2>&1 | Out-Null
-    Invoke-Adb @('shell', 'wm', 'size', 'reset') | Out-Null
-    Invoke-Adb @('shell', 'wm', 'density', 'reset') | Out-Null
+    try {
+        $logcat = Invoke-NativeCommand 'adb' @('-s', $Serial, 'logcat', '-d', '-t', '5000')
+        $logcat.Output | Set-Content (Join-Path $output 'logcat.txt')
+        if ($logcat.ExitCode -ne 0) { Write-Warning 'Logcat capture was incomplete; preserving its partial output.' }
+        $pull = Invoke-NativeCommand 'adb' @('-s', $Serial, 'pull', '/sdcard/Android/data/com.finnvek.knittools.baselineprofile/files/optimized-smoke', $output)
+        if ($pull.ExitCode -ne 0) { Write-Warning 'Optimized smoke evidence could not be fully copied.' }
+    } finally {
+        try {
+            Invoke-Adb @('shell', 'wm', 'size', 'reset') | Out-Null
+        } finally {
+            Invoke-Adb @('shell', 'wm', 'density', 'reset') | Out-Null
+        }
+    }
 }

@@ -57,7 +57,7 @@ class BrazilianPortugueseResourcesTest {
                 resources.getQuantityString(R.plurals.skein_count, quantity, quantity),
             )
             assertEquals(
-                "há $quantity m",
+                "há $quantity ${if (singular) "mês" else "meses"}",
                 resources.getQuantityString(R.plurals.relative_time_months_ago, quantity, quantity),
             )
         }

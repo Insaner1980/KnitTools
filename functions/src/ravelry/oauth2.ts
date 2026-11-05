@@ -99,7 +99,7 @@ async function requestOAuth2Token({
     if (isAbortOrTimeoutError(error)) {
       throw new OAuthTokenExchangeError(504);
     }
-    throw error;
+    throw new OAuthTokenExchangeError(503);
   }
 
   if (!response.ok) {
@@ -117,8 +117,8 @@ async function requestOAuth2Token({
     throw new OAuthTokenExchangeError(503);
   }
 
-  if (typeof body.access_token !== "string" || body.access_token.length === 0) {
-    throw new OAuthTokenExchangeError(response.status);
+  if (typeof body?.access_token !== "string" || body.access_token.length === 0) {
+    throw new OAuthTokenExchangeError(503);
   }
 
   const expiresInSeconds =

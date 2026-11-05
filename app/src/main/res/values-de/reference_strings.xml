@@ -7,7 +7,7 @@
     <string name="size_col_hips">Hüften</string>
     <string name="size_col_length">Länge</string>
     <string name="size_col_arm">Armlänge ab Achsel</string>
-    <string name="size_col_bust">Büste</string>
+    <string name="size_col_bust">Brustumfang</string>
     <string name="size_col_circumference">Umfang</string>
     <string name="size_row_preemie">Frühchen</string>
     <string name="size_row_baby">Baby</string>
@@ -63,7 +63,7 @@
     <string name="abbr_pwise_meaning">Wie zum Linksstricken</string>
     <string name="abbr_pwise_desc">Führe die Nadel wie zum Linksstricken ein</string>
     <string name="abbr_k2tog_meaning">2 rechts zusammenstricken</string>
-    <string name="abbr_k2tog_desc">Abnahme nach rechts: zwei Maschen als eine stricken</string>
+    <string name="abbr_k2tog_desc">Nach rechts geneigte Abnahme: zwei Maschen rechts zusammenstricken</string>
     <string name="abbr_p2tog_meaning">2 links zusammenstricken</string>
     <string name="abbr_p2tog_desc">Zwei Maschen links zusammenstricken</string>
     <string name="abbr_ssk_meaning">Abheben, abheben, rechts zusammenstricken</string>
@@ -150,10 +150,10 @@
     <string name="abbr_st_st_desc">Von der Vorderseite rechts stricken, von der Rückseite links stricken (oder in Runden alle Maschen rechts stricken)</string>
     <string name="abbr_rev_st_st_meaning">Glatt links</string>
     <string name="abbr_rev_st_st_desc">Links auf der Hin-R stricken, rechts auf der Rückseite stricken</string>
-    <string name="abbr_g_st_meaning">Krausstich</string>
+    <string name="abbr_g_st_meaning">Kraus rechts</string>
     <string name="abbr_g_st_desc">Jede Reihe rechts stricken (oder abwechselnde Runden rechts/links im Kreis stricken)</string>
     <string name="abbr_seed_st_meaning">Perlmuster</string>
-    <string name="abbr_seed_st_desc">Abwechselnd K1, P1 mit Versatz in jeder Reihe</string>
+    <string name="abbr_seed_st_desc">Abwechselnd 1 Masche rechts und 1 Masche links stricken; in der nächsten Reihe rechte Maschen links und linke Maschen rechts stricken</string>
     <string name="abbr_tog_meaning">Zusammen</string>
     <string name="abbr_tog_desc">Die Maschen als eine Masche zusammenstricken</string>
     <string name="abbr_rem_meaning">Übrig</string>
@@ -168,7 +168,7 @@
     <string name="abbr_cont_desc">Arbeite wie gewohnt weiter</string>
     <string name="abbr_foll_meaning">Nachfolgend</string>
     <string name="abbr_foll_desc">Die nächste Reihe, Runde oder Anweisung</string>
-    <string name="abbr_prev_meaning">Zurück</string>
+    <string name="abbr_prev_meaning">Vorherige</string>
     <string name="abbr_prev_desc">Die Reihe, Runde oder Masche vor der aktuellen</string>
     <string name="abbr_patt_meaning">Muster</string>
     <string name="abbr_patt_desc">Fahre im gewohnten Muster fort</string>
@@ -211,7 +211,7 @@
     <string name="sym_purl_tbl_name">Links verschränkt</string>
     <string name="sym_purl_tbl_desc">Links durch die hintere Schlaufe stricken (verdreht)</string>
     <string name="sym_slip_purlwise_name">Wie zum Linksstricken abheben</string>
-    <string name="sym_slip_purlwise_desc">Die Masche wie zum Linksstricken abheben, ohne sie zu stricken; der Faden liegt hinter der Arbeit</string>
+    <string name="sym_slip_purlwise_desc">Die Masche wie zum Linksstricken abheben, ohne sie zu stricken</string>
     <string name="sym_k2tog_name">K2tog</string>
     <string name="sym_k2tog_desc">2 Maschen rechts zusammenstricken – Abnahme nach rechts</string>
     <string name="sym_ssk_name">SSK</string>

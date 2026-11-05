@@ -144,7 +144,11 @@ class ProjectYarnUsageScreenTest {
             stores.forEach { it.clear() }
         }
         setApplicationLocales(localeTagsBefore)
-        shell("settings put system font_scale $fontBefore")
+        if (fontBefore.isBlank() || fontBefore == "null") {
+            shell("settings delete system font_scale")
+        } else {
+            shell("settings put system font_scale $fontBefore")
+        }
         runBlocking { PreferencesManager(context).setUseImperial(imperialBefore) }
         database.close()
     }

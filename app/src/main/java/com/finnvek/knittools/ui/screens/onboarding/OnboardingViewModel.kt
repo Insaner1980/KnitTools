@@ -119,8 +119,12 @@ class OnboardingViewModel
                 }
                 val created = projects.findOnboardingProject(stored.id)
                 when {
-                    !stored.completed && created != null ->
-                        stored.copy(step = OnboardingStep.Price, projectId = created).also { persist(it) }
+                    !stored.completed && created != null -> {
+                        // Luotu projekti ei palaa lomakkeeseen; keskeytynyt Ready-näkymä jatkuu Readystä.
+                        val step =
+                            if (stored.step == OnboardingStep.Ready) OnboardingStep.Ready else OnboardingStep.Price
+                        stored.copy(step = step, projectId = created).also { persist(it) }
+                    }
                     !stored.completed && projects.hasAnyProject() ->
                         stored.copy(completed = true, exitPending = false).also { persist(it) }
                     else -> stored
@@ -169,7 +173,7 @@ class OnboardingViewModel
                         )
                 ) {
                     is ProjectCreationResult.Created -> {
-                        val next = draft.copy(projectId = result.projectId, step = OnboardingStep.Price)
+                        val next = draft.copy(projectId = result.projectId, step = OnboardingStep.Ready)
                         _state.update { it.copy(draft = next) }
                         persist(next)
                         try {

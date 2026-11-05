@@ -7,6 +7,7 @@ import android.graphics.Paint
 import android.graphics.Rect
 import android.graphics.pdf.PdfDocument
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.os.SystemClock
 import android.view.KeyEvent
@@ -244,7 +245,9 @@ class AuditPart08RuntimeMatrixTest {
             fun pickerClick(label: String) {
                 automation.waitForIdle(300, 5_000)
                 await {
-                    automation.clearCache()
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                        automation.clearCache()
+                    }
                     var selected: AccessibilityNodeInfo? = null
 
                     fun find(node: AccessibilityNodeInfo?) {
@@ -1067,6 +1070,8 @@ class AuditPart08RuntimeMatrixTest {
         capture("pro-trial-failed")
         ProPolicyTestControl.setTrialStartResult(com.finnvek.knittools.pro.TrialStartResult.Started)
         tap("pro_start_14_day_trial")
+        see("trial_started_screen_title")
+        tap("completed_close")
         val activeLabel = app.resources.getQuantityString(com.finnvek.knittools.R.plurals.pro_status_trial_days, 14, 14)
         seek(activeLabel)
         capture("pro-trial-active")
@@ -1227,7 +1232,9 @@ class AuditPart08RuntimeMatrixTest {
     }
 
     private fun nodes(): List<AccessibilityNodeInfo> {
-        automation.clearCache()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            automation.clearCache()
+        }
         val result = mutableListOf<AccessibilityNodeInfo>()
 
         fun visit(node: AccessibilityNodeInfo) {

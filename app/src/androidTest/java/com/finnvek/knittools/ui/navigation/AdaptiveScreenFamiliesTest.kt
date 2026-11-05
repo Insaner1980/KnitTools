@@ -25,6 +25,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performScrollToIndex
+import androidx.compose.ui.test.performScrollToKey
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTextReplacement
@@ -472,6 +473,7 @@ class AdaptiveScreenFamiliesTest : AdaptiveRouteTestFixture() {
             assertTrue("$name centered in $viewport: $bounds", abs(bounds.center.x - viewport.center.x) <= density * 2)
             assertTrue("$name uses its policy: $bounds / $maximum", bounds.width >= maximum - 64 * density)
         } else {
+            rule.onAllNodes(vertical)[0].performScrollToKey("table")
             val horizontal =
                 rule
                     .onNode(SemanticsMatcher.keyIsDefined(SemanticsProperties.HorizontalScrollAxisRange))

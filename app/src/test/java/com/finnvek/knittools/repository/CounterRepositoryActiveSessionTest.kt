@@ -410,8 +410,8 @@ class CounterRepositoryActiveSessionTest : CounterRepositoryActiveSessionFixture
                     stepSize = any(),
                     action = any(),
                     previousValue = any(),
-                    newValue = any(),
                     updatedAt = any(),
+                    linkedCounterDeltasJson = any(),
                 )
             } answers {
                 project = project.copy(count = secondArg())
@@ -456,8 +456,8 @@ class CounterRepositoryActiveSessionTest : CounterRepositoryActiveSessionFixture
                     stepSize = any(),
                     action = any(),
                     previousValue = any(),
-                    newValue = any(),
                     updatedAt = any(),
+                    linkedCounterDeltasJson = any(),
                 )
             } answers {
                 project = project.copy(count = secondArg())
@@ -518,8 +518,8 @@ class CounterRepositoryActiveSessionTest : CounterRepositoryActiveSessionFixture
                     stepSize = any(),
                     action = any(),
                     previousValue = any(),
-                    newValue = any(),
                     updatedAt = any(),
+                    linkedCounterDeltasJson = any(),
                 )
             } answers {
                 project = project.copy(count = secondArg())
@@ -550,8 +550,8 @@ class CounterRepositoryActiveSessionTest : CounterRepositoryActiveSessionFixture
                     stepSize = any(),
                     action = any(),
                     previousValue = any(),
-                    newValue = any(),
                     updatedAt = any(),
+                    linkedCounterDeltasJson = any(),
                 )
             } answers {
                 project = project.copy(count = secondArg())
@@ -626,8 +626,8 @@ class CounterRepositoryActiveSessionTest : CounterRepositoryActiveSessionFixture
                     stepSize = any(),
                     action = any(),
                     previousValue = any(),
-                    newValue = any(),
                     updatedAt = any(),
+                    linkedCounterDeltasJson = any(),
                 )
             } answers {
                 project = project.copy(count = secondArg())
@@ -637,7 +637,7 @@ class CounterRepositoryActiveSessionTest : CounterRepositoryActiveSessionFixture
                         projectId = 7L,
                         action = arg(3),
                         previousValue = arg(4),
-                        newValue = arg(5),
+                        newValue = secondArg(),
                     )
             }
             repository = buildRepository(repositoryProjectCounterDao())
@@ -666,8 +666,8 @@ class CounterRepositoryActiveSessionTest : CounterRepositoryActiveSessionFixture
                     stepSize = any(),
                     action = any(),
                     previousValue = any(),
-                    newValue = any(),
                     updatedAt = any(),
+                    linkedCounterDeltasJson = any(),
                 )
             } answers {
                 project = project.copy(count = secondArg())

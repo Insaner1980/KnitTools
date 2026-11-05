@@ -10,8 +10,11 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.window.DialogProperties
 import com.finnvek.knittools.R
 import com.finnvek.knittools.ui.layout.AdaptiveModalWindow
+import com.finnvek.knittools.ui.layout.LocalAdaptiveModalWindow
+import com.finnvek.knittools.ui.layout.LocalWindowFolds
 
 /**
  * Yhtenäinen vahvistusdialogi destruktiivisille ja muille toiminnoille.
@@ -34,9 +37,12 @@ fun ConfirmationDialog(
     confirmModifier: Modifier = Modifier,
     dismissModifier: Modifier = Modifier,
 ) {
+    val usePaneCoordinates =
+        LocalAdaptiveModalWindow.current && LocalWindowFolds.current.any { it.isSeparating || it.isOccluding }
     AlertDialog(
         onDismissRequest = onDismiss,
         modifier = modifier,
+        properties = DialogProperties(decorFitsSystemWindows = !usePaneCoordinates),
         title = {
             AdaptiveModalWindow()
             Text(title)

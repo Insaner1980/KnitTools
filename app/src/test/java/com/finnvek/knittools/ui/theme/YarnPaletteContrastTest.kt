@@ -15,11 +15,13 @@ class YarnPaletteContrastTest {
     @Test
     fun `every dark theme yarn colour clears the graphical minimum`() {
         assertPaletteClearsMinimum(YarnColors, Background, "dark")
+        assertPaletteClearsMinimum(YarnColors, SurfaceHigh, "dark card")
     }
 
     @Test
     fun `every light theme yarn colour clears the graphical minimum`() {
         assertPaletteClearsMinimum(LightYarnColors, LightBackground, "light")
+        assertPaletteClearsMinimum(LightYarnColors, LightCardContainer, "light card")
     }
 
     @Test

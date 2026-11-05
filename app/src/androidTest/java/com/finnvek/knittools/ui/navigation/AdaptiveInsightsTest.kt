@@ -217,7 +217,7 @@ class AdaptiveInsightsTest : AdaptiveRouteTestFixture() {
                 .performClick()
             assertFocusedWindowOutside(fold)
             rule.onNodeWithTag("completion_history").performScrollToNode(hasText(name(5)))
-            rule.onAllNodesWithText(name(5)).onLast().assertIsDisplayed()
+            rule.onNode(hasText(name(5)) and hasAnyAncestor(hasTestTag("completion_history"))).assertIsDisplayed()
             back()
             windowInfo.overrideWindowLayoutInfo(TestWindowLayoutInfo(emptyList()))
         }

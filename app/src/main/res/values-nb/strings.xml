@@ -196,7 +196,7 @@
     <string name="unlink_yarn">Koble fra garn</string>
     <string name="select_yarn_card">Velg garnkort</string>
     <string name="linked_yarn_title">Koblet garn</string>
-    <string name="no_linked_yarn">Ingen garn koblet til ennå</string>
+    <string name="no_linked_yarn">Ikke noe garn koblet til ennå</string>
     <string name="choose_from_my_yarn">Velg fra Mitt garn</string>
     <string name="choose_from_my_yarn_body">Velg et lagret garn</string>
     <string name="add_yarn_to_project">Legg til garn i dette prosjektet</string>
@@ -277,7 +277,7 @@
     <string name="mode_decrease">Fell</string>
     <string name="style_flat">Flatstrikk</string>
     <string name="style_circular">Rundstrikk</string>
-    <string name="current_stitches">Nåværende masker</string>
+    <string name="current_stitches">Nåværende maskeantall</string>
     <string name="increase_by">Øk med</string>
     <string name="decrease_by">Fell med</string>
     <string name="increase_result_placeholder">Fyll inn begge feltene for å se hvor du skal øke</string>
@@ -289,7 +289,7 @@
     <string name="easy_to_remember">Lett å huske</string>
     <string name="balanced">Balansert</string>
     <string name="total_stitches_format">Totalt: %1$d %2$s</string>
-    <string name="increase_decrease_error_current_positive">Nåværende masker må være større enn 0</string>
+    <string name="increase_decrease_error_current_positive">Nåværende maskeantall må være større enn 0</string>
     <string name="increase_decrease_error_change_positive">Antall masker som endres må være større enn 0</string>
     <string name="increase_decrease_error_cannot_decrease">Tilgjengelig maskeantall: %2$d. Ønsket felling: %1$d.</string>
     <string name="increase_decrease_error_not_enough_decrease">Nødvendig maskeantall: %1$d. Ønskede fellinger: %2$d.</string>
@@ -369,7 +369,7 @@
     <string name="version_format">KnitTools %s</string>
 
     <!-- Pro Upgrade -->
-    <string name="one_time_purchase">Engangskjøp. Ingen abonnement.</string>
+    <string name="one_time_purchase">Engangskjøp. Uten abonnement.</string>
     <string name="loading_price">Laster pris…</string>
     <string name="billing_purchase_cancelled">Kjøp avbrutt</string>
     <string name="billing_price_refreshing">Gjeldende pris sjekkes. Prøv å kjøpe igjen om et øyeblikk.</string>
@@ -528,8 +528,8 @@
     <string name="relative_time_days_ago">for %1$dd siden</string>
     <string name="relative_time_weeks_ago">for %1$du siden</string>
     <plurals name="relative_time_months_ago">
-        <item quantity="one">for %1$dmnd siden</item>
-        <item quantity="other">for %1$dmnd siden</item>
+        <item quantity="one">for %1$d mnd. siden</item>
+        <item quantity="other">for %1$d mnd. siden</item>
     </plurals>
 
     <!-- Settings -->
@@ -1070,7 +1070,7 @@
     <string name="project_overview_yarn_allocated">Avsatt</string>
     <string name="project_overview_yarn_used">Brukt</string>
     <string name="project_overview_yarn_remaining">Gjenstår</string>
-    <string name="project_overview_yarn_empty">Ingen garn lagt til ennå</string>
+    <string name="project_overview_yarn_empty">Ikke noe garn lagt til ennå</string>
     <string name="project_overview_pattern_empty">Ingen oppskrift lagt til ennå</string>
     <string name="project_overview_notes_empty">Ingen notater ennå</string>
     <string name="project_overview_pdf_page_format">PDF-oppskrift, side %1$d</string>

@@ -34,6 +34,7 @@ import org.junit.rules.Timeout
 import java.io.ByteArrayInputStream
 import java.io.FileInputStream
 import java.lang.ref.WeakReference
+import kotlin.math.roundToInt
 
 class RavelryBrowserNavigationTest {
     @get:Rule val timeout = Timeout.seconds(120)
@@ -89,8 +90,10 @@ class RavelryBrowserNavigationTest {
         try {
             launchBrowser().use { scenario ->
                 browseThreePages(scenario)
+                var density = 1f
+                scenario.onActivity { density = it.resources.displayMetrics.density }
                 for ((width, height) in listOf(360 to 800, 800 to 400, 800 to 1280, 1280 to 800, 1600 to 900)) {
-                    shell("wm size ${width}x$height")
+                    shell("wm size ${(width * density).roundToInt()}x${(height * density).roundToInt()}")
                     waitUntil {
                         var resized = false
                         scenario.onActivity {
@@ -141,7 +144,16 @@ class RavelryBrowserNavigationTest {
         launchBrowser().use { scenario ->
             browseThreePages(scenario)
             val beforeTheme = browser(scenario)
-            scenario.onActivity { it.delegate.localNightMode = AppCompatDelegate.MODE_NIGHT_YES }
+            scenario.onActivity {
+                val nightMode =
+                    it.resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK
+                it.delegate.localNightMode =
+                    if (nightMode == android.content.res.Configuration.UI_MODE_NIGHT_YES) {
+                        AppCompatDelegate.MODE_NIGHT_NO
+                    } else {
+                        AppCompatDelegate.MODE_NIGHT_YES
+                    }
+            }
             waitUntil { browser(scenario) !== beforeTheme }
             awaitUrl(scenario, THIRD)
             scenario.onActivity { it.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE }

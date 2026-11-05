@@ -6,9 +6,21 @@ object OnboardingDimens {
     val JourneyProgressHeight = 6.dp
     val JourneyProgressGap = 5.dp
     val JourneyToolbarHeight = 48.dp
-    val JourneyDemoUndoSize = 64.dp
+    val JourneyDemoUndoSize = 48.dp
+    val JourneyDemoUndoTouchSize = 56.dp
     val JourneyDemoCounterSize = 80.dp
     val JourneySectionGap = 24.dp
+    val JourneyDemoTouchSize = 88.dp
+    val JourneyDemoButtonSize = 72.dp
+    val JourneyDemoNumberMinWidth = 96.dp
+    val CraftTileImageSize = 88.dp
+    val CraftTileMinHeight = 104.dp
+    val SelectionCheckSize = 24.dp
+    const val STEP_TRANSITION_MILLIS = 320
+    const val STEP_SLIDE_FRACTION = 0.15f
+    const val CRAFT_ADVANCE_DELAY_MILLIS = 250L
+    const val DEMO_NUMBER_MILLIS = 220
+    const val DEMO_LINE_MILLIS = 360
     val JourneyStackedBreakpoint = 320.dp
     val ExampleCardPadding = 16.dp
     val SketchWidth = 132.dp
@@ -53,9 +65,4 @@ object OnboardingDimens {
     const val TIP_MARKER_SWEEP = 300f
     const val TIP_CLASP_START_X = 0.6f
     const val TIP_CLASP_END_Y = 0.35f
-    val StitchWidth = 22.dp
-    val StitchGap = 6.dp
-    val StitchHeight = 30.dp
-    val StitchOutlineWidth = 1.5.dp
-    const val UPCOMING_STITCH_ALPHA = 0.38f
 }

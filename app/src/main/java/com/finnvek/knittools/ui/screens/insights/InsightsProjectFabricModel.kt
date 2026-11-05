@@ -51,7 +51,7 @@ internal fun buildInsightsProjectFabric(
     sessions.forEach(buckets::add)
     val firstSessionDate =
         sessions.minOfOrNull { session ->
-            val sessionZone = session.zoneId?.let(ZoneId::of) ?: zone
+            val sessionZone = session.analyticsZoneOr(zone)
             Instant.ofEpochMilli(session.startedAt).atZone(sessionZone).toLocalDate()
         }
     return buildInsightsProjectFabric(buckets.values, today, firstDayOfWeek, projectOrder, firstSessionDate)

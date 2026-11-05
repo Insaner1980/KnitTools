@@ -18,6 +18,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasAnyDescendant
+import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isDialog
@@ -875,8 +876,12 @@ class ProjectFoldersScreenTest {
         composeRule.onNodeWithContentDescription("New Project").performClick()
         composeRule.onNodeWithText("New Project").assertIsDisplayed()
         screenshotName?.let(::captureScreenshot)
-        composeRule.onNode(hasSetTextAction()).performTextInput(name)
-        composeRule.onNodeWithText("Create project").performClick()
+        composeRule.onNode(hasSetTextAction() and hasContentDescription("Project name")).performTextInput(name)
+        composeRule
+            .onNodeWithText("Create project")
+            .performScrollTo()
+            .assertIsDisplayed()
+            .performClick()
         composeRule.waitUntil(timeoutMillis = 5_000) {
             runBlocking { database.counterProjectDao().getAllProjectsOnce().any { it.name == name } }
         }

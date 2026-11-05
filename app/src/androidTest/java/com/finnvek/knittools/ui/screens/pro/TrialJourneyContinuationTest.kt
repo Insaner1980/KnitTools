@@ -40,6 +40,15 @@ class TrialJourneyContinuationTest {
                 }
                 ready
             }
+            var actionsPending = false
+            scenario.onActivity {
+                val facts = checkNotNull(it.trialJourneyStateRepository.state.value)
+                actionsPending = !facts.repeatCounterAdded && facts.projectsAdded == 0
+            }
+            assumeTrue(
+                "Preview requires unfinished repeat-counter and project steps; existing data is preserved",
+                actionsPending,
+            )
             scenario.onActivity { coordinator.requestStartedJourney(fromOnboarding = true) }
             waitText(R.string.trial_started_screen_title)
             click(R.string.trial_action_counter)

@@ -1,6 +1,7 @@
 package com.finnvek.knittools.ui.screens.counter
 
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
 import android.os.SystemClock
 import android.view.accessibility.AccessibilityNodeInfo
@@ -291,7 +292,9 @@ class ProjectYarnUsageRuntimeTest {
 
     private fun findNode(matches: (AccessibilityNodeInfo) -> Boolean): AccessibilityNodeInfo? {
         val automation = InstrumentationRegistry.getInstrumentation().uiAutomation
-        automation.clearCache()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            automation.clearCache()
+        }
 
         fun visit(node: AccessibilityNodeInfo): AccessibilityNodeInfo? {
             if (node.isVisibleToUser && matches(node)) return node

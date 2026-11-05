@@ -10,6 +10,54 @@ import java.time.ZonedDateTime
 
 class SessionMetricsTest {
     @Test
+    fun `weekly and monthly totals agree with activity and pace dates after travel`() {
+        val deviceZone = ZoneId.of("UTC")
+        for (date in listOf(LocalDate.of(2026, 1, 1), LocalDate.of(2026, 1, 5))) {
+            val tokyo = ZoneId.of("Asia/Tokyo")
+            val losAngeles = ZoneId.of("America/Los_Angeles")
+            val includedStart =
+                date
+                    .atTime(0, 30)
+                    .atZone(tokyo)
+                    .toInstant()
+                    .toEpochMilli()
+            val excludedStart =
+                date
+                    .minusDays(1)
+                    .atTime(23, 30)
+                    .atZone(losAngeles)
+                    .toInstant()
+                    .toEpochMilli()
+            val sessions =
+                listOf(includedStart to tokyo, excludedStart to losAngeles).mapIndexed { index, (start, sessionZone) ->
+                    KnitSession(
+                        id = index + 1L,
+                        projectId = 1L,
+                        startedAt = start,
+                        endedAt = start + 1_800_000L,
+                        startRow = 0,
+                        endRow = 10,
+                        durationMinutes = 30,
+                        durationSeconds = 1_800L,
+                        rowsWorked = 10,
+                        zoneId = sessionZone.id,
+                    )
+                }
+            val rangeStart = date.atStartOfDay(deviceZone).toInstant().toEpochMilli()
+
+            val summary = SessionMetrics.summarize(sessions, rangeStart, deviceZone)
+            val activity = SessionMetrics.dailyActivitySeconds(sessions, date, deviceZone)
+            val pace = SessionMetrics.paceBuckets(sessions, rangeStart, PaceGroupingInterval.DAY, deviceZone)
+
+            assertEquals(1_800L, summary.totalSeconds)
+            assertEquals(10L, summary.totalRows)
+            assertEquals(1, summary.sessionCount)
+            assertEquals(summary.totalSeconds, activity.values.sum())
+            assertEquals(summary.totalSeconds, pace.values.sumOf { it.totalSeconds })
+        }
+    }
+
+    @Test
     fun `rows per hour uses exact seconds instead of rounded minutes`() {
         val session =
             KnitSession(

@@ -854,24 +854,15 @@ function Test-BinaryFileContainsSecret {
     }
 
     $bytes = [System.IO.File]::ReadAllBytes($path)
+    $byteEncoding = [System.Text.Encoding]::GetEncoding(28591)
+    $haystack = $byteEncoding.GetString($bytes)
     foreach ($secret in $Secrets) {
         $needle = [System.Text.Encoding]::UTF8.GetBytes($secret)
         if ($needle.Length -eq 0 -or $bytes.Length -lt $needle.Length) {
             continue
         }
-
-        for ($index = 0; $index -le $bytes.Length - $needle.Length; $index++) {
-            $matched = $true
-            for ($offset = 0; $offset -lt $needle.Length; $offset++) {
-                if ($bytes[$index + $offset] -ne $needle[$offset]) {
-                    $matched = $false
-                    break
-                }
-            }
-
-            if ($matched) {
-                return $true
-            }
+        if ($haystack.IndexOf($byteEncoding.GetString($needle), [System.StringComparison]::Ordinal) -ge 0) {
+            return $true
         }
     }
 

@@ -56,6 +56,7 @@ class StartupReadinessTest {
         runBlocking(Dispatchers.IO) {
             app.database.get().clearAllTables()
             app.preferencesManager.get().setAppLanguage(AppLanguage.ENGLISH)
+            app.onboardingStateRepository.get().dismissWelcome()
             app.preferencesManager.get().setThemeMode(ThemeMode.LIGHT)
         }
         ProPolicyTestControl.setPurchased(false)
@@ -65,6 +66,7 @@ class StartupReadinessTest {
 
     @After
     fun cleanup() {
+        if (app.packageName != "com.finnvek.knittools.activepolicytest") return
         ActivityLifecycleMonitorRegistry.getInstance().removeLifecycleCallback(listener)
         runBlocking(Dispatchers.IO) {
             app.database.get().clearAllTables()
@@ -77,11 +79,11 @@ class StartupReadinessTest {
     fun emptyLauncherReportsAndLaterNavigationDoesNotReportAgain() {
         withLaunch { activity ->
             awaitReady(activity)
-            text(R.string.no_active_projects)
+            waitEmptyProjects()
             listOf("Tools", "Library", "Settings", "Projects").forEach {
                 clickText(it)
             }
-            text(R.string.no_active_projects)
+            waitEmptyProjects()
             assertEquals(1, completions.get())
             seedProject()
             waitText("Startup cardigan")
@@ -155,7 +157,7 @@ class StartupReadinessTest {
         val missing = MainActivity.createCounterLaunchIntent(app, 999L).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         withLaunch(missing) { activity ->
             awaitReady(activity)
-            text(R.string.no_active_projects)
+            waitEmptyProjects()
         }
         completions.set(0)
         val locked = MainActivity.createWidgetProPromptLaunchIntent(app).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -301,6 +303,16 @@ class StartupReadinessTest {
     }
 
     private fun text(id: Int) = waitText(app.getString(id))
+
+    private fun waitEmptyProjects() {
+        val titles =
+            listOf(
+                R.string.welcome_screen_title,
+                R.string.start_compact_title_knitting,
+                R.string.start_compact_title_crochet,
+            ).map(app::getString)
+        waitNode { it.text?.toString() in titles }
+    }
 
     private fun waitText(value: String) =
         waitNode { it.text?.toString().equals(value, true) || it.contentDescription?.toString() == value }

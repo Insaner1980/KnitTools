@@ -108,167 +108,171 @@ fun PatternPickerSheet(
     onSeePro: () -> Unit,
     onDismiss: () -> Unit,
     initialCameraRequestId: String? = null,
-) = key(projectId) {
-    val imageImportViewModel: PatternImageImportViewModel =
-        hiltViewModel(key = patternImageImportViewModelKey(projectId))
-    val imageImportState by imageImportViewModel.uiState.collectAsStateWithLifecycle()
-    val sessionId = imageImportState.sessionId
-    val completedBeforeOpening =
-        remember(imageImportViewModel) {
-            imageImportViewModel.uiState.value
-                .takeIf { it.closeReady }
-                ?.sessionId
+) {
+    val selectedProjectId by rememberUpdatedState(projectId)
+    key(projectId) {
+        val imageImportViewModel: PatternImageImportViewModel =
+            hiltViewModel(key = patternImageImportViewModelKey(projectId))
+        val imageImportState by imageImportViewModel.uiState.collectAsStateWithLifecycle()
+        val sessionId = imageImportState.sessionId
+        val completedBeforeOpening =
+            remember(imageImportViewModel) {
+                imageImportViewModel.uiState.value
+                    .takeIf { it.closeReady }
+                    ?.sessionId
+            }
+        var pendingProAction by rememberSaveable { mutableStateOf<PendingPatternProAction?>(null) }
+        var showDiscardConfirmation by rememberSaveable { mutableStateOf(false) }
+        val sheetState = rememberModalBottomSheetState()
+        val scope = rememberCoroutineScope()
+        val keepSelectedImages: () -> Unit = {
+            showDiscardConfirmation = false
+            scope.launch { sheetState.show() }
         }
-    var pendingProAction by rememberSaveable { mutableStateOf<PendingPatternProAction?>(null) }
-    var showDiscardConfirmation by rememberSaveable { mutableStateOf(false) }
-    val sheetState = rememberModalBottomSheetState()
-    val scope = rememberCoroutineScope()
-    val keepSelectedImages: () -> Unit = {
-        showDiscardConfirmation = false
-        scope.launch { sheetState.show() }
-    }
-    val actions =
-        rememberPatternPickerActions(
-            projectId = projectId,
-            isRestoringProject = isRestoringProject,
-            canUseCameraScan = canUseCameraScan,
-            imageImportViewModelProvider = { imageImportViewModel },
-            onDocumentSelected = onDocumentSelected,
-            onImportFromRavelry = onImportFromRavelry,
-            onAddWebPattern = onAddWebPattern,
-            onLockedGalleryImport = { pendingProAction = PendingPatternProAction.GalleryImages },
-            onLockedCameraScan = { pendingProAction = PendingPatternProAction.CameraCapture },
-            onDismiss = onDismiss,
-        )
+        val actions =
+            rememberPatternPickerActions(
+                projectId = projectId,
+                isCurrentProject = { selectedProjectId == projectId },
+                isRestoringProject = isRestoringProject,
+                canUseCameraScan = canUseCameraScan,
+                imageImportViewModelProvider = { imageImportViewModel },
+                onDocumentSelected = onDocumentSelected,
+                onImportFromRavelry = onImportFromRavelry,
+                onAddWebPattern = onAddWebPattern,
+                onLockedGalleryImport = { pendingProAction = PendingPatternProAction.GalleryImages },
+                onLockedCameraScan = { pendingProAction = PendingPatternProAction.CameraCapture },
+                onDismiss = onDismiss,
+            )
 
-    var handledCameraRequestId by rememberSaveable { mutableStateOf<String?>(null) }
-    val lifecycleOwner = LocalLifecycleOwner.current
-    val currentCameraAction by rememberUpdatedState(actions.startCameraScan)
-    LaunchedEffect(initialCameraRequestId, projectId, isRestoringProject, proAccessReady, imageImportState.isBusy) {
-        val requestId = initialCameraRequestId ?: return@LaunchedEffect
-        if (handledCameraRequestId == requestId || projectId == null || isRestoringProject) return@LaunchedEffect
-        if (!proAccessReady || imageImportState.isBusy) return@LaunchedEffect
-        lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
-            if (handledCameraRequestId != requestId) {
-                handledCameraRequestId = requestId
-                currentCameraAction()
+        var handledCameraRequestId by rememberSaveable { mutableStateOf<String?>(null) }
+        val lifecycleOwner = LocalLifecycleOwner.current
+        val currentCameraAction by rememberUpdatedState(actions.startCameraScan)
+        LaunchedEffect(initialCameraRequestId, projectId, isRestoringProject, proAccessReady, imageImportState.isBusy) {
+            val requestId = initialCameraRequestId ?: return@LaunchedEffect
+            if (handledCameraRequestId == requestId || projectId == null || isRestoringProject) return@LaunchedEffect
+            if (!proAccessReady || imageImportState.isBusy) return@LaunchedEffect
+            lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+                if (handledCameraRequestId != requestId) {
+                    handledCameraRequestId = requestId
+                    currentCameraAction()
+                }
             }
         }
-    }
 
-    LaunchedEffect(sessionId, imageImportState.closeReady) {
-        if (
-            imageImportState.closeReady &&
-            imageImportViewModel.consumeCloseRequest(sessionId) &&
-            sessionId != completedBeforeOpening
-        ) {
-            onDismiss()
+        LaunchedEffect(sessionId, imageImportState.closeReady) {
+            if (
+                imageImportState.closeReady &&
+                imageImportViewModel.consumeCloseRequest(sessionId) &&
+                sessionId != completedBeforeOpening
+            ) {
+                onDismiss()
+            }
         }
-    }
 
-    pendingProAction?.let {
-        ProPromptSheet(
-            request =
-                ProPromptRequest(
-                    source =
-                        when (pendingProAction) {
-                            PendingPatternProAction.GalleryImages -> ProPromptSource.PatternGallery
+        pendingProAction?.let {
+            ProPromptSheet(
+                request =
+                    ProPromptRequest(
+                        source =
+                            when (pendingProAction) {
+                                PendingPatternProAction.GalleryImages -> ProPromptSource.PatternGallery
 
-                            PendingPatternProAction.CameraCapture,
-                            null,
-                            -> ProPromptSource.PatternCamera
-                        },
-                ),
-            onDismiss = { pendingProAction = null },
-            onTrialStarted = {
-                val action = pendingProAction
-                pendingProAction = null
-                when (action) {
-                    PendingPatternProAction.GalleryImages -> actions.authorizeAndChooseImages()
-                    PendingPatternProAction.CameraCapture -> actions.authorizeAndStartCameraScan()
-                    null -> Unit
+                                PendingPatternProAction.CameraCapture,
+                                null,
+                                -> ProPromptSource.PatternCamera
+                            },
+                    ),
+                onDismiss = { pendingProAction = null },
+                onTrialStarted = {
+                    val action = pendingProAction
+                    pendingProAction = null
+                    when (action) {
+                        PendingPatternProAction.GalleryImages -> actions.authorizeAndChooseImages()
+                        PendingPatternProAction.CameraCapture -> actions.authorizeAndStartCameraScan()
+                        null -> Unit
+                    }
+                },
+                onSeePro = onSeePro,
+            )
+        }
+
+        ModalBottomSheet(
+            sheetState = sheetState,
+            onDismissRequest = {
+                when {
+                    imageImportState.isBusy -> imageImportViewModel.cancelImport(sessionId)
+                    imageImportState.selection.pages.isNotEmpty() -> showDiscardConfirmation = true
+                    else -> onDismiss()
                 }
             },
-            onSeePro = onSeePro,
-        )
-    }
-
-    ModalBottomSheet(
-        sheetState = sheetState,
-        onDismissRequest = {
-            when {
-                imageImportState.isBusy -> imageImportViewModel.cancelImport(sessionId)
-                imageImportState.selection.pages.isNotEmpty() -> showDiscardConfirmation = true
-                else -> onDismiss()
-            }
-        },
-        containerColor = MaterialTheme.colorScheme.surface,
-    ) {
-        AdaptiveModalWindow()
-        val showImageImport =
-            imageImportState.selection.pages.isNotEmpty() ||
-                imageImportState.isBusy ||
-                imageImportState.phase == PatternImageImportPhase.ERROR
-        if (showImageImport) {
-            PatternImageImportSurface(
-                state = imageImportState,
-                onAddMore = { if (imageImportViewModel.isCurrentSession(sessionId)) actions.chooseImages() },
-                onMoveEarlier = { imageImportViewModel.moveEarlier(it, sessionId) },
-                onMoveLater = { imageImportViewModel.moveLater(it, sessionId) },
-                onRemove = { imageImportViewModel.removePage(it, sessionId) },
-                onCreate = {
-                    if (imageImportState.replacementConfirmationPending) {
-                        imageImportViewModel.confirmReplacement(sessionId)
-                    } else {
-                        imageImportViewModel.createPatternPdf(hasExistingPattern, sessionId)
-                    }
-                },
-                onCancel = {
-                    if (imageImportState.replacementConfirmationPending) {
-                        imageImportViewModel.dismissReplacement(sessionId)
-                    } else {
-                        imageImportViewModel.cancelImport(sessionId)
-                    }
-                },
-                onPreviewFailed = { imageImportViewModel.markPreviewFailed(it, sessionId) },
-            )
-        } else {
-            PatternPickerSheetContent(
-                savedPatterns =
-                    if (mode == PatternPickerMode.ADD_READABLE_PROJECT_DOCUMENT) {
-                        savedPatterns.filter {
-                            !it.localPdfUri.isNullOrBlank() && it.id !in excludedSavedPatternIds
+            containerColor = MaterialTheme.colorScheme.surface,
+        ) {
+            AdaptiveModalWindow()
+            val showImageImport =
+                imageImportState.selection.pages.isNotEmpty() ||
+                    imageImportState.isBusy ||
+                    imageImportState.phase == PatternImageImportPhase.ERROR
+            if (showImageImport) {
+                PatternImageImportSurface(
+                    state = imageImportState,
+                    onAddMore = { if (imageImportViewModel.isCurrentSession(sessionId)) actions.chooseImages() },
+                    onMoveEarlier = { imageImportViewModel.moveEarlier(it, sessionId) },
+                    onMoveLater = { imageImportViewModel.moveLater(it, sessionId) },
+                    onRemove = { imageImportViewModel.removePage(it, sessionId) },
+                    onCreate = {
+                        if (imageImportState.replacementConfirmationPending) {
+                            imageImportViewModel.confirmReplacement(sessionId)
+                        } else {
+                            imageImportViewModel.createPatternPdf(hasExistingPattern, sessionId)
                         }
-                    } else {
-                        savedPatterns
                     },
-                proState = proState,
-                proAccessReady = proAccessReady,
-                projectId = projectId,
-                mode = mode,
-                actions = actions,
-                onSavedPatternSelected = { pattern ->
-                    onSavedPatternSelected(pattern)
-                    if (!pattern.isWebPatternCompatible) {
-                        onDismiss()
-                    }
+                    onCancel = {
+                        if (imageImportState.replacementConfirmationPending) {
+                            imageImportViewModel.dismissReplacement(sessionId)
+                        } else {
+                            imageImportViewModel.cancelImport(sessionId)
+                        }
+                    },
+                    onPreviewFailed = { imageImportViewModel.markPreviewFailed(it, sessionId) },
+                )
+            } else {
+                PatternPickerSheetContent(
+                    savedPatterns =
+                        if (mode == PatternPickerMode.ADD_READABLE_PROJECT_DOCUMENT) {
+                            savedPatterns.filter {
+                                !it.localPdfUri.isNullOrBlank() && it.id !in excludedSavedPatternIds
+                            }
+                        } else {
+                            savedPatterns
+                        },
+                    proState = proState,
+                    proAccessReady = proAccessReady,
+                    projectId = projectId,
+                    mode = mode,
+                    actions = actions,
+                    onSavedPatternSelected = { pattern ->
+                        onSavedPatternSelected(pattern)
+                        if (!pattern.isWebPatternCompatible) {
+                            onDismiss()
+                        }
+                    },
+                )
+            }
+        }
+
+        if (showDiscardConfirmation) {
+            ConfirmationDialog(
+                title = stringResource(R.string.pattern_image_discard_title),
+                message = stringResource(R.string.pattern_image_discard_message),
+                confirmText = stringResource(R.string.pattern_image_discard_action),
+                isDestructive = true,
+                onConfirm = {
+                    showDiscardConfirmation = false
+                    imageImportViewModel.cancelImport(sessionId)
                 },
+                onDismiss = keepSelectedImages,
             )
         }
-    }
-
-    if (showDiscardConfirmation) {
-        ConfirmationDialog(
-            title = stringResource(R.string.pattern_image_discard_title),
-            message = stringResource(R.string.pattern_image_discard_message),
-            confirmText = stringResource(R.string.pattern_image_discard_action),
-            isDestructive = true,
-            onConfirm = {
-                showDiscardConfirmation = false
-                imageImportViewModel.cancelImport(sessionId)
-            },
-            onDismiss = keepSelectedImages,
-        )
     }
 }
 
@@ -276,6 +280,7 @@ fun PatternPickerSheet(
 @Suppress("kotlin:S107", "kotlin:S3776") // Muistetut picker-toiminnot sitovat eri tuontisopimukset yhteen omistajaan.
 private fun rememberPatternPickerActions(
     projectId: Long?,
+    isCurrentProject: () -> Boolean,
     isRestoringProject: Boolean,
     canUseCameraScan: Boolean,
     imageImportViewModelProvider: @Composable () -> PatternImageImportViewModel,
@@ -308,6 +313,18 @@ private fun rememberPatternPickerActions(
         pendingCaptureSessionId = null
         pendingCaptureLaunch = false
         pendingCaptureResult = null
+    }
+
+    DisposableEffect(imageImportViewModel) {
+        onDispose {
+            if (!isCurrentProject()) {
+                val uri = pendingCaptureImageUriString?.let(Uri::parse)
+                val file = pendingCaptureFilePath?.let(::File)
+                if (uri != null && file != null) {
+                    imageImportViewModel.discardCameraCapture(uri, file, pendingCaptureSessionId)
+                }
+            }
+        }
     }
 
     val registry = checkNotNull(LocalActivityResultRegistryOwner.current).activityResultRegistry

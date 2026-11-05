@@ -65,6 +65,28 @@ class CounterWidgetPinHostTest {
         }
 
     @Test
+    fun `installed widget lookup handles empty results and service failure without swallowing cancellation`() =
+        runTest {
+            val manager = mockk<AppWidgetManager>()
+            val context = mockk<Context>(relaxed = true)
+            mockkStatic(AppWidgetManager::class)
+            every { AppWidgetManager.getInstance(context) } returns manager
+            val host = CounterWidgetPinHost(context, StandardTestDispatcher(testScheduler))
+
+            every { manager.getAppWidgetIds(any()) } returns intArrayOf()
+            assertFalse(host.hasInstalledWidgets())
+
+            every { manager.getAppWidgetIds(any()) } throws IllegalStateException("Launcher unavailable")
+            assertFalse(host.hasInstalledWidgets())
+
+            val cancelled = CancellationException("Lookup cancelled")
+            every { manager.getAppWidgetIds(any()) } throws cancelled
+            val failure = runCatching { host.hasInstalledWidgets() }.exceptionOrNull()
+            assertTrue(failure is CancellationException)
+            assertEquals(cancelled.message, failure?.message)
+        }
+
+    @Test
     fun `supported launcher receives one pin request`() =
         runTest {
             val host = FakeWidgetPinHost(isSupported = true)

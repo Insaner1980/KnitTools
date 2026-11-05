@@ -86,6 +86,23 @@ class ProjectCounterRepositoryTest {
         }
 
     @Test
+    fun `new repeating counters never use the legacy backfill sort order`() =
+        runTest {
+            repository.addCounter(
+                ProjectCounter(
+                    projectId = 1L,
+                    name = "Pattern repeat",
+                    stepSize = 4,
+                    repeatAt = 4,
+                    counterType = ProjectCounterType.REPEATING,
+                ),
+            )
+
+            assertEquals(1, fakeDao.lastInserted!!.sortOrder)
+            assertEquals("Pattern repeat", fakeDao.lastInserted!!.name)
+        }
+
+    @Test
     fun `addCounter trims names and rejects blank values`() =
         runTest {
             val success = repository.addCounter(ProjectCounter(projectId = 1L, name = "  Sleeve  "))
@@ -138,7 +155,7 @@ class ProjectCounterRepositoryTest {
         }
 
     @Test
-    fun `incrementCounter resets at repeatAt`() =
+    fun `incrementCounter preserves the final repeating row`() =
         runTest {
             val counter =
                 ProjectCounter(
@@ -153,8 +170,7 @@ class ProjectCounterRepositoryTest {
             fakeDao.store(counter)
             repository.incrementCounter(counter)
 
-            // ProjectCounterLogic.increment: 9 + 1 = 10 >= repeatAt(10) -> reset to 0
-            assertEquals(0, fakeDao.lastUpdatedCount)
+            assertEquals(10, fakeDao.lastUpdatedCount)
         }
 
     @Test

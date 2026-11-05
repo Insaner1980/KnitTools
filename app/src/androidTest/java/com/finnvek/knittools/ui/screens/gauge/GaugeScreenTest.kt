@@ -291,6 +291,28 @@ class GaugeScreenTest {
     }
 
     @Test
+    fun copyUpdatesClipboardWhilePreviousSnackbarIsVisible() {
+        val localized = localizedContext(Locale.US)
+        val model = render()
+        composeRule.runOnIdle {
+            model.onAction(GaugeAction.Task(GaugeTask.CONVERT), Locale.US)
+            model.onAction(GaugeAction.Edit(GaugeField.CONVERSION, "10"), Locale.US)
+            model.onAction(GaugeAction.Copy("First result"), Locale.US)
+        }
+        val confirmation = composeRule.onNodeWithText(localized.getString(R.string.measurement_copied))
+        composeRule.waitUntil(5_000) { confirmation.isDisplayed() }
+        assertEquals("First result", ownClipboardText(localized))
+        composeRule.mainClock.autoAdvance = false
+        try {
+            composeRule.runOnIdle { model.onAction(GaugeAction.Copy("Second result"), Locale.US) }
+            composeRule.waitUntil(2_000) { ownClipboardText(localized) == "Second result" }
+            confirmation.assertIsDisplayed()
+        } finally {
+            composeRule.mainClock.autoAdvance = true
+        }
+    }
+
+    @Test
     fun finnishInputAndClipboardUseLocalizedNumbersAndConfirmation() {
         val locale = Locale.forLanguageTag("fi")
         val localized = localizedContext(locale)

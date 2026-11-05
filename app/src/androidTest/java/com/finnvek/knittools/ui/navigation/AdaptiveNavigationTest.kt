@@ -282,8 +282,8 @@ class AdaptiveNavigationTest {
             ContentWidthPolicy.Unrestricted to 1600,
         )) {
             rule.runOnIdle { policy = nextPolicy }
-            val body = rule.onNodeWithTag("tool-body").fetchSemanticsNode().boundsInWindow
-            assertEquals(expected.toFloat(), body.width, 1f)
+            val body = rule.onNodeWithTag("tool-body").fetchSemanticsNode().size
+            assertEquals(expected, body.width)
             rule.runOnIdle { assertEquals(expected.dp, contentSize.width) }
         }
         rule.runOnIdle { width = 411 }

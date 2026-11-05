@@ -1,6 +1,5 @@
 package com.finnvek.knittools.ui.screens.onboarding
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -18,21 +17,22 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.clearAndSetSemantics
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import com.finnvek.knittools.R
 import com.finnvek.knittools.billing.BillingProductStatus
 import com.finnvek.knittools.billing.SelectedOneTimeOffer
 import com.finnvek.knittools.domain.model.OnboardingDraft
+import com.finnvek.knittools.domain.model.proGroupOrder
 import com.finnvek.knittools.pro.ProState
 import com.finnvek.knittools.ui.components.CancelButton
+import com.finnvek.knittools.ui.components.CraftIllustration
 import com.finnvek.knittools.ui.components.formatOfferFullPrice
 import com.finnvek.knittools.ui.components.rememberCurrentLocale
 import com.finnvek.knittools.ui.components.rememberLocaleDateFormat
+import com.finnvek.knittools.ui.screens.pro.ProAddsSection
+import com.finnvek.knittools.ui.screens.pro.ProFreeForeverSection
 import com.finnvek.knittools.ui.theme.ComponentDimens
+import com.finnvek.knittools.ui.theme.IllustrationDimens
 import com.finnvek.knittools.ui.theme.OnboardingDimens
-import com.finnvek.knittools.ui.theme.knitToolsColors
 import java.util.Date
 
 data class OnboardingPriceState(
@@ -122,9 +122,10 @@ internal fun JourneyPriceContent(
         Text(stringResource(R.string.journey_loading), style = MaterialTheme.typography.bodyLarge)
         return
     }
-    draft.projectId?.let {
-        Text(stringResource(R.string.journey_project_saved, draft.name), style = MaterialTheme.typography.bodyLarge)
-    }
+    CraftIllustration(
+        R.drawable.onboarding_pro_hero,
+        height = IllustrationDimens.CompactHeight,
+    )
     JourneyTitle(
         stringResource(
             if (price.mode ==
@@ -140,8 +141,8 @@ internal fun JourneyPriceContent(
         Text(stringResource(R.string.journey_trial_terms), style = MaterialTheme.typography.bodyLarge)
     }
     OnboardingPreview.Notice()
+    ProAddsSection(order = proGroupOrder(draft.needs))
     price.confirmedOffer?.let { offer -> JourneyOfferDetails(offer) }
-    JourneyComparison()
     if (price.mode == OnboardingPriceMode.Trial) {
         Text(stringResource(R.string.journey_timeline_title), style = MaterialTheme.typography.titleLarge)
         Column(verticalArrangement = Arrangement.spacedBy(ComponentDimens.ContentSpacing)) {
@@ -174,6 +175,8 @@ internal fun JourneyPriceContent(
             style = MaterialTheme.typography.bodyLarge,
         )
     }
+    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+    ProFreeForeverSection()
 }
 
 @Composable
@@ -201,108 +204,6 @@ private fun JourneyOfferDetails(offer: SelectedOneTimeOffer) {
             },
             style = MaterialTheme.typography.bodyLarge,
         )
-    }
-}
-
-@Composable
-private fun JourneyComparison() {
-    val free = stringResource(R.string.free)
-    val pro = stringResource(R.string.journey_pro)
-    val unlimited = stringResource(R.string.journey_unlimited)
-    val available = stringResource(R.string.journey_included)
-    val unavailable = stringResource(R.string.journey_not_included)
-    val rows =
-        listOf(
-            Triple(R.string.journey_compare_counter_pdf, available, available),
-            Triple(R.string.journey_compare_tools, available, available),
-            Triple(R.string.journey_compare_projects, "1", unlimited),
-            Triple(R.string.journey_compare_yarn, unavailable, available),
-            Triple(R.string.journey_compare_counters, unavailable, available),
-            Triple(R.string.journey_compare_notes_photos, unavailable, available),
-            Triple(R.string.journey_compare_widgets_charts, unavailable, available),
-        )
-    BoxWithConstraints(Modifier.fillMaxWidth()) {
-        val stacked = maxWidth < OnboardingDimens.JourneyStackedBreakpoint || LocalDensity.current.fontScale > 1.3f
-        Column(Modifier.fillMaxWidth()) {
-            if (!stacked) {
-                Row(Modifier.fillMaxWidth().background(MaterialTheme.knitToolsColors.cardContainer)) {
-                    Text("", Modifier.weight(2f).padding(ComponentDimens.StandardSpacing))
-                    Text(
-                        free,
-                        Modifier.weight(1f).padding(ComponentDimens.StandardSpacing),
-                        style = MaterialTheme.typography.titleMedium,
-                    )
-                    Text(
-                        pro,
-                        Modifier
-                            .weight(
-                                1.25f,
-                            ).background(
-                                MaterialTheme.knitToolsColors.actionContainer,
-                            ).padding(ComponentDimens.StandardSpacing),
-                        style = MaterialTheme.typography.titleMedium,
-                    )
-                }
-            }
-            rows.forEach { (label, freeValue, proValue) ->
-                val name = stringResource(label)
-                val freeDisplay =
-                    when (freeValue) {
-                        available -> "✓"
-                        unavailable -> "—"
-                        else -> freeValue
-                    }
-                val proDisplay =
-                    when (proValue) {
-                        available -> "✓"
-                        unavailable -> "—"
-                        else -> proValue
-                    }
-                Column(Modifier.fillMaxWidth().semantics(mergeDescendants = true) { }) {
-                    if (stacked) {
-                        Text(
-                            name,
-                            style = MaterialTheme.typography.bodyLarge,
-                            modifier = Modifier.padding(top = ComponentDimens.ContentSpacing),
-                        )
-                    }
-                    Row(Modifier.fillMaxWidth()) {
-                        if (!stacked) {
-                            Text(
-                                name,
-                                Modifier.weight(2f).padding(ComponentDimens.StandardSpacing),
-                                style = MaterialTheme.typography.bodyLarge,
-                            )
-                        }
-                        val freeDescription = stringResource(R.string.journey_compare_value, free, freeValue)
-                        val proDescription = stringResource(R.string.journey_compare_value, pro, proValue)
-                        Text(
-                            if (stacked) freeDescription else freeDisplay,
-                            Modifier.weight(1f).padding(ComponentDimens.StandardSpacing).clearAndSetSemantics {
-                                contentDescription =
-                                    freeDescription
-                            },
-                            style = MaterialTheme.typography.bodyLarge,
-                        )
-                        Text(
-                            if (stacked) proDescription else proDisplay,
-                            Modifier
-                                .weight(
-                                    if (stacked) 1f else 1.25f,
-                                ).background(
-                                    MaterialTheme.knitToolsColors.actionContainer,
-                                ).padding(ComponentDimens.StandardSpacing)
-                                .clearAndSetSemantics {
-                                    contentDescription =
-                                        proDescription
-                                },
-                            style = MaterialTheme.typography.bodyLarge,
-                        )
-                    }
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                }
-            }
-        }
     }
 }
 

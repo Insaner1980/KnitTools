@@ -7,6 +7,7 @@ import androidx.room.PrimaryKey
 
 @Entity(
     tableName = "onboarding_projects",
+    indices = [Index(value = ["projectId"], unique = true)],
     foreignKeys = [
         ForeignKey(
             entity = CounterProjectEntity::class,
@@ -15,7 +16,6 @@ import androidx.room.PrimaryKey
             onDelete = ForeignKey.CASCADE,
         ),
     ],
-    indices = [Index(value = ["projectId"], unique = true)],
 )
 data class OnboardingProjectEntity(
     @PrimaryKey val draftId: String,

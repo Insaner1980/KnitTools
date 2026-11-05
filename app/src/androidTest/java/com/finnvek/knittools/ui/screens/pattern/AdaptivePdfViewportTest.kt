@@ -18,6 +18,7 @@ import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.junit4.StateRestorationTester
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.percentOffset
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeUp
@@ -97,13 +98,18 @@ class AdaptivePdfViewportTest {
             val expected = (anchor * viewport.coordinateTransform.pageHeight).coerceAtMost(range.maxValue())
             assertTrue("Page anchor after $next", abs(expected - range.value()) < 3f)
             val image = reader.captureToImage()
+            val node = reader.fetchSemanticsNode()
             val x = screen.x.toInt()
             val y = (screen.y - range.value()).toInt()
-            if (x in 1 until image.width - 1 && y in 1 until image.height - 1) {
+            val visibleBounds = rule.onRoot().fetchSemanticsNode().boundsInRoot
+            // Oversized synthetic viewports include pixels outside the physical window that Android does not draw.
+            val visiblePoint = node.positionInRoot + Offset(x.toFloat(), y.toFloat())
+            if (x in 1 until image.width - 1 && y in 1 until image.height - 1 && visibleBounds.contains(visiblePoint)) {
                 val pixel = image.toPixelMap()[x, y]
+                // Device capture can map the solid red marker below 0.9; verify its position and red hue.
                 assertTrue(
-                    "Overlay uses exactly the same transform as the page at $next",
-                    pixel.red > 0.9f && pixel.green < 0.1f,
+                    "Overlay at $next: pixel=$pixel expected=($x,$y)",
+                    pixel.red > 0.8f && pixel.green < 0.1f && pixel.blue < 0.1f,
                 )
                 checkedPixels++
             }

@@ -3,10 +3,8 @@ package com.finnvek.knittools.ui.screens.pattern
 import android.accessibilityservice.AccessibilityServiceInfo
 import android.content.Context
 import android.content.res.Configuration
-import android.view.WindowInsets
 import android.view.accessibility.AccessibilityManager
 import android.view.accessibility.AccessibilityNodeInfo
-import android.view.inspector.WindowInspector
 import androidx.activity.ComponentActivity
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
@@ -38,6 +36,7 @@ import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.model.NormalizedPatternPoint
 import com.finnvek.knittools.domain.model.TextBoxPayload
 import com.finnvek.knittools.ui.localeThemeCases
+import com.finnvek.knittools.ui.navigation.awaitKeyboard
 import com.finnvek.knittools.ui.theme.KnitToolsTheme
 import kotlinx.coroutines.runBlocking
 import org.junit.After
@@ -115,13 +114,7 @@ class PatternAnnotationTextUiTest(
         click(R.string.pattern_annotation_edit_text)
         input.assert(SemanticsMatcher.expectValue(SemanticsProperties.EditableText, AnnotatedString("Original text")))
         input.performScrollTo().performClick().assertIsFocused()
-        compose.waitUntil(5_000) {
-            WindowInspector.getGlobalWindowViews().any {
-                it.rootWindowInsets?.isVisible(
-                    WindowInsets.Type.ime(),
-                ) == true
-            }
-        }
+        compose.awaitKeyboard(true)
         input.performTextReplacement(" \n")
         node(R.string.save).performScrollTo().assertIsNotEnabled()
         val edited = (1..18).joinToString("\n") { "$it: Wiederholungen und Strickanweisungen – äö 日本語" }

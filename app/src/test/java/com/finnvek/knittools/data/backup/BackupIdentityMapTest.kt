@@ -2,6 +2,7 @@ package com.finnvek.knittools.data.backup
 
 import android.database.Cursor
 import androidx.sqlite.db.SupportSQLiteDatabase
+import com.finnvek.knittools.data.local.LinkedCounterDeltas
 import com.finnvek.knittools.domain.model.YARN_CARD_IDS_MAX_CHARACTERS
 import io.mockk.every
 import io.mockk.mockk
@@ -42,6 +43,21 @@ internal fun backupCursor(rows: List<List<Any?>>): Cursor {
 }
 
 class BackupIdentityMapTest {
+    @Test fun linkedUndoDeltasRemapCounterIdsAndDropDeletedCounters() {
+        val identities = BackupIdentityMap(database(), database())
+        val row =
+            mutableMapOf<String, JsonElement>(
+                "linkedCounterDeltasJson" to JsonPrimitive(LinkedCounterDeltas.encode(mapOf(1L to -2, 999L to 3))),
+            )
+
+        identities.apply("counter_history", row)
+
+        assertEquals(
+            mapOf(51L to -2),
+            LinkedCounterDeltas.decode(row.getValue("linkedCounterDeltasJson").jsonPrimitive.content),
+        )
+    }
+
     private fun database(maximum: Long = 40): SupportSQLiteDatabase =
         mockk(relaxed = true) {
             every { query(any<String>()) } answers {

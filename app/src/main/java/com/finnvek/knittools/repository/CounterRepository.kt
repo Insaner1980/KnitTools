@@ -6,6 +6,7 @@ import com.finnvek.knittools.data.local.ActiveSessionEntity
 import com.finnvek.knittools.data.local.CounterHistoryEntity
 import com.finnvek.knittools.data.local.CounterProjectDao
 import com.finnvek.knittools.data.local.DatabaseTransactionRunner
+import com.finnvek.knittools.data.local.LinkedCounterDeltas
 import com.finnvek.knittools.data.local.MAX_COMPLETED_SESSIONS
 import com.finnvek.knittools.data.local.ProjectCompletionEntity
 import com.finnvek.knittools.data.local.ProjectCounterDao
@@ -1150,17 +1151,17 @@ class CounterRepository
             if (after.count == before.count) return false
 
             val updatedAt = System.currentTimeMillis()
+            val linkedDeltas = applyLinkedCounterDelta(id, after.count - before.count)
             dao.updateCounterStateWithHistory(
                 projectId = id,
                 count = after.count,
                 stepSize = after.stepSize,
                 action = change.historyAction,
                 previousValue = before.count,
-                newValue = after.count,
                 updatedAt = updatedAt,
+                linkedCounterDeltasJson = LinkedCounterDeltas.encode(linkedDeltas),
             )
             resetCurrentStitchIfNeeded(id, project, updatedAt)
-            applyLinkedCounterDelta(id, after.count - before.count)
             projectDocumentRepository.getActiveDocument(id)?.let { document ->
                 applyReadingLineFollow(
                     document = document,
@@ -1181,7 +1182,12 @@ class CounterRepository
             dao.updateCount(id, history.previousValue, updatedAt)
             dao.deleteHistoryById(history.id)
             resetCurrentStitchIfNeeded(id, project, updatedAt)
-            applyLinkedCounterDelta(id, history.previousValue - history.newValue)
+            val linkedDeltas = history.linkedCounterDeltasJson?.let(LinkedCounterDeltas::decode)
+            applyLinkedCounterDelta(
+                id,
+                history.previousValue - history.newValue,
+                linkedDeltas?.mapValues { (_, delta) -> -delta },
+            )
             projectDocumentRepository.getActiveDocument(id)?.let { document ->
                 applyReadingLineFollow(
                     document = document,
@@ -1278,8 +1284,10 @@ class CounterRepository
         private suspend fun applyLinkedCounterDelta(
             projectId: Long,
             delta: Int,
-        ) {
-            if (delta == 0) return
+            counterDeltas: Map<Long, Int>? = null,
+        ): Map<Long, Int> {
+            if (delta == 0) return emptyMap()
+            val appliedDeltas = mutableMapOf<Long, Int>()
             projectCounterDao
                 .getCountersForProject(projectId)
                 .first()
@@ -1289,14 +1297,17 @@ class CounterRepository
                             ProjectCounterType.fromPersistedValue(counter.counterType),
                         )
                 }.forEach { counter ->
+                    val requestedDelta = if (counterDeltas == null) delta else counterDeltas[counter.id] ?: 0
                     val updatedCount =
-                        (counter.count.toLong() + delta)
+                        (counter.count.toLong() + requestedDelta)
                             .coerceIn(0L, Int.MAX_VALUE.toLong())
                             .toInt()
                     if (updatedCount != counter.count) {
                         projectCounterDao.updateCount(counter.id, updatedCount)
+                        appliedDeltas[counter.id] = updatedCount - counter.count
                     }
                 }
+            return appliedDeltas
         }
 
         suspend fun undoLastChange(projectId: Long) {

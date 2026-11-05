@@ -10,8 +10,8 @@ export const androidUriShareWithoutClipData: MatcherPlugin = {
   match(content, filePath): CandidateMatch[] {
     if (isTestFile(filePath)) return [];
     const actionRegex = /\bIntent\.ACTION_SEND(?:_MULTIPLE)?\b/g;
-    const actionMatches = [...content.matchAll(actionRegex)];
     const code = kotlinStructuralCode(content);
+    const actionMatches = [...code.matchAll(actionRegex)];
 
     return actionMatches.flatMap((actionMatch, matchIndex) => {
       const index = actionMatch.index ?? 0;
@@ -26,7 +26,7 @@ export const androidUriShareWithoutClipData: MatcherPlugin = {
           break;
         }
       }
-      const shareBlock = content.slice(index, endIndex);
+      const shareBlock = code.slice(index, endIndex);
       if (!shareBlock.includes("Intent.EXTRA_STREAM")) return [];
 
       const hasReadGrant = shareBlock.includes("FLAG_GRANT_READ_URI_PERMISSION");

@@ -1,5 +1,4 @@
 import { onCall, onRequest } from "firebase-functions/v2/https";
-import { randomBytes } from "node:crypto";
 
 import {
   ravelryCallbackUrl,
@@ -22,6 +21,7 @@ import {
   BROWSER_AUTH_COOKIE,
   browserSecretFromCookie,
   browserSecretHash,
+  browserSecretForStart,
   completeBrowserOAuthCallback,
   requireBrowserValue,
   startBrowserOAuth,
@@ -142,7 +142,7 @@ export const ravelryCallback = onRequest(ravelrySecretOptions, async (request, r
       const state = requireBrowserValue(query.state);
       const ticket = requireBrowserValue(query.start);
       await rateLimiter.consumeGlobal("callback");
-      const secret = randomBytes(32).toString("base64url");
+      const secret = browserSecretForStart(request.headers.cookie);
       const stored = await stateStore.bindBrowser(state, browserSecretHash(ticket), browserSecretHash(secret), Date.now());
       if (!stored || await tokenStore.getConnectionGeneration(stored.uid) !== (stored.connectionGeneration ?? 0)) {
         throw new RavelryAuthFlowError("invalid_browser_session", 400);

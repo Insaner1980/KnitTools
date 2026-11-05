@@ -10,7 +10,7 @@ const source = process.env.DEEPSEC_MARKER_SOURCE ?? fileURLToPath(new URL("./mar
 const currentDecision = fs.readFileSync(new URL("../../config/security-decisions.md", import.meta.url), "utf8");
 const heading = "## Ravelry embedded credentials\n\n";
 
-function runDecision(decision, expectedVerdict, credentials = false) {
+function runDecision(decision, expectedVerdict, credentialPath = null) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "knittools-risk-test-"));
   try {
     const script = path.join(root, ".deepsec/scripts/mark-accepted-risks.mjs");
@@ -21,8 +21,12 @@ function runDecision(decision, expectedVerdict, credentials = false) {
     fs.copyFileSync(source, script);
     fs.writeFileSync(path.join(root, "config/security-decisions.md"), decision);
     fs.mkdirSync(path.join(root, "app"));
-    fs.writeFileSync(path.join(root, "app/build.gradle.kts"), credentials
-      ? "val synthetic = BuildConfig.RAVELRY_OAUTH2_SYNTHETIC" : "");
+    fs.writeFileSync(path.join(root, "app/build.gradle.kts"), "");
+    if (credentialPath) {
+      const credentialFile = path.join(root, credentialPath);
+      fs.mkdirSync(path.dirname(credentialFile), { recursive: true });
+      fs.writeFileSync(credentialFile, "val synthetic = BuildConfig.RAVELRY_OAUTH2_SYNTHETIC");
+    }
     const initial = JSON.stringify({
       filePath: "app/build.gradle.kts",
       findings: [
@@ -65,7 +69,13 @@ for (const [name, decision] of [
 }
 
 test("interprets the current documented decision as fixed", () => runDecision(currentDecision, "fixed"));
-test("keeps the removed-source guard", () => runDecision(currentDecision, null, true));
+for (const sourcePath of [
+  "app/build.gradle.kts",
+  "app/src/debug/java/Synthetic.kt",
+  "app/src/debugShared/kotlin/Synthetic.kt",
+]) {
+  test(`keeps the removed-source guard in ${sourcePath}`, () => runDecision(currentDecision, null, sourcePath));
+}
 test("accepts exactly one accepted status in a test copy only", () =>
   runDecision(heading + "Status: Accepted risk\n## Other\nStatus: Removed from Android", "accepted-risk"));
 test("ignores another section's accepted status when Ravelry is removed", () =>

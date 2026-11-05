@@ -7,6 +7,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
@@ -30,6 +31,7 @@ import com.finnvek.knittools.ui.screens.project.ProjectSetupSection
 import com.finnvek.knittools.ui.screens.project.ProjectSetupVisit
 import com.finnvek.knittools.ui.screens.project.ProjectsStartState
 import com.finnvek.knittools.ui.theme.KnitToolsTheme
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -195,7 +197,11 @@ class OnboardingLocalePresentationTest(
 
     private fun show(content: @Composable () -> Unit) {
         compose.setContent {
-            CompositionLocalProvider(LocalContext provides context, LocalConfiguration provides configuration) {
+            CompositionLocalProvider(
+                LocalContext provides context,
+                LocalConfiguration provides configuration,
+                LocalResources provides context.resources,
+            ) {
                 KnitToolsTheme { content() }
             }
         }
@@ -213,13 +219,28 @@ class OnboardingLocalePresentationTest(
         val node = compose.onNodeWithText(text(id), useUnmergedTree = true)
         if (scroll) node.performScrollTo()
         val results = mutableListOf<TextLayoutResult>()
-        node
-            .fetchSemanticsNode()
+        val semantics = node.fetchSemanticsNode()
+        semantics
             .config[SemanticsActions.GetTextLayoutResult]
             .action
             ?.invoke(results)
         assertTrue("Missing text layout for $language/$id", results.isNotEmpty())
-        assertFalse("Truncated action for $language/$id", results.any { it.hasVisualOverflow })
+        results.forEach { layout ->
+            // Semantics may reconstruct the paragraph at maxWidth instead of the measured text width.
+            val width = minOf(layout.size.width, semantics.size.width)
+            val height = minOf(layout.size.height, semantics.size.height)
+            val message = "Truncated action for $language/${text(id)}"
+            assertTrue(message, layout.lineCount > 0)
+            assertFalse(message, layout.multiParagraph.didExceedMaxLines)
+            repeat(layout.lineCount) { line ->
+                assertFalse(message, layout.isLineEllipsized(line))
+                assertTrue(message, layout.getLineLeft(line) >= -1f && layout.getLineRight(line) <= width + 1f)
+                assertTrue(message, layout.getLineTop(line) >= -1f && layout.getLineBottom(line) <= height + 1f)
+            }
+            assertEquals(message, layout.layoutInput.text.length, layout.getLineEnd(layout.lineCount - 1))
+            assertTrue(message, semantics.boundsInRoot.width >= width - 1f)
+            assertTrue(message, semantics.boundsInRoot.height >= height - 1f)
+        }
     }
 
     companion object {

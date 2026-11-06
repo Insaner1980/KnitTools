@@ -9,6 +9,10 @@ import androidx.datastore.preferences.core.PreferencesSerializer
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.preferencesOf
 import androidx.datastore.preferences.core.stringPreferencesKey
+import com.finnvek.knittools.domain.model.OnboardingCraft
+import com.finnvek.knittools.domain.model.OnboardingDraft
+import com.finnvek.knittools.domain.model.OnboardingNeed
+import com.finnvek.knittools.domain.model.OnboardingStep
 import com.finnvek.knittools.domain.tips.BASIC_TIPS
 import com.finnvek.knittools.domain.tips.TipId
 import kotlinx.coroutines.CancellationException
@@ -40,6 +44,41 @@ import java.time.LocalDate
 import java.time.ZoneId
 
 class OnboardingStateRepositoryTest {
+    @Test
+    fun `legacy benefits draft retains choices and project form when resuming`() =
+        runBlocking {
+            val json =
+                """{"id":"legacy","step":"Benefits","needs":["Counting","Yarn"],"craft":"Crochet",
+                    |"demoCount":2,"demoHistory":[0,1],"name":"Benefits","initialCount":"12",
+                    |"targetRows":"72","showOptions":true,"pdfUri":"file:///pattern.pdf","pdfName":"Benefits.pdf"}
+                """.trimMargin()
+            val dataStore =
+                object : DataStore<Preferences> {
+                    override val data = flowOf(preferencesOf(stringPreferencesKey("journey_draft_v1") to json))
+
+                    override suspend fun updateData(transform: suspend (Preferences) -> Preferences): Preferences =
+                        transform(data.first())
+                }
+            val repository = OnboardingStateRepository(dataStore)
+            val expected =
+                OnboardingDraft(
+                    id = "legacy",
+                    step = OnboardingStep.Project,
+                    needs = listOf(OnboardingNeed.Counting, OnboardingNeed.Yarn),
+                    craft = OnboardingCraft.Crochet,
+                    demoCount = 2,
+                    demoHistory = listOf(0, 1),
+                    name = "Benefits",
+                    initialCount = "12",
+                    targetRows = "72",
+                    showOptions = true,
+                    pdfUri = "file:///pattern.pdf",
+                    pdfName = "Benefits.pdf",
+                )
+
+            assertEquals(expected, repository.draft.first())
+        }
+
     @Test
     fun `unknown draft fields remain readable and invalid drafts are absent`() =
         runBlocking {

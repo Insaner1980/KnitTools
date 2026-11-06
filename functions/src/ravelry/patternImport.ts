@@ -44,6 +44,7 @@ const RAVELRY_SEARCH_MAX_FILTER_LENGTH = 100;
 const RAVELRY_DIFFICULTY_MIN = 1;
 const RAVELRY_DIFFICULTY_MAX = 10;
 const RAVELRY_IMPORT_MAX_URL_LENGTH = 2_048;
+const RAVELRY_IMPORT_MAX_SEARCH_PAGES = 3;
 const MAX_RAVELRY_PATTERN_ID = 2_147_483_647;
 const CONTROL_CHARACTERS = /[\u0000-\u001F\u007F-\u009F\u2028\u2029]/;
 
@@ -270,7 +271,7 @@ export async function importPatternByUrl(options: ImportPatternByUrlOptions): Pr
   }
 
   let matchedPattern: SanitizedPattern | undefined;
-  for (let page = 1; ; page++) {
+  for (let page = 1; page <= RAVELRY_IMPORT_MAX_SEARCH_PAGES; page++) {
     const response = await searchPatternsForUser({
       uid: options.uid,
       tokenStore: options.tokenStore,

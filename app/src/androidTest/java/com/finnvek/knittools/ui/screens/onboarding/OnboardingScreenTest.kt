@@ -60,6 +60,39 @@ class OnboardingScreenTest(
     private var finished = 0
     private val quote = SelectedOneTimeOffer("9,99 €", "test-offer", 9_990_000, "EUR")
 
+    @Test fun leavingCraftCancelsDelayedAdvance() {
+        draft.value = draft.value.copy(step = OnboardingStep.Craft)
+        var advances = 0
+        compose.setContent {
+            CompositionLocalProvider(LocalContext provides context, LocalConfiguration provides configuration) {
+                KnitToolsTheme {
+                    // AnimatedContent säilyttää poistuvan vaiheen hetken sommittelussa.
+                    JourneyCraft(
+                        draft.value,
+                        false,
+                        OnboardingActions(
+                            edit = { draft.value = it(draft.value) },
+                            next = {
+                                advances++
+                                draft.value = draft.value.next()
+                            },
+                        ),
+                    )
+                }
+            }
+        }
+        compose.mainClock.autoAdvance = false
+        compose.onNodeWithTag("onboarding_craft_knitting").performClick()
+        compose.runOnIdle { draft.value = draft.value.previous() }
+        compose.mainClock.advanceTimeBy(
+            OnboardingDimens.CRAFT_ADVANCE_DELAY_MILLIS + OnboardingDimens.STEP_TRANSITION_MILLIS,
+        )
+        compose.runOnIdle {
+            assertEquals(0, advances)
+            assertEquals(OnboardingStep.Welcome, draft.value.step)
+        }
+    }
+
     @Test fun priceActionsRemainReachableInShortWindows() {
         val windowHeight = mutableStateOf(240.dp)
         val clicked = mutableListOf<String>()

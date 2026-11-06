@@ -844,6 +844,39 @@ describe("Ravelry backend search and import", () => {
     ]);
   });
 
+  it("bounds a missing slug lookup without exhausting ordinary searches", async () => {
+    const tokenStore = new MemoryTokenStore();
+    await tokenStore.saveToken({
+      uid: "uid", authType: "oauth2", accessToken: "access-token",
+      createdAtMillis: 1_000, updatedAtMillis: 1_000,
+    });
+    const rateLimiter = new RecordingRateLimiter();
+    const pages: number[] = [];
+    const client = createRavelryClient(async (input) => {
+      const url = new URL(input.toString());
+      assert.equal(url.pathname, "/patterns/search.json");
+      const page = Number(url.searchParams.get("page"));
+      pages.push(page);
+      return Response.json({
+        patterns: [],
+        paginator: { page, page_count: 1_000, results: 10_000 },
+      });
+    });
+    await assert.rejects(
+      importPatternByUrl({
+        uid: "uid", tokenStore, client, rateLimiter,
+        url: "https://www.ravelry.com/patterns/library/missing-pattern",
+      }),
+      (error: unknown) => error instanceof RavelryPatternImportError && error.code === "pattern_not_found",
+    );
+    assert.deepEqual(pages, [1, 2, 3]);
+    assert.deepEqual(rateLimiter.calls.map(call => call.bucket), [
+      "search", "search", "search", "search", "search", "search",
+    ]);
+    await searchPatternsForUser({ uid: "uid", tokenStore, client, rateLimiter, query: { query: "hat", page: 1 } });
+    assert.deepEqual(pages, [1, 2, 3, 1]);
+  });
+
   it("rejects a slug URL when search returns no exact canonical match", async () => {
     const tokenStore = new MemoryTokenStore();
     const rateLimiter = new RecordingRateLimiter();

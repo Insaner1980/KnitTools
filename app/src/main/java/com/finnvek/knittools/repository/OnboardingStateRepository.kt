@@ -14,6 +14,7 @@ import androidx.datastore.preferences.preferencesDataStore
 import com.finnvek.knittools.data.datastore.editPreferencesSafely
 import com.finnvek.knittools.data.datastore.safePreferencesData
 import com.finnvek.knittools.domain.model.OnboardingDraft
+import com.finnvek.knittools.domain.model.OnboardingStep
 import com.finnvek.knittools.domain.tips.BASIC_TIPS
 import com.finnvek.knittools.domain.tips.TipId
 import com.finnvek.knittools.domain.tips.TipRules
@@ -24,6 +25,9 @@ import kotlinx.coroutines.flow.map
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.decodeFromJsonElement
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -69,7 +73,14 @@ class OnboardingStateRepository internal constructor(
             .map { prefs ->
                 prefs[KEY_JOURNEY_DRAFT]?.let {
                     try {
-                        draftJson.decodeFromString<OnboardingDraft>(it)
+                        val stored = draftJson.parseToJsonElement(it)
+                        val migrated =
+                            if (stored is JsonObject && stored["step"] == JsonPrimitive("Benefits")) {
+                                JsonObject(stored + ("step" to JsonPrimitive(OnboardingStep.Project.name)))
+                            } else {
+                                stored
+                            }
+                        draftJson.decodeFromJsonElement<OnboardingDraft>(migrated)
                     } catch (_: SerializationException) {
                         null
                     }

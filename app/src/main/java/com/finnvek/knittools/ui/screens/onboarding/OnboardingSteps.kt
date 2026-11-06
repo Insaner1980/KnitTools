@@ -47,7 +47,6 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -79,6 +78,7 @@ import com.finnvek.knittools.domain.model.DEMO_PATTERN_ROWS
 import com.finnvek.knittools.domain.model.OnboardingCraft
 import com.finnvek.knittools.domain.model.OnboardingDraft
 import com.finnvek.knittools.domain.model.OnboardingNeed
+import com.finnvek.knittools.domain.model.OnboardingStep
 import com.finnvek.knittools.domain.model.demoPatternRow
 import com.finnvek.knittools.ui.components.ContinueProjectCard
 import com.finnvek.knittools.ui.components.CounterImageButton
@@ -96,7 +96,6 @@ import com.finnvek.knittools.ui.theme.IllustrationDimens
 import com.finnvek.knittools.ui.theme.OnboardingDimens
 import com.finnvek.knittools.ui.theme.knitToolsColors
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 
 @Composable
 internal fun JourneyWelcome() {
@@ -149,8 +148,15 @@ internal fun JourneyCraft(
     busy: Boolean,
     actions: OnboardingActions,
 ) {
-    val scope = rememberCoroutineScope()
     var advancing by remember { mutableStateOf(false) }
+    LaunchedEffect(advancing, draft.step) {
+        if (!advancing) return@LaunchedEffect
+        if (draft.step == OnboardingStep.Craft) {
+            delay(OnboardingDimens.CRAFT_ADVANCE_DELAY_MILLIS)
+            actions.next()
+        }
+        advancing = false
+    }
     JourneyTitle(stringResource(R.string.journey_craft_title))
     Column(
         Modifier.fillMaxWidth().selectableGroup(),
@@ -166,11 +172,6 @@ internal fun JourneyCraft(
                     // Valinta näkyy hetken ennen siirtymää; yksi napautus riittää kuten Duolingossa.
                     advancing = true
                     actions.edit { it.copy(craft = craft, craftChosen = true) }
-                    scope.launch {
-                        delay(OnboardingDimens.CRAFT_ADVANCE_DELAY_MILLIS)
-                        actions.next()
-                        advancing = false
-                    }
                 },
                 modifier =
                     Modifier

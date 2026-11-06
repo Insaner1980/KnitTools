@@ -6,7 +6,7 @@ This is the product and technical reference for the **inspected working tree on 
 
 This update retains the October 18 reference and the pre-existing October 19 Brazilian Portuguese additions, reconciles their Git/source history, and refreshes the affected sections and inventories. It is a documentation/source verification, not a new build or runtime test run.
 
-Schema and backup-table facts were reconciled with schema 27 on November 5, 2026. Dated validation records below remain historical evidence.
+Schema and backup-table facts were reconciled with schema 27 on November 6, 2026. Dated validation records below remain historical evidence.
 
 All repository links are relative to the root. Package shorthand such as `repository/CounterRepository.kt` means a path below `app/src/main/java/com/finnvek/knittools`. “Implemented” means present and reachable subject to state, validation and entitlement; it does not mean released, live-service verified or freshly runtime-tested.
 
@@ -23,7 +23,7 @@ All repository links are relative to the root. Package shorthand such as `reposi
 | App version | `1.0.0`, version code `1` |
 | Android SDK | Minimum 29; target and compile 37 |
 | Room schema | 27 |
-| Current database shape | 19 entities/tables, 212 columns; 26 exported schema versions |
+| Current database shape | 19 entities/tables, 213 columns; 27 exported schema versions |
 | Supported app languages | 12 locale options; System is a selection mode |
 | Resource inventory | 1,308 translatable strings and 31 plurals per locale; 1,339 names per locale |
 | Modules | `:app` and `:baselineprofile` |
@@ -1756,7 +1756,7 @@ Foreign key: `projectId` → `counter_projects` (`id`), delete CASCADE, update N
 
 ### Migration chain
 
-Room exports every version 1–26. Versions 1→2 and 2→3 use declared auto-migrations; subsequent migrations are explicitly registered. Schema snapshots, migration implementation, constraint callbacks, and migration tests must change together for new persistent state.
+Room exports every version 1–27. Versions 1→2 and 2→3 use declared auto-migrations; subsequent migrations are explicitly registered. Schema snapshots, migration implementation, constraint callbacks, and migration tests must change together for new persistent state.
 
 | Transition | Implemented change / preservation boundary |
 | --- | --- |
@@ -1785,6 +1785,7 @@ Room exports every version 1–26. Versions 1→2 and 2→3 use declared auto-mi
 | 23→24 | Adds only empty project yarn usage plus four indexes; no amount backfill |
 | 24→25 | Adds project completion events; backfills at most one valid current completion per completed project, nullable legacy zone |
 | 25→26 | Adds only onboarding project draft receipts and their unique project index; preserves earlier tables |
+| 26→27 | `MIGRATION_26_27` adds nullable `counter_history.linkedCounterDeltasJson` TEXT for actual linked-counter history deltas; preserves existing history with null snapshots |
 
 Migration 24→25 requires a credible completion timestamp at/after creation; it does not invent all historical completion cycles. Session null zones and completion null zones keep the established current-device-zone fallback. Migration 18→19 must preserve tables that reference the rebuilt saved-pattern table; a successful table rebuild without those rows is not a correct migration.
 
@@ -2513,6 +2514,6 @@ The October 18 reconstruction established this product-first reference. The Octo
 
 The current refresh corrects branch/HEAD and distinguishes changes already committed in `e4416c7c` from the remaining working tree. It reconciles historical-unit suppression, session-zone bounds, neutral counter copy, M1/cast-on behavior, reference tables/symbols, care/weight/widget presentation, Brazilian Portuguese and month plurals, expanded test ownership, and scanner/stability inventories. Older resource audit counts and execution receipts are explicitly historical rather than extended to later inputs.
 
-All Android Ravelry descriptions use the WebView/site-session/download implementation. Backend OAuth/search/import is confined to the retained-backend explanation. Crashlytics is release crash reporting; PostHog is separate release-only optional usage analytics; debug Sentry is variant-specific. Manual backup remains free local-data export/replacement through SAF, not cloud synchronization. Current schema is 26 and current reader authority is project_documents.
+All Android Ravelry descriptions use the WebView/site-session/download implementation. Backend OAuth/search/import is confined to the retained-backend explanation. Crashlytics is release crash reporting; PostHog is separate release-only optional usage analytics; debug Sentry is variant-specific. Manual backup remains free local-data export/replacement through SAF, not cloud synchronization. Current schema is 27 and current reader authority is project_documents.
 
 Preserve the distinction between code, configuration, source assertions, historical run receipts and unverified external behavior when maintaining this reference. A newly added test, a green summary without positive test execution, a stable old hash or a deployment plan must not become a claim that a new working tree or live service was verified. Missing proof is not itself a confirmed production defect.

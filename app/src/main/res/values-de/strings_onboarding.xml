@@ -556,7 +556,7 @@
     <!-- Tilastojen laatan hyötyrivi. -->
     <string name="journey_tool_insights_body">Sieh, wohin deine Zeit geht.</string>
     <!-- Työajan laatan hyötyrivi. -->
-    <string name="journey_tool_time_body">Stoppe jede Sitzung.</string>
+    <string name="journey_tool_time_body">Miss die Dauer jeder Sitzung.</string>
     <!-- Kuvien laatan hyötyrivi. -->
     <string name="journey_tool_photos_body">Fortschrittsfotos für jedes Projekt.</string>
     <!-- Muistiinpanojen laatan hyötyrivi. -->

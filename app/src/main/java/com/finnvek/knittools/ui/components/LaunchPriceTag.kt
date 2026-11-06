@@ -3,6 +3,7 @@ package com.finnvek.knittools.ui.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -83,9 +84,10 @@ fun LaunchPriceTag(
                 )
             }
         }
-        Row(
-            verticalAlignment = Alignment.Bottom,
+        FlowRow(
+            itemVerticalAlignment = Alignment.Bottom,
             horizontalArrangement = Arrangement.spacedBy(ComponentDimens.ContentSpacing),
+            verticalArrangement = Arrangement.spacedBy(ComponentDimens.CompactSpacing),
         ) {
             Text(offer.formattedPrice, style = MaterialTheme.typography.displaySmall, color = colors.proMarkerContent)
             if (launch != null && fullPrice != null) {
@@ -103,7 +105,7 @@ fun LaunchPriceTag(
         }
         Text(
             if (launch != null) {
-                val date = rememberLocaleDateFormat("yMMMd").format(Date(launch.endsAtMillis))
+                val date = rememberLocaleDateFormat("yMMMdssz", includeTime = true).format(Date(launch.endsAtMillis))
                 stringResource(R.string.price_tag_launch_terms, date)
             } else {
                 stringResource(R.string.one_time_purchase)

@@ -24,7 +24,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -32,6 +35,8 @@ import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -246,9 +251,10 @@ private fun ToolboxGlyph(
     index: Int,
     modifier: Modifier = Modifier,
 ) {
-    val progress = remember { Animatable(0f) }
-    LaunchedEffect(tool) {
-        if (tool.detail == ToolDetail.None) return@LaunchedEffect
+    val progress = remember(tool) { Animatable(0f) }
+    var hasBeenVisible by remember(tool) { mutableStateOf(false) }
+    LaunchedEffect(tool, hasBeenVisible) {
+        if (!hasBeenVisible || tool.detail == ToolDetail.None) return@LaunchedEffect
         delay(
             (
                 IllustrationDimens.ENTRANCE_BASE_DELAY_MILLIS +
@@ -260,7 +266,9 @@ private fun ToolboxGlyph(
     }
     Box(
         modifier
-            .size(OnboardingDimens.ToolboxGlyphPadSize)
+            .onGloballyPositioned { coordinates ->
+                if (!hasBeenVisible && !coordinates.boundsInWindow().isEmpty) hasBeenVisible = true
+            }.size(OnboardingDimens.ToolboxGlyphPadSize)
             .clip(MaterialTheme.shapes.small)
             .background(MaterialTheme.knitToolsColors.paperSurface),
         contentAlignment = Alignment.Center,

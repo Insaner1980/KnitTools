@@ -2326,8 +2326,15 @@ internal fun PatternAnnotationViewModel.patternToolbarActions() =
         onDeleteSelected = ::deleteSelected,
         onBringSelectedForward = ::bringSelectedForward,
         onSendSelectedBackward = ::sendSelectedBackward,
-        onAddTextBox = { text -> addTextBox(text) },
-        onAddCallout = { title, description, symbol -> addCallout(title, description, symbol) },
+        onAddTextBox = { text, draftId -> addTextBox(text, draftId = draftId) },
+        onAddCallout = {
+            title,
+            description,
+            symbol,
+            draftId,
+            ->
+            addCallout(title, description, symbol, draftId = draftId)
+        },
         onUndo = ::undo,
         onRedo = ::redo,
         onClearPage = ::clearEditablePage,

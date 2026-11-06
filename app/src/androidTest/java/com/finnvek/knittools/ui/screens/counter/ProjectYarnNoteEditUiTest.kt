@@ -51,6 +51,7 @@ import com.finnvek.knittools.repository.ProjectYarnNoteEditResult
 import com.finnvek.knittools.repository.ProjectYarnNoteRepository
 import com.finnvek.knittools.repository.YarnCardRepository
 import com.finnvek.knittools.ui.localizedTestContext
+import com.finnvek.knittools.ui.navigation.awaitKeyboard
 import com.finnvek.knittools.ui.theme.KnitToolsTheme
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
@@ -200,13 +201,7 @@ class ProjectYarnNoteEditUiTest(
         render()
         openEditor()
         input("notes").performScrollTo().performClick().assertIsFocused()
-        compose.waitUntil(5_000) {
-            WindowInspector.getGlobalWindowViews().any {
-                ViewCompat.getRootWindowInsets(it)?.isVisible(
-                    WindowInsetsCompat.Type.ime(),
-                ) == true
-            }
-        }
+        compose.awaitKeyboard(true)
         input("notes").performTextReplacement("Long synthetic note\nSecond line\nThird line")
         val controls =
             listOf(
@@ -243,32 +238,40 @@ class ProjectYarnNoteEditUiTest(
                 .getInstrumentation()
                 .uiAutomation
         val serviceInfo = automation.serviceInfo
-        serviceInfo.flags = serviceInfo.flags or AccessibilityServiceInfo.FLAG_REQUEST_TOUCH_EXPLORATION_MODE
-        automation.serviceInfo = serviceInfo
-        val accessibility = base.getSystemService(AccessibilityManager::class.java)
-        compose.waitUntil(10_000) {
-            accessibility.isTouchExplorationEnabled
+        val originalFlags = serviceInfo.flags
+        try {
+            serviceInfo.flags = serviceInfo.flags or AccessibilityServiceInfo.FLAG_REQUEST_TOUCH_EXPLORATION_MODE
+            automation.serviceInfo = serviceInfo
+            val accessibility = base.getSystemService(AccessibilityManager::class.java)
+            compose.waitUntil(10_000) {
+                accessibility.isTouchExplorationEnabled
+            }
+            var accessible: AccessibilityNodeInfo? = null
+            compose.waitUntil(5_000) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                    automation.clearCache()
+                }
+                accessible = automation.rootInActiveWindow?.let { findSave(it) }
+                accessible != null
+            }
+            val button = requireNotNull(accessible)
+            assertTrue(button.performAction(AccessibilityNodeInfo.ACTION_ACCESSIBILITY_FOCUS))
+            compose.waitUntil(5_000) { button.refresh() && button.isAccessibilityFocused }
+            val screenshot = requireNotNull(automation.takeScreenshot())
+            val configuration = base.resources.configuration
+            File(
+                base.getExternalFilesDir(null),
+                "yarn-edit-$language-$dark-${configuration.screenWidthDp}-${configuration.fontScale}.png",
+            ).outputStream().use {
+                screenshot.compress(Bitmap.CompressFormat.PNG, 100, it)
+            }
+            screenshot.recycle()
+            assertTrue(button.performAction(AccessibilityNodeInfo.ACTION_CLICK))
+            compose.waitUntil(5_000) { note().notes.startsWith("Long synthetic note") }
+        } finally {
+            serviceInfo.flags = originalFlags
+            automation.serviceInfo = serviceInfo
         }
-        var accessible: AccessibilityNodeInfo? = null
-        compose.waitUntil(5_000) {
-            if (Build.VERSION.SDK_INT >= 33) automation.clearCache()
-            accessible = automation.rootInActiveWindow?.let { findSave(it) }
-            accessible != null
-        }
-        val button = requireNotNull(accessible)
-        assertTrue(button.performAction(AccessibilityNodeInfo.ACTION_ACCESSIBILITY_FOCUS))
-        compose.waitUntil(5_000) { button.refresh() && button.isAccessibilityFocused }
-        val screenshot = requireNotNull(automation.takeScreenshot())
-        val configuration = base.resources.configuration
-        File(
-            base.getExternalFilesDir(null),
-            "yarn-edit-$language-$dark-${configuration.screenWidthDp}-${configuration.fontScale}.png",
-        ).outputStream().use {
-            screenshot.compress(Bitmap.CompressFormat.PNG, 100, it)
-        }
-        screenshot.recycle()
-        assertTrue(button.performAction(AccessibilityNodeInfo.ACTION_CLICK))
-        compose.waitUntil(5_000) { note().notes.startsWith("Long synthetic note") }
     }
 
     @Test

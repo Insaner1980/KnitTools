@@ -226,7 +226,7 @@
     <string name="quantity_label">Quantité</string>
     <string name="status_in_stash">En stock</string>
     <string name="status_in_use">En cours d’utilisation</string>
-    <string name="status_finished">Terminé</string>
+    <string name="status_finished">Épuisé</string>
     <string name="yarn_not_linked">Non lié</string>
     <string name="yarn_card_project_format">Projet : %1$s</string>
     <string name="yarn_details_title">Détails</string>
@@ -284,7 +284,7 @@
     <string name="mode_decrease">Diminuer</string>
     <string name="style_flat">À plat</string>
     <string name="style_circular">En rond</string>
-    <string name="current_stitches">Mailles actuelles</string>
+    <string name="current_stitches">Nombre actuel de mailles</string>
     <string name="increase_by">Augmenter de</string>
     <string name="decrease_by">Diminuer de</string>
     <string name="increase_result_placeholder">Remplissez les deux champs pour voir où augmenter</string>
@@ -301,7 +301,7 @@
     <string name="increase_decrease_error_cannot_decrease">Nombre de mailles disponible : %2$d. Diminution demandée : %1$d.</string>
     <string name="increase_decrease_error_not_enough_decrease">Nombre de mailles requis : %1$d. Diminutions demandées : %2$d.</string>
     <string name="increase_decrease_error_total_out_of_range">Le résultat est trop grand. Utilisez des nombres de mailles plus petits.</string>
-    <string name="increase_decrease_error_not_enough_bars">Il n’y a pas assez d’espaces entre les mailles pour ces augmentations M1. Réduisez le nombre d’augmentations.</string>
+    <string name="increase_decrease_error_not_enough_bars">Il n’y a pas assez d’espaces entre les mailles pour ces augmentations M1. Partez d’au moins 2 mailles et réduisez si nécessaire le nombre d’augmentations.</string>
 
     <!-- Gauge Converter -->
     <string name="pattern_gauge">Échantillon du modèle</string>
@@ -429,7 +429,7 @@
     <string name="care_iron_medium">Repassage à température moyenne</string>
     <string name="care_iron_high">Repassage à haute température</string>
     <string name="care_iron_do_not">Ne pas repasser</string>
-    <string name="care_dryclean_any">Tous solvants</string>
+    <string name="care_dryclean_any">Nettoyage à sec (tous solvants)</string>
     <string name="care_dryclean_p">Nettoyage à sec au perchloroéthylène ou aux hydrocarbures (P)</string>
     <string name="care_dryclean_f">Nettoyage à sec aux hydrocarbures (F)</string>
     <string name="care_dryclean_do_not">Ne pas nettoyer à sec</string>

@@ -20,6 +20,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -41,6 +42,7 @@ import com.finnvek.knittools.ui.components.PasteInstructionButton
 import com.finnvek.knittools.ui.components.ToolInputCard
 import com.finnvek.knittools.ui.components.ToolScreenScaffold
 import com.finnvek.knittools.ui.components.rememberCurrentLocale
+import kotlinx.coroutines.launch
 
 @Composable
 fun GaugeScreen(
@@ -52,6 +54,7 @@ fun GaugeScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val locale = rememberCurrentLocale()
     val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
     val context = LocalContext.current
     val resources = LocalResources.current
     CollectWithLifecycleEffect({ viewModel.events }) { event ->
@@ -60,9 +63,12 @@ fun GaugeScreen(
                 context.getSystemService(ClipboardManager::class.java).setPrimaryClip(
                     ClipData.newPlainText(resources.getString(R.string.measurement_title), event.text),
                 )
-                snackbarHostState.showSnackbar(resources.getString(R.string.measurement_copied))
+                scope.launch { snackbarHostState.showSnackbar(resources.getString(R.string.measurement_copied)) }
             }
-            is GaugeUiEvent.Message -> snackbarHostState.showSnackbar(resources.getString(event.resourceId))
+            is GaugeUiEvent.Message ->
+                scope.launch {
+                    snackbarHostState.showSnackbar(resources.getString(event.resourceId))
+                }
         }
     }
     GaugeContent(

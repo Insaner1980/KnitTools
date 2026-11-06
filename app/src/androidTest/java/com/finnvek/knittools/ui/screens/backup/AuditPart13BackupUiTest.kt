@@ -2,6 +2,7 @@ package com.finnvek.knittools.ui.screens.backup
 
 import android.accessibilityservice.AccessibilityServiceInfo
 import android.content.res.Configuration
+import android.os.Build
 import android.view.WindowManager
 import android.view.accessibility.AccessibilityNodeInfo
 import androidx.activity.ComponentActivity
@@ -152,7 +153,9 @@ class AuditPart13BackupUiTest {
         var result: AccessibilityNodeInfo? = null
         compose.waitUntil(5_000) {
             val automation = InstrumentationRegistry.getInstrumentation().uiAutomation
-            automation.clearCache()
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                automation.clearCache()
+            }
             val root = automation.rootInActiveWindow
 
             fun visit(node: AccessibilityNodeInfo?) {

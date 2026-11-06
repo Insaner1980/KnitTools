@@ -122,6 +122,8 @@ function currentRavelryCredentialMatches() {
     path.join(projectRoot, "app", "build.gradle.kts"),
     ...walkKotlinFiles(path.join(projectRoot, "app", "src", "main", "java")),
     ...walkKotlinFiles(path.join(projectRoot, "app", "src", "release", "java")),
+    ...walkKotlinFiles(path.join(projectRoot, "app", "src", "debug", "java")),
+    ...walkKotlinFiles(path.join(projectRoot, "app", "src", "debugShared", "kotlin")),
   ];
 
   for (const sourcePath of sourcePaths) {

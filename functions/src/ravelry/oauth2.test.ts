@@ -10,6 +10,31 @@ import {
 } from "./oauth2";
 
 describe("Ravelry OAuth2 token exchange", () => {
+  for (const grant of ["exchange", "refresh"] as const) {
+    for (const failure of ["network", "missing-token", "empty-token", "null-body"] as const) {
+      it(`maps ${grant} ${failure} failures to sanitized unavailability`, async () => {
+        const fetchImpl: typeof fetch = async () => {
+          if (failure === "network") throw new Error("synthetic-private-provider-detail");
+          const body = failure === "null-body" ? null : failure === "empty-token" ? { access_token: "" } : {};
+          return Response.json(body);
+        };
+        const common = { clientId: "synthetic-client", clientSecret: "synthetic-secret", fetchImpl };
+        const request = grant === "exchange"
+          ? exchangeOAuth2CodeForToken({ ...common, code: "synthetic-code", codeVerifier: "synthetic-verifier",
+            redirectUri: "https://callback.example/ravelry" })
+          : refreshOAuth2AccessToken({ ...common, refreshToken: "synthetic-refresh" });
+
+        await assert.rejects(request, (error: unknown) => {
+          assert.ok(error instanceof OAuthTokenExchangeError);
+          assert.equal(error.statusCode, 503);
+          assert.equal(error.message, "ravelry_token_exchange_failed_503");
+          assert.equal(httpsErrorFor(error).code, "unavailable");
+          return true;
+        });
+      });
+    }
+  }
+
   it("maps rejected credentials and transient token failures to the callable contract", () => {
     for (const status of [400, 401]) {
       const mapped = httpsErrorFor(new OAuthTokenExchangeError(status));

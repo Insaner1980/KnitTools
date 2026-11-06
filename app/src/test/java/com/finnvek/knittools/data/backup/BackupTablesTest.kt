@@ -11,6 +11,7 @@ import io.mockk.verify
 import io.mockk.verifyOrder
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.long
@@ -22,6 +23,31 @@ import org.junit.rules.TemporaryFolder
 import java.io.File
 
 class BackupTablesTest {
+    @Test fun legacyHistoryHeadersRemainReadableWithoutInventingLinkedDeltas() {
+        val directory = temporary.newFolder()
+        val file = File(directory, "tables/counter_history.jsonl").apply { requireNotNull(parentFile).mkdirs() }
+        file.writeText("[\"id\",\"projectId\"]\n[1,7]\n")
+        var restored: Map<String, JsonElement>? = null
+
+        BackupTables.read(directory, "counter_history", listOf("id", "linkedCounterDeltasJson", "projectId")) {
+            restored = it
+        }
+
+        assertEquals(JsonNull, restored?.get("linkedCounterDeltasJson"))
+        assertEquals(JsonPrimitive(7), restored?.get("projectId"))
+    }
+
+    @Test fun malformedLinkedUndoDeltasAreRejectedBeforeImport() {
+        val directory = temporary.newFolder()
+        val file = File(directory, "tables/counter_history.jsonl").apply { requireNotNull(parentFile).mkdirs() }
+        for (value in listOf("not-json", "{\"0\":1}", "{\"1\":-2147483648}")) {
+            file.writeText("[\"linkedCounterDeltasJson\"]\n${JsonArray(listOf(JsonPrimitive(value)))}\n")
+            assertThrows(BackupException::class.java) {
+                BackupTables.read(directory, "counter_history", listOf("linkedCounterDeltasJson")) {}
+            }
+        }
+    }
+
     @Test fun sessionTablesAcceptOldAndNativeBoundariesAndRejectTheNextRow() {
         val folder = temporary.newFolder()
         val file = File(folder, "tables/sessions.jsonl").apply { requireNotNull(parentFile).mkdirs() }

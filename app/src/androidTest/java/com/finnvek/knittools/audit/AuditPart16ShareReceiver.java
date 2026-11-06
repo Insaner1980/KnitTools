@@ -7,6 +7,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Build;
 import android.os.Process;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
@@ -19,13 +20,20 @@ public class AuditPart16ShareReceiver extends Activity {
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
         try {
-            Uri uri = getIntent().getParcelableExtra(Intent.EXTRA_STREAM, Uri.class);
+            Uri uri = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+                ? getIntent().getParcelableExtra(Intent.EXTRA_STREAM, Uri.class)
+                : getIntent().getParcelableExtra(Intent.EXTRA_STREAM);
             input = getContentResolver().openInputStream(uri);
             if (getIntent().getBooleanExtra("hold", false)) {
                 continuation = new BroadcastReceiver() {
                     @Override public void onReceive(Context context, Intent intent) { readAndFinish(); }
                 };
-                registerReceiver(continuation, new IntentFilter(getPackageName() + ".CONTINUE"), RECEIVER_EXPORTED);
+                IntentFilter filter = new IntentFilter(getPackageName() + ".CONTINUE");
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    registerReceiver(continuation, filter, RECEIVER_EXPORTED);
+                } else {
+                    registerReceiver(continuation, filter);
+                }
                 reply("opened", null, null, false);
             } else {
                 readAndFinish();

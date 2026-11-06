@@ -65,6 +65,19 @@ try {
     Write-Output 'PASS: disappeared checked archive fails closed, value redacted'
     Set-Content -LiteralPath (Join-Path $fixture 'output.bin') -Value $content -Encoding utf8
     if (-not (Test-BinaryFileContainsSecret 'output.bin' @($secret))) { throw 'Raw file regression' }
+    $rawBytes = New-Object byte[] (1024 * 1024)
+    $rawBytes[0] = 0xff
+    $rawBytes[1] = 0xfe
+    $needle = [Text.Encoding]::UTF8.GetBytes($unicodeSecret)
+    [Array]::Copy($needle, 0, $rawBytes, $rawBytes.Length - $needle.Length, $needle.Length)
+    [IO.File]::WriteAllBytes((Join-Path $fixture 'raw-boundary.bin'), $rawBytes)
+    $elapsed = [Diagnostics.Stopwatch]::StartNew()
+    if (-not (Test-BinaryFileContainsSecret 'raw-boundary.bin' @('', $unicodeSecret))) { throw 'Raw UTF-8 byte match failed' }
+    if (Test-BinaryFileContainsSecret 'raw-boundary.bin' @('', $unicodeSecret.ToUpperInvariant(), ([string][char]0xfffd))) {
+        throw 'Raw byte matching must remain ordinal and must not replace invalid UTF-8'
+    }
+    $elapsed.Stop()
+    Write-Output "PASS: raw binary boundaries and ordinal matching ($($elapsed.ElapsedMilliseconds) ms)"
     Set-Content -LiteralPath (Join-Path $fixture 'invalid.apk') -Value 'invalid synthetic archive'
     $script:checkedFile = 'invalid.apk'
     Test-KnownRavelrySecrets

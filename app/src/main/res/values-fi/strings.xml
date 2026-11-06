@@ -294,7 +294,7 @@
     <string name="increase_decrease_error_cannot_decrease">Käytettävissä oleva silmukkamäärä: %2$d. Pyydetty kavennus: %1$d.</string>
     <string name="increase_decrease_error_not_enough_decrease">Tarvittava silmukkamäärä: %1$d. Pyydetyt kavennukset: %2$d.</string>
     <string name="increase_decrease_error_total_out_of_range">Tulos on liian suuri. Käytä pienempiä silmukkamääriä.</string>
-    <string name="increase_decrease_error_not_enough_bars">Silmukoiden välissä ei ole tarpeeksi välejä näille M1-lisäyksille. Aloita vähintään 2 silmukasta ja vähennä tarvittaessa lisäysten määrää.</string>
+    <string name="increase_decrease_error_not_enough_bars">Silmukoiden välisiä lankoja ei ole riittävästi näihin M1-lisäyksiin. Aloita vähintään 2 silmukasta ja vähennä tarvittaessa lisäysten määrää.</string>
 
     <!-- Tiheyslaskuri -->
     <string name="pattern_gauge">Ohjeen tiheys</string>
@@ -447,7 +447,7 @@
 
     <!-- Kirjasto — oma kokoelma -->
     <string name="library_my_collection">Oma kokoelma</string>
-    <string name="library_reference">Viitteet</string>
+    <string name="library_reference">Tietopankki</string>
     <string name="desc_saved_patterns">Verkkosivuilta ja PDF-tiedostoista tallennetut ohjeet</string>
     <string name="desc_my_yarn">Lankamuistiinpanot, määrät ja linkitetyt projektit</string>
     <string name="desc_all_photos">Kaikkien projektiesi edistymiskuvat</string>
@@ -642,7 +642,7 @@
     <string name="abbr_sk2p_meaning">Nosta 1, neulo 2 yhteen, vedä nostettu yli</string>
     <string name="abbr_sk2p_desc">Vasemmalle kallistuva kaksoiskavennus</string>
     <string name="abbr_cdd_meaning">Keskitetty kaksoiskavennus</string>
-    <string name="abbr_cdd_desc">Nosta 2 yhteen oikein, neulo 1 oikein, vedä nostetut yli</string>
+    <string name="abbr_cdd_desc">Nosta 2 silmukkaa yhdessä oikein neulomatta, neulo 1 oikein ja vedä nostetut silmukat neulotun yli</string>
     <string name="abbr_psso_meaning">Vedä nostettu silmukka yli</string>
     <string name="abbr_psso_desc">Nosta aiemmin nostettu silmukka viimeksi neulotun yli</string>
     <string name="abbr_dec_meaning">Kavennus</string>
@@ -654,7 +654,7 @@
     <string name="abbr_m1r_meaning">Lisää 1 oikealle</string>
     <string name="abbr_m1r_desc">Oikealle kallistuva lisäys silmukoiden välistä</string>
     <string name="abbr_kfb_meaning">Neulo etu- ja takareunasta oikein</string>
-    <string name="abbr_kfb_desc">Neulo samaan silmukkaan etu- ja takareunasta lisätäksesi silmukan</string>
+    <string name="abbr_kfb_desc">Neulo sama silmukka oikein etu- ja takareunasta lisätäksesi silmukan</string>
     <string name="abbr_pfb_meaning">Neulo etu- ja takareunasta nurin</string>
     <string name="abbr_pfb_desc">Neulo nurin samaan silmukkaan etu- ja takareunasta lisätäksesi silmukan</string>
     <string name="abbr_inc_meaning">Lisäys</string>

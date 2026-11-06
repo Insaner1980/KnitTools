@@ -30,6 +30,41 @@ class MigrationTest {
 
     private val latestVersion = KNITTOOLS_DATABASE_VERSION
 
+    @Test
+    fun migrate26to27PreservesHistoryAndAddsNullableLinkedUndoDeltas() {
+        val testDb = "migration-test-v26-to-v27-linked-undo"
+        helper.createDatabase(testDb, 1).apply {
+            execSQL(
+                "INSERT INTO counter_projects " +
+                    "(id, name, count, secondaryCount, stepSize, notes, createdAt, updatedAt) " +
+                    "VALUES (1, 'Undo', 7, 0, 1, '', 1000, 2000)",
+            )
+            close()
+        }
+        helper.runMigrationsAndValidate(testDb, 26, true, *allMigrations).apply {
+            execSQL(
+                "INSERT INTO counter_history (id, projectId, action, previousValue, newValue, timestamp) " +
+                    "VALUES (1, 1, 'reset', 7, 0, 3000)",
+            )
+            close()
+        }
+
+        helper.runMigrationsAndValidate(testDb, 27, true, KnitToolsDatabase.MIGRATION_26_27).use { db ->
+            assertSingleRow(
+                db,
+                "SELECT previousValue, newValue, linkedCounterDeltasJson FROM counter_history WHERE id = 1",
+            ) {
+                assertEquals(7, getInt(0))
+                assertEquals(0, getInt(1))
+                assertTrue(isNull(2))
+            }
+            db.execSQL("UPDATE counter_history SET linkedCounterDeltasJson = '{\"20\":-2}' WHERE id = 1")
+            assertSingleRow(db, "SELECT linkedCounterDeltasJson FROM counter_history WHERE id = 1") {
+                assertEquals(mapOf(20L to -2), LinkedCounterDeltas.decode(getString(0)))
+            }
+        }
+    }
+
     private fun migrateToLatest(testDb: String): SupportSQLiteDatabase =
         helper.runMigrationsAndValidate(
             testDb,

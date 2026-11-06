@@ -75,6 +75,35 @@ test("constructor defaults still expose WorkManager scheduling", () => {
 });
 
 for (const action of ["ACTION_SEND", "ACTION_SEND_MULTIPLE"]) {
+  test(`${action} cannot borrow grants from comments or strings`, () => {
+    for (const decoy of [
+      "// FLAG_GRANT_READ_URI_PERMISSION clipData",
+      'val hint = "FLAG_GRANT_READ_URI_PERMISSION ClipData.newRawUri"',
+    ]) {
+      const content = `fun share(uri: Uri) = Intent(Intent.${action}).apply {
+  putExtra(Intent.EXTRA_STREAM, uri)
+  ${decoy}
+}`;
+      assert.deepEqual(androidUriShareWithoutClipData.match(content, productionPath)
+        .map((match) => match.lineNumbers), [[1]]);
+    }
+  });
+  test(`${action} ignores decoy actions and streams in comments and strings`, () => {
+    const safe = `fun share(uri: Uri) = Intent(Intent.${action}).apply {
+  putExtra(Intent.EXTRA_STREAM, uri)
+  // Intent.${action} is not another share boundary
+  addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+  clipData = ClipData.newRawUri("PDF", uri)
+}`;
+    assert.deepEqual(androidUriShareWithoutClipData.match(safe, productionPath), []);
+    for (const decoy of [
+      `// Intent.${action} Intent.EXTRA_STREAM`,
+      `val text = "Intent.${action} Intent.EXTRA_STREAM"`,
+      `Intent(Intent.${action}).apply { /* Intent.EXTRA_STREAM */ }`,
+    ]) {
+      assert.deepEqual(androidUriShareWithoutClipData.match(decoy, productionPath), []);
+    }
+  });
   test(`${action} keeps nested local functions inside the share boundary`, () => {
     for (const grants of ["", "addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)",
       'addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION); clipData = ClipData.newRawUri("PDF", uri)']) {

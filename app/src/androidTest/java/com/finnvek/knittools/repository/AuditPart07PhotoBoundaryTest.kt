@@ -39,14 +39,6 @@ class AuditPart07PhotoBoundaryTest(
     fun authoredPhotoBoundary() =
         runBlocking {
             check(ApplicationProvider.getApplicationContext<Context>().packageName.endsWith(".activepolicytest"))
-            if (prompt == 1082) {
-                YarnCardPhotoReplacementRuntimeTest().apply {
-                    cancellationBeforeRoomCommitRemovesUnpublishedPhoto()
-                    cancellationAfterRoomCommitPreservesPublishedPhoto()
-                    failedReadbackKeepsPhotoUntilReferenceAwarePruning()
-                }
-                return@runBlocking
-            }
             val fixture = PhotoFixture()
             try {
                 fixture.seed()
@@ -220,6 +212,6 @@ class AuditPart07PhotoBoundaryTest(
     companion object {
         @JvmStatic
         @Parameterized.Parameters(name = "prompt_{0}")
-        fun prompts(): List<Array<Int>> = (1079..1082).map { arrayOf(it) }
+        fun prompts(): List<Array<Int>> = (1079..1081).map { arrayOf(it) }
     }
 }

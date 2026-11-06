@@ -1,6 +1,7 @@
 package com.finnvek.knittools.data.backup
 
 import androidx.sqlite.db.SupportSQLiteDatabase
+import com.finnvek.knittools.data.local.LinkedCounterDeltas
 import com.finnvek.knittools.domain.model.formatYarnCardIds
 import com.finnvek.knittools.domain.model.parseYarnCardIdsWithinLimits
 import kotlinx.serialization.json.JsonElement
@@ -87,6 +88,17 @@ internal class BackupIdentityMap(
         }
         rebaseDocumentKey(row)
         rebaseAnnotationCounter(table, row)
+        if (table == "counter_history") {
+            row["linkedCounterDeltasJson"]?.takeUnless { it == JsonNull }?.let { value ->
+                val deltas = LinkedCounterDeltas.decode(value.jsonPrimitive.content)
+                val rebased =
+                    deltas
+                        .mapNotNull { (id, delta) ->
+                            ids["project_counters"]?.get(id)?.let { it to delta }
+                        }.toMap()
+                row["linkedCounterDeltasJson"] = JsonPrimitive(LinkedCounterDeltas.encode(rebased))
+            }
+        }
         if (table == "active_sessions") resetSessionAnchors(row)
     }
 

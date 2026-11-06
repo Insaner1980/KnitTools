@@ -277,7 +277,7 @@
     <string name="mode_decrease">Minderen</string>
     <string name="style_flat">Heen en weer</string>
     <string name="style_circular">Rond</string>
-    <string name="current_stitches">Huidige steken</string>
+    <string name="current_stitches">Huidig aantal steken</string>
     <string name="increase_by">Meerderen met</string>
     <string name="decrease_by">Minderen met</string>
     <string name="increase_result_placeholder">Vul beide velden in om te zien waar je meerdert</string>
@@ -294,7 +294,7 @@
     <string name="increase_decrease_error_cannot_decrease">Beschikbaar aantal steken: %2$d. Gevraagde mindering: %1$d.</string>
     <string name="increase_decrease_error_not_enough_decrease">Vereist aantal steken: %1$d. Gevraagde minderingen: %2$d.</string>
     <string name="increase_decrease_error_total_out_of_range">Het resultaat is te groot. Gebruik kleinere stekenaantallen.</string>
-    <string name="increase_decrease_error_not_enough_bars">Er zijn niet genoeg tussenruimtes tussen de steken voor deze M1-meerderingen. Verminder het aantal meerderingen.</string>
+    <string name="increase_decrease_error_not_enough_bars">Er zijn niet genoeg tussenruimtes tussen de steken voor deze M1-meerderingen. Begin met minstens 2 steken en verminder zo nodig het aantal meerderingen.</string>
 
     <!-- Gauge Converter -->
     <string name="pattern_gauge">Stekenproef van patroon</string>
@@ -528,8 +528,8 @@
     <string name="relative_time_days_ago">%1$dd geleden</string>
     <string name="relative_time_weeks_ago">%1$dw geleden</string>
     <plurals name="relative_time_months_ago">
-        <item quantity="one">%1$dmnd geleden</item>
-        <item quantity="other">%1$dmnd geleden</item>
+        <item quantity="one">%1$d mnd. geleden</item>
+        <item quantity="other">%1$d mnd. geleden</item>
     </plurals>
 
     <!-- Settings -->
@@ -598,8 +598,8 @@
     <string name="shaping">Vormgeven</string>
     <string name="repeat_section">Sectie herhalen</string>
     <string name="starting_stitches">Beginaantal steken</string>
-    <string name="stitch_change">Steken om toe te voegen/verwijderen</string>
-    <string name="shape_every_n">Vorm elke N telstappen</string>
+    <string name="stitch_change">Te meerderen/minderen steken</string>
+    <string name="shape_every_n">Meerderen/minderen elke N telstappen</string>
     <string name="repeat_section_start_row">Beginstand</string>
     <string name="repeat_section_end_row">Eindstand</string>
     <string name="total_repeats">Totaal aantal herhalingen</string>

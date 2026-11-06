@@ -146,6 +146,7 @@ class ProjectFolderMigration23Test {
                     ).addMigrations(*KnitToolsDatabase.ALL_MANUAL_MIGRATIONS)
                     .build()
             try {
+                val beforeUsage = snapshotExistingState(database.openHelper.writableDatabase, before.tables.keys)
                 val repository =
                     ProjectYarnUsageRepository(
                         database.projectYarnUsageDao(),
@@ -171,7 +172,7 @@ class ProjectFolderMigration23Test {
                             created.usage.amounts.copy(usedMeters = 700.0),
                         ) as YarnUsageResult.Updated
                     assertEquals(
-                        before,
+                        beforeUsage,
                         snapshotExistingState(database.openHelper.writableDatabase, before.tables.keys),
                     )
                     assertEquals(
@@ -179,7 +180,10 @@ class ProjectFolderMigration23Test {
                         repository.delete(1, updated.usage.id, updated.usage.updatedAt),
                     )
                 }
-                assertEquals(before, snapshotExistingState(database.openHelper.writableDatabase, before.tables.keys))
+                assertEquals(
+                    beforeUsage,
+                    snapshotExistingState(database.openHelper.writableDatabase, before.tables.keys),
+                )
             } finally {
                 database.close()
             }

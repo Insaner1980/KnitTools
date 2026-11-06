@@ -20,7 +20,6 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.platform.app.InstrumentationRegistry
 import com.finnvek.knittools.App
 import com.finnvek.knittools.R
-import com.finnvek.knittools.domain.model.CraftType
 import com.finnvek.knittools.pro.ProPolicyTestControl
 import com.finnvek.knittools.pro.ProStatus
 import com.finnvek.knittools.pro.TrialJourneyAction
@@ -113,7 +112,6 @@ class TrialJourneyUiTest {
                 if (visible.value) {
                     TrialJourneySheet(
                         steps = steps,
-                        craft = CraftType.CROCHET,
                         onDismiss = {
                             events += "dismiss"
                             visible.value = false

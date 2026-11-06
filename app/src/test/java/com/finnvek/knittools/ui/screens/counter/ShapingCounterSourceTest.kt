@@ -3,6 +3,7 @@ package com.finnvek.knittools.ui.screens.counter
 import com.finnvek.knittools.ProjectSourceFiles
 import com.finnvek.knittools.domain.calculator.CounterValueDisplay
 import com.finnvek.knittools.domain.calculator.CounterValueFormatter
+import com.finnvek.knittools.domain.calculator.ProjectCounterLogic
 import com.finnvek.knittools.domain.model.ProjectCounter
 import com.finnvek.knittools.domain.model.ProjectCounterType
 import org.junit.Assert.assertEquals
@@ -46,10 +47,22 @@ class ShapingCounterSourceTest {
     }
 
     @Test
-    fun `domain repeating increment preserves overflow with modulo`() {
-        val source = ProjectSourceFiles.read(PROJECT_COUNTER_LOGIC)
+    fun `domain repeating increment preserves overflow across multiple cycles`() {
+        val counter =
+            ProjectCounter(
+                id = 1,
+                projectId = 1,
+                name = "Repeat",
+                count = 7,
+                stepSize = 18,
+                counterType = ProjectCounterType.REPEATING,
+                repeatAt = 8,
+            )
 
-        assertTrue(source.contains("newCount % repeatAt"))
+        val result = ProjectCounterLogic.increment(counter)
+
+        assertEquals(1, result.count)
+        assertEquals(CounterValueDisplay.Cycle(1, 8), CounterValueFormatter.forExtraCounter(result))
     }
 
     @Test
@@ -79,11 +92,17 @@ class ShapingCounterSourceTest {
     }
 
     @Test
-    fun `extra counter names use ellipsis instead of expanding layout`() {
+    fun `extra counter names wrap without truncation`() {
         val source = ProjectSourceFiles.read(MULTI_COUNTER_COMPONENTS)
 
-        assertTrue(source.contains("TextOverflow.Ellipsis"))
-        assertTrue(source.contains("maxLines = 1"))
+        val itemStart = source.indexOf("fun CounterListItem(")
+        val nameStart = source.indexOf("text = counter.name,", itemStart)
+        val nameEnd = source.indexOf("CounterOverflowMenu(", nameStart)
+        assertTrue(itemStart in 0 until nameStart)
+        assertTrue(nameStart in 0 until nameEnd)
+        val name = source.substring(nameStart, nameEnd)
+        assertFalse(name.contains("TextOverflow.Ellipsis"))
+        assertFalse(name.contains("maxLines"))
     }
 
     private fun isAddCounterFormValidByReflection(params: AddCounterFormParams): Boolean {
@@ -108,7 +127,5 @@ class ShapingCounterSourceTest {
     private companion object {
         const val MULTI_COUNTER_COMPONENTS =
             "app/src/main/java/com/finnvek/knittools/ui/screens/counter/MultiCounterComponents.kt"
-        const val PROJECT_COUNTER_LOGIC =
-            "app/src/main/java/com/finnvek/knittools/domain/calculator/ProjectCounterLogic.kt"
     }
 }

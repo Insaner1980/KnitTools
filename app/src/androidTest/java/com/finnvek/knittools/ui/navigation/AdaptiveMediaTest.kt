@@ -307,7 +307,23 @@ class AdaptiveMediaTest : AdaptiveRouteTestFixture() {
                 ?.toString()
                 ?.contains("documentsui") == true
         }
-        shell("input keyevent 4")
+        // The first Back can close the document picker's keyboard without closing the picker.
+        val automation = InstrumentationRegistry.getInstrumentation().uiAutomation
+        repeat(3) {
+            if (automation.rootInActiveWindow
+                    ?.packageName
+                    ?.toString()
+                    ?.contains("documentsui") == true
+            ) {
+                shell("input keyevent 4")
+                val deadline = SystemClock.uptimeMillis() + 1_000
+                while (SystemClock.uptimeMillis() < deadline &&
+                    automation.rootInActiveWindow?.packageName?.toString() != app.packageName
+                ) {
+                    SystemClock.sleep(50)
+                }
+            }
+        }
         waitText("Media PDF 2")
         assertEquals(before, documents())
     }
@@ -525,7 +541,7 @@ class AdaptiveMediaTest : AdaptiveRouteTestFixture() {
 
     private fun waitText(value: String) =
         rule.waitUntil(10_000) {
-            rule.onAllNodesWithText(value).fetchSemanticsNodes().isNotEmpty()
+            rule.onAllNodesWithText(value).fetchSemanticsNodes(atLeastOneRootRequired = false).isNotEmpty()
         }
 
     private fun scrollTo(value: String) = rule.scrollToText(value, ::list)
@@ -541,7 +557,8 @@ class AdaptiveMediaTest : AdaptiveRouteTestFixture() {
                     },
                 ).fetchSemanticsNodes()
         assertTrue(notes.isNotEmpty())
-        notes.forEach { assertTrue("Bounded thumbnail ${it.boundsInWindow}", it.boundsInWindow.width <= 221) }
+        val maximumWidth = 220 * rule.activity.resources.displayMetrics.density + 1
+        notes.forEach { assertTrue("Bounded thumbnail ${it.boundsInWindow}", it.boundsInWindow.width <= maximumWidth) }
     }
 
     private fun photoCaptions(): Set<String> =
@@ -554,7 +571,12 @@ class AdaptiveMediaTest : AdaptiveRouteTestFixture() {
             .toSet()
 
     private fun assertWindowOutside(fold: FoldingFeature) {
-        rule.waitUntil(10_000) { focusedWindowOutside(fold) }
+        var measured = ""
+        try {
+            rule.awaitWindowOutsideFold(fold) { measured = it }
+        } catch (failure: androidx.compose.ui.test.ComposeTimeoutException) {
+            throw AssertionError("Modal overlaps fold: $measured", failure)
+        }
         screenshot("modal-${fold.orientation}")
     }
 

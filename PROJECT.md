@@ -6,6 +6,8 @@ This is the product and technical reference for the **inspected working tree on 
 
 This update retains the October 18 reference and the pre-existing October 19 Brazilian Portuguese additions, reconciles their Git/source history, and refreshes the affected sections and inventories. It is a documentation/source verification, not a new build or runtime test run.
 
+Schema and backup-table facts were reconciled with schema 27 on November 6, 2026. Dated validation records below remain historical evidence.
+
 All repository links are relative to the root. Package shorthand such as `repository/CounterRepository.kt` means a path below `app/src/main/java/com/finnvek/knittools`. “Implemented” means present and reachable subject to state, validation and entitlement; it does not mean released, live-service verified or freshly runtime-tested.
 
 | Snapshot item | Inspected value |
@@ -20,8 +22,8 @@ All repository links are relative to the root. Package shorthand such as `reposi
 | Application ID / namespace | `com.finnvek.knittools` |
 | App version | `1.0.0`, version code `1` |
 | Android SDK | Minimum 29; target and compile 37 |
-| Room schema | 25 |
-| Current database shape | 18 entities/tables, 210 columns; 25 exported schema versions |
+| Room schema | 27 |
+| Current database shape | 19 entities/tables, 213 columns; 27 exported schema versions |
 | Supported app languages | 12 locale options; System is a selection mode |
 | Resource inventory | 1,308 translatable strings and 31 plurals per locale; 1,339 names per locale |
 | Modules | `:app` and `:baselineprofile` |
@@ -158,6 +160,7 @@ The user-facing feature chapters come first. Navigation and design explain how t
     - [project_folder_assignments](#project_folder_assignments)
     - [project_yarn_usage](#project_yarn_usage)
     - [project_completions](#project_completions)
+    - [onboarding_projects](#onboarding_projects)
   - [Migration chain](#migration-chain)
   - [Preferences and other persisted state](#preferences-and-other-persisted-state)
   - [Column semantics and weak relationships](#column-semantics-and-weak-relationships)
@@ -233,7 +236,7 @@ Before any project exists, Projects shows a nonblocking start state inside its n
 
 The bundled How to Use KnitTools guide has five topics and 26 local items, with exact English copy in strings_onboarding.xml. GuideContent owns topic keys, resource references, optional feature metadata and nine existing-screen actions. GuideScreen reuses ToolScreenScaffold and flat overview rows/hairline sections. Settings Info and the project footer open the same guide under their own graph, preserving bottom navigation. Project-dependent actions resolve current repository data and fall back to Projects when absent; navigation ignores results from departed entries. Show tips again reuses TipSession reset and its success/error handling. Guide content is available immediately; Pro markers wait for initialStateReady.
 
-The active starter project's overview includes a flat Project setup section directly below Continue. Its four free steps use existing facts: a positive count or target, a project document or linked web pattern, project yarn notes or linked yarn cards, and a completed work session. Unfinished steps precede completed, noninteractive rows. The section reuses overview rows/headers and a craft-aware StitchProgressRow with one progress semantics node. Hide and completion persist through OnboardingStateRepository; CounterViewModel retains only a current-visit celebration marker so All set stays visible during that visit, survives recreation, and disappears on the next entry even when navigation reuses an earlier back stack entry. Work time navigates to the existing Counter and requests immediate manual WORK_SESSION guidance; the request waits for a loaded, resumed, unblocked matching project and valid placement, consumes no automatic-tip budget, and is cancelled on leaving. Counter and overview tip hosts use their own navigation entry IDs so outgoing content cannot dismiss the destination's guidance. No Room table or entitlement changes are involved.
+The active starter project's overview includes a flat Project setup section directly below Continue. Its four free steps use existing facts: a positive count or target, a project document or linked web pattern, project yarn notes or linked yarn cards, and a completed work session. Unfinished steps precede completed, noninteractive rows. The section reuses overview rows/headers. Hide and completion persist through OnboardingStateRepository; CounterViewModel retains only a current-visit celebration marker so All set stays visible during that visit, survives recreation, and disappears on the next entry even when navigation reuses an earlier back stack entry. Work time navigates to the existing Counter and requests immediate manual WORK_SESSION guidance; the request waits for a loaded, resumed, unblocked matching project and valid placement, consumes no automatic-tip budget, and is cancelled on leaving. Counter and overview tip hosts use their own navigation entry IDs so outgoing content cannot dismiss the destination's guidance. No Room table or entitlement changes are involved.
 
 Patterns are reusable Library metadata and optional private PDFs; a project's document relation independently owns its reader state. Yarn cards are reusable stash metadata; project yarn notes and usage are project-owned. Completion retains the project's data and adds an event; reopening does not erase earlier completions. These distinctions prevent shared Library content from silently becoming project-specific or stock quantities from being silently consumed by estimates.
 
@@ -824,7 +827,7 @@ Phase 9 keeps the Pro page editorial, with Free Forever and Pro Adds sections, a
 
 `TrialJourneyStateRepository.state` is nullable until all four Room observations, onboarding state and `ProManager.initialStateReady` have supplied their real values. It supplies the unfiltered active count and latest active project, plus projects, named counters, yarn cards and progress photos whose `createdAt` belongs to `[trialStartTimestamp, trialStartTimestamp + 14 days)`. The end is exclusive, so later free additions do not appear as trial activity after expiry. The calculation uses a nonnegative timestamp difference to avoid overflow. `ProjectCounterRepository.getAllCounters()` maps the new all-project DAO observation and uses the existing retry boundary. Summary wording uses localized plurals and the platform locale-aware list formatter; unknown or empty summaries remain absent.
 
-`TrialJourneyContent` is shared by the Pro page and `TrialJourneySheet`. Its `OverviewLinkRow` actions and `StitchProgressRow` use actual completed facts. The five actions are widget pinning, adding a `REPEATING` counter, adding a project, opening this week's Insights chart, and camera-to-PDF. Project-dependent rows are omitted without a latest active project, leaving project creation and the chart. `TrialJourneyNavigation` routes directly into these existing actions; project creation retains its normal admission/draft flow, and Counter actions wait for the intended selected project and their existing readiness/blocking gates. Opening a destination is not completion evidence.
+`TrialJourneyContent` is shared by the Pro page and `TrialJourneySheet`. Its `OverviewLinkRow` actions and the text progress line (`trial_journey_progress`) use actual completed facts; the sheet replaces the section label with `trial_journey_intro`. The five actions are widget pinning, adding a `REPEATING` counter, adding a project, opening this week's Insights chart, and camera-to-PDF. Project-dependent rows are omitted without a latest active project, leaving project creation and the chart. `TrialJourneyNavigation` routes directly into these existing actions; project creation retains its normal admission/draft flow, and Counter actions wait for the intended selected project and their existing readiness/blocking gates. Opening a destination is not completion evidence.
 
 `CounterDestination` owns selection of the requested project before rendering the shared Counter content or handing off a journey action. Its request identity and current-entry guards prevent a stale load from consuming a newer request. Journey requests remain pending until the matching action is handled; their saved-state payload contains only primitive fields. Missing project targets return through the existing Projects fallback.
 
@@ -888,11 +891,11 @@ Contextual prompts retain pending user actions so that a successful trial activa
 
 [BackupScreen.kt](app/src/main/java/com/finnvek/knittools/ui/screens/backup/BackupScreen.kt) and [BackupViewModel.kt](app/src/main/java/com/finnvek/knittools/ui/screens/backup/BackupViewModel.kt) expose user-selected SAF export and import preview. Confirmed restore **replaces all current project data**; it is not a merge. Preview/confirmation state is separate from a live mutation.
 
-[BackupRepository.kt](app/src/main/java/com/finnvek/knittools/repository/BackupRepository.kt) coordinates [data/backup](app/src/main/java/com/finnvek/knittools/data/backup). `.knittools-backup` is an `application/octet-stream` ZIP with format version 1, data version 1, current schema 25, `manifest.json`, 18 `tables/<table>.jsonl` streams, and content-addressed `files/<sha256>.bin` entries. Table streams use ordered column headers and primitive row arrays. It contains logical records, not a copied SQLite database/WAL.
+[BackupRepository.kt](app/src/main/java/com/finnvek/knittools/repository/BackupRepository.kt) coordinates [data/backup](app/src/main/java/com/finnvek/knittools/data/backup). `.knittools-backup` is an `application/octet-stream` ZIP with format version 1, data version 1, current schema 27, `manifest.json`, 18 `tables/<table>.jsonl` streams, and content-addressed `files/<sha256>.bin` entries. Table streams use ordered column headers and primitive row arrays. It contains logical records, not a copied SQLite database/WAL.
 
 The manifest identifies KnitTools format, creation time, app version, schema, and bounded file paths/sizes/hashes. Structural allowlists, duplicate/path checks, ZIP/ZIP64 local/central inventory agreement, trailing-data/decompression/depth checks, declared budgets, hashes, row validation, and a shadow Room database reject invalid archives before confirmation/replacement. App version is informational; other format/data/schema versions need an adapter, currently absent. SHA-256 detects inconsistent bytes but supplies no cryptographic authenticity. The archive is **unencrypted and unauthenticated**; project notes/photos/PDFs are readable by anyone who can access the file.
 
-Included: all 18 tables, durable referenced PDFs, progress photos and yarn photos, relationships, annotation payloads, mappings/bookmarks, folders/usage/completions, and active-session recovery state. Excluded: preferences/language/theme/consent, trial/Play state, credentials/WebView cookies, widget configurations/launch tokens, caches/pending capture sessions, diagnostics, and raw SQLite files. Destination settings remain destination-owned.
+Included: 18 of the 19 tables, durable referenced PDFs, progress photos and yarn photos, relationships, annotation payloads, mappings/bookmarks, folders/usage/completions, and active-session recovery state. Excluded: onboarding project draft receipts, preferences/language/theme/consent, trial/Play state, credentials/WebView cookies, widget configurations/launch tokens, caches/pending capture sessions, diagnostics, and raw SQLite files. Destination settings remain destination-owned.
 
 ### Budgets and validation
 
@@ -1287,7 +1290,7 @@ Expected validation/missing/stale/feature failures use typed result models. Read
 
 ### Room ownership and constraints
 
-[KnitToolsDatabase.kt](app/src/main/java/com/finnvek/knittools/data/local/KnitToolsDatabase.kt) declares schema 25 and 18 entities. [DatabaseModule.kt](app/src/main/java/com/finnvek/knittools/di/DatabaseModule.kt) opens `knittools.db`, registers every manual migration plus Room auto-migrations, and installs constraints. Destructive fallback is not configured. Exported JSON schemas 1–25 are tracked in [app/schemas/com.finnvek.knittools.data.local.KnitToolsDatabase](app/schemas/com.finnvek.knittools.data.local.KnitToolsDatabase). Version 25's identity hash is `9e9baa96c63eedd96a597d2ce371a893`.
+[KnitToolsDatabase.kt](app/src/main/java/com/finnvek/knittools/data/local/KnitToolsDatabase.kt) declares schema 27 and 19 entities. [DatabaseModule.kt](app/src/main/java/com/finnvek/knittools/di/DatabaseModule.kt) opens `knittools.db`, registers every manual migration plus Room auto-migrations, and installs constraints. Destructive fallback is not configured. Exported JSON schemas 1–27 are available in [app/schemas/com.finnvek.knittools.data.local.KnitToolsDatabase](app/schemas/com.finnvek.knittools.data.local.KnitToolsDatabase). Version 27's identity hash is `0e2ccceb2d38b0e6741412179a5d1769`.
 
 | Table | Entity / DAO | Canonical writer / meaning |
 | --- | --- | --- |
@@ -1309,6 +1312,7 @@ Expected validation/missing/stale/feature failures use typed result models. Read
 | `project_folder_assignments` | `ProjectFolderAssignmentEntity` / `ProjectFolderDao` | Folder repository / transactional project creation |
 | `project_yarn_usage` | `ProjectYarnUsageEntity` / `ProjectYarnUsageDao` | `ProjectYarnUsageRepository`; canonical independent meter amounts |
 | `project_completions` | `ProjectCompletionEntity` / `CounterProjectDao` | `CounterRepository`; every completion transition |
+| `onboarding_projects` | `OnboardingProjectEntity` / `CounterProjectDao` | `CounterRepository.createOnboardingProject`; idempotent draft receipt |
 
 The table dictionary below reproduces column affinity, nullability, default, key, index, and FK metadata from the current exported schema. Kotlin booleans/enums/timestamps can use INTEGER/TEXT storage; affinity alone does not replace domain validation. Auto-generated primary IDs are distinct from the active-session singleton or project-keyed folder assignment.
 
@@ -1383,6 +1387,7 @@ Primary key: `id` (auto-generated).
 | `previousValue` | INTEGER | No | — |
 | `newValue` | INTEGER | No | — |
 | `timestamp` | INTEGER | No | — |
+| `linkedCounterDeltasJson` | TEXT | Yes | — |
 
 Indexes: `index_counter_history_projectId` (`projectId`).
 
@@ -1736,9 +1741,22 @@ Indexes: `index_project_completions_projectId` (`projectId`).
 
 Foreign keys: `projectId` → `counter_projects` (`id`), delete CASCADE, update NO ACTION.
 
+#### onboarding_projects
+
+Primary key: `draftId` (not auto-generated).
+
+| Column | SQLite affinity | Nullable | SQL default |
+| --- | --- | --- | --- |
+| `draftId` | TEXT | No | — |
+| `projectId` | INTEGER | No | — |
+
+Unique index: `index_onboarding_projects_projectId` (`projectId`).
+
+Foreign key: `projectId` → `counter_projects` (`id`), delete CASCADE, update NO ACTION. The draft receipt prevents duplicate project creation after retry and is excluded from logical backups.
+
 ### Migration chain
 
-Room exports every version 1–25. Versions 1→2 and 2→3 use declared auto-migrations; subsequent migrations are explicitly registered. Schema snapshots, migration implementation, constraint callbacks, and migration tests must change together for new persistent state.
+Room exports every version 1–27. Versions 1→2 and 2→3 use declared auto-migrations; subsequent migrations are explicitly registered. Schema snapshots, migration implementation, constraint callbacks, and migration tests must change together for new persistent state.
 
 | Transition | Implemented change / preservation boundary |
 | --- | --- |
@@ -1766,6 +1784,8 @@ Room exports every version 1–25. Versions 1→2 and 2→3 use declared auto-mi
 | 22→23 | Adds only empty folders/assignments; no earlier table changes |
 | 23→24 | Adds only empty project yarn usage plus four indexes; no amount backfill |
 | 24→25 | Adds project completion events; backfills at most one valid current completion per completed project, nullable legacy zone |
+| 25→26 | Adds only onboarding project draft receipts and their unique project index; preserves earlier tables |
+| 26→27 | `MIGRATION_26_27` adds nullable `counter_history.linkedCounterDeltasJson` TEXT for actual linked-counter history deltas; preserves existing history with null snapshots |
 
 Migration 24→25 requires a credible completion timestamp at/after creation; it does not invent all historical completion cycles. Session null zones and completion null zones keep the established current-device-zone fallback. Migration 18→19 must preserve tables that reference the rebuilt saved-pattern table; a successful table rebuild without those rows is not a correct migration.
 
@@ -2232,7 +2252,7 @@ The following classes show where to select a focused check. They are present sou
 | Starting count, target, pending draft compatibility and creation form | `ProjectStartValuesTest`, `CounterRepositoryCreateProjectTest`, `ProjectCreationActionsTest`, `ProjectCreationStateTest`, `ProjectDetailsSheetTest`; real Room and isolated policy cases in `ActiveProjectPolicyRoomTest` / `ActiveProjectPolicyRuntimeTest` |
 | Projects start-state eligibility, dismissal, Tools and local demo | `ProjectsStartStateViewModelTest`, `ProjectFoldersScreenTest`, `WelcomeExampleCardTest`; no repository writes from the example and once-per-process demo analytics |
 | Tip triggers, process budget, placement, input and reset | `TipRulesTest`, `TipSessionTest`, `TipHostTest`, `SettingsViewModelTest`, committed-counter and import feedback tests; no quota consumed before visible placement |
-| Project setup, visit-scoped completion and explicit work-session guidance | `ProjectSetupProgressTest`, `CounterProjectSetupTest`, `ProjectSetupListTest`, `ProjectSetupNavigationTest`, `StitchProgressRowTest`; TipSession/TipHost tests cover manual requests, unchanged automatic budgets, route ownership and delayed placement |
+| Project setup, visit-scoped completion and explicit work-session guidance | `ProjectSetupProgressTest`, `CounterProjectSetupTest`, `ProjectSetupListTest`, `ProjectSetupNavigationTest`; TipSession/TipHost tests cover manual requests, unchanged automatic budgets, route ownership and delayed placement |
 | Bundled guide content, actions and graph ownership | `GuideContentTest`, `GuideResourcesSourceTest`, `GuideViewModelTest`, `GuideScreenTest`, `GuideNavigationTest`; topic round trips, unknown-topic fallback, all actions, loaded project selection, stale-entry rejection, Pro readiness and reset feedback |
 | Contextual Pro marker states, contrast and semantics | `ProActionAccessTest`, `ProMarkerContrastTest`, `ProMarkerTest`, `UiConsistencySourceTest`; context/status/readiness/flag matrix, shared resolver calls and unchanged exception lists |
 | Pro consumer readiness, discovery and widget pinning | `ProPresentationConsumersTest`, `ProjectFoldersScreenTest`, `CounterProActionsTest`, `CounterProReadinessTest`, `CounterWidgetPinHostTest`; unfiltered project quota, independent marker/control readiness, merged action semantics, visible gated actions and supported/unsupported/declined pin requests |
@@ -2394,7 +2414,7 @@ Do not use a plan's class name, an old `functions/` endpoint or an AI review cla
 | Root `App`, `MainActivity`, `MainActivityTheme` | Hilt startup/cleanup, theme/locale readiness, activity intents, review/update and navigation host |
 | `domain/model` | Typed project/craft/count/source/availability/folder/document/session/yarn/annotation models and validation |
 | `domain/calculator` | Counter/repeat/timing, numeric measurement/estimation, reference data, geometry/chart/reading-line and local instruction rules |
-| `data/local` | All 18 entities, DAOs, exported migration chain, schema constraints, safe open helper and SQL chunking |
+| `data/local` | All 19 entities, DAOs, exported migration chain, schema constraints, safe open helper and SQL chunking |
 | `data/datastore` | App preferences and locale migration/safe-read-write mechanisms |
 | `data/storage` | App-owned URI boundaries, photo/PDF pipelines, renderer/exporter and counter-launch trust tokens |
 | `data/backup` | Logical archive, bounded validation/provider IO, identity/file publication and recovery |
@@ -2494,6 +2514,6 @@ The October 18 reconstruction established this product-first reference. The Octo
 
 The current refresh corrects branch/HEAD and distinguishes changes already committed in `e4416c7c` from the remaining working tree. It reconciles historical-unit suppression, session-zone bounds, neutral counter copy, M1/cast-on behavior, reference tables/symbols, care/weight/widget presentation, Brazilian Portuguese and month plurals, expanded test ownership, and scanner/stability inventories. Older resource audit counts and execution receipts are explicitly historical rather than extended to later inputs.
 
-All Android Ravelry descriptions use the WebView/site-session/download implementation. Backend OAuth/search/import is confined to the retained-backend explanation. Crashlytics is release crash reporting; PostHog is separate release-only optional usage analytics; debug Sentry is variant-specific. Manual backup remains free local-data export/replacement through SAF, not cloud synchronization. Current schema is 25 and current reader authority is project_documents.
+All Android Ravelry descriptions use the WebView/site-session/download implementation. Backend OAuth/search/import is confined to the retained-backend explanation. Crashlytics is release crash reporting; PostHog is separate release-only optional usage analytics; debug Sentry is variant-specific. Manual backup remains free local-data export/replacement through SAF, not cloud synchronization. Current schema is 27 and current reader authority is project_documents.
 
 Preserve the distinction between code, configuration, source assertions, historical run receipts and unverified external behavior when maintaining this reference. A newly added test, a green summary without positive test execution, a stable old hash or a deployment plan must not become a claim that a new working tree or live service was verified. Missing proof is not itself a confirmed production defect.

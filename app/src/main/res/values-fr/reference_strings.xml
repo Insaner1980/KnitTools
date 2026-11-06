@@ -53,9 +53,9 @@
     <string name="abbr_sts_meaning">Maille(s)</string>
     <string name="abbr_sts_desc">Une ou plusieurs boucles sur l\'aiguille</string>
     <string name="abbr_rs_meaning">Endroit de l’ouvrage</string>
-    <string name="abbr_rs_desc">Le côté public de l’œuvre</string>
+    <string name="abbr_rs_desc">Le côté de l’ouvrage destiné à être visible</string>
     <string name="abbr_ws_meaning">Envers de l’ouvrage</string>
-    <string name="abbr_ws_desc">La face privée/envers de l\'œuvre</string>
+    <string name="abbr_ws_desc">Le revers de l’ouvrage</string>
     <string name="abbr_yo_meaning">Jeté</string>
     <string name="abbr_yo_desc">Enroulez le fil autour de l’aiguille pour créer une nouvelle maille et un trou décoratif.</string>
     <string name="abbr_kwise_meaning">À l’endroit</string>
@@ -117,9 +117,9 @@
     <string name="abbr_rep_meaning">Répéter</string>
     <string name="abbr_rep_desc">Travaillez à nouveau la section spécifiée</string>
     <string name="abbr_rnd_meaning">Tour</string>
-    <string name="abbr_rnd_desc">Un circuit complet en tricot circulaire</string>
-    <string name="abbr_eor_meaning">Une rangée sur deux</string>
-    <string name="abbr_eor_desc">Travailler sur des rangées alternées</string>
+    <string name="abbr_rnd_desc">Un tour complet en tricot circulaire</string>
+    <string name="abbr_eor_meaning">Un rang sur deux</string>
+    <string name="abbr_eor_desc">Travailler un rang sur deux</string>
     <string name="abbr_dpn_meaning">Aiguilles à double pointe</string>
     <string name="abbr_dpn_desc">Aiguilles courtes pointues aux deux extrémités, utilisées pour le tricot de petite circonférence</string>
     <string name="abbr_cn_meaning">Aiguille à torsades</string>
@@ -165,9 +165,9 @@
     <string name="abbr_approx_meaning">Environ</string>
     <string name="abbr_approx_desc">Proche mais pas exact</string>
     <string name="abbr_cont_meaning">Continuer</string>
-    <string name="abbr_cont_desc">Continuer à travailler comme établi</string>
+    <string name="abbr_cont_desc">Continuer de la même manière</string>
     <string name="abbr_foll_meaning">Suite</string>
-    <string name="abbr_foll_desc">La rangée, le tour ou l\'instruction suivante</string>
+    <string name="abbr_foll_desc">Le rang, le tour ou l’instruction qui suit</string>
     <string name="abbr_prev_meaning">Précédent</string>
     <string name="abbr_prev_desc">Le rang, le tour ou la maille précédant celui en cours</string>
     <string name="abbr_patt_meaning">Modèle</string>
@@ -211,7 +211,7 @@
     <string name="sym_purl_tbl_name">Env. TBL</string>
     <string name="sym_purl_tbl_desc">Tricoter à l’envers dans le brin arrière</string>
     <string name="sym_slip_purlwise_name">Glisser à l’envers</string>
-    <string name="sym_slip_purlwise_desc">Glisser une maille comme pour la tricoter à l’envers, avec le fil derrière l’ouvrage</string>
+    <string name="sym_slip_purlwise_desc">Glisser une maille comme pour la tricoter à l’envers</string>
     <string name="sym_k2tog_name">K2tog</string>
     <string name="sym_k2tog_desc">Tricoter 2 mailles ensemble à l’endroit – diminution vers la droite</string>
     <string name="sym_ssk_name">SSK</string>

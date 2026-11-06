@@ -25,6 +25,7 @@ import com.finnvek.knittools.domain.calculator.parseTargetRows
 import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.domain.model.CraftType
 import com.finnvek.knittools.domain.model.OnboardingDraft
+import com.finnvek.knittools.domain.model.PatternDisplayNames
 import com.finnvek.knittools.ui.components.ContinueProjectCard
 import com.finnvek.knittools.ui.components.LabeledTextField
 import com.finnvek.knittools.ui.components.NumberInputField
@@ -75,7 +76,11 @@ internal fun JourneyProject(
         inputModifier = Modifier.testTag("onboarding_project_count"),
     )
     Text(stringResource(R.string.project_start_count_help_new), style = MaterialTheme.typography.bodyLarge)
-    TextButton(onClick = { actions.edit { it.copy(showOptions = !it.showOptions) } }, enabled = !busy) {
+    TextButton(
+        onClick = { actions.edit { it.copy(showOptions = !it.showOptions) } },
+        enabled = !busy,
+        contentPadding = ComponentDimens.FlushTextButtonPadding,
+    ) {
         Text(stringResource(R.string.journey_options), style = MaterialTheme.typography.titleMedium)
     }
     if (draft.showOptions || target == TargetInput.Invalid) {
@@ -99,16 +104,22 @@ internal fun JourneyProject(
         )
     }
     if (draft.pdfUri == null) {
-        TextButton(onClick = actions.selectPdf, enabled = !busy) {
+        TextButton(
+            onClick = actions.selectPdf,
+            enabled = !busy,
+            contentPadding = ComponentDimens.FlushTextButtonPadding,
+        ) {
             Text(stringResource(R.string.journey_attach_pdf), style = MaterialTheme.typography.titleMedium)
         }
     } else {
         JourneyBenefitCard {
-            Text(draft.pdfName.orEmpty(), style = MaterialTheme.typography.bodyLarge)
+            // Tiedostonimi siistitään samoin kuin muualla sovelluksessa.
+            Text(PatternDisplayNames.forDisplay(draft.pdfName.orEmpty()), style = MaterialTheme.typography.bodyLarge)
             FlowRow(horizontalArrangement = Arrangement.spacedBy(ComponentDimens.StandardSpacing)) {
                 TextButton(
                     onClick = actions.selectPdf,
                     enabled = !busy,
+                    contentPadding = ComponentDimens.FlushTextButtonPadding,
                 ) { Text(stringResource(R.string.journey_change_pdf)) }
                 IconButton(onClick = actions.removePdf, enabled = !busy) {
                     Icon(Icons.Default.Close, stringResource(R.string.remove_pattern))

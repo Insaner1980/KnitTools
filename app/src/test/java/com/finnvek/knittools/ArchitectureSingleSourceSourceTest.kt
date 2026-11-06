@@ -1,5 +1,6 @@
 package com.finnvek.knittools
 
+import com.finnvek.knittools.data.local.KNITTOOLS_DATABASE_VERSION
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -113,7 +114,7 @@ class ArchitectureSingleSourceSourceTest {
     fun `PROJECT document matches current architecture decisions`() {
         val project = ProjectSourceFiles.read(PROJECT_MD)
 
-        assertTrue(project.contains("| Room schema | 25 |"))
+        assertTrue(project.contains("| Room schema | $KNITTOOLS_DATABASE_VERSION |"))
         assertTrue(
             project.contains(
                 "local pattern PDF import, project attachment, reading-line calibration, " +
@@ -142,7 +143,7 @@ class ArchitectureSingleSourceSourceTest {
             assertTrue(instructions.contains("commit the authoritative database mutation first"))
             assertTrue(instructions.contains("per `project_documents` relation"))
         }
-        assertTrue(claude.contains("Room v25"))
+        assertTrue(claude.contains("Room v$KNITTOOLS_DATABASE_VERSION"))
         assertTrue(claude.contains("auktoriteetti on `project_documents`"))
         assertFalse(claude.contains("Room v21"))
         assertFalse(claude.contains("valinta näkyy kaistana"))

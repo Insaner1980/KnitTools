@@ -3,6 +3,7 @@ package com.finnvek.knittools.ui.screens.counter
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.Rect
+import android.os.Build
 import android.os.Bundle
 import android.os.SystemClock
 import android.view.KeyEvent
@@ -84,6 +85,8 @@ class ActiveProjectPolicyRuntimeTest {
         runBlocking(Dispatchers.IO) {
             database.clearAllTables()
             app.preferencesManager.get().setAppLanguage(AppLanguage.ENGLISH)
+            // Exercise project limits after the separate onboarding flow has finished.
+            app.onboardingStateRepository.get().dismissWelcome()
             InstrumentationRegistry.getArguments().getString("auditTheme")?.let { theme ->
                 app.preferencesManager.get().setThemeMode(ThemeMode.valueOf(theme))
             }
@@ -168,6 +171,8 @@ class ActiveProjectPolicyRuntimeTest {
         action(R.string.complete_project)
         click(R.string.complete_project)
         waitFor { runBlocking { repository.getProject(first)?.isCompleted == true } }
+        waitText(text(R.string.completed_title_knitting))
+        click(R.string.completed_close)
         waitText("First free project")
         assertTrue(findText("First free project")?.isVisibleToUser == true)
         createViaUi("Next free project")
@@ -303,13 +308,13 @@ class ActiveProjectPolicyRuntimeTest {
         runBlocking { app.preferencesManager.get().setAppLanguage(AppLanguage.FINNISH) }
         launch()
         clickDescription(R.string.new_project)
-        waitText("Luo toinen aktiivinen projekti Prolla")
+        waitText("Pidä kaikki projektisi työn alla")
         scrollToText(R.string.pro_prompt_not_now)
         screenshot("fi-create")
         click(R.string.pro_prompt_not_now)
         open("Valmis projekti")
         action(R.string.reactivate_project)
-        waitText("Aktivoi projekti uudelleen Prolla")
+        waitText("Pidä tämä projekti työn alla")
         scrollToText(R.string.pro_prompt_not_now)
         screenshot("fi-reactivation")
         click(R.string.pro_prompt_not_now)
@@ -727,7 +732,9 @@ class ActiveProjectPolicyRuntimeTest {
 
     private fun currentNodes(): List<AccessibilityNodeInfo> {
         val automation = InstrumentationRegistry.getInstrumentation().uiAutomation
-        automation.clearCache()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            automation.clearCache()
+        }
         val nodes = mutableListOf<AccessibilityNodeInfo>()
 
         fun visit(node: AccessibilityNodeInfo) {

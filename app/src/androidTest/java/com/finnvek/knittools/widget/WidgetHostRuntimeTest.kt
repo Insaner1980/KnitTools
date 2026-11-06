@@ -38,7 +38,6 @@ class WidgetHostRuntimeTest {
             check(app.packageName.endsWith(".activepolicytest"))
             val instrumentation = InstrumentationRegistry.getInstrumentation()
             val repository = EntryPointAccessors.fromApplication(app, WidgetEntryPoint::class.java).counterRepository()
-            ProPolicyTestControl.setPurchased(true)
             // Pahin tapaus: pisin yksikkösana (Repeats, esim. "WIEDERHOLUNGEN") ja nelinumeroinen tavoite.
             val created =
                 repository.createProject(
@@ -54,6 +53,7 @@ class WidgetHostRuntimeTest {
             val ids = mutableListOf<Int>()
             val scenario = ActivityScenario.launch(ComponentActivity::class.java)
             try {
+                ProPolicyTestControl.setPurchased(true)
                 val widgetData = checkNotNull(repository.getProject(projectId)).toWidgetData()
                 CounterWidgetState.save(app, widgetData)
                 instrumentation.uiAutomation.adoptShellPermissionIdentity("android.permission.BIND_APPWIDGET")
@@ -147,6 +147,7 @@ class WidgetHostRuntimeTest {
                     ids.remove(id)
                 }
             } finally {
+                ProPolicyTestControl.setPurchased(false)
                 ids.forEach(host::deleteAppWidgetId)
                 host.stopListening()
                 instrumentation.uiAutomation.dropShellPermissionIdentity()

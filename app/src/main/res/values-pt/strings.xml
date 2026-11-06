@@ -226,7 +226,7 @@
     <string name="quantity_label">Quantidade</string>
     <string name="status_in_stash">Em stock</string>
     <string name="status_in_use">Em uso</string>
-    <string name="status_finished">Terminado</string>
+    <string name="status_finished">Esgotado</string>
     <string name="yarn_not_linked">Não associado</string>
     <string name="yarn_card_project_format">Projeto: %1$s</string>
     <string name="yarn_details_title">Detalhes</string>
@@ -284,7 +284,7 @@
     <string name="mode_decrease">Diminuir</string>
     <string name="style_flat">Plano</string>
     <string name="style_circular">Circular</string>
-    <string name="current_stitches">Pontos atuais</string>
+    <string name="current_stitches">Número atual de pontos</string>
     <string name="increase_by">Aumentar em</string>
     <string name="decrease_by">Diminuir em</string>
     <string name="increase_result_placeholder">Preencha os dois campos para ver onde aumentar</string>
@@ -296,12 +296,12 @@
     <string name="easy_to_remember">Fácil de memorizar</string>
     <string name="balanced">Equilibrado</string>
     <string name="total_stitches_format">Total: %1$d %2$s</string>
-    <string name="increase_decrease_error_current_positive">Os pontos atuais devem ser maiores que 0</string>
+    <string name="increase_decrease_error_current_positive">O número atual de pontos deve ser maior que 0</string>
     <string name="increase_decrease_error_change_positive">O número de pontos a alterar deve ser maior que 0</string>
     <string name="increase_decrease_error_cannot_decrease">Contagem de pontos disponível: %2$d. Diminuição solicitada: %1$d.</string>
     <string name="increase_decrease_error_not_enough_decrease">Contagem de pontos necessária: %1$d. Diminuições solicitadas: %2$d.</string>
     <string name="increase_decrease_error_total_out_of_range">O resultado é demasiado grande. Use contagens de pontos menores.</string>
-    <string name="increase_decrease_error_not_enough_bars">Não há espaços suficientes entre os pontos para estes aumentos M1. Reduza o número de aumentos.</string>
+    <string name="increase_decrease_error_not_enough_bars">Não há espaços suficientes entre as malhas para estes aumentos M1. Comece com pelo menos 2 malhas e reduza o número de aumentos, se necessário.</string>
 
     <!-- Gauge Converter -->
     <string name="pattern_gauge">Tensão da receita</string>
@@ -413,9 +413,9 @@
     <!-- Camera permission -->
 
     <!-- Care symbol categories -->
-    <string name="care_wash_30">30°</string>
-    <string name="care_wash_40">40°</string>
-    <string name="care_wash_60">60°</string>
+    <string name="care_wash_30">Lavar a 30 °C</string>
+    <string name="care_wash_40">Lavar a 40 °C</string>
+    <string name="care_wash_60">Lavar a 60 °C</string>
     <string name="care_wash_hand">Lavar à mão</string>
     <string name="care_wash_do_not">Não lavar</string>
     <string name="care_bleach_any">Qualquer alvejante</string>
@@ -542,9 +542,9 @@
     <string name="relative_time_days_ago">há %1$d d</string>
     <string name="relative_time_weeks_ago">há %1$d sem</string>
     <plurals name="relative_time_months_ago">
-        <item quantity="one">há %1$d m</item>
-        <item quantity="many">há %1$d m</item>
-        <item quantity="other">há %1$d m</item>
+        <item quantity="one">há %1$d mês</item>
+        <item quantity="many">há %1$d meses</item>
+        <item quantity="other">há %1$d meses</item>
     </plurals>
 
     <!-- Settings -->
@@ -610,11 +610,11 @@
     <string name="step_size">Tamanho do passo</string>
     <string name="linked_counter">Contador ligado</string>
     <string name="linked_counter_description">Segue as alterações do contador principal.</string>
-    <string name="shaping">Moldagem</string>
+    <string name="shaping">Dar forma</string>
     <string name="repeat_section">Secção de repetição</string>
     <string name="starting_stitches">Número inicial de pontos</string>
-    <string name="stitch_change">Pontos a adicionar/remover</string>
-    <string name="shape_every_n">Moldar a cada N incrementos</string>
+    <string name="stitch_change">Pontos a aumentar/diminuir</string>
+    <string name="shape_every_n">Aumentar/diminuir a cada N incrementos</string>
     <string name="repeat_section_start_row">Valor inicial</string>
     <string name="repeat_section_end_row">Valor final</string>
     <string name="total_repeats">Total de repetições</string>
@@ -922,7 +922,7 @@
     <string name="measurement_project_context">Projeto: %1$s</string>
     <string name="measurement_estimate">Estimativa baseada na tensão introduzida.</string>
     <string name="measurement_adjust_warning">Estimativa matemática baseada na tensão introduzida. A modelagem e a construção não são reescritas. A folga, as repetições do motivo, as bordas, as cavas, os decotes e as mangas podem precisar de ajustes separados. Meça uma amostra lavada ou bloqueada para uma estimativa mais útil.</string>
-    <string name="measurement_adjust_warning_short">Uma estimativa com base na sua amostra. As formas podem precisar de ajuste à parte.</string>
+    <string name="measurement_adjust_warning_short">Uma estimativa com base na sua amostra. Os aumentos e as diminuições podem precisar de ajustes à parte.</string>
     <string name="measurement_swatch_hint">Para uma estimativa mais útil, meça a amostra depois de a lavar ou bloquear.</string>
     <string name="measurement_result">Resultado</string>
     <string name="measurement_value_unit_format">%1$s %2$s</string>

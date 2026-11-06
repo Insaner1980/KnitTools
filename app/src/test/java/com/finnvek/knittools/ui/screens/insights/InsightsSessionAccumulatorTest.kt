@@ -102,7 +102,7 @@ class InsightsSessionAccumulatorTest {
         assertEquals(null, emptyFilter.firstDate)
     }
 
-    @Test fun allTimeLeadingBucketKeepsTheExistingDeviceZoneClip() {
+    @Test fun allTimeLeadingBucketUsesTheStoredSessionZone() {
         val date = today.withDayOfMonth(1)
         val start =
             date
@@ -130,7 +130,10 @@ class InsightsSessionAccumulatorTest {
             )
         accumulator.add(row)
         assertEquals(60L, accumulator.summary.totalSeconds)
-        assertTrue(accumulator.chart(PaceGroupingInterval.DAY).values.isEmpty())
+        val buckets = accumulator.chart(PaceGroupingInterval.DAY).values.getValue(1L)
+        assertEquals(setOf(date), buckets.keys)
+        assertEquals(60L, buckets.getValue(date).totalSeconds)
+        assertEquals(1L, buckets.getValue(date).totalRows)
     }
 
     @Test fun futureBucketsKeepTheComparisonFlagWithoutRetainingInvisibleCharts() {

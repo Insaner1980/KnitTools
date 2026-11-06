@@ -72,6 +72,17 @@ internal fun focusedWindowOutside(
     }
 }
 
+internal fun ComposeTestRule.awaitWindowOutsideFold(
+    fold: FoldingFeature,
+    onMeasured: (String) -> Unit,
+) {
+    waitUntil(10_000) {
+        focusedWindowOutside(fold) { view, position ->
+            onMeasured("origin=${position.toList()} size=${view.width}x${view.height} fold=${fold.bounds}")
+        }
+    }
+}
+
 internal fun ComposeTestRule.findText(value: String) =
     onAllNodes(hasText(value) or hasContentDescription(value)).onLast()
 

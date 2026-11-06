@@ -19,7 +19,6 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.test.platform.app.InstrumentationRegistry
 import com.finnvek.knittools.R
-import com.finnvek.knittools.domain.model.CraftType
 import com.finnvek.knittools.pro.ProStatus
 import com.finnvek.knittools.pro.TrialJourneyAction
 import com.finnvek.knittools.pro.TrialJourneyFacts
@@ -270,7 +269,6 @@ class TrialJourneyPresentationTest {
                 if (visible) {
                     TrialJourneySheet(
                         steps = TrialJourneyAction.entries.map { TrialJourneyStep(it, false) },
-                        craft = CraftType.KNITTING,
                         onAction = {
                             actions += it
                             actionVersion.intValue++

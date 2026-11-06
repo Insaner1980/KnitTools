@@ -4,6 +4,11 @@
 # runtime classpaths; new advisories for those packages must remain visible.
 
 [[IgnoredVulns]]
+id = "GHSA-p93r-85wp-75v3"
+ignoreUntil = 2026-11-30
+reason = "Gradle verification metadata retains bcprov-jdk18on 1.79. The 2026-11-05 dependency-check run confirms Bouncy Castle is absent from app debug/release and benchmark runtime classpaths; root buildscript resolution forces fixed 1.86. Historical checksums do not select dependencies. Advisory: https://github.com/bcgit/bc-java/wiki/CVE%E2%80%902026%E2%80%905598."
+
+[[IgnoredVulns]]
 id = "GHSA-xxph-c9ww-hj94"
 ignoreUntil = 2026-11-30
 reason = "Gradle verification metadata retains Guava 31.0.1-jre, 32.0.1-jre, 33.0.0-jre, 33.2.1-jre, 33.3.1-jre, 33.4.0-jre, 33.5.0-android, 33.5.0-jre and 33.6.0-jre. Guava is absent from app debug/release and benchmark runtime classpaths; root buildscript and subproject resolution policies select fixed 33.7.2. Historical checksums remain for verification, not version selection."

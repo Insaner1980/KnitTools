@@ -451,8 +451,8 @@ interface CounterProjectDao {
         stepSize: Int,
         action: String,
         previousValue: Int,
-        newValue: Int,
         updatedAt: Long,
+        linkedCounterDeltasJson: String? = null,
     ) {
         updateCounterState(projectId, count, stepSize, updatedAt)
         insertHistory(
@@ -460,7 +460,8 @@ interface CounterProjectDao {
                 projectId = projectId,
                 action = action,
                 previousValue = previousValue,
-                newValue = newValue,
+                newValue = count,
+                linkedCounterDeltasJson = linkedCounterDeltasJson,
             ),
         )
     }

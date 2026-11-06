@@ -31,14 +31,16 @@ class BackupArchiveTest {
         manifest.entries.forEach { assertEquals(it.sha256, BackupFormat.digest(File(target, it.path))) }
     }
 
-    @Test fun schema25BackupRetainsEveryTableAndFileOnExtraction() {
+    @Test fun schema25And26BackupsRetainEveryTableAndFileOnExtraction() {
         val (source, current) = fixture()
-        val legacy = current.copy(schemaVersion = 25)
-        val archive = temporary.newFile()
-        BackupArchive.write(source, archive, legacy)
-        val target = temporary.newFolder()
-        assertEquals(legacy, BackupArchive.extract(archive, target))
-        legacy.entries.forEach { assertEquals(it.sha256, BackupFormat.digest(File(target, it.path))) }
+        for (version in listOf(25, 26)) {
+            val legacy = current.copy(schemaVersion = version)
+            val archive = temporary.newFile()
+            BackupArchive.write(source, archive, legacy)
+            val target = temporary.newFolder()
+            assertEquals(legacy, BackupArchive.extract(archive, target))
+            legacy.entries.forEach { assertEquals(it.sha256, BackupFormat.digest(File(target, it.path))) }
+        }
     }
 
     @Test fun changedBytesAndHashAndSizeAreRejected() {

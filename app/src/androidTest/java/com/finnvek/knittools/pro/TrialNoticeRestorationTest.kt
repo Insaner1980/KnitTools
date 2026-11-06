@@ -72,6 +72,8 @@ class TrialNoticeRestorationTest {
                     .first { it }
             }
             app.preferencesManager.get().setAppLanguage(AppLanguage.ENGLISH)
+            // These fixtures represent an existing user after onboarding.
+            app.onboardingStateRepository.get().dismissWelcome()
             // Reuse the production singleton DataStore instead of opening a competing file owner.
             trialDataStore().edit {
                 it.clear()

@@ -1439,6 +1439,48 @@ class PatternAnnotationDocumentSelectionTest {
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class PatternAnnotationWriteFeedbackTest {
+    @Test
+    fun `new text and callout drafts are acknowledged only after a successful write`() =
+        runTest {
+            for (library in listOf(false, true)) {
+                for (callout in listOf(false, true)) {
+                    val fixture = WriteFixture(library)
+                    advanceUntilIdle()
+                    val vm = fixture.vm
+                    val draftId = "retained-draft"
+                    val save = {
+                        if (callout) {
+                            vm.addCallout("Title", "Description", PatternCalloutSymbol.NOTE, draftId = draftId)
+                        } else {
+                            vm.addTextBox("Retained text", draftId = draftId)
+                        }
+                    }
+                    fixture.nextWrite = { throw IOException("insert rejected") }
+                    save()
+                    advanceUntilIdle()
+                    assertEquals(null, vm.uiState.value.savedDraftId)
+                    assertFailed(vm)
+
+                    val gate = CompletableDeferred<Unit>()
+                    fixture.nextWrite = { gate.await() }
+                    save()
+                    runCurrent()
+                    assertTrue(vm.uiState.value.isSaving)
+                    save()
+                    assertEquals(null, vm.uiState.value.savedDraftId)
+                    gate.complete(Unit)
+                    advanceUntilIdle()
+
+                    assertEquals(draftId, vm.uiState.value.savedDraftId)
+                    assertEquals(1, fixture.rows.value.size)
+                    assertEquals(2, fixture.writeAttempts)
+                    save()
+                    advanceUntilIdle()
+                    assertEquals(1, fixture.rows.value.size)
+                }
+            }
+        }
+
     @Before
     fun setUp() {
         Dispatchers.setMain(StandardTestDispatcher())

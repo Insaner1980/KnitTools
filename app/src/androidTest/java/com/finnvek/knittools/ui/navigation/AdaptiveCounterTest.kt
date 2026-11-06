@@ -10,6 +10,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasAnyDescendant
+import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
@@ -221,7 +222,7 @@ class AdaptiveCounterTest : AdaptiveRouteTestFixture() {
         text(R.string.project_overview_total_time).assertIsDisplayed()
         menu()
         text(R.string.project_overview_edit_details).performClick()
-        val field = rule.onNode(hasSetTextAction() and hasText(label(R.string.project_name_label)))
+        val field = rule.onNode(hasSetTextAction() and hasContentDescription(label(R.string.project_name_label)))
         field.performScrollTo().performClick().performTextReplacement("Retained project draft")
         keyboard(true)
         resize(800, 400)
@@ -395,10 +396,9 @@ class AdaptiveCounterTest : AdaptiveRouteTestFixture() {
                 if (orientation ==
                     FoldingFeature.Orientation.VERTICAL
                 ) {
-                    content.right <= fold.bounds.left
+                    content.right <= fold.bounds.left || content.left >= fold.bounds.right
                 } else {
-                    content.bottom <=
-                        fold.bounds.top
+                    content.bottom <= fold.bounds.top || content.top >= fold.bounds.bottom
                 },
             )
             menu()
@@ -459,11 +459,7 @@ class AdaptiveCounterTest : AdaptiveRouteTestFixture() {
     private fun assertModalOutsideFold(fold: FoldingFeature) {
         var measured = ""
         try {
-            rule.waitUntil(10_000) {
-                focusedWindowOutside(fold) { view, position ->
-                    measured = "origin=${position.toList()} size=${view.width}x${view.height} fold=${fold.bounds}"
-                }
-            }
+            rule.awaitWindowOutsideFold(fold) { measured = it }
         } finally {
             println("ADAPTIVE_MODAL $measured")
             screenshot("modal-${fold.orientation}")

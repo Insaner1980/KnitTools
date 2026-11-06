@@ -294,7 +294,7 @@
     <string name="increase_decrease_error_cannot_decrease">Verfügbare Maschenzahl: %2$d. Angeforderte Abnahme: %1$d.</string>
     <string name="increase_decrease_error_not_enough_decrease">Erforderliche Maschenzahl: %1$d. Angeforderte Abnahmen: %2$d.</string>
     <string name="increase_decrease_error_total_out_of_range">Das Ergebnis ist zu groß. Verwende kleinere Maschenzahlen.</string>
-    <string name="increase_decrease_error_not_enough_bars">Für diese M1-Zunahmen sind nicht genügend Zwischenräume zwischen den Maschen vorhanden. Verringere die Anzahl der Zunahmen.</string>
+    <string name="increase_decrease_error_not_enough_bars">Für diese M1-Zunahmen sind nicht genügend Zwischenräume zwischen den Maschen vorhanden. Verwende mindestens 2 Ausgangsmaschen und verringere bei Bedarf die Anzahl der Zunahmen.</string>
 
     <!-- Gauge Converter -->
     <string name="pattern_gauge">Maschenprobe der Anleitung</string>
@@ -413,8 +413,8 @@
     <string name="care_bleach_any">Alle Bleichmittel</string>
     <string name="care_bleach_non_chlorine">Chlorfreies Bleichmittel</string>
     <string name="care_bleach_do_not">Nicht bleichen</string>
-    <string name="care_dry_tumble_low">Schonend trocknen</string>
-    <string name="care_dry_tumble_normal">Normal trocknen</string>
+    <string name="care_dry_tumble_low">Bei niedriger Temperatur im Trockner trocknen</string>
+    <string name="care_dry_tumble_normal">Bei normaler Temperatur im Trockner trocknen</string>
     <string name="care_dry_flat">Liegend trocknen</string>
     <string name="care_dry_do_not_tumble">Nicht im Trockner trocknen</string>
     <string name="care_iron_low">Niedrig bügeln</string>
@@ -422,8 +422,8 @@
     <string name="care_iron_high">Heiß bügeln</string>
     <string name="care_iron_do_not">Nicht bügeln</string>
     <string name="care_dryclean_any">Alle Lösungsmittel</string>
-    <string name="care_dryclean_p">P-Lösungsmittel</string>
-    <string name="care_dryclean_f">F-Lösungsmittel</string>
+    <string name="care_dryclean_p">Chemische Reinigung (P)</string>
+    <string name="care_dryclean_f">Chemische Reinigung (F)</string>
     <string name="care_dryclean_do_not">Nicht chemisch reinigen</string>
 
     <!-- Defaults -->

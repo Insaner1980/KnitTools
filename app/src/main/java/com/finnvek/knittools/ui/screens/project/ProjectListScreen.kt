@@ -365,11 +365,16 @@ fun ProjectListScreen(
                 viewModel.projectCreationDismissed()
                 showCreateProjectDialog = false
             },
+            // Kohdekansio kerrotaan vain, kun kansioita on; ilman niitä "Unfiled" hämmensi uutta käyttäjää.
             destinationText =
-                stringResource(
-                    R.string.folder_project_creation_destination,
-                    creationFolderName ?: stringResource(R.string.folder_unfiled),
-                ),
+                if (folders.isNotEmpty()) {
+                    stringResource(
+                        R.string.folder_project_creation_destination,
+                        creationFolderName ?: stringResource(R.string.folder_unfiled),
+                    )
+                } else {
+                    null
+                },
             errorMessage =
                 if (projectCreationError == ProjectCreationResult.FolderMissing) {
                     stringResource(R.string.folder_missing)

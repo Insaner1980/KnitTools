@@ -131,16 +131,7 @@ internal object SessionMetrics {
 
         val started = startedAt
         val ended = effectiveEndedAt()
-        val rangeStart =
-            rangeStartMillis?.let { start ->
-                Instant
-                    .ofEpochMilli(start)
-                    .atZone(zone)
-                    .toLocalDate()
-                    .atStartOfDay(zone)
-                    .toInstant()
-                    .boundedEpochMillis()
-            }
+        val rangeStart = calendarRangeStartMillis(rangeStartMillis, zone)
         val overlapStart = maxOf(started, rangeStart ?: started)
         val overlapEnd = maxOf(overlapStart, ended)
         if (overlapEnd <= overlapStart) return null
@@ -230,7 +221,7 @@ internal object SessionMetrics {
                 .atStartOfDay(sessionZone)
                 .toInstant()
                 .boundedEpochMillis()
-        var cursor = maxOf(started, rangeStartMillis ?: started, boundedStartMillis)
+        var cursor = maxOf(started, calendarRangeStartMillis(rangeStartMillis, zone) ?: started, boundedStartMillis)
         val sessionMillis = sessionMillisBetween(started, ended).coerceAtLeast(1.0)
         val initialFraction = sessionMillisBetween(started, cursor) / sessionMillis
         var allocatedSeconds = scaledSeconds(activeSeconds, initialFraction)
@@ -275,6 +266,20 @@ internal object SessionMetrics {
 
         return contributions
     }
+
+    private fun KnitSession.calendarRangeStartMillis(
+        rangeStartMillis: Long?,
+        zone: ZoneId,
+    ): Long? =
+        rangeStartMillis?.let { start ->
+            Instant
+                .ofEpochMilli(start)
+                .atZone(zone)
+                .toLocalDate()
+                .atStartOfDay(analyticsZoneOr(zone))
+                .toInstant()
+                .boundedEpochMillis()
+        }
 }
 
 private const val MAX_SESSION_ANALYSIS_DAYS = 366L

@@ -6,14 +6,12 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -31,7 +29,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -39,12 +36,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.onSizeChanged
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.DpOffset
-import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.finnvek.knittools.R
@@ -67,9 +60,8 @@ import com.finnvek.knittools.ui.components.OverviewTextAction
 import com.finnvek.knittools.ui.components.ProMarker
 import com.finnvek.knittools.ui.components.craftTypeLabel
 import com.finnvek.knittools.ui.components.workSessionStatusText
+import com.finnvek.knittools.ui.layout.AdaptiveDropdownMenu
 import com.finnvek.knittools.ui.layout.ContentWidthPolicy
-import com.finnvek.knittools.ui.layout.LocalAdaptiveContentSize
-import com.finnvek.knittools.ui.layout.LocalWindowFolds
 import com.finnvek.knittools.ui.layout.contentWidth
 import com.finnvek.knittools.ui.screens.counter.CounterScreenActions
 import com.finnvek.knittools.ui.screens.counter.CounterUiState
@@ -142,7 +134,6 @@ internal fun ProjectOverviewScreen(
     val blockingSurfaceOpen = menuOpen
     SideEffect { onBlockingSurfaceChanged(blockingSurfaceOpen) }
     DisposableEffect(projectId) { onDispose { onBlockingSurfaceChanged(false) } }
-    var menuAnchorWidth by remember { mutableIntStateOf(0) }
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -155,11 +146,11 @@ internal fun ProjectOverviewScreen(
                     }
                 },
                 actions = {
-                    Box(Modifier.onSizeChanged { menuAnchorWidth = it.width }) {
+                    Box {
                         IconButton(onClick = { menuOpen = true }) {
                             Icon(Icons.Default.MoreVert, stringResource(R.string.project_actions_title))
                         }
-                        ProjectOverviewMenu(state, menuOpen, { menuOpen = false }, contentActions, menuAnchorWidth)
+                        ProjectOverviewMenu(state, menuOpen, { menuOpen = false }, contentActions)
                     }
                 },
                 // Läpinäkyvä kuten laskurin yläpalkki: oletuspinta piirsi taustasta eroavan kaistaleen,
@@ -228,7 +219,6 @@ private fun ProjectOverviewMenu(
     expanded: Boolean,
     onDismiss: () -> Unit,
     actions: ProjectOverviewContentActions,
-    anchorWidth: Int,
 ) {
     val hasActiveProjects = state.projects.any { !it.isCompleted }
     val reactivationAccess =
@@ -240,23 +230,9 @@ private fun ProjectOverviewMenu(
         )
     val alreadyAllowed =
         state.projectsLoaded && (!hasActiveProjects || state.proState.hasFeature(ProFeature.UNLIMITED_PROJECTS))
-    var menuWidth by remember { mutableIntStateOf(0) }
-    val available = LocalAdaptiveContentSize.current
-    val hasSeparatingFold = LocalWindowFolds.current.any { it.isSeparating || it.isOccluding }
-    // The platform popup sees the full window. Align its end to the action inside the selected pane.
-    val offset =
-        if (hasSeparatingFold) {
-            DpOffset(with(LocalDensity.current) { -(menuWidth - anchorWidth).coerceAtLeast(0).toDp() }, 0.dp)
-        } else {
-            DpOffset.Zero
-        }
-    DropdownMenu(
+    AdaptiveDropdownMenu(
         expanded = expanded,
         onDismissRequest = onDismiss,
-        offset = offset,
-        modifier =
-            (if (hasSeparatingFold) Modifier.heightIn(max = available.height) else Modifier)
-                .onSizeChanged { menuWidth = it.width },
     ) {
         listOf(
             R.string.project_overview_edit_details to actions.onEditDetails,

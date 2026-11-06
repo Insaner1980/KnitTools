@@ -58,12 +58,14 @@ class ProjectCounterLogicTest {
     }
 
     @Test
-    fun `repeat cycling resets at repeatAt`() {
+    fun `repeat cycling retains the completed final row`() {
         val result =
             ProjectCounterLogic.increment(
                 counter(count = 7, stepSize = 1, repeatAt = 8, counterType = ProjectCounterType.REPEATING),
             )
-        assertEquals(0, result.count)
+        assertEquals(8, result.count)
+        assertEquals(CounterValueDisplay.Cycle(8, 8), CounterValueFormatter.forExtraCounter(result))
+        assertEquals(1, ProjectCounterLogic.increment(result).count)
     }
 
     @Test
@@ -72,7 +74,7 @@ class ProjectCounterLogicTest {
             ProjectCounterLogic.increment(
                 counter(count = 6, stepSize = 2, repeatAt = 8, counterType = ProjectCounterType.REPEATING),
             )
-        assertEquals(0, result.count)
+        assertEquals(8, result.count)
     }
 
     @Test

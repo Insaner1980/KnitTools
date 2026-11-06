@@ -154,6 +154,28 @@ class OnboardingViewModelTest {
             coVerify(exactly = 0) { projects.createOnboardingProject(any(), any()) }
         }
 
+    @Test fun `interrupted ready step resumes ready and continues to price`() =
+        runTest {
+            saved.value = OnboardingDraft("same-id", step = OnboardingStep.Ready, name = "My socks", projectId = 7)
+            coEvery { projects.findOnboardingProject("same-id") } returns 7L
+            coEvery { projects.hasAnyProject() } returns true
+            val vm = viewModel()
+            assertEquals(
+                OnboardingStep.Ready,
+                vm.state.value.draft
+                    ?.step,
+            )
+            vm.next()
+            runCurrent()
+            assertEquals(
+                OnboardingStep.Price,
+                vm.state.value.draft
+                    ?.step,
+            )
+            assertEquals(OnboardingStep.Price, saved.value?.step)
+            coVerify(exactly = 0) { projects.createOnboardingProject(any(), any()) }
+        }
+
     @Test fun `double create tap runs one creation and persistence failure leaves retryable draft`() =
         runTest {
             saved.value = OnboardingDraft("same-id", step = OnboardingStep.Project, name = "My socks")
@@ -168,7 +190,7 @@ class OnboardingViewModelTest {
             result.complete(ProjectCreationResult.Created(7))
             runCurrent()
             assertEquals(
-                OnboardingStep.Price,
+                OnboardingStep.Ready,
                 vm.state.value.draft
                     ?.step,
             )

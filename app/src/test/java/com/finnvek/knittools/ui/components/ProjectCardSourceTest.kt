@@ -57,7 +57,10 @@ class ProjectCardSourceTest {
             "ProjectProgressBar",
             "projectTimestampText(project.completedAt ?: project.updatedAt, true)",
         ).forEach { assertTrue(it, source.contains(it)) }
-        assertTrue(source.indexOf("if (project.isCompleted)") < source.indexOf("ProjectCardProgress(project, compact)"))
+        assertTrue(
+            source.indexOf("if (project.isCompleted)") in 0 until
+                source.indexOf("ProjectCardProgress(project, compact)"),
+        )
     }
 
     private companion object {

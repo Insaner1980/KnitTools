@@ -277,7 +277,7 @@
     <string name="mode_decrease">Tag ind</string>
     <string name="style_flat">Fladt</string>
     <string name="style_circular">Rundt</string>
-    <string name="current_stitches">Nuværende masker</string>
+    <string name="current_stitches">Nuværende maskeantal</string>
     <string name="increase_by">Øg med</string>
     <string name="decrease_by">Mindsk med</string>
     <string name="increase_result_placeholder">Udfyld begge felter for at se, hvor du skal tage ud</string>
@@ -289,12 +289,12 @@
     <string name="easy_to_remember">Let at huske</string>
     <string name="balanced">Balanceret</string>
     <string name="total_stitches_format">I alt: %1$d %2$s</string>
-    <string name="increase_decrease_error_current_positive">Nuværende masker skal være større end 0</string>
+    <string name="increase_decrease_error_current_positive">Nuværende maskeantal skal være større end 0</string>
     <string name="increase_decrease_error_change_positive">Antallet af masker der ændres skal være større end 0</string>
     <string name="increase_decrease_error_cannot_decrease">Tilgængeligt maskeantal: %2$d. Ønsket indtagning: %1$d.</string>
     <string name="increase_decrease_error_not_enough_decrease">Påkrævet maskeantal: %1$d. Ønskede indtagninger: %2$d.</string>
     <string name="increase_decrease_error_total_out_of_range">Resultatet er for stort. Brug mindre masketal.</string>
-    <string name="increase_decrease_error_not_enough_bars">Der er ikke nok mellemrum mellem maskerne til disse M1-udtagninger. Reducer antallet af udtagninger.</string>
+    <string name="increase_decrease_error_not_enough_bars">Der er ikke nok mellemrum mellem maskerne til disse M1-udtagninger. Start med mindst 2 masker, og reducer om nødvendigt antallet af udtagninger.</string>
 
     <!-- Gauge Converter -->
     <string name="pattern_gauge">Opskriftens strikkefasthed</string>
@@ -528,8 +528,8 @@
     <string name="relative_time_days_ago">%1$dd siden</string>
     <string name="relative_time_weeks_ago">%1$du siden</string>
     <plurals name="relative_time_months_ago">
-        <item quantity="one">%1$dmdr siden</item>
-        <item quantity="other">%1$dmdr siden</item>
+        <item quantity="one">%1$d md. siden</item>
+        <item quantity="other">%1$d mdr. siden</item>
     </plurals>
 
     <!-- Settings -->

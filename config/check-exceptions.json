@@ -603,7 +603,7 @@
         "key = \"counter-buttons\"\"\"\"",
         "key = \"counter-hero-reveal-gap\"\"\"\"",
         "key = \"counter-hero\"\"\"\"",
-        "key = \"counter-hero\"\"\"\") < workspace.indexof(\"projectcontentcards(\"",
+        "key = \"counter-hero\"\"\"\") in 0 until workspace.indexof(\"projectcontentcards(\"",
         "key = \"extra-counters-title\"\"\"\"",
         "key = \"project-header\"\"\"\"",
         "key = \"stitch-tracker\"\"\"\""

@@ -103,35 +103,30 @@ val LightDivider = Color(0xFFC5C0A8)
 
 // === Lanka-ikonien väripaletti (deterministinen ID:n perusteella) ===
 
-/** Lankavärit tummalle taustalle. Kaikki kahdeksan ylttävät 3,35–7,08:1 kontrastiin. */
+/** Chart colors maintain at least 3:1 contrast against dark backgrounds and cards. */
 val YarnColors =
     listOf(
-        Color(0xFFC45100), // Poltettu oranssi
-        Color(0xFF8BA44A), // Avokado
-        Color(0xFFC9A435), // Sinappi
+        Color(0xFFCC6821), // Burnt orange
+        Color(0xFF8BA44A), // Avocado
+        Color(0xFFC9A435), // Mustard
         Color(0xFFB8908F), // Dusty rose
-        Color(0xFF9A6B4A), // Terrakotta
-        Color(0xFF5A8A7A), // Teal
-        Color(0xFF9A82AA), // Laventeli
-        Color(0xFFA85A3A), // Ruosteenpunainen
+        Color(0xFFA57B5D), // Terracotta
+        Color(0xFF5E8D7D), // Teal
+        Color(0xFF9A82AA), // Lavender
+        Color(0xFFB57357), // Rust
     )
 
-/**
- * Samat kahdeksan sävyä kermataustalle. Vaaleat värit jäivät [LightBackground]illa
- * alle graafisten elementtien 3:1 kontrastin — sinappi 1,86:1, avokado 2,19:1,
- * roosa 2,21:1, laventeli 2,67:1. Sävy ja kylläisyys on säilytetty, vain vaaleutta
- * on laskettu kunnes jokainen ylittää 3,2:1. Neljä tumminta ovat ennallaan.
- */
+/** Matching hues with at least 3:1 contrast against light backgrounds and cards. */
 val LightYarnColors =
     listOf(
-        Color(0xFFC45100), // Poltettu oranssi — 3,63:1, ennallaan
-        Color(0xFF70843C), // Avokado — 2,19 → 3,25:1
-        Color(0xFF957927), // Sinappi — 1,86 → 3,26:1
-        Color(0xFFA3706E), // Dusty rose — 2,21 → 3,22:1
-        Color(0xFF9A6B4A), // Terrakotta — 3,59:1, ennallaan
-        Color(0xFF578576), // Teal — 3,07 → 3,27:1
-        Color(0xFF8E73A0), // Laventeli — 2,67 → 3,22:1
-        Color(0xFFA85A3A), // Ruosteenpunainen — 3,92:1, ennallaan
+        Color(0xFFC45100), // Burnt orange
+        Color(0xFF687A38), // Avocado
+        Color(0xFF8A7024), // Mustard
+        Color(0xFF966765), // Dusty rose
+        Color(0xFF976949), // Terracotta
+        Color(0xFF517B6D), // Teal
+        Color(0xFF836A93), // Lavender
+        Color(0xFFA85A3A), // Rust
     )
 
 // === Insights — aktiviteettiruudukon ramppi (kylmä → lämmin), solidit värit ilman alpha-sekoitusta ===
@@ -156,6 +151,7 @@ val YarnSwatchNeutral = Color(0xFF4A4A38)
 val PaperSurface = Color(0xFFECE8D8)
 val LightPaperSurface = Color(0xFFF7F4E8)
 val PaperInk = Color(0xFFB9B29A)
+val PaperText = Color(0xFF4C4634) // Ohjeen teksti paperilla, noin 8:1 vaalealla paperilla
 
 // Kudotun Pro-merkin värit; pieni teksti säilyttää kontrastin myös läpinäkyvällä kokeilumerkillä.
 val ProMarkerContainer = Color(0xFF3A3520)

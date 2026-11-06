@@ -30,6 +30,11 @@ class LegacySecondaryCounterBackfillTest {
         val visibleCounters = withoutLegacySecondaryBackfillCopies(listOf(legacyBackfill, userCounter))
 
         assertEquals(listOf(userCounter), visibleCounters)
+        val newCounterWithLegacyName = legacyBackfill.copy(id = 3L, sortOrder = 1)
+        assertEquals(
+            listOf(newCounterWithLegacyName),
+            withoutLegacySecondaryBackfillCopies(listOf(newCounterWithLegacyName)),
+        )
     }
 
     @Suppress("UNCHECKED_CAST")

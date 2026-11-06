@@ -27,8 +27,10 @@ class CounterWorkspaceSourceTest {
         assertTrue(workspace.contains("""key = "counter-hero""""))
         assertTrue(workspace.contains("modifier = Modifier.heightIn(min = heroMinimumHeight)"))
         assertFalse(workspace.contains("fillParentMaxHeight()"))
-        assertTrue(workspace.indexOf("""key = "counter-hero"""") < workspace.indexOf("ProjectContentCards("))
-        assertTrue(workspace.indexOf("ProjectContentCards(") < workspace.indexOf("""key = "extra-counters-title""""))
+        assertTrue(workspace.indexOf("""key = "counter-hero"""") in 0 until workspace.indexOf("ProjectContentCards("))
+        assertTrue(
+            workspace.indexOf("ProjectContentCards(") in 0 until workspace.indexOf("""key = "extra-counters-title""""),
+        )
         assertTrue(workspace.contains("verticalArrangement = Arrangement.spacedBy"))
         assertTrue(workspace.contains("key = { counter -> counter.id }"))
     }
@@ -158,11 +160,11 @@ class CounterWorkspaceSourceTest {
         assertTrue(source.workspace.contains(".size(CounterDimens.CounterUndoTouchSize)"))
         assertTrue(source.workspace.contains(".align(Alignment.BottomCenter)"))
         assertTrue(
-            source.workspace.indexOf("imageRes = R.drawable.counter_minus_button") <
+            source.workspace.indexOf("imageRes = R.drawable.counter_minus_button") in 0 until
                 source.workspace.indexOf("imageRes = R.drawable.counter_undo_button"),
         )
         assertTrue(
-            source.workspace.indexOf("imageRes = R.drawable.counter_plus_button") <
+            source.workspace.indexOf("imageRes = R.drawable.counter_plus_button") in 0 until
                 source.workspace.indexOf("imageRes = R.drawable.counter_undo_button"),
         )
         assertTrue(source.workspace.contains("visualSize = CounterDimens.CounterMinusVisualSize"))
@@ -226,7 +228,7 @@ class CounterWorkspaceSourceTest {
         assertTrue(contentCards.contains("role = Role.Button"))
         assertFalse(workspace.contains("""key = "counter-buttons""""))
         assertTrue(
-            workspace.indexOf("ProjectContentCards(") <
+            workspace.indexOf("ProjectContentCards(") in 0 until
                 workspace.indexOf("""key = "extra-counters-title""""),
         )
         assertFalse(workspace.contains("""key = "stitch-tracker""""))
@@ -290,7 +292,7 @@ class CounterWorkspaceSourceTest {
         assertTrue(destination.contains("counterLaunchProjectMissing = !loaded"))
         assertTrue(destination.contains("counterLaunchProjectMissing || counterState.shouldLeaveCounter"))
         assertTrue(
-            destination.indexOf("loadedLaunchId != counterLaunchRequest.requestId") <
+            destination.indexOf("loadedLaunchId != counterLaunchRequest.requestId") in 0 until
                 destination.indexOf("ProjectContentHost("),
         )
     }
@@ -340,18 +342,21 @@ class CounterWorkspaceSourceTest {
     private fun assertHeroRevealOrdering(workspace: String) {
         assertTrue(workspace.contains("""key = "counter-hero-reveal-gap""""))
         assertTrue(
-            workspace.indexOf("""key = "counter-hero"""") <
+            workspace.indexOf("""key = "counter-hero"""") in 0 until
                 workspace.indexOf("""key = "counter-hero-reveal-gap""""),
         )
         assertTrue(
-            workspace.indexOf("""key = "counter-hero-reveal-gap"""") <
+            workspace.indexOf("""key = "counter-hero-reveal-gap"""") in 0 until
                 workspace.indexOf("ProjectContentCards("),
         )
     }
 
     private fun assertHeroControlStructure(source: CounterSourceFiles) {
         assertTrue(source.workspace.contains("CounterRepeatToRowSpacing"))
-        assertTrue(source.workspace.indexOf("CompactPatternRepeatRow(") < source.workspace.indexOf("CounterRowLabel("))
+        assertTrue(
+            source.workspace.indexOf("CompactPatternRepeatRow(") in 0 until
+                source.workspace.indexOf("CounterRowLabel("),
+        )
         assertTrue(source.workspace.contains("onUndo = actions.onUndo"))
         assertTrue(source.workspace.contains("onUndo: () -> Unit"))
         assertFalse(source.workspace.contains("CounterUndoButton("))
@@ -363,7 +368,7 @@ class CounterWorkspaceSourceTest {
         assertTrue(source.workspace.contains(".align(Alignment.TopEnd)"))
         val controls = source.workspace.substringAfter("private fun CounterButtons(")
         assertTrue(
-            controls.indexOf(".widthIn(max = CounterDimens.CounterControlsMaxWidth)") <
+            controls.indexOf(".widthIn(max = CounterDimens.CounterControlsMaxWidth)") in 0 until
                 controls.indexOf(".fillMaxWidth()"),
         )
     }

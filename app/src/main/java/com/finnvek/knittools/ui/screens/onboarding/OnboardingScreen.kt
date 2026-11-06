@@ -4,6 +4,10 @@ import android.app.Activity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -12,6 +16,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -37,7 +42,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -45,10 +49,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
@@ -62,6 +68,7 @@ import com.finnvek.knittools.domain.calculator.parseProjectStartCount
 import com.finnvek.knittools.domain.calculator.parseTargetRows
 import com.finnvek.knittools.domain.model.OnboardingDraft
 import com.finnvek.knittools.domain.model.OnboardingStep
+import com.finnvek.knittools.domain.model.canGoBack
 import com.finnvek.knittools.pro.ProStatus
 import com.finnvek.knittools.ui.components.CancelButton
 import com.finnvek.knittools.ui.components.rememberCurrentLocale
@@ -191,7 +198,12 @@ fun OnboardingScreen(
 ) {
     BackHandler(enabled = busy || draft.step != OnboardingStep.Welcome) {
         if (!busy) {
-            if (draft.step == OnboardingStep.Price) actions.finish() else actions.previous()
+            when (draft.step) {
+                OnboardingStep.Price -> actions.finish()
+                // Luotu projekti ei palaa lomakkeeseen: takaisin-ele jatkaa hintavaiheeseen.
+                OnboardingStep.Ready -> actions.next()
+                else -> actions.previous()
+            }
         }
     }
     Scaffold(
@@ -214,7 +226,7 @@ fun OnboardingScreen(
                 ) {
                     if (draft.step == OnboardingStep.Price) {
                         JourneyPriceActions(price, busy, actions)
-                    } else {
+                    } else if (draft.step != OnboardingStep.Craft) {
                         val canCreate =
                             draft.name.isNotBlank() &&
                                 parseProjectStartCount(draft.initialCount) != null &&
@@ -230,14 +242,26 @@ fun OnboardingScreen(
             }
         },
     ) { padding ->
-        Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.TopCenter) {
-            key(draft.step) {
+        BoxWithConstraints(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.TopCenter) {
+            val viewportHeight = maxHeight
+            AnimatedContent(
+                targetState = draft.step,
+                transitionSpec = { journeyStepTransition() },
+                label = "onboardingStep",
+            ) { step ->
+                // Kuvitetut esittelyvaiheet keskitetään, jottei näkymän alaosaan jää tyhjää aluetta.
+                val centered = step == OnboardingStep.Welcome || step == OnboardingStep.Ready
                 Column(
                     Modifier
                         .contentWidth(ContentWidthPolicy.Form)
                         .verticalScroll(rememberScrollState())
+                        .heightIn(min = viewportHeight)
                         .padding(ComponentDimens.ContentPadding),
-                    verticalArrangement = Arrangement.spacedBy(OnboardingDimens.JourneySectionGap),
+                    verticalArrangement =
+                        Arrangement.spacedBy(
+                            OnboardingDimens.JourneySectionGap,
+                            if (centered) Alignment.CenterVertically else Alignment.Top,
+                        ),
                 ) {
                     messageRes?.let {
                         Text(
@@ -246,12 +270,13 @@ fun OnboardingScreen(
                             modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
                         )
                     }
-                    when (draft.step) {
-                        OnboardingStep.Welcome -> JourneyWelcome(draft)
+                    when (step) {
+                        OnboardingStep.Welcome -> JourneyWelcome()
+                        OnboardingStep.Craft -> JourneyCraft(draft, busy, actions)
                         OnboardingStep.Needs -> JourneyNeeds(draft, busy, actions.edit)
                         OnboardingStep.Counter -> JourneyCounter(draft, busy, actions.edit)
-                        OnboardingStep.Benefits -> JourneyBenefits(draft)
                         OnboardingStep.Project -> JourneyProject(draft, busy, actions)
+                        OnboardingStep.Ready -> JourneyReady(draft)
                         OnboardingStep.Price -> JourneyPriceContent(draft, price)
                     }
                 }
@@ -273,50 +298,76 @@ private fun JourneyHeader(
             Modifier.fillMaxWidth().heightIn(min = OnboardingDimens.JourneyToolbarHeight),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            if (step.ordinal in 1..4) {
-                IconButton(onClick = actions.previous, enabled = !busy) {
+            if (step.canGoBack) {
+                IconButton(
+                    onClick = actions.previous,
+                    enabled = !busy,
+                    modifier = Modifier.testTag("onboarding_back"),
+                ) {
                     Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back))
                 }
             }
             Spacer(Modifier.weight(1f))
-            if (step != OnboardingStep.Price) {
+            if (step != OnboardingStep.Price && step != OnboardingStep.Ready) {
                 CancelButton(onClick = actions.skip, enabled = !busy, text = stringResource(R.string.journey_skip))
             }
         }
+        // Tervetulonäkymä ei ole vielä vaihe: palkki on piilossa mutta varaa tilansa, jottei sisältö hyppää.
+        val progressAlpha by animateFloatAsState(
+            if (step == OnboardingStep.Welcome) 0f else 1f,
+            animationSpec = tween(OnboardingDimens.STEP_TRANSITION_MILLIS),
+            label = "journeyProgressVisibility",
+        )
         Row(
             Modifier
                 .fillMaxWidth()
                 .padding(vertical = ComponentDimens.StandardSpacing)
-                .semantics { contentDescription = description },
+                .graphicsLayer { alpha = progressAlpha }
+                .then(
+                    if (step == OnboardingStep.Welcome) {
+                        Modifier.clearAndSetSemantics { }
+                    } else {
+                        Modifier.semantics { contentDescription = description }
+                    },
+                ),
             horizontalArrangement = Arrangement.spacedBy(OnboardingDimens.JourneyProgressGap),
         ) {
             OnboardingStep.entries.forEach { item ->
-                Spacer(
+                // Segmentti täyttyy vasemmalta oikealle, kun vaihe valmistuu.
+                val fill by animateFloatAsState(
+                    if (item.ordinal <= step.ordinal) 1f else 0f,
+                    animationSpec = tween(OnboardingDimens.STEP_TRANSITION_MILLIS, easing = FastOutSlowInEasing),
+                    label = "journeyProgress",
+                )
+                Box(
                     Modifier
                         .weight(1f)
                         .height(OnboardingDimens.JourneyProgressHeight)
                         .clip(CircleShape)
-                        .background(
-                            if (item.ordinal <=
-                                step.ordinal
-                            ) {
-                                MaterialTheme.colorScheme.primary
-                            } else {
-                                MaterialTheme.colorScheme.outlineVariant
-                            },
-                        ),
-                )
+                        .background(MaterialTheme.colorScheme.outlineVariant),
+                ) {
+                    Spacer(
+                        Modifier
+                            .fillMaxHeight()
+                            .fillMaxWidth(fill)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.primary),
+                    )
+                }
             }
         }
     }
 }
 
 @Composable
-internal fun JourneyTitle(text: String) {
+internal fun JourneyTitle(
+    text: String,
+    modifier: Modifier = Modifier,
+) {
     Text(
         text,
         style = MaterialTheme.typography.headlineLarge,
-        modifier = Modifier.fillMaxWidth().semantics { heading() },
+        modifier = modifier.fillMaxWidth().semantics { heading() },
     )
 }
 
@@ -338,9 +389,11 @@ internal fun JourneyPrimaryButton(
 private fun nextLabel(step: OnboardingStep): Int =
     when (step) {
         OnboardingStep.Welcome -> R.string.journey_begin
+        // Craft etenee laatan napautuksella, eikä sillä ole alapalkin painiketta.
+        OnboardingStep.Craft -> R.string.journey_continue
         OnboardingStep.Needs -> R.string.journey_try_counter
-        OnboardingStep.Counter -> R.string.journey_show_more
-        OnboardingStep.Benefits -> R.string.journey_start_project
+        OnboardingStep.Counter -> R.string.journey_start_project
         OnboardingStep.Project -> R.string.journey_create_project
+        OnboardingStep.Ready -> R.string.journey_continue
         OnboardingStep.Price -> R.string.journey_start_trial
     }

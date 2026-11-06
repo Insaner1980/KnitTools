@@ -74,7 +74,9 @@ class ProjectCounterRepository
                     } else {
                         validated
                     }
-                ProjectCounterMutationResult.Success(dao.insert(initialCounter.toEntity()))
+                ProjectCounterMutationResult.Success(
+                    dao.insert(initialCounter.copy(sortOrder = initialCounter.sortOrder.coerceAtLeast(1)).toEntity()),
+                )
             }
         }
 

@@ -44,6 +44,7 @@ const RAVELRY_SEARCH_MAX_FILTER_LENGTH = 100;
 const RAVELRY_DIFFICULTY_MIN = 1;
 const RAVELRY_DIFFICULTY_MAX = 10;
 const RAVELRY_IMPORT_MAX_URL_LENGTH = 2_048;
+const RAVELRY_IMPORT_MAX_SEARCH_PAGES = 3;
 const MAX_RAVELRY_PATTERN_ID = 2_147_483_647;
 const CONTROL_CHARACTERS = /[\u0000-\u001F\u007F-\u009F\u2028\u2029]/;
 
@@ -269,22 +270,26 @@ export async function importPatternByUrl(options: ImportPatternByUrlOptions): Pr
     );
   }
 
-  const response = await searchPatternsForUser({
-    uid: options.uid,
-    tokenStore: options.tokenStore,
-    client: options.client,
-    rateLimiter: options.rateLimiter,
-    refresh: options.refresh,
-    nowMillis: options.nowMillis,
-    query: {
-      query: parsedUrl.patternSlug ?? parsedUrl.canonicalUrl,
-      page: 1,
-      pageSize: 10,
-    },
-  });
-  const matchedPattern = response.patterns.find(
-    (pattern) => pattern.canonicalUrl === parsedUrl.canonicalUrl,
-  );
+  let matchedPattern: SanitizedPattern | undefined;
+  for (let page = 1; page <= RAVELRY_IMPORT_MAX_SEARCH_PAGES; page++) {
+    const response = await searchPatternsForUser({
+      uid: options.uid,
+      tokenStore: options.tokenStore,
+      client: options.client,
+      rateLimiter: options.rateLimiter,
+      refresh: options.refresh,
+      nowMillis: options.nowMillis,
+      query: {
+        query: parsedUrl.patternSlug ?? parsedUrl.canonicalUrl,
+        page,
+        pageSize: 10,
+      },
+    });
+    matchedPattern = response.patterns.find(
+      (pattern) => pattern.canonicalUrl === parsedUrl.canonicalUrl,
+    );
+    if (matchedPattern || page >= response.pagination.pageCount) break;
+  }
   if (!matchedPattern) {
     throw new RavelryPatternImportError("pattern_not_found", 404);
   }

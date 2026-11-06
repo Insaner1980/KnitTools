@@ -35,7 +35,13 @@ internal class CounterWidgetPinHost(
 
     suspend fun hasInstalledWidgets(): Boolean =
         withContext(ioDispatcher) {
-            manager.getAppWidgetIds(receiver).isNotEmpty()
+            try {
+                manager.getAppWidgetIds(receiver).isNotEmpty()
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                false
+            }
         }
 
     override fun requestPin(): Boolean = manager.requestPinAppWidget(receiver, null, null)

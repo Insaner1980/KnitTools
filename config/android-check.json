@@ -9,7 +9,7 @@
       "kind": "android-application",
       "required": true,
       "variants": ["debug", "release"],
-      "sourceSets": ["main", "debug", "debugShared", "release", "test", "sharedTest", "androidTest", "isolatedTest", "optimizedSmoke"]
+      "sourceSets": ["main", "debug", "debugShared", "release", "test", "testDebug", "sharedTest", "androidTest", "isolatedTest", "optimizedSmoke"]
     },
     {
       "path": ":baselineprofile",
@@ -24,7 +24,7 @@
   "testTasks": [":app:testDebugUnitTest"],
   "includedBuilds": [],
   "checks": {
-    "ktlintTasks": [":app:ktlintCheck"],
+    "ktlintTasks": [":app:ktlintCheck", ":baselineprofile:ktlintCheck"],
     "detektTasks": [":app:detekt"],
     "lintTasks": [":app:lintDebug"],
     "fullLintTasks": [":app:lintDebug", ":app:lintRelease"],

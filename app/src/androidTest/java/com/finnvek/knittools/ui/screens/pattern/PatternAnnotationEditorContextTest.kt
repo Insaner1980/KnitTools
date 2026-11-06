@@ -2,6 +2,8 @@ package com.finnvek.knittools.ui.screens.pattern
 
 import androidx.activity.ComponentActivity
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
@@ -29,6 +31,42 @@ class PatternAnnotationEditorContextTest {
             ),
         )
     private var writes = 0
+    private var acknowledgeWrites = true
+    private var submittedDraftId: String? = null
+
+    @Test
+    fun creationDraftsRemainUntilSuccessfulSave() {
+        acknowledgeWrites = false
+        showToolbar()
+        for (tool in listOf(R.string.pattern_annotation_tool_text, R.string.pattern_annotation_tool_callout)) {
+            click(tool)
+            composeRule.onAllNodes(hasSetTextAction())[0].performTextReplacement("Retained draft")
+            click(R.string.save)
+            composeRule.runOnIdle { state.value = state.value.copy(isSaving = true) }
+            composeRule.onNodeWithText(context.getString(R.string.save)).assertIsNotEnabled()
+            composeRule.runOnIdle {
+                state.value = state.value.copy(isSaving = false, writeError = PatternAnnotationWriteError.WRITE_FAILED)
+            }
+            composeRule.onAllNodes(hasSetTextAction())[0].assertTextContains("Retained draft")
+            composeRule.onNodeWithText(context.getString(R.string.pattern_annotation_write_failed)).assertExists()
+            click(R.string.save)
+            composeRule.runOnIdle {
+                state.value =
+                    state.value.copy(
+                        savedDraftId = submittedDraftId,
+                        writeError = PatternAnnotationWriteError.NONE,
+                    )
+            }
+            composeRule.onNodeWithText(context.getString(R.string.save)).assertDoesNotExist()
+        }
+        composeRule.runOnIdle { assertEquals(4, writes) }
+    }
+
+    private fun submitDraft(draftId: String) {
+        writes++
+        submittedDraftId = draftId
+        if (acknowledgeWrites) state.value = state.value.copy(savedDraftId = draftId)
+    }
 
     @Test
     fun textAndCalloutCannotConfirmAfterPageOrDocumentChanges() {
@@ -113,12 +151,12 @@ class PatternAnnotationEditorContextTest {
                             onDeleteSelected = {},
                             onBringSelectedForward = {},
                             onSendSelectedBackward = {},
-                            onAddTextBox = { writes++ },
-                            onAddCallout = { _, _, _ -> writes++ },
+                            onAddTextBox = { _, draftId -> submitDraft(draftId) },
+                            onAddCallout = { _, _, _, draftId -> submitDraft(draftId) },
                             onUndo = {},
                             onRedo = {},
                             onClearPage = {},
-                            onAddChartTracker = { writes++ },
+                            onAddChartTracker = { _, draftId -> submitDraft(draftId) },
                             onEditText = {},
                             onCancelTextEdit = {},
                             onSaveTextEdit = { _, _ -> writes++ },

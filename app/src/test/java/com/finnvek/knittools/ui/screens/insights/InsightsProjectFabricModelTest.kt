@@ -14,6 +14,20 @@ import java.time.temporal.TemporalAdjusters
 
 class InsightsProjectFabricModelTest {
     @Test
+    fun `invalid session zone uses the fallback zone for the first date and active days`() {
+        val zone = ZoneId.of("Europe/Helsinki")
+        val today = LocalDate.of(2026, 8, 17)
+        val start = today.atTime(0, 15).atZone(zone)
+        val valid = session(1L, start, start.plusMinutes(30))
+
+        val model = buildModel(today, listOf(valid.copy(zoneId = "Invalid/Zone")), zone)
+
+        assertEquals(buildModel(today, listOf(valid), zone), model)
+        assertEquals(today, model.startDate)
+        assertEquals(listOf(1L), model.days.single().projectIds)
+    }
+
+    @Test
     fun `window starts at the current week minus twenty five weeks`() {
         val today = LocalDate.of(2026, 8, 19)
 

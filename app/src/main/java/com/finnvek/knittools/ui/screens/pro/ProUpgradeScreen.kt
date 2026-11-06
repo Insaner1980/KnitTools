@@ -3,7 +3,6 @@ package com.finnvek.knittools.ui.screens.pro
 import android.app.Activity
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -13,7 +12,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -49,6 +47,7 @@ import com.finnvek.knittools.pro.TrialJourneyAction
 import com.finnvek.knittools.pro.TrialJourneyStep
 import com.finnvek.knittools.ui.components.BadgePill
 import com.finnvek.knittools.ui.components.CraftIllustration
+import com.finnvek.knittools.ui.components.LaunchPriceTag
 import com.finnvek.knittools.ui.components.ProPriceDetails
 import com.finnvek.knittools.ui.components.StatusMessage
 import com.finnvek.knittools.ui.components.StatusMessageType
@@ -199,7 +198,6 @@ private fun ProPurchaseSection(
     onStartTrial: () -> Unit,
 ) {
     val productStatus = productStatusProvider()
-    val price = offer?.formattedPrice
     if (!proStateReady) {
         if (purchaseQueryFailed) {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -214,50 +212,31 @@ private fun ProPurchaseSection(
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         ProStatusPill(proState)
         if (proState.status == ProStatus.PRO_PURCHASED) return@Column
-        ProPriceDetails(
-            offer = offer,
-            productStatus = productStatus,
-            trialAvailable = proState.status == ProStatus.TRIAL_NOT_STARTED,
-            onRetry = onRetry,
-            prominent = true,
-        )
+        // Voimassa oleva hinta näytetään ommeltuna hintalappuna ostopainikkeineen; lataus ja puuttuva hinta
+        // käyttävät tavallista hintaosiota.
+        val availableOffer = offer?.takeIf { productStatus == BillingProductStatus.Available }
+        if (availableOffer != null) {
+            LaunchPriceTag(
+                offer = availableOffer,
+                onBuy = onPurchase,
+                buyInFlight = purchaseFlowInFlight,
+            )
+        } else {
+            ProPriceDetails(
+                offer = offer,
+                productStatus = productStatus,
+                trialAvailable = proState.status == ProStatus.TRIAL_NOT_STARTED,
+                onRetry = onRetry,
+            )
+        }
         // Sisällön säilymisestä kerrotaan vain päättyneelle kokeilulle; ennen kokeilua teksti hämmensi.
         if (proState.status == ProStatus.TRIAL_EXPIRED) {
             Text(stringResource(R.string.pro_trial_ended_body), style = MaterialTheme.typography.bodyMedium)
         }
         if (proState.status == ProStatus.TRIAL_NOT_STARTED) {
             Text(stringResource(R.string.onboarding_pro_trial_terms), style = MaterialTheme.typography.bodyMedium)
-            Button(onClick = onStartTrial, modifier = Modifier.fillMaxWidth(), enabled = !isStartingTrial) {
+            OutlinedButton(onClick = onStartTrial, modifier = Modifier.fillMaxWidth(), enabled = !isStartingTrial) {
                 Text(stringResource(R.string.pro_start_14_day_trial))
-            }
-        }
-        if (productStatus == BillingProductStatus.Available && price != null) {
-            val purchaseButtonModifier =
-                Modifier
-                    .fillMaxWidth()
-                    .semantics { liveRegion = LiveRegionMode.Polite }
-            val purchaseButtonContent: @Composable RowScope.() -> Unit = {
-                if (purchaseFlowInFlight) {
-                    CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
-                    Spacer(modifier = Modifier.width(8.dp))
-                }
-                Text(stringResource(R.string.pro_buy_for_price, price))
-            }
-            // Kokeilun ollessa tarjolla osto on toissijainen; muuten se on sivun ainoa päätoiminto.
-            if (proState.status == ProStatus.TRIAL_NOT_STARTED) {
-                OutlinedButton(
-                    onClick = onPurchase,
-                    modifier = purchaseButtonModifier,
-                    enabled = !purchaseFlowInFlight,
-                    content = purchaseButtonContent,
-                )
-            } else {
-                Button(
-                    onClick = onPurchase,
-                    modifier = purchaseButtonModifier,
-                    enabled = !purchaseFlowInFlight,
-                    content = purchaseButtonContent,
-                )
             }
         }
     }

@@ -60,6 +60,9 @@ import com.finnvek.knittools.ui.components.CancelButton
 import com.finnvek.knittools.ui.components.ConfirmationDialog
 import com.finnvek.knittools.ui.components.CounterStepSymbol
 import com.finnvek.knittools.ui.components.CounterStepperButton
+import com.finnvek.knittools.ui.components.FormSheet
+import com.finnvek.knittools.ui.components.FormSheetConfirm
+import com.finnvek.knittools.ui.components.LabeledTextField
 import com.finnvek.knittools.ui.components.NumberInputField
 import com.finnvek.knittools.ui.components.NumberInputOptions
 import com.finnvek.knittools.ui.components.ProMarker
@@ -432,54 +435,13 @@ fun AddCounterDialog(
             proState.hasFeature(selectedFeature)
     val canSave = isAddCounterFormValid(formParams) && canUseSelectedType
 
-    ScrollableFormDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.add_counter)) },
-        text = {
-            AddCounterDialogContent(
-                state =
-                    AddCounterDialogContentState(
-                        name = name,
-                        selectedType = selectedType,
-                        isRepeating = isRepeating,
-                        repeatAtText = repeatAtText,
-                        isShaping = isShaping,
-                        startingStitchesText = startingStitchesText,
-                        stitchChangeText = stitchChangeText,
-                        shapeEveryNText = shapeEveryNText,
-                        isRepeatSection = isRepeatSection,
-                        repeatStartRowText = repeatStartRowText,
-                        repeatEndRowText = repeatEndRowText,
-                        totalRepeatsText = totalRepeatsText,
-                        stepSizeText = stepSizeText,
-                        linkedToMainCounter = linkedToMainCounter && canLinkToMainCounter,
-                        proState = proState,
-                        proAccessReady = proAccessReady,
-                    ),
-                actions =
-                    AddCounterDialogContentActions(
-                        onNameChange = { if (it.length <= ProjectCounterLogic.MAX_NAME_LENGTH) name = it },
-                        onProRequired = onProRequired,
-                        onTypeChange = { index ->
-                            selectedType = index
-                            if (index == 3) {
-                                linkedToMainCounter = false
-                            }
-                        },
-                        onRepeatAtChange = { repeatAtText = it },
-                        onStartingStitchesChange = { startingStitchesText = it },
-                        onStitchChangeChange = { stitchChangeText = it },
-                        onShapeEveryNChange = { shapeEveryNText = it },
-                        onRepeatStartRowChange = { repeatStartRowText = it },
-                        onRepeatEndRowChange = { repeatEndRowText = it },
-                        onTotalRepeatsChange = { totalRepeatsText = it },
-                        onStepSizeChange = { stepSizeText = it },
-                        onLinkedToMainCounterChange = { linkedToMainCounter = it && canLinkToMainCounter },
-                    ),
-            )
-        },
-        confirmButton = {
-            TextButton(
+    // Sama lomakesheet kuin muissa lisäyslomakkeissa: dialogissa tyyppivalinta kellui ilman taustaa.
+    FormSheet(
+        title = stringResource(R.string.add_counter),
+        confirm =
+            FormSheetConfirm(
+                text = stringResource(R.string.save),
+                enabled = canSave,
                 onClick = {
                     onSave(
                         createProjectCounterDraft(
@@ -488,15 +450,51 @@ fun AddCounterDialog(
                         ),
                     )
                 },
-                enabled = canSave,
-            ) {
-                Text(stringResource(R.string.save))
-            }
-        },
-        dismissButton = {
-            CancelButton(onClick = onDismiss)
-        },
-    )
+            ),
+        onDismiss = onDismiss,
+    ) {
+        AddCounterDialogContent(
+            state =
+                AddCounterDialogContentState(
+                    name = name,
+                    selectedType = selectedType,
+                    isRepeating = isRepeating,
+                    repeatAtText = repeatAtText,
+                    isShaping = isShaping,
+                    startingStitchesText = startingStitchesText,
+                    stitchChangeText = stitchChangeText,
+                    shapeEveryNText = shapeEveryNText,
+                    isRepeatSection = isRepeatSection,
+                    repeatStartRowText = repeatStartRowText,
+                    repeatEndRowText = repeatEndRowText,
+                    totalRepeatsText = totalRepeatsText,
+                    stepSizeText = stepSizeText,
+                    linkedToMainCounter = linkedToMainCounter && canLinkToMainCounter,
+                    proState = proState,
+                    proAccessReady = proAccessReady,
+                ),
+            actions =
+                AddCounterDialogContentActions(
+                    onNameChange = { if (it.length <= ProjectCounterLogic.MAX_NAME_LENGTH) name = it },
+                    onProRequired = onProRequired,
+                    onTypeChange = { index ->
+                        selectedType = index
+                        if (index == 3) {
+                            linkedToMainCounter = false
+                        }
+                    },
+                    onRepeatAtChange = { repeatAtText = it },
+                    onStartingStitchesChange = { startingStitchesText = it },
+                    onStitchChangeChange = { stitchChangeText = it },
+                    onShapeEveryNChange = { shapeEveryNText = it },
+                    onRepeatStartRowChange = { repeatStartRowText = it },
+                    onRepeatEndRowChange = { repeatEndRowText = it },
+                    onTotalRepeatsChange = { totalRepeatsText = it },
+                    onStepSizeChange = { stepSizeText = it },
+                    onLinkedToMainCounterChange = { linkedToMainCounter = it && canLinkToMainCounter },
+                ),
+        )
+    }
 }
 
 internal fun parseCounterInput(
@@ -637,14 +635,11 @@ private fun AddCounterDialogContent(
     Column(
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        TextField(
+        LabeledTextField(
             value = state.name,
             onValueChange = actions.onNameChange,
-            label = { Text(stringResource(R.string.counter_name)) },
-            placeholder = { Text(stringResource(R.string.counter_name_hint)) },
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth(),
-            colors = dialogTextFieldColors(),
+            label = stringResource(R.string.counter_name),
+            placeholder = stringResource(R.string.counter_name_hint),
         )
         SegmentedToggle(
             options =

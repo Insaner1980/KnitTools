@@ -169,8 +169,8 @@ fun KnitToolsNavHost(
     val onboarding by onboardingViewModel.state.collectAsStateWithLifecycle()
     val completionMessage = onboarding.completionMessageRes?.let { stringResource(it) }
     LaunchedEffect(onboarding.required, completionMessage) {
-        if (onboarding.required == false && completionMessage != null) {
-            snackbarHostState?.showSnackbar(completionMessage)
+        completionMessage?.takeIf { onboarding.required == false }?.let { message ->
+            snackbarHostState?.showSnackbar(message)
             onboardingViewModel.acknowledgeCompletionMessage()
         }
     }
@@ -215,6 +215,11 @@ fun KnitToolsNavHost(
             ?.steps(widgetInstalled, fromOnboarding = trialJourney.fromOnboarding)
             .orEmpty()
     var journeyActionVersion by rememberSaveable { mutableIntStateOf(0) }
+    // Kun jokainen ehdotettu kohta on tehty, polku kuitataan: valmista listaa ei näytetä uudelleen.
+    val journeyComplete = journeySteps.isNotEmpty() && journeySteps.all { it.done }
+    LaunchedEffect(journeyComplete, trialJourney.pending) {
+        if (journeyComplete && trialJourney.pending) actions.onTrialJourneyHandled()
+    }
     var journeyDeferredEntry by rememberTrialJourneyDeferredEntry(navBackStackEntry?.id)
     val showTrialJourney =
         rememberTrialJourneyVisible(
@@ -237,6 +242,8 @@ fun KnitToolsNavHost(
             onConsume = actions.onTrialJourneyHandled,
         )
     val onJourneyAction: (TrialJourneyAction) -> Unit = { action ->
+        // Toiminto piilottaa sheetin vain hetkeksi: se palaa, kun käyttäjä palaa toiminnosta (myös peruttuaan),
+        // kunnes Close kuittaa polun tai kaikki kohdat on tehty.
         journeyActionVersion++
         navController.navigateFromTrialJourney(action, trialJourney.facts) { internalCounterLaunch = it }
         if (action == TrialJourneyAction.WeeklyChart) {

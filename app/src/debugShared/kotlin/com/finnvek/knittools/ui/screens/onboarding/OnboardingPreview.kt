@@ -66,7 +66,7 @@ object OnboardingPreview {
             ConfirmationDialog(
                 title = stringResource(R.string.onboarding_preview_purchase_title),
                 message = stringResource(R.string.onboarding_preview_purchase_message, price),
-                confirmText = stringResource(R.string.journey_continue_app),
+                confirmText = stringResource(R.string.ok),
                 onConfirm = onContinue,
                 onDismiss = onDismiss,
             )

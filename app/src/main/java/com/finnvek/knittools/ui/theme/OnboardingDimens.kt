@@ -8,6 +8,7 @@ object OnboardingDimens {
     val JourneyToolbarHeight = 48.dp
     val JourneyDemoUndoSize = 48.dp
     val JourneyDemoUndoTouchSize = 56.dp
+    val DemoPatternRowGap = 20.dp
     val JourneyDemoCounterSize = 80.dp
     val JourneySectionGap = 24.dp
     val JourneyDemoTouchSize = 88.dp
@@ -16,11 +17,28 @@ object OnboardingDimens {
     val CraftTileImageSize = 88.dp
     val CraftTileMinHeight = 104.dp
     val SelectionCheckSize = 24.dp
+    val SelectionBorderWidth = 1.5.dp
     const val STEP_TRANSITION_MILLIS = 320
     const val STEP_SLIDE_FRACTION = 0.15f
     const val CRAFT_ADVANCE_DELAY_MILLIS = 250L
     const val DEMO_NUMBER_MILLIS = 220
     const val DEMO_LINE_MILLIS = 360
+
+    // Työkalupakki: laattojen kuvakkeet ja kertaluontoiset elävät yksityiskohdat.
+    val ToolboxGlyphPadSize = 52.dp
+    val ToolboxGlyphSize = 36.dp
+    val ToolboxLineStroke = 2.5.dp
+    val ToolboxMoreOutline = DashedOutlineStyle(width = 1.dp, dash = 5.dp, gap = 4.dp, corner = 12.dp)
+    const val TOOLBOX_COLUMNS = 2
+    const val TOOLBOX_COMPACT_COLUMNS = 1
+    const val TOOLBOX_DETAIL_MILLIS = 900
+
+    // Laskurilaatan kuvake painuu kahdesti kuin plussaa napautettaessa.
+    const val TOOLBOX_PRESS_DEPTH = 0.14f
+    const val TOOLBOX_PRESS_COUNT = 2
+    const val TOOLBOX_LINE_FROM = 0.3f
+    const val TOOLBOX_LINE_TO = 0.72f
+    const val TOOLBOX_CHART_BASE = 0.15f
     val JourneyStackedBreakpoint = 320.dp
     val ExampleCardPadding = 16.dp
     val SketchWidth = 132.dp
@@ -31,7 +49,6 @@ object OnboardingDimens {
     val PlusVisualSize = 96.dp
     val PlusTouchSize = 104.dp
     val CaptionMinHeight = 48.dp
-    val CompactSwatchSize = 96.dp
     val CompletedProjectImageSize = 160.dp
     val ReadingLineWidth = 2.dp
     val PaperInset = 10.dp

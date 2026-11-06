@@ -15,7 +15,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
@@ -26,14 +25,13 @@ import com.finnvek.knittools.pro.ProFeature
 import com.finnvek.knittools.pro.ProState
 import com.finnvek.knittools.pro.ProStatus
 import com.finnvek.knittools.pro.proActionAccess
-import com.finnvek.knittools.ui.components.FabricKind
-import com.finnvek.knittools.ui.components.FabricSwatch
+import com.finnvek.knittools.ui.components.CraftIllustration
 import com.finnvek.knittools.ui.components.LabeledCounterImageButton
 import com.finnvek.knittools.ui.components.ProMarker
 import com.finnvek.knittools.ui.components.WelcomeExampleCard
 import com.finnvek.knittools.ui.components.proMarkerDescription
 import com.finnvek.knittools.ui.theme.ComponentDimens
-import com.finnvek.knittools.ui.theme.OnboardingDimens
+import com.finnvek.knittools.ui.theme.IllustrationDimens
 import com.finnvek.knittools.ui.theme.ProjectListDimens
 import com.finnvek.knittools.ui.theme.knitToolsColors
 
@@ -152,10 +150,10 @@ private fun CompactProjectsStartState(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(ComponentDimens.LargeContentPadding, Alignment.CenterVertically),
     ) {
-        FabricSwatch(
-            kind = if (isCrochet) FabricKind.CROCHET else FabricKind.KNIT,
-            color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(OnboardingDimens.CompactSwatchSize).clip(MaterialTheme.shapes.large),
+        // Sama savimainen kuvitus kuin onboardingissa; koodilla piirretty neulepintatilkku luki silmukkakuviona.
+        CraftIllustration(
+            imageRes = if (isCrochet) R.drawable.onboarding_craft_crochet else R.drawable.onboarding_craft_knit,
+            height = IllustrationDimens.EmptyStateHeight,
         )
         Text(
             text =

@@ -42,8 +42,8 @@
     <string name="project_start_count_label_repeats">Al gemaakte herhalingen</string>
     <!-- Kääntäjälle: projektin luontilomake. Aloitusmäärä tarkoittaa jo tehtyä työtä; tavoite on vapaaehtoinen. -->
     <string name="project_start_count_label_custom">Huidige tellerstand</string>
-    <!-- Kääntäjälle: projektin luontilomake. Aloitusmäärä tarkoittaa jo tehtyä työtä; tavoite on vapaaehtoinen. -->
-    <string name="project_start_count_help_new">Laat dit op 0 staan voor een nieuw project.</string>
+    <!-- Aloituslukeman apuri: oletus on 0, jo aloitetussa työssä käyttäjä kirjoittaa kuinka pitkällä on. -->
+    <string name="project_start_count_help_new">Al begonnen? Vul in hoe ver je bent.</string>
     <!-- Kääntäjälle: projektin luontilomake. Aloitusmäärä tarkoittaa jo tehtyä työtä; tavoite on vapaaehtoinen. Säilytä paikkamerkit %1$d muuttumattomina. -->
     <string name="project_start_count_next_rows">Hierna: toer %1$d</string>
     <!-- Kääntäjälle: projektin luontilomake. Aloitusmäärä tarkoittaa jo tehtyä työtä; tavoite on vapaaehtoinen. Säilytä paikkamerkit %1$d muuttumattomina. -->
@@ -472,7 +472,7 @@
     <!-- Aloituspolku: tervetulonäkymän otsikko, sovelluksen nimi. -->
     <string name="journey_welcome_title">Welkom bij KnitTools</string>
     <!-- Aloituspolku: lämmin yhden virkkeen esittely siitä, mikä KnitTools on. -->
-    <string name="journey_welcome_body">Een rustige metgezel voor breien en haken. Je telling, je plek in het patroon en al je projecten samen op je telefoon.</string>
+    <string name="journey_welcome_body">Een rustige metgezel voor breien en haken.</string>
     <!-- Aloituspolku: tervetulonäkymän hyöty, kerrosten laskeminen yhdellä napautuksella. -->
     <string name="journey_welcome_point_count">Tel toeren met één tik</string>
     <!-- Aloituspolku: tervetulonäkymän hyöty, kohta ohjeessa säilyy (lukulinja). -->
@@ -501,8 +501,8 @@
     <string name="journey_need_pattern">Mijn plek in het patroon</string>
     <!-- Aloituspolku: valinta, sovellus muistaa mihin työ jäi edellisellä kerralla. -->
     <string name="journey_need_returning">Waar ik de vorige keer gebleven was</string>
-    <!-- Aloituspolku: valinta, sovellus auttaa arvioimaan riittääkö lanka. -->
-    <string name="journey_need_yarn">Of mijn garen genoeg is</string>
+    <!-- Aloituspolku: valinta, sovellus auttaa arvioimaan tarvittavan lankamäärän (laskuri, ei seurantaa). -->
+    <string name="journey_need_yarn">Hoeveel garen ik nodig heb</string>
     <!-- Aloituspolku: valinta, sovellus pitää kirjaa kaikista keskeneräisistä töistä. -->
     <string name="journey_need_projects">Al mijn lopende projecten</string>
     <!-- Aloituspolku: lyhyt myönteinen kuittaus, joka näkyy kun vähintään yksi kohta on valittu. -->
@@ -525,6 +525,44 @@
     <string name="journey_demo_increase">Verhoog de voorbeeldteller met één</string>
     <!-- Aloituspolku: näkyy demon jälkeen jatka-kortin yläpuolella; sovellus avautuu samasta kohdasta. -->
     <string name="journey_demo_return">Kom terug wanneer je wilt. KnitTools opent precies waar je gebleven was.</string>
+    <!-- Aloituspolku: ohje demon alla ennen ensimmäistä napautusta. -->
+    <string name="journey_demo_hint">Tik twee keer op + en zie wat KnitTools onthoudt.</string>
+    <!-- Aloituspolku: demon paluukortin neutraali projektin nimi. -->
+    <string name="journey_demo_project_name">Je project</string>
+    <!-- Työkalupakkivaiheen otsikko laskuridemon jälkeen: laskuri on vasta yksi työkalu monista. -->
+    <string name="journey_toolbox_title">En dat is nog maar de teller</string>
+    <!-- Työkalupakkivaiheen johdanto otsikon alla. -->
+    <string name="journey_toolbox_body">Alles voor je projecten in één app.</string>
+    <!-- Työkalupakin And more -laatan teksti: muut toiminnot luettelona. -->
+    <string name="journey_toolbox_more">Ravelry-browser, maattabellen, afkortingen en mappen.</string>
+    <!-- Työkalupakin laatta: neulojan kerroslaskuri. -->
+    <string name="journey_tool_counter">Toerenteller</string>
+    <!-- Työkalupakin laatta: virkkaajan kierroslaskuri. -->
+    <string name="journey_tool_counter_crochet">Rondeteller</string>
+    <!-- Työkalupakin laatta: PDF-ohjeet lukulinjalla. -->
+    <string name="journey_tool_pattern">PDF-patronen</string>
+    <!-- Työkalupakin viimeisen laatan nimi; laatan teksti luettelee muita toimintoja. -->
+    <string name="journey_toolbox_and_more">En meer</string>
+    <!-- Kerroslaskurin laatan hyötyrivi neulojalle. -->
+    <string name="journey_tool_counter_body">Elke toer geteld, met ongedaan maken en stapgrootte.</string>
+    <!-- Kierroslaskurin laatan hyötyrivi virkkaajalle. -->
+    <string name="journey_tool_counter_body_crochet">Elke ronde geteld, met ongedaan maken en stapgrootte.</string>
+    <!-- PDF-ohjeiden laatan hyötyrivi: lukulinja seuraa kohtaa ohjeessa. -->
+    <string name="journey_tool_pattern_body">Een leeslijn volgt je toer.</string>
+    <!-- My Yarn -laatan hyötyrivi: lankavarasto ja projektien langankäyttö. -->
+    <string name="journey_tool_yarn_body">Je garenvoorraad en wat elk project gebruikt.</string>
+    <!-- Laskinten laatan hyötyrivi: neljä laskinta. -->
+    <string name="journey_tool_calculators_body">Opzetten, meerderen, stekenverhouding en benodigd garen.</string>
+    <!-- Tilastojen laatan hyötyrivi. -->
+    <string name="journey_tool_insights_body">Zie waar je tijd naartoe gaat.</string>
+    <!-- Työajan laatan hyötyrivi. -->
+    <string name="journey_tool_time_body">Houd de tijd van elke sessie bij.</string>
+    <!-- Kuvien laatan hyötyrivi. -->
+    <string name="journey_tool_photos_body">Voortgangsfoto\'s per project.</string>
+    <!-- Muistiinpanojen laatan hyötyrivi. -->
+    <string name="journey_tool_notes_body">Notities die bij het project blijven.</string>
+    <!-- Muistutusten laatan hyötyrivi. -->
+    <string name="journey_tool_reminders_body">Mis nooit meer de volgende mindering.</string>
     <!-- Aloituspolku: 1. krs: kaikki oikein -->
     <string name="journey_knit_row_one">Toer 1: alle steken recht</string>
     <!-- Aloituspolku: 2. krs: 2 o, 2 n, toista -->
@@ -557,18 +595,28 @@
     <string name="journey_attach_pdf">PDF-patroon toevoegen (optioneel)</string>
     <!-- Aloituspolku: Vaihda ohje -->
     <string name="journey_change_pdf">Patroon wijzigen</string>
-    <!-- Aloituspolku: Oman projektisi esikatselu -->
-    <string name="journey_preview">Voorbeeld van je project</string>
     <!-- Aloituspolku: Luo projekti -->
     <string name="journey_create_project">Project maken</string>
     <!-- Aloituspolku: otsikko heti projektin luonnin jälkeen; projekti on luotu ja käyttövalmis, ei valmistunut. -->
     <string name="journey_ready_title">Je project staat klaar</string>
     <!-- Aloituspolku: projekti on tallennettu puhelimeen ja löytyy Projektit-välilehdeltä (tab_projects). -->
     <string name="journey_ready_body">Het staat opgeslagen op deze telefoon. Open het wanneer je wilt via Projecten.</string>
+    <!-- Ready-vaiheen rivi liitetystä ohjeesta; %1$s on ohjeen siistitty nimi. -->
+    <string name="journey_ready_pattern">Patroon toegevoegd: %1$s</string>
     <!-- Aloituspolku: yleinen Jatka-painike. -->
     <string name="journey_continue">Doorgaan</string>
     <!-- Aloituspolku: hintavaiheen otsikko, Pro maksutta 14 päivää. Pidä lyhyenä. -->
     <string name="journey_trial_title">Probeer Pro 14 dagen gratis</string>
+    <!-- Hintalapun yläreunan nimike, kun julkaisutarjous on voimassa. -->
+    <string name="price_tag_launch_label">Introductieprijs</string>
+    <!-- Hintalapun yläreunan nimike ilman julkaisutarjousta; tuotteen nimi, ei käännetä. -->
+    <string name="price_tag_label">KnitTools Pro</string>
+    <!-- Hintalapun alennusmerkki: %1$s on alennusprosentti valmiiksi muotoiltuna, esim. 33 %. -->
+    <string name="price_tag_save">Bespaar %1$s</string>
+    <!-- Hintalapun ehdot: kertaosto ja julkaisuhinnan päättymispäivä %1$s. -->
+    <string name="price_tag_launch_terms">Eenmalige aankoop. Introductieprijs tot %1$s.</string>
+    <!-- Ruudunlukijan teksti yliviivatulle normaalihinnalle; %1$s on hinta. -->
+    <string name="price_tag_regular_a11y">Normale prijs %1$s</string>
     <!-- Aloituspolku: Ei maksutapaa. Ei automaattista veloitusta. -->
     <string name="journey_trial_terms">Geen betaalmethode nodig. Geen automatische afschrijving.</string>
     <!-- Aloituspolku: Näin kokeilu etenee -->
@@ -587,16 +635,6 @@
     <string name="journey_day_fourteen_body">Je proefperiode eindigt. Er wordt niets afgeschreven.</string>
     <!-- Aloituspolku: Kaikki tekemäsi jää sinulle, myös kokeilun aikana aloitetut projektit. -->
     <string name="journey_keep_content">Alles wat je hebt gemaakt blijft van jou, ook projecten die je tijdens de proefperiode bent begonnen.</string>
-    <!-- Aloituspolku: Sen jälkeen jatkat ilmaisella versiolla tai ostat Pron kertamaksulla. -->
-    <string name="journey_after_trial">Daarna ga je verder met de gratis versie of koop je Pro met een eenmalige betaling.</string>
-    <!-- Aloituspolku: Tai osta heti julkaisuhintaan -->
-    <string name="journey_buy_launch_title">Of koop nu voor de introductieprijs</string>
-    <!-- Aloituspolku: Tai osta Pro heti -->
-    <string name="journey_buy_title">Of koop Pro meteen</string>
-    <!-- Kertaoston julkaisutarjous. %1$s on tarjouksen loppupäivä, %2$s vahvistettu tavallinen hinta. Kokeilu ei pidennä tarjousta. -->
-    <string name="journey_launch_terms">Introductieprijs tot %1$s, ook tijdens je proefperiode. Daarna %2$s.</string>
-    <!-- Aloituspolku: Maksat kerran. Ei tilausta, ei kuukausimaksuja. -->
-    <string name="journey_one_time">Betaal één keer. Geen abonnement of maandelijkse kosten.</string>
     <!-- Google Play -ostovahvistuksen avaava toiminto. %1$s on vahvistettu paikallinen hinta valuuttoineen. -->
     <string name="journey_buy_price">Kopen voor %1$s</string>
     <!-- Aloituspolku: Aloita ilmainen kokeilu -->

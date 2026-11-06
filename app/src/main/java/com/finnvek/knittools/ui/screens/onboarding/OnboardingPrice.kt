@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.HorizontalDivider
@@ -25,15 +26,12 @@ import com.finnvek.knittools.domain.model.proGroupOrder
 import com.finnvek.knittools.pro.ProState
 import com.finnvek.knittools.ui.components.CancelButton
 import com.finnvek.knittools.ui.components.CraftIllustration
-import com.finnvek.knittools.ui.components.formatOfferFullPrice
-import com.finnvek.knittools.ui.components.rememberCurrentLocale
-import com.finnvek.knittools.ui.components.rememberLocaleDateFormat
+import com.finnvek.knittools.ui.components.LaunchPriceTag
 import com.finnvek.knittools.ui.screens.pro.ProAddsSection
 import com.finnvek.knittools.ui.screens.pro.ProFreeForeverSection
 import com.finnvek.knittools.ui.theme.ComponentDimens
 import com.finnvek.knittools.ui.theme.IllustrationDimens
 import com.finnvek.knittools.ui.theme.OnboardingDimens
-import java.util.Date
 
 data class OnboardingPriceState(
     val ready: Boolean = false,
@@ -57,13 +55,22 @@ internal fun JourneyPriceActions(
     actions: OnboardingActions,
 ) {
     when (price.mode) {
+        // Ostopainike on hintalapun sisällä; kokeilu on alapalkissa reunustettuna, jotta lappu ei kilpaile
+        // toisen täytetyn oranssin painikkeen kanssa.
         OnboardingPriceMode.Trial ->
-            JourneyPrimaryButton(
-                stringResource(R.string.journey_start_trial),
-                !busy,
-                actions.startTrial,
-                Modifier.testTag("onboarding_start_trial"),
-            )
+            OutlinedButton(
+                onClick = actions.startTrial,
+                enabled = !busy,
+                shape = MaterialTheme.shapes.medium,
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.onSurface),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = ComponentDimens.FormSheetActionMinHeight)
+                        .testTag("onboarding_start_trial"),
+            ) {
+                Text(stringResource(R.string.journey_start_trial), style = MaterialTheme.typography.titleMedium)
+            }
         OnboardingPriceMode.Purchase ->
             JourneyPrimaryButton(
                 stringResource(R.string.journey_buy_price, price.confirmedOffer?.formattedPrice.orEmpty()),
@@ -86,22 +93,6 @@ internal fun JourneyPriceActions(
             )
         OnboardingPriceMode.Skip -> Unit
     }
-    if (price.mode == OnboardingPriceMode.Trial || price.mode == OnboardingPriceMode.Continue) {
-        price.confirmedOffer?.let { offer ->
-            OutlinedButton(
-                onClick = actions.purchase,
-                enabled = !busy && !price.purchaseBusy && !price.pending,
-                modifier = Modifier.fillMaxWidth().testTag("onboarding_buy_inline"),
-                shape = MaterialTheme.shapes.medium,
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.onSurface),
-            ) {
-                Text(
-                    stringResource(R.string.journey_buy_price, offer.formattedPrice),
-                    style = MaterialTheme.typography.titleMedium,
-                )
-            }
-        }
-    }
     if (price.mode != OnboardingPriceMode.Continue) {
         CancelButton(
             onClick = actions.finish,
@@ -116,6 +107,8 @@ internal fun JourneyPriceActions(
 internal fun JourneyPriceContent(
     draft: OnboardingDraft,
     price: OnboardingPriceState,
+    busy: Boolean,
+    onPurchase: () -> Unit,
 ) {
     if (!price.ready || price.mode == OnboardingPriceMode.Skip) {
         JourneyTitle(stringResource(R.string.journey_continue_title))
@@ -141,8 +134,18 @@ internal fun JourneyPriceContent(
         Text(stringResource(R.string.journey_trial_terms), style = MaterialTheme.typography.bodyLarge)
     }
     OnboardingPreview.Notice()
+    // Hintalappu heti otsikon alla, jotta hinta ja julkaisualennus näkyvät ilman vieritystä.
+    price.confirmedOffer?.let { offer ->
+        LaunchPriceTag(
+            offer = offer,
+            // Ilman kokeilua osto on alapalkin päätoiminto, joten lapussa ei ole toista ostopainiketta.
+            onBuy = onPurchase.takeIf { price.mode != OnboardingPriceMode.Purchase },
+            buyEnabled = !busy && !price.pending,
+            buyInFlight = price.purchaseBusy,
+            buyTestTag = "onboarding_buy_inline",
+        )
+    }
     ProAddsSection(order = proGroupOrder(draft.needs))
-    price.confirmedOffer?.let { offer -> JourneyOfferDetails(offer) }
     if (price.mode == OnboardingPriceMode.Trial) {
         Text(stringResource(R.string.journey_timeline_title), style = MaterialTheme.typography.titleLarge)
         Column(verticalArrangement = Arrangement.spacedBy(ComponentDimens.ContentSpacing)) {
@@ -157,7 +160,6 @@ internal fun JourneyPriceContent(
             )
         }
         Text(stringResource(R.string.journey_keep_content), style = MaterialTheme.typography.bodyLarge)
-        Text(stringResource(R.string.journey_after_trial), style = MaterialTheme.typography.bodyLarge)
     }
     if (price.mode == OnboardingPriceMode.Continue) {
         Text(
@@ -177,34 +179,6 @@ internal fun JourneyPriceContent(
     }
     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
     ProFreeForeverSection()
-}
-
-@Composable
-private fun JourneyOfferDetails(offer: SelectedOneTimeOffer) {
-    Text(
-        stringResource(
-            if (offer.launchDetails != null) R.string.journey_buy_launch_title else R.string.journey_buy_title,
-        ),
-        style = MaterialTheme.typography.titleLarge,
-    )
-    Text(
-        offer.formattedPrice,
-        style = MaterialTheme.typography.displaySmall,
-        color = MaterialTheme.colorScheme.onSurface,
-    )
-    Text(stringResource(R.string.journey_one_time), style = MaterialTheme.typography.bodyLarge)
-    offer.launchDetails?.let { launch ->
-        val date = rememberLocaleDateFormat("yMMMd").format(Date(launch.endsAtMillis))
-        val fullPrice = formatOfferFullPrice(offer, rememberCurrentLocale())
-        Text(
-            if (fullPrice != null) {
-                stringResource(R.string.journey_launch_terms, date, fullPrice)
-            } else {
-                stringResource(R.string.pro_launch_ends_at, date)
-            },
-            style = MaterialTheme.typography.bodyLarge,
-        )
-    }
 }
 
 @Composable

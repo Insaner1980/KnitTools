@@ -273,7 +273,7 @@ private fun MediumWidget(
     data: WidgetData,
     projectId: Long?,
 ) {
-    WidgetCard(projectId = projectId) {
+    WidgetCard(projectId = projectId, verticalPadding = mediumVerticalPadding()) {
         WidgetProjectName(data = data, fontSize = CounterWidgetDimens.NameSize, textAlign = TextAlign.Center)
         Spacer(modifier = GlanceModifier.defaultWeight())
         WidgetCount(
@@ -324,6 +324,10 @@ private fun LargeWidget(
         Spacer(modifier = GlanceModifier.defaultWeight())
     }
 }
+
+/** Neliön pehmuste: aina tiiviimpi kuin muissa koissa, isolla fontilla sama minimi kuin muualla. */
+@androidx.compose.runtime.Composable
+private fun mediumVerticalPadding(): Dp = minOf(widgetVerticalPadding(), CounterWidgetDimens.MediumVerticalPadding)
 
 @androidx.compose.runtime.Composable
 private fun widgetVerticalPadding(): Dp =

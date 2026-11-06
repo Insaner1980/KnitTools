@@ -3,9 +3,6 @@ package com.finnvek.knittools.ui.screens.pro
 import android.graphics.Bitmap
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.graphics.asAndroidBitmap
-import androidx.compose.ui.semantics.ProgressBarRangeInfo
-import androidx.compose.ui.semantics.SemanticsProperties
-import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertHasNoClickAction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.captureToImage
@@ -122,13 +119,8 @@ class TrialJourneyUiTest {
             }
         }
         compose.onNodeWithText(app.getString(R.string.trial_started_screen_title)).assertIsDisplayed()
-        compose
-            .onNode(
-                SemanticsMatcher.expectValue(
-                    SemanticsProperties.ProgressBarRangeInfo,
-                    ProgressBarRangeInfo(1f, 0f..5f),
-                ),
-            ).assertExists()
+        // Edistyminen on tekstinä; kudottu StitchProgressRow ja sen edistymispalkkisemantiikka poistettiin.
+        compose.onNodeWithText(app.getString(R.string.trial_journey_progress, 1, steps.size)).assertExists()
         compose.onNodeWithText(app.getString(R.string.trial_action_widget)).assertHasNoClickAction()
         captureIfRequested("phase9-journey-light", dialog = true)
         compose.runOnIdle { dark.value = true }
@@ -171,6 +163,8 @@ class TrialJourneyUiTest {
         captureIfRequested("phase9-pro-light")
         compose.runOnIdle { dark.value = true }
         captureIfRequested("phase9-pro-dark")
+        // Free Forever on tiivis rivi: lista avautuu vasta Show all -painikkeesta.
+        compose.onNodeWithText(app.getString(R.string.onboarding_pro_free_show_all)).performScrollTo().performClick()
         compose.onNodeWithText(app.getString(R.string.onboarding_pro_free_backup)).performScrollTo().assertIsDisplayed()
         compose
             .onNodeWithText(

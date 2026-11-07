@@ -14,6 +14,8 @@ import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertIsNotSelected
+import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.junit4.v2.createComposeRule
@@ -197,6 +199,19 @@ class OnboardingScreenTest(
             compose.onNodeWithTag("onboarding_demo_return").performScrollTo().assertIsDisplayed()
             capture("counter", isDark)
             compose.onNodeWithTag("onboarding_next").performClick()
+            intactText(R.string.journey_toolbox_title)
+            // Needs-vaiheessa valittu lanka on ruudukon ensimmäinen ja merkitty valituksi.
+            compose
+                .onNodeWithTag("onboarding_tool_Yarn")
+                .performScrollTo()
+                .assertIsDisplayed()
+                .assertIsSelected()
+            compose.onNodeWithTag("onboarding_tool_Counter").assertIsNotSelected()
+            compose.onNodeWithTag("onboarding_tool_Counter").assertExists()
+            compose.onNodeWithTag("onboarding_tool_Reminders").performScrollTo().assertIsDisplayed()
+            compose.onNodeWithTag("onboarding_tool_more").performScrollTo().assertIsDisplayed()
+            capture("toolbox", isDark)
+            compose.onNodeWithTag("onboarding_next").performClick()
             intactText(R.string.journey_project_title)
             compose.onNodeWithTag("onboarding_project_name").assert(
                 SemanticsMatcher.expectValue(
@@ -223,6 +238,8 @@ class OnboardingScreenTest(
             }
             intactText(R.string.journey_ready_title)
             intactText(R.string.journey_ready_body)
+            // Yhteenveto kertoo seuraavan rivin eikä näytä napautettavaa jatka-korttia.
+            compose.onNodeWithText(context.getString(R.string.project_start_count_next_rows, 1)).assertExists()
             compose.onNodeWithTag("onboarding_back").assertDoesNotExist()
             capture("ready", isDark)
             compose.onNodeWithTag("onboarding_next").assertIsEnabled().performClick()
@@ -240,10 +257,18 @@ class OnboardingScreenTest(
             }
             intactText(R.string.journey_trial_title)
             compose.onNodeWithTag("onboarding_start_trial").assertIsDisplayed().assertIsEnabled()
-            compose.onNodeWithTag("onboarding_buy_inline").assertIsDisplayed().assertIsEnabled()
+            compose
+                .onNodeWithTag("onboarding_buy_inline")
+                .performScrollTo()
+                .assertIsDisplayed()
+                .assertIsEnabled()
             intactText(R.string.journey_today_body)
             capture("price", isDark)
-            compose.onNodeWithTag("onboarding_buy_inline").assertIsDisplayed().assertIsEnabled()
+            compose
+                .onNodeWithTag("onboarding_buy_inline")
+                .performScrollTo()
+                .assertIsDisplayed()
+                .assertIsEnabled()
             compose.runOnIdle {
                 price.value = price.value.copy(pro = ProState(status = ProStatus.TRIAL_EXPIRED))
             }

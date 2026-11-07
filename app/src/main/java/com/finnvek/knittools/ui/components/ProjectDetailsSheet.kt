@@ -397,16 +397,24 @@ private fun projectStartCountHelp(
     if (count == 0) {
         stringResource(R.string.project_start_count_help_new)
     } else {
-        stringResource(
-            when (type) {
-                MainCounterLabelType.ROWS -> R.string.project_start_count_next_rows
-                MainCounterLabelType.ROUNDS -> R.string.project_start_count_next_rounds
-                MainCounterLabelType.REPEATS -> R.string.project_start_count_next_repeats
-                MainCounterLabelType.CUSTOM -> R.string.project_start_count_next_custom
-            },
-            count + 1,
-        )
+        projectNextUpText(count, type)
     }
+
+/** "Next up: row 4": seuraava rivi lukeman ja yksikön mukaan; jaettu onboardingin Ready-vaiheen kanssa. */
+@Composable
+internal fun projectNextUpText(
+    count: Int,
+    type: MainCounterLabelType,
+): String =
+    stringResource(
+        when (type) {
+            MainCounterLabelType.ROWS -> R.string.project_start_count_next_rows
+            MainCounterLabelType.ROUNDS -> R.string.project_start_count_next_rounds
+            MainCounterLabelType.REPEATS -> R.string.project_start_count_next_repeats
+            MainCounterLabelType.CUSTOM -> R.string.project_start_count_next_custom
+        },
+        count + 1,
+    )
 
 private fun updatedLabelTypeForCraftChange(
     currentLabelType: MainCounterLabelType,

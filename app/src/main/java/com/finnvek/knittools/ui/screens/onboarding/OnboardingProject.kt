@@ -2,12 +2,10 @@ package com.finnvek.knittools.ui.screens.onboarding
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -22,11 +20,9 @@ import com.finnvek.knittools.domain.calculator.TargetInput
 import com.finnvek.knittools.domain.calculator.formatIntegerForDisplay
 import com.finnvek.knittools.domain.calculator.parseProjectStartCount
 import com.finnvek.knittools.domain.calculator.parseTargetRows
-import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.domain.model.CraftType
 import com.finnvek.knittools.domain.model.OnboardingDraft
 import com.finnvek.knittools.domain.model.PatternDisplayNames
-import com.finnvek.knittools.ui.components.ContinueProjectCard
 import com.finnvek.knittools.ui.components.LabeledTextField
 import com.finnvek.knittools.ui.components.NumberInputField
 import com.finnvek.knittools.ui.components.NumberInputOptions
@@ -43,7 +39,6 @@ internal fun JourneyProject(
     val count = parseProjectStartCount(draft.initialCount)
     val target = parseTargetRows(draft.targetRows)
     val locale = rememberCurrentLocale()
-    val canCreate = !busy && draft.name.isNotBlank() && count != null && target != TargetInput.Invalid
     JourneyTitle(
         stringResource(if (crochet) R.string.journey_project_crochet_title else R.string.journey_project_title),
     )
@@ -76,73 +71,87 @@ internal fun JourneyProject(
         inputModifier = Modifier.testTag("onboarding_project_count"),
     )
     Text(stringResource(R.string.project_start_count_help_new), style = MaterialTheme.typography.bodyLarge)
-    TextButton(
-        onClick = { actions.edit { it.copy(showOptions = !it.showOptions) } },
-        enabled = !busy,
-        contentPadding = ComponentDimens.FlushTextButtonPadding,
-    ) {
-        Text(stringResource(R.string.journey_options), style = MaterialTheme.typography.titleMedium)
-    }
-    if (draft.showOptions || target == TargetInput.Invalid) {
-        NumberInputField(
-            value = draft.targetRows,
-            onValueChange = { value -> actions.edit { it.copy(targetRows = value) } },
-            label = stringResource(R.string.project_target_label),
-            options = NumberInputOptions(readOnly = busy, isLast = true),
-            errorMessage =
-                if (target ==
-                    TargetInput.Invalid
-                ) {
-                    stringResource(
-                        R.string.project_target_error,
-                        formatIntegerForDisplay(MAX_TARGET_ROWS.toLong(), locale),
-                    )
-                } else {
-                    null
-                },
-            inputModifier = Modifier.testTag("onboarding_project_target"),
-        )
-    }
-    if (draft.pdfUri == null) {
+    // Lisävalinnat ja PDF ovat yksi tiivis ryhmä: osioiden väli erotti ne turhaan toisistaan.
+    Column(verticalArrangement = Arrangement.spacedBy(ComponentDimens.CompactSpacing)) {
+        val optionsOpen = draft.showOptions || target == TargetInput.Invalid
         TextButton(
-            onClick = actions.selectPdf,
-            enabled = !busy,
+            onClick = { actions.edit { it.copy(showOptions = !it.showOptions) } },
+            enabled = !busy && target != TargetInput.Invalid,
             contentPadding = ComponentDimens.FlushTextButtonPadding,
         ) {
-            Text(stringResource(R.string.journey_attach_pdf), style = MaterialTheme.typography.titleMedium)
+            Text(
+                stringResource(
+                    if (optionsOpen) R.string.project_create_fewer_options else R.string.journey_options,
+                ),
+                style = MaterialTheme.typography.titleMedium,
+            )
         }
-    } else {
-        JourneyBenefitCard {
-            // Tiedostonimi siistitään samoin kuin muualla sovelluksessa.
-            Text(PatternDisplayNames.forDisplay(draft.pdfName.orEmpty()), style = MaterialTheme.typography.bodyLarge)
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(ComponentDimens.StandardSpacing)) {
-                TextButton(
-                    onClick = actions.selectPdf,
-                    enabled = !busy,
-                    contentPadding = ComponentDimens.FlushTextButtonPadding,
-                ) { Text(stringResource(R.string.journey_change_pdf)) }
-                IconButton(onClick = actions.removePdf, enabled = !busy) {
-                    Icon(Icons.Default.Close, stringResource(R.string.remove_pattern))
-                }
+        if (optionsOpen) {
+            NumberInputField(
+                value = draft.targetRows,
+                onValueChange = { value -> actions.edit { it.copy(targetRows = value) } },
+                label = stringResource(R.string.project_target_label),
+                options = NumberInputOptions(readOnly = busy, isLast = true),
+                errorMessage =
+                    if (target == TargetInput.Invalid) {
+                        stringResource(
+                            R.string.project_target_error,
+                            formatIntegerForDisplay(MAX_TARGET_ROWS.toLong(), locale),
+                        )
+                    } else {
+                        null
+                    },
+                inputModifier = Modifier.testTag("onboarding_project_target"),
+            )
+            Text(
+                stringResource(R.string.project_target_help),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        if (draft.pdfUri == null) {
+            TextButton(
+                onClick = actions.selectPdf,
+                enabled = !busy,
+                contentPadding = ComponentDimens.FlushTextButtonPadding,
+            ) {
+                Text(stringResource(R.string.journey_attach_pdf), style = MaterialTheme.typography.titleMedium)
             }
+        } else {
+            JourneyAttachedPdf(draft.pdfName.orEmpty(), busy, actions)
         }
     }
-    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(ComponentDimens.StandardSpacing)) {
-        Text(stringResource(R.string.journey_preview), style = MaterialTheme.typography.bodyMedium)
-        ContinueProjectCard(
-            project =
-                CounterProject(
-                    name = draft.name.ifBlank { stringResource(R.string.project_name_label) },
-                    count = count ?: 0,
-                    targetRows = (target as? TargetInput.Valid)?.value,
-                    craftType = draft.craftType,
-                    mainCounterLabelType = draft.craftType.defaultMainCounterLabelType(),
-                ),
-            sessionStatus = null,
-            onClick = actions.create,
-            onClickLabel = stringResource(R.string.journey_create_project),
-            onOpenCounter = actions.create,
-            enabled = canCreate,
+    // Ei esikatselukorttia: se jäi alapainikkeen alle, ja Ready-vaihe näyttää saman kortin heti perään.
+}
+
+/** Liitetty PDF hiusviivojen välissä: nimi ja tekstitoiminnot ilman korttia tai ikonipainiketta. */
+@Composable
+private fun JourneyAttachedPdf(
+    pdfName: String,
+    busy: Boolean,
+    actions: OnboardingActions,
+) {
+    // Väli erottaa liitetyn ohjeen yläpuolisesta apuritekstistä, joka muuten jäi kiinni hiusviivaan.
+    Column(Modifier.fillMaxWidth().padding(top = ComponentDimens.StandardSpacing)) {
+        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+        // Tiedostonimi siistitään samoin kuin muualla sovelluksessa.
+        Text(
+            PatternDisplayNames.forDisplay(pdfName),
+            style = MaterialTheme.typography.bodyLarge,
+            modifier = Modifier.fillMaxWidth().padding(top = ComponentDimens.StandardSpacing),
         )
+        Row(horizontalArrangement = Arrangement.spacedBy(ComponentDimens.ContentSpacing)) {
+            TextButton(
+                onClick = actions.selectPdf,
+                enabled = !busy,
+                contentPadding = ComponentDimens.FlushTextButtonPadding,
+            ) { Text(stringResource(R.string.journey_change_pdf)) }
+            TextButton(
+                onClick = actions.removePdf,
+                enabled = !busy,
+                contentPadding = ComponentDimens.FlushTextButtonPadding,
+            ) { Text(stringResource(R.string.remove_pattern)) }
+        }
+        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
     }
 }

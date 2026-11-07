@@ -25,6 +25,10 @@ private const val ROUNDED_END_ROW = "..XXXXX.."
 private const val EMPTY_WIDE_ROW = "X.......X"
 private const val EMPTY_NARROW_ROW = "X.....X"
 private const val ROUNDED_SIDE_ROW = ".X.....X."
+private const val FULL_ROW = "XXXXXXXXX"
+private const val KEY_ROW = "X.X.X.X.X"
+private const val EMPTY_ROW = "........."
+private const val CHART_BAR_ROW = ".X..X..X."
 
 /**
  * Projektin sisällön kuvakkeet ristipistoina. X on ääriviivan pisto, o himmeämpi täytepisto ja
@@ -44,7 +48,7 @@ enum class CrossStitchGlyph(
             "X..ooo..X",
             CENTER_FILL_ROW,
             EMPTY_WIDE_ROW,
-            "XXXXXXXXX",
+            FULL_ROW,
         ),
     ),
 
@@ -76,14 +80,14 @@ enum class CrossStitchGlyph(
     ),
     PHOTOS(
         listOf(
-            "XXXXXXXXX",
+            FULL_ROW,
             EMPTY_WIDE_ROW,
             "X.....o.X",
             EMPTY_WIDE_ROW,
             "X..o....X",
             "X.ooo.o.X",
             "XoooooooX",
-            "XXXXXXXXX",
+            FULL_ROW,
         ),
     ),
 
@@ -96,8 +100,8 @@ enum class CrossStitchGlyph(
             ROUNDED_SIDE_ROW,
             ROUNDED_SIDE_ROW,
             EMPTY_WIDE_ROW,
-            "XXXXXXXXX",
-            ".........",
+            FULL_ROW,
+            EMPTY_ROW,
             "...XXX...",
         ),
     ),
@@ -127,6 +131,36 @@ enum class CrossStitchGlyph(
             ROUNDED_END_ROW,
         ),
     ),
+
+    // Laskin: näyttörivi ja kaksi näppäinriviä; käytetään onboardingin työkalupakissa.
+    CALCULATOR(
+        listOf(
+            FULL_ROW,
+            EMPTY_WIDE_ROW,
+            "X.ooooo.X",
+            EMPTY_WIDE_ROW,
+            KEY_ROW,
+            EMPTY_WIDE_ROW,
+            KEY_ROW,
+            EMPTY_WIDE_ROW,
+            FULL_ROW,
+        ),
+    ),
+
+    // Pylväät perusviivalla kuten Insightsin kaaviossa.
+    CHART(
+        listOf(
+            ".......X.",
+            ".......X.",
+            "....X..X.",
+            "....X..X.",
+            CHART_BAR_ROW,
+            CHART_BAR_ROW,
+            CHART_BAR_ROW,
+            EMPTY_ROW,
+            FULL_ROW,
+        ),
+    ),
 }
 
 /** Kuvakkeen oma korostusväri teematokeneista; laskurin laatta ja projektinäkymän rivi jakavat sen. */
@@ -140,6 +174,8 @@ fun CrossStitchGlyph.accentColor(): Color =
         CrossStitchGlyph.REMINDER -> MaterialTheme.knitToolsColors.tealAccent
         CrossStitchGlyph.COUNTER -> MaterialTheme.colorScheme.primary
         CrossStitchGlyph.CLOCK -> MaterialTheme.knitToolsColors.tealAccent
+        CrossStitchGlyph.CALCULATOR -> MaterialTheme.colorScheme.secondary
+        CrossStitchGlyph.CHART -> MaterialTheme.colorScheme.tertiary
     }
 
 /** Koristekuvake: merkitys tulee aina viereisestä tekstistä, joten sillä ei ole omaa kuvausta. */

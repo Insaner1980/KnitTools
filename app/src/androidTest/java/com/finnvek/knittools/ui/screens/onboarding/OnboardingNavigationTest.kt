@@ -69,6 +69,7 @@ class OnboardingNavigationTest {
         waitForStep(R.string.journey_needs_title)
         nextTo(R.string.journey_counter_title)
         compose.onNodeWithTag("onboarding_demo_plus").performScrollTo().performClick()
+        nextTo(R.string.journey_toolbox_title)
         nextTo(R.string.journey_project_title)
         compose.onNodeWithTag("onboarding_next").assertIsNotEnabled()
         compose.onNodeWithTag("onboarding_project_name").performTextInput("Onboarding test")

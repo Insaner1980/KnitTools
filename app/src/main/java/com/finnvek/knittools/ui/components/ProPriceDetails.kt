@@ -27,11 +27,9 @@ internal fun ProPriceDetails(
     trialAvailable: Boolean,
     onRetry: () -> Unit,
     modifier: Modifier = Modifier,
-    // Pro-sivulla hinta on näkyvä otsikko ja kertaostoteksti sen alla; kehotteissa tiivis rivi.
-    prominent: Boolean = false,
 ) {
     Column(modifier, verticalArrangement = Arrangement.spacedBy(ComponentDimens.StandardSpacing)) {
-        if (!prominent) Text(stringResource(R.string.one_time_purchase), style = MaterialTheme.typography.bodySmall)
+        Text(stringResource(R.string.one_time_purchase), style = MaterialTheme.typography.bodySmall)
         when {
             productStatus == BillingProductStatus.Available && offer != null -> {
                 val launch = offer.launchDetails
@@ -40,12 +38,8 @@ internal fun ProPriceDetails(
                         if (launch == null) R.string.pro_current_price else R.string.pro_launch_price,
                         offer.formattedPrice,
                     ),
-                    style =
-                        if (prominent) MaterialTheme.typography.headlineSmall else MaterialTheme.typography.titleMedium,
+                    style = MaterialTheme.typography.titleMedium,
                 )
-                if (prominent) {
-                    Text(stringResource(R.string.one_time_purchase), style = MaterialTheme.typography.bodyMedium)
-                }
                 if (launch != null) {
                     val dateFormat = rememberLocaleDateFormat("yMMMdssz", includeTime = true)
                     Text(stringResource(R.string.pro_launch_ends_at, dateFormat.format(Date(launch.endsAtMillis))))

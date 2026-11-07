@@ -17,6 +17,10 @@ object CounterWidgetDimens {
 
     val HorizontalPadding = 14.dp
     val VerticalPadding = 8.dp
+
+    // Neliössä nimi, luku, palkki, yksikkörivi ja 48 dp:n napit täyttävät 160 dp:n korkeuden: fonttikoolla 1,15
+    // 8 dp:n pehmuste ja 34 sp:n luku leikkasivat nappirivin noin 5 dp:llä.
+    val MediumVerticalPadding = 4.dp
     val SmallHorizontalPadding = 10.dp
     val LargeFontVerticalPadding = 2.dp
 
@@ -29,7 +33,7 @@ object CounterWidgetDimens {
     val CaptionSize = 10.sp
     val SmallCountSize = 22.sp
     val StackedCountSize = 28.sp
-    val CountSize = 34.sp
+    val CountSize = 30.sp
     val LargeCountSize = 48.sp
     val ProPromptSize = 12.sp
 }

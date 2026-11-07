@@ -5,10 +5,11 @@ import androidx.compose.ui.unit.dp
 /** Savimaisten kuvitusten ja hienovaraisten sisääntuloanimaatioiden mitat (onboarding ja Pro-sivu). */
 object IllustrationDimens {
     val Height = 220.dp
-    val WelcomeHeight = 160.dp
+    val WelcomeHeight = 140.dp
     val CompactHeight = 170.dp
     val ProPageHeight = 150.dp
-    val LogoSize = 88.dp
+    val LogoSize = 128.dp
+    val EmptyStateHeight = 140.dp
     val Rise = 16.dp
     val EntranceRise = 10.dp
     const val ENTER_MILLIS = 450

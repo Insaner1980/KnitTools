@@ -34,15 +34,29 @@ function Get-RepositoryRoot {
     }
 }
 
+function Get-SonarCliPath {
+    $cli = Get-Command sonar.exe -CommandType Application -ErrorAction SilentlyContinue
+    if ($null -ne $cli) {
+        return $cli.Source
+    }
+    if (-not [string]::IsNullOrWhiteSpace($env:LOCALAPPDATA)) {
+        $localCli = Join-Path $env:LOCALAPPDATA "sonarqube-cli/bin/sonar.exe"
+        if (Test-Path -LiteralPath $localCli -PathType Leaf) {
+            return $localCli
+        }
+    }
+    return $null
+}
+
 function Invoke-SonarCli {
     param([string[]]$Arguments)
 
-    $cli = Get-Command sonar.exe -CommandType Application -ErrorAction SilentlyContinue
-    if ($null -eq $cli) {
-        throw "sonar.exe ei löytynyt PATHista."
+    $cliPath = Get-SonarCliPath
+    if ($null -eq $cliPath) {
+        throw "SonarQube CLI ei löytynyt."
     }
 
-    & $cli.Source @Arguments
+    & $cliPath @Arguments
     exit $(if ($null -ne $global:LASTEXITCODE) { [int]$global:LASTEXITCODE } else { 0 })
 }
 
@@ -196,8 +210,8 @@ try {
         exit 2
     }
 
-    $cli = Get-Command sonar.exe -CommandType Application -ErrorAction SilentlyContinue
-    if ($null -eq $cli) {
+    $cliPath = Get-SonarCliPath
+    if ($null -eq $cliPath) {
         Add-Content -LiteralPath $scanReport -Encoding utf8 -Value "NOT_APPLICABLE: sonar.exe issue export is unavailable."
         exit 0
     }
@@ -205,7 +219,7 @@ try {
     try {
         Import-SharedCheckerModule -ModuleName "SonarProjectChecks"
         Invoke-SonarIssueExport `
-            -Executable $cli.Source `
+            -Executable $cliPath `
             -Arguments @("list", "issues", "--project", $projectKey, "--statuses", "OPEN,CONFIRMED", "--format", "json") `
             -WorkingDirectory $repoRoot `
             -ReportPath $issuesReport | Out-Null

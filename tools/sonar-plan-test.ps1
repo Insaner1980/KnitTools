@@ -49,7 +49,28 @@ exit $LASTEXITCODE
         Write-Output "PASS: $arguments (exit $($case.Exit))"
     }
     if ((Get-Content (Join-Path $fixture 'cli-called') -Raw).Trim() -ne 'status') { throw 'CLI arguments changed' }
-    Write-Output 'sonar-plan-test: 6 passed; CLI stub only; no external upload'
+    $resolver = [System.Management.Automation.Language.Parser]::ParseFile(
+        (Join-Path $PSScriptRoot 'sonar.ps1'), [ref]$null, [ref]$null
+    ).Find({ param($node) $node -is [System.Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -eq 'Get-SonarCliPath' }, $true)
+    if ($null -eq $resolver) { throw 'Local Sonar CLI resolution is unavailable' }
+    & {
+        param($FixtureRoot, $ResolverText)
+        function Get-Command { param($Name, $CommandType, $ErrorAction) return $null }
+        . ([scriptblock]::Create($ResolverText))
+        $originalLocalAppData = $env:LOCALAPPDATA
+        try {
+            $env:LOCALAPPDATA = Join-Path $FixtureRoot 'local-app-data'
+            $localCli = Join-Path $env:LOCALAPPDATA 'sonarqube-cli/bin/sonar.exe'
+            New-Item -ItemType Directory -Path (Split-Path -Parent $localCli) | Out-Null
+            Set-Content -LiteralPath $localCli -Value 'fixture executable; never invoked'
+            if ((Get-SonarCliPath) -ne $localCli) { throw 'Installed CLI outside PATH was not resolved' }
+            Write-Output 'PASS: installed CLI outside PATH is resolved'
+            Remove-Item -LiteralPath $localCli
+            if ($null -ne (Get-SonarCliPath)) { throw 'Missing CLI was reported as available' }
+            Write-Output 'PASS: missing local CLI is unavailable'
+        } finally { $env:LOCALAPPDATA = $originalLocalAppData }
+    } $fixture $resolver.Extent.Text
+    Write-Output 'sonar-plan-test: 8 passed; no external upload'
 }
 finally {
     $resolved = [IO.Path]::GetFullPath($fixture)

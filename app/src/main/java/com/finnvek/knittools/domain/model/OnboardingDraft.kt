@@ -4,7 +4,7 @@ import com.finnvek.knittools.domain.calculator.MAX_PROJECT_START_COUNT
 import kotlinx.serialization.Serializable
 
 @Serializable
-enum class OnboardingStep { Welcome, Craft, Needs, Counter, Project, Ready, Price }
+enum class OnboardingStep { Welcome, Craft, Needs, Counter, Toolbox, Project, Ready, Price }
 
 @Serializable
 enum class OnboardingNeed { Counting, Pattern, Returning, Yarn, Projects }
@@ -88,7 +88,8 @@ data class OnboardingDraft(
             OnboardingStep.Welcome -> copy(step = OnboardingStep.Craft)
             OnboardingStep.Craft -> copy(step = OnboardingStep.Needs)
             OnboardingStep.Needs -> copy(step = OnboardingStep.Counter)
-            OnboardingStep.Counter -> copy(step = OnboardingStep.Project)
+            OnboardingStep.Counter -> copy(step = OnboardingStep.Toolbox)
+            OnboardingStep.Toolbox -> copy(step = OnboardingStep.Project)
             OnboardingStep.Ready -> copy(step = OnboardingStep.Price)
             else -> this
         }

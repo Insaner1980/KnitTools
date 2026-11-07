@@ -110,7 +110,13 @@ class OnboardingToolboxAnimationTest {
             compose.runOnIdle { layout.value = changedLayout }
             compose.mainClock.advanceTimeByFrame()
             revealTile()
+            compose.mainClock.advanceTimeBy(entranceMillis + OnboardingDimens.TOOLBOX_DETAIL_MILLIS / 2L)
+            val compactDetail = tile.captureToImage().asAndroidBitmap()
             compose.mainClock.advanceTimeBy(settlingMillis)
+            assertTrue(
+                "Completed detail replayed in $changedLayout",
+                compactDetail.sameAs(tile.captureToImage().asAndroidBitmap()),
+            )
             compose.runOnIdle { layout.value = baseLayout }
             compose.mainClock.advanceTimeByFrame()
             revealTile()

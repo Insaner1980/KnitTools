@@ -25,6 +25,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.movableContentOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -126,6 +127,15 @@ internal fun JourneyToolbox(
     needs: List<OnboardingNeed>,
 ) {
     val picked = pickedJourneyTools(needs).toSet()
+    // Laatan tila seuraa työkalua myös silloin, kun leveys tai fonttikoko vaihtaa sen riviä.
+    val toolTiles =
+        remember {
+            JourneyTool.entries.associateWith { tool ->
+                movableContentOf<CraftType, Boolean, Int, Modifier> { craft, selected, index, modifier ->
+                    ToolboxTile(tool, craft, selected, index, modifier)
+                }
+            }
+        }
     CraftIllustration(
         R.drawable.onboarding_toolbox_hero,
         height = IllustrationDimens.WelcomeHeight,
@@ -149,7 +159,7 @@ internal fun JourneyToolbox(
                         if (tool == null) {
                             ToolboxMoreTile(index, cellModifier)
                         } else {
-                            ToolboxTile(tool, craftType, tool in picked, index, cellModifier)
+                            toolTiles.getValue(tool)(craftType, tool in picked, index, cellModifier)
                         }
                     }
                     repeat(columns - row.size) { Spacer(Modifier.weight(1f)) }

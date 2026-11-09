@@ -14,10 +14,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.finnvek.knittools.ui.components.localizedUppercase
 import com.finnvek.knittools.ui.theme.knitToolsColors
+
+// Railin 80 dp:n leveydestä jää tekstille tämä, kun kohteen sisäreunukset vähennetään.
+private val NavigationRailLabelMaxWidth = 64.dp
 
 @Composable
 internal fun KnitToolsNavigationRail(navControllerProvider: @Composable () -> NavController) {
@@ -25,6 +29,16 @@ internal fun KnitToolsNavigationRail(navControllerProvider: @Composable () -> Na
     val entry by navController.currentBackStackEntryAsState()
     val currentRoute = entry?.destination?.parent?.route ?: entry?.destination?.route
     val colors = MaterialTheme.knitToolsColors
+    // Pisin käännetty nimi (EINSTELLUNGEN) levitti railin 92 dp:hen ja täytti sen reunasta reunaan; yhteinen
+    // koko pitää railin 80 dp:ssä kaikilla kielillä kuten alapalkissa.
+    val labelStyle = MaterialTheme.typography.labelSmall
+    val labelFontSize =
+        rememberSharedLabelFontSize(
+            labels = TopLevelDestination.entries.map { stringResource(it.labelRes).localizedUppercase() },
+            style = labelStyle,
+            maxWidth = NavigationRailLabelMaxWidth,
+            maxFontSize = labelStyle.fontSize,
+        )
     NavigationRail(
         modifier = Modifier.fillMaxHeight().verticalScroll(rememberScrollState()).testTag("navigation-rail"),
         containerColor = colors.navBarContainer,
@@ -40,7 +54,9 @@ internal fun KnitToolsNavigationRail(navControllerProvider: @Composable () -> Na
                 label = {
                     Text(
                         stringResource(destination.labelRes).localizedUppercase(),
-                        style = MaterialTheme.typography.labelSmall,
+                        style = labelStyle,
+                        fontSize = labelFontSize,
+                        maxLines = 1,
                     )
                 },
                 colors =

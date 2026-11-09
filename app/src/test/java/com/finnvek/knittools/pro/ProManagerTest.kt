@@ -5,9 +5,12 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkObject
+import io.mockk.unmockkObject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
@@ -25,10 +28,13 @@ class ProManagerTest {
     @Before
     fun setup() {
         Dispatchers.setMain(testDispatcher)
+        mockkObject(ProPolicyTestControl)
+        every { ProPolicyTestControl.isActive } returns true
     }
 
     @After
     fun tearDown() {
+        unmockkObject(ProPolicyTestControl)
         Dispatchers.resetMain()
     }
 
@@ -54,13 +60,19 @@ class ProManagerTest {
             assertFalse(manager.initialControlsReady.value)
             initialized.complete(Unit)
             assertFalse(manager.initialControlsReady.value)
+            assertEquals(ProActionAccess.Unknown, manager.featureAccessFlow(ProFeature.WIDGET).first())
             failed.value = true
             assertTrue(manager.initialControlsReady.value)
             assertFalse(manager.initialStateReady.value)
             assertEquals(ProStatus.TRIAL_NOT_STARTED, manager.proState.value.status)
+            assertEquals(ProActionAccess.Unknown, manager.featureAccessFlow(ProFeature.WIDGET).first())
             ready.value = true
             assertTrue(manager.initialControlsReady.value)
             assertTrue(manager.initialStateReady.value)
+            assertEquals(ProActionAccess.Locked, manager.featureAccessFlow(ProFeature.WIDGET).first())
+            every { ProPolicyTestControl.isActive } returns false
+            assertEquals(ProActionAccess.Allowed, manager.featureAccessFlow(ProFeature.WIDGET).first())
+            assertFalse(manager.isPro())
         }
 
     @Test

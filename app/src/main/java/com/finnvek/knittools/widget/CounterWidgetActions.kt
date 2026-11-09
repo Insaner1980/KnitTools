@@ -10,6 +10,7 @@ import dagger.hilt.android.EntryPointAccessors
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 
 class CounterWidgetActions : BroadcastReceiver() {
     override fun onReceive(
@@ -37,6 +38,13 @@ class CounterWidgetActions : BroadcastReceiver() {
         action: String,
     ) {
         val entryPoint = widgetEntryPoint(context)
+        if (action == ACTION_RETRY) {
+            withTimeoutOrNull(RETRY_TIMEOUT_MS) {
+                entryPoint.billingManager().restorePurchasesWithResult()
+                CounterWidgetState.refreshAll(context)
+            }
+            return
+        }
         if (!entryPoint.proManager().hasFeatureAfterInitialLoad(ProFeature.WIDGET)) {
             return
         }
@@ -105,8 +113,13 @@ class CounterWidgetActions : BroadcastReceiver() {
         get() = this == WidgetCounterAction.Increment
 
     companion object {
+        private const val RETRY_TIMEOUT_MS = 8_000L
         private const val ACTION_INCREMENT = "com.finnvek.knittools.widget.INCREMENT"
         private const val ACTION_DECREMENT = "com.finnvek.knittools.widget.DECREMENT"
+        private const val ACTION_RETRY = "com.finnvek.knittools.widget.RETRY"
+
+        fun retryIntent(context: Context): Intent =
+            Intent(context, CounterWidgetActions::class.java).setAction(ACTION_RETRY)
 
         fun incrementIntent(context: Context): Intent =
             Intent(context, CounterWidgetActions::class.java).setAction(ACTION_INCREMENT)

@@ -2,6 +2,7 @@ package com.finnvek.knittools.data.backup
 
 import android.database.Cursor
 import androidx.sqlite.db.SupportSQLiteDatabase
+import com.finnvek.knittools.data.local.CounterSessionUndo
 import com.finnvek.knittools.data.local.KNITTOOLS_DATABASE_VERSION
 import com.finnvek.knittools.data.local.LinkedCounterDeltas
 import com.finnvek.knittools.domain.model.PatternAnnotationKind
@@ -186,13 +187,19 @@ internal object BackupTables {
         file.bufferedReader().use { input ->
             val headerText = input.boundedLine(budget.limits.maxRowCharacters) ?: ""
             BackupFormat.requireJsonDepth(headerText, 1)
-            val expectedHeader = JsonArray(columns.map(::JsonPrimitive)).toString()
-            val legacyColumns = columns - "linkedCounterDeltasJson"
-            val legacyHistory =
-                table == "counter_history" &&
-                    headerText == JsonArray(legacyColumns.map(::JsonPrimitive)).toString()
-            BackupFormat.requireValid(headerText == expectedHeader || legacyHistory, BackupError.VALIDATION)
-            val inputColumns = if (legacyHistory) legacyColumns else columns
+            val allowedColumns =
+                if (table == "counter_history") {
+                    listOf(
+                        columns,
+                        columns - "sessionUndoJson",
+                        columns - setOf("linkedCounterDeltasJson", "sessionUndoJson"),
+                    )
+                } else {
+                    listOf(columns)
+                }
+            val inputColumns =
+                allowedColumns.firstOrNull { headerText == JsonArray(it.map(::JsonPrimitive)).toString() }
+                    ?: throw BackupException(BackupError.VALIDATION)
             while (true) {
                 check()
                 val line = input.boundedLine(budget.limits.maxRowCharacters) ?: break
@@ -204,7 +211,7 @@ internal object BackupTables {
                     BackupError.VALIDATION,
                 )
                 val row = inputColumns.zip(values).toMap().toMutableMap()
-                if (legacyHistory && "linkedCounterDeltasJson" in columns) row["linkedCounterDeltasJson"] = JsonNull
+                (columns - inputColumns.toSet()).forEach { row[it] = JsonNull }
                 validateFields(table, row, budget)
                 validateYarnCardIds(table, row)
                 budget.observeRow(table, row)
@@ -369,6 +376,13 @@ internal object BackupTables {
             if (value is JsonPrimitive && value.isString) budget.requireFieldLength(value.content.length)
         }
         if (table == "counter_history") {
+            row["sessionUndoJson"]?.takeUnless { it == JsonNull }?.let { value ->
+                BackupFormat.requireJsonDepth(value.jsonPrimitive.content, 1)
+                BackupFormat.requireValid(
+                    runCatching { CounterSessionUndo.decode(value.jsonPrimitive.content) }.isSuccess,
+                    BackupError.VALIDATION,
+                )
+            }
             row["linkedCounterDeltasJson"]?.takeUnless { it == JsonNull }?.let { value ->
                 BackupFormat.requireJsonDepth(value.jsonPrimitive.content, 1)
                 BackupFormat.requireValid(

@@ -205,7 +205,11 @@ internal fun ProjectOverviewScreen(
                 }
                 item(key = "guide") {
                     Box(Modifier.padding(top = ProjectOverviewDimens.HeaderTopGap)) {
-                        OverviewTextAction(stringResource(R.string.guide_entry_overview), actions.onGuide)
+                        OverviewTextAction(
+                            stringResource(R.string.guide_entry_overview),
+                            actions.onGuide,
+                            startAligned = true,
+                        )
                     }
                 }
             }

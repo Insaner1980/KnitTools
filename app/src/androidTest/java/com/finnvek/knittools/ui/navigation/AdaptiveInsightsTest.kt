@@ -1,6 +1,8 @@
 package com.finnvek.knittools.ui.navigation
 
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.click
@@ -8,6 +10,7 @@ import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasAnyDescendant
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.isDisplayed
 import androidx.compose.ui.test.isPopup
 import androidx.compose.ui.test.isSelectable
 import androidx.compose.ui.test.onAllNodesWithText
@@ -28,20 +31,25 @@ import com.finnvek.knittools.data.local.CounterProjectEntity
 import com.finnvek.knittools.data.local.ProjectCompletionEntity
 import com.finnvek.knittools.data.local.SessionEntity
 import com.finnvek.knittools.pro.ProPolicyTestControl
+import com.finnvek.knittools.ui.screens.insights.currentInsightsFirstDayOfWeek
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import java.time.LocalDate
 import java.time.ZoneId
+import java.time.temporal.TemporalAdjusters
 
 /** Runs only against an isolated local database; window overrides are restored even on failure. */
 class AdaptiveInsightsTest : AdaptiveRouteTestFixture() {
     private val matrix = listOf(360 to 800, 800 to 400, 800 to 1280, 1280 to 800)
-    private val today = LocalDate.now(ZoneId.of("UTC"))
+    private val zone = ZoneId.systemDefault()
+    private val today = LocalDate.now(zone)
+    private val sessionDates = listOf(0L, 1L, 14L, 90L, 700L).map(today::minusDays)
 
     @Before
     fun seed() {
@@ -51,13 +59,11 @@ class AdaptiveInsightsTest : AdaptiveRouteTestFixture() {
             db.clearAllTables()
             for (id in 1L..25L) {
                 db.counterProjectDao().insert(CounterProjectEntity(id = id, name = name(id)))
-                for (daysAgo in listOf(0L, 1L, 14L, 90L, 700L)) {
+                for (date in sessionDates) {
                     val start =
-                        today
-                            .minusDays(
-                                daysAgo,
-                            ).atTime(10, 0)
-                            .atZone(ZoneId.of("UTC"))
+                        date
+                            .atTime(10, 0)
+                            .atZone(zone)
                             .toInstant()
                             .toEpochMilli()
                     db.sessionDao().insert(
@@ -68,7 +74,7 @@ class AdaptiveInsightsTest : AdaptiveRouteTestFixture() {
                             startRow = 0,
                             endRow = 12,
                             durationMinutes = 10,
-                            zoneId = "UTC",
+                            zoneId = zone.id,
                         ),
                     )
                 }
@@ -81,10 +87,10 @@ class AdaptiveInsightsTest : AdaptiveRouteTestFixture() {
                         completedAt =
                             today
                                 .minusDays(id)
-                                .atStartOfDay(ZoneId.of("UTC"))
+                                .atStartOfDay(zone)
                                 .toInstant()
                                 .toEpochMilli(),
-                        zoneId = "UTC",
+                        zoneId = zone.id,
                     ),
                 )
             }
@@ -105,18 +111,38 @@ class AdaptiveInsightsTest : AdaptiveRouteTestFixture() {
         openInsights()
         for (range in listOf(R.string.insights_this_week, R.string.insights_this_month, R.string.insights_all_time)) {
             chooseRange(range)
+            val start =
+                when (range) {
+                    R.string.insights_this_week ->
+                        today.with(TemporalAdjusters.previousOrSame(currentInsightsFirstDayOfWeek()))
+                    R.string.insights_this_month -> today.withDayOfMonth(1)
+                    else -> sessionDates.last()
+                }
+            val expectedDays = sessionDates.count { !it.isBefore(start) }
             for ((width, height) in matrix) {
                 resize(width, height)
-                list().performScrollToKey("chart-heading")
-                selectChart()
-                val readout = heading()
+                assertRangeTotal(expectedDays * 250)
+                val readout =
+                    if (expectedDays >= 2) {
+                        list().performScrollToKey("chart-heading")
+                        selectChart()
+                        heading()
+                    } else {
+                        assertSparseChartAbsent()
+                        null
+                    }
                 rule.activityRule.scenario.recreate()
                 waitLoaded()
-                assertEquals(readout, heading())
-                assertTrue(
-                    "Chart must fit current content",
-                    plot().fetchSemanticsNode().boundsInRoot.width <= width * rule.density.density,
-                )
+                if (readout != null) {
+                    assertEquals(readout, heading())
+                    assertTrue(
+                        "Chart must fit current content",
+                        plot().fetchSemanticsNode().boundsInRoot.width <= width * rule.density.density,
+                    )
+                } else {
+                    assertRangeTotal(expectedDays * 250)
+                    assertSparseChartAbsent()
+                }
                 screenshot("range-$range-$width-$height")
             }
         }
@@ -137,10 +163,10 @@ class AdaptiveInsightsTest : AdaptiveRouteTestFixture() {
         rule.onAllNodesWithText(name(15)).onLast().assertIsDisplayed()
         for ((width, height) in matrix) {
             resize(width, height)
-            rule.onAllNodesWithText(name(15)).onLast().assertIsDisplayed()
+            assertProjectVisibleAfterLayout(15)
             rule.activityRule.scenario.recreate()
             waitLoaded()
-            rule.onAllNodesWithText(name(15)).onLast().assertIsDisplayed()
+            assertProjectVisibleAfterLayout(15)
         }
         list().performScrollToKey("context")
         rule
@@ -263,6 +289,37 @@ class AdaptiveInsightsTest : AdaptiveRouteTestFixture() {
     }
 
     private fun heading() = rule.insightsHeading()
+
+    private fun assertProjectVisibleAfterLayout(id: Long) {
+        val row = rule.onAllNodesWithText(name(id)).onLast()
+        // Wait for resized or recreated content without moving the list.
+        rule.waitUntil(15_000) { row.isDisplayed() }
+        row.assertIsDisplayed()
+    }
+
+    private fun assertRangeTotal(minutes: Int) {
+        list().performScrollToKey("hero")
+        val expected = listOf(minutes / 60, minutes % 60).filter { it != 0 }.map(Int::toString)
+        rule.waitUntil(15_000) {
+            rule
+                .onAllNodes(hasAnyAncestor(hasTestTag("insights-hero")), useUnmergedTree = true)
+                .fetchSemanticsNodes()
+                .flatMap { it.config.getOrNull(SemanticsProperties.Text).orEmpty() }
+                .map { it.text }
+                .filter { it.toIntOrNull() != null } == expected
+        }
+    }
+
+    private fun assertSparseChartAbsent() {
+        // Check the lazy key as well as semantics; an offscreen chart is not an absent chart.
+        val failure =
+            assertThrows(IllegalArgumentException::class.java) {
+                list().performScrollToKey("chart-heading")
+            }
+        assertTrue(failure.message.orEmpty().contains("couldn't find the key"))
+        rule.onNodeWithTag("insights-chart-heading").assertDoesNotExist()
+        plot().assertDoesNotExist()
+    }
 
     private fun resize(
         width: Int,

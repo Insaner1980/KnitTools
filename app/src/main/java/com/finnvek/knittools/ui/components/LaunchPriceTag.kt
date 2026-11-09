@@ -105,7 +105,7 @@ fun LaunchPriceTag(
         }
         Text(
             if (launch != null) {
-                val date = rememberLocaleDateFormat("yMMMdssz", includeTime = true).format(Date(launch.endsAtMillis))
+                val date = rememberLaunchEndDateFormat().format(Date(launch.endsAtMillis))
                 stringResource(R.string.price_tag_launch_terms, date)
             } else {
                 stringResource(R.string.one_time_purchase)

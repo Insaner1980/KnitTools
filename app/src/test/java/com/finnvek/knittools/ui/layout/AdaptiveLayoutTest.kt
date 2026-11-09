@@ -25,6 +25,9 @@ class AdaptiveLayoutTest {
             assertEquals(width >= 600, tall.useNavigationRail)
             assertFalse(short.useNavigationRail)
             assertTrue(short.isCompactHeight)
+            // Matala ja leveä ikkuna saa matalan palkin, kapea puhelin ja korkea ikkuna eivät.
+            assertEquals(width >= 600, short.useShortNavigationBar)
+            assertFalse(tall.useShortNavigationBar)
         }
     }
 

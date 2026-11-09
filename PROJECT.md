@@ -22,8 +22,8 @@ All repository links are relative to the root. Package shorthand such as `reposi
 | Application ID / namespace | `com.finnvek.knittools` |
 | App version | `1.0.0`, version code `1` |
 | Android SDK | Minimum 29; target and compile 37 |
-| Room schema | 27 |
-| Current database shape | 19 entities/tables, 213 columns; 27 exported schema versions |
+| Room schema | 28 |
+| Current database shape | 19 entities/tables, 214 columns; 28 exported schema versions |
 | Supported app languages | 12 locale options; System is a selection mode |
 | Resource inventory | 1,308 translatable strings and 31 plurals per locale; 1,339 names per locale |
 | Modules | `:app` and `:baselineprofile` |
@@ -891,7 +891,7 @@ Contextual prompts retain pending user actions so that a successful trial activa
 
 [BackupScreen.kt](app/src/main/java/com/finnvek/knittools/ui/screens/backup/BackupScreen.kt) and [BackupViewModel.kt](app/src/main/java/com/finnvek/knittools/ui/screens/backup/BackupViewModel.kt) expose user-selected SAF export and import preview. Confirmed restore **replaces all current project data**; it is not a merge. Preview/confirmation state is separate from a live mutation.
 
-[BackupRepository.kt](app/src/main/java/com/finnvek/knittools/repository/BackupRepository.kt) coordinates [data/backup](app/src/main/java/com/finnvek/knittools/data/backup). `.knittools-backup` is an `application/octet-stream` ZIP with format version 1, data version 1, current schema 27, `manifest.json`, 18 `tables/<table>.jsonl` streams, and content-addressed `files/<sha256>.bin` entries. Table streams use ordered column headers and primitive row arrays. It contains logical records, not a copied SQLite database/WAL.
+[BackupRepository.kt](app/src/main/java/com/finnvek/knittools/repository/BackupRepository.kt) coordinates [data/backup](app/src/main/java/com/finnvek/knittools/data/backup). `.knittools-backup` is an `application/octet-stream` ZIP with format version 1, data version 1, current schema 28, `manifest.json`, 18 `tables/<table>.jsonl` streams, and content-addressed `files/<sha256>.bin` entries. Table streams use ordered column headers and primitive row arrays. It contains logical records, not a copied SQLite database/WAL.
 
 The manifest identifies KnitTools format, creation time, app version, schema, and bounded file paths/sizes/hashes. Structural allowlists, duplicate/path checks, ZIP/ZIP64 local/central inventory agreement, trailing-data/decompression/depth checks, declared budgets, hashes, row validation, and a shadow Room database reject invalid archives before confirmation/replacement. App version is informational; other format/data/schema versions need an adapter, currently absent. SHA-256 detects inconsistent bytes but supplies no cryptographic authenticity. The archive is **unencrypted and unauthenticated**; project notes/photos/PDFs are readable by anyone who can access the file.
 
@@ -1290,7 +1290,7 @@ Expected validation/missing/stale/feature failures use typed result models. Read
 
 ### Room ownership and constraints
 
-[KnitToolsDatabase.kt](app/src/main/java/com/finnvek/knittools/data/local/KnitToolsDatabase.kt) declares schema 27 and 19 entities. [DatabaseModule.kt](app/src/main/java/com/finnvek/knittools/di/DatabaseModule.kt) opens `knittools.db`, registers every manual migration plus Room auto-migrations, and installs constraints. Destructive fallback is not configured. Exported JSON schemas 1–27 are available in [app/schemas/com.finnvek.knittools.data.local.KnitToolsDatabase](app/schemas/com.finnvek.knittools.data.local.KnitToolsDatabase). Version 27's identity hash is `0e2ccceb2d38b0e6741412179a5d1769`.
+[KnitToolsDatabase.kt](app/src/main/java/com/finnvek/knittools/data/local/KnitToolsDatabase.kt) declares schema 28 and 19 entities. [DatabaseModule.kt](app/src/main/java/com/finnvek/knittools/di/DatabaseModule.kt) opens `knittools.db`, registers every manual migration plus Room auto-migrations, and installs constraints. Destructive fallback is not configured. Exported JSON schemas 1–28 are available in [app/schemas/com.finnvek.knittools.data.local.KnitToolsDatabase](app/schemas/com.finnvek.knittools.data.local.KnitToolsDatabase). Version 28's identity hash is `da23c177722e708f242c5d2998ed91e0`; schema 28 adds the nullable `counter_history.sessionUndoJson` session snapshot (`MIGRATION_27_28`).
 
 | Table | Entity / DAO | Canonical writer / meaning |
 | --- | --- | --- |

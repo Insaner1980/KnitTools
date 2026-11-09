@@ -42,6 +42,9 @@ data class AdaptiveLayoutSize(
 
     val isCompactHeight: Boolean get() = height < 480.dp
     val useNavigationRail: Boolean get() = widthClass != AdaptiveWidth.Compact && !isCompactHeight
+
+    /** Matala ja leveä ikkuna: matala alapalkki, jossa kuvake on tekstin vieressä. */
+    val useShortNavigationBar: Boolean get() = widthClass != AdaptiveWidth.Compact && isCompactHeight
 }
 
 /** Re-provided by AdaptiveContent at narrower content boundaries. */

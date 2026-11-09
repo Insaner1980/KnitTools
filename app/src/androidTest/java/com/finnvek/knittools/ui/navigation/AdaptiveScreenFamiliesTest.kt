@@ -163,7 +163,7 @@ class AdaptiveScreenFamiliesTest : AdaptiveRouteTestFixture() {
             tab(TopLevelDestination.Projects)
             assertColumn("projects", 840)
             text(R.string.new_project).assertIsDisplayed()
-            if (width >= 1280) screenshot("projects-$width")
+            if (width >= 1280 || height < 480) screenshot("projects-$width-$height")
 
             tab(TopLevelDestination.Library)
             assertColumn("library", 840)
@@ -210,6 +210,7 @@ class AdaptiveScreenFamiliesTest : AdaptiveRouteTestFixture() {
             }
             tab(TopLevelDestination.Tools)
             assertColumn("tools", 600)
+            if (width >= 1280 || height < 480) screenshot("tools-$width-$height")
             for (resource in listOf(
                 R.string.tool_gauge_converter,
                 R.string.tool_increase_decrease,

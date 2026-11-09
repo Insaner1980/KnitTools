@@ -28,6 +28,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -52,8 +53,10 @@ import com.finnvek.knittools.ui.components.ProPriceDetails
 import com.finnvek.knittools.ui.components.StatusMessage
 import com.finnvek.knittools.ui.components.StatusMessageType
 import com.finnvek.knittools.ui.components.ToolScreenScaffold
+import com.finnvek.knittools.ui.components.illustrationHeightFor
 import com.finnvek.knittools.ui.components.rememberCurrentLocale
 import com.finnvek.knittools.ui.findActivity
+import com.finnvek.knittools.ui.layout.LocalAdaptiveContentSize
 import com.finnvek.knittools.ui.screens.onboarding.OnboardingPreview
 import com.finnvek.knittools.ui.theme.ComponentDimens
 import com.finnvek.knittools.ui.theme.IllustrationDimens
@@ -109,7 +112,14 @@ fun ProUpgradeScreen(
             verticalArrangement = Arrangement.spacedBy(20.dp),
         ) {
             // Hinta ja päätoiminto otsikon alla, sitten Pron lisäykset; ilmainen osa tiivistettynä lopussa.
-            CraftIllustration(R.drawable.onboarding_pro_hero, height = IllustrationDimens.ProPageHeight)
+            // Matalassa ikkunassa kuvitus pienenee tai jää pois, jotta hintalappu näkyy ilman vieritystä.
+            illustrationHeightFor(
+                LocalAdaptiveContentSize.current.height,
+                IllustrationDimens.ProPageHeight,
+                LocalDensity.current.fontScale,
+            )?.let {
+                CraftIllustration(R.drawable.onboarding_pro_hero, height = it)
+            }
             ProIntroduction(personalLine)
             ProPurchaseSection(
                 proState = proState,

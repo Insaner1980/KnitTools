@@ -128,7 +128,11 @@ class PseudolocaleNavigationTest {
                 .onNodeWithContentDescription(
                     rule.activity.getString(R.string.project_continue_content_description, projectName),
                 ).performClick()
-            rule.onNodeWithContentDescription(label(R.string.counter_add_row)).assertIsDisplayed().performClick()
+            rule
+                .onNodeWithContentDescription(label(R.string.counter_add_row), useUnmergedTree = true)
+                .performScrollTo()
+                .assertIsDisplayed()
+                .performClick()
             rule.waitUntil(10_000) {
                 runBlocking(Dispatchers.IO) {
                     app.database
@@ -139,7 +143,10 @@ class PseudolocaleNavigationTest {
                 }
             }
             screenshot("$tag-$width-counter")
-            rule.onNodeWithContentDescription(label(R.string.counter_undo_last_change)).performClick()
+            rule
+                .onNodeWithContentDescription(label(R.string.counter_undo_last_change), useUnmergedTree = true)
+                .performScrollTo()
+                .performClick()
             back()
 
             tab(TopLevelDestination.Tools).performClick()

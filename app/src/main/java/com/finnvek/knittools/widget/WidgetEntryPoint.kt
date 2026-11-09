@@ -1,5 +1,6 @@
 package com.finnvek.knittools.widget
 
+import com.finnvek.knittools.billing.BillingManager
 import com.finnvek.knittools.pro.ProManager
 import com.finnvek.knittools.repository.CounterRepository
 import dagger.hilt.EntryPoint
@@ -13,4 +14,6 @@ interface WidgetEntryPoint {
     fun counterRepository(): CounterRepository
 
     fun proManager(): ProManager
+
+    fun billingManager(): BillingManager
 }

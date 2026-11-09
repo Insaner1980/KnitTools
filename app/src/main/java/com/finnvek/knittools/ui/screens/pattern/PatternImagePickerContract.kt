@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import com.finnvek.knittools.ui.theme.FontScaleThresholds
 
 internal class PatternImagePickerContract :
     ActivityResultContracts.PickMultipleVisualMedia(PatternImageImportLimits.MAX_PAGES) {
@@ -14,7 +15,7 @@ internal class PatternImagePickerContract :
         val configuration = context.resources.configuration
         // PhotoPickerin toimintopalkki ei mahdu kapeaan ikkunaan suurella fontilla.
         // SAF säilyttää järjestelmän monivalinnan ja saman välittömän kopiointiputken.
-        return if (configuration.screenWidthDp < 360 && configuration.fontScale >= 1.5f) {
+        return if (configuration.screenWidthDp < 360 && configuration.fontScale >= FontScaleThresholds.LARGE) {
             ActivityResultContracts
                 .OpenMultipleDocuments()
                 .createIntent(context, arrayOf("image/*"))

@@ -8,6 +8,12 @@ object IllustrationDimens {
     val WelcomeHeight = 140.dp
     val CompactHeight = 170.dp
     val ProPageHeight = 150.dp
+
+    // Matalassa näkymässä kuvitus pienenee, ja hyvin matalassa (vaakapuhelin) se jätetään pois, jotta
+    // varsinainen sisältö, kuten hintalappu, näkyy ilman vieritystä.
+    val ShortHeight = 84.dp
+    val ShortViewportHeight = 480.dp
+    val HiddenBelowViewportHeight = 360.dp
     val LogoSize = 128.dp
     val EmptyStateHeight = 140.dp
     val Rise = 16.dp

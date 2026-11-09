@@ -386,6 +386,12 @@ interface CounterProjectDao {
     @Query("SELECT COUNT(*) FROM counter_projects WHERE patternUri = :patternUri")
     suspend fun countProjectsUsingPatternUri(patternUri: String): Int
 
+    @Query("UPDATE counter_projects SET patternUri = NULL WHERE id = :projectId AND patternUri = :patternUri")
+    suspend fun clearLegacyPatternUriIfMatching(
+        projectId: Long,
+        patternUri: String,
+    )
+
     @Query(
         """
         UPDATE counter_projects
@@ -468,9 +474,18 @@ interface CounterProjectDao {
 
     @Query(
         "SELECT * FROM counter_history WHERE projectId = :projectId " +
-            "ORDER BY timestamp DESC, id DESC LIMIT 1",
+            "ORDER BY id DESC LIMIT 1",
     )
     suspend fun getLatestHistory(projectId: Long): CounterHistoryEntity?
+
+    @Query(
+        "UPDATE counter_history SET sessionUndoJson = :snapshot " +
+            "WHERE id = (SELECT id FROM counter_history WHERE projectId = :projectId ORDER BY id DESC LIMIT 1)",
+    )
+    suspend fun updateLatestHistorySessionUndo(
+        projectId: Long,
+        snapshot: String,
+    )
 
     @Query("SELECT * FROM counter_history WHERE projectId = :projectId ORDER BY timestamp DESC, id DESC")
     fun observeCounterHistory(projectId: Long): Flow<List<CounterHistoryEntity>>

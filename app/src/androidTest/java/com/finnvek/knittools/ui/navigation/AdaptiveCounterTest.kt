@@ -8,6 +8,8 @@ import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertTextContains
+import androidx.compose.ui.test.click
+import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasAnyDescendant
 import androidx.compose.ui.test.hasContentDescription
@@ -21,7 +23,9 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performScrollToIndex
+import androidx.compose.ui.test.performScrollToKey
 import androidx.compose.ui.test.performTextReplacement
+import androidx.compose.ui.test.performTouchInput
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.test.espresso.Espresso
@@ -38,6 +42,7 @@ import com.finnvek.knittools.data.local.ProjectCounterEntity
 import com.finnvek.knittools.data.local.RowReminderEntity
 import com.finnvek.knittools.data.local.SessionEntity
 import com.finnvek.knittools.pro.ProPolicyTestControl
+import com.finnvek.knittools.ui.theme.CounterDimens
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -115,10 +120,19 @@ class AdaptiveCounterTest : AdaptiveRouteTestFixture() {
     @After
     fun restore() {
         if (initialized) {
-            Espresso.closeSoftKeyboard()
-            windowInfo.overrideWindowLayoutInfo(TestWindowLayoutInfo(emptyList()))
-            shell("wm size ${originalSize ?: "reset"}")
-            ProPolicyTestControl.setPurchased(false)
+            try {
+                val imeVisible =
+                    ViewCompat
+                        .getRootWindowInsets(rule.activity.window.decorView)
+                        ?.isVisible(WindowInsetsCompat.Type.ime())
+                if (imeVisible == true) {
+                    Espresso.closeSoftKeyboard()
+                }
+            } finally {
+                windowInfo.overrideWindowLayoutInfo(TestWindowLayoutInfo(emptyList()))
+                shell("wm size ${originalSize ?: "reset"}")
+                ProPolicyTestControl.setPurchased(false)
+            }
         }
     }
 
@@ -155,11 +169,26 @@ class AdaptiveCounterTest : AdaptiveRouteTestFixture() {
             val minusBounds = minus.fetchSemanticsNode().boundsInWindow
             val viewport = rule.onNodeWithTag("adaptive-content").fetchSemanticsNode().boundsInWindow
             val density = rule.activity.resources.displayMetrics.density
+            // Pinottu ryhmä on enintään 360 dp (tabletilla iso laskuri samassa suhteessa); vierekkäisessä
+            // asettelussa Kumoa on nappien välissä, jolloin ryhmä on kahden napin ja Kumoa-sarakkeen levyinen.
+            val heroScale = (plusBounds.height / density) / CounterDimens.CounterPrimaryTouchSize.value
+            val controlsCap =
+                if (height < 480) {
+                    CounterDimens.CounterPrimaryTouchSize.value * 2 + CounterDimens.ShortHeroUndoSize.value +
+                        CounterDimens.StepRingButtonGap.value * 2
+                } else {
+                    CounterDimens.CounterControlsMaxWidth.value * heroScale
+                }
             assertTrue(
-                "Compact controls: $minusBounds / $plusBounds",
-                plusBounds.right - minusBounds.left <= 360 * density + 1,
+                "Compact controls: $minusBounds / $plusBounds, cap $controlsCap dp",
+                plusBounds.right - minusBounds.left <= controlsCap * density + 1,
             )
-            assertTrue(abs((plusBounds.right + minusBounds.left) / 2 - viewport.center.x) <= density * 2)
+            if (height >= 480) {
+                assertTrue(abs((plusBounds.right + minusBounds.left) / 2 - viewport.center.x) <= density * 2)
+            } else {
+                list().performScrollToIndex(0)
+                assertPrimaryControlsVisible()
+            }
             scrollTo(label(R.string.counter_undo_last_change))
             if (width >= 800) screenshot("counter-$width-$height")
             for (resource in listOf(
@@ -183,6 +212,116 @@ class AdaptiveCounterTest : AdaptiveRouteTestFixture() {
             scrollTo(label(R.string.work_session_start))
             Espresso.pressBack()
             text(projectName).performClick()
+            assertUntouched()
+        }
+    }
+
+    @Test
+    fun shortCounterKeepsValueAndPrimaryActionsVisibleThroughLiveResize() {
+        openCounter()
+        menu()
+        scrollTo(label(R.string.work_session_start)).performClick()
+        rule.waitUntil(10_000) { activeSession() != null }
+        val session = checkNotNull(activeSession())
+        for ((width, height) in listOf(
+            640 to 360,
+            800 to 400,
+            800 to 1280,
+            1280 to 800,
+            1600 to 900,
+            360 to 640,
+            640 to 360,
+        )) {
+            resize(width, height)
+            list().performScrollToIndex(0)
+            screenshot("primary-$width-$height")
+            if (height < 480) {
+                assertPrimaryControlsVisible()
+                text(label(R.string.counter_step_increase, 5, label(R.string.main_counter_rows)))
+                    .performTouchInput { click() }
+                waitCount(25)
+                text(label(R.string.counter_step_decrease, 5, label(R.string.main_counter_rows)))
+                    .performTouchInput { click() }
+                waitCount(20)
+                assertPrimaryControlsVisible()
+            }
+            assertEquals(session.sessionToken, activeSession()?.sessionToken)
+            assertEquals(3, project().secondaryCount)
+            assertEquals(1L, runBlocking { db.sessionDao().countCompletedSessions() })
+        }
+        rule.activityRule.scenario.recreate()
+        rule.waitForIdle()
+        assertPrimaryControlsVisible()
+        assertEquals(20, project().count)
+        assertEquals(session.sessionToken, activeSession()?.sessionToken)
+        resize(800, 1280)
+        // Tabletilla iso laskuri näyttää myös Kumoa-napin, ja ruudut ovat 3 + 2 koko sisältöleveydellä.
+        list().performScrollToIndex(0)
+        assertPrimaryControlsVisible()
+        list().performScrollToKey("project-content")
+        val tile = text(R.string.project_content_add_pattern).fetchSemanticsNode().boundsInWindow
+        assertTrue("Tablet tiles stay bounded: $tile", tile.width <= 180 * rule.density.density)
+        screenshot("bounded-project-tiles-800-1280")
+    }
+
+    private fun assertPrimaryControlsVisible() {
+        val viewport = list().getUnclippedBoundsInRoot()
+        val nodes =
+            listOf(
+                rule.onNodeWithTag("main-counter-value", useUnmergedTree = true),
+                text(label(R.string.counter_step_increase, 5, label(R.string.main_counter_rows))),
+                text(label(R.string.counter_step_decrease, 5, label(R.string.main_counter_rows))),
+                rule.onNodeWithTag("main-counter-step"),
+                // Kumoa on laskiessa päätoiminto: se ei saa jäädä taitteen alle tai puoliksi leikatuksi.
+                text(label(R.string.counter_undo_last_change)),
+            )
+        nodes.forEach { node ->
+            node.assertIsDisplayed()
+            val bounds = node.getUnclippedBoundsInRoot()
+            assertTrue(
+                "Fully visible together: $bounds in $viewport",
+                bounds.top >= viewport.top && bounds.bottom <= viewport.bottom,
+            )
+        }
+        nodes.drop(1).take(2).forEach { node ->
+            val bounds = node.getUnclippedBoundsInRoot()
+            assertTrue(
+                "Primary targets retain their size: $bounds",
+                (bounds.right - bounds.left).value >= 144f && (bounds.bottom - bounds.top).value >= 144f,
+            )
+        }
+    }
+
+    @Test
+    fun heightAndWidthTransitionsKeepPrimaryAndSupportingActionsReachable() {
+        openCounter()
+        for (height in listOf(580, 620, 580)) {
+            resize(800, height)
+            list().performScrollToIndex(0)
+            rule.waitUntil(15_000) {
+                val bounds = list().getUnclippedBoundsInRoot()
+                (height < 600) == ((bounds.bottom - bounds.top).value < 480)
+            }
+            val viewport = list().getUnclippedBoundsInRoot()
+            assertEquals(height < 600, (viewport.bottom - viewport.top).value < 480)
+            assertPrimaryControlsVisible()
+            screenshot("height-boundary-$height")
+            println("ADAPTIVE_COUNTER_BOUNDARY content=$viewport window=${rule.activity.resources.configuration}")
+            scrollTo(label(R.string.counter_undo_last_change))
+            scrollTo(label(R.string.project_content_notes))
+            scrollTo("Extra 12")
+            assertUntouched()
+        }
+        for (width in listOf(599, 600, 599)) {
+            resize(width, 400)
+            list().performScrollToIndex(0)
+            if (width == 600) assertPrimaryControlsVisible()
+            scrollTo(label(R.string.counter_step_increase, 5, label(R.string.main_counter_rows)))
+                .performTouchInput { click() }
+            waitCount(25)
+            scrollTo(label(R.string.counter_undo_last_change)).performTouchInput { click() }
+            waitCount(20)
+            scrollTo("Extra 12")
             assertUntouched()
         }
     }
@@ -223,13 +362,14 @@ class AdaptiveCounterTest : AdaptiveRouteTestFixture() {
         menu()
         text(R.string.project_overview_edit_details).performClick()
         val field = rule.onNode(hasSetTextAction() and hasContentDescription(label(R.string.project_name_label)))
-        field.performScrollTo().performClick().performTextReplacement("Retained project draft")
+        field.performScrollTo().performTextReplacement("Retained project draft")
+        field.performTouchInput { click() }
         keyboard(true)
         resize(800, 400)
         rule.activityRule.scenario.recreate()
         rule.waitForIdle()
         field.performScrollTo().assertTextContains("Retained project draft")
-        field.performClick()
+        field.performTouchInput { click() }
         keyboard(true)
         assertActionAboveKeyboard(R.string.save)
         text(R.string.cancel).performClick()
@@ -424,7 +564,8 @@ class AdaptiveCounterTest : AdaptiveRouteTestFixture() {
             windowInfo.overrideWindowLayoutInfo(TestWindowLayoutInfo(listOf(fold)))
             menu()
             scrollTo(label(R.string.add_counter)).performClick()
-            val name = rule.onNode(hasSetTextAction() and hasText(label(R.string.counter_name)))
+            // Jaetun kentän nimike on kentän contentDescription, ei sen teksti.
+            val name = rule.onNode(hasSetTextAction() and hasContentDescription(label(R.string.counter_name)))
             name.performScrollTo().performTextReplacement("Extra draft")
             Espresso.closeSoftKeyboard()
             rule.activityRule.scenario.recreate()

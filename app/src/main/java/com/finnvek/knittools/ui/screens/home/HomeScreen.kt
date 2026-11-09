@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
@@ -35,7 +36,9 @@ import com.finnvek.knittools.ui.tips.tipAnchor
 @Composable
 fun HomeScreen(onNavigate: (Screen) -> Unit) {
     TipHost(context = TipContext(screen = TipScreen.TOOLS), onAction = {}, modifier = Modifier.fillMaxSize()) {
+        // Otsikko kulkee samassa keskitetyssä palstassa kuin lista, kuten Projects-, Library- ja Settings-näkymissä.
         Scaffold(
+            modifier = Modifier.fillMaxSize().wrapContentWidth().contentWidth(ContentWidthPolicy.Form),
             containerColor = MaterialTheme.colorScheme.background,
             topBar = {
                 TopAppBar(
@@ -57,10 +60,7 @@ fun HomeScreen(onNavigate: (Screen) -> Unit) {
                 contentAlignment = Alignment.TopCenter,
             ) {
                 LazyColumn(
-                    modifier =
-                        Modifier
-                            .contentWidth(ContentWidthPolicy.Form)
-                            .padding(horizontal = 16.dp),
+                    modifier = Modifier.padding(horizontal = 16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     // Laskimet — suora lista

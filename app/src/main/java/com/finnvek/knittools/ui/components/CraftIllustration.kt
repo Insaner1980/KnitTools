@@ -18,6 +18,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
+import com.finnvek.knittools.ui.theme.FontScaleThresholds
 import com.finnvek.knittools.ui.theme.IllustrationDimens
 
 /** Miten kuvitus tulee näkyviin: rauhallinen nousu tai juhlistava jousi. */
@@ -106,4 +107,21 @@ fun Modifier.staggeredEntrance(entrance: StaggeredEntrance): Modifier =
         val value = entrance.progress.value
         alpha = value
         translationY = (1f - value) * entrance.risePx
+    }
+
+/**
+ * Kuvituksen korkeus käytettävissä olevan korkeuden mukaan: matalassa näkymässä pienempi ja hyvin
+ * matalassa ei lainkaan (null). Suurella fontilla teksti tarvitsee tilan, joten matalassa näkymässä kuvitus
+ * jää silloin kokonaan pois. Yhteinen perehdytykselle ja Pro-sivulle.
+ */
+fun illustrationHeightFor(
+    viewportHeight: Dp,
+    regular: Dp,
+    fontScale: Float = 1f,
+): Dp? =
+    when {
+        viewportHeight < IllustrationDimens.HiddenBelowViewportHeight -> null
+        viewportHeight < IllustrationDimens.ShortViewportHeight && fontScale > FontScaleThresholds.COMPACT -> null
+        viewportHeight < IllustrationDimens.ShortViewportHeight -> minOf(regular, IllustrationDimens.ShortHeight)
+        else -> regular
     }

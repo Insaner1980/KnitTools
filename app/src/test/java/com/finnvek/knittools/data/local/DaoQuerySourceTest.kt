@@ -8,10 +8,13 @@ import org.junit.Test
 
 class DaoQuerySourceTest {
     @Test
-    fun `latest counter history uses row id as timestamp tiebreaker`() {
+    fun `latest counter history follows insertion order not wall clock`() {
         val dao = ProjectSourceFiles.read(COUNTER_PROJECT_DAO)
+        val latest = dao.substringBefore("suspend fun getLatestHistory(").substringAfterLast("@Query(")
 
-        assertTrue(dao.contains("ORDER BY timestamp DESC, id DESC LIMIT 1"))
+        // Schema 28: Kumoa peruu viimeksi lisätyn rivin, vaikka laitteen kelloa olisi siirretty taaksepäin.
+        assertTrue(latest.contains("ORDER BY id DESC LIMIT 1"))
+        assertFalse(latest.contains("ORDER BY timestamp"))
     }
 
     @Test

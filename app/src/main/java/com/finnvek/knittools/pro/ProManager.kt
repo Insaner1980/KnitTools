@@ -103,11 +103,25 @@ class ProManager
 
         suspend fun startTrial(): TrialStartResult = ProPolicyTestControl.startTrial { trialManager.startTrial() }
 
-        suspend fun hasFeatureAfterInitialLoad(feature: ProFeature): Boolean {
+        suspend fun hasFeatureAfterInitialLoad(feature: ProFeature): Boolean =
+            when (featureAccessAfterInitialLoad(feature)) {
+                ProActionAccess.Allowed, ProActionAccess.Trial -> true
+                ProActionAccess.Locked, ProActionAccess.Unknown -> false
+            }
+
+        suspend fun featureAccessAfterInitialLoad(feature: ProFeature): ProActionAccess {
             waitForInitialProState()
             waitForInitialPurchaseState()
-            return ProPolicyTestControl.currentPurchased(billingManager.isProPurchased.value) || hasFeature(feature)
+            if (ProPolicyTestControl.currentPurchased(billingManager.isProPurchased.value)) {
+                return ProActionAccess.Allowed
+            }
+            return featureAccessFlow(feature).first()
         }
+
+        fun featureAccessFlow(feature: ProFeature): Flow<ProActionAccess> =
+            combine(proState, initialStateReady) { state, ready ->
+                proActionAccess(state, ready = ready || state.hasFeature(feature), feature = feature)
+            }.distinctUntilChanged()
 
         fun hasFeatureFlow(feature: ProFeature): Flow<Boolean> =
             proState

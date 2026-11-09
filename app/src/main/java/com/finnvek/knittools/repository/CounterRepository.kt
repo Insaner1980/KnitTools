@@ -5,6 +5,7 @@ import android.database.sqlite.SQLiteConstraintException
 import com.finnvek.knittools.data.local.ActiveSessionEntity
 import com.finnvek.knittools.data.local.CounterHistoryEntity
 import com.finnvek.knittools.data.local.CounterProjectDao
+import com.finnvek.knittools.data.local.CounterSessionUndo
 import com.finnvek.knittools.data.local.DatabaseTransactionRunner
 import com.finnvek.knittools.data.local.LinkedCounterDeltas
 import com.finnvek.knittools.data.local.MAX_COMPLETED_SESSIONS
@@ -478,6 +479,7 @@ class CounterRepository
                     projectId = id,
                     newRow = updated.count,
                     undoneReset = undoHistory?.action == MainCounterChange.Reset.historyAction,
+                    undoHistory = undoHistory,
                 )
                 CommittedMainCounterChange(project.count, updated.count, project.targetRows, change)
             }
@@ -1931,10 +1933,24 @@ class CounterRepository
             projectId: Long,
             newRow: Int,
             undoneReset: Boolean,
+            undoHistory: CounterHistoryEntity?,
         ) {
             val now = sessionTimeSource.snapshot()
             val synchronized = synchronizeActiveSession(now) ?: return
             if (synchronized.projectId != projectId) return
+            if (undoHistory == null) {
+                dao.updateLatestHistorySessionUndo(projectId, CounterSessionUndo.capture(synchronized).encode())
+            } else {
+                val snapshot = undoHistory.sessionUndoJson?.let(CounterSessionUndo::decode)
+                val checkpointed = checkpointTrustedSession(synchronized, now)
+                val restored = snapshot?.restoreRows(checkpointed)
+                if (restored != null) {
+                    sessionDao.updateActiveSession(
+                        restored.copy(lastObservedRow = newRow, updatedAtWallMillis = now.wallClockMillis),
+                    )
+                    return
+                }
+            }
             val delta = newRow.toLong() - synchronized.lastObservedRow.toLong()
             if (synchronized.recoveryReason != null) {
                 val pendingRowsWorked =

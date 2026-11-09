@@ -24,6 +24,7 @@ import com.finnvek.knittools.pro.ProPolicyTestControl
 import com.finnvek.knittools.repository.ProjectCreationResult
 import dagger.hilt.android.EntryPointAccessors
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -37,7 +38,10 @@ class WidgetHostRuntimeTest {
             val app = ApplicationProvider.getApplicationContext<App>()
             check(app.packageName.endsWith(".activepolicytest"))
             val instrumentation = InstrumentationRegistry.getInstrumentation()
-            val repository = EntryPointAccessors.fromApplication(app, WidgetEntryPoint::class.java).counterRepository()
+            val entryPoint = EntryPointAccessors.fromApplication(app, WidgetEntryPoint::class.java)
+            val repository = entryPoint.counterRepository()
+            ProPolicyTestControl.setPurchased(true)
+            entryPoint.proManager().proState.first { it.isPro }
             // Pahin tapaus: pisin yksikkösana (Repeats, esim. "WIEDERHOLUNGEN") ja nelinumeroinen tavoite.
             val created =
                 repository.createProject(
@@ -53,7 +57,6 @@ class WidgetHostRuntimeTest {
             val ids = mutableListOf<Int>()
             val scenario = ActivityScenario.launch(ComponentActivity::class.java)
             try {
-                ProPolicyTestControl.setPurchased(true)
                 val widgetData = checkNotNull(repository.getProject(projectId)).toWidgetData()
                 CounterWidgetState.save(app, widgetData)
                 instrumentation.uiAutomation.adoptShellPermissionIdentity("android.permission.BIND_APPWIDGET")
@@ -77,12 +80,21 @@ class WidgetHostRuntimeTest {
                     lateinit var view: AppWidgetHostView
                     scenario.onActivity { activity ->
                         view = host.createView(activity, id, manager.getAppWidgetInfo(id))
-                        view.setPadding(0, 0, 0, 0)
                         val density = activity.resources.displayMetrics.density
+                        // Widget options describe content size; the host also reserves platform padding.
+                        val padding =
+                            AppWidgetHostView.getDefaultPaddingForWidget(
+                                activity,
+                                ComponentName(app, CounterWidgetReceiver::class.java),
+                                null,
+                            )
                         val container = FrameLayout(activity)
                         container.addView(
                             view,
-                            FrameLayout.LayoutParams((width * density).toInt(), (height * density).toInt()),
+                            FrameLayout.LayoutParams(
+                                (width * density).toInt() + padding.left + padding.right,
+                                (height * density).toInt() + padding.top + padding.bottom,
+                            ),
                         )
                         activity.setContentView(container)
                     }

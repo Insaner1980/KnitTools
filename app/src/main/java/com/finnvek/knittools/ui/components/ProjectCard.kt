@@ -24,6 +24,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.calculator.CounterValueFormatter
 import com.finnvek.knittools.domain.model.CounterProject
+import com.finnvek.knittools.ui.theme.FontScaleThresholds
 import com.finnvek.knittools.ui.theme.ProjectListDimens
 import com.finnvek.knittools.ui.theme.projectCardName
 
@@ -167,4 +168,4 @@ private fun ProjectCardProgress(
 internal fun usesCompactProjectCardLayout(
     maxWidthDp: Float,
     fontScale: Float,
-): Boolean = maxWidthDp < ProjectListDimens.CompactMaxWidthDp || fontScale > ProjectListDimens.CompactFontScaleThreshold
+): Boolean = maxWidthDp < ProjectListDimens.CompactMaxWidthDp || fontScale > FontScaleThresholds.COMPACT

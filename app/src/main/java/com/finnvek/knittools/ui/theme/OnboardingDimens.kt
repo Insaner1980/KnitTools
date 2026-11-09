@@ -11,6 +11,11 @@ object OnboardingDimens {
     val DemoPatternRowGap = 20.dp
     val JourneyDemoCounterSize = 80.dp
     val JourneySectionGap = 24.dp
+    val ShortContentHeight = 480.dp
+    val ShortSectionGap = 12.dp
+
+    // Tätä matalammalla näytöllä hintavaiheen kaksi painiketta ovat rinnakkain.
+    val SideBySideActionsScreenHeight = 480.dp
     val JourneyDemoTouchSize = 88.dp
     val JourneyDemoButtonSize = 72.dp
     val JourneyDemoNumberMinWidth = 96.dp
@@ -31,6 +36,7 @@ object OnboardingDimens {
     val ToolboxMoreOutline = DashedOutlineStyle(width = 1.dp, dash = 5.dp, gap = 4.dp, corner = 12.dp)
     const val TOOLBOX_COLUMNS = 2
     const val TOOLBOX_COMPACT_COLUMNS = 1
+
     const val TOOLBOX_DETAIL_MILLIS = 900
 
     // Laskurilaatan kuvake painuu kahdesti kuin plussaa napautettaessa.

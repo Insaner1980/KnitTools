@@ -17,6 +17,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import com.finnvek.knittools.R
 import com.finnvek.knittools.ui.theme.CounterDimens
+import com.finnvek.knittools.ui.theme.FontScaleThresholds
 
 @Composable
 fun StitchCounter(
@@ -33,7 +34,7 @@ fun StitchCounter(
         )
     val canDecrement = currentStitch > 0
     val canIncrement = currentStitch < totalStitches
-    val useLargeFontLayout = LocalDensity.current.fontScale >= 1.5f
+    val useLargeFontLayout = LocalDensity.current.fontScale >= FontScaleThresholds.LARGE
 
     Surface(
         modifier = modifier.heightIn(min = CounterDimens.StitchTrackerMinHeight),

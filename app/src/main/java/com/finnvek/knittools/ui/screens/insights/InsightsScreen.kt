@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
@@ -131,7 +132,9 @@ internal fun InsightsScreenContent(
     )
 
     CompositionLocalProvider(LocalAdaptiveModalWindow provides true) {
+        // Otsikko kulkee sisältöpalstan vasemmassa reunassa myös hyvin leveässä ikkunassa.
         Scaffold(
+            modifier = Modifier.fillMaxSize().wrapContentWidth().contentWidth(ContentWidthPolicy.Chart),
             containerColor = MaterialTheme.colorScheme.background,
             // Otsikko on valittu aikaväli, ei näytön nimi: alanavigaatio kertoo jo missä ollaan,
             // ja aikavälivalitsin omana rivinään söi 124 dp ennen kuin yhtään dataa näkyi.

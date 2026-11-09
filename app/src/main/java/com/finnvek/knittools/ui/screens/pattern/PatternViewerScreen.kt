@@ -147,10 +147,12 @@ import com.finnvek.knittools.ui.components.dialogTextFieldColors
 import com.finnvek.knittools.ui.layout.AdaptiveDropdownMenu
 import com.finnvek.knittools.ui.layout.AdaptiveModalWindow
 import com.finnvek.knittools.ui.layout.ContentWidthPolicy
+import com.finnvek.knittools.ui.layout.LocalAdaptiveContentSize
 import com.finnvek.knittools.ui.platform.ExternalWebLinkOpenResult
 import com.finnvek.knittools.ui.platform.openExternalWebLink
 import com.finnvek.knittools.ui.screens.counter.CounterViewModel
 import com.finnvek.knittools.ui.screens.counter.CounterViewerEvent
+import com.finnvek.knittools.ui.theme.PatternViewerDimens
 import com.finnvek.knittools.ui.theme.knitToolsColors
 import com.finnvek.knittools.ui.theme.rememberPatternAnnotationRenderStyle
 import com.finnvek.knittools.ui.tips.TipHost
@@ -1654,6 +1656,13 @@ internal fun PatternViewerTopBar(
     }
 
     TopAppBar(
+        // Matalassa ikkunassa 48 dp:n palkki: 64 dp:n palkit veivät 400 dp:n ikkunasta kolmanneksen.
+        expandedHeight =
+            if (LocalAdaptiveContentSize.current.isCompactHeight) {
+                PatternViewerDimens.CompactTopBarHeight
+            } else {
+                TopAppBarDefaults.TopAppBarExpandedHeight
+            },
         title = {
             Text(
                 text =
@@ -1994,7 +2003,14 @@ private fun LibraryPatternViewerBottomBar(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 8.dp, vertical = 6.dp),
+                    .padding(
+                        horizontal = PatternViewerDimens.LibraryBottomBarHorizontalPadding,
+                        vertical =
+                            PatternViewerDimens.bottomBarVerticalPadding(
+                                compactHeight = LocalAdaptiveContentSize.current.isCompactHeight,
+                                library = true,
+                            ),
+                    ),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -2654,7 +2670,14 @@ private fun PatternViewerBottomBar(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 10.dp),
+                    .padding(
+                        horizontal = PatternViewerDimens.BottomBarHorizontalPadding,
+                        vertical =
+                            PatternViewerDimens.bottomBarVerticalPadding(
+                                LocalAdaptiveContentSize.current.isCompactHeight,
+                                library = false,
+                            ),
+                    ),
         ) {
             BottomBarNavigationRow(state = state, actions = actions)
         }

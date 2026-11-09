@@ -31,6 +31,39 @@ class MigrationTest {
     private val latestVersion = KNITTOOLS_DATABASE_VERSION
 
     @Test
+    fun migrate27to28PreservesHistoryAndAddsNullableSessionUndo() {
+        val testDb = "migration-test-v27-to-v28-session-undo"
+        helper.createDatabase(testDb, 1).apply {
+            execSQL(
+                "INSERT INTO counter_projects " +
+                    "(id, name, count, secondaryCount, stepSize, notes, createdAt, updatedAt) " +
+                    "VALUES (1, 'Undo', 7, 0, 1, '', 1000, 2000)",
+            )
+            close()
+        }
+        helper.runMigrationsAndValidate(testDb, 27, true, *allMigrations).apply {
+            execSQL(
+                "INSERT INTO counter_history " +
+                    "(id, projectId, action, previousValue, newValue, timestamp, linkedCounterDeltasJson) " +
+                    "VALUES (1, 1, 'reset', 7, 0, 3000, '{\"20\":-2}')",
+            )
+            close()
+        }
+        helper.runMigrationsAndValidate(testDb, 28, true, KnitToolsDatabase.MIGRATION_27_28).use { db ->
+            assertSingleRow(
+                db,
+                "SELECT previousValue, newValue, timestamp, linkedCounterDeltasJson, sessionUndoJson FROM counter_history",
+            ) {
+                assertEquals(7, getInt(0))
+                assertEquals(0, getInt(1))
+                assertEquals(3000L, getLong(2))
+                assertEquals(mapOf(20L to -2), LinkedCounterDeltas.decode(getString(3)))
+                assertTrue(isNull(4))
+            }
+        }
+    }
+
+    @Test
     fun migrate26to27PreservesHistoryAndAddsNullableLinkedUndoDeltas() {
         val testDb = "migration-test-v26-to-v27-linked-undo"
         helper.createDatabase(testDb, 1).apply {

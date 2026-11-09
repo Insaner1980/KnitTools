@@ -89,6 +89,8 @@ internal class BackupIdentityMap(
         rebaseDocumentKey(row)
         rebaseAnnotationCounter(table, row)
         if (table == "counter_history") {
+            // Restore creates a new session identity and requires a new timing review.
+            if ("sessionUndoJson" in row) row["sessionUndoJson"] = JsonNull
             row["linkedCounterDeltasJson"]?.takeUnless { it == JsonNull }?.let { value ->
                 val deltas = LinkedCounterDeltas.decode(value.jsonPrimitive.content)
                 val rebased =

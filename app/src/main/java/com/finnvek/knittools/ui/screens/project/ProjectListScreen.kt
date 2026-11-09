@@ -5,6 +5,8 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -15,8 +17,12 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentWidth
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyGridItemScope
+import androidx.compose.foundation.lazy.grid.LazyGridScope
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
@@ -56,6 +62,7 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
@@ -96,6 +103,7 @@ import com.finnvek.knittools.ui.components.SelectionActionBar
 import com.finnvek.knittools.ui.components.proMarkerDescription
 import com.finnvek.knittools.ui.components.workSessionStatusText
 import com.finnvek.knittools.ui.layout.ContentWidthPolicy
+import com.finnvek.knittools.ui.layout.LocalAdaptiveContentSize
 import com.finnvek.knittools.ui.layout.contentWidth
 import com.finnvek.knittools.ui.screens.counter.ActiveSessionCompletionDialog
 import com.finnvek.knittools.ui.screens.counter.ActiveSessionDeletionDialog
@@ -553,6 +561,22 @@ fun ProjectListScreen(
         onCreateProjectRequestHandled(requestId)
         requestProjectCreation()
     }
+    val newProjectButton: @Composable (Dp, Modifier) -> Unit = { visualSize, buttonModifier ->
+        LabeledCounterImageButton(
+            imageRes = R.drawable.counter_plus_button,
+            label = newProjectLabel,
+            visualSize = visualSize,
+            onClick = requestProjectCreation,
+            enabled = selectedFolderFilter !is ProjectFolderFilter.Folder || !folderState.isLoading,
+            badgeContentDescription = createProjectDescription,
+            badge = createProjectDescription?.let { { ProMarker(createProjectAccess) } },
+            modifier = buttonModifier,
+        )
+    }
+    // Matalassa ikkunassa luontipainike on yläpalkissa; kelluvana se peitti listan ainoan näkyvän rivin.
+    val createButtonInTopBar = LocalAdaptiveContentSize.current.isCompactHeight
+    val showCreateButton = !isMultiSelectMode && !showFullWelcome
+    val showFloatingCreateButton = showCreateButton && !createButtonInTopBar
     TipHost(context = tipContext, onAction = {}, modifier = Modifier.fillMaxSize()) {
         Scaffold(
             modifier = Modifier.fillMaxSize().wrapContentWidth().contentWidth(ContentWidthPolicy.ListDetail),
@@ -608,6 +632,17 @@ fun ProjectListScreen(
                             )
                         }
                     },
+                    createAction =
+                        if (showCreateButton && createButtonInTopBar) {
+                            {
+                                newProjectButton(
+                                    ProjectListDimens.CreateButtonTopBarVisualSize,
+                                    Modifier.padding(end = ProjectListDimens.CreateButtonTopBarEndPadding),
+                                )
+                            }
+                        } else {
+                            null
+                        },
                 )
             },
             bottomBar = {
@@ -676,19 +711,12 @@ fun ProjectListScreen(
                 )
 
                 // Täysi aloitusnäkymä sisältää saman luontipainikkeen listan sisällä.
-                if (!isMultiSelectMode && !showFullWelcome) {
-                    LabeledCounterImageButton(
-                        imageRes = R.drawable.counter_plus_button,
-                        label = newProjectLabel,
-                        visualSize = ProjectListDimens.CreateButtonVisualSize,
-                        onClick = requestProjectCreation,
-                        enabled = selectedFolderFilter !is ProjectFolderFilter.Folder || !folderState.isLoading,
-                        badgeContentDescription = createProjectDescription,
-                        badge = createProjectDescription?.let { { ProMarker(createProjectAccess) } },
-                        modifier =
-                            Modifier
-                                .align(Alignment.BottomEnd)
-                                .padding(ProjectListDimens.CreateButtonMargin),
+                if (showFloatingCreateButton) {
+                    newProjectButton(
+                        ProjectListDimens.CreateButtonVisualSize,
+                        Modifier
+                            .align(Alignment.BottomEnd)
+                            .padding(ProjectListDimens.CreateButtonMargin),
                     )
                 }
             }
@@ -812,6 +840,7 @@ private fun ProjectListTopBar(
     state: ProjectListTopBarState,
     actions: ProjectListTopBarActions,
     folderTitle: @Composable () -> Unit,
+    createAction: (@Composable () -> Unit)? = null,
 ) {
     TopAppBar(
         title = {
@@ -844,6 +873,7 @@ private fun ProjectListTopBar(
             }
         },
         actions = {
+            createAction?.invoke()
             if (!state.isMultiSelectMode) {
                 OverflowMenuWithSort(
                     state =
@@ -1079,164 +1109,182 @@ private fun ProjectListContent(
             state.active
         }
 
-    LazyColumn(
-        contentPadding =
-            PaddingValues(
-                start = ProjectListDimens.ScreenHorizontalPadding,
-                top = ProjectListDimens.ListTopPadding,
-                end = ProjectListDimens.ScreenHorizontalPadding,
-                bottom = ProjectListDimens.ListBottomPadding,
-            ),
-    ) {
-        if (state.isLoading) {
-            item { Text(stringResource(R.string.folder_loading)) }
-            return@LazyColumn
-        }
-        if (!state.hasAnyProject && !state.isMultiSelectMode) {
-            item {
-                ProjectsStartState(
-                    compact = state.welcomeDismissed,
-                    lastCraftType = state.lastCraftType,
-                    onCreateProject = actions.onCreateProject,
-                    onDismiss = actions.onDismissWelcome,
-                    onTools = actions.onOpenTools,
-                    onDemoUsed = actions.onDemoUsed,
-                    onOpenPro = actions.onOpenPro,
-                    proState = state.proState,
-                    proAccessReady = state.proAccessReady,
-                )
-            }
-            return@LazyColumn
-        }
-        if (state.selectedFolderFilter != ProjectFolderFilter.AllProjects &&
-            state.active.isEmpty() &&
-            state.completed.isEmpty()
+    // Leveällä näytöllä kortit kahdessa sarakkeessa: yksi 808 dp:n kortti jätti sisällön vasempaan 200 dp:hen.
+    BoxWithConstraints {
+        val columns = projectListColumns(maxWidth - ProjectListDimens.ScreenHorizontalPadding * 2)
+        LazyVerticalGrid(
+            columns = GridCells.Fixed(columns),
+            horizontalArrangement = Arrangement.spacedBy(ProjectListDimens.CardSpacing),
+            contentPadding =
+                PaddingValues(
+                    start = ProjectListDimens.ScreenHorizontalPadding,
+                    top = ProjectListDimens.ListTopPadding,
+                    end = ProjectListDimens.ScreenHorizontalPadding,
+                    bottom = ProjectListDimens.ListBottomPadding,
+                ),
         ) {
-            item {
-                ProjectFolderEmptyState(
-                    filter = state.selectedFolderFilter,
-                    folders = state.folders,
-                    hasHiddenCompletedProjects = state.hasHiddenCompletedProjects,
-                    onShowCompleted = actions.onShowCompleted,
-                )
+            if (state.isLoading) {
+                fullWidthItem { Text(stringResource(R.string.folder_loading)) }
+                return@LazyVerticalGrid
             }
-            item(key = "backup-tip") {
+            if (!state.hasAnyProject && !state.isMultiSelectMode) {
+                fullWidthItem {
+                    ProjectsStartState(
+                        compact = state.welcomeDismissed,
+                        lastCraftType = state.lastCraftType,
+                        onCreateProject = actions.onCreateProject,
+                        onDismiss = actions.onDismissWelcome,
+                        onTools = actions.onOpenTools,
+                        onDemoUsed = actions.onDemoUsed,
+                        onOpenPro = actions.onOpenPro,
+                        proState = state.proState,
+                        proAccessReady = state.proAccessReady,
+                    )
+                }
+                return@LazyVerticalGrid
+            }
+            if (state.selectedFolderFilter != ProjectFolderFilter.AllProjects &&
+                state.active.isEmpty() &&
+                state.completed.isEmpty()
+            ) {
+                fullWidthItem {
+                    ProjectFolderEmptyState(
+                        filter = state.selectedFolderFilter,
+                        folders = state.folders,
+                        hasHiddenCompletedProjects = state.hasHiddenCompletedProjects,
+                        onShowCompleted = actions.onShowCompleted,
+                    )
+                }
+                fullWidthItem(key = "backup-tip") {
+                    InlineTipCard(id = TipId.BACKUP, context = tipContext, onAction = actions.onOpenBackup)
+                }
+                return@LazyVerticalGrid
+            }
+            // Continue Knitting -herokortti (ei multi-select-tilassa)
+            if (!state.isMultiSelectMode) {
+                state.continueKnitting?.let { ck ->
+                    fullWidthItem {
+                        val hasSession = ck.projectId == state.activeSessionProjectId
+                        ContinueProjectCard(
+                            project =
+                                CounterProject(
+                                    id = ck.projectId,
+                                    name = ck.name,
+                                    count = ck.count,
+                                    sectionName = ck.sectionName,
+                                    targetRows = ck.targetRows,
+                                    craftType = ck.craftType,
+                                    mainCounterLabelType = ck.mainCounterLabelType,
+                                    mainCounterCustomLabel = ck.mainCounterCustomLabel,
+                                ),
+                            sessionStatus =
+                                workSessionStatusText(hasSession, hasSession && state.activeSessionNeedsReview),
+                            // Heron runko avaa projektinäkymän kuten projektikortit; jatka-nappi avaa laskurin.
+                            onClick = { actions.onOpenOverview(ck.projectId) },
+                            onClickLabel = stringResource(R.string.project_card_open_overview_action),
+                            onOpenCounter = { actions.onOpenCounter(ck.projectId) },
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
+                }
+            }
+
+            if (visibleActiveProjects.isNotEmpty() || !isHeroVisible) {
+                fullWidthItem {
+                    // Lukumäärä sisältää myös heron projektin: se on aktiivinen, vaikka sillä ei ole omaa korttia.
+                    ProjectSectionLabel(
+                        text = stringResource(R.string.section_active),
+                        count = state.active.size,
+                    )
+                }
+
+                if (visibleActiveProjects.isEmpty()) {
+                    fullWidthItem {
+                        Text(
+                            text = stringResource(R.string.no_active_projects),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(vertical = 8.dp),
+                        )
+                    }
+                } else {
+                    itemsIndexed(
+                        items = visibleActiveProjects,
+                        key = { _, project -> project.id },
+                    ) { index, project ->
+                        // Ruudukon solu pinoaa lapsensa päällekkäin, joten väli tarvitsee oman sarakkeensa.
+                        Column {
+                            ProjectListItem(
+                                project = project,
+                                state = state,
+                                actions = actions,
+                                patternName = state.patternNames[project.id],
+                                statusText =
+                                    workSessionStatusText(
+                                        project.id == state.activeSessionProjectId,
+                                        project.id == state.activeSessionProjectId && state.activeSessionNeedsReview,
+                                    ),
+                            )
+                            if (index / columns < visibleActiveProjects.lastIndex / columns) {
+                                Spacer(modifier = Modifier.height(ProjectListDimens.CardSpacing))
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Completed-osio (näytetään vain kun toggle päällä)
+            if (state.showCompleted) {
+                fullWidthItem {
+                    ProjectSectionLabel(
+                        text = stringResource(R.string.section_completed),
+                        count = state.completed.size,
+                    )
+                }
+
+                if (state.completed.isEmpty()) {
+                    fullWidthItem {
+                        Text(
+                            text = stringResource(R.string.no_completed_projects),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(vertical = 8.dp),
+                        )
+                    }
+                } else {
+                    itemsIndexed(
+                        items = state.completed,
+                        key = { _, project -> project.id },
+                    ) { index, project ->
+                        val completedDescription = stringResource(R.string.section_completed)
+                        Column {
+                            ProjectListItem(
+                                project = project.copy(count = project.totalRows ?: project.count),
+                                state = state,
+                                actions = actions,
+                                patternName = project.patternName,
+                                modifier = Modifier.semantics { stateDescription = completedDescription },
+                            )
+                            if (index / columns < state.completed.lastIndex / columns) {
+                                Spacer(modifier = Modifier.height(ProjectListDimens.CardSpacing))
+                            }
+                        }
+                    }
+                }
+            }
+            fullWidthItem(key = "backup-tip") {
                 InlineTipCard(id = TipId.BACKUP, context = tipContext, onAction = actions.onOpenBackup)
             }
-            return@LazyColumn
-        }
-        // Continue Knitting -herokortti (ei multi-select-tilassa)
-        if (!state.isMultiSelectMode) {
-            state.continueKnitting?.let { ck ->
-                item {
-                    val hasSession = ck.projectId == state.activeSessionProjectId
-                    ContinueProjectCard(
-                        project =
-                            CounterProject(
-                                id = ck.projectId,
-                                name = ck.name,
-                                count = ck.count,
-                                sectionName = ck.sectionName,
-                                targetRows = ck.targetRows,
-                                craftType = ck.craftType,
-                                mainCounterLabelType = ck.mainCounterLabelType,
-                                mainCounterCustomLabel = ck.mainCounterCustomLabel,
-                            ),
-                        sessionStatus =
-                            workSessionStatusText(hasSession, hasSession && state.activeSessionNeedsReview),
-                        // Heron runko avaa projektinäkymän kuten projektikortit; jatka-nappi avaa laskurin.
-                        onClick = { actions.onOpenOverview(ck.projectId) },
-                        onClickLabel = stringResource(R.string.project_card_open_overview_action),
-                        onOpenCounter = { actions.onOpenCounter(ck.projectId) },
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                }
-            }
-        }
-
-        if (visibleActiveProjects.isNotEmpty() || !isHeroVisible) {
-            item {
-                // Lukumäärä sisältää myös heron projektin: se on aktiivinen, vaikka sillä ei ole omaa korttia.
-                ProjectSectionLabel(
-                    text = stringResource(R.string.section_active),
-                    count = state.active.size,
-                )
-            }
-
-            if (visibleActiveProjects.isEmpty()) {
-                item {
-                    Text(
-                        text = stringResource(R.string.no_active_projects),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(vertical = 8.dp),
-                    )
-                }
-            } else {
-                itemsIndexed(
-                    items = visibleActiveProjects,
-                    key = { _, project -> project.id },
-                ) { index, project ->
-                    ProjectListItem(
-                        project = project,
-                        state = state,
-                        actions = actions,
-                        patternName = state.patternNames[project.id],
-                        statusText =
-                            workSessionStatusText(
-                                project.id == state.activeSessionProjectId,
-                                project.id == state.activeSessionProjectId && state.activeSessionNeedsReview,
-                            ),
-                    )
-                    if (index < visibleActiveProjects.lastIndex) {
-                        Spacer(modifier = Modifier.height(ProjectListDimens.CardSpacing))
-                    }
-                }
-            }
-        }
-
-        // Completed-osio (näytetään vain kun toggle päällä)
-        if (state.showCompleted) {
-            item {
-                ProjectSectionLabel(
-                    text = stringResource(R.string.section_completed),
-                    count = state.completed.size,
-                )
-            }
-
-            if (state.completed.isEmpty()) {
-                item {
-                    Text(
-                        text = stringResource(R.string.no_completed_projects),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(vertical = 8.dp),
-                    )
-                }
-            } else {
-                itemsIndexed(
-                    items = state.completed,
-                    key = { _, project -> project.id },
-                ) { index, project ->
-                    val completedDescription = stringResource(R.string.section_completed)
-                    ProjectListItem(
-                        project = project.copy(count = project.totalRows ?: project.count),
-                        state = state,
-                        actions = actions,
-                        patternName = project.patternName,
-                        modifier = Modifier.semantics { stateDescription = completedDescription },
-                    )
-                    if (index < state.completed.lastIndex) {
-                        Spacer(modifier = Modifier.height(ProjectListDimens.CardSpacing))
-                    }
-                }
-            }
-        }
-        item(key = "backup-tip") {
-            InlineTipCard(id = TipId.BACKUP, context = tipContext, onAction = actions.onOpenBackup)
         }
     }
 }
+
+internal fun projectListColumns(listWidth: Dp): Int = if (listWidth >= ProjectListDimens.TwoColumnMinWidth) 2 else 1
+
+private fun LazyGridScope.fullWidthItem(
+    key: Any? = null,
+    content: @Composable LazyGridItemScope.() -> Unit,
+) = item(key = key, span = { GridItemSpan(maxLineSpan) }, content = content)
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable

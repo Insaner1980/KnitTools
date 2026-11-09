@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.CircleShape
@@ -57,6 +58,8 @@ import com.finnvek.knittools.ui.components.CancelButton
 import com.finnvek.knittools.ui.components.ScrollableFormDialog
 import com.finnvek.knittools.ui.components.SegmentedToggle
 import com.finnvek.knittools.ui.components.dialogTextFieldColors
+import com.finnvek.knittools.ui.layout.ContentWidthPolicy
+import com.finnvek.knittools.ui.layout.contentWidth
 import com.finnvek.knittools.ui.theme.PatternAnnotationTokens
 import java.util.UUID
 
@@ -116,10 +119,15 @@ internal fun PatternAnnotationToolbar(
             showChartTrackerEditor = false
         }
     }
+    // Tabletilla paletti rajataan lomakkeen levyiseksi: koko leveydellä paksuuden liukusäädin oli 1250 dp ja
+    // painekytkin yli tuhannen dp:n päässä nimikkeestään.
     Column(
         verticalArrangement = Arrangement.spacedBy(PatternAnnotationTokens.TOOLBAR_ITEM_SPACING),
         modifier =
             modifier
+                .fillMaxWidth()
+                .wrapContentWidth(Alignment.Start)
+                .contentWidth(ContentWidthPolicy.Form)
                 .fillMaxWidth()
                 .heightIn(max = PatternAnnotationTokens.TOOLBAR_MAX_HEIGHT)
                 .verticalScroll(rememberScrollState())

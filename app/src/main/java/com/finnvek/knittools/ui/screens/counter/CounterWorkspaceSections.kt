@@ -31,6 +31,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -48,6 +49,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -92,6 +94,7 @@ import com.finnvek.knittools.ui.layout.ContentWidthPolicy
 import com.finnvek.knittools.ui.layout.LocalAdaptiveContentSize
 import com.finnvek.knittools.ui.layout.contentWidth
 import com.finnvek.knittools.ui.theme.CounterDimens
+import com.finnvek.knittools.ui.theme.FontScaleThresholds
 import com.finnvek.knittools.ui.theme.knitToolsColors
 import com.finnvek.knittools.ui.tips.tipAnchor
 import com.finnvek.knittools.ui.tips.tipProtected
@@ -169,102 +172,108 @@ fun CounterWorkspace(
 ) {
     Box(Modifier.fillMaxSize().padding(scaffoldPadding).consumeWindowInsets(scaffoldPadding), Alignment.TopCenter) {
         AdaptiveContent(Modifier.contentWidth(ContentWidthPolicy.Form).fillMaxSize()) {
-            val available = LocalAdaptiveContentSize.current
-            val heroMinimumHeight =
-                if (available.isCompactHeight) {
-                    0.dp
-                } else {
-                    (available.height - CounterDimens.ContentBottomPadding).coerceAtLeast(
-                        CounterDimens.HeroMinimumHeight,
-                    )
-                }
-            LazyColumn(
-                modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .clipToBounds(),
-                contentPadding =
-                    PaddingValues(
-                        start = CounterDimens.ScreenHorizontalPadding,
-                        end = CounterDimens.ScreenHorizontalPadding,
-                        bottom = CounterDimens.ContentBottomPadding,
-                    ),
-                verticalArrangement = Arrangement.spacedBy(CounterDimens.WorkspaceSectionSpacing),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                item(key = "counter-hero") {
-                    CounterHero(
-                        state = state.toCounterHeroState(),
-                        stepDelta = stepDelta,
-                        actions = actions,
-                        compactHeight = available.isCompactHeight,
-                        modifier = Modifier.heightIn(min = heroMinimumHeight),
-                    )
-                }
-                state.activeSession?.takeIf { it.projectId == state.projectId }?.let { activeSession ->
-                    item(key = "active-work-session") {
-                        ActiveWorkSessionRow(
-                            projectName = state.projectName,
-                            durationSeconds = state.sessionSeconds,
-                            rowsWorked =
-                                (activeSession.trustedRowsWorked.toLong() + activeSession.pendingRowsWorked.toLong())
-                                    .coerceAtMost(Int.MAX_VALUE.toLong())
-                                    .toInt(),
-                            needsRecoveryReview = activeSession.needsRecoveryReview,
-                            onStop = actions.onStopSession,
-                            onResolve = actions.onResolveSessionRecovery,
-                        )
-                    }
-                }
-                item(key = "counter-hero-reveal-gap") {
-                    Spacer(
-                        modifier =
-                            Modifier.height(
-                                if (available.isCompactHeight) {
-                                    CounterDimens.WorkspaceGroupSpacing
-                                } else {
-                                    CounterDimens.CounterProjectRevealGap
-                                },
-                            ),
-                    )
-                }
-                item(key = "project-content") {
-                    ProjectContentCards(
-                        onCardClick = { kind -> actions.onProjectContentClick(kind, state) },
-                        hasPattern =
-                            hasProjectPatternContent(
-                                hasMetadataLink = state.linkedPattern != null,
-                                hasDocuments = state.projectDocuments.isNotEmpty(),
-                            ),
-                    )
-                }
-                if (state.projectCounters.isNotEmpty()) {
-                    item(key = "extra-counters-title") {
-                        WorkspaceSectionTitle(
-                            title = stringResource(R.string.extra_counters_title),
-                            actionLabel = stringResource(R.string.add_counter),
-                            onAction = actions.onShowAddCounter,
-                            proState = state.proState,
-                            proAccessReady = state.proAccessReady,
-                        )
-                    }
-                    items(items = state.projectCounters, key = { counter -> counter.id }) { counter ->
-                        ProjectCounterWorkspaceItem(
-                            counter = counter,
-                            mainRowCount = state.counter.count,
-                            actions = projectCountersActions,
-                            onBlockingSurfaceChanged = { onBlockingCounterChanged(counter.id, it) },
-                        )
-                    }
-                }
-                if (state.activeAlert != null) {
-                    state.activeAlert.let { reminder ->
-                        item(key = "active-reminder-alert") {
-                            ReminderAlertCard(
-                                reminder = reminder,
-                                currentRow = state.counter.count,
-                                onDismiss = actions.onDismissReminder,
+            val heroLayout = rememberCounterHeroLayout(state.toCounterHeroState(), LocalAdaptiveContentSize.current)
+            val sideBySide = heroLayout.arrangement == CounterHeroArrangement.SideBySide
+            val roomyHero = heroLayout.arrangement == CounterHeroArrangement.Stacked
+            CompositionLocalProvider(LocalCounterHeroMetrics provides heroLayout.metrics) {
+                LazyColumn(
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .clipToBounds(),
+                    contentPadding =
+                        PaddingValues(
+                            start = CounterDimens.ScreenHorizontalPadding,
+                            end = CounterDimens.ScreenHorizontalPadding,
+                            bottom = CounterDimens.ContentBottomPadding,
+                        ),
+                    verticalArrangement = Arrangement.spacedBy(CounterDimens.WorkspaceSectionSpacing),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    item(key = "counter-hero") {
+                        if (sideBySide) {
+                            ShortCounterHero(state.toCounterHeroState(), stepDelta, actions, heroLayout.maximumHeight)
+                        } else {
+                            CounterHero(
+                                state = state.toCounterHeroState(),
+                                stepDelta = stepDelta,
+                                actions = actions,
+                                compactHeight = !roomyHero,
+                                modifier = Modifier.heightIn(min = heroLayout.minimumHeight),
                             )
+                        }
+                    }
+                    if (sideBySide) {
+                        item(key = "counter-supporting-controls") {
+                            ShortCounterSupportingControls(state.toCounterHeroState(), actions)
+                        }
+                    }
+                    state.activeSession?.takeIf { it.projectId == state.projectId }?.let { activeSession ->
+                        val rowsWorked =
+                            (activeSession.trustedRowsWorked.toLong() + activeSession.pendingRowsWorked.toLong())
+                                .coerceAtMost(Int.MAX_VALUE.toLong())
+                                .toInt()
+                        item(key = "active-work-session") {
+                            ActiveWorkSessionRow(
+                                projectName = state.projectName,
+                                durationSeconds = state.sessionSeconds,
+                                rowsWorked = rowsWorked,
+                                needsRecoveryReview = activeSession.needsRecoveryReview,
+                                onStop = actions.onStopSession,
+                                onResolve = actions.onResolveSessionRecovery,
+                            )
+                        }
+                    }
+                    item(key = "counter-hero-reveal-gap") {
+                        Spacer(
+                            modifier =
+                                Modifier.height(
+                                    if (!roomyHero) {
+                                        CounterDimens.WorkspaceGroupSpacing
+                                    } else {
+                                        CounterDimens.CounterProjectRevealGap
+                                    },
+                                ),
+                        )
+                    }
+                    item(key = "project-content") {
+                        ProjectContentCards(
+                            onCardClick = { kind -> actions.onProjectContentClick(kind, state) },
+                            hasPattern =
+                                hasProjectPatternContent(
+                                    hasMetadataLink = state.linkedPattern != null,
+                                    hasDocuments = state.projectDocuments.isNotEmpty(),
+                                ),
+                        )
+                    }
+                    if (state.projectCounters.isNotEmpty()) {
+                        item(key = "extra-counters-title") {
+                            WorkspaceSectionTitle(
+                                title = stringResource(R.string.extra_counters_title),
+                                actionLabel = stringResource(R.string.add_counter),
+                                onAction = actions.onShowAddCounter,
+                                proState = state.proState,
+                                proAccessReady = state.proAccessReady,
+                            )
+                        }
+                        items(items = state.projectCounters, key = { counter -> counter.id }) { counter ->
+                            ProjectCounterWorkspaceItem(
+                                counter = counter,
+                                mainRowCount = state.counter.count,
+                                actions = projectCountersActions,
+                                onBlockingSurfaceChanged = { onBlockingCounterChanged(counter.id, it) },
+                            )
+                        }
+                    }
+                    if (state.activeAlert != null) {
+                        state.activeAlert.let { reminder ->
+                            item(key = "active-reminder-alert") {
+                                ReminderAlertCard(
+                                    reminder = reminder,
+                                    currentRow = state.counter.count,
+                                    onDismiss = actions.onDismissReminder,
+                                )
+                            }
                         }
                     }
                 }
@@ -316,7 +325,7 @@ internal fun ActiveWorkSessionRow(
                     bottom = CounterDimens.WorkSessionVerticalPadding,
                 ),
     ) {
-        val stackContent = maxWidth < CounterDimens.WorkSessionStackBreakpoint || fontScale >= 1.5f
+        val stackContent = maxWidth < CounterDimens.WorkSessionStackBreakpoint || fontScale >= FontScaleThresholds.LARGE
         val sessionContent: @Composable () -> Unit = {
             WorkSessionStatusText(
                 label = label,
@@ -409,10 +418,77 @@ private fun CounterWorkspaceActions.onProjectContentClick(
             }
         }
 
-        ProjectContentCardKind.YARN -> onOpenYarn()
-        ProjectContentCardKind.NOTES -> onOpenNotes()
-        ProjectContentCardKind.PHOTOS -> onOpenPhotos()
-        ProjectContentCardKind.REMINDER -> onOpenReminders()
+        ProjectContentCardKind.YARN -> {
+            onOpenYarn()
+        }
+
+        ProjectContentCardKind.NOTES -> {
+            onOpenNotes()
+        }
+
+        ProjectContentCardKind.PHOTOS -> {
+            onOpenPhotos()
+        }
+
+        ProjectContentCardKind.REMINDER -> {
+            onOpenReminders()
+        }
+    }
+}
+
+@Composable
+private fun ShortCounterHero(
+    state: CounterHeroState,
+    stepDelta: Int?,
+    actions: CounterWorkspaceActions,
+    maxHeight: Dp,
+) {
+    Row(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .heightIn(max = maxHeight)
+                .counterClickWithoutIndication(actions.onSurfaceIncrement),
+        horizontalArrangement = Arrangement.spacedBy(CounterDimens.ShortHeroSpacing),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
+            CounterRowLabel(state, actions.onShowTargetDialog)
+            // Luku saa rivistä sen korkeuden, joka nimikkeeltä jää; 200 %:n fontilla se muuten leikkautui.
+            CounterMainNumber(state, stepDelta, feedbackAtTop = true, modifier = Modifier.weight(1f, fill = false))
+        }
+        CounterButtons(
+            state = state,
+            onDecrement = actions.onDecrement,
+            onIncrement = actions.onIncrement,
+            onUndo = actions.onUndo,
+            onShowStepSize = actions.onShowStepSize,
+            undoPlacement = CounterUndoPlacement.BetweenButtons,
+        )
+    }
+}
+
+@Composable
+private fun ShortCounterSupportingControls(
+    state: CounterHeroState,
+    actions: CounterWorkspaceActions,
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(CounterDimens.WorkspaceGroupSpacing),
+    ) {
+        if (state.canUseSecondaryCounter) {
+            CompactPatternRepeatRow(
+                state.secondaryCount,
+                actions.onDecrementSecondary,
+                actions.onIncrementSecondary,
+            )
+        }
+        CounterValueFormatter.forMainCounter(state.toMainCounterProject()).targetLine?.let {
+            CounterTargetProgress(it, actions.onShowTargetDialog)
+        }
+        CounterStitchTracker(state, actions)
     }
 }
 
@@ -441,7 +517,7 @@ private fun CounterHero(
     Column(
         modifier =
             modifier
-                .widthIn(max = CounterDimens.CounterControlsMaxWidth)
+                .widthIn(max = LocalCounterHeroMetrics.current.controlsMaxWidth)
                 .fillMaxWidth()
                 .counterClickWithoutIndication(actions.onSurfaceIncrement),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -515,13 +591,24 @@ private fun CounterRowLabel(
 
 /** Laskurin pienet tekstit: yksikkö luvun yllä ja tavoiterivi palkin alla. */
 @Composable
-private fun counterCaptionStyle(): TextStyle =
+internal fun counterCaptionStyle(): TextStyle =
     MaterialTheme.typography.labelMedium.copy(fontSize = CounterDimens.CounterTargetHelperFontSize)
+
+/** Pääluvun tyyli; koko tulee `CounterHeroMetrics`ista (115 sp, tabletilla isompi). */
+@Composable
+internal fun counterMainNumberStyle(fontSize: TextUnit): TextStyle =
+    MaterialTheme.typography.displayMedium.copy(
+        fontSize = fontSize,
+        fontWeight = FontWeight.Bold,
+        fontFeatureSettings = "tnum",
+    )
 
 @Composable
 private fun CounterMainNumber(
     state: CounterHeroState,
     stepDelta: Int?,
+    modifier: Modifier = Modifier,
+    feedbackAtTop: Boolean = false,
 ) {
     val locale = rememberCurrentLocale()
     val display = CounterValueFormatter.forMainCounter(state.toMainCounterProject())
@@ -530,28 +617,28 @@ private fun CounterMainNumber(
             ?: mainCounterCountText(display.heroTitle)
     val countText = formatIntegerForDisplay(state.counter.count.toLong(), locale)
     val feedbackSpace =
-        if (state.counter.stepSize >
-            1
-        ) {
+        if (state.counter.stepSize > 1 && !feedbackAtTop) {
             CounterDimens.StepFeedbackWidth
         } else {
             CounterDimens.StepRingButtonGap * 0
         }
     val density = LocalDensity.current
-    val baseTextStyle =
-        MaterialTheme.typography.displayMedium.copy(
-            fontSize = CounterDimens.CounterMainNumberFontSize,
-            fontWeight = FontWeight.Bold,
-            fontFeatureSettings = "tnum",
-        )
+    val maxFontSize = LocalCounterHeroMetrics.current.numberFontSize
+    val baseTextStyle = counterMainNumberStyle(maxFontSize)
     BoxWithConstraints(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         contentAlignment = Alignment.Center,
     ) {
         val textMeasurer = rememberTextMeasurer()
+        val heightLimitedFontSize =
+            counterMainNumberHeightLimitedFontSize(
+                maxFontSize = maxFontSize,
+                maxHeightPx = constraints.maxHeight,
+                measuredHeightPx = textMeasurer.measure("0", baseTextStyle).size.height,
+            )
         val fittedFontSize =
             counterMainNumberFittedFontSize(
-                maxFontSize = CounterDimens.CounterMainNumberFontSize,
+                maxFontSize = heightLimitedFontSize,
                 minFontSize = CounterDimens.CounterMainNumberMinimumFontSize,
                 maxWidthPx = (constraints.maxWidth - with(density) { feedbackSpace.roundToPx() } * 2).coerceAtLeast(0),
                 measureWidth = { candidateFontSize ->
@@ -571,7 +658,7 @@ private fun CounterMainNumber(
             count = state.counter.count,
             textStyle = baseTextStyle.copy(fontSize = fittedFontSize),
             contentDescription = counterDescription,
-            modifier = Modifier.tipAnchor(TipId.TARGET_REACHED),
+            modifier = Modifier.testTag("main-counter-value").tipAnchor(TipId.TARGET_REACHED),
         )
         if (stepDelta != null && state.counter.stepSize > 1) {
             Text(
@@ -580,8 +667,8 @@ private fun CounterMainNumber(
                 color = MaterialTheme.knitToolsColors.primaryReadable,
                 modifier =
                     Modifier
-                        .align(Alignment.CenterEnd)
-                        .width(feedbackSpace)
+                        .align(if (feedbackAtTop) Alignment.TopEnd else Alignment.CenterEnd)
+                        .width(CounterDimens.StepFeedbackWidth)
                         .testTag("main-counter-step-feedback")
                         .clearAndSetSemantics {},
                 textAlign = TextAlign.Center,
@@ -589,6 +676,18 @@ private fun CounterMainNumber(
         }
     }
 }
+
+/** Rajoitettu korkeus (vierekkäinen laskuri) pienentää luvun samassa suhteessa kuin rivin korkeus ylittyy. */
+internal fun counterMainNumberHeightLimitedFontSize(
+    maxFontSize: TextUnit,
+    maxHeightPx: Int,
+    measuredHeightPx: Int,
+): TextUnit =
+    if (maxHeightPx == Constraints.Infinity || measuredHeightPx <= maxHeightPx || measuredHeightPx <= 0) {
+        maxFontSize
+    } else {
+        (maxFontSize.value * maxHeightPx / measuredHeightPx).sp
+    }
 
 internal fun counterMainNumberFittedFontSize(
     maxFontSize: TextUnit,
@@ -635,7 +734,7 @@ private fun CounterTargetProgress(
         modifier =
             Modifier
                 .padding(top = CounterDimens.CounterTargetHelperSpacing)
-                .widthIn(max = CounterDimens.CounterControlsMaxWidth)
+                .widthIn(max = LocalCounterHeroMetrics.current.controlsMaxWidth)
                 .clickable(onClick = onShowTargetDialog),
     ) {
         ProjectProgressBar(fraction)
@@ -666,18 +765,33 @@ private fun CounterTargetProgress(
 @Composable
 private fun counterTargetStatusText(status: MainCounterTargetStatus): String =
     when (status) {
-        is MainCounterTargetStatus.Remaining ->
+        is MainCounterTargetStatus.Remaining -> {
             stringResource(
                 R.string.counter_target_remaining_format,
                 mainCounterProjectCardCountText(status.countSlot),
             )
-        MainCounterTargetStatus.Reached -> stringResource(R.string.counter_target_reached)
-        is MainCounterTargetStatus.Past ->
+        }
+
+        MainCounterTargetStatus.Reached -> {
+            stringResource(R.string.counter_target_reached)
+        }
+
+        is MainCounterTargetStatus.Past -> {
             stringResource(
                 R.string.counter_target_past_format,
                 mainCounterProjectCardCountText(status.countSlot),
             )
+        }
     }
+
+/** Kumoa on laskiessa päätoiminto, joten se pysyy näkyvissä pää­nappien kanssa kaikissa asetteluissa. */
+private enum class CounterUndoPlacement {
+    /** Pinotussa laskurissa nappien alla keskellä. */
+    Below,
+
+    /** Matalassa vierekkäisessä laskurissa askelrenkaan alla miinuksen ja plussan välissä. */
+    BetweenButtons,
+}
 
 @Composable
 private fun CounterButtons(
@@ -686,8 +800,10 @@ private fun CounterButtons(
     onIncrement: () -> Unit,
     onUndo: () -> Unit,
     onShowStepSize: () -> Unit,
+    undoPlacement: CounterUndoPlacement = CounterUndoPlacement.Below,
 ) {
     val display = CounterValueFormatter.forMainCounter(state.toMainCounterProject())
+    val metrics = LocalCounterHeroMetrics.current
 
     val ringText = stringResource(R.string.counter_step_multiplier, state.counter.stepSize)
     val textStyle = MaterialTheme.typography.labelLarge
@@ -695,16 +811,29 @@ private fun CounterButtons(
     val ringSize =
         with(LocalDensity.current) { measured.size.width.toDp() + CounterDimens.StepRingTextPadding * 2 }
             .coerceIn(CounterDimens.StepRingMinimumSize, CounterDimens.StepRingMaximumSize)
+    val undoBetween = undoPlacement == CounterUndoPlacement.BetweenButtons
+    val betweenUndoSize =
+        (metrics.primaryTouchSize - ringSize - CounterDimens.ShortHeroUndoGap)
+            .coerceIn(CounterDimens.StepRingMinimumSize, CounterDimens.ShortHeroUndoSize)
+    val centerColumnWidth = if (undoBetween) maxOf(ringSize, betweenUndoSize) else ringSize
+    val centerColumnHeight = if (undoBetween) ringSize + CounterDimens.ShortHeroUndoGap + betweenUndoSize else ringSize
+    val centerColumnTop = ((metrics.primaryTouchSize - centerColumnHeight) / 2).coerceAtLeast(0.dp)
+    val maxControlsWidth =
+        if (undoBetween) {
+            metrics.primaryTouchSize * 2 + centerColumnWidth + CounterDimens.StepRingButtonGap * 2
+        } else {
+            metrics.controlsMaxWidth
+        }
     BoxWithConstraints(
         modifier =
             Modifier
-                .widthIn(max = CounterDimens.CounterControlsMaxWidth)
+                .widthIn(max = maxControlsWidth)
                 .fillMaxWidth()
-                .height(CounterDimens.CounterControlsHeight),
+                .height(if (undoBetween) metrics.primaryTouchSize else metrics.controlsHeight),
     ) {
         val buttonWidth =
-            ((maxWidth - ringSize - CounterDimens.StepRingButtonGap * 2) / 2)
-                .coerceAtMost(CounterDimens.CounterPrimaryTouchSize)
+            ((maxWidth - centerColumnWidth - CounterDimens.StepRingButtonGap * 2) / 2)
+                .coerceAtMost(metrics.primaryTouchSize)
         CounterImageButton(
             imageRes = R.drawable.counter_minus_button,
             contentDescription =
@@ -712,13 +841,13 @@ private fun CounterButtons(
                     display.decreaseContentDescription,
                     state.counter.stepSize,
                 ),
-            visualSize = CounterDimens.CounterMinusVisualSize,
+            visualSize = metrics.minusVisualSize,
             visualOffsetY = CounterDimens.CounterMinusOpticalOffsetY,
             onClick = onDecrement,
             modifier =
                 Modifier
                     .width(buttonWidth)
-                    .size(CounterDimens.CounterMinusTouchSize)
+                    .size(metrics.minusTouchSize)
                     .align(Alignment.TopStart)
                     .tipProtected(),
         )
@@ -729,12 +858,12 @@ private fun CounterButtons(
                     display.increaseContentDescription,
                     state.counter.stepSize,
                 ),
-            visualSize = CounterDimens.CounterPrimaryVisualSize,
+            visualSize = metrics.primaryVisualSize,
             onClick = onIncrement,
             modifier =
                 Modifier
                     .width(buttonWidth)
-                    .size(CounterDimens.CounterPrimaryTouchSize)
+                    .size(metrics.primaryTouchSize)
                     .align(Alignment.TopEnd)
                     .tipAnchor(TipId.FIRST_ROW)
                     .tipProtected(),
@@ -748,20 +877,24 @@ private fun CounterButtons(
             modifier =
                 Modifier
                     .align(Alignment.TopCenter)
-                    .padding(top = (CounterDimens.CounterPrimaryTouchSize - ringSize) / 2),
+                    .padding(top = centerColumnTop),
         )
+        val undoModifier =
+            if (undoBetween) {
+                Modifier
+                    .align(Alignment.TopCenter)
+                    .padding(top = centerColumnTop + ringSize + CounterDimens.ShortHeroUndoGap)
+                    .size(betweenUndoSize)
+            } else {
+                Modifier.align(Alignment.BottomCenter).size(metrics.undoSize)
+            }
         CounterImageButton(
             imageRes = R.drawable.counter_undo_button,
             contentDescription = stringResource(R.string.counter_undo_last_change),
-            visualSize = CounterDimens.CounterUndoVisualSize,
+            visualSize = if (undoBetween) betweenUndoSize else metrics.undoSize,
             onClick = onUndo,
             enabled = state.canUndo,
-            modifier =
-                Modifier
-                    .size(CounterDimens.CounterUndoTouchSize)
-                    .align(Alignment.BottomCenter)
-                    .tipAnchor(TipId.UNDO)
-                    .tipProtected(),
+            modifier = undoModifier.tipAnchor(TipId.UNDO).tipProtected(),
         )
     }
 }
@@ -809,7 +942,7 @@ private fun MainCounterStepButton(
     }
 }
 
-private fun CounterHeroState.toMainCounterProject(): CounterProject =
+internal fun CounterHeroState.toMainCounterProject(): CounterProject =
     CounterProject(
         count = counter.count,
         craftType = craftType,

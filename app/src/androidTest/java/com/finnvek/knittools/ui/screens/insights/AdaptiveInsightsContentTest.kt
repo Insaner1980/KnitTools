@@ -47,6 +47,46 @@ class AdaptiveInsightsContentTest {
     private val today = LocalDate.of(2026, 10, 21)
 
     @Test
+    fun fixedCalendarRangesKeepChartSelectionAcrossResizeAndRestoration() {
+        var state by mutableStateOf(populated())
+        var size by mutableStateOf(800 to 700)
+        val restoration = StateRestorationTester(rule)
+        restoration.setContent {
+            KnitToolsTheme {
+                Box(Modifier.requiredSize(size.first.dp, size.second.dp)) {
+                    InsightsScreenContent(state, {}, {})
+                }
+            }
+        }
+        for (range in TimeRange.entries) {
+            val axis = insightsChartAxis(range, today, LocalDate.of(2024, 1, 1), DayOfWeek.MONDAY)
+            val buckets =
+                axis.bucketStarts.mapIndexed { index, date ->
+                    InsightsChartBucket(date, (index + 1) * 10, index.toLong())
+                }
+            rule.runOnIdle {
+                state =
+                    populated().copy(
+                        timeRange = range,
+                        rangeStart = axis.bucketStarts.first(),
+                        chartInterval = axis.interval,
+                        chartBuckets = buckets,
+                    )
+            }
+            for (viewport in listOf(800 to 270, 800 to 700)) {
+                rule.runOnIdle { size = viewport }
+                list().performScrollToKey("chart-heading")
+                selectBucket(1, state.chartBuckets.size)
+                val selected = heading()
+                restoration.emulateSavedInstanceStateRestore()
+                assertEquals(selected, heading())
+                selectBucket(2, state.chartBuckets.size)
+                assertTrue(selected != heading())
+            }
+        }
+    }
+
+    @Test
     fun projectFabricHitTestingAndSelectedDaySurviveResizeAndRestoration() {
         val start = LocalDate.of(2026, 9, 28)
         val fabric =

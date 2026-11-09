@@ -6,7 +6,7 @@ import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 
-const val KNITTOOLS_DATABASE_VERSION = 27
+const val KNITTOOLS_DATABASE_VERSION = 28
 
 @Database(
     entities = [
@@ -751,6 +751,13 @@ abstract class KnitToolsDatabase : RoomDatabase() {
                 }
             }
 
+        val MIGRATION_27_28 =
+            object : Migration(27, 28) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    db.execSQL("ALTER TABLE counter_history ADD COLUMN sessionUndoJson TEXT")
+                }
+            }
+
         val ALL_MANUAL_MIGRATIONS: Array<Migration>
             get() =
                 arrayOf(
@@ -778,6 +785,7 @@ abstract class KnitToolsDatabase : RoomDatabase() {
                     MIGRATION_24_25,
                     MIGRATION_25_26,
                     MIGRATION_26_27,
+                    MIGRATION_27_28,
                 )
     }
 }

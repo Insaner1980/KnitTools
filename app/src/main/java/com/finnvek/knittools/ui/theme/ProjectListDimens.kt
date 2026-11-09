@@ -3,6 +3,8 @@ package com.finnvek.knittools.ui.theme
 import androidx.compose.ui.unit.dp
 
 object ProjectListDimens {
+    // Projektikortit kahdessa sarakkeessa tästä listaleveydestä alkaen (vaakatabletti).
+    val TwoColumnMinWidth = 760.dp
     val CardSpacing = 10.dp
     val CardPaddingStart = 10.dp
     val CardPaddingVertical = 10.dp
@@ -11,10 +13,6 @@ object ProjectListDimens {
     val ThumbnailSizeCompact = 56.dp
     val ThumbnailCornerRadius = 14.dp
     val ThumbnailTextGap = 14.dp
-
-    // Kompakti asettelu vasta selvästi suurennetulla fontilla; lievä suurennus mahtuu normaaliin riviin.
-    @Suppress("MayBeConstant")
-    val CompactFontScaleThreshold = 1.3f
 
     @Suppress("MayBeConstant")
     val CompactMaxWidthDp = 320f
@@ -43,4 +41,8 @@ object ProjectListDimens {
     val SectionBottomSpacing = 8.dp
     val CreateButtonVisualSize = 64.dp
     val CreateButtonMargin = 16.dp
+
+    // Matalassa ikkunassa New Project on yläpalkissa: kelluva pilleri peitti listan ainoan näkyvän rivin.
+    val CreateButtonTopBarVisualSize = 40.dp
+    val CreateButtonTopBarEndPadding = 4.dp
 }

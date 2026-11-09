@@ -187,6 +187,11 @@ open class StubCounterProjectDao(
     override suspend fun countProjectsUsingPatternUri(patternUri: String): Int =
         projects.count { it.patternUri == patternUri }
 
+    override suspend fun clearLegacyPatternUriIfMatching(
+        projectId: Long,
+        patternUri: String,
+    ) = Unit
+
     override suspend fun archiveProject(
         id: Long,
         totalRows: Int,
@@ -210,6 +215,11 @@ open class StubCounterProjectDao(
     override suspend fun insertHistory(entry: CounterHistoryEntity) = Unit
 
     override suspend fun getLatestHistory(projectId: Long): CounterHistoryEntity? = null
+
+    override suspend fun updateLatestHistorySessionUndo(
+        projectId: Long,
+        snapshot: String,
+    ) = Unit
 
     override suspend fun deleteHistoryById(id: Long) = Unit
 

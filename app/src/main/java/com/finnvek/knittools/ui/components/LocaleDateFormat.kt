@@ -42,3 +42,10 @@ internal fun localizedDateTimePattern(
 ): String = AndroidDateFormat.getBestDateTimePattern(locale, skeleton)
 
 private fun Configuration.primaryLocale(): Locale = ConfigurationCompat.getLocales(this)[0] ?: Locale.ROOT
+
+/**
+ * Julkaisutarjouksen päättymishetki: päivä, minuutin tarkkuudella kellonaika ja aikavyöhyke, koska kampanja
+ * päättyy Helsingin aikaan. Sekunnit tekivät rivistä muotoa "8:25:44 PM GMT+02:00".
+ */
+@Composable
+internal fun rememberLaunchEndDateFormat(): SimpleDateFormat = rememberLocaleDateFormat("yMMMdz", includeTime = true)

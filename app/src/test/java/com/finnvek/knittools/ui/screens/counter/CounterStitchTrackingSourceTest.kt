@@ -6,6 +6,9 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class CounterStitchTrackingSourceTest {
+    private val heroLayout: String
+        get() = ProjectSourceFiles.read(COUNTER_HERO_LAYOUT)
+
     @Test
     fun `counter screen renders stitch tracker and exposes stitch count setup`() {
         val counterScreen = ProjectSourceFiles.read(COUNTER_SCREEN)
@@ -77,8 +80,7 @@ class CounterStitchTrackingSourceTest {
         assertTrue(dimens.contains("CounterRepeatToRowSpacing = 32.dp"))
         assertTrue(dimens.contains("CounterUndoTouchSize = CounterUndoVisualSize"))
         assertTrue(dimens.contains("CounterUndoVerticalSpacing = 16.dp"))
-        assertTrue(dimens.contains("CounterControlsHeight ="))
-        assertTrue(dimens.contains("CounterPrimaryTouchSize + CounterUndoVerticalSpacing + CounterUndoTouchSize"))
+        assertTrue(heroLayout.contains("primaryTouchSize + CounterDimens.CounterUndoVerticalSpacing + undoSize"))
         assertTrue(dimens.contains("CounterControlsToStitchTrackerCompactSpacing = 8.dp"))
         assertTrue(dimens.contains("StitchTrackerMinHeight = 68.dp"))
         assertTrue(
@@ -150,6 +152,8 @@ class CounterStitchTrackingSourceTest {
     }
 
     private companion object {
+        private const val COUNTER_HERO_LAYOUT =
+            "app/src/main/java/com/finnvek/knittools/ui/screens/counter/CounterHeroLayout.kt"
         private const val COUNTER_VIEW_MODEL =
             "app/src/main/java/com/finnvek/knittools/ui/screens/counter/CounterViewModel.kt"
         private const val COUNTER_SCREEN =

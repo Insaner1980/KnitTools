@@ -26,7 +26,8 @@ internal fun KnitToolsNavigationScaffold(
 ) {
     UnobstructedWindowContent(modifier) {
         AdaptiveContent(Modifier.fillMaxSize()) {
-            val useRail = LocalAdaptiveContentSize.current.useNavigationRail
+            val windowSize = LocalAdaptiveContentSize.current
+            val useRail = windowSize.useNavigationRail
             Row(Modifier.fillMaxSize()) {
                 if (showNavigation && useRail) {
                     KnitToolsNavigationRail(navControllerProvider)
@@ -37,7 +38,7 @@ internal fun KnitToolsNavigationScaffold(
                     snackbarHost = { snackbarHostState?.let { SnackbarHost(it) } },
                     bottomBar = {
                         if (showNavigation && !useRail) {
-                            KnitToolsBottomBar(navControllerProvider)
+                            KnitToolsBottomBar(navControllerProvider, short = windowSize.useShortNavigationBar)
                         }
                     },
                 ) { padding ->

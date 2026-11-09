@@ -359,8 +359,9 @@ class AuditPart08RuntimeMatrixTest {
         hideKeyboard()
         capture("folder-form")
         tap("cancel")
+        see("folder_sheet_title")
         back()
-        if (nodes().none { it.isVisibleToUser && matches(it, s("new_project")) }) back()
+        see("tab_projects")
         tap("new_project")
         see("new_project_details_title")
         edit("Audit new project")
@@ -371,7 +372,10 @@ class AuditPart08RuntimeMatrixTest {
         capture("created-counter")
         scenario?.close()
         scenario = null
-        runBlocking(Dispatchers.IO) { db.clearAllTables() }
+        runBlocking(Dispatchers.IO) {
+            db.clearAllTables()
+            app.onboardingStateRepository.get().dismissWelcome()
+        }
         launch()
         tap("new_project")
         see("new_project_details_title")
@@ -1053,6 +1057,7 @@ class AuditPart08RuntimeMatrixTest {
         launch()
         tap("tab_settings")
         tap("knittools_pro")
+        tap("onboarding_pro_free_show_all")
         seek(s("onboarding_pro_free_project"))
         capture("pro-content-policy")
         seek(s("pro_page_purchased"))

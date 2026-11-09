@@ -2,6 +2,66 @@
   "schemaVersion": 1,
   "exceptions": [
     {
+      "id": "knittools-mobsf-counter-undo-test-document-key",
+      "tool": "mobsfscan",
+      "rule": "android_kotlin_hardcoded",
+      "scope": "Synthetic document identity in CounterUndoIntegrityRoomTest.kt",
+      "reason": "The exact match links a synthetic project document to its test project. It is not a credential or cryptographic key.",
+      "owner": "project-maintainers",
+      "added": "2026-11-08",
+      "expires": "2027-01-18",
+      "tracking": "local-review:android-check-20261108T224923744-c52eaf94",
+      "sourcePath": "app/src/androidTest/java/com/finnvek/knittools/repository/CounterUndoIntegrityRoomTest.kt",
+      "selector": "documentKey = \"counter-integrity:$id\"",
+      "findingPath": "app/src/androidTest/java/com/finnvek/knittools/repository/CounterUndoIntegrityRoomTest.kt",
+      "findingSelectors": ["key = \"counter-integrity:$id\""]
+    },
+    {
+      "id": "knittools-mobsf-counter-undo-test-sql",
+      "tool": "mobsfscan",
+      "rule": "android_kotlin_sql_raw_query",
+      "scope": "Fixed and parameterized Room SQL in CounterUndoIntegrityRoomTest.kt",
+      "reason": "The exact matches exercise rollback using triggers selected from fixed test constants and update timestamps with bound parameters. No untrusted input reaches SQL.",
+      "owner": "project-maintainers",
+      "added": "2026-11-08",
+      "expires": "2027-01-18",
+      "tracking": "local-review:android-check-20261108T224923744-c52eaf94",
+      "sourcePath": "app/src/androidTest/java/com/finnvek/knittools/repository/CounterUndoIntegrityRoomTest.kt",
+      "selector": "sql.execSQL(",
+      "findingPath": "app/src/androidTest/java/com/finnvek/knittools/repository/CounterUndoIntegrityRoomTest.kt",
+      "findingSelectors": ["android.database.sqlite", "execSQL("]
+    },
+    {
+      "id": "knittools-mobsf-backup-post-commit-test-document-key",
+      "tool": "mobsfscan",
+      "rule": "android_kotlin_hardcoded",
+      "scope": "Synthetic document identity in BackupPostCommitCancellationTest.kt",
+      "reason": "The exact match identifies the synthetic PDF fixture used to verify backup cancellation after commit. It is not a credential or cryptographic key.",
+      "owner": "project-maintainers",
+      "added": "2026-11-08",
+      "expires": "2027-01-18",
+      "tracking": "local-review:android-check-20261108T224923744-c52eaf94",
+      "sourcePath": "app/src/androidTest/java/com/finnvek/knittools/ui/screens/backup/BackupPostCommitCancellationTest.kt",
+      "selector": "documentKey = \"local:synthetic\"",
+      "findingPath": "app/src/androidTest/java/com/finnvek/knittools/ui/screens/backup/BackupPostCommitCancellationTest.kt",
+      "findingSelectors": ["key = \"local:synthetic\""]
+    },
+    {
+      "id": "knittools-mobsf-backup-post-commit-test-sql",
+      "tool": "mobsfscan",
+      "rule": "android_kotlin_sql_raw_query",
+      "scope": "Read-only fixed SQL assertions in BackupPostCommitCancellationTest.kt",
+      "reason": "The exact matches read a test-owned database using fixed SELECT and PRAGMA statements to verify restored data and database integrity. No query includes untrusted input.",
+      "owner": "project-maintainers",
+      "added": "2026-11-08",
+      "expires": "2027-01-18",
+      "tracking": "local-review:android-check-20261108T224923744-c52eaf94",
+      "sourcePath": "app/src/androidTest/java/com/finnvek/knittools/ui/screens/backup/BackupPostCommitCancellationTest.kt",
+      "selector": "sql.rawQuery(\"PRAGMA foreign_key_check\", null)",
+      "findingPath": "app/src/androidTest/java/com/finnvek/knittools/ui/screens/backup/BackupPostCommitCancellationTest.kt",
+      "findingSelectors": ["android.database.sqlite", "rawQuery("]
+    },
+    {
       "id": "knittools-mobsf-insights-journey-test-item-keys",
       "tool": "mobsfscan",
       "rule": "android_kotlin_hardcoded",
@@ -70,7 +130,7 @@
       "expires": "2027-01-18",
       "tracking": "local-review:android-check-20261030T110235782-96976225",
       "sourcePath": "app/src/main/java/com/finnvek/knittools/ui/screens/project/ProjectListScreen.kt",
-      "selector": "item(key = \"backup-tip\")",
+      "selector": "fullWidthItem(key = \"backup-tip\")",
       "findingPath": "app/src/main/java/com/finnvek/knittools/ui/screens/project/ProjectListScreen.kt",
       "findingSelectors": [
         "key = \"backup-tip\""
@@ -507,6 +567,7 @@
         "key = \"active-work-session\"",
         "key = \"counter-hero-reveal-gap\"",
         "key = \"counter-hero\"",
+        "key = \"counter-supporting-controls\"",
         "key = \"extra-counters-title\"",
         "key = \"project-content\""
       ]

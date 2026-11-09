@@ -7,6 +7,8 @@ final class AuditPart15BillingClient extends com.android.billingclient.api.Billi
     int ackCode = 0;
     int queries = 0;
     int acknowledgements = 0;
+    boolean deferQueries = false;
+    com.android.billingclient.api.PurchasesResponseListener deferredQuery;
     private com.android.billingclient.api.BillingResult result(int code) {
         return com.android.billingclient.api.BillingResult.newBuilder().setResponseCode(code).build();
     }
@@ -35,7 +37,14 @@ final class AuditPart15BillingClient extends com.android.billingclient.api.Billi
     @Override public void isExternalOfferAvailableAsync(com.android.billingclient.api.ExternalOfferAvailabilityListener p0) { throw new UnsupportedOperationException("Unexpected test operation: isExternalOfferAvailableAsync"); }
     @Override public void launchExternalLink(android.app.Activity p0, com.android.billingclient.api.LaunchExternalLinkParams p1, com.android.billingclient.api.LaunchExternalLinkResponseListener p2) { throw new UnsupportedOperationException("Unexpected test operation: launchExternalLink"); }
     @Override public void queryProductDetailsAsync(com.android.billingclient.api.QueryProductDetailsParams p0, com.android.billingclient.api.ProductDetailsResponseListener p1) { throw new UnsupportedOperationException("Unexpected test operation: queryProductDetailsAsync"); }
-    @Override public void queryPurchasesAsync(com.android.billingclient.api.QueryPurchasesParams p0, com.android.billingclient.api.PurchasesResponseListener p1) { queries++; p1.onQueryPurchasesResponse(result(queryCode), purchases); }
+    @Override public void queryPurchasesAsync(com.android.billingclient.api.QueryPurchasesParams p0, com.android.billingclient.api.PurchasesResponseListener p1) {
+        queries++;
+        if (deferQueries) {
+            deferredQuery = p1;
+        } else {
+            p1.onQueryPurchasesResponse(result(queryCode), purchases);
+        }
+    }
     @Override public void showBillingProgramInformationDialog(android.app.Activity p0, com.android.billingclient.api.BillingProgramInformationDialogParams p1, com.android.billingclient.api.BillingProgramInformationDialogListener p2) { throw new UnsupportedOperationException("Unexpected test operation: showBillingProgramInformationDialog"); }
     @Override public void startConnection(com.android.billingclient.api.BillingClientStateListener p0) { throw new UnsupportedOperationException("Unexpected test operation: startConnection"); }
     @Override public boolean isReady() { return true; }

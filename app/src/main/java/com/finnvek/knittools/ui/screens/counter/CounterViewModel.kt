@@ -330,6 +330,8 @@ class CounterViewModel
         val stepFeedback: SharedFlow<MainCounterStepFeedback> = _stepFeedback.asSharedFlow()
         private val stepSizeSaveMutex = Mutex()
         private var projectSelectionVersion = 0L
+        private var counterStateVersion = 0L
+        private var counterActionVersion = 0L
         private var pendingNotesBase: PendingNotesSave? = null
         private val notesSaveMutex = Mutex()
         private val projectClosedEventChannel = Channel<Long>(Channel.CONFLATED)
@@ -616,6 +618,7 @@ class CounterViewModel
             }
             val previousState = _uiState.value
             val countChanged = previousState.counter.count != project.count
+            counterStateVersion++
             _uiState.update { state ->
                 val observed = state.withObservedProject(project).copy(linkedPattern = linkedPattern)
                 if (pendingNotesBase?.selectionVersion == selectionVersion) {
@@ -638,6 +641,9 @@ class CounterViewModel
             if (linkedYarnIdsCache != project.yarnCardIds) {
                 linkedYarnIdsCache = project.yarnCardIds
                 loadLinkedYarnNames(project.id, project.yarnCardIds)
+            }
+            if (previousObservedProject != null && previousObservedProject.count != project.count) {
+                syncWidget(project.id, project.name, project.count)
             }
             return project
         }
@@ -963,8 +969,7 @@ class CounterViewModel
                             activeSession = session,
                             activeSessionLoaded = true,
                             sessionSeconds = sessionSeconds,
-                            showSessionRecoveryPrompt =
-                                session?.let { it.needsRecoveryReview && !it.recoveryPromptShown } == true,
+                            showSessionRecoveryPrompt = state.shouldShowRecoveryPrompt(session),
                         )
                     }
                 }
@@ -991,12 +996,20 @@ class CounterViewModel
                     it.copy(
                         activeSession = session,
                         sessionSeconds = sessionSeconds,
-                        showSessionRecoveryPrompt =
-                            session?.needsRecoveryReview == true && !session.recoveryPromptShown,
+                        showSessionRecoveryPrompt = it.shouldShowRecoveryPrompt(session),
                     )
                 }
             }
         }
+
+        private fun CounterUiState.shouldShowRecoveryPrompt(session: ActiveWorkSession?): Boolean =
+            session?.needsRecoveryReview == true &&
+                (
+                    !session.recoveryPromptShown ||
+                        showSessionRecoveryPrompt &&
+                        activeSession?.sessionToken == session.sessionToken &&
+                        activeSession.recoveryIntervalToken == session.recoveryIntervalToken
+                )
 
         fun refreshSessionPresentationTime() {
             if (sessionPresentationJob?.isActive == true) return
@@ -1827,14 +1840,22 @@ class CounterViewModel
             val state = _uiState.value
             val projectId = state.projectId ?: return
             val selectionVersion = projectSelectionVersion
+            val actionVersion = ++counterActionVersion
             launchProjectContentMutation {
                 val changed = repository.applyMainCounterChange(projectId, MainCounterChange.Undo)
                 if (!changed) return@launchProjectContentMutation true
+                inAppReviewManager.recordAction()
+                val readVersion = counterStateVersion
                 val updatedProject = repository.getProject(projectId) ?: return@launchProjectContentMutation false
                 val currentState = _uiState.value
-                if (selectionVersion != projectSelectionVersion || currentState.projectId != projectId) {
+                if (selectionVersion != projectSelectionVersion ||
+                    currentState.projectId != projectId ||
+                    readVersion != counterStateVersion ||
+                    actionVersion != counterActionVersion
+                ) {
                     return@launchProjectContentMutation true
                 }
+                counterStateVersion++
 
                 val updatedCounter =
                     CounterState(
@@ -1852,7 +1873,6 @@ class CounterViewModel
                     }
                 }
                 syncRepeatSectionCounters(updatedCounter.count, _uiState.value.projectCounters, persist = false)
-                inAppReviewManager.recordAction()
                 if (selectionVersion == projectSelectionVersion && _uiState.value.projectId == projectId) {
                     syncWidget(projectId, updatedProject.name, updatedCounter.count)
                 }
@@ -2952,13 +2972,23 @@ class CounterViewModel
             incrementTimestampMillis: Long? = null,
         ) {
             if (newValue == previousValue) return
+            val actionVersion = ++counterActionVersion
             val state = _uiState.value
             val projectId = state.projectId ?: return
             val selectionVersion = projectSelectionVersion
             viewModelScope.launch {
                 val changed = applyCountChangeAndRecordSignals(projectId, change, incrementTimestampMillis)
+                if (changed) inAppReviewManager.recordAction()
+                val readVersion = counterStateVersion
                 val persisted = loadProjectAfterCountChange(projectId, changed) ?: return@launch
-                if (selectionVersion != projectSelectionVersion || _uiState.value.projectId != projectId) return@launch
+                if (selectionVersion != projectSelectionVersion ||
+                    _uiState.value.projectId != projectId ||
+                    readVersion != counterStateVersion ||
+                    actionVersion != counterActionVersion
+                ) {
+                    return@launch
+                }
+                counterStateVersion++
                 _uiState.update {
                     it.copy(
                         counter = CounterState(count = persisted.count, stepSize = persisted.stepSize),
@@ -2966,7 +2996,6 @@ class CounterViewModel
                     )
                 }
                 syncRepeatSectionCounters(persisted.count, _uiState.value.projectCounters, persist = false)
-                if (changed) inAppReviewManager.recordAction()
                 if (selectionVersion == projectSelectionVersion && _uiState.value.projectId == projectId) {
                     syncWidget(projectId, persisted.name, persisted.count)
                 }

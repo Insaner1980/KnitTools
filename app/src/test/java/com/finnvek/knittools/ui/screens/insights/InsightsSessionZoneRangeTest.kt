@@ -25,6 +25,8 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import java.time.DayOfWeek
+import java.time.LocalDate
 import java.time.OffsetDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -127,6 +129,67 @@ class InsightsSessionZoneRangeTest {
                 assertEquals(1, state.activeDays)
                 assertEquals(60, state.totalMinutes)
                 assertTrue(state.activeDays <= state.daysInRange)
+            }
+        }
+
+    @Test
+    fun adaptiveFixtureKeepsExactTotalsAndSparseChartsAtCalendarBoundaries() =
+        runTest {
+            mockkStatic(::currentInsightsFirstDayOfWeek)
+            try {
+                for (firstDay in listOf(DayOfWeek.SUNDAY, DayOfWeek.MONDAY)) {
+                    every { currentInsightsFirstDayOfWeek() } returns firstDay
+                    for (date in listOf("2026-11-01", "2026-11-02", "2026-11-08", "2026-11-09", "2027-01-01")) {
+                        val today = LocalDate.parse(date)
+                        val rows =
+                            listOf(0L, 1L, 14L, 90L, 700L).map {
+                                session("${today.minusDays(it)}T10:00-10:00")
+                            }
+                        val week = stateAt("${date}T12:00-10:00", rows, TimeRange.THIS_WEEK)
+                        val weekDays = if (today.dayOfWeek == firstDay) 1 else 2
+                        assertEquals(weekDays * 30, week.totalMinutes)
+                        assertEquals(weekDays, week.activeDays)
+                        assertEquals(weekDays >= 2, week.hasMeaningfulChartData)
+                        assertEquals(weekDays, week.chartBuckets.count { it.totalMinutes > 0 })
+
+                        val month = stateAt("${date}T12:00-10:00", rows, TimeRange.THIS_MONTH)
+                        val monthDays = if (today.dayOfMonth == 1) 1 else 2
+                        assertEquals(monthDays * 30, month.totalMinutes)
+                        assertEquals(monthDays, month.activeDays)
+                        assertEquals(monthDays >= 2, month.hasMeaningfulChartData)
+                        assertEquals(monthDays, month.chartBuckets.count { it.totalMinutes > 0 })
+
+                        val all = stateAt("${date}T12:00-10:00", rows)
+                        assertEquals(150, all.totalMinutes)
+                        assertEquals(5, all.activeDays)
+                        assertTrue(all.hasMeaningfulChartData)
+                    }
+                }
+            } finally {
+                unmockkStatic(::currentInsightsFirstDayOfWeek)
+            }
+        }
+
+    @Test
+    fun weekAndMonthStartIncludeOnlyThePostMidnightPartOfSessions() =
+        runTest {
+            mockkStatic(::currentInsightsFirstDayOfWeek)
+            try {
+                every { currentInsightsFirstDayOfWeek() } returns DayOfWeek.SUNDAY
+                val rows =
+                    listOf(
+                        session("2026-10-31T23:30-10:00"),
+                        session("2026-10-31T23:45-10:00"),
+                        session("2026-11-01T00:00-10:00"),
+                    )
+                for (range in listOf(TimeRange.THIS_WEEK, TimeRange.THIS_MONTH)) {
+                    val state = stateAt("2026-11-01T12:00-10:00", rows, range)
+                    assertRange(state, "2026-11-01", "2026-11-01", 1, 1, 45)
+                    assertFalse(state.hasMeaningfulChartData)
+                    assertEquals(45, state.chartBuckets.single().totalMinutes)
+                }
+            } finally {
+                unmockkStatic(::currentInsightsFirstDayOfWeek)
             }
         }
 

@@ -93,8 +93,9 @@ class AppStartupSourceTest {
         )
         assertTrue(proManager.contains("suspend fun hasFeatureAfterInitialLoad(feature: ProFeature): Boolean"))
         assertTrue(proManager.contains("purchaseStateReady(billingManager.purchaseStateReady).first { it }"))
-        assertTrue(proManager.contains("currentPurchased(billingManager.isProPurchased.value) || hasFeature(feature)"))
-        assertTrue(widget.contains("hasFeatureAfterInitialLoad(ProFeature.WIDGET)"))
+        assertTrue(proManager.contains("currentPurchased(billingManager.isProPurchased.value)"))
+        assertTrue(proManager.contains("ProActionAccess.Locked, ProActionAccess.Unknown -> false"))
+        assertTrue(widget.contains("featureAccessAfterInitialLoad(ProFeature.WIDGET)"))
         assertTrue(actions.contains("hasFeatureAfterInitialLoad(ProFeature.WIDGET)"))
         assertFalse(widget.contains("hasFeature(ProFeature.WIDGET)"))
         assertFalse(actions.contains("hasFeature(ProFeature.WIDGET)"))
@@ -113,14 +114,14 @@ class AppStartupSourceTest {
     }
 
     @Test
-    fun `widget pro gate changes refresh placed widgets after initial pro state`() {
+    fun `widget access changes refresh placed widgets including unresolved ownership`() {
         val app = ProjectSourceFiles.read(APP)
         val widgetState = ProjectSourceFiles.read(COUNTER_WIDGET_STATE)
 
         assertTrue(app.contains("import com.finnvek.knittools.pro.ProFeature"))
         assertTrue(app.contains("import com.finnvek.knittools.widget.CounterWidgetState"))
-        assertTrue(app.contains("manager.initialStateReady.first { it }"))
-        assertTrue(app.contains(".hasFeatureFlow(ProFeature.WIDGET)"))
+        assertFalse(app.contains("manager.initialStateReady.first { it }"))
+        assertTrue(app.contains(".featureAccessFlow(ProFeature.WIDGET)"))
         assertTrue(app.contains("CounterWidgetState.refreshAll(this@App)"))
         assertTrue(app.contains("catch (e: CancellationException)"))
         assertTrue(widgetState.contains("suspend fun refreshAll(context: Context)"))

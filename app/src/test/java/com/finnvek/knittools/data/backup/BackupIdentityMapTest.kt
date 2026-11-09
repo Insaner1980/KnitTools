@@ -48,9 +48,11 @@ class BackupIdentityMapTest {
         val row =
             mutableMapOf<String, JsonElement>(
                 "linkedCounterDeltasJson" to JsonPrimitive(LinkedCounterDeltas.encode(mapOf(1L to -2, 999L to 3))),
+                "sessionUndoJson" to JsonPrimitive("old-session-snapshot"),
             )
 
         identities.apply("counter_history", row)
+        assertEquals(JsonNull, row["sessionUndoJson"])
 
         assertEquals(
             mapOf(51L to -2),

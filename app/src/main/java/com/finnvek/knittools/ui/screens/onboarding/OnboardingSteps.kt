@@ -118,7 +118,9 @@ internal fun JourneyWelcome() {
                     .size(IllustrationDimens.LogoSize)
                     .staggeredEntrance(rememberStaggeredEntrance(0)),
         )
-        CraftIllustration(R.drawable.onboarding_welcome_hero, height = IllustrationDimens.WelcomeHeight)
+        journeyIllustrationHeight(IllustrationDimens.WelcomeHeight)?.let { height ->
+            CraftIllustration(R.drawable.onboarding_welcome_hero, height = height)
+        }
         JourneyTitle(
             stringResource(R.string.journey_welcome_title),
             Modifier.staggeredEntrance(rememberStaggeredEntrance(1)),
@@ -552,7 +554,9 @@ private fun JourneyDemoCounter(
 
 @Composable
 internal fun JourneyReady(draft: OnboardingDraft) {
-    CraftIllustration(R.drawable.onboarding_project_ready, entrance = IllustrationEntrance.Bounce)
+    journeyIllustrationHeight(IllustrationDimens.Height)?.let { height ->
+        CraftIllustration(R.drawable.onboarding_project_ready, height = height, entrance = IllustrationEntrance.Bounce)
+    }
     JourneyTitle(
         stringResource(R.string.journey_ready_title),
         Modifier.staggeredEntrance(rememberStaggeredEntrance(2)),

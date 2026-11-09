@@ -98,24 +98,25 @@ class ProjectListWorkspaceSourceTest {
 
         // Plus-napin vieressä on teksti: sama plus tarkoittaa laskurissa rivin lisäämistä.
         assertTrue(screenFunction.contains("val newProjectLabel = stringResource(R.string.new_project)"))
+        assertTrue(screenFunction.contains("val showCreateButton = !isMultiSelectMode && !showFullWelcome"))
+        // Matalassa ikkunassa painike on yläpalkissa, muuten kelluvana oikeassa alakulmassa.
         assertTrue(
-            normalizeWhitespace(
-                screenFunction,
-            ).contains("if (!isMultiSelectMode && !showFullWelcome) { LabeledCounterImageButton("),
+            screenFunction.contains("val createButtonInTopBar = LocalAdaptiveContentSize.current.isCompactHeight"),
         )
+        assertTrue(normalizeWhitespace(screenFunction).contains("if (showFloatingCreateButton) { newProjectButton("))
         assertTokensInOrder(
             createAction,
             "imageRes = R.drawable.counter_plus_button",
             "label = newProjectLabel",
-            "visualSize = ProjectListDimens.CreateButtonVisualSize",
             "onClick = requestProjectCreation",
-            "modifier =",
+            "ProjectListDimens.CreateButtonTopBarVisualSize",
+            "ProjectListDimens.CreateButtonVisualSize",
             ".align(Alignment.BottomEnd)",
             ".padding(ProjectListDimens.CreateButtonMargin)",
         )
         assertTokensInOrder(
             content,
-            "LazyColumn(",
+            "LazyVerticalGrid(",
             "contentPadding =",
             "PaddingValues(",
             "start = ProjectListDimens.ScreenHorizontalPadding",
@@ -199,7 +200,7 @@ class ProjectListWorkspaceSourceTest {
             )
         val sectionLabel =
             sourceBetween(screen, "private fun ProjectSectionLabel(", "private fun DeleteProjectDialog(")
-        val visibleActiveFilter = sourceBetween(content, "val visibleActiveProjects =", "LazyColumn(")
+        val visibleActiveFilter = sourceBetween(content, "val visibleActiveProjects =", "LazyVerticalGrid(")
         val normalizedContent = normalizeWhitespace(content)
 
         assertTrue(content.contains("val isHeroVisible = !state.isMultiSelectMode && state.continueKnitting != null"))
@@ -240,7 +241,11 @@ class ProjectListWorkspaceSourceTest {
                 "private fun ProjectListItem(",
             )
         val completedRows =
-            sourceBetween(content, "items = state.completed,", "if (index < state.completed.lastIndex)")
+            sourceBetween(
+                content,
+                "items = state.completed,",
+                "if (index / columns < state.completed.lastIndex / columns)",
+            )
         val item =
             sourceBetween(
                 screen,

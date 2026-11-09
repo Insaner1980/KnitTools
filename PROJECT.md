@@ -6,7 +6,7 @@ This is the product and technical reference for the **inspected working tree on 
 
 This update retains the October 18 reference and the pre-existing October 19 Brazilian Portuguese additions, reconciles their Git/source history, and refreshes the affected sections and inventories. It is a documentation/source verification, not a new build or runtime test run.
 
-Schema and backup-table facts were reconciled with schema 27 on November 6, 2026. Dated validation records below remain historical evidence.
+Schema and backup-table facts were reconciled with schema 28 on November 9, 2026. Dated validation records below remain historical evidence.
 
 All repository links are relative to the root. Package shorthand such as `repository/CounterRepository.kt` means a path below `app/src/main/java/com/finnvek/knittools`. “Implemented” means present and reachable subject to state, validation and entitlement; it does not mean released, live-service verified or freshly runtime-tested.
 
@@ -22,8 +22,8 @@ All repository links are relative to the root. Package shorthand such as `reposi
 | Application ID / namespace | `com.finnvek.knittools` |
 | App version | `1.0.0`, version code `1` |
 | Android SDK | Minimum 29; target and compile 37 |
-| Room schema | 27 |
-| Current database shape | 19 entities/tables, 213 columns; 27 exported schema versions |
+| Room schema | 28 |
+| Current database shape | 19 entities/tables, 214 columns; 28 exported schema versions |
 | Supported app languages | 12 locale options; System is a selection mode |
 | Resource inventory | 1,308 translatable strings and 31 plurals per locale; 1,339 names per locale |
 | Modules | `:app` and `:baselineprofile` |
@@ -891,7 +891,7 @@ Contextual prompts retain pending user actions so that a successful trial activa
 
 [BackupScreen.kt](app/src/main/java/com/finnvek/knittools/ui/screens/backup/BackupScreen.kt) and [BackupViewModel.kt](app/src/main/java/com/finnvek/knittools/ui/screens/backup/BackupViewModel.kt) expose user-selected SAF export and import preview. Confirmed restore **replaces all current project data**; it is not a merge. Preview/confirmation state is separate from a live mutation.
 
-[BackupRepository.kt](app/src/main/java/com/finnvek/knittools/repository/BackupRepository.kt) coordinates [data/backup](app/src/main/java/com/finnvek/knittools/data/backup). `.knittools-backup` is an `application/octet-stream` ZIP with format version 1, data version 1, current schema 27, `manifest.json`, 18 `tables/<table>.jsonl` streams, and content-addressed `files/<sha256>.bin` entries. Table streams use ordered column headers and primitive row arrays. It contains logical records, not a copied SQLite database/WAL.
+[BackupRepository.kt](app/src/main/java/com/finnvek/knittools/repository/BackupRepository.kt) coordinates [data/backup](app/src/main/java/com/finnvek/knittools/data/backup). `.knittools-backup` is an `application/octet-stream` ZIP with format version 1, data version 1, current schema 28, `manifest.json`, 18 `tables/<table>.jsonl` streams, and content-addressed `files/<sha256>.bin` entries. Table streams use ordered column headers and primitive row arrays. It contains logical records, not a copied SQLite database/WAL.
 
 The manifest identifies KnitTools format, creation time, app version, schema, and bounded file paths/sizes/hashes. Structural allowlists, duplicate/path checks, ZIP/ZIP64 local/central inventory agreement, trailing-data/decompression/depth checks, declared budgets, hashes, row validation, and a shadow Room database reject invalid archives before confirmation/replacement. App version is informational; other format/data/schema versions need an adapter, currently absent. SHA-256 detects inconsistent bytes but supplies no cryptographic authenticity. The archive is **unencrypted and unauthenticated**; project notes/photos/PDFs are readable by anyone who can access the file.
 
@@ -1290,7 +1290,7 @@ Expected validation/missing/stale/feature failures use typed result models. Read
 
 ### Room ownership and constraints
 
-[KnitToolsDatabase.kt](app/src/main/java/com/finnvek/knittools/data/local/KnitToolsDatabase.kt) declares schema 27 and 19 entities. [DatabaseModule.kt](app/src/main/java/com/finnvek/knittools/di/DatabaseModule.kt) opens `knittools.db`, registers every manual migration plus Room auto-migrations, and installs constraints. Destructive fallback is not configured. Exported JSON schemas 1–27 are available in [app/schemas/com.finnvek.knittools.data.local.KnitToolsDatabase](app/schemas/com.finnvek.knittools.data.local.KnitToolsDatabase). Version 27's identity hash is `0e2ccceb2d38b0e6741412179a5d1769`.
+[KnitToolsDatabase.kt](app/src/main/java/com/finnvek/knittools/data/local/KnitToolsDatabase.kt) declares schema 28 and 19 entities. [DatabaseModule.kt](app/src/main/java/com/finnvek/knittools/di/DatabaseModule.kt) opens `knittools.db`, registers every manual migration plus Room auto-migrations, and installs constraints. Destructive fallback is not configured. Exported JSON schemas 1–28 are available in [app/schemas/com.finnvek.knittools.data.local.KnitToolsDatabase](app/schemas/com.finnvek.knittools.data.local.KnitToolsDatabase). Version 28's identity hash is `da23c177722e708f242c5d2998ed91e0`; schema 28 adds the nullable `counter_history.sessionUndoJson` session snapshot (`MIGRATION_27_28`).
 
 | Table | Entity / DAO | Canonical writer / meaning |
 | --- | --- | --- |
@@ -1388,6 +1388,7 @@ Primary key: `id` (auto-generated).
 | `newValue` | INTEGER | No | — |
 | `timestamp` | INTEGER | No | — |
 | `linkedCounterDeltasJson` | TEXT | Yes | — |
+| `sessionUndoJson` | TEXT | Yes | — |
 
 Indexes: `index_counter_history_projectId` (`projectId`).
 
@@ -1756,7 +1757,7 @@ Foreign key: `projectId` → `counter_projects` (`id`), delete CASCADE, update N
 
 ### Migration chain
 
-Room exports every version 1–27. Versions 1→2 and 2→3 use declared auto-migrations; subsequent migrations are explicitly registered. Schema snapshots, migration implementation, constraint callbacks, and migration tests must change together for new persistent state.
+Room exports every version 1–28. Versions 1→2 and 2→3 use declared auto-migrations; subsequent migrations are explicitly registered. Schema snapshots, migration implementation, constraint callbacks, and migration tests must change together for new persistent state.
 
 | Transition | Implemented change / preservation boundary |
 | --- | --- |
@@ -1786,6 +1787,7 @@ Room exports every version 1–27. Versions 1→2 and 2→3 use declared auto-mi
 | 24→25 | Adds project completion events; backfills at most one valid current completion per completed project, nullable legacy zone |
 | 25→26 | Adds only onboarding project draft receipts and their unique project index; preserves earlier tables |
 | 26→27 | `MIGRATION_26_27` adds nullable `counter_history.linkedCounterDeltasJson` TEXT for actual linked-counter history deltas; preserves existing history with null snapshots |
+| 27→28 | `MIGRATION_27_28` adds nullable `counter_history.sessionUndoJson` TEXT for session row-accounting undo snapshots; preserves existing history with null snapshots |
 
 Migration 24→25 requires a credible completion timestamp at/after creation; it does not invent all historical completion cycles. Session null zones and completion null zones keep the established current-device-zone fallback. Migration 18→19 must preserve tables that reference the rebuilt saved-pattern table; a successful table rebuild without those rows is not a correct migration.
 

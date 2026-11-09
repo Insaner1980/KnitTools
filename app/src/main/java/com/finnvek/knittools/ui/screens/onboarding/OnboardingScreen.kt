@@ -45,6 +45,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
@@ -52,10 +53,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -64,6 +67,7 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.finnvek.knittools.R
@@ -76,6 +80,7 @@ import com.finnvek.knittools.domain.model.OnboardingStep
 import com.finnvek.knittools.domain.model.canGoBack
 import com.finnvek.knittools.pro.ProStatus
 import com.finnvek.knittools.ui.components.CancelButton
+import com.finnvek.knittools.ui.components.illustrationHeightFor
 import com.finnvek.knittools.ui.components.rememberCurrentLocale
 import com.finnvek.knittools.ui.findActivity
 import com.finnvek.knittools.ui.layout.ContentWidthPolicy
@@ -220,86 +225,127 @@ fun OnboardingScreen(
             }
         },
         bottomBar = {
-            BoxWithConstraints(Modifier.fillMaxWidth().navigationBarsPadding(), contentAlignment = Alignment.Center) {
-                Column(
-                    Modifier
-                        .contentWidth(ContentWidthPolicy.Form)
-                        .heightIn(max = maxHeight / 2)
-                        .verticalScroll(rememberScrollState())
-                        .padding(ComponentDimens.ContentPadding),
-                    verticalArrangement = Arrangement.spacedBy(ComponentDimens.CompactSpacing),
-                ) {
-                    if (draft.step == OnboardingStep.Price) {
-                        JourneyPriceActions(price, busy, actions)
-                    } else if (draft.step != OnboardingStep.Craft) {
-                        val canCreate =
-                            draft.name.isNotBlank() &&
-                                parseProjectStartCount(draft.initialCount) != null &&
-                                parseTargetRows(draft.targetRows) != TargetInput.Invalid
-                        JourneyPrimaryButton(
-                            label = stringResource(nextLabel(draft.step)),
-                            enabled = !busy && (draft.step != OnboardingStep.Project || canCreate),
-                            onClick = if (draft.step == OnboardingStep.Project) actions.create else actions.next,
-                            modifier = Modifier.testTag("onboarding_next"),
-                        )
-                    }
-                }
-            }
+            JourneyFooter(draft, price, busy, actions)
         },
     ) { padding ->
         BoxWithConstraints(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.TopCenter) {
             val viewportHeight = maxHeight
-            AnimatedContent(
-                targetState = draft.step,
-                transitionSpec = { journeyStepTransition() },
-                label = "onboardingStep",
-            ) { step ->
-                // Kuvitetut esittelyvaiheet keskitetään, jottei näkymän alaosaan jää tyhjää aluetta.
-                val centered = step == OnboardingStep.Welcome || step == OnboardingStep.Ready
-                val scroll = rememberScrollState()
-                Box {
-                    Column(
-                        Modifier
-                            .contentWidth(ContentWidthPolicy.Form)
-                            .verticalScroll(scroll)
-                            .heightIn(min = viewportHeight)
-                            .padding(ComponentDimens.ContentPadding),
-                        verticalArrangement =
-                            Arrangement.spacedBy(
-                                OnboardingDimens.JourneySectionGap,
-                                if (centered) Alignment.CenterVertically else Alignment.Top,
-                            ),
-                    ) {
-                        messageRes?.let {
-                            Text(
-                                stringResource(it),
-                                style = MaterialTheme.typography.bodyLarge,
-                                modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+            val shortContent = viewportHeight < OnboardingDimens.ShortContentHeight
+            CompositionLocalProvider(LocalJourneyViewportHeight provides viewportHeight) {
+                AnimatedContent(
+                    targetState = draft.step,
+                    transitionSpec = { journeyStepTransition() },
+                    label = "onboardingStep",
+                ) { step ->
+                    // Kuvitetut esittelyvaiheet keskitetään, jottei näkymän alaosaan jää tyhjää aluetta.
+                    val centered = step == OnboardingStep.Welcome || step == OnboardingStep.Ready
+                    val scroll = rememberScrollState()
+                    Box(contentAlignment = Alignment.TopCenter) {
+                        Column(
+                            Modifier
+                                .contentWidth(ContentWidthPolicy.Form)
+                                .verticalScroll(scroll)
+                                .heightIn(min = viewportHeight)
+                                .padding(ComponentDimens.ContentPadding),
+                            verticalArrangement =
+                                Arrangement.spacedBy(
+                                    if (shortContent) {
+                                        OnboardingDimens.ShortSectionGap
+                                    } else {
+                                        OnboardingDimens.JourneySectionGap
+                                    },
+                                    if (centered) Alignment.CenterVertically else Alignment.Top,
+                                ),
+                        ) {
+                            messageRes?.let {
+                                Text(
+                                    stringResource(it),
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+                                )
+                            }
+                            when (step) {
+                                OnboardingStep.Welcome -> JourneyWelcome()
+                                OnboardingStep.Craft -> JourneyCraft(draft, busy, actions)
+                                OnboardingStep.Needs -> JourneyNeeds(draft, busy, actions.edit)
+                                OnboardingStep.Counter -> JourneyCounter(draft, busy, actions.edit)
+                                OnboardingStep.Toolbox -> JourneyToolbox(draft.craftType, draft.needs)
+                                OnboardingStep.Project -> JourneyProject(draft, busy, actions)
+                                OnboardingStep.Ready -> JourneyReady(draft)
+                                OnboardingStep.Price -> JourneyPriceContent(draft, price, busy, actions.purchase)
+                            }
+                        }
+                        // Vieritetty sisältö katkesi terävästi otsikkoalueen alle; ohut viiva erottaa ne.
+                        if (scroll.canScrollBackward) {
+                            HorizontalDivider(
+                                Modifier.align(Alignment.TopCenter),
+                                color = MaterialTheme.colorScheme.outlineVariant,
                             )
                         }
-                        when (step) {
-                            OnboardingStep.Welcome -> JourneyWelcome()
-                            OnboardingStep.Craft -> JourneyCraft(draft, busy, actions)
-                            OnboardingStep.Needs -> JourneyNeeds(draft, busy, actions.edit)
-                            OnboardingStep.Counter -> JourneyCounter(draft, busy, actions.edit)
-                            OnboardingStep.Toolbox -> JourneyToolbox(draft.craftType, draft.needs)
-                            OnboardingStep.Project -> JourneyProject(draft, busy, actions)
-                            OnboardingStep.Ready -> JourneyReady(draft)
-                            OnboardingStep.Price -> JourneyPriceContent(draft, price, busy, actions.purchase)
+                        // Sama viiva alareunassa kertoo, että sisältöä on vielä kiinteiden toimintojen alla.
+                        if (scroll.canScrollForward) {
+                            HorizontalDivider(
+                                Modifier.align(Alignment.BottomCenter).testTag("onboarding_more_below"),
+                                color = MaterialTheme.colorScheme.outlineVariant,
+                            )
                         }
-                    }
-                    // Vieritetty sisältö katkesi terävästi otsikkoalueen alle; ohut viiva erottaa ne.
-                    if (scroll.canScrollBackward) {
-                        HorizontalDivider(
-                            Modifier.align(Alignment.TopCenter),
-                            color = MaterialTheme.colorScheme.outlineVariant,
-                        )
                     }
                 }
             }
         }
     }
 }
+
+@Composable
+private fun JourneyFooter(
+    draft: OnboardingDraft,
+    price: OnboardingPriceState,
+    busy: Boolean,
+    actions: OnboardingActions,
+) {
+    BoxWithConstraints(Modifier.fillMaxWidth().navigationBarsPadding(), contentAlignment = Alignment.Center) {
+        val screenHeight = maxHeight
+        Column(
+            Modifier
+                .contentWidth(ContentWidthPolicy.Form)
+                .heightIn(max = maxHeight / 2)
+                .verticalScroll(rememberScrollState())
+                .padding(ComponentDimens.ContentPadding),
+            verticalArrangement = Arrangement.spacedBy(ComponentDimens.CompactSpacing),
+        ) {
+            if (draft.step == OnboardingStep.Price) {
+                JourneyPriceActions(
+                    price = price,
+                    busy = busy,
+                    actions = actions,
+                    sideBySide = screenHeight < OnboardingDimens.SideBySideActionsScreenHeight,
+                )
+            } else if (draft.step != OnboardingStep.Craft) {
+                val canCreate =
+                    draft.name.isNotBlank() &&
+                        parseProjectStartCount(draft.initialCount) != null &&
+                        parseTargetRows(draft.targetRows) != TargetInput.Invalid
+                JourneyPrimaryButton(
+                    label = stringResource(nextLabel(draft.step)),
+                    enabled = !busy && (draft.step != OnboardingStep.Project || canCreate),
+                    onClick = if (draft.step == OnboardingStep.Project) actions.create else actions.next,
+                    modifier = Modifier.testTag("onboarding_next"),
+                )
+            }
+        }
+    }
+}
+
+/** Vaiheen vieritettävän sisällön korkeus; kuvitus ja otsikko mitoittuvat sen mukaan. */
+internal val LocalJourneyViewportHeight = staticCompositionLocalOf { Dp.Infinity }
+
+/**
+ * Kuvituksen korkeus käytettävissä olevan korkeuden mukaan: matalassa tilassa pienempi ja hyvin
+ * matalassa (vaakapuhelin) ei lainkaan, jotta vaiheen varsinainen sisältö näkyy.
+ */
+@Composable
+internal fun journeyIllustrationHeight(regular: Dp): Dp? =
+    illustrationHeightFor(LocalJourneyViewportHeight.current, regular, LocalDensity.current.fontScale)
 
 @Composable
 private fun JourneyHeader(
@@ -385,9 +431,11 @@ internal fun JourneyTitle(
     modifier: Modifier = Modifier,
     textAlign: TextAlign? = null,
 ) {
+    // Matalassa tilassa kaksirivinen headlineLarge vei enemmän korkeutta kuin itse kuvitus.
+    val short = LocalJourneyViewportHeight.current < OnboardingDimens.ShortContentHeight
     Text(
         text,
-        style = MaterialTheme.typography.headlineLarge,
+        style = if (short) MaterialTheme.typography.headlineMedium else MaterialTheme.typography.headlineLarge,
         textAlign = textAlign,
         modifier = modifier.fillMaxWidth().semantics { heading() },
     )

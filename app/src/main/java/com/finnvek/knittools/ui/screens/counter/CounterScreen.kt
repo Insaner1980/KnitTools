@@ -1039,18 +1039,20 @@ fun ProjectContentHost(
         val activeProjectName =
             state.projects.firstOrNull { it.id == activeSession.projectId }?.name
                 ?: state.projectName
-        SessionRecoveryDialog(
-            projectName = activeProjectName,
-            recoveryReason = activeSession.recoveryReason,
-            recoveryIntervalToken = activeSession.recoveryIntervalToken,
-            trustedDurationSeconds = activeSession.timingAnchors.checkpointedDurationSeconds,
-            suggestedDurationSeconds = activeSession.recoverySuggestedDurationSeconds,
-            pendingRowsWorked = activeSession.pendingRowsWorked,
-            onAdd = viewModel::addRecoveryInterval,
-            onDiscard = viewModel::discardRecoveryInterval,
-            onEdit = viewModel::editRecoveryDurationAndStop,
-            onDismiss = viewModel::dismissRecoveryPrompt,
-        )
+        key(activeSession.sessionToken, activeSession.recoveryIntervalToken) {
+            SessionRecoveryDialog(
+                projectName = activeProjectName,
+                recoveryReason = activeSession.recoveryReason,
+                recoveryIntervalToken = activeSession.recoveryIntervalToken,
+                trustedDurationSeconds = activeSession.timingAnchors.checkpointedDurationSeconds,
+                suggestedDurationSeconds = activeSession.recoverySuggestedDurationSeconds,
+                pendingRowsWorked = activeSession.pendingRowsWorked,
+                onAdd = viewModel::addRecoveryInterval,
+                onDiscard = viewModel::discardRecoveryInterval,
+                onEdit = viewModel::editRecoveryDurationAndStop,
+                onDismiss = viewModel::dismissRecoveryPrompt,
+            )
+        }
     }
 
     state.sessionStartConflict?.let { conflict ->

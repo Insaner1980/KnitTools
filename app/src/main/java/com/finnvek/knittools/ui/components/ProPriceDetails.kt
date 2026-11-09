@@ -41,7 +41,7 @@ internal fun ProPriceDetails(
                     style = MaterialTheme.typography.titleMedium,
                 )
                 if (launch != null) {
-                    val dateFormat = rememberLocaleDateFormat("yMMMdssz", includeTime = true)
+                    val dateFormat = rememberLaunchEndDateFormat()
                     Text(stringResource(R.string.pro_launch_ends_at, dateFormat.format(Date(launch.endsAtMillis))))
                     formatOfferFullPrice(offer, rememberCurrentLocale())?.let {
                         Text(stringResource(R.string.pro_price_after_launch, it))

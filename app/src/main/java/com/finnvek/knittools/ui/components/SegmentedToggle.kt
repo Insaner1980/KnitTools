@@ -30,6 +30,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.finnvek.knittools.ui.theme.ComponentDimens
+import com.finnvek.knittools.ui.theme.FontScaleThresholds
 
 private val PillContainerShape = RoundedCornerShape(50)
 private val PillItemShape = RoundedCornerShape(50)
@@ -46,7 +47,7 @@ fun SegmentedToggle(
     optionTrailingContent: @Composable (Int) -> Unit = {},
 ) {
     val isGrid = options.size > 3
-    val expandedLabels = LocalDensity.current.fontScale >= 1.5f
+    val expandedLabels = LocalDensity.current.fontScale >= FontScaleThresholds.LARGE
     val containerShape: Shape = if (isGrid || expandedLabels) GridContainerShape else PillContainerShape
     val itemShape: Shape = if (isGrid || expandedLabels) GridItemShape else PillItemShape
 

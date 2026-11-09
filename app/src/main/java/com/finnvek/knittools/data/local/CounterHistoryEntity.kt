@@ -28,4 +28,5 @@ data class CounterHistoryEntity(
     val newValue: Int,
     val timestamp: Long = System.currentTimeMillis(),
     val linkedCounterDeltasJson: String? = null,
+    val sessionUndoJson: String? = null,
 )

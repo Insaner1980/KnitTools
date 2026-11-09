@@ -55,6 +55,7 @@ import com.finnvek.knittools.ui.components.dashedOutline
 import com.finnvek.knittools.ui.components.rememberStaggeredEntrance
 import com.finnvek.knittools.ui.components.staggeredEntrance
 import com.finnvek.knittools.ui.theme.ComponentDimens
+import com.finnvek.knittools.ui.theme.FontScaleThresholds
 import com.finnvek.knittools.ui.theme.IllustrationDimens
 import com.finnvek.knittools.ui.theme.OnboardingDimens
 import com.finnvek.knittools.ui.theme.knitToolsColors
@@ -136,14 +137,15 @@ internal fun JourneyToolbox(
                 }
             }
         }
-    CraftIllustration(
-        R.drawable.onboarding_toolbox_hero,
-        height = IllustrationDimens.WelcomeHeight,
-    )
+    journeyIllustrationHeight(IllustrationDimens.WelcomeHeight)?.let { height ->
+        CraftIllustration(R.drawable.onboarding_toolbox_hero, height = height)
+    }
     JourneyTitle(stringResource(R.string.journey_toolbox_title))
     Text(stringResource(R.string.journey_toolbox_body), style = MaterialTheme.typography.bodyLarge)
     BoxWithConstraints(Modifier.fillMaxWidth()) {
-        val compact = maxWidth < OnboardingDimens.JourneyStackedBreakpoint || LocalDensity.current.fontScale > 1.3f
+        val compact =
+            maxWidth < OnboardingDimens.JourneyStackedBreakpoint ||
+                LocalDensity.current.fontScale > FontScaleThresholds.COMPACT
         val columns = if (compact) OnboardingDimens.TOOLBOX_COMPACT_COLUMNS else OnboardingDimens.TOOLBOX_COLUMNS
         // Viimeinen solu (null) on And more -laatta.
         val cells: List<JourneyTool?> = orderedJourneyTools(needs) + null

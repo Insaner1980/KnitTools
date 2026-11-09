@@ -32,6 +32,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.finnvek.knittools.ui.theme.CrossStitchDimens
 import com.finnvek.knittools.ui.theme.ProjectOverviewDimens
@@ -73,6 +74,9 @@ internal fun OverviewTextAction(
     trailingIcon: ImageVector? = null,
     enabled: Boolean = true,
     trailingContent: (@Composable () -> Unit)? = null,
+    // Vasempaan reunaan tasattu toiminto (esim. projektisivun lopun opaslinkki) laajentaa kosketusaluetta
+    // oikealle, jotta teksti on samassa linjassa osioiden kanssa.
+    startAligned: Boolean = false,
 ) {
     Row(
         modifier =
@@ -80,7 +84,10 @@ internal fun OverviewTextAction(
                 .heightIn(min = ProjectOverviewDimens.ActionTouchSize)
                 .widthIn(min = ProjectOverviewDimens.ActionTouchSize)
                 .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
-                .padding(start = ProjectOverviewDimens.ContentGap),
+                .padding(
+                    start = if (startAligned) 0.dp else ProjectOverviewDimens.ContentGap,
+                    end = if (startAligned) ProjectOverviewDimens.ContentGap else 0.dp,
+                ),
         horizontalArrangement = Arrangement.End,
         verticalAlignment = Alignment.CenterVertically,
     ) {

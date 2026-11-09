@@ -1,5 +1,6 @@
 package com.finnvek.knittools.ui.screens.counter
 
+import androidx.compose.ui.unit.dp
 import com.finnvek.knittools.ProjectSourceFiles
 import com.finnvek.knittools.R
 import org.junit.Assert.assertEquals
@@ -43,7 +44,8 @@ class CounterProjectContentCardsTest {
         val dimens = ProjectSourceFiles.read(COUNTER_DIMENS)
         val glyphs = ProjectSourceFiles.read(CROSS_STITCH_ICON)
 
-        assertTrue(source.contains("take(4).chunked(2)"))
+        assertTrue(source.contains("cards.chunked(columns)"))
+        assertTrue(source.contains("Arrangement.spacedBy(spacing, Alignment.CenterHorizontally)"))
         assertFalse(source.contains("ProjectContentIconWell("))
         assertTrue(source.contains("titleRes = patternContentTitleRes(hasPattern)"))
         assertTrue(glyphs.contains("CrossStitchGlyph.PATTERN -> MaterialTheme.colorScheme.primary"))
@@ -51,10 +53,17 @@ class CounterProjectContentCardsTest {
         assertTrue(glyphs.contains("CrossStitchGlyph.NOTES -> MaterialTheme.knitToolsColors.brandWine"))
         assertTrue(glyphs.contains("CrossStitchGlyph.PHOTOS -> MaterialTheme.colorScheme.tertiary"))
         assertTrue(glyphs.contains("CrossStitchGlyph.REMINDER -> MaterialTheme.knitToolsColors.tealAccent"))
-        assertTrue(source.contains("horizontalArrangement = Arrangement.Center"))
         assertTrue(source.contains("ProjectCardIconTitleSpacing"))
         assertTrue(dimens.contains("ProjectCardIconSize = 56.dp"))
         assertFalse(source.contains("aspectRatio(1f),\n                    )\n                }"))
+    }
+
+    @Test
+    fun `wide content uses three columns and narrow content keeps two`() {
+        assertEquals(2, projectContentCardColumns(312.dp))
+        assertEquals(2, projectContentCardColumns(479.dp))
+        assertEquals(3, projectContentCardColumns(480.dp))
+        assertEquals(3, projectContentCardColumns(552.dp))
     }
 
     private companion object {

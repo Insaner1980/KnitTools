@@ -51,7 +51,7 @@ class CounterWorkspacePolishSourceTest {
 
         assertTrue(stitchCounter.contains("R.string.counter_decrease_named, label"))
         assertTrue(stitchCounter.contains("R.string.counter_increase_named, label"))
-        assertTrue(stitchCounter.contains("LocalDensity.current.fontScale >= 1.5f"))
+        assertTrue(stitchCounter.contains("LocalDensity.current.fontScale >= FontScaleThresholds.LARGE"))
         assertTrue(stitchCounter.contains("if (useLargeFontLayout)"))
         assertTrue(stitchCounter.contains("Column("))
     }

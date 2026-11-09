@@ -20,7 +20,6 @@ object CounterDimens {
     val ContentBottomPadding = 24.dp
     val WorkspaceSectionSpacing = 20.dp
     val WorkspaceGroupSpacing = 16.dp
-    val HeroMinimumHeight = 360.dp
     val HeroBottomBreathingSpace = 24.dp
     val CounterProjectRevealGap = 48.dp
 
@@ -32,6 +31,23 @@ object CounterDimens {
 
     val HeroButtonSpacing = 64.dp
     val HeroButtonCompactSpacing = 8.dp
+
+    // Pinottu laskuri saa venyä tarvitsemaansa korkeammaksi enintään tämän verran; isolla näytöllä
+    // sisältöruudut näkyvät heti laskurin alla eikä niiden yllä ole puolen ruudun tyhjää.
+    val HeroMaxExtraHeight = 64.dp
+
+    // Vierekkäinen laskuri valitaan, kun pinottu ei mahdu korkeuteen ja leveyttä on tämän verran.
+    val ShortHeroMinWidth = 552.dp
+    val ShortHeroSpacing = 16.dp
+    val ShortHeroUndoSize = 80.dp
+    val ShortHeroUndoGap = 8.dp
+
+    // Iso laskuri tabletilla: luku ja napit luetaan telineestä kauempaa.
+    val LargeHeroMinWidth = 600.dp
+    val LargeHeroMinHeight = 840.dp
+
+    @Suppress("MayBeConstant")
+    val LargeHeroScale = 1.4f
     val CounterMainNumberFontSize = 115.sp
     val CounterMainNumberMinimumFontSize = 48.sp
 
@@ -60,11 +76,13 @@ object CounterDimens {
     val CounterUndoTouchSize = CounterUndoVisualSize
     val CounterUndoVerticalSpacing = 16.dp
     val CounterControlsMaxWidth = 360.dp
-    val CounterControlsHeight =
-        CounterPrimaryTouchSize + CounterUndoVerticalSpacing + CounterUndoTouchSize
     val CounterControlsToStitchTrackerSpacing = 72.dp
     val CounterControlsToStitchTrackerCompactSpacing = 8.dp
     val ProjectCardGridSpacing = 12.dp
+    val ProjectCardGridMaxWidth = 360.dp
+
+    // Tästä leveydestä alkaen viisi ruutua ladotaan 3 + 2 koko sisältöleveydelle.
+    val ProjectCardThreeColumnMinWidth = 480.dp
     val ProjectCardPadding = 12.dp
     val ProjectCardIconSize = 56.dp
     val ProjectCardCompactIconSize = 32.dp

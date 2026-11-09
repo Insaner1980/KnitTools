@@ -108,10 +108,12 @@ class LaunchPriceTagUiTest {
             }
         }
         val deadline = Date(1_800_000_000_000L)
-        val timePattern = if (AndroidDateFormat.is24HourFormat(context)) "HH:mm:ss" else "h:mm:ss"
+        val timePattern = if (AndroidDateFormat.is24HourFormat(context)) "HH:mm" else "h:mm"
         val time = SimpleDateFormat(timePattern, Locale.US).format(deadline)
+        val timeWithSeconds = SimpleDateFormat("$timePattern:ss", Locale.US).format(deadline)
         val zone = SimpleDateFormat("z", Locale.US).format(deadline)
         compose.onNodeWithText(time, substring = true).assertExists()
+        compose.onNodeWithText(timeWithSeconds, substring = true).assertDoesNotExist()
         compose.onNodeWithText(zone, substring = true).assertExists()
     }
 }

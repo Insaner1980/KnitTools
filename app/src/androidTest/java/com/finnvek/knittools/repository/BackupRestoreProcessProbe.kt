@@ -19,6 +19,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import java.io.File
+import java.io.FileOutputStream
 import java.io.IOException
 import java.util.concurrent.CountDownLatch
 
@@ -33,11 +34,13 @@ internal class BackupRestoreProcessProbe(
     private var cleanupDatabase: SupportSQLiteDatabase? = null
     private var obsoleteFiles = emptyList<File>()
     private lateinit var cleanupJournal: File
+    private lateinit var restoreContext: Context
 
     fun arm(
         database: SupportSQLiteDatabase,
         context: Context,
     ) {
+        restoreContext = context
         BackupTables.export(database, File(directory, "before"), { _, _ -> }, check = {})
         val hashes =
             BackupTables
@@ -69,7 +72,10 @@ internal class BackupRestoreProcessProbe(
 
                     override fun endTransaction() {
                         database.endTransaction()
-                        if (armed && changed && phase == "postcommit" && !database.inTransaction()) pause(false)
+                        if (armed && changed && phase == "postcommit" && !database.inTransaction()) {
+                            recordPostCommitBoundary(database)
+                            pause(false)
+                        }
                         if (armed && changed && phase == "cleanup" && !committed && !database.inTransaction()) {
                             committed = true
                             deferCleanup = true
@@ -85,8 +91,80 @@ internal class BackupRestoreProcessProbe(
 
     private fun pause(inTransaction: Boolean): Nothing {
         check(inTransaction == (phase == "precommit"))
-        File(directory, "checkpoint.txt").writeText("${Process.myPid()} $phase $inTransaction")
-        while (true) Thread.sleep(1000)
+        FileOutputStream(File(directory, "checkpoint.txt")).use {
+            it.write("${Process.myPid()} $phase $inTransaction".toByteArray())
+            it.fd.sync()
+        }
+        CountDownLatch(1).await()
+        error("Process checkpoint cannot resume")
+    }
+
+    private fun recordPostCommitBoundary(database: SupportSQLiteDatabase) {
+        val configuration =
+            SupportSQLiteOpenHelper.Configuration
+                .builder(restoreContext)
+                .name(checkNotNull(database.path))
+                .callback(
+                    object : SupportSQLiteOpenHelper.Callback(database.version) {
+                        override fun onCreate(db: SupportSQLiteDatabase) = error("Expected committed database")
+
+                        override fun onUpgrade(
+                            db: SupportSQLiteDatabase,
+                            oldVersion: Int,
+                            newVersion: Int,
+                        ) = error("Unexpected migration")
+                    },
+                ).build()
+        FrameworkSQLiteOpenHelperFactory().create(configuration).use { reader ->
+            val sql = reader.readableDatabase
+            check(!sql.inTransaction())
+            sql.query("SELECT name, count, id FROM counter_projects").use {
+                check(it.moveToFirst())
+                check(it.getString(0) == "Cardigan" && it.getInt(1) == 12 && it.getLong(2) > 1)
+                check(!it.moveToNext())
+            }
+            val baseline = File(directory, "committed")
+            BackupTables.export(sql, baseline, { _, _ -> }, check = {})
+            recordContent(sql, restoreContext, baseline)
+            val journal =
+                File(directory, "private/manual-backup").walkTopDown().single {
+                    it.name == BackupRestoreFiles.JOURNAL
+                }
+            journal.copyTo(File(baseline, BackupRestoreFiles.JOURNAL))
+            val paths =
+                BackupFormat.json.parseToJsonElement(journal.readText()).jsonArray.map {
+                    File(it.jsonPrimitive.content).canonicalFile
+                }
+            val referenced =
+                BackupTables
+                    .references(sql)
+                    .map {
+                        checkNotNull(
+                            AppFileStorage.resolveAppOwnedFile(restoreContext, android.net.Uri.parse(it)),
+                        ).canonicalFile
+                    }.toSet()
+            check(referenced.size == 4 && paths.containsAll(referenced))
+            check(paths.all { it.isFile })
+            val obsolete = paths.filter { it !in referenced }
+            check(obsolete.size == 4)
+            File(baseline, "obsolete.txt").writeText(obsolete.joinToString("\n") { it.path })
+            File(baseline, "boundary.txt").writeText(
+                "independent_connection=committed\njournal=pending\nreferenced=4\nobsolete=4\n",
+            )
+        }
+    }
+
+    fun verifyPostCommitRecovery(
+        database: SupportSQLiteDatabase,
+        context: Context,
+        after: File,
+    ) {
+        val baseline = File(directory, "committed")
+        recordContent(database, context, after)
+        (BackupFormat.tables.map { "tables/$it.jsonl" } + listOf("sequences.json", "referenced-files.json")).forEach {
+            assertEquals(it, File(baseline, it).readText(), File(after, it).readText())
+        }
+        File(baseline, "obsolete.txt").readLines().forEach { assertFalse(File(it).exists()) }
     }
 
     fun beforeFilesAccess() {

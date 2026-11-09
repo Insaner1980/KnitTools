@@ -8,6 +8,7 @@ import android.graphics.pdf.PdfDocument
 import android.graphics.pdf.PdfRenderer
 import android.net.Uri
 import android.os.ParcelFileDescriptor
+import android.system.Os
 import androidx.core.net.toUri
 import androidx.room.Room
 import androidx.room.withTransaction
@@ -20,6 +21,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.finnvek.knittools.data.backup.BackupArchive
 import com.finnvek.knittools.data.backup.BackupError
 import com.finnvek.knittools.data.backup.BackupException
+import com.finnvek.knittools.data.backup.BackupFiles
 import com.finnvek.knittools.data.backup.BackupFormat
 import com.finnvek.knittools.data.backup.BackupLimits
 import com.finnvek.knittools.data.backup.BackupManifest
@@ -53,6 +55,7 @@ import com.finnvek.knittools.domain.model.SessionTimeSnapshot
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
@@ -77,8 +80,11 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
+import java.io.FileOutputStream
 import java.io.IOException
 import java.util.UUID
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 
 @RunWith(AndroidJUnit4::class)
@@ -92,6 +98,8 @@ class BackupRepositoryTest {
     private var processProbe: BackupRestoreProcessProbe? = null
     private var retainProcessFixture = false
     private var beforeSql: (String) -> Unit = {}
+    private var beforeQuery: (String) -> Unit = {}
+    private var beforeFileSpace: () -> Unit = {}
     private var selectionId = UUID.randomUUID()
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
@@ -124,7 +132,12 @@ class BackupRepositoryTest {
 
                 override fun getFilesDir(): File {
                     processProbe?.beforeFilesAccess()
-                    return File(directory, "files").apply { mkdirs() }
+                    return object : File(directory, "files") {
+                        override fun getUsableSpace(): Long {
+                            beforeFileSpace()
+                            return super.getUsableSpace()
+                        }
+                    }.apply { mkdirs() }
                 }
 
                 override fun getNoBackupFilesDir() = File(directory, "private").apply { mkdirs() }
@@ -161,6 +174,11 @@ class BackupRepositoryTest {
 
             fun wrap(database: SupportSQLiteDatabase): SupportSQLiteDatabase =
                 object : SupportSQLiteDatabase by database {
+                    override fun query(query: String): Cursor {
+                        beforeQuery(query)
+                        return database.query(query)
+                    }
+
                     override fun execSQL(sql: String) {
                         beforeSql(sql)
                         database.execSQL(sql)
@@ -180,6 +198,293 @@ class BackupRepositoryTest {
                 override val readableDatabase get() = wrap(helper.readableDatabase)
             }
         }
+
+    @Test fun replacementIntoFreshEmptyDatabasePersistsRelationshipsFilesAndNewIds() =
+        runBlocking {
+            seed()
+
+            fun rows(table: String): List<Map<String, Any?>> =
+                db.openHelper.writableDatabase.query("SELECT * FROM `$table` ORDER BY rowid").use { cursor ->
+                    buildList {
+                        while (cursor.moveToNext()) add(cursorValues(cursor))
+                    }
+                }
+
+            val sourceRows = BackupFormat.tables.associateWith(::rows)
+            val attachmentHashes =
+                BackupFiles.columns
+                    .flatMap { (table, column) ->
+                        sourceRows.getValue(table).map { row ->
+                            val uri = row.getValue(column).toString().toUri()
+                            val file = checkNotNull(AppFileStorage.resolveAppOwnedFile(context, uri))
+                            Triple(table, row.getValue("id"), column) to BackupFormat.digest(file)
+                        }
+                    }.toMap()
+            val archive = File(directory, "empty-destination.knittools-backup")
+            repository.export(archive.toUri())
+            db.close()
+
+            val sourceContext = context
+            val destination = File(directory, "empty-destination")
+            assertFalse(destination.exists())
+            assertTrue(destination.mkdirs())
+            context =
+                object : ContextWrapper(sourceContext) {
+                    override fun getApplicationContext(): Context = this
+
+                    override fun getFilesDir() = File(destination, "files").apply { mkdirs() }
+
+                    override fun getNoBackupFilesDir() = File(destination, "private").apply { mkdirs() }
+                }
+            val databaseFile = File(destination, "live.db")
+            assertFalse(databaseFile.exists())
+
+            fun openDestination(): KnitToolsDatabase =
+                Room
+                    .databaseBuilder(context, KnitToolsDatabase::class.java, databaseFile.absolutePath)
+                    .addCallback(PatternAnnotationSchemaConstraints.callback)
+                    .addCallback(ActiveSessionSchemaConstraints.callback)
+                    .addCallback(ProjectDocumentSchemaConstraints.callback)
+                    .build()
+
+            db = openDestination()
+            BackupFormat.tables.forEach {
+                assertEquals("Initially empty: $it", 0L, number("SELECT COUNT(*) FROM `$it`"))
+            }
+            assertEquals(0L, number("SELECT COUNT(*) FROM sqlite_sequence"))
+            assertTrue(
+                context.filesDir
+                    .listFiles()
+                    .orEmpty()
+                    .isEmpty(),
+            )
+            yarnCards =
+                YarnCardRepository(
+                    db.yarnCardDao(),
+                    db.counterProjectDao(),
+                    context,
+                    RoomDatabaseTransactionRunner(db),
+                    Dispatchers.IO,
+                )
+            repository = createRepository(ContentResolverBackupProviderIo(context))
+            val preview = prepare(archive.toUri())
+            assertEquals(1, preview.projects)
+            assertEquals(2, preview.patterns)
+            assertEquals(1, preview.yarnCards)
+            assertEquals(4, preview.files)
+            BackupFormat.tables.forEach {
+                assertEquals("Preview leaves empty: $it", 0L, number("SELECT COUNT(*) FROM `$it`"))
+            }
+            assertEquals(0L, number("SELECT COUNT(*) FROM sqlite_sequence"))
+            assertTrue(
+                context.filesDir
+                    .listFiles()
+                    .orEmpty()
+                    .isEmpty(),
+            )
+
+            assertEquals(Unit, repository.restore(selectionId))
+            val restoredRows = BackupFormat.tables.associateWith(::rows)
+            sourceRows.forEach { (table, expected) ->
+                val actual = restoredRows.getValue(table)
+                assertEquals("Restored row count: $table", expected.size, actual.size)
+                if (table != "active_sessions") {
+                    val uriColumn = BackupFiles.columns[table]
+                    assertEquals(
+                        "Preserved columns and relationships: $table",
+                        expected.map { row -> row.filterKeys { it != uriColumn } },
+                        actual.map { row -> row.filterKeys { it != uriColumn } },
+                    )
+                }
+            }
+            val active = checkNotNull(db.sessionDao().getActiveSession())
+            val projectId =
+                db
+                    .counterProjectDao()
+                    .getAllProjectsOnce()
+                    .single()
+                    .id
+            assertEquals(projectId, active.projectId)
+            assertEquals("BOOT_IDENTITY_UNAVAILABLE", active.recoveryReason)
+            assertFalse(active.sessionToken == "old-session")
+
+            fun verifyAttachments() {
+                attachmentHashes.forEach { (reference, hash) ->
+                    val (table, id, column) = reference
+                    val uri =
+                        rows(table)
+                            .single { it["id"] == id }
+                            .getValue(column)
+                            .toString()
+                            .toUri()
+                    val file = checkNotNull(AppFileStorage.resolveAppOwnedFile(context, uri))
+                    assertTrue(file.canonicalPath.startsWith(context.filesDir.canonicalPath + File.separator))
+                    assertTrue(file.isFile)
+                    assertEquals("Restored bytes: $reference", hash, BackupFormat.digest(file))
+                }
+                assertEquals(4, BackupTables.references(db.openHelper.writableDatabase).size)
+                assertEquals("ok", text("PRAGMA quick_check"))
+                db.openHelper.writableDatabase
+                    .query("PRAGMA foreign_key_check")
+                    .use { assertFalse(it.moveToFirst()) }
+            }
+
+            verifyAttachments()
+            assertTrue(File(context.noBackupFilesDir, "manual-backup").listFiles().orEmpty().isEmpty())
+            db.close()
+            db = openDestination()
+            assertEquals(restoredRows, BackupFormat.tables.associateWith(::rows))
+            verifyAttachments()
+            val restoredProject = db.counterProjectDao().getAllProjectsOnce().single()
+            assertEquals("Cardigan", restoredProject.name)
+            assertEquals(12, restoredProject.count)
+            val nextId = db.counterProjectDao().insert(CounterProjectEntity(name = "After empty restore"))
+            assertTrue(nextId > restoredProject.id)
+            assertEquals(2, db.counterProjectDao().getAllProjectsOnce().size)
+            val projects = db.counterProjectDao().getAllProjectsOnce()
+            assertEquals(restoredProject, projects.single { it.id == restoredProject.id })
+            verifyAttachments()
+        }
+
+    @Test fun partialAttachmentCopyFailurePreservesAuthoritativeDataAndFiles() =
+        runBlocking {
+            verifyPartialAttachmentCopy(cancel = false)
+        }
+
+    @Test fun cancellationDuringSecondAttachmentCopyPreservesAuthoritativeDataAndFiles() =
+        runBlocking {
+            verifyPartialAttachmentCopy(cancel = true)
+        }
+
+    private suspend fun verifyPartialAttachmentCopy(cancel: Boolean) {
+        seed()
+        val archive = File(directory, "partial-copy-backup")
+        repository.export(archive.toUri())
+        db.openHelper.writableDatabase.execSQL("UPDATE counter_projects SET name = 'Destination edit', count = 37")
+        prepare(archive.toUri())
+        val sql = db.openHelper.writableDatabase
+
+        fun rows(table: String): List<Map<String, Any?>> =
+            sql.query("SELECT * FROM `$table` ORDER BY rowid").use { cursor ->
+                buildList { while (cursor.moveToNext()) add(cursorValues(cursor)) }
+            }
+
+        val before = (BackupFormat.tables + "sqlite_sequence").associateWith(::rows)
+        val references = BackupTables.references(sql)
+        val fileRoot = File(directory, "files")
+
+        fun hashes(): Map<String, String> =
+            fileRoot.walkTopDown().filter { it.isFile }.associate { it.canonicalPath to BackupFormat.digest(it) }
+
+        val originalHashes = hashes()
+        val payload = File(context.noBackupFilesDir, "manual-backup/$selectionId/payload")
+        val writerReady = CompletableDeferred<Unit>()
+        val releaseWriter = CountDownLatch(1)
+        var writer: Deferred<Unit>? = null
+        var secondTarget: File? = null
+        var completedTarget: File? = null
+        var injected = false
+        var cleanupDeferred = false
+        var liveClearReached = false
+        beforeSql = { if (it.startsWith("DELETE FROM ")) liveClearReached = true }
+        beforeQuery = { query ->
+            if (injected && !cleanupDeferred && query.startsWith("SELECT DISTINCT `patternUri`")) {
+                cleanupDeferred = true
+                throw android.database.sqlite.SQLiteException("Synthetic cleanup read failure")
+            }
+        }
+        beforeFileSpace = {
+            val published = fileRoot.walkTopDown().filter { it.isFile && it.name.startsWith("restore-") }.toList()
+            if (!injected && published.size == 1) {
+                val first = published.single()
+                completedTarget = first
+                val firstHash = first.name.substringAfterLast('-').substringBeforeLast('.')
+                assertEquals(firstHash, BackupFormat.digest(first))
+                assertTrue(first.length() > 0L)
+                val journal = File(payload, BackupRestoreFiles.JOURNAL)
+                val candidates = BackupFormat.json.decodeFromString<List<String>>(journal.readText()).map(::File)
+                val target = candidates.first { it.name.startsWith("restore-") && !it.exists() }
+                secondTarget = target
+                injected = true
+                // Replace only the validated staging source at the copy boundary; live files stay real.
+                val hash = target.name.substringAfterLast('-').substringBeforeLast('.')
+                val source = File(payload, "files/$hash.bin")
+                check(source.delete())
+                if (cancel) {
+                    Os.mkfifo(source.absolutePath, 384)
+                    writer =
+                        scope.async {
+                            FileOutputStream(source).use {
+                                // A blocking FIFO writer opens only once the real copy has opened its reader.
+                                writerReady.complete(Unit)
+                                check(releaseWriter.await(20, TimeUnit.SECONDS))
+                            }
+                        }
+                }
+            }
+        }
+        try {
+            if (cancel) {
+                val restore = scope.async { repository.restore(selectionId) }
+                try {
+                    withTimeout(20_000) { writerReady.await() }
+                    assertTrue(checkNotNull(secondTarget).isFile)
+                    assertEquals(0L, checkNotNull(secondTarget).length())
+                    restore.cancel(CancellationException("Synthetic partial-copy cancellation"))
+                    releaseWriter.countDown()
+                    withTimeout(20_000) {
+                        try {
+                            restore.await()
+                            error("Cancelled restore must not return success")
+                        } catch (_: CancellationException) {
+                            assertTrue(restore.isCancelled)
+                        }
+                        restore.join()
+                        checkNotNull(writer).await()
+                    }
+                } finally {
+                    releaseWriter.countDown()
+                    restore.cancelAndJoin()
+                }
+            } else {
+                try {
+                    repository.restore(selectionId)
+                    error("Failed restore must not return success")
+                } catch (failure: BackupException) {
+                    assertEquals(BackupError.RESTORE, failure.error)
+                    assertTrue(failure.cause is IOException)
+                }
+            }
+        } finally {
+            beforeFileSpace = {}
+            beforeSql = {}
+            beforeQuery = {}
+            releaseWriter.countDown()
+        }
+        assertTrue("At least one complete attachment preceded the injected boundary", injected)
+        assertFalse("Failure/cancellation must occur before authoritative replacement", liveClearReached)
+        assertTrue("Failed cleanup must retain its journal for recovery", cleanupDeferred)
+        repeat(3) { pass ->
+            if (pass > 0) repository.recoverInterruptedOperations()
+            before.forEach { (table, expected) -> assertEquals(table, expected, rows(table)) }
+            assertEquals(references, BackupTables.references(sql))
+            if (pass == 0) {
+                val currentHashes = hashes()
+                assertEquals(originalHashes, currentHashes.filterKeys { it in originalHashes })
+                assertEquals(
+                    setOf(checkNotNull(completedTarget).canonicalPath, checkNotNull(secondTarget).canonicalPath),
+                    currentHashes.keys - originalHashes.keys,
+                )
+                assertEquals(0L, checkNotNull(secondTarget).length())
+                assertTrue(File(payload, BackupRestoreFiles.JOURNAL).isFile)
+            } else {
+                assertEquals(originalHashes, hashes())
+                assertReferencesAndPreviewCleanedUp(references)
+            }
+            assertEquals("ok", text("PRAGMA quick_check"))
+            sql.query("PRAGMA foreign_key_check").use { assertFalse(it.moveToFirst()) }
+        }
+    }
 
     @Test fun sequenceReseedFailureRollsBackEveryTableAndSequence() =
         runBlocking {
@@ -505,6 +810,13 @@ class BackupRepositoryTest {
             assertFalse(checkpoint[0].toInt() == android.os.Process.myPid())
             assertEquals(phase, checkpoint[1])
             assertEquals((phase != "postcommit").toString(), checkpoint[2])
+            if (phase == "postcommit") {
+                val journals =
+                    File(context.noBackupFilesDir, "manual-backup").walkTopDown().count {
+                        it.name == BackupRestoreFiles.JOURNAL
+                    }
+                assertEquals(if (BackupRestoreProcessProbe.recoveryStage() == "second") 0 else 1, journals)
+            }
             repository.recoverInterruptedOperations()
             val sql = db.openHelper.writableDatabase
             assertEquals("ok", text("PRAGMA quick_check"))
@@ -563,6 +875,19 @@ class BackupRepositoryTest {
                 checkNotNull(processProbe).recordRecovery(sql, context, after, File(proofRoot, "first/after"), stage)
             }
             if (phase == "cleanup") checkNotNull(processProbe).verifyCleanupRecovery(sql, context, after)
+            if (phase == "postcommit") {
+                checkNotNull(processProbe).verifyPostCommitRecovery(sql, context, after)
+                val export = File(directory, "recovered.knittools-backup")
+                repository.export(export.toUri())
+                val preview = prepare(export.toUri())
+                assertEquals(1, preview.projects)
+                assertEquals(2, preview.patterns)
+                assertEquals(1, preview.yarnCards)
+                assertEquals(4, preview.files)
+                repository.cancelPreview(selectionId)
+                assertTrue(File(context.noBackupFilesDir, "manual-backup").listFiles().orEmpty().isEmpty())
+                File(directory, "committed").copyRecursively(File(proof, "committed"))
+            }
             File(directory, "before").copyRecursively(File(proof, "before"))
             after.copyRecursively(File(proof, "after"))
             File(directory, "checkpoint.txt").copyTo(File(proof, "checkpoint.txt"))

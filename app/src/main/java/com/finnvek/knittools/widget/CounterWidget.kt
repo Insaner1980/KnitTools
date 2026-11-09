@@ -4,6 +4,9 @@ import android.content.Context
 import android.os.Build
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.TextUnit
@@ -17,6 +20,7 @@ import androidx.glance.Image
 import androidx.glance.ImageProvider
 import androidx.glance.LocalContext
 import androidx.glance.LocalSize
+import androidx.glance.action.Action
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.LinearProgressIndicator
@@ -53,6 +57,7 @@ import androidx.glance.unit.ColorProvider
 import com.finnvek.knittools.MainActivity
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.model.MainCounterLabelType
+import com.finnvek.knittools.pro.ProActionAccess
 import com.finnvek.knittools.pro.ProFeature
 import com.finnvek.knittools.ui.components.labelRes
 import com.finnvek.knittools.ui.theme.CounterWidgetDimens
@@ -91,15 +96,25 @@ class CounterWidget : GlanceAppWidget() {
                 context.applicationContext,
                 WidgetEntryPoint::class.java,
             )
-        val isPro = entryPoint.proManager().hasFeatureAfterInitialLoad(ProFeature.WIDGET)
+        val manager = entryPoint.proManager()
+        val initialAccess = manager.featureAccessAfterInitialLoad(ProFeature.WIDGET)
+        val accessFlow = manager.featureAccessFlow(ProFeature.WIDGET)
         val widgetData = CounterWidgetState.loadGlance(context, id)
-        if (isPro) resolveInitialWidgetData(context, id, entryPoint, widgetData)
+        if (initialAccess == ProActionAccess.Allowed || initialAccess == ProActionAccess.Trial) {
+            resolveInitialWidgetData(context, id, entryPoint, widgetData)
+        }
 
         provideContent {
+            val access by accessFlow.collectAsState(initialAccess)
             val prefs = currentState<Preferences>()
             val data = CounterWidgetState.fromPreferences(context, prefs)
+            LaunchedEffect(access) {
+                if (access == ProActionAccess.Allowed || access == ProActionAccess.Trial) {
+                    resolveInitialWidgetData(context, id, entryPoint, data)
+                }
+            }
             GlanceTheme(colors = ColorProviders(dark = WidgetDarkScheme, light = WidgetLightScheme)) {
-                WidgetSizedContent(data = data, isPro = isPro)
+                WidgetSizedContent(data = data, access = access)
             }
         }
     }
@@ -157,10 +172,10 @@ private val WidgetLightScheme =
 @androidx.compose.runtime.Composable
 private fun WidgetSizedContent(
     data: WidgetData,
-    isPro: Boolean,
+    access: ProActionAccess,
 ) {
-    if (!isPro) {
-        ProRequiredWidget()
+    if (access == ProActionAccess.Unknown || access == ProActionAccess.Locked) {
+        WidgetAccessMessage(unknown = access == ProActionAccess.Unknown)
         return
     }
     val size = LocalSize.current
@@ -181,18 +196,19 @@ private fun WidgetSizedContent(
 }
 
 @androidx.compose.runtime.Composable
-private fun ProRequiredWidget() {
+private fun WidgetAccessMessage(unknown: Boolean) {
     val context = LocalContext.current
-    val description = context.getString(R.string.widget_pro_required)
+    val description = context.getString(if (unknown) R.string.retry else R.string.widget_pro_required)
     val label =
-        if (LocalSize.current.height < CounterWidget.MEDIUM_SIZE.height) {
+        if (!unknown && LocalSize.current.height < CounterWidget.MEDIUM_SIZE.height) {
             context.getString(R.string.upgrade_to_pro)
         } else {
             description
         }
     WidgetCard(
         projectId = null,
-        openProUpgrade = true,
+        openProUpgrade = !unknown,
+        onClick = if (unknown) actionSendBroadcast(CounterWidgetActions.retryIntent(context)) else null,
         horizontalPadding = CounterWidgetDimens.HorizontalPadding,
         verticalPadding = CounterWidgetDimens.SectionSpacing,
     ) {
@@ -345,17 +361,20 @@ private fun widgetVerticalPadding(): Dp =
 private fun WidgetCard(
     projectId: Long?,
     openProUpgrade: Boolean = false,
+    onClick: Action? = null,
     horizontalPadding: Dp = CounterWidgetDimens.HorizontalPadding,
     verticalPadding: Dp = widgetVerticalPadding(),
     content: @androidx.compose.runtime.Composable ColumnScope.() -> Unit,
 ) {
     val context = LocalContext.current
-    val launchIntent =
-        if (openProUpgrade) {
-            MainActivity.createWidgetProPromptLaunchIntent(context)
-        } else {
-            MainActivity.createCounterLaunchIntent(context = context, projectId = projectId)
-        }
+    val clickAction =
+        onClick ?: actionStartActivity(
+            if (openProUpgrade) {
+                MainActivity.createWidgetProPromptLaunchIntent(context)
+            } else {
+                MainActivity.createCounterLaunchIntent(context = context, projectId = projectId)
+            },
+        )
     Box(
         modifier =
             GlanceModifier
@@ -363,7 +382,7 @@ private fun WidgetCard(
                 .appWidgetBackground()
                 .then(systemWidgetCorners())
                 .background(GlanceTheme.colors.surface)
-                .clickable(actionStartActivity(launchIntent)),
+                .clickable(clickAction),
     ) {
         Image(
             provider = ImageProvider(R.drawable.widget_knit_texture),

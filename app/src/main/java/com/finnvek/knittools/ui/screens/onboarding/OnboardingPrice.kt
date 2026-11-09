@@ -1,6 +1,7 @@
 package com.finnvek.knittools.ui.screens.onboarding
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -13,6 +14,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
@@ -30,6 +32,7 @@ import com.finnvek.knittools.ui.components.LaunchPriceTag
 import com.finnvek.knittools.ui.screens.pro.ProAddsSection
 import com.finnvek.knittools.ui.screens.pro.ProFreeForeverSection
 import com.finnvek.knittools.ui.theme.ComponentDimens
+import com.finnvek.knittools.ui.theme.FontScaleThresholds
 import com.finnvek.knittools.ui.theme.IllustrationDimens
 import com.finnvek.knittools.ui.theme.OnboardingDimens
 
@@ -48,8 +51,47 @@ data class OnboardingPriceState(
         get() = offer.takeIf { ready && productStatus == BillingProductStatus.Available }
 }
 
+/**
+ * Hintavaiheen kiinteät toiminnot. [sideBySide] matalalla näytöllä: ilmainen jatkaminen vasemmalla ja
+ * päätoiminto oikealla samalla rivillä, jotta kiinteä alue ei vie puolta näytöstä.
+ */
 @Composable
 internal fun JourneyPriceActions(
+    price: OnboardingPriceState,
+    busy: Boolean,
+    actions: OnboardingActions,
+    sideBySide: Boolean = false,
+) {
+    val showContinueFree = price.mode != OnboardingPriceMode.Continue
+    if (sideBySide && showContinueFree && price.mode != OnboardingPriceMode.Skip) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(ComponentDimens.CompactSpacing),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Box(Modifier.weight(1f)) { JourneyContinueFreeAction(busy, actions) }
+            Box(Modifier.weight(1f)) { JourneyPricePrimaryAction(price, busy, actions) }
+        }
+    } else {
+        JourneyPricePrimaryAction(price, busy, actions)
+        if (showContinueFree) JourneyContinueFreeAction(busy, actions)
+    }
+}
+
+@Composable
+private fun JourneyContinueFreeAction(
+    busy: Boolean,
+    actions: OnboardingActions,
+) {
+    CancelButton(
+        onClick = actions.finish,
+        text = stringResource(R.string.journey_continue_free),
+        enabled = !busy,
+        modifier = Modifier.fillMaxWidth().testTag("onboarding_continue_free"),
+    )
+}
+
+@Composable
+private fun JourneyPricePrimaryAction(
     price: OnboardingPriceState,
     busy: Boolean,
     actions: OnboardingActions,
@@ -93,14 +135,6 @@ internal fun JourneyPriceActions(
             )
         OnboardingPriceMode.Skip -> Unit
     }
-    if (price.mode != OnboardingPriceMode.Continue) {
-        CancelButton(
-            onClick = actions.finish,
-            text = stringResource(R.string.journey_continue_free),
-            enabled = !busy,
-            modifier = Modifier.fillMaxWidth().testTag("onboarding_continue_free"),
-        )
-    }
 }
 
 @Composable
@@ -115,10 +149,9 @@ internal fun JourneyPriceContent(
         Text(stringResource(R.string.journey_loading), style = MaterialTheme.typography.bodyLarge)
         return
     }
-    CraftIllustration(
-        R.drawable.onboarding_pro_hero,
-        height = IllustrationDimens.CompactHeight,
-    )
+    journeyIllustrationHeight(IllustrationDimens.CompactHeight)?.let { height ->
+        CraftIllustration(R.drawable.onboarding_pro_hero, height = height)
+    }
     JourneyTitle(
         stringResource(
             if (price.mode ==
@@ -187,7 +220,9 @@ private fun JourneyTimelineRow(
     body: String,
 ) {
     BoxWithConstraints(Modifier.fillMaxWidth()) {
-        if (maxWidth < OnboardingDimens.JourneyStackedBreakpoint || LocalDensity.current.fontScale > 1.3f) {
+        if (maxWidth < OnboardingDimens.JourneyStackedBreakpoint ||
+            LocalDensity.current.fontScale > FontScaleThresholds.COMPACT
+        ) {
             Column(verticalArrangement = Arrangement.spacedBy(ComponentDimens.StandardSpacing)) {
                 Text(label, style = MaterialTheme.typography.titleMedium)
                 Text(body, style = MaterialTheme.typography.bodyLarge)

@@ -25,7 +25,6 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import java.time.LocalDate
@@ -146,9 +145,8 @@ class App : Application() {
     private fun observeWidgetProState() {
         applicationScope.launch {
             val manager = proManager.get()
-            manager.initialStateReady.first { it }
             manager
-                .hasFeatureFlow(ProFeature.WIDGET)
+                .featureAccessFlow(ProFeature.WIDGET)
                 .collect {
                     try {
                         CounterWidgetState.refreshAll(this@App)

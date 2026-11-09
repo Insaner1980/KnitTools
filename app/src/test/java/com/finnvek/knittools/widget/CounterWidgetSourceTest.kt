@@ -108,7 +108,9 @@ class CounterWidgetSourceTest {
         val widget = ProjectSourceFiles.read(COUNTER_WIDGET)
 
         assertTrue(widget.contains("val data = CounterWidgetState.fromPreferences(context, prefs)"))
-        assertTrue(widget.contains("if (isPro) resolveInitialWidgetData(context, id, entryPoint, widgetData)"))
+        assertTrue(widget.contains("val access by accessFlow.collectAsState(initialAccess)"))
+        assertTrue(widget.contains("LaunchedEffect(access)"))
+        assertTrue(widget.contains("resolveInitialWidgetData(context, id, entryPoint, data)"))
         assertTrue(!widget.contains("val initialWidgetData"))
     }
 

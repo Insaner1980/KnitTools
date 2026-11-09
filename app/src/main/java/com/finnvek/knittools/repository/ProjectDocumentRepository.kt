@@ -579,6 +579,7 @@ class ProjectDocumentRepository
                 val now = System.currentTimeMillis()
                 updatePrimary(target, fallback, now)
                 updateActiveLayer(target, fallback)
+                projectDao.clearLegacyPatternUriIfMatching(projectId, target.localPdfUri)
                 if (documentDao.delete(documentId, projectId) != 1) {
                     abortMutation(ProjectDocumentMutationResult.StaleAction)
                 }

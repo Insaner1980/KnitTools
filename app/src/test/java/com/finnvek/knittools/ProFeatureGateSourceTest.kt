@@ -31,7 +31,7 @@ class ProFeatureGateSourceTest {
         val widget = ProjectSourceFiles.read(COUNTER_WIDGET)
         val actions = ProjectSourceFiles.read(COUNTER_WIDGET_ACTIONS)
 
-        assertTrue(widget.contains("hasFeatureAfterInitialLoad(ProFeature.WIDGET)"))
+        assertTrue(widget.contains("featureAccessAfterInitialLoad(ProFeature.WIDGET)"))
         assertTrue(actions.contains("hasFeatureAfterInitialLoad(ProFeature.WIDGET)"))
     }
 
@@ -41,7 +41,7 @@ class ProFeatureGateSourceTest {
         val mainActivity = ProjectSourceFiles.read(MAIN_ACTIVITY)
         val navGraph = ProjectSourceFiles.read(NAV_GRAPH)
 
-        assertTrue(widget.contains("openProUpgrade = true"))
+        assertTrue(widget.contains("openProUpgrade = !unknown"))
         assertTrue(widget.contains("MainActivity.createWidgetProPromptLaunchIntent(context)"))
         assertTrue(mainActivity.contains("fun createWidgetProPromptLaunchIntent(context: Context)"))
         assertTrue(

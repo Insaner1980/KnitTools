@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material3.MaterialTheme
@@ -24,6 +25,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.tips.TipId
@@ -31,6 +33,7 @@ import com.finnvek.knittools.ui.components.CrossStitchGlyph
 import com.finnvek.knittools.ui.components.CrossStitchIcon
 import com.finnvek.knittools.ui.components.SectionLabel
 import com.finnvek.knittools.ui.theme.CounterDimens
+import com.finnvek.knittools.ui.theme.FontScaleThresholds
 import com.finnvek.knittools.ui.theme.knitToolsColors
 import com.finnvek.knittools.ui.tips.tipAnchor
 
@@ -84,51 +87,51 @@ fun ProjectContentCards(
     modifier: Modifier = Modifier,
 ) {
     val cards = projectContentCards(hasPattern)
-    Column(
-        modifier = modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(CounterDimens.ProjectCardGridSpacing),
-    ) {
-        SectionLabel(text = stringResource(R.string.project_content_title))
-        cards.take(4).chunked(2).forEach { rowCards ->
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(CounterDimens.ProjectCardGridSpacing),
-            ) {
-                rowCards.forEach { card ->
-                    ProjectContentCardView(
-                        card = card,
-                        onClick = { onCardClick(card.kind) },
-                        modifier =
-                            Modifier.weight(1f).then(
-                                if (card.kind ==
-                                    ProjectContentCardKind.PATTERN
-                                ) {
-                                    Modifier.tipAnchor(TipId.PATTERN_TILE)
-                                } else {
-                                    Modifier
-                                },
-                            ),
-                    )
-                }
-            }
-        }
-        cards.getOrNull(4)?.let { card ->
+    // Kapeassa tilassa 2 + 2 + 1 enintään 360 dp:n levyisenä; leveässä 3 + 2 koko sisältöleveydellä, jolloin
+    // ruudukko on yhtä leveä kuin muut laskurin osiot eikä viides ruutu jää yksin omalle rivilleen.
+    BoxWithConstraints(modifier = modifier.fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
+        val columns = projectContentCardColumns(maxWidth)
+        Column(
+            modifier =
+                Modifier
+                    .then(if (columns == 2) Modifier.widthIn(max = CounterDimens.ProjectCardGridMaxWidth) else Modifier)
+                    .fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(CounterDimens.ProjectCardGridSpacing),
+        ) {
+            SectionLabel(text = stringResource(R.string.project_content_title))
             BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
-                val centeredTileWidth = (maxWidth - CounterDimens.ProjectCardGridSpacing) / 2
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.Center,
-                ) {
-                    ProjectContentCardView(
-                        card = card,
-                        onClick = { onCardClick(card.kind) },
-                        modifier = Modifier.width(centeredTileWidth),
-                    )
+                val spacing = CounterDimens.ProjectCardGridSpacing
+                val tileWidth = (maxWidth - spacing * (columns - 1)) / columns
+                Column(verticalArrangement = Arrangement.spacedBy(spacing)) {
+                    cards.chunked(columns).forEach { rowCards ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(spacing, Alignment.CenterHorizontally),
+                        ) {
+                            rowCards.forEach { card ->
+                                ProjectContentCardView(
+                                    card = card,
+                                    onClick = { onCardClick(card.kind) },
+                                    modifier =
+                                        Modifier.width(tileWidth).then(
+                                            if (card.kind == ProjectContentCardKind.PATTERN) {
+                                                Modifier.tipAnchor(TipId.PATTERN_TILE)
+                                            } else {
+                                                Modifier
+                                            },
+                                        ),
+                                )
+                            }
+                        }
+                    }
                 }
             }
         }
     }
 }
+
+internal fun projectContentCardColumns(availableWidth: Dp): Int =
+    if (availableWidth >= CounterDimens.ProjectCardThreeColumnMinWidth) 3 else 2
 
 @Composable
 private fun ProjectContentCardView(
@@ -165,7 +168,7 @@ private fun ProjectContentCardView(
                 glyph = card.kind.glyph,
                 modifier =
                     Modifier.size(
-                        if (LocalDensity.current.fontScale >= 1.5f) {
+                        if (LocalDensity.current.fontScale >= FontScaleThresholds.LARGE) {
                             CounterDimens.ProjectCardCompactIconSize
                         } else {
                             CounterDimens.ProjectCardIconSize

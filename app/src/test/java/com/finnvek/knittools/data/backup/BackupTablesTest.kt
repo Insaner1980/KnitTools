@@ -23,17 +23,49 @@ import org.junit.rules.TemporaryFolder
 import java.io.File
 
 class BackupTablesTest {
+    @Test fun schema27HistoryHeaderDefaultsOnlyTheNewSessionSnapshot() {
+        val directory = temporary.newFolder()
+        val file = File(directory, "tables/counter_history.jsonl").apply { requireNotNull(parentFile).mkdirs() }
+        file.writeText("[\"id\",\"linkedCounterDeltasJson\",\"projectId\"]\n[1,\"{}\",7]\n")
+        var restored: Map<String, JsonElement>? = null
+        BackupTables.read(
+            directory,
+            "counter_history",
+            listOf("id", "linkedCounterDeltasJson", "projectId", "sessionUndoJson"),
+        ) {
+            restored = it
+        }
+        assertEquals(JsonPrimitive("{}"), restored?.get("linkedCounterDeltasJson"))
+        assertEquals(JsonNull, restored?.get("sessionUndoJson"))
+    }
+
+    @Test fun malformedSessionUndoSnapshotIsRejectedBeforeImport() {
+        val directory = temporary.newFolder()
+        val file = File(directory, "tables/counter_history.jsonl").apply { requireNotNull(parentFile).mkdirs() }
+        for (value in listOf("not-json", "{}")) {
+            file.writeText("[\"sessionUndoJson\"]\n${JsonArray(listOf(JsonPrimitive(value)))}\n")
+            assertThrows(BackupException::class.java) {
+                BackupTables.read(directory, "counter_history", listOf("sessionUndoJson")) {}
+            }
+        }
+    }
+
     @Test fun legacyHistoryHeadersRemainReadableWithoutInventingLinkedDeltas() {
         val directory = temporary.newFolder()
         val file = File(directory, "tables/counter_history.jsonl").apply { requireNotNull(parentFile).mkdirs() }
         file.writeText("[\"id\",\"projectId\"]\n[1,7]\n")
         var restored: Map<String, JsonElement>? = null
 
-        BackupTables.read(directory, "counter_history", listOf("id", "linkedCounterDeltasJson", "projectId")) {
+        BackupTables.read(
+            directory,
+            "counter_history",
+            listOf("id", "linkedCounterDeltasJson", "projectId", "sessionUndoJson"),
+        ) {
             restored = it
         }
 
         assertEquals(JsonNull, restored?.get("linkedCounterDeltasJson"))
+        assertEquals(JsonNull, restored?.get("sessionUndoJson"))
         assertEquals(JsonPrimitive(7), restored?.get("projectId"))
     }
 

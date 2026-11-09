@@ -16,6 +16,7 @@ import com.finnvek.knittools.domain.model.MainCounterChange
 import com.finnvek.knittools.domain.model.PatternAnnotationLayer
 import com.finnvek.knittools.domain.model.PatternAnnotationOwner
 import com.finnvek.knittools.domain.model.SavedPattern
+import com.finnvek.knittools.pro.InAppReviewManager
 import com.finnvek.knittools.pro.ProManager
 import com.finnvek.knittools.pro.ProState
 import com.finnvek.knittools.repository.CounterRepository
@@ -59,6 +60,7 @@ import org.junit.Before
 abstract class CounterViewModelFixture {
     protected val dispatcher = StandardTestDispatcher()
     protected val repository = mockk<CounterRepository>(relaxed = true)
+    protected val reviewManager = mockk<InAppReviewManager>(relaxed = true)
     protected val photoRepository = mockk<ProgressPhotoRepository>()
     protected val layers = MutableStateFlow(listOf(layer(41L, active = true), layer(42L, active = false)))
     protected val observedProject = MutableStateFlow(CounterProject(id = 7L, name = "Project"))
@@ -163,7 +165,7 @@ abstract class CounterViewModelFixture {
             savedPatternRepository = savedPatterns,
             projectDocumentRepository = documentRepositoryOverride ?: documents,
             patternDocumentStorage = patternStorageOverride ?: mockk(),
-            inAppReviewManager = mockk(relaxed = true),
+            inAppReviewManager = reviewManager,
             savedStateHandle = savedStateHandle,
             context = contextOverride ?: mockk<Context>(relaxed = true),
             ioDispatcher = dispatcher,

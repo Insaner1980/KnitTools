@@ -89,7 +89,7 @@ fun ProjectContentCards(
     val cards = projectContentCards(hasPattern)
     // Kapeassa tilassa 2 + 2 + 1 enintään 360 dp:n levyisenä; leveässä 3 + 2 koko sisältöleveydellä, jolloin
     // ruudukko on yhtä leveä kuin muut laskurin osiot eikä viides ruutu jää yksin omalle rivilleen.
-    BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
+    BoxWithConstraints(modifier = modifier.fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
         val columns = projectContentCardColumns(maxWidth)
         Column(
             modifier =

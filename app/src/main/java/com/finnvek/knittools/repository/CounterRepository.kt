@@ -1941,7 +1941,7 @@ class CounterRepository
             if (undoHistory == null) {
                 dao.updateLatestHistorySessionUndo(projectId, CounterSessionUndo.capture(synchronized).encode())
             } else {
-                val snapshot = undoHistory.sessionUndoJson?.let(CounterSessionUndo::decode)
+                val snapshot = undoHistory.sessionUndoJson?.let(CounterSessionUndo::decodeOrNull)
                 val checkpointed = checkpointTrustedSession(synchronized, now)
                 val restored = snapshot?.restoreRows(checkpointed)
                 if (restored != null) {

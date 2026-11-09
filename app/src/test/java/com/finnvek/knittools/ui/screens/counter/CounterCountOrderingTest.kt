@@ -5,6 +5,7 @@ import com.finnvek.knittools.domain.model.MainCounterChange
 import com.finnvek.knittools.widget.CounterWidgetState
 import com.finnvek.knittools.widget.WidgetData
 import io.mockk.coEvery
+import io.mockk.coVerify
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -51,6 +52,8 @@ class CounterCountOrderingTest : CounterViewModelFixture() {
 
             assertEquals(2, model.uiState.value.counter.count)
             assertTrue(published.none { it.count == 1 })
+            assertEquals(2, published.lastOrNull()?.count)
+            coVerify(exactly = 1) { reviewManager.recordAction() }
         }
 
     @Test

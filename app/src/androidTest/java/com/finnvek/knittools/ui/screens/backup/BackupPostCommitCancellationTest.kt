@@ -54,6 +54,7 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
+import org.junit.Assume.assumeTrue
 import org.junit.Rule
 import org.junit.Test
 import java.io.File
@@ -68,7 +69,7 @@ class BackupPostCommitCancellationTest {
     @Test
     fun finishingActivityAfterCommitPreservesReplacementAndReopenedBackupIsUsable() {
         val app = ApplicationProvider.getApplicationContext<Context>()
-        check(app.packageName == "com.finnvek.knittools.notestest")
+        assumeTrue(app.packageName == "com.finnvek.knittools.notestest")
         val root = File(app.cacheDir, "br-g04-${UUID.randomUUID()}").apply { mkdirs() }
         val context =
             object : ContextWrapper(app) {

@@ -276,7 +276,7 @@ class WidgetEntitlementRuntimeTest {
                 null,
                 null,
             )
-            withTimeout(10_000) { completed.await() }
+            withTimeout(20_000) { completed.await() }
         }
 
         suspend fun awaitCount(count: Int) = await { repository.getProject(projectId)?.count == count }

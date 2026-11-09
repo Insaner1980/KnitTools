@@ -6,7 +6,7 @@ This is the product and technical reference for the **inspected working tree on 
 
 This update retains the October 18 reference and the pre-existing October 19 Brazilian Portuguese additions, reconciles their Git/source history, and refreshes the affected sections and inventories. It is a documentation/source verification, not a new build or runtime test run.
 
-Schema and backup-table facts were reconciled with schema 27 on November 6, 2026. Dated validation records below remain historical evidence.
+Schema and backup-table facts were reconciled with schema 28 on November 9, 2026. Dated validation records below remain historical evidence.
 
 All repository links are relative to the root. Package shorthand such as `repository/CounterRepository.kt` means a path below `app/src/main/java/com/finnvek/knittools`. “Implemented” means present and reachable subject to state, validation and entitlement; it does not mean released, live-service verified or freshly runtime-tested.
 
@@ -1388,6 +1388,7 @@ Primary key: `id` (auto-generated).
 | `newValue` | INTEGER | No | — |
 | `timestamp` | INTEGER | No | — |
 | `linkedCounterDeltasJson` | TEXT | Yes | — |
+| `sessionUndoJson` | TEXT | Yes | — |
 
 Indexes: `index_counter_history_projectId` (`projectId`).
 
@@ -1756,7 +1757,7 @@ Foreign key: `projectId` → `counter_projects` (`id`), delete CASCADE, update N
 
 ### Migration chain
 
-Room exports every version 1–27. Versions 1→2 and 2→3 use declared auto-migrations; subsequent migrations are explicitly registered. Schema snapshots, migration implementation, constraint callbacks, and migration tests must change together for new persistent state.
+Room exports every version 1–28. Versions 1→2 and 2→3 use declared auto-migrations; subsequent migrations are explicitly registered. Schema snapshots, migration implementation, constraint callbacks, and migration tests must change together for new persistent state.
 
 | Transition | Implemented change / preservation boundary |
 | --- | --- |
@@ -1786,6 +1787,7 @@ Room exports every version 1–27. Versions 1→2 and 2→3 use declared auto-mi
 | 24→25 | Adds project completion events; backfills at most one valid current completion per completed project, nullable legacy zone |
 | 25→26 | Adds only onboarding project draft receipts and their unique project index; preserves earlier tables |
 | 26→27 | `MIGRATION_26_27` adds nullable `counter_history.linkedCounterDeltasJson` TEXT for actual linked-counter history deltas; preserves existing history with null snapshots |
+| 27→28 | `MIGRATION_27_28` adds nullable `counter_history.sessionUndoJson` TEXT for session row-accounting undo snapshots; preserves existing history with null snapshots |
 
 Migration 24→25 requires a credible completion timestamp at/after creation; it does not invent all historical completion cycles. Session null zones and completion null zones keep the established current-device-zone fallback. Migration 18→19 must preserve tables that reference the rebuilt saved-pattern table; a successful table rebuild without those rows is not a correct migration.
 

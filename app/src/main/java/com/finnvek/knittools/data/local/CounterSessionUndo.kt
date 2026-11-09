@@ -79,5 +79,7 @@ internal data class CounterSessionUndo(
                 require(it.reviewedRowsWorked >= 0 && it.reviewedLastObservedRow >= 0 && it.trustedLastObservedRow >= 0)
                 require(it.trustedRowsWorked >= 0 && it.unreviewedRowsWorked >= 0 && it.pendingRowsWorked >= 0)
             }
+
+        fun decodeOrNull(value: String): CounterSessionUndo? = runCatching { decode(value) }.getOrNull()
     }
 }

@@ -2,6 +2,7 @@ package com.finnvek.knittools.repository
 
 import com.finnvek.knittools.data.local.CounterHistoryEntity
 import com.finnvek.knittools.data.local.CounterProjectEntity
+import com.finnvek.knittools.data.local.CounterSessionUndo
 import com.finnvek.knittools.domain.model.ActiveSessionRecoveryReason
 import com.finnvek.knittools.domain.model.MainCounterChange
 import io.mockk.coEvery
@@ -13,6 +14,32 @@ import org.junit.Test
 class CounterSessionUndoTest : CounterRepositoryActiveSessionFixture() {
     private var project = CounterProjectEntity(id = 7L, name = "Undo", count = 12)
     private val history = mutableListOf<CounterHistoryEntity>()
+
+    @Test
+    fun `undo falls back for malformed incompatible or invalid session snapshots`() =
+        runTest {
+            for (corruption in listOf("malformed", "incompatible", "invalid")) {
+                prepareCounter(12, 1)
+                repository.startSession(7L)
+                change(MainCounterChange.Increment)
+                val snapshot = requireNotNull(history.last().sessionUndoJson)
+                val corrupted =
+                    when (corruption) {
+                        "malformed" -> "not-json"
+                        "incompatible" -> snapshot.dropLast(1) + ",\"futureField\":true}"
+                        else -> CounterSessionUndo.decode(snapshot).copy(trustedRowsWorked = -1).encode()
+                    }
+                history[history.lastIndex] = history.last().copy(sessionUndoJson = corrupted)
+
+                change(MainCounterChange.Undo)
+
+                assertEquals(12, project.count)
+                assertEquals(12, active?.lastObservedRow)
+                assertEquals(0, active?.trustedRowsWorked)
+                assertTrue(history.isEmpty())
+                repository.discardActiveSession(requireNotNull(active).sessionToken)
+            }
+        }
 
     @Test
     fun `decrement and undo preserve zero session progress across clamps`() =

@@ -642,6 +642,9 @@ class CounterViewModel
                 linkedYarnIdsCache = project.yarnCardIds
                 loadLinkedYarnNames(project.id, project.yarnCardIds)
             }
+            if (previousObservedProject != null && previousObservedProject.count != project.count) {
+                syncWidget(project.id, project.name, project.count)
+            }
             return project
         }
 
@@ -1841,6 +1844,7 @@ class CounterViewModel
             launchProjectContentMutation {
                 val changed = repository.applyMainCounterChange(projectId, MainCounterChange.Undo)
                 if (!changed) return@launchProjectContentMutation true
+                inAppReviewManager.recordAction()
                 val readVersion = counterStateVersion
                 val updatedProject = repository.getProject(projectId) ?: return@launchProjectContentMutation false
                 val currentState = _uiState.value
@@ -1869,7 +1873,6 @@ class CounterViewModel
                     }
                 }
                 syncRepeatSectionCounters(updatedCounter.count, _uiState.value.projectCounters, persist = false)
-                inAppReviewManager.recordAction()
                 if (selectionVersion == projectSelectionVersion && _uiState.value.projectId == projectId) {
                     syncWidget(projectId, updatedProject.name, updatedCounter.count)
                 }
@@ -2975,6 +2978,7 @@ class CounterViewModel
             val selectionVersion = projectSelectionVersion
             viewModelScope.launch {
                 val changed = applyCountChangeAndRecordSignals(projectId, change, incrementTimestampMillis)
+                if (changed) inAppReviewManager.recordAction()
                 val readVersion = counterStateVersion
                 val persisted = loadProjectAfterCountChange(projectId, changed) ?: return@launch
                 if (selectionVersion != projectSelectionVersion ||
@@ -2992,7 +2996,6 @@ class CounterViewModel
                     )
                 }
                 syncRepeatSectionCounters(persisted.count, _uiState.value.projectCounters, persist = false)
-                if (changed) inAppReviewManager.recordAction()
                 if (selectionVersion == projectSelectionVersion && _uiState.value.projectId == projectId) {
                     syncWidget(projectId, persisted.name, persisted.count)
                 }

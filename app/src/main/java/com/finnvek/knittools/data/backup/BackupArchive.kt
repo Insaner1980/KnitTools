@@ -155,6 +155,9 @@ internal object BackupArchive {
             BackupFormat.requireValid(BackupFormat.allowedPath(entry.path))
             BackupFormat.requireValid(entry.size in 0..BackupFormat.limit(entry.path))
             BackupFormat.requireValid(BackupFormat.hashPattern.matches(entry.sha256))
+            BackupFormat.requireValid(
+                entry.path in BackupFormat.tablePaths || entry.path == "files/${entry.sha256}.bin",
+            )
             budget.addArchiveEntry(entry.path, entry.size)
         }
     }

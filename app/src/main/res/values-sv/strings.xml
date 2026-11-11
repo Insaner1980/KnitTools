@@ -933,7 +933,7 @@
         <item quantity="other">%1$d varv</item>
     </plurals>
     <string name="yarn_usage_title">Garnåtgång</string>
-    <string name="yarn_usage_scope">Spårar bara garn som avsatts för det här projektet. Mängderna i Mitt garn ändras inte.</string>
+    <string name="yarn_usage_scope">Spårar garnmängder för det här projektet. Mängderna i Mitt garn ändras inte.</string>
     <string name="yarn_usage_unit">Mängdenhet</string>
     <string name="yarn_usage_grams">Gram</string>
     <string name="yarn_usage_skeins">Härvor</string>

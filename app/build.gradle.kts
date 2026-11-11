@@ -115,6 +115,13 @@ val googleServicesPlaceholderJson =
 apply(plugin = "com.google.gms.google-services")
 apply(plugin = "com.google.firebase.crashlytics")
 
+gradle.projectsEvaluated {
+    // Use the same file for release admission and resource generation.
+    tasks.withType<GoogleServicesTask>().matching { it.name == "processReleaseGoogleServices" }.configureEach {
+        googleServicesJsonFiles.set(listOf(googleServicesJsonConfigFile.asFile))
+    }
+}
+
 object GoogleServicesJsonTaskActions {
     private const val PLACEHOLDER_API_KEY = "debug-placeholder-api-key"
 

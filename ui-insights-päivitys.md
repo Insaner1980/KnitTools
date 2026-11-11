@@ -1,5 +1,7 @@
 # Insights UI Update — Detailed Plan (A: Premium Polish + B: Stitch Fabric)
 
+**Historical draft:** section B is superseded by [projects-by-day-kaavio.md](projects-by-day-kaavio.md). Follow current AGENTS.md/CODEX.md and implementation for the current Insights design.
+
 Status: **draft for review** — no code changes yet.
 Scope: `app/src/main/java/com/finnvek/knittools/ui/screens/insights/`, `ui/theme/InsightsDimens.kt`, `res/values*/strings.xml`.
 Goal: make the Insights tab clear, premium and memorable ("wow") while keeping the 70s Craft Revival identity: editorial typography, hairlines instead of cards, theme tokens only, light + dark.

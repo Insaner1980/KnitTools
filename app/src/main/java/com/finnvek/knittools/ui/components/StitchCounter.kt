@@ -3,6 +3,7 @@ package com.finnvek.knittools.ui.components
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -48,7 +49,7 @@ fun StitchCounter(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-        val controlsContent: @Composable () -> Unit = {
+        val controlsContent: @Composable RowScope.() -> Unit = {
             CounterStepperButton(
                 symbol = CounterStepSymbol.Minus,
                 isIncrement = false,
@@ -61,6 +62,7 @@ fun StitchCounter(
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurface,
                 textAlign = TextAlign.Center,
+                modifier = Modifier.weight(1f, fill = false),
             )
             CounterStepperButton(
                 symbol = CounterStepSymbol.Plus,

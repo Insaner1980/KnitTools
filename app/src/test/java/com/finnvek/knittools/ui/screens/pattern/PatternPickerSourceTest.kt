@@ -23,21 +23,20 @@ class PatternPickerSourceTest {
         val picker = ProjectSourceFiles.read(PATTERN_PICKER)
         val registration =
             picker
-                .substringAfter("DisposableEffect(registry, imageImportViewModel, requestId)")
-                .substringBefore("val openDocumentLauncher")
+                .blockBetween("DisposableEffect(registry, imageImportViewModel, requestId)", "val openDocumentLauncher")
 
         assertTrue(picker.contains("val requestId = imageImportState.pickerRequestId"))
         assertTrue(
             registration.contains("registry.register(\"pattern-images-\$requestId\", PatternImagePickerContract())"),
         )
         assertTrue(registration.contains("imageImportViewModel.onGalleryPickerResult(requestId, uris)"))
-        assertTrue(
-            registration.indexOf("markGalleryPickerLaunched(requestId)") < registration.indexOf("launcher.launch("),
-        )
+        val launchedMarker = registration.indexOf("markGalleryPickerLaunched(requestId)")
+        assertTrue(launchedMarker >= 0)
+        assertTrue(launchedMarker < registration.indexOf("launcher.launch("))
         assertTrue(registration.contains("onDispose { launcher?.unregister() }"))
         assertFalse(picker.contains("pendingGalleryRequestId"))
         assertTrue(picker.contains("imageImportViewModel.consumeCloseRequest(sessionId)"))
-        val closeEffect = picker.substringAfter("LaunchedEffect(sessionId,").substringBefore("pendingProAction?.let")
+        val closeEffect = picker.blockBetween("LaunchedEffect(sessionId,", "pendingProAction?.let")
         assertTrue(
             closeEffect.replace(Regex("\\s+"), " ").contains(
                 "imageImportState.closeReady && imageImportViewModel.consumeCloseRequest(sessionId) && " +
@@ -125,10 +124,11 @@ class PatternPickerSourceTest {
         val viewer = ProjectSourceFiles.read(PATTERN_VIEWER_SCREEN)
         val resultHandler =
             screen
-                .substringAfter(
+                .blockBetween(
                     "onPatternImportResult = { error ->",
-                ).substringBefore("onImportFromRavelry =")
-        val addAction = screen.substringAfter("onAdd = {").substringBefore("onClearError =")
+                    "onImportFromRavelry =",
+                )
+        val addAction = screen.blockBetween("onAdd = {", "onClearError =")
 
         assertTrue(
             screen.contains("attachProjectPatternWithFeedback(viewModel, uri, name, owner, onPatternImportResult)"),
@@ -155,20 +155,25 @@ class PatternPickerSourceTest {
         val picker = ProjectSourceFiles.read(PATTERN_PICKER)
         val callback =
             picker
-                .substringAfter("rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument())")
-                .substringBefore("LaunchedEffect(pendingDocumentUriString")
+                .blockBetween(
+                    "rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument())",
+                    "LaunchedEffect(pendingDocumentUriString",
+                )
         val delivery =
             picker
-                .substringAfter(
+                .blockBetween(
                     "LaunchedEffect(pendingDocumentUriString",
-                ).substringBefore("val cameraLauncher")
+                    "val cameraLauncher",
+                )
 
         assertTrue(callback.contains("pendingDocumentUriString = uri?.toString()"))
         assertTrue(callback.contains("if (uri == null) pendingDocumentProjectId = null"))
         assertFalse(callback.contains("onDocumentSelected("))
         assertFalse(callback.contains("onDismiss()"))
         assertTrue(delivery.contains("val uri = pendingDocumentUriString ?: return@LaunchedEffect"))
-        assertTrue(delivery.indexOf("onDocumentSelected(uri, \"\", owner)") < delivery.indexOf("onDismiss()"))
+        val selectedIndex = delivery.indexOf("onDocumentSelected(uri, \"\", owner)")
+        assertTrue(selectedIndex >= 0)
+        assertTrue(selectedIndex < delivery.indexOf("onDismiss()"))
     }
 
     @Test

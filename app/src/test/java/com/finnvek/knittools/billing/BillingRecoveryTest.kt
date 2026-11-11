@@ -55,17 +55,17 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class BillingRecoveryTest {
-    private val dispatcher = UnconfinedTestDispatcher()
-    private val client = mockk<BillingClient>(relaxed = true)
-    private val builder = mockk<BillingClient.Builder>(relaxed = true)
-    private lateinit var connection: BillingClientStateListener
-    private lateinit var billing: BillingManager
-    private lateinit var trial: TrialManager
-    private val trialStates = MutableStateFlow(TrialState(hasStarted = true))
-    private lateinit var pro: ProManager
-    private lateinit var viewModel: ProUpgradeViewModel
-    private val viewModels = ViewModelStore()
+abstract class BillingRecoveryFixture {
+    protected val dispatcher = UnconfinedTestDispatcher()
+    protected val client = mockk<BillingClient>(relaxed = true)
+    protected val builder = mockk<BillingClient.Builder>(relaxed = true)
+    protected lateinit var connection: BillingClientStateListener
+    protected lateinit var billing: BillingManager
+    protected lateinit var trial: TrialManager
+    protected val trialStates = MutableStateFlow(TrialState(hasStarted = true))
+    protected lateinit var pro: ProManager
+    protected lateinit var viewModel: ProUpgradeViewModel
+    protected val viewModels = ViewModelStore()
 
     @Before
     fun setup() {
@@ -102,6 +102,23 @@ class BillingRecoveryTest {
         Dispatchers.resetMain()
     }
 
+    protected fun purchased(): Purchase =
+        mockk {
+            every { products } returns listOf(BillingManager.PRODUCT_ID)
+            every { purchaseState } returns Purchase.PurchaseState.PURCHASED
+            every { isAcknowledged } returns true
+        }
+
+    protected fun result(code: Int): BillingResult = BillingResult.newBuilder().setResponseCode(code).build()
+
+    protected fun purchases(
+        code: Int,
+        owned: List<Purchase> = emptyList(),
+    ): PurchasesResult = PurchasesResult(result(code), owned)
+}
+
+@OptIn(ExperimentalCoroutinesApi::class)
+class BillingRecoveryTest : BillingRecoveryFixture() {
     @Test
     fun `late empty initial query cannot revoke a newer restored purchase`() =
         runTest(dispatcher) {
@@ -318,6 +335,42 @@ class BillingRecoveryTest {
         }
 
     @Test
+    fun `overlapping restores share one explicit connection attempt and its scheduled retry`() =
+        runTest(dispatcher) {
+            val failure = result(BillingClient.BillingResponseCode.ERROR)
+            every { client.isReady } returns false
+            every { client.startConnection(any()) } answers {
+                firstArg<BillingClientStateListener>().onBillingSetupFinished(failure)
+            }
+            connection.onBillingSetupFinished(failure)
+            advanceUntilIdle()
+            verify(exactly = 3) { client.startConnection(any()) }
+
+            every { client.startConnection(any()) } answers { connection = firstArg() }
+            val first = async { billing.restorePurchasesWithResult() }
+            val second = async { billing.restorePurchasesWithResult() }
+            runCurrent()
+            verify(exactly = 4) { client.startConnection(any()) }
+
+            connection.onBillingSetupFinished(failure)
+            advanceTimeBy(1_000)
+            val third = async { billing.restorePurchasesWithResult() }
+            runCurrent()
+            verify(exactly = 4) { client.startConnection(any()) }
+
+            advanceTimeBy(1_000)
+            runCurrent()
+            verify(exactly = 5) { client.startConnection(any()) }
+            every { client.isReady } returns true
+            coEvery { client.queryPurchasesAsync(any()) } returns purchases(BillingClient.BillingResponseCode.OK)
+            connection.onBillingSetupFinished(result(BillingClient.BillingResponseCode.OK))
+            assertEquals(RestorePurchasesResult.FAILED, first.await())
+            assertEquals(RestorePurchasesResult.FAILED, second.await())
+            assertEquals(RestorePurchasesResult.NOT_FOUND, third.await())
+            assertTrue(billing.purchaseStateReady.value)
+        }
+
+    @Test
     fun `settings restore propagates to existing Pro view model`() =
         runTest(dispatcher) {
             connection.onBillingSetupFinished(result(BillingClient.BillingResponseCode.OK))
@@ -393,6 +446,26 @@ class BillingRecoveryTest {
         }
 
     @Test
+    fun `already owned launch result and its purchase callback share one recovery query`() =
+        runTest(dispatcher) {
+            val response = CompletableDeferred<PurchasesResult>()
+            coEvery { client.queryPurchasesAsync(any()) } coAnswers { response.await() }
+            val alreadyOwned = result(BillingClient.BillingResponseCode.ITEM_ALREADY_OWNED)
+
+            billing.applyPurchaseFlowResult(alreadyOwned)
+            billing.onPurchasesUpdated(alreadyOwned, null)
+            coVerify(exactly = 1) { client.queryPurchasesAsync(any()) }
+            assertFalse(billing.isProPurchased.value)
+
+            response.complete(purchases(BillingClient.BillingResponseCode.OK, listOf(purchased())))
+            runCurrent()
+            assertTrue(billing.isProPurchased.value)
+
+            billing.onPurchasesUpdated(alreadyOwned, null)
+            coVerify(exactly = 2) { client.queryPurchasesAsync(any()) }
+        }
+
+    @Test
     fun `destroy cancels initial query and its followup product query`() =
         runTest(dispatcher) {
             val pending = CompletableDeferred<PurchasesResult>()
@@ -413,6 +486,16 @@ class BillingRecoveryTest {
             coVerify(exactly = 0) { client.queryProductDetails(any()) }
         }
 
+    private fun deferInitialQuery(): CompletableDeferred<PurchasesResult> {
+        val initial = CompletableDeferred<PurchasesResult>()
+        coEvery { client.queryPurchasesAsync(any()) } coAnswers { initial.await() }
+        connection.onBillingSetupFinished(result(BillingClient.BillingResponseCode.OK))
+        return initial
+    }
+}
+
+@OptIn(ExperimentalCoroutinesApi::class)
+class BillingAcknowledgementRecoveryTest : BillingRecoveryFixture() {
     @Test
     fun `stale transient acknowledgement cannot retry or release current in flight purchase`() =
         runTest(dispatcher) {
@@ -528,6 +611,7 @@ class BillingRecoveryTest {
                     advanceTimeBy(5_001)
                     runCurrent()
                 }
+                assertEquals(RestorePurchasesResult.RESTORED, billing.restorePurchasesWithResult())
                 assertEquals(4, callbacks.size)
             }
         }
@@ -720,26 +804,5 @@ class BillingRecoveryTest {
         billing.initialize()
         connection.onBillingSetupFinished(result(BillingClient.BillingResponseCode.OK))
         return callbacks
-    }
-
-    private fun purchased(): Purchase =
-        mockk {
-            every { products } returns listOf(BillingManager.PRODUCT_ID)
-            every { purchaseState } returns Purchase.PurchaseState.PURCHASED
-            every { isAcknowledged } returns true
-        }
-
-    private fun result(code: Int): BillingResult = BillingResult.newBuilder().setResponseCode(code).build()
-
-    private fun purchases(
-        code: Int,
-        owned: List<Purchase> = emptyList(),
-    ): PurchasesResult = PurchasesResult(result(code), owned)
-
-    private fun deferInitialQuery(): CompletableDeferred<PurchasesResult> {
-        val initial = CompletableDeferred<PurchasesResult>()
-        coEvery { client.queryPurchasesAsync(any()) } coAnswers { initial.await() }
-        connection.onBillingSetupFinished(result(BillingClient.BillingResponseCode.OK))
-        return initial
     }
 }

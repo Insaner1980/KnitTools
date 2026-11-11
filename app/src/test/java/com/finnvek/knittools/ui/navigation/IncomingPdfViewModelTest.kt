@@ -105,6 +105,34 @@ class IncomingPdfViewModelTest {
     }
 
     @Test
+    fun `interrupted share restarts once in a fresh owner`() =
+        runTest {
+            val uri = mockk<Uri> { every { lastPathSegment } returns "Interrupted.pdf" }
+            coEvery { storage.copyPdfToInternal(context, 0L, uri, "Interrupted.pdf") } coAnswers { awaitCancellation() }
+            val state = SavedStateHandle()
+            val receiving = viewModel(state)
+            receiving.receive(uri)
+            runCurrent()
+
+            assertTrue(receiving.restoreInterruptedReceive(intent = null))
+            runCurrent()
+            coVerify(exactly = 1) { storage.copyPdfToInternal(context, 0L, uri, "Interrupted.pdf") }
+            val restoredState = SavedStateHandle(state.keys().associateWith { key -> state.get<Any?>(key) })
+            models.clear()
+            runCurrent()
+
+            coEvery { storage.copyPdfToInternal(context, 0L, uri, "Interrupted.pdf") } returns NEW_PDF_URI
+            val restored = viewModel(restoredState)
+            assertTrue(restored.restoreInterruptedReceive(intent = null))
+            advanceUntilIdle()
+
+            assertEquals(NEW_PDF_URI, restored.pending.value?.localUri)
+            assertFalse(restored.receiving.value)
+            assertFalse(restored.restoreInterruptedReceive(intent = null))
+            coVerify(exactly = 2) { storage.copyPdfToInternal(context, 0L, uri, "Interrupted.pdf") }
+        }
+
+    @Test
     fun `PDF choices preserve controls readiness separately from marker readiness`() =
         runTest {
             val controlsReady = MutableStateFlow(false)
@@ -253,6 +281,44 @@ class IncomingPdfViewModelTest {
             coVerify(exactly = 1) { savedPatternRepository.deleteLocalPatternFileIfUnused(olderUri) }
             coVerify(exactly = 0) { savedPatternRepository.deleteLocalPatternFileIfUnused(newerUri) }
             coVerify(exactly = 1) { savedPatternRepository.deleteLocalPatternFileIfUnused(stagedUri) }
+        }
+
+    @Test
+    fun `stale PDF actions do not affect a replacement pending document`() =
+        runTest {
+            val model = viewModel(handle(stagedUri))
+            val shownUri = requireNotNull(model.pending.value).localUri
+            val staleActions =
+                listOf(
+                    { model.attachToProject(7L, "A", expectedPdfUri = shownUri) },
+                    { model.startNewProject("A", expectedPdfUri = shownUri) },
+                    { model.saveToLibrary("A", expectedPdfUri = shownUri) },
+                    { model.discard(expectedPdfUri = shownUri) },
+                )
+
+            receiveNewPdf(model)
+            advanceUntilIdle()
+            val replacement = requireNotNull(model.pending.value)
+            assertEquals(NEW_PDF_URI, replacement.localUri)
+
+            staleActions.forEach { action ->
+                action()
+                advanceUntilIdle()
+                assertEquals(replacement, model.pending.value)
+                assertFalse(model.busy.value)
+            }
+
+            coVerify(exactly = 0) { counterRepository.attachPattern(any(), any(), any(), any(), any()) }
+            coVerify(exactly = 0) { counterRepository.createProjectWithImportedPdf(any(), any(), any(), any()) }
+            coVerify(exactly = 0) { savedPatternRepository.saveImportedPatternIfMissing(any(), any()) }
+            coVerify(exactly = 0) { savedPatternRepository.deleteLocalPatternFileIfUnused(NEW_PDF_URI) }
+
+            coEvery { savedPatternRepository.saveImportedPatternIfMissing(NEW_PDF_URI, "B") } returns 23L
+            model.saveToLibrary("B", expectedPdfUri = replacement.localUri)
+            advanceUntilIdle()
+
+            assertNull(model.pending.value)
+            coVerify(exactly = 1) { savedPatternRepository.saveImportedPatternIfMissing(NEW_PDF_URI, "B") }
         }
 
     @Test

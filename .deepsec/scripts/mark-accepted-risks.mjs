@@ -8,10 +8,11 @@ const projectRoot = path.resolve(deepsecRoot, "..");
 const securityDecisionPath = path.join(projectRoot, "config", "security-decisions.md");
 const fileRecordsRoot = path.join(deepsecRoot, "data", "knittools", "files");
 
-const RAVELRY_ACCEPTED_RISK_FILES = new Set([
-  "app/build.gradle.kts",
-  "app/src/main/java/com/finnvek/knittools/auth/RavelryAuthManager.kt",
-  "app/src/main/java/com/finnvek/knittools/data/remote/RavelryApiService.kt",
+const RAVELRY_ACCEPTED_RISK_RUN = "20260514063758-293653dff198bae7";
+const RAVELRY_ACCEPTED_RISK_FILES = new Map([
+  ["app/build.gradle.kts", "finding_6e03ceb481162a46"],
+  ["app/src/main/java/com/finnvek/knittools/auth/RavelryAuthManager.kt", "finding_229838296fa8182a"],
+  ["app/src/main/java/com/finnvek/knittools/data/remote/RavelryApiService.kt", "finding_3049f506c2ba95c0"],
 ]);
 
 const RAVELRY_CREDENTIAL_PATTERNS = [
@@ -86,11 +87,16 @@ function markRavelryCredentialFindings({ verdict, reasoning, runId }) {
 
   for (const recordPath of walkJsonFiles(fileRecordsRoot)) {
     const record = JSON.parse(fs.readFileSync(recordPath, "utf8"));
-    if (!RAVELRY_ACCEPTED_RISK_FILES.has(record.filePath)) continue;
+    const reviewedFindingId = RAVELRY_ACCEPTED_RISK_FILES.get(record.filePath);
+    if (!reviewedFindingId) continue;
 
     let changed = false;
     for (const finding of record.findings ?? []) {
-      if (!isRavelryCredentialFinding(finding)) continue;
+      if (
+        finding.findingId !== reviewedFindingId ||
+        finding.producedByRunId !== RAVELRY_ACCEPTED_RISK_RUN ||
+        finding.vulnSlug !== "secrets-exposure"
+      ) continue;
 
       finding.revalidation = {
         verdict,
@@ -109,11 +115,6 @@ function markRavelryCredentialFindings({ verdict, reasoning, runId }) {
   }
 
   return updatedFindings;
-}
-
-function isRavelryCredentialFinding(finding) {
-  const text = `${finding.title ?? ""}\n${finding.description ?? ""}\n${finding.recommendation ?? ""}`;
-  return finding.vulnSlug === "secrets-exposure" && /Ravelry/i.test(text);
 }
 
 function currentRavelryCredentialMatches() {

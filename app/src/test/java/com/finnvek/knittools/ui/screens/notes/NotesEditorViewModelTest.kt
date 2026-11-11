@@ -36,6 +36,8 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import kotlin.coroutines.resume
+import kotlin.coroutines.suspendCoroutine
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class NotesEditorViewModelTest {
@@ -82,6 +84,7 @@ class NotesEditorViewModelTest {
             proManager = proManager,
             applicationScope = applicationScope,
             savedStateHandle = SavedStateHandle(mapOf("projectId" to 1L)),
+            draftStorage = mockk(),
         )
     }
 
@@ -99,7 +102,7 @@ class NotesEditorViewModelTest {
                 )
             every { repository.observeProject(1L) } returns
                 flowOf(CounterProject(id = 1L, name = "Test", notesCreated = false))
-            val viewModel = NotesEditorViewModel(repository, proManager, applicationScope, handle)
+            val viewModel = NotesEditorViewModel(repository, proManager, applicationScope, handle, mockk())
             runCurrent()
             assertFalse(viewModel.uiState.value.canEditNotes)
 
@@ -153,6 +156,7 @@ class NotesEditorViewModelTest {
                     proManager = proManager,
                     applicationScope = applicationScope,
                     savedStateHandle = SavedStateHandle(mapOf("projectId" to 1L)),
+                    draftStorage = mockk(),
                 )
             advanceUntilIdle()
 
@@ -183,6 +187,7 @@ class NotesEditorViewModelTest {
                     proManager = proManager,
                     applicationScope = applicationScope,
                     savedStateHandle = SavedStateHandle(mapOf("projectId" to 1L)),
+                    draftStorage = mockk(),
                 )
             advanceUntilIdle()
 
@@ -224,9 +229,17 @@ class NotesEditorViewModelTest {
             val viewModel = vm(notes = "Base")
             advanceUntilIdle()
 
+            viewModel.onNotesChanged("Earlier edit")
+            runCurrent()
+            advanceTimeBy(600)
             viewModel.onNotesChanged("Local edit")
-            advanceTimeBy(1_000)
-            advanceUntilIdle()
+            runCurrent()
+            advanceTimeBy(999)
+            runCurrent()
+            coVerify(exactly = 0) { repository.saveProjectNotes(any(), any(), any(), any()) }
+
+            advanceTimeBy(1)
+            runCurrent()
 
             coVerify(exactly = 1) { repository.saveProjectNotes(1L, "Base", "Local edit", false) }
         }
@@ -243,6 +256,7 @@ class NotesEditorViewModelTest {
                     proManager = proManager,
                     applicationScope = applicationScope,
                     savedStateHandle = savedStateHandle,
+                    draftStorage = mockk(),
                 )
             runCurrent()
 
@@ -256,11 +270,12 @@ class NotesEditorViewModelTest {
     @Test
     fun `restored draft survives process recreation and is autosaved`() =
         runTest {
-            val project = CounterProject(id = 1L, name = "Test", notes = "Base")
+            val project = CounterProject(id = 1L, name = "Test", notes = "External edit")
+            val mergedNotes = "Local edit\n\n---\n\nExternal edit"
             every { repository.observeProject(1L) } returns flowOf(project)
             coEvery {
                 repository.saveProjectNotes(1L, "Base", "Local edit", false)
-            } returns ProjectNotesSaveResult.Saved(project.copy(notes = "Local edit"))
+            } returns ProjectNotesSaveResult.Saved(project.copy(notes = mergedNotes))
             val savedStateHandle =
                 SavedStateHandle(
                     mapOf(
@@ -275,19 +290,58 @@ class NotesEditorViewModelTest {
                     proManager = proManager,
                     applicationScope = applicationScope,
                     savedStateHandle = savedStateHandle,
+                    draftStorage = mockk(),
                 )
 
             runCurrent()
 
             assertEquals("Local edit", viewModel.uiState.value.notes)
+            assertEquals("Base", savedStateHandle.get<String>("notesDraftBase"))
             coVerify(exactly = 0) { repository.saveProjectNotes(any(), any(), any(), any()) }
 
             advanceTimeBy(1_000)
             advanceUntilIdle()
 
             coVerify(exactly = 1) { repository.saveProjectNotes(1L, "Base", "Local edit", false) }
+            assertEquals(mergedNotes, viewModel.uiState.value.notes)
             assertNull(savedStateHandle.get<String>("notesDraft"))
             assertNull(savedStateHandle.get<String>("notesDraftBase"))
+        }
+
+    @Test
+    fun `late save completion preserves newer typing and rebases its next save`() =
+        runTest {
+            val project = CounterProject(id = 1L, name = "Test", notes = "Base", notesCreated = true)
+            val handle = SavedStateHandle(mapOf("projectId" to 1L))
+            every { repository.observeProject(1L) } returns flowOf(project)
+            var completeFirstSave: ((ProjectNotesSaveResult) -> Unit)? = null
+            coEvery { repository.saveProjectNotes(1L, "Base", "Draft A", false) } coAnswers {
+                suspendCoroutine { continuation -> completeFirstSave = { continuation.resume(it) } }
+            }
+            coEvery { repository.saveProjectNotes(1L, "Draft A", "Draft B", false) } returns
+                ProjectNotesSaveResult.Saved(project.copy(notes = "Draft B"))
+            val viewModel = NotesEditorViewModel(repository, proManager, applicationScope, handle, mockk())
+            runCurrent()
+
+            viewModel.onNotesChanged("Draft A")
+            advanceTimeBy(1_000)
+            runCurrent()
+            viewModel.onNotesChanged("Draft B")
+            runCurrent()
+            requireNotNull(completeFirstSave)(ProjectNotesSaveResult.Saved(project.copy(notes = "Draft A")))
+            runCurrent()
+
+            assertEquals("Draft B", viewModel.uiState.value.notes)
+            assertEquals("Draft B", handle.get<String>("notesDraft"))
+            assertEquals("Draft A", handle.get<String>("notesDraftBase"))
+
+            advanceTimeBy(1_000)
+            runCurrent()
+
+            coVerify(exactly = 1) { repository.saveProjectNotes(1L, "Draft A", "Draft B", false) }
+            assertEquals("Draft B", viewModel.uiState.value.notes)
+            assertNull(handle.get<String>("notesDraft"))
+            assertNull(handle.get<String>("notesDraftBase"))
         }
 
     @Test
@@ -336,6 +390,7 @@ class NotesEditorViewModelTest {
                     proManager = proManager,
                     applicationScope = applicationScope,
                     savedStateHandle = savedStateHandle,
+                    draftStorage = mockk(),
                 )
             advanceUntilIdle()
             var callbacks = 0
@@ -373,7 +428,7 @@ class NotesEditorViewModelTest {
             val handle = SavedStateHandle(mapOf("projectId" to 1L))
             val projects = MutableStateFlow(project)
             every { repository.observeProject(1L) } returns projects
-            val viewModel = NotesEditorViewModel(repository, proManager, applicationScope, handle)
+            val viewModel = NotesEditorViewModel(repository, proManager, applicationScope, handle, mockk())
             runCurrent()
             viewModel.onNotesChanged("Local edit")
             advanceUntilIdle()
@@ -400,7 +455,7 @@ class NotesEditorViewModelTest {
             val project = CounterProject(id = 1L, name = "Test", notes = "Base", notesCreated = true)
             val handle = SavedStateHandle(mapOf("projectId" to 1L))
             every { repository.observeProject(1L) } returns flowOf(project)
-            val viewModel = NotesEditorViewModel(repository, proManager, applicationScope, handle)
+            val viewModel = NotesEditorViewModel(repository, proManager, applicationScope, handle, mockk())
             runCurrent()
             viewModel.onNotesChanged("Failed edit")
             viewModel.saveImmediately()
@@ -471,6 +526,7 @@ class NotesEditorViewModelTest {
                     proManager,
                     applicationScope,
                     SavedStateHandle(mapOf("projectId" to 2L)),
+                    mockk(),
                 )
             advanceUntilIdle()
 

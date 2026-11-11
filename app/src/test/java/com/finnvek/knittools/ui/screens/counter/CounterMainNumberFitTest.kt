@@ -1,26 +1,39 @@
 package com.finnvek.knittools.ui.screens.counter
 
-import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.sp
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class CounterMainNumberFitTest {
     @Test
-    fun `unbounded or roomy height keeps the full font size`() {
-        assertEquals(115.sp, counterMainNumberHeightLimitedFontSize(115.sp, Constraints.Infinity, 400))
-        assertEquals(115.sp, counterMainNumberHeightLimitedFontSize(115.sp, 400, 400))
+    fun `roomy cell keeps the full font size after one measurement`() {
+        var measurements = 0
+        val fitted =
+            counterMainNumberFittedFontSize(115.sp, 48.sp) {
+                measurements++
+                true
+            }
+        assertEquals(115.sp, fitted)
+        assertEquals(1, measurements)
     }
 
     @Test
-    fun `short side by side row scales the number by the overflow ratio`() {
-        // 200 %:n fontilla luku oli 138 dp korkea 120 dp:n tilassa.
-        val fitted = counterMainNumberHeightLimitedFontSize(115.sp, 120, 138)
-        assertEquals(100f, fitted.value, 0.01f)
+    fun `wide short cell uses measured height at each candidate size`() {
+        // Fixed font metrics make the height larger than proportional scaling would predict.
+        val fitted = counterMainNumberFittedFontSize(115.sp, 48.sp) { it.value + 30f <= 120f }
+        assertTrue(fitted.value in 89.7f..90f)
     }
 
     @Test
-    fun `missing measurement does not shrink the number`() {
-        assertEquals(115.sp, counterMainNumberHeightLimitedFontSize(115.sp, 120, 0))
+    fun `long count fits a narrow cell with a bounded number of measurements`() {
+        var measurements = 0
+        val fitted =
+            counterMainNumberFittedFontSize(115.sp, 48.sp) {
+                measurements++
+                it.value * 10 <= 240f
+            }
+        assertEquals(24.sp, fitted)
+        assertEquals(10, measurements)
     }
 }

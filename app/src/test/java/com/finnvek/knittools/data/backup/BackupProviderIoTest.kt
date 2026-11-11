@@ -15,6 +15,7 @@ import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
+import java.io.File
 import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
@@ -38,6 +39,23 @@ class BackupProviderIoTest {
             assertTrue(failure is IOException)
             assertEquals("Provider returned no descriptor", failure?.message)
             assertArrayEquals(byteArrayOf(), target.readBytes())
+        }
+
+    @Test fun writerRejectsCanonicalSourceAliasBeforeOpeningDestination() =
+        runBlocking {
+            val source = temporary.newFile().apply { writeText("archive") }
+            val alias = File(source.parentFile, "./${source.name}")
+            val destination =
+                mockk<Uri> {
+                    every { scheme } returns "file"
+                    every { path } returns alias.path
+                }
+            val io = providerIo(TestRequest(open = { error("Aliased destination must not open") }))
+
+            val failure = runCatching { io.write(source, destination, source.length()) }.exceptionOrNull()
+
+            assertTrue(failure is IOException)
+            assertEquals("archive", source.readText())
         }
 
     @Test fun stalledOpenIsCancelledAtTheNoProgressDeadline() =

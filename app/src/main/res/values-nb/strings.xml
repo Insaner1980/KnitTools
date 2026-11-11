@@ -916,7 +916,7 @@
         <item quantity="other">%1$d rader</item>
     </plurals>
     <string name="yarn_usage_title">Garnforbruk</string>
-    <string name="yarn_usage_scope">Sporer bare garn som er satt av til dette prosjektet. Mengdene i Mitt garn endres ikke.</string>
+    <string name="yarn_usage_scope">Sporer garnmengder for dette prosjektet. Mengdene i Mitt garn endres ikke.</string>
     <string name="yarn_usage_unit">Mengdeenhet</string>
     <string name="yarn_usage_grams">Gram</string>
     <string name="yarn_usage_skeins">Hesper</string>

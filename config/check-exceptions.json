@@ -609,7 +609,8 @@
       "findingSelectors": [
         "key = \"notescreationauthorized\"",
         "key = \"notesdraft\"",
-        "key = \"notesdraftbase\""
+        "key = \"notesdraftbase\"",
+        "key = \"notesdraftfileid\""
       ]
     },
     {
@@ -885,6 +886,23 @@
       "findingPath": "app/src/test/java/com/finnvek/knittools/repository/CounterRepositoryDomainApiTest.kt",
       "findingSelectors": [
         "key = \"project:7:document\""
+      ]
+    },
+    {
+      "id": "knittools-mobsf-hardcoded-repository-domain-test",
+      "tool": "mobsfscan",
+      "rule": "android_kotlin_hardcoded",
+      "scope": "Annotation layer document key fixture in RepositoryDomainApiTest.kt",
+      "reason": "The matched value is a synthetic document identifier returned by a test DAO.",
+      "owner": "project-maintainers",
+      "added": "2026-11-11",
+      "expires": "2026-11-30",
+      "tracking": "local-review:knittools-mobsf-hardcoded-repository-domain-test",
+      "sourcePath": "app/src/test/java/com/finnvek/knittools/repository/RepositoryDomainApiTest.kt",
+      "selector": "documentKey = \"project-document\"",
+      "findingPath": "app/src/test/java/com/finnvek/knittools/repository/RepositoryDomainApiTest.kt",
+      "findingSelectors": [
+        "key = \"project-document\""
       ]
     },
     {

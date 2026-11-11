@@ -4,7 +4,6 @@ import androidx.compose.ui.graphics.Color
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import kotlin.math.pow
 
 /**
  * Lankavärit ovat kaavion pylväitä, projektilistan väripisteitä ja osuuspalkkeja
@@ -48,23 +47,6 @@ class YarnPaletteContrastTest {
                 ratio >= MINIMUM_GRAPHICAL_CONTRAST,
             )
         }
-    }
-
-    private fun contrastRatio(
-        first: Color,
-        second: Color,
-    ): Double {
-        val a = relativeLuminance(first)
-        val b = relativeLuminance(second)
-        return (maxOf(a, b) + 0.05) / (minOf(a, b) + 0.05)
-    }
-
-    private fun relativeLuminance(color: Color): Double {
-        fun channel(value: Float): Double {
-            val v = value.toDouble()
-            return if (v <= 0.03928) v / 12.92 else ((v + 0.055) / 1.055).pow(2.4)
-        }
-        return 0.2126 * channel(color.red) + 0.7152 * channel(color.green) + 0.0722 * channel(color.blue)
     }
 
     private companion object {

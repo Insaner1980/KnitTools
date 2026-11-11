@@ -1247,7 +1247,7 @@
         <item quantity="other">%1$d rows</item>
     </plurals>
     <string name="yarn_usage_title">Yarn usage</string>
-    <string name="yarn_usage_scope">Tracks yarn allocated to this project only. My Yarn quantities stay unchanged.</string>
+    <string name="yarn_usage_scope">Tracks yarn amounts for this project. My Yarn quantities stay unchanged.</string>
     <string name="yarn_usage_unit">Amount unit</string>
     <string name="yarn_usage_grams">Grams</string>
     <string name="yarn_usage_skeins">Skeins</string>

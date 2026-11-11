@@ -94,7 +94,7 @@ internal object ProjectDocumentMigration22 {
         cursor: Cursor,
     ) {
         val projectId = cursor.getLong(0)
-        val localPdfUri = cursor.getString(2).trim()
+        val localPdfUri = cursor.getString(2).trim().takeIf(String::isNotEmpty) ?: return
         val matchingSavedPattern = findMatchingSavedPattern(db, cursor.longOrNull(1), localPdfUri)
         val documentKey = resolveDocumentKey(db, projectId, matchingSavedPattern?.id)
         val label = migratedLabel(cursor.stringOrNull(3), matchingSavedPattern?.name, localPdfUri)

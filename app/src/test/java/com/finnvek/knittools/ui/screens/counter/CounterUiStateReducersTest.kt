@@ -323,4 +323,24 @@ class CounterUiStateReducersTest {
 
         assertEquals(nextReminder, result.activeAlert)
     }
+
+    @Test
+    fun `dismissing all matching reminders keeps earlier dismissals through same row refreshes`() {
+        val first = RowReminder(id = 7L, projectId = 2L, targetRow = 8, repeatInterval = 8, message = "Cable")
+        val second = RowReminder(id = 8L, projectId = 2L, targetRow = 16, repeatInterval = 8, message = "Sleeve")
+        val reminders = listOf(first, second)
+        val dismissed =
+            CounterUiState(projectId = 2L, counter = CounterState(count = 16), reminders = reminders)
+                .withDismissedReminder(7L)
+                .withDismissedReminder(8L)
+
+        assertNull(dismissed.activeAlert)
+        assertNull(dismissed.withReminderList(reminders).activeAlert)
+        assertNull(dismissed.withObservedProject(CounterProject(id = 2L, name = "Sukat", count = 16)).activeAlert)
+        assertNull(dismissed.withCounterChange(CounterState(count = 16), resetStitch = false).activeAlert)
+        assertEquals(
+            first,
+            dismissed.withCounterChange(CounterState(count = 24), resetStitch = false).activeAlert,
+        )
+    }
 }

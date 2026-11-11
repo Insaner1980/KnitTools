@@ -128,7 +128,6 @@ object InstructionParser {
         // Yritetään jokaista kategoriaa järjestyksessä
         return parseIncreaseDecrease(upper)
             ?: parseGauge(upper)
-            ?: parseGaugeSwatch(upper)
             ?: ParsedInstruction.Failure("parse_failed", ParsedInstruction.ErrorType.PARSE_FAILED)
     }
 
@@ -217,8 +216,9 @@ object InstructionParser {
 
     private fun parseGauge(upper: String): ParsedInstruction? =
         parseGaugeStandard(upper)
-            ?: parseGaugeTension(upper)
             ?: parseGaugePerInch(upper)
+            ?: parseGaugeSwatch(upper)
+            ?: parseGaugeTension(upper)
             ?: parseGaugeFallback(upper)
             ?: parseGaugeBareNumbers(upper)
 
@@ -260,11 +260,15 @@ object InstructionParser {
 
     // "X sts/inch" tai "X stitches per inch" — muunnetaan per 4in -arvoksi, joka vastaa screenin imperial-yksikköä
     private fun parseGaugePerInch(upper: String): ParsedInstruction.Gauge? {
+        val sharedUnit =
+            Regex(
+                """(\d+(?:\.\d+)?)\s*(?:STITCHES?|STS?)\s*(?:AND|,|&|X|/)\s*(\d+(?:\.\d+)?)\s*(?:ROWS?|R)\s*(?:PER|/)\s*(?:INCH|IN)\b""",
+            ).find(upper)
         val piSt =
-            Regex("""(\d+(?:\.\d+)?)\s*(?:STITCHES?|STS?)\s*(?:PER|/)\s*(?:INCH|IN)\b""").find(upper) ?: return null
-        val piRow = Regex("""(\d+(?:\.\d+)?)\s*(?:ROWS?|R)\s*(?:PER|/)\s*(?:INCH|IN)\b""").find(upper) ?: return null
-        val stitches = piSt.groupValues[1].toDoubleOrNull() ?: return null
-        val rows = piRow.groupValues[1].toDoubleOrNull() ?: return null
+            Regex("""(\d+(?:\.\d+)?)\s*(?:STITCHES?|STS?)\s*(?:PER|/)\s*(?:INCH|IN)\b""").find(upper)
+        val piRow = Regex("""(\d+(?:\.\d+)?)\s*(?:ROWS?|R)\s*(?:PER|/)\s*(?:INCH|IN)\b""").find(upper)
+        val stitches = (sharedUnit?.groupValues?.get(1) ?: piSt?.groupValues?.get(1))?.toDoubleOrNull() ?: return null
+        val rows = (sharedUnit?.groupValues?.get(2) ?: piRow?.groupValues?.get(1))?.toDoubleOrNull() ?: return null
         return ParsedInstruction.Gauge(
             stitchesPer10cm = stitches * 4,
             rowsPer10cm = rows * 4,

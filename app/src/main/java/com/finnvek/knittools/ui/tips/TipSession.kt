@@ -1,6 +1,7 @@
 package com.finnvek.knittools.ui.tips
 
 import android.util.Log
+import com.finnvek.knittools.BuildConfig
 import com.finnvek.knittools.analytics.UsageAnalytics
 import com.finnvek.knittools.analytics.UsageEvent
 import com.finnvek.knittools.di.ApplicationScope
@@ -90,7 +91,10 @@ data class TipSessionState(
         return request
     }
 
-    fun contextFor(context: TipContext): TipContext =
+    fun contextFor(
+        context: TipContext,
+        monotonicMillis: Long = System.nanoTime() / 1_000_000,
+    ): TipContext =
         context.copy(
             screenReady = context.screenReady && loaded && onboarding.initializedVersion > 0,
             isStarter = context.projectId != null && context.projectId == onboarding.starterProjectId,
@@ -103,7 +107,10 @@ data class TipSessionState(
             counterOpenDays = onboarding.counterOpenDays,
             backupCreated = onboarding.backupCreated,
             firstSessionTipPending = onboarding.firstSessionTipPending,
-            incrementTimesMillis = incrementTimesMillis[context.projectId].orEmpty(),
+            incrementTimesMillis =
+                incrementTimesMillis[context.projectId].orEmpty().filter {
+                    monotonicMillis - it in 0..TipRules.BURST_WINDOW_MILLIS
+                },
             incrementsInProject =
                 maxOf(
                     onboarding.projectIncrementCounts[context.projectId] ?: 0,
@@ -129,6 +136,7 @@ class TipSession
         private var counterEntryProject: Long? = null
         private var counterEntryDay: Long? = null
         private var firstRowProject: Long? = null
+        private var visiblePresentation: TipPresentation? = null
 
         init {
             scope.launch {
@@ -232,13 +240,7 @@ class TipSession
             synchronized(lock) {
                 val current = mutableState.value
                 if (!current.canShowAutomaticTip(routeKey, id, projectId)) return false
-                mutableState.update {
-                    it.copy(
-                        presentation = TipPresentation(routeKey, id, projectId),
-                        shownThisProcess = it.shownThisProcess + if (id == TipId.UNDO) 0 else 1,
-                    )
-                }
-                if (id == TipId.FIRST_ROW) firstRowProject = projectId
+                mutableState.update { it.copy(presentation = TipPresentation(routeKey, id, projectId)) }
                 true
             }
 
@@ -255,14 +257,15 @@ class TipSession
 
         fun markPresentationVisible(presentation: TipPresentation) {
             synchronized(lock) {
-                val projectId = presentation.projectId ?: return
                 val current = mutableState.value
-                if (presentation.id != TipId.TARGET_REACHED ||
-                    current.presentation != presentation ||
-                    current.hasSeen(TipId.TARGET_REACHED, projectId)
-                ) {
-                    return
+                if (current.presentation != presentation || visiblePresentation == presentation) return
+                visiblePresentation = presentation
+                if (presentation != current.workSessionRequest && presentation.id != TipId.UNDO) {
+                    mutableState.update { it.copy(shownThisProcess = it.shownThisProcess + 1) }
                 }
+                if (presentation.id == TipId.FIRST_ROW) firstRowProject = presentation.projectId
+                val projectId = presentation.projectId ?: return
+                if (presentation.id != TipId.TARGET_REACHED || current.hasSeen(TipId.TARGET_REACHED, projectId)) return
                 mutableState.update { it.copy(processCelebratedTargets = it.processCelebratedTargets + projectId) }
                 persist { onboarding.markTargetCelebrated(projectId) }
             }
@@ -306,6 +309,7 @@ class TipSession
         private fun clearSessionTips() {
             synchronized(lock) {
                 firstRowProject = null
+                visiblePresentation = null
                 mutableState.update {
                     it.copy(
                         onboarding = it.onboarding.copy(tipsSeen = emptySet()),
@@ -352,33 +356,28 @@ class TipSession
             presentation: TipPresentation,
             acted: Boolean,
         ) {
+            val wasVisible = visiblePresentation == presentation
+            visiblePresentation = null
             mutableState.update {
                 it.copy(
                     presentation = null,
                     workSessionRequest = it.workSessionRequest.takeUnless { request -> request == presentation },
                     processSeen =
-                        if (presentation.id ==
-                            TipId.TARGET_REACHED
-                        ) {
+                        if (!wasVisible || presentation.id == TipId.TARGET_REACHED) {
                             it.processSeen
                         } else {
                             it.processSeen + presentation.id
                         },
                     undoProjectId = if (presentation.id == TipId.UNDO) null else it.undoProjectId,
                     targetReachedProjectId =
-                        if (presentation.id ==
-                            TipId.TARGET_REACHED
-                        ) {
-                            null
-                        } else {
-                            it.targetReachedProjectId
-                        },
+                        it.targetReachedProjectId.takeUnless { presentation.id == TipId.TARGET_REACHED && wasVisible },
                 )
             }
+            if (!wasVisible) return
             try {
                 analytics.track(if (acted) UsageEvent.TIP_ACTED else UsageEvent.TIP_DISMISSED)
             } catch (_: Exception) {
-                Log.w("TipSession", "Unable to record guidance event")
+                if (BuildConfig.DEBUG) Log.w("TipSession", "Unable to record guidance event")
             }
             persist {
                 if (presentation.id != TipId.TARGET_REACHED) onboarding.markTipSeen(presentation.id)
@@ -395,7 +394,7 @@ class TipSession
                     } catch (cancelled: CancellationException) {
                         throw cancelled
                     } catch (_: Exception) {
-                        Log.w("TipSession", "Unable to persist guidance state")
+                        if (BuildConfig.DEBUG) Log.w("TipSession", "Unable to persist guidance state")
                     }
                 }
             }

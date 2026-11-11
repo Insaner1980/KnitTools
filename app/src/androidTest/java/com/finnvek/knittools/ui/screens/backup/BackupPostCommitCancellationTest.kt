@@ -1,7 +1,6 @@
 package com.finnvek.knittools.ui.screens.backup
 
 import android.content.Context
-import android.content.ContextWrapper
 import android.database.sqlite.SQLiteDatabase
 import android.graphics.pdf.PdfDocument
 import android.net.Uri
@@ -22,8 +21,6 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.room.Room
 import androidx.sqlite.db.SupportSQLiteDatabase
-import androidx.sqlite.db.SupportSQLiteOpenHelper
-import androidx.sqlite.db.framework.FrameworkSQLiteOpenHelperFactory
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import com.finnvek.knittools.R
@@ -40,6 +37,7 @@ import com.finnvek.knittools.repository.BackupRepository
 import com.finnvek.knittools.repository.OnboardingStateRepository
 import com.finnvek.knittools.repository.PatternFileReferenceCoordinator
 import com.finnvek.knittools.repository.YarnCardRepository
+import com.finnvek.knittools.repository.interceptTestDatabase
 import com.finnvek.knittools.ui.theme.KnitToolsTheme
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -71,14 +69,7 @@ class BackupPostCommitCancellationTest {
         val app = ApplicationProvider.getApplicationContext<Context>()
         assumeTrue(app.packageName == "com.finnvek.knittools.notestest")
         val root = File(app.cacheDir, "br-g04-${UUID.randomUUID()}").apply { mkdirs() }
-        val context =
-            object : ContextWrapper(app) {
-                override fun getApplicationContext(): Context = this
-
-                override fun getFilesDir() = File(root, "files").apply { mkdirs() }
-
-                override fun getNoBackupFilesDir() = File(root, "private").apply { mkdirs() }
-            }
+        val context = BackupTestContext(app, root)
         val gate = CommitGate()
         val databaseFile = File(root, "live.db")
         val db =
@@ -147,7 +138,7 @@ class BackupPostCommitCancellationTest {
             }
             rule.waitUntil(15_000) { vm.state.value.phase == BackupPhase.PREVIEW }
             gate.armed.set(true)
-            scenario.onActivity { vm.restore() }
+            scenario.onActivity { vm.restore(checkNotNull(vm.state.value.previewSelectionId)) }
             assertTrue("Restore did not reach committed boundary", gate.committed.await(20, TimeUnit.SECONDS))
             val committed = snapshot(databaseFile)
             assertEquals("Restored project", committed.name)
@@ -322,28 +313,20 @@ class BackupPostCommitCancellationTest {
         val release = CountDownLatch(1)
         private val changed = AtomicBoolean(false)
         val factory =
-            SupportSQLiteOpenHelper.Factory { configuration ->
-                val helper = FrameworkSQLiteOpenHelperFactory().create(configuration)
+            interceptTestDatabase { database ->
+                object : SupportSQLiteDatabase by database {
+                    override fun execSQL(sql: String) {
+                        database.execSQL(sql)
+                        if (armed.get() && sql.startsWith("DELETE FROM ")) changed.set(true)
+                    }
 
-                fun wrap(database: SupportSQLiteDatabase): SupportSQLiteDatabase =
-                    object : SupportSQLiteDatabase by database {
-                        override fun execSQL(sql: String) {
-                            database.execSQL(sql)
-                            if (armed.get() && sql.startsWith("DELETE FROM ")) changed.set(true)
-                        }
-
-                        override fun endTransaction() {
-                            database.endTransaction()
-                            if (changed.get() && !database.inTransaction() && armed.compareAndSet(true, false)) {
-                                committed.countDown()
-                                check(release.await(30, TimeUnit.SECONDS)) { "Post-commit gate was not released" }
-                            }
+                    override fun endTransaction() {
+                        database.endTransaction()
+                        if (changed.get() && !database.inTransaction() && armed.compareAndSet(true, false)) {
+                            committed.countDown()
+                            check(release.await(30, TimeUnit.SECONDS)) { "Post-commit gate was not released" }
                         }
                     }
-                object : SupportSQLiteOpenHelper by helper {
-                    override val writableDatabase get() = wrap(helper.writableDatabase)
-
-                    override val readableDatabase get() = wrap(helper.readableDatabase)
                 }
             }
     }

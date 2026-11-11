@@ -62,7 +62,7 @@ internal fun KnitToolsNavigationRail(navControllerProvider: @Composable () -> Na
                 colors =
                     NavigationRailItemDefaults.colors(
                         selectedIconColor = MaterialTheme.colorScheme.primary,
-                        selectedTextColor = MaterialTheme.colorScheme.primary,
+                        selectedTextColor = colors.primaryReadable,
                         indicatorColor = colors.navBarContainer,
                         unselectedIconColor = colors.inactiveContent,
                         unselectedTextColor = colors.inactiveContent,

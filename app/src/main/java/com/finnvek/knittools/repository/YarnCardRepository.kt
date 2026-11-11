@@ -195,9 +195,11 @@ class YarnCardRepository
         suspend fun updateLinkedProjectId(
             id: Long,
             projectId: Long?,
+            expectedLinkedProjectId: Long? = null,
         ): Boolean =
             transactionRunner.run {
-                if (dao.getCard(id) == null) return@run false
+                val card = dao.getCard(id) ?: return@run false
+                if (expectedLinkedProjectId != null && card.linkedProjectId != expectedLinkedProjectId) return@run false
                 val projects = counterProjectDao.getAllProjectsOnce()
                 if (projectId != null && projects.none { it.id == projectId }) return@run false
                 if (!canLinkCard(projects, id, projectId)) return@run false

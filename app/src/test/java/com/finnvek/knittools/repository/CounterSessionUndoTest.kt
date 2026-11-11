@@ -84,27 +84,9 @@ class CounterSessionUndoTest : CounterRepositoryActiveSessionFixture() {
         project = project.copy(count = count, stepSize = step)
         history.clear()
         coEvery { projectDao.getProject(7L) } answers { project }
-        coEvery { projectDao.getLatestHistory(7L) } answers { history.lastOrNull() }
-        coEvery { projectDao.deleteHistoryById(any()) } answers {
-            history.removeAll { it.id == firstArg<Long>() }
-        }
+        projectDao.recordCounterHistory(7L, history) { project = project.copy(count = it) }
         coEvery { projectDao.updateLatestHistorySessionUndo(7L, any()) } answers {
             history[history.lastIndex] = history.last().copy(sessionUndoJson = secondArg())
-        }
-        coEvery { projectDao.updateCount(7L, any(), any()) } answers {
-            project = project.copy(count = secondArg())
-        }
-        coEvery { projectDao.updateCounterStateWithHistory(7L, any(), any(), any(), any(), any(), any()) } answers {
-            project = project.copy(count = secondArg())
-            history +=
-                CounterHistoryEntity(
-                    id = (history.lastOrNull()?.id ?: 0L) + 1L,
-                    projectId = 7L,
-                    action = arg(3),
-                    previousValue = arg(4),
-                    newValue = secondArg(),
-                    linkedCounterDeltasJson = arg(6),
-                )
         }
         repository = buildRepository(repositoryProjectCounterDao())
     }

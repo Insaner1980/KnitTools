@@ -148,7 +148,11 @@ class YarnCardViewModel
             if (previousProjectId == projectId) return
 
             launchCardMutation {
-                repository.updateLinkedProjectId(cardId, projectId)
+                repository.updateLinkedProjectId(
+                    cardId,
+                    projectId,
+                    expectedLinkedProjectId = previousProjectId.takeIf { projectId == null },
+                )
             }
         }
 

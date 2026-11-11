@@ -19,8 +19,11 @@ import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 import java.text.SimpleDateFormat
+import java.time.Instant
+import java.time.ZoneId
 import java.util.Date
 import java.util.Locale
+import java.util.TimeZone
 
 class ProjectCompletedSheetTest {
     @get:Rule val compose = createComposeRule()
@@ -42,7 +45,14 @@ class ProjectCompletedSheetTest {
         next: Boolean,
     ) {
         val startedAt = 1_700_000_000_000L
-        val finishedAt = startedAt + 172_800_000L
+        val finished = Instant.parse("2026-01-02T12:00:00Z")
+        val finishedAt = finished.toEpochMilli()
+        val deviceDate = finished.atZone(ZoneId.systemDefault()).toLocalDate()
+        val completionZone =
+            listOf(ZoneId.of("Pacific/Kiritimati"), ZoneId.of("UTC")).first {
+                finished.atZone(it).toLocalDate() !=
+                    deviceDate
+            }
         val celebration =
             ProjectCompletionCelebration(
                 snapshot =
@@ -60,6 +70,7 @@ class ProjectCompletedSheetTest {
                                 isCompleted = true,
                             ),
                         totalSessionMinutes = 125,
+                        completionZoneId = completionZone.id,
                     ),
                 photoUri = null,
             )
@@ -108,6 +119,7 @@ class ProjectCompletedSheetTest {
         val locale = ConfigurationCompat.getLocales(context.resources.configuration)[0] ?: Locale.ROOT
         val formatter = SimpleDateFormat(DateFormat.getBestDateTimePattern(locale, "yMMMd"), locale)
         compose.onNodeWithText(formatter.format(Date(startedAt))).performScrollTo().assertIsDisplayed()
+        formatter.timeZone = TimeZone.getTimeZone(completionZone)
         compose.onNodeWithText(formatter.format(Date(finishedAt))).performScrollTo().assertIsDisplayed()
         compose
             .onNodeWithText(

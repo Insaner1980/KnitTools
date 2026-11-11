@@ -28,7 +28,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavController
@@ -42,6 +41,7 @@ import androidx.navigation.compose.dialog
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import androidx.navigation.navigation
+import com.finnvek.knittools.billing.SelectedOneTimeOffer
 import com.finnvek.knittools.data.remote.WebPdfDownload
 import com.finnvek.knittools.domain.model.CraftType
 import com.finnvek.knittools.domain.model.SavedPattern
@@ -114,7 +114,7 @@ private const val ARG_SAVED_PATTERN_ID = "savedPatternId"
 private const val ARG_CARD_ID = "cardId"
 
 data class KnitToolsNavActions(
-    val onPurchasePro: (Activity) -> Unit = {},
+    val onPurchasePro: (Activity, SelectedOneTimeOffer) -> Unit = { _, _ -> },
     val onWebPdfDownload: (WebPdfDownload) -> Unit = {},
     val onCounterLaunchHandled: () -> Unit = {},
     val onProUpgradeLaunchHandled: () -> Unit = {},
@@ -207,8 +207,6 @@ fun KnitToolsNavHost(
             ?.currentStateFlow
             ?.collectAsState()
             ?.value
-    val lifecycle by LocalLifecycleOwner.current.lifecycle.currentStateFlow
-        .collectAsState()
     val widgetInstalled = rememberCounterWidgetInstalled()
     val journeySteps =
         trialJourney.facts
@@ -217,8 +215,8 @@ fun KnitToolsNavHost(
     var journeyActionVersion by rememberSaveable { mutableIntStateOf(0) }
     // Kun jokainen ehdotettu kohta on tehty, polku kuitataan: valmista listaa ei näytetä uudelleen.
     val journeyComplete = journeySteps.isNotEmpty() && journeySteps.all { it.done }
-    LaunchedEffect(journeyComplete, trialJourney.pending) {
-        if (journeyComplete && trialJourney.pending) actions.onTrialJourneyHandled()
+    LaunchedEffect(journeyComplete, trialJourney.pending, trialJourney.ready) {
+        if (journeyComplete && trialJourney.pending && trialJourney.ready) actions.onTrialJourneyHandled()
     }
     var journeyDeferredEntry by rememberTrialJourneyDeferredEntry(navBackStackEntry?.id)
     val showTrialJourney =
@@ -232,7 +230,7 @@ fun KnitToolsNavHost(
                     startupGatesReady,
                     isTrialJourneyRoute(currentRoute),
                     journeyDeferredEntry == null,
-                    lifecycle == Lifecycle.State.RESUMED,
+                    destinationLifecycle == Lifecycle.State.RESUMED,
                     LocalWindowInfo.current.isWindowFocused,
                     WindowInsets.ime.getBottom(LocalDensity.current) == 0,
                     !LocalTipBlocked.current,

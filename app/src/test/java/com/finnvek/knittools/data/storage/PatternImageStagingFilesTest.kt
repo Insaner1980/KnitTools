@@ -1,18 +1,23 @@
 package com.finnvek.knittools.data.storage
 
 import com.finnvek.knittools.ui.screens.pattern.PatternImageImportLimits
+import io.mockk.every
+import io.mockk.spyk
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
+import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.TemporaryFolder
 import java.io.ByteArrayInputStream
 import java.io.File
 import java.io.IOException
 import java.io.InputStream
-import java.nio.file.Files
 
 class PatternImageStagingFilesTest {
+    @get:Rule val temporaryFolder = TemporaryFolder()
+
     @Test
     fun `bounded copy writes accepted bytes once`() {
         val target = targetFile()
@@ -63,8 +68,33 @@ class PatternImageStagingFilesTest {
     }
 
     @Test
+    fun `bounded copy keeps the free space reserve before each write`() {
+        val target = spyk(targetFile())
+        every { target.usableSpace } answers {
+            PatternImageImportLimits.MIN_FREE_SPACE_RESERVE_BYTES + 8_192L - target.length()
+        }
+
+        assertThrows(IOException::class.java) {
+            PatternImageStagingFiles.copyBounded(ByteArrayInputStream(ByteArray(8_193)), target, 8_193L)
+        }
+
+        assertFalse(target.exists())
+    }
+
+    @Test
+    fun `bounded copy accepts bytes that leave exactly the reserve`() {
+        val target = spyk(targetFile())
+        every { target.usableSpace } answers {
+            PatternImageImportLimits.MIN_FREE_SPACE_RESERVE_BYTES + 3L - target.length()
+        }
+
+        assertEquals(3L, PatternImageStagingFiles.copyBounded(ByteArrayInputStream(ByteArray(3)), target, 3L))
+        assertEquals(3L, target.length())
+    }
+
+    @Test
     fun `session directory uses project and collision safe session ownership`() {
-        val filesDir = Files.createTempDirectory("knittools-files").toFile()
+        val filesDir = temporaryFolder.newFolder()
 
         val first = PatternImageStagingFiles.sessionDirectory(filesDir, 7L, "session-a")
         val second = PatternImageStagingFiles.sessionDirectory(filesDir, 7L, "session-b")
@@ -74,5 +104,5 @@ class PatternImageStagingFilesTest {
         assertFalse(first == second)
     }
 
-    private fun targetFile(): File = File(Files.createTempDirectory("knittools-stage").toFile(), "page.img")
+    private fun targetFile(): File = File(temporaryFolder.newFolder(), "page.img")
 }

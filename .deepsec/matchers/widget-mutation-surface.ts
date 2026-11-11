@@ -14,7 +14,6 @@ export const widgetMutationSurface: MatcherPlugin = {
   ],
   match(content, filePath): CandidateMatch[] {
     if (isTestFile(filePath)) return [];
-    if (!/\b(?:Widget|widget|BroadcastReceiver|actionSendBroadcast|applyWidgetCountChange|CounterLaunchTokenStore)\b/.test(content)) return [];
 
     const receiver = regexCandidates("widget-mutation-surface", content, [
       {

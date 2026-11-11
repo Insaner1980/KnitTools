@@ -135,6 +135,42 @@ describe("Ravelry callable rate limits", () => {
     assert.equal(fixedWindowStartMillis(120_000, 60_000), 120_000);
   });
 
+  it("preserves newer shard windows when an older admission resumes after the boundary", async () => {
+    let resumeOlderAdmission = () => {};
+    const olderAdmissionGate = new Promise<void>((resolve) => { resumeOlderAdmission = resolve; });
+    const firestore = new class extends FakeFirestore {
+      private firstTransaction = true;
+
+      override async runTransaction<T>(updateFunction: (transaction: FakeTransaction) => Promise<T>) {
+        if (this.firstTransaction) {
+          this.firstTransaction = false;
+          await olderAdmissionGate;
+        }
+        return super.runTransaction(updateFunction);
+      }
+    }();
+    let now = 119_999;
+    const limiter = createRavelryRateLimiter(
+      firestore as unknown as Firestore,
+      () => now,
+      () => 0,
+      createRavelryRateLimitRuntimeState(),
+    );
+
+    const olderAdmission = limiter.consumeGlobal("search");
+    now = 120_000;
+    const rule = RAVELRY_GLOBAL_RATE_LIMIT_RULES.search;
+    for (let call = 0; call < rule.limit; call += 1) {
+      await limiter.consumeGlobal("search");
+    }
+    resumeOlderAdmission();
+
+    await assert.rejects(olderAdmission, RavelryRateLimitError);
+    await assert.rejects(limiter.consumeGlobal("search"), RavelryRateLimitError);
+    assert.equal(firestore.documents.get("search_global_0")?.windowStartMillis, 120_000);
+    assert.equal(firestore.documents.get("search_global_0")?.count, 12);
+  });
+
   it("consumes a uid-only bucket without touching a global counter", async () => {
     const firestore = new FakeFirestore();
     const limiter = createRavelryRateLimiter(

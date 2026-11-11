@@ -56,6 +56,26 @@ class BackupZipStructureTest {
             archive.writeBytes(invalid)
             assertThrows(BackupException::class.java) { BackupZipStructure.verify(archive) {} }
         }
+        val conflictingSize = zip64.copyOf()
+        ByteBuffer.wrap(conflictingSize).order(ByteOrder.LITTLE_ENDIAN).putInt(conflictingSize.size - 10, 1)
+        archive.writeBytes(conflictingSize)
+        assertThrows(BackupException::class.java) { BackupZipStructure.verify(archive) {} }
+    }
+
+    @Test fun localAndCentralFlagsMustAgree() {
+        val archive = temporary.newFile()
+        ZipOutputStream(archive.outputStream()).use {
+            it.putNextEntry(ZipEntry("example"))
+            it.closeEntry()
+        }
+        val bytes = archive.readBytes()
+        val buffer = ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN)
+        val directory = buffer.getInt(bytes.size - 6)
+        val flags = buffer.getShort(directory + 8).toInt()
+        buffer.putShort(directory + 8, (flags xor 0x800).toShort())
+        archive.writeBytes(bytes)
+
+        assertThrows(BackupException::class.java) { BackupZipStructure.verify(archive) {} }
     }
 
     @Test fun eitherNonzeroClassicDiskFieldIsRejected() {

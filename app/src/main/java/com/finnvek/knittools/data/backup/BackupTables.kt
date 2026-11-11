@@ -31,12 +31,13 @@ internal object BackupTables {
     fun preflight(
         db: SupportSQLiteDatabase,
         directory: File,
+        schemaVersion: Int,
         budget: BackupBudget = BackupBudget(),
         check: () -> Unit = {},
         consume: (String, MutableMap<String, JsonElement>) -> Unit = { _, _ -> },
     ) {
         BackupFormat.tables.forEach { table ->
-            read(directory, table, columns(db, table).map { it.name }, check, budget) { row ->
+            read(directory, table, columns(db, table).map { it.name }, check, budget, schemaVersion) { row ->
                 consume(table, row)
             }
         }
@@ -126,13 +127,14 @@ internal object BackupTables {
         transform: (String, MutableMap<String, JsonElement>) -> Unit = { _, _ -> },
         check: () -> Unit = {},
         budget: BackupBudget = BackupBudget(),
+        schemaVersion: Int = KNITTOOLS_DATABASE_VERSION,
     ) {
         BackupFormat.tables.forEach { table ->
             val columns = columns(db, table)
             val names = columns.joinToString(",") { "`${it.name}`" }
             val placeholders = columns.joinToString(",") { "?" }
             db.compileStatement("INSERT INTO `$table` ($names) VALUES ($placeholders)").use { statement ->
-                read(directory, table, columns.map { it.name }, check, budget) { row ->
+                read(directory, table, columns.map { it.name }, check, budget, schemaVersion) { row ->
                     transform(table, row)
                     statement.clearBindings()
                     columns.forEachIndexed { index, column ->
@@ -180,6 +182,7 @@ internal object BackupTables {
         columns: List<String>,
         check: () -> Unit = {},
         budget: BackupBudget = BackupBudget(),
+        schemaVersion: Int = KNITTOOLS_DATABASE_VERSION,
         consume: (MutableMap<String, JsonElement>) -> Unit,
     ) {
         val file = File(directory, "tables/$table.jsonl")
@@ -189,11 +192,11 @@ internal object BackupTables {
             BackupFormat.requireJsonDepth(headerText, 1)
             val allowedColumns =
                 if (table == "counter_history") {
-                    listOf(
-                        columns,
-                        columns - "sessionUndoJson",
-                        columns - setOf("linkedCounterDeltasJson", "sessionUndoJson"),
-                    )
+                    buildList {
+                        add(columns)
+                        if (schemaVersion < 28) add(columns - "sessionUndoJson")
+                        if (schemaVersion < 27) add(columns - setOf("linkedCounterDeltasJson", "sessionUndoJson"))
+                    }
                 } else {
                     listOf(columns)
                 }
@@ -318,7 +321,8 @@ internal object BackupTables {
         }
     }
 
-    private val floatColumns = setOf("difficulty", "gaugeStitches", "gaugeRows")
+    private val floatColumns =
+        setOf("difficulty", "gaugeStitches", "gaugeRows", "readingLineYFraction", "verticalReadingGuideXFraction")
 
     private val booleanColumns =
         setOf(

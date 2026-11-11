@@ -123,7 +123,7 @@ class BackupRepository
                         }
                         operationResult(BackupError.CORRUPT) {
                             val payload = File(directory, "payload").apply { mkdirs() }
-                            val preview = validate(archive, payload, check)
+                            val preview = validate(BackupArchive.extract(archive, payload, check), payload, check)
                             if (latestSelectionId != selectionId) {
                                 throw CancellationException("Backup selection was replaced")
                             }
@@ -174,11 +174,17 @@ class BackupRepository
             val check = { coroutine.ensureActive() }
             val payload = File(directory, "payload")
             // Tarkistetaan valmistellut tavut uudelleen juuri ennen vahvistettua palautusta.
-            validate(File(directory, BACKUP_ARCHIVE_NAME), payload, check)
+            val manifest = BackupArchive.extract(File(directory, BACKUP_ARCHIVE_NAME), payload, check)
+            validate(manifest, payload, check)
             withContentLocks {
                 withShadow(payload) { source ->
                     source.withTransaction {
-                        BackupTables.import(source.openHelper.writableDatabase, payload, check = check)
+                        BackupTables.import(
+                            source.openHelper.writableDatabase,
+                            payload,
+                            check = check,
+                            schemaVersion = manifest.schemaVersion,
+                        )
                     }
                     database.withTransaction {
                         replaceLiveData(directory, payload, source, check)
@@ -349,7 +355,7 @@ class BackupRepository
             val archive = File(directory, BACKUP_ARCHIVE_NAME)
             BackupArchive.write(payload, archive, manifest, check)
             val validation = File(directory, "validation").apply { mkdirs() }
-            validate(archive, validation, check)
+            validate(BackupArchive.extract(archive, validation, check), validation, check)
             return archive
         }
 
@@ -388,11 +394,10 @@ class BackupRepository
         }
 
         private suspend fun validate(
-            archive: File,
+            manifest: BackupManifest,
             payload: File,
             check: () -> Unit,
         ): BackupPreview {
-            val manifest = BackupArchive.extract(archive, payload, check)
             val entries =
                 manifest.entries
                     .filter { it.path.startsWith("files/") }
@@ -404,7 +409,7 @@ class BackupRepository
                     val sql = db.openHelper.writableDatabase
                     val preflightBudget = BackupBudget()
                     val preflightFiles = BackupRestoreFiles(context, payload, preflightBudget)
-                    BackupTables.preflight(sql, payload, preflightBudget, check) { table, row ->
+                    BackupTables.preflight(sql, payload, manifest.schemaVersion, preflightBudget, check) { table, row ->
                         preflightFiles.rebase(table, row)
                     }
                     BackupFormat.requireValid(preflightFiles.archivePaths == entries, BackupError.VALIDATION)
@@ -413,6 +418,7 @@ class BackupRepository
                         payload,
                         check = check,
                         budget = BackupBudget(trackEmbeddedIdentities = false),
+                        schemaVersion = manifest.schemaVersion,
                     )
                     val references = BackupTables.references(sql)
                     BackupFormat.requireValid(references == entries, BackupError.VALIDATION)
@@ -425,6 +431,7 @@ class BackupRepository
                             BackupTables.columns(sql, table).map { it.name },
                             check,
                             remapBudget,
+                            manifest.schemaVersion,
                         ) { row ->
                             identities.apply(table, row)
                         }

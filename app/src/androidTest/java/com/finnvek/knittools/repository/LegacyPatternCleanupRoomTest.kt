@@ -16,6 +16,7 @@ import com.finnvek.knittools.data.local.KnitToolsDatabase
 import com.finnvek.knittools.data.local.PatternAnnotationSchemaConstraints
 import com.finnvek.knittools.data.local.ProjectDocumentSchemaConstraints
 import com.finnvek.knittools.data.local.RoomDatabaseTransactionRunner
+import com.finnvek.knittools.data.storage.AppFileStorage
 import com.finnvek.knittools.data.storage.PdfPageRenderer
 import com.finnvek.knittools.domain.model.ProjectDocument
 import kotlinx.coroutines.Dispatchers
@@ -234,6 +235,24 @@ class LegacyPatternCleanupRoomTest {
             assertTrue(documents.getDocuments(ownerId).isEmpty())
             patterns.deleteLocalPatternFileIfUnused(uri(pdf))
             assertReadableBytes()
+        }
+
+    @Test
+    fun legacyFileProviderAliasProtectsThePdfUntilItsLastOwnerIsRemoved() =
+        runTest {
+            loadMigratedDocument()
+            val legacyUri =
+                "content://${AppFileStorage.fileProviderAuthority(context)}/pattern_pdfs/dp-f01/${pdf.name}"
+            val ownerId =
+                database.counterProjectDao().insert(CounterProjectEntity(name = "Legacy alias", patternUri = legacyUri))
+            patterns.deleteById(PATTERN_ID)
+
+            remove(migrated)
+
+            assertReadableBytes()
+            database.counterProjectDao().delete(ownerId)
+            patterns.deleteLocalPatternFileIfUnused(uri(pdf))
+            assertFalse(pdf.exists())
         }
 
     @Test

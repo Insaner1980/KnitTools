@@ -109,7 +109,8 @@ internal class AnalyticsQueueStorage(
         try {
             if (
                 directory.name.matches(CONSENT_DIRECTORY) &&
-                directory.canonicalFile.parentFile == root.canonicalFile
+                directory.isDirectory &&
+                directory.canonicalFile == File(root.canonicalFile, directory.name)
             ) {
                 deleteDirectory(directory)
             }

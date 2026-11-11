@@ -99,6 +99,7 @@ class IncomingPdfViewModel
         @param:IoDispatcher private val ioDispatcher: CoroutineDispatcher,
         @param:ApplicationScope private val applicationScope: CoroutineScope,
     ) : ViewModel() {
+        internal var pdfIntentConsumed = false
         private val pendingMutex = Mutex()
         private var incomingRequestVersion = 0L
         private val mutablePending = MutableStateFlow(restorePending())
@@ -108,6 +109,8 @@ class IncomingPdfViewModel
         val busy: StateFlow<Boolean> = mutableBusy.asStateFlow()
         private val mutableReceiving = MutableStateFlow(false)
         val receiving: StateFlow<Boolean> = mutableReceiving.asStateFlow()
+        internal val interruptedSourceUri: Uri?
+            get() = savedStateHandle[KEY_SOURCE_URI]
         val proAccessReady get() = proManager.initialStateReady
 
         val choices: StateFlow<IncomingPdfChoices?> =
@@ -132,6 +135,7 @@ class IncomingPdfViewModel
 
         fun receive(uri: Uri) {
             val requestVersion = ++incomingRequestVersion
+            savedStateHandle[KEY_SOURCE_URI] = uri
             mutableReceiving.value = true
             viewModelScope.launch {
                 try {
@@ -141,7 +145,7 @@ class IncomingPdfViewModel
                             ?: context.getString(R.string.pattern_pdf_fallback_name)
                     receiveCopy(uri, fileName, requestVersion)
                 } finally {
-                    if (requestVersion == incomingRequestVersion) mutableReceiving.value = false
+                    if (requestVersion == incomingRequestVersion) finishReceiving()
                 }
             }
         }
@@ -155,7 +159,13 @@ class IncomingPdfViewModel
             val isPdf =
                 download.mimeType.equals(PDF_MIME_TYPE, ignoreCase = true) ||
                     fileName.endsWith(".pdf", ignoreCase = true)
-            val requestVersion = if (isPdf) ++incomingRequestVersion else incomingRequestVersion
+            val requestVersion =
+                if (isPdf) {
+                    finishReceiving()
+                    ++incomingRequestVersion
+                } else {
+                    incomingRequestVersion
+                }
             viewModelScope.launch {
                 if (!isPdf) {
                     outcomeChannel.send(IncomingPdfOutcome.NotPdf)
@@ -180,6 +190,11 @@ class IncomingPdfViewModel
                     withContext(NonCancellable + ioDispatcher) { file.delete() }
                 }
             }
+        }
+
+        private fun finishReceiving() {
+            savedStateHandle.remove<Uri>(KEY_SOURCE_URI)
+            mutableReceiving.value = false
         }
 
         private suspend fun receiveCopy(
@@ -223,14 +238,18 @@ class IncomingPdfViewModel
         fun attachToProject(
             projectId: Long,
             name: String,
+            expectedPdfUri: String? = mutablePending.value?.localUri,
         ) {
-            runBusy { pdf ->
+            runBusy(expectedPdfUri) { pdf ->
                 attach(pdf, projectId, name)
             }
         }
 
-        fun startNewProject(name: String) {
-            runBusy { pdf ->
+        fun startNewProject(
+            name: String,
+            expectedPdfUri: String? = mutablePending.value?.localUri,
+        ) {
+            runBusy(expectedPdfUri) { pdf ->
                 // Projekti ja PDF samassa transaktiossa: epäonnistunut liitos ei jätä tyhjää projektia.
                 val result =
                     counterRepository.createProjectWithImportedPdf(
@@ -248,8 +267,11 @@ class IncomingPdfViewModel
             }
         }
 
-        fun saveToLibrary(name: String) {
-            runBusy { pdf ->
+        fun saveToLibrary(
+            name: String,
+            expectedPdfUri: String? = mutablePending.value?.localUri,
+        ) {
+            runBusy(expectedPdfUri) { pdf ->
                 val savedPatternId =
                     savedPatternRepository.saveImportedPatternIfMissing(
                         patternUrl = pdf.localUri,
@@ -264,11 +286,12 @@ class IncomingPdfViewModel
             }
         }
 
-        fun discard() {
+        fun discard(expectedPdfUri: String? = mutablePending.value?.localUri) {
             if (mutableBusy.value) return
             viewModelScope.launch {
                 pendingMutex.withLock {
                     val pdf = mutablePending.value ?: return@withLock
+                    if (pdf.localUri != expectedPdfUri) return@withLock
                     setPending(null)
                     deleteUnusedCopy(pdf)
                 }
@@ -308,13 +331,17 @@ class IncomingPdfViewModel
             }
         }
 
-        private fun runBusy(block: suspend (IncomingPdf) -> Unit) {
+        private fun runBusy(
+            expectedPdfUri: String?,
+            block: suspend (IncomingPdf) -> Unit,
+        ) {
             if (mutableBusy.value) return
             mutableBusy.value = true
             viewModelScope.launch {
                 try {
                     pendingMutex.withLock {
                         val pdf = mutablePending.value ?: return@withLock
+                        if (pdf.localUri != expectedPdfUri) return@withLock
                         block(pdf)
                     }
                 } catch (cancellation: CancellationException) {
@@ -381,5 +408,6 @@ class IncomingPdfViewModel
             const val PDF_MIME_TYPE = "application/pdf"
             const val KEY_LOCAL_URI = "incoming_pdf_local_uri"
             const val KEY_NAME = "incoming_pdf_name"
+            const val KEY_SOURCE_URI = "incoming_pdf_source_uri"
         }
     }

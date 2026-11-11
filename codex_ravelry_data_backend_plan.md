@@ -1,5 +1,7 @@
 # Codex plan: Ravelry data, auth, backend, and import changes
 
+**Historical plan:** its Android OAuth/API design was superseded on 2026-10-09. The app now uses Ravelry's website in its WebView; the retained backend has no current Android consumer. Follow current AGENTS.md/CODEX.md and implementation before reusing this plan.
+
 Current date: 2026-06-10
 
 This file is for Codex. It describes the product and engineering direction, but Codex should inspect the existing code and make implementation decisions that fit the current architecture.

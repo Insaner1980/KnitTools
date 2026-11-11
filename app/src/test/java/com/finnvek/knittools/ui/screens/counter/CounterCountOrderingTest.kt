@@ -2,8 +2,6 @@ package com.finnvek.knittools.ui.screens.counter
 
 import com.finnvek.knittools.domain.model.CommittedMainCounterChange
 import com.finnvek.knittools.domain.model.MainCounterChange
-import com.finnvek.knittools.widget.CounterWidgetState
-import com.finnvek.knittools.widget.WidgetData
 import io.mockk.coEvery
 import io.mockk.coVerify
 import kotlinx.coroutines.CompletableDeferred
@@ -29,8 +27,7 @@ class CounterCountOrderingTest : CounterViewModelFixture() {
             advanceUntilIdle()
             val read = CompletableDeferred<Unit>()
             val release = CompletableDeferred<Unit>()
-            val published = mutableListOf<WidgetData>()
-            coEvery { CounterWidgetState.syncAll(any(), capture(published)) } returns Unit
+            val published = captureWidgetUpdates()
             coEvery { repository.applyMainCounterChangeWithResult(7L, MainCounterChange.Increment) } returns
                 CommittedMainCounterChange(0, 1, null, MainCounterChange.Increment)
             coEvery { repository.applyMainCounterChange(7L, MainCounterChange.Undo) } returns true

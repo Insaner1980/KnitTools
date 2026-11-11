@@ -261,8 +261,9 @@ class SavedPatternRepository
             fileReferenceCoordinator.withReferenceLock {
                 if (patternUrl.isBlank()) return@withReferenceLock
                 val uri = patternUrl.toUri()
-                val isAppOwned = withContext(ioDispatcher) { AppFileStorage.isAppOwnedUri(context, uri) }
-                if (!isAppOwned) return@withReferenceLock
+                val file =
+                    withContext(ioDispatcher) { AppFileStorage.resolveAppOwnedFile(context, uri)?.canonicalFile }
+                        ?: return@withReferenceLock
 
                 val savedPatternStillReferencesFile = dao.getByLocalPdfUri(patternUrl) != null
                 val projectStillReferencesFile = counterProjectDao.countProjectsUsingPatternUri(patternUrl) > 0
@@ -271,8 +272,13 @@ class SavedPatternRepository
                     !projectStillReferencesFile &&
                     !projectDocumentStillReferencesFile
                 ) {
+                    val references = dao.getReferencedPdfUris()
                     withContext(ioDispatcher) {
-                        AppFileStorage.deleteUri(context, uri)
+                        val hasAlias =
+                            references.any { reference ->
+                                AppFileStorage.resolveAppOwnedFile(context, reference.toUri())?.canonicalFile == file
+                            }
+                        if (!hasAlias) AppFileStorage.deleteIfAppOwned(context, uri)
                     }
                 }
             }

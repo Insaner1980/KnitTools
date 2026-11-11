@@ -1,7 +1,6 @@
 package com.finnvek.knittools.ui.screens.backup
 
 import android.content.Context
-import android.content.ContextWrapper
 import android.net.Uri
 import androidx.activity.ComponentActivity
 import androidx.compose.runtime.collectAsState
@@ -47,14 +46,7 @@ class BackupCancellationRuntimeTest {
         val app = ApplicationProvider.getApplicationContext<Context>()
         check(app.packageName == "com.finnvek.knittools.activepolicytest")
         val root = File(app.cacheDir, "rw03b-backup-${UUID.randomUUID()}").apply { mkdirs() }
-        val context =
-            object : ContextWrapper(app) {
-                override fun getApplicationContext(): Context = this
-
-                override fun getFilesDir() = File(root, "files").apply { mkdirs() }
-
-                override fun getNoBackupFilesDir() = File(root, "private").apply { mkdirs() }
-            }
+        val context = BackupTestContext(app, root)
         val db = Room.databaseBuilder(context, KnitToolsDatabase::class.java, File(root, "test.db").path).build()
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
         val started = CompletableDeferred<Unit>()

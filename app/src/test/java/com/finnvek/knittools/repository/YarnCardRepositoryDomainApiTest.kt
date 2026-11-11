@@ -279,7 +279,7 @@ class YarnCardRepositoryDomainApiTest {
                     UnconfinedTestDispatcher(testScheduler),
                 )
 
-            val updated = repository.updateLinkedProjectId(5L, null)
+            val updated = repository.updateLinkedProjectId(5L, null, expectedLinkedProjectId = 10L)
 
             assertEquals(true, updated)
             assertEquals(5L to null, yarnDao.lastLinkedProjectUpdate)

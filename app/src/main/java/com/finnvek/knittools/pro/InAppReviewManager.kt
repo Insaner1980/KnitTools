@@ -14,7 +14,6 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
@@ -54,15 +53,15 @@ class InAppReviewManager
          * oma käyttöraja estää liian aikaisen pyynnön ja turhat API-kutsut.
          */
         suspend fun maybeRequestReview(activity: Activity) {
-            val prefs = context.reviewDataStore.safePreferencesData.first()
-            val actions = prefs[KEY_ACTION_COUNT] ?: 0
-            if (!shouldRequestReview(prefs[KEY_REVIEW_REQUESTED] == true, actions)) return
-
+            var claimed = false
             val saved =
-                context.reviewDataStore.editPreferencesSafely {
-                    it[KEY_REVIEW_REQUESTED] = true
+                context.reviewDataStore.editPreferencesSafely { prefs ->
+                    if (shouldRequestReview(prefs[KEY_REVIEW_REQUESTED] == true, prefs[KEY_ACTION_COUNT] ?: 0)) {
+                        prefs[KEY_REVIEW_REQUESTED] = true
+                        claimed = true
+                    }
                 }
-            if (!saved) return
+            if (!saved || !claimed) return
 
             val manager = ReviewManagerFactory.create(context)
             val reviewInfo =

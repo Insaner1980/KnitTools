@@ -48,6 +48,9 @@ class GaugeNavigationRuntimeTest {
     @Before
     fun setUp() {
         app = ApplicationProvider.getApplicationContext()
+        check(app.packageName.endsWith(".notestest") || app.packageName.endsWith(".activepolicytest")) {
+            "Runtime fixtures require an isolated test package"
+        }
         database = app.database.get()
         repository = EntryPointAccessors.fromApplication(app, WidgetEntryPoint::class.java).counterRepository()
     }

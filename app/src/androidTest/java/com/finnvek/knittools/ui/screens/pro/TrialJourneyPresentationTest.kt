@@ -17,6 +17,7 @@ import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.test.espresso.Espresso.pressBack
 import androidx.test.platform.app.InstrumentationRegistry
 import com.finnvek.knittools.R
 import com.finnvek.knittools.pro.ProStatus
@@ -61,6 +62,12 @@ class TrialJourneyPresentationTest {
         compose.runOnIdle {
             assertEquals(0, consumed)
             presentation.value = presentation.value.copy(status = ProStatus.TRIAL_ACTIVE)
+        }
+        advance(2_500)
+        compose.onNodeWithText("Hidden").assertExists()
+        compose.runOnIdle {
+            assertEquals(0, consumed)
+            presentation.value = presentation.value.copy(facts = facts())
         }
         advance(1_000)
         compose.onNodeWithText("Hidden").assertExists()
@@ -158,7 +165,11 @@ class TrialJourneyPresentationTest {
         compose.runOnIdle { eligible.value = false }
         advance(100)
         compose.onNodeWithText("Visible").assertExists()
+        compose.runOnIdle { presentation.value = presentation.value.copy(facts = null) }
         restoration.emulateSavedInstanceStateRestore()
+        advance(100)
+        compose.onNodeWithText("Hidden").assertExists()
+        compose.runOnIdle { presentation.value = presentation.value.copy(facts = facts()) }
         advance(100)
         compose.onNodeWithText("Visible").assertExists()
         compose.runOnIdle {
@@ -311,6 +322,10 @@ class TrialJourneyPresentationTest {
             compose.onNodeWithText("Finish action").performClick()
         }
         compose.waitUntil(5_000) { compose.onAllNodes(hasText(title)).fetchSemanticsNodes().isNotEmpty() }
+        pressBack()
+        compose.onNodeWithText(title).assertExists()
+        compose.runOnIdle { assertEquals(0, consumed) }
+
         compose.onNodeWithText(resources.getString(R.string.completed_close)).performScrollTo().performClick()
         compose.mainClock.autoAdvance = false
         advance(2_500)
@@ -359,6 +374,7 @@ class TrialJourneyPresentationTest {
         TrialJourneyPresentation(
             status = ProStatus.TRIAL_ACTIVE,
             ready = true,
+            facts = facts(),
             pending = true,
         )
 

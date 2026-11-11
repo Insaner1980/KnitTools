@@ -16,9 +16,10 @@ internal suspend fun TestScope.assertPurchaseBlocked(
     client: BillingClient,
     activity: Activity,
     expectedMessage: BillingUserMessage,
+    displayedOffer: SelectedOneTimeOffer? = manager.selectedOffer.value,
 ) {
     val message = async(UnconfinedTestDispatcher(testScheduler)) { manager.purchaseMessages.first() }
-    manager.launchPurchaseFlow(activity)
-    assertEquals(expectedMessage, message.await())
+    manager.launchPurchaseFlow(activity, displayedOffer)
     verify(exactly = 0) { client.launchBillingFlow(any(), any()) }
+    assertEquals(expectedMessage, message.await())
 }

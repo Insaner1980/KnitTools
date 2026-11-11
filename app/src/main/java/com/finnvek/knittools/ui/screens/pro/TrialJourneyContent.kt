@@ -6,6 +6,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.ModalBottomSheetProperties
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
@@ -76,8 +77,15 @@ fun TrialJourneySheet(
     firstProject: Boolean = false,
 ) {
     ModalBottomSheet(
-        onDismissRequest = onDismiss,
+        onDismissRequest = {},
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        sheetGesturesEnabled = false,
+        dragHandle = null,
+        properties =
+            ModalBottomSheetProperties(
+                shouldDismissOnBackPress = false,
+                shouldDismissOnClickOutside = false,
+            ),
         containerColor = MaterialTheme.colorScheme.surface,
         sheetMaxWidth = ContentWidthPolicy.Form.maxWidth,
     ) {

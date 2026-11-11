@@ -57,12 +57,28 @@ export async function getUsableRavelryToken({
   }
 
   await beforeRefresh?.();
-  const nextToken = refreshedToken(token, await refresh({ refreshToken: token.refreshToken }), now);
+  let refreshed: Awaited<ReturnType<OAuthTokenRefresh>>;
+  try {
+    refreshed = await refresh({ refreshToken: token.refreshToken });
+  } catch (error) {
+    const current = await tokenStore.getToken(uid).catch(() => null);
+    if (current &&
+      (current.connectionGeneration ?? 0) === (token.connectionGeneration ?? 0) &&
+      (current.accessToken !== token.accessToken || current.refreshToken !== token.refreshToken ||
+        current.expiresAtMillis !== token.expiresAtMillis) &&
+      !requiresRefresh(current, nowMillis())) {
+      return current;
+    }
+    throw error;
+  }
+  const nextToken = refreshedToken(token, refreshed, now);
   const saved = await tokenStore.saveRefreshedTokenIfCurrent(nextToken, token);
   if (saved) {
     return saved;
   }
 
   const current = await tokenStore.getToken(uid);
-  return current && !requiresRefresh(current, nowMillis()) ? current : null;
+  return current &&
+    (current.connectionGeneration ?? 0) === (token.connectionGeneration ?? 0) &&
+    !requiresRefresh(current, nowMillis()) ? current : null;
 }

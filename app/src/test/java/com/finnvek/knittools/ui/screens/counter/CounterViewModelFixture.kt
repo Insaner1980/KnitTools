@@ -33,6 +33,7 @@ import com.finnvek.knittools.repository.SavedPatternRepository
 import com.finnvek.knittools.repository.YarnCardRepository
 import com.finnvek.knittools.ui.tips.TipSession
 import com.finnvek.knittools.widget.CounterWidgetState
+import com.finnvek.knittools.widget.WidgetData
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.confirmVerified
@@ -87,6 +88,12 @@ abstract class CounterViewModelFixture {
     fun tearDown() {
         unmockkObject(ProcessLifecycleOwner.Companion, CounterWidgetState)
         Dispatchers.resetMain()
+    }
+
+    protected fun captureWidgetUpdates(): List<WidgetData> {
+        val published = mutableListOf<WidgetData>()
+        coEvery { CounterWidgetState.syncAll(any(), capture(published)) } returns Unit
+        return published
     }
 
     protected fun pendingIncrement(count: Int): CompletableDeferred<CommittedMainCounterChange?> {

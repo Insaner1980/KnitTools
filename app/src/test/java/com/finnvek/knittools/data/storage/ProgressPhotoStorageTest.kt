@@ -15,11 +15,14 @@ import io.mockk.verify
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import org.junit.Rule
 import org.junit.Test
-import java.nio.file.Files
+import org.junit.rules.TemporaryFolder
 import kotlin.io.path.createTempFile
 
 class ProgressPhotoStorageTest {
+    @get:Rule val temporaryFolder = TemporaryFolder()
+
     @Test
     fun `bitmap sampling bounds the decoded longest edge before allocation`() {
         assertEquals(1, calculateBitmapInSampleSize(1_920, 1_080, 1_920))
@@ -30,7 +33,7 @@ class ProgressPhotoStorageTest {
 
     @Test
     fun `deletePhoto removes only a file owned by the requested project`() {
-        val filesDir = Files.createTempDirectory("knittools-progress-root").toFile()
+        val filesDir = temporaryFolder.newFolder()
         val ownedFile = filesDir.resolve("progress_photos/7/owned.jpg")
         val otherProjectFile = filesDir.resolve("progress_photos/8/other.jpg")
         val outsideFile = filesDir.resolve("pattern_captures/7/outside.jpg")

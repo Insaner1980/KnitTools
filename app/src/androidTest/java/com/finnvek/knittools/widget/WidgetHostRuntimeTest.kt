@@ -10,7 +10,6 @@ import android.graphics.Rect
 import android.os.Bundle
 import android.os.SystemClock
 import android.view.View
-import android.view.ViewGroup
 import android.widget.FrameLayout
 import android.widget.TextView
 import androidx.activity.ComponentActivity
@@ -22,6 +21,7 @@ import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.model.MainCounterLabelType
 import com.finnvek.knittools.pro.ProPolicyTestControl
 import com.finnvek.knittools.repository.ProjectCreationResult
+import com.finnvek.knittools.ui.descendants
 import dagger.hilt.android.EntryPointAccessors
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
@@ -172,18 +172,6 @@ class WidgetHostRuntimeTest {
                 ProPolicyTestControl.setPurchased(false)
             }
         }
-
-    private fun descendants(view: View): List<View> =
-        listOf(view) +
-            if (view is ViewGroup) {
-                (0 until view.childCount).flatMap {
-                    descendants(
-                        view.getChildAt(it),
-                    )
-                }
-            } else {
-                emptyList()
-            }
 
     private fun await(condition: () -> Boolean) {
         val deadline = SystemClock.elapsedRealtime() + 15_000

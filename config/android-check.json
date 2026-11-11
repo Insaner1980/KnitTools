@@ -16,7 +16,7 @@
       "relativePath": "baselineprofile",
       "kind": "android-test",
       "required": true,
-      "variants": ["benchmark"],
+      "variants": ["benchmarkRelease"],
       "sourceSets": ["main", "benchmarkRelease"]
     }
   ],

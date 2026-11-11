@@ -25,7 +25,7 @@ class InsightsPerformanceSourceTest {
         assertTrue(viewModel.contains(".flatMapLatest { params ->"))
         assertTrue(repository.contains(".observeSessionChanges()"))
         assertTrue(repository.contains(".mapLatest {"))
-        assertEquals(5, "LIMIT 256".toRegex().findAll(dao).count())
+        assertEquals(6, "LIMIT 256".toRegex().findAll(dao).count())
     }
 
     @Test

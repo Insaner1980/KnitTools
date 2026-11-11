@@ -5,4 +5,5 @@ data class ProjectCompletionSnapshot(
     val eventId: Long,
     val project: CounterProject,
     val totalSessionMinutes: Int,
+    val completionZoneId: String? = null,
 )

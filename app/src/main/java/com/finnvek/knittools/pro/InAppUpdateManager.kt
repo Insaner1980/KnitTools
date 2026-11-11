@@ -64,8 +64,6 @@ class InAppUpdateManager
                             canStartUpdateFlow = canStartUpdateFlow,
                         )
                     }
-                }.addOnFailureListener {
-                    updateFlowInProgress = false
                 }
         }
 

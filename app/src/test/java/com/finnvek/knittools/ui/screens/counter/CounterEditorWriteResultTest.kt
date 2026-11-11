@@ -113,6 +113,30 @@ class CounterEditorWriteResultTest : CounterViewModelFixture() {
         }
 
     @Test
+    fun `late project detail result preserves newer observed count target and notes`() =
+        runTest {
+            val saved = observedProject.value.copy(name = "Renamed", targetRows = 20, notes = "Base")
+            val reply = CompletableDeferred<CounterProject?>()
+            coEvery { repository.updateProjectDetails(7L, "Renamed", any(), any(), any()) } coAnswers { reply.await() }
+            val viewModel = viewModel()
+            advanceUntilIdle()
+
+            viewModel.setProjectDetails("Renamed", saved.craftType, saved.mainCounterLabelType, null)
+            runCurrent()
+            observedProject.value = saved.copy(count = 42, targetRows = 80, notes = "Current", notesCreated = true)
+            runCurrent()
+            reply.complete(saved)
+            advanceUntilIdle()
+
+            val state = viewModel.uiState.value
+            assertEquals("Renamed", state.projectName)
+            assertEquals(42, state.counter.count)
+            assertEquals(80, state.targetRows)
+            assertEquals("Current", state.notes)
+            assertEquals(true, state.notesCreated)
+        }
+
+    @Test
     fun `project observations preserve a notes draft while its save is pending`() =
         runTest {
             val (project, release) = deferNotesSave()

@@ -154,7 +154,7 @@ private fun KnitToolsTallNavigationBar(
                 colors =
                     NavigationBarItemDefaults.colors(
                         selectedIconColor = MaterialTheme.colorScheme.primary,
-                        selectedTextColor = MaterialTheme.colorScheme.primary,
+                        selectedTextColor = MaterialTheme.knitToolsColors.primaryReadable,
                         indicatorColor = MaterialTheme.knitToolsColors.navBarContainer,
                         unselectedIconColor = MaterialTheme.knitToolsColors.inactiveContent,
                         unselectedTextColor = MaterialTheme.knitToolsColors.inactiveContent,
@@ -184,7 +184,7 @@ private fun KnitToolsShortNavigationBar(
                 colors =
                     ShortNavigationBarItemDefaults.colors(
                         selectedIconColor = MaterialTheme.colorScheme.primary,
-                        selectedTextColor = MaterialTheme.colorScheme.primary,
+                        selectedTextColor = MaterialTheme.knitToolsColors.primaryReadable,
                         selectedIndicatorColor = MaterialTheme.knitToolsColors.navBarContainer,
                         unselectedIconColor = MaterialTheme.knitToolsColors.inactiveContent,
                         unselectedTextColor = MaterialTheme.knitToolsColors.inactiveContent,

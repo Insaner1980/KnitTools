@@ -1191,6 +1191,37 @@ class BackupRepositoryTest {
             assertTrue(File(context.noBackupFilesDir, "manual-backup").listFiles().orEmpty().isEmpty())
         }
 
+    @Test fun legacyHistoryHeaderRequiresMatchingArchiveSchema() =
+        runBlocking {
+            seed()
+            val archive = File(directory, "history-schema.knittools-backup")
+            repository.export(archive.toUri())
+            val payload = File(directory, "history-payload").apply { mkdirs() }
+            val manifest = BackupArchive.extract(archive, payload)
+            val history = File(payload, "tables/counter_history.jsonl")
+            val rows = history.readLines().map { BackupFormat.json.parseToJsonElement(it).jsonArray }
+            val snapshotColumns = setOf(JsonPrimitive("linkedCounterDeltasJson"), JsonPrimitive("sessionUndoJson"))
+            val keptIndices = rows.first().indices.filter { rows.first()[it] !in snapshotColumns }
+            assertEquals(2, rows.first().size - keptIndices.size)
+            history.writeText(
+                rows.joinToString("\n", postfix = "\n") { row -> JsonArray(keptIndices.map(row::get)).toString() },
+            )
+            rewriteArchive(payload, archive, manifest)
+            expectBackupFailure(BackupError.VALIDATION) { prepare(archive.toUri()) }
+            assertEquals("Cardigan", text("SELECT name FROM counter_projects"))
+
+            rewriteArchive(payload, archive, manifest.copy(schemaVersion = 26))
+            prepare(archive.toUri())
+            repository.restore(selectionId)
+            assertEquals(
+                rows.size.toLong() - 1,
+                number(
+                    "SELECT COUNT(*) FROM counter_history " +
+                        "WHERE linkedCounterDeltasJson IS NULL AND sessionUndoJson IS NULL",
+                ),
+            )
+        }
+
     @Test fun exportRefusesContentThatTheRestoreBudgetWouldReject() =
         runBlocking {
             seed()

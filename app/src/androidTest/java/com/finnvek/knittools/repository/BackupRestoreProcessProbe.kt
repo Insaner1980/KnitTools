@@ -57,35 +57,27 @@ internal class BackupRestoreProcessProbe(
     }
 
     val factory =
-        SupportSQLiteOpenHelper.Factory { configuration ->
-            val helper = FrameworkSQLiteOpenHelperFactory().create(configuration)
-
-            fun wrap(database: SupportSQLiteDatabase): SupportSQLiteDatabase =
-                object : SupportSQLiteDatabase by database {
-                    override fun execSQL(sql: String) {
-                        database.execSQL(sql)
-                        if (armed && sql.startsWith("DELETE FROM ")) {
-                            changed = true
-                            if (phase == "precommit") pause(database.inTransaction())
-                        }
-                    }
-
-                    override fun endTransaction() {
-                        database.endTransaction()
-                        if (armed && changed && phase == "postcommit" && !database.inTransaction()) {
-                            recordPostCommitBoundary(database)
-                            pause(false)
-                        }
-                        if (armed && changed && phase == "cleanup" && !committed && !database.inTransaction()) {
-                            committed = true
-                            deferCleanup = true
-                        }
+        interceptTestDatabase { database ->
+            object : SupportSQLiteDatabase by database {
+                override fun execSQL(sql: String) {
+                    database.execSQL(sql)
+                    if (armed && sql.startsWith("DELETE FROM ")) {
+                        changed = true
+                        if (phase == "precommit") pause(database.inTransaction())
                     }
                 }
-            object : SupportSQLiteOpenHelper by helper {
-                override val writableDatabase get() = wrap(helper.writableDatabase)
 
-                override val readableDatabase get() = wrap(helper.readableDatabase)
+                override fun endTransaction() {
+                    database.endTransaction()
+                    if (armed && changed && phase == "postcommit" && !database.inTransaction()) {
+                        recordPostCommitBoundary(database)
+                        pause(false)
+                    }
+                    if (armed && changed && phase == "cleanup" && !committed && !database.inTransaction()) {
+                        committed = true
+                        deferCleanup = true
+                    }
+                }
             }
         }
 
@@ -154,6 +146,13 @@ internal class BackupRestoreProcessProbe(
         }
     }
 
+    private fun assertRestoredTables(after: File) {
+        val baseline = File(directory, "committed")
+        (BackupFormat.tables.map { "tables/$it.jsonl" } + listOf("sequences.json", "referenced-files.json")).forEach {
+            assertEquals(it, File(baseline, it).readText(), File(after, it).readText())
+        }
+    }
+
     fun verifyPostCommitRecovery(
         database: SupportSQLiteDatabase,
         context: Context,
@@ -161,9 +160,7 @@ internal class BackupRestoreProcessProbe(
     ) {
         val baseline = File(directory, "committed")
         recordContent(database, context, after)
-        (BackupFormat.tables.map { "tables/$it.jsonl" } + listOf("sequences.json", "referenced-files.json")).forEach {
-            assertEquals(it, File(baseline, it).readText(), File(after, it).readText())
-        }
+        assertRestoredTables(after)
         File(baseline, "obsolete.txt").readLines().forEach { assertFalse(File(it).exists()) }
     }
 
@@ -255,9 +252,7 @@ internal class BackupRestoreProcessProbe(
     ) {
         recordContent(database, context, after)
         val baseline = File(directory, "committed")
-        (BackupFormat.tables.map { "tables/$it.jsonl" } + listOf("sequences.json", "referenced-files.json")).forEach {
-            assertEquals(it, File(baseline, it).readText(), File(after, it).readText())
-        }
+        assertRestoredTables(after)
         database.query("PRAGMA integrity_check").use {
             assertTrue(it.moveToFirst())
             assertEquals("ok", it.getString(0))

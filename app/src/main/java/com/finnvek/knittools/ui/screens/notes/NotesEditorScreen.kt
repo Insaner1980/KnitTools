@@ -30,6 +30,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -40,6 +41,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -80,11 +82,15 @@ fun NotesEditorScreen(
         )
     val focusRequester = remember { FocusRequester() }
     val lifecycle = LocalLifecycleOwner.current.lifecycle
-    var editorValue by rememberSaveable(stateSaver = TextFieldValue.Saver) {
-        mutableStateOf(TextFieldValue(state.notes))
+    var selectionStart by rememberSaveable { mutableIntStateOf(0) }
+    var selectionEnd by rememberSaveable { mutableIntStateOf(0) }
+    var editorValue by remember {
+        mutableStateOf(TextFieldValue(state.notes, TextRange(selectionStart, selectionEnd)))
     }
     if (state.isLoaded && editorValue.text != state.notes) {
-        editorValue = editorValue.copy(text = state.notes)
+        editorValue = editorValue.copy(text = state.notes, selection = TextRange(selectionStart, selectionEnd))
+        selectionStart = editorValue.selection.start
+        selectionEnd = editorValue.selection.end
     }
     var showProPrompt by rememberSaveable { mutableStateOf(false) }
     var showDiscardConfirmation by rememberSaveable { mutableStateOf(false) }
@@ -172,6 +178,8 @@ fun NotesEditorScreen(
                                 lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)
                             ) {
                                 editorValue = it
+                                selectionStart = it.selection.start
+                                selectionEnd = it.selection.end
                             }
                             if (it.text != state.notes) viewModel.onNotesChanged(it.text)
                         },

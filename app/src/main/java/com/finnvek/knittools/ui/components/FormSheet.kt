@@ -61,7 +61,7 @@ fun FormSheet(
 ) {
     val canDismiss by rememberUpdatedState(cancelEnabled)
     ModalBottomSheet(
-        onDismissRequest = onDismiss,
+        onDismissRequest = { if (canDismiss) onDismiss() },
         sheetState =
             rememberModalBottomSheetState(
                 skipPartiallyExpanded = true,

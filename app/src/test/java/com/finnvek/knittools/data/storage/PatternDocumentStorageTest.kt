@@ -1,27 +1,37 @@
 package com.finnvek.knittools.data.storage
 
+import android.content.ContentResolver
 import android.content.Context
 import android.net.Uri
 import android.os.storage.StorageManager
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkStatic
+import io.mockk.spyk
+import io.mockk.unmockkStatic
 import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
+import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.TemporaryFolder
 import java.io.File
-import java.nio.file.Files
 import java.util.UUID
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class PatternDocumentStorageTest {
+    @get:Rule val temporaryFolder = TemporaryFolder()
+
     @Test
     fun `pdf copy moves storage access to injected dispatcher`() =
         runTest {
@@ -56,8 +66,53 @@ class PatternDocumentStorageTest {
         }
 
     @Test
+    fun `cancelled delivery of a published copy deletes only that new PDF`() =
+        runTest {
+            val filesDir = temporaryFolder.newFolder()
+            val source = File(filesDir, "source.pdf").apply { writeText("source bytes") }
+            val targetDirectory = File(filesDir, "pattern_pdfs/7").apply { mkdirs() }
+            val existing = File(targetDirectory, "chart.pdf").apply { writeText("existing bytes") }
+            val context = mockk<Context>()
+            val resolver = mockk<ContentResolver>()
+            val storageManager = mockk<StorageManager>()
+            val sourceUri = mockk<Uri>()
+            val copiedUri = mockk<Uri>()
+            val storageUuid = UUID.randomUUID()
+            val storage = spyk(PatternDocumentStorage(StandardTestDispatcher(testScheduler)), recordPrivateCalls = true)
+            every { context.filesDir } returns filesDir
+            every { context.packageName } returns "com.finnvek.knittools"
+            every { context.contentResolver } returns resolver
+            every { sourceUri.scheme } returns "content"
+            every { sourceUri.authority } returns "provider"
+            every { resolver.openInputStream(sourceUri) } answers { source.inputStream() }
+            every { context.getSystemService(StorageManager::class.java) } returns storageManager
+            every { storageManager.getUuidForPath(filesDir) } returns storageUuid
+            every { storageManager.getAllocatableBytes(storageUuid) } returns 64L * 1024 * 1024
+            every { storage["isReadablePdf"](context, any<File>()) } returns true
+            every { copiedUri.toString() } returns "file:///copied.pdf"
+            lateinit var copy: Deferred<String?>
+            mockkStatic(Uri::class)
+            try {
+                every { Uri.fromFile(any()) } answers {
+                    assertTrue(firstArg<File>().isFile)
+                    copy.cancel()
+                    copiedUri
+                }
+                copy = async { storage.copyPdfToInternal(context, 7L, sourceUri, "chart.pdf") }
+                advanceUntilIdle()
+
+                assertTrue(copy.isCancelled)
+                assertEquals(listOf(existing), targetDirectory.listFiles().orEmpty().toList())
+                assertEquals("source bytes", source.readText())
+                assertEquals("existing bytes", existing.readText())
+            } finally {
+                unmockkStatic(Uri::class)
+            }
+        }
+
+    @Test
     fun `deleteProjectCaptureImages removes only project capture directory`() {
-        val filesDir = Files.createTempDirectory("knittools-files").toFile()
+        val filesDir = temporaryFolder.newFolder()
         val targetDir = File(filesDir, "pattern_captures/7").apply { mkdirs() }
         val otherDir = File(filesDir, "pattern_captures/8").apply { mkdirs() }
         File(targetDir, "capture.jpg").writeText("target")
@@ -73,7 +128,7 @@ class PatternDocumentStorageTest {
 
     @Test
     fun `pruneStaleCaptureImages removes old captures while keeping recent pending capture`() {
-        val filesDir = Files.createTempDirectory("knittools-files").toFile()
+        val filesDir = temporaryFolder.newFolder()
         val targetDir = File(filesDir, "pattern_captures/7").apply { mkdirs() }
         val oldCapture = File(targetDir, "old.jpg").apply { writeText("old") }
         val recentCapture = File(targetDir, "recent.jpg").apply { writeText("recent") }

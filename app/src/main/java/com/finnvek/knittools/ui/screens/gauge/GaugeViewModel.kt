@@ -101,14 +101,15 @@ class GaugeViewModel
                         )
                     }
                 is GaugeAction.Paste -> paste(action.instruction)
-                is GaugeAction.Copy -> copyResult(action.text)
+                is GaugeAction.Copy -> copyResult(action)
             }
             save()
         }
 
-        private fun copyResult(text: String) {
-            if (state.value.hasResult && text.isNotBlank()) {
-                eventChannel.trySend(GaugeUiEvent.Copy(text))
+        private fun copyResult(action: GaugeAction.Copy) {
+            val current = state.value
+            if (action.resultState == current && current.hasResult && action.text.isNotBlank()) {
+                eventChannel.trySend(GaugeUiEvent.Copy(action.text))
             }
         }
 

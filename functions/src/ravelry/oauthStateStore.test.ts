@@ -100,4 +100,15 @@ describe("OAuth state Firestore store", () => {
     assert.equal(marked, true);
     assert.deepEqual(firestore.updates, [{ state: "valid", usedAtMillis: 1_000 }]);
   });
+
+  it("cannot consume a state with a missing or invalid expiry", async () => {
+    for (const expiresAtMillis of [undefined, "invalid", "2000", Number.NaN, Infinity]) {
+      const state = { ...storedState(), expiresAtMillis } as unknown as StoredOAuthState;
+      const firestore = new FakeFirestore([state]);
+      const store = createOAuthStateStore(firestore as unknown as Firestore);
+
+      assert.equal(await store.markStateUsed(state.state, 1_000), false);
+      assert.deepEqual(firestore.updates, []);
+    }
+  });
 });

@@ -85,6 +85,24 @@ class GaugeViewModelTest {
     }
 
     @Test
+    fun `copy rejects a result rendered before a unit change`() =
+        runTest {
+            val vm = model()
+            vm.onAction(GaugeAction.Task(GaugeTask.CONVERT))
+            vm.edit(GaugeField.CONVERSION, "25.4")
+            val previous = vm.state.value
+            vm.onAction(GaugeAction.ToUnit(MeasurementUnit.YARD))
+
+            vm.events.test {
+                assertTrue(vm.state.value.hasResult)
+                vm.onAction(GaugeAction.Copy("Old result", previous))
+                expectNoEvents()
+                vm.onAction(GaugeAction.Copy("Current result", vm.state.value))
+                assertEquals(GaugeUiEvent.Copy("Current result"), awaitItem())
+            }
+        }
+
+    @Test
     fun `legacy task starts empty and preferences only seed local defaults once`() {
         preferences.value = AppPreferences(useImperial = true)
         val vm = model()
@@ -329,13 +347,30 @@ class GaugeViewModelTest {
             vm.onAction(GaugeAction.Task(GaugeTask.CONVERT))
             vm.edit(GaugeField.CONVERSION, "25.4")
             vm.events.test {
-                vm.onAction(GaugeAction.Copy("25.4 cm = 10 in"))
+                vm.onAction(GaugeAction.Copy("25.4 cm = 10 in", vm.state.value))
                 assertEquals(GaugeUiEvent.Copy("25.4 cm = 10 in"), awaitItem())
                 expectNoEvents()
             }
             model(
                 SavedStateHandle(handle.keys().associateWith { handle.get<Any?>(it) }),
             ).events.test { expectNoEvents() }
+        }
+
+    @Test
+    fun `copy cannot emit the previous result after the current input becomes invalid`() =
+        runTest {
+            val vm = model()
+            vm.onAction(GaugeAction.Task(GaugeTask.CONVERT))
+            vm.edit(GaugeField.CONVERSION, "25.4")
+            assertTrue(vm.state.value.hasResult)
+            listOf("", "1.", "invalid").forEach { text ->
+                vm.edit(GaugeField.CONVERSION, text)
+                assertFalse(vm.state.value.hasResult)
+                vm.events.test {
+                    vm.onAction(GaugeAction.Copy("25.4 cm = 10 in", vm.state.value))
+                    expectNoEvents()
+                }
+            }
         }
 
     @Test

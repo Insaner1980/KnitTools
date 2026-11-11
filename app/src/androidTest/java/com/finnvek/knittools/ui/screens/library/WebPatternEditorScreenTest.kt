@@ -26,25 +26,113 @@ import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.LifecycleRegistry
+import androidx.lifecycle.SavedStateHandle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.test.espresso.Espresso
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.runner.lifecycle.ActivityLifecycleMonitorRegistry
 import androidx.test.runner.lifecycle.Stage
+import com.finnvek.knittools.App
 import com.finnvek.knittools.MainActivity
 import com.finnvek.knittools.R
+import com.finnvek.knittools.data.local.RoomDatabaseTransactionRunner
+import com.finnvek.knittools.repository.SavedPatternRepository
+import com.finnvek.knittools.ui.navigation.Screen
 import com.finnvek.knittools.ui.navigation.WebPatternEditorOrigin
 import com.finnvek.knittools.ui.navigation.WebPatternEditorRoute
 import com.finnvek.knittools.ui.theme.KnitToolsTheme
+import com.finnvek.knittools.widget.WidgetEntryPoint
+import dagger.hilt.android.EntryPointAccessors
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
+import org.junit.Assume.assumeTrue
 import org.junit.Rule
 import org.junit.Test
+import java.util.UUID
 
 class WebPatternEditorScreenTest {
     @get:Rule
     val composeRule = createComposeRule()
 
     private val context = InstrumentationRegistry.getInstrumentation().targetContext
+
+    @Test
+    fun completionWaitsForStartedOwnerAndNavigatesOnce() {
+        assumeTrue(context.packageName == "com.finnvek.knittools.activepolicytest")
+        val app = context.applicationContext as App
+        val database = app.database.get()
+        val patterns =
+            SavedPatternRepository(
+                database.savedPatternDao(),
+                app,
+                database.counterProjectDao(),
+                RoomDatabaseTransactionRunner(database),
+                Dispatchers.IO,
+            )
+        val projects = EntryPointAccessors.fromApplication(app, WidgetEntryPoint::class.java).counterRepository()
+        val owner =
+            composeRule.runOnIdle {
+                object : LifecycleOwner {
+                    override val lifecycle = LifecycleRegistry(this).apply { currentState = Lifecycle.State.CREATED }
+                }
+            }
+        val model =
+            composeRule.runOnIdle {
+                WebPatternEditorViewModel(
+                    patterns,
+                    projects,
+                    SavedStateHandle(
+                        mapOf(
+                            Screen.WebPatternEditor.ARG_ORIGIN to WebPatternEditorOrigin.Manual.persistedValue,
+                        ),
+                    ),
+                ).apply {
+                    updateTitle("Lifecycle test pattern")
+                    updateUrl("https://example.com/pattern-${UUID.randomUUID()}")
+                    save()
+                }
+            }
+        composeRule.waitUntil(5_000) { model.uiState.value.completion is WebPatternEditorCompletion.OpenDetail }
+        val completion = model.uiState.value.completion as WebPatternEditorCompletion.OpenDetail
+        val opened = mutableListOf<Long>()
+        try {
+            composeRule.setContent {
+                CompositionLocalProvider(LocalLifecycleOwner provides owner) {
+                    KnitToolsTheme(isDarkTheme = false) {
+                        WebPatternEditorScreen(
+                            request = null,
+                            onRequestStored = {},
+                            onBack = {},
+                            onOpenDetail = { opened.add(it) },
+                            onOpenProject = { error("Unexpected project navigation") },
+                            onOpenRavelry = { error("Unexpected Ravelry navigation") },
+                            viewModelProvider = { model },
+                        )
+                    }
+                }
+            }
+            composeRule.runOnIdle {
+                assertTrue(opened.isEmpty())
+                assertEquals(completion, model.uiState.value.completion)
+                owner.lifecycle.currentState = Lifecycle.State.STARTED
+            }
+            composeRule.waitUntil(5_000) { model.uiState.value.completion == null }
+            composeRule.runOnIdle {
+                assertEquals(listOf(completion.patternId), opened)
+                owner.lifecycle.currentState = Lifecycle.State.CREATED
+            }
+            composeRule.runOnIdle { owner.lifecycle.currentState = Lifecycle.State.STARTED }
+            composeRule.runOnIdle { assertEquals(listOf(completion.patternId), opened) }
+        } finally {
+            runBlocking(Dispatchers.IO) { database.savedPatternDao().deleteById(completion.patternId) }
+        }
+    }
 
     // CPD-OFF: Compose-testien skenaariokohtainen asetelma pidetaan testien yhteydessa.
     // Tallenna on harmaa kunnes nimi ja osoite on annettu, kuten muissa lisäyslomakkeissa.
@@ -217,6 +305,44 @@ class WebPatternEditorScreenTest {
             assertEquals(1, cancellations)
             assertEquals(0, saves)
         }
+    }
+
+    @Test
+    fun backOnlyDismissesAfterSaveStopsBlocking() {
+        val saving = mutableStateOf(false)
+        var dismissals = 0
+        composeRule.setContent {
+            KnitToolsTheme {
+                WebPatternEditorContent(
+                    state =
+                        WebPatternEditorUiState(
+                            route = WebPatternEditorRoute(WebPatternEditorOrigin.Manual),
+                            title = "Unsaved cardigan",
+                            url = "https://example.com/unsaved",
+                            isSaving = saving.value,
+                        ),
+                    onBack = { dismissals++ },
+                    onTitleChange = {},
+                    onDesignerChange = {},
+                    onUrlChange = {},
+                    onSave = { saving.value = true },
+                    onKeepDraft = {},
+                    onUseSharedLink = {},
+                    onDismissReplacement = {},
+                    onConfirmReplacement = {},
+                )
+            }
+        }
+        composeRule.onNodeWithText(context.getString(R.string.save)).performClick()
+        composeRule.onNodeWithText(context.getString(R.string.cancel)).assertIsNotEnabled()
+        Espresso.pressBack()
+        composeRule.onNodeWithTag(WEB_PATTERN_TITLE_FIELD_TAG).assertIsDisplayed()
+        composeRule.runOnIdle {
+            assertEquals(0, dismissals)
+            saving.value = false
+        }
+        Espresso.pressBack()
+        composeRule.runOnIdle { assertEquals(1, dismissals) }
     }
 
     @Test

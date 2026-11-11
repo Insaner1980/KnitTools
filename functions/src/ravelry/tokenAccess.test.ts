@@ -88,6 +88,67 @@ class MemoryTokenStore implements RavelryTokenStore {
 }
 
 describe("Ravelry token access", () => {
+  it("uses the persisted rotation when a concurrent obsolete refresh is rejected", async () => {
+    const tokenStore = new MemoryTokenStore();
+    await tokenStore.saveToken({
+      uid: "uid", authType: "oauth2", accessToken: "expired-access", refreshToken: "expired-refresh",
+      expiresAtMillis: 999, createdAtMillis: 100, updatedAtMillis: 100,
+    });
+    let release: (() => void) | undefined;
+    let started: (() => void) | undefined;
+    const gate = new Promise<void>(resolve => { release = resolve; });
+    const firstStarted = new Promise<void>(resolve => { started = resolve; });
+    let calls = 0;
+    const refresh = async () => {
+      if (++calls === 1) {
+        started?.();
+        await gate;
+        throw new Error("Synthetic obsolete refresh rejection");
+      }
+      return { accessToken: "current-access", refreshToken: "current-refresh", expiresAtMillis: 10_000 };
+    };
+    const losing = getUsableRavelryToken({ uid: "uid", tokenStore, refresh, nowMillis: () => 1_000 })
+      .then(value => value, error => error);
+    await firstStarted;
+    const winner = await getUsableRavelryToken({ uid: "uid", tokenStore, refresh, nowMillis: () => 1_000 });
+    release?.();
+    assert.deepEqual(await losing, winner);
+    assert.equal(winner?.accessToken, "current-access");
+    assert.equal((await tokenStore.getToken("uid"))?.refreshToken, "current-refresh");
+  });
+
+  it("preserves refresh rejection without a usable changed token, including failed readback", async () => {
+    for (const replacement of ["unchanged", "expired", "disconnected", "reconnected", "unavailable"]) {
+      let reads = 0;
+      const tokenStore = new class extends MemoryTokenStore {
+        override async getToken(uid: string) {
+          if (++reads > 1 && replacement === "unavailable") throw new Error("Synthetic readback failure");
+          return super.getToken(uid);
+        }
+      }();
+      const original: StoredRavelryToken = {
+        uid: "uid", authType: "oauth2", accessToken: "expired-access", refreshToken: "expired-refresh",
+        expiresAtMillis: 999, createdAtMillis: 100, updatedAtMillis: 100,
+      };
+      await tokenStore.saveToken(original);
+      const rejection = new Error("Synthetic refresh rejection");
+      await assert.rejects(getUsableRavelryToken({
+        uid: "uid", tokenStore, nowMillis: () => 1_000,
+        refresh: async () => {
+          if (replacement === "expired") await tokenStore.saveToken({ ...original, accessToken: "new-but-expired" });
+          if (replacement === "disconnected") await tokenStore.deleteToken();
+          if (replacement === "reconnected") {
+            await tokenStore.deleteToken();
+            await tokenStore.saveToken({
+              ...original, accessToken: "new-connection", expiresAtMillis: 10_000, connectionGeneration: 1,
+            });
+          }
+          throw rejection;
+        },
+      }), error => error === rejection, replacement);
+    }
+  });
+
   it("keeps the first persisted rotation when concurrent refreshes finish out of order", async () => {
     const tokenStore = new MemoryTokenStore();
     await tokenStore.saveToken({

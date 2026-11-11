@@ -731,6 +731,40 @@ describe("Ravelry OAuth2 auth core", () => {
     assert.equal(exchangeCount, 0);
   });
 
+  it("rejects a state that expires while awaiting UID rate admission", async () => {
+    const stateStore = new MemoryOAuthStateStore();
+    const tokenStore = new MemoryTokenStore();
+    const started = await startRavelryOAuth({
+      uid: "uid",
+      stateStore,
+      tokenStore,
+      clientId: "synthetic-client",
+      backendCallbackUrl: "https://callback.example",
+      nowMillis: () => 1_000,
+    });
+    let now = started.expiresAtMillis - 1;
+    let exchanges = 0;
+
+    const result = await completeRavelryOAuthCallback({
+      query: { state: started.state, code: "synthetic-code" },
+      stateStore,
+      tokenStore,
+      rateLimiter: {
+        ...disabledRavelryRateLimiter,
+        async consumeUid() { now = started.expiresAtMillis; },
+      },
+      exchange: async () => {
+        exchanges++;
+        return { accessToken: "synthetic-access" };
+      },
+      nowMillis: () => now,
+    });
+
+    assert.equal(new URL(result.redirectUrl).searchParams.get("error"), "state_expired");
+    assert.equal(exchanges, 0);
+    assert.equal((await stateStore.getState(started.state))?.usedAtMillis, null);
+  });
+
   it("reports status, fetches current user, and disconnects without exposing tokens", async () => {
     const stateStore = new MemoryOAuthStateStore();
     const tokenStore = new MemoryTokenStore();
@@ -980,5 +1014,50 @@ describe("Ravelry OAuth2 auth core", () => {
     assert.equal(currentUserCalled, false);
     assert.equal(await tokenStore.getToken("uid"), null);
     assert.equal(await tokenStore.getConnectionGeneration("uid"), 1);
+  });
+
+  it("does not verify a replacement login after the original refresh loses ownership", async () => {
+    const tokenStore = new MemoryTokenStore();
+    const original: StoredRavelryToken = {
+      uid: "uid",
+      authType: "oauth2",
+      accessToken: "expired-access-token",
+      refreshToken: "old-refresh-token",
+      expiresAtMillis: 999,
+      createdAtMillis: 100,
+      updatedAtMillis: 100,
+    };
+    await tokenStore.saveToken(original);
+    const replacement = {
+      ...original,
+      accessToken: "replacement-access-token",
+      refreshToken: "replacement-refresh-token",
+      expiresAtMillis: 20_000,
+      createdAtMillis: 1_500,
+      updatedAtMillis: 1_500,
+      connectionGeneration: 2,
+    };
+    let lookups = 0;
+
+    const result = await getRavelryCurrentUser({
+      uid: original.uid,
+      tokenStore,
+      client: {
+        async getCurrentUser() {
+          lookups++;
+          return { ravelryUserId: "42", ravelryUsername: "synthetic-user" };
+        },
+      },
+      refresh: async () => {
+        await tokenStore.deleteToken(original.uid);
+        await tokenStore.saveToken(replacement);
+        return { accessToken: "late-access-token", expiresAtMillis: 10_000 };
+      },
+      nowMillis: () => 1_000,
+    });
+
+    assert.deepEqual(result, { connected: false });
+    assert.equal(lookups, 0);
+    assert.deepEqual(await tokenStore.getToken(original.uid), replacement);
   });
 });

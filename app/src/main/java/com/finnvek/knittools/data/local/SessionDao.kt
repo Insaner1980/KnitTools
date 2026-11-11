@@ -69,23 +69,55 @@ interface SessionDao {
 
     @Query(
         "SELECT projectId, MAX(startedAt) AS lastSessionAt FROM sessions " +
-            "WHERE (:projectId IS NULL OR projectId = :projectId) GROUP BY projectId ORDER BY MIN(id)",
+            "GROUP BY projectId ORDER BY MIN(id)",
     )
-    suspend fun getSessionProjectActivity(projectId: Long?): List<SessionProjectActivity>
-
-    @Query("SELECT MIN(startedAt) FROM sessions WHERE (:projectId IS NULL OR projectId = :projectId)")
-    suspend fun getFirstSessionStart(projectId: Long?): Long?
+    suspend fun getAllSessionProjectActivity(): List<SessionProjectActivity>
 
     @Query(
-        "SELECT id, startedAt, zoneId FROM sessions WHERE (:projectId IS NULL OR projectId = :projectId) " +
-            "AND id > :afterId AND startedAt <= :latestStart " +
-            "ORDER BY id LIMIT 256",
+        "SELECT projectId, MAX(startedAt) AS lastSessionAt FROM sessions WHERE projectId = :projectId GROUP BY projectId",
     )
+    suspend fun getProjectSessionActivity(projectId: Long): List<SessionProjectActivity>
+
+    suspend fun getSessionProjectActivity(projectId: Long?): List<SessionProjectActivity> =
+        if (projectId == null) getAllSessionProjectActivity() else getProjectSessionActivity(projectId)
+
+    @Query("SELECT MIN(startedAt) FROM sessions")
+    suspend fun getFirstSessionStart(): Long?
+
+    @Query("SELECT MIN(startedAt) FROM sessions WHERE projectId = :projectId")
+    suspend fun getProjectFirstSessionStart(projectId: Long): Long?
+
+    suspend fun getFirstSessionStart(projectId: Long?): Long? =
+        if (projectId == null) getFirstSessionStart() else getProjectFirstSessionStart(projectId)
+
+    @Query(
+        "SELECT id, startedAt, zoneId FROM sessions WHERE id > :afterId AND startedAt <= :latestStart ORDER BY id LIMIT 256",
+    )
+    suspend fun getInsightFirstDateBatch(
+        afterId: Long,
+        latestStart: Long,
+    ): List<SessionStart>
+
+    @Query(
+        "SELECT id, startedAt, zoneId FROM sessions WHERE projectId = :projectId " +
+            "AND id > :afterId AND startedAt <= :latestStart ORDER BY id LIMIT 256",
+    )
+    suspend fun getProjectInsightFirstDateBatch(
+        projectId: Long,
+        afterId: Long,
+        latestStart: Long,
+    ): List<SessionStart>
+
     suspend fun getInsightFirstDateBatch(
         projectId: Long?,
         afterId: Long,
         latestStart: Long,
-    ): List<SessionStart>
+    ): List<SessionStart> =
+        if (projectId == null) {
+            getInsightFirstDateBatch(afterId, latestStart)
+        } else {
+            getProjectInsightFirstDateBatch(projectId, afterId, latestStart)
+        }
 
     @Query("SELECT * FROM sessions WHERE id > :afterId ORDER BY id LIMIT 256")
     suspend fun getInsightSessionBatch(afterId: Long): List<SessionEntity>

@@ -1612,6 +1612,7 @@ class CounterRepository
                 ProjectCompletionResult.CompletedNow(
                     ProjectCompletionSnapshot(
                         eventId = eventId,
+                        completionZoneId = now.zoneId,
                         project =
                             project.toDomain().copy(
                                 isCompleted = true,
@@ -2163,6 +2164,7 @@ internal fun mergeProjectNotes(
 
     val requestedSuffix = requestedNotes.removeKnownPrefix(baseNotes)
     val currentSuffix = currentNotes.removeKnownPrefix(baseNotes)
+    if (requestedSuffix != null && currentNotes.endsWith(requestedSuffix)) return currentNotes
 
     return when {
         requestedSuffix != null && currentSuffix != null -> currentNotes + requestedSuffix

@@ -57,6 +57,7 @@ class PatternImageImportViewModelTest {
         Dispatchers.setMain(dispatcher)
         every { proManager.initialStateReady } returns MutableStateFlow(false)
         storage = mockk(relaxed = true)
+        every { storage.restoreStagedSelection(any(), any(), any(), any()) } answers { arg(3) }
         repository = mockk(relaxed = true)
         context = mockk()
         every { context.filesDir } returns File("build/test-pattern-import")
@@ -70,6 +71,48 @@ class PatternImageImportViewModelTest {
     }
 
     // CPD-OFF: Tuontitestien skenaariokohtainen asetelma pidetaan testien yhteydessa.
+    @Test
+    fun `pending picker result waits for restored private pages before appending`() =
+        runTest {
+            val first = page("first")
+            val second = page("second")
+            val picked = uri("content://second")
+            val handle =
+                SavedStateHandle(
+                    mapOf(
+                        "pattern_image_project_id" to 7L,
+                        "pattern_image_session_id" to "session-a",
+                        "pattern_image_pages" to encodeStagedPatternPages(listOf(first)),
+                        "pattern_image_picker_request_id" to "pending",
+                        "pattern_image_picker_launched" to false,
+                    ),
+                )
+            coEvery {
+                storage.stageSelectedImages(
+                    any(),
+                    7L,
+                    "session-a",
+                    PatternImageSelection(listOf(first)),
+                    listOf(picked),
+                )
+            } returns
+                PatternImageStageBatch(listOf(second), 0)
+            val vm = viewModel(handle, settleRestoration = false)
+            assertTrue(
+                vm.uiState.value.selection.pages
+                    .isEmpty(),
+            )
+            assertTrue(vm.markGalleryPickerLaunched("pending"))
+            assertEquals(listOf(first), decodeStagedPatternPages(handle.get<String>("pattern_image_pages").orEmpty()))
+
+            vm.onGalleryPickerResult("pending", listOf(picked))
+            advanceUntilIdle()
+
+            assertEquals(listOf(first, second), vm.uiState.value.selection.pages)
+            assertEquals(null, vm.uiState.value.pickerRequestId)
+            assertEquals(PatternImageImportPhase.READY, vm.uiState.value.phase)
+        }
+
     @Test
     fun `another owner cannot adopt or discard the retained draft`() =
         runTest {
@@ -172,6 +215,7 @@ class PatternImageImportViewModelTest {
                     ),
                 )
             val viewModel = viewModel(handle)
+            advanceUntilIdle()
             val request = viewModel.authorizeGalleryPicker(7L)
             val brokenUri = uri("content://broken")
             coEvery {
@@ -592,17 +636,19 @@ class PatternImageImportViewModelTest {
         return viewModel(handle)
     }
 
-    private fun viewModel(handle: SavedStateHandle = savedStateHandle) =
-        PatternImageImportViewModel(
-            storage = storage,
-            repository = repository,
-            context = context,
-            ioDispatcher = dispatcher,
-            savedStateHandle = handle,
-            proManager = proManager,
-            onboardingStateRepository = onboardingStateRepository,
-            applicationScope = applicationScope,
-        )
+    private fun viewModel(
+        handle: SavedStateHandle = savedStateHandle,
+        settleRestoration: Boolean = true,
+    ) = PatternImageImportViewModel(
+        storage = storage,
+        repository = repository,
+        context = context,
+        ioDispatcher = dispatcher,
+        savedStateHandle = handle,
+        proManager = proManager,
+        onboardingStateRepository = onboardingStateRepository,
+        applicationScope = applicationScope,
+    ).also { if (settleRestoration) dispatcher.scheduler.runCurrent() }
 
     private fun page(id: String) =
         StagedPatternPage(

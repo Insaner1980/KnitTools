@@ -14,6 +14,7 @@ import com.finnvek.knittools.ui.screens.pattern.PatternImageSelection
 import com.finnvek.knittools.ui.screens.pattern.StagedPatternPage
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -49,6 +50,7 @@ internal enum class PatternImageStageFailure {
     PAGE_LIMIT,
     IMAGE_TOO_LARGE,
     TOTAL_TOO_LARGE,
+    LOW_STORAGE,
     UNREADABLE,
     UNSUPPORTED,
     ANIMATED,
@@ -206,6 +208,8 @@ class PatternDocumentStorage
                 }
             } catch (failure: PatternImageTooLargeException) {
                 stageFailure(PatternImageStageFailure.IMAGE_TOO_LARGE, failure)
+            } catch (failure: PatternImageInsufficientSpaceException) {
+                stageFailure(PatternImageStageFailure.LOW_STORAGE, failure)
             } catch (failure: IOException) {
                 stageFailure(PatternImageStageFailure.UNREADABLE, failure)
             }
@@ -229,14 +233,61 @@ class PatternDocumentStorage
             projectId: Long,
             sessionId: String,
         ) {
-            val sessionDirectory =
-                PatternImageStagingFiles.sessionDirectory(
-                    context.filesDir,
-                    projectId,
-                    sessionId,
-                )
+            val sessionDirectory = validatedImportSessionDirectory(context, projectId, sessionId) ?: return
             deleteCaptureFileIfPossible(sessionDirectory)
         }
+
+        internal fun restoreStagedSelection(
+            context: Context,
+            projectId: Long?,
+            sessionId: String?,
+            selection: PatternImageSelection,
+        ): PatternImageSelection? {
+            if (projectId == null || sessionId == null) {
+                return null
+            }
+            return try {
+                val directory = validatedImportSessionDirectory(context, projectId, sessionId) ?: return null
+                var totalBytes = 0L
+                val pages =
+                    selection.pages.take(PatternImageImportLimits.MAX_PAGES).mapNotNull { page ->
+                        val file = File(page.stagedPath).canonicalFile
+                        val bytes = file.length()
+                        if (file.parentFile != directory ||
+                            !file.isFile ||
+                            bytes !in 1L..PatternImageImportLimits.MAX_BYTES_PER_IMAGE ||
+                            bytes > PatternImageImportLimits.MAX_TOTAL_BYTES - totalBytes
+                        ) {
+                            null
+                        } else {
+                            totalBytes += bytes
+                            page.copy(stagedPath = file.path, byteCount = bytes)
+                        }
+                    }
+                PatternImageSelection(pages)
+            } catch (_: IOException) {
+                null
+            }
+        }
+
+        private fun validatedImportSessionDirectory(
+            context: Context,
+            projectId: Long,
+            sessionId: String,
+        ): File? =
+            runCatching {
+                if (sessionId.isBlank() || File(sessionId).name != sessionId) return@runCatching null
+                val projectDirectory = patternCaptureDir(context, projectId).canonicalFile
+                val directory =
+                    PatternImageStagingFiles
+                        .sessionDirectory(context.filesDir, projectId, sessionId)
+                        .canonicalFile
+                directory.takeIf {
+                    projectDirectory.parentFile == patternCaptureRoot(context).canonicalFile &&
+                        directory.parentFile == projectDirectory &&
+                        directory.name == sessionId
+                }
+            }.getOrNull()
 
         internal fun deleteStagedPage(page: StagedPatternPage) {
             val file = File(page.stagedPath)
@@ -316,6 +367,9 @@ class PatternDocumentStorage
                     ) { targetFile ->
                         conversionContext.ensureActive()
                         targetFile.outputStream().use(document::writeTo)
+                        if (!isReadablePdf(context, targetFile)) {
+                            throw IOException("Generated pattern PDF is not readable")
+                        }
                         conversionContext.ensureActive()
                     }
                 return pdfFile.toUri().toString() to pdfFile.name
@@ -371,40 +425,54 @@ class PatternDocumentStorage
             projectId: Long,
             sourceUri: Uri,
             fileName: String,
-        ): String? =
-            withContext(ioDispatcher) {
-                if (AppFileStorage.isAppOwnedUri(context, sourceUri)) return@withContext null
-                val maxCopyBytes = availablePdfCopyBytes(context) ?: return@withContext null
-                val copyContext = coroutineContext
+        ): String? {
+            var undeliveredCopy: File? = null
+            try {
+                val copiedUri =
+                    withContext(ioDispatcher) {
+                        if (AppFileStorage.isAppOwnedUri(context, sourceUri)) return@withContext null
+                        val maxCopyBytes = availablePdfCopyBytes(context) ?: return@withContext null
+                        val copyContext = coroutineContext
 
-                try {
-                    context.contentResolver.openInputStream(sourceUri)?.use { input ->
-                        val copiedFile =
-                            PatternDocumentFiles.writeUniquePdf(
-                                directory = File(context.filesDir, "pattern_pdfs/$projectId"),
-                                fileName = fileName,
-                            ) { targetFile ->
-                                PatternDocumentFiles.copyBounded(
-                                    input = input,
-                                    target = targetFile,
-                                    maxBytes = maxCopyBytes,
-                                ) {
-                                    copyContext.ensureActive()
-                                }
-                                copyContext.ensureActive()
-                                if (!isReadablePdf(context, targetFile)) {
-                                    throw IOException("Pattern PDF is not readable")
-                                }
-                                copyContext.ensureActive()
+                        try {
+                            context.contentResolver.openInputStream(sourceUri)?.use { input ->
+                                val copiedFile =
+                                    PatternDocumentFiles.writeUniquePdf(
+                                        directory = File(context.filesDir, "pattern_pdfs/$projectId"),
+                                        fileName = fileName,
+                                    ) { targetFile ->
+                                        PatternDocumentFiles.copyBounded(
+                                            input = input,
+                                            target = targetFile,
+                                            maxBytes = maxCopyBytes,
+                                        ) {
+                                            copyContext.ensureActive()
+                                        }
+                                        copyContext.ensureActive()
+                                        if (!isReadablePdf(context, targetFile)) {
+                                            throw IOException("Pattern PDF is not readable")
+                                        }
+                                        copyContext.ensureActive()
+                                    }
+                                undeliveredCopy = copiedFile
+                                copiedFile?.toUri()?.toString()
                             }
-                        copiedFile?.toUri()?.toString()
+                        } catch (failure: CancellationException) {
+                            throw failure
+                        } catch (_: Exception) {
+                            null
+                        }
                     }
-                } catch (failure: CancellationException) {
-                    throw failure
-                } catch (_: Exception) {
-                    null
+                undeliveredCopy = null
+                return copiedUri
+            } finally {
+                undeliveredCopy?.let { file ->
+                    withContext(NonCancellable + ioDispatcher) {
+                        if (!file.delete() && file.exists()) file.deleteOnExit()
+                    }
                 }
             }
+        }
 
         private fun availablePdfCopyBytes(context: Context): Long? =
             try {
@@ -532,6 +600,7 @@ internal object PatternDocumentFiles {
         if (!directory.exists() && !directory.mkdirs()) {
             throw IOException("Pattern PDF directory creation failed")
         }
+        prepareUnassignedDirectory(directory)
         val safeFileName = safePdfFileName(fileName)
         val tempFile = createTempFile(directory, safeFileName)
         return try {
@@ -560,6 +629,22 @@ internal object PatternDocumentFiles {
                 index += 1
             } catch (_: Exception) {
                 return null
+            }
+        }
+    }
+
+    private val preparedUnassignedDirectories = mutableSetOf<File>()
+
+    private fun prepareUnassignedDirectory(directory: File) {
+        if (directory.name != "0" || directory.parentFile?.name != "pattern_pdfs") return
+        synchronized(preparedUnassignedDirectories) {
+            // All writers prepare the directory before creating their first temporary PDF.
+            if (preparedUnassignedDirectories.add(directory.canonicalFile)) {
+                directory.listFiles()?.forEach { file ->
+                    if (file.extension == "tmp" && file.isFile && !file.delete()) {
+                        file.deleteOnExit()
+                    }
+                }
             }
         }
     }

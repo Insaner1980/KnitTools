@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.text.TextAutoSize
@@ -63,6 +64,7 @@ fun ToolScreenScaffold(
     actions: @Composable RowScope.() -> Unit = {},
     content: @Composable (PaddingValues) -> Unit,
 ) {
+    val topBarModifier = Modifier.fillMaxWidth().wrapContentWidth().contentWidth(contentWidthPolicy)
     Scaffold(
         modifier = modifier,
         containerColor = MaterialTheme.colorScheme.background,
@@ -71,7 +73,7 @@ fun ToolScreenScaffold(
             if (wrapTitle) {
                 Row(
                     modifier =
-                        Modifier
+                        topBarModifier
                             .fillMaxWidth()
                             .windowInsetsPadding(
                                 TopAppBarDefaults.windowInsets,
@@ -95,6 +97,7 @@ fun ToolScreenScaffold(
                 }
             } else {
                 TopAppBar(
+                    modifier = topBarModifier,
                     title = {
                         if (showTitle) {
                             val titleStyle =

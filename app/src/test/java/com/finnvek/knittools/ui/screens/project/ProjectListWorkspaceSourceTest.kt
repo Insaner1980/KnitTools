@@ -122,10 +122,15 @@ class ProjectListWorkspaceSourceTest {
             "start = ProjectListDimens.ScreenHorizontalPadding",
             "top = ProjectListDimens.ListTopPadding",
             "end = ProjectListDimens.ScreenHorizontalPadding",
-            "bottom = ProjectListDimens.ListBottomPadding",
+            "bottom =",
+            "if (showFloatingCreateButton)",
+            "ProjectListDimens.ListBottomPaddingWithCreateButton",
+            "else",
+            "ProjectListDimens.ListBottomPadding",
         )
         assertTrue(dimens.contains("val CreateButtonVisualSize = 64.dp"))
-        assertTrue(dimens.contains("val ListBottomPadding = 112.dp"))
+        assertTrue(dimens.contains("val ListBottomPaddingWithCreateButton = 112.dp"))
+        assertTrue(dimens.contains("val ListBottomPadding = 16.dp"))
         assertTrue(
             "counter_plus_button.webp is missing",
             Files.exists(ProjectSourceFiles.file(COUNTER_PLUS_BUTTON_ASSET)),

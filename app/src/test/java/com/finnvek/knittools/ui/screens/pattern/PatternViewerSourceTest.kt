@@ -3,10 +3,18 @@ package com.finnvek.knittools.ui.screens.pattern
 import com.finnvek.knittools.ProjectSourceFiles
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class PatternViewerSourceTest {
+    @Test
+    fun `source blocks reject missing or out of order markers`() {
+        listOf("body<end>", "<start>body", "<end>body<start>").forEach { source ->
+            assertThrows(IllegalStateException::class.java) { source.blockBetween("<start>", "<end>") }
+        }
+    }
+
     @Test
     fun `renderer errors are not displayed from raw exception messages`() {
         val source = ProjectSourceFiles.read(PATTERN_VIEWER_SCREEN)
@@ -41,7 +49,7 @@ class PatternViewerSourceTest {
         val libraryViewer =
             source.blockBetween(
                 "fun LibraryPatternViewerScreen(",
-                "@Composable\nprivate fun rememberPatternRenderState",
+                "@Composable\ninternal fun rememberPatternRenderState",
             )
 
         assertFalse(libraryViewer.contains("CounterViewModel"))
@@ -85,7 +93,7 @@ class PatternViewerSourceTest {
         val documentBlock =
             source.blockBetween(
                 "PatternDocumentViewport(",
-                "@Composable\nprivate fun ReadingLineOverlay",
+                "internal fun ReadingLineOverlay(",
             )
         val overlayBlock =
             source.blockBetween(
@@ -130,7 +138,7 @@ class PatternViewerSourceTest {
         val libraryViewer =
             source.blockBetween(
                 "fun LibraryPatternViewerScreen(",
-                "@Composable\nprivate fun rememberPatternRenderState",
+                "@Composable\ninternal fun rememberPatternRenderState",
             )
 
         assertTrue(projectViewer.contains("onReadingLineYFractionCommit = { yFraction ->"))
@@ -157,8 +165,8 @@ class PatternViewerSourceTest {
             )
         val contentActions =
             projectViewer.blockBetween(
-                "actions =\n                    PatternViewerContentActions(",
-                "                modifier =\n",
+                "PatternViewerContentActions(",
+                "modifier =",
             )
 
         assertTrue(projectViewer.contains("var readingLinePreviewYFraction by remember(selectedDocument?.id)"))
@@ -326,7 +334,7 @@ class PatternViewerSourceTest {
         val libraryViewer =
             source.blockBetween(
                 "fun LibraryPatternViewerScreen(",
-                "@Composable\nprivate fun rememberPatternRenderState",
+                "@Composable\ninternal fun rememberPatternRenderState",
             )
 
         assertTrue(projectViewer.contains("currentRow = counterState.counter.count"))
@@ -355,7 +363,7 @@ class PatternViewerSourceTest {
         val libraryViewer =
             source.blockBetween(
                 "fun LibraryPatternViewerScreen(",
-                "@Composable\nprivate fun rememberPatternRenderState",
+                "@Composable\ninternal fun rememberPatternRenderState",
             )
 
         assertTrue(projectViewer.contains("var rowCalibrationState by remember"))
@@ -572,7 +580,7 @@ class PatternViewerSourceTest {
     @Test
     fun `page render clears the previous bitmap before rendering the next page`() {
         val viewer = ProjectSourceFiles.read(PATTERN_VIEWER_SCREEN)
-        val renderProducer = viewer.blockBetween("val renderedBitmap by produceState", "return PatternRenderState(")
+        val renderProducer = viewer.blockBetween("produceState<Bitmap?>(", "return PatternRenderState(")
         val resetIndex = renderProducer.indexOf("value = null")
         val rendererLookupIndex = renderProducer.indexOf("val activeRenderer")
 
@@ -668,10 +676,17 @@ class PatternViewerSourceTest {
     }
 }
 
-private fun String.blockBetween(
+internal fun String.blockBetween(
     start: String,
     end: String,
-): String = substringAfter(start).substringBefore(end)
+): String {
+    val startIndex = indexOf(start)
+    check(startIndex >= 0) { "Missing start marker: $start" }
+    val contentStart = startIndex + start.length
+    val endIndex = indexOf(end, contentStart)
+    check(endIndex >= contentStart) { "Missing following end marker: $end" }
+    return substring(contentStart, endIndex)
+}
 
 private fun String.hasStringResource(key: String): Boolean =
     Regex("""<string\s+name="$key"(\s|>)""").containsMatchIn(this)

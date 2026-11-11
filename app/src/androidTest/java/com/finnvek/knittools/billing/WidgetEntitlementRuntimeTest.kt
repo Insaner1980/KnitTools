@@ -11,7 +11,6 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.view.View
-import android.view.ViewGroup
 import android.widget.FrameLayout
 import android.widget.TextView
 import androidx.activity.ComponentActivity
@@ -30,6 +29,7 @@ import com.finnvek.knittools.pro.ProState
 import com.finnvek.knittools.pro.ProStatus
 import com.finnvek.knittools.pro.TrialState
 import com.finnvek.knittools.repository.ProjectCreationResult
+import com.finnvek.knittools.ui.descendants
 import com.finnvek.knittools.widget.CounterWidgetActions
 import com.finnvek.knittools.widget.CounterWidgetReceiver
 import com.finnvek.knittools.widget.CounterWidgetState
@@ -336,18 +336,6 @@ class WidgetEntitlementRuntimeTest {
     private companion object {
         fun purchase() =
             Purchase("""{"productId":"knittools_pro","purchaseState":0,"acknowledged":true}""", "synthetic-signature")
-
-        fun descendants(view: View): List<View> =
-            listOf(view) +
-                if (view is ViewGroup) {
-                    (0 until view.childCount).flatMap {
-                        descendants(
-                            view.getChildAt(it),
-                        )
-                    }
-                } else {
-                    emptyList()
-                }
 
         suspend fun await(condition: suspend () -> Boolean) = withTimeout(15_000) { while (!condition()) delay(50) }
     }

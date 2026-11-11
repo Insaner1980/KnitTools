@@ -22,6 +22,7 @@ import com.finnvek.knittools.data.backup.BackupPreview
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
+import java.util.UUID
 
 class BackupContentTest {
     @get:Rule val compose = createComposeRule()
@@ -52,14 +53,22 @@ class BackupContentTest {
 
     @Test fun validatedPreviewRequiresAnExplicitDestructiveConfirmation() {
         var confirmed = 0
+        val selectionId = UUID.randomUUID()
         compose.setContent {
             MaterialTheme {
                 BackupContent(
-                    BackupUiState(BackupPhase.PREVIEW, BackupPreview(1_700_000_000_000, "1.0", 2, 3, 4, 5)),
+                    BackupUiState(
+                        BackupPhase.PREVIEW,
+                        BackupPreview(1_700_000_000_000, "1.0", 2, 3, 4, 5),
+                        previewSelectionId = selectionId,
+                    ),
                     {},
                     {},
                     {},
-                    { confirmed++ },
+                    {
+                        assertEquals(selectionId, it)
+                        confirmed++
+                    },
                     {},
                     {},
                 )

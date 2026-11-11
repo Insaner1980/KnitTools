@@ -41,6 +41,7 @@ class LifecycleFlowCollectionSourceTest {
                 "app/src/main/java/com/finnvek/knittools/ui/components/ProPromptSheet.kt",
                 "app/src/main/java/com/finnvek/knittools/ui/navigation/NavGraph.kt",
                 "app/src/main/java/com/finnvek/knittools/ui/screens/counter/CounterScreen.kt",
+                "app/src/main/java/com/finnvek/knittools/ui/screens/library/WebPatternEditorScreen.kt",
                 "app/src/main/java/com/finnvek/knittools/ui/screens/project/ProjectListScreen.kt",
                 "app/src/main/java/com/finnvek/knittools/ui/screens/settings/SettingsScreen.kt",
             )

@@ -247,6 +247,7 @@ sealed interface GaugeAction {
 
     data class Copy(
         val text: String,
+        val resultState: GaugeUiState,
     ) : GaugeAction
 }
 

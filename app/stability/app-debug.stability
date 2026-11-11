@@ -28,7 +28,7 @@ private fun com.finnvek.knittools.MainActivity.MainActivityContent(): kotlin.Uni
   params:
 
 @Composable
-internal fun com.finnvek.knittools.TrialEndedDialog(endingSoon: kotlin.Boolean, summary: kotlin.String?, onSeePro: kotlin.Function0<kotlin.Unit>, onContinueFree: kotlin.Function0<kotlin.Unit>, offer: com.finnvek.knittools.billing.SelectedOneTimeOffer?, productStatus: com.finnvek.knittools.billing.BillingProductStatus, purchaseInFlight: kotlin.Boolean, onRetry: kotlin.Function0<kotlin.Unit>, onPurchase: kotlin.Function0<kotlin.Unit>, purchaseMessage: kotlin.Int?): kotlin.Unit
+internal fun com.finnvek.knittools.TrialEndedDialog(endingSoon: kotlin.Boolean, summary: kotlin.String?, onSeePro: kotlin.Function0<kotlin.Unit>, onContinueFree: kotlin.Function0<kotlin.Unit>, offer: com.finnvek.knittools.billing.SelectedOneTimeOffer?, productStatus: com.finnvek.knittools.billing.BillingProductStatus, purchaseInFlight: kotlin.Boolean, onRetry: kotlin.Function0<kotlin.Unit>, onPurchase: kotlin.Function1<com.finnvek.knittools.billing.SelectedOneTimeOffer, kotlin.Unit>, purchaseMessage: kotlin.Int?): kotlin.Unit
   skippable: true
   restartable: true
   params:
@@ -936,7 +936,7 @@ public fun com.finnvek.knittools.ui.components.SelectionActionBar(visible: kotli
     - actions: RUNTIME (requires runtime check)
 
 @Composable
-public fun com.finnvek.knittools.ui.components.SessionItem(startedAt: kotlin.Long, durationMinutes: kotlin.Int, startRow: kotlin.Int, endRow: kotlin.Int, modifier: androidx.compose.ui.Modifier, onDelete: kotlin.Function0<kotlin.Unit>?): kotlin.Unit
+public fun com.finnvek.knittools.ui.components.SessionItem(startedAt: kotlin.Long, durationMinutes: kotlin.Int, startRow: kotlin.Int, endRow: kotlin.Int, modifier: androidx.compose.ui.Modifier, onDelete: kotlin.Function0<kotlin.Unit>?, zoneId: kotlin.String?): kotlin.Unit
   skippable: true
   restartable: true
   params:
@@ -946,6 +946,7 @@ public fun com.finnvek.knittools.ui.components.SessionItem(startedAt: kotlin.Lon
     - endRow: STABLE (primitive type)
     - modifier: STABLE (marked @Stable or @Immutable)
     - onDelete: STABLE (function type)
+    - zoneId: STABLE (class with no mutable properties)
 
 @Composable
 internal fun com.finnvek.knittools.ui.components.SheetContentColumn(modifier: androidx.compose.ui.Modifier, content: @[Composable] @[ExtensionFunctionType] androidx.compose.runtime.internal.ComposableFunction1<androidx.compose.foundation.layout.ColumnScope, kotlin.Unit>): kotlin.Unit
@@ -1288,12 +1289,13 @@ internal fun com.finnvek.knittools.ui.components.rememberLaunchEndDateFormat(): 
   params:
 
 @Composable
-internal fun com.finnvek.knittools.ui.components.rememberLocaleDateFormat(dateSkeleton: kotlin.String, includeTime: kotlin.Boolean): java.text.SimpleDateFormat
+internal fun com.finnvek.knittools.ui.components.rememberLocaleDateFormat(dateSkeleton: kotlin.String, includeTime: kotlin.Boolean, eventZoneId: kotlin.String?): java.text.SimpleDateFormat
   skippable: false
   restartable: false
   params:
     - dateSkeleton: STABLE (String is immutable)
     - includeTime: STABLE (primitive type)
+    - eventZoneId: STABLE (class with no mutable properties)
 
 @Composable
 public fun com.finnvek.knittools.ui.components.rememberScrollTitleState(): com.finnvek.knittools.ui.components.ScrollTitleState
@@ -1563,11 +1565,11 @@ public fun com.finnvek.knittools.ui.screens.abbreviations.AbbreviationsScreen(cr
     - onBack: STABLE (function type)
 
 @Composable
-internal fun com.finnvek.knittools.ui.screens.backup.BackupContent(state: com.finnvek.knittools.ui.screens.backup.BackupUiState, onBack: kotlin.Function0<kotlin.Unit>, onExport: kotlin.Function0<kotlin.Unit>, onSelectRestore: kotlin.Function0<kotlin.Unit>, onConfirm: kotlin.Function0<kotlin.Unit>, onCancel: kotlin.Function0<kotlin.Unit>, onRestored: kotlin.Function0<kotlin.Unit>): kotlin.Unit
+internal fun com.finnvek.knittools.ui.screens.backup.BackupContent(state: com.finnvek.knittools.ui.screens.backup.BackupUiState, onBack: kotlin.Function0<kotlin.Unit>, onExport: kotlin.Function0<kotlin.Unit>, onSelectRestore: kotlin.Function0<kotlin.Unit>, onConfirm: kotlin.Function1<java.util.UUID, kotlin.Unit>, onCancel: kotlin.Function0<kotlin.Unit>, onRestored: kotlin.Function0<kotlin.Unit>): kotlin.Unit
   skippable: true
   restartable: true
   params:
-    - state: STABLE (class with no mutable properties)
+    - state: STABLE (marked @Stable or @Immutable)
     - onBack: STABLE (function type)
     - onExport: STABLE (function type)
     - onSelectRestore: STABLE (function type)
@@ -2551,7 +2553,7 @@ internal fun com.finnvek.knittools.ui.screens.counter.counterMainNumberStyle(fon
     - fontSize: STABLE (marked @Stable or @Immutable)
 
 @Composable
-private fun com.finnvek.knittools.ui.screens.counter.counterTargetStatusText(status: com.finnvek.knittools.ui.components.MainCounterTargetStatus): kotlin.String
+internal fun com.finnvek.knittools.ui.screens.counter.counterTargetStatusText(status: com.finnvek.knittools.ui.components.MainCounterTargetStatus): kotlin.String
   skippable: false
   restartable: false
   params:
@@ -2617,12 +2619,13 @@ private fun com.finnvek.knittools.ui.screens.counter.rememberProjectCountersSect
     - onShowAddCounter: STABLE (function type)
 
 @Composable
-private fun com.finnvek.knittools.ui.screens.counter.stackedCounterHeroHeight(state: com.finnvek.knittools.ui.screens.counter.CounterHeroState, metrics: com.finnvek.knittools.ui.screens.counter.CounterHeroMetrics, compactSpacing: kotlin.Boolean): androidx.compose.ui.unit.Dp
+private fun com.finnvek.knittools.ui.screens.counter.stackedCounterHeroHeight(state: com.finnvek.knittools.ui.screens.counter.CounterHeroState, metrics: com.finnvek.knittools.ui.screens.counter.CounterHeroMetrics, contentWidth: androidx.compose.ui.unit.Dp, compactSpacing: kotlin.Boolean): androidx.compose.ui.unit.Dp
   skippable: false
   restartable: false
   params:
     - state: STABLE (class with no mutable properties)
     - metrics: STABLE (marked @Stable or @Immutable)
+    - contentWidth: STABLE (marked @Stable or @Immutable)
     - compactSpacing: STABLE (primitive type)
 
 @Composable
@@ -3966,7 +3969,7 @@ public fun com.finnvek.knittools.ui.screens.onboarding.OnboardingPreview.Purchas
     - onContinue: STABLE (function type)
 
 @Composable
-public fun com.finnvek.knittools.ui.screens.onboarding.OnboardingRoute(viewModel: com.finnvek.knittools.ui.screens.onboarding.OnboardingViewModel, onPurchase: kotlin.Function1<android.app.Activity, kotlin.Unit>, onStartupReady: kotlin.Function1<kotlin.Boolean, kotlin.Unit>): kotlin.Unit
+public fun com.finnvek.knittools.ui.screens.onboarding.OnboardingRoute(viewModel: com.finnvek.knittools.ui.screens.onboarding.OnboardingViewModel, onPurchase: kotlin.Function2<android.app.Activity, com.finnvek.knittools.billing.SelectedOneTimeOffer, kotlin.Unit>, onStartupReady: kotlin.Function1<kotlin.Boolean, kotlin.Unit>): kotlin.Unit
   skippable: true
   restartable: true
   params:
@@ -4613,12 +4616,13 @@ private fun com.finnvek.knittools.ui.screens.pro.ProIntroduction(personalLine: k
     - personalLine: STABLE (class with no mutable properties)
 
 @Composable
-private fun com.finnvek.knittools.ui.screens.pro.ProPurchaseSection(proState: com.finnvek.knittools.pro.ProState, proStateReady: kotlin.Boolean, purchaseQueryFailed: kotlin.Boolean, offer: com.finnvek.knittools.billing.SelectedOneTimeOffer?, productStatusProvider: @[Composable] androidx.compose.runtime.internal.ComposableFunction0<com.finnvek.knittools.billing.BillingProductStatus>, purchaseFlowInFlight: kotlin.Boolean, isRestoring: kotlin.Boolean, isStartingTrial: kotlin.Boolean, onPurchase: kotlin.Function0<kotlin.Unit>, onRestore: kotlin.Function0<kotlin.Unit>, onRetry: kotlin.Function0<kotlin.Unit>, onStartTrial: kotlin.Function0<kotlin.Unit>): kotlin.Unit
+private fun com.finnvek.knittools.ui.screens.pro.ProPurchaseSection(proState: com.finnvek.knittools.pro.ProState, proStateReady: kotlin.Boolean, controlsReady: kotlin.Boolean, purchaseQueryFailed: kotlin.Boolean, offer: com.finnvek.knittools.billing.SelectedOneTimeOffer?, productStatusProvider: @[Composable] androidx.compose.runtime.internal.ComposableFunction0<com.finnvek.knittools.billing.BillingProductStatus>, purchaseFlowInFlight: kotlin.Boolean, isRestoring: kotlin.Boolean, isStartingTrial: kotlin.Boolean, onPurchase: kotlin.Function1<com.finnvek.knittools.billing.SelectedOneTimeOffer, kotlin.Unit>, onRestore: kotlin.Function0<kotlin.Unit>, onRetry: kotlin.Function0<kotlin.Unit>, onStartTrial: kotlin.Function0<kotlin.Unit>): kotlin.Unit
   skippable: true
   restartable: true
   params:
     - proState: STABLE (marked @Stable or @Immutable)
     - proStateReady: STABLE (primitive type)
+    - controlsReady: STABLE (primitive type)
     - purchaseQueryFailed: STABLE (primitive type)
     - offer: STABLE (class with no mutable properties)
     - productStatusProvider: STABLE (composable function type)
@@ -4653,7 +4657,7 @@ private fun com.finnvek.knittools.ui.screens.pro.ProStatusPill(proState: com.fin
     - proState: STABLE (marked @Stable or @Immutable)
 
 @Composable
-public fun com.finnvek.knittools.ui.screens.pro.ProUpgradeScreen(onBack: kotlin.Function0<kotlin.Unit>, onPurchase: kotlin.Function1<android.app.Activity, kotlin.Unit>, viewModelProvider: @[Composable] androidx.compose.runtime.internal.ComposableFunction0<com.finnvek.knittools.ui.screens.pro.ProUpgradeViewModel>, onStartupReady: kotlin.Function1<kotlin.Boolean, kotlin.Unit>, personalLine: kotlin.String?, journeySteps: kotlin.collections.List<com.finnvek.knittools.pro.TrialJourneyStep>, onJourneyAction: kotlin.Function1<com.finnvek.knittools.pro.TrialJourneyAction, kotlin.Unit>): kotlin.Unit
+public fun com.finnvek.knittools.ui.screens.pro.ProUpgradeScreen(onBack: kotlin.Function0<kotlin.Unit>, onPurchase: kotlin.Function2<android.app.Activity, com.finnvek.knittools.billing.SelectedOneTimeOffer, kotlin.Unit>, viewModelProvider: @[Composable] androidx.compose.runtime.internal.ComposableFunction0<com.finnvek.knittools.ui.screens.pro.ProUpgradeViewModel>, onStartupReady: kotlin.Function1<kotlin.Boolean, kotlin.Unit>, personalLine: kotlin.String?, journeySteps: kotlin.collections.List<com.finnvek.knittools.pro.TrialJourneyStep>, onJourneyAction: kotlin.Function1<com.finnvek.knittools.pro.TrialJourneyAction, kotlin.Unit>): kotlin.Unit
   skippable: true
   restartable: true
   params:
@@ -4954,13 +4958,14 @@ public fun com.finnvek.knittools.ui.screens.project.ProjectFoldersSheet(folders:
     - focusCreateFolder: STABLE (primitive type)
 
 @Composable
-private fun com.finnvek.knittools.ui.screens.project.ProjectListContent(state: com.finnvek.knittools.ui.screens.project.ProjectListContentState, actions: com.finnvek.knittools.ui.screens.project.ProjectListContentActions, tipContext: com.finnvek.knittools.domain.tips.TipContext): kotlin.Unit
+private fun com.finnvek.knittools.ui.screens.project.ProjectListContent(state: com.finnvek.knittools.ui.screens.project.ProjectListContentState, actions: com.finnvek.knittools.ui.screens.project.ProjectListContentActions, tipContext: com.finnvek.knittools.domain.tips.TipContext, showFloatingCreateButton: kotlin.Boolean): kotlin.Unit
   skippable: true
   restartable: true
   params:
     - state: STABLE (marked @Stable or @Immutable)
     - actions: STABLE (class with no mutable properties)
     - tipContext: RUNTIME (requires runtime check)
+    - showFloatingCreateButton: STABLE (primitive type)
 
 @Composable
 private fun com.finnvek.knittools.ui.screens.project.ProjectListDialogs(state: com.finnvek.knittools.ui.screens.project.ProjectListDialogState, actions: com.finnvek.knittools.ui.screens.project.ProjectListDialogActions): kotlin.Unit

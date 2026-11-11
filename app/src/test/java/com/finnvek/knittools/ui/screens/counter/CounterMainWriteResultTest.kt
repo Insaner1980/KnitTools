@@ -8,7 +8,6 @@ import com.finnvek.knittools.domain.model.MainCounterChange
 import com.finnvek.knittools.repository.RecoveryResolutionResult
 import com.finnvek.knittools.repository.StopSessionResult
 import com.finnvek.knittools.widget.CounterWidgetState
-import com.finnvek.knittools.widget.WidgetData
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -307,8 +306,7 @@ class CounterMainWriteResultTest : CounterViewModelFixture() {
     @Test
     fun `rejected count restores authoritative row instead of publishing optimistic value`() =
         runTest {
-            val published = mutableListOf<WidgetData>()
-            coEvery { CounterWidgetState.syncAll(any(), capture(published)) } returns Unit
+            val published = captureWidgetUpdates()
             coEvery { repository.applyMainCounterChangeWithResult(7L, MainCounterChange.Increment) } returns null
             coEvery { repository.getProject(7L) } returns observedProject.value
             val viewModel = viewModel()
@@ -335,8 +333,7 @@ class CounterMainWriteResultTest : CounterViewModelFixture() {
     @Test
     fun `successful count publishes the committed count after a competing writer`() =
         runTest {
-            val published = mutableListOf<WidgetData>()
-            coEvery { CounterWidgetState.syncAll(any(), capture(published)) } returns Unit
+            val published = captureWidgetUpdates()
             coEvery { repository.applyMainCounterChangeWithResult(7L, MainCounterChange.Increment) } returns
                 CommittedMainCounterChange(0, 1, null, MainCounterChange.Increment)
             coEvery { repository.getProject(7L) } returns observedProject.value.copy(count = 6)
@@ -373,8 +370,7 @@ class CounterMainWriteResultTest : CounterViewModelFixture() {
     fun `late count completion cannot replace newly selected project widget`() =
         runTest {
             val result = pendingIncrement(count = 1)
-            val published = mutableListOf<WidgetData>()
-            coEvery { CounterWidgetState.syncAll(any(), capture(published)) } returns Unit
+            val published = captureWidgetUpdates()
             val other = CounterProject(id = 8L, name = "Other", count = 10)
             every { repository.observeProject(8L) } returns flowOf(other)
             val viewModel = viewModel()

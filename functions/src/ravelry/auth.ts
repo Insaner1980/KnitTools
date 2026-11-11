@@ -81,12 +81,12 @@ export const ravelryCompleteAuth = onCall(async (request) => {
   try {
     const uid = requireUid(request.auth);
     const { rateLimiter, tokenStore } = stores();
-    await rateLimiter.consumeUid(uid, "auth");
     return await completeRavelryOAuth({
       uid,
       state: callableString(request.data, "state"),
       completionProof: callableString(request.data, "proof"),
       tokenStore,
+      rateLimiter,
     });
   } catch (error) {
     throw httpsErrorFor(error);

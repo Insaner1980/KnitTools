@@ -77,9 +77,10 @@ class BillingManager
         private var productQueryGeneration = 0L
         private var productQueryJob: Job? = null
         private var offerExpiryJob: Job? = null
+        private var alreadyOwnedRecoveryJob: Job? = null
         private var priceNeedsReview = false
         private val acknowledgementsInFlight = mutableSetOf<String>()
-        private val acknowledgedPurchaseTokens = mutableSetOf<String>()
+        private val finishedAcknowledgementTokens = mutableSetOf<String>()
         private val pendingAcknowledgementRetries = mutableSetOf<String>()
         private val acknowledgementRetryCounts = mutableMapOf<String, Int>()
         private var connectionAttempt = 0
@@ -125,6 +126,7 @@ class BillingManager
                             if (scheduleConnectionRetry()) {
                                 return
                             }
+                            connectionAttempt = 0
                             _purchaseQueryFailed.value = !_purchaseStateReady.value
                             applyProductUnavailable(result.toUserMessage())
                         }
@@ -150,8 +152,11 @@ class BillingManager
             return true
         }
 
-        fun launchPurchaseFlow(activity: Activity) {
-            if (_purchaseFlowInFlight.value) return
+        fun launchPurchaseFlow(
+            activity: Activity,
+            displayedOffer: SelectedOneTimeOffer?,
+        ) {
+            if (_purchaseFlowInFlight.value || alreadyOwnedRecoveryJob?.isActive == true) return
             if (_purchasePending.value) {
                 emitPurchaseMessage(BillingUserMessage.PURCHASE_PENDING)
                 return
@@ -162,18 +167,18 @@ class BillingManager
             }
             val launch = _selectedOffer.value?.launchDetails
             val now = System.currentTimeMillis()
-            if (launch != null && (now < launch.startsAtMillis || now >= launch.endsAtMillis)) {
+            if (launch.isOutsideWindow(now)) {
                 resetProductDetails()
                 priceNeedsReview = true
                 retryProductDetails()
             }
-            if (priceNeedsReview) {
+            val offer = _selectedOffer.value
+            if (priceNeedsReview || (offer != null && offer != displayedOffer)) {
                 priceNeedsReview = false
                 emitPurchaseMessage(BillingUserMessage.PRICE_CHANGED_REVIEW)
                 return
             }
             val details = _productDetails.value
-            val offer = _selectedOffer.value
             if (details == null || offer == null) {
                 emitPurchaseMessage(productUnavailableMessage())
                 return
@@ -274,7 +279,7 @@ class BillingManager
                 }
 
                 BillingClient.BillingResponseCode.ITEM_ALREADY_OWNED -> {
-                    scope.launch { restoreAlreadyOwnedPurchase() }
+                    restoreAlreadyOwnedPurchase()
                 }
 
                 else -> {
@@ -288,13 +293,14 @@ class BillingManager
             resetProductDetails()
             priceNeedsReview = false
             scope.coroutineContext.cancelChildren()
+            alreadyOwnedRecoveryJob = null
             connectionRetryJob?.cancel()
             connectionRetryJob = null
             val client = billingClient
             billingClient = null
             client?.endConnection()
             acknowledgementsInFlight.clear()
-            acknowledgedPurchaseTokens.clear()
+            finishedAcknowledgementTokens.clear()
             pendingAcknowledgementRetries.clear()
             acknowledgementRetryCounts.clear()
             _purchaseStateReady.value = false
@@ -307,8 +313,7 @@ class BillingManager
         private suspend fun awaitInitialBillingConnection(): Boolean {
             val client = billingClient ?: return false
             if (client.isReady || _purchaseStateReady.value) return true
-            if (_purchaseQueryFailed.value) {
-                connectionAttempt = 0
+            if (_purchaseQueryFailed.value && connectionAttempt == 0) {
                 startBillingConnection()
             }
             val connected =
@@ -319,18 +324,16 @@ class BillingManager
             return connected && billingClient === client
         }
 
-        private suspend fun restoreAlreadyOwnedPurchase() {
-            when (val result = queryPurchasesInternal()) {
-                is PurchaseQueryResult.Success -> {
-                    if (result.proPurchases.isEmpty()) {
+        private fun restoreAlreadyOwnedPurchase() {
+            if (alreadyOwnedRecoveryJob?.isActive == true) return
+            alreadyOwnedRecoveryJob =
+                scope.launch(start = CoroutineStart.LAZY) {
+                    val result = queryPurchasesInternal()
+                    if (result !is PurchaseQueryResult.Success || result.proPurchases.isEmpty()) {
                         emitPurchaseMessage(BillingUserMessage.ALREADY_OWNED_RESTORE_FAILED)
                     }
                 }
-
-                PurchaseQueryResult.Failure -> {
-                    emitPurchaseMessage(BillingUserMessage.ALREADY_OWNED_RESTORE_FAILED)
-                }
-            }
+            alreadyOwnedRecoveryJob?.start()
         }
 
         @Suppress("TooGenericExceptionCaught")
@@ -412,7 +415,10 @@ class BillingManager
                 return
             }
 
-            val details = result.productDetailsList?.firstOrNull()
+            val details =
+                result.productDetailsList?.firstOrNull {
+                    it.productId == PRODUCT_ID && it.productType == BillingClient.ProductType.INAPP
+                }
             val selectedOffer = details?.let { selectOneTimePurchaseOffer(it) }
             if (details == null || selectedOffer == null) {
                 applyProductUnavailable(BillingUserMessage.PURCHASE_UNAVAILABLE)
@@ -470,7 +476,7 @@ class BillingManager
                         if (billingClient !== client) return@launch
                         acknowledgementsInFlight.remove(purchaseToken)
                         if (result.responseCode == BillingClient.BillingResponseCode.OK) {
-                            acknowledgedPurchaseTokens.add(purchaseToken)
+                            finishedAcknowledgementTokens.add(purchaseToken)
                             pendingAcknowledgementRetries.remove(purchaseToken)
                             acknowledgementRetryCounts.remove(purchaseToken)
                         } else if (shouldRetryAcknowledgement(result.responseCode)) {
@@ -492,7 +498,7 @@ class BillingManager
 
         private fun canBeginAcknowledgement(purchaseToken: String): Boolean =
             purchaseToken.isNotBlank() &&
-                purchaseToken !in acknowledgedPurchaseTokens &&
+                purchaseToken !in finishedAcknowledgementTokens &&
                 purchaseToken !in pendingAcknowledgementRetries &&
                 acknowledgementsInFlight.add(purchaseToken)
 
@@ -501,6 +507,8 @@ class BillingManager
             val retryCount = (acknowledgementRetryCounts[purchaseToken] ?: 0) + 1
             if (retryCount > ACKNOWLEDGEMENT_MAX_RETRIES) {
                 pendingAcknowledgementRetries.remove(purchaseToken)
+                finishedAcknowledgementTokens.add(purchaseToken)
+                acknowledgementRetryCounts.remove(purchaseToken)
                 return
             }
             acknowledgementRetryCounts[purchaseToken] = retryCount
@@ -522,7 +530,7 @@ class BillingManager
             if (result.responseCode == BillingClient.BillingResponseCode.OK) return
             _purchaseFlowInFlight.value = false
             if (result.responseCode == BillingClient.BillingResponseCode.ITEM_ALREADY_OWNED) {
-                scope.launch { restoreAlreadyOwnedPurchase() }
+                restoreAlreadyOwnedPurchase()
             } else {
                 emitPurchaseMessage(result.toUserMessage())
             }
@@ -625,6 +633,9 @@ data class LaunchOfferDetails(
     val fullPriceMicros: Long?,
 )
 
+private fun LaunchOfferDetails?.isOutsideWindow(nowMillis: Long): Boolean =
+    this != null && (nowMillis < startsAtMillis || nowMillis >= endsAtMillis)
+
 internal fun selectOneTimePurchaseOffer(
     productDetails: ProductDetails,
     nowMillis: Long = System.currentTimeMillis(),
@@ -662,7 +673,8 @@ private fun ProductDetails.OneTimePurchaseOfferDetails.launchDetails(nowMillis: 
     if (offerId != "launch" || offerToken.isNullOrBlank()) return null
     val start = validTimeWindow?.startTimeMillis ?: return null
     val end = validTimeWindow?.endTimeMillis ?: return null
-    if (start >= end || nowMillis < start || nowMillis >= end) return null
+    if (start <= 0L || end == Long.MAX_VALUE || start >= end) return null
+    if (nowMillis < start || nowMillis >= end) return null
     return LaunchOfferDetails(start, end, fullPriceMicros?.takeIf { it > priceAmountMicros })
 }
 

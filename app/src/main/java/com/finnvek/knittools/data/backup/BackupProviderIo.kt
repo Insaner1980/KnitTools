@@ -324,6 +324,7 @@ internal class ProviderDeadline(
     private val scheduler: ScheduledExecutorService,
     private val descriptorCloser: ExecutorService,
     private val onFinished: () -> Unit,
+    private val nanoTime: () -> Long = System::nanoTime,
     private val onOpenTimeout: (Throwable) -> Unit,
 ) {
     private val timeoutNanos = TimeUnit.MILLISECONDS.toNanos(timeoutMillis)
@@ -389,10 +390,15 @@ internal class ProviderDeadline(
     @Synchronized
     private fun arm(resetDeadline: Boolean) {
         throwIfStopped()
-        if (resetDeadline || deadlineNanos == 0L) deadlineNanos = System.nanoTime() + timeoutNanos
+        val now = nanoTime()
+        if (resetDeadline || deadlineNanos == 0L) deadlineNanos = now + timeoutNanos
         scheduled?.cancel(false)
-        val delay = (deadlineNanos - System.nanoTime()).coerceAtLeast(0L)
         val generation = ++deadlineGeneration
+        val delay = deadlineNanos - now
+        if (delay <= 0L) {
+            expire(generation)
+            throwIfStopped()
+        }
         scheduled = scheduler.schedule({ expire(generation) }, delay, TimeUnit.NANOSECONDS)
     }
 

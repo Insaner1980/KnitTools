@@ -87,4 +87,24 @@ class CounterRepositoryNotesMergeTest {
 
         assertEquals("Local edit\n\n---\n\nExternal edit", result)
     }
+
+    @Test
+    fun `retrying a concurrent append does not duplicate its suffix`() {
+        val committedNotes =
+            mergeProjectNotes(
+                baseNotes = "Base",
+                requestedNotes = "Base\nLocal addition",
+                currentNotes = "Base\nExternal addition",
+            )
+        assertEquals("Base\nExternal addition\nLocal addition", committedNotes)
+
+        val retriedNotes =
+            mergeProjectNotes(
+                baseNotes = "Base",
+                requestedNotes = "Base\nLocal addition",
+                currentNotes = committedNotes,
+            )
+
+        assertEquals("Base\nExternal addition\nLocal addition", retriedNotes)
+    }
 }

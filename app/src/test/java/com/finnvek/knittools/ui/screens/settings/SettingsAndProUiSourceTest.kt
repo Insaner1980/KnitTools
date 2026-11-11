@@ -46,6 +46,18 @@ class SettingsAndProUiSourceTest {
         assertTrue(upgrade.contains("enabled = !isRestoring"))
     }
 
+    @Test
+    fun `billing failure leaves the local trial action available once controls load`() {
+        val upgrade = ProjectSourceFiles.read(PRO_UPGRADE_SCREEN)
+        val initialSection = upgrade.substringAfter("if (!proStateReady)").substringBefore("return@Column")
+        val trialCondition = "if ((proStateReady || controlsReady) && proState.status == ProStatus.TRIAL_NOT_STARTED)"
+        val trialSection = upgrade.substringAfter(trialCondition, "")
+
+        assertTrue(initialSection.contains("if (purchaseQueryFailed)"))
+        assertTrue(upgrade.contains("controlsReady = controlsReady"))
+        assertTrue(trialSection.contains("OutlinedButton(onClick = onStartTrial"))
+    }
+
     private companion object {
         const val SETTINGS_SCREEN =
             "app/src/main/java/com/finnvek/knittools/ui/screens/settings/SettingsScreen.kt"

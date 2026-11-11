@@ -11,7 +11,7 @@ KnitTools is an Android workspace for knitting and crochet, built with Kotlin, J
 - PDF Open/Share import and ordered camera/gallery photo-to-PDF creation.
 - Progress photos, My Yarn, project yarn notes, and independent planned/allocated/used yarn amounts.
 - Local measurements/gauge, cast-on, increase/decrease and yarn calculators, plus needle/size/abbreviation/chart-symbol references.
-- Home-screen widgets, 11 app languages, light/dark/system theme selection, and manual backup/replacement restore.
+- Home-screen widgets, 12 selectable locale options across 11 languages (including both Portuguese variants), light/dark/system theme selection, and manual backup/replacement restore.
 
 The five main tabs are Projects, Library, Tools, Insights, and Settings. A user-started 14-day trial and the one-time Play product `knittools_pro` unlock Pro features. Free use allows one active project; completed projects and existing content are retained. New Library yarn-card creation requires Pro, with no numeric free-card allowance. Detailed gates and continued-access rules are in [PROJECT.md](PROJECT.md#pro-trial-and-billing).
 
@@ -40,7 +40,7 @@ Package entries are under `app/src/main/java/com/finnvek/knittools`. The applica
 
 ## Build And Test
 
-Use the checked-in wrapper with **JDK 17 (Eclipse Temurin)** and the configured Android SDK. Current configuration uses Gradle 9.8.0, compile/target SDK 37, minimum SDK 29, and Room schema 25. The version catalog and Gradle files are authoritative.
+Use the checked-in wrapper with **JDK 17 (Eclipse Temurin)** and the configured Android SDK. Current configuration uses Gradle 9.8.1, compile/target SDK 37, minimum SDK 29, and Room schema 28. The version catalog and Gradle files are authoritative.
 
 From Windows PowerShell:
 

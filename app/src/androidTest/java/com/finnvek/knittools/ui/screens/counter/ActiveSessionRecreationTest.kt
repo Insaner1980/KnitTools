@@ -21,6 +21,7 @@ import com.finnvek.knittools.R
 import com.finnvek.knittools.data.datastore.AppLanguage
 import com.finnvek.knittools.data.local.ActiveSessionEntity
 import com.finnvek.knittools.data.local.CounterProjectEntity
+import com.finnvek.knittools.repository.deleteTestActiveSession
 import com.finnvek.knittools.ui.TestContentSplashRule
 import com.finnvek.knittools.widget.WidgetEntryPoint
 import dagger.hilt.android.EntryPointAccessors
@@ -77,9 +78,7 @@ class ActiveSessionRecreationTest {
         } finally {
             if (projectId > 0L) {
                 runBlocking(Dispatchers.IO) {
-                    database.sessionDao().getActiveSession()?.takeIf { it.projectId == projectId }?.let {
-                        database.sessionDao().deleteActiveSession(it.sessionToken)
-                    }
+                    database.deleteTestActiveSession(projectId)
                     EntryPointAccessors
                         .fromApplication(app, WidgetEntryPoint::class.java)
                         .counterRepository()

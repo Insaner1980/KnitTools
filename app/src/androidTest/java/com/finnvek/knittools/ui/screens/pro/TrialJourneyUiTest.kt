@@ -150,7 +150,7 @@ class TrialJourneyUiTest {
             KnitToolsTheme(isDarkTheme = dark.value) {
                 ProUpgradeScreen(
                     onBack = {},
-                    onPurchase = {},
+                    onPurchase = { _, _ -> },
                     viewModelProvider = { viewModel },
                     personalLine = "You have 3 projects in progress.",
                     journeySteps = steps.value,

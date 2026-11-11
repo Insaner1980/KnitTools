@@ -56,7 +56,7 @@ abstract class PatternAnnotationDao {
                 updatedAt =
                     maxOf(
                         System.currentTimeMillis(),
-                        current.updatedAt + 1,
+                        Math.addExact(current.updatedAt, 1L),
                     ),
             )
         update(updated)
@@ -172,6 +172,7 @@ abstract class PatternAnnotationDao {
 
     @Transaction
     open suspend fun insert(annotation: PatternAnnotationEntity): Long {
+        requireEditableLayer(annotation.layerId)
         val id = insertUnchecked(annotation)
         getPageBounded(annotation.layerId, annotation.page)
         return id
@@ -179,12 +180,14 @@ abstract class PatternAnnotationDao {
 
     @Transaction
     open suspend fun update(annotation: PatternAnnotationEntity) {
+        requireEditableLayer(annotation.layerId)
         updateUnchecked(annotation)
         getPageBounded(annotation.layerId, annotation.page)
     }
 
     @Transaction
     open suspend fun restoreBatch(annotations: List<PatternAnnotationEntity>) {
+        annotations.map { it.layerId }.distinct().forEach { requireEditableLayer(it) }
         restoreUnchecked(annotations)
         // Tarkistetaan REPLACE-erän lopputila myös toistuvilla ID-arvoilla ja sivun tai tason vaihtuessa.
         annotations.map { it.layerId to it.page }.distinct().forEach { (layerId, page) ->
@@ -193,13 +196,37 @@ abstract class PatternAnnotationDao {
     }
 
     @Query("DELETE FROM pattern_annotations WHERE layerId = :layerId AND page = :page")
-    abstract suspend fun deleteForPage(
+    protected abstract suspend fun deleteForPageUnchecked(
         layerId: Long,
         page: Int,
     )
 
     @Query("DELETE FROM pattern_annotations WHERE id = :id")
-    abstract suspend fun deleteById(id: Long)
+    protected abstract suspend fun deleteByIdUnchecked(id: Long)
+
+    @Query("SELECT layerId FROM pattern_annotations WHERE id = :id")
+    protected abstract suspend fun getAnnotationLayerId(id: Long): Long?
+
+    @Transaction
+    open suspend fun deleteForPage(
+        layerId: Long,
+        page: Int,
+    ) {
+        requireEditableLayer(layerId)
+        deleteForPageUnchecked(layerId, page)
+    }
+
+    @Transaction
+    open suspend fun deleteById(id: Long) {
+        val layerId = getAnnotationLayerId(id) ?: return
+        requireEditableLayer(layerId)
+        deleteByIdUnchecked(id)
+    }
+
+    private suspend fun requireEditableLayer(layerId: Long) {
+        val layer = checkNotNull(getTextEditLayer(layerId)) { "Annotation layer no longer exists" }
+        check(layer.projectId == null || layer.isActive) { "Annotation layer is not editable" }
+    }
 
     private fun validatePages(annotations: List<PatternAnnotationEntity>) {
         val budgets = mutableMapOf<Pair<Long, Int>, PatternAnnotationPageBudget>()

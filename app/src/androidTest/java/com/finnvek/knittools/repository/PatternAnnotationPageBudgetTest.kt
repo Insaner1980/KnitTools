@@ -107,6 +107,7 @@ class PatternAnnotationPageBudgetTest {
             val otherLayer = layers.activateProjectLayer(1L, "other").id
             val other = shape(400L).copy(layerId = otherLayer)
             repository.insertAnnotation(other)
+            layers.activateProjectLayer(1L, "document")
             rejected { dao.update(other.copy(layerId = layerId).toEntity()) }
             assertEquals(1, repository.observePage(otherLayer, 0).first().size)
         }
@@ -183,6 +184,32 @@ class PatternAnnotationPageBudgetTest {
             assertEquals(before, repository.observePage(layerId, 0).first())
             redo.apply(repository)
             assertEquals(after, repository.observePage(layerId, 0).first())
+        }
+
+    @Test fun detachedLayerRejectsDelayedWritesUntilReattached() =
+        runBlocking {
+            val original = shape(1L)
+            repository.insertAnnotation(original)
+            layers.deactivateProjectLayers(1L)
+            val writes: List<suspend () -> Unit> =
+                listOf(
+                    { repository.insertAnnotation(shape(2L)) },
+                    { repository.updateAnnotation(original.copy(zIndex = 2L)) },
+                    { repository.restoreBatch(listOf(original.copy(zIndex = 2L))) },
+                    { repository.clearPage(layerId, 0) },
+                    { repository.deleteAnnotation(original.id) },
+                )
+            writes.forEachIndexed { index, write ->
+                assertTrue(
+                    "Detached write $index must fail",
+                    runCatching { write() }.exceptionOrNull() is IllegalStateException,
+                )
+                assertEquals(listOf(original), repository.getForLayers(listOf(layerId)))
+            }
+            assertEquals(layerId, layers.activateProjectLayer(1L, "document").id)
+            val updated = original.copy(zIndex = 2L)
+            repository.updateAnnotation(updated)
+            assertEquals(listOf(updated), repository.getForLayers(listOf(layerId)))
         }
 
     private fun shape(id: Long) =

@@ -3,16 +3,76 @@ package com.finnvek.knittools.repository
 import com.finnvek.knittools.data.local.toEntity
 import com.finnvek.knittools.data.storage.PATTERN_PDF_EXPORT_MAX_ANNOTATIONS
 import com.finnvek.knittools.data.storage.PATTERN_PDF_EXPORT_MAX_ANNOTATION_PAYLOAD_BYTES
+import com.finnvek.knittools.domain.model.NormalizedPatternBounds
 import com.finnvek.knittools.domain.model.NormalizedPatternPoint
 import com.finnvek.knittools.domain.model.PatternAnnotation
 import com.finnvek.knittools.domain.model.PatternAnnotationKind
+import com.finnvek.knittools.domain.model.PatternAnnotationOwner
 import com.finnvek.knittools.domain.model.ShapePayload
+import com.finnvek.knittools.domain.model.TextBoxPayload
+import io.mockk.coVerify
+import io.mockk.spyk
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class PatternAnnotationRepositoryTest {
+    @Test
+    fun `text update advances stored timestamp or rejects overflow before writing`() =
+        runTest {
+            val owner = PatternAnnotationOwner.Project(7L, "project-document")
+            for (timestamp in listOf(0L, Long.MAX_VALUE - 1L, Long.MAX_VALUE)) {
+                val original =
+                    annotation(id = 77L, layerId = 100L, zIndex = 0L).copy(
+                        kind = PatternAnnotationKind.TEXT_BOX,
+                        payload = TextBoxPayload(NormalizedPatternBounds(0.1f, 0.1f, 0.9f, 0.9f), "Before", 18f, 1),
+                        updatedAt = timestamp,
+                    )
+                val dao = spyk(FakePatternAnnotationDao(listOf(original.toEntity())))
+                val repository = PatternAnnotationRepository(dao)
+
+                val result = runCatching { repository.updateText(owner, original, "After") }
+
+                if (timestamp == Long.MAX_VALUE) {
+                    assertTrue(result.exceptionOrNull() is ArithmeticException)
+                    coVerify(exactly = 0) { dao.update(any()) }
+                } else {
+                    val updated = result.getOrThrow()
+                    assertTrue(updated.updatedAt > timestamp)
+                    assertEquals("After", (updated.payload as TextBoxPayload).text)
+                    assertEquals(original.copy(payload = updated.payload, updatedAt = updated.updatedAt), updated)
+                    coVerify(exactly = 1) { dao.update(any()) }
+                }
+            }
+        }
+
+    @Test
+    fun `detached project layer rejects delayed annotation writes and reattach permits writing`() =
+        runTest {
+            val dao = FakePatternAnnotationDao()
+            val repository = PatternAnnotationRepository(dao)
+            val original = annotation(id = 77L, layerId = 100L, zIndex = 0L)
+            repository.insertAnnotation(original)
+            dao.layerIsActive = false
+
+            val writes: List<suspend () -> Unit> =
+                listOf(
+                    { repository.insertAnnotation(original.copy(id = 0L)) },
+                    { repository.updateAnnotation(original) },
+                    { repository.restoreBatch(listOf(original)) },
+                    { repository.clearPage(original.layerId, original.page) },
+                    { repository.deleteAnnotation(original.id) },
+                )
+            writes.forEachIndexed { index, write ->
+                val failure = runCatching { write() }.exceptionOrNull()
+                assertTrue("Detached write $index must be rejected", failure is IllegalStateException)
+            }
+
+            dao.layerIsActive = true
+            assertEquals(77L, repository.insertAnnotation(original.copy(id = 0L)))
+        }
+
     @Test
     fun `export annotations preserve requested layer order`() =
         runTest {

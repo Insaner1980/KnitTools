@@ -59,6 +59,7 @@ class PatternImageImportOwnershipTest {
         Dispatchers.setMain(dispatcher)
         every { proManager.initialStateReady } returns MutableStateFlow(false)
         every { storage.hasCreationSpace(any(), any()) } returns true
+        every { storage.restoreStagedSelection(any(), any(), any(), any()) } answers { arg(3) }
         coEvery { storage.stageSelectedImages(any(), any(), any(), any(), any()) } coAnswers {
             val owner = arg<Long>(1)
             val uris = arg<List<Uri>>(4)
@@ -95,6 +96,7 @@ class PatternImageImportOwnershipTest {
             val reordered = vm.uiState.value.selection
             assertEquals(listOf("second", "first"), reordered.pages.map { it.id })
             val restored = newModel(copyHandle(handles.getValue(7)))
+            advanceUntilIdle()
             assertEquals(reordered, restored.uiState.value.selection)
             vm.moveEarlier("first")
             assertEquals(initial.selection, vm.uiState.value.selection)

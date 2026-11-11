@@ -38,6 +38,7 @@ import com.finnvek.knittools.ui.components.ToolScreenScaffold
 import com.finnvek.knittools.ui.components.rememberLocaleDateFormat
 import java.time.LocalDate
 import java.util.Date
+import java.util.UUID
 
 @Composable
 fun BackupScreen(
@@ -72,11 +73,12 @@ internal fun BackupContent(
     onBack: () -> Unit,
     onExport: () -> Unit,
     onSelectRestore: () -> Unit,
-    onConfirm: () -> Unit,
+    onConfirm: (UUID) -> Unit,
     onCancel: () -> Unit,
     onRestored: () -> Unit,
 ) {
-    var confirm by rememberSaveable { mutableStateOf(false) }
+    var confirmationSelection by rememberSaveable { mutableStateOf<String?>(null) }
+    val previewSelectionId = state.previewSelectionId
     BackHandler(state.busy || state.preview != null) { onCancel() }
     BackHandler(state.phase == BackupPhase.RESTORED) { onRestored() }
     ToolScreenScaffold(
@@ -133,7 +135,11 @@ internal fun BackupContent(
                 Text(stringResource(R.string.backup_preview_patterns, preview.patterns))
                 Text(stringResource(R.string.backup_preview_yarn, preview.yarnCards))
                 Text(stringResource(R.string.backup_preview_files, preview.files))
-                Button({ confirm = true }, Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
+                Button(
+                    { confirmationSelection = previewSelectionId?.toString() },
+                    Modifier.fillMaxWidth().heightIn(min = 48.dp),
+                    enabled = previewSelectionId != null,
+                ) {
                     Text(stringResource(R.string.backup_restore))
                 }
                 CancelButton(onCancel, Modifier.heightIn(min = 48.dp))
@@ -152,7 +158,7 @@ internal fun BackupContent(
             }
         }
     }
-    if (confirm && state.preview != null) {
+    if (state.preview != null && previewSelectionId != null && confirmationSelection == previewSelectionId.toString()) {
         // Palautus korvaa nykyiset tiedot, joten vahvistus on punainen kuten muut tuhoavat toiminnot.
         ConfirmationDialog(
             title = stringResource(R.string.backup_confirm_title),
@@ -160,10 +166,10 @@ internal fun BackupContent(
             confirmText = stringResource(R.string.backup_replace),
             isDestructive = true,
             onConfirm = {
-                confirm = false
-                onConfirm()
+                confirmationSelection = null
+                onConfirm(previewSelectionId)
             },
-            onDismiss = { confirm = false },
+            onDismiss = { confirmationSelection = null },
         )
     }
 }

@@ -138,5 +138,6 @@ class CounterJourneyRequestTest {
             remindersLoadedProjectId = projectId,
             countersLoadedProjectId = projectId,
             documentsLoadedProjectId = projectId,
+            sessionsLoadedProjectId = projectId,
         )
 }

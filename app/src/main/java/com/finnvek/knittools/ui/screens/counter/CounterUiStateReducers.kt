@@ -16,6 +16,8 @@ internal fun CounterUiState.withStartedProject(project: CounterProject): Counter
         remindersLoadedProjectId = null,
         countersLoadedProjectId = null,
         documentsLoadedProjectId = null,
+        sessionsLoadedProjectId = null,
+        hasSessions = false,
         isRestoringProject = false,
         isCompleted = project.isCompleted,
         completedAt = project.completedAt,
@@ -120,12 +122,11 @@ internal fun CounterUiState.withReminderList(reminders: List<RowReminder>): Coun
 }
 
 internal fun CounterUiState.withDismissedReminder(reminderId: Long): CounterUiState {
-    val reminder = reminders.find { it.id == reminderId }
-    val immediateDismissal = DismissedReminderTrigger(reminderId = reminderId, row = counter.count)
-    val persistedDismissal = immediateDismissal.takeIf { reminder?.repeatInterval != null }
+    val dismissedIds = dismissedReminderTrigger?.takeIf { it.row == counter.count }?.reminderIds.orEmpty()
+    val dismissal = DismissedReminderTrigger(reminderIds = dismissedIds + reminderId, row = counter.count)
     return copy(
-        activeAlert = activeReminder(selectedProjectReminders(reminders), counter.count, immediateDismissal),
-        dismissedReminderTrigger = persistedDismissal,
+        activeAlert = activeReminder(selectedProjectReminders(reminders), counter.count, dismissal),
+        dismissedReminderTrigger = dismissal,
     )
 }
 
@@ -141,6 +142,6 @@ private fun activeReminder(
         .activeReminders(reminders, currentRow)
         .firstOrNull { reminder ->
             dismissedReminderTrigger == null ||
-                dismissedReminderTrigger.reminderId != reminder.id ||
+                reminder.id !in dismissedReminderTrigger.reminderIds ||
                 dismissedReminderTrigger.row != currentRow
         }

@@ -39,8 +39,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.finnvek.knittools.domain.tips.TipContext
 import com.finnvek.knittools.domain.tips.TipId
 import com.finnvek.knittools.domain.tips.TipRules
+import com.finnvek.knittools.domain.tips.TipScreen
 import com.finnvek.knittools.ui.theme.OnboardingDimens
 import kotlinx.coroutines.delay
+import java.time.LocalDate
 import kotlin.math.roundToInt
 
 internal data class TipPlacement(
@@ -134,6 +136,21 @@ fun TipHost(
     }
     LaunchedEffect(routeKey, requestedContext, state.workSessionRequest) {
         session.cancelInvalidWorkSessionRequest(routeKey, requestedContext)
+    }
+    LaunchedEffect(
+        routeKey,
+        state.routeEntryGeneration,
+        context.screen,
+        context.projectId,
+        requestedContext.screenReady,
+        lifecycle,
+    ) {
+        if (context.screen == TipScreen.COUNTER &&
+            requestedContext.screenReady &&
+            lifecycle == Lifecycle.State.RESUMED
+        ) {
+            context.projectId?.let { session.recordCounterOpen(routeKey, it, LocalDate.now().toEpochDay()) }
+        }
     }
     LaunchedEffect(overlayId, measured, effectiveContext, presentation, workSessionRequest, requestedContext) {
         if (presentation != null || overlayId == null) return@LaunchedEffect
@@ -376,7 +393,15 @@ fun InlineTipCard(
         if (eligible && fullyVisible) session.tryShow(environment.routeKey, id, effectiveContext.projectId)
     }
     LaunchedEffect(shown, fullyVisible, effectiveContext.blocked) {
-        if (shown && (!fullyVisible || effectiveContext.blocked)) session.dismiss(environment.routeKey, id)
+        if (!shown) return@LaunchedEffect
+        if (!fullyVisible || effectiveContext.blocked) {
+            session.dismiss(environment.routeKey, id)
+        } else {
+            withFrameNanos {}
+            session.state.value.presentation
+                ?.takeIf { it.routeKey == environment.routeKey && it.id == id }
+                ?.let(session::markPresentationVisible)
+        }
     }
     Layout(
         content = {

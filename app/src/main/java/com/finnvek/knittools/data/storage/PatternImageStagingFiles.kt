@@ -1,9 +1,13 @@
 package com.finnvek.knittools.data.storage
 
+import com.finnvek.knittools.ui.screens.pattern.PatternImageImportLimits
 import java.io.File
+import java.io.IOException
 import java.io.InputStream
 
 internal class PatternImageTooLargeException : Exception()
+
+internal class PatternImageInsufficientSpaceException : IOException("Insufficient space to stage image")
 
 internal object PatternImageStagingFiles {
     fun sessionDirectory(
@@ -12,6 +16,7 @@ internal object PatternImageStagingFiles {
         sessionId: String,
     ): File = File(filesDir, "pattern_captures/$projectId/$sessionId")
 
+    @Synchronized
     fun copyBounded(
         input: InputStream,
         target: File,
@@ -28,6 +33,10 @@ internal object PatternImageStagingFiles {
                     if (read < 0) break
                     copiedBytes += read
                     if (copiedBytes > maxBytes) throw PatternImageTooLargeException()
+                    // Preserve space that is free now; allocatable bytes also include reclaimable caches.
+                    if (target.usableSpace - read < PatternImageImportLimits.MIN_FREE_SPACE_RESERVE_BYTES) {
+                        throw PatternImageInsufficientSpaceException()
+                    }
                     output.write(buffer, 0, read)
                 }
             }

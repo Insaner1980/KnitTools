@@ -95,6 +95,10 @@ export function nextRavelryRateLimitState(
 ): RavelryRateLimitDecision {
   const current = activeRavelryRateLimitState(stored, nowMillis, rule);
   if (current != null) {
+    if (nowMillis < current.windowStartMillis) {
+      // A delayed admission must not overwrite a newer window.
+      return { allowed: false, state: current };
+    }
     const state = {
       windowStartMillis: current.windowStartMillis,
       count: current.count + 1,
@@ -455,7 +459,6 @@ function activeRavelryRateLimitState(
 ): StoredRavelryRateLimit | null {
   const current = storedRavelryRateLimit(stored);
   return current != null &&
-    nowMillis >= current.windowStartMillis &&
     nowMillis - current.windowStartMillis < rule.windowMillis
     ? current
     : null;

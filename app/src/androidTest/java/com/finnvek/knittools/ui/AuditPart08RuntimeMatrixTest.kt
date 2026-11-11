@@ -1,6 +1,9 @@
 package com.finnvek.knittools.ui
 
+import android.app.Activity
+import android.app.Instrumentation
 import android.content.Intent
+import android.content.IntentFilter
 import android.graphics.Bitmap
 import android.graphics.Color
 import android.graphics.Paint
@@ -209,6 +212,83 @@ class AuditPart08RuntimeMatrixTest {
         scenario?.close()
         pickerMonitor?.let(instrumentation::removeMonitor)
         automation.serviceInfo = automation.serviceInfo.apply { flags = initialAccessibilityFlags }
+    }
+
+    @Test
+    fun p0586_backupRestoreClearsSavedLibraryDetail() {
+        val archive = File.createTempFile("part12-restore-", ".knittools-backup", app.cacheDir)
+        val filter =
+            IntentFilter(Intent.ACTION_OPEN_DOCUMENT).apply {
+                addCategory(Intent.CATEGORY_OPENABLE)
+                addDataType("*/*")
+            }
+        val result = Instrumentation.ActivityResult(Activity.RESULT_OK, Intent().setData(Uri.fromFile(archive)))
+        val monitor = Instrumentation.ActivityMonitor(filter, result, true)
+        try {
+            runBlocking(Dispatchers.IO) { app.backupRepository.get().export(Uri.fromFile(archive)) }
+            instrumentation.addMonitor(monitor)
+            library()
+            tap("saved_patterns_title")
+            tapText(patternName)
+            see("saved_pattern_detail_open_pattern")
+            val libraryLabel = s("tab_library")
+            val selectedTab =
+                nodes().single {
+                    it.isVisibleToUser && it.text?.toString()?.equals(libraryLabel, ignoreCase = true) == true
+                }
+            val bounds = Rect().also(selectedTab::getBoundsInScreen)
+            repeat(2) { touch(bounds.centerX().toFloat(), bounds.centerY().toFloat(), 0) }
+            automation.waitForIdle(300, 5_000)
+            see("saved_pattern_detail_open_pattern")
+            tap("tab_settings")
+            tap("backup_title")
+            tap("backup_restore")
+            val restoreLabel = s("backup_restore")
+            await {
+                val previewRestore =
+                    nodes()
+                        .filter { it.isVisibleToUser && matches(it, restoreLabel) }
+                        .firstNotNullOfOrNull { node ->
+                            generateSequence(node) { it.parent }.firstOrNull { it.isClickable && it.isEnabled }
+                        }
+                if (previewRestore == null) scroll(true)
+                previewRestore?.performAction(AccessibilityNodeInfo.ACTION_CLICK) == true
+            }
+            assertEquals(1, monitor.hits)
+            see("backup_confirm_title")
+            tap("backup_replace")
+            see("backup_restored")
+            tap("backup_continue")
+            see("new_project")
+            tap("tab_library")
+            see("my_yarn_title")
+            tap("saved_patterns_title")
+            seeText(patternName)
+        } finally {
+            instrumentation.removeMonitor(monitor)
+            archive.delete()
+        }
+    }
+
+    @Test
+    fun p0596_deletedProjectClearsOpenGallery() {
+        overview()
+        tap("project_overview_open_photos")
+        seeText("Audit photograph")
+        runBlocking(Dispatchers.IO) { repository.deleteProject(projectId) }
+        see("no_photos")
+        assertFalse(nodes().any { it.isVisibleToUser && matches(it, "Audit photograph") })
+    }
+
+    @Test
+    fun p0599_deletedSavedPatternClosesItsDetails() {
+        library()
+        tap("saved_patterns_title")
+        tapText(patternName)
+        see("saved_pattern_detail_open_pattern")
+        runBlocking(Dispatchers.IO) { db.savedPatternDao().deleteById(patternId) }
+        see("web_pattern_add")
+        assertFalse(nodes().any { it.isVisibleToUser && matches(it, s("saved_pattern_detail_open_pattern")) })
     }
 
     @Test

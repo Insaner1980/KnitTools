@@ -26,31 +26,7 @@ class CounterRepositoryCelebrationTest : CounterRepositoryActiveSessionFixture()
     @Before
     fun prepareCelebrationRows() {
         coEvery { projectDao.getProject(7L) } answers { project }
-        coEvery {
-            projectDao.updateCounterStateWithHistory(
-                7L,
-                any(),
-                any(),
-                any(),
-                any(),
-                any(),
-                any(),
-            )
-        } answers
-            {
-                project = project.copy(count = secondArg())
-                history +=
-                    CounterHistoryEntity(
-                        id = history.size + 1L,
-                        projectId = 7L,
-                        action = arg(3),
-                        previousValue = arg(4),
-                        newValue = secondArg(),
-                    )
-            }
-        coEvery { projectDao.getLatestHistory(7L) } answers { history.lastOrNull() }
-        coEvery { projectDao.deleteHistoryById(any()) } answers { history.removeAll { it.id == firstArg<Long>() } }
-        coEvery { projectDao.updateCount(7L, any(), any()) } answers { project = project.copy(count = secondArg()) }
+        projectDao.recordCounterHistory(7L, history) { project = project.copy(count = it) }
         coEvery { projectDao.archiveProject(7L, any(), any(), any()) } answers {
             project =
                 project.copy(isCompleted = true, totalRows = secondArg(), completedAt = thirdArg(), updatedAt = arg(3))

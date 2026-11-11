@@ -226,9 +226,12 @@ class BackupViewModelTest {
             viewModel.cancel()
             viewModel.cancel()
             runCurrent()
-            assertEquals(BackupUiState(BackupPhase.PREVIEW, preview), viewModel.state.value)
+            assertEquals(
+                BackupUiState(BackupPhase.PREVIEW, preview, previewSelectionId = cancelledSelection),
+                viewModel.state.value,
+            )
             assertFalse(viewModel.select())
-            viewModel.restore()
+            viewModel.restore(cancelledSelection)
             viewModel.prepare(uri)
             viewModel.export(uri)
             runCurrent()
@@ -243,8 +246,13 @@ class BackupViewModelTest {
             viewModel.prepare(uri)
             runCurrent()
             assertFalse(cancelledSelection == selection.captured)
-            assertEquals(BackupUiState(BackupPhase.PREVIEW, preview), viewModel.state.value)
-            viewModel.restore()
+            val currentPreview = BackupUiState(BackupPhase.PREVIEW, preview, previewSelectionId = selection.captured)
+            assertEquals(currentPreview, viewModel.state.value)
+            viewModel.restore(cancelledSelection)
+            runCurrent()
+            coVerify(exactly = 0) { repository.restore(any()) }
+            assertEquals(currentPreview, viewModel.state.value)
+            viewModel.restore(selection.captured)
             runCurrent()
             coVerify(exactly = 1) { repository.restore(selection.captured) }
             assertEquals(BackupUiState(BackupPhase.RESTORED), viewModel.state.value)
@@ -279,7 +287,7 @@ class BackupViewModelTest {
             store.put("backup", viewModel)
             viewModel.prepare(uri)
             runCurrent()
-            viewModel.restore()
+            viewModel.restore(checkNotNull(viewModel.state.value.previewSelectionId))
             runCurrent()
             viewModel.cancel()
             runCurrent()

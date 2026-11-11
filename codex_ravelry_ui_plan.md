@@ -1,5 +1,7 @@
 # Codex UI plan: Ravelry screen and Saved Patterns experience
 
+**Historical plan:** the Android OAuth/API search and import UI was retired on 2026-10-09. Ravelry now opens in the app's WebView. Current AGENTS.md/CODEX.md and implementation supersede this plan.
+
 Current date: 2026-06-10
 
 This file is for Codex. It describes the desired UI direction. Codex should inspect the current app and make the final implementation decision based on the existing navigation, theme, data model, and screen structure.

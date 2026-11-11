@@ -667,6 +667,7 @@ fun ProjectListScreen(
             ) {
                 ProjectListContent(
                     tipContext = tipContext,
+                    showFloatingCreateButton = showFloatingCreateButton,
                     state =
                         ProjectListContentState(
                             active = active,
@@ -1099,6 +1100,7 @@ private fun ProjectListContent(
     state: ProjectListContentState,
     actions: ProjectListContentActions,
     tipContext: TipContext,
+    showFloatingCreateButton: Boolean,
 ) {
     val isHeroVisible = !state.isMultiSelectMode && state.continueKnitting != null
     val heroProjectId = state.continueKnitting?.projectId
@@ -1120,7 +1122,12 @@ private fun ProjectListContent(
                     start = ProjectListDimens.ScreenHorizontalPadding,
                     top = ProjectListDimens.ListTopPadding,
                     end = ProjectListDimens.ScreenHorizontalPadding,
-                    bottom = ProjectListDimens.ListBottomPadding,
+                    bottom =
+                        if (showFloatingCreateButton) {
+                            ProjectListDimens.ListBottomPaddingWithCreateButton
+                        } else {
+                            ProjectListDimens.ListBottomPadding
+                        },
                 ),
         ) {
             if (state.isLoading) {

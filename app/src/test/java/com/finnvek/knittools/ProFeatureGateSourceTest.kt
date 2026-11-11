@@ -184,6 +184,12 @@ class ProFeatureGateSourceTest {
         )
         assertTrue(mainActivity.contains("ProStatus.TRIAL_EXPIRED -> {"))
         assertTrue(mainActivity.contains("trialManager.claimTrialEndNotice()"))
+        val expiredNotice = "showTrialEndedNotice && proState.status == ProStatus.TRIAL_EXPIRED"
+        val noticeGate = "if ((trialEnded || trialEndingSoon) && noticeDataReady && noticeSurfaceReady)"
+        val retentionBody = "if (endingSoon) R.string.journey_keep_content else R.string.pro_trial_ended_body"
+        assertTrue(mainActivity.contains(expiredNotice))
+        assertTrue(mainActivity.contains(noticeGate))
+        assertTrue(mainActivity.contains(retentionBody))
         assertTrue(mainActivity.contains("openProUpgradeRequest ||"))
         assertTrue(mainActivity.contains("openWidgetProPromptRequest ||"))
         assertTrue(mainActivity.contains("isShareImport ||"))

@@ -80,7 +80,7 @@ class NotesAuditBoundaryTest(
         val pro = mockk<ProManager>()
         every { pro.proState } returns MutableStateFlow(ProState())
         every { pro.hasFeature(any()) } returns true
-        model = NotesEditorViewModel(repository, pro, applicationScope, handle)
+        model = NotesEditorViewModel(repository, pro, applicationScope, handle, mockk())
         store.put("owner", model)
     }
 

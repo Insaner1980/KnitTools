@@ -8,9 +8,11 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import com.finnvek.knittools.ui.theme.ComponentDimens
 
 @Composable
@@ -40,6 +42,11 @@ fun AnimatedResultNumber(
         },
         label = "resultNumber",
     ) { value ->
-        content(value)
+        Box(
+            modifier = if (value == targetValue) Modifier else Modifier.clearAndSetSemantics {},
+            propagateMinConstraints = true,
+        ) {
+            content(value)
+        }
     }
 }

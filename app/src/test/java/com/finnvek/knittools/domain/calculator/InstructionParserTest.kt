@@ -7,17 +7,16 @@ import org.junit.Test
 class InstructionParserTest {
     @Test
     fun `parseWithRegex - syotteen pituusraja erottaa sallitun ja ylipitkan syotteen`() {
-        val suurinSallittuSyote = "INCREASE 1 ".repeat(909)
-        val ylipitkaSyote = "INCREASE 1 ".repeat(50_000)
-
-        assertEquals(9_999, suurinSallittuSyote.length)
-        assertEquals(
-            ParsedInstruction.Failure("parse_failed", ParsedInstruction.ErrorType.PARSE_FAILED),
-            InstructionParser.parseWithRegex(suurinSallittuSyote),
-        )
+        val instruction = "Increase 12 stitches evenly across 96 stitches"
+        listOf(9_999, 10_000).forEach { length ->
+            assertEquals(
+                ParsedInstruction.IncreaseDecrease(96, 12, true),
+                InstructionParser.parse(instruction.padEnd(length)),
+            )
+        }
         assertEquals(
             ParsedInstruction.Failure("input_too_long", ParsedInstruction.ErrorType.PARSE_FAILED),
-            InstructionParser.parseWithRegex(ylipitkaSyote),
+            InstructionParser.parse(instruction.padEnd(10_001)),
         )
     }
 
@@ -183,6 +182,28 @@ class InstructionParserTest {
         assertEquals(22.0, g.stitchesPer10cm, 0.01)
         assertEquals(28.0, g.rowsPer10cm, 0.01)
         assertEquals(ParsedInstruction.GaugeUnit.PER_4_INCHES, g.unit)
+    }
+
+    @Test
+    fun `labelled per inch gauge retains its physical basis`() {
+        listOf("", "Gauge: ", "Tension: ").forEach { prefix ->
+            assertEquals(
+                ParsedInstruction.Gauge(22.0, 28.0, ParsedInstruction.GaugeUnit.PER_4_INCHES),
+                InstructionParser.parse("${prefix}5.5 stitches per inch, 7 rows per inch"),
+            )
+            assertEquals(
+                ParsedInstruction.Gauge(22.0, 28.0, ParsedInstruction.GaugeUnit.PER_4_INCHES),
+                InstructionParser.parse("${prefix}5.5 stitches and 7 rows per inch"),
+            )
+        }
+    }
+
+    @Test
+    fun `explicit swatch dimensions take precedence over adjacent stitch and row counts`() {
+        assertEquals(
+            ParsedInstruction.GaugeSwatch(14.0, 33, 15.0, 44, ParsedInstruction.LengthUnit.CM),
+            InstructionParser.parse("Width 14 cm, height 15 cm, 33 stitches and 44 rows"),
+        )
     }
 
     @Test

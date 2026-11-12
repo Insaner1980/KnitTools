@@ -36,13 +36,17 @@ function toStoredOAuthState(value: FirebaseFirestore.DocumentData | undefined): 
   if (!value || typeof value.state !== "string" || typeof value.uid !== "string") {
     return null;
   }
+  const expiresAtMillis = value.expiresAtMillis;
+  if (typeof expiresAtMillis !== "number" || !Number.isSafeInteger(expiresAtMillis)) {
+    return null;
+  }
 
   return {
     state: value.state,
     uid: value.uid,
     authType: "oauth2",
     createdAtMillis: Number(value.createdAtMillis),
-    expiresAtMillis: Number(value.expiresAtMillis),
+    expiresAtMillis,
     usedAtMillis: value.usedAtMillis == null ? null : Number(value.usedAtMillis),
     redirectUri: String(value.redirectUri),
     codeVerifier: String(value.codeVerifier),

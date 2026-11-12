@@ -26,7 +26,7 @@ The repository retains historical Firebase Ravelry backend code, but the current
 
 ## Release Crash Reporting
 
-Release builds enable Firebase Crashlytics for crash reporting, separately from optional usage analytics. The app has no Crashlytics consent switch in Settings; turning off usage analytics does not turn off release crash reporting.
+Release builds enable automatic crash and application-not-responding (ANR) reporting through Firebase Crashlytics. The usage analytics setting controls PostHog only.
 
 Crash reports can include technical information such as stack traces and app/device diagnostics handled by the SDK. The app's restricted usage-event interface does not govern Crashlytics reports. R8 mapping upload is configured for release builds to support readable crash traces. Debug/profile-producer variants disable Crashlytics collection/upload.
 
@@ -63,10 +63,9 @@ Debug builds can send diagnostics to Sentry only when a developer supplies a DSN
 ## Permissions
 
 - **Internet:** website browsing/downloads, remote images, Play operations and configured telemetry.
-- **Camera:** user-started pattern/progress photo capture; camera hardware is optional.
 - **Vibration:** preference-controlled haptic feedback.
 
-The app does not request microphone permission or broad storage access. Document/image access uses the Android pickers and grants. There is no speech recognition, text-to-speech or conversational voice flow.
+KnitTools opens the device's camera app for user-started pattern and progress photo capture. Camera hardware is optional, and KnitTools does not request camera permission. The app does not request microphone permission or broad storage access. Document/image access uses the Android pickers and grants. There is no speech recognition, text-to-speech or conversational voice flow.
 
 ## Retention And Deletion
 

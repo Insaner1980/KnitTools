@@ -34,6 +34,7 @@ import com.finnvek.knittools.domain.model.WebPatternDesignerValidation
 import com.finnvek.knittools.domain.model.WebPatternTitleValidation
 import com.finnvek.knittools.domain.model.WebPatternUrlValidation
 import com.finnvek.knittools.ui.components.CancelButton
+import com.finnvek.knittools.ui.components.CollectWithLifecycleEffect
 import com.finnvek.knittools.ui.components.FormSheet
 import com.finnvek.knittools.ui.components.FormSheetConfirm
 import com.finnvek.knittools.ui.components.LabelWithInfo
@@ -66,8 +67,8 @@ fun WebPatternEditorScreen(
             onRequestStored(currentRequest.requestId)
         }
     }
-    LaunchedEffect(state.completion?.eventId) {
-        val completion = state.completion ?: return@LaunchedEffect
+    CollectWithLifecycleEffect({ viewModel.uiState }) { editorState ->
+        val completion = editorState.completion ?: return@CollectWithLifecycleEffect
         viewModel.consumeCompletion(completion.eventId)
         when (completion) {
             is WebPatternEditorCompletion.OpenDetail -> onOpenDetail(completion.patternId)

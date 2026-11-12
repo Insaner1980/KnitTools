@@ -526,4 +526,13 @@ private class AnnotationBoundaryDao(
 
     override suspend fun updateUnchecked(annotation: PatternAnnotationEntity): Unit =
         error("Public write delegates to Room")
+
+    override suspend fun deleteForPageUnchecked(
+        layerId: Long,
+        page: Int,
+    ): Unit = error("Public write delegates to Room")
+
+    override suspend fun deleteByIdUnchecked(id: Long): Unit = error("Public write delegates to Room")
+
+    override suspend fun getAnnotationLayerId(id: Long): Long? = error("Public write delegates to Room")
 }

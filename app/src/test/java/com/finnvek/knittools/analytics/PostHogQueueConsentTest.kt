@@ -235,6 +235,19 @@ class PostHogQueueConsentTest {
     }
 
     @Test
+    fun `queue cleanup preserves a regular file with a consent directory name`() {
+        val root = temporaryFolder.newFolder()
+        val old = File(root, "consent-00000000-0000-0000-0000-000000000001").apply { mkdir() }
+        val unrelated = File(root, "consent-00000000-0000-0000-0000-000000000002").apply { writeText("keep") }
+
+        val fresh = AnalyticsQueueStorage(root).createDirectory()
+
+        assertFalse(old.exists())
+        assertEquals("keep", unrelated.readText())
+        assertTrue(fresh.isDirectory)
+    }
+
+    @Test
     fun `new instance cannot import prior default or consent queues when cleanup throws`() {
         val harness = harness()
         val analytics = harness.controller(deleteDirectory = { throw SecurityException("Synthetic denied deletion") })

@@ -2,6 +2,9 @@ package com.finnvek.knittools.repository
 
 import android.content.Context
 import androidx.room.Room
+import androidx.sqlite.db.SupportSQLiteDatabase
+import androidx.sqlite.db.SupportSQLiteOpenHelper
+import androidx.sqlite.db.framework.FrameworkSQLiteOpenHelperFactory
 import com.finnvek.knittools.data.local.ActiveSessionSchemaConstraints
 import com.finnvek.knittools.data.local.DatabaseTransactionRunner
 import com.finnvek.knittools.data.local.KnitToolsDatabase
@@ -17,6 +20,24 @@ internal fun auditDatabase(context: Context): KnitToolsDatabase =
         .addCallback(PatternAnnotationSchemaConstraints.callback)
         .addCallback(ProjectDocumentSchemaConstraints.callback)
         .build()
+
+internal fun interceptTestDatabase(
+    wrap: (SupportSQLiteDatabase) -> SupportSQLiteDatabase,
+): SupportSQLiteOpenHelper.Factory =
+    SupportSQLiteOpenHelper.Factory { configuration ->
+        val helper = FrameworkSQLiteOpenHelperFactory().create(configuration)
+        object : SupportSQLiteOpenHelper by helper {
+            override val writableDatabase get() = wrap(helper.writableDatabase)
+
+            override val readableDatabase get() = wrap(helper.readableDatabase)
+        }
+    }
+
+internal suspend fun KnitToolsDatabase.deleteTestActiveSession(projectId: Long) {
+    sessionDao().getActiveSession()?.takeIf { it.projectId == projectId }?.let {
+        sessionDao().deleteActiveSession(it.sessionToken)
+    }
+}
 
 internal open class BoundaryPause<Phase> {
     protected val phase = AtomicReference<Phase?>()

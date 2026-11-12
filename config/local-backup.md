@@ -1,8 +1,12 @@
 # Local backup v1
 
+## Current compatibility (2026-11-09)
+
+The current database uses Room 2.8.5 and schema 28. Backups include 18 of its 19 tables; `onboarding_projects` is excluded. Archive restore accepts schemas 25 through 28, as defined in `BackupArchive.kt`. The schema-25 design inventory and dated validation receipts below are historical; they do not establish fresh validation of the current checkout.
+
 ## Storage audit and design (2026-09-13)
 
-The live database is Room 25, with 18 entities. This inventory was taken before implementation.
+At this historical checkpoint, the database schema was 25, with 18 entities. This inventory was taken before implementation.
 
 | Classification | Persistence | Decision |
 | --- | --- | --- |

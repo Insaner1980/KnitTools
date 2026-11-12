@@ -30,7 +30,24 @@ function runDecision(decision, expectedVerdict, credentialPath = null) {
     const initial = JSON.stringify({
       filePath: "app/build.gradle.kts",
       findings: [
-        { vulnSlug: "secrets-exposure", title: "Synthetic Ravelry credential fixture" },
+        {
+          findingId: "finding_6e03ceb481162a46",
+          producedByRunId: "20260514063758-293653dff198bae7",
+          vulnSlug: "secrets-exposure",
+          title: "Synthetic Ravelry credential fixture",
+        },
+        {
+          findingId: "finding_6e03ceb481162a46",
+          producedByRunId: "new-scan",
+          vulnSlug: "secrets-exposure",
+          title: "Synthetic Ravelry credential fixture",
+        },
+        {
+          findingId: "finding_new_ravelry",
+          producedByRunId: "new-scan",
+          vulnSlug: "secrets-exposure",
+          title: "New Ravelry credential in the same Gradle file",
+        },
         { vulnSlug: "secrets-exposure", title: "Unrelated synthetic finding" },
       ],
     });
@@ -44,7 +61,7 @@ function runDecision(decision, expectedVerdict, credentialPath = null) {
       assert.equal(result.status, 0, result.stderr);
       const findings = JSON.parse(fs.readFileSync(record, "utf8")).findings;
       assert.equal(findings[0].revalidation.verdict, expectedVerdict);
-      assert.deepEqual(findings[1], JSON.parse(initial).findings[1]);
+      assert.deepEqual(findings.slice(1), JSON.parse(initial).findings.slice(1));
     }
   } finally {
     fs.rmSync(root, { recursive: true, force: true });

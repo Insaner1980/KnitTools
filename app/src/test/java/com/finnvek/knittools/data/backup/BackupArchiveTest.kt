@@ -1,7 +1,11 @@
 package com.finnvek.knittools.data.backup
 
 import com.finnvek.knittools.data.local.KNITTOOLS_DATABASE_VERSION
+import kotlinx.serialization.SerializationException
+import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.jsonObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertThrows
@@ -55,6 +59,16 @@ class BackupArchiveTest {
         rejected(source, manifest)
     }
 
+    @Test fun blobNameMustMatchItsContentHash() {
+        val (source, manifest) = fixture()
+        val blob = manifest.entries.last()
+        val wrongPath = "files/${"0".repeat(64)}.bin"
+        File(source, blob.path).copyTo(File(source, wrongPath))
+        val renamed = manifest.copy(entries = manifest.entries.dropLast(1) + blob.copy(path = wrongPath))
+
+        assertEquals(BackupError.CORRUPT, rejected(source, renamed).error)
+    }
+
     @Test fun unsupportedFormatDataAndSchemaAreRejected() {
         val (source, manifest) = fixture()
         listOf(
@@ -65,6 +79,17 @@ class BackupArchiveTest {
         ).forEach {
             val error = rejected(source, it)
             assertEquals(BackupError.UNSUPPORTED, error.error)
+        }
+    }
+
+    @Test fun manifestMustDeclareFormatAndCompatibilityVersions() {
+        val (_, manifest) = fixture()
+        val json = BackupFormat.json
+        val fields = json.parseToJsonElement(json.encodeToString(manifest)).jsonObject
+        for (field in listOf("format", "formatVersion", "dataVersion", "schemaVersion")) {
+            assertThrows(field, SerializationException::class.java) {
+                json.decodeFromString<BackupManifest>(JsonObject(fields - field).toString())
+            }
         }
     }
 
@@ -240,7 +265,10 @@ class BackupArchiveTest {
         fun file(
             index: Int,
             size: Long,
-        ): BackupEntry = BackupEntry("files/${index.toString(16).padStart(64, '0')}.bin", size, "0".repeat(64))
+        ): BackupEntry {
+            val hash = index.toString(16).padStart(64, '0')
+            return BackupEntry("files/$hash.bin", size, hash)
+        }
 
         fun manifest(entries: List<BackupEntry>) =
             BackupManifest(createdAt = 1, versionCode = 1, versionName = "1.0", entries = entries)
@@ -307,15 +335,26 @@ class BackupArchiveTest {
 
     private fun fixture(): Pair<File, BackupManifest> {
         val directory = temporary.newFolder()
-        val paths = BackupFormat.tablePaths + "files/${"a".repeat(64)}.bin"
         val entries =
-            paths.map { path ->
+            BackupFormat.tablePaths.map { path ->
                 val file = File(directory, path)
                 checkNotNull(file.parentFile).mkdirs()
                 file.writeText("[]\n")
                 BackupEntry(path, file.length(), BackupFormat.digest(file))
             }
-        return directory to BackupManifest(createdAt = 1, versionCode = 1, versionName = "1.0", entries = entries)
+        val blob = File(directory, "blob.tmp").apply { writeText("pattern PDF fixture") }
+        val hash = BackupFormat.digest(blob)
+        val path = "files/$hash.bin"
+        val target = File(directory, path)
+        checkNotNull(target.parentFile).mkdirs()
+        check(blob.renameTo(target))
+        return directory to
+            BackupManifest(
+                createdAt = 1,
+                versionCode = 1,
+                versionName = "1.0",
+                entries = entries + BackupEntry(path, target.length(), hash),
+            )
     }
 
     private fun rejected(

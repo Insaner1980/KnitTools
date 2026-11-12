@@ -27,7 +27,6 @@ import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasScrollToIndexAction
 import androidx.compose.ui.test.hasText
-import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -38,12 +37,8 @@ import androidx.core.app.ActivityOptionsCompat
 import androidx.lifecycle.DEFAULT_ARGS_KEY
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.MutableCreationExtras
-import androidx.test.core.app.ApplicationProvider
-import com.finnvek.knittools.App
-import com.finnvek.knittools.MainActivity
 import com.finnvek.knittools.R
 import com.finnvek.knittools.data.local.CounterProjectEntity
-import com.finnvek.knittools.data.local.KnitToolsDatabase
 import com.finnvek.knittools.data.storage.AppFileStorage
 import com.finnvek.knittools.domain.model.NormalizedPatternPoint
 import com.finnvek.knittools.pro.ProPolicyTestControl
@@ -51,8 +46,6 @@ import com.finnvek.knittools.pro.ProState
 import com.finnvek.knittools.pro.ProStatus
 import com.finnvek.knittools.pro.TrialStartResult
 import com.finnvek.knittools.pro.setTestProStatus
-import com.finnvek.knittools.repository.CounterRepository
-import com.finnvek.knittools.ui.TestContentSplashRule
 import com.finnvek.knittools.ui.screens.pattern.PatternAnnotationTool
 import com.finnvek.knittools.ui.screens.pattern.PatternAnnotationViewModel
 import com.finnvek.knittools.ui.screens.pattern.PatternAnnotationWriteError
@@ -73,22 +66,11 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Assume.assumeTrue
 import org.junit.Before
-import org.junit.Rule
 import org.junit.Test
 import java.io.File
 import java.util.UUID
 
-class ExternalActivityResultOwnershipTest {
-    // These tests replace activity content; its startup splash must not block the test clock's first draw.
-    @get:Rule(order = 0)
-    val splash =
-        TestContentSplashRule()
-
-    @get:Rule(order = 1)
-    val rule = createAndroidComposeRule<MainActivity>()
-    private val app: App = ApplicationProvider.getApplicationContext()
-    private lateinit var database: KnitToolsDatabase
-    private lateinit var repository: CounterRepository
+class ExternalActivityResultOwnershipTest : CounterActivityTestFixture() {
     private val results = DelayedResults()
     private val deliveredDocuments = mutableListOf<String>()
     private val model = mutableStateOf<CounterViewModel?>(null)

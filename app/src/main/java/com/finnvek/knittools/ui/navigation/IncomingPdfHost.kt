@@ -65,10 +65,16 @@ fun IncomingPdfHost(
                 busy = busy,
                 actions =
                     IncomingPdfSheetActions(
-                        onAttach = viewModel::attachToProject,
-                        onStartProject = viewModel::startNewProject,
-                        onSaveToLibrary = viewModel::saveToLibrary,
-                        onDismiss = viewModel::discard,
+                        onAttach = { projectId, name ->
+                            viewModel.attachToProject(projectId, name, expectedPdfUri = pdf.localUri)
+                        },
+                        onStartProject = { name ->
+                            viewModel.startNewProject(name, expectedPdfUri = pdf.localUri)
+                        },
+                        onSaveToLibrary = { name ->
+                            viewModel.saveToLibrary(name, expectedPdfUri = pdf.localUri)
+                        },
+                        onDismiss = { viewModel.discard(expectedPdfUri = pdf.localUri) },
                     ),
             )
         }

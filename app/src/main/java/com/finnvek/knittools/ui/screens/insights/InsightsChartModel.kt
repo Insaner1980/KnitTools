@@ -151,7 +151,7 @@ internal fun defaultSelectedBucketIndex(buckets: List<InsightsChartBucket>): Int
     buckets.indexOfLast { it.totalMinutes > 0 }.takeIf { it >= 0 }
 
 /** Alle tämän jäävästä edellisestä jaksosta ei lasketa prosenttimuutosta. */
-internal const val TREND_MINIMUM_BASE_MINUTES = 30
+internal const val TREND_MINIMUM_BASE_SECONDS = 30 * 60L
 
 /**
  * Ilman riittävää edellisen jakson pohjaa prosenttimuutosta ei lasketa: nollalla
@@ -159,13 +159,13 @@ internal const val TREND_MINIMUM_BASE_MINUTES = 30
  * kuten "500 % enemmän". Molemmissa tapauksissa rivi jätetään kokonaan pois.
  */
 internal fun insightsTrend(
-    currentMinutes: Int,
-    previousMinutes: Int,
+    currentSeconds: Long,
+    previousSeconds: Long,
 ): InsightsTrend? {
     // Pieni vertailupohja tuottaa lukuja kuten "500 % enemmän kuin viime viikolla"
     // kolmesta minuutista kahdeksaantoista. Se on kohinaa, ei tietoa, ja näyttää bugilta.
-    if (previousMinutes < TREND_MINIMUM_BASE_MINUTES) return null
-    val change = ((currentMinutes - previousMinutes) * 100.0 / previousMinutes).roundToInt()
+    if (previousSeconds < TREND_MINIMUM_BASE_SECONDS) return null
+    val change = ((currentSeconds - previousSeconds) * 100.0 / previousSeconds).roundToInt()
     val direction =
         when {
             change > 0 -> InsightsTrendDirection.UP
@@ -180,10 +180,8 @@ internal fun insightsTrend(
  * verrataan viime viikon keskiviikkoon asti, ei koko viikkoon. Muuten kesken
  * oleva jakso näyttäisi aina laskulta.
  *
- * Mittatapa on sama kuin nykyisellä jaksolla: sekunnit summataan ikkunan yli ja
- * pyöristetään minuuteiksi vasta kerran lopuksi. Päiväkohtaisten minuuttien
- * summaaminen kasvatti vertailukohtaa jokaisen aktiivisen päivän pyöristyksellä
- * ja vinoutti trendin systemaattisesti laskun suuntaan.
+ * Keep exact seconds across the window so neither the minimum baseline nor
+ * the percentage depends on display-minute rounding.
  *
  * Puhdas funktio päivämäärien vertailulle: [today] ratkaisee kuinka monta
  * päivää nykyisestä jaksosta on kulunut, ja sama määrä päiviä lasketaan
@@ -195,12 +193,12 @@ internal fun insightsTrend(
  * 31.3. ikkuna olisi 1.2.–4.3. ja laskisi maaliskuun alun sekä vertailukohtaan
  * että nykyiseen jaksoon.
  */
-internal fun previousPeriodMinutes(
+internal fun previousPeriodSeconds(
     dailySeconds: Map<LocalDate, Long>,
     previousStart: LocalDate,
     currentStart: LocalDate,
     today: LocalDate,
-): Int {
+): Long {
     val elapsedDays = ChronoUnit.DAYS.between(currentStart, today) + 1
     val previousEndExclusive = minOf(previousStart.plusDays(elapsedDays), currentStart)
     val windowSeconds =
@@ -208,7 +206,7 @@ internal fun previousPeriodMinutes(
             .entries
             .filter { (date, _) -> date >= previousStart && date < previousEndExclusive }
             .fold(0L) { total, (_, seconds) -> addSessionSeconds(total, seconds) }
-    return secondsToDisplayMinutes(windowSeconds)
+    return windowSeconds
 }
 
 /**

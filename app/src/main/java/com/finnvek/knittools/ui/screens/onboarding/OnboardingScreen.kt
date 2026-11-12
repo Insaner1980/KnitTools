@@ -72,6 +72,7 @@ import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.finnvek.knittools.R
 import com.finnvek.knittools.billing.BillingProductStatus
+import com.finnvek.knittools.billing.SelectedOneTimeOffer
 import com.finnvek.knittools.domain.calculator.TargetInput
 import com.finnvek.knittools.domain.calculator.parseProjectStartCount
 import com.finnvek.knittools.domain.calculator.parseTargetRows
@@ -104,7 +105,7 @@ data class OnboardingActions(
 @Composable
 fun OnboardingRoute(
     viewModel: OnboardingViewModel,
-    onPurchase: (Activity) -> Unit,
+    onPurchase: (Activity, SelectedOneTimeOffer) -> Unit,
     onStartupReady: (Boolean) -> Unit,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -180,7 +181,9 @@ fun OnboardingRoute(
                         if (previewOffer != null) {
                             previewPurchaseVisible = true
                         } else {
-                            context.findActivity()?.let(onPurchase)
+                            price.confirmedOffer?.let { displayedOffer ->
+                                context.findActivity()?.let { onPurchase(it, displayedOffer) }
+                            }
                         }
                     },
                 ),

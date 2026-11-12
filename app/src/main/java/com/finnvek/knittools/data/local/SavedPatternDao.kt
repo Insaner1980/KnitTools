@@ -33,6 +33,17 @@ interface SavedPatternDao {
     @Query("SELECT * FROM saved_patterns WHERE localPdfUri = :localPdfUri ORDER BY savedAt DESC, id DESC LIMIT 1")
     suspend fun getByLocalPdfUri(localPdfUri: String): SavedPatternEntity?
 
+    @Query(
+        """
+        SELECT localPdfUri FROM saved_patterns WHERE localPdfUri IS NOT NULL
+        UNION
+        SELECT localPdfUri FROM project_documents
+        UNION
+        SELECT patternUri FROM counter_projects WHERE patternUri IS NOT NULL
+        """,
+    )
+    suspend fun getReferencedPdfUris(): List<String>
+
     @Query("SELECT * FROM saved_patterns")
     suspend fun getAllOnce(): List<SavedPatternEntity>
 

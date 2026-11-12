@@ -102,6 +102,34 @@ class InsightsSessionAccumulatorTest {
         assertEquals(null, emptyFilter.firstDate)
     }
 
+    @Test fun trendRequiresThirtyExactMinutesInThePreviousPeriod() {
+        for (range in listOf(TimeRange.THIS_WEEK, TimeRange.THIS_MONTH)) {
+            for (previousSeconds in listOf(1799L, 1800L, 1801L)) {
+                val params = params(range)
+                val accumulator = InsightsSessionAccumulator(params, SessionInsightsFacts(true, emptyList()))
+                accumulator.add(session(requireNotNull(insightsPreviousStart(params)), 1, previousSeconds, 1))
+                accumulator.add(session(today, 1, 3600L, 1))
+
+                assertEquals(
+                    "$range baseline=$previousSeconds",
+                    if (previousSeconds < 1800L) null else InsightsTrend(100, InsightsTrendDirection.UP),
+                    accumulator.trend(),
+                )
+            }
+        }
+    }
+
+    @Test fun trendCalculatesPercentageFromExactSecondsInsteadOfDisplayMinutes() {
+        for (range in listOf(TimeRange.THIS_WEEK, TimeRange.THIS_MONTH)) {
+            val params = params(range)
+            val accumulator = InsightsSessionAccumulator(params, SessionInsightsFacts(true, emptyList()))
+            accumulator.add(session(requireNotNull(insightsPreviousStart(params)), 1, 1801L, 1))
+            accumulator.add(session(today, 1, 3541L, 1))
+
+            assertEquals(InsightsTrend(97, InsightsTrendDirection.UP), accumulator.trend())
+        }
+    }
+
     @Test fun allTimeLeadingBucketUsesTheStoredSessionZone() {
         val date = today.withDayOfMonth(1)
         val start =

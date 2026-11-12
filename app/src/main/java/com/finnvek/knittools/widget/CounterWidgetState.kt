@@ -25,6 +25,7 @@ import com.finnvek.knittools.domain.model.MainCounterLabelType
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
+import java.io.IOException
 
 private val Context.widgetDataStore by preferencesDataStore(
     name = "counter_widget",
@@ -71,9 +72,11 @@ object CounterWidgetState {
         context: Context,
         data: WidgetData,
     ) {
-        context.widgetDataStore.updatePreferencesSafely {
-            applyWidgetData(data)
-        }
+        val saved =
+            context.widgetDataStore.updatePreferencesSafely {
+                applyWidgetData(data)
+            }
+        if (!saved) throw IOException("Unable to persist shared widget state")
     }
 
     suspend fun loadGlance(

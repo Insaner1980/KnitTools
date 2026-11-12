@@ -193,7 +193,9 @@ class ProjectDocumentRuntimeIntegrationTest {
             requireNotNull(database.patternAnnotationLayerDao().getProjectLayer(projectId, documentB.documentKey))
         database.patternBookmarkDao().insert(bookmark(projectId, documentA.documentKey, "Body"))
         database.patternBookmarkDao().insert(bookmark(projectId, documentB.documentKey, "Sleeve"))
+        repository.select(projectId, documentA.id)
         database.patternAnnotationDao().insert(annotation(layerA.id, Color.RED.toLong()))
+        repository.select(projectId, documentB.id)
         database.patternAnnotationDao().insert(annotation(layerB.id, Color.BLUE.toLong()))
     }
 

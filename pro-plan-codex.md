@@ -1,5 +1,7 @@
 # KnitToolsin Pro-kokemuksen toteutussuunnitelma
 
+**Historiallinen suunnitelma (20.8.2026):** alla oleva kaikki olemassa olevat projektit laskeva luontiraja on korvattu yhden aktiivisen ilmaisen projektin säännöllä. Nykyiset AGENTS.md/CODEX.md, PROJECT.md ja ProState ovat voimassa olevat lähteet; tämä suunnitelma ei ohita niitä.
+
 Status: **päätössuunnitelma ennen toteutusta** — tämä dokumentti ei muuta sovelluskoodia.
 
 Lähde: nykyinen työpuu 20.8.2026. Työpuussa oleva keskeneräinen Insights-uudistus säilytetään eikä sitä palauteta tai korvata tämän työn sivuvaikutuksena.
@@ -347,7 +349,7 @@ Päiväluku toteutetaan plurals-resurssilla.
 
 Pro-merkintä yhdistyy ruudunlukijalle toiminnon nimeen ja tilaan, esimerkiksi `Take photo, Pro feature, available during trial`. Kaikki kosketuskohteet säilyvät vähintään 48 dp:n kokoisina ja tilat välitetään Compose-semanticsin kautta. [Compose accessibility defaults](https://developer.android.com/develop/ui/compose/accessibility/api-defaults), [Compose semantics](https://developer.android.com/develop/ui/compose/accessibility/semantics)
 
-Kaikki uudet ja muuttuneet tekstit lisätään englannin lisäksi nykyisiin `da`, `de`, `es`, `fi`, `fr`, `it`, `nb`, `nl`, `pt` ja `sv`-resursseihin. Testi tarkistaa avain-, plurals- ja placeholder-pariteetin. Käännösten luonnollisuus tarkistetaan erikseen, koska XML-pariteetti ei todista kielen laatua.
+Kaikki uudet ja muuttuneet tekstit lisätään englannin lisäksi nykyisiin `da`, `de`, `es`, `fi`, `fr`, `it`, `nb`, `nl`, `pt`, `pt-BR` ja `sv`-resursseihin. Sovelluksessa on 12 lokaalia ja 11 eri kieltä. Testi tarkistaa avain-, plurals- ja placeholder-pariteetin. Käännösten luonnollisuus tarkistetaan erikseen, koska XML-pariteetti ei todista kielen laatua.
 
 ## 7. Pienet, itsenäisesti julkaistavat työt
 
@@ -456,7 +458,7 @@ Hyväksyntä:
 - Kirjaa Pro-periaate ja kortiton Insights-esitys `CLAUDE.md`:hen.
 - Päivitä schema 18 sekä `AGENTS.md`:hen että `CODEX.md`:hen.
 - Päivitä `PROJECT.md`:n Pro-ominaisuudet toteutusta vastaaviksi.
-- Lisää kaikki uudet tekstit kaikkiin 11 kieliresurssiin.
+- Lisää kaikki uudet tekstit kaikkiin 12 lokaalin resursseihin.
 - Älä lisää generoituja `reports/`-tiedostoja versionhallintaan.
 
 ## 8. Automaattinen varmennus
@@ -495,7 +497,7 @@ Kohdennetut käyttäytymis- ja migraatiotestit kattavat ainakin:
 - Pro-käyttäjän oikea kaavio säilyy nykyisen valinnan mukaisena
 - ostosivun hyödyt eivät sisällä Full historya tai toteuttamattomia ominaisuuksia
 - lokalisoitu hinta tulee valitusta Play-tarjouksesta
-- merkkijonojen avaimet, plurals ja format-placeholderit täsmäävät kaikissa 11 kielessä
+- merkkijonojen avaimet, plurals ja format-placeholderit täsmäävät kaikkien 12 lokaalin resursseissa
 
 Käyttäytymistestit ovat ensisijaisia. Lähdetestejä käytetään vain kapeisiin arkkitehtuurisopimuksiin, kuten siihen, ettei suora `BuildConfig.DEBUG`-ohitus leviä käyttöliittymään tai että kaikki projektin luontipolut kutsuvat samaa repository-metodia.
 

@@ -162,8 +162,8 @@ internal fun GaugeResults(
         }
         Button(
             onClick = {
-                focusManager.clearFocus()
                 onCopy(presentation.copyText)
+                focusManager.clearFocus()
             },
             modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("measurement_copy"),
         ) {

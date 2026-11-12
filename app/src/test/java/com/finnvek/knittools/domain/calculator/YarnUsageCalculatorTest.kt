@@ -84,6 +84,15 @@ class YarnUsageCalculatorTest {
         )
     }
 
+    @Test
+    fun `positive conversion underflow is rejected while explicit zero remains known`() {
+        assertNull(YarnUsageCalculator.toMeters(Double.MIN_VALUE, YarnUsageUnit.GRAMS, 1.0, Double.MAX_VALUE))
+        assertNull(YarnUsageCalculator.fromMeters(Double.MIN_VALUE, YarnUsageUnit.GRAMS, Double.MAX_VALUE, 1.0))
+        assertNull(YarnUsageCalculator.toMeters(Double.MIN_VALUE, YarnUsageUnit.SKEINS, Double.MIN_VALUE, 1.0))
+        assertEquals(0.0, YarnUsageCalculator.toMeters(0.0, YarnUsageUnit.GRAMS, 1.0, Double.MAX_VALUE))
+        assertNull(YarnUsageCalculator.toMeters(Double.MAX_VALUE, YarnUsageUnit.SKEINS, 2.0, 1.0))
+    }
+
     private fun toMeters(
         value: Double,
         unit: YarnUsageUnit,

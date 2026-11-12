@@ -26,6 +26,7 @@ import androidx.compose.ui.test.performScrollToIndex
 import androidx.compose.ui.test.performScrollToKey
 import androidx.compose.ui.test.performTextReplacement
 import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.unit.dp
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.test.espresso.Espresso
@@ -55,6 +56,7 @@ import org.junit.Before
 import org.junit.Test
 import java.io.File
 import kotlin.math.abs
+import kotlin.math.roundToInt
 
 /** Actual Projects routes and persisted data, in the opt-in isolated package only. */
 class AdaptiveCounterTest : AdaptiveRouteTestFixture() {
@@ -285,25 +287,47 @@ class AdaptiveCounterTest : AdaptiveRouteTestFixture() {
         }
         nodes.drop(1).take(2).forEach { node ->
             val bounds = node.getUnclippedBoundsInRoot()
-            assertTrue(
-                "Primary targets retain their size: $bounds",
-                (bounds.right - bounds.left).value >= 144f && (bounds.bottom - bounds.top).value >= 144f,
-            )
+            with(rule.density) {
+                val minimumSize = 144.dp.roundToPx()
+                assertTrue(
+                    "Primary targets retain their size: $bounds",
+                    (bounds.right - bounds.left).roundToPx() >= minimumSize &&
+                        (bounds.bottom - bounds.top).roundToPx() >= minimumSize,
+                )
+            }
         }
+    }
+
+    @Test
+    fun longStitchValueLeavesSpaceForIncrementTouchTarget() {
+        val current = 1_999_999_999
+        runBlocking(Dispatchers.IO) {
+            db.counterProjectDao().update(project().copy(stitchCount = Int.MAX_VALUE, currentStitch = current))
+        }
+        openCounter()
+        val increase = scrollTo(label(R.string.counter_increase_named, label(R.string.stitch_tracker_label)))
+        val bounds = increase.getUnclippedBoundsInRoot()
+        assertTrue(bounds.right - bounds.left >= CounterDimens.ExtraCounterStepperTouchSize - 1.dp)
+        increase.performTouchInput { click() }
+        rule.waitUntil(10_000) { project().currentStitch == current + 1 }
     }
 
     @Test
     fun heightAndWidthTransitionsKeepPrimaryAndSupportingActionsReachable() {
         openCounter()
-        for (height in listOf(580, 620, 580)) {
+        resize(800, 620)
+        val initialViewport = list().getUnclippedBoundsInRoot()
+        val chromeHeight = 620 - (initialViewport.bottom - initialViewport.top).value.roundToInt()
+        for (contentHeight in listOf(456, 504, 456)) {
+            val height = contentHeight + chromeHeight
             resize(800, height)
             list().performScrollToIndex(0)
             rule.waitUntil(15_000) {
                 val bounds = list().getUnclippedBoundsInRoot()
-                (height < 600) == ((bounds.bottom - bounds.top).value < 480)
+                (contentHeight < 480) == ((bounds.bottom - bounds.top).value < 480)
             }
             val viewport = list().getUnclippedBoundsInRoot()
-            assertEquals(height < 600, (viewport.bottom - viewport.top).value < 480)
+            assertEquals(contentHeight < 480, (viewport.bottom - viewport.top).value < 480)
             assertPrimaryControlsVisible()
             screenshot("height-boundary-$height")
             println("ADAPTIVE_COUNTER_BOUNDARY content=$viewport window=${rule.activity.resources.configuration}")

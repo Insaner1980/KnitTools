@@ -50,14 +50,7 @@ class AdaptiveInsightsContentTest {
     fun fixedCalendarRangesKeepChartSelectionAcrossResizeAndRestoration() {
         var state by mutableStateOf(populated())
         var size by mutableStateOf(800 to 700)
-        val restoration = StateRestorationTester(rule)
-        restoration.setContent {
-            KnitToolsTheme {
-                Box(Modifier.requiredSize(size.first.dp, size.second.dp)) {
-                    InsightsScreenContent(state, {}, {})
-                }
-            }
-        }
+        val restoration = restoration({ state }, { size })
         for (range in TimeRange.entries) {
             val axis = insightsChartAxis(range, today, LocalDate.of(2024, 1, 1), DayOfWeek.MONDAY)
             val buckets =
@@ -98,14 +91,7 @@ class AdaptiveInsightsContentTest {
             )
         val data = populated().copy(projectFabric = fabric)
         var size by mutableStateOf(800 to 700)
-        val restoration = StateRestorationTester(rule)
-        restoration.setContent {
-            KnitToolsTheme {
-                Box(Modifier.requiredSize(size.first.dp, size.second.dp)) {
-                    InsightsScreenContent(data, {}, {})
-                }
-            }
-        }
+        val restoration = restoration({ data }, { size })
 
         fun selectFirstDay() {
             list().performScrollToKey("fabric")
@@ -146,14 +132,7 @@ class AdaptiveInsightsContentTest {
         val data = populated()
         var state by mutableStateOf(data)
         var size by mutableStateOf(800 to 700)
-        val restoration = StateRestorationTester(rule)
-        restoration.setContent {
-            KnitToolsTheme {
-                Box(Modifier.requiredSize(size.first.dp, size.second.dp)) {
-                    InsightsScreenContent(state, {}, {})
-                }
-            }
-        }
+        val restoration = restoration({ state }, { size })
         list().performScrollToKey("chart-heading")
         selectBucket(1, data.chartBuckets.size)
         val selectedText = heading()
@@ -314,6 +293,20 @@ class AdaptiveInsightsContentTest {
                                 .contains("2026"),
                         )
                     }
+                }
+            }
+        }
+    }
+
+    private fun restoration(
+        state: () -> InsightsUiState,
+        size: () -> Pair<Int, Int>,
+    ) = StateRestorationTester(rule).apply {
+        setContent {
+            KnitToolsTheme {
+                val viewport = size()
+                Box(Modifier.requiredSize(viewport.first.dp, viewport.second.dp)) {
+                    InsightsScreenContent(state(), {}, {})
                 }
             }
         }

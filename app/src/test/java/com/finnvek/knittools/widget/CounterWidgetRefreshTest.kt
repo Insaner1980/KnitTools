@@ -2,8 +2,11 @@ package com.finnvek.knittools.widget
 
 import android.appwidget.AppWidgetManager
 import android.content.Context
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
 import androidx.glance.GlanceId
 import androidx.glance.appwidget.GlanceAppWidgetManager
+import com.finnvek.knittools.data.datastore.updatePreferencesSafely
 import com.finnvek.knittools.di.AppDispatchers
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -30,6 +33,7 @@ import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import java.io.IOException
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import kotlin.coroutines.ContinuationInterceptor
@@ -111,6 +115,24 @@ class CounterWidgetRefreshTest {
             coEvery { anyConstructed<CounterWidget>().update(context, any()) } returns Unit
             CounterWidgetState.refreshAll(context)
             coVerify(exactly = 1) { anyConstructed<CounterWidget>().update(context, second) }
+        }
+
+    @Test
+    fun `failed shared state persistence prevents publishing to widget instances`() =
+        runTest {
+            val context = context()
+            widgetInstances()
+            mockkStatic("com.finnvek.knittools.data.datastore.PreferencesDataStoreSafetyKt")
+            coEvery { any<DataStore<Preferences>>().updatePreferencesSafely(any()) } returns false
+
+            val failure =
+                runCatching { CounterWidgetState.syncAll(context, WidgetData(projectId = 2L)) }.exceptionOrNull()
+
+            assertTrue(failure is IOException)
+            coVerify(exactly = 0) {
+                anyConstructed<GlanceAppWidgetManager>().getGlanceIds(CounterWidget::class.java)
+                anyConstructed<CounterWidget>().update(any(), any())
+            }
         }
 
     @Test

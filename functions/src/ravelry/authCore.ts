@@ -43,6 +43,7 @@ interface CompleteOAuthOptions {
   readonly state: string;
   readonly completionProof: string;
   readonly tokenStore: RavelryTokenStore;
+  readonly rateLimiter?: Pick<RavelryRateLimiter, "consumeUid">;
   readonly nowMillis?: () => number;
 }
 
@@ -323,16 +324,16 @@ export async function completeRavelryOAuthCallback({
   nowMillis = Date.now,
   randomString = randomBase64Url,
 }: CompleteCallbackOptions): Promise<CallbackResponse> {
-  const now = nowMillis();
   const { state, ravelryError, code } = validateRavelryOAuthCallbackQuery(query);
   await rateLimiter.consumeGlobal("callback");
-  const storedState = await loadUsableState(stateStore, state, now).catch((error: unknown) =>
+  const storedState = await loadUsableState(stateStore, state, nowMillis()).catch((error: unknown) =>
     redirectExpiredStateOrThrow(error, state),
   );
   if ("redirectUrl" in storedState) {
     return storedState;
   }
   await rateLimiter.consumeUid(storedState.uid, "callback");
+  const now = nowMillis();
 
   if (ravelryError) {
     const expiredResult = await markStateUsedOrReject(stateStore, state, now).catch((error: unknown) =>
@@ -391,10 +392,12 @@ export async function completeRavelryOAuth({
   state,
   completionProof,
   tokenStore,
+  rateLimiter,
   nowMillis = Date.now,
 }: CompleteOAuthOptions): Promise<{ connected: true }> {
   const validState = requireState(state);
   const validProof = requireCompletionProof(completionProof);
+  await rateLimiter?.consumeUid(uid, "auth");
   const activated = await tokenStore.activatePendingToken(
     uid,
     validState,

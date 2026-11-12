@@ -1,6 +1,7 @@
 package com.finnvek.knittools.ui.screens.backup
 
 import android.net.Uri
+import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.finnvek.knittools.data.backup.BackupError
@@ -21,10 +22,12 @@ import javax.inject.Inject
 
 enum class BackupPhase { IDLE, SELECTING, EXPORTING, VALIDATING, PREVIEW, RESTORING, EXPORTED, RESTORED }
 
+@Immutable
 data class BackupUiState(
     val phase: BackupPhase = BackupPhase.IDLE,
     val preview: BackupPreview? = null,
     val error: BackupError? = null,
+    val previewSelectionId: UUID? = null,
 ) {
     val busy: Boolean get() = phase in setOf(BackupPhase.EXPORTING, BackupPhase.VALIDATING, BackupPhase.RESTORING)
 }
@@ -79,14 +82,19 @@ class BackupViewModel
             }
             val selected = UUID.randomUUID()
             selectionId = selected
-            run(BackupPhase.VALIDATING) { BackupUiState(BackupPhase.PREVIEW, repository.prepare(uri, selected)) }
+            run(BackupPhase.VALIDATING) {
+                BackupUiState(BackupPhase.PREVIEW, repository.prepare(uri, selected), previewSelectionId = selected)
+            }
         }
 
-        fun restore() {
-            if (state.value.phase != BackupPhase.PREVIEW) return
-            val selected = selectionId ?: return
+        fun restore(confirmedSelectionId: UUID) {
+            if (state.value.phase != BackupPhase.PREVIEW ||
+                state.value.previewSelectionId != confirmedSelectionId
+            ) {
+                return
+            }
             run(BackupPhase.RESTORING) {
-                repository.restore(selected)
+                repository.restore(confirmedSelectionId)
                 recordOnboardingProgress(restored = true)
                 BackupUiState(BackupPhase.RESTORED)
             }

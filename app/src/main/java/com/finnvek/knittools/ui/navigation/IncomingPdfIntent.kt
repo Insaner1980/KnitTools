@@ -31,10 +31,29 @@ fun IncomingPdfViewModel.receiveFromIntent(
 
             else -> null
         } ?: return false
-    receive(uri)
-    intent.setAction(Intent.ACTION_MAIN)
-    intent.data = null
-    intent.setType(null)
-    intent.removeExtra(Intent.EXTRA_STREAM)
+    consumePdfIntent(uri, intent)
     return true
+}
+
+internal fun IncomingPdfViewModel.restoreInterruptedReceive(intent: Intent?): Boolean {
+    val uri = interruptedSourceUri ?: return false
+    if (receiving.value) pdfIntentConsumed = true
+    consumePdfIntent(uri, intent)
+    return true
+}
+
+private fun IncomingPdfViewModel.consumePdfIntent(
+    uri: Uri,
+    intent: Intent?,
+) {
+    if (!pdfIntentConsumed) {
+        pdfIntentConsumed = true
+        receive(uri)
+    }
+    intent?.apply {
+        action = Intent.ACTION_MAIN
+        data = null
+        type = null
+        removeExtra(Intent.EXTRA_STREAM)
+    }
 }

@@ -23,7 +23,13 @@ internal object BackupZipStructure {
             BackupFormat.requireValid(diskCount == count && input.short() == 0)
             val directory =
                 if (count == 0xffff || size == 0xffffffffL || offset == 0xffffffffL) {
-                    zip64(input, end)
+                    val extended = zip64(input, end)
+                    BackupFormat.requireValid(
+                        (count == 0xffff || count.toLong() == extended.count) &&
+                            (size == 0xffffffffL || size == extended.size) &&
+                            (offset == 0xffffffffL || offset == extended.offset),
+                    )
+                    extended
                 } else {
                     Directory(count.toLong(), size, offset, end)
                 }
@@ -69,7 +75,10 @@ internal object BackupZipStructure {
             check()
             BackupFormat.requireValid(++count <= directory.count && directory.end - input.filePointer >= 46)
             BackupFormat.requireValid(input.readInt() == 0x504b0102)
-            input.skipBytes(16)
+            input.skipBytes(4)
+            val flags = input.short()
+            val method = input.short()
+            input.skipBytes(8)
             val compressedSize = input.uint()
             val uncompressedSize = input.uint()
             val nameLength = input.short()
@@ -87,7 +96,7 @@ internal object BackupZipStructure {
                         (if (compressedSize == 0xffffffffL) 8 else 0)
                 localOffset = zip64LocalOffset(input, extraLength, sizeBytes)
             }
-            verifyLocalName(input, localOffset, directory.offset, name)
+            verifyLocalHeader(input, localOffset, directory.offset, name, flags, method)
             input.seek(nextEntry)
         }
         BackupFormat.requireValid(count == directory.count)
@@ -113,16 +122,20 @@ internal object BackupZipStructure {
         throw BackupException(BackupError.CORRUPT)
     }
 
-    private fun verifyLocalName(
+    private fun verifyLocalHeader(
         input: RandomAccessFile,
         offset: Long,
         directoryOffset: Long,
         expected: ByteArray,
+        flags: Int,
+        method: Int,
     ) {
         BackupFormat.requireValid(offset >= 0 && offset <= directoryOffset - 30L)
         input.seek(offset)
         BackupFormat.requireValid(input.readInt() == 0x504b0304)
-        input.skipBytes(22)
+        input.skipBytes(2)
+        BackupFormat.requireValid(input.short() == flags && input.short() == method)
+        input.skipBytes(16)
         val nameLength = input.short()
         val extraLength = input.short()
         BackupFormat.requireValid(nameLength == expected.size)

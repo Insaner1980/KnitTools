@@ -5,6 +5,7 @@ import com.finnvek.knittools.domain.calculator.RowMarker
 import com.finnvek.knittools.domain.calculator.parseMapping
 import com.finnvek.knittools.domain.calculator.serializeMapping
 import com.finnvek.knittools.domain.model.CounterProject
+import com.finnvek.knittools.domain.model.ProgressPhoto
 import com.finnvek.knittools.domain.model.ProjectCounter
 import com.finnvek.knittools.domain.model.ProjectCounterDraft
 import com.finnvek.knittools.domain.model.SavedPattern
@@ -42,6 +43,27 @@ import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class CounterViewModelTest : CounterViewModelFixture() {
+    @Test
+    fun `missing selected project clears gallery photos before the photo query catches up`() =
+        runTest {
+            val selected = MutableStateFlow<CounterProject?>(observedProject.value)
+            every { repository.observeProject(7L) } returns selected
+            val photos = MutableStateFlow(listOf(ProgressPhoto(1L, 7L, "content://photos/1", 3)))
+            val model = viewModel()
+            every { photoRepository.getPhotosForProject(7L) } returns photos
+            advanceUntilIdle()
+            assertEquals(photos.value, model.allPhotos.value)
+
+            selected.value = null
+            advanceUntilIdle()
+
+            assertNull(model.uiState.value.projectId)
+            assertTrue(model.allPhotos.value.isEmpty())
+            photos.value = listOf(ProgressPhoto(2L, 7L, "content://photos/2", 4))
+            advanceUntilIdle()
+            assertTrue(model.allPhotos.value.isEmpty())
+        }
+
     @Test
     fun `document selection result cannot navigate after another project selection`() =
         runTest {

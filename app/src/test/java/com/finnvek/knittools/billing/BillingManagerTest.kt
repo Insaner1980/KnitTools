@@ -125,6 +125,8 @@ class BillingManagerTest {
         val activity = mockk<Activity>(relaxed = true)
         val product = mockk<ProductDetails>(relaxed = true)
         val offer = oneTimeOffer("regular", "", null, 2_000_000L)
+        every { product.productId } returns BillingManager.PRODUCT_ID
+        every { product.productType } returns BillingClient.ProductType.INAPP
         every { product.oneTimePurchaseOfferDetailsList } returns listOf(offer)
         every { product.oneTimePurchaseOfferDetails } returns offer
         every { billingClient.launchBillingFlow(activity, any()) } returns
@@ -137,8 +139,9 @@ class BillingManagerTest {
             ),
         )
 
-        manager.launchPurchaseFlow(activity)
-        manager.launchPurchaseFlow(activity)
+        val displayedOffer = manager.selectedOffer.value
+        manager.launchPurchaseFlow(activity, displayedOffer)
+        manager.launchPurchaseFlow(activity, displayedOffer)
 
         assertTrue(manager.purchaseFlowInFlight.value)
         verify(exactly = 1) { billingClient.launchBillingFlow(activity, any()) }
@@ -149,7 +152,7 @@ class BillingManagerTest {
         )
 
         assertFalse(manager.purchaseFlowInFlight.value)
-        manager.launchPurchaseFlow(activity)
+        manager.launchPurchaseFlow(activity, displayedOffer)
         verify(exactly = 2) { billingClient.launchBillingFlow(activity, any()) }
     }
 
@@ -259,7 +262,7 @@ class BillingManagerTest {
             assertFalse(manager.isProPurchased.value)
             assertEquals(BillingUserMessage.PURCHASE_PENDING, message.await())
             assertTrue(manager.purchasePending.value)
-            manager.launchPurchaseFlow(mockk<Activity>())
+            manager.launchPurchaseFlow(mockk<Activity>(), displayedOffer = null)
             verify(exactly = 0) { billingClient.launchBillingFlow(any(), any()) }
             verify(exactly = 0) { billingClient.acknowledgePurchase(any(), any()) }
             manager.onPurchasesUpdated(
@@ -289,7 +292,7 @@ class BillingManagerTest {
             restore.await()
 
             assertTrue(manager.purchasePending.value)
-            manager.launchPurchaseFlow(mockk<Activity>())
+            manager.launchPurchaseFlow(mockk<Activity>(), displayedOffer = null)
             verify(exactly = 0) { billingClient.launchBillingFlow(any(), any()) }
             manager.destroy()
         }
@@ -324,7 +327,7 @@ class BillingManagerTest {
             assertPurchaseBlocked(manager, client, activity, BillingUserMessage.PRICE_CHANGED_REVIEW)
             runCurrent()
             assertEquals("base-token", manager.selectedOffer.value?.offerToken)
-            manager.launchPurchaseFlow(activity)
+            manager.launchPurchaseFlow(activity, manager.selectedOffer.value)
             verify(exactly = 1) { client.launchBillingFlow(activity, any()) }
             manager.destroy()
         }
@@ -552,6 +555,27 @@ class BillingManagerTest {
             BillingProductStatus.Unavailable(BillingUserMessage.PURCHASE_UNAVAILABLE),
             manager.productStatus.value,
         )
+    }
+
+    @Test
+    fun `only the one time Pro product can supply the purchase quote`() {
+        val manager = BillingManager(context)
+        val unrelated = launchProduct(1_000L, 2_000L)
+        every { unrelated.productId } returns "unrelated"
+        val subscription = launchProduct(1_000L, 2_000L)
+        every { subscription.productType } returns BillingClient.ProductType.SUBS
+        val ok = billingResult(BillingClient.BillingResponseCode.OK)
+
+        manager.applyProductDetailsResult(ProductDetailsResult(ok, listOf(unrelated, subscription)))
+        assertNull(manager.selectedOffer.value)
+        assertEquals(
+            BillingProductStatus.Unavailable(BillingUserMessage.PURCHASE_UNAVAILABLE),
+            manager.productStatus.value,
+        )
+
+        val pro = launchProduct(1_000L, 2_000L)
+        manager.applyProductDetailsResult(ProductDetailsResult(ok, listOf(unrelated, subscription, pro)))
+        assertEquals("base-token", manager.selectedOffer.value?.offerToken)
     }
 
     @Test

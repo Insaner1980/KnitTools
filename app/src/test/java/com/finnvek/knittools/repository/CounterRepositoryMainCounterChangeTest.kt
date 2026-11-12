@@ -41,29 +41,13 @@ class CounterRepositoryMainCounterChangeTest {
                         count = initialLinkedCount,
                         linkedToMainCounter = true,
                     )
-                var history: CounterHistoryEntity? = null
+                val history = mutableListOf<CounterHistoryEntity>()
                 val projectDao = mockk<CounterProjectDao>(relaxed = true)
                 val counterDao = mockk<ProjectCounterDao>(relaxed = true)
                 coEvery { projectDao.getProject(7L) } answers { project }
                 every { counterDao.getCountersForProject(7L) } answers { flowOf(listOf(linked)) }
                 coEvery { counterDao.updateCount(20L, any()) } answers { linked = linked.copy(count = secondArg()) }
-                coEvery {
-                    projectDao.updateCounterStateWithHistory(7L, any(), any(), any(), any(), any(), any())
-                } answers {
-                    project = project.copy(count = secondArg())
-                    history =
-                        CounterHistoryEntity(
-                            id = 1L,
-                            projectId = 7L,
-                            action = arg(3),
-                            previousValue = arg(4),
-                            newValue = secondArg(),
-                            linkedCounterDeltasJson = arg(6),
-                        )
-                }
-                coEvery { projectDao.getLatestHistory(7L) } answers { history }
-                coEvery { projectDao.updateCount(7L, any(), any()) } answers
-                    { project = project.copy(count = secondArg()) }
+                projectDao.recordCounterHistory(7L, history) { project = project.copy(count = it) }
 
                 assertTrue(buildRepository(projectDao, counterDao).applyMainCounterChange(7L, change))
                 val addedLater = linked.copy(id = 21L, count = 9)

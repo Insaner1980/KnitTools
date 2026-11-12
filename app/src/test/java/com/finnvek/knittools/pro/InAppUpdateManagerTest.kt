@@ -24,6 +24,28 @@ class InAppUpdateManagerTest {
     private val resultLauncher = mockk<ActivityResultLauncher<IntentSenderRequest>>(relaxed = true)
 
     @Test
+    fun `a concurrent availability failure cannot release an already started update flow`() {
+        val first = pendingTask<AppUpdateInfo>()
+        val second = pendingTask<AppUpdateInfo>()
+        val results = listOf(first.task, second.task, successTask(flexibleUpdateInfo()))
+        every { appUpdateManager.appUpdateInfo } returnsMany results
+        every {
+            appUpdateManager.startUpdateFlowForResult(any(), resultLauncher, any<AppUpdateOptions>())
+        } returns true
+        val manager = InAppUpdateManager(appUpdateManager)
+
+        manager.checkForUpdate(resultLauncher)
+        manager.checkForUpdate(resultLauncher)
+        first.succeed(flexibleUpdateInfo())
+        second.fail(IllegalStateException("availability failed"))
+        manager.checkForUpdate(resultLauncher)
+
+        verify(exactly = 1) {
+            appUpdateManager.startUpdateFlowForResult(any(), resultLauncher, any<AppUpdateOptions>())
+        }
+    }
+
+    @Test
     fun `checkForUpdate does not start update flow after activity becomes unavailable`() {
         val updateInfoTask = pendingTask<AppUpdateInfo>()
         val updateInfo = flexibleUpdateInfo()

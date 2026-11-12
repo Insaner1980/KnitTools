@@ -4,6 +4,7 @@ import com.finnvek.knittools.analytics.UsageAnalytics
 import com.finnvek.knittools.analytics.UsageEvent
 import com.finnvek.knittools.domain.tips.TipContext
 import com.finnvek.knittools.domain.tips.TipId
+import com.finnvek.knittools.domain.tips.TipRules
 import com.finnvek.knittools.domain.tips.TipScreen
 import com.finnvek.knittools.domain.tips.TipSignal
 import com.finnvek.knittools.repository.OnboardingState
@@ -28,6 +29,49 @@ import org.junit.Test
 @OptIn(ExperimentalCoroutinesApi::class)
 class TipSessionTest {
     @Test
+    fun `an old rapid burst cannot trigger step guidance after a blocker clears`() {
+        val state =
+            TipSessionState(
+                loaded = true,
+                onboarding = OnboardingState(initializedVersion = 1),
+                incrementTimesMillis = mapOf(7L to listOf(1_000L, 1_500L, 2_000L)),
+            )
+        val context = TipContext(TipScreen.COUNTER, projectId = 7L, millisSinceEntry = 2_000L)
+
+        assertEquals(TipId.STEP_SIZE, TipRules.next(state.contextFor(context, monotonicMillis = 3_000L)))
+        assertNull(TipRules.next(state.contextFor(context, monotonicMillis = 3_001L)))
+        assertNull(TipRules.next(state.contextFor(context.copy(blocked = true), monotonicMillis = 10_000L)))
+        assertNull(TipRules.next(state.contextFor(context, monotonicMillis = 10_000L)))
+        assertNull(TipRules.next(state.contextFor(context.copy(stepSize = 5), monotonicMillis = 3_000L)))
+        assertNull(TipRules.next(state.contextFor(context.copy(projectId = 8L), monotonicMillis = 3_000L)))
+    }
+
+    @Test
+    fun `navigation before the first visible frame leaves automatic guidance unconsumed`() =
+        runTest {
+            val fixture = fixture()
+            val session = fixture.session
+            runCurrent()
+            session.onRouteChanged("tools")
+            assertTrue(session.tryShow("tools", TipId.TOOLS_INTRO, null))
+            val pending = requireNotNull(session.state.value.presentation)
+
+            session.onRouteChanged("projects")
+            session.markPresentationVisible(pending)
+            runCurrent()
+
+            assertEquals(0, session.state.value.shownThisProcess)
+            assertTrue(
+                session.state.value.processSeen
+                    .isEmpty(),
+            )
+            coVerify(exactly = 0) { fixture.repository.markTipSeen(any()) }
+            verify(exactly = 0) { fixture.analytics.track(any()) }
+            session.onRouteChanged("tools")
+            assertTrue(session.tryShow("tools", TipId.TOOLS_INTRO, null))
+        }
+
+    @Test
     fun `only loaded active route can claim one tip and showing does not mark it seen`() =
         runTest {
             val fixture = fixture()
@@ -37,6 +81,7 @@ class TipSessionTest {
             runCurrent()
             assertFalse(session.tryShow("old-route", TipId.TOOLS_INTRO, null))
             assertTrue(session.tryShow("tools", TipId.TOOLS_INTRO, null))
+            session.markPresentationVisible(requireNotNull(session.state.value.presentation))
             assertFalse(session.tryShow("tools", TipId.BACKUP, null))
             assertTrue(
                 session.state.value.processSeen
@@ -69,9 +114,11 @@ class TipSessionTest {
             session.onRouteChanged("tools")
             assertTrue(session.tryShow("tools", TipId.TOOLS_INTRO, null))
             // CPD-ON
+            session.markPresentationVisible(requireNotNull(session.state.value.presentation))
             session.onRouteChanged("overview-7")
             session.dismiss("tools", TipId.TOOLS_INTRO)
             assertTrue(session.tryShow("overview-7", TipId.OVERVIEW_INTRO, 7L))
+            session.markPresentationVisible(requireNotNull(session.state.value.presentation))
             session.onRouteChanged("projects")
             assertEquals(2, session.state.value.shownThisProcess)
             assertFalse(session.tryShow("projects", TipId.FOLDERS, null))
@@ -88,9 +135,11 @@ class TipSessionTest {
             val session = fixture.session
             session.onRouteChanged("tools")
             assertTrue(session.tryShow("tools", TipId.TOOLS_INTRO, null))
+            session.markPresentationVisible(requireNotNull(session.state.value.presentation))
             session.onRouteChanged("counter-7")
             assertFalse(session.tryShow("counter-7", TipId.UNDO, 7L))
             assertTrue(session.tryShow("counter-7", TipId.FIRST_ROW, 7L))
+            session.markPresentationVisible(requireNotNull(session.state.value.presentation))
 
             session.onSignal(TipSignal.Increment(7L, 1_000L))
 
@@ -98,6 +147,7 @@ class TipSessionTest {
             assertEquals(7L, session.state.value.undoProjectId)
             assertEquals(2, session.state.value.shownThisProcess)
             assertTrue(session.tryShow("counter-7", TipId.UNDO, 7L))
+            session.markPresentationVisible(requireNotNull(session.state.value.presentation))
             assertEquals(2, session.state.value.shownThisProcess)
             session.dismiss("counter-7", TipId.UNDO)
             assertNull(session.state.value.undoProjectId)
@@ -118,8 +168,10 @@ class TipSessionTest {
             session.onRouteChanged("tools")
             session.onSignal(TipSignal.Increment(9L, 4_000L))
             runCurrent()
-            val first = session.state.value.contextFor(TipContext(screen = TipScreen.COUNTER, projectId = 7L))
-            val second = session.state.value.contextFor(TipContext(screen = TipScreen.COUNTER, projectId = 9L))
+            val first =
+                session.state.value.contextFor(TipContext(screen = TipScreen.COUNTER, projectId = 7L), 4_000L)
+            val second =
+                session.state.value.contextFor(TipContext(screen = TipScreen.COUNTER, projectId = 9L), 4_000L)
             assertEquals(30, first.incrementsInProject)
             assertEquals(listOf(3_000L), first.incrementTimesMillis)
             assertEquals(1, second.incrementsInProject)
@@ -161,6 +213,7 @@ class TipSessionTest {
             val session = fixture.session
             session.onRouteChanged("tools")
             assertTrue(session.tryShow("tools", TipId.TOOLS_INTRO, null))
+            session.markPresentationVisible(requireNotNull(session.state.value.presentation))
             session.dismiss("tools", TipId.TOOLS_INTRO)
             val reset = session.resetTips()
             runCurrent()
@@ -190,6 +243,7 @@ class TipSessionTest {
             val session = fixture.session
             session.onRouteChanged("tools")
             assertTrue(session.tryShow("tools", TipId.TOOLS_INTRO, null))
+            session.markPresentationVisible(requireNotNull(session.state.value.presentation))
             session.dismiss("tools", TipId.TOOLS_INTRO)
             assertFalse(session.resetTips().await())
             assertTrue(TipId.TOOLS_INTRO in session.state.value.processSeen)
@@ -205,6 +259,7 @@ class TipSessionTest {
             val session = fixture.session
             session.onRouteChanged("overview-7")
             assertTrue(session.tryShow("overview-7", TipId.FIRST_SESSION_SAVED, 7L))
+            session.markPresentationVisible(requireNotNull(session.state.value.presentation))
             session.dismiss("overview-7", TipId.FIRST_SESSION_SAVED)
             runCurrent()
             assertFalse(fixture.stored.value.firstSessionTipPending)
@@ -233,9 +288,44 @@ class TipSessionTest {
             val visible = requireNotNull(session.state.value.presentation)
             session.markPresentationVisible(visible)
             session.markPresentationVisible(visible)
+            assertEquals(1, session.state.value.shownThisProcess)
             runCurrent()
             coVerify(exactly = 1) { fixture.repository.markTargetCelebrated(7L) }
             assertTrue("7" in fixture.stored.value.targetCelebratedProjects)
+        }
+
+    @Test
+    fun `target dismissed before visibility remains eligible when its blocker clears`() =
+        runTest {
+            val fixture = fixture()
+            val session = fixture.session
+            runCurrent()
+            session.onRouteChanged("counter-7")
+            session.onSignal(TipSignal.TargetReached(7L))
+            assertTrue(session.tryShow("counter-7", TipId.TARGET_REACHED, 7L))
+
+            session.dismiss("counter-7", TipId.TARGET_REACHED)
+            runCurrent()
+
+            val context =
+                TipContext(
+                    TipScreen.COUNTER,
+                    projectId = 7L,
+                    count = 10,
+                    target = 10,
+                    millisSinceEntry = 2_000L,
+                )
+            assertEquals(TipId.TARGET_REACHED, TipRules.next(session.state.value.contextFor(context)))
+            assertEquals(0, session.state.value.shownThisProcess)
+            coVerify(exactly = 0) { fixture.repository.markTargetCelebrated(any()) }
+            assertTrue(session.tryShow("counter-7", TipId.TARGET_REACHED, 7L))
+            session.markPresentationVisible(requireNotNull(session.state.value.presentation))
+            session.dismiss("counter-7", TipId.TARGET_REACHED)
+            runCurrent()
+
+            val consumedContext = session.state.value.contextFor(context)
+            assertFalse(consumedContext.targetReached)
+            coVerify(exactly = 1) { fixture.repository.markTargetCelebrated(7L) }
         }
 
     @Test
@@ -297,9 +387,11 @@ class TipSessionTest {
             runCurrent()
             session.onRouteChanged("counter-7")
             assertTrue(session.tryShow("counter-7", TipId.WORK_SESSION, 7L))
+            session.markPresentationVisible(requireNotNull(session.state.value.presentation))
             session.dismiss("counter-7", TipId.WORK_SESSION)
             session.onRouteChanged("tools")
             assertTrue(session.tryShow("tools", TipId.TOOLS_INTRO, null))
+            session.markPresentationVisible(requireNotNull(session.state.value.presentation))
             session.onRouteChanged("overview-7")
             runCurrent()
             assertEquals(2, session.state.value.shownThisProcess)
@@ -312,6 +404,7 @@ class TipSessionTest {
             val context = TipContext(TipScreen.COUNTER, projectId = 7L)
             assertTrue(session.tryShowRequestedWorkSession("counter-7", context))
             assertEquals(session.state.value.workSessionRequest, session.state.value.presentation)
+            session.markPresentationVisible(requireNotNull(session.state.value.presentation))
             assertEquals(2, session.state.value.shownThisProcess)
 
             session.dismiss("counter-7", TipId.WORK_SESSION)
@@ -390,6 +483,7 @@ class TipSessionTest {
             runCurrent()
             session.requestWorkSession(7L, "counter-7")
             assertTrue(session.tryShowRequestedWorkSession("counter-7", context))
+            session.markPresentationVisible(requireNotNull(session.state.value.presentation))
             session.cancelInvalidWorkSessionRequest("counter-7", context.copy(hasActiveSession = true))
             assertNull(session.state.value.workSessionRequest)
             assertNull(session.state.value.presentation)

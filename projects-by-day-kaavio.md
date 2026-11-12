@@ -275,6 +275,7 @@ Lisää uudet tekstit kaikkiin nykyisiin resurssihakemistoihin:
 - `values-nb`
 - `values-nl`
 - `values-pt`
+- `values-pt-rBR`
 - `values-sv`
 
 Tarvittavat uudet merkitykset:
@@ -323,7 +324,7 @@ Testaa puhtaat geometriatoiminnot:
 - `InsightsRedesignSourceTest`: järjestys on pylväskaavio → projektiruudukko → “Where the time went”; ruudukko ei korvaa kaaviota.
 - `InsightsPerformanceSourceTest`: laskenta säilyy IO-dispatcherilla ja näkymä kerää edelleen yhden `InsightsUiState`-virran.
 - `InsightsKnitLatticeTest`: ruudukko käyttää `knitStitchLattice`-funktiota ja samoja neulepinnan tokeneita.
-- `InsightsCopySourceTest`: kaikki uudet resurssit löytyvät jokaisesta 11 lokaalikansiosta.
+- `InsightsCopySourceTest`: kaikki uudet resurssit löytyvät jokaisesta 12 lokaalikansiosta.
 - `YarnPaletteContrastTest` ja `InsightsContrastTest`: nykyiset projektivärit ja valintareunus säilyttävät kontrastivaatimukset.
 
 Lisää lähdekooditesti tai täsmällinen kielteinen tarkistus, joka estää seuraavien palaamisen:

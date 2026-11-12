@@ -123,6 +123,7 @@ fun SessionHistoryScreen(onBack: () -> Unit) {
                             startRow = session.startRow,
                             endRow = session.endRow,
                             onDelete = { pendingDeleteSessionId = session.id },
+                            zoneId = session.zoneId,
                         )
                     }
                 }

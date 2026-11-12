@@ -88,9 +88,11 @@ describe("Pending auth during refresh in local Firestore", {
     const f = await fixture();
     const proof = await f.pending();
     const refreshed = await f.refresh(async () => { await completeRavelryOAuth(proof); });
-    assert.equal(refreshed?.accessToken, "synthetic-new-access");
+    assert.equal(refreshed, null);
     const data = (await f.ref.get()).data();
+    assert.equal(data?.accessToken, "synthetic-new-access");
     assert.equal(data?.refreshToken, "synthetic-new-refresh");
+    assert.equal(data?.connectionGeneration, 4);
     assert.equal(data?.pending, undefined);
   });
 

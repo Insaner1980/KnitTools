@@ -47,6 +47,9 @@ abstract class HistoryNavigationTest(
 
     @Before fun seed() {
         app = ApplicationProvider.getApplicationContext()
+        check(app.packageName.endsWith(".notestest") || app.packageName.endsWith(".activepolicytest")) {
+            "Runtime fixtures require an isolated test package"
+        }
         repository = EntryPointAccessors.fromApplication(app, WidgetEntryPoint::class.java).counterRepository()
         runBlocking(Dispatchers.IO) {
             val created = repository.createProject(name, canCreateAdditionalProjects = true)

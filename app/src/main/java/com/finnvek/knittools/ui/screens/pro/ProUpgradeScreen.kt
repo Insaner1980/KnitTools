@@ -65,7 +65,7 @@ import com.finnvek.knittools.ui.theme.IllustrationDimens
 @Composable
 fun ProUpgradeScreen(
     onBack: () -> Unit,
-    onPurchase: (Activity) -> Unit,
+    onPurchase: (Activity, SelectedOneTimeOffer) -> Unit,
     viewModelProvider: @Composable () -> ProUpgradeViewModel = { hiltViewModel() },
     onStartupReady: (Boolean) -> Unit = {},
     personalLine: String? = null,
@@ -75,6 +75,7 @@ fun ProUpgradeScreen(
     val viewModel = viewModelProvider()
     val proState by viewModel.proState.collectAsStateWithLifecycle()
     val proStateReady by viewModel.proStateReady.collectAsStateWithLifecycle()
+    val controlsReady by viewModel.controlsReady.collectAsStateWithLifecycle()
     val purchaseQueryFailed by viewModel.purchaseQueryFailed.collectAsStateWithLifecycle()
     val selectedOffer by viewModel.selectedOffer.collectAsStateWithLifecycle()
     val productStatus by viewModel.productStatus.collectAsStateWithLifecycle()
@@ -124,17 +125,18 @@ fun ProUpgradeScreen(
             ProPurchaseSection(
                 proState = proState,
                 proStateReady = proStateReady,
+                controlsReady = controlsReady,
                 purchaseQueryFailed = purchaseQueryFailed,
                 offer = previewOffer ?: selectedOffer,
                 productStatusProvider = { if (previewOffer != null) BillingProductStatus.Available else productStatus },
                 purchaseFlowInFlight = purchaseFlowInFlight,
                 isRestoring = isRestoring,
                 isStartingTrial = isStartingTrial,
-                onPurchase = {
+                onPurchase = { displayedOffer ->
                     if (previewOffer != null) {
                         previewPurchaseVisible = true
                     } else {
-                        context.findActivity()?.let(onPurchase)
+                        context.findActivity()?.let { onPurchase(it, displayedOffer) }
                     }
                 },
                 onRestore = viewModel::restorePurchases,
@@ -196,54 +198,53 @@ private fun ProStatusPill(proState: ProState) {
 private fun ProPurchaseSection(
     proState: ProState,
     proStateReady: Boolean,
+    controlsReady: Boolean,
     purchaseQueryFailed: Boolean,
     offer: SelectedOneTimeOffer?,
     productStatusProvider: @Composable () -> BillingProductStatus,
     purchaseFlowInFlight: Boolean,
     isRestoring: Boolean,
     isStartingTrial: Boolean,
-    onPurchase: () -> Unit,
+    onPurchase: (SelectedOneTimeOffer) -> Unit,
     onRestore: () -> Unit,
     onRetry: () -> Unit,
     onStartTrial: () -> Unit,
 ) {
     val productStatus = productStatusProvider()
-    if (!proStateReady) {
-        if (purchaseQueryFailed) {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        if (!proStateReady) {
+            if (purchaseQueryFailed) {
                 ProStatusMessage(messageRes = R.string.generic_error_unknown)
                 ProRestoreButton(isRestoring = isRestoring, onRestore = onRestore)
+            } else {
+                CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+                return@Column
             }
         } else {
-            CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+            ProStatusPill(proState)
+            if (proState.status == ProStatus.PRO_PURCHASED) return@Column
+            // Voimassa oleva hinta näytetään ommeltuna hintalappuna ostopainikkeineen.
+            val availableOffer = offer?.takeIf { productStatus == BillingProductStatus.Available }
+            if (availableOffer != null) {
+                LaunchPriceTag(
+                    offer = availableOffer,
+                    onBuy = { onPurchase(availableOffer) },
+                    buyInFlight = purchaseFlowInFlight,
+                )
+            } else {
+                ProPriceDetails(
+                    offer = offer,
+                    productStatus = productStatus,
+                    trialAvailable = proState.status == ProStatus.TRIAL_NOT_STARTED,
+                    onRetry = onRetry,
+                )
+            }
+            // Sisällön säilymisestä kerrotaan vain päättyneelle kokeilulle.
+            if (proState.status == ProStatus.TRIAL_EXPIRED) {
+                Text(stringResource(R.string.pro_trial_ended_body), style = MaterialTheme.typography.bodyMedium)
+            }
         }
-        return
-    }
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        ProStatusPill(proState)
-        if (proState.status == ProStatus.PRO_PURCHASED) return@Column
-        // Voimassa oleva hinta näytetään ommeltuna hintalappuna ostopainikkeineen; lataus ja puuttuva hinta
-        // käyttävät tavallista hintaosiota.
-        val availableOffer = offer?.takeIf { productStatus == BillingProductStatus.Available }
-        if (availableOffer != null) {
-            LaunchPriceTag(
-                offer = availableOffer,
-                onBuy = onPurchase,
-                buyInFlight = purchaseFlowInFlight,
-            )
-        } else {
-            ProPriceDetails(
-                offer = offer,
-                productStatus = productStatus,
-                trialAvailable = proState.status == ProStatus.TRIAL_NOT_STARTED,
-                onRetry = onRetry,
-            )
-        }
-        // Sisällön säilymisestä kerrotaan vain päättyneelle kokeilulle; ennen kokeilua teksti hämmensi.
-        if (proState.status == ProStatus.TRIAL_EXPIRED) {
-            Text(stringResource(R.string.pro_trial_ended_body), style = MaterialTheme.typography.bodyMedium)
-        }
-        if (proState.status == ProStatus.TRIAL_NOT_STARTED) {
+        if ((proStateReady || controlsReady) && proState.status == ProStatus.TRIAL_NOT_STARTED) {
             Text(stringResource(R.string.onboarding_pro_trial_terms), style = MaterialTheme.typography.bodyMedium)
             OutlinedButton(onClick = onStartTrial, modifier = Modifier.fillMaxWidth(), enabled = !isStartingTrial) {
                 Text(stringResource(R.string.pro_start_14_day_trial))

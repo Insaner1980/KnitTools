@@ -115,12 +115,15 @@ class ArchitectureSingleSourceSourceTest {
         val project = ProjectSourceFiles.read(PROJECT_MD)
 
         assertTrue(project.contains("| Room schema | $KNITTOOLS_DATABASE_VERSION |"))
-        assertTrue(
-            project.contains(
-                "local pattern PDF import, project attachment, reading-line calibration, " +
-                    "layered annotations, and annotated export",
-            ),
-        )
+        listOf(
+            "Pattern import uses SAF `OpenDocument(application/pdf)`",
+            "New project plus PDF is one repository transaction",
+            "Only explicit row-marker and two-point calibration actions write mappings.",
+            "A project viewer renders that reusable master read-only plus its own editable overlay",
+            "Marked PDF export uses SAF `CreateDocument(application/pdf)`",
+        ).forEach { contract ->
+            assertTrue("PROJECT.md must document: $contract", project.contains(contract))
+        }
         assertFalse(project.contains("VoiceCommandParser.kt"))
         assertTrue(
             project.contains(

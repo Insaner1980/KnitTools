@@ -91,6 +91,7 @@ import com.finnvek.knittools.ui.navigation.PatternShareCoordinatorViewModel
 import com.finnvek.knittools.ui.navigation.PatternShareOfferResult
 import com.finnvek.knittools.ui.navigation.TopLevelDestination
 import com.finnvek.knittools.ui.navigation.receiveFromIntent
+import com.finnvek.knittools.ui.navigation.restoreInterruptedReceive
 import com.finnvek.knittools.ui.navigation.toPatternSharePayload
 import com.finnvek.knittools.ui.navigation.withValidatedCounterLaunchTrust
 import com.finnvek.knittools.ui.screens.pro.TrialJourneyCoordinator
@@ -333,6 +334,7 @@ class MainActivity : AppCompatActivity() {
                             !onboardingVisible,
                             launchRequestsReady,
                             startupSplashRemoved,
+                            destinationReady,
                             !suppressPassiveTrialNotice,
                             controlsReady,
                             incomingPdf == null,
@@ -365,16 +367,20 @@ class MainActivity : AppCompatActivity() {
                         if (noticeCanClaim && checkedResumeGeneration != trialNoticeResumeGeneration) {
                             // Tarkistus kuuluu käynnistykseen tai paluuseen, ei kesken käytön vaihtuvalle päivälle.
                             checkedResumeGeneration = trialNoticeResumeGeneration
-                            when (proState.status) {
-                                ProStatus.TRIAL_EXPIRED -> {
-                                    if (!showTrialEndedNotice) showTrialEndedNotice = trialManager.claimTrialEndNotice()
-                                }
-                                ProStatus.TRIAL_ACTIVE -> {
-                                    if (!showTrialThreeDayNotice) {
-                                        showTrialThreeDayNotice = trialManager.claimTrialThreeDayNotice()
+                            lifecycleScope.launch {
+                                when (proState.status) {
+                                    ProStatus.TRIAL_EXPIRED -> {
+                                        if (!showTrialEndedNotice && trialManager.claimTrialEndNotice()) {
+                                            showTrialEndedNotice = true
+                                        }
                                     }
+                                    ProStatus.TRIAL_ACTIVE -> {
+                                        if (!showTrialThreeDayNotice && trialManager.claimTrialThreeDayNotice()) {
+                                            showTrialThreeDayNotice = true
+                                        }
+                                    }
+                                    else -> Unit
                                 }
-                                else -> Unit
                             }
                         }
                     }
@@ -424,17 +430,22 @@ class MainActivity : AppCompatActivity() {
                             },
                         )
                     }
-                    if ((showTrialEndedNotice || showTrialThreeDayNotice) && noticeDataReady && noticeSurfaceReady) {
+                    val trialEnded = showTrialEndedNotice && proState.status == ProStatus.TRIAL_EXPIRED
+                    val trialEndingSoon =
+                        showTrialThreeDayNotice &&
+                            proState.status == ProStatus.TRIAL_ACTIVE &&
+                            proState.trialDaysRemaining == 3
+                    if ((trialEnded || trialEndingSoon) && noticeDataReady && noticeSurfaceReady) {
                         TrialEndedDialog(
-                            endingSoon = showTrialThreeDayNotice,
-                            summary = trialSummaryText(currentTrialFacts, afterTrial = showTrialEndedNotice),
+                            endingSoon = trialEndingSoon,
+                            summary = trialSummaryText(currentTrialFacts, afterTrial = trialEnded),
                             offer = selectedOffer,
                             productStatus = productStatus,
                             purchaseInFlight = purchaseFlowInFlight,
                             onRetry = billingManager::retryProductDetails,
-                            onPurchase = {
+                            onPurchase = { displayedOffer ->
                                 noticePurchaseMessage = null
-                                billingManager.launchPurchaseFlow(this@MainActivity)
+                                billingManager.launchPurchaseFlow(this@MainActivity, displayedOffer)
                             },
                             purchaseMessage = noticePurchaseMessage,
                             onSeePro = {
@@ -490,11 +501,15 @@ class MainActivity : AppCompatActivity() {
         launchRequestsReady = false
         consumedPatternShareIntent = savedInstanceState?.getBoolean(STATE_PATTERN_SHARE_INTENT_CONSUMED) == true
         if (consumedPatternShareIntent) clearPatternShareIntent()
+        incomingPdfViewModel.pdfIntentConsumed =
+            incomingPdfViewModel.pdfIntentConsumed ||
+            savedInstanceState?.getBoolean(STATE_PDF_INTENT_CONSUMED) == true
         restoreCounterLaunchRequest(savedInstanceState)
         openProUpgradeRequest = intent?.action == ACTION_OPEN_PRO_UPGRADE
         openWidgetProPromptRequest = intent?.action == ACTION_OPEN_WIDGET_PRO_PROMPT
         val isShareImport =
-            handlePatternShareIntentIfNeeded(intent) ||
+            incomingPdfViewModel.restoreInterruptedReceive(intent) ||
+                handlePatternShareIntentIfNeeded(intent) ||
                 incomingPdfViewModel.receiveFromIntent(intent, contentResolver)
         if (isShareImport) {
             counterLaunchRequest = null
@@ -555,6 +570,11 @@ class MainActivity : AppCompatActivity() {
         outState.putBoolean(STATE_TRIAL_JOURNEY_ONBOARDING, trialJourneyCoordinator.fromOnboarding.value)
         outState.putBoolean(STATE_SUPPRESS_PASSIVE_TRIAL_NOTICE, suppressPassiveTrialNotice)
         outState.putBoolean(STATE_PATTERN_SHARE_INTENT_CONSUMED, consumedPatternShareIntent)
+        // Retry an interrupted copy after process restoration; retained ViewModels already suppress rotation replays.
+        outState.putBoolean(
+            STATE_PDF_INTENT_CONSUMED,
+            incomingPdfViewModel.pdfIntentConsumed && !incomingPdfViewModel.receiving.value,
+        )
         consumedCounterLaunchRequestId?.let {
             outState.putString(STATE_CONSUMED_COUNTER_LAUNCH_REQUEST_ID, it)
         }
@@ -574,6 +594,7 @@ class MainActivity : AppCompatActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         consumedPatternShareIntent = false
+        incomingPdfViewModel.pdfIntentConsumed = false
         setIntent(intent)
         launchRequestsReady = false
         openProUpgradeRequest = intent.action == ACTION_OPEN_PRO_UPGRADE
@@ -678,6 +699,7 @@ class MainActivity : AppCompatActivity() {
         private const val STATE_TRIAL_JOURNEY_ONBOARDING = "trial_journey_onboarding"
         private const val STATE_SUPPRESS_PASSIVE_TRIAL_NOTICE = "suppress_passive_trial_notice"
         private const val STATE_PATTERN_SHARE_INTENT_CONSUMED = "pattern_share_intent_consumed"
+        private const val STATE_PDF_INTENT_CONSUMED = "pdf_intent_consumed"
         private const val EXTRA_OPEN_COUNTER = "com.finnvek.knittools.extra.OPEN_COUNTER"
         private const val EXTRA_PROJECT_ID = "com.finnvek.knittools.extra.PROJECT_ID"
         private const val EXTRA_COUNTER_LAUNCH_ID = "com.finnvek.knittools.extra.COUNTER_LAUNCH_ID"
@@ -759,7 +781,7 @@ internal fun TrialEndedDialog(
     productStatus: BillingProductStatus,
     purchaseInFlight: Boolean,
     onRetry: () -> Unit,
-    onPurchase: () -> Unit,
+    onPurchase: (SelectedOneTimeOffer) -> Unit,
     purchaseMessage: Int?,
 ) {
     LifecycleResumeEffect(endingSoon) {
@@ -778,13 +800,17 @@ internal fun TrialEndedDialog(
                 verticalArrangement = Arrangement.spacedBy(ComponentDimens.StandardSpacing),
             ) {
                 summary?.let { Text(it) }
-                Text(stringResource(R.string.pro_trial_ended_body))
+                val retentionBody = if (endingSoon) R.string.journey_keep_content else R.string.pro_trial_ended_body
+                Text(stringResource(retentionBody))
                 if (!endingSoon) ProPriceDetails(offer, productStatus, false, onRetry)
                 purchaseMessage?.let { Text(stringResource(it)) }
             }
         },
         confirmButton = {
-            TextButton(onClick = if (canBuy) onPurchase else onSeePro, enabled = !purchaseInFlight) {
+            TextButton(
+                onClick = { if (canBuy) onPurchase(offer) else onSeePro() },
+                enabled = !purchaseInFlight,
+            ) {
                 Text(
                     if (canBuy) {
                         stringResource(R.string.pro_buy_for_price, offer.formattedPrice)

@@ -84,6 +84,6 @@ class SessionMetricsRestoreBoundaryTest {
     fun `previous period sums restored durations without wrapping`() {
         val start = LocalDate.of(2026, 9, 1)
         val values = mapOf(start to Long.MAX_VALUE, start.plusDays(1) to Long.MAX_VALUE)
-        assertEquals(Int.MAX_VALUE, previousPeriodMinutes(values, start, start.plusMonths(1), start.plusMonths(2)))
+        assertEquals(Long.MAX_VALUE, previousPeriodSeconds(values, start, start.plusMonths(1), start.plusMonths(2)))
     }
 }

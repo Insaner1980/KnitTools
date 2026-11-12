@@ -93,8 +93,8 @@ internal class InsightsSessionAccumulator(
     fun trend(): InsightsTrend? =
         previousStart?.let {
             insightsTrend(
-                summary.totalMinutes,
-                previousPeriodMinutes(previousSeconds, it, requireNotNull(rangeDate), params.currentDate),
+                summary.totalSeconds,
+                previousPeriodSeconds(previousSeconds, it, requireNotNull(rangeDate), params.currentDate),
             )
         }
 

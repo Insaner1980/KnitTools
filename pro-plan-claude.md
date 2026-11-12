@@ -1,5 +1,7 @@
 # Pro-järjestelmän toteutussuunnitelma
 
+**Historiallinen vaihtoehtosuunnitelma:** alla olevat portit ja hinnoitteluehdotukset eivät kuvaa kaikkia nykyisiä päätöksiä. Nykyiset AGENTS.md/CODEX.md, PROJECT.md ja ProState ovat voimassa olevat lähteet. Ilmainen projektiraja koskee yhtä aktiivista projektia.
+
 Status: **luonnos päätettäväksi** — koodia ei ole muutettu tämän dokumentin perusteella.
 Laajuus: `pro/`, `ui/screens/counter/`, `ui/screens/notes/`, `ui/screens/library/`,
 `ui/screens/session/`, `ui/screens/insights/`, `ui/screens/pattern/`, `res/values*/strings.xml`.

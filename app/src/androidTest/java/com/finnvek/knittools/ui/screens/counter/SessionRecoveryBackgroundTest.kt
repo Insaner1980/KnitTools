@@ -6,7 +6,6 @@ import android.os.Bundle
 import android.os.Process
 import androidx.activity.compose.setContent
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
@@ -18,17 +17,12 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.MutableCreationExtras
-import androidx.test.core.app.ApplicationProvider
 import androidx.test.platform.app.InstrumentationRegistry
-import com.finnvek.knittools.App
-import com.finnvek.knittools.MainActivity
 import com.finnvek.knittools.R
 import com.finnvek.knittools.data.local.CounterProjectEntity
-import com.finnvek.knittools.data.local.KnitToolsDatabase
 import com.finnvek.knittools.domain.model.ActiveSessionRecoveryReason
-import com.finnvek.knittools.repository.CounterRepository
 import com.finnvek.knittools.repository.StartSessionResult
-import com.finnvek.knittools.ui.TestContentSplashRule
+import com.finnvek.knittools.repository.deleteTestActiveSession
 import com.finnvek.knittools.ui.theme.KnitToolsTheme
 import com.finnvek.knittools.widget.WidgetEntryPoint
 import dagger.hilt.android.EntryPointAccessors
@@ -40,21 +34,11 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Before
-import org.junit.Rule
 import org.junit.Test
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger
 
-class SessionRecoveryBackgroundTest {
-    @get:Rule(order = 0)
-    val splash = TestContentSplashRule()
-
-    @get:Rule(order = 1)
-    val rule = createAndroidComposeRule<MainActivity>()
-
-    private val app: App = ApplicationProvider.getApplicationContext()
-    private lateinit var database: KnitToolsDatabase
-    private lateinit var repository: CounterRepository
+class SessionRecoveryBackgroundTest : CounterActivityTestFixture() {
     private lateinit var model: CounterViewModel
     private var projectId = 0L
     private val pauses = AtomicInteger()
@@ -127,9 +111,7 @@ class SessionRecoveryBackgroundTest {
         rule.waitForIdle()
         if (projectId > 0L) {
             runBlocking(Dispatchers.IO) {
-                database.sessionDao().getActiveSession()?.takeIf { it.projectId == projectId }?.let {
-                    database.sessionDao().deleteActiveSession(it.sessionToken)
-                }
+                database.deleteTestActiveSession(projectId)
                 repository.deleteProject(projectId)
                 assertEquals(null, database.counterProjectDao().getProject(projectId))
                 assertEquals(null, database.sessionDao().getActiveSession())

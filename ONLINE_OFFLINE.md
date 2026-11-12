@@ -73,7 +73,7 @@ There is no Drive/Dropbox SDK, storage-provider OAuth, continuous background syn
 
 Google Play manages `knittools_pro` purchase/restore, review and flexible updates. The trial is evaluated locally from wall/elapsed/boot anchors. Reaching a local review threshold does not guarantee Play displays review UI; live service/product availability was not checked here.
 
-Release Crashlytics collection is configured independently of the usage-analytics setting. PostHog is release-only and off by default; after consent it sends predefined usage/lifecycle events and normalized screen names to the configured EU endpoint. No project content/IDs, URLs, notes, search text or billing state are supplied by that app event interface. Disabling it stops future app capture, not deletion of previously sent records.
+Release builds enable automatic crash and application-not-responding (ANR) reporting through Crashlytics. The optional usage-analytics setting controls PostHog. PostHog is release-only and off by default. After consent it sends predefined usage/lifecycle events and normalized screen names to the configured EU endpoint. No project content/IDs, URLs, notes, search text or billing state are supplied by that app event interface. Turning it off stops future app capture. The service handles previously received records under its retention policy.
 
 Debug Sentry is initialized only with a configured DSN; release has a no-op implementation and no Sentry dependency. Network failures and telemetry capture are not a remote authority for project/session persistence. Startup applies local language asynchronously, initializes trial/Billing state and recovers/prunes owned files; it does not initialize Firebase anonymous Ravelry authentication, App Check or an AI service.
 

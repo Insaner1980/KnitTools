@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, it, mock } from "node:test";
 import timers from "node:timers/promises";
 
 import { ravelryClientId, ravelryClientSecret } from "../config";
-import { ravelryCallback } from "./auth";
+import { ravelryCallback, ravelryCompleteAuth } from "./auth";
 import { BROWSER_AUTH_COOKIE, browserSecretFromCookie, browserSecretHash } from "./browserAuth";
 import type { StoredOAuthState } from "./oauthStateStore";
 import { disabledRavelryRateLimiter, RavelryRateLimitError } from "./rateLimit";
@@ -161,6 +161,26 @@ describe("production Ravelry HTTP callback with local responses", () => {
     assert.equal(body, undefined);
     assert.equal(pending, undefined);
   }
+
+  it("rejects malformed callable completion before consuming the UID quota", async () => {
+    const proof = "p".repeat(43);
+    for (const data of [
+      {},
+      { state: [state], proof },
+      { state, proof: 1 },
+      { state, proof: "p".repeat(44) },
+      { state: "invalid", proof },
+    ]) {
+      await assert.rejects(
+        ravelryCompleteAuth.run({
+          auth: { uid: "test-uid" },
+          data,
+        } as Parameters<typeof ravelryCompleteAuth.run>[0]),
+        { code: "invalid-argument" },
+      );
+    }
+    assert.equal(uidCalls, 0);
+  });
 
   it("preserves the browser binding across overlapping login starts", async () => {
     await invoke({ state, start: "t".repeat(43) });

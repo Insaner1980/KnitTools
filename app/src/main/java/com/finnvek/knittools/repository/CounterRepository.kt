@@ -1612,6 +1612,7 @@ class CounterRepository
                 ProjectCompletionResult.CompletedNow(
                     ProjectCompletionSnapshot(
                         eventId = eventId,
+                        completionZoneId = now.zoneId,
                         project =
                             project.toDomain().copy(
                                 isCompleted = true,

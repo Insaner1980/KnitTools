@@ -58,6 +58,9 @@ class ProjectYarnUsageRuntimeTest {
     @Before
     fun setUp() {
         app = ApplicationProvider.getApplicationContext()
+        check(app.packageName.endsWith(".notestest") || app.packageName.endsWith(".activepolicytest")) {
+            "Runtime fixtures require an isolated test package"
+        }
         if (ProPolicyTestControl.isActive) ProPolicyTestControl.setPurchased(true)
         database = app.database.get()
         counter = EntryPointAccessors.fromApplication(app, WidgetEntryPoint::class.java).counterRepository()

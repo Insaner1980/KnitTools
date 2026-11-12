@@ -38,6 +38,7 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import java.util.Locale
+import java.util.UUID
 
 class AuditPart13BackupUiTest {
     @get:Rule val compose = createAndroidComposeRule<ComponentActivity>()
@@ -118,6 +119,7 @@ class AuditPart13BackupUiTest {
                         BackupUiState(
                             BackupPhase.PREVIEW,
                             BackupPreview(1_700_000_000_000, "1.0", 123, 456, 789, 2_000),
+                            previewSelectionId = UUID.randomUUID(),
                         )
                 }
                 val before = confirmed

@@ -85,7 +85,7 @@ internal fun rememberTrialJourneyVisible(
     // Actions temporarily hide the sheet; only an explicit dismissal consumes the journey.
     var visible by rememberSaveable(actionVersion) { mutableStateOf(false) }
     val consume by rememberUpdatedState(onConsume)
-    val active = presentation.status == ProStatus.TRIAL_ACTIVE
+    val activeWithFacts = presentation.status == ProStatus.TRIAL_ACTIVE && presentation.facts != null
     val finished = presentation.status == ProStatus.TRIAL_EXPIRED || presentation.status == ProStatus.PRO_PURCHASED
     LaunchedEffect(presentation.pending, presentation.ready, finished) {
         if (!presentation.pending) visible = false
@@ -94,14 +94,14 @@ internal fun rememberTrialJourneyVisible(
             consume()
         }
     }
-    LaunchedEffect(presentation.pending, eligible, active, visible, actionVersion) {
-        if (presentation.pending && eligible && active && !visible) {
+    LaunchedEffect(presentation.pending, eligible, activeWithFacts, visible, actionVersion) {
+        if (presentation.pending && eligible && activeWithFacts && !visible) {
             // Alkuperäisen lomakkeen tai ulkoisen toiminnon annetaan avautua ensin.
             delay(TRIAL_JOURNEY_SETTLE_MILLIS)
             visible = true
         }
     }
-    return visible && presentation.pending && presentation.ready && active
+    return visible && presentation.pending && presentation.ready && activeWithFacts
 }
 
 private const val TRIAL_JOURNEY_SETTLE_MILLIS = 2_000L

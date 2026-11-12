@@ -20,6 +20,7 @@ import androidx.test.core.app.ApplicationProvider
 import com.finnvek.knittools.App
 import com.finnvek.knittools.MainActivity
 import com.finnvek.knittools.data.local.CounterProjectEntity
+import com.finnvek.knittools.data.storage.NotesDraftStorage
 import com.finnvek.knittools.data.storage.ProgressPhotoStorage
 import com.finnvek.knittools.domain.model.RowReminder
 import com.finnvek.knittools.pro.ProFeature
@@ -219,7 +220,14 @@ class AuditPart14ProRuntimeTest {
             )
         lateinit var model: NotesEditorViewModel
         rule.runOnUiThread {
-            model = NotesEditorViewModel(repository, manager, app.applicationScope, handle)
+            model =
+                NotesEditorViewModel(
+                    repository,
+                    manager,
+                    app.applicationScope,
+                    handle,
+                    NotesDraftStorage(app, Dispatchers.IO),
+                )
             notesStore.put("notes", model)
             rule.activity.setContent {
                 KnitToolsTheme(isDarkTheme = dark) {

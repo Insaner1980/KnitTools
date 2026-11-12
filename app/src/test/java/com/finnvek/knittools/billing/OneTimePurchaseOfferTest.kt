@@ -1,5 +1,6 @@
 package com.finnvek.knittools.billing
 
+import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.ProductDetails
 import io.mockk.every
 import io.mockk.mockk
@@ -82,6 +83,14 @@ class OneTimePurchaseOfferTest {
     }
 
     @Test
+    fun `malformed or unbounded launch timestamps fall back to regular purchase`() {
+        listOf(0L to 2_000L, Long.MIN_VALUE to 2_000L, 1_000L to Long.MAX_VALUE)
+            .forEach { (start, end) ->
+                assertEquals("base-token", selectOneTimePurchaseOffer(launchProduct(start, end), 1_500)?.offerToken)
+            }
+    }
+
+    @Test
     fun `unknown or non-increasing full price omits only future price`() {
         listOf(null, 9_990_000L, 5_000_000L).forEach { full ->
             val selected = selectOneTimePurchaseOffer(launchProduct(1_000, 2_000, full = full), 1_500)
@@ -125,6 +134,8 @@ internal fun launchProduct(
     every { launch.priceCurrencyCode } returns currency
     every { launch.fullPriceMicros } returns full
     return mockk<ProductDetails>(relaxed = true).also {
+        every { it.productId } returns BillingManager.PRODUCT_ID
+        every { it.productType } returns BillingClient.ProductType.INAPP
         every { it.oneTimePurchaseOfferDetailsList } returns listOf(base, launch)
         every { it.oneTimePurchaseOfferDetails } returns base
     }

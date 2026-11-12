@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModelStore
 import com.finnvek.knittools.data.datastore.AppPreferences
 import com.finnvek.knittools.data.datastore.PreferencesManager
+import com.finnvek.knittools.domain.calculator.InstructionParser
 import com.finnvek.knittools.domain.calculator.ParsedInstruction
 import com.finnvek.knittools.domain.model.GaugeBasis
 import com.finnvek.knittools.domain.model.MeasurementUnit
@@ -120,6 +121,32 @@ class GaugeScreenParsingTest {
         assertEquals(22.0 / 101.6, requireNotNull(state.stitchDensity), 1e-12)
         assertEquals(28.0 / 101.6, requireNotNull(state.rowDensity), 1e-12)
         assertEquals(22.0 / 1.016, state.input(GaugeField.ACTUAL_STITCHES).text.toDouble(), 1e-12)
+    }
+
+    @Test
+    fun `parsed per inch and four inch gauges reach the calculator with the same density`() {
+        listOf(
+            "Gauge: 5.5 stitches and 7 rows per inch",
+            "5.5 stitches per inch, 7 rows per inch",
+            "22 stitches and 28 rows per 4 inches",
+        ).forEach { instruction ->
+            viewModel.onAction(GaugeAction.Paste(InstructionParser.parse(instruction)))
+            assertEquals(22.0 / 101.6, requireNotNull(viewModel.state.value.stitchDensity), 1e-12)
+            assertEquals(28.0 / 101.6, requireNotNull(viewModel.state.value.rowDensity), 1e-12)
+        }
+    }
+
+    @Test
+    fun `parsed asymmetric swatch keeps its axes and partial paste preserves the opposite axis`() {
+        viewModel.onAction(
+            GaugeAction.Paste(InstructionParser.parse("Width 14 cm, height 15 cm, 33 stitches and 44 rows")),
+        )
+        assertEquals(33.0 / 140.0, requireNotNull(viewModel.state.value.stitchDensity), 1e-12)
+        assertEquals(44.0 / 150.0, requireNotNull(viewModel.state.value.rowDensity), 1e-12)
+
+        viewModel.onAction(GaugeAction.Paste(InstructionParser.parse("Width 7 cm, 22 stitches")))
+        assertEquals(22.0 / 70.0, requireNotNull(viewModel.state.value.stitchDensity), 1e-12)
+        assertEquals(44.0 / 150.0, requireNotNull(viewModel.state.value.rowDensity), 1e-12)
     }
 
     @Test

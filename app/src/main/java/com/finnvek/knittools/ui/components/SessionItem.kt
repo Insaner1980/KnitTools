@@ -27,8 +27,9 @@ fun SessionItem(
     endRow: Int,
     modifier: Modifier = Modifier,
     onDelete: (() -> Unit)? = null,
+    zoneId: String? = null,
 ) {
-    val dateFormat = rememberLocaleDateFormat("MMMd", includeTime = true)
+    val dateFormat = rememberLocaleDateFormat("MMMd", includeTime = true, eventZoneId = zoneId)
 
     // Hiusviivarivi kuten projektinäkymän osiot. Poisto on rivin valikossa: punainen roskakori
     // jokaisella rivillä oli helppo osua vahingossa ja korosti peruuttamatonta toimintoa.

@@ -80,11 +80,13 @@ class BillingPriceRefreshTest {
                 assertEquals(BillingProductStatus.Available, manager.productStatus.value)
                 assertEquals(amount, manager.selectedOffer.value?.priceAmountMicros)
                 if (changed) {
-                    assertPurchaseBlocked(manager, client, activity, BillingUserMessage.PRICE_CHANGED_REVIEW)
+                    repeat(2) {
+                        assertPurchaseBlocked(manager, client, activity, BillingUserMessage.PRICE_CHANGED_REVIEW, quote)
+                    }
                 } else {
                     assertEquals(quote, manager.selectedOffer.value)
                 }
-                manager.launchPurchaseFlow(activity)
+                manager.launchPurchaseFlow(activity, manager.selectedOffer.value)
                 verify(exactly = 1) { client.launchBillingFlow(activity, any()) }
             } finally {
                 manager.destroy()
@@ -105,6 +107,8 @@ class BillingPriceRefreshTest {
         every { offer.rentalDetails } returns null
         every { offer.preorderDetails } returns null
         return mockk<ProductDetails>(relaxed = true).also {
+            every { it.productId } returns BillingManager.PRODUCT_ID
+            every { it.productType } returns BillingClient.ProductType.INAPP
             every { it.oneTimePurchaseOfferDetailsList } returns listOf(offer)
         }
     }

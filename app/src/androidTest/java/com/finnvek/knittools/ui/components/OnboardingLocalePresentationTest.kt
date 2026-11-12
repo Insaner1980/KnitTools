@@ -119,6 +119,7 @@ class OnboardingLocalePresentationTest(
                     remindersLoadedProjectId = 7,
                     countersLoadedProjectId = 7,
                     documentsLoadedProjectId = 7,
+                    sessionsLoadedProjectId = 7,
                 ),
                 OnboardingState(initializedVersion = 1, starterProjectId = 7),
                 ProjectSetupVisit(7, 1),

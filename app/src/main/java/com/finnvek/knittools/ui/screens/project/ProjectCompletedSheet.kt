@@ -40,6 +40,7 @@ fun ProjectCompletedSheet(
 ) {
     val project = celebration.snapshot.project
     val dateFormat = rememberLocaleDateFormat("yMMMd")
+    val completionDateFormat = rememberLocaleDateFormat("yMMMd", eventZoneId = celebration.snapshot.completionZoneId)
     ModalBottomSheet(
         onDismissRequest = onClose,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
@@ -85,7 +86,7 @@ fun ProjectCompletedSheet(
             )
             CompletedProjectFact(
                 label = stringResource(R.string.completed_finished_label),
-                value = dateFormat.format(Date(checkNotNull(project.completedAt))),
+                value = completionDateFormat.format(Date(checkNotNull(project.completedAt))),
             )
             FlowRow(
                 modifier = Modifier.fillMaxWidth(),

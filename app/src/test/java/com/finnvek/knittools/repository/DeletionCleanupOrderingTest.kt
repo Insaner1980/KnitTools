@@ -1,6 +1,7 @@
 package com.finnvek.knittools.repository
 
 import android.content.Context
+import android.net.Uri
 import com.finnvek.knittools.data.local.ActiveSessionEntity
 import com.finnvek.knittools.data.local.CounterProjectDao
 import com.finnvek.knittools.data.local.CounterProjectEntity
@@ -29,12 +30,16 @@ import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.TemporaryFolder
 import java.io.IOException
-import java.nio.file.Files
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class DeletionCleanupOrderingTest {
+    @get:Rule
+    val temporaryFolder = TemporaryFolder()
+
     @Test
     fun `ordinary project deletion commits before every physical cleanup`() =
         runTest {
@@ -237,6 +242,16 @@ class DeletionCleanupOrderingTest {
             assertCanonicalPatternFileIsRetained(libraryReference = true, projectDocumentReference = false)
         }
 
+    @Test
+    fun `pattern cleanup retains a PDF referenced by its legacy FileProvider alias`() =
+        runTest {
+            assertCanonicalPatternFileIsRetained(
+                libraryReference = false,
+                projectDocumentReference = false,
+                legacyAliasReference = true,
+            )
+        }
+
     private suspend fun assertCleanupFailureIsBestEffort(failure: ProjectCleanupFailure) {
         val fixture = projectFixture(activeSession = activeSession(), cleanupFailure = failure)
 
@@ -254,10 +269,11 @@ class DeletionCleanupOrderingTest {
     private suspend fun assertCanonicalPatternFileIsRetained(
         libraryReference: Boolean,
         projectDocumentReference: Boolean,
+        legacyAliasReference: Boolean = false,
     ) {
-        val filesDir = Files.createTempDirectory("knittools-pattern-retention").toFile()
+        val filesDir = temporaryFolder.newFolder()
         val patternFile =
-            filesDir.resolve("pattern_pdfs/shared.pdf").apply {
+            filesDir.resolve("patterns/shared.pdf").apply {
                 checkNotNull(parentFile).mkdirs()
                 writeText("pdf")
             }
@@ -267,6 +283,10 @@ class DeletionCleanupOrderingTest {
         val documentDao = mockk<ProjectDocumentDao>(relaxed = true)
         val context = mockk<Context>(relaxed = true)
         every { context.filesDir } returns filesDir
+        every { context.packageName } returns "com.finnvek.knittools"
+        val legacyAlias = "content://com.finnvek.knittools.fileprovider/patterns/shared.pdf"
+        coEvery { patternDao.getReferencedPdfUris() } returns
+            if (legacyAliasReference) listOf(legacyAlias) else emptyList()
         coEvery { patternDao.getByLocalPdfUri(patternUri) } returns
             if (libraryReference) {
                 SavedPatternEntity(
@@ -293,6 +313,11 @@ class DeletionCleanupOrderingTest {
             )
 
         withParsedFileUri(patternUri, patternFile.absolutePath) {
+            val legacyUri = mockk<Uri>()
+            every { legacyUri.scheme } returns "content"
+            every { legacyUri.authority } returns "com.finnvek.knittools.fileprovider"
+            every { legacyUri.pathSegments } returns listOf("patterns", "shared.pdf")
+            every { Uri.parse(legacyAlias) } returns legacyUri
             repository.deleteLocalPatternFileIfUnused(patternUri)
         }
 

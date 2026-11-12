@@ -282,7 +282,7 @@ Multi-select:
 
 ### 9. Lokalisoidut tekstit
 
-Lisää kaikkiin nykyisiin 11 `values*`-hakemistoihin seuraavat resurssit idiomaattisina käännöksinä:
+Lisää kaikkiin nykyisiin 12 `values*`-hakemistoihin (myös `values-pt-rBR`) seuraavat resurssit idiomaattisina käännöksinä:
 
 - `project_updated_format`
   - default: `Updated %1$s`

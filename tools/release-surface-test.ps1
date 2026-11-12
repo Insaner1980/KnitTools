@@ -142,7 +142,8 @@ function Test-Mutation {
         [scriptblock]$Mutate,
         [string]$ExpectedStatus,
         [string]$ExpectedCheck,
-        [string]$PassMessage
+        [string]$PassMessage,
+        [string]$ForbiddenOutput = ""
     )
 
     $fixture = New-Fixture -Name $Name
@@ -158,14 +159,15 @@ function Test-Mutation {
         }
 
     Add-SelfTestResult `
-        -Condition ($statusMatches -and $exitMatches) `
+        -Condition ($statusMatches -and $exitMatches -and (!$ForbiddenOutput -or !$result.Output.Contains($ForbiddenOutput))) `
         -Message $PassMessage `
-        -Details "exit=$($result.ExitCode); expected line '$expectedLine'; output=$($result.Output)"
+        -Details "exit=$($result.ExitCode); expected line '$expectedLine'"
 }
 
 function Test-SecretScanReadFailure {
     $fixture = New-Fixture -Name "secret-scan-read-failure"
-    $relativePath = "app/src/main/secret-read-failure.txt"
+    $probe = "phase9-secret-probe"
+    $relativePath = "app/src/main/$probe-read-failure.txt"
     $path = Join-Path $fixture $relativePath
     Set-FileText -Path $path -Text "locked fixture file"
 
@@ -173,7 +175,7 @@ function Test-SecretScanReadFailure {
     $previousSecret = [Environment]::GetEnvironmentVariable($secretName, "Process")
     $stream = $null
     try {
-        [Environment]::SetEnvironmentVariable($secretName, "phase9-secret-probe", "Process")
+        [Environment]::SetEnvironmentVariable($secretName, $probe, "Process")
         $stream = [System.IO.File]::Open(
             $path,
             [System.IO.FileMode]::Open,
@@ -182,11 +184,11 @@ function Test-SecretScanReadFailure {
         )
         $result = Run-ReleaseSurface -Fixture $fixture
         $expectedLine = "[FAIL] known-ravelry-secrets:"
-        $expectedMessage = "Unable to read checked file: $relativePath"
+        $expectedMessage = "Unable to read checked file: app/src/main/[redacted]-read-failure.txt"
         Add-SelfTestResult `
-            -Condition ($result.ExitCode -eq 1 -and $result.Output.Contains($expectedLine) -and $result.Output.Contains($expectedMessage)) `
+            -Condition ($result.ExitCode -eq 1 -and $result.Output.Contains($expectedLine) -and $result.Output.Contains($expectedMessage) -and !$result.Output.Contains($probe)) `
             -Message "known Ravelry secret scan fails closed when a checked file cannot be read" `
-            -Details "exit=$($result.ExitCode); expected line '$expectedLine'; expected message '$expectedMessage'; output=$($result.Output)"
+            -Details "exit=$($result.ExitCode); expected line '$expectedLine'; expected message '$expectedMessage'"
     } finally {
         if ($null -ne $stream) {
             $stream.Dispose()
@@ -356,12 +358,11 @@ try {
             -ExpectedStatus "FAIL" `
             -ExpectedCheck "known-ravelry-secrets" `
             -PassMessage "known Ravelry secret value mutation detected without printing secret" `
+            -ForbiddenOutput "phase9-secret-probe" `
             -Mutate {
                 param($fixture)
-                $path = Join-Path $fixture "app/src/main/res/values/strings.xml"
-                $text = Get-Content -Raw -LiteralPath $path
-                $replacement = '    <string name="leaked_ravelry_secret">phase9-secret-probe</string>' + "`r`n`$1"
-                Set-FileText -Path $path -Text ($text -replace '(</resources>)', $replacement)
+                $path = Join-Path $fixture "app/src/main/phase9-secret-probe.txt"
+                Set-FileText -Path $path -Text "phase9-secret-probe"
                 $env:KNITTOOLS_RAVELRY_OAUTH2_CLIENT_SECRET = "phase9-secret-probe"
             }
 

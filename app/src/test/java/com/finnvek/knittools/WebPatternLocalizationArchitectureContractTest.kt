@@ -1,5 +1,6 @@
 package com.finnvek.knittools
 
+import com.finnvek.knittools.data.local.KNITTOOLS_DATABASE_VERSION
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -74,7 +75,10 @@ class WebPatternLocalizationArchitectureContractTest {
         val projectDocumentCreateSql = roomCreateSql(schema, "project_documents")
 
         assertTrue(database.contains("version = KNITTOOLS_DATABASE_VERSION"))
-        val currentSchema = ProjectSourceFiles.read(SCHEMA_25)
+        val currentSchema =
+            ProjectSourceFiles.read(
+                "app/schemas/com.finnvek.knittools.data.local.KnitToolsDatabase/$KNITTOOLS_DATABASE_VERSION.json",
+            )
         assertEquals(savedPatternCreateSql, roomCreateSql(currentSchema, "saved_patterns"))
         assertEquals(projectDocumentCreateSql, roomCreateSql(currentSchema, "project_documents"))
         assertTrue(schema.contains("\"version\": 24"))
@@ -305,8 +309,6 @@ class WebPatternLocalizationArchitectureContractTest {
             "app/src/main/java/com/finnvek/knittools/data/local/SavedPatternEntity.kt"
         private const val SCHEMA_24 =
             "app/schemas/com.finnvek.knittools.data.local.KnitToolsDatabase/24.json"
-        private const val SCHEMA_25 =
-            "app/schemas/com.finnvek.knittools.data.local.KnitToolsDatabase/25.json"
         private const val MANIFEST = "app/src/main/AndroidManifest.xml"
         private const val FILE_PROVIDER_PATHS = "app/src/main/res/xml/file_paths.xml"
         private const val PRO_STATE = "app/src/main/java/com/finnvek/knittools/pro/ProState.kt"

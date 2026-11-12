@@ -79,6 +79,30 @@ class TipHostTest {
         }
 
     @Test
+    fun counterOpensWaitForLoadedFactsAndDoNotCountRecomposition() {
+        val ready = mutableStateOf(false)
+        showHost(context = {
+            TipContext(TipScreen.COUNTER, projectId = 7L, screenReady = ready.value, blocked = true)
+        }) {
+            Text("Counter")
+        }
+        compose.waitUntil(5_000) { session.state.value.loaded }
+        compose.runOnIdle {
+            assertEquals(0, session.state.value.onboarding.counterOpenCount)
+            ready.value = true
+        }
+        compose.waitUntil(5_000) { session.state.value.onboarding.counterOpenCount == 1 }
+        compose.runOnIdle { ready.value = false }
+        compose.runOnIdle { ready.value = true }
+        compose.runOnIdle {
+            assertEquals(1, session.state.value.onboarding.counterOpenCount)
+            session.onRouteChanged("elsewhere")
+        }
+        compose.runOnIdle { session.onRouteChanged(ROUTE) }
+        compose.waitUntil(5_000) { session.state.value.onboarding.counterOpenCount == 2 }
+    }
+
+    @Test
     fun widgetActionWaitsForReadyUnblockedHostAndRunsOnce() {
         compose.mainClock.autoAdvance = false
         val blocked = mutableStateOf(true)

@@ -1,16 +1,25 @@
 package com.finnvek.knittools.ui.screens.counter
 
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
+import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.calculator.CounterValueFormatter
+import com.finnvek.knittools.domain.calculator.formatIntegerForDisplay
+import com.finnvek.knittools.ui.components.mainCounterLabelText
+import com.finnvek.knittools.ui.components.mainCounterTargetStatus
+import com.finnvek.knittools.ui.components.rememberCurrentLocale
 import com.finnvek.knittools.ui.layout.AdaptiveLayoutSize
 import com.finnvek.knittools.ui.theme.CounterDimens
+import com.finnvek.knittools.ui.theme.FontScaleThresholds
 import com.finnvek.knittools.ui.theme.ProjectListDimens
 
 /** Pääluvun ja -nappien mitat. Iso variantti skaalaa samat mitat tabletin telinekäyttöön. */
@@ -76,29 +85,41 @@ internal fun rememberCounterHeroLayout(
     available: AdaptiveLayoutSize,
 ): CounterHeroLayout {
     val viewportHeight = available.height - CounterDimens.ContentBottomPadding
-    val contentWidth = available.width - CounterDimens.ScreenHorizontalPadding * 2
+    val contentWidth = (available.width - CounterDimens.ScreenHorizontalPadding * 2).coerceAtLeast(0.dp)
     val largeCandidate =
         available.width >= CounterDimens.LargeHeroMinWidth && available.height >= CounterDimens.LargeHeroMinHeight
-    val large = stackedCounterHeroHeight(state, CounterHeroMetrics.Large, compactSpacing = false)
-    val useLarge = largeCandidate && viewportHeight >= large
-    val metrics = if (useLarge) CounterHeroMetrics.Large else CounterHeroMetrics.Regular
-    val regularHeight = stackedCounterHeroHeight(state, metrics, compactSpacing = false)
-    val compactHeight = stackedCounterHeroHeight(state, metrics, compactSpacing = true)
-    return when {
-        viewportHeight >= regularHeight -> {
-            CounterHeroLayout(
-                arrangement = CounterHeroArrangement.Stacked,
-                metrics = metrics,
-                minimumHeight = minOf(viewportHeight, regularHeight + CounterDimens.HeroMaxExtraHeight),
-            )
+    val largeHeight =
+        if (largeCandidate) {
+            stackedCounterHeroHeight(state, CounterHeroMetrics.Large, contentWidth, compactSpacing = false)
+        } else {
+            null
         }
+    val useLarge = largeHeight != null && viewportHeight >= largeHeight
+    val metrics = if (useLarge) CounterHeroMetrics.Large else CounterHeroMetrics.Regular
+    val regularHeight =
+        largeHeight?.takeIf { useLarge }
+            ?: stackedCounterHeroHeight(state, metrics, contentWidth, compactSpacing = false)
+    if (viewportHeight >= regularHeight) {
+        return CounterHeroLayout(
+            arrangement = CounterHeroArrangement.Stacked,
+            metrics = metrics,
+            minimumHeight = minOf(viewportHeight, regularHeight + CounterDimens.HeroMaxExtraHeight),
+        )
+    }
 
+    val compactHeight = stackedCounterHeroHeight(state, metrics, contentWidth, compactSpacing = true)
+    return when {
         viewportHeight >= compactHeight -> {
             CounterHeroLayout(CounterHeroArrangement.StackedCompact, metrics, viewportHeight)
         }
 
         contentWidth >= CounterDimens.ShortHeroMinWidth -> {
-            CounterHeroLayout(CounterHeroArrangement.SideBySide, CounterHeroMetrics.Regular, 0.dp, available.height)
+            CounterHeroLayout(
+                CounterHeroArrangement.SideBySide,
+                CounterHeroMetrics.Regular,
+                0.dp,
+                available.height.coerceAtLeast(CounterHeroMetrics.Regular.primaryTouchSize),
+            )
         }
 
         else -> {
@@ -112,21 +133,32 @@ internal fun rememberCounterHeroLayout(
 private fun stackedCounterHeroHeight(
     state: CounterHeroState,
     metrics: CounterHeroMetrics,
+    contentWidth: Dp,
     compactSpacing: Boolean,
 ): Dp {
     val measurer = rememberTextMeasurer()
     val density = LocalDensity.current
+    val display = CounterValueFormatter.forMainCounter(state.toMainCounterProject())
+    val width = minOf(contentWidth, metrics.controlsMaxWidth)
+    val widthPx = with(density) { width.roundToPx() }
+    val captionStyle = counterCaptionStyle()
+    val caption = mainCounterLabelText(display.heroTitle.labelType, display.heroTitle.customLabel)
     val captionHeight =
         with(density) {
             measurer
-                .measure("0", counterCaptionStyle())
+                .measure(caption, captionStyle, constraints = Constraints(maxWidth = widthPx))
                 .size.height
                 .toDp()
         }
+    val countText = formatIntegerForDisplay(state.counter.count.toLong(), rememberCurrentLocale())
+    val numberStyle = counterMainNumberStyle(metrics.numberFontSize)
     val numberHeight =
         with(density) {
+            val feedbackWidth = if (state.counter.stepSize > 1) CounterDimens.StepFeedbackWidth.roundToPx() * 2 else 0
+            val numberWidth = (widthPx - feedbackWidth).coerceAtLeast(0)
+            val numberFontSize = measurer.fitCounterNumber(countText, numberStyle, numberWidth)
             measurer
-                .measure("0", counterMainNumberStyle(metrics.numberFontSize))
+                .measure(countText, numberStyle.copy(fontSize = numberFontSize), maxLines = 1)
                 .size.height
                 .toDp()
         }
@@ -136,12 +168,73 @@ private fun stackedCounterHeroHeight(
     if (state.canUseSecondaryCounter) {
         height += CounterDimens.CounterRepeatHeight + CounterDimens.CounterRepeatToRowSpacing
     }
-    if (CounterValueFormatter.forMainCounter(state.toMainCounterProject()).targetLine != null) {
-        height += CounterDimens.CounterTargetHelperSpacing * 2 + ProjectListDimens.ProgressTrackHeight + captionHeight
+    val target = display.targetLine
+    val status = mainCounterTargetStatus(target)
+    if (target != null && status != null) {
+        val targetText = stringResource(R.string.counter_target_of_format, target.target)
+        val statusText = counterTargetStatusText(status)
+        val rowHeight =
+            with(density) {
+                val left =
+                    measurer.measure(
+                        targetText,
+                        captionStyle,
+                        maxLines = 1,
+                        constraints = Constraints(maxWidth = widthPx),
+                    )
+                val statusWidth =
+                    (widthPx - left.size.width - CounterDimens.CounterTargetHelperSpacing.roundToPx()).coerceAtLeast(0)
+                val right =
+                    measurer.measure(statusText, captionStyle, constraints = Constraints(maxWidth = statusWidth))
+                maxOf(left.size.height, right.size.height).toDp()
+            }
+        height += CounterDimens.CounterTargetHelperSpacing * 2 + ProjectListDimens.ProgressTrackHeight + rowHeight
     }
-    if (state.visibleStitchTotal != null) {
+    val stitchTotal = state.visibleStitchTotal
+    if (stitchTotal != null) {
+        val stitchLabel = stringResource(R.string.stitch_tracker_label)
+        val stitchValue =
+            stringResource(
+                R.string.stitch_counter_compact_format,
+                state.currentStitch.coerceIn(0, stitchTotal),
+                stitchTotal,
+            )
+        val typography = MaterialTheme.typography
+        val largeFont = density.fontScale >= FontScaleThresholds.LARGE
+        val stitchContentHeight =
+            with(density) {
+                val padding = CounterDimens.StitchTrackerHorizontalPadding.roundToPx() * 2
+                val innerWidth = (widthPx - padding).coerceAtLeast(0)
+                val label =
+                    measurer.measure(
+                        stitchLabel,
+                        typography.labelMedium,
+                        constraints = Constraints(maxWidth = innerWidth),
+                    )
+                val gap = CounterDimens.StitchTrackerContentSpacing.roundToPx()
+                val buttonsWidth = CounterDimens.ExtraCounterStepperTouchSize.roundToPx() * 2
+                val rowPrefix = if (largeFont) 0 else label.size.width + gap
+                val valueWidth = (innerWidth - rowPrefix - buttonsWidth - gap * 2).coerceAtLeast(0)
+                val value =
+                    measurer.measure(
+                        stitchValue,
+                        typography.titleMedium,
+                        constraints = Constraints(maxWidth = valueWidth),
+                    )
+                val controls = maxOf(value.size.height.toDp(), CounterDimens.ExtraCounterStepperTouchSize)
+                if (largeFont) {
+                    label.size.height.toDp() + CounterDimens.StitchTrackerContentSpacing + controls
+                } else {
+                    maxOf(label.size.height.toDp(), controls)
+                }
+            }
+        val stitchHeight =
+            maxOf(
+                CounterDimens.StitchTrackerMinHeight,
+                stitchContentHeight + CounterDimens.StitchTrackerVerticalPadding * 2,
+            )
         height +=
-            CounterDimens.StitchTrackerMinHeight +
+            stitchHeight +
             if (compact) {
                 CounterDimens.CounterControlsToStitchTrackerCompactSpacing
             } else {

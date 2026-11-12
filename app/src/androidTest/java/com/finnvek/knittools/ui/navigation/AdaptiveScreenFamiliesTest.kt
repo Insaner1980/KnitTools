@@ -235,6 +235,18 @@ class AdaptiveScreenFamiliesTest : AdaptiveRouteTestFixture() {
     }
 
     @Test
+    fun calculatorTopBarUsesTheFormColumn() {
+        resize(1280, 800)
+        tab(TopLevelDestination.Tools)
+        click(R.string.tool_gauge_converter)
+        val viewport = rule.onNodeWithTag("adaptive-content").fetchSemanticsNode().boundsInWindow
+        val density = rule.density.density
+        val formStart = viewport.center.x - 300 * density
+        val back = text(R.string.back).fetchSemanticsNode().boundsInWindow
+        assertTrue("Back button $back starts at the form column $formStart", abs(back.left - formStart) <= 16 * density)
+    }
+
+    @Test
     fun projectYarnAndWebPatternFormsAvoidSeparatingHinges() {
         resize(1280, 800)
         for (orientation in listOf(FoldingFeature.Orientation.VERTICAL, FoldingFeature.Orientation.HORIZONTAL)) {

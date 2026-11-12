@@ -172,6 +172,7 @@ data class CounterUiState(
     val remindersLoadedProjectId: Long? = null,
     val countersLoadedProjectId: Long? = null,
     val documentsLoadedProjectId: Long? = null,
+    val sessionsLoadedProjectId: Long? = null,
     val isRestoringProject: Boolean = false,
     val sectionName: String? = null,
     val stitchCount: Int? = null,
@@ -212,7 +213,8 @@ data class CounterUiState(
                 initialSessionRefreshFinished &&
                 remindersLoadedProjectId == projectId &&
                 countersLoadedProjectId == projectId &&
-                documentsLoadedProjectId == projectId
+                documentsLoadedProjectId == projectId &&
+                sessionsLoadedProjectId == projectId
 
     val primaryDocument: ProjectDocument?
         get() = primaryProjectDocument(projectDocuments)
@@ -236,7 +238,7 @@ data class SessionStopSummary(
 )
 
 data class DismissedReminderTrigger(
-    val reminderId: Long,
+    val reminderIds: Set<Long>,
     val row: Int,
 )
 
@@ -570,7 +572,7 @@ class CounterViewModel
                         repository.observeHasSessionsForProject(projectId).collect { hasSessions ->
                             _uiState.update { state ->
                                 if (state.projectId == projectId && selectionVersion == projectSelectionVersion) {
-                                    state.copy(hasSessions = hasSessions)
+                                    state.copy(hasSessions = hasSessions, sessionsLoadedProjectId = projectId)
                                 } else {
                                     state
                                 }
@@ -658,6 +660,8 @@ class CounterViewModel
                 if (state.projectId == projectId) state.copy(projectId = null) else state
             }
             if (wasSelected) {
+                allPhotosJob?.cancel()
+                _allPhotos.value = emptyList()
                 closeSelectedProject(selectionVersion)
             }
         }
@@ -668,7 +672,10 @@ class CounterViewModel
         }
 
         fun unlinkYarnCard(cardId: Long) {
-            updateYarnCardLink(cardId, null)
+            val projectId = _uiState.value.projectId ?: return
+            launchProjectContentMutation {
+                yarnCardRepository.updateLinkedProjectId(cardId, null, expectedLinkedProjectId = projectId)
+            }
         }
 
         private fun updateYarnCardLink(
@@ -2386,12 +2393,12 @@ class CounterViewModel
                     ) ?: return@launchProjectContentMutation false
                 _uiState.update { state ->
                     if (state.projectId == id && selectionVersion == projectSelectionVersion) {
-                        val observed = state.withObservedProject(savedProject)
-                        if (pendingNotesBase?.selectionVersion == selectionVersion) {
-                            observed.copy(notes = state.notes)
-                        } else {
-                            observed
-                        }
+                        state.copy(
+                            projectName = savedProject.name,
+                            craftType = savedProject.craftType,
+                            mainCounterLabelType = savedProject.mainCounterLabelType,
+                            mainCounterCustomLabel = savedProject.mainCounterCustomLabel,
+                        )
                     } else {
                         state
                     }

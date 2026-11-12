@@ -147,7 +147,7 @@ fun GaugeContent(
                                 .testTag("measurement_result_error"),
                     )
                 }
-                GaugeResults(presentation, onCopy = { onAction(GaugeAction.Copy(it)) })
+                GaugeResults(presentation, onCopy = { onAction(GaugeAction.Copy(it, state)) })
             }
         }
     }

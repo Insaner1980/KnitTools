@@ -35,6 +35,43 @@ function Invoke-Adb([string[]]$Arguments) {
     return ($result.Output -join "`n")
 }
 
+function Assert-OptimizedArtifactIdentity(
+    [string]$App,
+    [string]$Mapping,
+    [string]$AppManifest,
+    [string]$DriverManifest
+) {
+    if ($AppManifest -cnotmatch '(?m)^\s*A: package="com\.finnvek\.knittools\.optimizedtest"') {
+        throw 'Unexpected packaged target application ID.'
+    }
+    # The Baseline Profile producer is self-instrumenting.
+    if ($DriverManifest -cnotmatch '(?m)^\s*A: package="com\.finnvek\.knittools\.baselineprofile"' -or
+        $DriverManifest -cnotmatch 'android:targetPackage\([^\r\n)]*\)="com\.finnvek\.knittools\.baselineprofile"' -or
+        $DriverManifest -cnotmatch 'android:name\([^\r\n)]*\)="androidx\.test\.runner\.AndroidJUnitRunner"') {
+        throw 'Unexpected packaged driver application ID or instrumentation.'
+    }
+
+    $header = (Get-Content -LiteralPath $Mapping -TotalCount 12) -join "`n"
+    $mappingId = [regex]::Match($header, '(?m)^# pg_map_id: (\S+)$').Groups[1].Value
+    Add-Type -AssemblyName System.IO.Compression, System.IO.Compression.FileSystem
+    $archive = [IO.Compression.ZipFile]::OpenRead($App)
+    try {
+        $dex = $archive.GetEntry('classes.dex')
+        if ($null -eq $dex) { throw 'Target APK does not contain classes.dex.' }
+        $reader = [IO.StreamReader]::new($dex.Open(), [Text.Encoding]::GetEncoding(28591))
+        try {
+            $marker = [regex]::Match($reader.ReadToEnd(), '~~R8\{[^}\x00]*"pg-map-id":"([^"]+)"[^}\x00]*\}')
+        } finally {
+            $reader.Dispose()
+        }
+    } finally {
+        $archive.Dispose()
+    }
+    if (-not $mappingId -or $marker.Groups[1].Value -cne $mappingId) {
+        throw 'R8 mapping does not match the target APK.'
+    }
+}
+
 if ((Invoke-Adb @('shell', 'getprop', 'ro.kernel.qemu')).Trim() -ne '1') {
     throw 'The selected device is not an emulator.'
 }
@@ -44,6 +81,9 @@ $appMetadata = Get-Content (Join-Path $appDir 'output-metadata.json') -Raw | Con
 $driverMetadata = Get-Content (Join-Path $driverDir 'output-metadata.json') -Raw | ConvertFrom-Json
 if ($appMetadata.applicationId -ne 'com.finnvek.knittools.optimizedtest' -or $appMetadata.variantName -ne 'benchmarkRelease') {
     throw 'Build with -Pknittools.optimizedSmoke=true; refusing any other target.'
+}
+if ($driverMetadata.applicationId -ne 'com.finnvek.knittools.baselineprofile' -or $driverMetadata.variantName -ne 'benchmarkRelease') {
+    throw 'Expected benchmarkRelease metadata for the Baseline Profile driver.'
 }
 $app = Join-Path $appDir $appMetadata.elements[0].outputFile
 $driver = Join-Path $driverDir $driverMetadata.elements[0].outputFile
@@ -66,6 +106,10 @@ if ($manifestText -notmatch 'android:testOnly[^\r\n]*=true' -or $manifestText -m
 if ($manifestText -match '"(android\.permission\.INTERNET|com\.android\.vending\.BILLING|android\.permission\.CAMERA)"') {
     throw 'Unexpected target permission.'
 }
+$driverManifest = Invoke-NativeCommand $aapt @('dump', 'xmltree', $driver, '--file', 'AndroidManifest.xml')
+if ($driverManifest.ExitCode -ne 0) { throw 'Cannot inspect the packaged driver manifest.' }
+Assert-OptimizedArtifactIdentity $app $mapping $manifestText ($driverManifest.Output -join "`n")
+
 $configurationResult = Invoke-NativeCommand $aapt @('dump', 'configurations', $app)
 $configurations = $configurationResult.Output
 if ($configurationResult.ExitCode -ne 0 -or ($configurations -join "`n") -match 'en-rXA|ar-rXB') {

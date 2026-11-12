@@ -27,16 +27,9 @@ class BackupTablesTest {
         val directory = temporary.newFolder()
         val file = File(directory, "tables/counter_history.jsonl").apply { requireNotNull(parentFile).mkdirs() }
         file.writeText("[\"id\",\"linkedCounterDeltasJson\",\"projectId\"]\n[1,\"{}\",7]\n")
-        var restored: Map<String, JsonElement>? = null
-        BackupTables.read(
-            directory,
-            "counter_history",
-            listOf("id", "linkedCounterDeltasJson", "projectId", "sessionUndoJson"),
-        ) {
-            restored = it
-        }
-        assertEquals(JsonPrimitive("{}"), restored?.get("linkedCounterDeltasJson"))
-        assertEquals(JsonNull, restored?.get("sessionUndoJson"))
+        val restored = readCounterHistory(directory, schemaVersion = 27)
+        assertEquals(JsonPrimitive("{}"), restored["linkedCounterDeltasJson"])
+        assertEquals(JsonNull, restored["sessionUndoJson"])
     }
 
     @Test fun malformedSessionUndoSnapshotIsRejectedBeforeImport() {
@@ -54,19 +47,36 @@ class BackupTablesTest {
         val directory = temporary.newFolder()
         val file = File(directory, "tables/counter_history.jsonl").apply { requireNotNull(parentFile).mkdirs() }
         file.writeText("[\"id\",\"projectId\"]\n[1,7]\n")
-        var restored: Map<String, JsonElement>? = null
+        for (schemaVersion in listOf(25, 26)) {
+            val restored = readCounterHistory(directory, schemaVersion)
+            assertEquals(JsonNull, restored["linkedCounterDeltasJson"])
+            assertEquals(JsonNull, restored["sessionUndoJson"])
+            assertEquals(JsonPrimitive(7), restored["projectId"])
+        }
+        assertThrows(BackupException::class.java) { readCounterHistory(directory, schemaVersion = 27) }
+    }
 
+    @Test fun currentHistoryHeaderMustIncludeBothSnapshotColumns() {
+        val directory = temporary.newFolder()
+        val file = File(directory, "tables/counter_history.jsonl").apply { requireNotNull(parentFile).mkdirs() }
+        file.writeText("[\"id\",\"linkedCounterDeltasJson\",\"projectId\"]\n[1,\"{}\",7]\n")
+        assertThrows(BackupException::class.java) { readCounterHistory(directory) }
+    }
+
+    private fun readCounterHistory(
+        directory: File,
+        schemaVersion: Int = KNITTOOLS_DATABASE_VERSION,
+    ): Map<String, JsonElement> {
+        var restored: Map<String, JsonElement>? = null
         BackupTables.read(
             directory,
             "counter_history",
             listOf("id", "linkedCounterDeltasJson", "projectId", "sessionUndoJson"),
+            schemaVersion = schemaVersion,
         ) {
             restored = it
         }
-
-        assertEquals(JsonNull, restored?.get("linkedCounterDeltasJson"))
-        assertEquals(JsonNull, restored?.get("sessionUndoJson"))
-        assertEquals(JsonPrimitive(7), restored?.get("projectId"))
+        return requireNotNull(restored)
     }
 
     @Test fun malformedLinkedUndoDeltasAreRejectedBeforeImport() {
@@ -282,6 +292,42 @@ class BackupTablesTest {
         assertEquals(listOf(mapOf("id" to JsonPrimitive(1))), rows)
     }
 
+    @Test fun jsonRowAndDecodedFieldUseUtf16WhileTableUsesUtf8Bytes() {
+        val folder = temporary.newFolder()
+        val file = File(folder, "tables/sessions.jsonl").apply { requireNotNull(parentFile).mkdirs() }
+        val header = """["label"]"""
+        val plain = """["🧶"]"""
+        val escaped = """["\ud83e\uddf6"]"""
+
+        fun read(
+            line: String,
+            rowLimit: Int,
+            fieldLimit: Int = 2,
+            tableLimit: Long? = null,
+        ): JsonElement {
+            file.writeText("$header\n$line\n")
+            val limits =
+                BackupLimits(
+                    maxRowCharacters = rowLimit,
+                    maxFieldCharacters = fieldLimit,
+                    maxTableBytes = tableLimit ?: file.length(),
+                )
+            var field: JsonElement = JsonNull
+            BackupTables.read(folder, "sessions", listOf("label"), budget = BackupBudget(limits)) {
+                field = it.getValue("label")
+            }
+            return field
+        }
+
+        assertEquals(JsonPrimitive("🧶"), read(plain, header.length))
+        assertEquals(JsonPrimitive("🧶"), read(escaped, escaped.length))
+        assertThrows(BackupException::class.java) { read(escaped, escaped.length - 1) }
+        assertThrows(BackupException::class.java) { read(escaped, escaped.length, fieldLimit = 1) }
+        assertThrows(BackupException::class.java) {
+            read(plain, header.length, tableLimit = "$header\n$plain\n".length.toLong())
+        }
+    }
+
     @Test fun importRejectsInvalidColumnValuesBeforeExecutingInsert() {
         val cases =
             listOf(
@@ -299,6 +345,8 @@ class BackupTablesTest {
                 Triple("difficulty", "REAL", "1e300"),
                 Triple("gaugeStitches", "REAL", "-1e300"),
                 Triple("gaugeRows", "REAL", "1e300"),
+                Triple("readingLineYFraction", "REAL", "1e300"),
+                Triple("verticalReadingGuideXFraction", "REAL", "-1e300"),
                 Triple("name", "TEXT", "1"),
                 Triple("name", "TEXT", "null"),
                 Triple("value", "BLOB", "1"),

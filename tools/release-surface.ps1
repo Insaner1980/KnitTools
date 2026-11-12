@@ -869,8 +869,18 @@ function Test-BinaryFileContainsSecret {
     return $false
 }
 
+function Remove-SecretValuesFromDiagnostic {
+    param([string]$Text, [string[]]$Secrets)
+
+    foreach ($secret in ($Secrets | Sort-Object Length -Descending)) {
+        $Text = $Text.Replace($secret, "[redacted]")
+    }
+    return $Text
+}
+
 function Test-KnownRavelrySecrets {
     $check = "known-ravelry-secrets"
+    $secrets = @()
 
     try {
         $secrets = @(Get-KnownRavelrySecretValues)
@@ -915,13 +925,18 @@ function Test-KnownRavelrySecrets {
         }
 
         if ($matches.Count -gt 0) {
-            $firstPath = $matches[0]
+            $firstPath = Remove-SecretValuesFromDiagnostic -Text $matches[0] -Secrets $secrets
             Add-Fail -Check $check -Message "known Ravelry secret value found in $($matches.Count) checked file(s); value redacted" -RelativePath $firstPath
         } else {
             Add-Pass -Check $check -Message "known Ravelry secret values are absent from checked sources, resources, generated constants, tests, APKs, and bundles"
         }
     } catch {
-        Add-Fail -Check $check -Message $_.Exception.Message
+        $message = if ($secrets.Count -eq 0) {
+            "Unable to load known Ravelry secret values for comparison"
+        } else {
+            Remove-SecretValuesFromDiagnostic -Text $_.Exception.Message -Secrets $secrets
+        }
+        Add-Fail -Check $check -Message $message
     }
 }
 

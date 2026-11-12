@@ -12,6 +12,11 @@ $native = $ast.Find({ param($node)
 }, $true)
 if ($null -eq $native) { throw 'Missing native-command helper' }
 . ([scriptblock]::Create($native.Extent.Text))
+$artifactIdentity = $ast.Find({ param($node)
+    $node -is [Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -eq 'Assert-OptimizedArtifactIdentity'
+}, $true)
+if ($null -eq $artifactIdentity) { throw 'Missing artifact identity check' }
+. ([scriptblock]::Create($artifactIdentity.Extent.Text))
 
 $shell = (Get-Process -Id $PID).Path
 foreach ($code in @(0, 7)) {
@@ -47,7 +52,47 @@ function Invoke-Adb([string[]]$Arguments) {
 
 $output = Join-Path (Split-Path $PSScriptRoot -Parent) 'reports/optimized-smoke-selftest'
 New-Item -ItemType Directory -Path $output -ErrorAction Stop | Out-Null
+$apk = Join-Path $output 'fixture.apk'
+$mapping = Join-Path $output 'fixture-mapping.txt'
 try {
+    Add-Type -AssemblyName System.IO.Compression, System.IO.Compression.FileSystem
+    $archive = [IO.Compression.ZipFile]::Open($apk, [IO.Compression.ZipArchiveMode]::Create)
+    try {
+        $writer = [IO.StreamWriter]::new($archive.CreateEntry('classes.dex').Open())
+        try {
+            $writer.Write('~~R8{"backend":"dex","pg-map-id":"fixture-map-id","version":"9.5.29"}')
+        } finally {
+            $writer.Dispose()
+        }
+    } finally {
+        $archive.Dispose()
+    }
+    $appManifest = '    A: package="com.finnvek.knittools.optimizedtest"'
+    $driverManifest = @'
+    A: package="com.finnvek.knittools.baselineprofile"
+      E: instrumentation (line=9)
+        A: http://schemas.android.com/apk/res/android:name(0x01010003)="androidx.test.runner.AndroidJUnitRunner"
+        A: http://schemas.android.com/apk/res/android:targetPackage(0x01010021)="com.finnvek.knittools.baselineprofile"
+'@
+    '# pg_map_id: fixture-map-id' | Set-Content -LiteralPath $mapping
+    Assert-OptimizedArtifactIdentity $apk $mapping $appManifest $driverManifest
+
+    function Assert-IdentityRejected($appManifest, $driverManifest, $message) {
+        try {
+            Assert-OptimizedArtifactIdentity $apk $mapping $appManifest $driverManifest
+        } catch {
+            if ($_.Exception.Message -ceq $message) { return }
+            throw
+        }
+        throw "Expected rejection: $message"
+    }
+    Assert-IdentityRejected ($appManifest.Replace('.optimizedtest', '')) $driverManifest 'Unexpected packaged target application ID.'
+    Assert-IdentityRejected $appManifest ($driverManifest.Replace('.baselineprofile', '.unrelated')) 'Unexpected packaged driver application ID or instrumentation.'
+    Assert-IdentityRejected $appManifest ($driverManifest.Replace('AndroidJUnitRunner', 'OtherRunner')) 'Unexpected packaged driver application ID or instrumentation.'
+    '# pg_map_id: stale-map-id' | Set-Content -LiteralPath $mapping
+    Assert-IdentityRejected $appManifest $driverManifest 'R8 mapping does not match the target APK.'
+    Write-Output 'PASS: artifact identity accepts a matching set and rejects the wrong target, driver and mapping'
+
     . $cleanupBlock
     if (-not $calls.Contains('shell wm size reset') -or -not $calls.Contains('shell wm density reset')) {
         throw 'Failed evidence pull prevented display restoration'
@@ -62,6 +107,8 @@ try {
     Write-Output 'PASS: failed pull and size reset cannot skip subsequent restoration'
 } finally {
     $log = Join-Path $output 'logcat.txt'
-    if (Test-Path -LiteralPath $log) { Remove-Item -LiteralPath $log -Force }
+    foreach ($file in @($log, $apk, $mapping)) {
+        if (Test-Path -LiteralPath $file) { Remove-Item -LiteralPath $file -Force }
+    }
     Remove-Item -LiteralPath $output -Force
 }

@@ -203,34 +203,34 @@ class InsightsChartModelTest {
 
     @Test
     fun `trend reports growth against the previous period`() {
-        val trend = insightsTrend(currentMinutes = 120, previousMinutes = 100)
+        val trend = insightsTrend(currentSeconds = minutesAsSeconds(120), previousSeconds = minutesAsSeconds(100))
 
         assertEquals(InsightsTrend(percentChange = 20, direction = InsightsTrendDirection.UP), trend)
     }
 
     @Test
     fun `trend reports decline as a positive magnitude`() {
-        val trend = insightsTrend(currentMinutes = 80, previousMinutes = 100)
+        val trend = insightsTrend(currentSeconds = minutesAsSeconds(80), previousSeconds = minutesAsSeconds(100))
 
         assertEquals(InsightsTrend(percentChange = 20, direction = InsightsTrendDirection.DOWN), trend)
     }
 
     @Test
     fun `equal periods are flat`() {
-        val trend = insightsTrend(currentMinutes = 100, previousMinutes = 100)
+        val trend = insightsTrend(currentSeconds = minutesAsSeconds(100), previousSeconds = minutesAsSeconds(100))
 
         assertEquals(InsightsTrend(percentChange = 0, direction = InsightsTrendDirection.FLAT), trend)
     }
 
     @Test
     fun `trend is unavailable without a previous period to divide by`() {
-        assertNull(insightsTrend(currentMinutes = 90, previousMinutes = 0))
-        assertNull(insightsTrend(currentMinutes = 0, previousMinutes = 0))
+        assertNull(insightsTrend(currentSeconds = minutesAsSeconds(90), previousSeconds = 0L))
+        assertNull(insightsTrend(currentSeconds = 0L, previousSeconds = 0L))
     }
 
     @Test
     fun `dropping to zero is a full decline`() {
-        val trend = insightsTrend(currentMinutes = 0, previousMinutes = 100)
+        val trend = insightsTrend(currentSeconds = 0L, previousSeconds = minutesAsSeconds(100))
 
         assertEquals(InsightsTrend(percentChange = 100, direction = InsightsTrendDirection.DOWN), trend)
     }
@@ -249,8 +249,8 @@ class InsightsChartModelTest {
                 LocalDate.of(2026, 7, 26) to minutesAsSeconds(999), // ei sisälly: viime viikon loppupää
             )
 
-        val minutes =
-            previousPeriodMinutes(
+        val seconds =
+            previousPeriodSeconds(
                 dailySeconds = dailySeconds,
                 previousStart = LocalDate.of(2026, 7, 20),
                 currentStart = LocalDate.of(2026, 7, 27),
@@ -258,7 +258,7 @@ class InsightsChartModelTest {
                 // CPD-ON
             )
 
-        assertEquals(40, minutes)
+        assertEquals(2400L, seconds)
     }
 
     @Test
@@ -272,29 +272,29 @@ class InsightsChartModelTest {
                 LocalDate.of(2026, 7, 26) to minutesAsSeconds(999),
             )
 
-        val minutes =
-            previousPeriodMinutes(
+        val seconds =
+            previousPeriodSeconds(
                 dailySeconds = dailySeconds,
                 previousStart = LocalDate.of(2026, 7, 20),
                 currentStart = LocalDate.of(2026, 7, 27),
                 today = LocalDate.of(2026, 8, 2),
             )
 
-        assertEquals(1029, minutes)
+        assertEquals(61_740L, seconds)
         // CPD-ON
     }
 
     @Test
     fun `previous period without matching activity is zero`() {
-        val minutes =
-            previousPeriodMinutes(
+        val seconds =
+            previousPeriodSeconds(
                 dailySeconds = mapOf(LocalDate.of(2026, 6, 1) to minutesAsSeconds(45)),
                 previousStart = LocalDate.of(2026, 7, 20),
                 currentStart = LocalDate.of(2026, 7, 27),
                 today = LocalDate.of(2026, 7, 30),
             )
 
-        assertEquals(0, minutes)
+        assertEquals(0L, seconds)
     }
 
     @Test
@@ -311,8 +311,8 @@ class InsightsChartModelTest {
                 LocalDate.of(2026, 3, 3) to minutesAsSeconds(900), // ei sisälly: kuuluu nykyiseen jaksoon
             )
 
-        val minutes =
-            previousPeriodMinutes(
+        val seconds =
+            previousPeriodSeconds(
                 dailySeconds = dailySeconds,
                 previousStart = LocalDate.of(2026, 2, 1),
                 currentStart = LocalDate.of(2026, 3, 1),
@@ -320,7 +320,7 @@ class InsightsChartModelTest {
                 // CPD-ON
             )
 
-        assertEquals(45, minutes)
+        assertEquals(2700L, seconds)
     }
 
     @Test
@@ -335,22 +335,20 @@ class InsightsChartModelTest {
                 LocalDate.of(2026, 2, 28) to minutesAsSeconds(900), // ei sisälly: kuluneiden päivien jälkeen
             )
 
-        val minutes =
-            previousPeriodMinutes(
+        val seconds =
+            previousPeriodSeconds(
                 dailySeconds = dailySeconds,
                 previousStart = LocalDate.of(2026, 2, 1),
                 currentStart = LocalDate.of(2026, 3, 1),
                 today = LocalDate.of(2026, 3, 10),
             )
 
-        assertEquals(45, minutes)
+        assertEquals(2700L, seconds)
     }
 
     @Test
-    fun `previous period rounds once over the window instead of once per active day`() {
-        // Kolme päivää, joista jokainen jäisi omalla pyöristyksellään minuutin yli:
-        // 3 x 90 s = 270 s = 5 min. Päiväkohtaisesti pyöristettynä summa olisi 6 min,
-        // eli vertailukohta kasvaisi ja trendi näyttäisi laskua jota ei ole.
+    fun `previous period retains exact seconds across active days`() {
+        // Display rounding would turn 270 seconds into five or six minutes.
         val dailySeconds =
             mapOf(
                 LocalDate.of(2026, 7, 20) to 90L,
@@ -358,15 +356,15 @@ class InsightsChartModelTest {
                 LocalDate.of(2026, 7, 22) to 90L,
             )
 
-        val minutes =
-            previousPeriodMinutes(
+        val seconds =
+            previousPeriodSeconds(
                 dailySeconds = dailySeconds,
                 previousStart = LocalDate.of(2026, 7, 20),
                 currentStart = LocalDate.of(2026, 7, 27),
                 today = LocalDate.of(2026, 8, 2),
             )
 
-        assertEquals(5, minutes)
+        assertEquals(270L, seconds)
     }
 
     private fun minutesAsSeconds(minutes: Int): Long = minutes * 60L
@@ -401,8 +399,8 @@ class InsightsChartModelTest {
     @Test
     fun `a tiny previous period never produces a percentage`() {
         // 3 min → 18 min oli "500 % more than last week": kohinaa, ei tietoa.
-        assertNull(insightsTrend(currentMinutes = 18, previousMinutes = 3))
-        assertNull(insightsTrend(currentMinutes = 18, previousMinutes = 0))
-        assertNotNull(insightsTrend(currentMinutes = 90, previousMinutes = 60))
+        assertNull(insightsTrend(currentSeconds = minutesAsSeconds(18), previousSeconds = minutesAsSeconds(3)))
+        assertNull(insightsTrend(currentSeconds = minutesAsSeconds(18), previousSeconds = 0L))
+        assertNotNull(insightsTrend(currentSeconds = minutesAsSeconds(90), previousSeconds = minutesAsSeconds(60)))
     }
 }

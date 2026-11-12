@@ -104,6 +104,7 @@ class ProjectDocumentMigration22Test {
             colonUris.forEachIndexed { index, uri ->
                 insertProject(id = 11L + index, name = "Colon label $index", patternUri = uri, patternName = "  ")
             }
+            insertProject(id = 15, name = "Whitespace URI", patternUri = "\t\n")
             execSQL(
                 "INSERT INTO pattern_annotation_layers " +
                     "(id, projectId, savedPatternId, documentKey, isActive, createdAt, updatedAt) " +
@@ -148,6 +149,8 @@ class ProjectDocumentMigration22Test {
             )
 
         assertEquals(0, count(db, "SELECT COUNT(*) FROM project_documents WHERE projectId IN (1, 2)"))
+        assertEquals(0, count(db, "SELECT COUNT(*) FROM project_documents WHERE projectId = 15"))
+        assertEquals("\t\n", scalarString(db, "SELECT patternUri FROM counter_projects WHERE id = 15"))
         assertDocument(
             db = db,
             projectId = 3,

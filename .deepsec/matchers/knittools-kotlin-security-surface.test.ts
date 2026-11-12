@@ -312,6 +312,24 @@ class RavelryBackendClient(
   );
 });
 
+test("widget boundaries do not require unrelated standalone widget text", () => {
+  const cases = [
+    ["fun persist() { CounterWidgetState.save(context, data) }", "Widget persisted state boundary"],
+    ["fun persist() { updateAppWidgetState(context, definition, id) {} }", "Glance widget persisted state write"],
+    ["fun persist() { preferences.updatePreferencesSafely(\"state\") {} }", "Widget persisted DataStore write"],
+    ["fun launch() { issueLaunchId(context) }", "Widget launch-token trust boundary"],
+    ["fun launch() { consumeLaunchId(context, id) }", "Widget launch-token trust boundary"],
+  ];
+  for (const [content, expected] of cases) {
+    assert.deepEqual(
+      widgetMutationSurface.match(content, "app/src/main/java/com/finnvek/knittools/widget/CounterWidgetState.kt")
+        .map(match => match.matchedPattern),
+      [expected],
+      content,
+    );
+  }
+});
+
 test("flags widget launch-token and persisted state write boundaries", () => {
   const tokenContent = `
 object CounterLaunchTokenStore {

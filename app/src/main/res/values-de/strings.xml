@@ -916,7 +916,7 @@
         <item quantity="other">%1$d Reihen</item>
     </plurals>
     <string name="yarn_usage_title">Garnverbrauch</string>
-    <string name="yarn_usage_scope">Erfasst nur das für dieses Projekt reservierte Garn. Die Mengen in Mein Garn bleiben unverändert.</string>
+    <string name="yarn_usage_scope">Erfasst die Garnmengen für dieses Projekt. Die Mengen in Mein Garn bleiben unverändert.</string>
     <string name="yarn_usage_unit">Mengeneinheit</string>
     <string name="yarn_usage_grams">Gramm</string>
     <string name="yarn_usage_skeins">Stränge</string>

@@ -22,6 +22,7 @@ import com.finnvek.knittools.R
 import com.finnvek.knittools.data.local.CounterProjectDao
 import com.finnvek.knittools.data.local.CounterProjectEntity
 import com.finnvek.knittools.data.local.KnitToolsDatabase
+import com.finnvek.knittools.data.storage.NotesDraftStorage
 import com.finnvek.knittools.repository.counterHistoryTestRepository
 import com.finnvek.knittools.ui.theme.KnitToolsTheme
 import com.finnvek.knittools.widget.WidgetEntryPoint
@@ -81,7 +82,8 @@ class NotesEditorFailureTest {
                     WidgetEntryPoint::class.java,
                 ).proManager()
         composeRule.runOnUiThread {
-            viewModel = NotesEditorViewModel(repository, proManager, scope, handle)
+            viewModel =
+                NotesEditorViewModel(repository, proManager, scope, handle, NotesDraftStorage(context, Dispatchers.IO))
             store.put("notes", viewModel)
             composeRule.activity.setContent(content = content)
         }

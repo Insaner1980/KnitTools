@@ -19,9 +19,10 @@ object ProjectListDimens {
 
     val ScreenHorizontalPadding = 16.dp
     val ListTopPadding = 8.dp
+    val ListBottomPadding = 16.dp
 
     // Uusi projekti -painike (64 dp + 16 dp reunus) ja 32 dp väli: viimeisen kortin palkki jää näkyviin.
-    val ListBottomPadding = 112.dp
+    val ListBottomPaddingWithCreateButton = 112.dp
     val HeroPadding = 20.dp
     val HeroContentGap = 12.dp
 

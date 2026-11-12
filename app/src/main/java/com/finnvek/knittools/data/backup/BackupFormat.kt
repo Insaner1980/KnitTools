@@ -3,6 +3,7 @@ package com.finnvek.knittools.data.backup
 import android.annotation.SuppressLint
 import com.finnvek.knittools.data.local.KNITTOOLS_DATABASE_VERSION
 import com.finnvek.knittools.data.storage.YarnPhotoStorage
+import kotlinx.serialization.Required
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import java.io.File
@@ -36,10 +37,10 @@ data class BackupEntry(
 
 @Serializable
 data class BackupManifest(
-    val format: String = "KnitTools",
-    val formatVersion: Int = 1,
-    val dataVersion: Int = 1,
-    val schemaVersion: Int = KNITTOOLS_DATABASE_VERSION,
+    @Required val format: String = "KnitTools",
+    @Required val formatVersion: Int = 1,
+    @Required val dataVersion: Int = 1,
+    @Required val schemaVersion: Int = KNITTOOLS_DATABASE_VERSION,
     val createdAt: Long,
     val versionCode: Long,
     val versionName: String,

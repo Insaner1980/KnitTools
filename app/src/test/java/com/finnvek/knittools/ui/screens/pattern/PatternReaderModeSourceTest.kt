@@ -9,7 +9,7 @@ class PatternReaderModeSourceTest {
     @Test
     fun `downloaded pdf can be opened or shared straight into the app`() {
         val manifest = ProjectSourceFiles.read(MANIFEST)
-        val pdfFilter = manifest.substringAfter("<!-- Ladattu PDF-ohje").substringBefore("</intent-filter>")
+        val pdfFilter = manifest.blockBetween("<!-- Ladattu PDF-ohje", "</intent-filter>")
 
         assertTrue(pdfFilter.contains("android.intent.action.VIEW"))
         assertTrue(pdfFilter.contains("android.intent.action.SEND"))
@@ -24,7 +24,9 @@ class PatternReaderModeSourceTest {
         assertTrue(viewer.contains("if (state.patternUri != null && state.annotationMode)"))
         assertTrue(viewer.contains("R.string.pattern_mark_up"))
         assertTrue(viewer.contains("PatternAnnotationLayersSheet("))
-        assertFalse(viewer.substringAfter("private fun PatternViewerContent(").contains("PatternAnnotationLayerPanel("))
+        val contentMarker = "private fun PatternViewerContent("
+        assertTrue(viewer.contains(contentMarker))
+        assertFalse(viewer.substringAfter(contentMarker).contains("PatternAnnotationLayerPanel("))
     }
 
     @Test
@@ -32,8 +34,7 @@ class PatternReaderModeSourceTest {
         val viewer = ProjectSourceFiles.read(PATTERN_VIEWER)
         val overflowMenu =
             viewer
-                .substringAfter("private fun PatternViewerOverflowMenu(")
-                .substringBefore("private fun PatternReadingLineMenuItem(")
+                .blockBetween("private fun PatternViewerOverflowMenu(", "private fun PatternReadingLineMenuItem(")
 
         assertFalse(overflowMenu.contains("R.string.pattern_bookmarks"))
         assertTrue(viewer.contains("onClick = actions.onOpenBookmarks"))

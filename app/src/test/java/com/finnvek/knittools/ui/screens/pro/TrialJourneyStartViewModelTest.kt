@@ -45,6 +45,7 @@ class TrialJourneyStartViewModelTest {
         Dispatchers.setMain(dispatcher)
         every { manager.proState } returns MutableStateFlow(ProState())
         every { manager.initialStateReady } returns MutableStateFlow(true)
+        every { manager.initialControlsReady } returns MutableStateFlow(true)
         every { billing.purchaseQueryFailed } returns MutableStateFlow(false)
         every { billing.selectedOffer } returns MutableStateFlow(null)
         every { billing.productStatus } returns MutableStateFlow(BillingProductStatus.Loading)

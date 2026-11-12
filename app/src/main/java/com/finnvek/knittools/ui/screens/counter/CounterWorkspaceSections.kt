@@ -44,6 +44,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.TextMeasurer
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
@@ -630,29 +631,12 @@ private fun CounterMainNumber(
         contentAlignment = Alignment.Center,
     ) {
         val textMeasurer = rememberTextMeasurer()
-        val heightLimitedFontSize =
-            counterMainNumberHeightLimitedFontSize(
-                maxFontSize = maxFontSize,
-                maxHeightPx = constraints.maxHeight,
-                measuredHeightPx = textMeasurer.measure("0", baseTextStyle).size.height,
-            )
         val fittedFontSize =
-            counterMainNumberFittedFontSize(
-                maxFontSize = heightLimitedFontSize,
-                minFontSize = CounterDimens.CounterMainNumberMinimumFontSize,
+            textMeasurer.fitCounterNumber(
+                text = countText,
+                style = baseTextStyle,
                 maxWidthPx = (constraints.maxWidth - with(density) { feedbackSpace.roundToPx() } * 2).coerceAtLeast(0),
-                measureWidth = { candidateFontSize ->
-                    // RollingCounter lays out each character separately, including grouping spaces.
-                    countText.sumOf { character ->
-                        textMeasurer
-                            .measure(
-                                text = character.toString(),
-                                style = baseTextStyle.copy(fontSize = candidateFontSize),
-                                softWrap = false,
-                                maxLines = 1,
-                            ).size.width
-                    }
-                },
+                maxHeightPx = constraints.maxHeight,
             )
         RollingCounter(
             count = state.counter.count,
@@ -677,16 +661,21 @@ private fun CounterMainNumber(
     }
 }
 
-/** Rajoitettu korkeus (vierekkäinen laskuri) pienentää luvun samassa suhteessa kuin rivin korkeus ylittyy. */
-internal fun counterMainNumberHeightLimitedFontSize(
-    maxFontSize: TextUnit,
-    maxHeightPx: Int,
-    measuredHeightPx: Int,
+internal fun TextMeasurer.fitCounterNumber(
+    text: String,
+    style: TextStyle,
+    maxWidthPx: Int,
+    maxHeightPx: Int = Constraints.Infinity,
 ): TextUnit =
-    if (maxHeightPx == Constraints.Infinity || measuredHeightPx <= maxHeightPx || measuredHeightPx <= 0) {
-        maxFontSize
-    } else {
-        (maxFontSize.value * maxHeightPx / measuredHeightPx).sp
+    counterMainNumberFittedFontSize(style.fontSize, CounterDimens.CounterMainNumberMinimumFontSize) { candidate ->
+        val candidateStyle = style.copy(fontSize = candidate)
+        var width = 0
+        // RollingCounter measures each character separately, including grouping spaces.
+        text.all { character ->
+            val size = measure(character.toString(), candidateStyle, softWrap = false, maxLines = 1).size
+            width += size.width
+            width <= maxWidthPx && size.height <= maxHeightPx
+        }
     }
 
 internal fun counterMainNumberFittedFontSize(
@@ -694,23 +683,28 @@ internal fun counterMainNumberFittedFontSize(
     minFontSize: TextUnit,
     maxWidthPx: Int,
     measureWidth: (TextUnit) -> Int,
+): TextUnit =
+    when {
+        maxWidthPx == Constraints.Infinity -> maxFontSize
+        maxWidthPx <= 0 -> minFontSize
+        else -> counterMainNumberFittedFontSize(maxFontSize, minFontSize) { measureWidth(it) <= maxWidthPx }
+    }
+
+internal fun counterMainNumberFittedFontSize(
+    maxFontSize: TextUnit,
+    minFontSize: TextUnit,
+    fits: (TextUnit) -> Boolean,
 ): TextUnit {
-    if (maxWidthPx == Constraints.Infinity) {
-        return maxFontSize
-    }
-    if (maxWidthPx <= 0) {
-        return minFontSize
-    }
-    if (measureWidth(maxFontSize) <= maxWidthPx) {
+    if (fits(maxFontSize)) {
         return maxFontSize
     }
     // Keep the preferred minimum when possible, but never truncate a valid counter value.
-    val minimumFits = measureWidth(minFontSize) <= maxWidthPx
+    val minimumFits = fits(minFontSize)
     var lowFontSize = if (minimumFits) minFontSize else 0.sp
     var highFontSize = if (minimumFits) maxFontSize else minFontSize
     repeat(CounterDimens.CounterMainNumberFitIterations) {
         val candidateFontSize = ((lowFontSize.value + highFontSize.value) / 2f).sp
-        if (measureWidth(candidateFontSize) <= maxWidthPx) {
+        if (fits(candidateFontSize)) {
             lowFontSize = candidateFontSize
         } else {
             highFontSize = candidateFontSize
@@ -763,7 +757,7 @@ private fun CounterTargetProgress(
 
 /** Laskurissa jäljellä oleva määrä yksikön kanssa ("38 rows left"), toisin kuin listan lyhyt muoto. */
 @Composable
-private fun counterTargetStatusText(status: MainCounterTargetStatus): String =
+internal fun counterTargetStatusText(status: MainCounterTargetStatus): String =
     when (status) {
         is MainCounterTargetStatus.Remaining -> {
             stringResource(

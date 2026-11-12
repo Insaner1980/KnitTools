@@ -11,6 +11,7 @@ import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -229,7 +230,12 @@ class SessionInsightsDatabaseTest {
             assertTrue(dao.getInsightSessionBatchSince(Long.MIN_VALUE, 11_001).isEmpty())
             assertTrue(dao.hasAnySessions())
             assertEquals(1000L, dao.getSessionProjectActivity(2).single().lastSessionAt)
+            assertEquals(listOf(old), dao.getInsightFirstDateBatch(2, Long.MIN_VALUE, 0).map { it.id })
+            assertEquals(listOf(fallback), dao.getInsightFirstDateBatch(2, old, 1000).map { it.id })
             dao.deleteById(old)
+            assertEquals(0L, dao.getFirstSessionStart(null))
+            assertEquals(1000L, dao.getFirstSessionStart(2))
+            assertNull(dao.getFirstSessionStart(3))
             assertEquals(258L, dao.countCompletedSessions())
             val sql = database.openHelper.writableDatabase
             sql.query("EXPLAIN QUERY PLAN SELECT * FROM sessions WHERE id > 256 ORDER BY id LIMIT 256").use { cursor ->

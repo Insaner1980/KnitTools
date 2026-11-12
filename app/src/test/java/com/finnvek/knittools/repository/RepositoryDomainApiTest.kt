@@ -437,6 +437,9 @@ internal class FakeSavedPatternDao(
     override suspend fun getByLocalPdfUri(localPdfUri: String): SavedPatternEntity? =
         savedPatterns.firstOrNull { it.localPdfUri == localPdfUri }
 
+    override suspend fun getReferencedPdfUris(): List<String> =
+        savedPatterns.filterNot { it.id in deletedIds }.mapNotNull { it.localPdfUri }.distinct()
+
     override suspend fun getAllOnce(): List<SavedPatternEntity> = savedPatterns
 
     override suspend fun getImportedPatternsOnce(): List<SavedPatternEntity> =
@@ -553,9 +556,20 @@ internal class RepositoryDomainFakeCounterProjectDao(
 internal class FakePatternAnnotationDao(
     patternAnnotations: List<PatternAnnotationEntity> = emptyList(),
 ) : PatternAnnotationDao() {
+    var layerIsActive = true
+
     override suspend fun getTextEditLayer(
         layerId: Long,
-    ): com.finnvek.knittools.data.local.PatternAnnotationLayerEntity? = null
+    ): com.finnvek.knittools.data.local.PatternAnnotationLayerEntity =
+        com.finnvek.knittools.data.local.PatternAnnotationLayerEntity(
+            id = layerId,
+            projectId = 7L,
+            savedPatternId = null,
+            documentKey = "project-document",
+            isActive = layerIsActive,
+            createdAt = 1L,
+            updatedAt = 1L,
+        )
 
     private val patternAnnotations = patternAnnotations.toMutableList()
     var lastInserted: PatternAnnotationEntity? = null
@@ -619,12 +633,14 @@ internal class FakePatternAnnotationDao(
 
     override suspend fun updateUnchecked(annotation: PatternAnnotationEntity) = Unit
 
-    override suspend fun deleteForPage(
+    override suspend fun deleteForPageUnchecked(
         layerId: Long,
         page: Int,
     ) = Unit
 
-    override suspend fun deleteById(id: Long) = Unit
+    override suspend fun deleteByIdUnchecked(id: Long) = Unit
+
+    override suspend fun getAnnotationLayerId(id: Long): Long? = patternAnnotations.firstOrNull { it.id == id }?.layerId
 }
 
 internal suspend inline fun withParsedFileUrisForDomainApi(

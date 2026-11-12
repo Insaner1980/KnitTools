@@ -72,5 +72,5 @@ class NotesDraftStorage
         private fun file(
             projectId: Long,
             id: UUID,
-        ): AtomicFile = AtomicFile(File(context.cacheDir, "notes-draft-$projectId-$id.json"))
+        ): AtomicFile = AtomicFile(File(context.noBackupFilesDir, "notes-draft-$projectId-$id.json"))
     }

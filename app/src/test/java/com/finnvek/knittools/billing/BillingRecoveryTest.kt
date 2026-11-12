@@ -611,9 +611,34 @@ class BillingAcknowledgementRecoveryTest : BillingRecoveryFixture() {
                     advanceTimeBy(5_001)
                     runCurrent()
                 }
-                assertEquals(RestorePurchasesResult.RESTORED, billing.restorePurchasesWithResult())
+                assertEquals(4, callbacks.size)
+                advanceUntilIdle()
                 assertEquals(4, callbacks.size)
             }
+        }
+
+    @Test
+    fun `explicit restore can acknowledge after automatic retries are exhausted`() =
+        runTest(dispatcher) {
+            val callbacks = startAcknowledgementLifecycle(client)
+            repeat(4) {
+                callbacks.last().onAcknowledgePurchaseResponse(result(BillingClient.BillingResponseCode.NETWORK_ERROR))
+                advanceTimeBy(5_001)
+                runCurrent()
+            }
+            assertEquals(4, callbacks.size)
+
+            assertEquals(RestorePurchasesResult.RESTORED, billing.restorePurchasesWithResult())
+            assertEquals(5, callbacks.size)
+            callbacks.last().onAcknowledgePurchaseResponse(result(BillingClient.BillingResponseCode.NETWORK_ERROR))
+            advanceUntilIdle()
+            assertEquals("An explicit retry must not restart automatic retry loops", 5, callbacks.size)
+
+            billing.restorePurchasesWithResult()
+            assertEquals(6, callbacks.size)
+            callbacks.last().onAcknowledgePurchaseResponse(result(BillingClient.BillingResponseCode.OK))
+            billing.restorePurchasesWithResult()
+            assertEquals("Confirmed purchases must not be acknowledged twice", 6, callbacks.size)
         }
 
     @Test

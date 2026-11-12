@@ -4,6 +4,7 @@ import org.junit.Assert.assertThrows
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
+import java.io.File
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.util.zip.ZipEntry
@@ -20,6 +21,48 @@ class BackupZipStructureTest {
             it.closeEntry()
         }
         BackupZipStructure.verify(archive) {}
+        val bytes = archive.readBytes()
+        val end = bytes.size - 22
+        val original = ByteBuffer.wrap(bytes, end, 22).slice().order(ByteOrder.LITTLE_ENDIAN)
+        val directorySize = original.getInt(12)
+        val directoryOffset = original.getInt(16)
+        appendZip64Directory(archive)
+        BackupZipStructure.verify(archive) {}
+        val zip64 = archive.readBytes()
+        for (offset in listOf(end + 16, end + 20)) {
+            val invalid = zip64.copyOf()
+            ByteBuffer.wrap(invalid).order(ByteOrder.LITTLE_ENDIAN).putInt(offset, 1)
+            archive.writeBytes(invalid)
+            assertThrows(BackupException::class.java) { BackupZipStructure.verify(archive) {} }
+        }
+        val conflictingSize = zip64.copyOf()
+        ByteBuffer.wrap(conflictingSize).order(ByteOrder.LITTLE_ENDIAN).putInt(conflictingSize.size - 10, 1)
+        archive.writeBytes(conflictingSize)
+        assertThrows(BackupException::class.java) { BackupZipStructure.verify(archive) {} }
+
+        for (field in listOf(10, 12, 16)) {
+            val compatible = zip64.copyOf()
+            val classic =
+                ByteBuffer.wrap(compatible, compatible.size - 22, 22).slice().order(ByteOrder.LITTLE_ENDIAN)
+            when (field) {
+                10 -> classic.putShort(8, 1).putShort(10, 1)
+                12 -> classic.putInt(12, directorySize)
+                16 -> classic.putInt(16, directoryOffset)
+            }
+            archive.writeBytes(compatible)
+            BackupZipStructure.verify(archive) {}
+
+            when (field) {
+                10 -> classic.putShort(8, 2).putShort(10, 2)
+                12 -> classic.putInt(12, directorySize + 1)
+                16 -> classic.putInt(16, directoryOffset + 1)
+            }
+            archive.writeBytes(compatible)
+            assertThrows(BackupException::class.java) { BackupZipStructure.verify(archive) {} }
+        }
+    }
+
+    private fun appendZip64Directory(archive: File) {
         val bytes = archive.readBytes()
         val end = bytes.size - 22
         val original = ByteBuffer.wrap(bytes, end, 22).slice().order(ByteOrder.LITTLE_ENDIAN)
@@ -48,17 +91,21 @@ class BackupZipStructureTest {
             .putInt(16, -1)
         trailer.put(bytes, end, 22)
         archive.writeBytes(bytes.copyOf(end) + trailer.array())
-        BackupZipStructure.verify(archive) {}
-        val zip64 = archive.readBytes()
-        for (offset in listOf(end + 16, end + 20)) {
-            val invalid = zip64.copyOf()
-            ByteBuffer.wrap(invalid).order(ByteOrder.LITTLE_ENDIAN).putInt(offset, 1)
-            archive.writeBytes(invalid)
-            assertThrows(BackupException::class.java) { BackupZipStructure.verify(archive) {} }
+    }
+
+    @Test fun localAndCentralCompressionMethodsMustAgree() {
+        val archive = temporary.newFile()
+        ZipOutputStream(archive.outputStream()).use {
+            it.putNextEntry(ZipEntry("example"))
+            it.write(byteArrayOf(1, 2, 3))
+            it.closeEntry()
         }
-        val conflictingSize = zip64.copyOf()
-        ByteBuffer.wrap(conflictingSize).order(ByteOrder.LITTLE_ENDIAN).putInt(conflictingSize.size - 10, 1)
-        archive.writeBytes(conflictingSize)
+        val bytes = archive.readBytes()
+        val buffer = ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN)
+        val directory = buffer.getInt(bytes.size - 6)
+        buffer.putShort(directory + 10, ZipEntry.STORED.toShort())
+        archive.writeBytes(bytes)
+
         assertThrows(BackupException::class.java) { BackupZipStructure.verify(archive) {} }
     }
 

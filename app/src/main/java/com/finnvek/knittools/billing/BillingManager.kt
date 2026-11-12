@@ -507,8 +507,6 @@ class BillingManager
             val retryCount = (acknowledgementRetryCounts[purchaseToken] ?: 0) + 1
             if (retryCount > ACKNOWLEDGEMENT_MAX_RETRIES) {
                 pendingAcknowledgementRetries.remove(purchaseToken)
-                finishedAcknowledgementTokens.add(purchaseToken)
-                acknowledgementRetryCounts.remove(purchaseToken)
                 return
             }
             acknowledgementRetryCounts[purchaseToken] = retryCount

@@ -2164,7 +2164,6 @@ internal fun mergeProjectNotes(
 
     val requestedSuffix = requestedNotes.removeKnownPrefix(baseNotes)
     val currentSuffix = currentNotes.removeKnownPrefix(baseNotes)
-    if (requestedSuffix != null && currentNotes.endsWith(requestedSuffix)) return currentNotes
 
     return when {
         requestedSuffix != null && currentSuffix != null -> currentNotes + requestedSuffix

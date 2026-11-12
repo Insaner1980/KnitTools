@@ -39,7 +39,12 @@ class PatternShareCoordinatorViewModelTest {
             PatternShareCoordinatorViewModel(
                 SavedStateHandle(valid + ("pattern_share_pending_title" to 7L)),
             )
-        assertEquals("", missingTitle.pending.value?.payload?.titleSuggestion)
+        assertEquals(
+            "",
+            missingTitle.pending.value
+                ?.payload
+                ?.titleSuggestion,
+        )
         val malformedError =
             PatternShareCoordinatorViewModel(
                 SavedStateHandle(

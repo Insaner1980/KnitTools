@@ -14,9 +14,11 @@ import androidx.test.runner.lifecycle.Stage
 import com.finnvek.knittools.data.storage.writeOnePagePdf
 import com.finnvek.knittools.ui.navigation.IncomingPdfViewModel
 import com.finnvek.knittools.ui.navigation.PatternShareCoordinatorViewModel
+import com.finnvek.knittools.ui.navigation.PatternShareError
 import com.finnvek.knittools.ui.navigation.PatternShareOfferResult
 import com.finnvek.knittools.ui.navigation.PatternSharePayload
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.File
@@ -25,6 +27,43 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
 
 class PatternShareIntentRestoreTest {
+    @Test
+    fun externalExtrasCannotSeedPrivateShareState() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        check(context.packageName.endsWith(".activepolicytest") || context.packageName.endsWith(".notestest"))
+        val launch =
+            Intent(context, MainActivity::class.java).setAction(Intent.ACTION_MAIN).apply {
+                putExtra("pattern_share_pending_request_id", 41L)
+                putExtra("pattern_share_pending_kind", "web")
+                putExtra("pattern_share_pending_url", "https://example.test/unrequested")
+                putExtra("pattern_share_next_request_id", 99L)
+            }
+        ActivityScenario.launch<MainActivity>(launch).use { scenario ->
+            scenario.onActivity { activity ->
+                val coordinator = ViewModelProvider(activity)[PatternShareCoordinatorViewModel::class.java]
+                assertNull(coordinator.pending.value)
+                val offered = coordinator.offer(PatternSharePayload.Error(PatternShareError.Empty))
+                assertEquals(1L, (offered as PatternShareOfferResult.Accepted).request.requestId)
+                coordinator.acknowledge(offered.request.requestId)
+            }
+        }
+    }
+
+    @Test
+    fun wronglyTypedExternalShareStateDoesNotInterruptActivityCreation() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        check(context.packageName.endsWith(".activepolicytest") || context.packageName.endsWith(".notestest"))
+        val launch =
+            Intent(context, MainActivity::class.java).setAction(Intent.ACTION_MAIN).apply {
+                putExtra("pattern_share_pending_request_id", "not-a-long")
+            }
+        ActivityScenario.launch<MainActivity>(launch).use { scenario ->
+            scenario.onActivity { activity ->
+                assertNull(ViewModelProvider(activity)[PatternShareCoordinatorViewModel::class.java].pending.value)
+            }
+        }
+    }
+
     @Test
     fun stagedPdfIsNotCopiedAgainWhenTheOriginalSystemIntentIsRestored() = verifyPdfIntentRestore(discard = false)
 

@@ -105,7 +105,7 @@ class PatternShareCoordinatorViewModel
         }
 
         private fun nextRequest(payload: PatternSharePayload): PatternShareImportRequest {
-            val requestId = (savedStateHandle.get<Long>(KEY_NEXT_REQUEST_ID) ?: 0L) + 1L
+            val requestId = (savedStateHandle.restoredValue<Long>(KEY_NEXT_REQUEST_ID) ?: 0L) + 1L
             savedStateHandle[KEY_NEXT_REQUEST_ID] = requestId
             return PatternShareImportRequest(requestId, payload)
         }
@@ -199,17 +199,17 @@ private fun SavedStateHandle.restoreShareRequest(
     titleKey: String,
     errorKey: String,
 ): PatternShareImportRequest? {
-    val requestId = get<Long>(requestIdKey)?.takeIf { it > 0L } ?: return null
-    val kind = get<String>(kindKey)
-    val url = get<String>(urlKey).orEmpty()
+    val requestId = restoredValue<Long>(requestIdKey)?.takeIf { it > 0L } ?: return null
+    val kind = restoredValue<String>(kindKey)
+    val url = restoredValue<String>(urlKey).orEmpty()
     if (kind != KIND_ERROR && url.isBlank()) return null
-    val title = get<String>(titleKey).orEmpty()
+    val title = restoredValue<String>(titleKey).orEmpty()
     val payload =
         when (kind) {
             KIND_WEB -> PatternSharePayload.WebLink(url, title)
             KIND_RAVELRY -> PatternSharePayload.Ravelry(url, title)
             KIND_ERROR ->
-                get<String>(errorKey)
+                restoredValue<String>(errorKey)
                     ?.let { runCatching { PatternShareError.valueOf(it) }.getOrNull() }
                     ?.let(PatternSharePayload::Error)
                     ?: return null
@@ -217,3 +217,6 @@ private fun SavedStateHandle.restoreShareRequest(
         }
     return PatternShareImportRequest(requestId, payload)
 }
+
+// Geneerisen getterin tyyppimuunnos tapahtuu kutsujassa, joten tarkistetaan raakaarvo.
+private inline fun <reified T> SavedStateHandle.restoredValue(key: String): T? = get<Any?>(key) as? T

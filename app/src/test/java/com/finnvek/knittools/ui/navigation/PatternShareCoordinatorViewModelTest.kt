@@ -9,6 +9,80 @@ import org.junit.Test
 
 class PatternShareCoordinatorViewModelTest {
     @Test
+    fun `wrongly typed pending id is discarded and a new share is accepted`() {
+        val model =
+            PatternShareCoordinatorViewModel(
+                SavedStateHandle(mapOf("pattern_share_pending_request_id" to "not-a-long")),
+            )
+
+        assertNull(model.pending.value)
+        val payload = PatternSharePayload.WebLink("https://example.com/pattern", "Pattern")
+        val offered = model.offer(payload) as PatternShareOfferResult.Accepted
+        assertEquals(1L, offered.request.requestId)
+        assertEquals(payload, offered.request.payload)
+    }
+
+    @Test
+    fun `wrongly typed restored payload fields do not interrupt restoration`() {
+        val valid =
+            mapOf<String, Any>(
+                "pattern_share_pending_request_id" to 1L,
+                "pattern_share_pending_kind" to "web",
+                "pattern_share_pending_url" to "https://example.com/pattern",
+                "pattern_share_pending_title" to "Pattern",
+            )
+        for (key in listOf("pattern_share_pending_kind", "pattern_share_pending_url")) {
+            val model = PatternShareCoordinatorViewModel(SavedStateHandle(valid + (key to 7L)))
+            assertNull(key, model.pending.value)
+        }
+        val missingTitle =
+            PatternShareCoordinatorViewModel(
+                SavedStateHandle(valid + ("pattern_share_pending_title" to 7L)),
+            )
+        assertEquals(
+            "",
+            missingTitle.pending.value
+                ?.payload
+                ?.titleSuggestion,
+        )
+        val malformedError =
+            PatternShareCoordinatorViewModel(
+                SavedStateHandle(
+                    valid + mapOf("pattern_share_pending_kind" to "error", "pattern_share_pending_error" to 7L),
+                ),
+            )
+        assertNull(malformedError.pending.value)
+    }
+
+    @Test
+    fun `wrongly typed queued id does not prevent acknowledging the pending share`() {
+        val handle = SavedStateHandle()
+        val model = PatternShareCoordinatorViewModel(handle)
+        val payload = PatternSharePayload.WebLink("https://example.com/pattern", "Pattern")
+        val request = (model.offer(payload) as PatternShareOfferResult.Accepted).request
+        handle["pattern_share_queued_request_id"] = "not-a-long"
+
+        model.acknowledge(request.requestId)
+
+        assertNull(model.pending.value)
+        assertEquals(2L, (model.offer(payload) as PatternShareOfferResult.Accepted).request.requestId)
+    }
+
+    @Test
+    fun `wrongly typed next id does not prevent offering a share`() {
+        val model =
+            PatternShareCoordinatorViewModel(
+                SavedStateHandle(mapOf("pattern_share_next_request_id" to "not-a-long")),
+            )
+        val payload = PatternSharePayload.WebLink("https://example.com/pattern", "Pattern")
+
+        val request = (model.offer(payload) as PatternShareOfferResult.Accepted).request
+
+        assertEquals(1L, request.requestId)
+        assertEquals(payload, model.pending.value?.payload)
+    }
+
+    @Test
     fun `share parser outcomes keep Ravelry ownership and typed local errors`() {
         assertEquals(
             PatternSharePayload.WebLink("https://example.com/pattern", "Cardigan"),

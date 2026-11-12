@@ -144,7 +144,13 @@ class MainActivity : AppCompatActivity() {
     @IoDispatcher
     lateinit var ioDispatcher: CoroutineDispatcher
 
-    private val patternShareCoordinator: PatternShareCoordinatorViewModel by viewModels()
+    private val patternShareCoordinator: PatternShareCoordinatorViewModel by viewModels(
+        extrasProducer = {
+            MutableCreationExtras(defaultViewModelCreationExtras).apply {
+                this[DEFAULT_ARGS_KEY] = Bundle()
+            }
+        },
+    )
     private val incomingPdfViewModel: IncomingPdfViewModel by viewModels(
         extrasProducer = {
             MutableCreationExtras(defaultViewModelCreationExtras).apply {

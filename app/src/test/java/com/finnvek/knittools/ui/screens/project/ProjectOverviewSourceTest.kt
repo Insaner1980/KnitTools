@@ -109,7 +109,7 @@ class ProjectOverviewSourceTest {
         )
         // Edistymispalkin pohja erottuu taustasta.
         assertFalse(progressBar.contains("background(MaterialTheme.colorScheme.background)"))
-        assertTrue(progressBar.contains("ProjectListDimens.ProgressTrackAlpha"))
+        assertTrue(progressBar.contains("PROJECT_PROGRESS_TRACK_ALPHA"))
         // Osiotoiminnot ovat linjassa oikean reunan kanssa, eikä lataus välähdä indikaattorina.
         assertFalse(sections.contains("TextButton("))
         assertFalse(sections.contains("CircularProgressIndicator("))

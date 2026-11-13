@@ -11,6 +11,10 @@ class RavelryLinksTest {
     fun `restoration accepts eligible pages but rejects checkout redirects credentials and oversized metadata`() {
         val page = "https://www.ravelry.com/patterns/library/cozy-hat"
         assertEquals(page, restorableRavelryPageOrNull(page))
+        val subdomain = "https://forums.ravelry.com/topics/knitting"
+        assertEquals(subdomain, eligibleRavelryPageOrNull(subdomain))
+        assertEquals(subdomain, restorableRavelryPageOrNull(subdomain))
+        assertNull(restorableRavelryPageOrNull("https://forums.ravelry.com.evil.example/topics"))
         listOf(
             null,
             "not a url",

@@ -1,5 +1,7 @@
 # Voice Queries — Ääneen vastattavat projektikyselyt
 
+Historiallinen, korvattu suunnitelma. Nykyinen [tietoturva- ja tuotepäätös](../../../config/security-decisions.md) poistaa puhetoiminnot ja Gemini-riippuvuudet. Alla kuvattua SpeechRecognizer-, Gemini- tai TTS-putkea ei saa palauttaa ilman uutta nimenomaista päätöstä.
+
 ## Tavoite
 
 Laajentaa Voice Commands v2:n toimintopohjaista mallia kyselyillä. Neuloja voi kysyä projektistaan äänellä ja saada TTS-vastauksen — kädet pysyvät puikoilla.

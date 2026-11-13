@@ -83,10 +83,14 @@ class InsightsTrialJourneyTest {
             val vm = weeklyModel()
             ready.value = false
             vm.onWeeklyChartVisible()
+            runCurrent()
+            coVerify(exactly = 0) { onboarding.markTrialChartSeen(any()) }
             ready.value = true
             listOf(ProStatus.TRIAL_EXPIRED, ProStatus.PRO_PURCHASED, ProStatus.TRIAL_NOT_STARTED).forEach { status ->
                 pro.value = ProState(status, trialStartTimestamp = 100L)
                 vm.onWeeklyChartVisible()
+                runCurrent()
+                coVerify(exactly = 0) { onboarding.markTrialChartSeen(any()) }
             }
             runCurrent()
 

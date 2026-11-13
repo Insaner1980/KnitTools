@@ -1,13 +1,24 @@
 package com.finnvek.knittools.ui.theme
 
+import androidx.compose.ui.graphics.compositeOver
+import com.finnvek.knittools.ui.components.PROJECT_PROGRESS_TRACK_ALPHA
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class ProjectListContrastTest {
     @Test
     fun `progress fill clears the graphical contrast minimum against its track`() {
-        assertTrue(contrastRatio(Primary, Background) >= MINIMUM_GRAPHICAL_CONTRAST)
-        assertTrue(contrastRatio(Primary, LightBackground) >= MINIMUM_GRAPHICAL_CONTRAST)
+        val darkContainers = listOf(SurfaceHigh, ActionContainer, Primary.copy(alpha = 0.07f).compositeOver(Background))
+        val lightContainers =
+            listOf(LightCardContainer, LightActionContainer, Primary.copy(alpha = 0.07f).compositeOver(LightBackground))
+        darkContainers.forEach { container ->
+            val track = TextPrimary.copy(alpha = PROJECT_PROGRESS_TRACK_ALPHA).compositeOver(container)
+            assertTrue(contrastRatio(PrimaryReadable, track) >= MINIMUM_GRAPHICAL_CONTRAST)
+        }
+        lightContainers.forEach { container ->
+            val track = LightTextPrimary.copy(alpha = PROJECT_PROGRESS_TRACK_ALPHA).compositeOver(container)
+            assertTrue(contrastRatio(LightPrimaryReadable, track) >= MINIMUM_GRAPHICAL_CONTRAST)
+        }
     }
 
     @Test

@@ -153,9 +153,14 @@ abstract class CounterViewModelFixture {
         val yarnNotes = yarnNoteRepositoryOverride ?: mockk<ProjectYarnNoteRepository>()
         every { yarnNotes.observeForProject(any()) } returns flowOf(emptyList())
         val documentDao = mockk<ProjectDocumentDao>()
-        every { documentDao.observeForProject(any()) } returns flowOf(listOf(document(41L), document(42L)))
-        val layerRepository = mockk<PatternAnnotationLayerRepository>()
-        every { layerRepository.observeLayers(any()) } returns layers
+        every { documentDao.observeForProject(any()) } returns flowOf(emptyList())
+        every { documentDao.observeForProject(7L) } returns flowOf(listOf(document(41L), document(42L)))
+        val layerRepository =
+            mockk<PatternAnnotationLayerRepository> {
+                every { observeLayers(any()) } returns flowOf(emptyList())
+                every { observeLayers(match { it is PatternAnnotationOwner.Project && it.projectId == 7L }) } returns
+                    layers
+            }
         val availability = mockk<ProjectDocumentFileAvailability>()
         coEvery { availability.isAvailable(any()) } returns true
         val documents =

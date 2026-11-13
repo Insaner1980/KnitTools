@@ -19,6 +19,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
@@ -263,9 +264,13 @@ class ProjectCounterRepositoryTest {
                     "A".repeat(49) + emoji to "A".repeat(49),
                     "  " + "A".repeat(49) + emoji + "  " to "A".repeat(49),
                 )
+            val createdIds = mutableSetOf<Long>()
             for ((input, expected) in cases) {
                 val created = repository.addCounter(ProjectCounter(projectId = 1L, name = input))
-                assertEquals(ProjectCounterMutationResult.Success(1L), created)
+                assertTrue(created is ProjectCounterMutationResult.Success)
+                val createdId = (created as ProjectCounterMutationResult.Success).counterId
+                assertTrue(createdId > 0L && createdIds.add(createdId))
+                assertEquals(expected, fakeDao.getCounter(createdId)?.name)
                 assertEquals(expected, requireNotNull(fakeDao.lastInserted).name)
 
                 fakeDao.store(ProjectCounter(id = 3L, projectId = 1L, name = "Counter"))
@@ -343,7 +348,12 @@ class ProjectCounterRepositoryTest {
                 ),
             )
 
-        override fun getCountersForProject(projectId: Long): Flow<List<ProjectCounterEntity>> = flowOf(emptyList())
+        override fun getCountersForProject(projectId: Long): Flow<List<ProjectCounterEntity>> =
+            flowOf(
+                storedCounters.values
+                    .filter { it.projectId == projectId }
+                    .sortedWith(compareBy<ProjectCounterEntity> { it.sortOrder }.thenBy { it.id }),
+            )
 
         override suspend fun getCounter(id: Long): ProjectCounterEntity? = storedCounters[id]
 
@@ -355,7 +365,9 @@ class ProjectCounterRepositoryTest {
 
         override suspend fun insert(counter: ProjectCounterEntity): Long {
             lastInserted = counter
-            return 1L
+            val id = counter.id.takeIf { it > 0L } ?: ((storedCounters.keys.maxOrNull() ?: 0L) + 1L)
+            storedCounters[id] = counter.copy(id = id)
+            return id
         }
 
         override suspend fun update(counter: ProjectCounterEntity) {
@@ -365,6 +377,7 @@ class ProjectCounterRepositoryTest {
         override suspend fun delete(id: Long) {
             if (failDelete) error("delete failed")
             lastDeletedId = id
+            storedCounters.remove(id)
         }
 
         override suspend fun updateCount(
@@ -382,6 +395,7 @@ class ProjectCounterRepositoryTest {
         ) {
             lastRenamedId = id
             lastRenamedName = name
+            storedCounters[id]?.let { storedCounters[id] = it.copy(name = name) }
         }
 
         override suspend fun updateRepeatSectionState(

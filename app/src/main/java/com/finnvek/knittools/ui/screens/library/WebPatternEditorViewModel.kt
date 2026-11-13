@@ -93,6 +93,7 @@ data class WebPatternEditorUiState(
     val isLoading: Boolean = false,
     val isSaving: Boolean = false,
     val didPersist: Boolean = false,
+    val pendingAttachmentId: Long? = null,
     val error: WebPatternEditorError? = null,
     val pendingIncomingShare: PendingIncomingWebPatternShare? = null,
     val pendingReplacement: PendingWebPatternReplacement? = null,
@@ -112,7 +113,8 @@ data class WebPatternEditorUiState(
         get() =
             !isLoading &&
                 !isSaving &&
-                !didPersist &&
+                (!didPersist || pendingAttachmentId != null) &&
+                pendingReplacement == null &&
                 pendingIncomingShare == null &&
                 route != null &&
                 titleValidation is WebPatternTitleValidation.Valid &&
@@ -234,6 +236,10 @@ class WebPatternEditorViewModel
             persistState()
             viewModelScope.launch {
                 try {
+                    state.pendingAttachmentId?.let { patternId ->
+                        finishCreatedOrDuplicate(patternId, currentRoute)
+                        return@launch
+                    }
                     val result =
                         if (currentRoute.origin == WebPatternEditorOrigin.Edit) {
                             val patternId =
@@ -429,6 +435,8 @@ class WebPatternEditorViewModel
                 complete(WebPatternEditorCompletion.OpenDetail(nextEventId(), patternId))
                 return
             }
+            mutableUiState.update { it.copy(didPersist = true, pendingAttachmentId = patternId) }
+            persistState()
             when (val attachResult = counterRepository.attachSavedPatternMetadata(projectId, patternId)) {
                 is SavedPatternMetadataMutationResult.Attached,
                 is SavedPatternMetadataMutationResult.AlreadyAttached,
@@ -489,6 +497,7 @@ class WebPatternEditorViewModel
                     error = null,
                     pendingReplacement = null,
                     completion = completion,
+                    pendingAttachmentId = null,
                 )
             }
             persistState()
@@ -547,6 +556,7 @@ private const val KEY_DESIGNER = "web_pattern_editor_designer"
 private const val KEY_URL = "web_pattern_editor_url"
 private const val KEY_IS_LOADING = "web_pattern_editor_loading"
 private const val KEY_IS_SAVING = "web_pattern_editor_saving"
+private const val KEY_PENDING_ATTACHMENT_ID = "web_pattern_editor_pending_attachment_id"
 private const val KEY_DID_PERSIST = "web_pattern_editor_did_persist"
 private const val KEY_ERROR = "web_pattern_editor_error"
 private const val KEY_EXPECTED_UPDATED_AT = "web_pattern_editor_expected_updated_at"
@@ -573,6 +583,7 @@ private fun SavedStateHandle.saveWebPatternEditorState(state: WebPatternEditorUi
     this[KEY_IS_LOADING] = state.isLoading
     this[KEY_IS_SAVING] = state.isSaving
     this[KEY_DID_PERSIST] = state.didPersist
+    this[KEY_PENDING_ATTACHMENT_ID] = state.pendingAttachmentId
     this[KEY_ERROR] = state.error?.name
     this[KEY_EXPECTED_UPDATED_AT] = state.expectedUpdatedAt
     this[KEY_INCOMING_REQUEST_ID] = state.pendingIncomingShare?.requestId
@@ -632,10 +643,7 @@ private fun SavedStateHandle.restoreWebPatternEditorState(route: WebPatternEdito
                 else -> null
             }
         }
-    val error =
-        get<String>(KEY_ERROR)?.let { value ->
-            runCatching { WebPatternEditorError.valueOf(value) }.getOrNull()
-        }
+    val error = get<String>(KEY_ERROR)?.let { runCatching { WebPatternEditorError.valueOf(it) }.getOrNull() }
     val replacementProjectId = get<Long>(KEY_REPLACEMENT_PROJECT_ID)
     val replacementPatternId = get<Long>(KEY_REPLACEMENT_PATTERN_ID)
     val replacementExistingPatternId = get<Long>(KEY_REPLACEMENT_EXISTING_PATTERN_ID)
@@ -657,6 +665,7 @@ private fun SavedStateHandle.restoreWebPatternEditorState(route: WebPatternEdito
         isLoading = get<Boolean>(KEY_IS_LOADING) ?: (route?.origin == WebPatternEditorOrigin.Edit),
         isSaving = false,
         didPersist = get<Boolean>(KEY_DID_PERSIST) ?: false,
+        pendingAttachmentId = get<Long>(KEY_PENDING_ATTACHMENT_ID),
         error = error,
         pendingIncomingShare = pending,
         pendingReplacement = pendingReplacement,

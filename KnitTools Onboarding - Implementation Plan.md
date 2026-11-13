@@ -1,6 +1,6 @@
 # KnitTools Onboarding: Implementation Plan
 
-Status: **approved direction, ready for phased implementation**. No code has been changed by this document.
+Status: **historical implementation baseline**. The phased plan below records the approved direction on 2026-10-29; implementation has since progressed. See [PROJECT.md](PROJECT.md) for implemented behavior and its dated validation records. This plan is not a current completion or test-status report.
 Date: 2026-10-29.
 Scope: first-run experience, in-context teaching, in-app guide, Pro presentation, celebrations.
 Language: English ships first. All other locales follow in a dedicated phase before the Play release.

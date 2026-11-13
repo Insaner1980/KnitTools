@@ -81,6 +81,27 @@ class PatternAnnotationPageLimitViewModelTest {
         Dispatchers.resetMain()
     }
 
+    @Test
+    fun hiddenEditablePageCannotBeCleared() =
+        runTest {
+            val route = projectRoute()
+            every { route.annotationRepository.observePage(any(), any()) } returns flowOf(emptyList())
+            every { route.annotationRepository.observePage(41L, 0) } returns flowOf(listOf(annotation(41L, 0)))
+            val model = route.viewModel()
+            val store = androidx.lifecycle.ViewModelStore().apply { put("hidden-layer", model) }
+            try {
+                runCurrent()
+                assertEquals(1, model.uiState.value.projectAnnotations.size)
+                model.setProjectLayerVisible(false)
+                runCurrent()
+                model.clearEditablePage()
+                runCurrent()
+                coVerify(exactly = 0) { route.annotationRepository.clearPage(any(), any()) }
+            } finally {
+                store.clear()
+            }
+        }
+
     @Test fun `blocked page clears prior annotations and leaves valid pages available`() =
         runTest {
             val layerRepository = mockk<PatternAnnotationLayerRepository>()
@@ -2297,6 +2318,9 @@ class PatternAnnotationExportOwnershipTest {
             invalidContexts.forEach {
                 fixture.vm.setExportContext(it)
                 fixture.vm.requestAnnotatedPdfExport(it)
+                runCurrent()
+                assertTrue(fixture.queries.isEmpty())
+                coVerify(exactly = 0) { fixture.exporter.preflight(any(), any(), any()) }
             }
             runCurrent()
             assertTrue(fixture.queries.isEmpty())

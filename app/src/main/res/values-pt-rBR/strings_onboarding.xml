@@ -75,7 +75,7 @@
     <!-- Kumoamisvihje käyttää samaa toimintonimeä kuin laskurin Undo. -->
     <string name="tip_undo">Salvo. Tocou por engano? Desfazer reverte a última alteração.</string>
     <!-- Askelkoko määrittää yhden painalluksen lisäyksen. -->
-    <string name="tip_step_size">Conta mais de uma unidade por vez? Altere aqui quanto cada toque acrescenta.</string>
+    <string name="tip_step_size">Conta mais de uma unidade por vez? Altere aqui quanto cada toque acrescenta ou subtrai.</string>
     <!-- Työskentelyjakso käynnistetään käsin; aikaa ei seurata automaattisesti. -->
     <string name="tip_work_session">Quer saber quanto tempo este projeto leva? Inicie uma sessão de trabalho neste menu. A contagem do tempo nunca começa sozinha.</string>
     <!-- Projektisivun esittely; Continue viittaa jatkamistoimintoon. -->
@@ -145,7 +145,7 @@
     <!-- Askelkoon opaskohdan otsikko. -->
     <string name="guide_continue_step_title">Conte mais de uma unidade</string>
     <!-- ×1 on painikkeiden välisen askelvalitsimen näkyvä merkintä; arvo on projektikohtainen. -->
-    <string name="guide_continue_step_body">O círculo ×1 entre os botões define quanto cada toque acrescenta, de 1 a 99, separadamente para cada projeto.</string>
+    <string name="guide_continue_step_body">O círculo ×1 entre os botões define quanto cada toque acrescenta ou subtrai, de 1 a 99, separadamente para cada projeto.</string>
     <!-- Projektisivun ja laskurin eroa kuvaava otsikko. -->
     <string name="guide_continue_project_page_title">Página do projeto e contador</string>
     <!-- Projektikortti avaa tiedot ja jatkamistoiminto laskurin. -->
@@ -481,7 +481,7 @@
     <!-- Aloituspolku: tervetulonäkymän hyöty, kerrosten laskeminen yhdellä napautuksella. -->
     <string name="journey_welcome_point_count">Conte carreiras com um toque</string>
     <!-- Aloituspolku: tervetulonäkymän hyöty, kohta ohjeessa säilyy (lukulinja). -->
-    <string name="journey_welcome_point_pattern">Mantenha seu ponto em qualquer receita</string>
+    <string name="journey_welcome_point_pattern">Mantenha seu ponto em uma receita em PDF</string>
     <!-- Aloituspolku: tervetulonäkymän hyöty, työtä voi jatkaa siitä mihin jäi. -->
     <string name="journey_welcome_point_return">Continue exatamente de onde parou</string>
     <!-- Aloituspolku: Aloitetaan -->

@@ -145,6 +145,7 @@ class AuditPart16RestoreTest {
                                 .stagedPath,
                         )
                     } else {
+                        awaitReady(vm)
                         assertEquals(2, vm.uiState.value.selection.pages.size)
                         assertTrue(
                             vm.uiState.value.selection.pages

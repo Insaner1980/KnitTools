@@ -130,7 +130,10 @@ class ProjectYarnUsageRuntimeTest {
         edit(YarnUsageField.ALLOCATED, "600")
         edit(YarnUsageField.USED, "350")
         scenario?.recreate()
-        scrollToNode("restored remaining") { it.text?.toString() == "Remaining: 250 m" }
+        scrollToNode("restored remaining") {
+            it.text?.toString() ==
+                app.getString(R.string.yarn_usage_remaining_format, "250 m")
+        }
         save()
         val initial = currentUsage()
         assertEquals(600.0, initial.amounts.allocatedMeters)

@@ -734,25 +734,48 @@ class CounterViewModel
                 }
         }
 
+        private var pendingYarnNoteCreation: Pair<Long?, Deferred<ProjectYarnNoteEditResult>>? = null
+
+        fun pendingProjectYarnNoteCreation(): Deferred<ProjectYarnNoteEditResult>? =
+            pendingYarnNoteCreation
+                ?.takeIf { it.first == _uiState.value.projectId && !it.second.isCancelled }
+                ?.second
+
+        fun consumeProjectYarnNoteCreation(request: Deferred<ProjectYarnNoteEditResult>) {
+            if (pendingYarnNoteCreation?.second === request && request.isCompleted) {
+                pendingYarnNoteCreation = null
+            }
+        }
+
         fun saveProjectYarnNote(
             name: String,
             description: String,
             quantity: Int,
             notes: String,
-        ) {
-            val projectId = _uiState.value.projectId ?: return
-            if (name.isBlank()) return
-            launchProjectContentMutation {
-                projectYarnNoteRepository.save(
-                    ProjectYarnNote(
-                        projectId = projectId,
-                        name = name,
-                        description = description,
-                        quantity = quantity,
-                        notes = notes,
-                    ),
-                ) > 0L
-            }
+        ): Deferred<ProjectYarnNoteEditResult> {
+            pendingProjectYarnNoteCreation()?.let { return it }
+            val projectId = _uiState.value.projectId
+            val request =
+                viewModelScope.async {
+                    if (projectId == null) return@async ProjectYarnNoteEditResult.Missing
+                    if (name.isBlank()) return@async ProjectYarnNoteEditResult.InvalidName
+                    val saved =
+                        tryProjectWrite {
+                            projectYarnNoteRepository.save(
+                                ProjectYarnNote(
+                                    projectId = projectId,
+                                    name = name,
+                                    description = description,
+                                    quantity = quantity,
+                                    notes = notes,
+                                ),
+                            ) > 0L
+                        }
+                    if (!saved) projectContentErrorsChannel.send(Unit)
+                    if (saved) ProjectYarnNoteEditResult.Saved else ProjectYarnNoteEditResult.Failed
+                }
+            pendingYarnNoteCreation = projectId to request
+            return request
         }
 
         fun editProjectYarnNote(
@@ -2545,11 +2568,11 @@ class CounterViewModel
                 attachSavedPatternMetadata(pattern.id)
                 return
             }
-            viewModelScope.launch {
+            launchProjectContentMutation {
                 repository.attachSavedPattern(
                     projectId = projectId,
                     savedPatternId = pattern.id,
-                )
+                ) != null
             }
         }
 
@@ -2997,10 +3020,11 @@ class CounterViewModel
                 }
                 counterStateVersion++
                 _uiState.update {
-                    it.copy(
-                        counter = CounterState(count = persisted.count, stepSize = persisted.stepSize),
-                        currentStitch = persisted.currentStitch,
-                    )
+                    it
+                        .withCounterChange(
+                            CounterState(count = persisted.count, stepSize = persisted.stepSize),
+                            resetStitch = false,
+                        ).copy(currentStitch = persisted.currentStitch)
                 }
                 syncRepeatSectionCounters(persisted.count, _uiState.value.projectCounters, persist = false)
                 if (selectionVersion == projectSelectionVersion && _uiState.value.projectId == projectId) {
@@ -3092,24 +3116,34 @@ class CounterViewModel
             projectSelectionVersion++
             if (id != (_uiState.value.projectId ?: pendingReactivation?.projectId)) dismissPendingReactivation()
             projectSelectionJob?.cancel()
-            projectSelectionJob =
-                viewModelScope.launch {
+            val selectionJob =
+                viewModelScope.launch(start = CoroutineStart.LAZY) {
+                    var loaded = false
                     try {
-                        onLoaded(loadProjectForLaunch(id))
+                        loaded = loadProjectForLaunch(id)
+                        onLoaded(loaded)
                     } catch (cancellation: CancellationException) {
                         throw cancellation
                     } catch (_: Exception) {
                         onLoaded(false)
                     } finally {
-                        if (currentCoroutineContext().isActive) {
+                        if (projectSelectionJob === currentCoroutineContext()[Job]) {
+                            if (!loaded) {
+                                projectSelectionJob = null
+                                _uiState.value.projectId?.let(::observeSelectedProject)
+                            }
                             _uiState.update { it.copy(isRestoringProject = false) }
                         }
                     }
                 }
+            projectSelectionJob = selectionJob
+            selectionJob.start()
         }
 
         private suspend fun loadProjectForLaunch(id: Long): Boolean {
-            val project = repository.getProject(id) ?: return false
+            val project = repository.getProject(id)
+            currentCoroutineContext().ensureActive()
+            if (project == null) return false
             openProject(project)
             return true
         }

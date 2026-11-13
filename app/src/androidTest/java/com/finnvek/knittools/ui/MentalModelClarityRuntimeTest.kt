@@ -268,7 +268,18 @@ class MentalModelClarityRuntimeTest {
                 projectYarnNotes = notes.value,
                 proState = ProState(status = ProStatus.PRO_PURCHASED),
                 proAccessReady = true,
-                actions = YarnManagementSheetActions({}, {}, { _, _, _, _ -> }, {}, { saved = it }, {}),
+                actions =
+                    YarnManagementSheetActions({
+                    }, {
+                    }, { _, _, _, _ ->
+                        kotlinx.coroutines.CompletableDeferred(
+                            com.finnvek.knittools.repository.ProjectYarnNoteEditResult.Saved,
+                        )
+                    }, {
+                    }, {
+                        saved =
+                            it
+                    }, {}),
                 usageItems =
                     notes.value.map {
                         ProjectYarnUsageItem(

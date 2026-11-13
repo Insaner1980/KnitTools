@@ -61,6 +61,7 @@ internal fun CounterUiState.withStartedProject(project: CounterProject): Counter
         activeAlert = null,
         dismissedReminderTrigger = null,
         sessionSeconds = 0,
+        totalSessionMinutes = 0,
     )
 
 internal fun CounterUiState.withObservedProject(project: CounterProject): CounterUiState {

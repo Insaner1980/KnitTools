@@ -45,6 +45,14 @@ internal class SmokeDevice : TestWatcher() {
 
     fun reset() {
         assertEquals(
+            "English device locale is required before resetting the isolated smoke fixture",
+            "en",
+            android.content.res.Resources
+                .getSystem()
+                .configuration.locales[0]
+                .language,
+        )
+        assertEquals(
             "Explicit disposable-emulator opt-in is required",
             "true",
             InstrumentationRegistry.getArguments().getString("optimizedSmokeAllowed"),

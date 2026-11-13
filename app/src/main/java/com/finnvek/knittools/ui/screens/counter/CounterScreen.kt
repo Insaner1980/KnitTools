@@ -323,6 +323,7 @@ fun ProjectContentHost(
     }
     var showTargetDialog by rememberSaveable { mutableStateOf(false) }
     var pendingProAction by rememberSaveable { mutableStateOf<PendingCounterProAction?>(null) }
+    var pendingSecondaryProjectId by rememberSaveable { mutableStateOf<Long?>(null) }
     val requestWidgetPin = {
         when (widgetAccess) {
             ProActionAccess.Allowed, ProActionAccess.Trial -> pinWidget()
@@ -588,6 +589,7 @@ fun ProjectContentHost(
                         performHaptic()
                         viewModel.decrementSecondary()
                     } else {
+                        pendingSecondaryProjectId = state.projectId
                         pendingProAction = PendingCounterProAction.DecrementSecondary
                     }
                 },
@@ -596,6 +598,7 @@ fun ProjectContentHost(
                         performHaptic()
                         viewModel.incrementSecondary()
                     } else {
+                        pendingSecondaryProjectId = state.projectId
                         pendingProAction = PendingCounterProAction.IncrementSecondary
                     }
                 },
@@ -992,9 +995,14 @@ fun ProjectContentHost(
             }
         ProPromptSheet(
             request = request,
-            onDismiss = { pendingProAction = null },
+            onDismiss = {
+                pendingProAction = null
+                pendingSecondaryProjectId = null
+            },
             onTrialStarted = {
                 pendingProAction = null
+                val secondaryProjectId = pendingSecondaryProjectId
+                pendingSecondaryProjectId = null
                 when (action) {
                     PendingCounterProAction.OpenCounter -> {
                         runForCurrentProject(dialogActionDependencies, viewModel) { showAddCounter = true }
@@ -1021,13 +1029,17 @@ fun ProjectContentHost(
                     PendingCounterProAction.OpenSecondary -> Unit
                     PendingCounterProAction.PinWidget -> pinWidget()
                     PendingCounterProAction.IncrementSecondary -> {
-                        performHaptic()
-                        viewModel.incrementSecondary()
+                        if (secondaryProjectId != null && secondaryProjectId == viewModel.uiState.value.projectId) {
+                            performHaptic()
+                            viewModel.incrementSecondary()
+                        }
                     }
 
                     PendingCounterProAction.DecrementSecondary -> {
-                        performHaptic()
-                        viewModel.decrementSecondary()
+                        if (secondaryProjectId != null && secondaryProjectId == viewModel.uiState.value.projectId) {
+                            performHaptic()
+                            viewModel.decrementSecondary()
+                        }
                     }
                 }
             },
@@ -1420,6 +1432,7 @@ internal fun SessionRecoveryDialog(
                     Text(stringResource(R.string.work_session_edit_total_duration))
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         TextField(
+                            colors = dialogTextFieldColors(),
                             value = hoursText,
                             onValueChange = { hoursText = it.filter(Char::isDigit) },
                             label = { Text(stringResource(R.string.work_session_hours)) },
@@ -1429,6 +1442,7 @@ internal fun SessionRecoveryDialog(
                             modifier = Modifier.weight(1f),
                         )
                         TextField(
+                            colors = dialogTextFieldColors(),
                             value = minutesText,
                             onValueChange = { minutesText = it.filter(Char::isDigit) },
                             label = { Text(stringResource(R.string.work_session_minutes)) },
@@ -1886,7 +1900,9 @@ data class CounterSheetActions(
     val onYarnSelect: (Long) -> Unit,
     val onShowYarnPickerFromManagement: () -> Unit,
     val onUnlinkYarn: (Long) -> Unit,
-    val onSaveProjectYarnNote: (String, String, Int, String) -> Unit,
+    val onSaveProjectYarnNote: (String, String, Int, String) -> kotlinx.coroutines.Deferred<ProjectYarnNoteEditResult>,
+    val pendingProjectYarnNoteCreation: () -> kotlinx.coroutines.Deferred<ProjectYarnNoteEditResult>?,
+    val consumeProjectYarnNoteCreation: (kotlinx.coroutines.Deferred<ProjectYarnNoteEditResult>) -> Unit,
     val onEditProjectYarnNote: suspend (ProjectYarnNote, ProjectYarnNote) -> ProjectYarnNoteEditResult,
     val onDeleteProjectYarnNote: (Long) -> Unit,
     val onSaveProjectYarnNoteToMyYarn: (Long) -> Unit,
@@ -1927,6 +1943,8 @@ private fun CounterScreenSheets(
                     onUnlinkYarn = actions.onUnlinkYarn,
                     onAddYarn = actions.onShowYarnPickerFromManagement,
                     onSaveProjectYarnNote = actions.onSaveProjectYarnNote,
+                    pendingProjectYarnNoteCreation = actions.pendingProjectYarnNoteCreation,
+                    consumeProjectYarnNoteCreation = actions.consumeProjectYarnNoteCreation,
                     onEditProjectYarnNote = actions.onEditProjectYarnNote,
                     onDeleteProjectYarnNote = actions.onDeleteProjectYarnNote,
                     onSaveProjectYarnNoteToMyYarn = actions.onSaveProjectYarnNoteToMyYarn,
@@ -2420,6 +2438,8 @@ private fun rememberCounterSheetActions(
             },
             onUnlinkYarn = viewModel::unlinkYarnCard,
             onSaveProjectYarnNote = viewModel::saveProjectYarnNote,
+            pendingProjectYarnNoteCreation = viewModel::pendingProjectYarnNoteCreation,
+            consumeProjectYarnNoteCreation = viewModel::consumeProjectYarnNoteCreation,
             onEditProjectYarnNote = { original, draft -> viewModel.editProjectYarnNote(original, draft).await() },
             onDeleteProjectYarnNote = viewModel::deleteProjectYarnNote,
             onSaveProjectYarnNoteToMyYarn = onSaveProjectYarnNoteToMyYarn,
@@ -2443,7 +2463,7 @@ private fun rememberCounterSheetActions(
                             is SavedPatternMetadataMutationResult.Attached,
                             is SavedPatternMetadataMutationResult.AlreadyAttached,
                             -> {
-                                onHidePatternPicker()
+                                if (requestProjectId == viewModel.uiState.value.projectId) onHidePatternPicker()
                             }
 
                             is SavedPatternMetadataMutationResult.ReplacementRequired -> {

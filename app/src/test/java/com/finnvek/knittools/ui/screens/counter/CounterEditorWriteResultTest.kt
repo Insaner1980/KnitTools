@@ -4,6 +4,7 @@ import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.repository.ProjectNotesSaveResult
 import com.finnvek.knittools.repository.mergeProjectNotes
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -217,6 +218,7 @@ class CounterEditorWriteResultTest : CounterViewModelFixture() {
             advanceUntilIdle()
             assertEquals("Draft", viewModel.uiState.value.notes)
             assertEquals(1, errors.size)
+            coVerify(exactly = 2) { repository.saveProjectNotes(7L, "Base", "Draft", any()) }
         }
 
     @Test

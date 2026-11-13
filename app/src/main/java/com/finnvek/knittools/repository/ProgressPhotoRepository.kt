@@ -2,6 +2,7 @@ package com.finnvek.knittools.repository
 
 import android.content.Context
 import android.net.Uri
+import com.finnvek.knittools.data.local.DatabaseTransactionRunner
 import com.finnvek.knittools.data.local.ProgressPhotoDao
 import com.finnvek.knittools.data.local.ProgressPhotoEntity
 import com.finnvek.knittools.data.local.distinctSqliteQueryChunks
@@ -31,6 +32,7 @@ class ProgressPhotoRepository
         private val storage: ProgressPhotoStorage,
         @param:ApplicationContext private val context: Context,
         @param:IoDispatcher private val ioDispatcher: CoroutineDispatcher,
+        private val transactionRunner: DatabaseTransactionRunner,
     ) {
         fun observeLatestPhotoUris(): Flow<Map<Long, String>> =
             dao
@@ -141,10 +143,12 @@ class ProgressPhotoRepository
             if (idChunks.isEmpty()) return
             val photos = idChunks.flatMap { chunk -> dao.getByIds(chunk) }
             if (photos.isEmpty()) return
-            photos
-                .map { it.id }
-                .distinctSqliteQueryChunks()
-                .forEach { chunk -> dao.deleteByIds(chunk) }
+            transactionRunner.run {
+                photos
+                    .map { it.id }
+                    .distinctSqliteQueryChunks()
+                    .forEach { chunk -> dao.deleteByIds(chunk) }
+            }
             cleanupDeletedPhotos(photos)
         }
 

@@ -1,7 +1,6 @@
 package com.finnvek.knittools.repository
 
 import com.finnvek.knittools.data.local.DatabaseTransactionRunner
-import com.finnvek.knittools.data.local.PatternAnnotationLayerDao
 import com.finnvek.knittools.data.local.PatternBookmarkDao
 import com.finnvek.knittools.data.local.PatternBookmarkEntity
 import com.finnvek.knittools.di.IoDispatcher
@@ -46,17 +45,16 @@ class PatternBookmarkRepository
     @Inject
     constructor(
         private val bookmarkDao: PatternBookmarkDao,
-        private val annotationLayerDao: PatternAnnotationLayerDao,
         private val projectDocumentRepository: ProjectDocumentRepository,
         private val transactionRunner: DatabaseTransactionRunner,
         @param:IoDispatcher private val ioDispatcher: CoroutineDispatcher,
     ) {
         @OptIn(ExperimentalCoroutinesApi::class)
         fun observeActiveBookmarks(projectId: Long): Flow<ActivePatternBookmarks> =
-            annotationLayerDao
-                .observeProjectLayers(projectId)
-                .flatMapLatest { layers ->
-                    val documentKey = layers.singleOrNull { it.isActive }?.documentKey
+            projectDocumentRepository
+                .observeActiveDocument(projectId)
+                .flatMapLatest { document ->
+                    val documentKey = document?.documentKey
                     if (documentKey == null) {
                         flowOf(ActivePatternBookmarks(documentKey = null, bookmarks = emptyList()))
                     } else {
@@ -172,7 +170,7 @@ class PatternBookmarkRepository
             }
 
         private suspend fun activeDocumentKey(projectId: Long): String? =
-            annotationLayerDao.getActiveProjectLayer(projectId)?.documentKey
+            projectDocumentRepository.getActiveDocument(projectId)?.documentKey
 
         private suspend fun validatedBookmark(
             projectId: Long,

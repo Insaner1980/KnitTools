@@ -5,6 +5,7 @@ import android.net.Uri
 import com.finnvek.knittools.data.local.CounterProjectDao
 import com.finnvek.knittools.data.local.CounterProjectEntity
 import com.finnvek.knittools.data.local.DatabaseTransactionRunner
+import com.finnvek.knittools.data.local.ImmediateDatabaseTransactionRunner
 import com.finnvek.knittools.data.local.ProgressPhotoDao
 import com.finnvek.knittools.data.local.ProgressPhotoEntity
 import com.finnvek.knittools.data.local.SavedPatternDao
@@ -674,6 +675,7 @@ class RepositoryTransactionBoundaryTest {
                     storage = storage,
                     context = mockk(relaxed = true),
                     ioDispatcher = UnconfinedTestDispatcher(testScheduler),
+                    transactionRunner = ImmediateDatabaseTransactionRunner,
                 )
 
             repository.deletePhoto(
@@ -702,6 +704,7 @@ class RepositoryTransactionBoundaryTest {
                     storage = storage,
                     context = mockk(relaxed = true),
                     ioDispatcher = UnconfinedTestDispatcher(testScheduler),
+                    transactionRunner = ImmediateDatabaseTransactionRunner,
                 )
 
             val thrown =
@@ -743,6 +746,7 @@ class RepositoryTransactionBoundaryTest {
                         storage = storage,
                         context = context,
                         ioDispatcher = UnconfinedTestDispatcher(testScheduler),
+                        transactionRunner = ImmediateDatabaseTransactionRunner,
                     )
 
                 val thrown =

@@ -278,7 +278,7 @@ private fun AnnotationHistoryControls(
         TextButton(onClick = actions.onRedo, enabled = state.canRedo) {
             Text(stringResource(R.string.pattern_annotation_redo))
         }
-        TextButton(onClick = actions.onClearPage) {
+        TextButton(onClick = actions.onClearPage, enabled = state.editableLayerVisible && !state.isSaving) {
             Text(stringResource(R.string.pattern_annotation_clear_page))
         }
     }

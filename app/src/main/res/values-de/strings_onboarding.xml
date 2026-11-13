@@ -75,7 +75,7 @@
     <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
     <string name="tip_undo">Gespeichert. Versehentlich getippt? Rückgängig nimmt die letzte Änderung zurück.</string>
     <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
-    <string name="tip_step_size">Zählst du mehr als eins auf einmal? Hier änderst du, wie viel jeder Tipp hinzufügt.</string>
+    <string name="tip_step_size">Zählst du mehr als eins auf einmal? Hier änderst du, wie viel jeder Tipp hinzufügt oder abzieht.</string>
     <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
     <string name="tip_work_session">Möchtest du wissen, wie lange dieses Projekt dauert? Starte eine Arbeitssitzung über dieses Menü. Die Zeiterfassung startet nie von selbst.</string>
     <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
@@ -145,7 +145,7 @@
     <!-- Kääntäjälle: paikallinen käyttöopas. Toimintojen ja välilehtien nimet vastaavat muuta käyttöliittymää. -->
     <string name="guide_continue_step_title">Mehr als eins zählen</string>
     <!-- Kääntäjälle: paikallinen käyttöopas. Toimintojen ja välilehtien nimet vastaavat muuta käyttöliittymää. -->
-    <string name="guide_continue_step_body">Der Ring ×1 zwischen den Tasten legt fest, wie viel jeder Tipp hinzufügt: von 1 bis 99, für jedes Projekt einzeln.</string>
+    <string name="guide_continue_step_body">Der Ring ×1 zwischen den Tasten legt fest, wie viel jeder Tipp hinzufügt oder abzieht: von 1 bis 99, für jedes Projekt einzeln.</string>
     <!-- Kääntäjälle: paikallinen käyttöopas. Toimintojen ja välilehtien nimet vastaavat muuta käyttöliittymää. -->
     <string name="guide_continue_project_page_title">Projektseite und Zähler</string>
     <!-- Kääntäjälle: paikallinen käyttöopas. Toimintojen ja välilehtien nimet vastaavat muuta käyttöliittymää. -->
@@ -476,7 +476,7 @@
     <!-- Aloituspolku: tervetulonäkymän hyöty, kerrosten laskeminen yhdellä napautuksella. -->
     <string name="journey_welcome_point_count">Reihen mit einem Tipp zählen</string>
     <!-- Aloituspolku: tervetulonäkymän hyöty, kohta ohjeessa säilyy (lukulinja). -->
-    <string name="journey_welcome_point_pattern">Behalte deine Stelle in jedem Muster</string>
+    <string name="journey_welcome_point_pattern">Behalte deine Stelle in einer PDF-Anleitung</string>
     <!-- Aloituspolku: tervetulonäkymän hyöty, työtä voi jatkaa siitä mihin jäi. -->
     <string name="journey_welcome_point_return">Mach genau dort weiter, wo du aufgehört hast</string>
     <!-- Aloituspolku: Aloitetaan -->

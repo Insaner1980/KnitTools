@@ -6,6 +6,7 @@ import com.finnvek.knittools.data.local.ActiveSessionEntity
 import com.finnvek.knittools.data.local.CounterProjectDao
 import com.finnvek.knittools.data.local.CounterProjectEntity
 import com.finnvek.knittools.data.local.DatabaseTransactionRunner
+import com.finnvek.knittools.data.local.ImmediateDatabaseTransactionRunner
 import com.finnvek.knittools.data.local.ProgressPhotoDao
 import com.finnvek.knittools.data.local.ProgressPhotoEntity
 import com.finnvek.knittools.data.local.ProjectCounterDao
@@ -139,7 +140,14 @@ class DeletionCleanupOrderingTest {
             coEvery { dao.getByIds(listOf(PHOTO_ID)) } returns listOf(photoEntity())
             coEvery { dao.delete(PHOTO_ID) } answers { events += "delete-row" }
             every { storage.deletePhoto(context, PROJECT_ID, PHOTO_URI) } answers { events += "delete-file" }
-            val repository = ProgressPhotoRepository(dao, storage, context, UnconfinedTestDispatcher(testScheduler))
+            val repository =
+                ProgressPhotoRepository(
+                    dao,
+                    storage,
+                    context,
+                    UnconfinedTestDispatcher(testScheduler),
+                    transactionRunner = ImmediateDatabaseTransactionRunner,
+                )
 
             repository.deletePhoto(photo())
 
@@ -206,7 +214,14 @@ class DeletionCleanupOrderingTest {
             every { storage.deletePhoto(context, PROJECT_ID, SECOND_PHOTO_URI) } answers {
                 events += "delete-second-file"
             }
-            val repository = ProgressPhotoRepository(dao, storage, context, UnconfinedTestDispatcher(testScheduler))
+            val repository =
+                ProgressPhotoRepository(
+                    dao,
+                    storage,
+                    context,
+                    UnconfinedTestDispatcher(testScheduler),
+                    transactionRunner = ImmediateDatabaseTransactionRunner,
+                )
 
             repository.deletePhotos(listOf(PHOTO_ID, 4L))
 
@@ -222,7 +237,14 @@ class DeletionCleanupOrderingTest {
             coEvery { dao.getByIds(listOf(PHOTO_ID, 4L)) } returns
                 listOf(photoEntity(), photoEntity(id = 4L, uri = SECOND_PHOTO_URI))
             coEvery { dao.deleteByIds(listOf(PHOTO_ID, 4L)) } throws IOException("database failed")
-            val repository = ProgressPhotoRepository(dao, storage, context, UnconfinedTestDispatcher(testScheduler))
+            val repository =
+                ProgressPhotoRepository(
+                    dao,
+                    storage,
+                    context,
+                    UnconfinedTestDispatcher(testScheduler),
+                    transactionRunner = ImmediateDatabaseTransactionRunner,
+                )
 
             val thrown = runCatching { repository.deletePhotos(listOf(PHOTO_ID, 4L)) }.exceptionOrNull()
 
@@ -401,7 +423,14 @@ class DeletionCleanupOrderingTest {
             cleanupFailure?.let { throw it }
         }
         return ProgressPhotoFixture(
-            repository = ProgressPhotoRepository(dao, storage, context, UnconfinedTestDispatcher()),
+            repository =
+                ProgressPhotoRepository(
+                    dao,
+                    storage,
+                    context,
+                    UnconfinedTestDispatcher(),
+                    transactionRunner = ImmediateDatabaseTransactionRunner,
+                ),
             dao = dao,
             storage = storage,
         )
@@ -444,6 +473,8 @@ class DeletionCleanupOrderingTest {
         fun assertDatabaseDeletePrecedesCleanup() {
             val databaseDelete = events.indexOf("delete-project")
             assertTrue(databaseDelete >= 0)
+            val commit = events.indexOfLast { it == "transaction-commit" }
+            assertTrue(commit > databaseDelete)
             listOf(
                 "delete-progress-photos",
                 "delete-captures",
@@ -451,8 +482,8 @@ class DeletionCleanupOrderingTest {
                 "delete-pattern:$PATTERN_B",
             ).forEach { cleanup ->
                 assertTrue(
-                    "$cleanup must occur after database deletion",
-                    events.indexOf(cleanup) > databaseDelete,
+                    "$cleanup must occur after transaction commit",
+                    events.indexOf(cleanup) > commit,
                 )
             }
         }

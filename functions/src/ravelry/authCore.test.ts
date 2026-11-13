@@ -118,7 +118,9 @@ class MemoryTokenStore implements RavelryTokenStore {
       pending.expiresAtMillis <= nowMillis ||
       await this.getConnectionGeneration(uid) !== (pending.token.connectionGeneration ?? 0)
     ) return false;
-    this.tokens.set(uid, pending.token);
+    const connectionGeneration = (pending.token.connectionGeneration ?? 0) + 1;
+    this.generations.set(uid, connectionGeneration);
+    this.tokens.set(uid, { ...pending.token, connectionGeneration });
     this.pending.delete(uid);
     return true;
   }
@@ -490,8 +492,13 @@ describe("Ravelry OAuth2 auth core", () => {
       expiresAtMillis: 8_000,
       createdAtMillis: 1_000,
       updatedAtMillis: 1_000,
-      connectionGeneration: 0,
+      connectionGeneration: 1,
     });
+    assert.equal(await tokenStore.getConnectionGeneration("uid"), 1);
+    assert.equal(await tokenStore.saveTokenIfGenerationCurrent({
+      uid: "uid", authType: "oauth2", accessToken: "stale",
+      createdAtMillis: 0, updatedAtMillis: 0,
+    }, 0), false);
     await assert.rejects(
       completeRavelryOAuth({
         uid: "uid",

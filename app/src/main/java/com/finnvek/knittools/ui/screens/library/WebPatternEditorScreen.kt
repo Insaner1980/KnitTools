@@ -148,7 +148,8 @@ internal fun WebPatternEditorContent(
                 // Virheellinen osoite tarkistetaan yhä tallennusyrityksellä, jotta syy näkyy kentän alla.
                 enabled =
                     !state.isLoading &&
-                        !state.didPersist &&
+                        (!state.didPersist || state.pendingAttachmentId != null) &&
+                        state.pendingReplacement == null &&
                         state.route != null &&
                         state.hasRequiredFields,
                 busy = state.isSaving,

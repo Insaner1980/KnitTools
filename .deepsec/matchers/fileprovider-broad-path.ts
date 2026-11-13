@@ -15,7 +15,7 @@ export const fileproviderBroadPath: MatcherPlugin = {
       { regex: /<external-path\b[^>]*>/i, label: "FileProvider external-path exposes shared storage" },
       {
         regex:
-          /<(?:files-path|cache-path|external-files-path|external-cache-path|external-media-path)\b[^>]*\bpath\s*=\s*"[\s.\/]*"[^>]*>/i,
+          /<(?:files-path|cache-path|external-files-path|external-cache-path|external-media-path)\b[^>]*\bpath\s*=\s*(["'])[\s.\/]*\1[^>]*>/i,
         label: 'FileProvider path="." or equivalent broad directory',
       },
     ]);

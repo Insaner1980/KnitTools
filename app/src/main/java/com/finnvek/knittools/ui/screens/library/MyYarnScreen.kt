@@ -92,6 +92,8 @@ data class MyYarnState(
     val proAccessReady: Boolean,
     val deleteErrorId: Long = 0L,
     val saveErrorId: Long = 0L,
+    val saveSuccessId: Long = 0L,
+    val isSaving: Boolean = false,
 )
 
 data class MyYarnActions(
@@ -126,6 +128,7 @@ fun MyYarnScreen(
     var actionAwaitingEntitlement by rememberSaveable { mutableStateOf<PendingYarnProAction?>(null) }
     var lastHandledDeleteErrorId by rememberSaveable { mutableLongStateOf(state.deleteErrorId) }
     var lastHandledSaveErrorId by rememberSaveable { mutableLongStateOf(state.saveErrorId) }
+    var lastHandledSaveSuccessId by rememberSaveable { mutableLongStateOf(state.saveSuccessId) }
     val snackbarHostState = remember { SnackbarHostState() }
     val deleteFailedMessage = stringResource(R.string.generic_error_unknown)
     val requestAddYarn = {
@@ -140,6 +143,13 @@ fun MyYarnScreen(
         if (state.deleteErrorId > lastHandledDeleteErrorId) {
             lastHandledDeleteErrorId = state.deleteErrorId
             snackbarHostState.showSnackbar(deleteFailedMessage)
+        }
+    }
+
+    LaunchedEffect(state.saveSuccessId) {
+        if (state.saveSuccessId > lastHandledSaveSuccessId) {
+            lastHandledSaveSuccessId = state.saveSuccessId
+            showManualYarnSheet = false
         }
     }
 
@@ -160,7 +170,7 @@ fun MyYarnScreen(
             }
 
             PendingYarnProAction.RetryCreation -> {
-                if (actions.onRetryCreateYarnCard()) showManualYarnSheet = false
+                actions.onRetryCreateYarnCard()
             }
         }
     }
@@ -182,10 +192,9 @@ fun MyYarnScreen(
 
     if (showManualYarnSheet) {
         ManualYarnCardSheet(
+            saving = state.isSaving,
             onSave = { input ->
-                if (actions.onCreateYarnCard(input)) {
-                    showManualYarnSheet = false
-                } else {
+                if (!actions.onCreateYarnCard(input)) {
                     pendingProAction = PendingYarnProAction.RetryCreation
                 }
             },
@@ -258,6 +267,7 @@ internal fun ManualYarnCardSheet(
     onDismiss: () -> Unit,
     initialInput: ManualYarnCardInput = ManualYarnCardInput(yarnName = ""),
     showQuantity: Boolean = true,
+    saving: Boolean = false,
     @StringRes titleRes: Int = R.string.add_yarn_to_my_yarn,
     // Muokkauksessa ohje jätetään pois: "Aloita nimestä" ei päde, kun nimi on jo annettu.
     @StringRes bodyRes: Int? = R.string.manual_yarn_optional_details,
@@ -275,9 +285,11 @@ internal fun ManualYarnCardSheet(
         title = stringResource(titleRes),
         description = bodyRes?.let { stringResource(it) },
         onDismiss = onDismiss,
+        cancelEnabled = !saving,
         confirm =
             FormSheetConfirm(
                 text = stringResource(R.string.save),
+                busy = saving,
                 enabled = yarnName.isNotBlank() && validQuantity != null,
                 onClick = {
                     validQuantity?.let {
@@ -297,12 +309,14 @@ internal fun ManualYarnCardSheet(
             ),
     ) {
         ProjectYarnTextField(
+            readOnly = saving,
             value = yarnName,
             onValueChange = { yarnName = it },
             label = stringResource(R.string.project_yarn_name),
             singleLine = true,
         )
         ProjectYarnTextField(
+            readOnly = saving,
             value = brand,
             onValueChange = { brand = it },
             // CPD-OFF: Ruudun paikallinen Compose-rakenne pidetaan vastuun yhteydessa.
@@ -311,6 +325,7 @@ internal fun ManualYarnCardSheet(
         )
         if (showQuantity) {
             ProjectYarnTextField(
+                readOnly = saving,
                 value = quantity,
                 onValueChange = { quantity = it.filter(Char::isDigit) },
                 label = stringResource(R.string.quantity_label),
@@ -319,20 +334,23 @@ internal fun ManualYarnCardSheet(
             )
         }
         // CPD-ON
-        YarnWeightField(value = weightCategory, onValueChange = { weightCategory = it })
+        YarnWeightField(value = weightCategory, onValueChange = { if (!saving) weightCategory = it })
         ProjectYarnTextField(
+            readOnly = saving,
             value = colorName,
             onValueChange = { colorName = it },
             label = stringResource(R.string.color_name),
             singleLine = true,
         )
         ProjectYarnTextField(
+            readOnly = saving,
             value = colorNumber,
             onValueChange = { colorNumber = it },
             label = stringResource(R.string.color_number),
             singleLine = true,
         )
         ProjectYarnTextField(
+            readOnly = saving,
             value = dyeLot,
             onValueChange = { dyeLot = it },
             label = stringResource(R.string.dye_lot),

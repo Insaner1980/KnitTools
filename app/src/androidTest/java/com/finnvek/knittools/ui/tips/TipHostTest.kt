@@ -17,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusManager
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -31,6 +32,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.unit.IntSize
 import androidx.test.platform.app.InstrumentationRegistry
 import com.finnvek.knittools.R
 import com.finnvek.knittools.analytics.UsageAnalytics
@@ -49,6 +51,8 @@ import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
@@ -77,6 +81,23 @@ class TipHostTest {
         runBlocking {
             scopeJob.cancelAndJoin()
         }
+
+    @Test
+    fun placementRequiresTheWholeAnchorInsideTheViewport() {
+        val viewport = Rect(0f, 0f, 400f, 600f)
+
+        fun place(anchor: Rect) = findTipPlacement(viewport, anchor, IntSize(100, 50), emptyList(), 8f, 8f)
+        assertNotNull(place(Rect(150f, 200f, 250f, 240f)))
+        assertNotNull(place(Rect(0f, 200f, 80f, 240f)))
+        for (anchor in listOf(
+            Rect(-1f, 200f, 79f, 240f),
+            Rect(321f, 200f, 401f, 240f),
+            Rect(150f, -1f, 250f, 39f),
+            Rect(150f, 561f, 250f, 601f),
+        )) {
+            assertNull(place(anchor))
+        }
+    }
 
     @Test
     fun counterOpensWaitForLoadedFactsAndDoNotCountRecomposition() {

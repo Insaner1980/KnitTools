@@ -50,6 +50,32 @@ class WebPatternEditorViewModelTest {
     }
 
     @Test
+    fun savedPatternAttachmentRetriesAfterRecreationWithoutCreatingAnotherRow() =
+        runTest {
+            val handle = routeHandle(WebPatternEditorOrigin.Project, projectId = 42L)
+            val editor = model(handle)
+            editor.updateTitle("Pattern")
+            editor.updateUrl("https://example.com/pattern")
+            coEvery { patterns.createWebPattern(any()) } returns WebPatternMutationResult.Created(15L)
+            coEvery { projects.attachSavedPatternMetadata(42L, 15L, null) } returns
+                SavedPatternMetadataMutationResult.PersistenceFailure
+            editor.save()
+            runCurrent()
+            assertTrue(editor.uiState.value.didPersist)
+            assertTrue(editor.uiState.value.canSave)
+            editor.updateTitle("Must not replace persisted draft")
+            assertEquals("Pattern", editor.uiState.value.title)
+            val restored = model(handle.restoredCopy())
+            coEvery { projects.attachSavedPatternMetadata(42L, 15L, null) } returns
+                SavedPatternMetadataMutationResult.AlreadyAttached(15L)
+            restored.save()
+            runCurrent()
+            assertTrue(restored.uiState.value.completion is WebPatternEditorCompletion.OpenProject)
+            coVerify(exactly = 1) { patterns.createWebPattern(any()) }
+            coVerify(exactly = 2) { projects.attachSavedPatternMetadata(42L, 15L, null) }
+        }
+
+    @Test
     fun `raw invalid draft survives recreation without persistence`() =
         runTest {
             val handle = routeHandle(WebPatternEditorOrigin.Manual)

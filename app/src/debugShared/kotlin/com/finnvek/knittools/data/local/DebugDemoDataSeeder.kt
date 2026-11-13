@@ -41,7 +41,7 @@ object DebugDemoDataSeeder {
         saveYarnCard: suspend (YarnCard) -> Long,
     ) {
         val projectDao = database.counterProjectDao()
-        if (projectDao.getAllProjectsOnce().any { it.name == MARKER_PROJECT_NAME }) {
+        if (projectDao.getAllProjectsOnce().isNotEmpty()) {
             return
         }
 

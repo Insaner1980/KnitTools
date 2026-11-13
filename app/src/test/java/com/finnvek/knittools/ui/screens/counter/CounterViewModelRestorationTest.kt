@@ -79,6 +79,39 @@ class CounterViewModelRestorationTest {
     }
 
     @Test
+    fun failedLaunchTargetKeepsCurrentProjectObservation() =
+        runTest {
+            val rows = MutableStateFlow(active)
+            every { repository.observeProject(8L) } returns rows
+            coEvery { repository.getProject(99L) } returns null
+            val vm = viewModel(SavedStateHandle())
+            runCurrent()
+            assertEquals(8L, vm.uiState.value.projectId)
+            vm.selectProjectByIdForLaunch(99L)
+            runCurrent()
+            rows.value = active.copy(count = 29)
+            runCurrent()
+            assertEquals(8L, vm.uiState.value.projectId)
+            assertEquals(29, vm.uiState.value.counter.count)
+        }
+
+    @Test
+    fun missingLaunchTargetReleasesSelectionOwnershipForLaterProjects() =
+        runTest {
+            activeRows.value = emptyList()
+            coEvery { repository.getProject(99L) } returns null
+            val vm = viewModel(SavedStateHandle())
+            runCurrent()
+            var loaded: Boolean? = null
+            vm.selectProjectByIdForLaunch(99L) { loaded = it }
+            runCurrent()
+            assertEquals(false, loaded)
+            activeRows.value = listOf(active)
+            runCurrent()
+            assertEquals(8L, vm.uiState.value.projectId)
+        }
+
+    @Test
     fun `fresh view model restores publicly selected completed project instead of active alternative`() =
         runTest {
             val restored = completedSelectionSnapshot()

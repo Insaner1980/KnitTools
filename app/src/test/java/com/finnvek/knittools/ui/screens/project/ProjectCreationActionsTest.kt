@@ -16,6 +16,7 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
@@ -48,6 +49,27 @@ class ProjectCreationActionsTest {
         coEvery { repository.createProject(any(), any(), any(), any(), any(), any(), any()) } returns
             ProjectCreationResult.Created(7L)
     }
+
+    @Test
+    fun `a second creation cannot replace an in flight request`() =
+        runTest {
+            val gate = CompletableDeferred<ProjectCreationResult>()
+            coEvery { repository.createProject(any(), any(), any(), any(), any(), any(), any()) } coAnswers
+                { gate.await() }
+            val handle = SavedStateHandle()
+            val actions = actions(handle)
+            actions.create(request())
+            runCurrent()
+            actions.create(request().copy(name = "Second"))
+            runCurrent()
+            assertEquals(request(), handle.get<PendingProjectCreation>(PENDING_KEY))
+            gate.complete(ProjectCreationResult.Created(7L))
+            runCurrent()
+            assertEquals(listOf(7L), createdIds)
+            assertNull(handle.get<PendingProjectCreation>(PENDING_KEY))
+            coVerify(exactly = 1) { repository.createProject("Blanket", any(), any(), any(), any(), any(), any()) }
+            coVerify(exactly = 0) { repository.createProject("Second", any(), any(), any(), any(), any(), any()) }
+        }
 
     @Test
     fun `successful first project forwards starting values and saves craft and starter`() =

@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.SystemClock
+import android.text.SpannableString
 import androidx.lifecycle.ViewModelProvider
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
@@ -29,10 +30,8 @@ import java.util.concurrent.atomic.AtomicReference
 class PatternShareIntentRestoreTest {
     @Test
     fun externalExtrasCannotSeedPrivateShareState() {
-        val context = ApplicationProvider.getApplicationContext<Context>()
-        check(context.packageName.endsWith(".activepolicytest") || context.packageName.endsWith(".notestest"))
         val launch =
-            Intent(context, MainActivity::class.java).setAction(Intent.ACTION_MAIN).apply {
+            isolatedMainIntent().apply {
                 putExtra("pattern_share_pending_request_id", 41L)
                 putExtra("pattern_share_pending_kind", "web")
                 putExtra("pattern_share_pending_url", "https://example.test/unrequested")
@@ -51,10 +50,8 @@ class PatternShareIntentRestoreTest {
 
     @Test
     fun wronglyTypedExternalShareStateDoesNotInterruptActivityCreation() {
-        val context = ApplicationProvider.getApplicationContext<Context>()
-        check(context.packageName.endsWith(".activepolicytest") || context.packageName.endsWith(".notestest"))
         val launch =
-            Intent(context, MainActivity::class.java).setAction(Intent.ACTION_MAIN).apply {
+            isolatedMainIntent().apply {
                 putExtra("pattern_share_pending_request_id", "not-a-long")
             }
         ActivityScenario.launch<MainActivity>(launch).use { scenario ->
@@ -69,6 +66,12 @@ class PatternShareIntentRestoreTest {
 
     @Test
     fun discardedPdfIsNotReopenedByRestorationAndANewShareIsAccepted() = verifyPdfIntentRestore(discard = true)
+
+    private fun isolatedMainIntent(): Intent {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        check(context.packageName.endsWith(".activepolicytest") || context.packageName.endsWith(".notestest"))
+        return Intent(context, MainActivity::class.java).setAction(Intent.ACTION_MAIN)
+    }
 
     private fun verifyPdfIntentRestore(discard: Boolean) {
         val context = ApplicationProvider.getApplicationContext<Context>()
@@ -173,13 +176,18 @@ class PatternShareIntentRestoreTest {
             Intent(context, MainActivity::class.java).apply {
                 action = Intent.ACTION_SEND
                 type = "text/plain"
-                putExtra(Intent.EXTRA_TEXT, "https://example.org/first")
+                putExtra(Intent.EXTRA_TEXT, SpannableString("https://example.org/first"))
                 putExtra(Intent.EXTRA_SUBJECT, "Synthetic pattern")
             }
         val launch = Intent(context, MainActivity::class.java).setAction(Intent.ACTION_MAIN)
         ActivityScenario.launch<MainActivity>(launch).use { scenario ->
             scenario.onActivity {
                 InstrumentationRegistry.getInstrumentation().callActivityOnNewIntent(it, Intent(original))
+                val coordinator = ViewModelProvider(it)[PatternShareCoordinatorViewModel::class.java]
+                assertEquals(
+                    PatternSharePayload.WebLink("https://example.org/first", "Synthetic pattern"),
+                    coordinator.pending.value?.payload,
+                )
             }
             awaitConsumed(scenario)
             var originalIntentRestored = false

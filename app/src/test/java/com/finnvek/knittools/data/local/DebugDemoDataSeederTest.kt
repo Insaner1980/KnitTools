@@ -51,6 +51,17 @@ class DebugDemoDataSeederTest {
             assertEquals(5, seed.projects.size)
         }
 
+    @Test
+    fun deletingTheOriginalMarkerDoesNotDuplicateRemainingDemoData() =
+        runTest {
+            val seed = SeedState(0)
+            seed.start(this)
+            seed.projects.removeAll { it.name == "Forest Cardigan" }
+            seed.start(this)
+            assertEquals(4, seed.projects.size)
+            assertEquals(13, seed.insertedSessions.size)
+        }
+
     private class SeedState(
         private val existingSessions: Long,
     ) {

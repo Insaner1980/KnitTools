@@ -546,33 +546,6 @@ class ActiveProjectPolicyRuntimeTest {
                 inspectStore(activity.viewModelStore)
             }
             record.put("counterViewModels", counters)
-            record.put(
-                "proState",
-                app.proManager
-                    .get()
-                    .proState.value
-                    .toString(),
-            )
-            record.put("unlimitedProjects", app.proManager.get().hasFeature(ProFeature.UNLIMITED_PROJECTS))
-            record.put(
-                "purchased",
-                app.billingManager
-                    .get()
-                    .isProPurchased.value,
-            )
-            record.put(
-                "purchaseStateReady",
-                app.billingManager
-                    .get()
-                    .purchaseStateReady.value,
-            )
-            record.put(
-                "proState",
-                app.proManager
-                    .get()
-                    .proState.value
-                    .toString(),
-            )
         } catch (failure: Throwable) {
             record.put("diagnosticError", failure.stackTraceToString())
         }
@@ -592,7 +565,7 @@ class ActiveProjectPolicyRuntimeTest {
             .put("text", node.text)
             .put("description", node.contentDescription)
             .put("paneTitle", node.paneTitle)
-            .put("stateDescription", node.stateDescription)
+            .put("stateDescription", if (android.os.Build.VERSION.SDK_INT >= 30) node.stateDescription else null)
             .put("visible", node.isVisibleToUser)
             .put("clickable", node.isClickable)
             .put("enabled", node.isEnabled)

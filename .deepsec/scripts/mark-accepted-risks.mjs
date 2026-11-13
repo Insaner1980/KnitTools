@@ -17,12 +17,16 @@ const RAVELRY_ACCEPTED_RISK_FILES = new Map([
 
 const RAVELRY_CREDENTIAL_PATTERNS = [
   {
-    regex: /BuildConfig\.RAVELRY_(?:BASIC_AUTH|OAUTH2)_[A-Z_]+/,
+    regex: /BuildConfig\.RAVELRY_(?:(?:BASIC_AUTH|OAUTH2)_[A-Z_]+|CLIENT_SECRET|ACCESS_TOKEN|REFRESH_TOKEN)\b/,
     label: "Ravelry credential BuildConfig read",
   },
   {
     regex: /KNITTOOLS_(?:ALLOW_EMBEDDED_RAVELRY_SECRETS|RAVELRY_[A-Z0-9_]+)/,
     label: "Ravelry credential environment gate",
+  },
+  {
+    regex: /buildConfigField\s*\(\s*["']String["']\s*,\s*["']RAVELRY_(?:(?:BASIC_AUTH|OAUTH2)_[A-Z_]+|CLIENT_SECRET|ACCESS_TOKEN|REFRESH_TOKEN)["']/,
+    label: "Ravelry credential BuildConfig declaration",
   },
   {
     regex: /Authorization["']?\s*,\s*["'](?:Basic|Bearer)\b/,
@@ -133,7 +137,7 @@ function currentRavelryCredentialMatches() {
     const relativePath = path.relative(projectRoot, sourcePath).replaceAll(path.sep, "/");
     const patterns = /Ravelry/i.test(relativePath)
       ? RAVELRY_CREDENTIAL_PATTERNS
-      : RAVELRY_CREDENTIAL_PATTERNS.slice(0, 2);
+      : RAVELRY_CREDENTIAL_PATTERNS.slice(0, 3);
 
     for (const { regex, label } of patterns) {
       const flags = regex.flags.includes("g") ? regex.flags : `${regex.flags}g`;

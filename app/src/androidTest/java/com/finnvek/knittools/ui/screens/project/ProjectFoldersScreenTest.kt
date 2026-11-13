@@ -797,6 +797,9 @@ class ProjectFoldersScreenTest {
                     storage = ProgressPhotoStorage(),
                     context = context,
                     ioDispatcher = Dispatchers.IO,
+                    transactionRunner =
+                        com.finnvek.knittools.data.local
+                            .RoomDatabaseTransactionRunner(database),
                 ),
             savedPatternRepository = fixture.savedPatternRepository,
             projectDocumentRepository = fixture.projectDocumentRepository,

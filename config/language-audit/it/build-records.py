@@ -11,6 +11,14 @@ ROOT = Path(__file__).resolve().parents[3]
 OUT = ROOT / 'config/language-audit/it'
 BASE = 'app/src/main/java/com/finnvek/knittools/'
 
+required_receipts = [
+    ROOT / f'reports/language-audit/shared/{name}/final-input-hashes.tsv'
+    for name in ('20261018', '20261018-followup', '20261019-b08')
+] + [ROOT / 'reports/language-audit/shared/20261019-b05/final-input-hashes.json']
+missing_receipts = [str(path.relative_to(ROOT)) for path in required_receipts if not path.is_file()]
+if missing_receipts:
+    raise SystemExit('Missing historical audit evidence; no outputs written:\n' + '\n'.join(missing_receipts))
+
 def read(path):
     return (ROOT / path).read_text(encoding='utf-8-sig')
 

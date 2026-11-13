@@ -88,10 +88,12 @@ class AuditPart14ProRuntimeTest {
             ProgressPhotoStorage(),
             app,
             Dispatchers.IO,
+            app.transactionRunner.get(),
         )
 
     @Before fun prepare() {
-        check(ProPolicyTestControl.isActive && app.packageName.endsWith(".activepolicytest"))
+        org.junit.Assume.assumeTrue(ProPolicyTestControl.isActive && app.packageName.endsWith(".activepolicytest"))
+        ProPolicyTestControl.reset()
         rule.runOnUiThread { rule.activity.setContent { } }
         runBlocking(Dispatchers.IO) { db.clearAllTables() }
         status(ProStatus.TRIAL_NOT_STARTED)
@@ -99,6 +101,10 @@ class AuditPart14ProRuntimeTest {
 
     @After fun close() {
         rule.runOnUiThread { notesStore.clear() }
+        if (ProPolicyTestControl.isActive && app.packageName.endsWith(".activepolicytest")) {
+            runBlocking(Dispatchers.IO) { db.clearAllTables() }
+            ProPolicyTestControl.reset()
+        }
     }
 
     @Test fun fourStatesReachRealRepositoryAndViewModelBoundaries() {

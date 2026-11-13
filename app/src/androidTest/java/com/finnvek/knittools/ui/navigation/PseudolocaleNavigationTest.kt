@@ -128,8 +128,15 @@ class PseudolocaleNavigationTest {
                 .onNodeWithContentDescription(
                     rule.activity.getString(R.string.project_continue_content_description, projectName),
                 ).performClick()
+            val addRow = label(R.string.counter_add_row)
+            rule.waitUntil(15_000) {
+                rule
+                    .onAllNodes(hasContentDescription(addRow), useUnmergedTree = true)
+                    .fetchSemanticsNodes(atLeastOneRootRequired = false)
+                    .isNotEmpty()
+            }
             rule
-                .onNodeWithContentDescription(label(R.string.counter_add_row), useUnmergedTree = true)
+                .onNodeWithContentDescription(addRow, useUnmergedTree = true)
                 .performScrollTo()
                 .assertIsDisplayed()
                 .performClick()

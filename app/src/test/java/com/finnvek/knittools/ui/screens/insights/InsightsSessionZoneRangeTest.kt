@@ -96,28 +96,38 @@ class InsightsSessionZoneRangeTest {
     @Test
     fun sameZoneControlAndProjectFilterKeepOrdinaryRangeBehavior() =
         runTest {
-            val rows =
-                listOf(
-                    session("2026-09-30T00:00-10:00"),
-                    session("2026-10-01T00:00-10:00"),
-                    session("2026-10-02T00:00-10:00").copy(projectId = 2),
-                )
-            val all = stateAt("2026-10-02T02:00-10:00", rows)
-            assertRange(all, "2026-09-30", "2026-10-02", 3, 3, 90)
-            assertEnglish(all, "Active 3 of 3 days", "Sep 2026 – Oct 2026")
+            mockkStatic(::currentInsightsFirstDayOfWeek)
+            try {
+                every { currentInsightsFirstDayOfWeek() } returns DayOfWeek.MONDAY
+                val rows =
+                    listOf(
+                        session("2026-09-30T00:00-10:00"),
+                        session("2026-10-01T00:00-10:00"),
+                        session("2026-10-02T00:00-10:00").copy(projectId = 2),
+                    )
+                val all = stateAt("2026-10-02T02:00-10:00", rows)
+                assertRange(all, "2026-09-30", "2026-10-02", 3, 3, 90)
+                assertEnglish(all, "Active 3 of 3 days", "Sep 2026 – Oct 2026")
 
-            val month = stateAt("2026-10-02T02:00-10:00", rows, TimeRange.THIS_MONTH)
-            assertRange(month, "2026-10-01", "2026-10-02", 2, 2, 60)
-            val week = stateAt("2026-10-02T02:00-10:00", rows, TimeRange.THIS_WEEK)
-            assertEquals(3, week.activeDays)
-            assertEquals(90, week.totalMinutes)
-            assertEquals(
-                InsightsViewModel.rangeStartDate(TimeRange.THIS_WEEK, week.rangeEnd, currentInsightsFirstDayOfWeek()),
-                week.rangeStart,
-            )
-            val selected = stateAt("2026-10-02T02:00-10:00", rows, projectId = 2)
-            assertRange(selected, "2026-10-02", "2026-10-02", 1, 1, 30)
-            assertEquals(listOf(2L), selected.timePerProject.map { it.projectId })
+                val month = stateAt("2026-10-02T02:00-10:00", rows, TimeRange.THIS_MONTH)
+                assertRange(month, "2026-10-01", "2026-10-02", 2, 2, 60)
+                val week = stateAt("2026-10-02T02:00-10:00", rows, TimeRange.THIS_WEEK)
+                assertEquals(3, week.activeDays)
+                assertEquals(90, week.totalMinutes)
+                assertEquals(
+                    InsightsViewModel.rangeStartDate(
+                        TimeRange.THIS_WEEK,
+                        week.rangeEnd,
+                        currentInsightsFirstDayOfWeek(),
+                    ),
+                    week.rangeStart,
+                )
+                val selected = stateAt("2026-10-02T02:00-10:00", rows, projectId = 2)
+                assertRange(selected, "2026-10-02", "2026-10-02", 1, 1, 30)
+                assertEquals(listOf(2L), selected.timePerProject.map { it.projectId })
+            } finally {
+                unmockkStatic(::currentInsightsFirstDayOfWeek)
+            }
         }
 
     @Test

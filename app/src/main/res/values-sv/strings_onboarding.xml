@@ -75,7 +75,7 @@
     <!-- Kumoamisvihje käyttää samaa toimintonimeä kuin laskurin Undo. -->
     <string name="tip_undo">Sparat. Tryckte du av misstag? Ångra tar tillbaka den senaste ändringen.</string>
     <!-- Askelkoko määrittää yhden painalluksen lisäyksen. -->
-    <string name="tip_step_size">Räknar du mer än en åt gången? Ändra här hur mycket varje tryck lägger till.</string>
+    <string name="tip_step_size">Räknar du mer än en åt gången? Ändra här hur mycket varje tryck lägger till eller drar ifrån.</string>
     <!-- Työskentelyjakso käynnistetään käsin; aikaa ei seurata automaattisesti. -->
     <string name="tip_work_session">Vill du veta hur lång tid projektet tar? Starta ett arbetspass i den här menyn. Tidtagningen startar aldrig av sig själv.</string>
     <!-- Projektisivun esittely; Continue viittaa jatkamistoimintoon. -->
@@ -145,7 +145,7 @@
     <!-- Askelkoon opaskohdan otsikko. -->
     <string name="guide_continue_step_title">Räkna mer än en åt gången</string>
     <!-- ×1 on painikkeiden välisen askelvalitsimen näkyvä merkintä; arvo on projektikohtainen. -->
-    <string name="guide_continue_step_body">Ringen ×1 mellan knapparna anger hur mycket varje tryck lägger till, från 1 till 99, separat för varje projekt.</string>
+    <string name="guide_continue_step_body">Ringen ×1 mellan knapparna anger hur mycket varje tryck lägger till eller drar ifrån, från 1 till 99, separat för varje projekt.</string>
     <!-- Projektisivun ja laskurin eroa kuvaava otsikko. -->
     <string name="guide_continue_project_page_title">Projektsidan och räknaren</string>
     <!-- Projektikortti avaa tiedot ja jatkamistoiminto laskurin. -->
@@ -476,7 +476,7 @@
     <!-- Aloituspolku: tervetulonäkymän hyöty, kerrosten laskeminen yhdellä napautuksella. -->
     <string name="journey_welcome_point_count">Räkna varv med ett tryck</string>
     <!-- Aloituspolku: tervetulonäkymän hyöty, kohta ohjeessa säilyy (lukulinja). -->
-    <string name="journey_welcome_point_pattern">Behåll din plats i alla mönster</string>
+    <string name="journey_welcome_point_pattern">Behåll din plats i ett PDF-mönster</string>
     <!-- Aloituspolku: tervetulonäkymän hyöty, työtä voi jatkaa siitä mihin jäi. -->
     <string name="journey_welcome_point_return">Fortsätt precis där du slutade</string>
     <!-- Aloituspolku: Aloitetaan -->

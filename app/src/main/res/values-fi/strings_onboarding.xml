@@ -75,7 +75,7 @@
     <!-- Tallennetun laskurimuutoksen vihje. Undo on sovelluksen Kumoa-toiminto. -->
     <string name="tip_undo">Tallennettu. Napautitko vahingossa? Kumoa peruu viimeisen muutoksen.</string>
     <!-- Askelkoon vihje: yhden napautuksen lisäysmäärä on muokattavissa. -->
-    <string name="tip_step_size">Lasketko useamman kerrallaan? Muuta tästä, kuinka paljon yksi napautus lisää.</string>
+    <string name="tip_step_size">Lasketko useamman kerrallaan? Muuta tästä, kuinka paljon yksi napautus lisää tai vähentää.</string>
     <!-- Työskentelyistunto käynnistyy käyttäjän toimesta valikosta, ei automaattisesti. -->
     <string name="tip_work_session">Haluatko tietää, kuinka kauan projektiin kuluu aikaa? Aloita työskentelyistunto tästä valikosta. Ajanotto ei koskaan käynnisty itsestään.</string>
     <!-- Projektisivun vihje; Continue tarkoittaa nykyistä Jatka-toimintoa. -->
@@ -145,7 +145,7 @@
     <!-- Oppaan kohdan otsikko: projektikohtainen laskurin askelkoko 1–99 ja ×1-painike. -->
     <string name="guide_continue_step_title">Laske useampi kerralla</string>
     <!-- Oppaan kohdan selitys: projektikohtainen laskurin askelkoko 1–99 ja ×1-painike. -->
-    <string name="guide_continue_step_body">Painikkeiden välissä oleva ×1-rengas määrittää, kuinka paljon yksi napautus lisää. Voit valita kullekin projektille oman arvon väliltä 1–99.</string>
+    <string name="guide_continue_step_body">Painikkeiden välissä oleva ×1-rengas määrittää, kuinka paljon yksi napautus lisää tai vähentää. Voit valita kullekin projektille oman arvon väliltä 1–99.</string>
     <!-- Oppaan kohdan otsikko: projektisivun ja laskurin ero; Continue on nykyinen Jatka-toiminto. -->
     <string name="guide_continue_project_page_title">Projektisivu ja laskuri</string>
     <!-- Oppaan kohdan selitys: projektisivun ja laskurin ero; Continue on nykyinen Jatka-toiminto. -->
@@ -476,7 +476,7 @@
     <!-- Aloituspolku: tervetulonäkymän hyöty, kerrosten laskeminen yhdellä napautuksella. -->
     <string name="journey_welcome_point_count">Laske kerrokset yhdellä napautuksella</string>
     <!-- Aloituspolku: tervetulonäkymän hyöty, kohta ohjeessa säilyy (lukulinja). -->
-    <string name="journey_welcome_point_pattern">Pidä kohtasi missä tahansa ohjeessa</string>
+    <string name="journey_welcome_point_pattern">Pidä kohtasi PDF-ohjeessa</string>
     <!-- Aloituspolku: tervetulonäkymän hyöty, työtä voi jatkaa siitä mihin jäi. -->
     <string name="journey_welcome_point_return">Jatka juuri siitä, mihin jäit</string>
     <!-- Aloituspolku: Aloitetaan -->

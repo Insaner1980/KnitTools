@@ -64,6 +64,8 @@ class CounterRemainingWriteResultTest : CounterViewModelFixture() {
             assertEquals(false, viewModel.uiState.value.stitchTrackingEnabled)
             viewModel.setStitchTrackingEnabled(true)
             advanceUntilIdle()
+            assertEquals(true, viewModel.uiState.value.stitchTrackingEnabled)
+            coVerify(exactly = 1) { repository.updateStitchTrackingEnabled(7L, true) }
             viewModel.setStitchCount(null)
             advanceUntilIdle()
 

@@ -55,9 +55,27 @@ class FutureSyncSpecSourceTest {
                 "jatkuva synkronointi",
             )
         val offenders =
-            ProjectSourceFiles.localizedStringFiles().filter { file ->
-                val text = ProjectSourceFiles.read(file).lowercase()
-                forbiddenClaims.any { claim -> text.contains(claim.lowercase()) }
+            Files.walk(ProjectSourceFiles.file("app/src/main/res")).use { paths ->
+                paths
+                    .filter { file ->
+                        file.fileName.toString().endsWith(".xml") &&
+                            file.parent.fileName
+                                .toString()
+                                .startsWith("values")
+                    }.filter { file ->
+                        val document =
+                            javax.xml.parsers.DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(
+                                file.toFile(),
+                            )
+                        val children = document.documentElement.childNodes
+                        (0 until children.length)
+                            .mapNotNull { children.item(it) as? org.w3c.dom.Element }
+                            .filter { it.tagName in setOf("string", "plurals", "string-array") }
+                            .any { element ->
+                                val text = element.textContent.lowercase(java.util.Locale.ROOT)
+                                forbiddenClaims.any(text::contains)
+                            }
+                    }.toList()
             }
 
         assertTrue("Live UI strings promise future sync: $offenders", offenders.isEmpty())

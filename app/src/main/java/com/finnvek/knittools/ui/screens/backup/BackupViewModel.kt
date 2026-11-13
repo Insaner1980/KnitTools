@@ -61,6 +61,12 @@ class BackupViewModel
             return true
         }
 
+        fun selectionFailed(error: BackupError) {
+            if (state.value.phase == BackupPhase.SELECTING) {
+                mutableState.value = BackupUiState(error = error)
+            }
+        }
+
         fun export(uri: Uri?) {
             if (cancelling || state.value.busy) return
             if (uri == null) {

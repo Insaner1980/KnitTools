@@ -12,6 +12,7 @@ import com.finnvek.knittools.data.local.KnitToolsDatabase
 import com.finnvek.knittools.data.local.ProgressPhotoDao
 import com.finnvek.knittools.data.local.ProgressPhotoEntity
 import com.finnvek.knittools.data.local.ProjectYarnUsageEntity
+import com.finnvek.knittools.data.local.RoomDatabaseTransactionRunner
 import com.finnvek.knittools.data.local.toDomain
 import com.finnvek.knittools.data.storage.ProgressPhotoStorage
 import com.finnvek.knittools.domain.model.YarnUsageAmounts
@@ -115,7 +116,14 @@ class AuditPart08CommitRuntimeTest(
 
                         override suspend fun delete(id: Long) = gate.run { photos.delete(id) }
                     }
-                val photoRepository = ProgressPhotoRepository(gatedPhotos, ProgressPhotoStorage(), app, Dispatchers.IO)
+                val photoRepository =
+                    ProgressPhotoRepository(
+                        gatedPhotos,
+                        ProgressPhotoStorage(),
+                        app,
+                        Dispatchers.IO,
+                        transactionRunner = RoomDatabaseTransactionRunner(db),
+                    )
                 val mutate: suspend () -> Any = {
                     when (operation) {
                         "usage-update" -> usageRepository.update(owner, usageId, 1, YarnUsageAmounts(usedMeters = 9.0))

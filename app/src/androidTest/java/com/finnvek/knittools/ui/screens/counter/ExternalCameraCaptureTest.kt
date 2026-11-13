@@ -55,7 +55,7 @@ class ExternalCameraCaptureTest {
 
     @Before
     fun setup() {
-        check(app.packageName.endsWith(".activepolicytest") && ProPolicyTestControl.isActive)
+        org.junit.Assume.assumeTrue(app.packageName.endsWith(".activepolicytest") && ProPolicyTestControl.isActive)
         instrumentation.uiAutomation.serviceInfo =
             instrumentation.uiAutomation.serviceInfo.apply {
                 flags = flags or AccessibilityServiceInfo.FLAG_REPORT_VIEW_IDS

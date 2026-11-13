@@ -6,6 +6,12 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class WebPatternUrlTest {
+    @Test fun emptyHexIpv4PartsCannotBypassLocalAddressValidation() {
+        listOf("0x", "0X", "0x.0.0.1", "127.0x.0x.1", "0x.1").forEach {
+            assertInvalid("https://$it/pattern")
+        }
+    }
+
     @Test
     fun `accepts http and https and preserves trimmed original url`() {
         val https = validUrl("  https://example.com/pattern  ")

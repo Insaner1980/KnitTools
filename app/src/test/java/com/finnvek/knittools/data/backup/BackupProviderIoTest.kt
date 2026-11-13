@@ -191,7 +191,7 @@ class BackupProviderIoTest {
             val readHandle = TestHandle(input = slowInput)
             val target = temporary.newFile()
 
-            providerIo(TestRequest(open = { readHandle }, closeDescriptor = readHandle::close), 80)
+            providerIo(TestRequest(open = { readHandle }, closeDescriptor = readHandle::close), 500)
                 .read(mockk(), target, 1024)
 
             assertArrayEquals(bytes, target.readBytes())

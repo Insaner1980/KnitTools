@@ -252,7 +252,7 @@ function Test-ManifestPermissions {
 
     try {
         $xml = Read-XmlFile $relativePath
-        $permissionNodes = @($xml.DocumentElement.SelectNodes("uses-permission"))
+        $permissionNodes = @($xml.DocumentElement.SelectNodes("uses-permission|uses-permission-sdk-23"))
         $actual = @(
             $permissionNodes |
                 ForEach-Object { Get-AndroidAttribute -Node $_ -Name "name" } |
@@ -613,12 +613,14 @@ function Test-SentryBoundary {
         $gradleFiles = @(
             "build.gradle.kts",
             "app/build.gradle.kts",
-            "baselineprofile/build.gradle.kts"
+            "baselineprofile/build.gradle.kts",
+            "gradle/libs.versions.toml"
         ) | Where-Object { Test-Path -LiteralPath (Join-RepoPath $_) }
 
         foreach ($file in $gradleFiles) {
             foreach ($line in Get-CodeLines $file) {
-                if ($line.Text -match '^\s*(implementation|api|releaseImplementation|runtimeOnly|releaseRuntimeOnly|compileOnly|releaseCompileOnly)\s*\(.*(sentry|io\.sentry|libs\.sentry)') {
+                if ($line.Text -match '^\s*(implementation|api|releaseImplementation|runtimeOnly|releaseRuntimeOnly|compileOnly|releaseCompileOnly)\s*\(.*(sentry|io\.sentry|libs\.sentry)' -or
+                    $line.Text -match '\bid\s*(?:\(\s*|=\s*)["'']io\.sentry(?:\.[\w.-]+)?["'']|alias\s*\(\s*libs\.plugins\.sentry\b') {
                     $problems += "release-visible Sentry dependency in $file"
                     if ($null -eq $firstLine) {
                         $firstPath = $file
@@ -1138,13 +1140,15 @@ function Test-RoomSchema {
         $edges = @($edges | Sort-Object From, To -Unique)
         $startVersion = [int]($schemaVersions | Measure-Object -Minimum).Minimum
         if ($startVersion -gt 1) {
-            Add-Warn -Check $check -Message "schema history starts at $startVersion; path checked from first exported schema only" -RelativePath $schemaRelativeDir
+            Add-Warn -Check $check -Message "schema history starts at $startVersion; paths checked from every exported schema" -RelativePath $schemaRelativeDir
         }
 
-        if (-not (Test-MigrationPath -Start $startVersion -Target $version -Edges $edges)) {
-            $problems += "migration path from $startVersion to $version is incomplete"
-            if ($null -eq $firstLine) {
-                $firstLine = Get-LineNumber -RelativePath $databasePath -Pattern "MIGRATION_|AutoMigration"
+        foreach ($sourceVersion in $schemaVersions | Where-Object { $_ -lt $version }) {
+            if (-not (Test-MigrationPath -Start $sourceVersion -Target $version -Edges $edges)) {
+                $problems += "migration path from $sourceVersion to $version is incomplete"
+                if ($null -eq $firstLine) {
+                    $firstLine = Get-LineNumber -RelativePath $databasePath -Pattern "MIGRATION_|AutoMigration"
+                }
             }
         }
 
@@ -1210,7 +1214,7 @@ function Test-WidgetOAuthBoundary {
             Add-Pass -Check $check -Message "token gate anchors present and no OAuth callback surface"
         }
     } catch {
-        Add-Warn -Check $check -Message ("manual review needed: " + $_.Exception.Message) -RelativePath $mainPath
+        Add-Fail -Check $check -Message ("unable to inspect widget boundary: " + $_.Exception.Message) -RelativePath $mainPath
     }
 }
 

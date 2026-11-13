@@ -14,7 +14,11 @@ class ProPromptSourceTest {
             )
 
         assertTrue(source.contains("var pendingActionResumed by rememberSaveable(request)"))
-        assertTrue(source.contains("if (!pendingActionResumed)"))
+        val resumeBody = source.substringAfter("val resumePendingAction = {").substringBefore("LaunchedEffect(")
+        val guard = resumeBody.indexOf("if (!pendingActionResumed)")
+        val claim = resumeBody.indexOf("pendingActionResumed = true")
+        val callback = resumeBody.indexOf("onTrialStarted()")
+        assertTrue(guard >= 0 && claim > guard && callback > claim)
         assertTrue(source.contains("if (proState.isPro && !isStartingTrial) resumePendingAction()"))
         assertTrue(source.contains("TrialStartResult.Started"))
         assertTrue(source.contains("TrialStartResult.AlreadyActive"))

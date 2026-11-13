@@ -60,6 +60,22 @@ class TrialJourneyStartViewModelTest {
     }
 
     @Test
+    fun failedPromptResultRemainsBoundToItsRequestWithoutACollector() =
+        runTest {
+            val model = ProPromptViewModel(manager, trialManager, coordinator, billing)
+            store.put("prompt", model)
+            coEvery { manager.startTrial() } returns TrialStartResult.Failed
+            val request = model.startTrial()
+            runCurrent()
+            assertEquals(request, model.failedRequestId.value)
+            coEvery { manager.startTrial() } returns TrialStartResult.AlreadyActive
+            val next = model.startTrial()
+            assertFalse(request == next)
+            runCurrent()
+            assertEquals(null, model.failedRequestId.value)
+        }
+
+    @Test
     fun `prompt queues only Started before result delivery and ignores duplicate clicks`() =
         runTest {
             val result = CompletableDeferred<TrialStartResult>()

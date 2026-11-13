@@ -21,15 +21,14 @@ class ProgressPhotoGallerySourceTest {
                     "        snackbarHostState.showSnackbar(errorMessage)",
             ),
         )
-        assertTrue(
-            source.contains(
-                "if (captureTarget == null) {\n" +
-                    "            actions.cancelPhotoCreation()\n" +
-                    "        } else {\n" +
-                    "            onCaptureTargetReady(captureTarget)\n" +
-                    "        }",
-            ),
-        )
+        val targetCallback =
+            source
+                .substringAfter("actions.createPhotoCaptureTarget(id) { captureTarget ->")
+                .substringBefore("@Composable")
+        assertTrue(targetCallback.contains("if (captureTarget == null) {"))
+        assertTrue(targetCallback.contains("actions.cancelPhotoCreation()"))
+        assertTrue(targetCallback.contains("onCaptureTargetReady(captureTarget)"))
+        assertTrue(source.contains("if (captureTarget == null) return@requestCameraCaptureTarget"))
         assertTrue(source.contains("requestCameraCaptureTarget(ownerProjectId, actions) { captureTarget ->"))
         assertTrue(source.contains("cameraLauncher.launch(captureTarget.uri)"))
     }

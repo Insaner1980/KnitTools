@@ -63,7 +63,7 @@ class AuditPart12PhotoNoteUiTest(
     @Test
     fun photoNoteEmojiBoundaryPersistsThroughActualEditorAndRoomReopen() {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
-        check(context.packageName.endsWith(".activepolicytest"))
+        org.junit.Assume.assumeTrue(context.packageName.endsWith(".activepolicytest"))
         val arguments = InstrumentationRegistry.getArguments()
         arguments
             .getString(
@@ -79,7 +79,14 @@ class AuditPart12PhotoNoteUiTest(
         try {
             writeTestBitmap(source)
             val repository =
-                ProgressPhotoRepository(db.progressPhotoDao(), ProgressPhotoStorage(), context, Dispatchers.IO)
+                ProgressPhotoRepository(
+                    db.progressPhotoDao(),
+                    ProgressPhotoStorage(),
+                    context,
+                    Dispatchers.IO,
+                    com.finnvek.knittools.data.local
+                        .RoomDatabaseTransactionRunner(db),
+                )
             runBlocking {
                 db.counterProjectDao().insert(CounterProjectEntity(id = projectId, name = "Synthetic photo"))
                 repository.savePhoto(projectId, source.toUri(), 42, "a".repeat(99) + "\uD83D\uDE00")

@@ -2,7 +2,7 @@ import type { CandidateMatch, MatcherPlugin } from "deepsec/config";
 import { candidate, isTestFile } from "./utils.js";
 
 const sensitiveWords =
-  "(?:ravelry|oauth|token|credential|secret|password|billing|purchase|project|projectId|counter|count|pattern|instruction|voice)";
+  "(?:ravelry|oauth|token|credential|secret|password|billing|purchase|project|projectId|counter|count|pattern|instruction|voice|transcript)";
 
 export const sensitiveAndroidLog: MatcherPlugin = {
   slug: "sensitive-android-log",

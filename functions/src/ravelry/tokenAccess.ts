@@ -48,7 +48,10 @@ export async function getUsableRavelryToken({
   }
 
   const now = nowMillis();
-  if (!requiresRefresh(token, now)) {
+  // Cover the API request timeout when refresh is available; a valid token without
+  // refresh capability remains usable until its actual expiry.
+  const refreshDeadline = token.refreshToken && refresh ? now + 10_000 : now;
+  if (!requiresRefresh(token, refreshDeadline)) {
     return token;
   }
 

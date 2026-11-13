@@ -9,6 +9,13 @@ import java.nio.file.Files
 import javax.xml.parsers.DocumentBuilderFactory
 
 class ProLocalizationSourceTest {
+    private fun expectedPluralQuantities(directory: String): Set<String> =
+        if (directory in setOf("values-fr", "values-es", "values-it", "values-pt", "values-pt-rBR")) {
+            setOf("one", "many", "other")
+        } else {
+            setOf("one", "other")
+        }
+
     @Test
     fun `active project policy resources cover configured locales quantities and distinct actions`() {
         val configuration =
@@ -84,11 +91,28 @@ class ProLocalizationSourceTest {
                     base.getValue(key).type,
                     localized.getValue(key).type,
                 )
-                assertEquals(
-                    "Placeholders differ for $key in $directory",
-                    base.getValue(key).placeholders,
-                    localized.getValue(key).placeholders,
-                )
+                val original = base.getValue(key)
+                val translated = localized.getValue(key)
+                if (original.type == "plurals") {
+                    val expectedQuantities = expectedPluralQuantities(directory)
+                    assertEquals(
+                        "Quantities differ for $key in $directory",
+                        expectedQuantities,
+                        translated.quantities.toSet(),
+                    )
+                    assertEquals(
+                        "Duplicate quantity for $key in $directory",
+                        translated.quantities.size,
+                        translated.quantities.toSet().size,
+                    )
+                }
+                translated.placeholders.forEach { (variant, placeholders) ->
+                    assertEquals(
+                        "Placeholders differ for $key/$variant in $directory",
+                        original.placeholders[variant] ?: original.placeholders["other"],
+                        placeholders,
+                    )
+                }
             }
         }
     }
@@ -104,12 +128,7 @@ class ProLocalizationSourceTest {
             (0 until resources.length)
                 .mapNotNull { resources.item(it) as? Element }
                 .associateBy { it.getAttribute("name") }
-        val expectedQuantities =
-            if (directory in setOf("values-fr", "values-es", "values-it", "values-pt", "values-pt-rBR")) {
-                setOf("one", "many", "other")
-            } else {
-                setOf("one", "other")
-            }
+        val expectedQuantities = expectedPluralQuantities(directory)
         val items = elements.getValue("onboarding_pro_active_projects").getElementsByTagName("item")
         val quantities = List(items.length) { (items.item(it) as Element).getAttribute("quantity") }.toSet()
         assertEquals(directory, expectedQuantities, quantities)
@@ -152,22 +171,27 @@ class ProLocalizationSourceTest {
                 val variants =
                     if (type == "plurals") {
                         val items = element.getElementsByTagName("item")
-                        List(items.length) { itemIndex -> items.item(itemIndex).textContent }
+                        List(items.length) { itemIndex ->
+                            val item = items.item(itemIndex) as Element
+                            item.getAttribute("quantity") to item.textContent
+                        }
                     } else {
-                        listOf(element.textContent)
+                        listOf("string" to element.textContent)
                     }
                 resources[element.getAttribute("name")] =
                     ResourceShape(
                         type = type,
+                        quantities = if (type == "plurals") variants.map { it.first } else emptyList(),
                         placeholders =
                             variants
-                                .map { text ->
-                                    placeholderRegex
-                                        .findAll(text)
-                                        .map { it.value }
-                                        .sorted()
-                                        .toList()
-                                }.toSet(),
+                                .associate { (quantity, text) ->
+                                    quantity to
+                                        placeholderRegex
+                                            .findAll(text)
+                                            .map { it.value }
+                                            .sorted()
+                                            .toList()
+                                },
                     )
             }
         }
@@ -176,7 +200,8 @@ class ProLocalizationSourceTest {
 
     private data class ResourceShape(
         val type: String,
-        val placeholders: Set<List<String>>,
+        val placeholders: Map<String, List<String>>,
+        val quantities: List<String>,
     )
 
     private companion object {

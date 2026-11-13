@@ -14,6 +14,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.finnvek.knittools.data.local.CounterProjectEntity
 import com.finnvek.knittools.data.local.KnitToolsDatabase
 import com.finnvek.knittools.data.local.ProgressPhotoEntity
+import com.finnvek.knittools.data.local.RoomDatabaseTransactionRunner
 import com.finnvek.knittools.data.storage.AppFileStorage
 import com.finnvek.knittools.data.storage.ProgressPhotoStorage
 import kotlinx.coroutines.Dispatchers
@@ -65,6 +66,7 @@ class AuditPart16ShareTest {
                         ProgressPhotoStorage(),
                         context,
                         Dispatchers.IO,
+                        transactionRunner = RoomDatabaseTransactionRunner(database),
                     )
                 val photo = repository.getPhotosForProject(16076).first().single()
                 val uri = requireNotNull(AppFileStorage.shareUriForAppOwnedFile(context, source.toUri()))

@@ -2,6 +2,7 @@ package com.finnvek.knittools.repository
 
 import android.content.Context
 import android.net.Uri
+import com.finnvek.knittools.data.local.ImmediateDatabaseTransactionRunner
 import com.finnvek.knittools.data.local.ProgressPhotoDao
 import com.finnvek.knittools.data.local.ProgressPhotoEntity
 import com.finnvek.knittools.data.local.ProjectPhotoCount
@@ -49,7 +50,14 @@ class ProgressPhotoRepositoryDomainApiTest {
             val storage = mockk<ProgressPhotoStorage>(relaxed = true)
             every { storage.isPhotoAvailable(context, "file:///available.jpg") } returns true
             every { storage.isPhotoAvailable(context, "file:///missing.jpg") } returns false
-            val repository = ProgressPhotoRepository(dao, storage, context, UnconfinedTestDispatcher(testScheduler))
+            val repository =
+                ProgressPhotoRepository(
+                    dao,
+                    storage,
+                    context,
+                    UnconfinedTestDispatcher(testScheduler),
+                    transactionRunner = ImmediateDatabaseTransactionRunner,
+                )
             assertEquals(mapOf(7L to "file:///available.jpg"), repository.observeLatestPhotoUris().first())
             coVerify { dao.delete(2) }
         }
@@ -73,7 +81,14 @@ class ProgressPhotoRepositoryDomainApiTest {
                 )
             val storage = mockk<ProgressPhotoStorage>(relaxed = true)
             every { storage.isPhotoAvailable(context, "file:///photo.jpg") } returns true
-            val repository = ProgressPhotoRepository(dao, storage, context, UnconfinedTestDispatcher(testScheduler))
+            val repository =
+                ProgressPhotoRepository(
+                    dao,
+                    storage,
+                    context,
+                    UnconfinedTestDispatcher(testScheduler),
+                    transactionRunner = ImmediateDatabaseTransactionRunner,
+                )
 
             val photos: List<ProgressPhoto> = repository.getAllPhotos().first()
             val projectPhotos: List<ProgressPhoto> = repository.getPhotosForProject(7L).first()
@@ -126,6 +141,7 @@ class ProgressPhotoRepositoryDomainApiTest {
                     mockk(relaxed = true),
                     context,
                     UnconfinedTestDispatcher(testScheduler),
+                    transactionRunner = ImmediateDatabaseTransactionRunner,
                 )
 
             val counts = repository.getPhotoCountsByProjectIds(listOf(7L, 8L, 7L, 9L))
@@ -147,7 +163,14 @@ class ProgressPhotoRepositoryDomainApiTest {
             val sourceUri = mockk<Uri>()
             every { storage.createPhotoFile(context, 7L) } returns (targetFile to mockk())
             every { storage.compressAndSave(context, sourceUri, targetFile) } returns true
-            val repository = ProgressPhotoRepository(dao, storage, context, UnconfinedTestDispatcher(testScheduler))
+            val repository =
+                ProgressPhotoRepository(
+                    dao,
+                    storage,
+                    context,
+                    UnconfinedTestDispatcher(testScheduler),
+                    transactionRunner = ImmediateDatabaseTransactionRunner,
+                )
 
             val savedId =
                 withUriFromFile(targetFile, targetUriString) {
@@ -182,7 +205,14 @@ class ProgressPhotoRepositoryDomainApiTest {
             val sourceUri = mockk<Uri>()
             every { storage.createPhotoFile(context, 7L) } returns (targetFile to mockk())
             every { storage.compressAndSave(context, sourceUri, targetFile) } returns false
-            val repository = ProgressPhotoRepository(dao, storage, context, UnconfinedTestDispatcher(testScheduler))
+            val repository =
+                ProgressPhotoRepository(
+                    dao,
+                    storage,
+                    context,
+                    UnconfinedTestDispatcher(testScheduler),
+                    transactionRunner = ImmediateDatabaseTransactionRunner,
+                )
 
             val savedId =
                 withUriFromFile(targetFile, targetUriString) {
@@ -212,7 +242,14 @@ class ProgressPhotoRepositoryDomainApiTest {
                         ),
                 )
             val storage = mockk<ProgressPhotoStorage>(relaxed = true)
-            val repository = ProgressPhotoRepository(dao, storage, context, UnconfinedTestDispatcher(testScheduler))
+            val repository =
+                ProgressPhotoRepository(
+                    dao,
+                    storage,
+                    context,
+                    UnconfinedTestDispatcher(testScheduler),
+                    transactionRunner = ImmediateDatabaseTransactionRunner,
+                )
 
             repository.deletePhotos(listOf(3L, 4L))
 
@@ -231,6 +268,7 @@ class ProgressPhotoRepositoryDomainApiTest {
                     mockk(relaxed = true),
                     context,
                     UnconfinedTestDispatcher(testScheduler),
+                    transactionRunner = ImmediateDatabaseTransactionRunner,
                 )
 
             repository.updatePhotoNote(3L, "   ")
@@ -268,7 +306,14 @@ class ProgressPhotoRepositoryDomainApiTest {
         every { storage.isPhotoAvailable(context, availableUri) } returns true
         return ProgressPhotoPruningFixture(
             dao = dao,
-            repository = ProgressPhotoRepository(dao, storage, context, dispatcher),
+            repository =
+                ProgressPhotoRepository(
+                    dao,
+                    storage,
+                    context,
+                    dispatcher,
+                    transactionRunner = ImmediateDatabaseTransactionRunner,
+                ),
         )
     }
 

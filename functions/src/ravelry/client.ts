@@ -96,13 +96,9 @@ function thumbnailUrlOrUndefined(value: unknown): string | undefined {
 }
 
 function currentUserFromResponse(value: unknown): RavelryCurrentUser {
-  const root = value as { user?: unknown };
-  const user = (root.user ?? value) as {
-    id?: unknown;
-    username?: unknown;
-    login?: unknown;
-    name?: unknown;
-  };
+  const root = objectOrNull(value);
+  const user = root && objectOrNull("user" in root ? root.user : root);
+  if (!user) throw new RavelryClientHttpError(503);
 
   return {
     ravelryUserId: sanitizedTextOrUndefined(user.id, MAX_RAVELRY_USER_FIELD_LENGTH),
@@ -114,7 +110,8 @@ function currentUserFromResponse(value: unknown): RavelryCurrentUser {
 }
 
 function objectOrNull(value: unknown): Record<string, unknown> | null {
-  return typeof value === "object" && value !== null ? (value as Record<string, unknown>) : null;
+  return typeof value === "object" && value !== null && !Array.isArray(value)
+    ? (value as Record<string, unknown>) : null;
 }
 
 function integerInRangeOrUndefined(
@@ -217,6 +214,7 @@ async function ravelryJson(
   fetchImpl: typeof fetch,
   accessToken: string,
   url: URL,
+  allowMissing = false,
 ): Promise<unknown> {
   const response = await fetchRavelry(fetchImpl, url.toString(), {
     headers: new Headers({
@@ -224,7 +222,7 @@ async function ravelryJson(
     }),
   });
 
-  if (response.status === 404) {
+  if (response.status === 404 && allowMissing) {
     return null;
   }
   if (!response.ok) {
@@ -297,7 +295,7 @@ export function createRavelryClient(fetchImpl: typeof fetch = fetch): RavelryCli
     },
     async getPatternById(accessToken, ravelryPatternId) {
       const url = new URL(`${RAVELRY_API_BASE_URL}/patterns/${ravelryPatternId}.json`);
-      const body = await ravelryJson(fetchImpl, accessToken, url);
+      const body = await ravelryJson(fetchImpl, accessToken, url, true);
       if (body === null) {
         return null;
       }

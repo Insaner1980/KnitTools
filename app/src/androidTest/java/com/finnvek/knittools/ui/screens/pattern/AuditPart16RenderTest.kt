@@ -45,6 +45,7 @@ class AuditPart16RenderTest {
         }
         val page = mutableIntStateOf(0)
         val frames = CopyOnWriteArrayList<Pair<Int, Bitmap?>>()
+        val colors = CopyOnWriteArrayList<Pair<Int, Int>>()
         val consumed = CopyOnWriteArrayList<Long>()
         var state: PatternRenderState? = null
         composeRule.setContent {
@@ -62,6 +63,7 @@ class AuditPart16RenderTest {
             SideEffect {
                 state = rendered
                 frames += page.intValue to rendered.renderedBitmap
+                rendered.renderedBitmap?.let { bitmap -> colors += page.intValue to bitmap.getPixel(0, 0) }
             }
         }
         composeRule.waitUntil(15_000) { state?.renderedBitmap != null }
@@ -105,6 +107,9 @@ class AuditPart16RenderTest {
             )
             composeRule.waitUntil(5_000) { consumed.isNotEmpty() }
             org.junit.Assert.assertEquals(listOf(16L), consumed.toList())
+            colors.forEach { (requestedPage, color) ->
+                org.junit.Assert.assertEquals(listOf(Color.RED, Color.GREEN, Color.BLUE)[requestedPage], color)
+            }
             assertTrue(oldBitmap.isRecycled)
         } finally {
             release.countDown()

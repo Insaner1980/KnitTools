@@ -5,6 +5,7 @@ import androidx.room.Room
 import androidx.sqlite.db.SupportSQLiteDatabase
 import androidx.sqlite.db.SupportSQLiteOpenHelper
 import androidx.sqlite.db.framework.FrameworkSQLiteOpenHelperFactory
+import androidx.test.core.app.ApplicationProvider
 import com.finnvek.knittools.data.local.ActiveSessionSchemaConstraints
 import com.finnvek.knittools.data.local.DatabaseTransactionRunner
 import com.finnvek.knittools.data.local.KnitToolsDatabase
@@ -12,6 +13,11 @@ import com.finnvek.knittools.data.local.PatternAnnotationSchemaConstraints
 import com.finnvek.knittools.data.local.ProjectDocumentSchemaConstraints
 import kotlinx.coroutines.CompletableDeferred
 import java.util.concurrent.atomic.AtomicReference
+
+internal fun notesTestContext(): Context =
+    ApplicationProvider.getApplicationContext<Context>().also {
+        check(it.packageName == "com.finnvek.knittools.notestest")
+    }
 
 internal fun auditDatabase(context: Context): KnitToolsDatabase =
     Room

@@ -376,7 +376,16 @@ class ProjectYarnNoteEditUiTest(
                             YarnManagementSheetActions(
                                 onUnlinkYarn = {},
                                 onAddYarn = {},
-                                onSaveProjectYarnNote = { _, _, _, _ -> },
+                                onSaveProjectYarnNote = {
+                                    _,
+                                    _,
+                                    _,
+                                    _,
+                                    ->
+                                    kotlinx.coroutines.CompletableDeferred(
+                                        com.finnvek.knittools.repository.ProjectYarnNoteEditResult.Saved,
+                                    )
+                                },
                                 onDeleteProjectYarnNote = {},
                                 onSaveProjectYarnNoteToMyYarn = {},
                                 onDismiss = {},

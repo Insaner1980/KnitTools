@@ -57,7 +57,17 @@ interface ProjectYarnUsageDao {
         }
         if (rows.size == 1) {
             val row = rows.single()
-            check(update(row.copy(yarnCardId = cardId, projectYarnNoteId = noteId)) == 1)
+            if (row.yarnCardId != cardId || row.projectYarnNoteId != noteId) {
+                check(
+                    update(
+                        row.copy(
+                            yarnCardId = cardId,
+                            projectYarnNoteId = noteId,
+                            updatedAt = maxOf(System.currentTimeMillis(), Math.addExact(row.updatedAt, 1L)),
+                        ),
+                    ) == 1,
+                )
+            }
             return LinkSavedCardUsageResult.Linked
         }
 

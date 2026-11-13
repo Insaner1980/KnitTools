@@ -9,10 +9,51 @@ import { androidUriShareWithoutClipData } from "./android-uri-share-without-clip
 import { fileproviderBroadPath } from "./fileprovider-broad-path.js";
 import { knitToolsFileUriSurface } from "./knittools-file-uri-surface.js";
 import { ravelryFirebaseCallableSurface } from "./ravelry-firebase-callable-surface.js";
+import { ravelryCredentialSurface } from "./ravelry-credential-surface.js";
 import { sensitiveAndroidLog } from "./sensitive-android-log.js";
 import { widgetMutationSurface } from "./widget-mutation-surface.js";
 
 const productionPath = "app/src/main/java/com/finnvek/knittools/Surface.kt";
+
+test("standalone extra reads and deletions are not lost to prefilters", () => {
+  assert.equal(androidIntentInputSurface.match('getIntent().getStringExtra("name")', productionPath).length, 1);
+  assert.equal(knitToolsFileUriSurface.match("file.deleteRecursively()", productionPath).length, 1);
+});
+
+test("XML attributes accept either paired quote style", () => {
+  for (const quote of ['"', "'"]) {
+    assert.equal(androidExportedComponent.match(
+      "<activity android:exported=" + quote + "true" + quote + " />",
+      "app/src/main/AndroidManifest.xml").length, 1);
+    assert.equal(fileproviderBroadPath.match(
+      "<files-path path=" + quote + "." + quote + " />",
+      "app/src/main/res/xml/file_paths.xml").length, 1);
+  }
+});
+
+test("transcripts and direct Ravelry credentials remain review candidates", () => {
+  assert.equal(sensitiveAndroidLog.match("Log.d(TAG, transcript)", productionPath).length, 1);
+  for (const name of ["CLIENT_SECRET", "ACCESS_TOKEN", "REFRESH_TOKEN", "OAUTH2_SYNTHETIC"]) {
+    assert.equal(ravelryCredentialSurface.match("val value = BuildConfig.RAVELRY_" + name, productionPath).length, 1);
+  }
+});
+
+test("ClipData must contain the same URI as EXTRA_STREAM", () => {
+  for (const assignment of [
+    "clipData = null",
+    'clipData = ClipData.newPlainText("label", text)',
+    'clipData = ClipData.newRawUri("label", otherUri)',
+    'clipData = ClipData.newRawUri("label", uri); clipData = null',
+  ]) {
+    const content = 'Intent(Intent.ACTION_SEND).apply { putExtra(Intent.EXTRA_STREAM, uri); ' +
+      'addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION); ' + assignment + " }";
+    assert.equal(androidUriShareWithoutClipData.match(content, productionPath).length, 1, assignment);
+  }
+  assert.deepEqual(androidUriShareWithoutClipData.match(
+    'Intent(Intent.ACTION_SEND).apply { putExtra(Intent.EXTRA_STREAM, uri); ' +
+    'addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION); clipData = ClipData.newUri(resolver, "label", uri) }',
+    productionPath), []);
+});
 
 for (const [base, label] of [
   ["AppCompatActivity", "Android activity entry point"],
@@ -21,6 +62,15 @@ for (const [base, label] of [
   ["LifecycleService", "Android service entry point"],
   ["CoroutineWorker", "WorkManager background execution entry point"],
 ]) {
+  test("long constructor preserves the " + base + " entry point", () => {
+    const parameters = Array.from({ length: 40 }, (_, index) => "val argument" + index + ": String").join(", ");
+    const content = "class Entry(" + parameters + ") : " + base + "() {}";
+    assert.deepEqual(androidKotlinEntrypointSurface.match(content, productionPath)
+      .map(match => match.matchedPattern), [label]);
+    if (base === "BroadcastReceiver") {
+      assert.equal(widgetMutationSurface.match(content, productionPath).length, 1);
+    }
+  });
   test(`class boundaries preserve names and lines for ${base}`, () => {
     const content = [
       "class Helper {}",

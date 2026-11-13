@@ -14,12 +14,7 @@ class BackupZipStructureTest {
     @get:Rule val temporary = TemporaryFolder()
 
     @Test fun classicAndZip64DirectoriesAreAccepted() {
-        val archive = temporary.newFile()
-        ZipOutputStream(archive.outputStream()).use {
-            it.putNextEntry(ZipEntry("example"))
-            it.write(byteArrayOf(1, 2, 3))
-            it.closeEntry()
-        }
+        val archive = archiveWithExampleEntry()
         BackupZipStructure.verify(archive) {}
         val bytes = archive.readBytes()
         val end = bytes.size - 22
@@ -94,12 +89,7 @@ class BackupZipStructureTest {
     }
 
     @Test fun localAndCentralCompressionMethodsMustAgree() {
-        val archive = temporary.newFile()
-        ZipOutputStream(archive.outputStream()).use {
-            it.putNextEntry(ZipEntry("example"))
-            it.write(byteArrayOf(1, 2, 3))
-            it.closeEntry()
-        }
+        val archive = archiveWithExampleEntry()
         val bytes = archive.readBytes()
         val buffer = ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN)
         val directory = buffer.getInt(bytes.size - 6)
@@ -110,11 +100,7 @@ class BackupZipStructureTest {
     }
 
     @Test fun localAndCentralFlagsMustAgree() {
-        val archive = temporary.newFile()
-        ZipOutputStream(archive.outputStream()).use {
-            it.putNextEntry(ZipEntry("example"))
-            it.closeEntry()
-        }
+        val archive = archiveWithExampleEntry(withContent = false)
         val bytes = archive.readBytes()
         val buffer = ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN)
         val directory = buffer.getInt(bytes.size - 6)
@@ -126,11 +112,7 @@ class BackupZipStructureTest {
     }
 
     @Test fun eitherNonzeroClassicDiskFieldIsRejected() {
-        val archive = temporary.newFile()
-        ZipOutputStream(archive.outputStream()).use {
-            it.putNextEntry(ZipEntry("example"))
-            it.closeEntry()
-        }
+        val archive = archiveWithExampleEntry(withContent = false)
         val valid = archive.readBytes()
         for (offset in listOf(4, 6)) {
             val invalid = valid.copyOf()
@@ -141,11 +123,7 @@ class BackupZipStructureTest {
     }
 
     @Test fun zip64LocalOffsetsAreCheckedAgainstLocalNames() {
-        val archive = temporary.newFile()
-        ZipOutputStream(archive.outputStream()).use {
-            it.putNextEntry(ZipEntry("example"))
-            it.closeEntry()
-        }
+        val archive = archiveWithExampleEntry(withContent = false)
         val original = archive.readBytes()
         val end = original.size - 22
         val buffer = ByteBuffer.wrap(original).order(ByteOrder.LITTLE_ENDIAN)
@@ -171,11 +149,7 @@ class BackupZipStructureTest {
     }
 
     @Test fun falseCountsOversizedDirectoryAndInvalidOffsetsAreRejectedBeforeZipAllocation() {
-        val archive = temporary.newFile()
-        ZipOutputStream(archive.outputStream()).use {
-            it.putNextEntry(ZipEntry("example"))
-            it.closeEntry()
-        }
+        val archive = archiveWithExampleEntry(withContent = false)
         val valid = archive.readBytes()
         for (variant in 0..2) {
             val bytes = valid.copyOf()
@@ -188,5 +162,15 @@ class BackupZipStructureTest {
             archive.writeBytes(bytes)
             assertThrows(BackupException::class.java) { BackupZipStructure.verify(archive) {} }
         }
+    }
+
+    private fun archiveWithExampleEntry(withContent: Boolean = true): File {
+        val archive = temporary.newFile()
+        ZipOutputStream(archive.outputStream()).use {
+            it.putNextEntry(ZipEntry("example"))
+            if (withContent) it.write(byteArrayOf(1, 2, 3))
+            it.closeEntry()
+        }
+        return archive
     }
 }

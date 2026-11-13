@@ -14,6 +14,7 @@ import com.finnvek.knittools.data.local.ProgressPhotoDao
 import com.finnvek.knittools.data.local.ProgressPhotoEntity
 import com.finnvek.knittools.data.local.ProjectCounterDao
 import com.finnvek.knittools.data.local.ProjectCounterEntity
+import com.finnvek.knittools.data.local.RoomDatabaseTransactionRunner
 import com.finnvek.knittools.data.local.RowReminderDao
 import com.finnvek.knittools.data.local.SessionDao
 import com.finnvek.knittools.data.local.SessionEntity
@@ -50,6 +51,76 @@ class AuditRoomContractsTest {
     private lateinit var directory: File
     private lateinit var database: KnitToolsDatabase
     private val createdFiles = mutableListOf<File>()
+
+    @Test fun photoFlowsBreakEqualTimestampTiesByNewestIdentity() =
+        runBlocking {
+            val owner = database.counterProjectDao().insert(CounterProjectEntity(name = "Photo order"))
+            val dao = database.progressPhotoDao()
+            val ids =
+                List(3) { index ->
+                    dao.insert(
+                        ProgressPhotoEntity(
+                            projectId = owner,
+                            photoUri = "content://fixture/$index",
+                            rowNumber = index,
+                            createdAt = 123L,
+                        ),
+                    )
+                }
+            assertEquals(ids.reversed(), dao.getPhotosForProject(owner).first().map { it.id })
+            assertEquals(ids.reversed(), dao.getAllPhotos().first().map { it.id })
+        }
+
+    @Test fun bulkPhotoDeletionRollsBackEveryChunkBeforeFileCleanup() =
+        runBlocking {
+            val owner =
+                database.counterProjectDao().insert(
+                    CounterProjectEntity(id = System.nanoTime(), name = "Bulk photos"),
+                )
+            val root = File(context.filesDir, "progress_photos/$owner")
+            check(!root.exists())
+            check(root.mkdirs())
+            try {
+                val first = File(root, "first.jpg").apply { writeText("first") }
+                val last = File(root, "last.jpg").apply { writeText("last") }
+                val dao = database.progressPhotoDao()
+                val runner = RoomDatabaseTransactionRunner(database)
+                val ids =
+                    runner.run {
+                        List(901) { index ->
+                            dao.insert(
+                                ProgressPhotoEntity(
+                                    projectId = owner,
+                                    photoUri = Uri.fromFile(if (index == 900) last else first).toString(),
+                                    rowNumber = index,
+                                ),
+                            )
+                        }
+                    }
+                var calls = 0
+                val failing =
+                    object : ProgressPhotoDao by dao {
+                        override suspend fun deleteByIds(ids: List<Long>) {
+                            if (++calls == 2) throw java.io.IOException("Synthetic second-chunk failure")
+                            dao.deleteByIds(ids)
+                        }
+                    }
+                val repository =
+                    ProgressPhotoRepository(failing, ProgressPhotoStorage(), context, Dispatchers.IO, runner)
+                val failure = runCatching { repository.deletePhotos(ids) }.exceptionOrNull()
+                assertTrue(failure is java.io.IOException)
+                assertEquals(2, calls)
+                assertEquals(ids.toSet(), dao.getAllPhotosOnce().map { it.id }.toSet())
+                assertEquals("first", first.readText())
+                assertEquals("last", last.readText())
+                ProgressPhotoRepository(dao, ProgressPhotoStorage(), context, Dispatchers.IO, runner).deletePhotos(ids)
+                assertTrue(dao.getAllPhotosOnce().isEmpty())
+                assertFalse(first.exists())
+                assertFalse(last.exists())
+            } finally {
+                root.deleteRecursively()
+            }
+        }
 
     @Before fun setup() {
         context = ApplicationProvider.getApplicationContext()
@@ -255,7 +326,14 @@ class AuditRoomContractsTest {
         runBlocking {
             val project = database.counterProjectDao().insert(CounterProjectEntity(id = 501L, name = "Photo"))
             val storage = ProgressPhotoStorage()
-            val repository = ProgressPhotoRepository(database.progressPhotoDao(), storage, context, Dispatchers.IO)
+            val repository =
+                ProgressPhotoRepository(
+                    database.progressPhotoDao(),
+                    storage,
+                    context,
+                    Dispatchers.IO,
+                    transactionRunner = RoomDatabaseTransactionRunner(database),
+                )
             val (capture, captureUri) = repository.createPhotoCaptureTarget(project)
             createdFiles += capture
             context.contentResolver.openOutputStream(captureUri).use { stream ->
@@ -391,8 +469,22 @@ class AuditRoomContractsTest {
                                 resume.await()
                             }
                     }
-                val repository = ProgressPhotoRepository(dao, ProgressPhotoStorage(), context, Dispatchers.IO)
-                val paused = ProgressPhotoRepository(pausedDao, ProgressPhotoStorage(), context, Dispatchers.IO)
+                val repository =
+                    ProgressPhotoRepository(
+                        dao,
+                        ProgressPhotoStorage(),
+                        context,
+                        Dispatchers.IO,
+                        transactionRunner = RoomDatabaseTransactionRunner(database),
+                    )
+                val paused =
+                    ProgressPhotoRepository(
+                        pausedDao,
+                        ProgressPhotoStorage(),
+                        context,
+                        Dispatchers.IO,
+                        transactionRunner = RoomDatabaseTransactionRunner(database),
+                    )
                 val deletion = async { paused.deletePhoto(saved.toDomain()) }
                 read.await()
                 repository.updatePhotoNote(saved.id, "New note")

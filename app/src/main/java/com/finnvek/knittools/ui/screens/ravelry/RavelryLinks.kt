@@ -4,7 +4,6 @@ import java.net.URI
 import java.util.Locale
 
 private const val RAVELRY_SCHEME = "https"
-private val RAVELRY_HOSTS = setOf("ravelry.com", "www.ravelry.com")
 internal const val RAVELRY_PATTERN_SEARCH_URL = "https://www.ravelry.com/patterns/search"
 
 /** Restoration and app-driven Back are page loads, never download redirects. */
@@ -25,7 +24,7 @@ internal fun ravelryPageUrlOrNull(url: String): String? {
     if (!parsedUri.scheme.equals(RAVELRY_SCHEME, ignoreCase = true)) return null
 
     val host = parsedUri.host?.lowercase(Locale.US) ?: return null
-    if (host !in RAVELRY_HOSTS) return null
+    if (!isRavelryHost(host)) return null
 
     return parsedUri.toString()
 }

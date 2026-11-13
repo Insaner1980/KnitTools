@@ -17,7 +17,7 @@ export const widgetMutationSurface: MatcherPlugin = {
 
     const receiver = regexCandidates("widget-mutation-surface", content, [
       {
-        regex: /\bclass\s+\w+(?:(?!\bclass\b)[^{};]){0,260}?:\s*(?:[\w.]+\.)?BroadcastReceiver\s*\(/,
+        regex: /\bclass\s+\w+(?:(?!\bclass\b)[^{};])*?:\s*(?:[\w.]+\.)?BroadcastReceiver\s*\(/,
         label: "Android broadcast receiver entry point",
       },
     ], kotlinClassHeaderCode(content));

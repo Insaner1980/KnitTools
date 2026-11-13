@@ -163,8 +163,7 @@ class CodeReviewPart05SessionRoomTest {
     fun countCommittedBeforeStopRejectsOldSummaryAndPreservesTheCheckpoint() =
         runBlocking {
             withTimeout(15_000L) {
-                val active = (repository.startSession(1L) as StartSessionResult.Started).session
-                now = now.copy(wallClockMillis = 66_000L, elapsedRealtimeMillis = 70_000L)
+                val active = startSessionAtCheckpoint()
                 val written = CompletableDeferred<Unit>()
                 val release = CompletableDeferred<Unit>()
                 coroutineScope {
@@ -208,12 +207,16 @@ class CodeReviewPart05SessionRoomTest {
             }
         }
 
+    private suspend fun startSessionAtCheckpoint() =
+        (repository.startSession(1L) as StartSessionResult.Started).session.also {
+            now = now.copy(wallClockMillis = 66_000L, elapsedRealtimeMillis = 70_000L)
+        }
+
     @Test
     fun stopCommittedBeforeCountKeepsTheLateCheckpointOutOfTheCompletedSession() =
         runBlocking {
             withTimeout(15_000L) {
-                val active = (repository.startSession(1L) as StartSessionResult.Started).session
-                now = now.copy(wallClockMillis = 66_000L, elapsedRealtimeMillis = 70_000L)
+                val active = startSessionAtCheckpoint()
                 val written = CompletableDeferred<Unit>()
                 val release = CompletableDeferred<Unit>()
                 coroutineScope {

@@ -7,6 +7,7 @@ import android.webkit.CookieManager
 import android.webkit.RenderProcessGoneDetail
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
+import android.webkit.WebResourceResponse
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.Toast
@@ -40,6 +41,7 @@ import com.finnvek.knittools.ui.layout.contentWidth
 import com.finnvek.knittools.ui.platform.ExternalWebLinkOpenResult
 import com.finnvek.knittools.ui.platform.openExternalWebLink
 import com.finnvek.knittools.ui.theme.ComponentDimens
+import java.io.ByteArrayInputStream
 
 /**
  * Ravelry sovelluksen sisällä. Chromen välilehdessä ladattu PDF meni puhelimen latauskansioon;
@@ -185,6 +187,33 @@ internal fun WebView.configureRavelryBrowser(
                     RavelryNavigation.InApp, RavelryNavigation.Blocked -> Unit
                 }
                 return navigation != RavelryNavigation.InApp
+            }
+
+            override fun shouldInterceptRequest(
+                view: WebView,
+                request: WebResourceRequest,
+            ): WebResourceResponse? {
+                if (!request.isForMainFrame) return null
+                val url = request.url
+                val navigation =
+                    ravelryNavigation(
+                        scheme = url.scheme,
+                        host = url.host,
+                        path = url.path,
+                        isMainFrame = true,
+                        isRedirect = request.isRedirect,
+                    )
+                if (navigation == RavelryNavigation.InApp) return null
+                // POST requests bypass shouldOverrideUrlLoading. Block without replaying the body
+                // as a GET or touching Compose/WebView state from the request worker thread.
+                return WebResourceResponse(
+                    "text/plain",
+                    "UTF-8",
+                    403,
+                    "Forbidden",
+                    emptyMap(),
+                    ByteArrayInputStream(byteArrayOf()),
+                )
             }
 
             override fun onPageStarted(

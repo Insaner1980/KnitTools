@@ -1,5 +1,7 @@
 # KnitTools Language Audit
 
+Historical scope: the completed locale campaign and its key counts describe the October 2026 snapshots recorded in each locale ledger (including 2026-10-19). Later resources, including onboarding strings, are not covered by those totals or acceptance decisions. They do not constitute full validation of the current source tree.
+
 ## 1. Purpose and current status
 
 This document records the completed Android language-content audit campaign and retains its execution policy: knitting terminology, factual accuracy, natural language, and correct meaning in context. The campaign closeout below reconciles existing independent locale decisions and the verified narrow month-resource migration; it is not a new full audit. The retained procedures and start prompt apply only to separately assigned future work, not to an outstanding campaign task.

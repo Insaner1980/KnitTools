@@ -1,5 +1,6 @@
 package com.finnvek.knittools.ui.screens.backup
 
+import android.content.ActivityNotFoundException
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -55,12 +56,26 @@ fun BackupScreen(
         onBack = onBack,
         onExport = {
             if (viewModel.select()) {
-                export.launch(
-                    "KnitTools-backup-${LocalDate.now()}.${BackupFormat.EXTENSION}",
-                )
+                try {
+                    export.launch("KnitTools-backup-${LocalDate.now()}.${BackupFormat.EXTENSION}")
+                } catch (_: ActivityNotFoundException) {
+                    viewModel.selectionFailed(BackupError.WRITE)
+                } catch (_: SecurityException) {
+                    viewModel.selectionFailed(BackupError.WRITE)
+                }
             }
         },
-        onSelectRestore = { if (viewModel.select()) restore.launch(arrayOf("*/*")) },
+        onSelectRestore = {
+            if (viewModel.select()) {
+                try {
+                    restore.launch(arrayOf("*/*"))
+                } catch (_: ActivityNotFoundException) {
+                    viewModel.selectionFailed(BackupError.READ)
+                } catch (_: SecurityException) {
+                    viewModel.selectionFailed(BackupError.READ)
+                }
+            }
+        },
         onConfirm = viewModel::restore,
         onCancel = viewModel::cancel,
         onRestored = onRestored,

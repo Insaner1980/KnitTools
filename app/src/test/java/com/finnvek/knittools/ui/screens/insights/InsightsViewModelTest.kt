@@ -314,6 +314,8 @@ class InsightsViewModelTest {
             assertTrue(viewModel.uiState.value.isLoading)
 
             projectRows.emit(emptyList())
+            runCurrent()
+            assertTrue(viewModel.uiState.value.isLoading)
             sessionRows.emit(emptyList())
             advanceUntilIdle()
 
@@ -710,36 +712,36 @@ class InsightsViewModelTest {
             assertEquals(listOf(firstDate, firstDate.plusDays(1)), dates)
             job.cancel()
         }
+}
 
-    private fun instantMillis(
-        date: LocalDate,
-        hour: Int,
-        minute: Int,
-        zone: ZoneId,
-    ): Long =
-        ZonedDateTime
-            .of(date.year, date.monthValue, date.dayOfMonth, hour, minute, 0, 0, zone)
-            .toInstant()
-            .toEpochMilli()
+private fun instantMillis(
+    date: LocalDate,
+    hour: Int,
+    minute: Int,
+    zone: ZoneId,
+): Long =
+    ZonedDateTime
+        .of(date.year, date.monthValue, date.dayOfMonth, hour, minute, 0, 0, zone)
+        .toInstant()
+        .toEpochMilli()
 
-    private fun sessionAt(
-        date: LocalDate,
-        hour: Int,
-        minute: Int,
-        rows: Int,
-        minutes: Int,
-        zone: ZoneId,
-    ): KnitSession {
-        val startedAt = instantMillis(date, hour, minute, zone)
-        return KnitSession(
-            projectId = 1L,
-            startedAt = startedAt,
-            endedAt = startedAt + minutes * 60 * 1_000L,
-            startRow = 0,
-            endRow = rows,
-            durationMinutes = minutes,
-            durationSeconds = minutes * 60L,
-            rowsWorked = rows,
-        )
-    }
+private fun sessionAt(
+    date: LocalDate,
+    hour: Int,
+    minute: Int,
+    rows: Int,
+    minutes: Int,
+    zone: ZoneId,
+): KnitSession {
+    val startedAt = instantMillis(date, hour, minute, zone)
+    return KnitSession(
+        projectId = 1L,
+        startedAt = startedAt,
+        endedAt = startedAt + minutes * 60 * 1_000L,
+        startRow = 0,
+        endRow = rows,
+        durationMinutes = minutes,
+        durationSeconds = minutes * 60L,
+        rowsWorked = rows,
+    )
 }

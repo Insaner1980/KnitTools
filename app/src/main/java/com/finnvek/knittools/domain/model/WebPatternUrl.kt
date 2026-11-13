@@ -184,7 +184,6 @@ private fun String.looksLikeNonCanonicalIpv4Literal(): Boolean =
                 part.all(Char::isDigit) ||
                     (
                         part.startsWith("0x", ignoreCase = true) &&
-                            part.drop(2).isNotEmpty() &&
                             part.drop(2).all(Char::isHexDigit)
                     )
             )

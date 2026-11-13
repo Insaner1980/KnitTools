@@ -161,6 +161,11 @@ class CounterRecoveryPromptTest : CounterViewModelFixture() {
                 advanceUntilIdle()
                 assertFalse(viewModel.uiState.value.showSessionRecoveryPrompt)
             }
+            coVerify(exactly = 1) { repository.addRecoveryInterval(dismissed.sessionToken, "old-interval", 120L) }
+            coVerify(exactly = 1) { repository.discardRecoveryInterval(dismissed.sessionToken, "old-interval") }
+            coVerify(
+                exactly = 1,
+            ) { repository.editRecoveryDurationAndStop(dismissed.sessionToken, "old-interval", 180L) }
         }
 
     @Test

@@ -104,7 +104,9 @@ class InsightsQueryCancellationTest {
             assertEquals(7L, requested.last().first)
             assertEquals(TimeRange.THIS_MONTH, viewModel.uiState.value.timeRange)
             assertTrue(viewModel.uiState.value.hasAnySessionData)
-            assertTrue(states.filter { !it.isLoading }.all { it.selectedProjectId == 7L })
+            val loadedStates = states.filter { !it.isLoading }
+            assertTrue(loadedStates.isNotEmpty())
+            assertTrue(loadedStates.all { it.selectedProjectId == 7L })
         }
 
     @Test

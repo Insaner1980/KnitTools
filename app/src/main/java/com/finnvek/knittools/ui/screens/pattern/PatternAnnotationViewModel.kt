@@ -177,6 +177,13 @@ data class PatternAnnotationUiState(
     val exportFailed: Boolean = false,
 )
 
+internal val PatternAnnotationUiState.editableLayerVisible: Boolean
+    get() =
+        when (owner) {
+            is PatternAnnotationOwner.Project -> projectLayerVisible
+            is PatternAnnotationOwner.SavedPattern -> masterLayerVisible
+        }
+
 @HiltViewModel
 @OptIn(ExperimentalCoroutinesApi::class)
 // Reittikohtainen ViewModel tarjoaa Compose-kerrokselle jokaisen editorin käyttäjäaikeen erillisenä metodina.
@@ -720,6 +727,7 @@ class PatternAnnotationViewModel
         }
 
         fun clearEditablePage() {
+            if (!uiState.value.editableLayerVisible) return
             val annotations = editableAnnotations()
             val layerId = uiState.value.editableLayerId ?: return
             if (annotations.isEmpty()) return

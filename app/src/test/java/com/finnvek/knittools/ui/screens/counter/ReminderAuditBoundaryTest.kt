@@ -60,6 +60,11 @@ class ReminderAuditBoundaryTest : CounterViewModelFixture() {
         val model = viewModel(reminderRepositoryOverride = reminders)
         advanceUntilIdle()
         assertEquals(7L, model.uiState.value.projectId)
+        assertEquals(
+            1L,
+            model.uiState.value.activeAlert
+                ?.id,
+        )
         if (edit) model.updateReminder(1, 20, null, "Edited") else model.deleteReminder(1)
         runCurrent()
         if (switchProject) {
@@ -84,6 +89,32 @@ class ReminderAuditBoundaryTest : CounterViewModelFixture() {
                 ?.id,
         )
         assertEquals(second, rows.value.single { it.id == 2L })
+        assertCommittedMutation(reminders, first, rows.value, edit)
+    }
+
+    private fun assertCommittedMutation(
+        reminders: ReminderRepository,
+        first: RowReminder,
+        rows: List<RowReminder>,
+        edit: Boolean,
+    ) {
+        if (edit) {
+            coVerify(exactly = 1) {
+                reminders.update(
+                    7,
+                    match {
+                        it.id == 1L &&
+                            it.targetRow == 20 &&
+                            it.message == "Edited"
+                    },
+                    first,
+                )
+            }
+            assertEquals(20, rows.single { it.id == 1L }.targetRow)
+        } else {
+            coVerify(exactly = 1) { reminders.delete(7, 1) }
+            assertEquals(false, rows.any { it.id == 1L })
+        }
         coVerify(exactly = 0) { reminders.delete(8, any()) }
         coVerify(exactly = 0) { reminders.update(8, any(), any()) }
     }

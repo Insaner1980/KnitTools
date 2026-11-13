@@ -45,14 +45,15 @@ class TrialJourneyUiTest {
 
     @Before
     fun setUp() {
-        check(ProPolicyTestControl.isActive)
+        org.junit.Assume.assumeTrue(ProPolicyTestControl.isActive)
+        ProPolicyTestControl.reset()
         setTestProStatus(ProStatus.TRIAL_NOT_STARTED)
     }
 
     @After
     fun tearDown() {
         store.clear()
-        setTestProStatus(ProStatus.TRIAL_NOT_STARTED)
+        if (ProPolicyTestControl.isActive) ProPolicyTestControl.reset()
     }
 
     @Test

@@ -24,9 +24,7 @@ import java.io.File
 
 class BackupTablesTest {
     @Test fun schema27HistoryHeaderDefaultsOnlyTheNewSessionSnapshot() {
-        val directory = temporary.newFolder()
-        val file = File(directory, "tables/counter_history.jsonl").apply { requireNotNull(parentFile).mkdirs() }
-        file.writeText("[\"id\",\"linkedCounterDeltasJson\",\"projectId\"]\n[1,\"{}\",7]\n")
+        val directory = schema27HistoryFixture()
         val restored = readCounterHistory(directory, schemaVersion = 27)
         assertEquals(JsonPrimitive("{}"), restored["linkedCounterDeltasJson"])
         assertEquals(JsonNull, restored["sessionUndoJson"])
@@ -34,7 +32,7 @@ class BackupTablesTest {
 
     @Test fun malformedSessionUndoSnapshotIsRejectedBeforeImport() {
         val directory = temporary.newFolder()
-        val file = File(directory, "tables/counter_history.jsonl").apply { requireNotNull(parentFile).mkdirs() }
+        val file = counterHistoryFile(directory)
         for (value in listOf("not-json", "{}")) {
             file.writeText("[\"sessionUndoJson\"]\n${JsonArray(listOf(JsonPrimitive(value)))}\n")
             assertThrows(BackupException::class.java) {
@@ -45,7 +43,7 @@ class BackupTablesTest {
 
     @Test fun legacyHistoryHeadersRemainReadableWithoutInventingLinkedDeltas() {
         val directory = temporary.newFolder()
-        val file = File(directory, "tables/counter_history.jsonl").apply { requireNotNull(parentFile).mkdirs() }
+        val file = counterHistoryFile(directory)
         file.writeText("[\"id\",\"projectId\"]\n[1,7]\n")
         for (schemaVersion in listOf(25, 26)) {
             val restored = readCounterHistory(directory, schemaVersion)
@@ -57,11 +55,18 @@ class BackupTablesTest {
     }
 
     @Test fun currentHistoryHeaderMustIncludeBothSnapshotColumns() {
-        val directory = temporary.newFolder()
-        val file = File(directory, "tables/counter_history.jsonl").apply { requireNotNull(parentFile).mkdirs() }
-        file.writeText("[\"id\",\"linkedCounterDeltasJson\",\"projectId\"]\n[1,\"{}\",7]\n")
+        val directory = schema27HistoryFixture()
         assertThrows(BackupException::class.java) { readCounterHistory(directory) }
     }
+
+    private fun schema27HistoryFixture(): File {
+        val directory = temporary.newFolder()
+        counterHistoryFile(directory).writeText("[\"id\",\"linkedCounterDeltasJson\",\"projectId\"]\n[1,\"{}\",7]\n")
+        return directory
+    }
+
+    private fun counterHistoryFile(directory: File): File =
+        File(directory, "tables/counter_history.jsonl").apply { requireNotNull(parentFile).mkdirs() }
 
     private fun readCounterHistory(
         directory: File,

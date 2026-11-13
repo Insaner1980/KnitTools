@@ -44,6 +44,10 @@ class LibraryViewModel
     ) : ViewModel() {
         val proState = proManager.proState
         val proAccessReady get() = proManager.initialStateReady
+        private val _isSavingYarnCard = MutableStateFlow(false)
+        val isSavingYarnCard = _isSavingYarnCard.asStateFlow()
+        private val _yarnSaveSuccessId = MutableStateFlow(0L)
+        val yarnSaveSuccessId = _yarnSaveSuccessId.asStateFlow()
         private var pendingManualYarnCard: ManualYarnCardInput? = null
         private val _isPhotoSelectMode = MutableStateFlow(false)
         val isPhotoSelectMode: StateFlow<Boolean> = _isPhotoSelectMode.asStateFlow()
@@ -266,24 +270,26 @@ class LibraryViewModel
         }
 
         fun createManualYarnCard(input: ManualYarnCardInput): Boolean {
+            if (_isSavingYarnCard.value) return true
             pendingManualYarnCard = input
             if (!canUseYarnCards.value) return false
             return savePendingManualYarnCard()
         }
 
         fun retryCreateManualYarnCard(): Boolean {
-            if (!canUseYarnCards.value) return false
+            if (_isSavingYarnCard.value || !canUseYarnCards.value) return false
             return savePendingManualYarnCard()
         }
 
         private fun savePendingManualYarnCard(): Boolean {
+            if (_isSavingYarnCard.value) return true
             val input = pendingManualYarnCard ?: return false
             val yarnName = input.yarnName.trim()
             if (yarnName.isBlank() || input.quantity < 1) {
                 pendingManualYarnCard = null
                 return false
             }
-            pendingManualYarnCard = null
+            _isSavingYarnCard.value = true
 
             viewModelScope.launch {
                 try {
@@ -300,11 +306,18 @@ class LibraryViewModel
                                 status = YarnCardStatus.IN_STASH,
                             ),
                         )
-                    if (savedId == null) _yarnSaveErrorId.value += 1
+                    if (savedId == null) {
+                        _yarnSaveErrorId.value += 1
+                    } else {
+                        pendingManualYarnCard = null
+                        _yarnSaveSuccessId.value += 1
+                    }
                 } catch (cancellation: CancellationException) {
                     throw cancellation
                 } catch (_: Exception) {
                     _yarnSaveErrorId.value += 1
+                } finally {
+                    _isSavingYarnCard.value = false
                 }
             }
             return true

@@ -59,7 +59,6 @@ class PatternBookmarkLifecycleTest {
         repository =
             PatternBookmarkRepository(
                 bookmarkDao = database.patternBookmarkDao(),
-                annotationLayerDao = database.patternAnnotationLayerDao(),
                 projectDocumentRepository = documentRepository,
                 transactionRunner = transactionRunner,
                 ioDispatcher = Dispatchers.Unconfined,
@@ -90,6 +89,10 @@ class PatternBookmarkLifecycleTest {
             )
             val firstLayerId = layerDao.insert(projectLayer(projectId = 1, documentKey = ORIGINAL_KEY, active = true))
             layerDao.insert(projectLayer(projectId = 2, documentKey = ORIGINAL_KEY, active = true))
+            val documentDao = database.projectDocumentDao()
+            val firstDocument = document(projectId = 1, documentKey = ORIGINAL_KEY)
+            var firstDocumentId = documentDao.insert(firstDocument)
+            documentDao.insert(document(projectId = 2, documentKey = ORIGINAL_KEY))
 
             assertTrue(repository.add(1, ORIGINAL_KEY, "Body", 1, 0.4f) is PatternBookmarkMutationResult.Success)
             assertTrue(repository.add(2, ORIGINAL_KEY, "Sleeve", 2, 0.6f) is PatternBookmarkMutationResult.Success)
@@ -111,6 +114,16 @@ class PatternBookmarkLifecycleTest {
             )
 
             layerDao.deactivateProjectLayers(1, updatedAt = 10)
+            // An attached primary PDF remains readable without an active annotation layer.
+            assertEquals(
+                listOf("Body"),
+                repository
+                    .observeActiveBookmarks(1)
+                    .first()
+                    .bookmarks
+                    .map { it.name },
+            )
+            documentDao.delete(firstDocumentId, 1)
             assertTrue(
                 repository
                     .observeActiveBookmarks(1)
@@ -119,6 +132,7 @@ class PatternBookmarkLifecycleTest {
                     .isEmpty(),
             )
             layerDao.setActive(firstLayerId, isActive = true, updatedAt = 11)
+            firstDocumentId = documentDao.insert(firstDocument)
             assertEquals(
                 listOf("Body"),
                 repository
@@ -130,6 +144,9 @@ class PatternBookmarkLifecycleTest {
 
             layerDao.deactivateProjectLayers(1, updatedAt = 12)
             layerDao.insert(projectLayer(projectId = 1, documentKey = REPLACEMENT_KEY, active = true))
+            documentDao.insert(
+                document(projectId = 1, documentKey = REPLACEMENT_KEY).copy(isPrimary = false, sortOrder = 1),
+            )
             assertTrue(
                 repository
                     .observeActiveBookmarks(1)
@@ -195,6 +212,45 @@ class PatternBookmarkLifecycleTest {
         isActive = active,
         createdAt = projectId,
         updatedAt = projectId,
+    )
+
+    @Test fun primaryDocumentWithoutAnAnnotationLayerSupportsBookmarkWritesAndJumps() =
+        runTest {
+            database.counterProjectDao().insert(CounterProjectEntity(id = 4, name = "Primary fallback"))
+            val documentId = database.projectDocumentDao().insert(document(4, ORIGINAL_KEY))
+            val saved = repository.add(4, ORIGINAL_KEY, "Body", 2, 0.6f) as PatternBookmarkMutationResult.Success
+            assertEquals(listOf(saved.bookmark), repository.observeActiveBookmarks(4).first().bookmarks)
+            assertTrue(repository.jumpTo(4, ORIGINAL_KEY, saved.bookmark.id) is PatternBookmarkMutationResult.Success)
+            val updated = requireNotNull(database.projectDocumentDao().getById(documentId))
+            assertEquals(2, updated.currentPage)
+            assertEquals(0.6f, updated.readingLineYFraction)
+            assertTrue(!updated.readingLineFollowCurrentRow)
+            assertEquals(
+                PatternBookmarkMutationResult.StaleDocument,
+                repository.add(4, REPLACEMENT_KEY, "Stale", 0, 0.1f),
+            )
+        }
+
+    private fun document(
+        projectId: Long,
+        documentKey: String,
+    ) = ProjectDocumentEntity(
+        projectId = projectId,
+        savedPatternId = null,
+        documentKey = documentKey,
+        label = "Pattern",
+        localPdfUri = "file:///synthetic/$projectId/$documentKey.pdf",
+        sortOrder = 0,
+        isPrimary = true,
+        currentPage = 0,
+        rowMapping = null,
+        readingLineEnabled = true,
+        readingLineYFraction = 0.5f,
+        readingLineFollowCurrentRow = true,
+        verticalReadingGuideEnabled = false,
+        verticalReadingGuideXFraction = 0.5f,
+        createdAt = 1,
+        updatedAt = 1,
     )
 
     private fun bookmark(

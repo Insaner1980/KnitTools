@@ -28,6 +28,26 @@ import java.io.IOException
 @OptIn(ExperimentalCoroutinesApi::class)
 class CounterPatternAttachmentFailureTest : CounterViewModelFixture() {
     @Test
+    fun savedPdfAttachmentReportsRepositoryFailure() =
+        runTest {
+            val model = viewModel()
+            advanceUntilIdle()
+            val errors = collectErrors(model.projectContentErrors)
+            coEvery { repository.attachSavedPattern(7L, 15L) } throws IOException("Synthetic attachment failure")
+            model.attachSavedPattern(
+                com.finnvek.knittools.domain.model.SavedPattern(
+                    id = 15L,
+                    source = com.finnvek.knittools.domain.model.SavedPatternSource.Other,
+                    name = "PDF",
+                    designerName = "",
+                    localPdfUri = "file:///pattern_pdfs/fixture.pdf",
+                ),
+            )
+            advanceUntilIdle()
+            assertEquals(1, errors.size)
+        }
+
+    @Test
     fun `unknown attachment outcome retains the imported copy`() = verifyCleanup(null)
 
     @Test

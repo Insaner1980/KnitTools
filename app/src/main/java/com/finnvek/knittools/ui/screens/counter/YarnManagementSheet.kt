@@ -88,11 +88,21 @@ fun YarnManagementSheet(
     focusKey: String? = null,
     sheetState: SheetState = rememberModalBottomSheetState(),
 ) {
+    var pendingCreation by remember { mutableStateOf(actions.pendingProjectYarnNoteCreation()) }
+    var createResult by remember { mutableStateOf<ProjectYarnNoteEditResult?>(null) }
     var showProjectYarnForm by rememberSaveable { mutableStateOf(false) }
     var editingNote by rememberSaveable(
         stateSaver = ProjectYarnNoteEditorSaver,
     ) { mutableStateOf<ProjectYarnNote?>(null) }
     val headingFocus = remember { FocusRequester() }
+
+    LaunchedEffect(pendingCreation) {
+        val request = pendingCreation ?: return@LaunchedEffect
+        createResult = request.await()
+        if (createResult == ProjectYarnNoteEditResult.Saved) showProjectYarnForm = false
+        actions.consumeProjectYarnNoteCreation(request)
+        pendingCreation = null
+    }
 
     ModalBottomSheet(
         onDismissRequest = actions.onDismiss,
@@ -184,9 +194,12 @@ fun YarnManagementSheet(
     // oli kolmas eri tapa lisätä lanka.
     if (showProjectYarnForm) {
         ProjectYarnForm(
+            saving = pendingCreation != null,
+            result = createResult,
             onSave = { name, description, quantity, notes ->
-                actions.onSaveProjectYarnNote(name, description, quantity, notes)
-                showProjectYarnForm = false
+                if (pendingCreation == null) {
+                    pendingCreation = actions.onSaveProjectYarnNote(name, description, quantity, notes)
+                }
             },
             onCancel = { showProjectYarnForm = false },
         )
@@ -203,10 +216,12 @@ fun YarnManagementSheet(
 data class YarnManagementSheetActions(
     val onUnlinkYarn: (Long) -> Unit,
     val onAddYarn: () -> Unit,
-    val onSaveProjectYarnNote: (String, String, Int, String) -> Unit,
+    val onSaveProjectYarnNote: (String, String, Int, String) -> kotlinx.coroutines.Deferred<ProjectYarnNoteEditResult>,
     val onDeleteProjectYarnNote: (Long) -> Unit,
     val onSaveProjectYarnNoteToMyYarn: (Long) -> Unit,
     val onDismiss: () -> Unit,
+    val pendingProjectYarnNoteCreation: () -> kotlinx.coroutines.Deferred<ProjectYarnNoteEditResult>? = { null },
+    val consumeProjectYarnNoteCreation: (kotlinx.coroutines.Deferred<ProjectYarnNoteEditResult>) -> Unit = {},
     val onEditProjectYarnNote: suspend (ProjectYarnNote, ProjectYarnNote) -> ProjectYarnNoteEditResult = { _, _ ->
         ProjectYarnNoteEditResult.Failed
     },

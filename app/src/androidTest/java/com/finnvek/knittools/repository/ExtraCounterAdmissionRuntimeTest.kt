@@ -244,7 +244,8 @@ class ExtraCounterAdmissionRuntimeTest {
         compose.onAllNodes(hasSetTextAction())[0].performTextReplacement(name)
         compose.onNodeWithText(localized.getString(R.string.repeating)).performScrollTo().performClick()
         compose.onAllNodes(hasSetTextAction())[1].performScrollTo().performTextReplacement("4")
-        val save = compose.onNodeWithText(localized.getString(R.string.save)).assertIsDisplayed().assertIsEnabled()
+        val save = compose.onNodeWithText(localized.getString(R.string.save))
+        save.performScrollTo().assertIsDisplayed().assertIsEnabled()
         return requireNotNull(save.fetchSemanticsNode().config[SemanticsActions.OnClick].action)
     }
 

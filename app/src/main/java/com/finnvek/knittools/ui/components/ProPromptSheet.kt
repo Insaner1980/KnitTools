@@ -74,6 +74,8 @@ fun ProPromptSheet(
         onPauseOrDispose { }
     }
     val isStartingTrial by viewModel.isStartingTrial.collectAsStateWithLifecycle()
+    val failedRequestId by viewModel.failedRequestId.collectAsStateWithLifecycle()
+    var pendingRequestId by rememberSaveable(request) { mutableStateOf<String?>(null) }
     var startFailed by remember(request) { mutableStateOf(false) }
     var pendingActionResumed by rememberSaveable(request) { mutableStateOf(false) }
     val resumePendingAction = {
@@ -81,6 +83,10 @@ fun ProPromptSheet(
             pendingActionResumed = true
             onTrialStarted()
         }
+    }
+
+    LaunchedEffect(failedRequestId, pendingRequestId) {
+        if (pendingRequestId != null && failedRequestId == pendingRequestId) startFailed = true
     }
 
     LaunchedEffect(proState.isPro, isStartingTrial) {
@@ -128,7 +134,10 @@ fun ProPromptSheet(
             startFailed,
             onDismiss,
             onSeePro,
-            viewModel::startTrial,
+            {
+                startFailed = false
+                viewModel.startTrial()?.let { pendingRequestId = it }
+            },
             viewModel::retryProductDetails,
         )
     }

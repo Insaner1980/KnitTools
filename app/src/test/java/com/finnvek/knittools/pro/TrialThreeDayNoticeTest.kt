@@ -8,7 +8,9 @@ import androidx.datastore.preferences.core.PreferencesSerializer
 import com.finnvek.knittools.data.time.SessionTimeSource
 import com.finnvek.knittools.domain.model.SessionTimeSnapshot
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
@@ -37,6 +39,44 @@ class TrialThreeDayNoticeTest {
 
     @After
     fun closeStores() = runBlocking { jobs.forEach { it.cancelAndJoin() } }
+
+    @Test
+    fun committedClaimCannotPublishAfterANewerTrialRefresh() =
+        runBlocking {
+            val delegate = store()
+            val committed = CompletableDeferred<Unit>()
+            val resume = CompletableDeferred<Unit>()
+            var pauseNext = false
+            val pausedStore =
+                object : DataStore<Preferences> {
+                    override val data = delegate.data
+
+                    override suspend fun updateData(transform: suspend (Preferences) -> Preferences): Preferences {
+                        val result = delegate.updateData(transform)
+                        if (pauseNext) {
+                            pauseNext = false
+                            committed.complete(Unit)
+                            resume.await()
+                        }
+                        return result
+                    }
+                }
+            val time = TrialClock()
+            val manager = TrialManager(pausedStore, Dispatchers.Unconfined, time)
+            assertEquals(TrialStartResult.Started, manager.startTrial())
+            time.advanceDays(11L)
+            pauseNext = true
+            val claim = async { manager.claimTrialThreeDayNotice() }
+            committed.await()
+            time.advanceDays(3L)
+            val refresh = async(start = CoroutineStart.UNDISPATCHED) { manager.startTrial() }
+            assertFalse(refresh.isCompleted)
+            resume.complete(Unit)
+            assertTrue(claim.await())
+            assertEquals(TrialStartResult.AlreadyExpired, refresh.await())
+            assertFalse(manager.trialState.value.isActive)
+            assertEquals(0, manager.trialState.value.daysRemaining)
+        }
 
     @Test
     fun `concurrent claims have one winner and reopening cannot claim again`() =

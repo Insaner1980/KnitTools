@@ -75,7 +75,7 @@
     <!-- Tallennetun laskurimuutoksen vihje. Undo on sovelluksen Kumoa-toiminto. -->
     <string name="tip_undo">Saved. Tapped by mistake? Undo takes back the last change.</string>
     <!-- Askelkoon vihje: yhden napautuksen lisäysmäärä on muokattavissa. -->
-    <string name="tip_step_size">Counting more than one at a time? Change how much each tap adds here.</string>
+    <string name="tip_step_size">Counting more than one at a time? Change how much each tap adds or subtracts here.</string>
     <!-- Työskentelyistunto käynnistyy käyttäjän toimesta valikosta, ei automaattisesti. -->
     <string name="tip_work_session">Want to know how long this project takes? Start a work session from this menu. Time never starts on its own.</string>
     <!-- Projektisivun vihje; Continue tarkoittaa nykyistä Jatka-toimintoa. -->
@@ -145,7 +145,7 @@
     <!-- Oppaan kohdan otsikko: projektikohtainen laskurin askelkoko 1–99 ja ×1-painike. -->
     <string name="guide_continue_step_title">Count More Than One</string>
     <!-- Oppaan kohdan selitys: projektikohtainen laskurin askelkoko 1–99 ja ×1-painike. -->
-    <string name="guide_continue_step_body">The ×1 ring between the buttons sets how much each tap adds, from 1 to 99, separately for each project.</string>
+    <string name="guide_continue_step_body">The ×1 ring between the buttons sets how much each tap adds or subtracts, from 1 to 99, separately for each project.</string>
     <!-- Oppaan kohdan otsikko: projektisivun ja laskurin ero; Continue on nykyinen Jatka-toiminto. -->
     <string name="guide_continue_project_page_title">Project Page and Counter</string>
     <!-- Oppaan kohdan selitys: projektisivun ja laskurin ero; Continue on nykyinen Jatka-toiminto. -->
@@ -476,7 +476,7 @@
     <!-- Aloituspolku: tervetulonäkymän hyöty, kerrosten laskeminen yhdellä napautuksella. -->
     <string name="journey_welcome_point_count">Count rows with one tap</string>
     <!-- Aloituspolku: tervetulonäkymän hyöty, kohta ohjeessa säilyy (lukulinja). -->
-    <string name="journey_welcome_point_pattern">Keep your place in any pattern</string>
+    <string name="journey_welcome_point_pattern">Keep your place in a PDF pattern</string>
     <!-- Aloituspolku: tervetulonäkymän hyöty, työtä voi jatkaa siitä mihin jäi. -->
     <string name="journey_welcome_point_return">Pick up right where you left off</string>
     <!-- Aloituspolku: Aloitetaan -->

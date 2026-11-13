@@ -561,9 +561,12 @@ class CounterRepositoryReadingGuideTest {
                     name = "Manual",
                 )
             val documentRepository = mockk<ProjectDocumentRepository>(relaxed = true)
-            val document = projectDocument(currentPage = 1, readingLineYFraction = 0.4f)
-            coEvery { documentRepository.getActiveDocument(7L) } returns document
-            coEvery { documentRepository.updateViewerStateInTransaction(any()) } returns true
+            var document = projectDocument(currentPage = 1, readingLineYFraction = 0.4f)
+            coEvery { documentRepository.getActiveDocument(7L) } answers { document }
+            coEvery { documentRepository.updateViewerStateInTransaction(any()) } answers {
+                document = firstArg()
+                true
+            }
             val repository =
                 buildRepository(projectDao, linkedCounterDao(7L, 0, 0), projectDocumentRepository = documentRepository)
 
@@ -575,7 +578,7 @@ class CounterRepositoryReadingGuideTest {
                     match { it.currentPage == 2 && it.readingLineYFraction == 0.4f && !it.readingLineFollowCurrentRow },
                 )
                 documentRepository.updateViewerStateInTransaction(
-                    match { it.currentPage == 1 && it.readingLineYFraction == 0.8f && !it.readingLineFollowCurrentRow },
+                    match { it.currentPage == 2 && it.readingLineYFraction == 0.8f && !it.readingLineFollowCurrentRow },
                 )
             }
         }
@@ -606,13 +609,16 @@ class CounterRepositoryReadingGuideTest {
         runTest {
             val projectDao = mockk<CounterProjectDao>(relaxed = true)
             val documentRepository = mockk<ProjectDocumentRepository>(relaxed = true)
-            val selectedDocument =
+            var selectedDocument =
                 projectDocument().copy(
                     verticalReadingGuideEnabled = true,
                     verticalReadingGuideXFraction = 0.8f,
                 )
-            coEvery { documentRepository.getDocument(selectedDocument.id) } returns selectedDocument
-            coEvery { documentRepository.updateViewerStateInTransaction(any()) } returns true
+            coEvery { documentRepository.getDocument(selectedDocument.id) } answers { selectedDocument }
+            coEvery { documentRepository.updateViewerStateInTransaction(any()) } answers {
+                selectedDocument = firstArg()
+                true
+            }
             val repository =
                 buildRepository(projectDao, linkedCounterDao(7L, 0, 0), projectDocumentRepository = documentRepository)
 
@@ -636,7 +642,7 @@ class CounterRepositoryReadingGuideTest {
             }
             coVerify(exactly = 1) {
                 documentRepository.updateViewerStateInTransaction(
-                    match { it.verticalReadingGuideEnabled && it.verticalReadingGuideXFraction == 0.3f },
+                    match { !it.verticalReadingGuideEnabled && it.verticalReadingGuideXFraction == 0.3f },
                 )
             }
         }

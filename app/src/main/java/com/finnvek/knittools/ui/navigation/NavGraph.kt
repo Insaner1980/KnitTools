@@ -198,6 +198,9 @@ fun KnitToolsNavHost(
         return
     }
     if (showOnboarding) {
+        LaunchedEffect(onboarding.draft?.step) {
+            onScreenViewed(onboarding.draft?.step?.let { "onboarding/${it.name}" })
+        }
         OnboardingRoute(onboardingViewModel, actions.onPurchasePro, onStartupReady)
         return
     }

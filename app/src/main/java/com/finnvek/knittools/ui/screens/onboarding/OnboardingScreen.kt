@@ -116,6 +116,7 @@ fun OnboardingRoute(
     val productStatus by viewModel.productStatus.collectAsStateWithLifecycle()
     val purchaseBusy by viewModel.purchaseInFlight.collectAsStateWithLifecycle()
     val pending by viewModel.purchasePending.collectAsStateWithLifecycle()
+    val usageAnalyticsEnabled by viewModel.usageAnalyticsEnabled.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val locale = rememberCurrentLocale()
     val previewOffer = remember(locale) { OnboardingPreview.offer(locale) }
@@ -166,6 +167,8 @@ fun OnboardingRoute(
             price = price,
             busy = state.busy,
             messageRes = state.messageRes,
+            usageAnalyticsEnabled = usageAnalyticsEnabled,
+            onUsageAnalyticsChanged = viewModel::setUsageAnalyticsEnabled,
             actions =
                 OnboardingActions(
                     edit = viewModel::edit,
@@ -208,6 +211,8 @@ fun OnboardingScreen(
     busy: Boolean,
     messageRes: Int?,
     actions: OnboardingActions,
+    usageAnalyticsEnabled: Boolean = false,
+    onUsageAnalyticsChanged: (Boolean) -> Unit = {},
 ) {
     BackHandler(enabled = busy || draft.step != OnboardingStep.Welcome) {
         if (!busy) {
@@ -268,7 +273,7 @@ fun OnboardingScreen(
                                 )
                             }
                             when (step) {
-                                OnboardingStep.Welcome -> JourneyWelcome()
+                                OnboardingStep.Welcome -> JourneyWelcome(usageAnalyticsEnabled, onUsageAnalyticsChanged)
                                 OnboardingStep.Craft -> JourneyCraft(draft, busy, actions)
                                 OnboardingStep.Needs -> JourneyNeeds(draft, busy, actions.edit)
                                 OnboardingStep.Counter -> JourneyCounter(draft, busy, actions.edit)

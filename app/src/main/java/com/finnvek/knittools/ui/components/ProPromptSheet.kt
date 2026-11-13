@@ -28,8 +28,11 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.finnvek.knittools.R
+import com.finnvek.knittools.analytics.UsageDetail
+import com.finnvek.knittools.analytics.UsageEvent
 import com.finnvek.knittools.pro.ProStatus
 import com.finnvek.knittools.pro.TrialStartResult
+import com.finnvek.knittools.ui.LocalUsageAnalytics
 import com.finnvek.knittools.ui.layout.ContentWidthPolicy
 import com.finnvek.knittools.ui.screens.pro.ProPromptViewModel
 import com.finnvek.knittools.ui.theme.ComponentDimens
@@ -65,6 +68,32 @@ fun ProPromptSheet(
     onSeePro: () -> Unit,
     viewModelProvider: @Composable () -> ProPromptViewModel = { hiltViewModel() },
 ) {
+    val analytics = LocalUsageAnalytics.current
+    val detail =
+        when (request.source) {
+            ProPromptSource.Projects -> UsageDetail.PRO_PROJECTS
+            ProPromptSource.ProjectReactivation -> UsageDetail.PRO_PROJECT_REACTIVATION
+            ProPromptSource.ProgressPhotos -> UsageDetail.PRO_PROGRESS_PHOTOS
+            ProPromptSource.Notes -> UsageDetail.PRO_NOTES
+            ProPromptSource.YarnCards -> UsageDetail.PRO_YARN_CARDS
+            ProPromptSource.SaveToMyYarn -> UsageDetail.PRO_SAVE_TO_MY_YARN
+            ProPromptSource.Counters -> UsageDetail.PRO_COUNTERS
+            ProPromptSource.Reminders -> UsageDetail.PRO_REMINDERS
+            ProPromptSource.PatternCamera -> UsageDetail.PRO_PATTERN_CAMERA
+            ProPromptSource.PatternGallery -> UsageDetail.PRO_PATTERN_GALLERY
+            ProPromptSource.Widget -> UsageDetail.PRO_WIDGET
+            ProPromptSource.InstructionPaste -> UsageDetail.PRO_INSTRUCTION_PASTE
+            ProPromptSource.WidgetPin -> UsageDetail.PRO_WIDGET_PIN
+        }
+    LaunchedEffect(request.source) { analytics.track(UsageEvent.PRO_PROMPT_SHOWN, detail) }
+    val dismiss = {
+        analytics.track(UsageEvent.PRO_PROMPT_DISMISSED, detail)
+        onDismiss()
+    }
+    val seePro = {
+        analytics.track(UsageEvent.PRO_DETAILS_REQUESTED, detail)
+        onSeePro()
+    }
     val viewModel = viewModelProvider()
     val proState by viewModel.proState.collectAsStateWithLifecycle()
     val offer by viewModel.selectedOffer.collectAsStateWithLifecycle()
@@ -122,7 +151,7 @@ fun ProPromptSheet(
 
     ModalBottomSheet(
         sheetMaxWidth = ContentWidthPolicy.Form.maxWidth,
-        onDismissRequest = onDismiss,
+        onDismissRequest = dismiss,
         containerColor = MaterialTheme.colorScheme.surface,
     ) {
         ProPromptContent(
@@ -132,8 +161,8 @@ fun ProPromptSheet(
             productStatus,
             isStartingTrial,
             startFailed,
-            onDismiss,
-            onSeePro,
+            dismiss,
+            seePro,
             {
                 startFailed = false
                 viewModel.startTrial()?.let { pendingRequestId = it }

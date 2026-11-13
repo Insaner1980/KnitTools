@@ -1,6 +1,7 @@
 package com.finnvek.knittools.ui.tips
 
 import com.finnvek.knittools.analytics.UsageAnalytics
+import com.finnvek.knittools.analytics.UsageDetail
 import com.finnvek.knittools.analytics.UsageEvent
 import com.finnvek.knittools.domain.tips.TipContext
 import com.finnvek.knittools.domain.tips.TipId
@@ -67,6 +68,7 @@ class TipSessionTest {
             )
             coVerify(exactly = 0) { fixture.repository.markTipSeen(any()) }
             verify(exactly = 0) { fixture.analytics.track(any()) }
+            verify(exactly = 0) { fixture.analytics.track(any(), any()) }
             session.onRouteChanged("tools")
             assertTrue(session.tryShow("tools", TipId.TOOLS_INTRO, null))
         }
@@ -101,7 +103,7 @@ class TipSessionTest {
             assertFalse(session.tryShow("tools", TipId.TOOLS_INTRO, null))
             runCurrent()
             coVerify(exactly = 1) { fixture.repository.markTipSeen(TipId.TOOLS_INTRO) }
-            verify(exactly = 1) { fixture.analytics.track(UsageEvent.TIP_ACTED) }
+            verify(exactly = 1) { fixture.analytics.track(UsageEvent.TIP_ACTED, UsageDetail.TIP_TOOLS_INTRO) }
         }
 
     @Test

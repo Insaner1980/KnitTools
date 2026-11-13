@@ -2,6 +2,8 @@ package com.finnvek.knittools.ui.screens.project
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.finnvek.knittools.analytics.UsageAnalytics
+import com.finnvek.knittools.analytics.UsageEvent
 import com.finnvek.knittools.repository.ProjectFolderRepository
 import com.finnvek.knittools.repository.isSuccess
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -19,6 +21,7 @@ class ProjectFolderMoveViewModel
     @Inject
     constructor(
         private val repository: ProjectFolderRepository,
+        private val analytics: UsageAnalytics = UsageAnalytics.NONE,
     ) : ViewModel() {
         private val _state = MutableStateFlow(ProjectFoldersState())
         val state = _state.asStateFlow()
@@ -72,6 +75,7 @@ class ProjectFolderMoveViewModel
                 try {
                     val result = repository.moveProjects(setOf(id), folderId)
                     if (result.isSuccess) {
+                        analytics.track(UsageEvent.PROJECTS_MOVED)
                         movedEventChannel.send(id)
                     } else if (projectId == id) {
                         failedMove = id to folderId

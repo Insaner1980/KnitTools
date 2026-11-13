@@ -8,7 +8,7 @@
 - CI alternative: `KNITTOOLS_POSTHOG_PROJECT_TOKEN`. The environment value takes precedence.
 - Release artifact tasks require a configured project token. Personal API keys are not accepted.
 - Debug and benchmark variants disable collection even when the local preference is enabled.
-- The end user enables **Settings → Share usage statistics**. It defaults to off; the SDK is not initialized until consent is loaded and enabled. DataStore remains the consent authority.
+- The end user enables **Share usage statistics** on the welcome step or in Settings. It defaults to off, never blocks continuing, and can be disabled again. Both controls write the same DataStore preference. The SDK is not initialized until persisted consent is loaded and enabled.
 
 ## Revocation policy
 
@@ -30,17 +30,33 @@ RW-07A remains historical evidence of the previous capture-only contract. The in
 | --- | --- |
 | `app opened`, `app backgrounded` | Foreground use after consent; background event includes `duration_seconds` |
 | `$screen`, `screen exited` | Allowlisted navigation screen name; exit includes foreground duration |
-| `project creation started/submitted/cancelled`, `project created`, `project creation failed` | Project list creation flow; cancellation is dialog dismissal, failure is an invalid project or missing folder result |
-| `pdf import started/succeeded/failed` | Project PDF import after a source is selected; success follows the repository result |
+| `project creation started/submitted/cancelled`, `project created`, `project creation failed` | Existing project-list creation funnel, plus successful onboarding and shared-PDF project creation |
+| `onboarding continued/back/skipped/completed` | Persisted onboarding navigation; fixed `step` names. Separate allowlisted onboarding screens measure the currently visible step after consent, never earlier steps retroactively |
+| `calculator result shown/copied` | First valid result per tool visit/ViewModel task and confirmed clipboard copy in Measurements. Fixed `tool`; no inputs, outputs or pasted instructions |
+| `pdf import started/succeeded/failed/cancelled` | File, onboarding, camera, gallery, Ravelry-browser and shared-document flows. Fixed `source`, with bounded `reason` where available. Success follows storage/attachment; existing-document duplicates count as successful opening. Onboarding success means the draft PDF was staged, before project creation |
 | `counter incremented`, `counter decremented` | Main counter button actions; these describe requested actions, not persistence success |
 | `work session start requested`, `work session saved` | Start action and confirmed save of a stopped work session |
+| `extra counter created/used`, `counter undo requested`, `counter step changed`, `counter target changed`, `stitch tracking changed` | Counter features; fixed `counter_type` and enabled/disabled `setting`, never values or targets. Undo is a request |
+| `reading aid changed`, `bookmark created/opened` | Horizontal/vertical guides, following the current row, and bookmark use; fixed `aid` and `setting`, no page, position, title or document key |
+| `annotation created`, `annotation tool selected`, `annotated pdf export started/succeeded/failed/cancelled` | Committed annotation insertion, fixed `annotation_tool`, and PDF export outcome; no text, paths or geometry |
+| `web pattern saved` | Saved/updated local web-pattern metadata; fixed web source, never the URL |
+| `project completed/reopened`, `folder created`, `projects moved` | Confirmed project and organization operations; no names, IDs or selected-project counts |
+| `yarn card created`, `yarn linked`, `yarn usage saved`, `notes saved`, `progress photo added` | Successful library, linking, yarn-usage, note and photo operations. Notes report at most once per editor instance, not per keystroke; no material names, quantities, text or images |
+| `backup export/restore started/succeeded/failed/cancelled` | Manual backup/restore outcomes; fixed error categories only. Starts follow file selection; cancellations may therefore have no start event |
+| `widget pin requested`, `widget installed`, `widget counter changed` | Pin request, first actual widget installation (`onEnabled`), and committed widget counter changes. Additional widgets do not generate another installed event while one exists |
+| `insights range changed`, `insights chart viewed` | Fixed `range`; chart viewing once per range per ViewModel, when real data is visible. No project filters or statistics values |
+| `welcome demo used`, `welcome tools chosen`, `welcome dismissed`, `guide opened`, `guide topic opened` | Welcome actions and fixed guide `topic` |
+| `tip shown/acted/dismissed` | Visible tips and their actions, with a fixed `tip` name |
+| `pro prompt shown/dismissed`, `pro details requested` | Contextual prompt visibility and actions with fixed `feature`; no billing, trial, ownership or price information |
 
-No project IDs, names, counter values, text, URLs, photos, documents, billing state, or account identifiers are passed. Screen arguments are discarded and unknown screen names are dropped. All events disable GeoIP enrichment. SDK-generated pseudonymous IDs support returning-user and session analysis; they are not linked to Firebase or Ravelry identities.
+`UsageAnalytics` accepts only `UsageEvent` and `UsageDetail` enum values, not arbitrary strings or maps. No project IDs, names, counter values, text, URLs, photos, documents, billing state, account identifiers, raw errors or logs are passed. Screen arguments are discarded and unknown screen names are dropped. All events disable GeoIP enrichment. SDK-generated pseudonymous IDs and SDK device/app metadata remain; identities are not linked to Firebase or Ravelry accounts. This is pseudonymous usage analytics, not a promise of zero device metadata.
 
-Screen duration measures foreground time on a destination, including idle time. Process termination may omit exit/background events. Missing funnel completion does not prove a user cancellation. Modals are not separate navigation screens, and widget changes are not included in this first event set.
+Screen duration measures foreground time on a destination, including idle time. Process termination may omit exit/background events. Missing funnel completion does not prove a user cancellation. Modals are not separate navigation screens; contextual Pro prompts have explicit events. Widget actions wait up to one second for the initial persisted consent snapshot and otherwise drop the event. All delivery remains best-effort; a short widget-only process may end before a batch is sent. Counts describe consenting users only and must not be treated as all-user totals.
 
 ## Verification
 
 Focused JVM tests cover consent defaults, no client initialization before consent, revocation, route sanitization, lifecycle deduplication, SDK failure isolation, SDK configuration, and preference-write failure. Real-SDK acceptance tests use actual disk queues, synthetic events/token and a terminal local recording transport installed before initialization for every URL; no request reaches a live service. Executor barriers, latches and a controlled SDK clock cover queued events, disabled capture/flush/retry/close, re-opt-in, prior-storage recreation, delayed writers, failed cleanup and the dispatch boundary. An actual file-backed DataStore test covers conflated consent changes and marker persistence. These are local JVM results, not Android/device, live-service/dashboard or signed-candidate acceptance. Native session replay, surveys, experiments, and an additional crash reporter are not enabled.
+
+The opt-in `PostHogLiveDeliveryTest` additionally exercises the production controller/factory with the real Android SDK and EU HTTP ingestion. It runs only with instrumentation argument `posthogLive=true`, uses isolated preferences/cache and three synthetic events carrying `traffic=verification`, and tears down its SDK workers and storage. Filter `traffic != verification` (including events without that property) in product reports. A successful HTTP acknowledgement is checked separately against the server event query; neither proves delivery from a published signed release. See [current verification](../reports/posthog-verification/VERIFICATION.md).
 
 References: [Android SDK](https://posthog.com/docs/libraries/android), [API keys and EU ingestion](https://posthog.com/docs/api).

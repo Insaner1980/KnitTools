@@ -3,6 +3,9 @@ package com.finnvek.knittools.ui.screens.gauge
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModelStore
 import app.cash.turbine.test
+import com.finnvek.knittools.analytics.UsageAnalytics
+import com.finnvek.knittools.analytics.UsageDetail
+import com.finnvek.knittools.analytics.UsageEvent
 import com.finnvek.knittools.data.datastore.AppPreferences
 import com.finnvek.knittools.data.datastore.PreferencesManager
 import com.finnvek.knittools.domain.calculator.MeasurementNumberError
@@ -85,6 +88,22 @@ class GaugeViewModelTest {
     }
 
     @Test
+    fun `result analytics is once per tool and copy waits for clipboard confirmation`() =
+        runTest {
+            val analytics = mockk<UsageAnalytics>(relaxed = true)
+            val vm = GaugeViewModel(SavedStateHandle(), manager, repository, proManager, analytics)
+            stores += ViewModelStore().apply { put("gauge", vm) }
+            vm.onAction(GaugeAction.Task(GaugeTask.CONVERT))
+            vm.edit(GaugeField.CONVERSION, "25.4")
+            vm.edit(GaugeField.CONVERSION, "50.8")
+            verify(exactly = 1) { analytics.track(UsageEvent.CALCULATOR_RESULT_SHOWN, UsageDetail.TOOL_CONVERT) }
+            vm.onAction(GaugeAction.Copy("Private result", vm.state.value))
+            verify(exactly = 0) { analytics.track(UsageEvent.CALCULATOR_RESULT_COPIED, any()) }
+            vm.resultCopied(GaugeTask.CONVERT)
+            verify(exactly = 1) { analytics.track(UsageEvent.CALCULATOR_RESULT_COPIED, UsageDetail.TOOL_CONVERT) }
+        }
+
+    @Test
     fun `copy rejects a result rendered before a unit change`() =
         runTest {
             val vm = model()
@@ -98,7 +117,7 @@ class GaugeViewModelTest {
                 vm.onAction(GaugeAction.Copy("Old result", previous))
                 expectNoEvents()
                 vm.onAction(GaugeAction.Copy("Current result", vm.state.value))
-                assertEquals(GaugeUiEvent.Copy("Current result"), awaitItem())
+                assertEquals(GaugeUiEvent.Copy("Current result", GaugeTask.CONVERT), awaitItem())
             }
         }
 
@@ -348,7 +367,7 @@ class GaugeViewModelTest {
             vm.edit(GaugeField.CONVERSION, "25.4")
             vm.events.test {
                 vm.onAction(GaugeAction.Copy("25.4 cm = 10 in", vm.state.value))
-                assertEquals(GaugeUiEvent.Copy("25.4 cm = 10 in"), awaitItem())
+                assertEquals(GaugeUiEvent.Copy("25.4 cm = 10 in", GaugeTask.CONVERT), awaitItem())
                 expectNoEvents()
             }
             model(

@@ -8,6 +8,9 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.finnvek.knittools.R
+import com.finnvek.knittools.analytics.UsageAnalytics
+import com.finnvek.knittools.analytics.UsageDetail
+import com.finnvek.knittools.analytics.UsageEvent
 import com.finnvek.knittools.data.remote.WebPdfDownload
 import com.finnvek.knittools.data.remote.WebPdfDownloader
 import com.finnvek.knittools.data.storage.AppFileStorage
@@ -58,6 +61,7 @@ data class IncomingPdfChoices(
 data class IncomingPdf(
     val localUri: String,
     val suggestedName: String,
+    val source: UsageDetail = UsageDetail.SOURCE_SHARED,
 )
 
 sealed interface IncomingPdfOutcome {
@@ -98,6 +102,7 @@ class IncomingPdfViewModel
         @param:ApplicationContext private val context: Context,
         @param:IoDispatcher private val ioDispatcher: CoroutineDispatcher,
         @param:ApplicationScope private val applicationScope: CoroutineScope,
+        private val analytics: UsageAnalytics = UsageAnalytics.NONE,
     ) : ViewModel() {
         internal var pdfIntentConsumed = false
         private val pendingMutex = Mutex()
@@ -134,6 +139,7 @@ class IncomingPdfViewModel
         val outcomes: Flow<IncomingPdfOutcome> = outcomeChannel.receiveAsFlow()
 
         fun receive(uri: Uri) {
+            analytics.track(UsageEvent.PDF_IMPORT_STARTED, UsageDetail.SOURCE_SHARED)
             val requestVersion = ++incomingRequestVersion
             savedStateHandle[KEY_SOURCE_URI] = uri
             mutableReceiving.value = true
@@ -171,6 +177,7 @@ class IncomingPdfViewModel
                     outcomeChannel.send(IncomingPdfOutcome.NotPdf)
                     return@launch
                 }
+                analytics.track(UsageEvent.PDF_IMPORT_STARTED, UsageDetail.SOURCE_RAVELRY)
                 outcomeChannel.send(IncomingPdfOutcome.Downloading)
                 val file =
                     try {
@@ -181,11 +188,12 @@ class IncomingPdfViewModel
                         null
                     }
                 if (file == null) {
+                    analytics.track(UsageEvent.PDF_IMPORT_FAILED, UsageDetail.SOURCE_RAVELRY, UsageDetail.ERROR_READ)
                     outcomeChannel.send(IncomingPdfOutcome.OpenFailed)
                     return@launch
                 }
                 try {
-                    receiveCopy(Uri.fromFile(file), fileName, requestVersion)
+                    receiveCopy(Uri.fromFile(file), fileName, requestVersion, UsageDetail.SOURCE_RAVELRY)
                 } finally {
                     withContext(NonCancellable + ioDispatcher) { file.delete() }
                 }
@@ -201,6 +209,7 @@ class IncomingPdfViewModel
             uri: Uri,
             fileName: String,
             requestVersion: Long,
+            source: UsageDetail = UsageDetail.SOURCE_SHARED,
         ) {
             val copiedUri =
                 try {
@@ -216,10 +225,11 @@ class IncomingPdfViewModel
                     null
                 }
             if (copiedUri == null) {
+                analytics.track(UsageEvent.PDF_IMPORT_FAILED, source, UsageDetail.ERROR_READ)
                 outcomeChannel.send(IncomingPdfOutcome.OpenFailed)
                 return
             }
-            val pdf = IncomingPdf(copiedUri, PatternDisplayNames.documentLabel(fileName))
+            val pdf = IncomingPdf(copiedUri, PatternDisplayNames.documentLabel(fileName), source)
             try {
                 pendingMutex.withLock {
                     if (requestVersion != incomingRequestVersion) {
@@ -259,9 +269,12 @@ class IncomingPdfViewModel
                         patternName = documentLabel(pdf, name),
                     )
                 if (result is ProjectCreationResult.Created) {
+                    analytics.track(UsageEvent.PROJECT_CREATED, pdf.source)
+                    analytics.track(UsageEvent.PDF_IMPORT_SUCCEEDED, pdf.source)
                     setPending(null)
                     outcomeChannel.send(IncomingPdfOutcome.OpenProject(result.projectId))
                 } else {
+                    analytics.track(UsageEvent.PDF_IMPORT_FAILED, pdf.source, UsageDetail.ERROR_WRITE)
                     outcomeChannel.send(IncomingPdfOutcome.SaveFailed)
                 }
             }
@@ -278,9 +291,11 @@ class IncomingPdfViewModel
                         name = name.ifBlank { pdf.suggestedName },
                     )
                 if (savedPatternId == null) {
+                    analytics.track(UsageEvent.PDF_IMPORT_FAILED, pdf.source, UsageDetail.ERROR_WRITE)
                     outcomeChannel.send(IncomingPdfOutcome.SaveFailed)
                 } else {
                     setPending(null)
+                    analytics.track(UsageEvent.PDF_IMPORT_SUCCEEDED, pdf.source)
                     outcomeChannel.send(IncomingPdfOutcome.OpenSavedPattern(savedPatternId))
                 }
             }
@@ -292,6 +307,7 @@ class IncomingPdfViewModel
                 pendingMutex.withLock {
                     val pdf = mutablePending.value ?: return@withLock
                     if (pdf.localUri != expectedPdfUri) return@withLock
+                    analytics.track(UsageEvent.PDF_IMPORT_CANCELLED, pdf.source)
                     setPending(null)
                     deleteUnusedCopy(pdf)
                 }
@@ -313,6 +329,7 @@ class IncomingPdfViewModel
                 )
             when (result) {
                 is ProjectDocumentMutationResult.Added -> {
+                    analytics.track(UsageEvent.PDF_IMPORT_SUCCEEDED, pdf.source)
                     setPending(null)
                     outcomeChannel.send(IncomingPdfOutcome.OpenProject(projectId))
                 }
@@ -322,12 +339,16 @@ class IncomingPdfViewModel
                 ProjectDocumentMutationResult.DuplicateUri,
                 ProjectDocumentMutationResult.DuplicateDocumentKey,
                 -> {
+                    analytics.track(UsageEvent.PDF_IMPORT_SUCCEEDED, pdf.source)
                     setPending(null)
                     deleteUnusedCopy(pdf)
                     outcomeChannel.send(IncomingPdfOutcome.OpenProject(projectId))
                 }
 
-                else -> outcomeChannel.send(IncomingPdfOutcome.SaveFailed)
+                else -> {
+                    analytics.track(UsageEvent.PDF_IMPORT_FAILED, pdf.source, UsageDetail.ERROR_WRITE)
+                    outcomeChannel.send(IncomingPdfOutcome.SaveFailed)
+                }
             }
         }
 
@@ -347,6 +368,13 @@ class IncomingPdfViewModel
                 } catch (cancellation: CancellationException) {
                     throw cancellation
                 } catch (_: Exception) {
+                    mutablePending.value?.let {
+                        analytics.track(
+                            UsageEvent.PDF_IMPORT_FAILED,
+                            it.source,
+                            UsageDetail.ERROR_WRITE,
+                        )
+                    }
                     outcomeChannel.send(IncomingPdfOutcome.SaveFailed)
                 } finally {
                     mutableBusy.value = false
@@ -385,6 +413,7 @@ class IncomingPdfViewModel
             mutablePending.value = pdf
             savedStateHandle[KEY_LOCAL_URI] = pdf?.localUri
             savedStateHandle[KEY_NAME] = pdf?.suggestedName
+            savedStateHandle[KEY_ANALYTICS_SOURCE] = pdf?.source?.name
         }
 
         private fun restorePending(): IncomingPdf? {
@@ -398,7 +427,15 @@ class IncomingPdfViewModel
                         File(context.filesDir, "pattern_pdfs/$UNASSIGNED_PDF_DIRECTORY_ID").canonicalFile
                 }.getOrDefault(false)
             if (!isStagedPdf) return null
-            return IncomingPdf(localUri, name)
+            val source =
+                if (savedStateHandle.get<String>(KEY_ANALYTICS_SOURCE) ==
+                    UsageDetail.SOURCE_RAVELRY.name
+                ) {
+                    UsageDetail.SOURCE_RAVELRY
+                } else {
+                    UsageDetail.SOURCE_SHARED
+                }
+            return IncomingPdf(localUri, name, source)
         }
 
         private companion object {
@@ -408,6 +445,7 @@ class IncomingPdfViewModel
             const val PDF_MIME_TYPE = "application/pdf"
             const val KEY_LOCAL_URI = "incoming_pdf_local_uri"
             const val KEY_NAME = "incoming_pdf_name"
+            const val KEY_ANALYTICS_SOURCE = "incoming_pdf_analytics_source"
             const val KEY_SOURCE_URI = "incoming_pdf_source_uri"
         }
     }

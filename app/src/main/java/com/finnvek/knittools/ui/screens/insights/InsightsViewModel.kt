@@ -4,6 +4,9 @@ import androidx.compose.runtime.Immutable
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.finnvek.knittools.analytics.UsageAnalytics
+import com.finnvek.knittools.analytics.UsageDetail
+import com.finnvek.knittools.analytics.UsageEvent
 import com.finnvek.knittools.di.ApplicationScope
 import com.finnvek.knittools.di.IoDispatcher
 import com.finnvek.knittools.domain.calculator.DurationDisplay
@@ -137,6 +140,7 @@ class InsightsViewModel
         private val savedStateHandle: SavedStateHandle,
         private val onboardingStateRepository: OnboardingStateRepository,
         @param:ApplicationScope private val applicationScope: CoroutineScope,
+        private val analytics: UsageAnalytics = UsageAnalytics.NONE,
     ) : ViewModel() {
         val isPro: StateFlow<Boolean> =
             proManager
@@ -366,11 +370,25 @@ class InsightsViewModel
         }
 
         fun selectTimeRange(selectedTimeRange: TimeRange) {
+            if (uiState.value.timeRange !=
+                selectedTimeRange
+            ) {
+                analytics.track(UsageEvent.INSIGHTS_RANGE_CHANGED, rangeDetail(selectedTimeRange))
+            }
             savedStateHandle["timeRange"] = selectedTimeRange
         }
 
+        private val reportedCharts = mutableSetOf<TimeRange>()
+
         fun onWeeklyChartVisible() {
             val state = uiState.value
+            if (!state.isLoading &&
+                state.isPro &&
+                state.hasMeaningfulChartData &&
+                reportedCharts.add(state.timeRange)
+            ) {
+                analytics.track(UsageEvent.INSIGHTS_CHART_VIEWED, rangeDetail(state.timeRange))
+            }
             if (state.isLoading || state.timeRange != TimeRange.THIS_WEEK) return
             if (!state.isPro || !state.hasMeaningfulChartData || state.totalMinutes <= 0) return
             if (!proManager.initialStateReady.value) return
@@ -644,3 +662,10 @@ internal fun insightsCalendarChanges(
             delay(minOf((nextDayStart - now).coerceAtLeast(1L), DATE_CHANGE_CHECK_INTERVAL_MILLIS))
         }
     }.distinctUntilChanged()
+
+private fun rangeDetail(range: TimeRange): UsageDetail =
+    when (range) {
+        TimeRange.ALL_TIME -> UsageDetail.RANGE_ALL
+        TimeRange.THIS_WEEK -> UsageDetail.RANGE_WEEK
+        TimeRange.THIS_MONTH -> UsageDetail.RANGE_MONTH
+    }

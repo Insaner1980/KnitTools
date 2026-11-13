@@ -4,6 +4,9 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.finnvek.knittools.R
+import com.finnvek.knittools.analytics.UsageAnalytics
+import com.finnvek.knittools.analytics.UsageDetail
+import com.finnvek.knittools.analytics.UsageEvent
 import com.finnvek.knittools.data.datastore.PreferencesManager
 import com.finnvek.knittools.domain.calculator.MeasurementNumberError
 import com.finnvek.knittools.domain.calculator.MeasurementNumberFormatter
@@ -35,6 +38,7 @@ class GaugeViewModel
         preferencesManager: PreferencesManager,
         repository: CounterRepository,
         proManager: ProManager,
+        private val analytics: UsageAnalytics = UsageAnalytics.NONE,
     ) : ViewModel() {
         private val mutableState = MutableStateFlow(restore())
         val state: StateFlow<GaugeUiState> = mutableState.asStateFlow()
@@ -78,6 +82,8 @@ class GaugeViewModel
             }
         }
 
+        private val reportedResults = mutableSetOf<GaugeTask>()
+
         fun onAction(
             action: GaugeAction,
             locale: Locale = Locale.getDefault(),
@@ -103,14 +109,25 @@ class GaugeViewModel
                 is GaugeAction.Paste -> paste(action.instruction)
                 is GaugeAction.Copy -> copyResult(action)
             }
+            trackResultIfNeeded()
             save()
+        }
+
+        private fun trackResultIfNeeded() {
+            if (state.value.hasResult && reportedResults.add(state.value.task)) {
+                analytics.track(UsageEvent.CALCULATOR_RESULT_SHOWN, toolDetail(state.value.task))
+            }
         }
 
         private fun copyResult(action: GaugeAction.Copy) {
             val current = state.value
             if (action.resultState == current && current.hasResult && action.text.isNotBlank()) {
-                eventChannel.trySend(GaugeUiEvent.Copy(action.text))
+                eventChannel.trySend(GaugeUiEvent.Copy(action.text, current.task))
             }
+        }
+
+        fun resultCopied(task: GaugeTask) {
+            analytics.track(UsageEvent.CALCULATOR_RESULT_COPIED, toolDetail(task))
         }
 
         private fun edit(
@@ -366,4 +383,12 @@ internal fun optionalGaugeProjectId(value: Any?): Long? =
         is Int -> value.toLong().takeIf { it > 0 }
         is String -> value.toLongOrNull()?.takeIf { it > 0 }
         else -> null
+    }
+
+private fun toolDetail(task: GaugeTask): UsageDetail =
+    when (task) {
+        GaugeTask.CONVERT -> UsageDetail.TOOL_CONVERT
+        GaugeTask.MEASURE -> UsageDetail.TOOL_MEASURE
+        GaugeTask.CALCULATE -> UsageDetail.TOOL_CALCULATE
+        GaugeTask.ADJUST -> UsageDetail.TOOL_ADJUST
     }

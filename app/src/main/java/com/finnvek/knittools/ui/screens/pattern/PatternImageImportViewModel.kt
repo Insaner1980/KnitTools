@@ -5,6 +5,9 @@ import android.net.Uri
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.finnvek.knittools.analytics.UsageAnalytics
+import com.finnvek.knittools.analytics.UsageDetail
+import com.finnvek.knittools.analytics.UsageEvent
 import com.finnvek.knittools.data.storage.PatternDocumentStorage
 import com.finnvek.knittools.data.storage.PatternImageFailureReason
 import com.finnvek.knittools.data.storage.PatternImageStageException
@@ -16,6 +19,7 @@ import com.finnvek.knittools.pro.ProManager
 import com.finnvek.knittools.pro.ProStatus
 import com.finnvek.knittools.repository.CounterRepository
 import com.finnvek.knittools.repository.OnboardingStateRepository
+import com.finnvek.knittools.repository.ProjectDocumentMutationResult
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
@@ -48,6 +52,7 @@ internal class PatternImageImportViewModel
         private val proManager: ProManager,
         private val onboardingStateRepository: OnboardingStateRepository,
         @param:ApplicationScope private val applicationScope: CoroutineScope,
+        private val analytics: UsageAnalytics = UsageAnalytics.NONE,
     ) : ViewModel() {
         private val restoredDraft = restoredState(savedStateHandle)
         private val _uiState =
@@ -399,6 +404,7 @@ internal class PatternImageImportViewModel
             ) {
                 return
             }
+            analytics.track(UsageEvent.PDF_IMPORT_CANCELLED, _uiState.value.origin.analyticsDetail())
             if (activeOperationId != null) {
                 operationJob?.cancel()
                 return
@@ -416,6 +422,7 @@ internal class PatternImageImportViewModel
             val startState = _uiState.value.beginConversion() ?: return
             val projectId = startState.projectId ?: return
             val sessionId = startState.sessionId ?: return
+            analytics.track(UsageEvent.PDF_IMPORT_STARTED, _uiState.value.origin.analyticsDetail())
             _uiState.value = startState
             launchOperation { operationId ->
                 createAndAttachPattern(startState, projectId, sessionId, operationId)
@@ -446,6 +453,7 @@ internal class PatternImageImportViewModel
                     return
                 }
                 uncommittedOutputUri = null
+                analytics.track(UsageEvent.PDF_IMPORT_SUCCEEDED, _uiState.value.origin.analyticsDetail())
                 recordTrialPhotoPdfCreated()
                 finishImport(projectId, sessionId, PatternImageImportPhase.SUCCESS, operationId)
             } catch (failure: CancellationException) {
@@ -499,7 +507,7 @@ internal class PatternImageImportViewModel
             projectId: Long,
             output: Pair<String, String>,
         ): Boolean? {
-            val failure =
+            val attachment =
                 runCatching {
                     repository.attachPattern(
                         id = projectId,
@@ -508,8 +516,16 @@ internal class PatternImageImportViewModel
                         currentPatternPage = 0,
                         patternRowMapping = null,
                     )
-                }.exceptionOrNull()
-            if (failure == null) return true
+                }
+            when (attachment.getOrNull()) {
+                is ProjectDocumentMutationResult.Added,
+                ProjectDocumentMutationResult.AlreadyAttached,
+                ProjectDocumentMutationResult.DuplicateUri,
+                ProjectDocumentMutationResult.DuplicateDocumentKey,
+                -> return true
+                else -> Unit
+            }
+            val failure = attachment.exceptionOrNull()
 
             val committed =
                 withContext(NonCancellable) {
@@ -569,6 +585,12 @@ internal class PatternImageImportViewModel
             error: PatternImageImportError,
             operationId: String,
         ) {
+            if (operationId != activeOperationId) return
+            analytics.track(
+                UsageEvent.PDF_IMPORT_FAILED,
+                _uiState.value.origin.analyticsDetail(),
+                error.analyticsDetail(),
+            )
             updateOperation(
                 operationId,
             ) { it.copy(phase = PatternImageImportPhase.ERROR, error = error, progress = null) }
@@ -661,18 +683,6 @@ internal class PatternImageImportViewModel
             savedStateHandle.remove<Boolean>(KEY_CAMERA_PENDING)
         }
 
-        private fun cameraPage(
-            imageUri: Uri,
-            imageFile: File,
-        ) = StagedPatternPage(
-            id = imageFile.name,
-            sourceUri = imageUri.toString(),
-            stagedPath = imageFile.absolutePath,
-            byteCount = imageFile.length(),
-            width = 1,
-            height = 1,
-        )
-
         private companion object {
             const val KEY_PROJECT_ID = "pattern_image_project_id"
             const val KEY_SESSION_ID = "pattern_image_session_id"
@@ -707,6 +717,18 @@ internal class PatternImageImportViewModel
         }
     }
 
+private fun cameraPage(
+    imageUri: Uri,
+    imageFile: File,
+) = StagedPatternPage(
+    id = imageFile.name,
+    sourceUri = imageUri.toString(),
+    stagedPath = imageFile.absolutePath,
+    byteCount = imageFile.length(),
+    width = 1,
+    height = 1,
+)
+
 private fun PatternImageImportUiState.withRestoredSelection(
     restoredSelection: PatternImageSelection?,
     expectedPageCount: Int,
@@ -723,6 +745,21 @@ private fun PatternImageImportUiState.withRestoredSelection(
         error = if (rejectedPages) PatternImageImportError.UNREADABLE else error,
     )
 }
+
+private fun PatternImageImportOrigin.analyticsDetail(): UsageDetail =
+    if (this == PatternImageImportOrigin.CAMERA) UsageDetail.SOURCE_CAMERA else UsageDetail.SOURCE_GALLERY
+
+private fun PatternImageImportError.analyticsDetail(): UsageDetail =
+    when (this) {
+        PatternImageImportError.PAGE_LIMIT,
+        PatternImageImportError.IMAGE_TOO_LARGE,
+        PatternImageImportError.TOTAL_TOO_LARGE,
+        PatternImageImportError.LOW_STORAGE,
+        -> UsageDetail.ERROR_TOO_LARGE
+        PatternImageImportError.UNREADABLE -> UsageDetail.ERROR_READ
+        PatternImageImportError.UNSUPPORTED, PatternImageImportError.ANIMATED -> UsageDetail.ERROR_INVALID
+        else -> UsageDetail.ERROR_WRITE
+    }
 
 private fun selectionPhase(pages: List<StagedPatternPage>): PatternImageImportPhase =
     if (pages.isEmpty()) PatternImageImportPhase.IDLE else PatternImageImportPhase.READY

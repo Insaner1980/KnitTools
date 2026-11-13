@@ -3,8 +3,11 @@ package com.finnvek.knittools.data.widget
 import android.appwidget.AppWidgetManager
 import android.content.ComponentName
 import android.content.Context
+import com.finnvek.knittools.analytics.UsageEvent
 import com.finnvek.knittools.di.AppDispatchers
 import com.finnvek.knittools.widget.CounterWidgetReceiver
+import com.finnvek.knittools.widget.WidgetEntryPoint
+import dagger.hilt.android.EntryPointAccessors
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
@@ -16,7 +19,7 @@ internal interface WidgetPinHost {
 }
 
 internal class CounterWidgetPinHost(
-    context: Context,
+    private val context: Context,
     private val ioDispatcher: CoroutineDispatcher = AppDispatchers.IO,
 ) : WidgetPinHost {
     private val manager = AppWidgetManager.getInstance(context)
@@ -44,7 +47,13 @@ internal class CounterWidgetPinHost(
             }
         }
 
-    override fun requestPin(): Boolean = manager.requestPinAppWidget(receiver, null, null)
+    override fun requestPin(): Boolean {
+        EntryPointAccessors
+            .fromApplication(context.applicationContext, WidgetEntryPoint::class.java)
+            .analytics()
+            .track(UsageEvent.WIDGET_PIN_REQUESTED)
+        return manager.requestPinAppWidget(receiver, null, null)
+    }
 }
 
 internal suspend fun requestCounterWidgetPin(host: WidgetPinHost): Boolean =

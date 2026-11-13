@@ -74,6 +74,7 @@ import com.finnvek.knittools.pro.ProManager
 import com.finnvek.knittools.pro.ProStatus
 import com.finnvek.knittools.pro.TrialManager
 import com.finnvek.knittools.repository.TrialJourneyStateRepository
+import com.finnvek.knittools.ui.LocalUsageAnalytics
 import com.finnvek.knittools.ui.ProvidePreferenceAwareHapticFeedback
 import com.finnvek.knittools.ui.SplashLogoDrawable
 import com.finnvek.knittools.ui.components.ProPriceDetails
@@ -331,6 +332,7 @@ class MainActivity : AppCompatActivity() {
                 LocalAdaptiveModalWindow provides true,
                 LocalWindowFolds provides rememberWindowFolds(),
                 LocalTipSession provides tipSession,
+                LocalUsageAnalytics provides analytics,
                 LocalTipBlocked provides tipsBlocked,
             ) {
                 KnitToolsTheme(isDarkTheme = isDarkTheme) {

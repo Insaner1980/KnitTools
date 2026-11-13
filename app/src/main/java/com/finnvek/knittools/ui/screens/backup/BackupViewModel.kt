@@ -4,6 +4,9 @@ import android.net.Uri
 import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.finnvek.knittools.analytics.UsageAnalytics
+import com.finnvek.knittools.analytics.UsageDetail
+import com.finnvek.knittools.analytics.UsageEvent
 import com.finnvek.knittools.data.backup.BackupError
 import com.finnvek.knittools.data.backup.BackupException
 import com.finnvek.knittools.data.backup.BackupPreview
@@ -38,6 +41,7 @@ class BackupViewModel
     constructor(
         private val repository: BackupRepository,
         private val onboardingStateRepository: OnboardingStateRepository,
+        private val analytics: UsageAnalytics = UsageAnalytics.NONE,
     ) : ViewModel() {
         private val mutableState = MutableStateFlow(BackupUiState())
         val state = mutableState.asStateFlow()
@@ -63,6 +67,16 @@ class BackupViewModel
 
         fun selectionFailed(error: BackupError) {
             if (state.value.phase == BackupPhase.SELECTING) {
+                analytics.track(
+                    if (error ==
+                        BackupError.WRITE
+                    ) {
+                        UsageEvent.BACKUP_EXPORT_FAILED
+                    } else {
+                        UsageEvent.BACKUP_RESTORE_FAILED
+                    },
+                    backupErrorDetail(error),
+                )
                 mutableState.value = BackupUiState(error = error)
             }
         }
@@ -70,11 +84,14 @@ class BackupViewModel
         fun export(uri: Uri?) {
             if (cancelling || state.value.busy) return
             if (uri == null) {
+                analytics.track(UsageEvent.BACKUP_EXPORT_CANCELLED)
                 mutableState.value = BackupUiState()
                 return
             }
+            analytics.track(UsageEvent.BACKUP_EXPORT_STARTED)
             run(BackupPhase.EXPORTING) {
                 repository.export(uri)
+                analytics.track(UsageEvent.BACKUP_EXPORT_SUCCEEDED)
                 recordOnboardingProgress(restored = false)
                 BackupUiState(BackupPhase.EXPORTED)
             }
@@ -83,11 +100,13 @@ class BackupViewModel
         fun prepare(uri: Uri?) {
             if (cancelling || state.value.busy) return
             if (uri == null) {
+                analytics.track(UsageEvent.BACKUP_RESTORE_CANCELLED)
                 mutableState.value = BackupUiState()
                 return
             }
             val selected = UUID.randomUUID()
             selectionId = selected
+            analytics.track(UsageEvent.BACKUP_RESTORE_STARTED)
             run(BackupPhase.VALIDATING) {
                 BackupUiState(BackupPhase.PREVIEW, repository.prepare(uri, selected), previewSelectionId = selected)
             }
@@ -101,6 +120,7 @@ class BackupViewModel
             }
             run(BackupPhase.RESTORING) {
                 repository.restore(confirmedSelectionId)
+                analytics.track(UsageEvent.BACKUP_RESTORE_SUCCEEDED)
                 recordOnboardingProgress(restored = true)
                 BackupUiState(BackupPhase.RESTORED)
             }
@@ -135,6 +155,15 @@ class BackupViewModel
             ) {
                 return
             }
+            if (phase != BackupPhase.SELECTING) {
+                analytics.track(
+                    if (phase == BackupPhase.EXPORTING) {
+                        UsageEvent.BACKUP_EXPORT_CANCELLED
+                    } else {
+                        UsageEvent.BACKUP_RESTORE_CANCELLED
+                    },
+                )
+            }
             cancelling = true
             val cancelledSelection = selectionId
             job?.cancel()
@@ -165,9 +194,28 @@ class BackupViewModel
                     } catch (failure: CancellationException) {
                         throw failure
                     } catch (failure: BackupException) {
+                        analytics.track(
+                            if (phase ==
+                                BackupPhase.EXPORTING
+                            ) {
+                                UsageEvent.BACKUP_EXPORT_FAILED
+                            } else {
+                                UsageEvent.BACKUP_RESTORE_FAILED
+                            },
+                            backupErrorDetail(failure.error),
+                        )
                         currentCoroutineContext().ensureActive()
                         mutableState.value = BackupUiState(error = failure.error)
                     }
                 }
         }
+    }
+
+private fun backupErrorDetail(error: BackupError): UsageDetail =
+    when (error) {
+        BackupError.READ -> UsageDetail.ERROR_READ
+        BackupError.WRITE, BackupError.RESTORE -> UsageDetail.ERROR_WRITE
+        BackupError.SPACE -> UsageDetail.ERROR_TOO_LARGE
+        BackupError.UNSUPPORTED -> UsageDetail.ERROR_UNAVAILABLE
+        BackupError.INVALID, BackupError.CORRUPT, BackupError.VALIDATION -> UsageDetail.ERROR_INVALID
     }

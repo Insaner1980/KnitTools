@@ -4,6 +4,9 @@ import android.net.Uri
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.finnvek.knittools.analytics.UsageAnalytics
+import com.finnvek.knittools.analytics.UsageDetail
+import com.finnvek.knittools.analytics.UsageEvent
 import com.finnvek.knittools.data.storage.PATTERN_PDF_EXPORT_MAX_ANNOTATIONS
 import com.finnvek.knittools.data.storage.PATTERN_PDF_EXPORT_MAX_ANNOTATION_PAYLOAD_BYTES
 import com.finnvek.knittools.data.storage.PatternAnnotationRenderStyle
@@ -198,6 +201,7 @@ class PatternAnnotationViewModel
         private val projectDocumentRepository: ProjectDocumentRepository,
         private val projectCounterRepository: ProjectCounterRepository? = null,
         private val pdfExporter: PatternPdfExporter? = null,
+        private val analytics: UsageAnalytics = UsageAnalytics.NONE,
     ) : ViewModel() {
         private val routeOwner = savedStateHandle.requirePatternAnnotationOwner()
         private val currentPage = MutableStateFlow(0)
@@ -389,6 +393,12 @@ class PatternAnnotationViewModel
         }
 
         fun setActiveTool(tool: PatternAnnotationTool) {
+            if (interaction.value.activeTool != tool) {
+                analytics.track(
+                    UsageEvent.ANNOTATION_TOOL_SELECTED,
+                    tool.analyticsDetail(),
+                )
+            }
             if (tool != interaction.value.activeTool && interaction.value.draftStroke != null) cancelStroke()
             interaction.update { it.copy(activeTool = tool) }
         }
@@ -772,6 +782,7 @@ class PatternAnnotationViewModel
                         exporter.preflight(request.context.sourceUri, annotations, trackerHighlights)
                         coroutineContext.ensureActive()
                     }.onSuccess {
+                        analytics.track(UsageEvent.ANNOTATED_PDF_EXPORT_SUCCEEDED)
                         if (isCurrentExport(request)) {
                             exportPhase = PatternPdfExportPhase.READY
                             interaction.update { it.copy(isExporting = false) }
@@ -809,10 +820,12 @@ class PatternAnnotationViewModel
             if (request.id != requestId || !isCurrentExport(request)) return
             if (exportPhase != PatternPdfExportPhase.DESTINATION && exportPhase != PatternPdfExportPhase.READY) return
             if (destinationUri == null || context != request.context) {
+                if (destinationUri == null) analytics.track(UsageEvent.ANNOTATED_PDF_EXPORT_CANCELLED)
                 invalidateExport()
                 return
             }
             if (exportPhase != PatternPdfExportPhase.DESTINATION) return
+            analytics.track(UsageEvent.ANNOTATED_PDF_EXPORT_STARTED)
             exportPhase = PatternPdfExportPhase.EXPORTING
             markExportStarted()
             exportJob =
@@ -918,6 +931,13 @@ class PatternAnnotationViewModel
             request: PatternPdfExportRequest,
             failure: Throwable,
         ) {
+            analytics.track(
+                if (failure is CancellationException) {
+                    UsageEvent.ANNOTATED_PDF_EXPORT_CANCELLED
+                } else {
+                    UsageEvent.ANNOTATED_PDF_EXPORT_FAILED
+                },
+            )
             if (isCurrentExport(request)) {
                 exportRequest = null
                 interaction.update { it.copy(isExporting = false, exportFailed = failure !is CancellationException) }
@@ -982,6 +1002,7 @@ class PatternAnnotationViewModel
             viewModelScope.launch {
                 runCatching { command.apply(annotationRepository) }
                     .onSuccess { inverse ->
+                        if (command is PatternAnnotationCommand.Insert) analytics.track(UsageEvent.ANNOTATION_CREATED)
                         interaction.update { state ->
                             if (currentEditContext() == commandContext) {
                                 onSuccess(state).copy(
@@ -1386,6 +1407,22 @@ private fun PatternStrokeDraft.toAnnotation(
         zIndex = zIndex,
     )
 }
+
+private fun PatternAnnotationTool.analyticsDetail(): UsageDetail =
+    when (this) {
+        PatternAnnotationTool.BROWSE -> UsageDetail.ANNOTATION_BROWSE
+        PatternAnnotationTool.PEN -> UsageDetail.ANNOTATION_PEN
+        PatternAnnotationTool.HIGHLIGHTER -> UsageDetail.ANNOTATION_HIGHLIGHTER
+        PatternAnnotationTool.ERASER -> UsageDetail.ANNOTATION_ERASER
+        PatternAnnotationTool.SELECT -> UsageDetail.ANNOTATION_SELECT
+        PatternAnnotationTool.LINE -> UsageDetail.ANNOTATION_LINE
+        PatternAnnotationTool.ARROW -> UsageDetail.ANNOTATION_ARROW
+        PatternAnnotationTool.RECTANGLE -> UsageDetail.ANNOTATION_RECTANGLE
+        PatternAnnotationTool.ELLIPSE -> UsageDetail.ANNOTATION_ELLIPSE
+        PatternAnnotationTool.TEXT -> UsageDetail.ANNOTATION_TEXT
+        PatternAnnotationTool.CALLOUT -> UsageDetail.ANNOTATION_CALLOUT
+        PatternAnnotationTool.CHART -> UsageDetail.ANNOTATION_CHART
+    }
 
 private fun PatternAnnotationTool.toAnnotationKind(): PatternAnnotationKind? =
     when (this) {

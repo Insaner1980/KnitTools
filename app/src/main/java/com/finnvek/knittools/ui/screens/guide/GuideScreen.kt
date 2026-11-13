@@ -12,13 +12,17 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.key
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import com.finnvek.knittools.R
+import com.finnvek.knittools.analytics.UsageDetail
+import com.finnvek.knittools.analytics.UsageEvent
 import com.finnvek.knittools.pro.ProState
 import com.finnvek.knittools.pro.proActionAccess
+import com.finnvek.knittools.ui.LocalUsageAnalytics
 import com.finnvek.knittools.ui.components.OverviewLinkRow
 import com.finnvek.knittools.ui.components.OverviewTextAction
 import com.finnvek.knittools.ui.components.ProMarker
@@ -96,6 +100,19 @@ private fun GuideTopicContent(
     proState: ProState?,
     onAction: (GuideAction) -> Unit,
 ) {
+    val analytics = LocalUsageAnalytics.current
+    LaunchedEffect(topic) {
+        analytics.track(
+            UsageEvent.GUIDE_TOPIC_OPENED,
+            when (topic) {
+                GuideTopic.CONTINUE -> UsageDetail.GUIDE_CONTINUE
+                GuideTopic.PATTERN -> UsageDetail.GUIDE_PATTERN
+                GuideTopic.YARN -> UsageDetail.GUIDE_YARN
+                GuideTopic.DETAILS -> UsageDetail.GUIDE_DETAILS
+                GuideTopic.TOOLS -> UsageDetail.GUIDE_TOOLS
+            },
+        )
+    }
     Text(
         stringResource(topic.subtitle),
         style = MaterialTheme.typography.bodyMedium,

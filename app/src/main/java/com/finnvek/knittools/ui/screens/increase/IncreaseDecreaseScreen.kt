@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.finnvek.knittools.R
+import com.finnvek.knittools.analytics.UsageDetail
 import com.finnvek.knittools.domain.calculator.IncreaseDecreaseCalculator
 import com.finnvek.knittools.domain.calculator.MeasurementNumberParser
 import com.finnvek.knittools.domain.calculator.ParsedInstruction
@@ -32,6 +33,7 @@ import com.finnvek.knittools.domain.model.IncreaseDecreaseMessage
 import com.finnvek.knittools.domain.model.IncreaseDecreaseMode
 import com.finnvek.knittools.domain.model.IncreaseDecreaseResult
 import com.finnvek.knittools.domain.model.KnittingStyle
+import com.finnvek.knittools.ui.TrackCalculatorResult
 import com.finnvek.knittools.ui.components.AnimatedResultNumber
 import com.finnvek.knittools.ui.components.BadgePill
 import com.finnvek.knittools.ui.components.InfoTipText
@@ -76,6 +78,8 @@ fun IncreaseDecreaseScreen(
             IncreaseDecreaseCalculator.calculate(current, change, mode, style)
         }
     }
+
+    TrackCalculatorResult(UsageDetail.TOOL_INCREASE_DECREASE, result?.isValid == true)
 
     ToolScreenScaffold(
         title = stringResource(R.string.tool_increase_decrease),

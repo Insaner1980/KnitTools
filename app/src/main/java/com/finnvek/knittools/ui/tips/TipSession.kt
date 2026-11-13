@@ -3,6 +3,7 @@ package com.finnvek.knittools.ui.tips
 import android.util.Log
 import com.finnvek.knittools.BuildConfig
 import com.finnvek.knittools.analytics.UsageAnalytics
+import com.finnvek.knittools.analytics.UsageDetail
 import com.finnvek.knittools.analytics.UsageEvent
 import com.finnvek.knittools.di.ApplicationScope
 import com.finnvek.knittools.domain.tips.TipContext
@@ -260,6 +261,7 @@ class TipSession
                 val current = mutableState.value
                 if (current.presentation != presentation || visiblePresentation == presentation) return
                 visiblePresentation = presentation
+                analytics.track(UsageEvent.TIP_SHOWN, tipDetail(presentation.id))
                 if (presentation != current.workSessionRequest && presentation.id != TipId.UNDO) {
                     mutableState.update { it.copy(shownThisProcess = it.shownThisProcess + 1) }
                 }
@@ -375,7 +377,10 @@ class TipSession
             }
             if (!wasVisible) return
             try {
-                analytics.track(if (acted) UsageEvent.TIP_ACTED else UsageEvent.TIP_DISMISSED)
+                analytics.track(
+                    if (acted) UsageEvent.TIP_ACTED else UsageEvent.TIP_DISMISSED,
+                    tipDetail(presentation.id),
+                )
             } catch (_: Exception) {
                 if (BuildConfig.DEBUG) Log.w("TipSession", "Unable to record guidance event")
             }
@@ -398,4 +403,22 @@ class TipSession
                     }
                 }
             }
+    }
+
+private fun tipDetail(tip: TipId): UsageDetail =
+    when (tip) {
+        TipId.FIRST_ROW -> UsageDetail.TIP_FIRST_ROW
+        TipId.UNDO -> UsageDetail.TIP_UNDO
+        TipId.STEP_SIZE -> UsageDetail.TIP_STEP_SIZE
+        TipId.WORK_SESSION -> UsageDetail.TIP_WORK_SESSION
+        TipId.OVERVIEW_INTRO -> UsageDetail.TIP_OVERVIEW_INTRO
+        TipId.PATTERN_TILE -> UsageDetail.TIP_PATTERN_TILE
+        TipId.READING_LINE -> UsageDetail.TIP_READING_LINE
+        TipId.KEEP_SCREEN_ON -> UsageDetail.TIP_KEEP_SCREEN_ON
+        TipId.TARGET_REACHED -> UsageDetail.TIP_TARGET_REACHED
+        TipId.FIRST_SESSION_SAVED -> UsageDetail.TIP_FIRST_SESSION_SAVED
+        TipId.BACKUP -> UsageDetail.TIP_BACKUP
+        TipId.FOLDERS -> UsageDetail.TIP_FOLDERS
+        TipId.WIDGET -> UsageDetail.TIP_WIDGET
+        TipId.TOOLS_INTRO -> UsageDetail.TIP_TOOLS_INTRO
     }

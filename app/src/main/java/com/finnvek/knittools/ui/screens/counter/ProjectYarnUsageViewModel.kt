@@ -3,6 +3,8 @@ package com.finnvek.knittools.ui.screens.counter
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.finnvek.knittools.analytics.UsageAnalytics
+import com.finnvek.knittools.analytics.UsageEvent
 import com.finnvek.knittools.data.datastore.PreferencesManager
 import com.finnvek.knittools.domain.calculator.MeasurementNumberFormatter
 import com.finnvek.knittools.domain.model.ProjectYarnUsageItem
@@ -37,6 +39,7 @@ class ProjectYarnUsageViewModel
         private val repository: ProjectYarnUsageRepository,
         private val preferencesManager: PreferencesManager,
         private val savedStateHandle: SavedStateHandle,
+        private val analytics: UsageAnalytics = UsageAnalytics.NONE,
     ) : ViewModel() {
         val displayUnit =
             preferencesManager.preferences
@@ -148,6 +151,7 @@ class ProjectYarnUsageViewModel
                         result is YarnUsageResult.Updated ||
                         result == YarnUsageResult.Deleted
                     ) {
+                        if (!deleting) analytics.track(UsageEvent.YARN_USAGE_SAVED)
                         savedStateHandle.saveYarnUsage(null)
                         mutableEditor.update { it.copy(completed = true, busy = false) }
                     } else {

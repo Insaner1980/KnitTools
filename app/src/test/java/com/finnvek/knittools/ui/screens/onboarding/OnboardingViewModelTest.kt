@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModelStore
 import com.finnvek.knittools.R
 import com.finnvek.knittools.billing.BillingManager
 import com.finnvek.knittools.billing.BillingProductStatus
+import com.finnvek.knittools.data.datastore.AppPreferences
 import com.finnvek.knittools.data.datastore.PreferencesManager
 import com.finnvek.knittools.data.storage.OnboardingPdfStorage
 import com.finnvek.knittools.domain.model.OnboardingDraft
@@ -82,6 +83,7 @@ class OnboardingViewModelTest {
 
     @Before fun setup() {
         Dispatchers.setMain(dispatcher)
+        every { preferences.preferences } returns MutableStateFlow(AppPreferences())
         every { state.draft } returns saved
         every { state.state } returns MutableStateFlow(OnboardingState())
         coEvery { state.saveDraft(any()) } coAnswers {
@@ -133,6 +135,29 @@ class OnboardingViewModelTest {
             coEvery { projects.hasAnyProject() } returns true
             assertFalse(viewModel().state.value.required!!)
             assertNull(saved.value)
+        }
+
+    @Test fun `analytics remains off until a successful explicit preference write`() =
+        runTest {
+            val storedPreferences = MutableStateFlow(AppPreferences())
+            every { preferences.preferences } returns storedPreferences
+            coEvery { preferences.setUsageAnalyticsEnabled(true) } returns false
+            val vm = viewModel()
+            assertFalse(vm.usageAnalyticsEnabled.value)
+            coVerify(exactly = 0) { preferences.setUsageAnalyticsEnabled(any()) }
+            vm.setUsageAnalyticsEnabled(true)
+            runCurrent()
+            assertFalse(storedPreferences.value.usageAnalyticsEnabled)
+            assertEquals(R.string.generic_error_unknown, vm.state.value.messageRes)
+
+            coEvery { preferences.setUsageAnalyticsEnabled(true) } coAnswers {
+                storedPreferences.value = storedPreferences.value.copy(usageAnalyticsEnabled = true)
+                true
+            }
+            vm.setUsageAnalyticsEnabled(true)
+            runCurrent()
+            assertTrue(storedPreferences.value.usageAnalyticsEnabled)
+            coVerify(exactly = 2) { preferences.setUsageAnalyticsEnabled(true) }
         }
 
     @Test fun `committed receipt resumes price without creating another project`() =

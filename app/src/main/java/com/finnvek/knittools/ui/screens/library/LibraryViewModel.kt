@@ -2,6 +2,8 @@ package com.finnvek.knittools.ui.screens.library
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.finnvek.knittools.analytics.UsageAnalytics
+import com.finnvek.knittools.analytics.UsageEvent
 import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.domain.model.ProgressPhoto
 import com.finnvek.knittools.domain.model.SavedPattern
@@ -41,6 +43,7 @@ class LibraryViewModel
         private val progressPhotoRepository: ProgressPhotoRepository,
         private val proManager: ProManager,
         counterRepository: CounterRepository,
+        private val analytics: UsageAnalytics = UsageAnalytics.NONE,
     ) : ViewModel() {
         val proState = proManager.proState
         val proAccessReady get() = proManager.initialStateReady
@@ -310,6 +313,7 @@ class LibraryViewModel
                         _yarnSaveErrorId.value += 1
                     } else {
                         pendingManualYarnCard = null
+                        analytics.track(UsageEvent.YARN_CARD_CREATED)
                         _yarnSaveSuccessId.value += 1
                     }
                 } catch (cancellation: CancellationException) {

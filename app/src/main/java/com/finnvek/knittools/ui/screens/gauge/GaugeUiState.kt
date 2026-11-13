@@ -254,6 +254,7 @@ sealed interface GaugeAction {
 sealed interface GaugeUiEvent {
     data class Copy(
         val text: String,
+        val task: GaugeTask,
     ) : GaugeUiEvent
 
     data class Message(

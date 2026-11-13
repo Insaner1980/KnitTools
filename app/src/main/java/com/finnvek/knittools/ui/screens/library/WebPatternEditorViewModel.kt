@@ -3,6 +3,9 @@ package com.finnvek.knittools.ui.screens.library
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.finnvek.knittools.analytics.UsageAnalytics
+import com.finnvek.knittools.analytics.UsageDetail
+import com.finnvek.knittools.analytics.UsageEvent
 import com.finnvek.knittools.domain.model.SavedPattern
 import com.finnvek.knittools.domain.model.WebPatternDesignerValidation
 import com.finnvek.knittools.domain.model.WebPatternTitleValidation
@@ -147,6 +150,7 @@ class WebPatternEditorViewModel
         private val savedPatternRepository: SavedPatternRepository,
         private val counterRepository: CounterRepository,
         private val savedStateHandle: SavedStateHandle,
+        private val analytics: UsageAnalytics = UsageAnalytics.NONE,
     ) : ViewModel() {
         private val route =
             WebPatternEditorRoute.from(
@@ -398,6 +402,9 @@ class WebPatternEditorViewModel
             currentRoute: WebPatternEditorRoute,
             submittedUrl: String,
         ) {
+            if (result is WebPatternMutationResult.Created || result is WebPatternMutationResult.Updated) {
+                analytics.track(UsageEvent.WEB_PATTERN_SAVED, UsageDetail.SOURCE_WEB)
+            }
             when (result) {
                 is WebPatternMutationResult.Created -> finishCreatedOrDuplicate(result.patternId, currentRoute)
                 is WebPatternMutationResult.Duplicate -> {

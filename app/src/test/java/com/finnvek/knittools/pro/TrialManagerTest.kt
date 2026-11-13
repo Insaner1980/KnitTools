@@ -149,7 +149,9 @@ class TrialManagerTest {
                         ),
                     storedTiming = storedTiming,
                     lastKnownTimestamp = lastKnownTimestamp,
+                    clockTamperedAlready = evaluation.state.clockTampered,
                 )
+            assertFalse("Rollback interval $interval must remain tolerated", evaluation.state.clockTampered)
             storedTiming = checkNotNull(evaluation.anchors)
             lastKnownTimestamp = evaluation.lastKnownTimestamp
         }

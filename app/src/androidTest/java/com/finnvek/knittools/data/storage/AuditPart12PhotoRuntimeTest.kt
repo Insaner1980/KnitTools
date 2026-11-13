@@ -32,7 +32,14 @@ class AuditPart12PhotoRuntimeTest {
                 writeTestBitmap(source)
                 db.counterProjectDao().insert(CounterProjectEntity(id = projectId, name = "Synthetic note"))
                 val repository =
-                    ProgressPhotoRepository(db.progressPhotoDao(), ProgressPhotoStorage(), context, Dispatchers.IO)
+                    ProgressPhotoRepository(
+                        db.progressPhotoDao(),
+                        ProgressPhotoStorage(),
+                        context,
+                        Dispatchers.IO,
+                        com.finnvek.knittools.data.local
+                            .RoomDatabaseTransactionRunner(db),
+                    )
                 repository.savePhoto(projectId, source.toUri(), 42, "a".repeat(99) + "\uD83D\uDE00")
                 val original = db.progressPhotoDao().getAllPhotosOnce().single()
                 assertEquals("a".repeat(99), original.note)

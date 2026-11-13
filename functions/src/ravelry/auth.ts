@@ -143,11 +143,18 @@ export const ravelryCallback = onRequest(ravelrySecretOptions, async (request, r
       const ticket = requireBrowserValue(query.start);
       await rateLimiter.consumeGlobal("callback");
       const secret = browserSecretForStart(request.headers.cookie);
-      const stored = await stateStore.bindBrowser(state, browserSecretHash(ticket), browserSecretHash(secret), Date.now());
+      const startHash = browserSecretHash(ticket);
+      const pending = await stateStore.getState(state);
+      if (!pending || pending.usedAtMillis != null || pending.expiresAtMillis <= Date.now() ||
+          pending.browserStartHash !== startHash || pending.browserBindingHash != null ||
+          await tokenStore.getConnectionGeneration(pending.uid) !== (pending.connectionGeneration ?? 0)) {
+        throw new RavelryAuthFlowError("invalid_browser_session", 400);
+      }
+      await rateLimiter.consumeUid(pending.uid, "callback");
+      const stored = await stateStore.bindBrowser(state, startHash, browserSecretHash(secret), Date.now());
       if (!stored || await tokenStore.getConnectionGeneration(stored.uid) !== (stored.connectionGeneration ?? 0)) {
         throw new RavelryAuthFlowError("invalid_browser_session", 400);
       }
-      await rateLimiter.consumeUid(stored.uid, "callback");
       response.set("Set-Cookie", `${BROWSER_AUTH_COOKIE}=${secret}; Max-Age=600; Path=/; Secure; HttpOnly; SameSite=Lax`);
       response.redirect(302, ravelryAuthorizeUrl(ravelryClientId.value(), stored.redirectUri, state, stored.codeChallenge));
       return;

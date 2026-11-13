@@ -71,7 +71,13 @@ class BackupCancellationRuntimeTest {
                 ) {
                     writes += 1
                     if (writes == 1) {
-                        target.writeBytes(source.inputStream().use { it.readNBytes(16) })
+                        target.writeBytes(
+                            source.inputStream().use {
+                                ByteArray(16).also { bytes ->
+                                    java.io.DataInputStream(it).readFully(bytes)
+                                }
+                            },
+                        )
                         started.complete(Unit)
                         try {
                             awaitCancellation()

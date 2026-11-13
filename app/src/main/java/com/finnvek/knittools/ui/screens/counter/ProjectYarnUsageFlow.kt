@@ -1,6 +1,7 @@
 package com.finnvek.knittools.ui.screens.counter
 
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.SheetValue
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -39,7 +40,11 @@ fun ProjectYarnUsageFlow(
     val items by model.items.collectAsStateWithLifecycle()
     val editor by model.editor.collectAsStateWithLifecycle()
     val managementSheet = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    val usageSheet = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val usageSheet =
+        rememberModalBottomSheetState(
+            skipPartiallyExpanded = true,
+            confirmValueChange = { it != SheetValue.Hidden || !model.editor.value.busy },
+        )
     val scope = rememberCoroutineScope()
     var transitioning by remember { mutableStateOf(false) }
     var returnKey by rememberSaveable(projectId) { mutableStateOf<String?>(null) }

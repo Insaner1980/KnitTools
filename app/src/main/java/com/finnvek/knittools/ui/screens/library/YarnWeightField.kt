@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -36,35 +37,28 @@ internal fun YarnWeightField(
 ) {
     val label = stringResource(R.string.weight_category)
     var customMode by rememberSaveable { mutableStateOf(!StandardYarnWeight.isStandardOrBlank(value)) }
-    if (customMode) {
-        ProjectYarnTextField(
-            value = value,
-            onValueChange = onValueChange,
-            label = label,
-            modifier = modifier,
-            singleLine = true,
-        )
-        return
-    }
-
     var expanded by remember { mutableStateOf(false) }
     // Valikko on kentän levyinen kuten Gaugen valitsimissa: sisällön levyisenä se jäi irralliseksi kaistaleeksi.
     BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
         val menuWidth = maxWidth
         ProjectYarnTextField(
             value = value,
-            onValueChange = {},
+            onValueChange = { if (customMode) onValueChange(it) },
             label = label,
             singleLine = true,
-            readOnly = true,
-            trailingIcon = { DropdownIndicator() },
+            readOnly = !customMode,
+            trailingIcon = {
+                IconButton(onClick = { expanded = true }) { DropdownIndicator() }
+            },
         )
         // Vain luku -kenttä ei avaa listaa itse, joten napautus otetaan koko kentän päältä.
-        Spacer(
-            Modifier
-                .matchParentSize()
-                .clickable(role = Role.Button, onClickLabel = label) { expanded = true },
-        )
+        if (!customMode) {
+            Spacer(
+                Modifier
+                    .matchParentSize()
+                    .clickable(role = Role.Button, onClickLabel = label) { expanded = true },
+            )
+        }
         DropdownMenu(
             expanded = expanded,
             onDismissRequest = { expanded = false },
@@ -88,6 +82,7 @@ internal fun YarnWeightField(
                         )
                     },
                     onClick = {
+                        customMode = false
                         onValueChange(weight.label)
                         expanded = false
                     },

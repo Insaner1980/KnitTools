@@ -41,7 +41,7 @@ fun MoveProjectToFolderSheet(
             },
         isMoving = state.isMutating,
         onMoveToFolder = viewModel::moveTo,
-        onRetry = viewModel::retryLoading,
+        onRetry = viewModel::retry,
         onDismiss = onDismiss,
     )
 }

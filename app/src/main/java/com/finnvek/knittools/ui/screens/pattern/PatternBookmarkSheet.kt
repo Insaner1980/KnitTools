@@ -35,6 +35,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
@@ -104,7 +105,10 @@ internal fun PatternBookmarkSheet(
                 Text(
                     text = description,
                     color = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.semantics { contentDescription = description },
+                    modifier =
+                        Modifier.semantics {
+                            contentDescription = description
+                        },
                 )
                 TextButton(
                     onClick = actions.onClearError,
@@ -245,7 +249,10 @@ private fun PatternBookmarkRow(
                 Modifier
                     .fillMaxWidth()
                     .heightIn(min = 48.dp)
-                    .semantics { contentDescription = description },
+                    .semantics {
+                        contentDescription = description
+                        this.selected = selected
+                    },
         ) {
             Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp)) {
                 Text(

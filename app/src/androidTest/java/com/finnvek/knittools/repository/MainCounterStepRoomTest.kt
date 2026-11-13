@@ -23,7 +23,6 @@ import androidx.compose.ui.test.performTextReplacement
 import androidx.compose.ui.unit.Density
 import androidx.lifecycle.ViewModelStore
 import androidx.room.Room
-import androidx.test.core.app.ApplicationProvider
 import androidx.test.platform.app.InstrumentationRegistry
 import com.finnvek.knittools.R
 import com.finnvek.knittools.data.local.CounterHistoryEntity
@@ -75,8 +74,7 @@ class MainCounterStepRoomTest {
     private val models = ViewModelStore()
 
     @Before fun setup() {
-        context = ApplicationProvider.getApplicationContext()
-        check(context.packageName == "com.finnvek.knittools.notestest")
+        context = notesTestContext()
         database = Room.databaseBuilder(context, KnitToolsDatabase::class.java, databaseName).build()
         fixture = RoomCounterTestFixture(database, context)
     }

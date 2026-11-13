@@ -43,6 +43,10 @@ class StartupTimingBenchmark {
         compilation: CompilationMode,
     ) {
         val ui = SmokeDevice()
+        org.junit.Assume.assumeTrue(
+            "Compilation reset requires API 34+ or an already rooted shell to preserve fixture data",
+            android.os.Build.VERSION.SDK_INT >= 34 || ui.shell("id -u").trim() == "0",
+        )
         val args = InstrumentationRegistry.getArguments()
         val fixture = if (populated) "populated" else "empty"
         val info = ui.context.packageManager.getApplicationInfo(SmokeDevice.PACKAGE, 0)

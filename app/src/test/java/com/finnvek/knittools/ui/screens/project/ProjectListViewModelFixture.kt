@@ -2,6 +2,7 @@ package com.finnvek.knittools.ui.screens.project
 
 import android.content.Context
 import androidx.lifecycle.SavedStateHandle
+import androidx.lifecycle.ViewModelStore
 import com.finnvek.knittools.analytics.UsageAnalytics
 import com.finnvek.knittools.data.datastore.PreferencesManager
 import com.finnvek.knittools.domain.model.ProjectDocument
@@ -29,6 +30,8 @@ import org.junit.Before
 
 @OptIn(ExperimentalCoroutinesApi::class)
 abstract class ProjectListViewModelFixture {
+    private val viewModels = ViewModelStore()
+    private var modelIndex = 0
     protected val testDispatcher = UnconfinedTestDispatcher()
 
     protected lateinit var repository: CounterRepository
@@ -80,6 +83,7 @@ abstract class ProjectListViewModelFixture {
 
     @After
     fun tearDown() {
+        viewModels.clear()
         Dispatchers.resetMain()
     }
 
@@ -98,5 +102,5 @@ abstract class ProjectListViewModelFixture {
         savedStateHandle = savedStateHandle,
         onboardingStateRepository = onboardingStateRepository,
         analytics = analytics,
-    )
+    ).also { viewModels.put("project-list-${modelIndex++}", it) }
 }

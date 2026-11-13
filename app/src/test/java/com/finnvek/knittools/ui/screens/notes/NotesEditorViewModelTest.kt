@@ -311,9 +311,8 @@ class NotesEditorViewModelTest {
     @Test
     fun `late save completion preserves newer typing and rebases its next save`() =
         runTest {
-            val project = CounterProject(id = 1L, name = "Test", notes = "Base", notesCreated = true)
+            val project = observeProjectWithBaseNotes()
             val handle = SavedStateHandle(mapOf("projectId" to 1L))
-            every { repository.observeProject(1L) } returns flowOf(project)
             var completeFirstSave: ((ProjectNotesSaveResult) -> Unit)? = null
             coEvery { repository.saveProjectNotes(1L, "Base", "Draft A", false) } coAnswers {
                 suspendCoroutine { continuation -> completeFirstSave = { continuation.resume(it) } }
@@ -452,9 +451,8 @@ class NotesEditorViewModelTest {
     @Test
     fun `explicit discard cancels debounce and prevents the final persistence flush`() =
         runTest {
-            val project = CounterProject(id = 1L, name = "Test", notes = "Base", notesCreated = true)
+            observeProjectWithBaseNotes()
             val handle = SavedStateHandle(mapOf("projectId" to 1L))
-            every { repository.observeProject(1L) } returns flowOf(project)
             val viewModel = NotesEditorViewModel(repository, proManager, applicationScope, handle, mockk())
             runCurrent()
             viewModel.onNotesChanged("Failed edit")
@@ -472,6 +470,12 @@ class NotesEditorViewModelTest {
             assertFalse(viewModel.uiState.value.saveFailed)
             coVerify(exactly = 1) { repository.saveProjectNotes(any(), any(), any(), any()) }
         }
+
+    private fun observeProjectWithBaseNotes(): CounterProject {
+        val project = CounterProject(id = 1L, name = "Test", notes = "Base", notesCreated = true)
+        every { repository.observeProject(1L) } returns flowOf(project)
+        return project
+    }
 
     @Test
     fun `final persistence propagates repository cancellation`() =

@@ -51,13 +51,13 @@ class ReminderRepeatDisplaySourceTest {
         val other = pluralItem(strings, "reminder_repeat_occurrence_format", "other")
         val one = pluralItem(strings, "reminder_repeat_occurrence_format", "one")
 
-        val rendered = String.format(other, 11, 3)
+        val rendered = String.format(java.util.Locale.ROOT, other, 11, 3)
 
         assertEquals("Repeat #11, interval 3", rendered)
         assertNotEquals("Repeat 11/3", rendered)
         assertFalse("New copy must not contain a slash", rendered.contains("/"))
         assertFalse("New copy must not contain a middle dot", rendered.contains(" · "))
-        assertEquals("Repeat #11, interval 1", String.format(one, 11, 1))
+        assertEquals("Repeat #11, interval 1", String.format(java.util.Locale.ROOT, one, 11, 1))
     }
 
     private fun pluralItem(

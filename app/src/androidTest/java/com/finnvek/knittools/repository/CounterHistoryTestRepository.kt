@@ -110,6 +110,7 @@ internal class RoomCounterTestFixture(
                     ProgressPhotoStorage(),
                     context,
                     Dispatchers.IO,
+                    transactionRunner = RoomDatabaseTransactionRunner(database),
                 ),
             projectYarnNoteRepository =
                 ProjectYarnNoteRepository(

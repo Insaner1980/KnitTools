@@ -2,6 +2,8 @@ package com.finnvek.knittools.domain.calculator
 
 import com.finnvek.knittools.domain.model.READING_LINE_MAX_Y_FRACTION
 import com.finnvek.knittools.domain.model.READING_LINE_MIN_Y_FRACTION
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonArray
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -92,6 +94,8 @@ class RowMappingParserTest {
                 },
             )
 
+        assertTrue(serialized.length <= ROW_MAPPING_MAX_JSON_LENGTH)
+        assertEquals(ROW_MAPPING_MAX_MARKERS, Json.parseToJsonElement(serialized).jsonArray.size)
         assertEquals(ROW_MAPPING_MAX_MARKERS, parseMapping(serialized).size)
     }
 

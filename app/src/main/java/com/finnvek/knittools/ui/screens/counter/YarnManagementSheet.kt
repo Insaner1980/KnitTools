@@ -88,6 +88,9 @@ fun YarnManagementSheet(
     focusKey: String? = null,
     sheetState: SheetState = rememberModalBottomSheetState(),
 ) {
+    val scope = rememberCoroutineScope()
+    var creatingNote by remember { mutableStateOf(false) }
+    var createResult by remember { mutableStateOf<ProjectYarnNoteEditResult?>(null) }
     var showProjectYarnForm by rememberSaveable { mutableStateOf(false) }
     var editingNote by rememberSaveable(
         stateSaver = ProjectYarnNoteEditorSaver,
@@ -184,9 +187,21 @@ fun YarnManagementSheet(
     // oli kolmas eri tapa lisätä lanka.
     if (showProjectYarnForm) {
         ProjectYarnForm(
+            saving = creatingNote,
+            result = createResult,
             onSave = { name, description, quantity, notes ->
-                actions.onSaveProjectYarnNote(name, description, quantity, notes)
-                showProjectYarnForm = false
+                if (!creatingNote) {
+                    creatingNote = true
+                    val pending = actions.onSaveProjectYarnNote(name, description, quantity, notes)
+                    scope.launch {
+                        try {
+                            createResult = pending.await()
+                            if (createResult == ProjectYarnNoteEditResult.Saved) showProjectYarnForm = false
+                        } finally {
+                            creatingNote = false
+                        }
+                    }
+                }
             },
             onCancel = { showProjectYarnForm = false },
         )
@@ -203,7 +218,7 @@ fun YarnManagementSheet(
 data class YarnManagementSheetActions(
     val onUnlinkYarn: (Long) -> Unit,
     val onAddYarn: () -> Unit,
-    val onSaveProjectYarnNote: (String, String, Int, String) -> Unit,
+    val onSaveProjectYarnNote: (String, String, Int, String) -> kotlinx.coroutines.Deferred<ProjectYarnNoteEditResult>,
     val onDeleteProjectYarnNote: (Long) -> Unit,
     val onSaveProjectYarnNoteToMyYarn: (Long) -> Unit,
     val onDismiss: () -> Unit,

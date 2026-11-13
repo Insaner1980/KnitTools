@@ -21,6 +21,7 @@ import io.mockk.mockkStatic
 import io.mockk.unmockkAll
 import io.mockk.verify
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -33,6 +34,43 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class InAppReviewManagerTest {
+    @Test fun cancellationBeforePlayLaunchReleasesThePersistedClaim() =
+        runTest {
+            val requested = booleanPreferencesKey("review_requested")
+            val actionCount = intPreferencesKey("action_count")
+            var persisted = preferencesOf(actionCount to 20)
+            val context = mockk<Context>(relaxed = true)
+            every { context.applicationContext } returns context
+            mockkStatic("com.finnvek.knittools.data.datastore.PreferencesDataStoreSafetyKt")
+            coEvery { any<DataStore<Preferences>>().editPreferencesSafely(any()) } coAnswers {
+                val next = persisted.toMutablePreferences()
+                secondArg<suspend (MutablePreferences) -> Unit>()(next)
+                persisted = next
+                true
+            }
+            val task = mockk<Task<ReviewInfo>>(relaxed = true)
+            every { task.isComplete } returns false
+            val play = mockk<ReviewManager>(relaxed = true)
+            every { play.requestReviewFlow() } returns task
+            mockkStatic(ReviewManagerFactory::class)
+            every { ReviewManagerFactory.create(context) } returns play
+            val manager = InAppReviewManager(context)
+            val request = launch { manager.maybeRequestReview(mockk<Activity>()) }
+            testScheduler.runCurrent()
+            assertTrue(persisted[requested] == true)
+            request.cancelAndJoin()
+            assertFalse(persisted[requested] == true)
+            verify(exactly = 0) { play.launchReviewFlow(any(), any()) }
+            every { task.isComplete } returns true
+            every { task.exception } returns null
+            every { task.isCanceled } returns false
+            every { task.result } returns mockk<ReviewInfo>()
+            manager.maybeRequestReview(mockk<Activity>())
+            assertTrue(persisted[requested] == true)
+            verify(exactly = 2) { play.requestReviewFlow() }
+            verify(exactly = 1) { play.launchReviewFlow(any(), any()) }
+        }
+
     @After
     fun tearDown() = unmockkAll()
 

@@ -26,9 +26,11 @@ class ProjectFolderMoveViewModel
         val movedEvents = movedEventChannel.receiveAsFlow()
         private var projectId: Long? = null
         private var observation: Job? = null
+        private var failedMove: Pair<Long, Long?>? = null
 
         fun prepareProject(id: Long) {
             if (projectId != id) {
+                failedMove = null
                 projectId = id
                 _state.value = ProjectFoldersState(isMutating = _state.value.isMutating)
             }
@@ -52,9 +54,19 @@ class ProjectFolderMoveViewModel
             observation?.cancel()
         }
 
+        fun retry() {
+            val failed = failedMove
+            if (failed != null && failed.first == projectId) {
+                moveTo(failed.second)
+            } else {
+                retryLoading()
+            }
+        }
+
         fun moveTo(folderId: Long?) {
             val id = projectId ?: return
             if (_state.value.isMutating) return
+            failedMove = null
             _state.update { it.copy(isMutating = true, mutationError = null) }
             viewModelScope.launch {
                 try {
@@ -62,6 +74,7 @@ class ProjectFolderMoveViewModel
                     if (result.isSuccess) {
                         movedEventChannel.send(id)
                     } else if (projectId == id) {
+                        failedMove = id to folderId
                         _state.update { it.copy(mutationError = result) }
                     }
                 } finally {

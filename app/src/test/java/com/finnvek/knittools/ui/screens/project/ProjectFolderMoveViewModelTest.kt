@@ -57,6 +57,19 @@ class ProjectFolderMoveViewModelTest {
     }
 
     @Test
+    fun retryRepeatsFailedUnfiledDestinationAndNeverMovesANewOwner() =
+        runTest {
+            coEvery { repository.moveProjects(setOf(7), null) } returns ProjectFolderMutationResult.PersistenceFailure
+            viewModel.prepareProject(7)
+            viewModel.moveTo(null)
+            viewModel.retry()
+            coVerify(exactly = 2) { repository.moveProjects(setOf(7), null) }
+            viewModel.prepareProject(9)
+            viewModel.retry()
+            coVerify(exactly = 0) { repository.moveProjects(setOf(9), any()) }
+        }
+
+    @Test
     fun `single move uses stable project identity and emits success only after repository result`() =
         runTest {
             coEvery { repository.moveProjects(setOf(7), 2) } returns ProjectFolderMutationResult.Assigned(7, 2)

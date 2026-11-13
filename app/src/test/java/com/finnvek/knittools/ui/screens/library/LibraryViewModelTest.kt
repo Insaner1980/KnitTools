@@ -105,6 +105,31 @@ class LibraryViewModelTest {
         )
 
     @Test
+    fun failedManualCreationRetainsDraftAndRetryWaitsForCommittedSuccess() =
+        runTest {
+            val model = createViewModel()
+            runCurrent()
+            val pending = CompletableDeferred<Long?>()
+            coEvery { yarnCardRepository.saveCard(any()) } coAnswers { pending.await() }
+            val input = ManualYarnCardInput(yarnName = "Wool")
+            assertTrue(model.createManualYarnCard(input))
+            runCurrent()
+            assertTrue(model.isSavingYarnCard.value)
+            assertTrue(model.createManualYarnCard(input.copy(yarnName = "Ignored")))
+            pending.complete(null)
+            runCurrent()
+            assertEquals(1L, model.yarnSaveErrorId.value)
+            assertEquals(0L, model.yarnSaveSuccessId.value)
+            assertFalse(model.isSavingYarnCard.value)
+            coEvery { yarnCardRepository.saveCard(any()) } returns 19L
+            assertTrue(model.retryCreateManualYarnCard())
+            runCurrent()
+            assertEquals(1L, model.yarnSaveSuccessId.value)
+            coVerify(exactly = 2) { yarnCardRepository.saveCard(match { it.yarnName == "Wool" }) }
+            coVerify(exactly = 0) { yarnCardRepository.saveCard(match { it.yarnName == "Ignored" }) }
+        }
+
+    @Test
     fun `leaving a pattern route cancels its load without affecting the next route`() =
         runTest {
             val pending = CompletableDeferred<SavedPattern?>()

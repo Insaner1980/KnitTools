@@ -12,7 +12,7 @@ export const ravelryCredentialSurface: MatcherPlugin = {
 
     const patterns = [
       {
-        regex: /BuildConfig\.RAVELRY_(?:BASIC_AUTH|OAUTH2)_[A-Z_]+/,
+        regex: /BuildConfig\.RAVELRY_(?:(?:BASIC_AUTH|OAUTH2)_[A-Z_]+|CLIENT_SECRET|ACCESS_TOKEN|REFRESH_TOKEN)\b/,
         label: "Ravelry credential read from BuildConfig",
       },
       {

@@ -401,7 +401,7 @@ object InstructionParser {
     private fun Regex.firstGroupDouble(text: String): Double? = find(text)?.groupValues?.get(1)?.toDoubleOrNull()
 
     private fun detectGaugeUnit(text: String): ParsedInstruction.GaugeUnit =
-        if (text.contains("4 IN")) {
+        if (Regex("""(?<![\d.])4\s*IN(?:CHES?)?\b""").containsMatchIn(text)) {
             ParsedInstruction.GaugeUnit.PER_4_INCHES
         } else {
             ParsedInstruction.GaugeUnit.PER_10_CM
@@ -410,7 +410,7 @@ object InstructionParser {
     private fun detectLengthUnit(text: String): ParsedInstruction.LengthUnit? =
         when {
             text.contains("CM") -> ParsedInstruction.LengthUnit.CM
-            text.contains("INCH") || Regex("""\bIN\b""").containsMatchIn(text) -> ParsedInstruction.LengthUnit.INCHES
+            Regex("""\bINCH(?:ES)?\b|\d\s*IN\b""").containsMatchIn(text) -> ParsedInstruction.LengthUnit.INCHES
             else -> null
         }
 
@@ -428,5 +428,5 @@ object InstructionParser {
             null
         }
 
-    private const val MAX_INPUT_LENGTH = 10_000
+    const val MAX_INPUT_LENGTH = 10_000
 }

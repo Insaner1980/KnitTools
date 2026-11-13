@@ -17,6 +17,7 @@ import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -166,7 +167,11 @@ fun AllPhotosScreen(
             )
         },
     ) { padding ->
-        if (state.photos.isEmpty()) {
+        if (state.isLoading) {
+            Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator()
+            }
+        } else if (state.photos.isEmpty()) {
             CrossStitchEmptyState(
                 glyph = CrossStitchGlyph.PHOTOS,
                 // Sama otsikko kuin projektin galleriassa; selitys kertoo, mistä kuvat tulevat.

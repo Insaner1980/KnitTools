@@ -36,6 +36,7 @@ class PatternImagePdfPipelineTest {
 
     @After
     fun cleanUp() {
+        File(context.filesDir, "pattern_captures/$projectId/session-a").deleteRecursively()
         fixtureDir.deleteRecursively()
         File(context.filesDir, "pattern_pdfs/$projectId").deleteRecursively()
     }

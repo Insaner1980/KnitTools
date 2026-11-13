@@ -5,6 +5,25 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class InstructionParserTest {
+    @Test fun lengthAndGaugeUnitsDoNotTreatPrepositionsOrOtherNumbersAsInches() {
+        assertEquals(
+            ParsedInstruction.GaugeSwatch(width = 12.0, stitches = 20, lengthUnit = null),
+            InstructionParser.parse("20 stitches in width 12"),
+        )
+        assertEquals(
+            ParsedInstruction.GaugeSwatch(width = 4.0, stitches = 20, lengthUnit = ParsedInstruction.LengthUnit.INCHES),
+            InstructionParser.parse("20 stitches in width 4in"),
+        )
+        assertEquals(
+            ParsedInstruction.Gauge(20.0, 28.0, ParsedInstruction.GaugeUnit.PER_4_INCHES),
+            InstructionParser.parse("gauge: 20 / 28 over 4in"),
+        )
+        assertEquals(
+            ParsedInstruction.Gauge(20.0, 28.0, ParsedInstruction.GaugeUnit.PER_10_CM),
+            InstructionParser.parse("gauge: 20 / 28 over 14 inches"),
+        )
+    }
+
     @Test
     fun `parseWithRegex - syotteen pituusraja erottaa sallitun ja ylipitkan syotteen`() {
         val instruction = "Increase 12 stitches evenly across 96 stitches"

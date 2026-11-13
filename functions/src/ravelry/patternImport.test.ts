@@ -566,6 +566,19 @@ describe("Ravelry backend search and import", () => {
     assert.equal(httpsErrorFor(new RavelryClientHttpError(503)).code, "unavailable");
   });
 
+  it("maps missing search endpoints to errors while missing pattern details stay null", async () => {
+    const client = createRavelryClient(async () => new Response("", { status: 404 }));
+    await assert.rejects(client.searchPatterns("synthetic", { query: "hat" }), /ravelry_http_404/);
+    assert.equal(await client.getPatternById("synthetic", 1), null);
+  });
+
+  it("rejects malformed current-user JSON shapes with a sanitized upstream error", async () => {
+    for (const value of [null, true, 42, "text", [], { user: null }, { user: "text" }]) {
+      const client = createRavelryClient(async () => Response.json(value));
+      await assert.rejects(client.getCurrentUser("synthetic"), /ravelry_http_503/);
+    }
+  });
+
   it("imports by ID or URL as metadata without downloading PDFs", async () => {
     const tokenStore = new MemoryTokenStore();
     await tokenStore.saveToken({

@@ -90,11 +90,13 @@ def main():
             ["android", "layout", "--device", args.serial, "--flat", "--full", "--output", str(path)],
             check=True, capture_output=True, timeout=45,
         )
-        windows = json.loads(path.read_text(encoding="utf-8"))
-        return [node for window in windows for node in window["content"]]
+        return json.loads(path.read_text(encoding="utf-8"))
 
     def visible_text(nodes, text):
-        return [node for node in nodes if node.get("text") == text and not node.get("off-screen", False)]
+        return [
+            node for node in nodes
+            if node.get("text") == text and not node.get("off-screen", False) and not node.get("hidden", False)
+        ]
 
     def wait_text(text, name):
         return wait_for(text, lambda: visible_text(layout(name), text))

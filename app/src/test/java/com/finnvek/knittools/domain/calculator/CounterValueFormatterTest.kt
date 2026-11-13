@@ -11,6 +11,19 @@ import org.junit.Assert.assertNull
 import org.junit.Test
 
 class CounterValueFormatterTest {
+    @Test fun repeatSectionRejectsNonpositiveStartRows() {
+        for (start in listOf(-1, 0)) {
+            val invalid =
+                counter(
+                    counterType = ProjectCounterType.REPEAT_SECTION,
+                    repeatStartRow = start,
+                    repeatEndRow = 4,
+                    totalRepeats = 2,
+                )
+            assertEquals(CounterValueDisplay.Plain(invalid.count), CounterValueFormatter.forRepeatSection(invalid, 2))
+        }
+    }
+
     private fun counter(
         count: Int = 0,
         counterType: ProjectCounterType = ProjectCounterType.COUNT_UP,

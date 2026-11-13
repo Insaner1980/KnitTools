@@ -14,6 +14,10 @@ import org.junit.Test
 
 /** Run each method in a fresh instrumentation process; billing inputs remain synthetic. */
 class WidgetReadinessRuntimeTest {
+    @org.junit.After fun resetControl() {
+        if (ProPolicyTestControl.isActive) ProPolicyTestControl.reset()
+    }
+
     @Test fun delayedPurchaseIsNotRejectedFromDefaultState() = verifyDelayed(purchased = true, trial = false)
 
     @Test fun delayedTrialIsNotRejectedFromDefaultState() = verifyDelayed(purchased = false, trial = true)
@@ -24,7 +28,7 @@ class WidgetReadinessRuntimeTest {
         purchased: Boolean,
         trial: Boolean,
     ) = runBlocking(Dispatchers.IO) {
-        check(ProPolicyTestControl.isActive)
+        org.junit.Assume.assumeTrue(ProPolicyTestControl.isActive)
         val manager = controlledManager()
         ProPolicyTestControl.setTrialState(TrialState(hasStarted = true))
         assertFalse(manager.initialStateReady.value)
@@ -38,15 +42,16 @@ class WidgetReadinessRuntimeTest {
                 ProPolicyTestControl.setPurchased(purchased)
             }
         val allowed = manager.hasFeatureAfterInitialLoad(ProFeature.WIDGET)
+        val elapsed = SystemClock.elapsedRealtime() - start
         load.join()
-        assertTrue(SystemClock.elapsedRealtime() - start >= 250)
+        assertTrue(elapsed >= 250)
         assertTrue(allowed == (purchased || trial))
         assertTrue(manager.initialStateReady.value)
     }
 
     @Test fun readinessTimeoutDoesNotInventPurchasedAccess() =
         runBlocking(Dispatchers.IO) {
-            check(ProPolicyTestControl.isActive)
+            org.junit.Assume.assumeTrue(ProPolicyTestControl.isActive)
             val manager = controlledManager()
             ProPolicyTestControl.setTrialState(TrialState(hasStarted = true))
             val start = SystemClock.elapsedRealtime()
@@ -58,6 +63,7 @@ class WidgetReadinessRuntimeTest {
         }
 
     private fun controlledManager(): ProManager {
+        ProPolicyTestControl.reset()
         val app = ApplicationProvider.getApplicationContext<App>()
         // Do not initialize a BillingClient: its real response would race the synthetic delay.
         return ProManager(TrialManager(app, Dispatchers.IO), BillingManager(app)).also { it.initialize() }

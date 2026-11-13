@@ -23,6 +23,44 @@ import org.junit.Test
 /** Injected callback coverage: detects any state/history operation after a view becomes unusable. */
 class RavelryBrowserStateTest {
     @Test
+    fun mainFramePostRequestsAreFilteredWithoutReplayingTheBody() =
+        onMain {
+            val state = RavelryBrowserState("request")
+            val view = GuardedWebView(context())
+            var externalActions = 0
+            try {
+                view.configureRavelryBrowser(state, {}, { _, _ -> externalActions++ }, "checkout")
+                state.restoreOrLoad(view, FIRST) {}
+                val client = view.webViewClient
+                for (address in listOf(
+                    "https://www.paypal.com/checkout",
+                    CHECKOUT,
+                    "https://outside.example/form",
+                    "http://www.ravelry.com/login",
+                )) {
+                    val response =
+                        requireNotNull(client.shouldInterceptRequest(view, request(address, method = "POST")))
+                    assertEquals(403, response.statusCode)
+                    response.data.close()
+                }
+                assertNull(
+                    client.shouldInterceptRequest(
+                        view,
+                        request("https://www.ravelry.com/account/login", method = "POST"),
+                    ),
+                )
+                assertNull(client.shouldInterceptRequest(view, request(PDF, redirect = true)))
+                assertNull(
+                    client.shouldInterceptRequest(view, request("https://asset.example/image.png", mainFrame = false)),
+                )
+                assertEquals(listOf(FIRST), view.loads)
+                assertEquals(0, externalActions)
+            } finally {
+                state.release(view)
+            }
+        }
+
+    @Test
     fun lossNeverReadsDeadViewAndOldCallbacksCannotAffectReplacement() =
         onMain {
             for (crashed in listOf(true, false)) {
@@ -171,20 +209,24 @@ class RavelryBrowserStateTest {
             override fun rendererPriorityAtExit() = WebView.RENDERER_PRIORITY_IMPORTANT
         }
 
-    private fun request(address: String) =
-        object : WebResourceRequest {
-            override fun getUrl(): Uri = Uri.parse(address)
+    private fun request(
+        address: String,
+        method: String = "GET",
+        mainFrame: Boolean = true,
+        redirect: Boolean = false,
+    ) = object : WebResourceRequest {
+        override fun getUrl(): Uri = Uri.parse(address)
 
-            override fun isForMainFrame() = true
+        override fun isForMainFrame() = mainFrame
 
-            override fun isRedirect() = false
+        override fun isRedirect() = redirect
 
-            override fun hasGesture() = true
+        override fun hasGesture() = true
 
-            override fun getMethod() = "GET"
+        override fun getMethod() = method
 
-            override fun getRequestHeaders(): Map<String, String> = emptyMap()
-        }
+        override fun getRequestHeaders(): Map<String, String> = emptyMap()
+    }
 
     private class GuardedWebView(
         context: Context,

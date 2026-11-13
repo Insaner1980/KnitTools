@@ -10,7 +10,8 @@ const source = process.env.DEEPSEC_MARKER_SOURCE ?? fileURLToPath(new URL("./mar
 const currentDecision = fs.readFileSync(new URL("../../config/security-decisions.md", import.meta.url), "utf8");
 const heading = "## Ravelry embedded credentials\n\n";
 
-function runDecision(decision, expectedVerdict, credentialPath = null) {
+function runDecision(decision, expectedVerdict, credentialPath = null,
+  credentialSource = "val synthetic = BuildConfig.RAVELRY_OAUTH2_SYNTHETIC") {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "knittools-risk-test-"));
   try {
     const script = path.join(root, ".deepsec/scripts/mark-accepted-risks.mjs");
@@ -25,7 +26,7 @@ function runDecision(decision, expectedVerdict, credentialPath = null) {
     if (credentialPath) {
       const credentialFile = path.join(root, credentialPath);
       fs.mkdirSync(path.dirname(credentialFile), { recursive: true });
-      fs.writeFileSync(credentialFile, "val synthetic = BuildConfig.RAVELRY_OAUTH2_SYNTHETIC");
+      fs.writeFileSync(credentialFile, credentialSource);
     }
     const initial = JSON.stringify({
       filePath: "app/build.gradle.kts",
@@ -86,6 +87,13 @@ for (const [name, decision] of [
 }
 
 test("interprets the current documented decision as fixed", () => runDecision(currentDecision, "fixed"));
+for (const name of ["CLIENT_SECRET", "ACCESS_TOKEN", "REFRESH_TOKEN"]) {
+  test("rejects a direct credential read: " + name, () =>
+    runDecision(currentDecision, null, "app/src/main/java/Synthetic.kt", "val value = BuildConfig.RAVELRY_" + name));
+  test("rejects a credential declaration: " + name, () =>
+    runDecision(currentDecision, null, "app/build.gradle.kts",
+      'buildConfigField("String", "RAVELRY_' + name + '", syntheticValue)'));
+}
 for (const sourcePath of [
   "app/build.gradle.kts",
   "app/src/debug/java/Synthetic.kt",

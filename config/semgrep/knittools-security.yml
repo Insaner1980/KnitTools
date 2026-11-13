@@ -111,7 +111,7 @@ rules:
     languages:
       - kotlin
     severity: WARNING
-    message: Lokitus sisältää käyttäjän projektin tai laskurin tilaa. Jätä tämä vain väliaikaiseksi debug-lokitukseksi.
+    message: Lokitus sisältää käyttäjän projektin tai laskurin tilaa. Poista arkaluonteinen sisältö kaikista julkaisu- ja debug-versioista.
     paths:
       exclude:
         - tools/testdata/semgrep/**

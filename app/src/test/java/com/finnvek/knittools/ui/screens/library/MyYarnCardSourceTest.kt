@@ -65,7 +65,11 @@ class MyYarnCardSourceTest {
         assertTrue(screen.contains("ManualYarnCardSheet("))
         assertTrue(screen.contains("ProjectYarnTextField("))
         assertTrue(screen.contains("label = stringResource(R.string.project_yarn_name)"))
-        assertTrue(screen.contains("YarnWeightField(value = weightCategory, onValueChange = { weightCategory = it })"))
+        assertTrue(
+            screen.contains(
+                "YarnWeightField(value = weightCategory, onValueChange = { if (!saving) weightCategory = it })",
+            ),
+        )
         assertTrue(screen.contains("label = stringResource(R.string.color_name)"))
         assertTrue(screen.contains("label = stringResource(R.string.color_number)"))
         assertTrue(screen.contains("label = stringResource(R.string.dye_lot)"))
@@ -73,7 +77,7 @@ class MyYarnCardSourceTest {
     }
 
     @Test
-    fun `restored yarn retry waits for entitlement and closes the form only on submission`() {
+    fun `restored yarn retry waits for entitlement and closes the form only after successful persistence`() {
         val screen = ProjectSourceFiles.read(MY_YARN_SCREEN)
         val navGraph = ProjectSourceFiles.read(NAV_GRAPH)
         val effect =
@@ -93,11 +97,15 @@ class MyYarnCardSourceTest {
         assertTrue(
             effect.indexOf("actionAwaitingEntitlement = null") < effect.indexOf("when (action)"),
         )
-        assertTrue(
-            retryBranch.trim().replace(Regex("\\s+"), " ") ==
-                "if (actions.onRetryCreateYarnCard()) showManualYarnSheet = false } } }",
-        )
-        assertTrue(screen.contains("if (actions.onCreateYarnCard(input)) {"))
+        assertTrue(retryBranch.contains("actions.onRetryCreateYarnCard()"))
+        assertFalse(retryBranch.contains("showManualYarnSheet = false"))
+        val successEffect =
+            screen
+                .substringAfter("LaunchedEffect(state.saveSuccessId) {")
+                .substringBefore("LaunchedEffect(state.saveErrorId)")
+        assertTrue(successEffect.contains("state.saveSuccessId > lastHandledSaveSuccessId"))
+        assertTrue(successEffect.contains("showManualYarnSheet = false"))
+        assertTrue(screen.contains("if (!actions.onCreateYarnCard(input)) {"))
         assertTrue(screen.contains("onDismiss = { showManualYarnSheet = false }"))
         assertTrue(navGraph.contains("onRetryCreateYarnCard = libraryViewModel::retryCreateManualYarnCard"))
         assertTrue(navGraph.contains("onCreateYarnCard = libraryViewModel::createManualYarnCard"))

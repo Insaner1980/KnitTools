@@ -37,6 +37,9 @@ if command -v pwsh >/dev/null 2>&1; then
 fi
 
 if command -v powershell.exe >/dev/null 2>&1; then
+  if command -v wslpath >/dev/null 2>&1; then
+    POWERSHELL_ENTRYPOINT="$(wslpath -w "$CANONICAL_ENTRYPOINT")"
+  fi
   exec powershell.exe -NoProfile -File "$POWERSHELL_ENTRYPOINT" ${POWERSHELL_ARGS[@]+"${POWERSHELL_ARGS[@]}"}
 fi
 

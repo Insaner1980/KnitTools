@@ -131,8 +131,10 @@ private fun InstructionInputForm(
         TextField(
             value = instructionText,
             onValueChange = {
-                instructionText = it
-                resultMessage = null
+                if (it.length <= InstructionParser.MAX_INPUT_LENGTH) {
+                    instructionText = it
+                    resultMessage = null
+                }
             },
             label = { Text(hintText) },
             modifier = Modifier.fillMaxWidth(),

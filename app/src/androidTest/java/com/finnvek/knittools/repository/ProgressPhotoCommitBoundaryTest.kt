@@ -66,7 +66,15 @@ class ProgressPhotoCommitBoundaryTest {
                         return realDao.getAllPhotosOnce()
                     }
                 }
-            val repository = ProgressPhotoRepository(gatedDao, ProgressPhotoStorage(), app, Dispatchers.IO)
+            val repository =
+                ProgressPhotoRepository(
+                    gatedDao,
+                    ProgressPhotoStorage(),
+                    app,
+                    Dispatchers.IO,
+                    com.finnvek.knittools.data.local
+                        .RoomDatabaseTransactionRunner(database),
+                )
             withTimeout(15_000) {
                 val job = launch(Dispatchers.IO) { repository.savePhoto(projectId, Uri.fromFile(source), 7) }
                 val uri = boundary.await()

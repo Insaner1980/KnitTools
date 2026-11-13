@@ -1424,7 +1424,14 @@ class AuditPart08RuntimeMatrixTest {
                         androidx.core.view.WindowInsetsCompat.Type
                             .systemBars(),
                     )
-            val viewport = Rect(0, insets?.top ?: 0, decor.width, decor.height - (insets?.bottom ?: 0))
+            val origin = IntArray(2).also(decor::getLocationOnScreen)
+            val viewport =
+                Rect(
+                    origin[0] + (insets?.left ?: 0),
+                    origin[1] + (insets?.top ?: 0),
+                    origin[0] + decor.width - (insets?.right ?: 0),
+                    origin[1] + decor.height - (insets?.bottom ?: 0),
+                )
             assertTrue("Touch must stay outside the system bars: $value $bounds", bounds.intersect(viewport))
         }
         assertTrue("Nonempty touch target $value: $bounds", bounds.width() > 0 && bounds.height() > 0)

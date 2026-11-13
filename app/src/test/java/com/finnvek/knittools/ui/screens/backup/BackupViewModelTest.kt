@@ -46,6 +46,17 @@ class BackupViewModelTest {
         Dispatchers.resetMain()
     }
 
+    @Test fun pickerLaunchFailureReturnsToIdleAndAllowsRetry() =
+        runTest(dispatcher) {
+            val model = BackupViewModel(repository, onboarding)
+            store.put("backup", model)
+            for (error in listOf(BackupError.READ, BackupError.WRITE)) {
+                assertTrue(model.select())
+                model.selectionFailed(error)
+                assertEquals(BackupUiState(error = error), model.state.value)
+            }
+        }
+
     @Test fun exportCancellationWaitsForCleanupBeforeReturningToIdle() = cancellation(BackupPhase.EXPORTING)
 
     @Test fun validationCancellationWaitsForCleanupBeforeReturningToIdle() = cancellation(BackupPhase.VALIDATING)

@@ -133,9 +133,7 @@ class TipSessionTest {
             val fixture = fixture()
             runCurrent()
             val session = fixture.session
-            session.onRouteChanged("tools")
-            assertTrue(session.tryShow("tools", TipId.TOOLS_INTRO, null))
-            session.markPresentationVisible(requireNotNull(session.state.value.presentation))
+            showToolsIntro(session)
             session.onRouteChanged("counter-7")
             assertFalse(session.tryShow("counter-7", TipId.UNDO, 7L))
             assertTrue(session.tryShow("counter-7", TipId.FIRST_ROW, 7L))
@@ -211,9 +209,7 @@ class TipSessionTest {
             }
             runCurrent()
             val session = fixture.session
-            session.onRouteChanged("tools")
-            assertTrue(session.tryShow("tools", TipId.TOOLS_INTRO, null))
-            session.markPresentationVisible(requireNotNull(session.state.value.presentation))
+            showToolsIntro(session)
             session.dismiss("tools", TipId.TOOLS_INTRO)
             val reset = session.resetTips()
             runCurrent()
@@ -241,9 +237,7 @@ class TipSessionTest {
             coEvery { fixture.repository.resetTips() } returns false
             runCurrent()
             val session = fixture.session
-            session.onRouteChanged("tools")
-            assertTrue(session.tryShow("tools", TipId.TOOLS_INTRO, null))
-            session.markPresentationVisible(requireNotNull(session.state.value.presentation))
+            showToolsIntro(session)
             session.dismiss("tools", TipId.TOOLS_INTRO)
             assertFalse(session.resetTips().await())
             assertTrue(TipId.TOOLS_INTRO in session.state.value.processSeen)
@@ -272,9 +266,7 @@ class TipSessionTest {
             val fixture = fixture()
             val session = fixture.session
             runCurrent()
-            session.onRouteChanged("counter-7")
-            session.onSignal(TipSignal.TargetReached(7L))
-            assertTrue(session.tryShow("counter-7", TipId.TARGET_REACHED, 7L))
+            showProjectTarget(session)
             val stale = requireNotNull(session.state.value.presentation)
             session.onRouteChanged("overview-7")
             session.markPresentationVisible(stale)
@@ -282,9 +274,7 @@ class TipSessionTest {
             coVerify(exactly = 0) { fixture.repository.markTargetCelebrated(any()) }
             coVerify(exactly = 0) { fixture.repository.markTipSeen(TipId.TARGET_REACHED) }
 
-            session.onRouteChanged("counter-7")
-            session.onSignal(TipSignal.TargetReached(7L))
-            assertTrue(session.tryShow("counter-7", TipId.TARGET_REACHED, 7L))
+            showProjectTarget(session)
             val visible = requireNotNull(session.state.value.presentation)
             session.markPresentationVisible(visible)
             session.markPresentationVisible(visible)
@@ -300,9 +290,7 @@ class TipSessionTest {
             val fixture = fixture()
             val session = fixture.session
             runCurrent()
-            session.onRouteChanged("counter-7")
-            session.onSignal(TipSignal.TargetReached(7L))
-            assertTrue(session.tryShow("counter-7", TipId.TARGET_REACHED, 7L))
+            showProjectTarget(session)
 
             session.dismiss("counter-7", TipId.TARGET_REACHED)
             runCurrent()
@@ -523,6 +511,18 @@ class TipSessionTest {
             assertEquals(4L, session.state.value.routeEntryGeneration)
             assertFalse(session.tryShowRequestedWorkSession("counter-7", TipContext(TipScreen.COUNTER, projectId = 7L)))
         }
+
+    private fun showToolsIntro(session: TipSession) {
+        session.onRouteChanged("tools")
+        assertTrue(session.tryShow("tools", TipId.TOOLS_INTRO, null))
+        session.markPresentationVisible(requireNotNull(session.state.value.presentation))
+    }
+
+    private fun showProjectTarget(session: TipSession) {
+        session.onRouteChanged("counter-7")
+        session.onSignal(TipSignal.TargetReached(7L))
+        assertTrue(session.tryShow("counter-7", TipId.TARGET_REACHED, 7L))
+    }
 
     private fun TestScope.fixture(initial: OnboardingState = OnboardingState(initializedVersion = 1)): Fixture {
         val stored = MutableStateFlow(initial)

@@ -13,6 +13,7 @@ import io.mockk.unmockkStatic
 import io.mockk.verify
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -22,6 +23,13 @@ import org.junit.Before
 import org.junit.Test
 
 class OnboardingPdfStorageTest {
+    @Test fun metadataFailureStillCopiesTheReadablePdfWithFallbackName() =
+        runTest {
+            every { resolver.query(uri, any(), null, null, null) } throws SecurityException("metadata unavailable")
+            assertCopiesWithFallbackName()
+            verify(exactly = 1) { resolver.releasePersistableUriPermission(uri, any()) }
+        }
+
     private val context = mockk<Context>()
     private val resolver = mockk<ContentResolver>(relaxed = true)
     private val documents = mockk<PatternDocumentStorage>()
@@ -53,11 +61,15 @@ class OnboardingPdfStorageTest {
     @Test fun `temporary read grant allows a copy when persistence is denied`() =
         runTest {
             every { resolver.takePersistableUriPermission(uri, any()) } throws SecurityException("temporary only")
-            coEvery { documents.copyPdfToInternal(context, 0L, uri, "pattern.pdf") } returns "file:///copy.pdf"
-            val storage = OnboardingPdfStorage(context, documents, StandardTestDispatcher(testScheduler))
-            assertEquals("file:///copy.pdf" to "pattern.pdf", storage.copy("content://provider/pattern"))
+            assertCopiesWithFallbackName()
             verify(exactly = 0) { resolver.releasePersistableUriPermission(any(), any()) }
         }
+
+    private suspend fun TestScope.assertCopiesWithFallbackName() {
+        coEvery { documents.copyPdfToInternal(context, 0L, uri, "pattern.pdf") } returns "file:///copy.pdf"
+        val storage = OnboardingPdfStorage(context, documents, StandardTestDispatcher(testScheduler))
+        assertEquals("file:///copy.pdf" to "pattern.pdf", storage.copy("content://provider/pattern"))
+    }
 
     @Test fun `acquired grant is released when copy is cancelled`() =
         runTest {

@@ -458,7 +458,14 @@ class ProjectFolderComponentsTest {
         FileOutputStream(output).use { stream ->
             assertEquals(true, bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream))
         }
-        assertArrayEquals(PNG_SIGNATURE, output.inputStream().use { it.readNBytes(PNG_SIGNATURE.size) })
+        assertArrayEquals(
+            PNG_SIGNATURE,
+            output.inputStream().use {
+                ByteArray(PNG_SIGNATURE.size).also { bytes ->
+                    java.io.DataInputStream(it).readFully(bytes)
+                }
+            },
+        )
     }
 
     private fun awaitCommittedFrame(instrumentation: android.app.Instrumentation) {

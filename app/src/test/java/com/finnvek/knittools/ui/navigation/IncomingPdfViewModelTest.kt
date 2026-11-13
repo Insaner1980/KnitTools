@@ -308,8 +308,7 @@ class IncomingPdfViewModelTest {
                 assertFalse(model.busy.value)
             }
 
-            coVerify(exactly = 0) { counterRepository.attachPattern(any(), any(), any(), any(), any()) }
-            coVerify(exactly = 0) { counterRepository.createProjectWithImportedPdf(any(), any(), any(), any()) }
+            verifyNoProjectPublication()
             coVerify(exactly = 0) { savedPatternRepository.saveImportedPatternIfMissing(any(), any()) }
             coVerify(exactly = 0) { savedPatternRepository.deleteLocalPatternFileIfUnused(NEW_PDF_URI) }
 
@@ -557,6 +556,10 @@ class IncomingPdfViewModelTest {
         assertNull(savedState.get<String>("incoming_pdf_name"))
         assertFalse(model.busy.value)
         coVerify(exactly = 0) { savedPatternRepository.deleteLocalPatternFileIfUnused(retryUri) }
+        verifyNoProjectPublication()
+    }
+
+    private fun verifyNoProjectPublication() {
         coVerify(exactly = 0) { counterRepository.attachPattern(any(), any(), any(), any(), any()) }
         coVerify(exactly = 0) { counterRepository.createProjectWithImportedPdf(any(), any(), any(), any()) }
     }

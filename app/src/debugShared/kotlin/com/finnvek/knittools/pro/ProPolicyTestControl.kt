@@ -42,6 +42,13 @@ internal object ProPolicyTestControl {
         return result
     }
 
+    fun reset() {
+        requireActive()
+        purchasedOverride.value = null
+        trialStateOverride.value = null
+        trialStartResult = null
+    }
+
     fun setPurchased(value: Boolean) {
         requireActive()
         purchasedOverride.value = value

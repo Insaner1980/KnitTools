@@ -224,6 +224,34 @@ try {
         Test-SecretScanReadFailure
         Test-GitReadFailure
 
+        Test-Mutation -Name "sdk23-permission" -ExpectedStatus "FAIL" -ExpectedCheck "permissions" -PassMessage "SDK-specific forbidden permission is detected" -Mutate {
+            param($fixture)
+            $path = Join-Path $fixture "app/src/main/AndroidManifest.xml"
+            $text = Get-Content -Raw -LiteralPath $path
+            Set-FileText $path ($text.Replace("<application", '<uses-permission-sdk-23 android:name="android.permission.RECORD_AUDIO" /><application'))
+        }
+        Test-Mutation -Name "direct-sentry-plugin" -ExpectedStatus "FAIL" -ExpectedCheck "sentry-boundary" -PassMessage "direct Sentry plugin is detected" -Mutate {
+            param($fixture)
+            Add-Content -LiteralPath (Join-Path $fixture "app/build.gradle.kts") -Value 'plugins { id("io.sentry.android.gradle") }'
+        }
+        Test-Mutation -Name "aliased-sentry-plugin" -ExpectedStatus "FAIL" -ExpectedCheck "sentry-boundary" -PassMessage "renamed catalog Sentry plugin is detected" -Mutate {
+            param($fixture)
+            Add-Content -LiteralPath (Join-Path $fixture "gradle/libs.versions.toml") -Value 'diagnostics = { id = "io.sentry.android.gradle", version = "1.0" }'
+            Add-Content -LiteralPath (Join-Path $fixture "app/build.gradle.kts") -Value 'plugins { alias(libs.plugins.diagnostics) }'
+        }
+        Test-Mutation -Name "room-branch-hole" -ExpectedStatus "FAIL" -ExpectedCheck "room-schema" -PassMessage "intermediate exported schema must reach current version" -Mutate {
+            param($fixture)
+            $path = Join-Path $fixture "app/src/main/java/com/finnvek/knittools/data/local/KnitToolsDatabase.kt"
+            $text = Get-Content -Raw -LiteralPath $path
+            $mutated = $text.Replace("AutoMigration(from = 1, to = 2)", "AutoMigration(from = 1, to = 3)").Replace("AutoMigration(from = 2, to = 3),", "")
+            if ($text -ceq $mutated) { throw "Expected auto-migrations are absent" }
+            Set-FileText $path $mutated
+        }
+        Test-Mutation -Name "missing-widget-source" -ExpectedStatus "FAIL" -ExpectedCheck "widget-oauth-boundary" -PassMessage "unreadable widget boundary fails closed" -Mutate {
+            param($fixture)
+            Remove-Item -LiteralPath (Join-Path $fixture "app/src/main/java/com/finnvek/knittools/ui/navigation/CounterLaunchRequest.kt")
+        }
+
         Test-Mutation `
             -Name "camera-permission" `
             -ExpectedStatus "FAIL" `
@@ -531,7 +559,15 @@ try {
     if ($KeepTemp) {
         Write-Output "[WARN] selftest: kept temp fixture root $TempRoot"
     } elseif (Test-Path -LiteralPath $TempRoot) {
+        $resolved = [IO.Path]::GetFullPath($TempRoot)
+        $tempParent = [IO.Path]::GetFullPath([IO.Path]::GetTempPath())
+        if (-not $resolved.StartsWith($tempParent, [StringComparison]::OrdinalIgnoreCase) -or
+            (Get-Item -LiteralPath $resolved).Attributes.HasFlag([IO.FileAttributes]::ReparsePoint) -or
+            @(Get-ChildItem -LiteralPath $resolved -Recurse -Force -Attributes ReparsePoint).Count -gt 0) {
+            throw "Unsafe fixture cleanup path: $resolved"
+        }
         Remove-Item -LiteralPath $TempRoot -Recurse -Force
+        if (Test-Path -LiteralPath $TempRoot) { throw "Fixture cleanup failed: $TempRoot" }
     }
 }
 

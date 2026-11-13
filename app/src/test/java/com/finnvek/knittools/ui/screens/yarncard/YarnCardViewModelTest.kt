@@ -53,6 +53,25 @@ class YarnCardViewModelTest {
     private fun createViewModel() = YarnCardViewModel(repository, counterRepository)
 
     @Test
+    fun completedLinkedProjectKeepsItsNameAndUpdatesFromObservation() =
+        runTest {
+            val project =
+                kotlinx.coroutines.flow.MutableStateFlow<com.finnvek.knittools.domain.model.CounterProject?>(
+                    com.finnvek.knittools.domain.model
+                        .CounterProject(id = 9L, name = "Completed", isCompleted = true),
+                )
+            every { counterRepository.observeProject(9L) } returns project
+            val vm = createViewModel()
+            vm.loadFromCard(YarnCard(id = 7L, yarnName = "Yarn", linkedProjectId = 9L))
+            backgroundScope.launch(testDispatcher) { vm.linkedProjectName.collect {} }
+            assertEquals("Completed", vm.linkedProjectName.value)
+            project.value = project.value?.copy(name = "Renamed")
+            assertEquals("Renamed", vm.linkedProjectName.value)
+            project.value = null
+            assertNull(vm.linkedProjectName.value)
+        }
+
+    @Test
     fun `detail write failures report errors without changing observed card and permit retry`() =
         runTest {
             val vm = createViewModel()

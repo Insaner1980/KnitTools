@@ -9,8 +9,6 @@ export const androidIntentInputSurface: MatcherPlugin = {
   filePatterns: ["app/src/main/java/**/*.kt", "app/src/release/java/**/*.kt"],
   match(content, filePath): CandidateMatch[] {
     if (isTestFile(filePath)) return [];
-    if (!/\b(?:Intent|intent)\b/.test(content)) return [];
-
     return regexCandidates("android-intent-input-surface", content, [
       {
         regex: /\b\w*intent\??\.data\b/i,

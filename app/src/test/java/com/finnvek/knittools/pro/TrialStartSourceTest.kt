@@ -26,7 +26,7 @@ class TrialStartSourceTest {
         val cleanStartBody = source.substringAfter("private fun isCleanUnstartedState")
 
         assertEqualsOne(needle = "editPreferencesSafely", source = startBody)
-        assertTrue(startBody.indexOf("sessionTimeSource.snapshot()") > startBody.indexOf("{ preferences ->"))
+        assertSnapshotInsideEdit(startBody)
         assertTrue(startBody.contains("isCleanUnstartedState("))
         assertTrue(cleanStartBody.contains("startTimestamp == 0L"))
         assertTrue(cleanStartBody.contains("storedTiming == StoredTrialTiming.Legacy"))
@@ -100,9 +100,17 @@ class TrialStartSourceTest {
 
     private fun assertAtomicProgress(body: String) {
         assertEqualsOne(needle = "editPreferencesSafely", source = body)
-        assertTrue(body.indexOf("sessionTimeSource.snapshot()") > body.indexOf("{ preferences ->"))
+        assertSnapshotInsideEdit(body)
         assertFalse(body.contains("safePreferencesData.first()"))
         assertTrue(body.contains("preferences.evaluateAndPersistTrialState(now)"))
+    }
+
+    private fun assertSnapshotInsideEdit(body: String) {
+        val edit = body.indexOf("{ preferences ->")
+        val snapshot = body.indexOf("sessionTimeSource.snapshot()")
+        assertTrue("Missing preferences edit", edit >= 0)
+        assertTrue("Missing clock snapshot", snapshot >= 0)
+        assertTrue(snapshot > edit)
     }
 
     private fun assertEqualsOne(
@@ -114,7 +122,7 @@ class TrialStartSourceTest {
     }
 
     private companion object {
-        const val REFRESH_START = "private suspend fun refreshTrialState() {"
+        const val REFRESH_START = "private suspend fun refreshTrialStateLocked() {"
         const val REFRESH_END = "private fun MutablePreferences.evaluateAndPersistTrialState"
         const val TRIAL_MANAGER = "app/src/main/java/com/finnvek/knittools/pro/TrialManager.kt"
     }

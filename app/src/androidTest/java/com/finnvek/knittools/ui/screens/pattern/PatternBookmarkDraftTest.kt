@@ -30,6 +30,20 @@ class PatternBookmarkDraftTest {
     private val context = InstrumentationRegistry.getInstrumentation().targetContext
 
     @Test
+    fun selectedBookmarkSemanticsSurviveErrorPresentation() {
+        composeRule.runOnUiThread {
+            composeRule.activity.setContent(content = content(error = PatternBookmarkError.SAVE_FAILURE))
+        }
+        composeRule.onNodeWithText("First").assert(
+            SemanticsMatcher.expectValue(SemanticsProperties.Selected, true),
+        )
+        composeRule.onNodeWithText("Second").assert(
+            SemanticsMatcher.expectValue(SemanticsProperties.Selected, false),
+        )
+        composeRule.onNodeWithText(context.getString(R.string.dismiss)).assertExists()
+    }
+
+    @Test
     fun addDraftSurvivesActivityRecreationAndNewAddStartsEmpty() {
         val added = mutableListOf<String>()
         val content = content(onAdd = { added += it })
@@ -102,6 +116,7 @@ class PatternBookmarkDraftTest {
     }
 
     private fun content(
+        error: PatternBookmarkError? = null,
         onAdd: (String) -> Unit = {},
         onRename: (Long, String) -> Unit = { _, _ -> },
     ): @Composable () -> Unit =
@@ -112,6 +127,8 @@ class PatternBookmarkDraftTest {
                         PatternBookmarkUiState(
                             documentKey = "document",
                             isLoading = false,
+                            selectedBookmarkId = 1L,
+                            error = error,
                             bookmarks =
                                 listOf("First", "Second").mapIndexed { index, name ->
                                     PatternBookmark(index + 1L, 1L, "document", name, index, 0.5f, 1L)

@@ -313,9 +313,11 @@ class ProjectYarnUsageRepositoryTest {
             seed()
             val usage = create()
             val cardId = requireNotNull(noteRepository().saveToMyYarn(4))
-            assertEquals(cardId, noteRepository().saveToMyYarn(4))
             val row = requireNotNull(database.projectYarnUsageDao().getById(usage.id)).toDomain()
-            assertEquals(usage.copy(source = YarnUsageSource(cardId, 4)), row)
+            assertTrue(row.updatedAt > usage.updatedAt)
+            assertEquals(usage.copy(source = YarnUsageSource(cardId, 4), updatedAt = row.updatedAt), row)
+            assertEquals(cardId, noteRepository().saveToMyYarn(4))
+            assertEquals(row, database.projectYarnUsageDao().getById(usage.id)?.toDomain())
             assertEquals(cardId, database.projectYarnNoteDao().getById(4)?.savedYarnCardId)
             assertEquals(
                 YarnUsageResult.AlreadyExists(row),

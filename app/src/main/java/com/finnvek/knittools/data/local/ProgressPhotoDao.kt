@@ -19,11 +19,11 @@ interface ProgressPhotoDao {
     )
     fun observeLatestPhotosPerProject(): Flow<List<ProgressPhotoEntity>>
 
-    @Query("SELECT * FROM progress_photos WHERE projectId = :projectId ORDER BY createdAt DESC")
+    @Query("SELECT * FROM progress_photos WHERE projectId = :projectId ORDER BY createdAt DESC, id DESC")
     fun getPhotosForProject(projectId: Long): Flow<List<ProgressPhotoEntity>>
 
     @Query(
-        "SELECT * FROM progress_photos WHERE projectId = :projectId ORDER BY createdAt DESC LIMIT :limit",
+        "SELECT * FROM progress_photos WHERE projectId = :projectId ORDER BY createdAt DESC, id DESC LIMIT :limit",
     )
     fun getLatestPhotos(
         projectId: Long,
@@ -39,7 +39,7 @@ interface ProgressPhotoDao {
     )
     suspend fun getPhotoCountsByProjectIds(projectIds: List<Long>): List<ProjectPhotoCount>
 
-    @Query("SELECT * FROM progress_photos ORDER BY createdAt DESC")
+    @Query("SELECT * FROM progress_photos ORDER BY createdAt DESC, id DESC")
     fun getAllPhotos(): Flow<List<ProgressPhotoEntity>>
 
     @Query("SELECT * FROM progress_photos")

@@ -75,7 +75,7 @@
     <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
     <string name="tip_undo">Gemt. Trykkede du forkert? Fortryd annullerer den seneste ændring.</string>
     <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
-    <string name="tip_step_size">Tæller du mere end én ad gangen? Her ændrer du, hvor meget hvert tryk lægger til.</string>
+    <string name="tip_step_size">Tæller du mere end én ad gangen? Her ændrer du, hvor meget hvert tryk lægger til eller trækker fra.</string>
     <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
     <string name="tip_work_session">Vil du vide, hvor lang tid projektet tager? Start en arbejdssession fra denne menu. Tiden starter aldrig af sig selv.</string>
     <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
@@ -145,7 +145,7 @@
     <!-- Kääntäjälle: paikallinen käyttöopas. Toimintojen ja välilehtien nimet vastaavat muuta käyttöliittymää. -->
     <string name="guide_continue_step_title">Tæl mere end én</string>
     <!-- Kääntäjälle: paikallinen käyttöopas. Toimintojen ja välilehtien nimet vastaavat muuta käyttöliittymää. -->
-    <string name="guide_continue_step_body">Ringen ×1 mellem knapperne bestemmer, hvor meget hvert tryk lægger til, fra 1 til 99, særskilt for hvert projekt.</string>
+    <string name="guide_continue_step_body">Ringen ×1 mellem knapperne bestemmer, hvor meget hvert tryk lægger til eller trækker fra, fra 1 til 99, særskilt for hvert projekt.</string>
     <!-- Kääntäjälle: paikallinen käyttöopas. Toimintojen ja välilehtien nimet vastaavat muuta käyttöliittymää. -->
     <string name="guide_continue_project_page_title">Projektside og tæller</string>
     <!-- Kääntäjälle: paikallinen käyttöopas. Toimintojen ja välilehtien nimet vastaavat muuta käyttöliittymää. -->
@@ -476,7 +476,7 @@
     <!-- Aloituspolku: tervetulonäkymän hyöty, kerrosten laskeminen yhdellä napautuksella. -->
     <string name="journey_welcome_point_count">Tæl pinde med ét tryk</string>
     <!-- Aloituspolku: tervetulonäkymän hyöty, kohta ohjeessa säilyy (lukulinja). -->
-    <string name="journey_welcome_point_pattern">Hold styr på, hvor du er i opskriften</string>
+    <string name="journey_welcome_point_pattern">Hold styr på, hvor du er i en PDF-opskrift</string>
     <!-- Aloituspolku: tervetulonäkymän hyöty, työtä voi jatkaa siitä mihin jäi. -->
     <string name="journey_welcome_point_return">Fortsæt lige dér, hvor du slap</string>
     <!-- Aloituspolku: Aloitetaan -->

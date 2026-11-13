@@ -1,5 +1,7 @@
 # Brazilian Portuguese implementation and content review (pt-BR)
 
+Evidence limitation recorded 2026-11-13: some labels in the historical `validation.json` contain mojibake. The referenced original captures under `reports/ptbr-work` are unavailable locally, so their rendered text and the origin of the encoding corruption cannot be reverified. Original records are preserved; their `VERIFIED` labels must not be read as fresh visual verification of those strings or the current app.
+
 ## Scope and snapshot
 
 - Date: 2026-10-19, Europe/Helsinki. Branch: `codex/audit-korjaukset-20261018`.

@@ -13,6 +13,7 @@ import io.mockk.mockk
 import io.mockk.spyk
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -57,6 +58,9 @@ class CounterYarnLinkMutationsTest : CounterViewModelFixture() {
             rows = listOf(CounterProjectEntity(id = 7L), CounterProjectEntity(id = 8L, yarnCardIds = "19"))
             advanceUntilIdle()
 
+            coVerify(exactly = 1) { yarn.updateLinkedProjectId(19L, null, expectedLinkedProjectId = 7L) }
+            coVerify(exactly = 1) { cards.getCard(19L) }
+            coVerify(exactly = 0) { cards.updateLinkedProjectId(any(), any()) }
             assertEquals(8L, card.linkedProjectId)
             assertEquals(listOf("", "19"), rows.map { it.yarnCardIds })
         }
@@ -85,9 +89,7 @@ class CounterYarnLinkMutationsTest : CounterViewModelFixture() {
     fun `unlink exception reports failure and leaves subsequent unlink usable`() =
         runTest {
             val yarn = mockk<YarnCardRepository>()
-            val viewModel = viewModel(yarnRepositoryOverride = yarn)
-            val errors = collectErrors(viewModel.projectContentErrors)
-            advanceUntilIdle()
+            val (viewModel, errors) = observeYarnWriteErrors(yarn)
             coEvery {
                 yarn.updateLinkedProjectId(19L, null, expectedLinkedProjectId = 7L)
             } throws IOException("synthetic failure")
@@ -107,9 +109,7 @@ class CounterYarnLinkMutationsTest : CounterViewModelFixture() {
     fun `cancelled yarn write remains cancellation without a failure message`() =
         runTest {
             val yarn = mockk<YarnCardRepository>()
-            val viewModel = viewModel(yarnRepositoryOverride = yarn)
-            val errors = collectErrors(viewModel.projectContentErrors)
-            advanceUntilIdle()
+            val (viewModel, errors) = observeYarnWriteErrors(yarn)
             coEvery {
                 yarn.updateLinkedProjectId(19L, null, expectedLinkedProjectId = 7L)
             } throws CancellationException("cancelled")
@@ -119,5 +119,12 @@ class CounterYarnLinkMutationsTest : CounterViewModelFixture() {
 
             assertEquals(0, errors.size)
             coVerify(exactly = 1) { yarn.updateLinkedProjectId(19L, null, expectedLinkedProjectId = 7L) }
+        }
+
+    private fun TestScope.observeYarnWriteErrors(yarn: YarnCardRepository) =
+        viewModel(yarnRepositoryOverride = yarn).let { model ->
+            val errors = collectErrors(model.projectContentErrors)
+            advanceUntilIdle()
+            model to errors
         }
 }

@@ -69,10 +69,12 @@ import com.finnvek.knittools.domain.model.YarnUsageAmounts
 import com.finnvek.knittools.domain.model.YarnUsageSource
 import com.finnvek.knittools.pro.ProState
 import com.finnvek.knittools.pro.ProStatus
+import com.finnvek.knittools.repository.ProjectYarnNoteEditResult
 import com.finnvek.knittools.repository.ProjectYarnNoteRepository
 import com.finnvek.knittools.repository.ProjectYarnUsageRepository
 import com.finnvek.knittools.repository.YarnCardRepository
 import com.finnvek.knittools.ui.theme.KnitToolsTheme
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -443,7 +445,8 @@ class ProjectYarnUsageScreenTest {
         handle: SavedStateHandle = SavedStateHandle(),
     ): ProjectYarnUsageViewModel {
         // Myös maa: en-FI muotoilee desimaalit pilkulla, vaikka kieli on sama kuin en-US:ssä.
-        if (!composeRule.activity.resources.configuration.locales[0]
+        if (android.os.Build.VERSION.SDK_INT >= 33 &&
+            !composeRule.activity.resources.configuration.locales[0]
                 .matches(locale)
         ) {
             setApplicationLocales(locale.toLanguageTag())
@@ -451,7 +454,8 @@ class ProjectYarnUsageScreenTest {
         shell("settings put system font_scale ${if (large) "2.0" else "1.0"}")
         composeRule.waitUntil(10_000) {
             val config = composeRule.activity.resources.configuration
-            config.locales[0].matches(locale) && config.fontScale == if (large) 2f else 1f
+            (android.os.Build.VERSION.SDK_INT < 33 || config.locales[0].matches(locale)) &&
+                config.fontScale == if (large) 2f else 1f
         }
         val model = createModel(handle)
         composeRule.setContent { TestSurface(model, locale, dark, large) }
@@ -509,7 +513,9 @@ class ProjectYarnUsageScreenTest {
                     YarnManagementSheetActions(
                         onUnlinkYarn = { scope.launch { yarnRepository.updateLinkedProjectId(it, null) } },
                         onAddYarn = {},
-                        onSaveProjectYarnNote = { _, _, _, _ -> },
+                        onSaveProjectYarnNote = { _, _, _, _ ->
+                            CompletableDeferred(ProjectYarnNoteEditResult.Saved)
+                        },
                         onDeleteProjectYarnNote = { scope.launch { noteRepository.delete(it) } },
                         onSaveProjectYarnNoteToMyYarn = { scope.launch { noteRepository.saveToMyYarn(it) } },
                         onDismiss = {},

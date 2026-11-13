@@ -75,7 +75,7 @@
     <!-- Tilannekohtainen vihje nykyisessä näkymässä; toimintojen nimet vastaavat sovelluksen nykyisiä nimiä. -->
     <string name="tip_undo">Enregistré. Un appui par erreur ? Annuler revient sur la dernière modification.</string>
     <!-- Tilannekohtainen vihje nykyisessä näkymässä; toimintojen nimet vastaavat sovelluksen nykyisiä nimiä. -->
-    <string name="tip_step_size">Vous comptez plusieurs unités à la fois ? Réglez ici la quantité ajoutée à chaque appui.</string>
+    <string name="tip_step_size">Vous comptez plusieurs unités à la fois ? Réglez ici la quantité ajoutée ou retirée à chaque appui.</string>
     <!-- Työajan seuranta käynnistetään itse; ajastin ei käynnisty automaattisesti. -->
     <string name="tip_work_session">Vous voulez savoir combien de temps ce projet vous prend ? Démarrez une session de travail depuis ce menu. Le suivi du temps ne démarre jamais tout seul.</string>
     <!-- Tilannekohtainen vihje nykyisessä näkymässä; toimintojen nimet vastaavat sovelluksen nykyisiä nimiä. -->
@@ -145,7 +145,7 @@
     <!-- Oppaan laskentaosio; Kumoa ja Jatka tarkoittavat olemassa olevia käyttöliittymän toimintoja. -->
     <string name="guide_continue_step_title">Compter plusieurs unités à la fois</string>
     <!-- Oppaan laskentaosio; Kumoa ja Jatka tarkoittavat olemassa olevia käyttöliittymän toimintoja. -->
-    <string name="guide_continue_step_body">L’anneau ×1 entre les boutons règle la quantité ajoutée à chaque appui, de 1 à 99, séparément pour chaque projet.</string>
+    <string name="guide_continue_step_body">L’anneau ×1 entre les boutons règle la quantité ajoutée ou retirée à chaque appui, de 1 à 99, séparément pour chaque projet.</string>
     <!-- Oppaan laskentaosio; Kumoa ja Jatka tarkoittavat olemassa olevia käyttöliittymän toimintoja. -->
     <string name="guide_continue_project_page_title">Page du projet et compteur</string>
     <!-- Oppaan laskentaosio; Kumoa ja Jatka tarkoittavat olemassa olevia käyttöliittymän toimintoja. -->
@@ -481,7 +481,7 @@
     <!-- Aloituspolku: tervetulonäkymän hyöty, kerrosten laskeminen yhdellä napautuksella. -->
     <string name="journey_welcome_point_count">Comptez les rangs d\'un seul geste</string>
     <!-- Aloituspolku: tervetulonäkymän hyöty, kohta ohjeessa säilyy (lukulinja). -->
-    <string name="journey_welcome_point_pattern">Gardez votre place dans n\'importe quel patron</string>
+    <string name="journey_welcome_point_pattern">Gardez votre place dans un patron PDF</string>
     <!-- Aloituspolku: tervetulonäkymän hyöty, työtä voi jatkaa siitä mihin jäi. -->
     <string name="journey_welcome_point_return">Reprenez exactement là où vous en étiez</string>
     <!-- Aloituspolku: Aloitetaan -->

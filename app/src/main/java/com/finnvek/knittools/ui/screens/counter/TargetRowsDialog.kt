@@ -22,6 +22,7 @@ import com.finnvek.knittools.domain.calculator.TargetInput
 import com.finnvek.knittools.domain.calculator.parseTargetRows
 import com.finnvek.knittools.ui.components.CancelButton
 import com.finnvek.knittools.ui.components.ScrollableFormDialog
+import com.finnvek.knittools.ui.components.dialogTextFieldColors
 
 @Composable
 fun TargetRowsDialog(
@@ -43,6 +44,7 @@ fun TargetRowsDialog(
                 onValueChange = { new -> text = new.filter { it.isDigit() }.take(5) },
                 label = { Text(counterLabel) },
                 singleLine = true,
+                colors = dialogTextFieldColors(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 modifier = Modifier.fillMaxWidth(),
             )

@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import java.util.UUID
 import javax.inject.Inject
 
 @HiltViewModel
@@ -34,18 +35,25 @@ class ProPromptViewModel
         private val _isStartingTrial = MutableStateFlow(false)
         val isStartingTrial = _isStartingTrial.asStateFlow()
 
-        fun startTrial() {
-            if (_isStartingTrial.value) return
+        private val _failedRequestId = MutableStateFlow<String?>(null)
+        val failedRequestId = _failedRequestId.asStateFlow()
+
+        fun startTrial(): String? {
+            if (_isStartingTrial.value) return null
+            val requestId = UUID.randomUUID().toString()
+            _failedRequestId.value = null
             _isStartingTrial.value = true
             viewModelScope.launch {
                 try {
                     val result = proManager.startTrial()
                     if (result == TrialStartResult.Started) trialJourneyCoordinator.requestStartedJourney()
+                    if (result == TrialStartResult.Failed) _failedRequestId.value = requestId
                     _trialStartResults.emit(result)
                 } finally {
                     _isStartingTrial.value = false
                 }
             }
+            return requestId
         }
 
         fun markContextualPromptShown() {

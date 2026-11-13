@@ -3,6 +3,7 @@ package com.finnvek.knittools.ui.screens.library
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -359,10 +360,12 @@ private fun SavedPatternItem(
             )
         }
         if (isSelectMode) {
-            SelectionIndicator(
-                isSelected = isSelected,
-                modifier = Modifier.align(Alignment.CenterStart).padding(start = 8.dp),
-            )
+            Box(
+                modifier = Modifier.align(Alignment.CenterStart).size(48.dp).clickable(onClick = onClick),
+                contentAlignment = Alignment.Center,
+            ) {
+                SelectionIndicator(isSelected = isSelected)
+            }
         }
     }
 }

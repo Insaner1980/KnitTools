@@ -88,6 +88,32 @@ class MemoryTokenStore implements RavelryTokenStore {
 }
 
 describe("Ravelry token access", () => {
+  it("refreshes near-expiry tokens before the API request while retaining valid nonrefreshable tokens", async () => {
+    for (const [expiry, canRefresh, expected] of [
+      [11_000, true, "fresh"], [11_001, true, "original"],
+      [1_001, false, "original"], [1_000, false, null],
+    ] as const) {
+      const tokenStore = new MemoryTokenStore();
+      await tokenStore.saveToken({
+        uid: "uid", authType: "oauth2", accessToken: "original", refreshToken: "synthetic",
+        expiresAtMillis: expiry, createdAtMillis: 0, updatedAtMillis: 0,
+      });
+      let refreshCalls = 0;
+      let limiterCalls = 0;
+      const result = await getUsableRavelryToken({
+        uid: "uid", tokenStore, nowMillis: () => 1_000,
+        beforeRefresh: async () => { limiterCalls++; },
+        refresh: canRefresh ? async () => {
+          assert.equal(limiterCalls, 1);
+          refreshCalls++;
+          return { accessToken: "fresh", expiresAtMillis: 100_000 };
+        } : undefined,
+      });
+      assert.equal(result?.accessToken ?? null, expected);
+      assert.equal(refreshCalls, expected === "fresh" ? 1 : 0);
+      assert.equal(limiterCalls, refreshCalls);
+    }
+  });
   it("uses the persisted rotation when a concurrent obsolete refresh is rejected", async () => {
     const tokenStore = new MemoryTokenStore();
     await tokenStore.saveToken({

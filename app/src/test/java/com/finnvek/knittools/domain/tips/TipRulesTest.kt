@@ -141,6 +141,8 @@ class TipRulesTest {
         assertEquals(TipId.BACKUP, TipRules.next(context.copy(today = 107L, projectCount = 4)))
         assertEquals(TipId.FOLDERS, TipRules.next(context.copy(today = 107L, projectCount = 4, backupCreated = true)))
         assertNull(TipRules.next(context.copy(projectCount = 3)))
+        assertNull(TipRules.next(context.copy(firstUseEpochDay = 0L)))
+        assertNull(TipRules.next(context.copy(firstUseEpochDay = -1L)))
     }
 
     @Test

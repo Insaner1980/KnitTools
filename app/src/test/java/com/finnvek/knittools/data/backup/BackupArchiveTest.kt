@@ -23,6 +23,22 @@ import java.util.zip.ZipOutputStream
 class BackupArchiveTest {
     @get:Rule val temporary = TemporaryFolder()
 
+    @Test fun targetDirectoryConflictIsReportedAsWriteFailure() {
+        val (source, manifest) = fixture()
+        val archive = temporary.newFile()
+        BackupArchive.write(source, archive, manifest)
+        val target = temporary.newFolder()
+        File(
+            target,
+            manifest.entries
+                .first()
+                .path
+                .substringBefore('/'),
+        ).writeText("existing")
+        val error = assertThrows(BackupException::class.java) { BackupArchive.extract(archive, target) }
+        assertEquals(BackupError.WRITE, error.error)
+    }
+
     @Test fun roundTripChecksAllTablesAndFileBytes() {
         val (source, manifest) = fixture()
         assertEquals(KNITTOOLS_DATABASE_VERSION, manifest.schemaVersion)

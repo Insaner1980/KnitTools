@@ -88,63 +88,65 @@ class TrialManager
         private val refreshScope = CoroutineScope(SupervisorJob() + ioDispatcher)
         private var refreshJob: Job? = null
         private val refreshLoopMutex = Mutex()
+        private val stateMutex = Mutex()
 
         suspend fun initialize() {
             refreshTrialState()
             startRefreshLoop()
         }
 
-        suspend fun startTrial(): TrialStartResult {
-            var startResult: TrialStartResult? = null
-            val didWrite =
-                dataStore.editPreferencesSafely { preferences ->
-                    val now = withContext(ioDispatcher) { sessionTimeSource.snapshot() }
-                    val startTimestamp = preferences[KEY_TRIAL_START] ?: 0L
-                    val lastKnownTimestamp = preferences[KEY_LAST_KNOWN_TIMESTAMP] ?: 0L
-                    val clockTamperedAlready = preferences[KEY_CLOCK_TAMPERED] ?: false
-                    val storedTiming = preferences.readStoredTrialTiming()
-                    val cleanUnstarted =
-                        isCleanUnstartedState(
-                            startTimestamp = startTimestamp,
-                            lastKnownTimestamp = lastKnownTimestamp,
-                            clockTamperedAlready = clockTamperedAlready,
-                            storedTiming = storedTiming,
-                        )
-                    if (cleanUnstarted && isValidTimeSnapshot(now)) {
-                        preferences[KEY_TRIAL_START] = now.wallClockMillis
-                        preferences.persistTrialEvaluation(
-                            TrialTimingEvaluation(
-                                state =
-                                    createTrialState(
-                                        startTimestamp = now.wallClockMillis,
-                                        elapsedDurationMillis = 0L,
-                                        clockTampered = false,
-                                    ),
-                                anchors =
-                                    StoredTrialTiming.Anchored(
-                                        elapsedDurationMillis = 0L,
-                                        anchorWallClockMillis = now.wallClockMillis,
-                                        anchorElapsedRealtimeMillis = now.elapsedRealtimeMillis,
-                                        anchorBootCount = now.bootCount,
-                                    ),
-                                lastKnownTimestamp = maxOf(now.wallClockMillis, lastKnownTimestamp),
-                            ),
-                        )
-                        startResult = TrialStartResult.Started
-                    } else if (cleanUnstarted) {
-                        startResult = TrialStartResult.Failed
-                    } else {
-                        startResult =
-                            classifyExistingTrial(
-                                preferences.evaluateAndPersistTrialState(now),
+        suspend fun startTrial(): TrialStartResult =
+            stateMutex.withLock {
+                var startResult: TrialStartResult? = null
+                val didWrite =
+                    dataStore.editPreferencesSafely { preferences ->
+                        val now = withContext(ioDispatcher) { sessionTimeSource.snapshot() }
+                        val startTimestamp = preferences[KEY_TRIAL_START] ?: 0L
+                        val lastKnownTimestamp = preferences[KEY_LAST_KNOWN_TIMESTAMP] ?: 0L
+                        val clockTamperedAlready = preferences[KEY_CLOCK_TAMPERED] ?: false
+                        val storedTiming = preferences.readStoredTrialTiming()
+                        val cleanUnstarted =
+                            isCleanUnstartedState(
+                                startTimestamp = startTimestamp,
+                                lastKnownTimestamp = lastKnownTimestamp,
+                                clockTamperedAlready = clockTamperedAlready,
+                                storedTiming = storedTiming,
                             )
+                        if (cleanUnstarted && isValidTimeSnapshot(now)) {
+                            preferences[KEY_TRIAL_START] = now.wallClockMillis
+                            preferences.persistTrialEvaluation(
+                                TrialTimingEvaluation(
+                                    state =
+                                        createTrialState(
+                                            startTimestamp = now.wallClockMillis,
+                                            elapsedDurationMillis = 0L,
+                                            clockTampered = false,
+                                        ),
+                                    anchors =
+                                        StoredTrialTiming.Anchored(
+                                            elapsedDurationMillis = 0L,
+                                            anchorWallClockMillis = now.wallClockMillis,
+                                            anchorElapsedRealtimeMillis = now.elapsedRealtimeMillis,
+                                            anchorBootCount = now.bootCount,
+                                        ),
+                                    lastKnownTimestamp = maxOf(now.wallClockMillis, lastKnownTimestamp),
+                                ),
+                            )
+                            startResult = TrialStartResult.Started
+                        } else if (cleanUnstarted) {
+                            startResult = TrialStartResult.Failed
+                        } else {
+                            startResult =
+                                classifyExistingTrial(
+                                    preferences.evaluateAndPersistTrialState(now),
+                                )
+                        }
                     }
-                }
-            if (!didWrite) return TrialStartResult.Failed
+                if (!didWrite) return@withLock TrialStartResult.Failed
 
-            refreshTrialState()
-            return startResult ?: TrialStartResult.Failed
-        }
+                refreshTrialStateLocked()
+                startResult ?: TrialStartResult.Failed
+            }
 
         suspend fun claimTrialEndNotice(): Boolean {
             var claimed = false
@@ -160,26 +162,27 @@ class TrialManager
             return didWrite && claimed
         }
 
-        suspend fun claimTrialThreeDayNotice(): Boolean {
-            var claimed = false
-            var evaluatedState: TrialState? = null
-            val didWrite =
-                dataStore.editPreferencesSafely { preferences ->
-                    val now = withContext(ioDispatcher) { sessionTimeSource.snapshot() }
-                    val state = preferences.evaluateAndPersistTrialState(now)
-                    evaluatedState = state
-                    if (state.isActive &&
-                        !state.clockTampered &&
-                        state.daysRemaining == 3 &&
-                        preferences[KEY_TRIAL_THREE_DAY_NOTICE_SHOWN] != true
-                    ) {
-                        preferences[KEY_TRIAL_THREE_DAY_NOTICE_SHOWN] = true
-                        claimed = true
+        suspend fun claimTrialThreeDayNotice(): Boolean =
+            stateMutex.withLock {
+                var claimed = false
+                var evaluatedState: TrialState? = null
+                val didWrite =
+                    dataStore.editPreferencesSafely { preferences ->
+                        val now = withContext(ioDispatcher) { sessionTimeSource.snapshot() }
+                        val state = preferences.evaluateAndPersistTrialState(now)
+                        evaluatedState = state
+                        if (state.isActive &&
+                            !state.clockTampered &&
+                            state.daysRemaining == 3 &&
+                            preferences[KEY_TRIAL_THREE_DAY_NOTICE_SHOWN] != true
+                        ) {
+                            preferences[KEY_TRIAL_THREE_DAY_NOTICE_SHOWN] = true
+                            claimed = true
+                        }
                     }
-                }
-            if (didWrite) evaluatedState?.let { _trialState.value = it }
-            return didWrite && claimed
-        }
+                if (didWrite) evaluatedState?.let { _trialState.value = it }
+                didWrite && claimed
+            }
 
         suspend fun markTrialEndNoticeShown() {
             dataStore.editPreferencesSafely { preferences ->
@@ -189,7 +192,9 @@ class TrialManager
             }
         }
 
-        private suspend fun refreshTrialState() {
+        private suspend fun refreshTrialState() = stateMutex.withLock { refreshTrialStateLocked() }
+
+        private suspend fun refreshTrialStateLocked() {
             var refreshedState: TrialState? = null
             val didWrite =
                 dataStore.editPreferencesSafely { preferences ->

@@ -38,9 +38,11 @@ import androidx.compose.material3.TextField
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -117,6 +119,10 @@ fun PhotoGalleryScreen(
     CollectWithLifecycleEffect({ errorsProvider() }) {
         snackbarHostState.showSnackbar(errorMessage)
     }
+    var creatingCapture by remember { mutableStateOf(false) }
+    var captureHostActive by remember { mutableStateOf(true) }
+    val currentProjectId by rememberUpdatedState(projectId)
+    DisposableEffect(Unit) { onDispose { captureHostActive = false } }
     var pendingPhotoUriString by rememberSaveable { mutableStateOf<String?>(null) }
     var pendingPhotoFilePath by rememberSaveable { mutableStateOf<String?>(null) }
     var pendingPhotoProjectId by rememberSaveable { mutableStateOf<Long?>(null) }
@@ -145,7 +151,17 @@ fun PhotoGalleryScreen(
         }
 
     fun startCameraCapture(ownerProjectId: Long?) {
+        if (creatingCapture || pendingPhotoUriString != null) return
+        creatingCapture = true
         requestCameraCaptureTarget(ownerProjectId, actions) { captureTarget ->
+            creatingCapture = false
+            if (captureTarget == null) return@requestCameraCaptureTarget
+            if (!captureHostActive || currentProjectId != ownerProjectId) {
+                actions.deletePendingPhotoFile(captureTarget.filePath)
+                actions.cancelPhotoCreation()
+                return@requestCameraCaptureTarget
+            }
+
             fun abandonCapture() {
                 actions.deletePendingPhotoFile(captureTarget.filePath)
                 actions.cancelPhotoCreation()
@@ -169,6 +185,7 @@ fun PhotoGalleryScreen(
     }
 
     fun launchCamera() {
+        if (creatingCapture || pendingPhotoUriString != null) return
         requestPhotoCapture(
             canCreatePhoto = canCreatePhoto,
             actions = actions,
@@ -303,19 +320,19 @@ private fun handlePhotoCaptureResult(
 private fun requestCameraCaptureTarget(
     projectId: Long?,
     actions: PhotoGalleryActions,
-    onCaptureTargetReady: (PhotoCaptureTarget) -> Unit,
+    onCaptureTargetReady: (PhotoCaptureTarget?) -> Unit,
 ) {
     val id =
         projectId ?: run {
             actions.cancelPhotoCreation()
+            onCaptureTargetReady(null)
             return
         }
     actions.createPhotoCaptureTarget(id) { captureTarget ->
         if (captureTarget == null) {
             actions.cancelPhotoCreation()
-        } else {
-            onCaptureTargetReady(captureTarget)
         }
+        onCaptureTargetReady(captureTarget)
     }
 }
 

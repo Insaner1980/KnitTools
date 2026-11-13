@@ -40,6 +40,7 @@ object TipRules {
                     TipId.BACKUP.takeIf {
                         context.projectCount > 0 &&
                             !context.backupCreated &&
+                            context.firstUseEpochDay > 0 &&
                             context.today - context.firstUseEpochDay >= BACKUP_AFTER_DAYS
                     },
                     TipId.FOLDERS.takeIf { context.projectCount >= FOLDER_PROJECT_COUNT },

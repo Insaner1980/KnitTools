@@ -1029,6 +1029,8 @@ private fun NavGraphBuilder.libraryMyYarnRoute(navController: NavHostController)
         val selectedYarnIds by libraryViewModel.selectedYarnIds.collectAsStateWithLifecycle()
         val yarnDeleteErrorId by libraryViewModel.yarnDeleteErrorId.collectAsStateWithLifecycle()
         val yarnSaveErrorId by libraryViewModel.yarnSaveErrorId.collectAsStateWithLifecycle()
+        val yarnSaveSuccessId by libraryViewModel.yarnSaveSuccessId.collectAsStateWithLifecycle()
+        val isSavingYarnCard by libraryViewModel.isSavingYarnCard.collectAsStateWithLifecycle()
         val canUseYarnCards by libraryViewModel.canUseYarnCards.collectAsStateWithLifecycle()
         val proState by libraryViewModel.proState.collectAsStateWithLifecycle()
         val proAccessReady by libraryViewModel.proAccessReady.collectAsStateWithLifecycle()
@@ -1045,6 +1047,8 @@ private fun NavGraphBuilder.libraryMyYarnRoute(navController: NavHostController)
                     proAccessReady = proAccessReady,
                     deleteErrorId = yarnDeleteErrorId,
                     saveErrorId = yarnSaveErrorId,
+                    saveSuccessId = yarnSaveSuccessId,
+                    isSaving = isSavingYarnCard,
                 ),
             actions =
                 myYarnActions(

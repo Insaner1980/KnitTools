@@ -465,9 +465,10 @@ class ProjectListViewModel
                     }
                     ProjectCompletionResult.Completed,
                     is ProjectCompletionResult.CompletedNow,
-                    ProjectCompletionResult.PersistenceFailure,
                     ProjectCompletionResult.ProjectUnavailable,
                     -> Unit
+                    ProjectCompletionResult.PersistenceFailure ->
+                        sessionErrorChannel.trySend(R.string.generic_error_unknown)
                     ProjectCompletionResult.HistoryLimitReached ->
                         sessionErrorChannel.trySend(R.string.work_session_history_full)
                 }

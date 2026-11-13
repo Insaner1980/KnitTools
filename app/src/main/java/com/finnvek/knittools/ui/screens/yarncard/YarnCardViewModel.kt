@@ -10,13 +10,17 @@ import com.finnvek.knittools.repository.CounterRepository
 import com.finnvek.knittools.repository.YarnCardRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -67,14 +71,18 @@ class YarnCardViewModel
                     initialValue = emptyList(),
                 )
 
+        @OptIn(ExperimentalCoroutinesApi::class)
         val linkedProjectName: StateFlow<String?> =
-            combine(availableProjects, formState) { projects, form ->
-                form.linkedProjectId?.let { id -> projects.firstOrNull { it.id == id }?.name }
-            }.stateIn(
-                scope = viewModelScope,
-                started = SharingStarted.WhileSubscribed(5000),
-                initialValue = null,
-            )
+            formState
+                .map { it.linkedProjectId }
+                .distinctUntilChanged()
+                .flatMapLatest { id ->
+                    if (id == null) flowOf(null) else counterRepository.observeProject(id).map { it?.name }
+                }.stateIn(
+                    scope = viewModelScope,
+                    started = SharingStarted.WhileSubscribed(5000),
+                    initialValue = null,
+                )
 
         fun observeCardForDetail(id: Long): Flow<YarnCard?> = repository.observeCard(id)
 

@@ -75,7 +75,7 @@
     <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
     <string name="tip_undo">Opgeslagen. Verkeerd getikt? Ongedaan maken draait de laatste wijziging terug.</string>
     <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
-    <string name="tip_step_size">Tel je meer dan één tegelijk? Verander hier hoeveel elke tik optelt.</string>
+    <string name="tip_step_size">Tel je meer dan één tegelijk? Verander hier hoeveel elke tik optelt of aftrekt.</string>
     <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
     <string name="tip_work_session">Wil je weten hoeveel tijd dit project kost? Start een werksessie vanuit dit menu. De tijd begint nooit vanzelf te lopen.</string>
     <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
@@ -145,7 +145,7 @@
     <!-- Kääntäjälle: paikallinen käyttöopas. Toimintojen ja välilehtien nimet vastaavat muuta käyttöliittymää. -->
     <string name="guide_continue_step_title">Meer dan één tellen</string>
     <!-- Kääntäjälle: paikallinen käyttöopas. Toimintojen ja välilehtien nimet vastaavat muuta käyttöliittymää. -->
-    <string name="guide_continue_step_body">Met de ring ×1 tussen de knoppen stel je in hoeveel elke tik optelt, van 1 tot 99, voor elk project apart.</string>
+    <string name="guide_continue_step_body">Met de ring ×1 tussen de knoppen stel je in hoeveel elke tik optelt of aftrekt, van 1 tot 99, voor elk project apart.</string>
     <!-- Kääntäjälle: paikallinen käyttöopas. Toimintojen ja välilehtien nimet vastaavat muuta käyttöliittymää. -->
     <string name="guide_continue_project_page_title">Projectpagina en teller</string>
     <!-- Kääntäjälle: paikallinen käyttöopas. Toimintojen ja välilehtien nimet vastaavat muuta käyttöliittymää. -->
@@ -476,7 +476,7 @@
     <!-- Aloituspolku: tervetulonäkymän hyöty, kerrosten laskeminen yhdellä napautuksella. -->
     <string name="journey_welcome_point_count">Tel toeren met één tik</string>
     <!-- Aloituspolku: tervetulonäkymän hyöty, kohta ohjeessa säilyy (lukulinja). -->
-    <string name="journey_welcome_point_pattern">Houd je plek vast in elk patroon</string>
+    <string name="journey_welcome_point_pattern">Houd je plek vast in een PDF-patroon</string>
     <!-- Aloituspolku: tervetulonäkymän hyöty, työtä voi jatkaa siitä mihin jäi. -->
     <string name="journey_welcome_point_return">Ga verder precies waar je gebleven was</string>
     <!-- Aloituspolku: Aloitetaan -->

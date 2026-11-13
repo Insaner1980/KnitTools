@@ -33,6 +33,24 @@ import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ProjectYarnUsageRepositoryTest {
+    @Test fun linkingSingleUsageAdvancesRevisionAndRejectsStaleEditors() =
+        runTest {
+            val original = usage(id = 9, noteId = 4, updatedAt = System.currentTimeMillis() + 60_000)
+            val dao =
+                FakeUsageDao(relations()).apply {
+                    row = original
+                    sourceRows = listOf(original)
+                }
+            val repository = repository(dao)
+            assertEquals(LinkSavedCardUsageResult.Linked, dao.linkSavedCard(1, 4, 3))
+            val linked = requireNotNull(dao.row)
+            assertEquals(original.updatedAt + 1, linked.updatedAt)
+            assertEquals(YarnUsageResult.StaleAction, repository.update(1, 9, original.updatedAt, amounts))
+            assertEquals(YarnUsageResult.StaleAction, repository.delete(1, 9, original.updatedAt))
+            assertEquals(LinkSavedCardUsageResult.Linked, dao.linkSavedCard(1, 4, 3))
+            assertEquals(linked, dao.row)
+        }
+
     private val amounts = YarnUsageAmounts(1_200.0, 600.0, 350.0, 200.0, 100.0)
 
     @Test
@@ -422,7 +440,7 @@ class ProjectYarnUsageRepositoryTest {
             if (current?.id == id && current.projectId == projectId) row = null
             val before = sourceRows.size
             sourceRows = sourceRows.filterNot { it.id == id && it.projectId == projectId }
-            return if (current?.id == id || sourceRows.size != before) 1 else 0
+            return if ((current?.id == id && current.projectId == projectId) || sourceRows.size != before) 1 else 0
         }
     }
 }

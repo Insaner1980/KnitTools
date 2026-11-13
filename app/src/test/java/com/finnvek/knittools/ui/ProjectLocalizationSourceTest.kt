@@ -57,7 +57,11 @@ class ProjectLocalizationSourceTest {
             ?: throw AssertionError("Missing string resource: $name")
 
     private fun formatPlaceholders(value: String): List<String> =
-        FORMAT_PLACEHOLDER_REGEX.findAll(value).map { it.value }.toList()
+        FORMAT_PLACEHOLDER_REGEX
+            .findAll(value)
+            .map { it.value }
+            .sorted()
+            .toList()
 
     private companion object {
         private const val PROJECT_LIST_ITEM =

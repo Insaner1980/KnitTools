@@ -87,14 +87,14 @@ class KnitToolsDatabaseMigrationSourceTest {
         assertTrue(sql.any { it.contains("CASE WHEN isFree = 1 THEN 'free' ELSE 'unknown' END") })
         assertTrue(sql.any { it.contains("`availability` TEXT NOT NULL") })
         assertFalse(sql.any { it.contains("CASE WHEN isFree = 0 THEN 'paid'") })
-        assertTrue(
-            sql.indexOfFirst { it.startsWith("DELETE FROM `pattern_annotations`") } <
-                sql.indexOfFirst { it.startsWith("DELETE FROM `pattern_annotation_layers`") },
-        )
-        assertTrue(
-            sql.indexOfFirst { it.startsWith("INSERT INTO `pattern_annotation_layers`") } <
-                sql.indexOfFirst { it.startsWith("INSERT INTO `pattern_annotations`") },
-        )
+        val deleteAnnotations = sql.indexOfFirst { it.startsWith("DELETE FROM `pattern_annotations`") }
+        val deleteLayers = sql.indexOfFirst { it.startsWith("DELETE FROM `pattern_annotation_layers`") }
+        val restoreLayers = sql.indexOfFirst { it.startsWith("INSERT INTO `pattern_annotation_layers`") }
+        val restoreAnnotations = sql.indexOfFirst { it.startsWith("INSERT INTO `pattern_annotations`") }
+        assertTrue(deleteAnnotations >= 0 && deleteLayers >= 0)
+        assertTrue(restoreLayers >= 0 && restoreAnnotations >= 0)
+        assertTrue(deleteAnnotations < deleteLayers)
+        assertTrue(restoreLayers < restoreAnnotations)
     }
 
     @Test

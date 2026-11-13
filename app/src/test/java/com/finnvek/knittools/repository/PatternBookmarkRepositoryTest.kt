@@ -8,6 +8,7 @@ import com.finnvek.knittools.data.local.PatternBookmarkDao
 import com.finnvek.knittools.data.local.PatternBookmarkEntity
 import com.finnvek.knittools.data.local.ProjectDocumentDao
 import com.finnvek.knittools.data.local.ProjectDocumentEntity
+import com.finnvek.knittools.data.local.toDomain
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -16,6 +17,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -162,7 +164,6 @@ class PatternBookmarkRepositoryTest {
             val repository =
                 PatternBookmarkRepository(
                     bookmarkDao = mockk(relaxed = true),
-                    annotationLayerDao = mockk(relaxed = true),
                     projectDocumentRepository = mockk(relaxed = true),
                     transactionRunner =
                         object : com.finnvek.knittools.data.local.DatabaseTransactionRunner {
@@ -183,10 +184,24 @@ class PatternBookmarkRepositoryTest {
     private fun repository(
         bookmarkDao: PatternBookmarkDao,
         layerDao: PatternAnnotationLayerDao,
-        projectDocumentRepository: ProjectDocumentRepository = mockk(relaxed = true),
+        projectDocumentRepository: ProjectDocumentRepository =
+            mockk<ProjectDocumentRepository>(relaxed = true).also { documents ->
+                coEvery { documents.getActiveDocument(7L) } coAnswers {
+                    layerDao.getActiveProjectLayer(7L)?.let { document().copy(documentKey = it.documentKey).toDomain() }
+                }
+                every { documents.observeActiveDocument(7L) } answers {
+                    layerDao.observeProjectLayers(7L).map { layers ->
+                        layers.singleOrNull { it.isActive }?.let {
+                            document()
+                                .copy(
+                                    documentKey = it.documentKey,
+                                ).toDomain()
+                        }
+                    }
+                }
+            },
     ) = PatternBookmarkRepository(
         bookmarkDao = bookmarkDao,
-        annotationLayerDao = layerDao,
         projectDocumentRepository = projectDocumentRepository,
         transactionRunner = ImmediateDatabaseTransactionRunner,
         ioDispatcher = Dispatchers.Unconfined,

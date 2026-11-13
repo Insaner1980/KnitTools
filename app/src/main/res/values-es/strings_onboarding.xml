@@ -75,7 +75,7 @@
     <!-- Tilannekohtainen vihje nykyisessä näkymässä; toimintojen nimet vastaavat sovelluksen nykyisiä nimiä. -->
     <string name="tip_undo">Guardado. ¿Has tocado por error? Deshacer revierte el último cambio.</string>
     <!-- Tilannekohtainen vihje nykyisessä näkymässä; toimintojen nimet vastaavat sovelluksen nykyisiä nimiä. -->
-    <string name="tip_step_size">¿Cuentas de varias en varias? Cambia aquí cuánto suma cada toque.</string>
+    <string name="tip_step_size">¿Cuentas de varias en varias? Cambia aquí cuánto suma o resta cada toque.</string>
     <!-- Työajan seuranta käynnistetään itse; ajastin ei käynnisty automaattisesti. -->
     <string name="tip_work_session">¿Quieres saber cuánto tiempo te lleva este proyecto? Inicia una sesión de trabajo desde este menú. El tiempo nunca empieza a contarse solo.</string>
     <!-- Tilannekohtainen vihje nykyisessä näkymässä; toimintojen nimet vastaavat sovelluksen nykyisiä nimiä. -->
@@ -145,7 +145,7 @@
     <!-- Oppaan laskentaosio; Kumoa ja Jatka tarkoittavat olemassa olevia käyttöliittymän toimintoja. -->
     <string name="guide_continue_step_title">Contar de varias en varias</string>
     <!-- Oppaan laskentaosio; Kumoa ja Jatka tarkoittavat olemassa olevia käyttöliittymän toimintoja. -->
-    <string name="guide_continue_step_body">El anillo ×1 entre los botones permite ajustar cuánto suma cada toque, de 1 a 99, por separado para cada proyecto.</string>
+    <string name="guide_continue_step_body">El anillo ×1 entre los botones permite ajustar cuánto suma o resta cada toque, de 1 a 99, por separado para cada proyecto.</string>
     <!-- Oppaan laskentaosio; Kumoa ja Jatka tarkoittavat olemassa olevia käyttöliittymän toimintoja. -->
     <string name="guide_continue_project_page_title">Página del proyecto y contador</string>
     <!-- Oppaan laskentaosio; Kumoa ja Jatka tarkoittavat olemassa olevia käyttöliittymän toimintoja. -->
@@ -481,7 +481,7 @@
     <!-- Aloituspolku: tervetulonäkymän hyöty, kerrosten laskeminen yhdellä napautuksella. -->
     <string name="journey_welcome_point_count">Cuenta vueltas con un toque</string>
     <!-- Aloituspolku: tervetulonäkymän hyöty, kohta ohjeessa säilyy (lukulinja). -->
-    <string name="journey_welcome_point_pattern">No pierdas tu punto en ningún patrón</string>
+    <string name="journey_welcome_point_pattern">No pierdas tu punto en un patrón PDF</string>
     <!-- Aloituspolku: tervetulonäkymän hyöty, työtä voi jatkaa siitä mihin jäi. -->
     <string name="journey_welcome_point_return">Retoma justo donde lo dejaste</string>
     <!-- Aloituspolku: Aloitetaan -->

@@ -12,7 +12,6 @@ import android.os.Bundle
 import android.os.SystemClock
 import android.view.InputDevice
 import android.view.MotionEvent
-import android.view.WindowInsets
 import android.view.accessibility.AccessibilityNodeInfo
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
@@ -374,9 +373,17 @@ class PatternNotesNavigationRuntimeTest {
     private fun usableWindowBounds(): Rect {
         var bounds = Rect()
         checkNotNull(scenario).onActivity { activity ->
-            val metrics = activity.windowManager.currentWindowMetrics
-            val insets = metrics.windowInsets.getInsets(WindowInsets.Type.systemBars())
-            bounds = Rect(metrics.bounds).apply { inset(insets.left, insets.top, insets.right, insets.bottom) }
+            val decor = activity.window.decorView
+            val origin = IntArray(2).also(decor::getLocationOnScreen)
+            val insets =
+                androidx.core.view.ViewCompat
+                    .getRootWindowInsets(decor)
+                    ?.getInsets(
+                        androidx.core.view.WindowInsetsCompat.Type
+                            .systemBars(),
+                    )
+            bounds = Rect(origin[0], origin[1], origin[0] + decor.width, origin[1] + decor.height)
+            if (insets != null) bounds.inset(insets.left, insets.top, insets.right, insets.bottom)
         }
         return bounds
     }
@@ -401,10 +408,18 @@ class PatternNotesNavigationRuntimeTest {
         val folder = File(app.cacheDir, "pattern-notes-navigation")
         checkNotNull(scenario).onActivity { activity ->
             val config = activity.resources.configuration
-            val metrics = activity.windowManager.currentWindowMetrics
-            val insets = metrics.windowInsets.getInsets(WindowInsets.Type.systemBars())
+            val decor = activity.window.decorView
+            val origin = IntArray(2).also(decor::getLocationOnScreen)
+            val windowBounds = Rect(origin[0], origin[1], origin[0] + decor.width, origin[1] + decor.height)
+            val insets =
+                androidx.core.view.ViewCompat
+                    .getRootWindowInsets(decor)
+                    ?.getInsets(
+                        androidx.core.view.WindowInsetsCompat.Type
+                            .systemBars(),
+                    )
             File(folder, "$layout-$name.txt").writeText(
-                "windowPx=${metrics.bounds}; screenDp=${config.screenWidthDp}x${config.screenHeightDp}; " +
+                "windowPx=$windowBounds; screenDp=${config.screenWidthDp}x${config.screenHeightDp}; " +
                     "density=${activity.resources.displayMetrics.density}; densityDpi=${config.densityDpi}; " +
                     "fontScale=${config.fontScale}; locale=${config.locales.toLanguageTags()}; " +
                     "systemInsetsPx=$insets; theme=${InstrumentationRegistry.getArguments().getString("readerTheme")}",

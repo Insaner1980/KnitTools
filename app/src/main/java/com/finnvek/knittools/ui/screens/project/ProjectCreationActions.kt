@@ -138,6 +138,7 @@ internal class ProjectCreationActions(
     }
 
     fun create(request: PendingProjectCreation) {
+        if (projectCreationInFlight) return
         pendingProjectCreation = request
         scope.launch { createProjectInternal(request) }
     }

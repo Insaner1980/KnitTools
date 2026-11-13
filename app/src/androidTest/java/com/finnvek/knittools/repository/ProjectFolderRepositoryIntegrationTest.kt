@@ -143,11 +143,8 @@ class ProjectFolderRepositoryIntegrationTest {
                     },
                 )
 
-            try {
-                cancellingRepository.createFolder("Cancelled")
-            } catch (_: CancellationException) {
-                // Peruutus kuuluu välittää kutsujalle ja Room-transaktion perua.
-            }
+            val failure = runCatching { cancellingRepository.createFolder("Cancelled") }.exceptionOrNull()
+            assertTrue(failure is CancellationException)
 
             assertEquals(0L, scalarLong("SELECT COUNT(*) FROM project_folders"))
         }

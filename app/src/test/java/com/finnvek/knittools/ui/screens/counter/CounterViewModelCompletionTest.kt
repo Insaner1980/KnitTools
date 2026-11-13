@@ -322,7 +322,7 @@ class CounterViewModelCompletionTest : CounterViewModelFixture() {
     ) {
         assertEquals(expectedState, viewModel.uiState.value)
         coVerify(exactly = 0) {
-            repository.completeProjectWithSessionChoice(8L, any())
+            repository.completeProjectWithSessionChoice(8L, any(), any(), any())
             repository.stopSession(any(), any(), any(), any())
             repository.discardActiveSession(any())
             repository.replaceActiveSession(any(), any(), any())

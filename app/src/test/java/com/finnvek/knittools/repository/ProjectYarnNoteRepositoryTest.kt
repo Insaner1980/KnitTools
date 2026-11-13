@@ -64,7 +64,8 @@ class ProjectYarnNoteRepositoryTest {
             assertEquals("Silk blend", dao.lastUpserted?.description)
             assertEquals(2, dao.lastUpserted?.quantity)
             assertEquals("Use only for cuffs", dao.lastUpserted?.notes)
-            assertEquals(listOf("Sleeve yarn"), notes.map { it.name })
+            assertEquals(listOf("Sleeve yarn", "Contrast cuff"), notes.map { it.name })
+            assertEquals("Contrast cuff", dao.getById(savedId)?.name)
         }
 
     @Test
@@ -215,25 +216,33 @@ class ProjectYarnNoteRepositoryTest {
         )
 
     private class FakeProjectYarnNoteDao(
-        private val notes: List<ProjectYarnNoteEntity> = emptyList(),
+        notes: List<ProjectYarnNoteEntity> = emptyList(),
     ) : ProjectYarnNoteDao {
+        private val stored = notes.associateBy { it.id }.toMutableMap()
         var lastUpserted: ProjectYarnNoteEntity? = null
         var savedYarnCardLink: Pair<Long, Long>? = null
         var deletedId: Long? = null
 
         override fun observeForProject(projectId: Long): Flow<List<ProjectYarnNoteEntity>> =
-            flowOf(notes.filter { it.projectId == projectId })
+            flowOf(
+                stored.values
+                    .filter { it.projectId == projectId }
+                    .sortedWith(compareByDescending<ProjectYarnNoteEntity> { it.createdAt }.thenByDescending { it.id }),
+            )
 
-        override suspend fun getById(id: Long): ProjectYarnNoteEntity? =
-            notes.firstOrNull { it.id == id } ?: lastUpserted?.takeIf { it.id == id }
+        override suspend fun getById(id: Long): ProjectYarnNoteEntity? = stored[id]
 
         override suspend fun upsert(note: ProjectYarnNoteEntity): Long {
             lastUpserted = note
-            return 77L
+            val id = note.id.takeIf { it > 0L } ?: maxOf(77L, (stored.keys.maxOrNull() ?: 0L) + 1L)
+            stored[id] = note.copy(id = id)
+            return id
         }
 
         override suspend fun update(note: ProjectYarnNoteEntity): Int {
+            if (note.id !in stored) return 0
             lastUpserted = note
+            stored[note.id] = note
             return 1
         }
 
@@ -242,12 +251,15 @@ class ProjectYarnNoteRepositoryTest {
             savedYarnCardId: Long,
             updatedAt: Long,
         ): Int {
+            val note = stored[id] ?: return 0
+            stored[id] = note.copy(savedYarnCardId = savedYarnCardId, updatedAt = updatedAt)
             savedYarnCardLink = id to savedYarnCardId
             return 1
         }
 
         override suspend fun delete(id: Long) {
             deletedId = id
+            stored.remove(id)
         }
     }
 

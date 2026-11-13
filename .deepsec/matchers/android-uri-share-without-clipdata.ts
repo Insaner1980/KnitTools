@@ -30,7 +30,13 @@ export const androidUriShareWithoutClipData: MatcherPlugin = {
       if (!shareBlock.includes("Intent.EXTRA_STREAM")) return [];
 
       const hasReadGrant = shareBlock.includes("FLAG_GRANT_READ_URI_PERMISSION");
-      const hasClipData = /\bclipData\b|ClipData\./.test(shareBlock);
+      const streamUri = /\bputExtra\s*\(\s*Intent\.EXTRA_STREAM\s*,\s*([\w.]+)\s*\)/.exec(shareBlock)?.[1];
+      const assignments = [...shareBlock.matchAll(/\bclipData\s*=(?!=)/g)];
+      const lastAssignment = assignments.at(-1);
+      const clipUri = lastAssignment && /^\bclipData\s*=\s*ClipData\.(?:newRawUri\s*\([^,]*,|newUri\s*\([^,]*,[^,]*,)\s*([\w.]+)\s*\)/
+        .exec(shareBlock.slice(lastAssignment.index))?.[1];
+      // Only a direct same-URI assignment is enough to dismiss this review candidate.
+      const hasClipData = streamUri != null && clipUri === streamUri;
       if (hasReadGrant && hasClipData) return [];
 
       return [

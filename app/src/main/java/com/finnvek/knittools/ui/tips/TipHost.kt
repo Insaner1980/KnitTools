@@ -344,6 +344,13 @@ internal fun findTipPlacement(
     inset: Float,
 ): TipPlacement? {
     if (anchor.isEmpty || viewport.isEmpty || bubble.width > viewport.width - inset * 2f) return null
+    if (anchor.left < viewport.left ||
+        anchor.top < viewport.top ||
+        anchor.right > viewport.right ||
+        anchor.bottom > viewport.bottom
+    ) {
+        return null
+    }
     val left =
         (anchor.center.x - bubble.width / 2f).coerceIn(
             viewport.left + inset,

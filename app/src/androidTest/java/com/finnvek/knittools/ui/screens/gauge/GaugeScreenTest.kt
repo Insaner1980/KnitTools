@@ -84,6 +84,7 @@ class GaugeScreenTest {
     private val viewModelStore = ViewModelStore()
     private var modelNumber = 0
     private var copiedLabel: String? = null
+    private var copiedText: String? = null
 
     @After
     fun tearDown() {
@@ -91,7 +92,13 @@ class GaugeScreenTest {
             viewModelStore.clear()
             copiedLabel?.let { label ->
                 val clipboard = context.getSystemService(ClipboardManager::class.java)
-                if (clipboard.primaryClipDescription?.label?.toString() == label) {
+                if (clipboard.primaryClipDescription?.label?.toString() == label &&
+                    clipboard.primaryClip
+                        ?.takeIf { it.itemCount == 1 }
+                        ?.getItemAt(0)
+                        ?.text
+                        ?.toString() == copiedText
+                ) {
                     clipboard.clearPrimaryClip()
                 }
             }
@@ -648,6 +655,7 @@ class GaugeScreenTest {
             assertEquals(label, clipboard.primaryClipDescription?.label?.toString())
             copiedLabel = label
             copied = requireNotNull(clipboard.primaryClip).getItemAt(0).text.toString()
+            copiedText = copied
         }
         return copied
     }

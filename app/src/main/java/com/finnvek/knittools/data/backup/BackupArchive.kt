@@ -81,7 +81,10 @@ internal object BackupArchive {
                     BackupFormat.requireValid(entry.size == item.size)
                     val target = File(directory, item.path)
                     BackupFormat.requireValid(target.canonicalPath.startsWith(directory.canonicalPath + File.separator))
-                    check(target.parentFile?.mkdirs() == true || target.parentFile?.isDirectory == true)
+                    BackupFormat.requireValid(
+                        target.parentFile?.mkdirs() == true || target.parentFile?.isDirectory == true,
+                        BackupError.WRITE,
+                    )
                     FileOutputStream(target).use { output ->
                         zip.getInputStream(entry).use { input ->
                             val actual = BackupFormat.copy(input, output, item.size, check)

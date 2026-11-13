@@ -203,12 +203,14 @@ class ProjectDetailsSheetTest {
                 ),
             restorationTester = restoration,
         )
+        compose.onNodeWithText("Sections").performScrollTo().performTextReplacement("Panels")
+        compose.onNodeWithText("40").performScrollTo().performTextReplacement("55")
         compose.onNodeWithText(label(R.string.project_create_fewer_options)).performScrollTo().performClick()
         compose.onNodeWithContentDescription(label(R.string.project_target_label)).assertDoesNotExist()
         restoration.emulateSavedInstanceStateRestore()
         compose.onNodeWithContentDescription(label(R.string.project_target_label)).assertExists()
-        compose.onNodeWithText("Sections").assertExists()
-        compose.onNodeWithText("40").assertExists()
+        compose.onNodeWithText("Panels").assertExists()
+        compose.onNodeWithText("55").assertExists()
     }
 
     private fun showSheet(

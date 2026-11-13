@@ -19,7 +19,8 @@ open class StubCounterProjectDao(
 
     override fun observeCompletions(projectId: Long?): Flow<List<ProjectCompletionEntity>> = flowOf(emptyList())
 
-    override fun getAllProjects(): Flow<List<CounterProjectEntity>> = flowOf(projects)
+    override fun getAllProjects(): Flow<List<CounterProjectEntity>> =
+        flowOf(projects.sortedByDescending { it.updatedAt })
 
     override fun observeHasAnyProject(): Flow<Boolean> = flowOf(projects.isNotEmpty())
 
@@ -208,7 +209,10 @@ open class StubCounterProjectDao(
 
     override suspend fun getProjectCount(): Int = projects.size
 
-    override suspend fun getLatestActiveProject(): CounterProjectEntity? = projects.firstOrNull()
+    override suspend fun getLatestActiveProject(): CounterProjectEntity? =
+        projects.filter { !it.isCompleted }.maxWithOrNull(
+            compareBy<CounterProjectEntity> { it.updatedAt }.thenBy { it.id },
+        )
 
     override fun observeCounterHistory(projectId: Long): Flow<List<CounterHistoryEntity>> = flowOf(emptyList())
 
@@ -229,17 +233,59 @@ open class StubCounterProjectDao(
         updatedAt: Long,
     ) = Unit
 
-    override fun getActiveProjects(): Flow<List<CounterProjectEntity>> = flowOf(projects)
+    override fun getActiveProjects(): Flow<List<CounterProjectEntity>> =
+        flowOf(
+            projects
+                .filter {
+                    !it.isCompleted
+                }.sortedWith(compareByDescending<CounterProjectEntity> { it.updatedAt }.thenByDescending { it.id }),
+        )
 
-    override fun getActiveProjectsByName(): Flow<List<CounterProjectEntity>> = flowOf(projects)
+    override fun getActiveProjectsByName(): Flow<List<CounterProjectEntity>> = projectsByName(completed = false)
 
-    override fun getActiveProjectsByCreated(): Flow<List<CounterProjectEntity>> = flowOf(projects)
+    override fun getActiveProjectsByCreated(): Flow<List<CounterProjectEntity>> =
+        flowOf(
+            projects
+                .filter {
+                    !it.isCompleted
+                }.sortedWith(compareByDescending<CounterProjectEntity> { it.createdAt }.thenByDescending { it.id }),
+        )
 
-    override fun getCompletedProjects(): Flow<List<CounterProjectEntity>> = flowOf(emptyList())
+    override fun getCompletedProjects(): Flow<List<CounterProjectEntity>> =
+        flowOf(
+            projects
+                .filter {
+                    it.isCompleted
+                }.sortedWith(compareByDescending<CounterProjectEntity> { it.completedAt }.thenByDescending { it.id }),
+        )
 
-    override fun getCompletedProjectsByName(): Flow<List<CounterProjectEntity>> = flowOf(emptyList())
+    override fun getCompletedProjectsByName(): Flow<List<CounterProjectEntity>> = projectsByName(completed = true)
 
-    override fun getCompletedProjectsByCreated(): Flow<List<CounterProjectEntity>> = flowOf(emptyList())
+    private fun projectsByName(completed: Boolean): Flow<List<CounterProjectEntity>> =
+        flowOf(
+            projects.filter { it.isCompleted == completed }.sortedWith(
+                compareBy<CounterProjectEntity> {
+                    it.name
+                        .map { char ->
+                            if (char in
+                                'A'..'Z'
+                            ) {
+                                char.lowercaseChar()
+                            } else {
+                                char
+                            }
+                        }.joinToString("")
+                }.thenByDescending { it.id },
+            ),
+        )
+
+    override fun getCompletedProjectsByCreated(): Flow<List<CounterProjectEntity>> =
+        flowOf(
+            projects
+                .filter {
+                    it.isCompleted
+                }.sortedWith(compareByDescending<CounterProjectEntity> { it.createdAt }.thenByDescending { it.id }),
+        )
 
     override suspend fun getActiveProjectCount(): Int = projects.count { !it.isCompleted }
 

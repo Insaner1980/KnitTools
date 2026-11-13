@@ -3,7 +3,6 @@ package com.finnvek.knittools.data.storage
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
-import android.provider.OpenableColumns
 import androidx.core.net.toUri
 import com.finnvek.knittools.di.IoDispatcher
 import com.finnvek.knittools.domain.model.PROJECT_DOCUMENT_LABEL_MAX_LENGTH
@@ -53,10 +52,5 @@ class OnboardingPdfStorage
                 }
             }
 
-        private fun readDisplayName(uri: Uri): String =
-            context.contentResolver
-                .query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)
-                ?.use {
-                    if (it.moveToFirst()) it.getString(0) else null
-                }?.takeIf { it.isNotBlank() } ?: "pattern.pdf"
+        private fun readDisplayName(uri: Uri): String = context.contentResolver.displayNameOrNull(uri) ?: "pattern.pdf"
     }

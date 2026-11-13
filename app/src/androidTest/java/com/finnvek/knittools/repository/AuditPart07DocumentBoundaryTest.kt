@@ -94,7 +94,6 @@ class AuditPart07DocumentBoundaryTest(
             bookmarks =
                 PatternBookmarkRepository(
                     database.patternBookmarkDao(),
-                    database.patternAnnotationLayerDao(),
                     documents,
                     gate,
                     Dispatchers.IO,

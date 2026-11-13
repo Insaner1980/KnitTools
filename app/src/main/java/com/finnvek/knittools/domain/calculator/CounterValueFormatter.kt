@@ -171,7 +171,7 @@ object CounterValueFormatter {
         val startRow = counter.repeatStartRow ?: return CounterValueDisplay.Plain(counter.count)
         val endRow = counter.repeatEndRow ?: return CounterValueDisplay.Plain(counter.count)
         val totalRepeats = counter.totalRepeats ?: return CounterValueDisplay.Plain(counter.count)
-        if (totalRepeats <= 0 || endRow < startRow) {
+        if (totalRepeats <= 0 || startRow <= 0 || endRow < startRow) {
             return CounterValueDisplay.Plain(counter.count)
         }
         if (RepeatSectionLogic.isComplete(counter, mainRowCount)) {

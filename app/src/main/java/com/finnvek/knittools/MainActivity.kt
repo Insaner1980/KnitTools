@@ -632,7 +632,7 @@ class MainActivity : AppCompatActivity() {
 
         val payload =
             parseWebPatternSharedText(
-                text = intent.getStringExtra(Intent.EXTRA_TEXT),
+                text = intent.getCharSequenceExtra(Intent.EXTRA_TEXT)?.toString(),
                 subject = intent.getStringExtra(Intent.EXTRA_SUBJECT),
             ).toPatternSharePayload()
         when (patternShareCoordinator.offer(payload)) {

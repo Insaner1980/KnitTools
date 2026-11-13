@@ -11,6 +11,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.Dp
 import com.finnvek.knittools.ui.theme.ProjectListDimens
+import com.finnvek.knittools.ui.theme.knitToolsColors
+
+internal const val PROJECT_PROGRESS_TRACK_ALPHA = 0.1f
 
 @Composable
 fun ProjectProgressBar(
@@ -25,14 +28,14 @@ fun ProjectProgressBar(
             .fillMaxWidth()
             .height(height)
             .clip(shape)
-            .background(MaterialTheme.colorScheme.onSurface.copy(alpha = ProjectListDimens.ProgressTrackAlpha)),
+            .background(MaterialTheme.colorScheme.onSurface.copy(alpha = PROJECT_PROGRESS_TRACK_ALPHA)),
     ) {
         Box(
             Modifier
                 .fillMaxWidth(fraction.coerceIn(0f, 1f))
                 .height(height)
                 .clip(shape)
-                .background(MaterialTheme.colorScheme.primary),
+                .background(MaterialTheme.knitToolsColors.primaryReadable),
         )
     }
 }

@@ -90,21 +90,24 @@ describe("production Ravelry HTTP callback with local responses", () => {
     });
     mock.method(stores, "createRavelryBackendStores", () => ({
       stateStore: {
-        async bindBrowser(key: string, _ticketHash: string, bindingHash: string) {
+        async bindBrowser(key: string, ticketHash: string, bindingHash: string) {
           browserBinds++;
-          assert.equal(globalCalls, 1);
-          if (key !== state || !stored) return null;
-          stored = { ...stored, browserBindingHash: bindingHash };
+          assert.ok(globalCalls >= 1);
+          assert.ok(uidCalls >= 1);
+          if (!stored || key !== stored.state || stored.browserStartHash !== ticketHash ||
+              stored.browserBindingHash != null || stored.usedAtMillis != null || stored.expiresAtMillis <= now) return null;
+          const { browserStartHash: _startHash, ...unbound } = stored;
+          stored = { ...unbound, browserBindingHash: bindingHash };
           return stored;
         },
         async getState(key: string) {
           stateReads++;
           if (failRead) throw new Error(rawError);
-          return key === state ? stored : null;
+          return key === stored?.state ? stored : null;
         },
         async markStateUsed() { return consumeState(); },
         async saveBrowserResult(key: string, _bindingHash: string, result: string) {
-          if (key !== state || !stored || stored.usedAtMillis == null) return false;
+          if (!stored || key !== stored.state || stored.usedAtMillis == null) return false;
           stored = { ...stored, browserResult: result };
           return true;
         },
@@ -183,17 +186,23 @@ describe("production Ravelry HTTP callback with local responses", () => {
   });
 
   it("preserves the browser binding across overlapping login starts", async () => {
+    stored = { ...stored!, browserStartHash: browserSecretHash("t".repeat(43)) };
     await invoke({ state, start: "t".repeat(43) });
     assert.equal(status, 302);
     const firstSecret = browserSecretFromCookie(responseCookie);
     const firstBinding = stored?.browserBindingHash;
     assert.equal(firstBinding, browserSecretHash(firstSecret));
     globalCalls = 0;
-    await invoke({ state, start: "u".repeat(43) }, "GET", responseCookie);
+    const secondState = "u".repeat(43);
+    stored = {
+      ...stored!, state: secondState, browserBindingHash: undefined,
+      browserStartHash: browserSecretHash("v".repeat(43)),
+    };
+    await invoke({ state: secondState, start: "v".repeat(43) }, "GET", responseCookie);
     assert.equal(status, 302);
     assert.equal(browserSecretFromCookie(responseCookie), firstSecret);
     assert.equal(stored?.browserBindingHash, firstBinding);
-    await invoke({ state, code: "synthetic-code" }, "GET", responseCookie);
+    await invoke({ state: secondState, code: "synthetic-code" }, "GET", responseCookie);
     assert.equal(status, 302);
     assert.ok(pending);
   });
@@ -204,6 +213,10 @@ describe("production Ravelry HTTP callback with local responses", () => {
       `${BROWSER_AUTH_COOKIE}=${"b".repeat(43)}; ${BROWSER_AUTH_COOKIE}=${"c".repeat(43)}`,
     ]) {
       globalCalls = 0;
+      stored = {
+        ...stored!, browserBindingHash: undefined,
+        browserStartHash: browserSecretHash("t".repeat(43)),
+      };
       await invoke({ state, start: "t".repeat(43) }, "GET", cookie);
       assert.equal(status, 302);
       assert.equal(stored?.browserBindingHash, browserSecretHash(browserSecretFromCookie(responseCookie)));
@@ -295,13 +308,40 @@ describe("production Ravelry HTTP callback with local responses", () => {
   });
 
   it("charges valid browser starts before binding and redirects to Ravelry", async () => {
+    stored = { ...stored!, browserStartHash: browserSecretHash("t".repeat(43)) };
     await invoke({ state, start: "t".repeat(43) });
     assert.equal(globalCalls, 1);
     assert.equal(browserBinds, 1);
-    assert.equal(stateReads, 0);
+    assert.equal(stateReads, 1);
+    assert.equal(uidCalls, 1);
     assert.equal(status, 302);
     assert.equal(new URL(redirect!).origin, "https://www.ravelry.com");
     assert.equal(fetchCalls, 0);
+  });
+
+  it("keeps the browser ticket retryable when the UID quota rejects the start", async () => {
+    const ticket = "t".repeat(43);
+    stored = { ...stored!, browserStartHash: browserSecretHash(ticket) };
+    limit = true;
+    await invoke({ state, start: ticket });
+    assert.equal(status, 429);
+    assert.equal(browserBinds, 0);
+    assert.equal(responseCookie, undefined);
+    assert.equal(stored?.browserStartHash, browserSecretHash(ticket));
+    limit = false;
+    await invoke({ state, start: ticket });
+    assert.equal(status, 302);
+    assert.equal(browserBinds, 1);
+    assert.equal(stored?.browserStartHash, undefined);
+    assert.ok(responseCookie);
+  });
+
+  it("rejects an invalid browser ticket before UID charging", async () => {
+    stored = { ...stored!, browserStartHash: browserSecretHash("t".repeat(43)) };
+    await invoke({ state, start: "w".repeat(43) });
+    assert.equal(status, 400);
+    assert.equal(uidCalls, 0);
+    assert.equal(browserBinds, 0);
   });
 
   it("rejects an overloaded browser start before binding", async () => {

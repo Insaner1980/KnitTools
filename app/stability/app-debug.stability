@@ -3345,7 +3345,7 @@ internal fun com.finnvek.knittools.ui.screens.library.LibraryTopBar(isSelectMode
     - onBack: STABLE (function type)
 
 @Composable
-internal fun com.finnvek.knittools.ui.screens.library.ManualYarnCardSheet(onSave: kotlin.Function1<com.finnvek.knittools.ui.screens.yarncard.ManualYarnCardInput, kotlin.Unit>, onDismiss: kotlin.Function0<kotlin.Unit>, initialInput: com.finnvek.knittools.ui.screens.yarncard.ManualYarnCardInput, showQuantity: kotlin.Boolean, titleRes: kotlin.Int, bodyRes: kotlin.Int?): kotlin.Unit
+internal fun com.finnvek.knittools.ui.screens.library.ManualYarnCardSheet(onSave: kotlin.Function1<com.finnvek.knittools.ui.screens.yarncard.ManualYarnCardInput, kotlin.Unit>, onDismiss: kotlin.Function0<kotlin.Unit>, initialInput: com.finnvek.knittools.ui.screens.yarncard.ManualYarnCardInput, showQuantity: kotlin.Boolean, saving: kotlin.Boolean, titleRes: kotlin.Int, bodyRes: kotlin.Int?): kotlin.Unit
   skippable: true
   restartable: true
   params:
@@ -3353,6 +3353,7 @@ internal fun com.finnvek.knittools.ui.screens.library.ManualYarnCardSheet(onSave
     - onDismiss: STABLE (function type)
     - initialInput: STABLE (class with no mutable properties)
     - showQuantity: STABLE (primitive type)
+    - saving: STABLE (primitive type)
     - titleRes: STABLE (primitive type)
     - bodyRes: STABLE (class with no mutable properties)
 

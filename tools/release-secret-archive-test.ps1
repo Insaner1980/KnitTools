@@ -11,7 +11,7 @@ $tokens = $null
 $parseErrors = $null
 $ast = [Management.Automation.Language.Parser]::ParseFile((Join-Path $PSScriptRoot 'release-surface.ps1'), [ref]$tokens, [ref]$parseErrors)
 if ($parseErrors.Count) { throw 'Source parse failed' }
-foreach ($name in @('Join-RepoPath', 'Test-BinaryFileContainsSecret', 'Test-KnownRavelrySecrets')) {
+foreach ($name in @('Join-RepoPath', 'Test-BinaryFileContainsSecret', 'Remove-SecretValuesFromDiagnostic', 'Test-KnownRavelrySecrets')) {
     $node = $ast.Find({ param($n) $n -is [Management.Automation.Language.FunctionDefinitionAst] -and $n.Name -eq $name }, $true)
     if ($null -eq $node) { throw "Missing function: $name" }
     . ([scriptblock]::Create($node.Extent.Text))
@@ -46,6 +46,8 @@ try {
                 throw 'Fixture does not demonstrate compressed-byte bypass'
             }
             $script:checkedFile = $name
+            $script:result = $null
+            $script:message = $null
             Test-KnownRavelrySecrets
             if ($result -ne 'FAIL' -or $message.Contains($secret)) { throw "Secret detection/redaction failed: $name" }
             Write-Output "PASS: detects synthetic secret in $name, value redacted"
@@ -60,6 +62,8 @@ try {
     if (Test-BinaryFileContainsSecret 'clean.apk' @($secret)) { throw 'False match: clean.apk' }
     Write-Output 'PASS: no match in clean.apk'
     $script:checkedFile = 'missing.aab'
+    $script:result = $null
+    $script:message = $null
     Test-KnownRavelrySecrets
     if ($result -ne 'FAIL' -or $message -ne 'Checked binary file is missing: missing.aab') { throw 'Disappeared checked archive must fail closed' }
     Write-Output 'PASS: disappeared checked archive fails closed, value redacted'
@@ -80,6 +84,8 @@ try {
     Write-Output "PASS: raw binary boundaries and ordinal matching ($($elapsed.ElapsedMilliseconds) ms)"
     Set-Content -LiteralPath (Join-Path $fixture 'invalid.apk') -Value 'invalid synthetic archive'
     $script:checkedFile = 'invalid.apk'
+    $script:result = $null
+    $script:message = $null
     Test-KnownRavelrySecrets
     if ($result -ne 'FAIL' -or $message.Contains($secret)) { throw 'Unreadable archive must fail closed without disclosing values' }
     Write-Output 'PASS: UTF-8, raw file fallback, corrupt archive fail closed'
@@ -90,5 +96,12 @@ finally {
     if (-not $resolved.StartsWith([IO.Path]::GetFullPath([IO.Path]::GetTempPath()), [StringComparison]::OrdinalIgnoreCase)) {
         throw 'Unsafe fixture cleanup path'
     }
-    if (Test-Path -LiteralPath $resolved) { Remove-Item -LiteralPath $resolved -Recurse -Force }
+    if (Test-Path -LiteralPath $resolved) {
+        if ((Get-Item -LiteralPath $resolved).Attributes.HasFlag([IO.FileAttributes]::ReparsePoint) -or
+            @(Get-ChildItem -LiteralPath $resolved -Recurse -Force -Attributes ReparsePoint).Count -gt 0) {
+            throw "Unsafe fixture cleanup path: $resolved"
+        }
+        Remove-Item -LiteralPath $resolved -Recurse -Force
+        if (Test-Path -LiteralPath $resolved) { throw "Fixture cleanup failed: $resolved" }
+    }
 }

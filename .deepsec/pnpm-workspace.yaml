@@ -11,7 +11,7 @@ overrides:
   body-parser: 2.4.0
   fast-uri: 3.1.9
   glob: 14.0.3
-  hono: 4.13.14
+  hono: 4.13.18
   ip-address: 10.7.5
   minimatch: 11.0.3
   proxy-addr: 2.0.8
@@ -19,7 +19,7 @@ overrides:
   tar: 7.5.22
   undici: 7.30.1
   'zod@>=4': 4.6.7
+  '@vercel/sandbox>zod': 4.6.7
 
 patchedDependencies:
   deepsec@2.3.9: patches/deepsec@2.3.9.patch
-  zod@3.24.4: patches/zod@3.24.4.patch

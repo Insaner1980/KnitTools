@@ -6,6 +6,7 @@ import android.content.Intent
 import android.os.SystemClock
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.uiautomator.By
+import androidx.test.uiautomator.Until
 import org.json.JSONArray
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -60,6 +61,10 @@ class OptimizedSmokeTest {
             scrollTo("Stop work session").click()
             text(string("work_session_stop_summary_title"))
             tap("Save session")
+            assertTrue(
+                "Session save must dismiss its dialog before navigating back",
+                device.wait(Until.gone(By.text(string("work_session_stop_summary_title"))), 15_000),
+            )
             projects()
             tap("Insights")
             scrollTo(string("insights_section_where_time_went"))

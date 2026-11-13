@@ -88,14 +88,21 @@ fun YarnManagementSheet(
     focusKey: String? = null,
     sheetState: SheetState = rememberModalBottomSheetState(),
 ) {
-    val scope = rememberCoroutineScope()
-    var creatingNote by remember { mutableStateOf(false) }
+    var pendingCreation by remember { mutableStateOf(actions.pendingProjectYarnNoteCreation()) }
     var createResult by remember { mutableStateOf<ProjectYarnNoteEditResult?>(null) }
     var showProjectYarnForm by rememberSaveable { mutableStateOf(false) }
     var editingNote by rememberSaveable(
         stateSaver = ProjectYarnNoteEditorSaver,
     ) { mutableStateOf<ProjectYarnNote?>(null) }
     val headingFocus = remember { FocusRequester() }
+
+    LaunchedEffect(pendingCreation) {
+        val request = pendingCreation ?: return@LaunchedEffect
+        createResult = request.await()
+        if (createResult == ProjectYarnNoteEditResult.Saved) showProjectYarnForm = false
+        actions.consumeProjectYarnNoteCreation(request)
+        pendingCreation = null
+    }
 
     ModalBottomSheet(
         onDismissRequest = actions.onDismiss,
@@ -187,20 +194,11 @@ fun YarnManagementSheet(
     // oli kolmas eri tapa lisätä lanka.
     if (showProjectYarnForm) {
         ProjectYarnForm(
-            saving = creatingNote,
+            saving = pendingCreation != null,
             result = createResult,
             onSave = { name, description, quantity, notes ->
-                if (!creatingNote) {
-                    creatingNote = true
-                    val pending = actions.onSaveProjectYarnNote(name, description, quantity, notes)
-                    scope.launch {
-                        try {
-                            createResult = pending.await()
-                            if (createResult == ProjectYarnNoteEditResult.Saved) showProjectYarnForm = false
-                        } finally {
-                            creatingNote = false
-                        }
-                    }
+                if (pendingCreation == null) {
+                    pendingCreation = actions.onSaveProjectYarnNote(name, description, quantity, notes)
                 }
             },
             onCancel = { showProjectYarnForm = false },
@@ -222,6 +220,8 @@ data class YarnManagementSheetActions(
     val onDeleteProjectYarnNote: (Long) -> Unit,
     val onSaveProjectYarnNoteToMyYarn: (Long) -> Unit,
     val onDismiss: () -> Unit,
+    val pendingProjectYarnNoteCreation: () -> kotlinx.coroutines.Deferred<ProjectYarnNoteEditResult>? = { null },
+    val consumeProjectYarnNoteCreation: (kotlinx.coroutines.Deferred<ProjectYarnNoteEditResult>) -> Unit = {},
     val onEditProjectYarnNote: suspend (ProjectYarnNote, ProjectYarnNote) -> ProjectYarnNoteEditResult = { _, _ ->
         ProjectYarnNoteEditResult.Failed
     },

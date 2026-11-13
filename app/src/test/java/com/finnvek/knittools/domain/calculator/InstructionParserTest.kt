@@ -5,6 +5,22 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class InstructionParserTest {
+    @Test
+    fun `gauge accepts abbreviated singular and plural inches with numeric boundaries`() {
+        listOf("4in", "4 in", "4 inch", "4 inches").forEach { unit ->
+            assertEquals(
+                ParsedInstruction.Gauge(20.0, 28.0, ParsedInstruction.GaugeUnit.PER_4_INCHES),
+                InstructionParser.parse("gauge: 20 / 28 over $unit"),
+            )
+        }
+        listOf("14 inches", "24 inches", "1.4 inches", "4 index", "4 inche").forEach { unit ->
+            assertEquals(
+                ParsedInstruction.Gauge(20.0, 28.0, ParsedInstruction.GaugeUnit.PER_10_CM),
+                InstructionParser.parse("gauge: 20 / 28 over $unit"),
+            )
+        }
+    }
+
     @Test fun lengthAndGaugeUnitsDoNotTreatPrepositionsOrOtherNumbersAsInches() {
         assertEquals(
             ParsedInstruction.GaugeSwatch(width = 12.0, stitches = 20, lengthUnit = null),

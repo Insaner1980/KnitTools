@@ -401,7 +401,7 @@ object InstructionParser {
     private fun Regex.firstGroupDouble(text: String): Double? = find(text)?.groupValues?.get(1)?.toDoubleOrNull()
 
     private fun detectGaugeUnit(text: String): ParsedInstruction.GaugeUnit =
-        if (Regex("""(?<![\d.])4\s*IN(?:CHES?)?\b""").containsMatchIn(text)) {
+        if (Regex("""(?<![\d.])4\s*IN(?:CH(?:ES)?)?\b""").containsMatchIn(text)) {
             ParsedInstruction.GaugeUnit.PER_4_INCHES
         } else {
             ParsedInstruction.GaugeUnit.PER_10_CM

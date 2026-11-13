@@ -734,31 +734,48 @@ class CounterViewModel
                 }
         }
 
+        private var pendingYarnNoteCreation: Pair<Long?, Deferred<ProjectYarnNoteEditResult>>? = null
+
+        fun pendingProjectYarnNoteCreation(): Deferred<ProjectYarnNoteEditResult>? =
+            pendingYarnNoteCreation
+                ?.takeIf { it.first == _uiState.value.projectId && !it.second.isCancelled }
+                ?.second
+
+        fun consumeProjectYarnNoteCreation(request: Deferred<ProjectYarnNoteEditResult>) {
+            if (pendingYarnNoteCreation?.second === request && request.isCompleted) {
+                pendingYarnNoteCreation = null
+            }
+        }
+
         fun saveProjectYarnNote(
             name: String,
             description: String,
             quantity: Int,
             notes: String,
         ): Deferred<ProjectYarnNoteEditResult> {
+            pendingProjectYarnNoteCreation()?.let { return it }
             val projectId = _uiState.value.projectId
-            return viewModelScope.async {
-                if (projectId == null) return@async ProjectYarnNoteEditResult.Missing
-                if (name.isBlank()) return@async ProjectYarnNoteEditResult.InvalidName
-                val saved =
-                    tryProjectWrite {
-                        projectYarnNoteRepository.save(
-                            ProjectYarnNote(
-                                projectId = projectId,
-                                name = name,
-                                description = description,
-                                quantity = quantity,
-                                notes = notes,
-                            ),
-                        ) > 0L
-                    }
-                if (!saved) projectContentErrorsChannel.send(Unit)
-                if (saved) ProjectYarnNoteEditResult.Saved else ProjectYarnNoteEditResult.Failed
-            }
+            val request =
+                viewModelScope.async {
+                    if (projectId == null) return@async ProjectYarnNoteEditResult.Missing
+                    if (name.isBlank()) return@async ProjectYarnNoteEditResult.InvalidName
+                    val saved =
+                        tryProjectWrite {
+                            projectYarnNoteRepository.save(
+                                ProjectYarnNote(
+                                    projectId = projectId,
+                                    name = name,
+                                    description = description,
+                                    quantity = quantity,
+                                    notes = notes,
+                                ),
+                            ) > 0L
+                        }
+                    if (!saved) projectContentErrorsChannel.send(Unit)
+                    if (saved) ProjectYarnNoteEditResult.Saved else ProjectYarnNoteEditResult.Failed
+                }
+            pendingYarnNoteCreation = projectId to request
+            return request
         }
 
         fun editProjectYarnNote(

@@ -1,21 +1,25 @@
 import assert from 'node:assert/strict';
-import { realpathSync } from 'node:fs';
+import { readFileSync, realpathSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { dirname, resolve } from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
-// Exercise Sandbox's actual dependency, not Deepsec's separate Zod 4 version.
-// Backport: https://github.com/colinhacks/zod/pull/6652 (GHSA-mrhx-c7xc-m3w5).
+// Exercise Sandbox's actual dependency for GHSA-mrhx-c7xc-m3w5.
 const root = fileURLToPath(new URL('../', import.meta.url));
 const deepsecRequire = createRequire(realpathSync(resolve(root, 'node_modules/deepsec/package.json')));
 const sandboxEntry = deepsecRequire.resolve('@vercel/sandbox');
 const sandboxRequire = createRequire(sandboxEntry);
 const zodRoot = dirname(sandboxRequire.resolve('zod/package.json'));
+const zodPackage = JSON.parse(readFileSync(resolve(zodRoot, 'package.json'), 'utf8'));
 const modules = {
   cjs: sandboxRequire('zod'),
-  esm: await import(pathToFileURL(resolve(zodRoot, 'lib/index.mjs')).href),
+  esm: await import(pathToFileURL(resolve(zodRoot, zodPackage.module)).href),
 };
+
+test('Sandbox resolves the upstream security-fixed Zod release', () => {
+  assert.equal(zodPackage.version, '4.6.7');
+});
 
 for (const [format, { z }] of Object.entries(modules)) {
   for (const kind of ['array.max', 'array.length', 'set.max', 'set.size']) {
@@ -49,7 +53,7 @@ for (const [format, { z }] of Object.entries(modules)) {
     ]) {
       const result = schema.safeParse(value);
       assert.equal(result.success, false);
-      assert.deepEqual(result.error.issues.map(issue => issue.code), ['too_small', 'invalid_type']);
+      assert.deepEqual(result.error.issues.map(issue => issue.code).sort(), ['invalid_type', 'too_small']);
     }
     assert.equal(z.array(z.string()).safeParse(['a', 2]).success, false);
     assert.equal(z.set(z.string()).safeParse(new Set(['a', 2])).success, false);

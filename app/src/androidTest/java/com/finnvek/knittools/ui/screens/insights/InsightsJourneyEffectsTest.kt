@@ -74,19 +74,17 @@ class InsightsJourneyEffectsTest {
     }
 
     @Test
-    fun visibleLockedOrNonWeeklyChartDoesNotCompleteTheTrialStep() {
+    fun visibleUnlockedChartsReportEveryRange() {
         val state = mutableStateOf(readyState().copy(isPro = false))
         showContent(state)
         compose.runOnIdle { scope.launch { listState.scrollToItem(5) } }
         compose.runOnIdle {
             assertEquals(0, seen)
-            state.value = readyState().copy(timeRange = TimeRange.ALL_TIME)
         }
-        compose.runOnIdle {
-            assertEquals(0, seen)
-            state.value = readyState()
+        TimeRange.entries.forEachIndexed { index, range ->
+            compose.runOnIdle { state.value = readyState().copy(timeRange = range) }
+            compose.waitUntil { seen == index + 1 }
         }
-        compose.waitUntil { seen == 1 }
     }
 
     private fun showContent(

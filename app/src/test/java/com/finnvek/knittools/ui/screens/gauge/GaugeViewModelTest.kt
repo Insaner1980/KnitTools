@@ -104,6 +104,24 @@ class GaugeViewModelTest {
         }
 
     @Test
+    fun `restored valid result is reported once without another user action`() {
+        val handle = SavedStateHandle()
+        model(handle).apply {
+            onAction(GaugeAction.Task(GaugeTask.CONVERT))
+            edit(GaugeField.CONVERSION, "25.4")
+        }
+        val restoredHandle = SavedStateHandle(handle.keys().associateWith { handle.get<Any?>(it) })
+        val analytics = mockk<UsageAnalytics>(relaxed = true)
+        val restored = GaugeViewModel(restoredHandle, manager, repository, proManager, analytics)
+        stores += ViewModelStore().apply { put("gauge", restored) }
+
+        assertTrue(restored.state.value.hasResult)
+        verify(exactly = 1) { analytics.track(UsageEvent.CALCULATOR_RESULT_SHOWN, UsageDetail.TOOL_CONVERT) }
+        restored.edit(GaugeField.CONVERSION, "50.8")
+        verify(exactly = 1) { analytics.track(UsageEvent.CALCULATOR_RESULT_SHOWN, UsageDetail.TOOL_CONVERT) }
+    }
+
+    @Test
     fun `copy rejects a result rendered before a unit change`() =
         runTest {
             val vm = model()

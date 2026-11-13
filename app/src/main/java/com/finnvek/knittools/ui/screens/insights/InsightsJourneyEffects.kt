@@ -48,7 +48,7 @@ internal fun InsightsJourneyEffects(
         }
     }
     LaunchedEffect(state.isLoading, state.timeRange, state.isPro, state.hasMeaningfulChartData, lifecycleOwner) {
-        if (state.isLoading || state.timeRange != TimeRange.THIS_WEEK) return@LaunchedEffect
+        if (state.isLoading) return@LaunchedEffect
         if (!state.isPro || !state.hasMeaningfulChartData) return@LaunchedEffect
         lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
             snapshotFlow {

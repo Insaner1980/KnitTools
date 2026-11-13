@@ -370,9 +370,7 @@ class InsightsViewModel
         }
 
         fun selectTimeRange(selectedTimeRange: TimeRange) {
-            if (uiState.value.timeRange !=
-                selectedTimeRange
-            ) {
+            if (timeRange.value != selectedTimeRange) {
                 analytics.track(UsageEvent.INSIGHTS_RANGE_CHANGED, rangeDetail(selectedTimeRange))
             }
             savedStateHandle["timeRange"] = selectedTimeRange

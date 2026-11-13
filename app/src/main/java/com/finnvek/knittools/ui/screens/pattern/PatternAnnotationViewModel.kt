@@ -782,7 +782,6 @@ class PatternAnnotationViewModel
                         exporter.preflight(request.context.sourceUri, annotations, trackerHighlights)
                         coroutineContext.ensureActive()
                     }.onSuccess {
-                        analytics.track(UsageEvent.ANNOTATED_PDF_EXPORT_SUCCEEDED)
                         if (isCurrentExport(request)) {
                             exportPhase = PatternPdfExportPhase.READY
                             interaction.update { it.copy(isExporting = false) }
@@ -846,6 +845,7 @@ class PatternAnnotationViewModel
                         coroutineContext.ensureActive()
                     }.onSuccess {
                         if (isCurrentExport(request)) {
+                            analytics.track(UsageEvent.ANNOTATED_PDF_EXPORT_SUCCEEDED)
                             exportRequest = null
                             interaction.update { it.copy(isExporting = false) }
                         }

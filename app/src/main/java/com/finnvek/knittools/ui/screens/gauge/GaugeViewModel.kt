@@ -44,6 +44,7 @@ class GaugeViewModel
         val state: StateFlow<GaugeUiState> = mutableState.asStateFlow()
         private val eventChannel = Channel<GaugeUiEvent>(Channel.BUFFERED)
         val events = eventChannel.receiveAsFlow()
+        private val reportedResults = mutableSetOf<GaugeTask>()
 
         init {
             viewModelScope.launch {
@@ -59,6 +60,7 @@ class GaugeViewModel
                     }
                     save()
                 }
+                trackResultIfNeeded()
             }
             viewModelScope.launch {
                 combine(proManager.proState, proManager.initialStateReady) { pro, ready -> pro to ready }
@@ -81,8 +83,6 @@ class GaugeViewModel
                 }
             }
         }
-
-        private val reportedResults = mutableSetOf<GaugeTask>()
 
         fun onAction(
             action: GaugeAction,

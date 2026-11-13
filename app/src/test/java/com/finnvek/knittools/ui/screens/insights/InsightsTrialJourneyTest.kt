@@ -1,6 +1,9 @@
 package com.finnvek.knittools.ui.screens.insights
 
 import androidx.lifecycle.SavedStateHandle
+import com.finnvek.knittools.analytics.UsageAnalytics
+import com.finnvek.knittools.analytics.UsageDetail
+import com.finnvek.knittools.analytics.UsageEvent
 import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.domain.model.KnitSession
 import com.finnvek.knittools.pro.ProManager
@@ -14,6 +17,7 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.unmockkStatic
+import io.mockk.verify
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -110,8 +114,61 @@ class InsightsTrialJourneyTest {
             coVerify(exactly = 1) { onboarding.markTrialChartSeen(100L) }
         }
 
-    private suspend fun TestScope.weeklyModel(): InsightsViewModel {
-        val vm = InsightsViewModel(repository, proManager, dispatcher, SavedStateHandle(), onboarding, backgroundScope)
+    @Test
+    fun `rapid range choices compare the saved selection while UI state is still loading`() =
+        runTest {
+            val analytics = mockk<UsageAnalytics>(relaxed = true)
+            val vm =
+                InsightsViewModel(
+                    repository,
+                    proManager,
+                    dispatcher,
+                    SavedStateHandle(),
+                    onboarding,
+                    backgroundScope,
+                    analytics,
+                )
+
+            vm.selectTimeRange(TimeRange.THIS_WEEK)
+            vm.selectTimeRange(TimeRange.THIS_WEEK)
+            vm.selectTimeRange(TimeRange.ALL_TIME)
+
+            assertTrue(vm.uiState.value.isLoading)
+            verify(exactly = 1) { analytics.track(UsageEvent.INSIGHTS_RANGE_CHANGED, UsageDetail.RANGE_WEEK) }
+            verify(exactly = 1) { analytics.track(UsageEvent.INSIGHTS_RANGE_CHANGED, UsageDetail.RANGE_ALL) }
+        }
+
+    @Test
+    fun `visible charts report every range once while trial progress remains weekly`() =
+        runTest {
+            val analytics = mockk<UsageAnalytics>(relaxed = true)
+            val vm = weeklyModel(analytics)
+
+            TimeRange.entries.forEach { range ->
+                vm.selectTimeRange(range)
+                vm.uiState.first { !it.isLoading && it.timeRange == range }
+                vm.onWeeklyChartVisible()
+                vm.onWeeklyChartVisible()
+                runCurrent()
+            }
+
+            listOf(UsageDetail.RANGE_ALL, UsageDetail.RANGE_WEEK, UsageDetail.RANGE_MONTH).forEach { range ->
+                verify(exactly = 1) { analytics.track(UsageEvent.INSIGHTS_CHART_VIEWED, range) }
+            }
+            coVerify(exactly = 2) { onboarding.markTrialChartSeen(100L) }
+        }
+
+    private suspend fun TestScope.weeklyModel(analytics: UsageAnalytics = UsageAnalytics.NONE): InsightsViewModel {
+        val vm =
+            InsightsViewModel(
+                repository,
+                proManager,
+                dispatcher,
+                SavedStateHandle(),
+                onboarding,
+                backgroundScope,
+                analytics,
+            )
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect() }
         vm.selectTimeRange(TimeRange.THIS_WEEK)
         val state = vm.uiState.first { !it.isLoading && it.timeRange == TimeRange.THIS_WEEK }

@@ -2,6 +2,8 @@ package com.finnvek.knittools.ui.screens.pattern
 
 import android.net.Uri
 import androidx.lifecycle.SavedStateHandle
+import com.finnvek.knittools.analytics.UsageAnalytics
+import com.finnvek.knittools.analytics.UsageEvent
 import com.finnvek.knittools.data.storage.PATTERN_PDF_EXPORT_MAX_ANNOTATIONS
 import com.finnvek.knittools.data.storage.PatternAnnotationRenderStyle
 import com.finnvek.knittools.data.storage.PatternPdfExportLimitException
@@ -39,6 +41,7 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
@@ -2561,6 +2564,32 @@ class PatternAnnotationExportOwnershipTest {
             assertFalse(fixture.vm.uiState.value.exportFailed)
         }
 
+    @Test
+    fun `export analytics waits for writing and excludes cancelled or failed destinations`() =
+        runTest {
+            val fixture = ExportFixture(this)
+            val cancelled = fixture.ready()
+            verify(exactly = 0) { fixture.analytics.track(UsageEvent.ANNOTATED_PDF_EXPORT_SUCCEEDED) }
+            fixture.deliver(cancelled, destination = null)
+            verify(exactly = 1) { fixture.analytics.track(UsageEvent.ANNOTATED_PDF_EXPORT_CANCELLED) }
+            verify(exactly = 0) { fixture.analytics.track(UsageEvent.ANNOTATED_PDF_EXPORT_SUCCEEDED) }
+
+            fixture.onExport = { throw IOException("write failed") }
+            fixture.deliver(fixture.ready())
+            runCurrent()
+            verify(exactly = 1) { fixture.analytics.track(UsageEvent.ANNOTATED_PDF_EXPORT_FAILED) }
+            verify(exactly = 0) { fixture.analytics.track(UsageEvent.ANNOTATED_PDF_EXPORT_SUCCEEDED) }
+
+            val written = CompletableDeferred<Unit>()
+            fixture.onExport = { written.await() }
+            fixture.deliver(fixture.ready())
+            runCurrent()
+            verify(exactly = 0) { fixture.analytics.track(UsageEvent.ANNOTATED_PDF_EXPORT_SUCCEEDED) }
+            written.complete(Unit)
+            runCurrent()
+            verify(exactly = 1) { fixture.analytics.track(UsageEvent.ANNOTATED_PDF_EXPORT_SUCCEEDED) }
+        }
+
     private class ExportFixture(
         val scope: TestScope,
         library: Boolean = false,
@@ -2568,6 +2597,7 @@ class PatternAnnotationExportOwnershipTest {
     ) {
         val route = projectRoute()
         val exporter = mockk<PatternPdfExporter>()
+        val analytics = mockk<UsageAnalytics>(relaxed = true)
         val source = mockk<Uri>()
         val destination = mockk<Uri>()
         val style = mockk<PatternAnnotationRenderStyle>()
@@ -2619,9 +2649,10 @@ class PatternAnnotationExportOwnershipTest {
                         route.annotationRepository,
                         route.projectDocumentRepository,
                         pdfExporter = exporter,
+                        analytics = analytics,
                     )
                 } else {
-                    route.viewModel(exporter)
+                    route.viewModel(exporter, analytics)
                 }
             scope.backgroundScope.launch(UnconfinedTestDispatcher(scope.testScheduler)) {
                 vm.exportDestinationRequests.collect { requests += it }
@@ -2699,15 +2730,18 @@ private class ProjectRoute(
     val documents: MutableStateFlow<List<ProjectDocument>>,
     val project: MutableStateFlow<CounterProject>,
 ) {
-    fun viewModel(pdfExporter: PatternPdfExporter? = null) =
-        PatternAnnotationViewModel(
-            SavedStateHandle(mapOf("projectId" to 7L)),
-            counterRepository,
-            layerRepository,
-            annotationRepository,
-            projectDocumentRepository,
-            pdfExporter = pdfExporter,
-        )
+    fun viewModel(
+        pdfExporter: PatternPdfExporter? = null,
+        analytics: UsageAnalytics = UsageAnalytics.NONE,
+    ) = PatternAnnotationViewModel(
+        SavedStateHandle(mapOf("projectId" to 7L)),
+        counterRepository,
+        layerRepository,
+        annotationRepository,
+        projectDocumentRepository,
+        pdfExporter = pdfExporter,
+        analytics = analytics,
+    )
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)

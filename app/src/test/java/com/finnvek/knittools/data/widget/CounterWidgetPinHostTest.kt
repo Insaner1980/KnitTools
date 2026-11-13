@@ -2,10 +2,15 @@ package com.finnvek.knittools.data.widget
 
 import android.appwidget.AppWidgetManager
 import android.content.Context
+import com.finnvek.knittools.analytics.PostHogAnalytics
+import com.finnvek.knittools.analytics.UsageEvent
+import com.finnvek.knittools.widget.WidgetEntryPoint
+import dagger.hilt.android.EntryPointAccessors
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
+import io.mockk.verify
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
@@ -43,7 +48,14 @@ class CounterWidgetPinHostTest {
             val callerThread = Thread.currentThread()
             val manager = mockk<AppWidgetManager>()
             val context = mockk<Context>(relaxed = true)
+            val analytics = mockk<PostHogAnalytics>(relaxed = true)
+            val entryPoint = mockk<WidgetEntryPoint>()
             mockkStatic(AppWidgetManager::class)
+            mockkStatic(EntryPointAccessors::class)
+            every {
+                EntryPointAccessors.fromApplication(context.applicationContext, WidgetEntryPoint::class.java)
+            } returns entryPoint
+            every { entryPoint.analytics() } returns analytics
             every { AppWidgetManager.getInstance(context) } returns manager
             every { manager.isRequestPinAppWidgetSupported } answers {
                 assertNotSame(callerThread, Thread.currentThread())
@@ -62,6 +74,8 @@ class CounterWidgetPinHostTest {
             assertTrue(host.isSupported())
             assertTrue(host.hasInstalledWidgets())
             assertTrue(requestCounterWidgetPin(host))
+            verify(exactly = 1) { manager.requestPinAppWidget(any(), null, null) }
+            verify(exactly = 1) { analytics.track(UsageEvent.WIDGET_PIN_REQUESTED) }
         }
 
     @Test

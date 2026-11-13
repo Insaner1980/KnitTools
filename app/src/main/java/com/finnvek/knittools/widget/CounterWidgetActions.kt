@@ -91,12 +91,11 @@ class CounterWidgetActions : BroadcastReceiver() {
         widgetData: WidgetData,
         widgetAction: WidgetCounterAction,
     ) {
-        if (repository.applyWidgetCountChange(widgetData.projectId, widgetAction.increments)) {
-            widgetEntryPoint(context).analytics().trackFromWidget(UsageEvent.WIDGET_COUNTER_CHANGED)
-        }
+        val changed = repository.applyWidgetCountChange(widgetData.projectId, widgetAction.increments)
         val updatedProject =
             repository.activeWidgetProjectOrSyncFallback(context, widgetData) ?: return
         CounterWidgetState.syncAll(context, updatedProject.toWidgetData())
+        if (changed) widgetEntryPoint(context).analytics().trackFromWidget(UsageEvent.WIDGET_COUNTER_CHANGED)
     }
 
     private suspend fun CounterRepository.activeWidgetProjectOrSyncFallback(

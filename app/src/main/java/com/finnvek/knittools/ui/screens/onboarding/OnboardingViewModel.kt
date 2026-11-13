@@ -221,23 +221,29 @@ class OnboardingViewModel
         fun selectPdf(source: String) =
             operate { draft ->
                 analytics.track(UsageEvent.PDF_IMPORT_STARTED, UsageDetail.SOURCE_ONBOARDING)
-                val copied: Pair<String, String>? = pdfStorage.copy(source)
-                if (copied == null) {
-                    analytics.track(UsageEvent.PDF_IMPORT_FAILED, UsageDetail.SOURCE_ONBOARDING)
-                    _state.update { it.copy(messageRes = R.string.journey_pdf_failed) }
-                    return@operate
-                }
-                val next = draft.copy(pdfUri = copied.first, pdfName = copied.second)
-                var persisted = false
-                try {
-                    persist(next)
-                    persisted = true
-                } finally {
-                    if (!persisted) deleteUnusedPdf(copied.first)
-                }
-                _state.update { it.copy(draft = next) }
-                draft.pdfUri?.let { deleteUnusedPdf(it) }
-                analytics.track(UsageEvent.PDF_IMPORT_SUCCEEDED, UsageDetail.SOURCE_ONBOARDING)
+                runCatching {
+                    val copied: Pair<String, String>? = pdfStorage.copy(source)
+                    if (copied == null) {
+                        analytics.track(UsageEvent.PDF_IMPORT_FAILED, UsageDetail.SOURCE_ONBOARDING)
+                        _state.update { it.copy(messageRes = R.string.journey_pdf_failed) }
+                        return@operate
+                    }
+                    val next = draft.copy(pdfUri = copied.first, pdfName = copied.second)
+                    var persisted = false
+                    try {
+                        persist(next)
+                        persisted = true
+                    } finally {
+                        if (!persisted) deleteUnusedPdf(copied.first)
+                    }
+                    _state.update { it.copy(draft = next) }
+                    draft.pdfUri?.let { deleteUnusedPdf(it) }
+                    analytics.track(UsageEvent.PDF_IMPORT_SUCCEEDED, UsageDetail.SOURCE_ONBOARDING)
+                }.onFailure { failure ->
+                    if (failure is Exception && failure !is CancellationException) {
+                        analytics.track(UsageEvent.PDF_IMPORT_FAILED, UsageDetail.SOURCE_ONBOARDING)
+                    }
+                }.getOrThrow()
             }
 
         fun removePdf() =

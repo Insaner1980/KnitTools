@@ -3,6 +3,8 @@ package com.finnvek.knittools.ui.screens.yarncard
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.finnvek.knittools.analytics.UsageAnalytics
+import com.finnvek.knittools.analytics.UsageEvent
 import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.domain.model.YarnCard
 import com.finnvek.knittools.domain.model.YarnCardStatus
@@ -55,6 +57,7 @@ class YarnCardViewModel
     constructor(
         private val repository: YarnCardRepository,
         private val counterRepository: CounterRepository,
+        private val analytics: UsageAnalytics = UsageAnalytics.NONE,
     ) : ViewModel() {
         private val _formState = MutableStateFlow(YarnCardFormState())
         val formState: StateFlow<YarnCardFormState> = _formState.asStateFlow()
@@ -156,11 +159,12 @@ class YarnCardViewModel
             if (previousProjectId == projectId) return
 
             launchCardMutation {
-                repository.updateLinkedProjectId(
-                    cardId,
-                    projectId,
-                    expectedLinkedProjectId = previousProjectId.takeIf { projectId == null },
-                )
+                repository
+                    .updateLinkedProjectId(
+                        cardId,
+                        projectId,
+                        expectedLinkedProjectId = previousProjectId.takeIf { projectId == null },
+                    ).also { saved -> if (saved && projectId != null) analytics.track(UsageEvent.YARN_LINKED) }
             }
         }
 

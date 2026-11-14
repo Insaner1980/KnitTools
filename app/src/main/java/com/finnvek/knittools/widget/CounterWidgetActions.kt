@@ -3,6 +3,7 @@ package com.finnvek.knittools.widget
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import com.finnvek.knittools.analytics.UsageEvent
 import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.pro.ProFeature
 import com.finnvek.knittools.repository.CounterRepository
@@ -90,10 +91,11 @@ class CounterWidgetActions : BroadcastReceiver() {
         widgetData: WidgetData,
         widgetAction: WidgetCounterAction,
     ) {
-        repository.applyWidgetCountChange(widgetData.projectId, widgetAction.increments)
+        val changed = repository.applyWidgetCountChange(widgetData.projectId, widgetAction.increments)
         val updatedProject =
             repository.activeWidgetProjectOrSyncFallback(context, widgetData) ?: return
         CounterWidgetState.syncAll(context, updatedProject.toWidgetData())
+        if (changed) widgetEntryPoint(context).analytics().trackFromWidget(UsageEvent.WIDGET_COUNTER_CHANGED)
     }
 
     private suspend fun CounterRepository.activeWidgetProjectOrSyncFallback(

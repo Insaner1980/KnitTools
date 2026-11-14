@@ -6,6 +6,7 @@ import android.net.Uri
 import android.webkit.URLUtil
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModelStore
+import com.finnvek.knittools.analytics.UsageDetail
 import com.finnvek.knittools.data.remote.WebPdfDownload
 import com.finnvek.knittools.data.remote.WebPdfDownloader
 import com.finnvek.knittools.data.storage.PatternDocumentStorage
@@ -504,8 +505,9 @@ class IncomingPdfViewModelTest {
         validatedCopy.complete(retryUri)
         advanceUntilIdle()
 
-        val retriedPending = IncomingPdf(retryUri, "Retry")
+        val retriedPending = IncomingPdf(retryUri, "Retry", UsageDetail.SOURCE_RAVELRY)
         assertEquals(retriedPending, model.pending.value)
+        assertEquals(UsageDetail.SOURCE_RAVELRY.name, savedState.get<String>("incoming_pdf_analytics_source"))
         assertEquals(retryUri, savedState.get<String>("incoming_pdf_local_uri"))
         assertEquals("Retry", savedState.get<String>("incoming_pdf_name"))
         assertEquals(retryOutcomes, outcomes)
@@ -523,7 +525,7 @@ class IncomingPdfViewModelTest {
         retryOutcomes: List<IncomingPdfOutcome>,
         outcomes: List<IncomingPdfOutcome>,
     ) {
-        val retriedPending = IncomingPdf(retryUri, "Retry")
+        val retriedPending = IncomingPdf(retryUri, "Retry", UsageDetail.SOURCE_RAVELRY)
         val releaseSave = CompletableDeferred<Unit>()
         var completedWrites = 0
         coEvery { savedPatternRepository.saveImportedPatternIfMissing(retryUri, "Retried pattern") } coAnswers {

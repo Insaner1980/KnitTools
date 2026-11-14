@@ -222,6 +222,22 @@ class LibraryViewModelTest {
         }
 
     @Test
+    fun `single pattern delete stops when the initial lookup finds no row`() =
+        runTest {
+            coEvery { savedPatternRepository.getById(7L) } returns null
+            val viewModel = createViewModel()
+            var deleted = false
+
+            viewModel.deleteSavedPattern(7L) { deleted = true }
+            advanceUntilIdle()
+
+            assertFalse(deleted)
+            assertEquals(0L, viewModel.patternDeleteErrorId.value)
+            coVerify(exactly = 0) { savedPatternRepository.deleteWebPattern(any()) }
+            coVerify(exactly = 0) { savedPatternRepository.deleteById(any()) }
+        }
+
+    @Test
     fun `single pattern delete does not report a missing row as success or failure`() =
         runTest {
             coEvery { savedPatternRepository.getById(7L) } returns webPattern(7L)

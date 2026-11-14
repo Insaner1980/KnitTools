@@ -2,8 +2,12 @@ package com.finnvek.knittools.ui.screens.onboarding
 
 import androidx.lifecycle.ViewModelStore
 import com.finnvek.knittools.R
+import com.finnvek.knittools.analytics.UsageAnalytics
+import com.finnvek.knittools.analytics.UsageDetail
+import com.finnvek.knittools.analytics.UsageEvent
 import com.finnvek.knittools.billing.BillingManager
 import com.finnvek.knittools.billing.BillingProductStatus
+import com.finnvek.knittools.data.datastore.AppPreferences
 import com.finnvek.knittools.data.datastore.PreferencesManager
 import com.finnvek.knittools.data.storage.OnboardingPdfStorage
 import com.finnvek.knittools.domain.model.OnboardingDraft
@@ -22,6 +26,7 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -29,6 +34,8 @@ import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -47,6 +54,8 @@ import java.io.IOException
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class OnboardingViewModelTest {
+    private val analytics = mockk<UsageAnalytics>(relaxed = true)
+
     @Test
     fun `cancelling draft persistence still finishes cleanup of the new PDF`() =
         runTest {
@@ -62,6 +71,7 @@ class OnboardingViewModelTest {
             runCurrent()
             store.clear()
             advanceUntilIdle()
+            verify(exactly = 0) { analytics.track(UsageEvent.PDF_IMPORT_FAILED, UsageDetail.SOURCE_ONBOARDING) }
             assertTrue(deleted)
             assertEquals("old-uri", saved.value?.pdfUri)
             coVerify(exactly = 0) { patterns.deleteLocalPatternFileIfUnused("old-uri") }
@@ -82,6 +92,7 @@ class OnboardingViewModelTest {
 
     @Before fun setup() {
         Dispatchers.setMain(dispatcher)
+        every { preferences.preferences } returns MutableStateFlow(AppPreferences())
         every { state.draft } returns saved
         every { state.state } returns MutableStateFlow(OnboardingState())
         coEvery { state.saveDraft(any()) } coAnswers {
@@ -118,6 +129,7 @@ class OnboardingViewModelTest {
             coordinator,
             dispatcher,
             backgroundScope,
+            analytics,
         ).also {
             store.put("onboarding", it)
             runCurrent()
@@ -133,6 +145,31 @@ class OnboardingViewModelTest {
             coEvery { projects.hasAnyProject() } returns true
             assertFalse(viewModel().state.value.required!!)
             assertNull(saved.value)
+        }
+
+    @Test fun `analytics remains off until a successful explicit preference write`() =
+        runTest {
+            val storedPreferences = MutableStateFlow(AppPreferences())
+            every { preferences.preferences } returns storedPreferences
+            coEvery { preferences.setUsageAnalyticsEnabled(true) } returns false
+            val vm = viewModel()
+            backgroundScope.launch { vm.usageAnalyticsEnabled.collect() }
+            runCurrent()
+            assertFalse(vm.usageAnalyticsEnabled.value)
+            coVerify(exactly = 0) { preferences.setUsageAnalyticsEnabled(any()) }
+            vm.setUsageAnalyticsEnabled(true)
+            runCurrent()
+            assertFalse(vm.usageAnalyticsEnabled.value)
+            assertEquals(R.string.generic_error_unknown, vm.state.value.messageRes)
+
+            coEvery { preferences.setUsageAnalyticsEnabled(true) } coAnswers {
+                storedPreferences.value = storedPreferences.value.copy(usageAnalyticsEnabled = true)
+                true
+            }
+            vm.setUsageAnalyticsEnabled(true)
+            runCurrent()
+            assertTrue(vm.usageAnalyticsEnabled.value)
+            coVerify(exactly = 2) { preferences.setUsageAnalyticsEnabled(true) }
         }
 
     @Test fun `committed receipt resumes price without creating another project`() =
@@ -242,6 +279,7 @@ class OnboardingViewModelTest {
                     ?.pdfName,
             )
             assertEquals(R.string.journey_pdf_failed, vm.state.value.messageRes)
+            verify(exactly = 1) { analytics.track(UsageEvent.PDF_IMPORT_FAILED, UsageDetail.SOURCE_ONBOARDING) }
             coVerify(exactly = 0) { patterns.deleteLocalPatternFileIfUnused(any()) }
         }
 
@@ -266,6 +304,25 @@ class OnboardingViewModelTest {
             assertFalse(vm.state.value.busy)
             coVerify(exactly = 1) { patterns.deleteLocalPatternFileIfUnused("copied-uri") }
             coVerify(exactly = 0) { patterns.deleteLocalPatternFileIfUnused("old-uri") }
+            verify(exactly = 1) { analytics.track(UsageEvent.PDF_IMPORT_FAILED, UsageDetail.SOURCE_ONBOARDING) }
+            verify(exactly = 0) { analytics.track(UsageEvent.PDF_IMPORT_SUCCEEDED, UsageDetail.SOURCE_ONBOARDING) }
+        }
+
+    @Test
+    fun `PDF copy exception reports one failed import without changing the draft`() =
+        runTest {
+            preparePdfReplacement()
+            coEvery { pdf.copy("new-uri") } throws IOException("copy failed")
+            val vm = viewModel()
+
+            vm.selectPdf("new-uri")
+            runCurrent()
+
+            assertEquals("old-uri", saved.value?.pdfUri)
+            assertEquals(R.string.journey_save_failed, vm.state.value.messageRes)
+            verify(exactly = 1) { analytics.track(UsageEvent.PDF_IMPORT_STARTED, UsageDetail.SOURCE_ONBOARDING) }
+            verify(exactly = 1) { analytics.track(UsageEvent.PDF_IMPORT_FAILED, UsageDetail.SOURCE_ONBOARDING) }
+            verify(exactly = 0) { analytics.track(UsageEvent.PDF_IMPORT_SUCCEEDED, UsageDetail.SOURCE_ONBOARDING) }
         }
 
     @Test

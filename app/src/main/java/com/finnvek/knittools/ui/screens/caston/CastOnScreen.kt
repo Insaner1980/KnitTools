@@ -25,10 +25,12 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.finnvek.knittools.R
+import com.finnvek.knittools.analytics.UsageDetail
 import com.finnvek.knittools.domain.calculator.CastOnCalculator
 import com.finnvek.knittools.domain.calculator.MeasurementNumberParser
 import com.finnvek.knittools.domain.calculator.formatDecimalForDisplay
 import com.finnvek.knittools.domain.model.CastOnResult
+import com.finnvek.knittools.ui.TrackCalculatorResult
 import com.finnvek.knittools.ui.components.AnimatedResultNumber
 import com.finnvek.knittools.ui.components.InfoNote
 import com.finnvek.knittools.ui.components.InfoTipText
@@ -82,6 +84,8 @@ fun CastOnScreen(
             )
         }
     }
+
+    TrackCalculatorResult(UsageDetail.TOOL_CAST_ON, result != null)
 
     ToolScreenScaffold(
         title = stringResource(R.string.tool_cast_on_calculator),

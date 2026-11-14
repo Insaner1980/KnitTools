@@ -63,6 +63,7 @@ fun GaugeScreen(
                 context.getSystemService(ClipboardManager::class.java).setPrimaryClip(
                     ClipData.newPlainText(resources.getString(R.string.measurement_title), event.text),
                 )
+                viewModel.resultCopied(event.task)
                 scope.launch { snackbarHostState.showSnackbar(resources.getString(R.string.measurement_copied)) }
             }
             is GaugeUiEvent.Message ->

@@ -3,6 +3,8 @@ package com.finnvek.knittools.ui.screens.notes
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.finnvek.knittools.analytics.UsageAnalytics
+import com.finnvek.knittools.analytics.UsageEvent
 import com.finnvek.knittools.data.storage.NotesDraft
 import com.finnvek.knittools.data.storage.NotesDraftStorage
 import com.finnvek.knittools.di.ApplicationScope
@@ -46,6 +48,7 @@ class NotesEditorViewModel
         @param:ApplicationScope private val applicationScope: CoroutineScope,
         private val savedStateHandle: SavedStateHandle,
         private val draftStorage: NotesDraftStorage,
+        private val analytics: UsageAnalytics = UsageAnalytics.NONE,
     ) : ViewModel() {
         val proState = proManager.proState
         val proAccessReady get() = proManager.initialStateReady
@@ -190,6 +193,8 @@ class NotesEditorViewModel
                 }
         }
 
+        private var saveReported = false
+
         private suspend fun persistNotes(
             loadedProjectId: Long,
             requestedNotes: String,
@@ -218,6 +223,10 @@ class NotesEditorViewModel
                         return false
                     }
                 }
+            if (!saveReported) {
+                saveReported = true
+                analytics.track(UsageEvent.NOTES_SAVED)
+            }
             persistedNotes = savedProject.notes
             if (savedProject.notesCreated) {
                 savedStateHandle.remove<Boolean>(NOTES_CREATION_AUTHORIZED_KEY)

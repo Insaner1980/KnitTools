@@ -29,10 +29,12 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.finnvek.knittools.R
+import com.finnvek.knittools.analytics.UsageDetail
 import com.finnvek.knittools.domain.calculator.MeasurementNumberParser
 import com.finnvek.knittools.domain.calculator.YarnEstimator
 import com.finnvek.knittools.domain.calculator.formatDecimalForDisplay
 import com.finnvek.knittools.domain.model.YarnEstimate
+import com.finnvek.knittools.ui.TrackCalculatorResult
 import com.finnvek.knittools.ui.components.AnimatedResultNumber
 import com.finnvek.knittools.ui.components.BadgePill
 import com.finnvek.knittools.ui.components.InfoNote
@@ -83,6 +85,8 @@ private fun YarnEstimatorContent(
     val result by remember(totalYarn, yarnPerSkein, weightPerSkein, locale) {
         derivedStateOf { calculateYarnEstimate(totalYarn, yarnPerSkein, weightPerSkein, locale) }
     }
+
+    TrackCalculatorResult(UsageDetail.TOOL_YARN, result != null)
 
     Column(
         modifier =

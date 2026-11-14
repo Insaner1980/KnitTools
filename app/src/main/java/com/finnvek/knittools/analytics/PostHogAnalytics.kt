@@ -2,6 +2,9 @@ package com.finnvek.knittools.analytics
 
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
+import com.finnvek.knittools.BuildConfig
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.withTimeoutOrNull
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -23,6 +26,15 @@ class PostHogAnalytics
         private var screen: String? = null
         private var foregroundStarted: Long? = null
         private var screenStarted: Long? = null
+        internal val initialConsentLoaded = CompletableDeferred<Unit>()
+
+        suspend fun trackFromWidget(event: UsageEvent) {
+            if (!BuildConfig.POSTHOG_ENABLED) return
+            withTimeoutOrNull(1_000) {
+                initialConsentLoaded.await()
+                track(event)
+            }
+        }
 
         fun setEnabled(
             allowed: Boolean,
@@ -84,6 +96,14 @@ class PostHogAnalytics
         @Synchronized
         override fun track(event: UsageEvent) {
             send(event.eventName)
+        }
+
+        @Synchronized
+        override fun track(
+            event: UsageEvent,
+            vararg details: UsageDetail,
+        ) {
+            send(event.eventName, details.associate { it.property to it.value })
         }
 
         @Synchronized
@@ -154,6 +174,19 @@ class PostHogAnalytics
 
 internal fun screenNameForRoute(route: String?): String? {
     val path = route?.substringBefore('?') ?: return null
+    if (path.startsWith("onboarding/")) {
+        return when (path.substringAfter('/')) {
+            "Welcome" -> "onboarding_welcome"
+            "Craft" -> "onboarding_craft"
+            "Needs" -> "onboarding_needs"
+            "Counter" -> "onboarding_counter"
+            "Toolbox" -> "onboarding_toolbox"
+            "Project" -> "onboarding_project"
+            "Ready" -> "onboarding_ready"
+            "Price" -> "onboarding_price"
+            else -> null
+        }
+    }
     val screen = if (path.startsWith("guide/")) "guide_topic" else path.substringBefore('/')
     return screen.takeIf { it in ANALYTICS_SCREENS }
 }

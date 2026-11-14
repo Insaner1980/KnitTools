@@ -3,6 +3,8 @@ package com.finnvek.knittools.ui.screens.pattern
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.finnvek.knittools.analytics.UsageAnalytics
+import com.finnvek.knittools.analytics.UsageEvent
 import com.finnvek.knittools.domain.model.PatternBookmark
 import com.finnvek.knittools.domain.model.ProjectDocument
 import com.finnvek.knittools.repository.ActivePatternBookmarks
@@ -103,6 +105,7 @@ class PatternViewerViewModel
         private val bookmarkRepository: PatternBookmarkRepository,
         private val documentRepository: ProjectDocumentRepository,
         private val savedStateHandle: SavedStateHandle,
+        private val analytics: UsageAnalytics = UsageAnalytics.NONE,
     ) : ViewModel() {
         private val projectId = savedStateHandle.get<Long>(PROJECT_ID_KEY) ?: 0L
         private val selectedBookmarkId = MutableStateFlow<Long?>(null)
@@ -301,7 +304,10 @@ class PatternViewerViewModel
             val documentKey = uiState.value.documentKey ?: return setError(PatternBookmarkError.STALE_DOCUMENT)
             runMutation(
                 mutation = { bookmarkRepository.add(projectId, documentKey, name, pageIndex, yFraction) },
-                onSuccess = { bookmark -> selectedBookmarkId.value = bookmark.id },
+                onSuccess = { bookmark ->
+                    selectedBookmarkId.value = bookmark.id
+                    analytics.track(UsageEvent.BOOKMARK_CREATED)
+                },
                 failureError = PatternBookmarkError.SAVE_FAILURE,
             )
         }
@@ -334,6 +340,7 @@ class PatternViewerViewModel
                 mutation = { bookmarkRepository.jumpTo(projectId, documentKey, bookmarkId) },
                 onSuccess = { bookmark ->
                     selectedBookmarkId.value = bookmark.id
+                    analytics.track(UsageEvent.BOOKMARK_OPENED)
                     eventChannel.send(
                         PatternViewerEvent.BookmarkJumped(
                             requestId = nextRequestId++,

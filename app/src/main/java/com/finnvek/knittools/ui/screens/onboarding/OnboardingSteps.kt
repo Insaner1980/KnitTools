@@ -64,6 +64,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
@@ -102,7 +103,10 @@ import com.finnvek.knittools.ui.theme.knitToolsColors
 import kotlinx.coroutines.delay
 
 @Composable
-internal fun JourneyWelcome() {
+internal fun JourneyWelcome(
+    usageAnalyticsEnabled: Boolean = false,
+    onUsageAnalyticsChanged: (Boolean) -> Unit = {},
+) {
     // Kaikki keskitetään: leimalogo on brändin pääkuva, ja kuvitus, otsikko ja hyödyt seuraavat sen alla.
     Column(
         Modifier.fillMaxWidth(),
@@ -158,6 +162,22 @@ internal fun JourneyWelcome() {
             textAlign = TextAlign.Center,
             modifier = Modifier.fillMaxWidth().staggeredEntrance(rememberStaggeredEntrance(6)),
         )
+        val analyticsLabel = stringResource(R.string.usage_analytics)
+        Column(Modifier.fillMaxWidth()) {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    stringResource(R.string.usage_analytics),
+                    Modifier.weight(1f),
+                    style = MaterialTheme.typography.titleMedium,
+                )
+                androidx.compose.material3.Switch(
+                    checked = usageAnalyticsEnabled,
+                    onCheckedChange = onUsageAnalyticsChanged,
+                    modifier = Modifier.semantics { contentDescription = analyticsLabel },
+                )
+            }
+            Text(stringResource(R.string.usage_analytics_description), style = MaterialTheme.typography.bodySmall)
+        }
     }
 }
 

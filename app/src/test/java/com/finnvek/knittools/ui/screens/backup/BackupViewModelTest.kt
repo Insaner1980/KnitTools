@@ -2,6 +2,9 @@ package com.finnvek.knittools.ui.screens.backup
 
 import android.net.Uri
 import androidx.lifecycle.ViewModelStore
+import com.finnvek.knittools.analytics.UsageAnalytics
+import com.finnvek.knittools.analytics.UsageDetail
+import com.finnvek.knittools.analytics.UsageEvent
 import com.finnvek.knittools.data.backup.BackupError
 import com.finnvek.knittools.data.backup.BackupException
 import com.finnvek.knittools.data.backup.BackupPreview
@@ -11,6 +14,7 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
 import io.mockk.slot
+import io.mockk.verify
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
@@ -70,6 +74,30 @@ class BackupViewModelTest {
             assertEquals(BackupPhase.EXPORTED, viewModel.state.value.phase)
             coVerify(exactly = 1) { onboarding.markBackupCreated() }
             coVerify(exactly = 0) { onboarding.markBasicTipsSeen() }
+        }
+
+    @Test fun analyticsReportsCommittedSuccessOrBoundedFailureWithoutBackupContent() =
+        runTest(dispatcher) {
+            val analytics = mockk<UsageAnalytics>(relaxed = true)
+            val model = BackupViewModel(repository, onboarding, analytics)
+            store.put("backup", model)
+            val write = CompletableDeferred<Unit>()
+            coEvery { repository.export(uri) } coAnswers { write.await() }
+            model.export(uri)
+            runCurrent()
+            verify(exactly = 1) { analytics.track(UsageEvent.BACKUP_EXPORT_STARTED) }
+            verify(exactly = 0) { analytics.track(UsageEvent.BACKUP_EXPORT_SUCCEEDED) }
+            write.complete(Unit)
+            runCurrent()
+            verify(exactly = 1) { analytics.track(UsageEvent.BACKUP_EXPORT_SUCCEEDED) }
+
+            coEvery { repository.export(uri) } throws BackupException(BackupError.WRITE)
+            model.export(uri)
+            runCurrent()
+            verify(exactly = 1) { analytics.track(UsageEvent.BACKUP_EXPORT_FAILED, UsageDetail.ERROR_WRITE) }
+            verify(exactly = 1) { analytics.track(UsageEvent.BACKUP_EXPORT_SUCCEEDED) }
+            model.export(null)
+            verify(exactly = 1) { analytics.track(UsageEvent.BACKUP_EXPORT_CANCELLED) }
         }
 
     @Test fun onboardingFailureDoesNotTurnCompletedExportIntoFailure() =

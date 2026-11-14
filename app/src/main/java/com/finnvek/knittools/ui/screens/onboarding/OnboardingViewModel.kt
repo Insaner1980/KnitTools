@@ -3,6 +3,9 @@ package com.finnvek.knittools.ui.screens.onboarding
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.finnvek.knittools.R
+import com.finnvek.knittools.analytics.UsageAnalytics
+import com.finnvek.knittools.analytics.UsageDetail
+import com.finnvek.knittools.analytics.UsageEvent
 import com.finnvek.knittools.billing.BillingManager
 import com.finnvek.knittools.billing.BillingUserMessage
 import com.finnvek.knittools.data.datastore.PreferencesManager
@@ -28,8 +31,11 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -62,6 +68,7 @@ class OnboardingViewModel
         private val journeyCoordinator: TrialJourneyCoordinator,
         @param:IoDispatcher private val ioDispatcher: CoroutineDispatcher,
         @param:ApplicationScope private val applicationScope: CoroutineScope,
+        private val analytics: UsageAnalytics = UsageAnalytics.NONE,
     ) : ViewModel() {
         private val _state = MutableStateFlow(OnboardingUiState())
         val state = _state.asStateFlow()
@@ -72,6 +79,10 @@ class OnboardingViewModel
         val productStatus = billing.productStatus
         val purchaseInFlight = billing.purchaseFlowInFlight
         val purchasePending = billing.purchasePending
+        val usageAnalyticsEnabled =
+            preferences.preferences
+                .map { it.usageAnalyticsEnabled }
+                .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
         private val writes = Mutex()
 
         init {
@@ -149,21 +160,33 @@ class OnboardingViewModel
             }
         }
 
-        fun next() = changeStep { it.next() }
-
-        fun previous() = changeStep { it.previous() }
-
-        fun skip() = changeStep { it.copy(step = OnboardingStep.Price) }
-
-        private fun changeStep(transform: (OnboardingDraft) -> OnboardingDraft) =
-            operate {
-                val next = transform(it)
-                persist(next)
-                _state.update { state -> state.copy(draft = next) }
+        fun setUsageAnalyticsEnabled(enabled: Boolean) {
+            viewModelScope.launch {
+                if (!preferences.setUsageAnalyticsEnabled(enabled)) {
+                    _state.update { it.copy(messageRes = R.string.generic_error_unknown) }
+                }
             }
+        }
+
+        fun next() = changeStep(UsageEvent.ONBOARDING_CONTINUED) { it.next() }
+
+        fun previous() = changeStep(UsageEvent.ONBOARDING_BACK) { it.previous() }
+
+        fun skip() = changeStep(UsageEvent.ONBOARDING_SKIPPED) { it.copy(step = OnboardingStep.Price) }
+
+        private fun changeStep(
+            event: UsageEvent,
+            transform: (OnboardingDraft) -> OnboardingDraft,
+        ) = operate {
+            val next = transform(it)
+            persist(next)
+            _state.update { state -> state.copy(draft = next) }
+            analytics.track(event, it.step.analyticsDetail())
+        }
 
         fun createProject() =
             operate { draft ->
+                analytics.track(UsageEvent.PROJECT_CREATION_SUBMITTED, UsageDetail.SOURCE_ONBOARDING)
                 persist(draft)
                 when (
                     val result =
@@ -173,6 +196,7 @@ class OnboardingViewModel
                         )
                 ) {
                     is ProjectCreationResult.Created -> {
+                        analytics.track(UsageEvent.PROJECT_CREATED, UsageDetail.SOURCE_ONBOARDING)
                         val next = draft.copy(projectId = result.projectId, step = OnboardingStep.Ready)
                         _state.update { it.copy(draft = next) }
                         persist(next)
@@ -196,21 +220,30 @@ class OnboardingViewModel
 
         fun selectPdf(source: String) =
             operate { draft ->
-                val copied: Pair<String, String>? = pdfStorage.copy(source)
-                if (copied == null) {
-                    _state.update { it.copy(messageRes = R.string.journey_pdf_failed) }
-                    return@operate
-                }
-                val next = draft.copy(pdfUri = copied.first, pdfName = copied.second)
-                var persisted = false
-                try {
-                    persist(next)
-                    persisted = true
-                } finally {
-                    if (!persisted) deleteUnusedPdf(copied.first)
-                }
-                _state.update { it.copy(draft = next) }
-                draft.pdfUri?.let { deleteUnusedPdf(it) }
+                analytics.track(UsageEvent.PDF_IMPORT_STARTED, UsageDetail.SOURCE_ONBOARDING)
+                runCatching {
+                    val copied: Pair<String, String>? = pdfStorage.copy(source)
+                    if (copied == null) {
+                        analytics.track(UsageEvent.PDF_IMPORT_FAILED, UsageDetail.SOURCE_ONBOARDING)
+                        _state.update { it.copy(messageRes = R.string.journey_pdf_failed) }
+                        return@operate
+                    }
+                    val next = draft.copy(pdfUri = copied.first, pdfName = copied.second)
+                    var persisted = false
+                    try {
+                        persist(next)
+                        persisted = true
+                    } finally {
+                        if (!persisted) deleteUnusedPdf(copied.first)
+                    }
+                    _state.update { it.copy(draft = next) }
+                    draft.pdfUri?.let { deleteUnusedPdf(it) }
+                    analytics.track(UsageEvent.PDF_IMPORT_SUCCEEDED, UsageDetail.SOURCE_ONBOARDING)
+                }.onFailure { failure ->
+                    if (failure is Exception && failure !is CancellationException) {
+                        analytics.track(UsageEvent.PDF_IMPORT_FAILED, UsageDetail.SOURCE_ONBOARDING)
+                    }
+                }.getOrThrow()
             }
 
         fun removePdf() =
@@ -256,6 +289,7 @@ class OnboardingViewModel
             val projectId = draft.projectId?.takeIf { projects.getProject(it) != null }
             val next = draft.copy(completed = true, exitPending = projectId != null, projectId = projectId)
             persist(next)
+            analytics.track(UsageEvent.ONBOARDING_COMPLETED)
             _state.update {
                 it.copy(
                     required = false,
@@ -315,4 +349,16 @@ class OnboardingViewModel
                 }
             }
         }
+    }
+
+internal fun OnboardingStep.analyticsDetail(): UsageDetail =
+    when (this) {
+        OnboardingStep.Welcome -> UsageDetail.STEP_WELCOME
+        OnboardingStep.Craft -> UsageDetail.STEP_CRAFT
+        OnboardingStep.Needs -> UsageDetail.STEP_NEEDS
+        OnboardingStep.Counter -> UsageDetail.STEP_COUNTER
+        OnboardingStep.Toolbox -> UsageDetail.STEP_TOOLBOX
+        OnboardingStep.Project -> UsageDetail.STEP_PROJECT
+        OnboardingStep.Ready -> UsageDetail.STEP_READY
+        OnboardingStep.Price -> UsageDetail.STEP_PRICE
     }

@@ -87,7 +87,10 @@ class App : Application() {
                     .preferences
                     .map { it.usageAnalyticsEnabled to it.usageAnalyticsGeneration }
                     .distinctUntilChanged()
-                    .collect { (enabled, generation) -> analytics.setEnabled(enabled, generation) }
+                    .collect { (enabled, generation) ->
+                        analytics.setEnabled(enabled, generation)
+                        analytics.initialConsentLoaded.complete(Unit)
+                    }
             }
         }
         applicationScope.launch {

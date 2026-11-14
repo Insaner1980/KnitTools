@@ -232,4 +232,46 @@ class PostHogAnalyticsTest {
         assertFalse(config.debug)
         assertEquals(PersonProfiles.NEVER, config.personProfiles)
     }
+
+    @Test
+    fun `expanded events send only fixed vocabulary while consent is active`() {
+        analytics.track(UsageEvent.PDF_IMPORT_STARTED, UsageDetail.SOURCE_CAMERA)
+        assertEquals(0, initializations)
+        analytics.setEnabled(true)
+        analytics.track(UsageEvent.PDF_IMPORT_FAILED, UsageDetail.SOURCE_CAMERA, UsageDetail.ERROR_TOO_LARGE)
+        analytics.setEnabled(false)
+        analytics.track(UsageEvent.PDF_IMPORT_SUCCEEDED, UsageDetail.SOURCE_CAMERA)
+        verify(exactly = 1) {
+            client.capture(
+                "pdf import failed",
+                mapOf(
+                    "source" to "camera",
+                    "reason" to "too_large",
+                    "\$geoip_disable" to true,
+                ),
+            )
+        }
+        verify(exactly = 0) { client.capture("pdf import started", any()) }
+        verify(exactly = 0) { client.capture("pdf import succeeded", any()) }
+    }
+
+    @Test
+    fun `onboarding starts at the currently visible step after consent without replaying earlier steps`() {
+        analytics.onStart(owner)
+        analytics.screenViewed("onboarding/Welcome")
+        analytics.screenViewed("onboarding/Craft")
+        analytics.setEnabled(true)
+        verify(exactly = 1) {
+            client.capture(
+                "\$screen",
+                mapOf(
+                    "\$screen_name" to "onboarding_craft",
+                    "\$geoip_disable" to true,
+                ),
+            )
+        }
+        verify(exactly = 0) { client.capture("\$screen", match { it["\$screen_name"] == "onboarding_welcome" }) }
+        assertNull(screenNameForRoute("onboarding/private project title"))
+        assertNull(screenNameForRoute("onboarding/Welcome/private"))
+    }
 }

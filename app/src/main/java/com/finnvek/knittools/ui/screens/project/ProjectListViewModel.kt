@@ -27,6 +27,7 @@ import com.finnvek.knittools.repository.ProjectDeletionResult
 import com.finnvek.knittools.repository.ProjectDocumentRepository
 import com.finnvek.knittools.repository.ProjectFolderMutationResult
 import com.finnvek.knittools.repository.ProjectFolderRepository
+import com.finnvek.knittools.repository.ProjectReactivationResult
 import com.finnvek.knittools.repository.SavedPatternRepository
 import com.finnvek.knittools.repository.isSuccess
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -464,9 +465,9 @@ class ProjectListViewModel
                             PendingProjectListSessionAction(result.session, setOf(id))
                     }
                     ProjectCompletionResult.Completed,
-                    is ProjectCompletionResult.CompletedNow,
                     ProjectCompletionResult.ProjectUnavailable,
                     -> Unit
+                    is ProjectCompletionResult.CompletedNow -> analytics.track(UsageEvent.PROJECT_COMPLETED)
                     ProjectCompletionResult.PersistenceFailure ->
                         sessionErrorChannel.trySend(R.string.generic_error_unknown)
                     ProjectCompletionResult.HistoryLimitReached ->
@@ -573,6 +574,7 @@ class ProjectListViewModel
             id: Long,
             celebrateCompletion: Boolean,
         ) {
+            if (result is ProjectCompletionResult.CompletedNow) analytics.track(UsageEvent.PROJECT_COMPLETED)
             if (result is ProjectCompletionResult.CompletedNow && celebrateCompletion) {
                 _pendingCompletion.value =
                     ProjectCompletionCelebration(result.snapshot, projectLatestPhotoUris.value[id])
@@ -637,7 +639,11 @@ class ProjectListViewModel
         fun reactivateProject(id: Long) {
             viewModelScope.launch {
                 val project = repository.getProject(id) ?: return@launch
-                repository.reactivateProject(id, project.completedAt, isPro)
+                if (repository.reactivateProject(id, project.completedAt, isPro) ==
+                    ProjectReactivationResult.Reactivated
+                ) {
+                    analytics.track(UsageEvent.PROJECT_REOPENED)
+                }
             }
         }
 
@@ -676,7 +682,13 @@ class ProjectListViewModel
             _folderState.update { it.copy(mutationError = null) }
         }
 
-        fun createFolder(name: String) = mutateFolder { folderRepository.createFolder(name) }
+        fun createFolder(name: String) =
+            mutateFolder {
+                folderRepository
+                    .createFolder(
+                        name,
+                    ).also { if (it.isSuccess) analytics.track(UsageEvent.FOLDER_CREATED) }
+            }
 
         fun renameFolder(
             id: Long,
@@ -696,7 +708,10 @@ class ProjectListViewModel
             val ids = selectedProjectIds.value.toSet()
             mutateFolder {
                 folderRepository.moveProjects(ids, folderId).also { result ->
-                    if (result.isSuccess) exitMultiSelectMode()
+                    if (result.isSuccess) {
+                        analytics.track(UsageEvent.PROJECTS_MOVED)
+                        exitMultiSelectMode()
+                    }
                 }
             }
         }

@@ -15,7 +15,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.finnvek.knittools.R
 import com.finnvek.knittools.analytics.UsageAnalytics
+import com.finnvek.knittools.analytics.UsageDetail
 import com.finnvek.knittools.analytics.UsageEvent
+import com.finnvek.knittools.analytics.counterDetail
 import com.finnvek.knittools.data.datastore.PreferencesManager
 import com.finnvek.knittools.data.storage.AppFileStorage
 import com.finnvek.knittools.data.storage.PatternDocumentStorage
@@ -1525,6 +1527,7 @@ class CounterViewModel
                 -> {
                     if (selectionVersion != projectSelectionVersion) return
                     if (result is ProjectCompletionResult.CompletedNow) {
+                        analytics.track(UsageEvent.PROJECT_COMPLETED)
                         _pendingCompletion.value =
                             ProjectCompletionCelebration(
                                 result.snapshot,
@@ -1584,6 +1587,16 @@ class CounterViewModel
                 val saved =
                     tryProjectWrite {
                         repository.setTargetRows(projectId, validated)
+                        analytics.track(
+                            UsageEvent.COUNTER_TARGET_CHANGED,
+                            if (validated !=
+                                null
+                            ) {
+                                UsageDetail.ENABLED
+                            } else {
+                                UsageDetail.DISABLED
+                            },
+                        )
                         true
                     }
                 val persisted = repository.getProject(projectId) ?: return@launchProjectContentMutation false
@@ -1867,6 +1880,7 @@ class CounterViewModel
         // CPD-ON
 
         fun undo() {
+            analytics.track(UsageEvent.COUNTER_UNDO_REQUESTED)
             val state = _uiState.value
             val projectId = state.projectId ?: return
             val selectionVersion = projectSelectionVersion
@@ -2040,7 +2054,19 @@ class CounterViewModel
                         } else {
                             counter
                         }
-                    projectCounterRepository.addCounter(initialCounter) is ProjectCounterMutationResult.Success
+                    val saved =
+                        projectCounterRepository.addCounter(
+                            initialCounter,
+                        ) is ProjectCounterMutationResult.Success
+                    saved.also {
+                        if (saved) {
+                            analytics.track(
+                                UsageEvent.EXTRA_COUNTER_CREATED,
+                                counterDetail(draft.counterType),
+                                if (draft.linkedToMainCounter) UsageDetail.ENABLED else UsageDetail.DISABLED,
+                            )
+                        }
+                    }
                 } finally {
                     projectCounterCreationInFlight = false
                 }
@@ -2064,14 +2090,20 @@ class CounterViewModel
         fun incrementProjectCounter(counter: ProjectCounter) {
             if (!canUseProjectCounter(counter)) return
             launchProjectContentMutation {
-                projectCounterRepository.incrementCounter(counter) is ProjectCounterMutationResult.Success
+                val saved = projectCounterRepository.incrementCounter(counter) is ProjectCounterMutationResult.Success
+                saved.also {
+                    if (saved) analytics.track(UsageEvent.EXTRA_COUNTER_USED, counterDetail(counter.counterType))
+                }
             }
         }
 
         fun decrementProjectCounter(counter: ProjectCounter) {
             if (!canUseProjectCounter(counter)) return
             launchProjectContentMutation {
-                projectCounterRepository.decrementCounter(counter) is ProjectCounterMutationResult.Success
+                val saved = projectCounterRepository.decrementCounter(counter) is ProjectCounterMutationResult.Success
+                saved.also {
+                    if (saved) analytics.track(UsageEvent.EXTRA_COUNTER_USED, counterDetail(counter.counterType))
+                }
             }
         }
 
@@ -2245,6 +2277,7 @@ class CounterViewModel
                         photoErrorsChannel.send(Unit)
                         return@launchPhotoOperation
                     }
+                    analytics.track(UsageEvent.PROGRESS_PHOTO_ADDED)
                     if (savedStateHandle.get<Long>(KEY_PROGRESS_PHOTO_CREATION_PROJECT_ID) == projectId) {
                         cancelProgressPhotoCreation()
                     }
@@ -2458,6 +2491,7 @@ class CounterViewModel
                     return@withLock false
                 }
                 val saved = tryProjectWrite { repository.updateProjectStepSize(id, size) }
+                if (saved) analytics.track(UsageEvent.COUNTER_STEP_CHANGED)
                 if (_uiState.value.projectId != id || selectionVersion != projectSelectionVersion) {
                     return@withLock false
                 }
@@ -2504,7 +2538,7 @@ class CounterViewModel
             name: String,
         ): ProjectDocumentMutationResult {
             if (restoredExternalResultState(projectId) == null) return ProjectDocumentMutationResult.StaleAction
-            analytics.track(UsageEvent.PDF_IMPORT_STARTED)
+            analytics.track(UsageEvent.PDF_IMPORT_STARTED, UsageDetail.SOURCE_FILE)
             val sourceUri = uri.toUri()
             val sanitizedName =
                 withContext(ioDispatcher) {
@@ -2518,7 +2552,7 @@ class CounterViewModel
                     sanitizedName = sanitizedName,
                 )
             if (attachment == null) {
-                analytics.track(UsageEvent.PDF_IMPORT_FAILED)
+                analytics.track(UsageEvent.PDF_IMPORT_FAILED, UsageDetail.SOURCE_FILE)
                 return ProjectDocumentMutationResult.PersistenceFailure
             }
             val result =
@@ -2536,6 +2570,7 @@ class CounterViewModel
                 } else {
                     UsageEvent.PDF_IMPORT_FAILED
                 },
+                UsageDetail.SOURCE_FILE,
             )
             return result
         }
@@ -2837,6 +2872,11 @@ class CounterViewModel
             _uiState.update { it.copy(readingLineEnabled = enabled) }
             launchProjectContentMutation {
                 repository.updateReadingLineVisibility(projectId, enabled, documentId)
+                analytics.track(
+                    UsageEvent.READING_AID_CHANGED,
+                    UsageDetail.HORIZONTAL_GUIDE,
+                    if (enabled) UsageDetail.ENABLED else UsageDetail.DISABLED,
+                )
                 true
             }
         }
@@ -2867,6 +2907,11 @@ class CounterViewModel
             _uiState.update { it.copy(readingLineFollowCurrentRow = enabled) }
             launchProjectContentMutation {
                 val resolution = repository.setReadingLineFollowCurrentRow(projectId, enabled, documentId)
+                analytics.track(
+                    UsageEvent.READING_AID_CHANGED,
+                    UsageDetail.FOLLOW_ROW,
+                    if (enabled) UsageDetail.ENABLED else UsageDetail.DISABLED,
+                )
                 if (enabled && resolution != null) {
                     _viewerEvents.emit(
                         CounterViewerEvent.ReadingLineFollowingResumed(
@@ -2897,6 +2942,11 @@ class CounterViewModel
                     enabled = enabled,
                     xFraction = state.verticalReadingGuideXFraction.takeIf { documentId == null },
                     documentId = documentId,
+                )
+                analytics.track(
+                    UsageEvent.READING_AID_CHANGED,
+                    UsageDetail.VERTICAL_GUIDE,
+                    if (enabled) UsageDetail.ENABLED else UsageDetail.DISABLED,
                 )
                 true
             }
@@ -3206,7 +3256,14 @@ class CounterViewModel
                 )
             }
             persistStitchChange(projectId) {
-                repository.updateStitchTrackingEnabled(projectId, enabled)
+                repository.updateStitchTrackingEnabled(projectId, enabled).also { saved ->
+                    if (saved) {
+                        analytics.track(
+                            UsageEvent.STITCH_TRACKING_CHANGED,
+                            if (enabled) UsageDetail.ENABLED else UsageDetail.DISABLED,
+                        )
+                    }
+                }
             }
         }
 

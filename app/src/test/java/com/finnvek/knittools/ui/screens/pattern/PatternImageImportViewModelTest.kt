@@ -3,6 +3,9 @@ package com.finnvek.knittools.ui.screens.pattern
 import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.SavedStateHandle
+import com.finnvek.knittools.analytics.UsageAnalytics
+import com.finnvek.knittools.analytics.UsageDetail
+import com.finnvek.knittools.analytics.UsageEvent
 import com.finnvek.knittools.data.storage.PatternDocumentStorage
 import com.finnvek.knittools.data.storage.PatternImageInfo
 import com.finnvek.knittools.data.storage.PatternImageStageBatch
@@ -47,6 +50,7 @@ class PatternImageImportViewModelTest {
     private val applicationScope = CoroutineScope(dispatcher)
     private val proManager = mockk<ProManager>()
     private val onboardingStateRepository = mockk<OnboardingStateRepository>(relaxed = true)
+    private val analytics = mockk<UsageAnalytics>(relaxed = true)
     private lateinit var storage: PatternDocumentStorage
     private lateinit var repository: CounterRepository
     private lateinit var context: Context
@@ -59,6 +63,8 @@ class PatternImageImportViewModelTest {
         storage = mockk(relaxed = true)
         every { storage.restoreStagedSelection(any(), any(), any(), any()) } answers { arg(3) }
         repository = mockk(relaxed = true)
+        coEvery { repository.attachPattern(any(), any(), any(), any(), any()) } returns
+            ProjectDocumentMutationResult.AlreadyAttached
         context = mockk()
         every { context.filesDir } returns File("build/test-pattern-import")
         savedStateHandle = SavedStateHandle()
@@ -111,6 +117,30 @@ class PatternImageImportViewModelTest {
             assertEquals(listOf(first, second), vm.uiState.value.selection.pages)
             assertEquals(null, vm.uiState.value.pickerRequestId)
             assertEquals(PatternImageImportPhase.READY, vm.uiState.value.phase)
+        }
+
+    @Test
+    fun `restored pages preserve a picker failure reported during restoration`() =
+        runTest {
+            val first = page("first")
+            val handle =
+                SavedStateHandle(
+                    mapOf(
+                        "pattern_image_project_id" to 7L,
+                        "pattern_image_session_id" to "session-a",
+                        "pattern_image_pages" to encodeStagedPatternPages(listOf(first)),
+                        "pattern_image_picker_request_id" to "pending",
+                    ),
+                )
+            val vm = viewModel(handle, settleRestoration = false)
+
+            vm.onGalleryPickerLaunchFailed("pending")
+            advanceUntilIdle()
+
+            assertEquals(listOf(first), vm.uiState.value.selection.pages)
+            assertEquals(PatternImageImportPhase.ERROR, vm.uiState.value.phase)
+            assertEquals(PatternImageImportError.UNREADABLE, vm.uiState.value.error)
+            assertEquals(null, vm.uiState.value.pickerRequestId)
         }
 
     @Test
@@ -565,6 +595,8 @@ class PatternImageImportViewModelTest {
                 assertEquals(PatternImageImportPhase.SUCCESS, vm.uiState.value.phase)
             }
             coVerify(exactly = 2) { onboardingStateRepository.markTrialPhotoPdfCreated(100L) }
+            verify(exactly = 1) { analytics.track(UsageEvent.PDF_IMPORT_SUCCEEDED, UsageDetail.SOURCE_CAMERA) }
+            verify(exactly = 1) { analytics.track(UsageEvent.PDF_IMPORT_SUCCEEDED, UsageDetail.SOURCE_GALLERY) }
         }
 
     @Test
@@ -582,6 +614,23 @@ class PatternImageImportViewModelTest {
 
             assertEquals(PatternImageImportPhase.ERROR, vm.uiState.value.phase)
             coVerify(exactly = 0) { onboardingStateRepository.markTrialPhotoPdfCreated(any()) }
+        }
+
+    @Test
+    fun `typed attachment failure never counts as successful pdf import`() =
+        runTest {
+            coEvery { repository.attachPattern(any(), any(), any(), any(), any()) } returns
+                ProjectDocumentMutationResult.PersistenceFailure
+            coEvery { repository.isPatternDocumentAttached(any(), any()) } returns false
+            val vm = readyTrialImport(PatternImageImportOrigin.CAMERA)
+            vm.createPatternPdf(replaceExisting = false)
+            advanceUntilIdle()
+            assertEquals(PatternImageImportPhase.ERROR, vm.uiState.value.phase)
+            verify(exactly = 0) { analytics.track(UsageEvent.PDF_IMPORT_SUCCEEDED, any()) }
+            verify(exactly = 1) {
+                analytics.track(UsageEvent.PDF_IMPORT_FAILED, UsageDetail.SOURCE_CAMERA, UsageDetail.ERROR_WRITE)
+            }
+            verify { storage.deleteGeneratedPdf(context, "file:///pattern_pdfs/7/trial.pdf") }
         }
 
     @Test
@@ -648,6 +697,7 @@ class PatternImageImportViewModelTest {
         proManager = proManager,
         onboardingStateRepository = onboardingStateRepository,
         applicationScope = applicationScope,
+        analytics = analytics,
     ).also { if (settleRestoration) dispatcher.scheduler.runCurrent() }
 
     private fun page(id: String) =

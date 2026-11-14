@@ -120,6 +120,30 @@ class PatternImageImportViewModelTest {
         }
 
     @Test
+    fun `restored pages preserve a picker failure reported during restoration`() =
+        runTest {
+            val first = page("first")
+            val handle =
+                SavedStateHandle(
+                    mapOf(
+                        "pattern_image_project_id" to 7L,
+                        "pattern_image_session_id" to "session-a",
+                        "pattern_image_pages" to encodeStagedPatternPages(listOf(first)),
+                        "pattern_image_picker_request_id" to "pending",
+                    ),
+                )
+            val vm = viewModel(handle, settleRestoration = false)
+
+            vm.onGalleryPickerLaunchFailed("pending")
+            advanceUntilIdle()
+
+            assertEquals(listOf(first), vm.uiState.value.selection.pages)
+            assertEquals(PatternImageImportPhase.ERROR, vm.uiState.value.phase)
+            assertEquals(PatternImageImportError.UNREADABLE, vm.uiState.value.error)
+            assertEquals(null, vm.uiState.value.pickerRequestId)
+        }
+
+    @Test
     fun `another owner cannot adopt or discard the retained draft`() =
         runTest {
             val vm = viewModel()

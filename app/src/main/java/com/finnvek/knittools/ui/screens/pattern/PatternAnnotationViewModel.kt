@@ -1004,15 +1004,12 @@ class PatternAnnotationViewModel
                     .onSuccess { inverse ->
                         if (command is PatternAnnotationCommand.Insert) analytics.track(UsageEvent.ANNOTATION_CREATED)
                         interaction.update { state ->
-                            if (currentEditContext() == commandContext) {
-                                onSuccess(state).copy(
-                                    undoStack = (state.undoStack + inverse).takeLast(HISTORY_LIMIT),
-                                    redoStack = emptyList(),
-                                    isSaving = false,
-                                )
-                            } else {
-                                state.copy(isSaving = false)
-                            }
+                            if (currentEditContext() != commandContext) return@update state.copy(isSaving = false)
+                            onSuccess(state).copy(
+                                undoStack = (state.undoStack + inverse).takeLast(HISTORY_LIMIT),
+                                redoStack = emptyList(),
+                                isSaving = false,
+                            )
                         }
                     }.onFailure { failure ->
                         if (failure is CancellationException) {

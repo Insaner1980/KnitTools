@@ -202,13 +202,13 @@ class LibraryViewModel
             viewModelScope.launch {
                 val pattern =
                     try {
-                        savedPatternRepository.getById(id)
+                        savedPatternRepository.getById(id) ?: return@launch
                     } catch (cancellation: CancellationException) {
                         throw cancellation
                     } catch (_: Exception) {
                         _patternDeleteErrorId.value += 1
                         return@launch
-                    } ?: return@launch
+                    }
 
                 if (pattern.isWebPatternCompatible) {
                     val result =

@@ -735,14 +735,15 @@ private fun PatternImageImportUiState.withRestoredSelection(
 ): PatternImageImportUiState {
     val selection = restoredSelection ?: PatternImageSelection()
     val rejectedPages = selection.pages.size != expectedPageCount
+    val restoredError = if (rejectedPages) PatternImageImportError.UNREADABLE else this.error
     return copy(
         selection = selection,
         sessionId = if (restoredSelection != null) sessionId else UUID.randomUUID().toString(),
         pickerRequestId = if (restoredSelection != null) pickerRequestId else null,
         pickerLaunched = restoredSelection != null && pickerLaunched,
         cameraCapturePending = restoredSelection != null && cameraCapturePending,
-        phase = if (rejectedPages || error != null) PatternImageImportPhase.ERROR else selectionPhase(selection.pages),
-        error = if (rejectedPages) PatternImageImportError.UNREADABLE else error,
+        phase = if (restoredError != null) PatternImageImportPhase.ERROR else selectionPhase(selection.pages),
+        error = restoredError,
     )
 }
 

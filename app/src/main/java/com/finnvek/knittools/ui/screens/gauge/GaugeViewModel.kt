@@ -87,8 +87,8 @@ class GaugeViewModel
         fun onAction(
             action: GaugeAction,
             locale: Locale = Locale.getDefault(),
-        ) {
-            if (!state.value.ready) return
+        ): Boolean {
+            if (!state.value.ready) return false
             when (action) {
                 is GaugeAction.Edit -> edit(action.field, action.text, locale)
                 is GaugeAction.Blur -> blur(action.field)
@@ -98,19 +98,23 @@ class GaugeViewModel
                 is GaugeAction.Basis -> switchBasis(action.basis)
                 is GaugeAction.FromUnit -> switchFromUnit(action.unit)
                 is GaugeAction.ToUnit -> mutableState.update { it.copy(toUnit = action.unit) }
-                is GaugeAction.SwatchInput ->
-                    mutableState.update {
-                        it.copy(
-                            useSwatch = action.enabled,
-                            manualStitchGauge = !action.enabled && it.manualStitchGauge,
-                            manualRowGauge = !action.enabled && it.manualRowGauge,
-                        )
-                    }
-                is GaugeAction.Paste -> paste(action.instruction)
+                is GaugeAction.SwatchInput -> switchSwatchInput(action.enabled)
+                is GaugeAction.Paste -> if (!paste(action.instruction)) return false
                 is GaugeAction.Copy -> copyResult(action)
             }
             trackResultIfNeeded()
             save()
+            return true
+        }
+
+        private fun switchSwatchInput(enabled: Boolean) {
+            mutableState.update {
+                it.copy(
+                    useSwatch = enabled,
+                    manualStitchGauge = !enabled && it.manualStitchGauge,
+                    manualRowGauge = !enabled && it.manualRowGauge,
+                )
+            }
         }
 
         private fun trackResultIfNeeded() {
@@ -135,6 +139,21 @@ class GaugeViewModel
             text: String,
             locale: Locale,
         ) {
+            val input = fieldInput(field, text, locale)
+            mutableState.update {
+                it.copy(
+                    fields = it.fields + (field to input),
+                    manualStitchGauge = it.manualStitchGauge || field == GaugeField.ACTUAL_STITCHES,
+                    manualRowGauge = it.manualRowGauge || field == GaugeField.ACTUAL_ROWS,
+                )
+            }
+        }
+
+        private fun fieldInput(
+            field: GaugeField,
+            text: String,
+            locale: Locale,
+        ): GaugeInput {
             val parsed =
                 MeasurementNumberParser.parse(
                     text,
@@ -154,21 +173,13 @@ class GaugeViewModel
                 }
             val rangeError =
                 canonical != null && (!canonical.isFinite() || (canonical <= 0 && field != GaugeField.CONVERSION))
-            val input =
-                GaugeInput(
-                    text = text,
-                    canonicalValue = canonical?.takeUnless { rangeError },
-                    error = if (rangeError) MeasurementNumberError.TOO_LARGE else parsed.error,
-                    touched = current.fields[field]?.touched ?: false,
-                    incomplete = parsed.incomplete,
-                )
-            mutableState.update {
-                it.copy(
-                    fields = it.fields + (field to input),
-                    manualStitchGauge = it.manualStitchGauge || field == GaugeField.ACTUAL_STITCHES,
-                    manualRowGauge = it.manualRowGauge || field == GaugeField.ACTUAL_ROWS,
-                )
-            }
+            return GaugeInput(
+                text = text,
+                canonicalValue = canonical?.takeUnless { rangeError },
+                error = if (rangeError) MeasurementNumberError.TOO_LARGE else parsed.error,
+                touched = current.fields[field]?.touched ?: false,
+                incomplete = parsed.incomplete,
+            )
         }
 
         private fun blur(field: GaugeField) {
@@ -254,67 +265,105 @@ class GaugeViewModel
             return invalid.isEmpty()
         }
 
-        private fun paste(instruction: ParsedInstruction) {
-            if (!state.value.proState.hasFeature(ProFeature.INSTRUCTION_PASTE)) return
-            when (instruction) {
-                is ParsedInstruction.Gauge -> {
-                    val basisMm =
-                        if (instruction.unit == ParsedInstruction.GaugeUnit.PER_10_CM) {
-                            GaugeBasis.PER_10_CM.lengthMm
-                        } else {
-                            GaugeBasis.PER_4_INCHES.lengthMm
-                        }
-                    pasteValue(
-                        GaugeField.ACTUAL_STITCHES,
-                        instruction.stitchesPer10cm / basisMm * state.value.basis.lengthMm,
-                    )
-                    pasteValue(GaugeField.ACTUAL_ROWS, instruction.rowsPer10cm / basisMm * state.value.basis.lengthMm)
-                    mutableState.update { it.copy(useSwatch = false) }
-                }
+        private fun paste(instruction: ParsedInstruction): Boolean {
+            val current = state.value
+            if (current.task != GaugeTask.ADJUST || !current.proState.hasFeature(ProFeature.INSTRUCTION_PASTE)) {
+                return false
+            }
+            return when (instruction) {
+                is ParsedInstruction.Gauge -> pasteGauge(instruction)
                 is ParsedInstruction.GaugeSwatch -> pasteSwatch(instruction)
-                else -> Unit
+                else -> false
             }
         }
 
-        private fun pasteSwatch(instruction: ParsedInstruction.GaugeSwatch) {
-            val sourceUnit =
-                when (instruction.lengthUnit) {
-                    ParsedInstruction.LengthUnit.CM -> MeasurementUnit.CM
-                    ParsedInstruction.LengthUnit.INCHES -> MeasurementUnit.INCH
-                    null -> state.value.lengthUnit
+        private fun pasteGauge(instruction: ParsedInstruction.Gauge): Boolean {
+            val current = state.value
+            val basisMm =
+                if (instruction.unit == ParsedInstruction.GaugeUnit.PER_10_CM) {
+                    GaugeBasis.PER_10_CM.lengthMm
+                } else {
+                    GaugeBasis.PER_4_INCHES.lengthMm
                 }
-            listOf(
-                GaugeField.SWATCH_WIDTH to instruction.width,
-                GaugeField.SWATCH_HEIGHT to instruction.height,
-            ).forEach { (field, value) ->
-                value?.let { pasteValue(field, state.value.lengthUnit.fromMillimeters(sourceUnit.toMillimeters(it))) }
-            }
-            listOf(
-                GaugeField.SWATCH_STITCHES to instruction.stitches,
-                GaugeField.SWATCH_ROWS to instruction.rows,
-            ).forEach { (field, value) ->
-                value?.let { edit(field, it.toString(), Locale.US) }
-            }
+            val stitchInput =
+                pasteInput(GaugeField.ACTUAL_STITCHES, instruction.stitchesPer10cm / basisMm * current.basis.lengthMm)
+            val rowInput =
+                pasteInput(GaugeField.ACTUAL_ROWS, instruction.rowsPer10cm / basisMm * current.basis.lengthMm)
+            if (stitchInput.canonicalValue == null || rowInput.canonicalValue == null) return false
             mutableState.update {
                 it.copy(
-                    useSwatch = true,
-                    manualStitchGauge =
-                        it.manualStitchGauge && instruction.width == null && instruction.stitches == null,
-                    manualRowGauge = it.manualRowGauge && instruction.height == null && instruction.rows == null,
+                    fields =
+                        it.fields +
+                            mapOf(
+                                GaugeField.ACTUAL_STITCHES to stitchInput,
+                                GaugeField.ACTUAL_ROWS to rowInput,
+                            ),
+                    useSwatch = false,
+                    manualStitchGauge = true,
+                    manualRowGauge = true,
                 )
             }
+            return true
         }
 
-        private fun pasteValue(
+        private fun pasteSwatch(instruction: ParsedInstruction.GaugeSwatch): Boolean {
+            val current = state.value
+            val width = instruction.width
+            val stitches = instruction.stitches
+            val height = instruction.height
+            val rows = instruction.rows
+            val hasStitchAxis = width != null && stitches != null
+            val hasRowAxis = height != null && rows != null
+            if (!hasStitchAxis && !hasRowAxis) return false
+            val sourceUnit = swatchSourceUnit(instruction.lengthUnit, current.lengthUnit)
+            val inputs = mutableMapOf<GaugeField, GaugeInput>()
+            if (hasStitchAxis) {
+                val displayWidth = current.lengthUnit.fromMillimeters(sourceUnit.toMillimeters(width))
+                inputs[GaugeField.SWATCH_WIDTH] = pasteInput(GaugeField.SWATCH_WIDTH, displayWidth)
+                inputs[GaugeField.SWATCH_STITCHES] =
+                    fieldInput(GaugeField.SWATCH_STITCHES, stitches.toString(), Locale.US)
+            }
+            if (hasRowAxis) {
+                val displayHeight = current.lengthUnit.fromMillimeters(sourceUnit.toMillimeters(height))
+                inputs[GaugeField.SWATCH_HEIGHT] = pasteInput(GaugeField.SWATCH_HEIGHT, displayHeight)
+                inputs[GaugeField.SWATCH_ROWS] = fieldInput(GaugeField.SWATCH_ROWS, rows.toString(), Locale.US)
+            }
+            if (inputs.values.any { it.canonicalValue == null }) return false
+            val updated =
+                current.copy(
+                    fields = current.fields + inputs,
+                    useSwatch = true,
+                    manualStitchGauge = current.manualStitchGauge && !hasStitchAxis,
+                    manualRowGauge = current.manualRowGauge && !hasRowAxis,
+                )
+            if ((hasStitchAxis && updated.stitchDensity == null) ||
+                (hasRowAxis && updated.rowDensity == null)
+            ) {
+                return false
+            }
+            mutableState.value = updated
+            return true
+        }
+
+        private fun swatchSourceUnit(
+            unit: ParsedInstruction.LengthUnit?,
+            fallback: MeasurementUnit,
+        ): MeasurementUnit =
+            when (unit) {
+                ParsedInstruction.LengthUnit.CM -> MeasurementUnit.CM
+                ParsedInstruction.LengthUnit.INCHES -> MeasurementUnit.INCH
+                null -> fallback
+            }
+
+        private fun pasteInput(
             field: GaugeField,
             value: Double,
-        ) {
-            edit(
+        ): GaugeInput =
+            fieldInput(
                 field,
                 if (value.isFinite()) MeasurementNumberFormatter.formatEditing(value) else value.toString(),
                 Locale.US,
             )
-        }
 
         private fun save() {
             val current = state.value

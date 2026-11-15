@@ -212,6 +212,9 @@ private fun ProPurchaseSection(
 ) {
     val productStatus = productStatusProvider()
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        if (proStateReady || proState.status == ProStatus.TRIAL_ACTIVE) {
+            ProStatusPill(proState)
+        }
         if (!proStateReady) {
             if (purchaseQueryFailed) {
                 ProStatusMessage(messageRes = R.string.generic_error_unknown)
@@ -221,7 +224,6 @@ private fun ProPurchaseSection(
                 return@Column
             }
         } else {
-            ProStatusPill(proState)
             if (proState.status == ProStatus.PRO_PURCHASED) return@Column
             // Voimassa oleva hinta näytetään ommeltuna hintalappuna ostopainikkeineen.
             val availableOffer = offer?.takeIf { productStatus == BillingProductStatus.Available }

@@ -1,0 +1,30 @@
+appId: com.finnvek.knittools
+name: Local Pro trial without Play billing
+---
+- launchApp:
+    clearState: true
+- tapOn: "SETTINGS"
+- scrollUntilVisible:
+    element:
+      text: "KnitTools Pro"
+    direction: DOWN
+- tapOn: "KnitTools Pro"
+- scrollUntilVisible:
+    element:
+      text: "Start 14-day free trial"
+    direction: DOWN
+- tapOn: "Start 14-day free trial"
+- assertVisible: "Trial, 14 days left"
+- assertNotVisible: "Start 14-day free trial"
+- takeScreenshot: pro-trial
+- tapOn: "Back"
+- assertVisible: "Trial, 14 days left"
+- launchApp
+- tapOn: "SETTINGS"
+- assertVisible: "Trial, 14 days left"
+- scrollUntilVisible:
+    element:
+      text: "KnitTools Pro"
+    direction: DOWN
+- tapOn: "KnitTools Pro"
+- assertVisible: "Trial, 14 days left"

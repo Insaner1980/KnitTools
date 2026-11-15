@@ -7,6 +7,8 @@ import com.finnvek.knittools.data.datastore.AppPreferences
 import com.finnvek.knittools.domain.model.ActiveWorkSession
 import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.domain.model.ProjectDocument
+import com.finnvek.knittools.domain.model.ProjectFolderMembership
+import com.finnvek.knittools.domain.model.ProjectFolderSnapshot
 import com.finnvek.knittools.domain.model.ProjectSortOrder
 import com.finnvek.knittools.domain.model.SavedPattern
 import com.finnvek.knittools.domain.model.SavedPatternSource
@@ -604,6 +606,28 @@ class ProjectListViewModelTest : ProjectListViewModelFixture() {
         }
 
     @Test
+    fun `show completed keeps selection until the preference changes`() =
+        runTest {
+            val preferences = MutableStateFlow(AppPreferences(showCompletedProjects = true))
+            every { preferencesManager.preferences } returns preferences
+            every { repository.getCompletedProjects(ProjectSortOrder.UPDATED) } returns
+                flowOf(listOf(CounterProject(id = 2L, name = "Completed", isCompleted = true)))
+            every { folderRepository.observeOrganization(any()) } returns
+                flowOf(ProjectFolderSnapshot(emptyList(), listOf(ProjectFolderMembership(2L, null, true))))
+            val vm = createViewModel()
+            runCurrent()
+            vm.enterMultiSelectMode(2L)
+
+            vm.toggleShowCompleted()
+            runCurrent()
+
+            assertEquals(setOf(2L), vm.selectedProjectIds.value)
+            preferences.value = AppPreferences(showCompletedProjects = false)
+            runCurrent()
+            assertEquals(emptySet<Long>(), vm.selectedProjectIds.value)
+        }
+
+    @Test
     fun `reactivateProject calls repository`() =
         runTest {
             every { proManager.hasFeature(any()) } returns true
@@ -739,7 +763,15 @@ class ProjectSelectionViewModelTest : ProjectListViewModelFixture() {
             val active = MutableStateFlow((1L..2L).map { CounterProject(id = it, name = "Project $it") })
             every { repository.getActiveProjects(ProjectSortOrder.UPDATED) } returns active
             val session = CompletableDeferred<ActiveWorkSession?>()
-            coEvery { repository.refreshActiveSession() } coAnswers { session.await() }
+            var initialRefresh = true
+            coEvery { repository.refreshActiveSession() } coAnswers {
+                if (initialRefresh) {
+                    initialRefresh = false
+                    null
+                } else {
+                    session.await()
+                }
+            }
             coEvery { repository.deleteProjectResolvingActiveSession(2L, false) } returns ProjectDeletionResult.Deleted
             val vm = createViewModel()
             runCurrent()

@@ -7,12 +7,16 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleOwner
 import com.finnvek.knittools.data.datastore.editPreferencesSafely
 import com.finnvek.knittools.data.datastore.safePreferencesData
 import com.google.android.play.core.review.ReviewManagerFactory
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
@@ -56,31 +60,47 @@ class InAppReviewManager
          */
         suspend fun maybeRequestReview(activity: Activity) {
             var claimed = false
-            val saved =
-                context.reviewDataStore.editPreferencesSafely { prefs ->
-                    if (shouldRequestReview(prefs[KEY_REVIEW_REQUESTED] == true, prefs[KEY_ACTION_COUNT] ?: 0)) {
-                        prefs[KEY_REVIEW_REQUESTED] = true
-                        claimed = true
-                    }
+            var launched = false
+            try {
+                withContext(NonCancellable) {
+                    val saved =
+                        context.reviewDataStore.editPreferencesSafely { prefs ->
+                            if (shouldRequestReview(
+                                    prefs[KEY_REVIEW_REQUESTED] == true,
+                                    prefs[KEY_ACTION_COUNT] ?: 0,
+                                )
+                            ) {
+                                prefs[KEY_REVIEW_REQUESTED] = true
+                                claimed = true
+                            }
+                        }
+                    if (!saved) claimed = false
                 }
-            if (!saved || !claimed) return
+                if (!claimed) return
 
-            val manager = ReviewManagerFactory.create(context)
-            val reviewInfo =
-                try {
-                    manager.requestReviewFlow().await()
-                } catch (e: CancellationException) {
+                currentCoroutineContext().ensureActive()
+                val manager = ReviewManagerFactory.create(context)
+                val reviewInfo = manager.requestReviewFlow().await()
+                currentCoroutineContext().ensureActive()
+                if (activity.isFinishing ||
+                    activity.isDestroyed ||
+                    (activity is LifecycleOwner && activity.lifecycle.currentState != Lifecycle.State.RESUMED)
+                ) {
+                    return
+                }
+                manager.launchReviewFlow(activity, reviewInfo)
+                launched = true
+            } catch (cancellation: CancellationException) {
+                throw cancellation
+            } catch (_: Exception) {
+                // Play review is optional. Keep the app usable after a failed request.
+            } finally {
+                if (claimed && !launched) {
                     withContext(NonCancellable) {
                         context.reviewDataStore.editPreferencesSafely { it[KEY_REVIEW_REQUESTED] = false }
                     }
-                    throw e
-                } catch (_: Exception) {
-                    context.reviewDataStore.editPreferencesSafely {
-                        it[KEY_REVIEW_REQUESTED] = false
-                    }
-                    return
                 }
-            manager.launchReviewFlow(activity, reviewInfo)
+            }
         }
 
         companion object {

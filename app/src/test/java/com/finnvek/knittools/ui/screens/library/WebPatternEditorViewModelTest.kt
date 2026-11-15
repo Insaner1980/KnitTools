@@ -114,7 +114,7 @@ class WebPatternEditorViewModelTest {
             assertNotNull(model.uiState.value.pendingIncomingShare)
 
             val restored = model(handle.restoredCopy())
-            restored.resolveIncomingShare(useIncoming = true)
+            restored.resolveIncomingShare(request.requestId, useIncoming = true)
 
             assertEquals("Incoming", restored.uiState.value.title)
             assertEquals("https://example.com/incoming", restored.uiState.value.url)
@@ -138,13 +138,22 @@ class WebPatternEditorViewModelTest {
                 )
             model.offerSharedRequest(request)
 
-            model.resolveIncomingShare(useIncoming = false)
+            val keepFirstDraft = { model.resolveIncomingShare(request.requestId, useIncoming = false) }
+            keepFirstDraft()
 
             assertEquals("Current draft", model.uiState.value.title)
             assertEquals("https://example.com/current", model.uiState.value.url)
             assertNull(model.uiState.value.pendingIncomingShare)
             assertEquals(WebPatternShareAcceptResult.Stored, model.offerSharedRequest(request))
             assertNull(model.uiState.value.pendingIncomingShare)
+            val second = request.copy(requestId = 14L)
+            assertEquals(WebPatternShareAcceptResult.Stored, model.offerSharedRequest(second))
+            keepFirstDraft()
+            assertEquals(
+                14L,
+                model.uiState.value.pendingIncomingShare
+                    ?.requestId,
+            )
             coVerify(exactly = 0) { patterns.createWebPattern(any()) }
             coVerify(exactly = 0) { patterns.updateWebPattern(any(), any(), any()) }
         }
@@ -175,7 +184,7 @@ class WebPatternEditorViewModelTest {
                 assertEquals("Current draft", editor.uiState.value.title)
                 val restored = model(handle.restoredCopy())
                 assertEquals(WebPatternShareAcceptResult.Ignored, restored.offerSharedRequest(second))
-                restored.resolveIncomingShare(useIncoming)
+                restored.resolveIncomingShare(first.requestId, useIncoming)
                 assertEquals(WebPatternShareAcceptResult.Stored, restored.offerSharedRequest(second))
                 assertEquals(
                     second.requestId,
@@ -214,7 +223,7 @@ class WebPatternEditorViewModelTest {
             runCurrent()
             assertEquals("Pattern", editor.uiState.value.title)
             assertEquals(WebPatternShareAcceptResult.Stored, editor.offerSharedRequest(request))
-            editor.resolveIncomingShare(useIncoming = true)
+            editor.resolveIncomingShare(request.requestId, useIncoming = true)
             assertEquals("Next draft", editor.uiState.value.title)
             assertEquals("https://example.com/next", editor.uiState.value.url)
         }

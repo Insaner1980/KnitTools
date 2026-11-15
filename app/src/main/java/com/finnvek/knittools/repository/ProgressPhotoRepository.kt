@@ -66,10 +66,23 @@ class ProgressPhotoRepository
 
         fun getPhotoCount(projectId: Long): Flow<Int> = dao.getPhotoCount(projectId).retryOnRepositoryReadFailure()
 
-        suspend fun createPhotoCaptureTarget(projectId: Long): Pair<File, Uri> =
-            withContext(ioDispatcher) {
-                storage.createPhotoFile(context, projectId)
+        suspend fun createPhotoCaptureTarget(projectId: Long): Pair<File, Uri> {
+            var unclaimedFile: File? = null
+            try {
+                val target =
+                    withContext(ioDispatcher) {
+                        storage.createPhotoFile(context, projectId).also { unclaimedFile = it.first }
+                    }
+                unclaimedFile = null
+                return target
+            } finally {
+                unclaimedFile?.let { file ->
+                    withContext(ioDispatcher + NonCancellable) {
+                        storage.deletePendingPhotoFile(file.absolutePath)
+                    }
+                }
             }
+        }
 
         suspend fun getPhotoCountsByProjectIds(projectIds: List<Long>): Map<Long, Int> =
             projectIds

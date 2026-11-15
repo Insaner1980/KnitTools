@@ -1,5 +1,6 @@
 package com.finnvek.knittools.repository
 
+import android.net.Uri
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -10,6 +11,7 @@ import com.finnvek.knittools.data.local.KnitToolsDatabase
 import com.finnvek.knittools.data.local.PatternAnnotationSchemaConstraints
 import com.finnvek.knittools.data.local.ProjectCompletionEntity
 import com.finnvek.knittools.data.local.ProjectDocumentSchemaConstraints
+import com.finnvek.knittools.data.storage.writeOnePagePdf
 import com.finnvek.knittools.domain.calculator.ProjectStartValues
 import com.finnvek.knittools.domain.model.MainCounterChange
 import kotlinx.coroutines.CancellationException
@@ -29,6 +31,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.io.File
 
 @RunWith(AndroidJUnit4::class)
 class ActiveProjectPolicyRoomTest {
@@ -107,6 +110,38 @@ class ActiveProjectPolicyRoomTest {
             val before = database.counterProjectDao().getAllProjectsOnce()
             assertEquals(ProjectCreationResult.LimitReached, create("Blocked"))
             assertEquals(before, database.counterProjectDao().getAllProjectsOnce())
+        }
+
+    @Test
+    fun replayingAnAlreadyPublishedPdfReturnsTheSameProjectWithoutTakingAnotherSlot() =
+        runBlocking {
+            val stagingDir = File(context.filesDir, "pattern_pdfs/0").apply { mkdirs() }
+            val firstPdf = File.createTempFile("create-project-first-", ".pdf", stagingDir)
+            val secondPdf = File.createTempFile("create-project-second-", ".pdf", stagingDir)
+            try {
+                writeOnePagePdf(firstPdf)
+                writeOnePagePdf(secondPdf)
+                val firstUri = Uri.fromFile(firstPdf).toString()
+                val secondUri = Uri.fromFile(secondPdf).toString()
+                val created = repository.createProjectWithImportedPdf("Cardigan", false, firstUri, "Chart")
+                val restoredOwner = newCounterRepository()
+
+                assertTrue(created is ProjectCreationResult.Created)
+                assertEquals(created, restoredOwner.createProjectWithImportedPdf("Cardigan", false, firstUri, "Chart"))
+                assertEquals(created, restoredOwner.createProjectWithImportedPdf("Cardigan", true, firstUri, "Chart"))
+                assertEquals(1, repository.getProjectCount())
+                assertEquals(
+                    ProjectCreationResult.LimitReached,
+                    restoredOwner.createProjectWithImportedPdf("Cardigan", false, secondUri, "Chart"),
+                )
+                val second = restoredOwner.createProjectWithImportedPdf("Cardigan", true, secondUri, "Chart")
+                assertTrue(second is ProjectCreationResult.Created)
+                assertTrue(second != created)
+                assertEquals(2, repository.getProjectCount())
+            } finally {
+                firstPdf.delete()
+                secondPdf.delete()
+            }
         }
 
     @Test

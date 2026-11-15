@@ -33,6 +33,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.finnvek.knittools.R
 import com.finnvek.knittools.billing.BillingProductStatus
 import com.finnvek.knittools.billing.SelectedOneTimeOffer
+import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.domain.model.OnboardingDraft
 import com.finnvek.knittools.domain.model.OnboardingStep
 import com.finnvek.knittools.pro.ProState
@@ -155,6 +156,7 @@ class OnboardingScreenTest(
                             create = { created++ },
                             finish = { finished++ },
                         ),
+                        readyProject = CounterProject(id = 1L, name = "Committed project", count = 4),
                     )
                 }
             }
@@ -239,7 +241,8 @@ class OnboardingScreenTest(
             intactText(R.string.journey_ready_title)
             intactText(R.string.journey_ready_body)
             // Yhteenveto kertoo seuraavan rivin eikä näytä napautettavaa jatka-korttia.
-            compose.onNodeWithText(context.getString(R.string.project_start_count_next_rows, 1)).assertExists()
+            compose.onNodeWithText("Committed project").assertExists()
+            compose.onNodeWithText(context.getString(R.string.project_start_count_next_rows, 5)).assertExists()
             compose.onNodeWithTag("onboarding_back").assertDoesNotExist()
             capture("ready", isDark)
             compose.onNodeWithTag("onboarding_next").assertIsEnabled().performClick()

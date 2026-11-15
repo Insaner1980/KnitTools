@@ -1,0 +1,37 @@
+appId: com.finnvek.knittools
+name: Library reference and Insights navigation
+---
+- launchApp:
+    clearState: true
+- tapOn: "LIBRARY"
+- tapOn: "Needle Sizes"
+- assertVisible: "Needle Sizes"
+- assertVisible: "mm"
+- assertVisible: "US"
+- tapOn: "Back"
+- tapOn: "Size Charts"
+- assertVisible: "Size Charts"
+- tapOn: "Back"
+- scrollUntilVisible:
+    element:
+      text: "Abbreviations"
+    direction: DOWN
+- tapOn: "Abbreviations"
+- assertVisible: "Abbreviations"
+- tapOn: "Back"
+- scrollUntilVisible:
+    element:
+      text: "Chart Symbols"
+    direction: DOWN
+- tapOn: "Chart Symbols"
+- assertVisible: "Chart Symbols"
+- tapOn: "Back"
+- tapOn: "INSIGHTS"
+- assertVisible: "Insights"
+- tapOn: "LIBRARY"
+- scrollUntilVisible:
+    element:
+      text: "Progress Photos"
+    direction: UP
+- tapOn: "Progress Photos"
+- assertVisible: "Progress Photos"

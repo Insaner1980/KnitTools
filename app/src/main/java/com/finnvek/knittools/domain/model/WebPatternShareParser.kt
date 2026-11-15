@@ -3,7 +3,7 @@ package com.finnvek.knittools.domain.model
 const val WEB_PATTERN_SHARED_TEXT_MAX_LENGTH = 16 * 1_024
 
 private const val WEB_PATTERN_SHARED_SUBJECT_MAX_LENGTH = 4 * 1_024
-private val SHARED_URL_PATTERN = Regex("""(?i)\b[a-z][a-z0-9+.-]*://[^\s<>\"']+""")
+private val SHARED_URL_PATTERN = Regex("""(?i)\b[a-z][a-z0-9+.-]*://[^\s<>\"]+""")
 private val POTENTIAL_UNSUPPORTED_URL_PATTERN = Regex("""(?i)\b[a-z][a-z0-9+.-]*:[^\s]+""")
 
 sealed interface WebPatternShareParseResult {
@@ -32,8 +32,12 @@ fun parseWebPatternSharedText(
     text: String?,
     subject: String?,
 ): WebPatternShareParseResult {
-    if (text == null || text.isBlank()) return WebPatternShareParseResult.Empty
-    if (text.length > WEB_PATTERN_SHARED_TEXT_MAX_LENGTH) return WebPatternShareParseResult.TooLong
+    if (text.orEmpty().length > WEB_PATTERN_SHARED_TEXT_MAX_LENGTH ||
+        subject.orEmpty().length > WEB_PATTERN_SHARED_SUBJECT_MAX_LENGTH
+    ) {
+        return WebPatternShareParseResult.TooLong
+    }
+    if (text.isNullOrBlank()) return WebPatternShareParseResult.Empty
     if (
         POTENTIAL_UNSUPPORTED_URL_PATTERN.findAll(text).any { match ->
             match.value.length > WEB_PATTERN_URL_MAX_LENGTH
@@ -51,7 +55,8 @@ fun parseWebPatternSharedText(
         foundMatch = true
         val hasSurroundingText =
             firstTextIndex < match.range.first || lastTextIndex > match.range.last
-        val candidate = match.value.trimSharedUrlPunctuation(hasSurroundingText)
+        val hasOpeningQuote = text.getOrNull(match.range.first - 1) == '\''
+        val candidate = match.value.trimSharedUrlPunctuation(hasSurroundingText, hasOpeningQuote)
         val validation =
             validateWebPatternUrl(candidate) as? WebPatternUrlValidation.Valid
                 ?: return WebPatternShareParseResult.Invalid
@@ -76,12 +81,19 @@ fun parseWebPatternSharedText(
 }
 
 private fun sanitizeSharedWebPatternTitle(subject: String?): String {
-    if (subject == null || subject.length > WEB_PATTERN_SHARED_SUBJECT_MAX_LENGTH) return ""
+    if (subject == null) return ""
     return (validateWebPatternTitle(subject) as? WebPatternTitleValidation.Valid)?.value.orEmpty()
 }
 
-private fun String.trimSharedUrlPunctuation(hasSurroundingText: Boolean): String {
+private fun String.trimSharedUrlPunctuation(
+    hasSurroundingText: Boolean,
+    hasOpeningQuote: Boolean,
+): String {
     val candidate = dropUnmatchedClosingSuffix()
+    if (hasOpeningQuote) {
+        val quoted = candidate.trimEnd { it in SHARED_SENTENCE_PUNCTUATION }
+        if (quoted.endsWith('\'')) return quoted.dropLast(1)
+    }
     if (!hasSurroundingText || '?' in candidate || '#' in candidate) return candidate
     return candidate.trimEnd { character -> character in SHARED_SENTENCE_PUNCTUATION }
 }

@@ -3,16 +3,17 @@ package com.finnvek.knittools.ui
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.hapticfeedback.HapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 
 internal class PreferenceAwareHapticFeedback(
-    private val enabled: Boolean,
+    private val enabled: () -> Boolean,
     private val delegate: HapticFeedback,
 ) : HapticFeedback {
     override fun performHapticFeedback(hapticFeedbackType: HapticFeedbackType) {
-        if (enabled) delegate.performHapticFeedback(hapticFeedbackType)
+        if (enabled()) delegate.performHapticFeedback(hapticFeedbackType)
     }
 }
 
@@ -22,9 +23,10 @@ internal fun ProvidePreferenceAwareHapticFeedback(
     content: @Composable () -> Unit,
 ) {
     val platformHapticFeedback = LocalHapticFeedback.current
+    val currentEnabled = rememberUpdatedState(enabled)
     val preferenceAwareHapticFeedback =
-        remember(enabled, platformHapticFeedback) {
-            PreferenceAwareHapticFeedback(enabled, platformHapticFeedback)
+        remember(platformHapticFeedback) {
+            PreferenceAwareHapticFeedback({ currentEnabled.value }, platformHapticFeedback)
         }
     CompositionLocalProvider(
         LocalHapticFeedback provides preferenceAwareHapticFeedback,

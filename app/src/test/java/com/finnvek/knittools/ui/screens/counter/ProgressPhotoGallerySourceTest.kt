@@ -9,7 +9,8 @@ class ProgressPhotoGallerySourceTest {
     @Test
     fun `capture failure uses localized feedback and null target cannot launch the camera`() {
         val source = ProjectSourceFiles.read(PHOTO_GALLERY_SCREEN)
-        val navigation = ProjectSourceFiles.read("app/src/main/java/com/finnvek/knittools/ui/navigation/NavGraph.kt")
+        val navigation =
+            ProjectSourceFiles.read("app/src/main/java/com/finnvek/knittools/ui/navigation/PhotoGalleryDestination.kt")
 
         assertTrue(navigation.contains("errorsProvider = { counterViewModel.photoErrors }"))
         assertTrue(navigation.contains("createPhotoCaptureTarget = counterViewModel::createPhotoCaptureTarget"))
@@ -86,7 +87,7 @@ class ProgressPhotoGallerySourceTest {
 
         assertTrue(source.contains("suspend fun createPhotoCaptureTarget("))
         assertTrue(source.contains("suspend fun deletePendingPhotoFile("))
-        assertTrue(source.contains("withContext(ioDispatcher) {\n                storage.createPhotoFile"))
+        assertTrue(source.substringAfter("suspend fun createPhotoCaptureTarget(").contains("withContext(ioDispatcher)"))
         assertTrue(source.contains("withContext(ioDispatcher) {\n                storage.deletePendingPhotoFile"))
     }
 

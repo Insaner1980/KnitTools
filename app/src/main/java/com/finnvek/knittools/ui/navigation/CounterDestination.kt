@@ -8,12 +8,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavHostController
+import androidx.navigation.compose.currentBackStackEntryAsState
 import com.finnvek.knittools.ui.layout.LocalAdaptiveModalWindow
 import com.finnvek.knittools.ui.screens.counter.CounterViewModel
 import com.finnvek.knittools.ui.screens.counter.ProjectContentHost
@@ -27,7 +27,8 @@ internal fun CounterDestination(
     navController: NavHostController,
     backStackEntry: NavBackStackEntry,
     counterLaunchRequest: CounterLaunchRequest?,
-    onCounterLaunchHandled: () -> Unit,
+    isCurrentCounterLaunch: (String) -> Boolean,
+    onCounterLaunchHandled: (String) -> Unit,
     onImportFromRavelry: () -> Unit,
     onStartupReady: (Boolean) -> Unit,
 ) {
@@ -37,38 +38,46 @@ internal fun CounterDestination(
         }
     val counterViewModel: CounterViewModel = hiltViewModel(parentEntry)
     val counterState by counterViewModel.uiState.collectAsStateWithLifecycle()
-    var counterLaunchProjectMissing by remember { mutableStateOf(false) }
-    var loadedLaunchId by rememberSaveable { mutableStateOf<String?>(null) }
+    var unavailableLaunchId by remember { mutableStateOf<String?>(null) }
+    var loadedLaunchId by remember { mutableStateOf<String?>(null) }
     val currentLaunchRequest by rememberUpdatedState(counterLaunchRequest)
-    LaunchedEffect(counterLaunchRequest?.requestId) {
+    val isCurrentLaunch by rememberUpdatedState(isCurrentCounterLaunch)
+    val currentEntry by navController.currentBackStackEntryAsState()
+    LaunchedEffect(counterLaunchRequest?.requestId, currentEntry?.id) {
         val launchRequest = counterLaunchRequest ?: return@LaunchedEffect
-        counterLaunchProjectMissing = false
+        val canSelect = {
+            currentLaunchRequest?.requestId == launchRequest.requestId &&
+                isCurrentLaunch(launchRequest.requestId) &&
+                navController.currentBackStackEntry?.id == backStackEntry.id
+        }
+        if (!canSelect()) return@LaunchedEffect
         val projectId = launchRequest.projectId
         if (projectId == null) {
-            onCounterLaunchHandled()
+            onCounterLaunchHandled(launchRequest.requestId)
             return@LaunchedEffect
         }
-        counterViewModel.selectProjectByIdForLaunch(projectId) { loaded ->
-            if (currentLaunchRequest?.requestId == launchRequest.requestId &&
-                navController.currentBackStackEntry?.id == backStackEntry.id
-            ) {
-                counterLaunchProjectMissing = !loaded
+        counterViewModel.selectProjectByIdForLaunch(projectId, canSelect = canSelect) { loaded ->
+            if (canSelect()) {
+                unavailableLaunchId = launchRequest.requestId.takeUnless { loaded }
                 loadedLaunchId = launchRequest.requestId.takeIf { loaded }
-                if (!loaded || launchRequest.journeyAction == null) onCounterLaunchHandled()
+                if (!loaded || launchRequest.journeyAction == null) onCounterLaunchHandled(launchRequest.requestId)
             }
         }
     }
-    if (counterLaunchRequest != null && loadedLaunchId != counterLaunchRequest.requestId) return
-    if (counterLaunchProjectMissing || counterState.shouldLeaveCounter) {
-        LaunchedEffect(counterLaunchRequest?.requestId) {
-            if (currentLaunchRequest?.requestId == counterLaunchRequest?.requestId &&
-                navController.currentBackStackEntry?.id == backStackEntry.id
-            ) {
-                onCounterLaunchHandled()
-            }
-        }
+    if (counterLaunchRequest != null &&
+        (loadedLaunchId != counterLaunchRequest.requestId || counterLaunchRequest.projectId != counterState.projectId)
+    ) {
+        return
+    }
+    if (unavailableLaunchId != null || counterState.shouldLeaveCounter) {
         RouteArgumentFallback({ navController }, TopLevelDestination.Projects)
         return
+    }
+    if (counterState.isRestoringProject || counterState.projectId == null) return
+    SideEffect {
+        if (navController.currentBackStackEntry?.id == backStackEntry.id) {
+            counterState.projectId?.let { backStackEntry.savedStateHandle[COUNTER_ENTRY_PROJECT_ID] = it }
+        }
     }
     CompositionLocalProvider(LocalAdaptiveModalWindow provides true) {
         TipEnvironment(routeKey = backStackEntry.id) {
@@ -76,7 +85,7 @@ internal fun CounterDestination(
                 overview = false,
                 journeyRequest = counterLaunchRequest,
                 onJourneyRequestHandled = { requestId ->
-                    if (currentLaunchRequest?.requestId == requestId) onCounterLaunchHandled()
+                    if (currentLaunchRequest?.requestId == requestId) onCounterLaunchHandled(requestId)
                 },
                 actions =
                     projectWorkspaceActions(

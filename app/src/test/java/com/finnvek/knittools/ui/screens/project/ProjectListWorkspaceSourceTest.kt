@@ -190,7 +190,12 @@ class ProjectListWorkspaceSourceTest {
         assertTrue(screen.contains("actions.onOpenOverview(ck.projectId)"))
         assertTrue(screen.contains("onOpenCounter(projectId)"))
         assertTrue(nav.contains("Screen.ProjectOverview(projectId).route"))
-        assertTrue(nav.contains("counterViewModel.selectProjectByIdForLaunch(projectId)"))
+        val counterAction = sourceBetween(nav, "onOpenCounter = { projectId ->", "onUpgradeToPro =")
+        assertTokensInOrder(
+            counterAction,
+            "navController.currentBackStackEntry?.id == backStackEntry.id",
+            "onLaunchCounter(projectId)",
+        )
         assertTrue(screen.contains("ProjectListDimens.CardSpacing"))
     }
 

@@ -48,7 +48,7 @@ class TrialManagerDispatcherTest {
                 assertFalse(manager.trialState.value.hasStarted)
                 assertEquals(
                     TrialStartResult.Started,
-                    runSnapshotOperation(ioScheduler, clock, 2) { manager.startTrial() },
+                    runSnapshotOperation(ioScheduler, clock, 1) { manager.startTrial() },
                 )
                 val startedAt = manager.trialState.value.startTimestamp
                 assertEquals(14, manager.trialState.value.daysRemaining)
@@ -64,7 +64,7 @@ class TrialManagerDispatcherTest {
                 assertEquals(elapsed, manager.trialState.value.elapsedDurationMillis)
                 assertEquals(
                     TrialStartResult.AlreadyActive,
-                    runSnapshotOperation(ioScheduler, clock, 2) { manager.startTrial() },
+                    runSnapshotOperation(ioScheduler, clock, 1) { manager.startTrial() },
                 )
                 assertEquals(startedAt, manager.trialState.value.startTimestamp)
 

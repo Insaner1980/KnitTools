@@ -177,6 +177,39 @@ class PatternPdfExporterTest {
         }
 
     @Test
+    fun storageDropDuringExportPreservesReserveAndCleansTemporaryFile() =
+        runBlocking {
+            val limits = DEFAULT_PATTERN_PDF_EXPORT_LIMITS
+            var available = limits.maxTemporaryOutputBytes + limits.cacheReserveBytes
+            val exporter =
+                PatternPdfExporter.createForTest(
+                    context = context,
+                    ioDispatcher = Dispatchers.IO,
+                    cacheSpaceProvider = { available },
+                )
+            val source = createPdf("source-storage-drop.pdf", pageCount = 1)
+            val original = source.readBytes()
+            val destination = File(context.cacheDir, "annotated-storage-drop.pdf").apply { writeBytes(SENTINEL) }
+
+            val failure =
+                runCatching {
+                    exporter.export(
+                        sourceUri = source.toUri(),
+                        destinationUri = destination.toUri(),
+                        annotations = emptyList(),
+                        trackerHighlights = emptyMap(),
+                        style = renderStyle(),
+                        onProgress = { available = limits.cacheReserveBytes },
+                    )
+                }.exceptionOrNull()
+
+            assertLimitReason(PatternPdfExportLimitReason.CACHE_SPACE, failure)
+            assertArrayEquals(SENTINEL, destination.readBytes())
+            assertArrayEquals(original, source.readBytes())
+            assertTempDirectoryEmpty()
+        }
+
+    @Test
     fun temporaryOutputHardCapRejectsPartialArchiveAndCleansTempFile() =
         runBlocking {
             val cappedExporter =

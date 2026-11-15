@@ -208,7 +208,7 @@ class PatternPdfExportBudgetTest {
         val output = PatternPdfExportBoundedOutputStream(target, maxBytes = 3L)
 
         output.write(byteArrayOf(1, 2, 3))
-        output.throwIfLimitExceeded()
+        output.throwIfWriteFailed()
 
         assertArrayEquals(byteArrayOf(1, 2, 3), target.toByteArray())
         assertLimit(PatternPdfExportLimitReason.OUTPUT_BYTES) { output.write(4) }
@@ -222,10 +222,23 @@ class PatternPdfExportBudgetTest {
 
         assertLimit(PatternPdfExportLimitReason.OUTPUT_BYTES) { output.write(byteArrayOf(1, 2, 3, 4)) }
 
-        assertLimit(PatternPdfExportLimitReason.OUTPUT_BYTES) { output.throwIfLimitExceeded() }
+        assertLimit(PatternPdfExportLimitReason.OUTPUT_BYTES) { output.throwIfWriteFailed() }
         assertLimit(PatternPdfExportLimitReason.OUTPUT_BYTES) { output.write(1) }
         assertLimit(PatternPdfExportLimitReason.OUTPUT_BYTES) { output.write(byteArrayOf(1)) }
         assertArrayEquals(byteArrayOf(), target.toByteArray())
+    }
+
+    @Test
+    fun `file write failure remains visible when the native writer consumes it`() {
+        val failure = IOException("File write failed")
+        val target =
+            object : OutputStream() {
+                override fun write(value: Int) = throw failure
+            }
+        val output = PatternPdfExportBoundedOutputStream(target, maxBytes = 8L)
+
+        assertSame(failure, assertThrows(IOException::class.java) { output.write(byteArrayOf(1, 2, 3)) })
+        assertSame(failure, assertThrows(IOException::class.java, output::throwIfWriteFailed))
     }
 
     @Test

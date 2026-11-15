@@ -21,6 +21,7 @@ import com.finnvek.knittools.domain.model.parseYarnCardIdsWithinLimits
 import com.finnvek.knittools.pro.ProFeature
 import com.finnvek.knittools.pro.ProManager
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.Flow
@@ -155,9 +156,17 @@ class YarnCardRepository
         ): Boolean =
             photoStorageMutex.withLock {
                 val currentCard = dao.getCard(id) ?: return@withLock false
+                var unpublishedPhotoUri: String? = null
                 val copiedPhotoUri =
-                    withContext(ioDispatcher) {
-                        runInterruptible { yarnPhotoStorage.copyPhoto(context, id, sourceUri) }
+                    try {
+                        withContext(ioDispatcher) {
+                            runInterruptible {
+                                yarnPhotoStorage.copyPhoto(context, id, sourceUri).also { unpublishedPhotoUri = it }
+                            }
+                        }
+                    } catch (failure: CancellationException) {
+                        unpublishedPhotoUri?.let { deleteAppOwnedPhoto(it) }
+                        throw failure
                     }
                 val updateResult = runCatching { dao.updatePhotoUri(id, copiedPhotoUri) }
                 updateResult.exceptionOrNull()?.let { failure ->

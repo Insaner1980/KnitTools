@@ -233,7 +233,7 @@ class PatternAnnotationTextRoomTest {
                 )
             fixture.repository.updateAnnotation(competitor)
             main { fixture.vm.saveTextEdit(edit, "Mine") }
-            fixture.awaitState { !it.isSaving && it.writeError == PatternAnnotationWriteError.WRITE_FAILED }
+            fixture.awaitState { !it.isSaving && it.writeError == PatternAnnotationWriteError.TEXT_CONFLICT }
             assertEquals(competitor, fixture.annotation())
             assertFalse(fixture.vm.uiState.value.canUndo)
             assertEquals(edit, fixture.vm.uiState.value.textEdit)

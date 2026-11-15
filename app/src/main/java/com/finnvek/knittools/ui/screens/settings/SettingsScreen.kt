@@ -157,7 +157,8 @@ fun SettingsScreen(
             SettingsSelectionRow(
                 label = stringResource(R.string.knittools_pro),
                 supportingText = stringResource(R.string.pro_content_stays_available),
-                valueText = proState.takeIf { proStateReady }?.settingsStatusText(),
+                valueText =
+                    proState.takeIf { proStateReady || it.status == ProStatus.TRIAL_ACTIVE }?.settingsStatusText(),
                 onClick = onUpgradeToPro,
             )
             if (proState.status != ProStatus.PRO_PURCHASED) {

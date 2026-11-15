@@ -99,7 +99,13 @@ class PatternPdfExporter private constructor(
     }
 
     private fun planDocument(renderer: PdfPageRenderer): PatternPdfExportPlan =
-        PatternPdfExportBudget.planDocument(renderer.pageCount, limits, renderer::pageSize)
+        PatternPdfExportBudget.planDocument(renderer.pageCount, limits) { page ->
+            try {
+                renderer.pageSize(page)
+            } catch (failure: IllegalStateException) {
+                throw PatternPdfExportLimitException(PatternPdfExportLimitReason.SOURCE_PAGE_DIMENSIONS, failure)
+            }
+        }
 
     private suspend fun renderToTempFile(
         renderer: PdfPageRenderer,
@@ -166,18 +172,27 @@ class PatternPdfExporter private constructor(
         tempFile: File,
     ) {
         val exportContext = coroutineContext
-        tempFile.outputStream().buffered().use { output ->
+        tempFile.outputStream().use { output ->
             val boundedOutput =
                 PatternPdfExportBoundedOutputStream(
                     output = output,
                     maxBytes = limits.maxTemporaryOutputBytes,
                     checkCancelled = exportContext::ensureActive,
+                    checkStorage = { additionalBytes ->
+                        val available = cacheSpaceProvider(context.cacheDir)
+                        if (available < limits.cacheReserveBytes ||
+                            additionalBytes.toLong() > available - limits.cacheReserveBytes
+                        ) {
+                            throw PatternPdfExportLimitException(PatternPdfExportLimitReason.CACHE_SPACE)
+                        }
+                    },
                 )
             try {
                 document.writeTo(boundedOutput)
             } finally {
-                // Androidin natiivikirjoitin voi niellä streamin poikkeuksen tai korvata sen toisella.
-                boundedOutput.throwIfLimitExceeded()
+                // Android's native PDF writer can consume an exception from the output stream.
+                exportContext.ensureActive()
+                boundedOutput.throwIfWriteFailed()
             }
             boundedOutput.flush()
         }

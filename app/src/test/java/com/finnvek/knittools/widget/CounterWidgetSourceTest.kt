@@ -96,10 +96,11 @@ class CounterWidgetSourceTest {
     fun `shared widget state wins over stale per-instance state`() {
         val widget = ProjectSourceFiles.read(COUNTER_WIDGET)
 
+        val resolver = widget.substringAfter("private suspend fun resolveWidgetData(")
+        assertTrue(resolver.contains("if (sharedWidgetData.projectId > 0L)"))
         assertTrue(
-            widget.contains(
-                "candidates = listOf(sharedWidgetData, widgetData)",
-            ),
+            resolver.indexOf("listOf(sharedWidgetData)") <
+                resolver.indexOf("listOf(sharedWidgetData, widgetData)"),
         )
     }
 
@@ -107,11 +108,10 @@ class CounterWidgetSourceTest {
     fun `widget rendering observes updated glance state instead of retaining initial snapshot`() {
         val widget = ProjectSourceFiles.read(COUNTER_WIDGET)
 
-        assertTrue(widget.contains("val data = CounterWidgetState.fromPreferences(context, prefs)"))
+        assertTrue(widget.contains("val shared by sharedDataFlow.collectAsState(initialShared)"))
         assertTrue(widget.contains("val access by accessFlow.collectAsState(initialAccess)"))
-        assertTrue(widget.contains("LaunchedEffect(access)"))
-        assertTrue(widget.contains("resolveInitialWidgetData(context, id, entryPoint, data)"))
-        assertTrue(!widget.contains("val initialWidgetData"))
+        assertTrue(widget.contains("LaunchedEffect(access, shared, refresh)"))
+        assertTrue(widget.contains("CounterWidgetState.replaceIfCurrent(context, sharedWidgetData, resolvedData)"))
     }
 
     private fun widgetSection(

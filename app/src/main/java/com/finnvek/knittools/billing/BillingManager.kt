@@ -42,7 +42,7 @@ class BillingManager
     @Inject
     constructor(
         @param:ApplicationContext private val context: Context,
-    ) : PurchasesUpdatedListener {
+    ) {
         private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
 
         private val _isProPurchased = MutableStateFlow(false)
@@ -73,6 +73,7 @@ class BillingManager
         val purchasePending: StateFlow<Boolean> = _purchasePending.asStateFlow()
 
         private var billingClient: BillingClient? = null
+        private var purchaseUpdatesListener: PurchasesUpdatedListener? = null
         private var purchaseQueryGeneration = 0L
         private var productQueryGeneration = 0L
         private var productQueryJob: Job? = null
@@ -95,10 +96,25 @@ class BillingManager
             connectionAttempt = 0
             connectionRetryJob?.cancel()
             connectionRetryJob = null
+            val listener =
+                object : PurchasesUpdatedListener {
+                    override fun onPurchasesUpdated(
+                        result: BillingResult,
+                        purchases: List<Purchase>?,
+                    ) {
+                        val source = this
+                        scope.launch {
+                            if (purchaseUpdatesListener === source) {
+                                this@BillingManager.onPurchasesUpdated(result, purchases)
+                            }
+                        }
+                    }
+                }
+            purchaseUpdatesListener = listener
             billingClient =
                 BillingClient
                     .newBuilder(context)
-                    .setListener(this)
+                    .setListener(listener)
                     .enablePendingPurchases(
                         PendingPurchasesParams.newBuilder().enableOneTimeProducts().build(),
                     ).enableAutoServiceReconnection()
@@ -247,7 +263,7 @@ class BillingManager
             }
         }
 
-        override fun onPurchasesUpdated(
+        internal fun onPurchasesUpdated(
             result: BillingResult,
             purchases: List<Purchase>?,
         ) {
@@ -289,6 +305,7 @@ class BillingManager
         }
 
         fun destroy() {
+            purchaseUpdatesListener = null
             _purchasePending.value = false
             resetProductDetails()
             priceNeedsReview = false

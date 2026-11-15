@@ -15,6 +15,9 @@ interface SavedPatternDao {
     @Query("SELECT * FROM saved_patterns WHERE id = :id")
     suspend fun getById(id: Long): SavedPatternEntity?
 
+    @Query("SELECT * FROM saved_patterns WHERE id = :id")
+    fun observeById(id: Long): Flow<SavedPatternEntity?>
+
     @Query("SELECT * FROM saved_patterns WHERE id IN (:ids)")
     suspend fun getByIds(ids: List<Long>): List<SavedPatternEntity>
 

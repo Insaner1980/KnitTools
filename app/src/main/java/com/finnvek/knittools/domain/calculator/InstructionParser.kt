@@ -34,8 +34,18 @@ sealed class ParsedInstruction {
 }
 
 object InstructionParser {
-    private val gaugeStitchesPattern = Regex("""(\d+(?:\.\d+)?)\s*(?:STITCHES?|STS?)""")
-    private val gaugeRowsPattern = Regex("""^\s*(?:AND|[,/&X])?\s*(\d+(?:\.\d+)?)\s*(?:ROWS?|R\b)""")
+    private const val NUMBER_START = """(?<![\d.\-])"""
+    private const val DECIMAL = """\d++(?:\.\d++)?+"""
+    private const val INTEGER = """\d++(?!\.\d)"""
+    private const val STITCHES = """(?:STITCH(?:ES)?|STS?)\b"""
+    private const val ROWS = """(?:ROWS?|R)\b"""
+    private const val LENGTH_UNIT = """(?:CM|IN(?:CH(?:ES)?)?)\b"""
+    private const val PER_INCH = """(?:PER|/)\s*(?:INCH|IN)\b"""
+    private val gaugeStitchesPattern = Regex("""$NUMBER_START($DECIMAL)\s*$STITCHES""")
+    private val gaugeRowsPattern = Regex("""^\s*(?:AND|[,/&X])?\s*($DECIMAL)\s*$ROWS""")
+    private val perInchStitches = Regex("""$NUMBER_START($DECIMAL)\s*$STITCHES\s*$PER_INCH""")
+    private val perInchRows = Regex("""$NUMBER_START($DECIMAL)\s*$ROWS\s*$PER_INCH""")
+    private val bareGaugePair = Regex("""\b(?:GAUGE|TENSION)\s*+:?\s*+($DECIMAL)\s*(?:[/,X]|PER\b)?\s*($DECIMAL)""")
 
     fun parse(instruction: String): ParsedInstruction = parseWithRegex(instruction)
 
@@ -148,7 +158,8 @@ object InstructionParser {
     private fun parseIncreaseEveryNth(upper: String): ParsedInstruction.IncreaseDecrease? {
         val incEveryNth =
             Regex(
-                """(?:INCREASE|INC)\s+1\s*(?:STITCH|ST|STS?)\s+(?:IN|ON)\s+EVERY\s+(\d+)\w*\s+(?:ST|STITCH).*?(?:ACROSS|OVER)\s+(\d+)""",
+                """\b(?:INCREASE|INC)\s+1\s*$STITCHES\s+(?:IN|ON)\s+EVERY\s+($INTEGER)\w*\s+$STITCHES""" +
+                    """.*?(?:ACROSS|OVER)\s+($INTEGER)(?:\s*$STITCHES|(?=\s*(?:[,.;)]|$)))""",
             )
         // CPD-OFF: Erilliset kielioppisaannot pidetaan eksplisiittisina.
         val match = incEveryNth.find(upper) ?: return null
@@ -163,7 +174,7 @@ object InstructionParser {
         // "increase/decrease X stitches evenly across/over Y stitches"
         val incDecAcross =
             Regex(
-                """(INCREASE|DECREASE|INC|DEC)\s+(\d+).*?(?:ACROSS|OVER|FROM|IN|ON)\s+(\d+)\s*(?:STITCHES?|STS?)""",
+                """\b(INCREASE|DECREASE|INC|DEC)\s+($INTEGER).*?(?:ACROSS|OVER|FROM|IN|ON)\s+($INTEGER)\s*$STITCHES""",
             )
         val match = incDecAcross.find(upper) ?: return null
         val isIncrease = match.groupValues[1].startsWith("INC")
@@ -175,7 +186,9 @@ object InstructionParser {
     private fun parseIncreaseDecreaseToTarget(upper: String): ParsedInstruction.IncreaseDecrease? {
         // "increase/decrease to X from Y" tai "increase to X stitches (currently Y)"
         val incDecTo =
-            Regex("""(INCREASE|DECREASE|INC|DEC)\s+(?:EVENLY\s+)?TO\s+(\d+).*?(?:FROM|CURRENTLY|NOW)\s+(\d+)""")
+            Regex(
+                """\b(INCREASE|DECREASE|INC|DEC)\s+(?:EVENLY\s+)?TO\s+($INTEGER).*?(?:FROM|CURRENTLY|NOW)\s+($INTEGER)""",
+            )
         val match = incDecTo.find(upper) ?: return null
         val isIncrease = match.groupValues[1].startsWith("INC")
         val target = match.groupValues[2].toIntOrNull() ?: return null
@@ -188,7 +201,7 @@ object InstructionParser {
     private fun parseIncreaseDecreaseReverse(upper: String): ParsedInstruction.IncreaseDecrease? {
         // "Y stitches, increase/decrease X" (käänteinen)
         val incDecReverse =
-            Regex("""(\d+)\s*(?:STITCHES?|STS?).*?(INCREASE|DECREASE|INC|DEC)\s+(\d+)""")
+            Regex("""$NUMBER_START($INTEGER)\s*$STITCHES.*?\b(INCREASE|DECREASE|INC|DEC)\s+($INTEGER)""")
         val match = incDecReverse.find(upper) ?: return null
         val current = match.groupValues[1].toIntOrNull() ?: return null
         val isIncrease = match.groupValues[2].startsWith("INC")
@@ -200,7 +213,7 @@ object InstructionParser {
         // "k2tog every Nth stitch (Y sts)" — implisiittinen decrease
         val k2togPattern =
             Regex(
-                """(K2TOG|SSK|P2TOG|SK2P|S2KP)\s+(?:EVERY|EACH)\s+(\d+)\w*\s+(?:ST|STITCH).*?(\d+)\s*(?:STS?|STITCHES?)""",
+                """\b(K2TOG|SSK|P2TOG|SK2P|S2KP)\s+(?:EVERY|EACH)\s+($INTEGER)\w*\s+$STITCHES.*?$NUMBER_START($INTEGER)\s*$STITCHES""",
             )
         val match = k2togPattern.find(upper) ?: return null
         val every = match.groupValues[2].toIntOrNull()
@@ -228,7 +241,8 @@ object InstructionParser {
         val pattern =
             Regex(
                 // CPD-OFF: Erilliset kielioppisaannot pidetaan eksplisiittisina.
-                """(\d+(?:\.\d+)?)\s*(?:STITCHES?|STS?)\s*(?:AND|,|&|X|/)\s*(\d+(?:\.\d+)?)\s*(?:ROWS?|R)\s*(?:=|PER|TO|OVER|IN)?\s*(10\s*CM|4\s*IN(?:CHES?)?)""",
+                """$NUMBER_START($DECIMAL)\s*$STITCHES\s*(?:AND|,|&|X|/)\s*($DECIMAL)\s*$ROWS""" +
+                    """\s*(?:(?:=|PER|TO|OVER|IN)\s*)?(10\s*CM|4\s*IN(?:CH(?:ES)?)?)\b""",
             )
         val m = pattern.find(upper) ?: return null
         val stitches = m.groupValues[1].toDoubleOrNull() ?: return null
@@ -246,7 +260,7 @@ object InstructionParser {
     private fun parseGaugeTension(upper: String): ParsedInstruction.Gauge? {
         val pattern =
             Regex(
-                """(?:TENSION|GAUGE)\s*:?\s*(\d+(?:\.\d+)?)\s*(?:STITCHES?|STS?)\s*(?:AND|,|&|X|/)\s*(\d+(?:\.\d+)?)\s*(?:ROWS?|R)""",
+                """\b(?:TENSION|GAUGE)\s*(?::\s*)?($DECIMAL)\s*$STITCHES\s*(?:AND|,|&|X|/)\s*($DECIMAL)\s*$ROWS""",
             )
         val m = pattern.find(upper) ?: return null
         val stitches = m.groupValues[1].toDoubleOrNull() ?: return null
@@ -262,11 +276,10 @@ object InstructionParser {
     private fun parseGaugePerInch(upper: String): ParsedInstruction.Gauge? {
         val sharedUnit =
             Regex(
-                """(\d+(?:\.\d+)?)\s*(?:STITCHES?|STS?)\s*(?:AND|,|&|X|/)\s*(\d+(?:\.\d+)?)\s*(?:ROWS?|R)\s*(?:PER|/)\s*(?:INCH|IN)\b""",
+                """$NUMBER_START($DECIMAL)\s*$STITCHES\s*(?:AND|,|&|X|/)\s*($DECIMAL)\s*$ROWS\s*$PER_INCH""",
             ).find(upper)
-        val piSt =
-            Regex("""(\d+(?:\.\d+)?)\s*(?:STITCHES?|STS?)\s*(?:PER|/)\s*(?:INCH|IN)\b""").find(upper)
-        val piRow = Regex("""(\d+(?:\.\d+)?)\s*(?:ROWS?|R)\s*(?:PER|/)\s*(?:INCH|IN)\b""").find(upper)
+        val piSt = perInchStitches.find(upper)
+        val piRow = perInchRows.find(upper)
         val stitches = (sharedUnit?.groupValues?.get(1) ?: piSt?.groupValues?.get(1))?.toDoubleOrNull() ?: return null
         val rows = (sharedUnit?.groupValues?.get(2) ?: piRow?.groupValues?.get(1))?.toDoubleOrNull() ?: return null
         return ParsedInstruction.Gauge(
@@ -278,17 +291,14 @@ object InstructionParser {
 
     // "gauge X/Y" tai "gauge: X, Y" — pelkät kaksi lukua gauge-kontekstissa
     private fun parseGaugeBareNumbers(upper: String): ParsedInstruction.Gauge? {
-        if (!upper.contains("GAUGE") && !upper.contains("TENSION")) return null
-        val numbers =
-            Regex("""(\d+(?:\.\d+)?)""")
-                .findAll(upper)
-                .mapNotNull { it.groupValues[1].toDoubleOrNull() }
-                .toList()
-        if (numbers.size < 2) return null
+        if (perInchStitches.containsMatchIn(upper) || perInchRows.containsMatchIn(upper)) return null
+        val match = bareGaugePair.find(upper) ?: return null
+        val stitches = match.groupValues[1].toDoubleOrNull() ?: return null
+        val rows = match.groupValues[2].toDoubleOrNull() ?: return null
         return ParsedInstruction.Gauge(
-            stitchesPer10cm = numbers[0],
-            rowsPer10cm = numbers[1],
-            unit = detectGaugeUnit(upper),
+            stitchesPer10cm = stitches,
+            rowsPer10cm = rows,
+            unit = detectGaugeUnit(upper.substring(match.range.last + 1)),
         )
     }
 
@@ -316,38 +326,71 @@ object InstructionParser {
 
     // --- Swatch-patternien tunnistus ---
 
-    private fun parseGaugeSwatch(upper: String): ParsedInstruction? {
+    private fun parseMeasuredSwatch(upper: String): ParsedInstruction? {
         // "width/wide X", "measured width is X"
-        val widthP = Regex("""(?:WIDTH|WIDE|MEASURED\s*(?:WIDTH)?)\s*(?:IS|=|:)?\s*(\d+(?:\.\d+)?)""")
+        val widthP =
+            Regex("""\b(?:WIDTH|WIDE|MEASURED(?:\s*WIDTH)?)\s*(?:(?:IS|=|:)\s*)?($DECIMAL)(?:\s*($LENGTH_UNIT))?""")
         // "height/tall/long X"
-        val heightP = Regex("""(?:HEIGHT|TALL|LONG|MEASURED\s*HEIGHT)\s*(?:IS|=|:)?\s*(\d+(?:\.\d+)?)""")
+        val heightP = Regex("""\b(?:HEIGHT|TALL|LONG)\s*(?:(?:IS|=|:)\s*)?($DECIMAL)(?:\s*($LENGTH_UNIT))?""")
         // "X stitches/sts" (swatch-kontekstissa)
-        val swStP = Regex("""(\d+)\s*(?:STITCHES?|STS?)""")
+        val swStP = Regex("""$NUMBER_START($INTEGER)\s*$STITCHES""")
         // "X rows" (swatch-kontekstissa)
-        val swRowP = Regex("""(\d+)\s*ROWS?""")
+        val swRowP = Regex("""$NUMBER_START($INTEGER)\s*$ROWS""")
 
-        val swW = widthP.firstGroupDouble(upper)
-        val swH = heightP.firstGroupDouble(upper)
+        val widthMatch = widthP.find(upper)
+        val heightMatch = heightP.find(upper)
+        val swW = widthMatch?.groupValues?.get(1)?.toDoubleOrNull()
+        val swH = heightMatch?.groupValues?.get(1)?.toDoubleOrNull()
 
         // Swatch: vähintään leveys tai korkeus + silmukat/rivit
         if (swW != null || swH != null) {
             val swSt = swStP.firstGroupInt(upper)
             val swR = swRowP.firstGroupInt(upper)
+            val widthUnit = widthMatch?.groupValues?.get(2)?.let(::detectLengthUnit)
+            val heightUnit = heightMatch?.groupValues?.get(2)?.let(::detectLengthUnit)
+            val useCentimeters = ParsedInstruction.LengthUnit.CM in listOf(widthUnit, heightUnit)
             return ParsedInstruction.GaugeSwatch(
-                width = swW,
+                width =
+                    if (useCentimeters &&
+                        widthUnit == ParsedInstruction.LengthUnit.INCHES
+                    ) {
+                        swW?.times(2.54)
+                    } else {
+                        swW
+                    },
                 stitches = swSt,
-                height = swH,
+                height =
+                    if (useCentimeters &&
+                        heightUnit == ParsedInstruction.LengthUnit.INCHES
+                    ) {
+                        swH?.times(2.54)
+                    } else {
+                        swH
+                    },
                 rows = swR,
-                lengthUnit = detectLengthUnit(upper),
+                lengthUnit =
+                    if (useCentimeters) {
+                        ParsedInstruction.LengthUnit.CM
+                    } else {
+                        widthUnit ?: heightUnit ?: detectLengthUnit(upper)
+                    },
             )
         }
+
+        return null
+    }
+
+    private fun parseGaugeSwatch(upper: String): ParsedInstruction? {
+        parseMeasuredSwatch(upper)?.let { return it }
+        val swStP = Regex("""$NUMBER_START($INTEGER)\s*$STITCHES""")
+        val swRowP = Regex("""$NUMBER_START($INTEGER)\s*$ROWS""")
 
         // "swatch: X cm, Y stitches" tai "my swatch is X cm with Y stitches"
         if (upper.contains("SWATCH") || upper.contains("MEASURED")) {
             val swSt = swStP.firstGroupInt(upper)
             val swR = swRowP.firstGroupInt(upper)
             // Ensimmäinen cm/in-luku on leveys
-            val width = Regex("""(\d+(?:\.\d+)?)\s*(?:CM|IN|INCHES?)""").firstGroupDouble(upper)
+            val width = Regex("""$NUMBER_START($DECIMAL)\s*$LENGTH_UNIT""").firstGroupDouble(upper)
             if (width != null || swSt != null || swR != null) {
                 return ParsedInstruction.GaugeSwatch(
                     width = width,
@@ -361,7 +404,7 @@ object InstructionParser {
 
         // "X stitches over/in Y cm" — lyhyt swatch-muoto
         val stsOverCm =
-            Regex("""(\d+)\s*(?:STITCHES?|STS?)\s+(?:OVER|IN|ACROSS)\s+(\d+(?:\.\d+)?)\s*(?:CM|IN|INCHES?)""")
+            Regex("""$NUMBER_START($INTEGER)\s*$STITCHES\s+(?:OVER|IN|ACROSS)\s+($DECIMAL)\s*$LENGTH_UNIT""")
         // CPD-OFF: Erilliset kielioppisaannot pidetaan eksplisiittisina.
         stsOverCm.find(upper)?.let { m ->
             val sts = m.groupValues[1].toIntOrNull()
@@ -379,7 +422,7 @@ object InstructionParser {
         // "I got X sts in Y cm"
         val gotSts =
             Regex(
-                """(?:GOT|GET|GETTING|HAVE)\s+(\d+)\s*(?:STITCHES?|STS?)\s+(?:IN|OVER|PER|ACROSS)\s+(\d+(?:\.\d+)?)""",
+                """\b(?:GOT|GET|GETTING|HAVE)\s+($INTEGER)\s*$STITCHES\s+(?:IN|OVER|PER|ACROSS)\s+($DECIMAL)""",
             )
         gotSts.find(upper)?.let { m ->
             val sts = m.groupValues[1].toIntOrNull()
@@ -410,7 +453,7 @@ object InstructionParser {
     private fun detectLengthUnit(text: String): ParsedInstruction.LengthUnit? =
         when {
             text.contains("CM") -> ParsedInstruction.LengthUnit.CM
-            Regex("""\bINCH(?:ES)?\b|\d\s*IN\b""").containsMatchIn(text) -> ParsedInstruction.LengthUnit.INCHES
+            Regex("""\bINCH(?:ES)?\b|(?:\d\s*|^)IN\b""").containsMatchIn(text) -> ParsedInstruction.LengthUnit.INCHES
             else -> null
         }
 

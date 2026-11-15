@@ -448,13 +448,17 @@ class GaugeViewModelTest {
         vm.onAction(GaugeAction.Paste(ParsedInstruction.GaugeSwatch(width = 14.0, stitches = 33)))
         assertEquals(0.3, vm.state.value.rowDensity ?: 0.0, 0.0)
         assertEquals(33.0 / 140.0, vm.state.value.stitchDensity ?: 0.0, 0.0)
-        vm.onAction(GaugeAction.Paste(ParsedInstruction.Gauge(Double.POSITIVE_INFINITY, 28.0)))
-        assertNull(vm.state.value.stitchDensity)
-        assertNotNull(
-            vm.state.value
-                .input(GaugeField.ACTUAL_STITCHES)
-                .error,
-        )
+        val accepted = vm.state.value
+        assertFalse(vm.onAction(GaugeAction.Paste(ParsedInstruction.Gauge(Double.POSITIVE_INFINITY, 28.0))))
+        assertEquals(accepted, vm.state.value)
+
+        assertFalse(vm.onAction(GaugeAction.Paste(ParsedInstruction.GaugeSwatch(width = 8.0))))
+        assertEquals(accepted, vm.state.value)
+
+        vm.onAction(GaugeAction.Task(GaugeTask.CONVERT))
+        val converter = vm.state.value
+        assertFalse(vm.onAction(GaugeAction.Paste(ParsedInstruction.Gauge(24.0, 36.0))))
+        assertEquals(converter, vm.state.value)
     }
 
     @Test

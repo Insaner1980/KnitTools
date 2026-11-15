@@ -352,6 +352,7 @@ class BackupTablesTest {
                 Triple("gaugeRows", "REAL", "1e300"),
                 Triple("readingLineYFraction", "REAL", "1e300"),
                 Triple("verticalReadingGuideXFraction", "REAL", "-1e300"),
+                Triple("yFraction", "REAL", "1e300"),
                 Triple("name", "TEXT", "1"),
                 Triple("name", "TEXT", "null"),
                 Triple("value", "BLOB", "1"),

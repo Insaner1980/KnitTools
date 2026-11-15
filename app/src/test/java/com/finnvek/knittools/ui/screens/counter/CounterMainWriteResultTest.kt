@@ -272,6 +272,33 @@ class CounterMainWriteResultTest : CounterViewModelFixture() {
         }
 
     @Test
+    fun `late initial total read cannot replace the total after a committed stop`() =
+        runTest {
+            val active = activeSession().copy(projectId = 7L)
+            observeSession(MutableStateFlow(active))
+            coEvery { repository.activeSessionDurationSeconds(active) } returns 60L
+            coEvery { repository.stopSession(active.sessionToken, 60L, 0, 0) } returns StopSessionResult.Saved(1L)
+            val initialTotal = CompletableDeferred<Int>()
+            var reads = 0
+            val viewModel = viewModel()
+            coEvery { repository.getTotalMinutesForProject(7L) } coAnswers {
+                if (++reads == 1) initialTotal.await() else 11
+            }
+            runCurrent()
+            assertEquals(1, reads)
+
+            viewModel.stopWorkSession()
+            runCurrent()
+            viewModel.saveStoppedWorkSession()
+            runCurrent()
+            assertEquals(11, viewModel.uiState.value.totalSessionMinutes)
+
+            initialTotal.complete(10)
+            advanceUntilIdle()
+            assertEquals(11, viewModel.uiState.value.totalSessionMinutes)
+        }
+
+    @Test
     fun `late saved stop preserves a newer session summary`() =
         runTest {
             val original = activeSession().copy(projectId = 7L)

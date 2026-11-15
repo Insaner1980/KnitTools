@@ -504,6 +504,8 @@ class BackupRepository
                         }
                     }
                 }
+            } catch (failure: CancellationException) {
+                throw failure
             } catch (_: Exception) {
                 // Loki säilyy seuraavaan käynnistykseen; vahvistettu tietokanta määrää säilytettävät tiedostot.
             }

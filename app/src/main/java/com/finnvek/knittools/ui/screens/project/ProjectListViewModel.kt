@@ -41,6 +41,8 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filterNot
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
@@ -247,23 +249,25 @@ class ProjectListViewModel
                 }
             }
             viewModelScope.launch {
-                combine(activeProjects, completedProjects) { active, completed ->
-                    (active + completed).map { it.id }.toSet()
-                }.collect { visibleIds ->
-                    _selectedProjectIds.update { it.intersect(visibleIds) }
-                    if (isMultiSelectMode.value) {
-                        _pendingCompletionSessionAction.update {
-                            it?.copy(
-                                projectIds = it.projectIds.intersect(visibleIds),
-                            )
-                        }
-                        _pendingDeletionSessionAction.update {
-                            it?.copy(
-                                projectIds = it.projectIds.intersect(visibleIds),
-                            )
+                content
+                    .filterNot { it.isLoading }
+                    .map { (it.active + it.completed).map { project -> project.id }.toSet() }
+                    .distinctUntilChanged()
+                    .collect { visibleIds ->
+                        _selectedProjectIds.update { it.intersect(visibleIds) }
+                        if (isMultiSelectMode.value) {
+                            _pendingCompletionSessionAction.update {
+                                it?.copy(
+                                    projectIds = it.projectIds.intersect(visibleIds),
+                                )
+                            }
+                            _pendingDeletionSessionAction.update {
+                                it?.copy(
+                                    projectIds = it.projectIds.intersect(visibleIds),
+                                )
+                            }
                         }
                     }
-                }
             }
             viewModelScope.launch {
                 activeProjects
@@ -304,17 +308,6 @@ class ProjectListViewModel
         }
 
         fun toggleShowCompleted() {
-            if (showCompleted.value) {
-                val completedIds =
-                    folderState.value.snapshot
-                        ?.memberships
-                        .orEmpty()
-                        .filter {
-                            it.isCompleted
-                        }.map { it.projectId }
-                        .toSet()
-                _selectedProjectIds.update { it - completedIds }
-            }
             viewModelScope.launch {
                 preferencesManager.toggleShowCompletedProjects()
             }
@@ -347,7 +340,9 @@ class ProjectListViewModel
         }
 
         fun selectAllProjects() {
-            _selectedProjectIds.value = (activeProjects.value + completedProjects.value).map { it.id }.toSet()
+            val visible = content.value
+            if (visible.isLoading) return
+            _selectedProjectIds.value = (visible.active + visible.completed).map { it.id }.toSet()
         }
 
         fun completeSelectedProjects() {
@@ -553,7 +548,7 @@ class ProjectListViewModel
                         repository.completeProjectWithSessionChoice(
                             projectId = id,
                             choice = choice.takeIf { expectedSession?.projectId == id },
-                            expectedSession = expectedSession,
+                            expectedSession = expectedSession?.takeIf { it.projectId == id },
                         )
                     val successful =
                         result == ProjectCompletionResult.Completed || result is ProjectCompletionResult.CompletedNow

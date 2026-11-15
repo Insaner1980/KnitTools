@@ -199,7 +199,7 @@ class OnboardingStateRepositoryTest {
             repository.initializeIfNeeded(hasAnyProject = true, today = 42L)
             repository.dismissWelcome()
             repository.setStarterProject(7L)
-            repository.hideProjectSetup()
+            repository.hideProjectSetup(7L)
             repository.markProjectSetupCelebrated()
             repository.recordCounterOpen(42L)
             repository.recordProjectIncrement(7L)
@@ -232,6 +232,17 @@ class OnboardingStateRepositoryTest {
 
             assertEquals(saved, repository(file).state.first())
             assertEquals(7L, saved.starterProjectId)
+        }
+
+    @Test
+    fun `setup hide for a different project leaves the starter visible`() =
+        runBlocking {
+            val repository = repository()
+            repository.setStarterProject(7L)
+            repository.hideProjectSetup(8L)
+            assertFalse(repository.state.first().projectSetupHidden)
+            assertTrue(repository.hideProjectSetup(7L))
+            assertTrue(repository.state.first().projectSetupHidden)
         }
 
     @Test

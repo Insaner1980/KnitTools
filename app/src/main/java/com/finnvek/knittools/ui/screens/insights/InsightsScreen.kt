@@ -177,8 +177,9 @@ internal fun InsightsScreenContent(
                                     hasUserSelection = selectedBucketIndex != null,
                                     selectedFabricDate = selectedFabricDate,
                                     onSelectBucket = {
-                                        selectedBucketDay =
-                                            uiState.chartBuckets[it].bucketStart.toEpochDay()
+                                        uiState.chartBuckets.getOrNull(it)?.let { bucket ->
+                                            selectedBucketDay = bucket.bucketStart.toEpochDay()
+                                        }
                                     },
                                     onSelectFabricDate = { selectedFabricDay = it.toEpochDay() },
                                     onSelectProject = onSelectProject,

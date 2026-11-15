@@ -22,6 +22,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -61,6 +62,8 @@ class NotesEditorViewModel
         private var draftWriteJob: Job? = null
         private val draftFileMutex = Mutex()
         private var persistedNotes: String = ""
+        private var latestStoredNotes: String = ""
+        private var notesObservationVersion = 0L
         private var hasLocalEdits: Boolean = false
 
         init {
@@ -70,7 +73,14 @@ class NotesEditorViewModel
                     _uiState.update { it.copy(isMissingProject = true) }
                     return@launch
                 }
-                combine(repository.observeProject(loadedProjectId), proState) { project, _ ->
+                val projects =
+                    repository.observeProject(loadedProjectId).onEach { project ->
+                        if (project != null) {
+                            latestStoredNotes = project.notes
+                            notesObservationVersion++
+                        }
+                    }
+                combine(projects, proState) { project, _ ->
                     project
                 }.collect { project ->
                     if (project == null) {
@@ -199,6 +209,7 @@ class NotesEditorViewModel
             loadedProjectId: Long,
             requestedNotes: String,
         ): Boolean {
+            val observationVersion = notesObservationVersion
             val result =
                 repository.saveProjectNotes(
                     id = loadedProjectId,
@@ -228,6 +239,7 @@ class NotesEditorViewModel
                 analytics.track(UsageEvent.NOTES_SAVED)
             }
             persistedNotes = savedProject.notes
+            if (observationVersion == notesObservationVersion) latestStoredNotes = savedProject.notes
             if (savedProject.notesCreated) {
                 savedStateHandle.remove<Boolean>(NOTES_CREATION_AUTHORIZED_KEY)
             }
@@ -264,6 +276,7 @@ class NotesEditorViewModel
 
         fun discardChanges() {
             saveJob?.cancel()
+            persistedNotes = latestStoredNotes
             hasLocalEdits = false
             clearSavedDraft()
             _uiState.update { it.copy(notes = persistedNotes, saveFailed = false) }

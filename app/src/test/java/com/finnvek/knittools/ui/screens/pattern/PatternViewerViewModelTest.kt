@@ -52,6 +52,27 @@ class PatternViewerViewModelTest {
     }
 
     @Test
+    fun `bookmark creation rejects a callback from the previously displayed document`() =
+        runTest {
+            val repository = mockk<PatternBookmarkRepository>()
+            every { repository.observeActiveBookmarks(7L) } returns MutableStateFlow(active(DOCUMENT_B, emptyList()))
+            val viewModel =
+                PatternViewerViewModel(
+                    repository,
+                    emptyDocumentRepository(),
+                    SavedStateHandle(mapOf("projectId" to 7L)),
+                )
+            backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.uiState.collect() }
+            advanceUntilIdle()
+
+            viewModel.addBookmark("Body", 0, 0.5f, expectedDocumentKey = DOCUMENT_A)
+            advanceUntilIdle()
+
+            assertEquals(PatternBookmarkError.STALE_DOCUMENT, viewModel.uiState.value.error)
+            coVerify(exactly = 0) { repository.add(any(), any(), any(), any(), any()) }
+        }
+
+    @Test
     fun `active document observation follows document switches and clears stale selection`() =
         runTest {
             val observed = MutableStateFlow(active(DOCUMENT_A, listOf(bookmark(1, DOCUMENT_A))))

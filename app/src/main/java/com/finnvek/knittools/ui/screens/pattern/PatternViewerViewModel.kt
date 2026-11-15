@@ -299,9 +299,12 @@ class PatternViewerViewModel
             name: String,
             pageIndex: Int,
             yFraction: Float,
+            expectedDocumentKey: String? = uiState.value.documentKey,
         ) {
             if (operationState.value.isMutating) return
-            val documentKey = uiState.value.documentKey ?: return setError(PatternBookmarkError.STALE_DOCUMENT)
+            val documentKey =
+                expectedDocumentKey?.takeIf { it == uiState.value.documentKey }
+                    ?: return setError(PatternBookmarkError.STALE_DOCUMENT)
             runMutation(
                 mutation = { bookmarkRepository.add(projectId, documentKey, name, pageIndex, yFraction) },
                 onSuccess = { bookmark ->

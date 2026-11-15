@@ -12,21 +12,24 @@ internal fun restorableRavelryPageOrNull(url: String?): String? =
 
 internal fun eligibleRavelryPageOrNull(url: String?): String? =
     url
-        ?.let(::ravelryPageUrlOrNull)
-        ?.takeUnless(::isRavelryPurchasePage)
-        ?.takeIf { URI(it).rawUserInfo == null }
+        ?.let(::parseRavelryHttpsUri)
+        ?.takeIf { it.rawUserInfo == null && !isRavelryPurchaseUrl(it.host, it.path) }
+        ?.toString()
 
 private const val MAX_RESTORABLE_URL_LENGTH = 2048
 
-/** Hyväksyy vain Ravelryn HTTPS-sivun; sovelluksen Ravelry-selain avaa muut osoitteet kaavahakuun. */
-internal fun ravelryPageUrlOrNull(url: String): String? {
+/** The initial page uses the two exact Ravelry hosts. */
+internal fun ravelryPageUrlOrNull(url: String): String? =
+    parseRavelryHttpsUri(url)
+        ?.takeIf {
+            it.host.equals(RAVELRY_DOMAIN, ignoreCase = true) ||
+                it.host.equals("www.$RAVELRY_DOMAIN", ignoreCase = true)
+        }?.toString()
+
+private fun parseRavelryHttpsUri(url: String): URI? {
     val parsedUri = runCatching { URI(url.trim()) }.getOrNull() ?: return null
     if (!parsedUri.scheme.equals(RAVELRY_SCHEME, ignoreCase = true)) return null
-
-    val host = parsedUri.host?.lowercase(Locale.US) ?: return null
-    if (!isRavelryHost(host)) return null
-
-    return parsedUri.toString()
+    return parsedUri.takeIf { isRavelryHost(it.host) }
 }
 
 private val PAYMENT_HOSTS = listOf("paypal.com", "stripe.com", "braintreegateway.com", "braintree-api.com")
@@ -39,7 +42,7 @@ internal fun isRavelryPurchaseUrl(
     host: String?,
     path: String?,
 ): Boolean {
-    val normalizedHost = host?.lowercase(Locale.US) ?: return false
+    val normalizedHost = host?.removeSuffix(".")?.lowercase(Locale.US) ?: return false
     if (PAYMENT_HOSTS.any { normalizedHost == it || normalizedHost.endsWith(".$it") }) return true
     return isRavelryHost(normalizedHost) &&
         (
@@ -69,9 +72,8 @@ internal enum class RavelryNavigation {
 }
 
 /**
- * Sovelluksen Ravelry-selain näyttää vain Ravelryn sivuja. Muiden sivustojen linkit ja kassa avataan
- * käyttäjän selaimessa. Palvelimen uudelleenohjaukset (esim. Ravelryn latauspalvelin) ja upotetut
- * kehykset jatkuvat täällä, jottei Download PDF katkea.
+ * Checkout and ordinary main-frame links to other sites open in the user's browser.
+ * Other HTTPS redirects and subframes can stay in the WebView for downloads.
  */
 internal fun ravelryNavigation(
     scheme: String?,

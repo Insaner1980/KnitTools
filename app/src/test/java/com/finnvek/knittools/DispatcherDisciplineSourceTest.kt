@@ -19,8 +19,12 @@ class DispatcherDisciplineSourceTest {
         assertFalse(picker.contains("contentResolver"))
         assertTrue(imageImportViewModel.contains("return withContext(ioDispatcher)"))
         assertTrue(imageImportViewModel.contains("storage.createCaptureImageFile(context, projectId, sessionId)"))
-        assertTrue(repository.contains("private suspend fun String.isAppOwnedMissingFile(): Boolean"))
-        assertTrue(repository.contains("return withContext(ioDispatcher)"))
+        val availabilityCheck =
+            repository
+                .substringAfter("suspend fun isLocalPdfAvailable(")
+                .substringBefore("suspend fun save(")
+        assertTrue(availabilityCheck.contains("return withContext(ioDispatcher)"))
+        assertTrue(availabilityCheck.contains("PdfPageRenderer(context, uri)"))
     }
 
     @Test

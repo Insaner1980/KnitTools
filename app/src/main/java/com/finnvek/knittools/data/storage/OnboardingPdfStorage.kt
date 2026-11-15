@@ -10,6 +10,7 @@ import com.finnvek.knittools.domain.model.takeWithoutSplittingSurrogatePair
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
@@ -20,37 +21,46 @@ class OnboardingPdfStorage
         private val documents: PatternDocumentStorage,
         @param:IoDispatcher private val ioDispatcher: CoroutineDispatcher,
     ) {
-        suspend fun copy(source: String): Pair<String, String>? =
-            withContext(ioDispatcher) {
-                val uri = source.toUri()
-                if (uri.scheme != "content") return@withContext null
-                val resolver = context.contentResolver
-                var acquiredGrant = false
-                try {
-                    val hadGrant = resolver.persistedUriPermissions.any { it.uri == uri && it.isReadPermission }
-                    try {
-                        resolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                        acquiredGrant = !hadGrant
-                    } catch (_: SecurityException) {
-                        // A temporary read grant is sufficient for the immediate app-owned copy.
-                    }
-                    val name = readDisplayName(uri)
-                    val copied = documents.copyPdfToInternal(context, 0L, uri, name) ?: return@withContext null
-                    copied to name.trim().takeWithoutSplittingSurrogatePair(PROJECT_DOCUMENT_LABEL_MAX_LENGTH)
-                } catch (cancelled: CancellationException) {
-                    throw cancelled
-                } catch (_: Exception) {
-                    null
-                } finally {
-                    if (acquiredGrant) {
+        suspend fun copy(source: String): Pair<String, String>? {
+            var undeliveredUri: String? = null
+            try {
+                val result =
+                    withContext(ioDispatcher) {
+                        val uri = source.toUri()
+                        if (uri.scheme != "content") return@withContext null
+                        val resolver = context.contentResolver
+                        val acquiredGrant =
+                            runCatching {
+                                val hadGrant =
+                                    resolver.persistedUriPermissions.any { it.uri == uri && it.isReadPermission }
+                                resolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                !hadGrant
+                            }.getOrDefault(false)
                         try {
-                            resolver.releasePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                        } catch (_: SecurityException) {
-                            // The app-owned copy no longer depends on the provider grant.
+                            val name = readDisplayName(uri)
+                            val copied = documents.copyPdfToInternal(context, 0L, uri, name) ?: return@withContext null
+                            undeliveredUri = copied
+                            copied to name.trim().takeWithoutSplittingSurrogatePair(PROJECT_DOCUMENT_LABEL_MAX_LENGTH)
+                        } finally {
+                            if (acquiredGrant) {
+                                runCatching {
+                                    resolver.releasePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                }
+                            }
                         }
                     }
+                undeliveredUri = null
+                return result
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                return null
+            } finally {
+                undeliveredUri?.let { uri ->
+                    withContext(NonCancellable + ioDispatcher) { documents.deleteGeneratedPdf(context, uri) }
                 }
             }
+        }
 
         private fun readDisplayName(uri: Uri): String = context.contentResolver.displayNameOrNull(uri) ?: "pattern.pdf"
     }

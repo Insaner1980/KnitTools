@@ -144,6 +144,25 @@ class CounterRemainingWriteResultTest : CounterViewModelFixture() {
         }
 
     @Test
+    fun `target writes reject a stale project and invalid values`() =
+        runTest {
+            val project = observedProject.value.copy(targetRows = 12)
+            observedProject.value = project
+            every { repository.getActiveProjects() } returns flowOf(listOf(project))
+            coEvery { repository.getProject(7L) } returns project
+            val viewModel = viewModel()
+            advanceUntilIdle()
+
+            viewModel.setTargetRows(20, expectedProjectId = 8L)
+            viewModel.setTargetRows(0, expectedProjectId = 7L)
+            viewModel.setTargetRows(100_000, expectedProjectId = 7L)
+            advanceUntilIdle()
+
+            assertEquals(12, viewModel.uiState.value.targetRows)
+            coVerify(exactly = 0) { repository.setTargetRows(any(), any()) }
+        }
+
+    @Test
     fun `failed target save restores stored target and reports failure`() =
         runTest {
             val project = observedProject.value.copy(targetRows = 12)

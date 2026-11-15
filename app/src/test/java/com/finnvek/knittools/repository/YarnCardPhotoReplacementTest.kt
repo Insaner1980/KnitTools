@@ -8,12 +8,14 @@ import com.finnvek.knittools.data.local.YarnCardDao
 import com.finnvek.knittools.data.local.YarnCardEntity
 import com.finnvek.knittools.data.storage.YarnPhotoStorage
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
@@ -31,6 +33,52 @@ import java.nio.file.Files
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class YarnCardPhotoReplacementTest {
+    @Test
+    fun `cancellation during copy handoff removes the unpublished replacement`() =
+        runTest {
+            val filesDir = Files.createTempDirectory("knittools-photo-copy-handoff").toFile()
+            try {
+                val copy = File(filesDir, "yarn_photos/5/new.jpg")
+                val old = File(filesDir, "yarn_photos/5/old.jpg")
+                old.parentFile!!.mkdirs()
+                old.writeText("old")
+                val copiedUri = "file:///new.jpg"
+                val sourceUri = mockk<Uri>()
+                val context = mockk<Context>()
+                every { context.filesDir } returns filesDir
+                val dao = mockk<YarnCardDao>()
+                coEvery { dao.getCard(5L) } returns YarnCardEntity(id = 5L, photoUri = "file:///old.jpg")
+                val storage = mockk<YarnPhotoStorage>()
+                lateinit var request: Job
+                every { storage.copyPhoto(context, 5L, sourceUri) } answers {
+                    copy.writeText("new")
+                    request.cancel()
+                    copiedUri
+                }
+                val repository =
+                    YarnCardRepository(
+                        dao,
+                        mockk(),
+                        context,
+                        ImmediateDatabaseTransactionRunner,
+                        StandardTestDispatcher(testScheduler),
+                        storage,
+                    )
+
+                withParsedFileUri(copiedUri, copy.absolutePath) {
+                    request = launch { repository.updatePhotoUri(5L, sourceUri) }
+                    request.join()
+                }
+
+                assertTrue(request.isCancelled)
+                assertEquals("old", old.readText())
+                assertFalse(copy.exists())
+                coVerify(exactly = 0) { dao.updatePhotoUri(any(), any()) }
+            } finally {
+                filesDir.deleteRecursively()
+            }
+        }
+
     @Test
     fun `cancelled photo result preserves a copy already published by the database`() =
         verifyCancelledPhotoResult(published = true)

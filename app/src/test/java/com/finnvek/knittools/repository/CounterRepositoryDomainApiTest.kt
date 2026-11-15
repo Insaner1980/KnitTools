@@ -254,7 +254,7 @@ class CounterRepositoryDomainApiTest {
                     canCreateAdditionalProjects = true,
                 )
 
-            assertEquals(ProjectCreationResult.Created(9L), result)
+            assertEquals(ProjectCreationResult.Created(9L, wasFirstProject = true), result)
             assertEquals("Sukat", insertedProject.captured.name)
             assertEquals(insertedProject.captured.createdAt, insertedProject.captured.updatedAt)
         }
@@ -314,7 +314,7 @@ class CounterRepositoryDomainApiTest {
             coEvery { projectFolderDao.insertOrReplaceAssignment(capture(assignment)) } returns Unit
 
             assertEquals(
-                ProjectCreationResult.Created(12L),
+                ProjectCreationResult.Created(12L, wasFirstProject = true),
                 createRepository(transactionRunner = runner).createProject(
                     name = "In folder",
                     canCreateAdditionalProjects = true,
@@ -394,11 +394,12 @@ class CounterRepositoryDomainApiTest {
                     canCreateAdditionalProjects = false,
                 )
 
-            assertEquals(ProjectCreationResult.Created(11L), result)
+            assertEquals(ProjectCreationResult.Created(11L, wasFirstProject = true), result)
             assertEquals(1, runner.runCount)
             coVerifyOrder {
                 projectDao.getActiveProjectCount()
                 projectDao.getAllProjectsOnce()
+                projectDao.hasAnyProject()
                 projectDao.insert(any())
             }
         }
@@ -441,6 +442,7 @@ class CounterRepositoryDomainApiTest {
             every { proManager.hasFeature(any()) } returns false
             coEvery { projectDao.getActiveProjectCount() } returns 0
             coEvery { projectDao.getProjectCount() } returns 5
+            coEvery { projectDao.hasAnyProject() } returns true
             coEvery { projectDao.insert(any()) } returns 11L
 
             assertEquals(

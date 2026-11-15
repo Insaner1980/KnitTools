@@ -83,6 +83,10 @@ async function requestOAuth2Token({
   readonly fetchImpl: typeof fetch;
   readonly nowMillis: () => number;
 }): Promise<OAuthTokenExchangeResult> {
+  if (!clientId.trim() || !clientSecret.trim()) {
+    throw new OAuthTokenExchangeError(503);
+  }
+
   let response: Response;
   try {
     response = await fetchImpl(RAVELRY_TOKEN_URL, {
@@ -121,10 +125,16 @@ async function requestOAuth2Token({
     throw new OAuthTokenExchangeError(503);
   }
 
-  const expiresInSeconds =
-    typeof body.expires_in === "number" && Number.isFinite(body.expires_in)
-      ? body.expires_in
-      : undefined;
+  let expiresAtMillis: number | undefined;
+  if (body.expires_in !== undefined) {
+    if (typeof body.expires_in !== "number" || !Number.isFinite(body.expires_in)) {
+      throw new OAuthTokenExchangeError(503);
+    }
+    expiresAtMillis = nowMillis() + Math.max(0, body.expires_in) * 1_000;
+    if (!Number.isFinite(expiresAtMillis)) {
+      throw new OAuthTokenExchangeError(503);
+    }
+  }
 
   return {
     accessToken: body.access_token,
@@ -132,8 +142,7 @@ async function requestOAuth2Token({
       typeof body.refresh_token === "string" && body.refresh_token.length > 0
         ? body.refresh_token
         : undefined,
-    expiresAtMillis:
-      expiresInSeconds == null ? undefined : nowMillis() + Math.max(0, expiresInSeconds) * 1_000,
+    expiresAtMillis,
   };
 }
 

@@ -70,6 +70,10 @@ internal class BackupBudget(
         BackupFormat.requireValid(bytes in 0..limits.maxArchiveBytes, error)
     }
 
+    fun addManifest(bytes: Long) {
+        extractedBytes = BackupFormat.addWithinLimit(extractedBytes, bytes, limits.maxExtractedBytes)
+    }
+
     fun addArchiveEntry(
         path: String,
         bytes: Long,

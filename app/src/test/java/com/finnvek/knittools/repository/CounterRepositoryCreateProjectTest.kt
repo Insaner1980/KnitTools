@@ -119,7 +119,11 @@ class CounterRepositoryCreateProjectTest {
             listOf(
                 draft,
                 draft.copy(name = "My socks", initialCount = "bad"),
+                draft.copy(name = "My socks", initialCount = " "),
+                draft.copy(name = "My socks", initialCount = "+2"),
                 draft.copy(name = "My socks", targetRows = "-1"),
+                draft.copy(name = "My socks", targetRows = " "),
+                draft.copy(name = "My socks", targetRows = "+2"),
             ).forEach {
                 assertEquals(ProjectCreationResult.InvalidProject, repository.createOnboardingProject(it, false))
             }
@@ -144,6 +148,7 @@ class CounterRepositoryCreateProjectTest {
     fun `creation persists starting state without counter history or related mutations`() =
         runTest {
             val row = slot<CounterProjectEntity>()
+            coEvery { dao.hasAnyProject() } returns false
             coEvery { dao.insert(capture(row)) } returns 7L
             coEvery { dao.getProject(7L) } answers { row.captured.copy(id = 7L) }
             coEvery { dao.getLatestHistory(7L) } returns null
@@ -156,7 +161,7 @@ class CounterRepositoryCreateProjectTest {
                     startValues = ProjectStartValues(37, 120),
                 )
 
-            assertEquals(ProjectCreationResult.Created(7L), result)
+            assertEquals(ProjectCreationResult.Created(7L, wasFirstProject = true), result)
             assertEquals(37, row.captured.count)
             assertEquals(120, row.captured.targetRows)
             coVerify(
@@ -167,6 +172,28 @@ class CounterRepositoryCreateProjectTest {
             assertFalse(repository.applyMainCounterChange(7L, MainCounterChange.Undo))
             assertEquals(37, row.captured.count)
             coVerify(exactly = 0) { dao.updateCount(any(), any(), any()) }
+        }
+
+    @Test
+    fun `first project status comes from the unfiltered snapshot inside insertion transaction`() =
+        runTest {
+            val transaction = TrackingTransactionRunner()
+            var hasAnyProject = false
+            coEvery { dao.hasAnyProject() } answers {
+                assertTrue(transaction.inTransaction)
+                hasAnyProject
+            }
+            coEvery { dao.insert(any()) } answers {
+                hasAnyProject = true
+                7L
+            }
+            val repository = repository(transaction)
+
+            val first = repository.createProject("First", canCreateAdditionalProjects = false)
+            val afterCompleted = repository.createProject("After completed", canCreateAdditionalProjects = false)
+
+            assertEquals(ProjectCreationResult.Created(7L, wasFirstProject = true), first)
+            assertEquals(ProjectCreationResult.Created(7L, wasFirstProject = false), afterCompleted)
         }
 
     @Test

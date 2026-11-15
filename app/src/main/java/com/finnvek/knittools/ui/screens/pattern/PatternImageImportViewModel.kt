@@ -442,8 +442,18 @@ internal class PatternImageImportViewModel
                     showRecoverableError(PatternImageImportError.LOW_STORAGE, operationId)
                     return
                 }
-                val output = convertImages(startState, projectId, operationId)
-                uncommittedOutputUri = output.first
+                val output =
+                    withContext(ioDispatcher) {
+                        storage
+                            .convertImagesToPdf(
+                                context = context,
+                                projectId = projectId,
+                                pages = startState.selection.pages,
+                                fileName = "pattern-images-${System.currentTimeMillis()}.pdf",
+                            ) { current, total ->
+                                updateOperation(operationId) { it.withProgress(current, total) }
+                            }.also { uncommittedOutputUri = it.first }
+                    }
                 updateOperation(operationId) { it.copy(phase = PatternImageImportPhase.ATTACHING, progress = null) }
                 val attached = attachGeneratedPattern(projectId, output)
                 if (attached != true) {
@@ -485,22 +495,6 @@ internal class PatternImageImportViewModel
         private suspend fun hasCreationSpace(state: PatternImageImportUiState): Boolean =
             withContext(ioDispatcher) {
                 storage.hasCreationSpace(context, state.selection.totalBytes)
-            }
-
-        private suspend fun convertImages(
-            state: PatternImageImportUiState,
-            projectId: Long,
-            operationId: String,
-        ): Pair<String, String> =
-            withContext(ioDispatcher) {
-                storage.convertImagesToPdf(
-                    context = context,
-                    projectId = projectId,
-                    pages = state.selection.pages,
-                    fileName = "pattern-images-${System.currentTimeMillis()}.pdf",
-                ) { current, total ->
-                    updateOperation(operationId) { it.withProgress(current, total) }
-                }
             }
 
         private suspend fun attachGeneratedPattern(

@@ -5,6 +5,8 @@ import androidx.datastore.core.okio.OkioStorage
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.PreferencesSerializer
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.longPreferencesKey
 import com.finnvek.knittools.data.time.SessionTimeSource
 import com.finnvek.knittools.domain.model.SessionTimeSnapshot
 import kotlinx.coroutines.CancellationException
@@ -76,6 +78,44 @@ class TrialThreeDayNoticeTest {
             assertEquals(TrialStartResult.AlreadyExpired, refresh.await())
             assertFalse(manager.trialState.value.isActive)
             assertEquals(0, manager.trialState.value.daysRemaining)
+        }
+
+    @Test
+    fun `trial start publishes its committed state without a second datastore edit`() =
+        runBlocking {
+            val delegate = store()
+            var edits = 0
+            val store =
+                object : DataStore<Preferences> by delegate {
+                    override suspend fun updateData(transform: suspend (Preferences) -> Preferences): Preferences {
+                        if (++edits > 1) throw IOException("Subsequent trial write unavailable")
+                        return delegate.updateData(transform)
+                    }
+                }
+            val time = TrialClock()
+            val manager = TrialManager(store, Dispatchers.IO, time)
+
+            assertEquals(TrialStartResult.Started, manager.startTrial())
+            assertEquals(1, edits)
+            assertTrue(manager.trialState.value.isActive)
+            assertEquals(time.snapshot().wallClockMillis, manager.trialState.value.startTimestamp)
+            assertEquals(14, manager.trialState.value.daysRemaining)
+        }
+
+    @Test
+    fun `starting after a pretrial clock correction establishes a fresh rollback baseline`() =
+        runBlocking {
+            val store = store()
+            val time = TrialClock()
+            store.edit { it[longPreferencesKey("last_known_timestamp")] = START + TimeUnit.HOURS.toMillis(2L) }
+            val manager = TrialManager(store, Dispatchers.IO, time)
+
+            assertEquals(TrialStartResult.Started, manager.startTrial())
+            assertFalse(manager.claimTrialThreeDayNotice())
+            assertTrue(manager.trialState.value.isActive)
+            time.advanceDays(11L)
+            assertTrue(manager.claimTrialThreeDayNotice())
+            assertTrue(manager.trialState.value.isActive)
         }
 
     @Test

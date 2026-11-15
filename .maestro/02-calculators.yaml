@@ -1,0 +1,58 @@
+appId: com.finnvek.knittools
+name: Calculator numeric results
+---
+- launchApp:
+    clearState: true
+- tapOn: "TOOLS"
+- tapOn: "Increase / Decrease"
+- tapOn:
+    text: "Current stitches"
+    index: 1
+- inputText: "60"
+- tapOn:
+    text: "Increase by"
+    index: 1
+- inputText: "10"
+- hideKeyboard
+- scrollUntilVisible:
+    element:
+      text: "Total: 70 st"
+    direction: DOWN
+- assertVisible: "Total: 70 st"
+- tapOn: "Back"
+- tapOn: "Cast On Calculator"
+- tapOn:
+    text: "Desired body width"
+    index: 1
+- inputText: "50"
+- tapOn:
+    text: "Stitch gauge"
+    index: 1
+- inputText: "20"
+- hideKeyboard
+- scrollUntilVisible:
+    element:
+      text: "100 stitches"
+    direction: DOWN
+- assertVisible: "Actual width: 50.0 cm"
+- tapOn: "Back"
+- tapOn: "Yarn Estimator"
+- tapOn:
+    text: "Total yarn needed"
+    index: 1
+- inputText: "1200"
+- tapOn:
+    text: "Length per skein"
+    index: 1
+- inputText: "200"
+- tapOn:
+    text: "Weight per skein"
+    index: 1
+- inputText: "50"
+- hideKeyboard
+- scrollUntilVisible:
+    element:
+      text: "Weight of whole skeins: 300 g"
+    direction: DOWN
+- assertVisible: "Weight of whole skeins: 300 g"
+- tapOn: "Back"

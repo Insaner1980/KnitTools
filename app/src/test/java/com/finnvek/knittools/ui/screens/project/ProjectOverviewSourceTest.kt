@@ -54,7 +54,10 @@ class ProjectOverviewSourceTest {
                     "app/src/main/java/com/finnvek/knittools/ui/navigation/ProjectWorkspaceNavigation.kt",
                 ).substringBefore("internal fun NavHostController.openCounterWithWorkSessionTip")
         assertTrue(nav.contains("onOpenCounter = { navController.openCounterFromOverview() }"))
-        assertTrue(counterNavigation.contains("previousBackStackEntry?.destination?.route == Screen.Counter.route"))
+        assertTrue(counterNavigation.contains("previous?.destination?.route == Screen.Counter.route"))
+        assertTrue(
+            counterNavigation.contains("previous.savedStateHandle.get<Long>(COUNTER_ENTRY_PROJECT_ID) == projectId"),
+        )
         assertTrue(counterNavigation.contains("popBackStack()"))
         assertTrue(counterNavigation.contains("navigate(Screen.Counter.route) { launchSingleTop = true }"))
         assertTrue(nav.contains("previous?.destination?.route == Screen.ProjectOverview.ROUTE"))

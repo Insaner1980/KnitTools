@@ -40,7 +40,7 @@ class RavelryShareTargetSourceTest {
         assertFalse(screen.contains("Uri.decode"))
         assertFalse(screen.contains("RavelryImport"))
 
-        assertTrue(navGraph.contains("LaunchedEffect(requests.patternShareImport?.requestId, currentRoute)"))
+        assertTrue(navGraph.contains("LaunchedEffect(currentPatternShareImport?.requestId, currentRoute)"))
         assertTrue(navGraph.contains("is PatternSharePayload.Ravelry"))
         assertTrue(
             navGraph.contains(

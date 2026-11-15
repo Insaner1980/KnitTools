@@ -455,8 +455,16 @@ private fun ShortCounterHero(
     ) {
         Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
             CounterRowLabel(state, actions.onShowTargetDialog)
+            if (state.counter.stepSize > 1) {
+                CounterStepFeedback(stepDelta, Modifier.align(Alignment.End), maxLines = 1)
+            }
             // Luku saa rivistä sen korkeuden, joka nimikkeeltä jää; 200 %:n fontilla se muuten leikkautui.
-            CounterMainNumber(state, stepDelta, feedbackAtTop = true, modifier = Modifier.weight(1f, fill = false))
+            CounterMainNumber(
+                state = state,
+                stepDelta = null,
+                modifier = Modifier.weight(1f, fill = false),
+                inlineStepFeedback = false,
+            )
         }
         CounterButtons(
             state = state,
@@ -609,7 +617,7 @@ private fun CounterMainNumber(
     state: CounterHeroState,
     stepDelta: Int?,
     modifier: Modifier = Modifier,
-    feedbackAtTop: Boolean = false,
+    inlineStepFeedback: Boolean = true,
 ) {
     val locale = rememberCurrentLocale()
     val display = CounterValueFormatter.forMainCounter(state.toMainCounterProject())
@@ -618,7 +626,7 @@ private fun CounterMainNumber(
             ?: mainCounterCountText(display.heroTitle)
     val countText = formatIntegerForDisplay(state.counter.count.toLong(), locale)
     val feedbackSpace =
-        if (state.counter.stepSize > 1 && !feedbackAtTop) {
+        if (state.counter.stepSize > 1 && inlineStepFeedback) {
             CounterDimens.StepFeedbackWidth
         } else {
             CounterDimens.StepRingButtonGap * 0
@@ -644,21 +652,31 @@ private fun CounterMainNumber(
             contentDescription = counterDescription,
             modifier = Modifier.testTag("main-counter-value").tipAnchor(TipId.TARGET_REACHED),
         )
-        if (stepDelta != null && state.counter.stepSize > 1) {
-            Text(
-                text = stringResource(R.string.counter_step_delta, stepDelta),
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.knitToolsColors.primaryReadable,
-                modifier =
-                    Modifier
-                        .align(if (feedbackAtTop) Alignment.TopEnd else Alignment.CenterEnd)
-                        .width(CounterDimens.StepFeedbackWidth)
-                        .testTag("main-counter-step-feedback")
-                        .clearAndSetSemantics {},
-                textAlign = TextAlign.Center,
-            )
+        if (stepDelta != null && state.counter.stepSize > 1 && inlineStepFeedback) {
+            CounterStepFeedback(stepDelta, Modifier.align(Alignment.CenterEnd))
         }
     }
+}
+
+@Composable
+private fun CounterStepFeedback(
+    stepDelta: Int?,
+    modifier: Modifier = Modifier,
+    maxLines: Int = Int.MAX_VALUE,
+) {
+    Text(
+        text = stepDelta?.let { stringResource(R.string.counter_step_delta, it) }.orEmpty(),
+        style = MaterialTheme.typography.titleMedium,
+        color = MaterialTheme.knitToolsColors.primaryReadable,
+        modifier =
+            modifier
+                .width(CounterDimens.StepFeedbackWidth)
+                .then(if (stepDelta != null) Modifier.testTag("main-counter-step-feedback") else Modifier)
+                .clearAndSetSemantics {},
+        textAlign = TextAlign.Center,
+        minLines = 1,
+        maxLines = maxLines,
+    )
 }
 
 internal fun TextMeasurer.fitCounterNumber(
@@ -888,7 +906,7 @@ private fun CounterButtons(
             visualSize = if (undoBetween) betweenUndoSize else metrics.undoSize,
             onClick = onUndo,
             enabled = state.canUndo,
-            modifier = undoModifier.tipAnchor(TipId.UNDO).tipProtected(),
+            modifier = (if (state.canUndo) undoModifier.tipAnchor(TipId.UNDO) else undoModifier).tipProtected(),
         )
     }
 }

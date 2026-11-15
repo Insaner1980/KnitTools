@@ -2,6 +2,7 @@ package com.finnvek.knittools.ui.screens.counter
 
 import com.finnvek.knittools.domain.model.ActiveSessionRecoveryReason
 import com.finnvek.knittools.domain.model.ActiveWorkSession
+import com.finnvek.knittools.repository.StartSessionResult
 import io.mockk.clearMocks
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -154,6 +155,25 @@ class CounterSessionPresentationTest : CounterViewModelFixture() {
 
             assertTrue(vm.uiState.value.showSessionRecoveryPrompt)
             assertNull(vm.uiState.value.sessionStopSummary)
+        }
+
+    @Test
+    fun `delayed start conflict stays with the project where start was tapped`() =
+        runTest {
+            val vm = viewModel()
+            runCurrent()
+            val pending = CompletableDeferred<StartSessionResult>()
+            coEvery { repository.startSession(7L) } coAnswers { pending.await() }
+            vm.startWorkSession()
+            runCurrent()
+
+            vm.selectProject(observeOtherProject(count = 0))
+            runCurrent()
+            pending.complete(StartSessionResult.ProjectConflict(activeSession().copy(projectId = 9L), 7L))
+            runCurrent()
+
+            assertEquals(8L, vm.uiState.value.projectId)
+            assertNull(vm.uiState.value.sessionStartConflict)
         }
 
     @Test

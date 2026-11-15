@@ -12,6 +12,7 @@ import com.finnvek.knittools.data.local.distinctSqliteQueryChunks
 import com.finnvek.knittools.data.local.toDomain
 import com.finnvek.knittools.data.local.toEntity
 import com.finnvek.knittools.data.storage.AppFileStorage
+import com.finnvek.knittools.data.storage.PdfPageRenderer
 import com.finnvek.knittools.di.IoDispatcher
 import com.finnvek.knittools.domain.model.PatternAvailability
 import com.finnvek.knittools.domain.model.SavedPattern
@@ -62,25 +63,29 @@ class SavedPatternRepository
 
         suspend fun getById(id: Long): SavedPattern? = dao.getById(id)?.toDomain()
 
+        fun observeById(id: Long): Flow<SavedPattern?> =
+            dao
+                .observeById(id)
+                .map { it?.toDomain() }
+                .retryOnRepositoryReadFailure()
+
         suspend fun getByIds(ids: List<Long>): List<SavedPattern> =
             ids
                 .distinctSqliteQueryChunks()
                 .flatMap { chunk -> dao.getByIds(chunk) }
                 .map { it.toDomain() }
 
-        suspend fun getByIdIfAvailable(id: Long): SavedPattern? {
-            val pattern = dao.getById(id) ?: return null
-            if (pattern.patternUrl.isAppOwnedMissingFile()) {
-                deleteById(id)
-                return null
+        suspend fun isLocalPdfAvailable(pattern: SavedPattern): Boolean {
+            val uri = pattern.localPdfUri?.takeIf(String::isNotBlank)?.toUri() ?: return false
+            return withContext(ioDispatcher) {
+                try {
+                    PdfPageRenderer(context, uri).use { it.pageCount > 0 }
+                } catch (cancellation: CancellationException) {
+                    throw cancellation
+                } catch (_: Exception) {
+                    false
+                }
             }
-            return pattern.toDomain()
-        }
-
-        suspend fun pruneMissingLocalPattern(patternUrl: String): Boolean {
-            if (!patternUrl.isAppOwnedMissingFile()) return false
-            dao.getByLocalPdfUri(patternUrl)?.let { pattern -> deleteById(pattern.id) }
-            return true
         }
 
         suspend fun save(pattern: SavedPattern): Long = dao.insert(pattern.toEntity())
@@ -172,6 +177,11 @@ class SavedPatternRepository
         ): Long? {
             if (!patternUrl.startsWith("content://") && !patternUrl.startsWith("file://")) return null
             return fileReferenceCoordinator.withReferenceLock {
+                val exists =
+                    withContext(ioDispatcher) {
+                        AppFileStorage.resolveAppOwnedFile(context, patternUrl.toUri())?.isFile == true
+                    }
+                if (!exists) return@withReferenceLock null
                 saveMutex.withLock {
                     transactionRunner.run { saveImportedPatternIfMissingInCurrentTransaction(patternUrl, name) }
                 }
@@ -342,19 +352,19 @@ class SavedPatternRepository
                 } else {
                     dao.getByCanonicalUrlExcludingId(url.canonicalUrl, excludingPatternId)
                 }
-            if (exactMatch != null) return exactMatch
+            if (exactMatch?.matchesCanonicalWebPatternUrl(url.canonicalUrl) == true) return exactMatch
 
             return dao.getAllOnce().firstOrNull { candidate ->
                 candidate.id != excludingPatternId && candidate.matchesCanonicalWebPatternUrl(url.canonicalUrl)
             }
         }
 
-        private fun SavedPatternEntity.matchesCanonicalWebPatternUrl(canonicalUrl: String): Boolean =
-            sequenceOf(originalUrl, this.canonicalUrl)
-                .filter(String::isNotBlank)
-                .mapNotNull { storedUrl ->
-                    (validateWebPatternUrl(storedUrl) as? WebPatternUrlValidation.Valid)?.value?.canonicalUrl
-                }.any { candidateCanonicalUrl -> candidateCanonicalUrl == canonicalUrl }
+        private fun SavedPatternEntity.matchesCanonicalWebPatternUrl(canonicalUrl: String): Boolean {
+            val storedUrl =
+                (validateWebPatternUrl(originalUrl) as? WebPatternUrlValidation.Valid)
+                    ?: (validateWebPatternUrl(this.canonicalUrl) as? WebPatternUrlValidation.Valid)
+            return storedUrl?.value?.canonicalUrl == canonicalUrl
+        }
 
         private suspend fun persistWebPatternMutation(
             mutation: suspend () -> WebPatternMutationResult,
@@ -384,14 +394,6 @@ class SavedPatternRepository
                     WebPatternMutationResult.InvalidDesigner
                 else -> WebPatternMutationResult.InvalidUrl
             }
-
-        private suspend fun String.isAppOwnedMissingFile(): Boolean {
-            if (isBlank()) return false
-            return withContext(ioDispatcher) {
-                val file = AppFileStorage.resolveAppOwnedFile(context, toUri()) ?: return@withContext false
-                !file.exists()
-            }
-        }
 
         private fun filesHaveSameContent(
             first: File,

@@ -253,7 +253,13 @@ abstract class KnitToolsDatabase : RoomDatabase() {
                 override fun migrate(db: SupportSQLiteDatabase) {
                     db.execSQL("ALTER TABLE sessions ADD COLUMN durationSeconds INTEGER NOT NULL DEFAULT 0")
                     db.execSQL("ALTER TABLE sessions ADD COLUMN rowsWorked INTEGER NOT NULL DEFAULT 0")
-                    db.execSQL("UPDATE sessions SET durationSeconds = durationMinutes * 60")
+                    db.execSQL(
+                        """
+                        UPDATE sessions
+                        SET durationSeconds = durationMinutes * 60
+                        WHERE typeof(durationMinutes) = 'integer' AND durationMinutes BETWEEN 0 AND ${Int.MAX_VALUE}
+                        """.trimIndent(),
+                    )
                     db.execSQL(
                         """
                         UPDATE sessions
@@ -262,6 +268,8 @@ abstract class KnitToolsDatabase : RoomDatabase() {
                             WHEN endRow - startRow > ${Int.MAX_VALUE} THEN ${Int.MAX_VALUE}
                             ELSE endRow - startRow
                         END
+                        WHERE typeof(startRow) = 'integer' AND startRow BETWEEN ${Int.MIN_VALUE} AND ${Int.MAX_VALUE}
+                          AND typeof(endRow) = 'integer' AND endRow BETWEEN ${Int.MIN_VALUE} AND ${Int.MAX_VALUE}
                         """.trimIndent(),
                     )
                 }
@@ -399,8 +407,7 @@ abstract class KnitToolsDatabase : RoomDatabase() {
                         FROM `saved_patterns`
                         """.trimIndent(),
                     )
-                    db.execSQL("DROP TABLE `saved_patterns`")
-                    db.execSQL("ALTER TABLE `saved_patterns_new` RENAME TO `saved_patterns`")
+                    replaceSavedPatternsTable(db)
                     db.execSQL(
                         "CREATE INDEX IF NOT EXISTS `index_saved_patterns_ravelryPatternId` " +
                             "ON `saved_patterns` (`ravelryPatternId`)",
@@ -594,8 +601,7 @@ abstract class KnitToolsDatabase : RoomDatabase() {
                         """.trimIndent(),
                     )
                     // CPD-OFF: Migraation tauluindeksit pidetaan version oman uudelleenluonnin yhteydessa.
-                    db.execSQL("DROP TABLE `saved_patterns`")
-                    db.execSQL("ALTER TABLE `saved_patterns_new` RENAME TO `saved_patterns`")
+                    replaceSavedPatternsTable(db)
                     db.execSQL(
                         "CREATE INDEX IF NOT EXISTS `index_saved_patterns_ravelryPatternId` " +
                             "ON `saved_patterns` (`ravelryPatternId`)",
@@ -757,6 +763,19 @@ abstract class KnitToolsDatabase : RoomDatabase() {
                     db.execSQL("ALTER TABLE counter_history ADD COLUMN sessionUndoJson TEXT")
                 }
             }
+
+        private fun replaceSavedPatternsTable(db: SupportSQLiteDatabase) {
+            // A deleted pattern ID can still appear in a legacy project's soft link.
+            db.execSQL(
+                """
+                UPDATE sqlite_sequence
+                SET seq = MAX(seq, COALESCE((SELECT seq FROM sqlite_sequence WHERE name = 'saved_patterns'), 0))
+                WHERE name = 'saved_patterns_new'
+                """.trimIndent(),
+            )
+            db.execSQL("DROP TABLE `saved_patterns`")
+            db.execSQL("ALTER TABLE `saved_patterns_new` RENAME TO `saved_patterns`")
+        }
 
         val ALL_MANUAL_MIGRATIONS: Array<Migration>
             get() =

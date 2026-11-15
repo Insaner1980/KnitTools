@@ -2,6 +2,7 @@ package com.finnvek.knittools.ui.screens.settings
 
 import com.finnvek.knittools.billing.BillingManager
 import com.finnvek.knittools.billing.RestorePurchasesResult
+import com.finnvek.knittools.data.datastore.AppLanguage
 import com.finnvek.knittools.data.datastore.PreferencesManager
 import com.finnvek.knittools.data.datastore.ThemeMode
 import com.finnvek.knittools.pro.ProManager
@@ -91,6 +92,16 @@ class SettingsViewModelTest {
             coEvery { preferencesManager.setUsageAnalyticsEnabled(true) } returns false
             val vm = createViewModel()
             vm.setUsageAnalyticsEnabled(true)
+            assertEquals(com.finnvek.knittools.R.string.generic_error_unknown, vm.messages.first())
+        }
+
+    @Test
+    fun `failed language write reports an error`() =
+        runTest {
+            val language = AppLanguage.SYSTEM
+            coEvery { preferencesManager.setAppLanguage(language) } returns false
+            val vm = createViewModel()
+            vm.setAppLanguage(language)
             assertEquals(com.finnvek.knittools.R.string.generic_error_unknown, vm.messages.first())
         }
 

@@ -70,7 +70,7 @@ class AuditPart08RuntimeMatrixTest {
     private var patternId = 0L
     private lateinit var photo: File
     private lateinit var output: File
-    private var initialAccessibilityFlags = 0
+    private var initialAccessibilityFlags: Int? = null
     private var pickerMonitor: android.app.Instrumentation.ActivityMonitor? = null
 
     @Before
@@ -211,7 +211,9 @@ class AuditPart08RuntimeMatrixTest {
         if (::output.isInitialized && scenario != null) capture("final")
         scenario?.close()
         pickerMonitor?.let(instrumentation::removeMonitor)
-        automation.serviceInfo = automation.serviceInfo.apply { flags = initialAccessibilityFlags }
+        initialAccessibilityFlags?.let { original ->
+            automation.serviceInfo = automation.serviceInfo.apply { flags = original }
+        }
     }
 
     @Test

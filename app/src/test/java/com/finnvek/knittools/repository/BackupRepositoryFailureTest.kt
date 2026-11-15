@@ -7,6 +7,8 @@ import com.finnvek.knittools.data.backup.BackupError
 import com.finnvek.knittools.data.backup.BackupException
 import com.finnvek.knittools.data.backup.BackupProviderIo
 import com.finnvek.knittools.data.local.KnitToolsDatabase
+import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -151,6 +153,34 @@ class BackupRepositoryFailureTest {
             preparation.cancelAndJoin()
             runCurrent()
             assertTrue(File(root, "manual-backup").listFiles().orEmpty().isEmpty())
+        }
+
+    @Test fun interruptedRecoveryStopsAtCancelledCleanupAndPreservesStaging() =
+        runTest {
+            val root = temporary.newFolder()
+            val staging = List(2) { File(root, "manual-backup/${UUID.randomUUID()}").apply { mkdirs() } }
+            val context = mockk<Context> { every { noBackupFilesDir } returns root }
+            val yarnCards = mockk<YarnCardRepository>()
+            val database = mockk<KnitToolsDatabase>()
+            val cancellation = CancellationException("Recovery cancelled before acquiring the photo lock")
+            coEvery { yarnCards.withPhotoStorageLock<Unit>(any()) } throws cancellation
+            val repository =
+                BackupRepository(
+                    context,
+                    database,
+                    PatternFileReferenceCoordinator(),
+                    yarnCards,
+                    StandardTestDispatcher(testScheduler),
+                    backgroundScope,
+                    FakeProviderIo(),
+                )
+
+            val actual = runCatching { repository.recoverInterruptedOperations() }.exceptionOrNull()
+            assertTrue(actual is CancellationException)
+            assertEquals(cancellation.message, actual?.message)
+            coVerify(exactly = 1) { yarnCards.withPhotoStorageLock<Unit>(any()) }
+            verify(exactly = 0) { database.openHelper }
+            assertTrue(staging.all(File::isDirectory))
         }
 
     private suspend fun assertPrepareError(

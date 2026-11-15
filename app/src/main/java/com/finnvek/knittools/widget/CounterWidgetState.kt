@@ -23,7 +23,12 @@ import com.finnvek.knittools.domain.calculator.CounterValueFormatter
 import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.domain.model.MainCounterLabelType
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.withContext
 import java.io.IOException
 
@@ -59,14 +64,16 @@ object CounterWidgetState {
     val KEY_LABEL_TYPE = stringPreferencesKey("label_type")
     val KEY_CUSTOM_LABEL = stringPreferencesKey("custom_label")
     private val KEY_REVISION = intPreferencesKey("rev")
+    private val refreshRevision = MutableStateFlow(0L)
+    internal val refreshes = refreshRevision.asStateFlow()
 
     fun defaultData(context: Context): WidgetData =
         WidgetData(projectName = context.getString(R.string.default_project_name))
 
-    suspend fun load(context: Context): WidgetData {
-        val prefs = context.widgetDataStore.safePreferencesData.first()
-        return fromPreferences(context, prefs)
-    }
+    internal fun observe(context: Context): Flow<WidgetData> =
+        context.widgetDataStore.safePreferencesData.map { fromPreferences(context, it) }
+
+    suspend fun load(context: Context): WidgetData = observe(context).first()
 
     suspend fun save(
         context: Context,
@@ -75,6 +82,18 @@ object CounterWidgetState {
         val saved =
             context.widgetDataStore.updatePreferencesSafely {
                 applyWidgetData(data)
+            }
+        if (!saved) throw IOException("Unable to persist shared widget state")
+    }
+
+    internal suspend fun replaceIfCurrent(
+        context: Context,
+        expected: WidgetData,
+        replacement: WidgetData,
+    ) {
+        val saved =
+            context.widgetDataStore.updatePreferencesSafely {
+                if (fromPreferences(context, this) == expected) applyWidgetData(replacement)
             }
         if (!saved) throw IOException("Unable to persist shared widget state")
     }
@@ -92,18 +111,6 @@ object CounterWidgetState {
         return fromPreferences(context, prefs)
     }
 
-    suspend fun saveGlance(
-        context: Context,
-        glanceId: GlanceId,
-        data: WidgetData,
-    ) {
-        updateAppWidgetState(context, PreferencesGlanceStateDefinition, glanceId) { prefs ->
-            prefs.toMutablePreferences().apply {
-                applyWidgetData(data)
-            }
-        }
-    }
-
     suspend fun syncAll(
         context: Context,
         data: WidgetData,
@@ -114,7 +121,7 @@ object CounterWidgetState {
         updatePlacedWidgets(context) { glanceId ->
             updateAppWidgetState(context, PreferencesGlanceStateDefinition, glanceId) { prefs ->
                 prefs.toMutablePreferences().apply {
-                    applyWidgetData(data)
+                    applyWidgetData(load(context))
                     this[KEY_REVISION] = (prefs[KEY_REVISION] ?: 0) + 1
                 }
             }
@@ -122,6 +129,7 @@ object CounterWidgetState {
     }
 
     suspend fun refreshAll(context: Context) {
+        refreshRevision.update { it + 1L }
         updatePlacedWidgets(context) {}
     }
 

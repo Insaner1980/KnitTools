@@ -145,7 +145,8 @@ export function createTokenStore(firestore: Firestore): RavelryTokenStore {
     collectionPath: RAVELRY_TOKENS_COLLECTION,
     async getToken(uid) {
       const snapshot = await collection.doc(uid).get();
-      return toStoredToken(snapshot.data());
+      const token = toStoredToken(snapshot.data());
+      return token?.uid === uid ? token : null;
     },
     async getConnectionGeneration(uid) {
       const snapshot = await collection.doc(uid).get();
@@ -264,7 +265,7 @@ export function createTokenStore(firestore: Firestore): RavelryTokenStore {
       return firestore.runTransaction(async (transaction) => {
         const snapshot = await transaction.get(ref);
         const current = toStoredToken(snapshot.data());
-        if (!current || (current.connectionGeneration ?? 0) !== expectedGeneration) {
+        if (!current || current.uid !== uid || (current.connectionGeneration ?? 0) !== expectedGeneration) {
           return false;
         }
 

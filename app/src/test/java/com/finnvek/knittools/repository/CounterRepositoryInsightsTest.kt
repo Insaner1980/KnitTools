@@ -33,10 +33,7 @@ class CounterRepositoryInsightsTest {
             every { dao.observeSessionChanges() } returns flowOf(true)
             coEvery { dao.hasAnySessions() } returns true
             coEvery { dao.getSessionProjectActivity(7) } returns emptyList()
-            val midnight =
-                java.time.Instant
-                    .parse("2026-01-02T00:00:00Z")
-                    .toEpochMilli()
+            val midnight = -86_400_000L
             coEvery { dao.getFirstSessionStart(7) } returns midnight
             coEvery { dao.getInsightFirstDateBatch(7, Long.MIN_VALUE, midnight + 129600000L) } returns
                 listOf(
@@ -53,7 +50,7 @@ class CounterRepositoryInsightsTest {
                         it.firstSessionDate
                     }) { _, _ -> }
                     .first()
-            assertEquals(java.time.LocalDate.of(2026, 1, 1), result)
+            assertEquals(java.time.LocalDate.of(1969, 12, 30), result)
         }
 
     @Test fun allTimeFoldsEveryFixedSizeBatchWithoutAnArchiveLimit() =

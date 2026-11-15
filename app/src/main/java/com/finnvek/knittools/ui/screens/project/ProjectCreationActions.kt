@@ -169,7 +169,6 @@ internal class ProjectCreationActions(
         try {
             runCatching {
                 _projectCreationError.value = null
-                val wasFirstProject = !repository.hasAnyProject()
                 val result =
                     repository.createProject(
                         name = request.name,
@@ -180,8 +179,8 @@ internal class ProjectCreationActions(
                         targetFolderId = request.targetFolderId,
                         startValues = ProjectStartValues(request.initialCount, request.targetRows),
                     )
-                if (pendingProjectCreation != request) return
-                limited = handleCreationResult(request, result, wasFirstProject)
+                if (result !is ProjectCreationResult.Created && pendingProjectCreation != request) return
+                limited = handleCreationResult(request, result)
             }.onFailure { failure ->
                 if (failure is CancellationException) throw failure
                 if (pendingProjectCreation == request) {
@@ -205,15 +204,17 @@ internal class ProjectCreationActions(
     private suspend fun handleCreationResult(
         request: PendingProjectCreation,
         result: ProjectCreationResult,
-        wasFirstProject: Boolean,
     ): Boolean {
         when (result) {
             is ProjectCreationResult.Created -> {
                 analytics.track(UsageEvent.PROJECT_CREATED)
-                pendingProjectCreation = null
-                _projectCreationPromptCount.value = null
-                persistCreationPreferences(request, result.projectId, wasFirstProject)
-                onCreated(result.projectId)
+                val shouldNavigate = pendingProjectCreation == request
+                if (shouldNavigate) {
+                    pendingProjectCreation = null
+                    _projectCreationPromptCount.value = null
+                }
+                persistCreationPreferences(request, result.projectId, result.wasFirstProject)
+                if (shouldNavigate) onCreated(result.projectId)
             }
             ProjectCreationResult.LimitReached -> {
                 val activeCount = repository.getActiveProjectCount()

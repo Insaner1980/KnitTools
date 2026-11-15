@@ -378,6 +378,21 @@ class CounterRepositoryActiveSessionTest : CounterRepositoryActiveSessionFixture
         }
 
     @Test
+    fun `recovery add rejects an unrepresentable completed duration without changing the active row`() =
+        runTest {
+            val started = repository.startSession(7L) as StartSessionResult.Started
+            timeSource.reboot()
+            val recovery = requireNotNull(repository.refreshActiveSession())
+            val intervalToken = requireNotNull(recovery.recoveryIntervalToken)
+
+            assertEquals(
+                RecoveryResolutionResult.InvalidDuration,
+                repository.addRecoveryInterval(started.session.sessionToken, intervalToken, Long.MAX_VALUE),
+            )
+            assertEquals(recovery, repository.refreshActiveSession())
+        }
+
+    @Test
     fun `adding reviewed recovery time resets anchors and continues without immediate repeat`() =
         runTest {
             val started = repository.startSession(7L) as StartSessionResult.Started

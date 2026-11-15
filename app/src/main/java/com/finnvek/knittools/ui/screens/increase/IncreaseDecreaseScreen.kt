@@ -101,7 +101,7 @@ fun IncreaseDecreaseScreen(
                 onSeePro = onSeePro,
                 hintText = stringResource(R.string.instruction_hint_increase),
                 onResult = { parsed ->
-                    applyIncDecInstruction(parsed)?.let { (st, ch, m) ->
+                    applyIncDecInstruction(parsed, style)?.let { (st, ch, m) ->
                         currentStitches = st
                         changeBy = ch
                         mode = m
@@ -214,16 +214,15 @@ private fun PatternResultCard(
     }
 }
 
-private fun applyIncDecInstruction(parsed: ParsedInstruction): Triple<String, String, IncreaseDecreaseMode>? =
-    if (parsed is ParsedInstruction.IncreaseDecrease) {
-        Triple(
-            parsed.currentStitches.toString(),
-            parsed.changeBy.toString(),
-            if (parsed.isIncrease) IncreaseDecreaseMode.INCREASE else IncreaseDecreaseMode.DECREASE,
-        )
-    } else {
-        null
-    }
+private fun applyIncDecInstruction(
+    parsed: ParsedInstruction,
+    style: KnittingStyle,
+): Triple<String, String, IncreaseDecreaseMode>? {
+    if (parsed !is ParsedInstruction.IncreaseDecrease) return null
+    val mode = if (parsed.isIncrease) IncreaseDecreaseMode.INCREASE else IncreaseDecreaseMode.DECREASE
+    if (!IncreaseDecreaseCalculator.calculate(parsed.currentStitches, parsed.changeBy, mode, style).isValid) return null
+    return Triple(parsed.currentStitches.toString(), parsed.changeBy.toString(), mode)
+}
 
 private fun IncreaseDecreaseMode.labelRes(): Int =
     when (this) {

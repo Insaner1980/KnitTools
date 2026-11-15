@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.junit4.StateRestorationTester
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -16,6 +17,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.model.CraftType
 import com.finnvek.knittools.domain.model.MainCounterLabelType
+import com.finnvek.knittools.ui.screens.counter.TargetRowsDialog
 import com.finnvek.knittools.ui.theme.KnitToolsTheme
 import org.junit.Assert.assertEquals
 import org.junit.Rule
@@ -83,26 +85,49 @@ class ProjectDetailsSheetTest {
     fun invalidStartingCountAndTargetDisableCreate() {
         showSheet(ProjectDetailsMode.Create)
         compose.onNodeWithContentDescription(label(R.string.project_name_label)).performTextReplacement("Cardigan")
-        compose
-            .onNodeWithContentDescription(label(R.string.project_start_count_label_rows))
-            .performScrollTo()
-            .performTextReplacement("100000")
-        compose.onNodeWithText(label(R.string.create_project)).performScrollTo().assertIsNotEnabled()
-        compose
-            .onNodeWithContentDescription(label(R.string.project_start_count_label_rows))
-            .performScrollTo()
-            .performTextReplacement("0")
+        val startField = compose.onNodeWithContentDescription(label(R.string.project_start_count_label_rows))
+        val targetField = compose.onNodeWithContentDescription(label(R.string.project_target_label))
+        val createButton = compose.onNodeWithText(label(R.string.create_project))
+        for (invalid in listOf("100000", " 1 ")) {
+            startField.performScrollTo().performTextReplacement(invalid)
+            createButton.performScrollTo().assertIsNotEnabled()
+        }
+        startField.performScrollTo().performTextReplacement("0")
         compose.onNodeWithText(label(R.string.project_create_more_options)).performScrollTo().performClick()
-        compose
-            .onNodeWithContentDescription(label(R.string.project_target_label))
-            .performScrollTo()
-            .performTextReplacement("0")
-        compose.onNodeWithText(label(R.string.create_project)).performScrollTo().assertIsNotEnabled()
-        compose
-            .onNodeWithContentDescription(label(R.string.project_target_label))
-            .performScrollTo()
-            .performTextReplacement("")
-        compose.onNodeWithText(label(R.string.create_project)).performScrollTo().assertIsEnabled()
+        for (invalid in listOf("0", " 1 ")) {
+            targetField.performScrollTo().performTextReplacement(invalid)
+            createButton.performScrollTo().assertIsNotEnabled()
+        }
+        targetField.performScrollTo().performTextReplacement("")
+        createButton.performScrollTo().assertIsEnabled()
+    }
+
+    @Test
+    fun targetEditorRejectsMalformedPasteAndAllowsClearing() {
+        var target: Int? = 12
+        compose.setContent {
+            KnitToolsTheme {
+                TargetRowsDialog(
+                    currentTarget = 12,
+                    counterLabel = "Rows",
+                    onDismiss = {},
+                    onConfirm = { target = it },
+                    onRemove = { target = null },
+                )
+            }
+        }
+        val targetField = compose.onNode(hasSetTextAction())
+        val confirm = compose.onNodeWithText(label(android.R.string.ok))
+        for (invalid in listOf("100000", "1.5")) {
+            targetField.performTextReplacement(invalid)
+            confirm.assertIsNotEnabled()
+        }
+        targetField.performTextReplacement("99999")
+        confirm.performClick()
+        compose.runOnIdle { assertEquals(99_999, target) }
+        targetField.performTextReplacement("")
+        confirm.performClick()
+        compose.runOnIdle { assertEquals(null, target) }
     }
 
     @Test
@@ -139,6 +164,16 @@ class ProjectDetailsSheetTest {
             assertEquals("Sections", submitted?.mainCounterCustomLabel)
             assertEquals(40, submitted?.targetRows)
         }
+    }
+
+    @Test
+    fun emptyCustomLabelExplainsWhyCreateIsDisabled() {
+        showSheet(
+            ProjectDetailsMode.Create,
+            initialValues = ProjectDetailsValues("Scarf", CraftType.KNITTING, MainCounterLabelType.CUSTOM, null),
+        )
+        compose.onNodeWithText(label(R.string.main_counter_custom_label_error)).assertExists()
+        compose.onNodeWithText(label(R.string.create_project)).performScrollTo().assertIsNotEnabled()
     }
 
     @Test
@@ -184,7 +219,11 @@ class ProjectDetailsSheetTest {
             .performScrollTo()
             .performClick()
             .performImeAction()
-        compose.onNodeWithText("Sections").assertIsFocused()
+        compose
+            .onNodeWithContentDescription(label(R.string.main_counter_custom_label))
+            .assertIsFocused()
+            .performImeAction()
+        compose.onNodeWithContentDescription(label(R.string.project_target_label)).assertIsFocused()
     }
 
     @Test

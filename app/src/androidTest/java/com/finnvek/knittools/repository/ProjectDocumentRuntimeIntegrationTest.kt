@@ -1,6 +1,7 @@
 package com.finnvek.knittools.repository
 
 import android.content.Context
+import android.database.sqlite.SQLiteConstraintException
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.pdf.PdfDocument
@@ -90,6 +91,69 @@ class ProjectDocumentRuntimeIntegrationTest {
             assertEquals(0.22f, repository.getDocument(documentA.id)?.readingLineYFraction)
             assertEquals(3, repository.getDocument(documentB.id)?.currentPage)
             assertEquals(0.77f, repository.getDocument(documentB.id)?.readingLineYFraction)
+        }
+
+    @Test
+    fun failureAttachingFirstPdfRollsBackProjectAndLibraryRow() =
+        runTest {
+            val existing =
+                database
+                    .counterProjectDao()
+                    .insert(CounterProjectEntity(name = "Existing", isCompleted = true))
+            val file = createPdf("new-project.pdf", Color.RED)
+            val uri = Uri.fromFile(file).toString()
+            val counter = RoomCounterTestFixture(database, context).counterRepository(documents = repository)
+            val sqlite = database.openHelper.writableDatabase
+            sqlite.execSQL(
+                """
+                CREATE TRIGGER reject_first_pdf BEFORE INSERT ON project_documents
+                BEGIN SELECT RAISE(ABORT, 'Controlled document attachment failure'); END
+                """.trimIndent(),
+            )
+            try {
+                val failure =
+                    runCatching {
+                        counter.createProjectWithImportedPdf("New project", false, uri, "First chart")
+                    }.exceptionOrNull()
+                assertTrue(failure is SQLiteConstraintException)
+                assertEquals(listOf(existing), counter.getAllProjects().first().map { it.id })
+                assertTrue(database.savedPatternDao().getAllOnce().isEmpty())
+                assertFalse(database.projectDocumentDao().isUriReferenced(uri))
+                assertTrue(file.isFile)
+            } finally {
+                sqlite.execSQL("DROP TRIGGER reject_first_pdf")
+            }
+
+            val created = counter.createProjectWithImportedPdf("New project", false, uri, "First chart")
+            val projectId = (created as ProjectCreationResult.Created).projectId
+            assertEquals(uri, repository.getPrimary(projectId)?.localPdfUri)
+        }
+
+    @Test
+    fun libraryOnlyImportPublishesOnlyAnExistingPrivateFileAndReusesItsRow() =
+        runTest {
+            val file = createPdf("library-only.pdf", Color.BLUE)
+            val uri = Uri.fromFile(file).toString()
+            val missingUri = Uri.fromFile(File(filesDir, "missing.pdf")).toString()
+
+            assertNull(savedPatternRepository.saveImportedPatternIfMissing(missingUri, "Unavailable"))
+            val id = requireNotNull(savedPatternRepository.saveImportedPatternIfMissing(uri, "Library chart"))
+            assertEquals(id, savedPatternRepository.saveImportedPatternIfMissing(uri, "Different label"))
+
+            val pattern = database.savedPatternDao().getAllOnce().single()
+            assertEquals(id, pattern.id)
+            assertEquals("Library chart", pattern.name)
+            assertEquals(uri, pattern.localPdfUri)
+            assertTrue(pattern.isAvailableOffline)
+            assertTrue(file.isFile)
+            assertTrue(
+                database
+                    .counterProjectDao()
+                    .getAllProjects()
+                    .first()
+                    .isEmpty(),
+            )
+            assertFalse(database.projectDocumentDao().isUriReferenced(uri))
         }
 
     @Test

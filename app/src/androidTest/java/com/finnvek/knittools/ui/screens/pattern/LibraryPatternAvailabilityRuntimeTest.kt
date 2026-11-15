@@ -12,7 +12,9 @@ import com.finnvek.knittools.data.local.SavedPatternEntity
 import com.finnvek.knittools.domain.model.SavedPatternSource
 import com.finnvek.knittools.repository.RoomCounterTestFixture
 import com.finnvek.knittools.ui.theme.KnitToolsTheme
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
@@ -29,7 +31,7 @@ class LibraryPatternAvailabilityRuntimeTest {
     private val context = ApplicationProvider.getApplicationContext<Context>()
 
     @Test
-    fun missingOwnedPdfIsPrunedBeforeOpeningItsDetails() =
+    fun missingOwnedPdfLeavesSavedPatternMetadataAndCanStillBeDeleted() =
         runBlocking {
             check(context.packageName == "com.finnvek.knittools.activepolicytest")
             val missing = File(context.filesDir, "pattern_pdfs/0/review05-${UUID.randomUUID()}.pdf")
@@ -39,17 +41,26 @@ class LibraryPatternAvailabilityRuntimeTest {
                 val id =
                     database.savedPatternDao().insert(
                         SavedPatternEntity(
-                            source = SavedPatternSource.LocalFile.persistedValue,
+                            source = SavedPatternSource.Ravelry.persistedValue,
+                            ravelryPatternId = 123,
                             name = "Unavailable PDF",
                             designerName = "",
+                            originalUrl = "https://www.ravelry.com/patterns/library/fixture",
                             localPdfUri = missing.toUri().toString(),
+                            isAvailableOffline = true,
                         ),
                     )
                 val repository = RoomCounterTestFixture(database, context).savedPatternRepository
 
-                assertNull(repository.getByIdIfAvailable(id))
-                assertNull(database.savedPatternDao().getById(id))
+                val pattern = requireNotNull(repository.observeById(id).first())
+                assertFalse(repository.isLocalPdfAvailable(pattern))
+                assertEquals(123, repository.getById(id)?.ravelryPatternId)
+                assertEquals(pattern.originalUrl, repository.getById(id)?.originalUrl)
+                assertEquals(pattern.localPdfUri, repository.getById(id)?.localPdfUri)
                 assertFalse(missing.exists())
+
+                repository.deleteById(id)
+                assertNull(repository.observeById(id).first())
             } finally {
                 database.close()
             }

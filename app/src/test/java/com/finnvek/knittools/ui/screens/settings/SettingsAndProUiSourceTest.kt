@@ -16,11 +16,12 @@ class SettingsAndProUiSourceTest {
     }
 
     @Test
-    fun `settings and upgrade screens wait for authoritative pro state`() {
+    fun `settings and upgrade can show a known active trial before Play readiness`() {
         val settings = ProjectSourceFiles.read(SETTINGS_SCREEN)
         val upgrade = ProjectSourceFiles.read(PRO_UPGRADE_SCREEN)
 
-        assertTrue(settings.contains("proState.takeIf { proStateReady }"))
+        assertTrue(settings.contains("proState.takeIf { proStateReady || it.status == ProStatus.TRIAL_ACTIVE }"))
+        assertTrue(upgrade.contains("if (proStateReady || proState.status == ProStatus.TRIAL_ACTIVE)"))
         assertTrue(upgrade.contains("if (!proStateReady)"))
     }
 

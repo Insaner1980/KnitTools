@@ -149,7 +149,7 @@ class AuditPart14ProRuntimeTest {
             runBlocking(Dispatchers.IO) { CounterWidgetState.save(app, WidgetData(projectId = id)) }
             val broadcastFinished = CountDownLatch(1)
             app.sendOrderedBroadcast(
-                CounterWidgetActions.incrementIntent(app),
+                CounterWidgetActions.incrementIntent(app, id),
                 null,
                 object : BroadcastReceiver() {
                     override fun onReceive(

@@ -84,10 +84,6 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 import java.util.Date
 
-private enum class PendingPhotoProAction {
-    Capture,
-}
-
 data class PhotoGalleryActions(
     val authorizePhotoCreation: () -> Unit,
     val cancelPhotoCreation: () -> Unit,
@@ -130,7 +126,7 @@ fun PhotoGalleryScreen(
     var viewingPhotoId by rememberSaveable { mutableStateOf<Long?>(null) }
     val renamingPhoto = remember(renamingPhotoId, photos) { photos.firstOrNull { it.id == renamingPhotoId } }
     val viewingPhoto = remember(viewingPhotoId, photos) { photos.firstOrNull { it.id == viewingPhotoId } }
-    var pendingProAction by rememberSaveable { mutableStateOf<PendingPhotoProAction?>(null) }
+    var pendingProProjectId by rememberSaveable { mutableStateOf<Long?>(null) }
 
     fun clearPendingCapture() {
         pendingPhotoUriString = null
@@ -186,27 +182,30 @@ fun PhotoGalleryScreen(
 
     fun launchCamera() {
         if (creatingCapture || pendingPhotoUriString != null) return
+        val ownerProjectId = projectId ?: return
         requestPhotoCapture(
             canCreatePhoto = canCreatePhoto,
             actions = actions,
             onAuthorized = {
-                startCameraCapture(projectId)
+                startCameraCapture(ownerProjectId)
             },
-            onProRequired = { pendingProAction = PendingPhotoProAction.Capture },
+            onProRequired = { pendingProProjectId = ownerProjectId },
         )
     }
 
-    pendingProAction?.let {
+    pendingProProjectId?.takeIf { it == projectId }?.let { ownerProjectId ->
         ProPromptSheet(
             request =
                 ProPromptRequest(
                     source = ProPromptSource.ProgressPhotos,
                 ),
-            onDismiss = { pendingProAction = null },
+            onDismiss = { pendingProProjectId = null },
             onTrialStarted = {
-                pendingProAction = null
-                actions.authorizePhotoCreation()
-                startCameraCapture(projectId)
+                pendingProProjectId = null
+                if (currentProjectId == ownerProjectId) {
+                    actions.authorizePhotoCreation()
+                    startCameraCapture(ownerProjectId)
+                }
             },
             onSeePro = onSeePro,
         )
@@ -264,6 +263,7 @@ fun PhotoGalleryScreen(
             )
         },
         floatingActionButton = {
+            if (projectId == null) return@Scaffold
             // Sama lisäyspilleri kuin New Project, Add Yarn ja Add web pattern.
             val photoLabel = stringResource(R.string.take_photo)
             val proDescription = proMarkerDescription(photoAccess)

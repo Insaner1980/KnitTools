@@ -34,7 +34,7 @@ class YarnPhotoStorage
                         ?: throw IOException("Unable to open yarn photo")
                 input.use { stream ->
                     targetFile.outputStream().use { output ->
-                        copyYarnPhotoWithLimit(stream, output)
+                        copyYarnPhotoWithLimit(stream, output, usableSpace = targetFile::getUsableSpace)
                     }
                 }
                 validateYarnPhoto(targetFile)
@@ -118,6 +118,7 @@ internal fun copyYarnPhotoWithLimit(
     input: InputStream,
     output: OutputStream,
     maxBytes: Long = YarnPhotoStorage.YARN_PHOTO_MAX_BYTES,
+    usableSpace: () -> Long = { Long.MAX_VALUE },
 ): Long {
     require(maxBytes >= 0L)
     val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
@@ -128,10 +129,16 @@ internal fun copyYarnPhotoWithLimit(
             if (copied == 0L) throw IOException("Yarn photo is empty")
             return copied
         }
-        val nextTotal = copied + read
-        if (nextTotal > maxBytes) throw IOException("Yarn photo exceeds size limit")
+        val failure =
+            when {
+                read > maxBytes - copied -> "Yarn photo exceeds size limit"
+                usableSpace() - read < YarnPhotoStorage.YARN_PHOTO_FREE_SPACE_RESERVE_BYTES ->
+                    "Not enough storage for yarn photo"
+                else -> null
+            }
+        if (failure != null) throw IOException(failure)
         output.write(buffer, 0, read)
-        copied = nextTotal
+        copied += read
     }
 }
 

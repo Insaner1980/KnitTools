@@ -46,18 +46,20 @@ fun PasteInstructionButton(
 ) {
     var expanded by rememberSaveable { mutableStateOf(false) }
     var showProPrompt by rememberSaveable { mutableStateOf(false) }
+    val canPaste = proState.hasFeature(ProFeature.INSTRUCTION_PASTE)
 
     Column(modifier = modifier) {
         PasteInstructionAction(proState, proAccessReady, { expanded = !expanded }, { showProPrompt = true })
 
-        AnimatedVisibility(visible = expanded && proState.hasFeature(ProFeature.INSTRUCTION_PASTE)) {
+        AnimatedVisibility(visible = expanded && canPaste) {
             InstructionInputForm(
                 onResult = { result ->
-                    val accepted = proState.hasFeature(ProFeature.INSTRUCTION_PASTE) && onResult(result)
+                    val accepted = canPaste && onResult(result)
                     if (accepted) expanded = false
                     accepted
                 },
                 hintText = hintText ?: stringResource(R.string.instruction_hint),
+                enabled = canPaste,
             )
         }
     }
@@ -114,6 +116,7 @@ private fun PasteInstructionAction(
 private fun InstructionInputForm(
     onResult: (ParsedInstruction) -> Boolean,
     hintText: String,
+    enabled: Boolean,
 ) {
     var instructionText by rememberSaveable { mutableStateOf("") }
     var isParsing by remember { mutableStateOf(false) }
@@ -151,6 +154,7 @@ private fun InstructionInputForm(
 
         TextButton(
             onClick = {
+                if (!enabled) return@TextButton
                 scope.launch {
                     isParsing = true
                     resultMessage = null
@@ -161,7 +165,7 @@ private fun InstructionInputForm(
                     if (clearInput) instructionText = ""
                 }
             },
-            enabled = instructionText.isNotBlank() && !isParsing,
+            enabled = enabled && instructionText.isNotBlank() && !isParsing,
         ) {
             Text(
                 if (isParsing) {

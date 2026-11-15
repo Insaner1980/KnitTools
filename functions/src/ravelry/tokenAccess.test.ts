@@ -92,6 +92,7 @@ describe("Ravelry token access", () => {
     for (const [expiry, canRefresh, expected] of [
       [11_000, true, "fresh"], [11_001, true, "original"],
       [1_001, false, "original"], [1_000, false, null],
+      [undefined, false, "original"], [Number.NaN, false, null], [Infinity, false, null],
     ] as const) {
       const tokenStore = new MemoryTokenStore();
       await tokenStore.saveToken({
@@ -114,6 +115,30 @@ describe("Ravelry token access", () => {
       assert.equal(limiterCalls, refreshCalls);
     }
   });
+
+  it("preserves rotation without returning a refreshed token already expired at publication", async () => {
+    let now = 1_000;
+    const tokenStore = new class extends MemoryTokenStore {
+      override async saveRefreshedTokenIfCurrent(token: StoredRavelryToken, expected: StoredRavelryToken) {
+        const saved = await super.saveRefreshedTokenIfCurrent(token, expected);
+        now = 1_001;
+        return saved;
+      }
+    }();
+    await tokenStore.saveToken({
+      uid: "uid", authType: "oauth2", accessToken: "expired-access", refreshToken: "original-refresh",
+      expiresAtMillis: 999, createdAtMillis: 100, updatedAtMillis: 100,
+    });
+
+    assert.equal(await getUsableRavelryToken({
+      uid: "uid", tokenStore, nowMillis: () => now,
+      refresh: async () => ({
+        accessToken: "expired-at-publication", refreshToken: "rotated-refresh", expiresAtMillis: 1_001,
+      }),
+    }), null);
+    assert.equal((await tokenStore.getToken("uid"))?.refreshToken, "rotated-refresh");
+  });
+
   it("uses the persisted rotation when a concurrent obsolete refresh is rejected", async () => {
     const tokenStore = new MemoryTokenStore();
     await tokenStore.saveToken({

@@ -1,0 +1,47 @@
+appId: com.finnvek.knittools
+name: Project creation and counter persistence
+---
+- launchApp:
+    clearState: true
+- extendedWaitUntil:
+    visible: "New Project"
+    timeout: 30000
+- tapOn: "New Project"
+- tapOn:
+    text: "Project name"
+    index: 1
+- inputText: "Maestro Scarf"
+- assertVisible: "Maestro Scarf"
+- tapOn: "Create project"
+- assertVisible: "Maestro Scarf"
+- assertVisible: "Row 0"
+- tapOn: "Add row"
+- tapOn: "Add row"
+- assertVisible: "Row 2"
+- tapOn: "Undo last change"
+- assertVisible: "Row 1"
+- tapOn: "Subtract row"
+- tapOn: "Subtract row"
+- assertVisible: "Row 0"
+- tapOn: "Project actions"
+- tapOn: "Start work session"
+- tapOn: "Add row"
+- tapOn: "Add row"
+- launchApp
+- runFlow:
+    when:
+      visible: "Continue Maestro Scarf"
+    commands:
+      - tapOn: "Continue Maestro Scarf"
+- assertVisible: "Row 2"
+- tapOn: "Project actions"
+- tapOn: "Stop work session"
+- tapOn: "Save session"
+- assertVisible: "Maestro Scarf"
+- tapOn: "Maestro Scarf"
+- scrollUntilVisible:
+    element:
+      text: "Session History"
+    direction: DOWN
+- tapOn: "Session History"
+- assertVisible: "Counter: 0 → 2"

@@ -74,20 +74,23 @@ fun NumberInputField(
     val interactionSource = remember { MutableInteractionSource() }
     val isFocused by interactionSource.collectIsFocusedAsState()
     val locale = rememberCurrentLocale()
+    val rawIntegerInput = options.preserveRawInput && !options.isDecimal
+    val useOwnBorder = !options.preserveRawInput || rawIntegerInput
     var hasFocused by remember { mutableStateOf(false) }
     var hasBlurred by remember { mutableStateOf(false) }
-    val parsed =
-        MeasurementNumberParser.parse(
-            value,
-            locale,
-            integer = !options.isDecimal,
-            allowZero = options.allowZero,
-            allowNegative = options.allowNegative,
-        )
     val localError =
-        if (hasBlurred &&
+        if (!rawIntegerInput &&
+            hasBlurred &&
             value.isNotBlank()
         ) {
+            val parsed =
+                MeasurementNumberParser.parse(
+                    value,
+                    locale,
+                    integer = !options.isDecimal,
+                    allowZero = options.allowZero,
+                    allowNegative = options.allowNegative,
+                )
             parsed.error
                 ?: MeasurementNumberError.INVALID_NUMBER.takeIf { parsed.incomplete && !isFocused }
         } else {
@@ -138,7 +141,7 @@ fun NumberInputField(
                     .fillMaxWidth()
                     .heightIn(min = 48.dp)
                     .then(
-                        if (options.preserveRawInput) Modifier else Modifier.inputFieldBorder(isFocused),
+                        if (useOwnBorder) Modifier.inputFieldBorder(isFocused) else Modifier,
                     ).semantics {
                         contentDescription = semanticLabel ?: label
                         displayedError?.let { error(it) }

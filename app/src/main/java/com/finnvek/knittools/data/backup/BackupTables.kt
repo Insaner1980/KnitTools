@@ -322,7 +322,14 @@ internal object BackupTables {
     }
 
     private val floatColumns =
-        setOf("difficulty", "gaugeStitches", "gaugeRows", "readingLineYFraction", "verticalReadingGuideXFraction")
+        setOf(
+            "difficulty",
+            "gaugeStitches",
+            "gaugeRows",
+            "readingLineYFraction",
+            "verticalReadingGuideXFraction",
+            "yFraction",
+        )
 
     private val booleanColumns =
         setOf(

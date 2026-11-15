@@ -237,6 +237,17 @@ class WebPatternTextTest {
     }
 
     @Test
+    fun `share parser preserves apostrophes within URLs and removes paired prose quotes`() {
+        val first = "https://example.com/a'b"
+        val second = "https://example.com/a'c"
+        assertEquals(
+            first,
+            (parseWebPatternSharedText("Try '$first'.", null) as WebPatternShareParseResult.WebLink).url.originalUrl,
+        )
+        assertEquals(WebPatternShareParseResult.Ambiguous, parseWebPatternSharedText("$first $second", null))
+    }
+
+    @Test
     fun `share parser handles many short URL matches at the shared text limit`() {
         val firstUrl = "https://EXAMPLE.com:443/pattern"
         val duplicateUrl = "https://example.com/pattern"
@@ -300,6 +311,13 @@ class WebPatternTextTest {
             parseWebPatternSharedText("a".repeat(WEB_PATTERN_SHARED_TEXT_MAX_LENGTH + 1), null) is
                 WebPatternShareParseResult.TooLong,
         )
+        assertEquals(
+            WebPatternShareParseResult.TooLong,
+            parseWebPatternSharedText(" ".repeat(WEB_PATTERN_SHARED_TEXT_MAX_LENGTH + 1), null),
+        )
+        val url = "https://example.com/pattern"
+        assertTrue(parseWebPatternSharedText(url, "a".repeat(4_096)) is WebPatternShareParseResult.WebLink)
+        assertEquals(WebPatternShareParseResult.TooLong, parseWebPatternSharedText(url, "a".repeat(4_097)))
     }
 
     @Test

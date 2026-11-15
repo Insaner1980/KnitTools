@@ -1,0 +1,40 @@
+appId: com.finnvek.knittools
+name: Camera photo to project PDF
+---
+- launchApp:
+    clearState: true
+- tapOn: "New Project"
+- tapOn:
+    text: "Project name"
+    index: 1
+- inputText: "Maestro Camera PDF"
+- tapOn: "Create project"
+- tapOn: "Add row"
+- scrollUntilVisible:
+    element:
+      text: "Add Pattern"
+    direction: DOWN
+- tapOn: "Add Pattern"
+- scrollUntilVisible:
+    element:
+      text: "Take pattern photo"
+    direction: DOWN
+- tapOn: "Take pattern photo"
+- tapOn: "Shutter"
+- tapOn: "Done"
+- assertVisible: "Review pattern pages"
+- tapOn: "Create pattern PDF"
+- extendedWaitUntil:
+    visible: "Open Pattern"
+    timeout: 30000
+- tapOn: "Open Pattern"
+- assertVisible: "Page 1 of 1"
+- takeScreenshot: camera-pdf
+- launchApp
+- tapOn: "Continue Maestro Camera PDF"
+- scrollUntilVisible:
+    element:
+      text: "Open Pattern"
+    direction: DOWN
+- tapOn: "Open Pattern"
+- assertVisible: "Page 1 of 1"

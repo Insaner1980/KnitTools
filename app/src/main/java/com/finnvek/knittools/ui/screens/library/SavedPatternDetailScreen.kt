@@ -85,6 +85,7 @@ fun SavedPatternDetailScreen(
     },
     onOpenProject: (projectId: Long) -> Unit = {},
     deleteErrorId: Long = 0L,
+    isLocalPdfAvailable: Boolean = false,
 ) {
     var showRemoveConfirmDialog by rememberSaveable { mutableStateOf(false) }
     var pendingReplacementId by rememberSaveable(pattern.id) { mutableStateOf<Long?>(null) }
@@ -285,7 +286,7 @@ fun SavedPatternDetailScreen(
                 )
             } else {
                 when {
-                    pattern.hasAttachedPdf -> {
+                    isLocalPdfAvailable -> {
                         SavedPatternPrimaryAction(
                             label = stringResource(R.string.saved_pattern_detail_open_pattern),
                             onClick = onOpenPattern,
@@ -300,16 +301,21 @@ fun SavedPatternDetailScreen(
                 if (pattern.source == SavedPatternSource.Ravelry || ravelryUrl != null) {
                     RavelrySourceSection(
                         pattern = pattern,
+                        isLocalPdfAvailable = isLocalPdfAvailable,
                         canOpenRavelry = ravelryUrl != null,
                         // Ravelry-linkki rivinä vain kun päätoiminto on PDF; muuten se on jo painike.
-                        onOpenRavelry = openRavelry.takeIf { pattern.hasAttachedPdf && ravelryUrl != null },
+                        onOpenRavelry = openRavelry.takeIf { isLocalPdfAvailable && ravelryUrl != null },
                     )
                 }
-                SavedPatternProjectSection(
-                    label = stringResource(R.string.saved_pattern_detail_attach_to_project),
-                    description = null,
-                    onAttach = { showProjectPicker = true },
-                )
+                if (!pattern.localPdfUri.isNullOrBlank() && !isLocalPdfAvailable) {
+                    OverviewEmptyText(R.string.pattern_open_failed)
+                } else {
+                    SavedPatternProjectSection(
+                        label = stringResource(R.string.saved_pattern_detail_attach_to_project),
+                        description = null,
+                        onAttach = { showProjectPicker = true },
+                    )
+                }
             }
         }
     }
@@ -428,29 +434,31 @@ private fun WebPatternSourceSection(url: WebPatternUrl) {
 @Composable
 private fun RavelrySourceSection(
     pattern: SavedPattern,
+    isLocalPdfAvailable: Boolean,
     canOpenRavelry: Boolean,
     onOpenRavelry: (() -> Unit)?,
 ) {
+    val requiresRavelryAccess = pattern.source == SavedPatternSource.Ravelry && !isLocalPdfAvailable
     OverviewSectionHeader(R.string.tool_ravelry)
     FlowRow(
         horizontalArrangement = Arrangement.spacedBy(ProjectOverviewDimens.ContentGap),
         verticalArrangement = Arrangement.spacedBy(ProjectOverviewDimens.ContentGap),
     ) {
         PatternAvailabilityBadge(availability = pattern.availability)
-        if (pattern.hasAttachedPdf) {
+        if (isLocalPdfAvailable) {
             SavedPatternAvailabilityChip(text = stringResource(R.string.saved_pattern_detail_pdf_attached))
         }
-        if (pattern.isAvailableOffline) {
+        if (isLocalPdfAvailable && pattern.isAvailableOffline) {
             SavedPatternAvailabilityChip(text = stringResource(R.string.saved_pattern_detail_available_offline))
         }
         if (canOpenRavelry) {
             SavedPatternAvailabilityChip(text = stringResource(R.string.saved_pattern_detail_open_on_ravelry))
         }
-        if (pattern.requiresRavelryAccess) {
+        if (requiresRavelryAccess) {
             SavedPatternAvailabilityChip(text = stringResource(R.string.saved_pattern_detail_requires_ravelry))
         }
     }
-    if (pattern.requiresRavelryAccess) {
+    if (requiresRavelryAccess) {
         OverviewEmptyText(R.string.saved_pattern_detail_no_pdf_explanation)
     }
     onOpenRavelry?.let { OverviewLinkRow(stringResource(R.string.open_in_ravelry), null, null, onClick = it) }
@@ -489,12 +497,6 @@ private fun SavedPatternProjectSection(
             },
     )
 }
-
-private val SavedPattern.hasAttachedPdf: Boolean
-    get() = !localPdfUri.isNullOrBlank()
-
-private val SavedPattern.requiresRavelryAccess: Boolean
-    get() = source == SavedPatternSource.Ravelry && !hasAttachedPdf
 
 private fun SavedPattern.ravelryUrlOrNull(): String? =
     canonicalUrl

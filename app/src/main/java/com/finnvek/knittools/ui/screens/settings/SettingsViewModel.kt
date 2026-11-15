@@ -60,7 +60,9 @@ class SettingsViewModel
 
         fun setAppLanguage(language: AppLanguage) {
             viewModelScope.launch {
-                preferencesManager.setAppLanguage(language)
+                if (!preferencesManager.setAppLanguage(language)) {
+                    messageChannel.send(R.string.generic_error_unknown)
+                }
             }
         }
 

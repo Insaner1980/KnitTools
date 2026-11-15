@@ -229,6 +229,7 @@ fun ProjectDetailsSheet(
                     sanitizedValue = sanitizedCustomLabel,
                     onValueChange = { customLabel = it },
                     modifier = Modifier.focusRequester(customLabelFocus),
+                    onNext = if (isCreate) ({ targetFocus.requestFocus() }) else null,
                 )
             }
             if (isCreate) {
@@ -261,7 +262,7 @@ private fun ProjectStartingCountField(
             value = value,
             onValueChange = onValueChange,
             label = projectStartCountLabel(labelType),
-            options = NumberInputOptions(placeholder = "0", isLast = !moreOptionsExpanded),
+            options = NumberInputOptions(placeholder = "0", isLast = !moreOptionsExpanded, preserveRawInput = true),
             errorMessage =
                 if (startCount == null) {
                     stringResource(
@@ -330,7 +331,7 @@ private fun ProjectTargetField(
             value = value,
             onValueChange = onValueChange,
             label = stringResource(R.string.project_target_label),
-            options = NumberInputOptions(isLast = true, allowZero = false),
+            options = NumberInputOptions(isLast = true, allowZero = false, preserveRawInput = true),
             errorMessage =
                 if (isTargetInvalid) {
                     stringResource(
@@ -433,15 +434,18 @@ private fun CustomMainCounterLabelField(
     sanitizedValue: String?,
     onValueChange: (String) -> Unit,
     modifier: Modifier = Modifier,
+    onNext: (() -> Unit)? = null,
 ) {
-    val showError = value.isNotBlank() && sanitizedValue == null
+    val focusManager = LocalFocusManager.current
     LabeledTextField(
         value = value,
         onValueChange = onValueChange,
         inputModifier = modifier,
         label = stringResource(R.string.main_counter_custom_label),
+        keyboardOptions = KeyboardOptions(imeAction = if (onNext == null) ImeAction.Done else ImeAction.Next),
+        keyboardActions = KeyboardActions(onNext = { onNext?.invoke() }, onDone = { focusManager.clearFocus() }),
         errorMessage =
-            if (showError) {
+            if (sanitizedValue == null) {
                 stringResource(R.string.main_counter_custom_label_error)
             } else {
                 null
@@ -453,7 +457,7 @@ private fun CustomMainCounterLabelField(
 // Sama segmenttivalitsin kuin muualla: vihreät sirut olivat ainoa eri näköinen valinta, ja
 // tummassa teemassa valittu siru erottui tuskin lainkaan valitsemattomasta.
 @Composable
-private fun CraftTypeToggle(
+internal fun CraftTypeToggle(
     selected: CraftType,
     onSelect: (CraftType) -> Unit,
 ) {

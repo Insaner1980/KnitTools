@@ -94,7 +94,7 @@ class PatternShareCoordinatorViewModelTest {
                 "",
             ),
             parseWebPatternSharedText(
-                "https://www.ravelry.com/patterns/library/cozy-hat",
+                "https://www.ravelry\u3002com/patterns/library/cozy-hat",
                 null,
             ).toPatternSharePayload(),
         )
@@ -137,8 +137,9 @@ class PatternShareCoordinatorViewModelTest {
     }
 
     @Test
-    fun `replayed source intent keeps the pending request identity`() {
-        val model = PatternShareCoordinatorViewModel(SavedStateHandle())
+    fun `identical deliberate shares keep separate identities across restoration`() {
+        val handle = SavedStateHandle()
+        val model = PatternShareCoordinatorViewModel(handle)
         val payload =
             PatternSharePayload.Ravelry(
                 url = "https://www.ravelry.com/patterns/library/cozy-hat",
@@ -146,10 +147,14 @@ class PatternShareCoordinatorViewModelTest {
             )
 
         val first = (model.offer(payload) as PatternShareOfferResult.Accepted).request
-        val replay = (model.offer(payload) as PatternShareOfferResult.Accepted).request
+        val second = (model.offer(payload) as PatternShareOfferResult.Queued).request
+        val restored = PatternShareCoordinatorViewModel(handle.restoredCopy())
 
-        assertEquals(first, replay)
-        assertEquals(first.requestId, model.pending.value?.requestId)
+        assertEquals(first.requestId + 1L, second.requestId)
+        assertEquals(first, restored.pending.value)
+        restored.acknowledge(first.requestId)
+        restored.acknowledge(first.requestId)
+        assertEquals(second, restored.pending.value)
     }
 
     @Test

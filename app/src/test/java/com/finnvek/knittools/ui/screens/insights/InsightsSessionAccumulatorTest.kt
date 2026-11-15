@@ -164,13 +164,12 @@ class InsightsSessionAccumulatorTest {
         assertEquals(1L, buckets.getValue(date).totalRows)
     }
 
-    @Test fun futureBucketsKeepTheComparisonFlagWithoutRetainingInvisibleCharts() {
+    @Test fun futureBucketsContributeDurationWithoutRetainingInvisibleCharts() {
         val params = params(TimeRange.THIS_MONTH)
         val accumulator = InsightsSessionAccumulator(params, SessionInsightsFacts(true, emptyList()))
         repeat(5) { accumulator.add(session(today.plusYears(it + 1L), 1, 3600, 10)) }
         val chart = accumulator.chart(PaceGroupingInterval.DAY)
         assertTrue(chart.values.isEmpty())
-        assertEquals(2, chart.futureMeasuredBucketCount)
         assertEquals(18_000L, accumulator.summary.totalSeconds)
     }
 

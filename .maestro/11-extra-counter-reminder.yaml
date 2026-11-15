@@ -1,0 +1,59 @@
+appId: com.finnvek.knittools
+name: Extra counter and reminder
+---
+- launchApp:
+    clearState: true
+- tapOn: "New Project"
+- tapOn:
+    text: "Project name"
+    index: 1
+- inputText: "Maestro Details"
+- tapOn: "Create project"
+- tapOn: "Project actions"
+- tapOn: "Add counter"
+- tapOn:
+    text: "Name"
+    index: 1
+- inputText: "Maestro Extra"
+- hideKeyboard
+- tapOn: "Save"
+- scrollUntilVisible:
+    element:
+      text: "Increase Maestro Extra"
+    direction: DOWN
+- tapOn: "Increase Maestro Extra"
+- assertVisible: "1"
+- tapOn: "Decrease Maestro Extra"
+- assertVisible: "0"
+- scrollUntilVisible:
+    element:
+      text: "Reminders"
+    direction: UP
+- tapOn: "Reminders"
+- tapOn: "Add"
+- tapOn:
+    text: "Counter value"
+    index: 1
+- inputText: "2"
+- tapOn:
+    text: "Message"
+    index: 1
+- inputText: "Change yarn at row two"
+- hideKeyboard
+- tapOn: "Save"
+- tapOn: "Reminders"
+- assertVisible: "Change yarn at row two"
+- back
+- scrollUntilVisible:
+    element:
+      text: "Add row"
+    direction: UP
+- tapOn: "Add row"
+- tapOn: "Add row"
+- scrollUntilVisible:
+    element:
+      text: "Change yarn at row two"
+    direction: DOWN
+- assertVisible: "Change yarn at row two"
+- tapOn: "Dismiss"
+- assertNotVisible: "Change yarn at row two"

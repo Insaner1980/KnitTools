@@ -90,11 +90,16 @@ fun TipHost(
             keyboardVisible ||
             registry.focusedFields.isNotEmpty() ||
             lifecycle != Lifecycle.State.RESUMED
-    var entryReady by remember(routeKey) { mutableStateOf(false) }
-    var viewport by remember { mutableStateOf(Rect.Zero) }
-    val environment = TipHostEnvironment(routeKey, entryReady, blocked, viewport)
-    val effectiveContext = state.contextFor(context.withEnvironment(environment))
     val requestedContext = state.contextFor(context.copy(blocked = blocked))
+    val canStartEntryDelay =
+        requestedContext.screenReady && lifecycle == Lifecycle.State.RESUMED && state.routeKey == routeKey
+    val entryDelayReady =
+        remember(routeKey, state.routeEntryGeneration, context.screen, context.projectId, canStartEntryDelay) {
+            mutableStateOf(false)
+        }
+    var viewport by remember { mutableStateOf(Rect.Zero) }
+    val environment = TipHostEnvironment(routeKey, entryDelayReady.value, blocked, viewport)
+    val effectiveContext = state.contextFor(context.withEnvironment(environment))
     val workSessionRequest = state.workSessionRequestFor(routeKey, requestedContext)
     val presentation = state.presentation?.takeIf { it.routeKey == routeKey }
     val requestedPresentation = presentation != null && presentation == state.workSessionRequest
@@ -130,9 +135,11 @@ fun TipHost(
             currentOutsideDismiss,
         )
 
-    LaunchedEffect(routeKey) {
-        delay(OnboardingDimens.TIP_ENTRY_DELAY_MILLIS)
-        entryReady = true
+    LaunchedEffect(entryDelayReady) {
+        if (canStartEntryDelay) {
+            delay(OnboardingDimens.TIP_ENTRY_DELAY_MILLIS)
+            entryDelayReady.value = true
+        }
     }
     LaunchedEffect(routeKey, requestedContext, state.workSessionRequest) {
         session.cancelInvalidWorkSessionRequest(routeKey, requestedContext)
@@ -166,7 +173,7 @@ fun TipHost(
         val shown = presentation ?: return@LaunchedEffect
         val placementLost = shown.id != TipId.BACKUP && measured?.id == shown.id && measured?.placement == null
         if (blocked || !presentationContext.screenReady || placementLost || !presentationAllowed) {
-            session.dismiss(routeKey, shown.id)
+            session.releasePresentation(shown)
         }
     }
     LaunchedEffect(presentation) {
@@ -178,7 +185,7 @@ fun TipHost(
     DisposableEffect(session, routeKey) {
         onDispose {
             session.state.value.presentation?.takeIf { it.routeKey == routeKey }?.let {
-                session.dismiss(routeKey, it.id)
+                session.releasePresentation(it)
             }
         }
     }
@@ -195,9 +202,12 @@ fun TipHost(
                     viewport = viewport,
                     anchor = registry.anchors[overlayId]?.bounds,
                     protectedBounds = registry.protectedBounds.values.toList(),
-                    visible = presentation?.id == overlayId && presentationAllowed && !blocked,
+                    presentation =
+                        presentation?.takeIf {
+                            it.id == overlayId && presentationAllowed && presentationContext.screenReady && !blocked
+                        },
                     onMeasured = { measured = it },
-                    onVisible = { presentation?.let(session::markPresentationVisible) },
+                    onVisible = session::markPresentationVisible,
                     onDismiss = { session.dismiss(routeKey, overlayId) },
                     onAction = {
                         session.dismiss(routeKey, overlayId, acted = true)
@@ -240,14 +250,15 @@ private fun MeasuredTipOverlay(
     viewport: Rect,
     anchor: Rect?,
     protectedBounds: List<Rect>,
-    visible: Boolean,
+    presentation: TipPresentation?,
     onMeasured: (MeasuredTip) -> Unit,
-    onVisible: () -> Unit,
+    onVisible: (TipPresentation) -> Unit,
     onDismiss: () -> Unit,
     onAction: () -> Unit,
 ) {
     val text = tipText(id, context)
     val actionLabel = tipActionLabel(id)
+    val visible = presentation != null
     val progress by animateFloatAsState(
         targetValue = if (visible) 1f else 0f,
         animationSpec = tween(OnboardingDimens.TIP_ENTER_DURATION_MILLIS),
@@ -290,14 +301,13 @@ private fun MeasuredTipOverlay(
             }
         onMeasured(MeasuredTip(id, placement))
         val bubble =
-            if (visible && placement != null) {
+            if (presentation != null && placement != null) {
                 subcompose("bubble") {
-                    val visibleCallback by rememberUpdatedState(onVisible)
-                    LaunchedEffect(progress > 0f) {
+                    LaunchedEffect(presentation, progress > 0f) {
                         if (progress > 0f) {
                             // Kertamerkintä odottaa ruutua, jossa kupla on aidosti näkyvä.
                             withFrameNanos {}
-                            visibleCallback()
+                            onVisible(presentation)
                         }
                     }
                     StitchMarkerTip(text, onDismiss, actionLabel = actionLabel, onAction = onAction)
@@ -382,7 +392,8 @@ fun InlineTipCard(
     val registry = LocalTipAnchors.current ?: return
     val state by session.state.collectAsStateWithLifecycle()
     val effectiveContext = state.contextFor(context.withEnvironment(environment))
-    val shown = state.presentation?.let { it.routeKey == environment.routeKey && it.id == id } == true
+    val presentation = state.presentation?.takeIf { it.routeKey == environment.routeKey && it.id == id }
+    val shown = presentation != null
     val eligible = TipRules.next(effectiveContext) == id && state.presentation == null
     if (!shown && !eligible) return
     var size by remember { mutableStateOf(IntSize.Zero) }
@@ -399,15 +410,13 @@ fun InlineTipCard(
     LaunchedEffect(eligible, fullyVisible, bounds) {
         if (eligible && fullyVisible) session.tryShow(environment.routeKey, id, effectiveContext.projectId)
     }
-    LaunchedEffect(shown, fullyVisible, effectiveContext.blocked) {
-        if (!shown) return@LaunchedEffect
+    LaunchedEffect(presentation, fullyVisible, effectiveContext.blocked) {
+        if (presentation == null) return@LaunchedEffect
         if (!fullyVisible || effectiveContext.blocked) {
-            session.dismiss(environment.routeKey, id)
+            session.releasePresentation(presentation)
         } else {
             withFrameNanos {}
-            session.state.value.presentation
-                ?.takeIf { it.routeKey == environment.routeKey && it.id == id }
-                ?.let(session::markPresentationVisible)
+            session.markPresentationVisible(presentation)
         }
     }
     Layout(

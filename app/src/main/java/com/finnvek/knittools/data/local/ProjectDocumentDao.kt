@@ -7,10 +7,11 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface ProjectDocumentDao :
+    ProjectDocumentObservations,
     ProjectDocumentQueries,
     ProjectDocumentMutations
 
-interface ProjectDocumentQueries {
+interface ProjectDocumentObservations {
     @Query("SELECT * FROM project_documents WHERE projectId = :projectId ORDER BY sortOrder, id")
     fun observeForProject(projectId: Long): Flow<List<ProjectDocumentEntity>>
 
@@ -19,7 +20,9 @@ interface ProjectDocumentQueries {
 
     @Query("SELECT * FROM project_documents WHERE projectId = :projectId AND isPrimary = 1 LIMIT 1")
     fun observePrimary(projectId: Long): Flow<ProjectDocumentEntity?>
+}
 
+interface ProjectDocumentQueries {
     @Query("SELECT * FROM project_documents WHERE projectId = :projectId ORDER BY sortOrder, id")
     suspend fun getForProject(projectId: Long): List<ProjectDocumentEntity>
 
@@ -43,6 +46,9 @@ interface ProjectDocumentQueries {
         projectId: Long,
         localPdfUri: String,
     ): ProjectDocumentEntity?
+
+    @Query("SELECT projectId FROM project_documents WHERE localPdfUri = :localPdfUri ORDER BY id LIMIT 1")
+    suspend fun getFirstProjectIdByUri(localPdfUri: String): Long?
 
     @Query("SELECT * FROM project_documents WHERE projectId = :projectId AND savedPatternId = :savedPatternId")
     suspend fun getBySavedPatternId(

@@ -69,7 +69,7 @@ internal fun ProjectSetupRoute(
         actions =
             ProjectSetupActions(
                 onItemClick,
-                viewModel::hideProjectSetup,
+                { state.projectId?.let(viewModel::hideProjectSetup) },
                 { viewModel.celebrateProjectSetup(it.projectId, it.routeEntryGeneration) },
             ),
         onBlockingSurfaceChanged = onBlockingSurfaceChanged,
@@ -90,16 +90,18 @@ internal fun ProjectSetupSection(
     val currentVisit = visit?.takeIf { it.projectId == projectId } ?: return
     if (!state.startupReady || onboarding == null || onboarding.initializedVersion == 0) return
     if (onboarding.starterProjectId != projectId || state.isCompleted || onboarding.projectSetupHidden) return
-    if (onboarding.projectSetupCelebrated && celebratedVisit != currentVisit) return
+    val setupWasCelebrated = onboarding.projectSetupCelebrated || celebratedVisit?.projectId == projectId
+    if (setupWasCelebrated && celebratedVisit != currentVisit) return
     val progress =
         projectSetupProgress(
             state.targetRows,
-            state.projectDocuments.isNotEmpty() || state.linkedPattern?.isWebPatternCompatible == true,
+            state.projectDocuments.any { state.projectDocumentAvailability[it.id] == true } ||
+                state.linkedPattern?.isWebPatternCompatible == true,
             state.projectYarnNotes.isNotEmpty() || state.linkedYarns.isNotEmpty(),
             state.hasSessions,
         )
-    LaunchedEffect(currentVisit, progress.doneCount, canCelebrate, onboarding.projectSetupCelebrated) {
-        if (canCelebrate && progress.doneCount == ProjectSetupItem.entries.size && !onboarding.projectSetupCelebrated) {
+    LaunchedEffect(currentVisit, progress.doneCount, canCelebrate, setupWasCelebrated) {
+        if (canCelebrate && progress.doneCount == ProjectSetupItem.entries.size && !setupWasCelebrated) {
             actions.onCelebrate(currentVisit)
         }
     }

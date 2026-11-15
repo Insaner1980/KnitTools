@@ -149,9 +149,10 @@ class OnboardingStateRepository internal constructor(
         }
     }
 
-    suspend fun hideProjectSetup() {
-        dataStore.editPreferencesSafely { it[KEY_PROJECT_SETUP_HIDDEN] = true }
-    }
+    suspend fun hideProjectSetup(projectId: Long): Boolean =
+        dataStore.editPreferencesSafely {
+            if (it[KEY_STARTER_PROJECT_ID] == projectId) it[KEY_PROJECT_SETUP_HIDDEN] = true
+        }
 
     suspend fun markProjectSetupCelebrated() {
         dataStore.editPreferencesSafely { it[KEY_PROJECT_SETUP_CELEBRATED] = true }

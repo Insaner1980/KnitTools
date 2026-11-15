@@ -14,33 +14,41 @@ private const val MIME_TYPE_PDF = "application/pdf"
 fun IncomingPdfViewModel.receiveFromIntent(
     intent: Intent?,
     contentResolver: ContentResolver,
+    isNewIntent: Boolean = false,
 ): Boolean {
     if (intent == null) return false
-    val uri =
-        when (intent.action) {
-            Intent.ACTION_VIEW ->
-                intent.data?.takeIf { data ->
-                    intent.type == MIME_TYPE_PDF ||
-                        runCatching { contentResolver.getType(data) }.getOrNull() == MIME_TYPE_PDF
-                }
-
-            Intent.ACTION_SEND ->
-                IntentCompat
-                    .getParcelableExtra(intent, Intent.EXTRA_STREAM, Uri::class.java)
-                    ?.takeIf { intent.type == MIME_TYPE_PDF }
-
-            else -> null
-        } ?: return false
+    val uri = intent.pdfUri(contentResolver) ?: return false
+    if (isNewIntent) pdfIntentConsumed = false
     consumePdfIntent(uri, intent)
     return true
 }
 
-internal fun IncomingPdfViewModel.restoreInterruptedReceive(intent: Intent?): Boolean {
+internal fun IncomingPdfViewModel.restoreInterruptedReceive(
+    intent: Intent?,
+    contentResolver: ContentResolver,
+): Boolean {
     val uri = interruptedSourceUri ?: return false
     if (receiving.value) pdfIntentConsumed = true
-    consumePdfIntent(uri, intent)
+    consumePdfIntent(uri, intent?.takeIf { it.pdfUri(contentResolver) == uri })
     return true
 }
+
+private fun Intent.pdfUri(contentResolver: ContentResolver): Uri? =
+    when (action) {
+        Intent.ACTION_VIEW ->
+            data?.takeIf { source ->
+                type == MIME_TYPE_PDF || runCatching { contentResolver.getType(source) }.getOrNull() == MIME_TYPE_PDF
+            }
+
+        Intent.ACTION_SEND ->
+            if (type == MIME_TYPE_PDF) {
+                IntentCompat.getParcelableExtra(this, Intent.EXTRA_STREAM, Uri::class.java)
+            } else {
+                null
+            }
+
+        else -> null
+    }
 
 private fun IncomingPdfViewModel.consumePdfIntent(
     uri: Uri,

@@ -14,6 +14,7 @@ import java.io.OutputStream
 
 internal const val PATTERN_PDF_EXPORT_MAX_ANNOTATIONS = 2_000
 internal const val PATTERN_PDF_EXPORT_MAX_ANNOTATION_PAYLOAD_BYTES = 16L * 1_024L * 1_024L
+internal const val PATTERN_PDF_EXPORT_MAX_TRACKER_CELLS = 20_000L
 
 internal data class PatternPdfExportLimits(
     val maxPageCount: Int = 100,
@@ -24,7 +25,7 @@ internal data class PatternPdfExportLimits(
     val maxAnnotations: Int = PATTERN_PDF_EXPORT_MAX_ANNOTATIONS,
     val maxAnnotationPayloadBytes: Long = PATTERN_PDF_EXPORT_MAX_ANNOTATION_PAYLOAD_BYTES,
     val maxAnnotationWork: Long = 250_000L,
-    val maxTrackerHighlightCells: Long = 20_000L,
+    val maxTrackerHighlightCells: Long = PATTERN_PDF_EXPORT_MAX_TRACKER_CELLS,
     val maxTemporaryOutputBytes: Long = 200L * 1_024L * 1_024L,
     val cacheReserveBytes: Long = 32L * 1_024L * 1_024L,
 )
@@ -45,7 +46,8 @@ internal enum class PatternPdfExportLimitReason {
 
 internal class PatternPdfExportLimitException(
     val reason: PatternPdfExportLimitReason,
-) : IOException("Pattern PDF export resource limit exceeded: $reason")
+    cause: Throwable? = null,
+) : IOException("Pattern PDF export resource limit exceeded: $reason", cause)
 
 internal data class PatternPdfSourcePageSize(
     val width: Int,
@@ -154,19 +156,17 @@ internal class PatternPdfExportBoundedOutputStream(
     private val output: OutputStream,
     private val maxBytes: Long,
     private val checkCancelled: () -> Unit = {},
+    private val checkStorage: (additionalBytes: Int) -> Unit = {},
 ) : FilterOutputStream(output) {
     private var writtenBytes = 0L
-    private var limitExceeded = false
+    private var writeFailure: IOException? = null
 
     init {
         require(maxBytes >= 0L)
     }
 
     override fun write(value: Int) {
-        requireCapacity(1)
-        checkCancelled()
-        output.write(value)
-        writtenBytes += 1L
+        writeWithinBudget(1) { output.write(value) }
     }
 
     override fun write(
@@ -175,21 +175,30 @@ internal class PatternPdfExportBoundedOutputStream(
         length: Int,
     ) {
         require(offset >= 0 && length >= 0 && offset <= buffer.size - length)
-        requireCapacity(length)
-        checkCancelled()
-        output.write(buffer, offset, length)
-        writtenBytes += length.toLong()
+        writeWithinBudget(length) { output.write(buffer, offset, length) }
     }
 
     override fun close() = Unit
 
-    fun throwIfLimitExceeded() {
-        if (limitExceeded) fail(PatternPdfExportLimitReason.OUTPUT_BYTES)
+    fun throwIfWriteFailed() {
+        writeFailure?.let { throw it }
     }
 
-    private fun requireCapacity(additionalBytes: Int) {
-        if (additionalBytes.toLong() > maxBytes - writtenBytes) limitExceeded = true
-        throwIfLimitExceeded()
+    private inline fun writeWithinBudget(
+        additionalBytes: Int,
+        write: () -> Unit,
+    ) {
+        throwIfWriteFailed()
+        try {
+            if (additionalBytes.toLong() > maxBytes - writtenBytes) fail(PatternPdfExportLimitReason.OUTPUT_BYTES)
+            checkCancelled()
+            checkStorage(additionalBytes)
+            write()
+            writtenBytes += additionalBytes
+        } catch (failure: IOException) {
+            writeFailure = failure
+            throw failure
+        }
     }
 }
 

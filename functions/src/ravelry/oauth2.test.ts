@@ -11,6 +11,25 @@ import {
 
 describe("Ravelry OAuth2 token exchange", () => {
   for (const grant of ["exchange", "refresh"] as const) {
+    it(`rejects missing ${grant} configuration without sending a token request`, async () => {
+      let fetchCalls = 0;
+      const fetchImpl: typeof fetch = async () => {
+        fetchCalls++;
+        return Response.json({ access_token: "synthetic-access" });
+      };
+      for (const config of [
+        { clientId: "", clientSecret: "synthetic-secret" },
+        { clientId: "synthetic-client", clientSecret: "" },
+      ]) {
+        const request = grant === "exchange"
+          ? exchangeOAuth2CodeForToken({ ...config, fetchImpl, code: "synthetic-code",
+            codeVerifier: "synthetic-verifier", redirectUri: "https://callback.example/ravelry" })
+          : refreshOAuth2AccessToken({ ...config, fetchImpl, refreshToken: "synthetic-refresh" });
+        await assert.rejects(request, { statusCode: 503 });
+      }
+      assert.equal(fetchCalls, 0);
+    });
+
     for (const failure of ["network", "missing-token", "empty-token", "null-body"] as const) {
       it(`maps ${grant} ${failure} failures to sanitized unavailability`, async () => {
         const fetchImpl: typeof fetch = async () => {
@@ -34,6 +53,20 @@ describe("Ravelry OAuth2 token exchange", () => {
       });
     }
   }
+
+  it("distinguishes absent expiry from malformed or overflowing provider deadlines", async () => {
+    for (const expiry of [null, "60", {}, Number.MAX_VALUE]) {
+      await assert.rejects(refreshOAuth2AccessToken({
+        clientId: "synthetic-client", clientSecret: "synthetic-secret", refreshToken: "synthetic-refresh",
+        fetchImpl: async () => Response.json({ access_token: "synthetic-access", expires_in: expiry }),
+      }), { statusCode: 503 });
+    }
+    const withoutExpiry = await refreshOAuth2AccessToken({
+      clientId: "synthetic-client", clientSecret: "synthetic-secret", refreshToken: "synthetic-refresh",
+      fetchImpl: async () => Response.json({ access_token: "synthetic-access" }),
+    });
+    assert.equal(withoutExpiry.expiresAtMillis, undefined);
+  });
 
   it("maps rejected credentials and transient token failures to the callable contract", () => {
     for (const status of [400, 401]) {

@@ -117,8 +117,9 @@ internal class AnnotationTextTestFixture {
     suspend fun annotation() = checkNotNull(row().toDomain())
 
     suspend fun close() {
+        if (!::db.isInitialized) return
         if (::vm.isInitialized) vm.viewModelScope.coroutineContext[Job]?.cancelAndJoin()
-        if (::db.isInitialized) db.close()
+        db.close()
         context.deleteDatabase(databaseName)
     }
 

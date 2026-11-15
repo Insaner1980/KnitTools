@@ -23,6 +23,7 @@ import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -270,13 +271,14 @@ class TipSessionTest {
             runCurrent()
             showProjectTarget(session)
             val stale = requireNotNull(session.state.value.presentation)
-            session.onRouteChanged("overview-7")
+            session.dismiss("counter-7", TipId.TARGET_REACHED)
+            assertTrue(session.tryShow("counter-7", TipId.TARGET_REACHED, 7L))
             session.markPresentationVisible(stale)
             runCurrent()
+            assertEquals(0, session.state.value.shownThisProcess)
             coVerify(exactly = 0) { fixture.repository.markTargetCelebrated(any()) }
             coVerify(exactly = 0) { fixture.repository.markTipSeen(TipId.TARGET_REACHED) }
 
-            showProjectTarget(session)
             val visible = requireNotNull(session.state.value.presentation)
             session.markPresentationVisible(visible)
             session.markPresentationVisible(visible)
@@ -432,6 +434,27 @@ class TipSessionTest {
             )
             assertEquals(0, session.state.value.shownThisProcess)
             assertTrue(session.tryShowRequestedWorkSession("counter-7", context))
+        }
+
+    @Test
+    fun `blocking a claimed work session before visibility preserves the request`() =
+        runTest {
+            val fixture = fixture()
+            val session = fixture.session
+            val context = TipContext(TipScreen.COUNTER, projectId = 7L)
+            runCurrent()
+            session.requestWorkSession(7L, "counter-7")
+            assertTrue(session.tryShowRequestedWorkSession("counter-7", context))
+            val blocked = requireNotNull(session.state.value.presentation)
+
+            session.releasePresentation(blocked)
+            assertNull(session.state.value.presentation)
+            assertNotNull(session.state.value.workSessionRequest)
+            assertFalse(session.tryShowRequestedWorkSession("counter-7", context.copy(blocked = true)))
+            assertTrue(session.tryShowRequestedWorkSession("counter-7", context))
+            session.markPresentationVisible(blocked)
+            assertEquals(0, session.state.value.shownThisProcess)
+            verify(exactly = 0) { fixture.analytics.track(UsageEvent.TIP_SHOWN, any()) }
         }
 
     @Test

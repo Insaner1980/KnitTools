@@ -28,6 +28,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavController
@@ -44,7 +45,6 @@ import androidx.navigation.navigation
 import com.finnvek.knittools.billing.SelectedOneTimeOffer
 import com.finnvek.knittools.data.remote.WebPdfDownload
 import com.finnvek.knittools.domain.model.CraftType
-import com.finnvek.knittools.domain.model.SavedPattern
 import com.finnvek.knittools.pro.ProStatus
 import com.finnvek.knittools.pro.TrialJourneyAction
 import com.finnvek.knittools.ui.components.CollectWithLifecycleEffect
@@ -59,8 +59,6 @@ import com.finnvek.knittools.ui.screens.caston.CastOnScreen
 import com.finnvek.knittools.ui.screens.chartsymbols.ChartSymbolScreen
 import com.finnvek.knittools.ui.screens.counter.CounterScreenActions
 import com.finnvek.knittools.ui.screens.counter.CounterViewModel
-import com.finnvek.knittools.ui.screens.counter.PhotoGalleryActions
-import com.finnvek.knittools.ui.screens.counter.PhotoGalleryScreen
 import com.finnvek.knittools.ui.screens.counter.ProjectContentHost
 import com.finnvek.knittools.ui.screens.counterhistory.CounterHistoryScreen
 import com.finnvek.knittools.ui.screens.gauge.GaugeScreen
@@ -75,6 +73,7 @@ import com.finnvek.knittools.ui.screens.library.LibraryViewModel
 import com.finnvek.knittools.ui.screens.library.MyYarnActions
 import com.finnvek.knittools.ui.screens.library.MyYarnScreen
 import com.finnvek.knittools.ui.screens.library.MyYarnState
+import com.finnvek.knittools.ui.screens.library.SavedPatternDetail
 import com.finnvek.knittools.ui.screens.library.SavedPatternDetailScreen
 import com.finnvek.knittools.ui.screens.library.SavedPatternsActions
 import com.finnvek.knittools.ui.screens.library.SavedPatternsScreen
@@ -116,7 +115,8 @@ private const val ARG_CARD_ID = "cardId"
 data class KnitToolsNavActions(
     val onPurchasePro: (Activity, SelectedOneTimeOffer) -> Unit = { _, _ -> },
     val onWebPdfDownload: (WebPdfDownload) -> Unit = {},
-    val onCounterLaunchHandled: () -> Unit = {},
+    val onCounterLaunchHandled: (String) -> Unit = {},
+    val isCurrentExternalCounterLaunch: (String) -> Boolean = { true },
     val onProUpgradeLaunchHandled: () -> Unit = {},
     val onWidgetProPromptLaunchHandled: () -> Unit = {},
     val onPatternShareImportHandled: (Long) -> Unit = {},
@@ -160,8 +160,9 @@ fun KnitToolsNavHost(
         mutableStateOf<CounterLaunchRequest?>(null)
     }
     var showWidgetProPrompt by remember { mutableStateOf(false) }
-    val effectiveCounterLaunch = requests.counterLaunch ?: internalCounterLaunch
-    val currentPatternShareImport by rememberUpdatedState(requests.patternShareImport)
+    val currentPatternShareImport by rememberUpdatedState(
+        requests.patternShareImport.takeUnless { externalEntryActive },
+    )
 
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
@@ -176,6 +177,21 @@ fun KnitToolsNavHost(
     }
     var deferOnboarding by rememberSaveable { mutableStateOf(false) }
     val externalEntry = requests.hasExternalEntry(externalEntryActive)
+    var handledOnboardingLaunchId by rememberSaveable { mutableStateOf<String?>(null) }
+    val onboardingLaunch =
+        onboarding.draft?.let { draft ->
+            val projectId = draft.projectId ?: return@let null
+            if (!externalEntry &&
+                onboarding.required == false &&
+                draft.exitPending &&
+                handledOnboardingLaunchId != draft.id
+            ) {
+                CounterLaunchRequest(requestId = draft.id, projectId = projectId)
+            } else {
+                null
+            }
+        }
+    val effectiveCounterLaunch = requests.counterLaunch ?: internalCounterLaunch ?: onboardingLaunch
     SideEffect {
         if (externalEntry) deferOnboarding = true
     }
@@ -187,12 +203,6 @@ fun KnitToolsNavHost(
             (currentRoute == null || currentRoute == Screen.ProjectList.route) &&
             onboarding.required != false
     SideEffect { onOnboardingVisible(showOnboarding) }
-    LaunchedEffect(onboarding.draft?.exitPending, onboarding.required) {
-        val draft = onboarding.draft
-        if (onboarding.required == false && draft?.exitPending == true && draft.projectId != null) {
-            internalCounterLaunch = CounterLaunchRequest(projectId = draft.projectId)
-        }
-    }
     if (!launchRequestsReady) {
         SideEffect { onStartupReady(false) }
         return
@@ -299,8 +309,8 @@ fun KnitToolsNavHost(
         actions.onWidgetProPromptLaunchHandled()
     }
 
-    LaunchedEffect(requests.patternShareImport?.requestId, currentRoute) {
-        val request = requests.patternShareImport ?: return@LaunchedEffect
+    LaunchedEffect(currentPatternShareImport?.requestId, currentRoute) {
+        val request = currentPatternShareImport ?: return@LaunchedEffect
         when (val payload = request.payload) {
             is PatternSharePayload.Ravelry -> {
                 navController.navigateSingleTopTo(Screen.RavelryBrowser.createRoute(payload.url, request.requestId))
@@ -346,10 +356,19 @@ fun KnitToolsNavHost(
                 projectsGraph(
                     navController,
                     effectiveCounterLaunch,
-                    onCounterLaunchHandled = {
-                        actions.onCounterLaunchHandled()
-                        internalCounterLaunch = null
-                        if (onboarding.draft?.exitPending == true) onboardingViewModel.acknowledgeExit()
+                    isCurrentCounterLaunch = { requestId ->
+                        effectiveCounterLaunch?.requestId == requestId &&
+                            (requests.counterLaunch == null || actions.isCurrentExternalCounterLaunch(requestId))
+                    },
+                    onCounterLaunchHandled = { requestId ->
+                        when {
+                            requests.counterLaunch?.requestId == requestId -> actions.onCounterLaunchHandled(requestId)
+                            internalCounterLaunch?.requestId == requestId -> internalCounterLaunch = null
+                            onboardingLaunch?.requestId == requestId -> {
+                                handledOnboardingLaunchId = onboardingLaunch.requestId
+                                onboardingViewModel.acknowledgeExit(onboardingLaunch.requestId)
+                            }
+                        }
                     },
                     // Tuo Ravelrysta avaa Ravelryn sovelluksen sisällä, jotta PDF tallentuu suoraan.
                     onImportFromRavelry = {
@@ -504,7 +523,8 @@ fun KnitToolsNavHost(
 private fun NavGraphBuilder.projectsGraph(
     navController: NavHostController,
     counterLaunchRequest: CounterLaunchRequest?,
-    onCounterLaunchHandled: () -> Unit,
+    isCurrentCounterLaunch: (String) -> Boolean,
+    onCounterLaunchHandled: (String) -> Unit,
     onImportFromRavelry: () -> Unit,
     onStartupReady: (NavBackStackEntry, Boolean) -> Unit,
     onLaunchCounter: (Long) -> Unit,
@@ -539,10 +559,8 @@ private fun NavGraphBuilder.projectsGraph(
                     navController.navigateSingleTopTo(Screen.ProjectOverview(projectId).route)
                 },
                 onOpenCounter = { projectId ->
-                    counterViewModel.selectProjectByIdForLaunch(projectId) { loaded ->
-                        if (loaded && navController.currentBackStackEntry?.id == backStackEntry.id) {
-                            navController.navigateSingleTopTo(Screen.Counter.route)
-                        }
+                    if (navController.currentBackStackEntry?.id == backStackEntry.id) {
+                        onLaunchCounter(projectId)
                     }
                 },
                 onUpgradeToPro = {
@@ -588,42 +606,13 @@ private fun NavGraphBuilder.projectsGraph(
                 navController = navController,
                 backStackEntry = backStackEntry,
                 counterLaunchRequest = counterLaunchRequest,
+                isCurrentCounterLaunch = isCurrentCounterLaunch,
                 onCounterLaunchHandled = onCounterLaunchHandled,
                 onImportFromRavelry = onImportFromRavelry,
                 onStartupReady = { onStartupReady(backStackEntry, it) },
             )
         }
-        composable(Screen.PhotoGallery.route) { backStackEntry ->
-            val parentEntry =
-                remember(backStackEntry) {
-                    navController.getBackStackEntry(TopLevelDestination.Projects.route)
-                }
-            val counterViewModel: CounterViewModel = hiltViewModel(parentEntry)
-            val allPhotos by counterViewModel.allPhotos.collectAsStateWithLifecycle()
-            val state by counterViewModel.uiState.collectAsStateWithLifecycle()
-            CompositionLocalProvider(LocalAdaptiveModalWindow provides true) {
-                PhotoGalleryScreen(
-                    errorsProvider = { counterViewModel.photoErrors },
-                    photos = allPhotos,
-                    projectId = state.projectId,
-                    canCreatePhoto = state.canUseProgressPhotos,
-                    proState = state.proState,
-                    proAccessReady = state.proAccessReady,
-                    onBack = { navController.popBackStack() },
-                    onSeePro = { navController.navigateSingleTopTo(Screen.ProUpgrade.route) },
-                    actions =
-                        PhotoGalleryActions(
-                            authorizePhotoCreation = counterViewModel::authorizeProgressPhotoCreation,
-                            cancelPhotoCreation = counterViewModel::cancelProgressPhotoCreation,
-                            createPhotoCaptureTarget = counterViewModel::createPhotoCaptureTarget,
-                            deletePendingPhotoFile = counterViewModel::deletePendingPhotoFile,
-                            savePhoto = counterViewModel::savePhoto,
-                            deletePhoto = counterViewModel::deletePhoto,
-                            updateNote = counterViewModel::updatePhotoNote,
-                        ),
-                )
-            }
-        }
+        photoGalleryDestination(navController)
         composable(
             // CPD-OFF: Reittikohtainen argumenttien kasittely pidetaan reitin yhteydessa.
             Screen.PatternViewer.ROUTE,
@@ -690,15 +679,23 @@ private fun NavGraphBuilder.projectsGraph(
                 return@composable
             }
             SessionHistoryScreen(
-                onBack = { navController.popBackStack() },
+                onBack = {
+                    if (navController.currentBackStackEntry?.id == backStackEntry.id) {
+                        navController.popBackStackOrNavigateToTopLevel(TopLevelDestination.Projects)
+                    }
+                },
             )
         }
         counterHistoryDestination(navController)
         gaugeDestination(navController)
         guideDestinations(navController, onLaunchCounter)
-        projectDestination(navController, Screen.NotesEditor.ROUTE) { _, _ ->
+        projectDestination(navController, Screen.NotesEditor.ROUTE) { backStackEntry, _ ->
             NotesEditorScreen(
-                onBack = { navController.popBackStack() },
+                onBack = {
+                    if (navController.currentBackStackEntry?.id == backStackEntry.id) {
+                        navController.popBackStackOrNavigateToTopLevel(TopLevelDestination.Projects)
+                    }
+                },
                 onSeePro = { navController.navigateSingleTopTo(Screen.ProUpgrade.route) },
             )
         }
@@ -910,27 +907,28 @@ private fun SavedPatternDetailContent(
     val counterViewModel: CounterViewModel = hiltViewModel(projectsEntry)
     val patternDeleteErrorId by libraryViewModel.patternDeleteErrorId.collectAsStateWithLifecycle()
     val projects by libraryViewModel.allProjects.collectAsStateWithLifecycle(initialValue = emptyList())
-    var patternRouteState by remember(savedPatternId) { mutableStateOf<SavedPattern?>(null) }
+    var patternRouteState by remember(savedPatternId) { mutableStateOf<SavedPatternDetail?>(null) }
     var patternRouteLoaded by remember(savedPatternId) { mutableStateOf(false) }
-    LaunchedEffect(savedPatternId) {
-        patternRouteLoaded = false
-        patternRouteState = libraryViewModel.loadSavedPattern(savedPatternId).first()
+    val detail =
+        remember(libraryViewModel, savedPatternId) {
+            libraryViewModel.observeSavedPatternDetail(savedPatternId)
+        }
+    CollectWithLifecycleEffect({ detail }) { observed ->
+        patternRouteState = observed
         patternRouteLoaded = true
     }
-    CollectWithLifecycleEffect({ libraryViewModel.savedPatterns }) { patterns ->
-        if (patternRouteLoaded) {
-            patternRouteState = patterns.firstOrNull { it.id == savedPatternId }
-        }
-    }
-    val pattern = patternRouteState
-    if (pattern == null) {
-        if (patternRouteLoaded) {
+    val currentDetail = patternRouteState
+    val currentEntry by navController.currentBackStackEntryAsState()
+    if (currentDetail == null) {
+        if (patternRouteLoaded && currentEntry?.id == backStackEntryId) {
             RouteArgumentFallback({ navController }, TopLevelDestination.Library)
         }
         return
     }
+    val pattern = currentDetail.pattern
     SavedPatternDetailScreen(
         pattern = pattern,
+        isLocalPdfAvailable = currentDetail.isLocalPdfAvailable,
         onBack = { navController.popBackStack() },
         onOpenPattern = {
             navController.navigateSingleTopTo(Screen.LibraryPatternViewer(savedPatternId).route)
@@ -990,16 +988,18 @@ private fun NavGraphBuilder.libraryPatternViewerRoute(navController: NavHostCont
         val libraryViewModel: LibraryViewModel = hiltViewModel(parentEntry)
         val annotationViewModel: PatternAnnotationViewModel = hiltViewModel(backStackEntry)
         var patternRouteState by remember(savedPatternId) { mutableStateOf<Pair<String, String>?>(null) }
+        var patternRouteLoaded by remember(savedPatternId) { mutableStateOf(false) }
         LaunchedEffect(savedPatternId) {
             val pattern = libraryViewModel.loadSavedPattern(savedPatternId).first()
             val localPdfUri = pattern?.localPdfUri?.takeIf { it.isNotBlank() }
-            if (pattern == null || localPdfUri == null) {
-                navController.popBackStackOrNavigateToTopLevel(TopLevelDestination.Library)
-            } else {
-                patternRouteState = localPdfUri to pattern.name
-            }
+            if (pattern != null && localPdfUri != null) patternRouteState = localPdfUri to pattern.name
+            patternRouteLoaded = true
         }
-        val pattern = patternRouteState ?: return@composable
+        val pattern = patternRouteState
+        if (pattern == null) {
+            if (patternRouteLoaded) RouteArgumentFallback({ navController }, TopLevelDestination.Library)
+            return@composable
+        }
 
         CompositionLocalProvider(LocalAdaptiveModalWindow provides true) {
             LibraryPatternViewerScreen(
@@ -1250,7 +1250,11 @@ private fun NavGraphBuilder.insightsGraph(
                 return@composable
             }
             SessionHistoryScreen(
-                onBack = { navController.popBackStack() },
+                onBack = {
+                    if (navController.currentBackStackEntry?.id == backStackEntry.id) {
+                        navController.popBackStackOrNavigateToTopLevel(TopLevelDestination.Insights)
+                    }
+                },
             )
         }
     }
@@ -1361,14 +1365,18 @@ internal fun RouteArgumentFallback(
     destination: TopLevelDestination,
 ) {
     val navController = navControllerProvider()
-    LaunchedEffect(navController, destination) {
-        navController.popBackStackOrNavigateToTopLevel(destination)
+    val origin = LocalLifecycleOwner.current as? NavBackStackEntry ?: return
+    val currentEntry by navController.currentBackStackEntryAsState()
+    LaunchedEffect(navController, destination, origin.id, currentEntry?.id) {
+        if (navController.currentBackStackEntry?.id == origin.id) {
+            navController.popBackStackOrNavigateToTopLevel(destination)
+        }
     }
 }
 
 private fun NavHostController.popBackStackOrNavigateToTopLevel(destination: TopLevelDestination) {
     if (popBackStack()) return
-    navigateToTopLevel(destination)
+    navigate(destination.route) { launchSingleTop = true }
 }
 
 private fun NavHostController.returnToProjectList() {
@@ -1464,8 +1472,11 @@ private fun rememberRouteProjectReady(
             ready = true
         } else {
             ready = false
-            viewModel.selectProjectByIdForLaunch(projectId) { loaded ->
-                if (currentEntry?.id == backStackEntryId) {
+            viewModel.selectProjectByIdForLaunch(
+                projectId,
+                canSelect = { navController.currentBackStackEntry?.id == backStackEntryId },
+            ) { loaded ->
+                if (navController.currentBackStackEntry?.id == backStackEntryId) {
                     if (loaded) {
                         ready = true
                     } else {

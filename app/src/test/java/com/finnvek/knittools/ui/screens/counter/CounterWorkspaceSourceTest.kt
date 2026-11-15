@@ -123,6 +123,21 @@ class CounterWorkspaceSourceTest {
     }
 
     @Test
+    fun `short counter reserves a separate feedback line before fitting the number`() {
+        val workspace = ProjectSourceFiles.read(COUNTER_WORKSPACE_SECTIONS)
+        val shortHero =
+            workspace
+                .substringAfter("private fun ShortCounterHero(")
+                .substringBefore("private fun ShortCounterSupportingControls(")
+        val feedback = shortHero.indexOf("CounterStepFeedback(")
+
+        assertTrue(feedback in 0 until shortHero.indexOf("CounterMainNumber("))
+        assertTrue(shortHero.contains("inlineStepFeedback = false"))
+        assertTrue(shortHero.contains("maxLines = 1"))
+        assertFalse(shortHero.contains("stepDelta != null"))
+    }
+
+    @Test
     fun `counter hero number measures available width before rolling digits`() {
         val workspace = ProjectSourceFiles.read(COUNTER_WORKSPACE_SECTIONS)
         val dimens = ProjectSourceFiles.read(COUNTER_DIMENS)
@@ -279,20 +294,20 @@ class CounterWorkspaceSourceTest {
         val destination = ProjectSourceFiles.read(COUNTER_DESTINATION)
 
         assertTrue(navGraph.contains("CounterDestination("))
-        assertTrue(
-            destination.contains(
-                "if (counterLaunchRequest != null && loadedLaunchId != counterLaunchRequest.requestId) return",
-            ),
-        )
+        assertTrue(destination.contains("counterLaunchRequest.projectId != counterState.projectId"))
+        assertTrue(destination.contains("canSelect = canSelect"))
         assertTrue(destination.contains("currentLaunchRequest?.requestId == launchRequest.requestId"))
         assertTrue(destination.contains("navController.currentBackStackEntry?.id == backStackEntry.id"))
         assertTrue(destination.contains("loadedLaunchId = launchRequest.requestId.takeIf { loaded }"))
         assertTrue(
-            destination.contains("if (!loaded || launchRequest.journeyAction == null) onCounterLaunchHandled()"),
+            destination.contains(
+                "if (!loaded || launchRequest.journeyAction == null) " +
+                    "onCounterLaunchHandled(launchRequest.requestId)",
+            ),
         )
         assertTrue(destination.contains("currentLaunchRequest?.requestId == requestId"))
-        assertTrue(destination.contains("counterLaunchProjectMissing = !loaded"))
-        assertTrue(destination.contains("counterLaunchProjectMissing || counterState.shouldLeaveCounter"))
+        assertTrue(destination.contains("unavailableLaunchId = launchRequest.requestId.takeUnless { loaded }"))
+        assertTrue(destination.contains("unavailableLaunchId != null || counterState.shouldLeaveCounter"))
         assertTrue(
             destination.indexOf("loadedLaunchId != counterLaunchRequest.requestId") in 0 until
                 destination.indexOf("ProjectContentHost("),

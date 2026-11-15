@@ -49,14 +49,19 @@ function callableString(data: unknown, key: string): string {
 export const ravelryStartAuth = onCall(ravelrySecretOptions, async (request) => {
   try {
     const uid = requireUid(request.auth);
+    const clientId = ravelryClientId.value();
+    if (!clientId.trim() || !ravelryClientSecret.value().trim()) {
+      throw new RavelryAuthFlowError("ravelry_oauth_unavailable", 503);
+    }
+    const backendCallbackUrl = resolveBackendCallbackUrl(ravelryCallbackUrl.value());
     const { rateLimiter, stateStore, tokenStore } = stores();
     await rateLimiter.consume(uid, "auth");
     return await startBrowserOAuth({
       uid,
       stateStore,
       tokenStore,
-      clientId: ravelryClientId.value(),
-      backendCallbackUrl: resolveBackendCallbackUrl(ravelryCallbackUrl.value()),
+      clientId,
+      backendCallbackUrl,
     });
   } catch (error) {
     throw httpsErrorFor(error);
@@ -138,7 +143,9 @@ export const ravelryCallback = onRequest(ravelrySecretOptions, async (request, r
       ? (request.body && typeof request.body === "object" ? request.body : {}) as Record<string, unknown>
       : request.query;
     if (query.start != null) {
-      if (request.method !== "GET") throw new RavelryAuthFlowError("invalid_browser_session", 400);
+      if (request.method !== "GET" || query.code != null || query.error != null) {
+        throw new RavelryAuthFlowError("invalid_browser_session", 400);
+      }
       const state = requireBrowserValue(query.state);
       const ticket = requireBrowserValue(query.start);
       await rateLimiter.consumeGlobal("callback");

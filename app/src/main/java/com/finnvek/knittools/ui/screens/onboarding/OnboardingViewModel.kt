@@ -16,6 +16,7 @@ import com.finnvek.knittools.domain.model.OnboardingDraft
 import com.finnvek.knittools.domain.model.OnboardingStep
 import com.finnvek.knittools.pro.ProFeature
 import com.finnvek.knittools.pro.ProManager
+import com.finnvek.knittools.pro.ProStatus
 import com.finnvek.knittools.pro.TrialManager
 import com.finnvek.knittools.pro.TrialStartResult
 import com.finnvek.knittools.repository.CounterRepository
@@ -29,11 +30,15 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -72,6 +77,14 @@ class OnboardingViewModel
     ) : ViewModel() {
         private val _state = MutableStateFlow(OnboardingUiState())
         val state = _state.asStateFlow()
+
+        @OptIn(ExperimentalCoroutinesApi::class)
+        val readyProject =
+            state
+                .map { it.draft?.takeIf { draft -> draft.step == OnboardingStep.Ready }?.projectId }
+                .distinctUntilChanged()
+                .flatMapLatest { id -> if (id != null) projects.observeProject(id) else flowOf(null) }
+                .stateIn(viewModelScope, SharingStarted.WhileSubscribed(), null)
         val proState = proManager.proState
         val proReady = proManager.initialControlsReady
         val trialState = trialManager.trialState
@@ -136,8 +149,8 @@ class OnboardingViewModel
                             if (stored.step == OnboardingStep.Ready) OnboardingStep.Ready else OnboardingStep.Price
                         stored.copy(step = step, projectId = created).also { persist(it) }
                     }
-                    !stored.completed && projects.hasAnyProject() ->
-                        stored.copy(completed = true, exitPending = false).also { persist(it) }
+                    !stored.completed && (stored.projectId != null || projects.hasAnyProject()) ->
+                        stored.copy(completed = true, exitPending = false, projectId = null).also { persist(it) }
                     else -> stored
                 }
             }
@@ -185,7 +198,7 @@ class OnboardingViewModel
         }
 
         fun createProject() =
-            operate { draft ->
+            operate(step = OnboardingStep.Project) { draft ->
                 analytics.track(UsageEvent.PROJECT_CREATION_SUBMITTED, UsageDetail.SOURCE_ONBOARDING)
                 persist(draft)
                 when (
@@ -201,7 +214,7 @@ class OnboardingViewModel
                         _state.update { it.copy(draft = next) }
                         persist(next)
                         try {
-                            preferences.setLastProjectCraftType(draft.craftType)
+                            preferences.setLastProjectCraftType(draft.projectCraftType)
                         } catch (cancelled: CancellationException) {
                             throw cancelled
                         } catch (_: Exception) {
@@ -218,36 +231,38 @@ class OnboardingViewModel
                 }
             }
 
-        fun selectPdf(source: String) =
-            operate { draft ->
-                analytics.track(UsageEvent.PDF_IMPORT_STARTED, UsageDetail.SOURCE_ONBOARDING)
-                runCatching {
-                    val copied: Pair<String, String>? = pdfStorage.copy(source)
-                    if (copied == null) {
-                        analytics.track(UsageEvent.PDF_IMPORT_FAILED, UsageDetail.SOURCE_ONBOARDING)
-                        _state.update { it.copy(messageRes = R.string.journey_pdf_failed) }
-                        return@operate
-                    }
-                    val next = draft.copy(pdfUri = copied.first, pdfName = copied.second)
-                    var persisted = false
-                    try {
-                        persist(next)
-                        persisted = true
-                    } finally {
-                        if (!persisted) deleteUnusedPdf(copied.first)
-                    }
-                    _state.update { it.copy(draft = next) }
-                    draft.pdfUri?.let { deleteUnusedPdf(it) }
-                    analytics.track(UsageEvent.PDF_IMPORT_SUCCEEDED, UsageDetail.SOURCE_ONBOARDING)
-                }.onFailure { failure ->
-                    if (failure is Exception && failure !is CancellationException) {
-                        analytics.track(UsageEvent.PDF_IMPORT_FAILED, UsageDetail.SOURCE_ONBOARDING)
-                    }
-                }.getOrThrow()
-            }
+        fun selectPdf(
+            source: String,
+            draftId: String,
+        ) = operate(step = OnboardingStep.Project, draftId = draftId) { draft ->
+            analytics.track(UsageEvent.PDF_IMPORT_STARTED, UsageDetail.SOURCE_ONBOARDING)
+            runCatching {
+                val copied: Pair<String, String>? = pdfStorage.copy(source)
+                if (copied == null) {
+                    analytics.track(UsageEvent.PDF_IMPORT_FAILED, UsageDetail.SOURCE_ONBOARDING)
+                    _state.update { it.copy(messageRes = R.string.journey_pdf_failed) }
+                    return@operate
+                }
+                val next = draft.copy(pdfUri = copied.first, pdfName = copied.second)
+                var persisted = false
+                try {
+                    persist(next)
+                    persisted = true
+                } finally {
+                    if (!persisted) deleteUnusedPdf(copied.first)
+                }
+                _state.update { it.copy(draft = next) }
+                draft.pdfUri?.let { deleteUnusedPdf(it) }
+                analytics.track(UsageEvent.PDF_IMPORT_SUCCEEDED, UsageDetail.SOURCE_ONBOARDING)
+            }.onFailure { failure ->
+                if (failure is Exception && failure !is CancellationException) {
+                    analytics.track(UsageEvent.PDF_IMPORT_FAILED, UsageDetail.SOURCE_ONBOARDING)
+                }
+            }.getOrThrow()
+        }
 
         fun removePdf() =
-            operate { draft ->
+            operate(step = OnboardingStep.Project) { draft ->
                 val next = draft.copy(pdfUri = null, pdfName = null)
                 persist(next)
                 _state.update { it.copy(draft = next) }
@@ -255,7 +270,7 @@ class OnboardingViewModel
             }
 
         fun startTrial() =
-            operate { draft ->
+            operate(step = OnboardingStep.Price) { draft ->
                 when (proManager.startTrial()) {
                     TrialStartResult.Started -> {
                         journeyCoordinator.requestStartedJourney(fromOnboarding = true)
@@ -274,9 +289,14 @@ class OnboardingViewModel
                 }
             }
 
-        fun finish() = operate { finishDraft(it) }
+        fun finish() = operate(step = OnboardingStep.Price) { finishDraft(it) }
 
-        fun finishWithPro() = operate { finishDraft(it, confirmedPurchase = true) }
+        fun finishWithPro(draftId: String) =
+            operate(step = OnboardingStep.Price, draftId = draftId) {
+                if (proReady.value && proState.value.status == ProStatus.PRO_PURCHASED) {
+                    finishDraft(it, confirmedPurchase = true)
+                }
+            }
 
         fun acknowledgeCompletionMessage() {
             _state.update { it.copy(completionMessageRes = null) }
@@ -310,10 +330,12 @@ class OnboardingViewModel
             }
         }
 
-        fun acknowledgeExit() {
+        fun acknowledgeExit(draftId: String) {
             applicationScope.launch(start = CoroutineStart.UNDISPATCHED) {
                 writes.withLock {
-                    val draft = _state.value.draft?.takeIf { it.completed && it.exitPending } ?: return@withLock
+                    val draft =
+                        _state.value.draft?.takeIf { it.id == draftId && it.completed && it.exitPending }
+                            ?: return@withLock
                     val next = draft.copy(exitPending = false)
                     try {
                         persist(next)
@@ -333,13 +355,23 @@ class OnboardingViewModel
             check(stateRepository.saveDraft(draft)) { "Onboarding draft persistence failed" }
         }
 
-        private fun operate(action: suspend (OnboardingDraft) -> Unit) {
+        private fun operate(
+            step: OnboardingStep? = null,
+            draftId: String? = null,
+            action: suspend (OnboardingDraft) -> Unit,
+        ) {
             val current = _state.value
-            if (current.busy || current.draft == null) return
+            val draft = current.draft ?: return
+            if (current.busy || current.required != true) return
+            if ((step != null && draft.step != step) ||
+                (draftId != null && draft.id != draftId)
+            ) {
+                return
+            }
             _state.update { it.copy(busy = true, messageRes = null) }
             viewModelScope.launch {
                 try {
-                    writes.withLock { action(current.draft) }
+                    writes.withLock { action(draft) }
                 } catch (cancelled: CancellationException) {
                     throw cancelled
                 } catch (_: Exception) {

@@ -961,9 +961,16 @@ class MigrationTest {
                 """
                 INSERT INTO sessions (
                     id, projectId, startedAt, endedAt, startRow, endRow, durationMinutes
-                ) VALUES (
-                    1, 1, 1000, 2000, 4, 9, 12
-                )
+                ) VALUES
+                    (1, 1, 1000, 2000, 4, 9, 12),
+                    (2, 1, 1000, 2000, 4, 9, -4),
+                    (3, 1, 1000, 2000, 4, 9, ${Int.MAX_VALUE}),
+                    (4, 1, 1000, 2000, 4, 9, ${Long.MAX_VALUE}),
+                    (5, 1, 1000, 2000, 4, 9, 1.5),
+                    (6, 1, 1000, 2000, 4, 'invalid', 12),
+                    (7, 1, 1000, 2000, 4, 9.5, 12),
+                    (8, 1, 1000, 2000, 4, ${Long.MAX_VALUE}, 12),
+                    (9, 1, 1000, 2000, 9, 4, 12)
                 """.trimIndent(),
             )
             close()
@@ -985,6 +992,24 @@ class MigrationTest {
             assertEquals(720L, getLong(0))
             assertEquals(5, getInt(1))
             // CPD-ON
+        }
+        db
+            .query("SELECT durationSeconds, typeof(durationSeconds) FROM sessions WHERE id BETWEEN 2 AND 5 ORDER BY id")
+            .use { rows ->
+                listOf(0L, Int.MAX_VALUE.toLong() * 60L, 0L, 0L).forEach { seconds ->
+                    assertTrue(rows.moveToNext())
+                    assertEquals(seconds, rows.getLong(0))
+                    assertEquals("integer", rows.getString(1))
+                }
+                assertFalse(rows.moveToNext())
+            }
+        db.query("SELECT rowsWorked, typeof(rowsWorked) FROM sessions WHERE id >= 6 ORDER BY id").use { rows ->
+            repeat(4) {
+                assertTrue(rows.moveToNext())
+                assertEquals(0, rows.getInt(0))
+                assertEquals("integer", rows.getString(1))
+            }
+            assertFalse(rows.moveToNext())
         }
 
         db.close()
@@ -1395,6 +1420,13 @@ class MigrationTest {
                 )
                 """.trimIndent(),
             )
+            execSQL(
+                """
+                INSERT INTO saved_patterns (id, ravelryId, name, designerName, isFree, patternUrl, savedAt)
+                VALUES (20, 0, 'Deleted', '', 0, '', 4000)
+                """.trimIndent(),
+            )
+            execSQL("DELETE FROM saved_patterns WHERE id = 20")
             close()
         }
 
@@ -1456,6 +1488,17 @@ class MigrationTest {
             assertEquals(3000L, getLong(7))
             assertEquals(3000L, getLong(8))
             assertTrue(isNull(9))
+        }
+        db.execSQL(
+            """
+            INSERT INTO saved_patterns (
+                source, name, designerName, availability, originalUrl, canonicalUrl,
+                isAvailableOffline, savedAt, updatedAt
+            ) VALUES ('OTHER', 'New pattern', '', 'unknown', '', '', 0, 5000, 5000)
+            """.trimIndent(),
+        )
+        assertSingleRow(db, "SELECT id FROM saved_patterns WHERE name = 'New pattern'") {
+            assertEquals(21L, getLong(0))
         }
 
         db.close()

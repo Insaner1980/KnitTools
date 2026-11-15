@@ -155,6 +155,9 @@ class ProjectDocumentRepository
 
         suspend fun getDistinctUris(projectId: Long): List<String> = documentDao.getDistinctUris(projectId)
 
+        internal suspend fun getFirstProjectIdByUri(localPdfUri: String): Long? =
+            documentDao.getFirstProjectIdByUri(localPdfUri.trim())
+
         suspend fun getActiveDocument(projectId: Long): ProjectDocument? {
             val activeKey = layerRepository.getActiveProjectLayer(projectId)?.owner?.documentKey
             return activeKey

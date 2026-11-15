@@ -179,18 +179,17 @@ fun KnitToolsNavHost(
     val externalEntry = requests.hasExternalEntry(externalEntryActive)
     var handledOnboardingLaunchId by rememberSaveable { mutableStateOf<String?>(null) }
     val onboardingLaunch =
-        onboarding.draft?.let { draft ->
-            val projectId = draft.projectId ?: return@let null
-            if (!externalEntry &&
-                onboarding.required == false &&
-                draft.exitPending &&
-                handledOnboardingLaunchId != draft.id
-            ) {
-                CounterLaunchRequest(requestId = draft.id, projectId = projectId)
-            } else {
-                null
+        onboarding.draft
+            ?.takeIf { draft ->
+                !externalEntry &&
+                    onboarding.required == false &&
+                    draft.exitPending &&
+                    handledOnboardingLaunchId != draft.id
+            }?.let { draft ->
+                draft.projectId?.let { projectId ->
+                    CounterLaunchRequest(requestId = draft.id, projectId = projectId)
+                }
             }
-        }
     val effectiveCounterLaunch = requests.counterLaunch ?: internalCounterLaunch ?: onboardingLaunch
     SideEffect {
         if (externalEntry) deferOnboarding = true

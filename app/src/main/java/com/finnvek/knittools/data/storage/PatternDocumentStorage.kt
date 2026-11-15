@@ -112,7 +112,7 @@ class PatternDocumentStorage
                     val modifiedAt = file.lastModified()
                     if (modifiedAt > 0L && modifiedAt <= nowMillis && modifiedAt <= staleBeforeMillis) {
                         // Delete an empty directory atomically so a concurrent capture can never be swept recursively.
-                        if (file.isDirectory) file.delete() else deleteCaptureFileIfPossible(file)
+                        if (file.isDirectory) deleteEmptySessionDirectory(file) else deleteCaptureFileIfPossible(file)
                     }
                 }
         }
@@ -533,8 +533,9 @@ private fun deleteCaptureFileIfPossible(file: File) {
 }
 
 private fun deleteEmptySessionDirectory(directory: File) {
-    if (directory.isDirectory && directory.listFiles()?.isEmpty() == true) {
-        deleteCaptureFileIfPossible(directory)
+    if (directory.isDirectory) {
+        // A concurrent capture may make the directory nonempty; leave it for a later cleanup.
+        runCatching { Files.delete(directory.toPath()) }
     }
 }
 

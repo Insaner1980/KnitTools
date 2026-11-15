@@ -96,17 +96,12 @@ class BillingManager
             connectionAttempt = 0
             connectionRetryJob?.cancel()
             connectionRetryJob = null
-            val listener =
-                object : PurchasesUpdatedListener {
-                    override fun onPurchasesUpdated(
-                        result: BillingResult,
-                        purchases: List<Purchase>?,
-                    ) {
-                        val source = this
-                        scope.launch {
-                            if (purchaseUpdatesListener === source) {
-                                this@BillingManager.onPurchasesUpdated(result, purchases)
-                            }
+            lateinit var listener: PurchasesUpdatedListener
+            listener =
+                PurchasesUpdatedListener { result, purchases ->
+                    scope.launch {
+                        if (purchaseUpdatesListener === listener) {
+                            onPurchasesUpdated(result, purchases)
                         }
                     }
                 }

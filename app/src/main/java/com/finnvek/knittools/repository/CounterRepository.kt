@@ -297,16 +297,24 @@ class CounterRepository
         ): ProjectCreationResult =
             try {
                 transactionRunner.run {
-                    insertProjectInCurrentTransaction(
-                        name = name,
-                        craftType = craftType,
-                        mainCounterLabelType = mainCounterLabelType,
-                        mainCounterCustomLabel = mainCounterCustomLabel,
-                        canCreateAdditionalProjects = canCreateAdditionalProjects,
-                        targetFolderId = targetFolderId,
-                        startValues = startValues,
-                        trackFirstProject = true,
-                    )
+                    val wasFirstProject = !dao.hasAnyProject()
+                    val result =
+                        insertProjectInCurrentTransaction(
+                            name = name,
+                            craftType = craftType,
+                            mainCounterLabelType = mainCounterLabelType,
+                            mainCounterCustomLabel = mainCounterCustomLabel,
+                            canCreateAdditionalProjects = canCreateAdditionalProjects,
+                            targetFolderId = targetFolderId,
+                            startValues = startValues,
+                        )
+                    if (result is ProjectCreationResult.Created) {
+                        result.copy(
+                            wasFirstProject = wasFirstProject,
+                        )
+                    } else {
+                        result
+                    }
                 }
             } catch (cancelled: CancellationException) {
                 throw cancelled
@@ -368,7 +376,6 @@ class CounterRepository
             canCreateAdditionalProjects: Boolean,
             targetFolderId: Long?,
             startValues: ProjectStartValues = ProjectStartValues(),
-            trackFirstProject: Boolean = false,
         ): ProjectCreationResult {
             if (!canAddActiveProject(canCreateAdditionalProjects)) return ProjectCreationResult.LimitReached
             val (initialCount, targetRows) = startValues
@@ -388,7 +395,6 @@ class CounterRepository
             if (targetFolderId != null && projectFolderDao.getById(targetFolderId) == null) {
                 return ProjectCreationResult.FolderMissing
             }
-            val wasFirstProject = trackFirstProject && !dao.hasAnyProject()
             val now = System.currentTimeMillis()
             val projectId =
                 dao.insert(
@@ -408,7 +414,7 @@ class CounterRepository
                     ProjectFolderAssignmentEntity(projectId = projectId, folderId = targetFolderId),
                 )
             }
-            return ProjectCreationResult.Created(projectId, wasFirstProject)
+            return ProjectCreationResult.Created(projectId)
         }
 
         /** Ensisijainen tuotu PDF antaa projektille ohjeen tiedot, jos projektilla ei vielä ole niitä. */

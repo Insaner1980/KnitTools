@@ -168,6 +168,13 @@ class PatternDocumentStorageTest {
                 mkdir()
                 setLastModified(now + ONE_HOUR_MILLIS)
             }
+        val occupiedSession = File(targetDir, "occupied-session").apply { mkdir() }
+        val pendingCapture =
+            File(occupiedSession, "pending.jpg").apply {
+                writeText("pending")
+                setLastModified(now - ONE_HOUR_MILLIS)
+            }
+        occupiedSession.setLastModified(now - TWO_DAYS_MILLIS)
         oldCapture.setLastModified(now - TWO_DAYS_MILLIS)
         recentCapture.setLastModified(now - ONE_HOUR_MILLIS)
         unknownAgeCapture.setLastModified(0L)
@@ -186,6 +193,8 @@ class PatternDocumentStorageTest {
         assertTrue(newSession.isDirectory)
         assertFalse(staleSession.exists())
         assertTrue(futureSession.isDirectory)
+        assertTrue(occupiedSession.isDirectory)
+        assertEquals("pending", pendingCapture.readText())
         assertTrue(targetDir.exists())
     }
 

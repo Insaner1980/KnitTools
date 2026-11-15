@@ -397,9 +397,9 @@ class CounterRepositoryDomainApiTest {
             assertEquals(ProjectCreationResult.Created(11L, wasFirstProject = true), result)
             assertEquals(1, runner.runCount)
             coVerifyOrder {
+                projectDao.hasAnyProject()
                 projectDao.getActiveProjectCount()
                 projectDao.getAllProjectsOnce()
-                projectDao.hasAnyProject()
                 projectDao.insert(any())
             }
         }

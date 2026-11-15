@@ -97,31 +97,18 @@ fun ProjectDetailsSheet(
     val sanitizedCustomLabel = sanitizeMainCounterCustomLabel(customLabel)
     val hasValidCustomLabel =
         labelType != MainCounterLabelType.CUSTOM || sanitizedCustomLabel != null
-    var moreOptionsExpanded by rememberSaveable {
-        mutableStateOf(
-            labelType != craftType.defaultMainCounterLabelType() ||
-                customLabel.isNotBlank() ||
-                targetText.isNotBlank(),
-        )
-    }
+    val hasMoreOptions =
+        labelType != craftType.defaultMainCounterLabelType() || customLabel.isNotBlank() || targetText.isNotBlank()
+    var moreOptionsExpanded by rememberSaveable { mutableStateOf(hasMoreOptions) }
     LaunchedEffect(isCreate) {
-        if (isCreate &&
-            (
-                labelType != craftType.defaultMainCounterLabelType() ||
-                    customLabel.isNotBlank() ||
-                    targetText.isNotBlank()
-            )
-        ) {
+        if (isCreate && hasMoreOptions) {
             moreOptionsExpanded = true
         }
     }
     LaunchedEffect(isCreate, hasValidCustomLabel, target) {
         if (isCreate && (!hasValidCustomLabel || target == TargetInput.Invalid)) moreOptionsExpanded = true
     }
-    val canConfirm =
-        name.trim().isNotEmpty() &&
-            hasValidCustomLabel &&
-            (!isCreate || startCount != null && target != TargetInput.Invalid)
+    val canConfirm = canConfirmProjectDetails(name, hasValidCustomLabel, isCreate, startCount, target)
 
     FormSheet(
         title = title,
@@ -244,6 +231,17 @@ fun ProjectDetailsSheet(
         }
     }
 }
+
+private fun canConfirmProjectDetails(
+    name: String,
+    hasValidCustomLabel: Boolean,
+    isCreate: Boolean,
+    startCount: Int?,
+    target: TargetInput,
+): Boolean =
+    name.trim().isNotEmpty() &&
+        hasValidCustomLabel &&
+        (!isCreate || startCount != null && target != TargetInput.Invalid)
 
 @Composable
 private fun ProjectStartingCountField(

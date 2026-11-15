@@ -1056,32 +1056,40 @@ class PatternAnnotationViewModel
                             )
                         }
                     }.onFailure { failure ->
-                        if (failure is CancellationException) {
-                            savingStroke = null
-                            interaction.update { state -> state.copy(isSaving = false) }
-                            throw failure
-                        }
-                        interaction.update { state ->
-                            if (currentEditContext() == commandContext) {
-                                state.copy(
-                                    isSaving = false,
-                                    writeError =
-                                        if (command is PatternAnnotationCommand.EditText &&
-                                            failure is PatternAnnotationTextConflict
-                                        ) {
-                                            PatternAnnotationWriteError.TEXT_CONFLICT
-                                        } else {
-                                            PatternAnnotationWriteError.WRITE_FAILED
-                                        },
-                                    failedStroke = savingStroke?.draft ?: state.failedStroke,
-                                )
-                            } else {
-                                state.copy(isSaving = false)
-                            }
-                        }
+                        handleCommandFailure(command, commandContext, failure)
                     }
                 savingStroke = null
                 persistNextStroke()
+            }
+        }
+
+        private fun handleCommandFailure(
+            command: PatternAnnotationCommand,
+            commandContext: AnnotationEditContext,
+            failure: Throwable,
+        ) {
+            if (failure is CancellationException) {
+                savingStroke = null
+                interaction.update { state -> state.copy(isSaving = false) }
+                throw failure
+            }
+            interaction.update { state ->
+                if (currentEditContext() == commandContext) {
+                    state.copy(
+                        isSaving = false,
+                        writeError =
+                            if (command is PatternAnnotationCommand.EditText &&
+                                failure is PatternAnnotationTextConflict
+                            ) {
+                                PatternAnnotationWriteError.TEXT_CONFLICT
+                            } else {
+                                PatternAnnotationWriteError.WRITE_FAILED
+                            },
+                        failedStroke = savingStroke?.draft ?: state.failedStroke,
+                    )
+                } else {
+                    state.copy(isSaving = false)
+                }
             }
         }
 

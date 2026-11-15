@@ -1860,7 +1860,7 @@ class CounterViewModel
             applicationScope.launch {
                 val hidden =
                     try {
-                        withContext(ioDispatcher) { onboardingStateRepository.hideProjectSetup(projectId) }
+                        onboardingStateRepository.hideProjectSetup(projectId)
                     } catch (cancelled: CancellationException) {
                         throw cancelled
                     } catch (_: Exception) {
@@ -1886,7 +1886,7 @@ class CounterViewModel
         private fun persistProjectSetup(action: suspend () -> Unit) {
             applicationScope.launch {
                 try {
-                    withContext(ioDispatcher) { action() }
+                    action()
                 } catch (cancelled: CancellationException) {
                     throw cancelled
                 } catch (_: Exception) {

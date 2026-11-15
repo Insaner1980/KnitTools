@@ -10,19 +10,44 @@ import com.google.android.gms.tasks.Task
 import com.google.android.play.core.appupdate.AppUpdateInfo
 import com.google.android.play.core.appupdate.AppUpdateManager
 import com.google.android.play.core.appupdate.AppUpdateOptions
+import com.google.android.play.core.install.InstallStateUpdatedListener
 import com.google.android.play.core.install.model.AppUpdateType
 import com.google.android.play.core.install.model.InstallStatus
 import com.google.android.play.core.install.model.UpdateAvailability
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.slot
 import io.mockk.verify
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class InAppUpdateManagerTest {
     private val appUpdateManager = mockk<AppUpdateManager>(relaxed = true)
     private val resultLauncher = mockk<ActivityResultLauncher<IntentSenderRequest>>(relaxed = true)
+
+    @Test
+    fun `install listener preserves downloaded prompts until a terminal status`() {
+        val listener = slot<InstallStateUpdatedListener>()
+        every { appUpdateManager.registerListener(capture(listener)) } returns Unit
+        every { appUpdateManager.appUpdateInfo } returns pendingTask<AppUpdateInfo>().task
+        val manager = InAppUpdateManager(appUpdateManager)
+        manager.checkForUpdate(resultLauncher)
+
+        listOf(InstallStatus.CANCELED, InstallStatus.FAILED, InstallStatus.INSTALLED).forEach { terminalStatus ->
+            listener.captured.onStateUpdate(mockk { every { installStatus() } returns InstallStatus.DOWNLOADED })
+            val promptId = manager.downloadedUpdatePromptId.value
+            assertTrue(promptId > 0L)
+            listOf(InstallStatus.PENDING, InstallStatus.DOWNLOADING, InstallStatus.INSTALLING, InstallStatus.UNKNOWN)
+                .forEach { status ->
+                    listener.captured.onStateUpdate(mockk { every { installStatus() } returns status })
+                    assertEquals(promptId, manager.downloadedUpdatePromptId.value)
+                }
+            listener.captured.onStateUpdate(mockk { every { installStatus() } returns terminalStatus })
+            assertEquals(0L, manager.downloadedUpdatePromptId.value)
+        }
+    }
 
     @Test
     fun `a concurrent availability failure cannot release an already started update flow`() {

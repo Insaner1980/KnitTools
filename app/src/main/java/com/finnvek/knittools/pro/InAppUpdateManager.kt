@@ -162,18 +162,18 @@ class InAppUpdateManager
             val listener =
                 InstallStateUpdatedListener { state ->
                     if (listenerOwner !== owner) return@InstallStateUpdatedListener
-                    when (state.installStatus()) {
-                        InstallStatus.DOWNLOADED -> {
-                            resumeCheck = null
-                            notifyUpdateDownloaded()
-                        }
-
-                        InstallStatus.CANCELED, InstallStatus.FAILED, InstallStatus.INSTALLED -> {
-                            resumeCheck = null
-                            updateFlowInProgress = false
-                            completingPromptId = 0L
-                            _downloadedUpdatePromptId.value = 0L
-                        }
+                    val status = state.installStatus()
+                    if (status == InstallStatus.DOWNLOADED) {
+                        resumeCheck = null
+                        notifyUpdateDownloaded()
+                    } else if (status == InstallStatus.CANCELED ||
+                        status == InstallStatus.FAILED ||
+                        status == InstallStatus.INSTALLED
+                    ) {
+                        resumeCheck = null
+                        updateFlowInProgress = false
+                        completingPromptId = 0L
+                        _downloadedUpdatePromptId.value = 0L
                     }
                 }
             installStateListener = listener

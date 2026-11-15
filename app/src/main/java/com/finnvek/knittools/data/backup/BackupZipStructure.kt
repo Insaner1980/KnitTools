@@ -73,7 +73,7 @@ internal object BackupZipStructure {
     ) {
         BackupFormat.requireValid(directory.count in 1..BackupFormat.MAX_ENTRIES.toLong())
         BackupFormat.requireValid(directory.size in 1..BackupFormat.MAX_ENTRIES * 512L)
-        BackupFormat.requireValid(directory.offset >= 0 && directory.offset <= directory.end)
+        BackupFormat.requireValid(directory.offset in 0..directory.end)
         BackupFormat.requireValid(directory.size == directory.end - directory.offset)
         input.seek(directory.offset)
         val members = mutableListOf<Member>()
@@ -182,11 +182,7 @@ internal object BackupZipStructure {
             if (compressedZip64) compressedSize = input.long()
         }
         val hasDescriptor = member.flags and DATA_DESCRIPTOR != 0
-        BackupFormat.requireValid(crc == member.crc || (hasDescriptor && crc == 0L))
-        BackupFormat.requireValid(compressedSize == member.compressedSize || (hasDescriptor && compressedSize == 0L))
-        BackupFormat.requireValid(
-            uncompressedSize == member.uncompressedSize || (hasDescriptor && uncompressedSize == 0L),
-        )
+        verifyLocalMetadata(member, crc, compressedSize, uncompressedSize, hasDescriptor)
         BackupFormat.requireValid(member.compressedSize <= nextOffset - dataOffset)
         val payloadEnd = dataOffset + member.compressedSize
         if (hasDescriptor) {
@@ -194,6 +190,20 @@ internal object BackupZipStructure {
         } else {
             BackupFormat.requireValid(payloadEnd == nextOffset)
         }
+    }
+
+    private fun verifyLocalMetadata(
+        member: Member,
+        crc: Long,
+        compressedSize: Long,
+        uncompressedSize: Long,
+        hasDescriptor: Boolean,
+    ) {
+        BackupFormat.requireValid(crc == member.crc || (hasDescriptor && crc == 0L))
+        BackupFormat.requireValid(compressedSize == member.compressedSize || (hasDescriptor && compressedSize == 0L))
+        BackupFormat.requireValid(
+            uncompressedSize == member.uncompressedSize || (hasDescriptor && uncompressedSize == 0L),
+        )
     }
 
     private fun verifyDescriptor(

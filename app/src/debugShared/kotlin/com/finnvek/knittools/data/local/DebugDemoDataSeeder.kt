@@ -6,6 +6,7 @@ import com.finnvek.knittools.domain.model.SavedPatternSource
 import com.finnvek.knittools.domain.model.YarnCard
 import com.finnvek.knittools.domain.model.YarnCardStatus
 import dagger.Lazy
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -25,12 +26,18 @@ object DebugDemoDataSeeder {
         saveYarnCard: suspend (YarnCard) -> Long,
     ) {
         applicationScope.launch(ioDispatcher) {
-            transactionRunner.get().run {
-                seedDatabaseIfNeeded(
-                    database = database.get(),
-                    addCounter = addCounter,
-                    saveYarnCard = saveYarnCard,
-                )
+            try {
+                transactionRunner.get().run {
+                    seedDatabaseIfNeeded(
+                        database = database.get(),
+                        addCounter = addCounter,
+                        saveYarnCard = saveYarnCard,
+                    )
+                }
+            } catch (failure: CancellationException) {
+                throw failure
+            } catch (_: Exception) {
+                // The transaction has rolled back. Sample data is optional for startup.
             }
         }
     }

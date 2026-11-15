@@ -100,6 +100,24 @@ class RowMappingParserTest {
     }
 
     @Test
+    fun `mapping input limit counts UTF-8 bytes in unknown fields`() {
+        val prefix = """[{"row":2,"page":0,"yPosition":0.5,"ignored":""" + "\""
+        val suffix = "\"}]"
+        val padding = "ä".repeat((ROW_MAPPING_MAX_JSON_LENGTH - prefix.length - suffix.length) / 2)
+        val atLimit = prefix + padding + suffix
+
+        assertEquals(listOf(RowMarker(2, 0, 0.5f)), parseMapping(atLimit))
+        assertTrue(parseMapping(prefix + padding + "ä" + suffix).isEmpty())
+    }
+
+    @Test
+    fun `calibration rejects invalid coordinates without accepting one endpoint`() {
+        assertNull(createCalibrationRowMarkers(-1, 0, 0.2f, 4, 0, 0.4f))
+        assertNull(createCalibrationRowMarkers(2, 0, 0.2f, 4, -1, 0.4f))
+        assertNull(createCalibrationRowMarkers(2, 0, Float.NaN, 4, 0, 0.4f))
+    }
+
+    @Test
     fun `createCalibrationRowMarkers returns two clamped markers for interpolation`() {
         val markers =
             requireNotNull(

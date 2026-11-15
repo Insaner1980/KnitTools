@@ -1,0 +1,30 @@
+appId: com.finnvek.knittools
+name: Progress photo capture
+---
+- launchApp:
+    clearState: true
+- tapOn: "New Project"
+- tapOn:
+    text: "Project name"
+    index: 1
+- inputText: "Maestro Photo"
+- tapOn: "Create project"
+- tapOn: "Add row"
+- scrollUntilVisible:
+    element:
+      text: "Photos"
+    direction: DOWN
+- tapOn: "Photos"
+- tapOn: "Take photo"
+- tapOn: "Shutter"
+- tapOn: "Done"
+- assertVisible: "Count 1"
+- takeScreenshot: photo-saved
+- launchApp
+- tapOn: "Continue Maestro Photo"
+- scrollUntilVisible:
+    element:
+      text: "Photos"
+    direction: DOWN
+- tapOn: "Photos"
+- assertVisible: "Count 1"

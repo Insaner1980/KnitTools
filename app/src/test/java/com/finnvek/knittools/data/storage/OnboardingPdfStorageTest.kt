@@ -82,6 +82,13 @@ class OnboardingPdfStorageTest {
             verify(exactly = 1) { resolver.releasePersistableUriPermission(uri, any()) }
         }
 
+    @Test fun `a provider cleanup failure does not discard a successful private copy`() =
+        runTest {
+            every { resolver.releasePersistableUriPermission(uri, any()) } throws
+                IllegalArgumentException("grant changed")
+            assertCopiesWithFallbackName()
+        }
+
     @Test fun `non-content sources never reach the provider or copier`() =
         runTest {
             every { uri.scheme } returns "https"

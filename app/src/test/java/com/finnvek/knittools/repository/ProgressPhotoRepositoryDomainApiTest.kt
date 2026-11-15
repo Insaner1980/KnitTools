@@ -16,12 +16,16 @@ import io.mockk.unmockkStatic
 import io.mockk.verify
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import java.io.File
@@ -35,6 +39,32 @@ class ProgressPhotoRepositoryDomainApiTest {
     fun setup() {
         context = mockk(relaxed = true)
     }
+
+    @Test
+    fun `cancelled capture target handoff discards its unclaimed file`() =
+        runTest {
+            val storage = mockk<ProgressPhotoStorage>(relaxed = true)
+            val target = File("build/test-progress-capture.jpg")
+            lateinit var request: Job
+            every { storage.createPhotoFile(context, 7L) } answers {
+                request.cancel()
+                target to mockk()
+            }
+            val repository =
+                ProgressPhotoRepository(
+                    mockk(),
+                    storage,
+                    context,
+                    StandardTestDispatcher(testScheduler),
+                    ImmediateDatabaseTransactionRunner,
+                )
+
+            request = launch { repository.createPhotoCaptureTarget(7L) }
+            request.join()
+
+            assertTrue(request.isCancelled)
+            verify(exactly = 1) { storage.deletePendingPhotoFile(target.absolutePath) }
+        }
 
     @Test
     fun `thumbnail map excludes unavailable files`() =

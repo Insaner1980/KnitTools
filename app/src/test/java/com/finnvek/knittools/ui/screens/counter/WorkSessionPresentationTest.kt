@@ -15,6 +15,9 @@ class WorkSessionPresentationTest {
         assertEquals(9_000L, parseRecoveryDurationSeconds("2", "30"))
         assertNull(parseRecoveryDurationSeconds("2", "60"))
         assertNull(parseRecoveryDurationSeconds("", "15"))
+        assertNull(parseRecoveryDurationSeconds("2", "-5"))
+        assertNull(parseRecoveryDurationSeconds("2h", "15"))
+        assertNull(parseRecoveryDurationSeconds("-0", "15"))
         assertNull(parseRecoveryDurationSeconds(Long.MAX_VALUE.toString(), "0"))
     }
 

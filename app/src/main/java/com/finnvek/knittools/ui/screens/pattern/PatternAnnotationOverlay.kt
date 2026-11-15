@@ -256,7 +256,7 @@ private fun PointerInputChange.toNormalizedPoint(
     pressureEnabled: Boolean,
 ): NormalizedPatternPoint? {
     val normalized = transform.screenToPage(PatternScreenPoint(position.x, position.y)) ?: return null
-    return normalized.copy(pressure = if (pressureEnabled) pressure.coerceIn(0f, 1f) else 1f)
+    return normalized.copy(pressure = if (pressureEnabled && pressure.isFinite()) pressure.coerceIn(0f, 1f) else 1f)
 }
 
 private fun PointerType.toPatternInputPointerType(): PatternInputPointerType =

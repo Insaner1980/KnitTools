@@ -98,6 +98,7 @@ class TrialManager
         suspend fun startTrial(): TrialStartResult =
             stateMutex.withLock {
                 var startResult: TrialStartResult? = null
+                var evaluatedState: TrialState? = null
                 val didWrite =
                     dataStore.editPreferencesSafely { preferences ->
                         val now = withContext(ioDispatcher) { sessionTimeSource.snapshot() }
@@ -114,14 +115,10 @@ class TrialManager
                             )
                         if (cleanUnstarted && isValidTimeSnapshot(now)) {
                             preferences[KEY_TRIAL_START] = now.wallClockMillis
+                            val state = createTrialState(now.wallClockMillis, 0L, clockTampered = false)
                             preferences.persistTrialEvaluation(
                                 TrialTimingEvaluation(
-                                    state =
-                                        createTrialState(
-                                            startTimestamp = now.wallClockMillis,
-                                            elapsedDurationMillis = 0L,
-                                            clockTampered = false,
-                                        ),
+                                    state = state,
                                     anchors =
                                         StoredTrialTiming.Anchored(
                                             elapsedDurationMillis = 0L,
@@ -129,22 +126,22 @@ class TrialManager
                                             anchorElapsedRealtimeMillis = now.elapsedRealtimeMillis,
                                             anchorBootCount = now.bootCount,
                                         ),
-                                    lastKnownTimestamp = maxOf(now.wallClockMillis, lastKnownTimestamp),
+                                    lastKnownTimestamp = now.wallClockMillis,
                                 ),
                             )
+                            evaluatedState = state
                             startResult = TrialStartResult.Started
                         } else if (cleanUnstarted) {
                             startResult = TrialStartResult.Failed
                         } else {
-                            startResult =
-                                classifyExistingTrial(
-                                    preferences.evaluateAndPersistTrialState(now),
-                                )
+                            val state = preferences.evaluateAndPersistTrialState(now)
+                            evaluatedState = state
+                            startResult = classifyExistingTrial(state)
                         }
                     }
                 if (!didWrite) return@withLock TrialStartResult.Failed
 
-                refreshTrialStateLocked()
+                evaluatedState?.let { _trialState.value = it }
                 startResult ?: TrialStartResult.Failed
             }
 

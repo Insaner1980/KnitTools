@@ -109,12 +109,10 @@ class PatternDocumentStorage
                 .walkBottomUp()
                 .filterNot { file -> file == root }
                 .forEach { file ->
-                    when {
-                        file.isFile &&
-                            file.lastModified().let { modifiedAt ->
-                                modifiedAt > 0L && modifiedAt <= nowMillis && modifiedAt <= staleBeforeMillis
-                            } -> deleteCaptureFileIfPossible(file)
-                        file.isDirectory && file.listFiles()?.isEmpty() == true -> deleteCaptureFileIfPossible(file)
+                    val modifiedAt = file.lastModified()
+                    if (modifiedAt > 0L && modifiedAt <= nowMillis && modifiedAt <= staleBeforeMillis) {
+                        // Delete an empty directory atomically so a concurrent capture can never be swept recursively.
+                        if (file.isDirectory) deleteEmptySessionDirectory(file) else deleteCaptureFileIfPossible(file)
                     }
                 }
         }
@@ -430,33 +428,35 @@ class PatternDocumentStorage
             try {
                 val copiedUri =
                     withContext(ioDispatcher) {
-                        if (AppFileStorage.isAppOwnedUri(context, sourceUri)) return@withContext null
+                        if (AppFileStorage.isInternalUri(context, sourceUri)) return@withContext null
                         val maxCopyBytes = availablePdfCopyBytes(context) ?: return@withContext null
                         val copyContext = coroutineContext
 
                         try {
-                            context.contentResolver.openInputStream(sourceUri)?.use { input ->
-                                val copiedFile =
-                                    PatternDocumentFiles.writeUniquePdf(
-                                        directory = File(context.filesDir, "pattern_pdfs/$projectId"),
-                                        fileName = fileName,
-                                    ) { targetFile ->
+                            val copiedFile =
+                                PatternDocumentFiles.writeUniquePdf(
+                                    directory = File(context.filesDir, "pattern_pdfs/$projectId"),
+                                    // A discarded share must not make its URI available to a later request.
+                                    fileName = if (projectId == 0L) "${UUID.randomUUID()}.pdf" else fileName,
+                                ) { targetFile ->
+                                    val input =
+                                        context.contentResolver.openInputStream(sourceUri)
+                                            ?: throw IOException("Pattern PDF source is unavailable")
+                                    input.use {
                                         PatternDocumentFiles.copyBounded(
-                                            input = input,
+                                            input = it,
                                             target = targetFile,
                                             maxBytes = maxCopyBytes,
                                         ) {
                                             copyContext.ensureActive()
                                         }
-                                        copyContext.ensureActive()
-                                        if (!isReadablePdf(context, targetFile)) {
-                                            throw IOException("Pattern PDF is not readable")
-                                        }
-                                        copyContext.ensureActive()
                                     }
-                                undeliveredCopy = copiedFile
-                                copiedFile?.toUri()?.toString()
-                            }
+                                    copyContext.ensureActive()
+                                    requireReadablePdf(context, targetFile)
+                                    copyContext.ensureActive()
+                                }
+                            undeliveredCopy = copiedFile
+                            copiedFile?.toUri()?.toString()
                         } catch (failure: CancellationException) {
                             throw failure
                         } catch (_: Exception) {
@@ -472,6 +472,13 @@ class PatternDocumentStorage
                     }
                 }
             }
+        }
+
+        private fun requireReadablePdf(
+            context: Context,
+            file: File,
+        ) {
+            if (!isReadablePdf(context, file)) throw IOException("Pattern PDF is not readable")
         }
 
         private fun availablePdfCopyBytes(context: Context): Long? =
@@ -491,7 +498,9 @@ class PatternDocumentStorage
             file: File,
         ): Boolean =
             runCatching {
-                PdfPageRenderer(context, file.toUri()).use { renderer -> renderer.pageCount > 0 }
+                PdfPageRenderer(context, file.toUri()).use { renderer ->
+                    renderer.pageCount > 0 && renderer.pageSize(0).let { it.width > 0 && it.height > 0 }
+                }
             }.getOrDefault(false)
 
         private companion object {
@@ -524,8 +533,9 @@ private fun deleteCaptureFileIfPossible(file: File) {
 }
 
 private fun deleteEmptySessionDirectory(directory: File) {
-    if (directory.isDirectory && directory.listFiles()?.isEmpty() == true) {
-        deleteCaptureFileIfPossible(directory)
+    if (directory.isDirectory) {
+        // A concurrent capture may make the directory nonempty; leave it for a later cleanup.
+        runCatching { Files.delete(directory.toPath()) }
     }
 }
 
@@ -597,7 +607,7 @@ internal object PatternDocumentFiles {
         fileName: String,
         write: (File) -> Unit,
     ): File {
-        if (!directory.exists() && !directory.mkdirs()) {
+        if (!directory.isDirectory && !directory.mkdirs() && !directory.isDirectory) {
             throw IOException("Pattern PDF directory creation failed")
         }
         prepareUnassignedDirectory(directory)
@@ -614,6 +624,8 @@ internal object PatternDocumentFiles {
         }
     }
 
+    // On Android the existence check in Files.move and the rename may be separate operations.
+    @Synchronized
     private fun moveToUniquePdf(
         sourceFile: File,
         directory: File,

@@ -366,13 +366,15 @@ class PatternViewerSourceTest {
                 "@Composable\ninternal fun rememberPatternRenderState",
             )
 
-        assertTrue(projectViewer.contains("var rowCalibrationState by remember"))
+        assertTrue(projectViewer.contains("var rowCalibrationState by"))
+        assertTrue(projectViewer.contains("rememberSaveable(selectedDocument?.id, selectedDocument?.rowMapping,"))
         assertTrue(projectViewer.contains("onStartRowCalibration = {"))
         assertTrue(projectViewer.contains("counterViewModel.setReadingLineEnabled(true, selectedDocument?.id)"))
         assertTrue(projectViewer.contains("RowCalibrationPanel("))
         assertTrue(projectViewer.contains("createCalibrationRowMarkers("))
         assertTrue(projectViewer.contains("counterViewModel.mergePatternRowMarkers("))
-        assertTrue(projectViewer.contains("documentRowMapping = selectedDocument?.rowMapping"))
+        assertTrue(projectViewer.contains("expectedMapping = selectedDocument?.rowMapping"))
+        assertTrue(projectViewer.contains("documentRowMapping = calibrationState.expectedMapping"))
         assertTrue(projectViewer.contains("rowCalibrationState = null"))
         assertFalse(libraryViewer.contains("RowCalibrationPanel("))
         assertFalse(libraryViewer.contains("mergePatternRowMarkers"))

@@ -59,6 +59,7 @@ fun WebPatternEditorScreen(
 ) {
     val viewModel = viewModelProvider()
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val incomingShare = state.pendingIncomingShare
     SideEffect { onStartupReady(request == null && !state.isLoading) }
 
     LaunchedEffect(request?.requestId, state.pendingIncomingShare?.requestId, state.isLoading, state.isSaving) {
@@ -84,8 +85,8 @@ fun WebPatternEditorScreen(
         onDesignerChange = viewModel::updateDesigner,
         onUrlChange = viewModel::updateUrl,
         onSave = viewModel::save,
-        onKeepDraft = { viewModel.resolveIncomingShare(useIncoming = false) },
-        onUseSharedLink = { viewModel.resolveIncomingShare(useIncoming = true) },
+        onKeepDraft = { incomingShare?.let { viewModel.resolveIncomingShare(it.requestId, useIncoming = false) } },
+        onUseSharedLink = { incomingShare?.let { viewModel.resolveIncomingShare(it.requestId, useIncoming = true) } },
         onDismissReplacement = viewModel::dismissReplacement,
         onConfirmReplacement = viewModel::confirmReplacement,
     )

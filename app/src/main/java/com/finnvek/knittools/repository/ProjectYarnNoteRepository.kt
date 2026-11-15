@@ -106,7 +106,6 @@ class ProjectYarnNoteRepository
                             quantityInStash = note.quantity,
                             status = YarnCardStatus.IN_USE,
                             linkedProjectId = note.projectId,
-                            createdAt = note.createdAt,
                         ),
                     ) ?: return@run null
                 dao.updateSavedYarnCardId(

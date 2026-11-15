@@ -65,9 +65,14 @@ class InAppReviewManagerTest {
             every { task.exception } returns null
             every { task.isCanceled } returns false
             every { task.result } returns mockk<ReviewInfo>()
-            manager.maybeRequestReview(mockk<Activity>())
+            val destroyedActivity = mockk<Activity>(relaxed = true) { every { isDestroyed } returns true }
+            manager.maybeRequestReview(destroyedActivity)
+            assertFalse(persisted[requested] == true)
+            verify(exactly = 0) { play.launchReviewFlow(any(), any()) }
+
+            manager.maybeRequestReview(mockk<Activity>(relaxed = true))
             assertTrue(persisted[requested] == true)
-            verify(exactly = 2) { play.requestReviewFlow() }
+            verify(exactly = 3) { play.requestReviewFlow() }
             verify(exactly = 1) { play.launchReviewFlow(any(), any()) }
         }
 
@@ -108,8 +113,8 @@ class InAppReviewManagerTest {
             every { ReviewManagerFactory.create(context) } returns play
             val manager = InAppReviewManager(context)
 
-            val first = launch { manager.maybeRequestReview(mockk<Activity>()) }
-            val second = launch { manager.maybeRequestReview(mockk<Activity>()) }
+            val first = launch { manager.maybeRequestReview(mockk<Activity>(relaxed = true)) }
+            val second = launch { manager.maybeRequestReview(mockk<Activity>(relaxed = true)) }
             testScheduler.runCurrent()
             verify(exactly = 0) { play.requestReviewFlow() }
             allowWrites.complete(Unit)

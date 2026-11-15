@@ -345,7 +345,7 @@ fun ProjectListScreen(
         )
     }
 
-    if (showCreateProjectDialog) {
+    if (showCreateProjectDialog && !content.isLoading) {
         ProjectDetailsSheet(
             title = stringResource(R.string.new_project_details_title),
             confirmText = stringResource(R.string.create_project),
@@ -567,7 +567,7 @@ fun ProjectListScreen(
             label = newProjectLabel,
             visualSize = visualSize,
             onClick = requestProjectCreation,
-            enabled = selectedFolderFilter !is ProjectFolderFilter.Folder || !folderState.isLoading,
+            enabled = creationDataReady,
             badgeContentDescription = createProjectDescription,
             badge = createProjectDescription?.let { { ProMarker(createProjectAccess) } },
             modifier = buttonModifier,

@@ -43,6 +43,7 @@ private val rowMarkerOrder: Comparator<RowMarker> = compareBy<RowMarker> { it.pa
 
 fun parseMapping(json: String?): List<RowMarker> {
     if (json == null || json.length > ROW_MAPPING_MAX_JSON_LENGTH || json.isBlank()) return emptyList()
+    if (json.encodeToByteArray().size > ROW_MAPPING_MAX_JSON_LENGTH) return emptyList()
     return runCatching {
         (rowMappingJson.parseToJsonElement(json) as? JsonArray)
             ?.asSequence()
@@ -75,6 +76,8 @@ fun createCalibrationRowMarkers(
     lastYPosition: Float,
 ): List<RowMarker>? {
     if (firstRow == lastRow) return null
+    if (firstRow < 0 || lastRow < 0 || firstPage < 0 || lastPage < 0) return null
+    if (!firstYPosition.isFinite() || !lastYPosition.isFinite()) return null
 
     return listOf(
         RowMarker(

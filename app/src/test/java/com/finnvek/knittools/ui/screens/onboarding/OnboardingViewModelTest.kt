@@ -10,10 +10,12 @@ import com.finnvek.knittools.billing.BillingProductStatus
 import com.finnvek.knittools.data.datastore.AppPreferences
 import com.finnvek.knittools.data.datastore.PreferencesManager
 import com.finnvek.knittools.data.storage.OnboardingPdfStorage
+import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.domain.model.OnboardingDraft
 import com.finnvek.knittools.domain.model.OnboardingStep
 import com.finnvek.knittools.pro.ProManager
 import com.finnvek.knittools.pro.ProState
+import com.finnvek.knittools.pro.ProStatus
 import com.finnvek.knittools.pro.TrialManager
 import com.finnvek.knittools.pro.TrialStartResult
 import com.finnvek.knittools.repository.CounterRepository
@@ -67,7 +69,7 @@ class OnboardingViewModelTest {
                 deleted = true
             }
             val vm = viewModel()
-            vm.selectPdf("new-uri")
+            vm.selectPdf("new-uri", "pdf")
             runCurrent()
             store.clear()
             advanceUntilIdle()
@@ -270,7 +272,7 @@ class OnboardingViewModelTest {
             saved.value = OnboardingDraft("pdf", step = OnboardingStep.Project, pdfUri = "old-uri", pdfName = "old.pdf")
             coEvery { pdf.copy("new-uri") } returns null
             val vm = viewModel()
-            vm.selectPdf("new-uri")
+            vm.selectPdf("new-uri", "pdf")
             runCurrent()
             assertEquals("old-uri", saved.value?.pdfUri)
             assertEquals(
@@ -291,7 +293,7 @@ class OnboardingViewModelTest {
             val vm = viewModel()
             coEvery { state.saveDraft(match { it.pdfUri == "copied-uri" }) } returns false
 
-            vm.selectPdf("new-uri")
+            vm.selectPdf("new-uri", "pdf")
             runCurrent()
 
             assertEquals("old-uri", saved.value?.pdfUri)
@@ -315,7 +317,7 @@ class OnboardingViewModelTest {
             coEvery { pdf.copy("new-uri") } throws IOException("copy failed")
             val vm = viewModel()
 
-            vm.selectPdf("new-uri")
+            vm.selectPdf("new-uri", "pdf")
             runCurrent()
 
             assertEquals("old-uri", saved.value?.pdfUri)
@@ -334,7 +336,7 @@ class OnboardingViewModelTest {
             }
             val vm = viewModel()
 
-            vm.selectPdf("new-uri")
+            vm.selectPdf("new-uri", "pdf")
             runCurrent()
 
             assertEquals("copied-uri", saved.value?.pdfUri)
@@ -352,6 +354,58 @@ class OnboardingViewModelTest {
         saved.value = OnboardingDraft("pdf", step = OnboardingStep.Project, pdfUri = "old-uri", pdfName = "old.pdf")
         coEvery { pdf.copy("new-uri") } returns ("copied-uri" to "new.pdf")
     }
+
+    @Test fun `obsolete PDF results cannot change the current or completed draft`() =
+        runTest {
+            preparePdfReplacement()
+            val vm = viewModel()
+            vm.selectPdf("new-uri", "old-draft")
+            runCurrent()
+            vm.skip()
+            runCurrent()
+            vm.selectPdf("new-uri", "pdf")
+            runCurrent()
+            vm.finish()
+            runCurrent()
+            vm.selectPdf("new-uri", "pdf")
+            runCurrent()
+
+            coVerify(exactly = 0) { pdf.copy(any()) }
+            assertTrue(saved.value?.completed == true)
+        }
+
+    @Test fun `ready summary follows the committed project identified by the receipt`() =
+        runTest {
+            saved.value = OnboardingDraft("ready", step = OnboardingStep.Ready, name = "  Draft  ", projectId = 7)
+            coEvery { projects.findOnboardingProject("ready") } returns 7L
+            val project = CounterProject(id = 7L, name = "Draft", count = 4, patternName = "Committed.pdf")
+            every { projects.observeProject(7L) } returns MutableStateFlow(project)
+            val vm = viewModel()
+            backgroundScope.launch { vm.readyProject.collect() }
+            runCurrent()
+
+            assertEquals(project, vm.readyProject.value)
+            assertEquals("  Draft  ", saved.value?.name)
+        }
+
+    @Test fun `purchase confirmation requires the active price draft and verified status`() =
+        runTest {
+            saved.value = OnboardingDraft("price", step = OnboardingStep.Price)
+            val proState = MutableStateFlow(ProState())
+            every { pro.proState } returns proState
+            val vm = viewModel()
+            vm.finishWithPro("price")
+            runCurrent()
+            assertFalse(saved.value!!.completed)
+            proState.value = ProState(status = ProStatus.PRO_PURCHASED)
+            vm.finishWithPro("old-price")
+            runCurrent()
+            assertFalse(saved.value!!.completed)
+            vm.finishWithPro("price")
+            runCurrent()
+            assertEquals(R.string.journey_pro_active, vm.state.value.completionMessageRes)
+            assertTrue(saved.value!!.completed)
+        }
 
     @Test fun `queued field edits cannot overwrite a later completed draft`() =
         runTest {
@@ -379,7 +433,10 @@ class OnboardingViewModelTest {
                 true
             }
 
-            vm.acknowledgeExit()
+            vm.acknowledgeExit("old")
+            runCurrent()
+            assertFalse(writeStarted.isCompleted)
+            vm.acknowledgeExit("completed")
             runCurrent()
             assertTrue(writeStarted.isCompleted)
             store.clear()

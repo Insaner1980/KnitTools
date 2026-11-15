@@ -96,16 +96,19 @@ internal fun PatternAnnotationToolbar(
     modifier: Modifier = Modifier,
 ) {
     val hapticFeedback = LocalHapticFeedback.current
-    var showTextEditor by rememberSaveable(state.owner, state.editableLayerId, state.currentPage) {
-        mutableStateOf(false)
-    }
-    var showCalloutEditor by rememberSaveable(state.owner, state.editableLayerId, state.currentPage) {
-        mutableStateOf(false)
-    }
+    var showTextEditor by
+        rememberSaveable(state.owner, state.editableLayerId, state.currentPage, state.editableLayerVisible) {
+            mutableStateOf(false)
+        }
+    var showCalloutEditor by
+        rememberSaveable(state.owner, state.editableLayerId, state.currentPage, state.editableLayerVisible) {
+            mutableStateOf(false)
+        }
     var showChartTrackerEditor by rememberSaveable(
         state.owner,
         state.editableLayerId,
         state.currentPage,
+        state.editableLayerVisible,
         state.selectedAnnotationId,
         state.chartCounterOptions.map { it.type to it.extraCounterId },
     ) { mutableStateOf(false) }
@@ -158,6 +161,7 @@ internal fun PatternAnnotationToolbar(
                 if (item.tool == PatternAnnotationTool.TEXT || item.tool == PatternAnnotationTool.CALLOUT) {
                     AssistChip(
                         onClick = onClick,
+                        enabled = state.editableLayerVisible,
                         label = { Text(stringResource(item.labelRes)) },
                         modifier = Modifier.heightIn(min = PatternAnnotationTokens.TOOL_TOUCH_TARGET),
                     )
@@ -201,7 +205,10 @@ internal fun PatternAnnotationToolbar(
             else -> Unit
         }
         AnnotationHistoryControls(state, actions)
-        if (state.selectedAnnotationSupportsChartTracker && state.chartCounterOptions.isNotEmpty()) {
+        if (state.editableLayerVisible &&
+            state.selectedAnnotationSupportsChartTracker &&
+            state.chartCounterOptions.isNotEmpty()
+        ) {
             TextButton(onClick = {
                 editorDraftId = UUID.randomUUID().toString()
                 showChartTrackerEditor = true
@@ -222,6 +229,7 @@ internal fun PatternAnnotationToolbar(
         PatternTextEditorDialog(
             isSaving = state.isSaving,
             writeFailed = state.writeError == PatternAnnotationWriteError.WRITE_FAILED,
+            writeFailureRes = R.string.pattern_annotation_write_failed,
             onDismiss = { showTextEditor = false },
             onConfirm = { text ->
                 actions.onAddTextBox(text, editorDraftId)
@@ -235,6 +243,7 @@ internal fun PatternAnnotationToolbar(
                 titleRes = R.string.pattern_annotation_edit_text,
                 isSaving = state.isSaving,
                 writeFailed = state.writeError == PatternAnnotationWriteError.WRITE_FAILED,
+                textConflict = state.writeError == PatternAnnotationWriteError.TEXT_CONFLICT,
                 onDismiss = { actions.onCancelTextEdit(edit) },
                 onConfirm = { text -> actions.onSaveTextEdit(edit, text) },
             )
@@ -331,6 +340,8 @@ private fun PatternTextEditorDialog(
     @StringRes titleRes: Int = R.string.pattern_annotation_text_editor_title,
     isSaving: Boolean = false,
     writeFailed: Boolean = false,
+    @StringRes writeFailureRes: Int = R.string.generic_error_unknown,
+    textConflict: Boolean = false,
 ) {
     var text by rememberSaveable { mutableStateOf(initialText) }
     ScrollableFormDialog(
@@ -345,11 +356,15 @@ private fun PatternTextEditorDialog(
                     colors = dialogTextFieldColors(),
                     enabled = !isSaving,
                 )
-                if (writeFailed) Text(stringResource(R.string.pattern_annotation_write_failed))
+                if (textConflict) {
+                    Text(stringResource(R.string.pattern_annotation_write_failed))
+                } else if (writeFailed) {
+                    Text(stringResource(writeFailureRes))
+                }
             }
         },
         confirmButton = {
-            TextButton(onClick = { onConfirm(text) }, enabled = text.isNotBlank() && !isSaving) {
+            TextButton(onClick = { onConfirm(text) }, enabled = text.isNotBlank() && !isSaving && !textConflict) {
                 Text(stringResource(R.string.save))
             }
         },

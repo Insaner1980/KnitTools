@@ -2,12 +2,12 @@ package com.finnvek.knittools.ui.navigation
 
 import android.content.ContentResolver
 import android.content.Context
+import android.content.Intent
 import android.net.Uri
 import android.webkit.URLUtil
+import androidx.core.content.IntentCompat
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModelStore
-import com.finnvek.knittools.analytics.UsageDetail
-import com.finnvek.knittools.data.remote.WebPdfDownload
 import com.finnvek.knittools.data.remote.WebPdfDownloader
 import com.finnvek.knittools.data.storage.PatternDocumentStorage
 import com.finnvek.knittools.pro.ProManager
@@ -23,6 +23,7 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.unmockkStatic
+import io.mockk.verify
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -48,62 +49,54 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import java.io.File
-import java.io.IOException
 import java.net.URI
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class IncomingPdfViewModelTest {
-    @get:Rule
-    val temporaryFolder = TemporaryFolder()
+class IncomingPdfViewModelTest : IncomingPdfTestFixture() {
+    @Test
+    fun `only a PDF VIEW or a PDF SEND with a stream starts receipt`() =
+        runTest {
+            val source = mockk<Uri> { every { lastPathSegment } returns "Chart.pdf" }
+            val resolver = context.contentResolver
+            coEvery { storage.copyPdfToInternal(context, 0L, source, "Chart.pdf") } returns NEW_PDF_URI
+            val model = viewModel(SavedStateHandle())
+            val missingViewData = pdfIntent(Intent.ACTION_VIEW, "application/pdf")
+            val unresolvedView = pdfIntent(Intent.ACTION_VIEW, null, source)
+            val missingSendStream = pdfIntent(Intent.ACTION_SEND, "application/pdf")
+            val wrongSendMime = pdfIntent(Intent.ACTION_SEND, "text/plain")
+            val send = pdfIntent(Intent.ACTION_SEND, "application/pdf")
+            mockkStatic(IntentCompat::class)
+            try {
+                every {
+                    IntentCompat.getParcelableExtra(missingSendStream, Intent.EXTRA_STREAM, Uri::class.java)
+                } returns null
+                every { IntentCompat.getParcelableExtra(send, Intent.EXTRA_STREAM, Uri::class.java) } returns source
+                assertFalse(model.receiveFromIntent(null, resolver))
+                assertFalse(model.receiveFromIntent(missingViewData, resolver))
+                every { resolver.getType(source) } returns "text/plain"
+                assertFalse(model.receiveFromIntent(unresolvedView, resolver))
+                assertFalse(model.receiveFromIntent(missingSendStream, resolver))
+                assertFalse(model.receiveFromIntent(wrongSendMime, resolver))
+                runCurrent()
+                assertNull(model.pending.value)
+                coVerify(exactly = 0) { storage.copyPdfToInternal(any(), any(), any(), any()) }
 
-    private val dispatcher = StandardTestDispatcher()
-    private val models = ViewModelStore()
-    private lateinit var context: Context
-    private lateinit var storage: PatternDocumentStorage
-    private lateinit var counterRepository: CounterRepository
-    private lateinit var savedPatternRepository: SavedPatternRepository
-    private lateinit var proManager: ProManager
-    private lateinit var stagedUri: String
+                assertTrue(model.receiveFromIntent(pdfIntent(Intent.ACTION_VIEW, "application/pdf", source), resolver))
+                every { resolver.getType(source) } returns "application/pdf"
+                assertTrue(model.receiveFromIntent(unresolvedView, resolver, isNewIntent = true))
+                assertTrue(model.receiveFromIntent(send, resolver, isNewIntent = true))
+                runCurrent()
 
-    @Before
-    fun setUp() {
-        Dispatchers.setMain(dispatcher)
-        context = mockk()
-        storage = mockk()
-        counterRepository = mockk()
-        savedPatternRepository = mockk(relaxed = true)
-        proManager = mockk(relaxed = true)
-        every { proManager.initialControlsReady } returns MutableStateFlow(true)
-        val resolver = mockk<ContentResolver>()
-        every { context.filesDir } returns temporaryFolder.root
-        every { context.contentResolver } returns resolver
-        every { resolver.query(any(), any(), any(), any(), any()) } returns null
-        every { counterRepository.getActiveProjects() } returns flowOf(emptyList())
-        every { proManager.proState } returns MutableStateFlow(ProState())
-        mockkStatic(Uri::class)
-        every { Uri.parse(any()) } answers {
-            val parsed = URI(firstArg<String>())
-            mockk<Uri> {
-                every { scheme } returns parsed.scheme
-                every { path } returns if (parsed.scheme == "file") File(parsed).path else parsed.path
+                coVerify(exactly = 3) { storage.copyPdfToInternal(context, 0L, source, "Chart.pdf") }
+                assertEquals(NEW_PDF_URI, model.pending.value?.localUri)
+                verify(exactly = 1) { send.action = Intent.ACTION_MAIN }
+                verify(exactly = 1) { send.data = null }
+                verify(exactly = 1) { send.type = null }
+                verify(exactly = 1) { send.removeExtra(Intent.EXTRA_STREAM) }
+            } finally {
+                unmockkStatic(IntentCompat::class)
             }
         }
-        stagedUri =
-            temporaryFolder
-                .newFolder("pattern_pdfs", "0")
-                .resolve("A.pdf")
-                .also { it.writeText("PDF") }
-                .toURI()
-                .toString()
-    }
-
-    @After
-    fun tearDown() {
-        models.clear()
-        unmockkStatic(Uri::class)
-        unmockkStatic(URLUtil::class)
-        Dispatchers.resetMain()
-    }
 
     @Test
     fun `interrupted share restarts once in a fresh owner`() =
@@ -115,7 +108,7 @@ class IncomingPdfViewModelTest {
             receiving.receive(uri)
             runCurrent()
 
-            assertTrue(receiving.restoreInterruptedReceive(intent = null))
+            assertTrue(receiving.restoreInterruptedReceive(intent = null, context.contentResolver))
             runCurrent()
             coVerify(exactly = 1) { storage.copyPdfToInternal(context, 0L, uri, "Interrupted.pdf") }
             val restoredState = SavedStateHandle(state.keys().associateWith { key -> state.get<Any?>(key) })
@@ -124,12 +117,12 @@ class IncomingPdfViewModelTest {
 
             coEvery { storage.copyPdfToInternal(context, 0L, uri, "Interrupted.pdf") } returns NEW_PDF_URI
             val restored = viewModel(restoredState)
-            assertTrue(restored.restoreInterruptedReceive(intent = null))
+            assertTrue(restored.restoreInterruptedReceive(intent = null, context.contentResolver))
             advanceUntilIdle()
 
             assertEquals(NEW_PDF_URI, restored.pending.value?.localUri)
             assertFalse(restored.receiving.value)
-            assertFalse(restored.restoreInterruptedReceive(intent = null))
+            assertFalse(restored.restoreInterruptedReceive(intent = null, context.contentResolver))
             coVerify(exactly = 2) { storage.copyPdfToInternal(context, 0L, uri, "Interrupted.pdf") }
         }
 
@@ -159,46 +152,6 @@ class IncomingPdfViewModelTest {
             runCurrent()
             assertNull(model.choices.value)
         }
-
-    @Test
-    fun `clearing the owner during downloaded pdf staging removes the download cache file`() =
-        runTest {
-            val cacheFile = temporaryFolder.newFile("download.pdf")
-            val download =
-                WebPdfDownload(
-                    "https://example.invalid/pattern.pdf",
-                    "test",
-                    null,
-                    "application/pdf",
-                ) { null }
-            val downloader = mockk<WebPdfDownloader>()
-            coEvery { downloader.download(download) } returns cacheFile
-            mockkStatic(URLUtil::class)
-            every { URLUtil.guessFileName(any(), any(), any()) } returns "download.pdf"
-            val cacheUri = mockk<Uri>()
-            every { Uri.fromFile(cacheFile) } returns cacheUri
-            coEvery { storage.copyPdfToInternal(context, 0L, cacheUri, "download.pdf") } coAnswers {
-                awaitCancellation()
-            }
-            val model = viewModel(handle(stagedUri), downloader)
-
-            model.receiveDownload(download)
-            runCurrent()
-            assertTrue(cacheFile.exists())
-            models.clear()
-            advanceUntilIdle()
-
-            assertFalse(cacheFile.exists())
-            assertEquals(stagedUri, model.pending.value?.localUri)
-        }
-
-    @Test
-    fun `null download preserves pending pdf until deliberate retry and explicit library save`() =
-        runTest { assertDownloadFailureThenRetry(failure = null) }
-
-    @Test
-    fun `download IOException preserves pending pdf until deliberate retry and explicit library save`() =
-        runTest { assertDownloadFailureThenRetry(IOException("Controlled download failure")) }
 
     @Test
     fun `project attachment does not split a surrogate pair at the label limit`() =
@@ -282,6 +235,32 @@ class IncomingPdfViewModelTest {
             coVerify(exactly = 1) { savedPatternRepository.deleteLocalPatternFileIfUnused(olderUri) }
             coVerify(exactly = 0) { savedPatternRepository.deleteLocalPatternFileIfUnused(newerUri) }
             coVerify(exactly = 1) { savedPatternRepository.deleteLocalPatternFileIfUnused(stagedUri) }
+        }
+
+    @Test
+    fun `late older import failure does not show an error over the newer pending pdf`() =
+        runTest {
+            val older = mockk<Uri> { every { lastPathSegment } returns "Older.pdf" }
+            val olderCopy = CompletableDeferred<String?>()
+            coEvery { storage.copyPdfToInternal(context, 0L, older, "Older.pdf") } coAnswers { olderCopy.await() }
+            val model = viewModel(SavedStateHandle())
+            val outcomes = mutableListOf<IncomingPdfOutcome>()
+            backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+                model.outcomes.collect { outcomes.add(it) }
+            }
+
+            model.receive(older)
+            runCurrent()
+            receiveNewPdf(model)
+            runCurrent()
+            assertEquals(NEW_PDF_URI, model.pending.value?.localUri)
+
+            olderCopy.complete(null)
+            runCurrent()
+
+            assertTrue(outcomes.isEmpty())
+            assertEquals(NEW_PDF_URI, model.pending.value?.localUri)
+            assertFalse(model.receiving.value)
         }
 
     @Test
@@ -379,6 +358,36 @@ class IncomingPdfViewModelTest {
         }
 
     @Test
+    fun `undelivered committed navigation is handled once by the replacement collector`() =
+        runTest {
+            val model = viewModel(handle(stagedUri))
+            val outcomes = mutableListOf<IncomingPdfOutcome>()
+            val originalCollector = backgroundScope.launch(dispatcher) { model.outcomes.collect { outcomes.add(it) } }
+            runCurrent()
+            coEvery { savedPatternRepository.saveImportedPatternIfMissing(stagedUri, any()) } coAnswers {
+                // Enqueue the stop ahead of the collector's resumption after publication.
+                backgroundScope.launch(dispatcher) { originalCollector.cancel() }
+                11L
+            }
+
+            model.saveToLibrary("A")
+            runCurrent()
+            assertTrue(outcomes.isEmpty())
+            assertNull(model.pending.value)
+
+            val replacementCollector =
+                backgroundScope.launch(dispatcher) {
+                    model.outcomes.collect { outcomes.add(it) }
+                }
+            runCurrent()
+            replacementCollector.cancel()
+            backgroundScope.launch(dispatcher) { model.outcomes.collect { outcomes.add(it) } }
+            runCurrent()
+
+            assertEquals(listOf(IncomingPdfOutcome.OpenSavedPattern(11L)), outcomes)
+        }
+
+    @Test
     fun `discard uses reference aware cleanup after view model is cleared`() =
         runTest {
             val model = viewModel(handle(stagedUri))
@@ -451,120 +460,24 @@ class IncomingPdfViewModelTest {
             coVerify(exactly = 0) { savedPatternRepository.deleteLocalPatternFileIfUnused(stagedUri) }
         }
 
-    private suspend fun TestScope.assertDownloadFailureThenRetry(failure: IOException?) {
-        val download = WebPdfDownload("https://example.invalid/retry.pdf", "test", null, "application/pdf") { null }
-        val downloader = mockk<WebPdfDownloader>()
-        coEvery { downloader.download(download) } coAnswers {
-            if (failure != null) throw failure
-            null
+    @Test
+    fun `an already attached pdf opens the requested project and cleans its staged copy`() =
+        runTest {
+            val model = viewModel(handle(stagedUri))
+            val outcomes = mutableListOf<IncomingPdfOutcome>()
+            backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+                model.outcomes.collect { outcomes.add(it) }
+            }
+            coEvery { counterRepository.attachPattern(7L, stagedUri, any(), 0, null) } returns
+                ProjectDocumentMutationResult.DuplicateUri
+
+            model.attachToProject(7L, "A")
+            advanceUntilIdle()
+
+            assertEquals(listOf(IncomingPdfOutcome.OpenProject(7L)), outcomes)
+            assertNull(model.pending.value)
+            coVerify(exactly = 1) { savedPatternRepository.deleteLocalPatternFileIfUnused(stagedUri) }
         }
-        mockkStatic(URLUtil::class)
-        every { URLUtil.guessFileName(download.url, download.contentDisposition, download.mimeType) } returns
-            "Retry.pdf"
-        val savedState = handle(stagedUri)
-        val model = viewModel(savedState, downloader)
-        val originalPending = IncomingPdf(stagedUri, "A")
-        val outcomes = mutableListOf<IncomingPdfOutcome>()
-        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { model.outcomes.collect { outcomes.add(it) } }
-
-        model.receiveDownload(download)
-        advanceUntilIdle()
-
-        val failureOutcomes = listOf(IncomingPdfOutcome.Downloading, IncomingPdfOutcome.OpenFailed)
-        assertEquals(failureOutcomes, outcomes)
-        assertEquals(originalPending, model.pending.value)
-        assertEquals(stagedUri, savedState.get<String>("incoming_pdf_local_uri"))
-        assertEquals("A", savedState.get<String>("incoming_pdf_name"))
-        assertEquals("PDF", File(URI(stagedUri)).readText())
-        assertFalse(model.busy.value)
-        coVerify(exactly = 1) { downloader.download(download) }
-        coVerify(exactly = 0) { storage.copyPdfToInternal(any(), any(), any(), any()) }
-        coVerify(exactly = 0) { savedPatternRepository.saveImportedPatternIfMissing(any(), any()) }
-        coVerify(exactly = 0) { savedPatternRepository.deleteLocalPatternFileIfUnused(any()) }
-
-        val cacheFile = temporaryFolder.newFile("retry-download.pdf")
-        val cacheUri = mockk<Uri>()
-        every { Uri.fromFile(cacheFile) } returns cacheUri
-        val retryFile = File(temporaryFolder.root, "pattern_pdfs/0/Retry.pdf").also { it.writeText("Retry fixture") }
-        val retryUri = retryFile.toURI().toString()
-        val validatedCopy = CompletableDeferred<String?>()
-        coEvery { downloader.download(download) } returns cacheFile
-        coEvery { storage.copyPdfToInternal(context, 0L, cacheUri, "Retry.pdf") } coAnswers { validatedCopy.await() }
-
-        model.receiveDownload(download)
-        runCurrent()
-
-        val retryOutcomes = failureOutcomes + IncomingPdfOutcome.Downloading
-        assertEquals(retryOutcomes, outcomes)
-        assertEquals(originalPending, model.pending.value)
-        coVerify(exactly = 2) { downloader.download(download) }
-        coVerify(exactly = 1) { storage.copyPdfToInternal(context, 0L, cacheUri, "Retry.pdf") }
-        coVerify(exactly = 0) { savedPatternRepository.saveImportedPatternIfMissing(any(), any()) }
-        coVerify(exactly = 0) { savedPatternRepository.deleteLocalPatternFileIfUnused(any()) }
-
-        validatedCopy.complete(retryUri)
-        advanceUntilIdle()
-
-        val retriedPending = IncomingPdf(retryUri, "Retry", UsageDetail.SOURCE_RAVELRY)
-        assertEquals(retriedPending, model.pending.value)
-        assertEquals(UsageDetail.SOURCE_RAVELRY.name, savedState.get<String>("incoming_pdf_analytics_source"))
-        assertEquals(retryUri, savedState.get<String>("incoming_pdf_local_uri"))
-        assertEquals("Retry", savedState.get<String>("incoming_pdf_name"))
-        assertEquals(retryOutcomes, outcomes)
-        assertFalse(model.busy.value)
-        coVerify(exactly = 0) { savedPatternRepository.saveImportedPatternIfMissing(any(), any()) }
-        coVerify(exactly = 1) { savedPatternRepository.deleteLocalPatternFileIfUnused(stagedUri) }
-
-        assertRetriedDownloadSavedOnce(model, savedState, retryUri, retryOutcomes, outcomes)
-    }
-
-    private fun TestScope.assertRetriedDownloadSavedOnce(
-        model: IncomingPdfViewModel,
-        savedState: SavedStateHandle,
-        retryUri: String,
-        retryOutcomes: List<IncomingPdfOutcome>,
-        outcomes: List<IncomingPdfOutcome>,
-    ) {
-        val retriedPending = IncomingPdf(retryUri, "Retry", UsageDetail.SOURCE_RAVELRY)
-        val releaseSave = CompletableDeferred<Unit>()
-        var completedWrites = 0
-        coEvery { savedPatternRepository.saveImportedPatternIfMissing(retryUri, "Retried pattern") } coAnswers {
-            releaseSave.await()
-            completedWrites++
-            23L
-        }
-        model.saveToLibrary("Retried pattern")
-        runCurrent()
-        model.saveToLibrary("Ignored duplicate")
-        runCurrent()
-
-        coVerify(exactly = 1) { savedPatternRepository.saveImportedPatternIfMissing(any(), any()) }
-        assertEquals(0, completedWrites)
-        assertTrue(model.busy.value)
-        assertEquals(retriedPending, model.pending.value)
-        assertEquals(retryOutcomes, outcomes)
-
-        releaseSave.complete(Unit)
-        advanceUntilIdle()
-        model.saveToLibrary("Already consumed")
-        advanceUntilIdle()
-
-        assertEquals(1, completedWrites)
-        coVerify(exactly = 1) { savedPatternRepository.saveImportedPatternIfMissing(retryUri, "Retried pattern") }
-        coVerify(exactly = 1) { savedPatternRepository.saveImportedPatternIfMissing(any(), any()) }
-        assertEquals(retryOutcomes + IncomingPdfOutcome.OpenSavedPattern(23L), outcomes)
-        assertNull(model.pending.value)
-        assertNull(savedState.get<String>("incoming_pdf_local_uri"))
-        assertNull(savedState.get<String>("incoming_pdf_name"))
-        assertFalse(model.busy.value)
-        coVerify(exactly = 0) { savedPatternRepository.deleteLocalPatternFileIfUnused(retryUri) }
-        verifyNoProjectPublication()
-    }
-
-    private fun verifyNoProjectPublication() {
-        coVerify(exactly = 0) { counterRepository.attachPattern(any(), any(), any(), any(), any()) }
-        coVerify(exactly = 0) { counterRepository.createProjectWithImportedPdf(any(), any(), any(), any()) }
-    }
 
     private fun mockPublication(
         attach: Boolean,
@@ -682,8 +595,68 @@ class IncomingPdfViewModelTest {
         coEvery { storage.copyPdfToInternal(context, 0L, uri, "B.pdf") } returns NEW_PDF_URI
         model.receive(uri)
     }
+}
 
-    private fun TestScope.viewModel(
+@OptIn(ExperimentalCoroutinesApi::class)
+abstract class IncomingPdfTestFixture {
+    protected fun verifyNoProjectPublication() {
+        coVerify(exactly = 0) { counterRepository.attachPattern(any(), any(), any(), any(), any()) }
+        coVerify(exactly = 0) { counterRepository.createProjectWithImportedPdf(any(), any(), any(), any()) }
+    }
+
+    @get:Rule
+    val temporaryFolder = TemporaryFolder()
+
+    protected val dispatcher = StandardTestDispatcher()
+    protected val models = ViewModelStore()
+    protected lateinit var context: Context
+    protected lateinit var storage: PatternDocumentStorage
+    protected lateinit var counterRepository: CounterRepository
+    protected lateinit var savedPatternRepository: SavedPatternRepository
+    protected lateinit var proManager: ProManager
+    protected lateinit var stagedUri: String
+
+    @Before
+    fun setUp() {
+        Dispatchers.setMain(dispatcher)
+        context = mockk()
+        storage = mockk()
+        counterRepository = mockk()
+        savedPatternRepository = mockk(relaxed = true)
+        proManager = mockk(relaxed = true)
+        every { proManager.initialControlsReady } returns MutableStateFlow(true)
+        val resolver = mockk<ContentResolver>()
+        every { context.filesDir } returns temporaryFolder.root
+        every { context.contentResolver } returns resolver
+        every { resolver.query(any(), any(), any(), any(), any()) } returns null
+        every { counterRepository.getActiveProjects() } returns flowOf(emptyList())
+        every { proManager.proState } returns MutableStateFlow(ProState())
+        mockkStatic(Uri::class)
+        every { Uri.parse(any()) } answers {
+            val parsed = URI(firstArg<String>())
+            mockk<Uri> {
+                every { scheme } returns parsed.scheme
+                every { path } returns if (parsed.scheme == "file") File(parsed).path else parsed.path
+            }
+        }
+        stagedUri =
+            temporaryFolder
+                .newFolder("pattern_pdfs", "0")
+                .resolve("A.pdf")
+                .also { it.writeText("PDF") }
+                .toURI()
+                .toString()
+    }
+
+    @After
+    fun tearDown() {
+        models.clear()
+        unmockkStatic(Uri::class)
+        unmockkStatic(URLUtil::class)
+        Dispatchers.resetMain()
+    }
+
+    protected fun TestScope.viewModel(
         handle: SavedStateHandle,
         downloader: WebPdfDownloader = mockk(),
     ): IncomingPdfViewModel =
@@ -699,10 +672,21 @@ class IncomingPdfViewModelTest {
             applicationScope = this,
         ).also { models.put(models.keys().size.toString(), it) }
 
-    private fun handle(uri: Any): SavedStateHandle =
+    protected fun handle(uri: Any): SavedStateHandle =
         SavedStateHandle(mapOf("incoming_pdf_local_uri" to uri, "incoming_pdf_name" to "A"))
 
-    private companion object {
+    protected fun pdfIntent(
+        intentAction: String,
+        mimeType: String?,
+        source: Uri? = null,
+    ): Intent =
+        mockk(relaxed = true) {
+            every { action } returns intentAction
+            every { type } returns mimeType
+            every { data } returns source
+        }
+
+    companion object {
         const val NEW_PDF_URI = "file:///new.pdf"
     }
 }

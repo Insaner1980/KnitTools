@@ -67,6 +67,57 @@ class PatternShareIntentRestoreTest {
     @Test
     fun discardedPdfIsNotReopenedByRestorationAndANewShareIsAccepted() = verifyPdfIntentRestore(discard = true)
 
+    @Test
+    fun restoredTextConsumptionDoesNotClearPdfSendIntent() {
+        val launch = isolatedMainIntent()
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val source = File.createTempFile("pdf-after-text-", ".pdf", context.cacheDir)
+        try {
+            writeOnePagePdf(source)
+            ActivityScenario.launch<MainActivity>(launch).use { scenario ->
+                scenario.onActivity {
+                    val textShare =
+                        Intent(launch).apply {
+                            action = Intent.ACTION_SEND
+                            type = "text/plain"
+                            putExtra(Intent.EXTRA_TEXT, "https://example.org/pattern")
+                        }
+                    InstrumentationRegistry.getInstrumentation().callActivityOnNewIntent(it, textShare)
+                }
+                awaitConsumed(scenario)
+                val current = AtomicReference<MainActivity>()
+                scenario.onActivity { current.set(it) }
+                val resumed = CountDownLatch(1)
+                val callback =
+                    ActivityLifecycleCallback { activity, stage ->
+                        if (activity is MainActivity && stage == Stage.PRE_ON_CREATE) {
+                            activity.intent =
+                                Intent(launch).apply {
+                                    action = Intent.ACTION_SEND
+                                    type = "application/pdf"
+                                    putExtra(Intent.EXTRA_STREAM, Uri.fromFile(source))
+                                }
+                            current.set(activity)
+                        }
+                        if (activity === current.get() && stage == Stage.RESUMED) resumed.countDown()
+                    }
+                val lifecycle = ActivityLifecycleMonitorRegistry.getInstance()
+                lifecycle.addLifecycleCallback(callback)
+                try {
+                    onActivity(current) { it.recreate() }
+                    assertTrue(resumed.await(15, TimeUnit.SECONDS))
+                    awaitPdfIntentSettled(current, expectedPending = true)
+                } finally {
+                    lifecycle.removeLifecycleCallback(callback)
+                    onActivity(current) { ViewModelProvider(it)[IncomingPdfViewModel::class.java].discard() }
+                    awaitPdfIntentSettled(current, expectedPending = false)
+                }
+            }
+        } finally {
+            source.delete()
+        }
+    }
+
     private fun isolatedMainIntent(): Intent {
         val context = ApplicationProvider.getApplicationContext<Context>()
         check(context.packageName.endsWith(".activepolicytest") || context.packageName.endsWith(".notestest"))
@@ -100,6 +151,13 @@ class PatternShareIntentRestoreTest {
                         if (discard) model.discard()
                     }
                     if (discard) awaitPdfIntentSettled(current, expectedPending = false)
+                    if (discard) {
+                        onActivity(current) {
+                            InstrumentationRegistry
+                                .getInstrumentation()
+                                .callActivityOnNewIntent(it, isolatedMainIntent())
+                        }
+                    }
                     var restored = false
                     val resumed = CountDownLatch(1)
                     val callback =

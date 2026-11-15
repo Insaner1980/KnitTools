@@ -159,6 +159,9 @@ export function validateRavelryOAuthCallbackQuery(query: Record<string, unknown>
     }
   }
   const state = requireState(queryString(query, "state"));
+  if (query.code != null && query.error != null) {
+    throw new RavelryAuthFlowError("invalid_callback", 400);
+  }
   const ravelryError = boundedCallbackValue(queryString(query, "error"), "error");
   const code = boundedCallbackValue(queryString(query, "code"), "code");
   if (!ravelryError && !code) throw new RavelryAuthFlowError("missing_code", 400);
@@ -246,6 +249,10 @@ export function resolveBackendCallbackUrl(
 ): string {
   const trimmedCallbackUrl = configuredCallbackUrl.trim();
   if (trimmedCallbackUrl.length > 0) {
+    const url = URL.parse(trimmedCallbackUrl);
+    if (!url || url.protocol !== "https:" || url.username || url.password || url.hash) {
+      throw new RavelryAuthFlowError("invalid_callback_url", 500);
+    }
     return trimmedCallbackUrl;
   }
 

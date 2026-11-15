@@ -1,0 +1,25 @@
+appId: com.finnvek.knittools
+name: Notes autosave and restart
+---
+- launchApp:
+    clearState: true
+- tapOn: "Forest Cardigan"
+- scrollUntilVisible:
+    element:
+      text: "Check sleeve length after the next cable repeat. Block pieces before seaming."
+    direction: DOWN
+- tapOn: "Check sleeve length after the next cable repeat. Block pieces before seaming."
+- longPressOn: "Check sleeve length after the next cable repeat. Block pieces before seaming."
+- tapOn: "Select all"
+- eraseText: 1
+- inputText: "Maestro note: finish sleeve, then block."
+- hideKeyboard
+- tapOn: "Back"
+- assertVisible: "Maestro note: finish sleeve, then block."
+- launchApp
+- tapOn: "Forest Cardigan"
+- scrollUntilVisible:
+    element:
+      text: "Maestro note: finish sleeve, then block."
+    direction: DOWN
+- assertVisible: "Maestro note: finish sleeve, then block."

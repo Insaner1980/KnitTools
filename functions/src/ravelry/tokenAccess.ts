@@ -10,7 +10,8 @@ interface UsableTokenOptions {
 }
 
 function requiresRefresh(token: StoredRavelryToken, nowMillis: number): boolean {
-  return token.expiresAtMillis != null && token.expiresAtMillis <= nowMillis;
+  const expiry = token.expiresAtMillis;
+  return expiry != null && (!Number.isFinite(expiry) || expiry <= nowMillis);
 }
 
 function refreshedToken(
@@ -77,7 +78,7 @@ export async function getUsableRavelryToken({
   const nextToken = refreshedToken(token, refreshed, now);
   const saved = await tokenStore.saveRefreshedTokenIfCurrent(nextToken, token);
   if (saved) {
-    return saved;
+    return requiresRefresh(saved, nowMillis()) ? null : saved;
   }
 
   const current = await tokenStore.getToken(uid);

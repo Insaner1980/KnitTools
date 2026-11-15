@@ -8,6 +8,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import androidx.navigation.navigation
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -113,6 +114,47 @@ class ProjectOverviewNavigationTest {
     }
 
     @Test
+    fun counterOfAnotherProjectIsNotReused() {
+        setup()
+        openOverviewFromCounter(counterProjectId = 6L)
+        rule.runOnIdle { projectWorkspaceActions(nav, {}).onOpenCounter() }
+        rule.waitForIdle()
+        rule.runOnIdle {
+            assertEquals(Screen.Counter.route, nav.currentDestination?.route)
+            assertEquals(Screen.ProjectOverview.ROUTE, nav.previousBackStackEntry?.destination?.route)
+            assertEquals(7L, nav.previousBackStackEntry?.arguments?.getLong("projectId"))
+        }
+    }
+
+    @Test
+    fun invalidDestinationAtEffectiveRootOpensItsOwningTab() {
+        rule.setContent {
+            nav = rememberNavController()
+            NavHost(nav, startDestination = TopLevelDestination.Projects.route) {
+                navigation(Screen.ProjectList.route, TopLevelDestination.Projects.route) {
+                    composable(Screen.ProjectList.route) { Text("Projects") }
+                }
+                navigation(Screen.Library.route, TopLevelDestination.Library.route) {
+                    composable(Screen.Library.route) { Text("Library") }
+                    composable(Screen.SavedPatterns.route) {
+                        RouteArgumentFallback({ nav }, TopLevelDestination.Library)
+                    }
+                }
+            }
+        }
+        rule.runOnIdle {
+            nav.navigate(Screen.SavedPatterns.route) {
+                popUpTo(nav.graph.id) { inclusive = true }
+            }
+        }
+        rule.waitForIdle()
+        rule.runOnIdle {
+            assertEquals(Screen.Library.route, nav.currentDestination?.route)
+            assertEquals(null, nav.previousBackStackEntry)
+        }
+    }
+
+    @Test
     fun overviewOfAnotherProjectIsNotReused() {
         setup()
         roundTripThroughCounter(6, 7)
@@ -131,10 +173,13 @@ class ProjectOverviewNavigationTest {
         rule.waitForIdle()
     }
 
-    private fun openOverviewFromCounter() {
+    private fun openOverviewFromCounter(counterProjectId: Long = 7L) {
         rule.runOnIdle { nav.navigate(Screen.Counter.route) }
         rule.waitForIdle()
-        rule.runOnIdle { projectWorkspaceActions(nav, {}).onProjectOverview(7) }
+        rule.runOnIdle {
+            nav.currentBackStackEntry?.savedStateHandle?.set(COUNTER_ENTRY_PROJECT_ID, counterProjectId)
+            projectWorkspaceActions(nav, {}).onProjectOverview(7)
+        }
         rule.waitForIdle()
     }
 

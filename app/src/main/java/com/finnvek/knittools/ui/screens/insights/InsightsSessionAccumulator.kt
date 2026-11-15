@@ -44,7 +44,8 @@ internal class InsightsSessionAccumulator(
 
     private fun millis(date: LocalDate) = date.atStartOfDay(params.zone).toInstant().toEpochMilli()
 
-    private val axis = insightsChartAxis(params.timeRange, params.currentDate, firstDate, firstDay)
+    private val axis =
+        insightsChartAxis(params.timeRange, params.currentDate, firstDate?.coerceAtMost(params.currentDate), firstDay)
     private val chart =
         SessionPaceAccumulator(
             listOfNotNull(params.startMillis, axis.bucketStarts.firstOrNull()?.let(::millis)).maxOrNull(),
@@ -130,17 +131,12 @@ internal class SessionPaceAccumulator(
     private val lastBucket: LocalDate? = null,
 ) {
     val values = mutableMapOf<Long, MutableMap<LocalDate, PaceBucketMetric>>()
-    private val futureMeasuredBuckets = mutableSetOf<LocalDate>()
-    val futureMeasuredBucketCount: Int get() = futureMeasuredBuckets.size
 
     fun add(session: KnitSession) {
         val contributions = SessionMetrics.paceBuckets(listOf(session), start, interval, zone, firstDay)
         if (contributions.isEmpty()) return
         contributions.forEach { (date, metric) ->
-            if (lastBucket != null && date.isAfter(lastBucket)) {
-                if (metric.totalSeconds > 0 && futureMeasuredBuckets.size < 2) futureMeasuredBuckets.add(date)
-                return@forEach
-            }
+            if (lastBucket != null && date.isAfter(lastBucket)) return@forEach
             val project = values.getOrPut(session.projectId) { mutableMapOf() }
             val old = project[date]
             project[date] =

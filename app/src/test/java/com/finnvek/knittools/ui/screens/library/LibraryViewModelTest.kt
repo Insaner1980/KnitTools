@@ -133,8 +133,8 @@ class LibraryViewModelTest {
     fun `leaving a pattern route cancels its load without affecting the next route`() =
         runTest {
             val pending = CompletableDeferred<SavedPattern?>()
-            coEvery { savedPatternRepository.getByIdIfAvailable(7L) } coAnswers { pending.await() }
-            coEvery { savedPatternRepository.getByIdIfAvailable(8L) } returns savedPattern(8L)
+            coEvery { savedPatternRepository.getById(7L) } coAnswers { pending.await() }
+            coEvery { savedPatternRepository.getById(8L) } returns savedPattern(8L)
             val viewModel = createViewModel()
             var previousRouteCalled = false
 
@@ -159,7 +159,7 @@ class LibraryViewModelTest {
         runTest {
             var attempts = 0
             val pattern = savedPattern(7L)
-            coEvery { savedPatternRepository.getByIdIfAvailable(7L) } coAnswers {
+            coEvery { savedPatternRepository.getById(7L) } coAnswers {
                 if (++attempts == 1) throw IOException("transient read failure")
                 pattern
             }
@@ -176,7 +176,7 @@ class LibraryViewModelTest {
     @Test
     fun `leaving a pattern route during read backoff prevents retry and callback`() =
         runTest {
-            coEvery { savedPatternRepository.getByIdIfAvailable(7L) } throws IOException("transient read failure")
+            coEvery { savedPatternRepository.getById(7L) } throws IOException("transient read failure")
             val results = mutableListOf<SavedPattern?>()
             val viewModel = createViewModel()
             val loading = launch { results += viewModel.loadSavedPattern(7L).first() }
@@ -186,7 +186,29 @@ class LibraryViewModelTest {
             advanceUntilIdle()
 
             assertTrue(results.isEmpty())
-            coVerify(exactly = 1) { savedPatternRepository.getByIdIfAvailable(7L) }
+            coVerify(exactly = 1) { savedPatternRepository.getById(7L) }
+        }
+
+    @Test
+    fun `observed deletion cancels an in-flight file check without emitting stale details`() =
+        runTest {
+            val pattern = savedPattern(7L)
+            val observed = MutableStateFlow<SavedPattern?>(pattern)
+            val availability = CompletableDeferred<Boolean>()
+            every { savedPatternRepository.observeById(pattern.id) } returns observed
+            coEvery { savedPatternRepository.isLocalPdfAvailable(pattern) } coAnswers { availability.await() }
+            val results = mutableListOf<SavedPatternDetail?>()
+            val viewModel = createViewModel()
+
+            val collector = launch { viewModel.observeSavedPatternDetail(pattern.id).collect { results += it } }
+            runCurrent()
+            observed.value = null
+            advanceUntilIdle()
+            availability.complete(true)
+            advanceUntilIdle()
+
+            assertEquals(listOf<SavedPatternDetail?>(null), results)
+            collector.cancel()
         }
 
     @Test

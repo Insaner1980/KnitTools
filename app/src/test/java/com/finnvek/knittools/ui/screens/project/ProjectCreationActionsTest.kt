@@ -45,9 +45,8 @@ class ProjectCreationActionsTest {
         every { repository.getActiveProjects() } returns flowOf(emptyList())
         every { proManager.proState } returns MutableStateFlow(ProState())
         every { proManager.hasFeature(ProFeature.UNLIMITED_PROJECTS) } returns true
-        coEvery { repository.hasAnyProject() } returns false
         coEvery { repository.createProject(any(), any(), any(), any(), any(), any(), any()) } returns
-            ProjectCreationResult.Created(7L)
+            ProjectCreationResult.Created(7L, wasFirstProject = true)
     }
 
     @Test
@@ -99,13 +98,34 @@ class ProjectCreationActionsTest {
     @Test
     fun `creation with existing projects updates craft without changing starter`() =
         runTest {
-            coEvery { repository.hasAnyProject() } returns true
+            coEvery { repository.createProject(any(), any(), any(), any(), any(), any(), any()) } returns
+                ProjectCreationResult.Created(7L, wasFirstProject = false)
             actions().create(request())
             runCurrent()
 
             coVerify { preferences.setLastProjectCraftType(CraftType.CROCHET) }
             coVerify(exactly = 0) { onboarding.setStarterProject(any()) }
             assertEquals(listOf(7L), createdIds)
+        }
+
+    @Test
+    fun `dismissed request still records a committed project without navigating`() =
+        runTest {
+            val gate = CompletableDeferred<ProjectCreationResult>()
+            coEvery {
+                repository.createProject(any(), any(), any(), any(), any(), any(), any())
+            } coAnswers { gate.await() }
+            val actions = actions()
+            actions.create(request())
+            runCurrent()
+            actions.dismissPendingProjectCreation()
+
+            gate.complete(ProjectCreationResult.Created(7L, wasFirstProject = true))
+            runCurrent()
+
+            coVerify(exactly = 1) { preferences.setLastProjectCraftType(CraftType.CROCHET) }
+            coVerify(exactly = 1) { onboarding.setStarterProject(7L) }
+            assertTrue(createdIds.isEmpty())
         }
 
     @Test

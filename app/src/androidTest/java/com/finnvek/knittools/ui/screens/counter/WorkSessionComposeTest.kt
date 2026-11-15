@@ -121,6 +121,8 @@ class WorkSessionComposeTest {
             ).performScrollTo()
             .assertIsDisplayed()
         composeRule.onNodeWithText(text(R.string.work_session_save_edited_and_stop)).assertIsNotEnabled()
+        composeRule.onNodeWithText(text(R.string.work_session_minutes)).performTextReplacement("-5")
+        composeRule.onNodeWithText(text(R.string.work_session_save_edited_and_stop)).assertIsNotEnabled()
         composeRule.onNodeWithText(text(R.string.work_session_discard_pending)).assertHeightIsAtLeast(48.dp)
     }
 

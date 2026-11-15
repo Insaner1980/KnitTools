@@ -1,0 +1,84 @@
+appId: com.finnvek.knittools
+name: PDF import bookmarks annotations and export
+---
+- launchApp:
+    clearState: true
+- tapOn: "New Project"
+- tapOn:
+    text: "Project name"
+    index: 1
+- inputText: "Maestro PDF"
+- tapOn: "Create project"
+- scrollUntilVisible:
+    element:
+      text: "Add Pattern"
+    direction: DOWN
+- tapOn: "Add Pattern"
+- scrollUntilVisible:
+    element:
+      text: "Import PDF"
+    direction: DOWN
+- tapOn: "Import PDF"
+- tapOn: "Show roots"
+- tapOn: "Downloads"
+- scrollUntilVisible:
+    element:
+      text: "maestro-pattern.pdf"
+    direction: DOWN
+- tapOn: "maestro-pattern.pdf"
+- assertVisible: "Maestro PDF"
+- tapOn: "Open Pattern"
+- assertVisible: "Next page"
+- tapOn: "Next page"
+- assertVisible: "Previous page"
+- assertVisible: "Page 2 of 2"
+- tapOn: "Bookmarks"
+- tapOn: "Add bookmark"
+- tapOn: "Bookmark name"
+- inputText: "Maestro Bookmark"
+- tapOn: "Save"
+- assertVisible: "Maestro Bookmark"
+- back
+- tapOn: "Previous page"
+- assertVisible: "Page 1 of 2"
+- tapOn: "Bookmarks"
+- tapOn: "Jump to bookmark Maestro Bookmark, page 2"
+- assertVisible: "Page 2 of 2"
+- takeScreenshot: pdf-bookmark
+- tapOn: "Increase"
+- assertVisible: "Count 1"
+- tapOn: "Mark up"
+- tapOn: "Annotation color: Red"
+- assertVisible:
+    text: '^Maestro-pattern$'
+    below: 'Annotation color: Red'
+- swipe:
+    start: "20%, 65%"
+    end: "70%, 70%"
+    duration: 700
+- tapOn: "More options"
+- tapOn: "Annotation layers"
+- assertVisible: 'Project notes \(1\)'
+- back
+- tapOn: "Done"
+- tapOn: "More options"
+- tapOn: "Export annotated PDF"
+- tapOn: "Save"
+- extendedWaitUntil:
+    notVisible: "Exporting .*"
+    timeout: 30000
+- assertVisible: "Page 2 of 2"
+- assertNotVisible: "PDF export failed.*"
+- launchApp
+- tapOn: "Continue Maestro PDF"
+- scrollUntilVisible:
+    element:
+      text: "Open Pattern"
+    direction: DOWN
+- tapOn: "Open Pattern"
+- assertVisible: "Page 2 of 2"
+- tapOn: "More options"
+- tapOn: "Annotation layers"
+- assertVisible: 'Project notes \(1\)'
+- back
+- takeScreenshot: pdf-annotation-persisted

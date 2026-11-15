@@ -76,6 +76,7 @@ import com.finnvek.knittools.billing.SelectedOneTimeOffer
 import com.finnvek.knittools.domain.calculator.TargetInput
 import com.finnvek.knittools.domain.calculator.parseProjectStartCount
 import com.finnvek.knittools.domain.calculator.parseTargetRows
+import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.domain.model.OnboardingDraft
 import com.finnvek.knittools.domain.model.OnboardingStep
 import com.finnvek.knittools.domain.model.canGoBack
@@ -117,13 +118,17 @@ fun OnboardingRoute(
     val purchaseBusy by viewModel.purchaseInFlight.collectAsStateWithLifecycle()
     val pending by viewModel.purchasePending.collectAsStateWithLifecycle()
     val usageAnalyticsEnabled by viewModel.usageAnalyticsEnabled.collectAsStateWithLifecycle()
+    val readyProject by viewModel.readyProject.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val locale = rememberCurrentLocale()
     val previewOffer = remember(locale) { OnboardingPreview.offer(locale) }
     var previewPurchaseVisible by rememberSaveable { mutableStateOf(false) }
+    var pendingPdfDraftId by rememberSaveable { mutableStateOf<String?>(null) }
+    var pendingPdfUri by rememberSaveable { mutableStateOf<String?>(null) }
     val pdfPicker =
         rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-            uri?.let { viewModel.selectPdf(it.toString()) }
+            if (uri == null) pendingPdfDraftId = null
+            pendingPdfUri = uri?.toString()
         }
     val price =
         OnboardingPriceState(
@@ -136,17 +141,35 @@ fun OnboardingRoute(
             pending = pending,
         )
     val draft = state.draft
+    LaunchedEffect(draft?.id, draft?.step, state.busy, pendingPdfUri) {
+        val owner = pendingPdfDraftId ?: return@LaunchedEffect
+        if (draft == null || state.busy) return@LaunchedEffect
+        if (draft.id != owner || draft.step != OnboardingStep.Project) {
+            pendingPdfDraftId = null
+            pendingPdfUri = null
+        } else {
+            pendingPdfUri?.let { uri ->
+                pendingPdfDraftId = null
+                pendingPdfUri = null
+                viewModel.selectPdf(uri, owner)
+            }
+        }
+    }
     SideEffect { onStartupReady(draft != null || state.messageRes != null) }
     if (draft?.step == OnboardingStep.Price) {
-        var automaticExitAttempted by remember(draft.id, price.mode) { mutableStateOf(false) }
+        var automaticExitAttempted by remember(draft.id, price.mode, price.pro.status) { mutableStateOf(false) }
         LifecycleResumeEffect(viewModel) {
             viewModel.refreshPrice()
             onPauseOrDispose { }
         }
-        LaunchedEffect(price.mode, state.busy) {
+        LaunchedEffect(draft.id, price.mode, price.pro.status, state.busy) {
             if (price.mode == OnboardingPriceMode.Skip && !state.busy && !automaticExitAttempted) {
                 automaticExitAttempted = true
-                if (price.pro.status == ProStatus.PRO_PURCHASED) viewModel.finishWithPro() else viewModel.finish()
+                if (price.pro.status == ProStatus.PRO_PURCHASED) {
+                    viewModel.finishWithPro(draft.id)
+                } else {
+                    viewModel.finish()
+                }
             }
         }
     }
@@ -168,6 +191,7 @@ fun OnboardingRoute(
             busy = state.busy,
             messageRes = state.messageRes,
             usageAnalyticsEnabled = usageAnalyticsEnabled,
+            readyProject = readyProject?.takeIf { it.id == draft.projectId },
             onUsageAnalyticsChanged = viewModel::setUsageAnalyticsEnabled,
             actions =
                 OnboardingActions(
@@ -176,7 +200,12 @@ fun OnboardingRoute(
                     previous = viewModel::previous,
                     skip = viewModel::skip,
                     create = viewModel::createProject,
-                    selectPdf = { pdfPicker.launch(arrayOf("application/pdf")) },
+                    selectPdf = {
+                        if (pendingPdfDraftId == null && draft.step == OnboardingStep.Project) {
+                            pendingPdfDraftId = draft.id
+                            pdfPicker.launch(arrayOf("application/pdf"))
+                        }
+                    },
                     removePdf = viewModel::removePdf,
                     startTrial = viewModel::startTrial,
                     finish = viewModel::finish,
@@ -213,6 +242,7 @@ fun OnboardingScreen(
     actions: OnboardingActions,
     usageAnalyticsEnabled: Boolean = false,
     onUsageAnalyticsChanged: (Boolean) -> Unit = {},
+    readyProject: CounterProject? = null,
 ) {
     BackHandler(enabled = busy || draft.step != OnboardingStep.Welcome) {
         if (!busy) {
@@ -279,7 +309,7 @@ fun OnboardingScreen(
                                 OnboardingStep.Counter -> JourneyCounter(draft, busy, actions.edit)
                                 OnboardingStep.Toolbox -> JourneyToolbox(draft.craftType, draft.needs)
                                 OnboardingStep.Project -> JourneyProject(draft, busy, actions)
-                                OnboardingStep.Ready -> JourneyReady(draft)
+                                OnboardingStep.Ready -> readyProject?.let { JourneyReady(it) }
                                 OnboardingStep.Price -> JourneyPriceContent(draft, price, busy, actions.purchase)
                             }
                         }

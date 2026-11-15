@@ -252,7 +252,13 @@ class InsightsViewModel
                         val projectList = input.projects.value
                         val sessionMetrics = input.sessions.value
                         val completions = input.completions.value
-                        if (sessionMetrics == null || projectList == null || completions == null) {
+                        val selectedProjectMissing =
+                            params.projectId != null && projectList?.none { it.id == params.projectId } == true
+                        if (sessionMetrics == null ||
+                            projectList == null ||
+                            completions == null ||
+                            selectedProjectMissing
+                        ) {
                             InsightsUiState(
                                 projects = projectList.orEmpty(),
                                 selectedProjectId = params.projectId,
@@ -317,8 +323,7 @@ class InsightsViewModel
             val chartAccumulator = sessions.chart(axis.interval)
             val measuredBuckets = chartBucketsFromMetrics(chartAccumulator.values, projectOrder)
             val hasMeaningfulChartData =
-                measuredBuckets.values.count { it.totalMinutes > 0 } +
-                    chartAccumulator.futureMeasuredBucketCount >=
+                axis.bucketStarts.count { (measuredBuckets[it]?.totalMinutes ?: 0) > 0 } >=
                     MINIMUM_MEANINGFUL_CHART_BUCKETS
             val chartBuckets =
                 if (featureGates.canUseCharts) fillChartBuckets(axis, measuredBuckets) else emptyList()
@@ -533,7 +538,7 @@ class InsightsViewModel
                     rangeStartDate(timeRange, today, firstDayOfWeek)
                         ?: firstSessionDate
                         ?: return 0
-                return (ChronoUnit.DAYS.between(start, today) + 1).toInt().coerceAtLeast(0)
+                return (ChronoUnit.DAYS.between(start, today) + 1).coerceIn(0L, Int.MAX_VALUE.toLong()).toInt()
             }
 
             internal fun rangeStartDate(

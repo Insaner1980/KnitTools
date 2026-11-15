@@ -1,7 +1,7 @@
 package com.finnvek.knittools.domain.calculator
 
 import com.finnvek.knittools.domain.model.YarnEstimate
-import kotlin.math.ceil
+import java.math.RoundingMode
 
 object YarnEstimator {
     fun estimate(
@@ -14,9 +14,9 @@ object YarnEstimator {
         if (!weightPerSkein.isFinite() || weightPerSkein <= 0.0) return null
 
         val exactSkeins = totalYarnNeeded / yarnPerSkein
-        if (exactSkeins <= 0.0) return null
-        val roundedSkeins = ceil(exactSkeins)
-        if (!roundedSkeins.isFinite() || roundedSkeins > Int.MAX_VALUE.toDouble()) return null
+        if (!exactSkeins.isFinite() || exactSkeins <= 0.0) return null
+        val roundedSkeins = totalYarnNeeded.toBigDecimal().divide(yarnPerSkein.toBigDecimal(), 0, RoundingMode.CEILING)
+        if (roundedSkeins > Int.MAX_VALUE.toBigDecimal()) return null
         val skeinsNeeded = roundedSkeins.toInt()
         val totalWeight = skeinsNeeded * weightPerSkein
         if (!totalWeight.isFinite()) return null

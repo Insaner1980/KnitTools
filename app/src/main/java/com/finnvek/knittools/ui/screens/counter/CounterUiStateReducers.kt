@@ -61,6 +61,7 @@ internal fun CounterUiState.withStartedProject(project: CounterProject): Counter
         activeAlert = null,
         dismissedReminderTrigger = null,
         sessionSeconds = 0,
+        sessionStartConflict = sessionStartConflict?.takeIf { it.requestedProjectId == project.id },
         totalSessionMinutes = 0,
     )
 

@@ -97,31 +97,18 @@ fun ProjectDetailsSheet(
     val sanitizedCustomLabel = sanitizeMainCounterCustomLabel(customLabel)
     val hasValidCustomLabel =
         labelType != MainCounterLabelType.CUSTOM || sanitizedCustomLabel != null
-    var moreOptionsExpanded by rememberSaveable {
-        mutableStateOf(
-            labelType != craftType.defaultMainCounterLabelType() ||
-                customLabel.isNotBlank() ||
-                targetText.isNotBlank(),
-        )
-    }
+    val hasMoreOptions =
+        labelType != craftType.defaultMainCounterLabelType() || customLabel.isNotBlank() || targetText.isNotBlank()
+    var moreOptionsExpanded by rememberSaveable { mutableStateOf(hasMoreOptions) }
     LaunchedEffect(isCreate) {
-        if (isCreate &&
-            (
-                labelType != craftType.defaultMainCounterLabelType() ||
-                    customLabel.isNotBlank() ||
-                    targetText.isNotBlank()
-            )
-        ) {
+        if (isCreate && hasMoreOptions) {
             moreOptionsExpanded = true
         }
     }
     LaunchedEffect(isCreate, hasValidCustomLabel, target) {
         if (isCreate && (!hasValidCustomLabel || target == TargetInput.Invalid)) moreOptionsExpanded = true
     }
-    val canConfirm =
-        name.trim().isNotEmpty() &&
-            hasValidCustomLabel &&
-            (!isCreate || startCount != null && target != TargetInput.Invalid)
+    val canConfirm = canConfirmProjectDetails(name, hasValidCustomLabel, isCreate, startCount, target)
 
     FormSheet(
         title = title,
@@ -229,6 +216,7 @@ fun ProjectDetailsSheet(
                     sanitizedValue = sanitizedCustomLabel,
                     onValueChange = { customLabel = it },
                     modifier = Modifier.focusRequester(customLabelFocus),
+                    onNext = if (isCreate) ({ targetFocus.requestFocus() }) else null,
                 )
             }
             if (isCreate) {
@@ -243,6 +231,17 @@ fun ProjectDetailsSheet(
         }
     }
 }
+
+private fun canConfirmProjectDetails(
+    name: String,
+    hasValidCustomLabel: Boolean,
+    isCreate: Boolean,
+    startCount: Int?,
+    target: TargetInput,
+): Boolean =
+    name.trim().isNotEmpty() &&
+        hasValidCustomLabel &&
+        (!isCreate || startCount != null && target != TargetInput.Invalid)
 
 @Composable
 private fun ProjectStartingCountField(
@@ -261,7 +260,7 @@ private fun ProjectStartingCountField(
             value = value,
             onValueChange = onValueChange,
             label = projectStartCountLabel(labelType),
-            options = NumberInputOptions(placeholder = "0", isLast = !moreOptionsExpanded),
+            options = NumberInputOptions(placeholder = "0", isLast = !moreOptionsExpanded, preserveRawInput = true),
             errorMessage =
                 if (startCount == null) {
                     stringResource(
@@ -330,7 +329,7 @@ private fun ProjectTargetField(
             value = value,
             onValueChange = onValueChange,
             label = stringResource(R.string.project_target_label),
-            options = NumberInputOptions(isLast = true, allowZero = false),
+            options = NumberInputOptions(isLast = true, allowZero = false, preserveRawInput = true),
             errorMessage =
                 if (isTargetInvalid) {
                     stringResource(
@@ -433,15 +432,18 @@ private fun CustomMainCounterLabelField(
     sanitizedValue: String?,
     onValueChange: (String) -> Unit,
     modifier: Modifier = Modifier,
+    onNext: (() -> Unit)? = null,
 ) {
-    val showError = value.isNotBlank() && sanitizedValue == null
+    val focusManager = LocalFocusManager.current
     LabeledTextField(
         value = value,
         onValueChange = onValueChange,
         inputModifier = modifier,
         label = stringResource(R.string.main_counter_custom_label),
+        keyboardOptions = KeyboardOptions(imeAction = if (onNext == null) ImeAction.Done else ImeAction.Next),
+        keyboardActions = KeyboardActions(onNext = { onNext?.invoke() }, onDone = { focusManager.clearFocus() }),
         errorMessage =
-            if (showError) {
+            if (sanitizedValue == null) {
                 stringResource(R.string.main_counter_custom_label_error)
             } else {
                 null
@@ -453,7 +455,7 @@ private fun CustomMainCounterLabelField(
 // Sama segmenttivalitsin kuin muualla: vihreät sirut olivat ainoa eri näköinen valinta, ja
 // tummassa teemassa valittu siru erottui tuskin lainkaan valitsemattomasta.
 @Composable
-private fun CraftTypeToggle(
+internal fun CraftTypeToggle(
     selected: CraftType,
     onSelect: (CraftType) -> Unit,
 ) {

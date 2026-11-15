@@ -2,10 +2,18 @@ import assert from "node:assert/strict";
 import { afterEach, beforeEach, describe, it, mock } from "node:test";
 import timers from "node:timers/promises";
 
-import { ravelryClientId, ravelryClientSecret } from "../config";
-import { ravelryCallback, ravelryCompleteAuth } from "./auth";
+import { ravelryCallbackUrl, ravelryClientId, ravelryClientSecret } from "../config";
+import {
+  ravelryAuthStatus,
+  ravelryCallback,
+  ravelryCompleteAuth,
+  ravelryCurrentUser,
+  ravelryDisconnect,
+  ravelryStartAuth,
+} from "./auth";
 import { BROWSER_AUTH_COOKIE, browserSecretFromCookie, browserSecretHash } from "./browserAuth";
 import type { StoredOAuthState } from "./oauthStateStore";
+import { ravelryImportPatternById, ravelryImportPatternByUrl, ravelrySearchPatterns } from "./patternImport";
 import { disabledRavelryRateLimiter, RavelryRateLimitError } from "./rateLimit";
 import * as stores from "./stores";
 import type { PendingRavelryToken } from "./tokenStore";
@@ -25,6 +33,7 @@ describe("production Ravelry HTTP callback with local responses", () => {
   let uidCalls: number;
   let stateReads: number;
   let browserBinds: number;
+  let stateWrites: number;
   let status: number;
   let body: unknown;
   let redirect: string | undefined;
@@ -50,6 +59,7 @@ describe("production Ravelry HTTP callback with local responses", () => {
     uidCalls = 0;
     stateReads = 0;
     browserBinds = 0;
+    stateWrites = 0;
     status = 200;
     body = undefined;
     redirect = undefined;
@@ -65,6 +75,7 @@ describe("production Ravelry HTTP callback with local responses", () => {
     }
     mock.method(ravelryClientId, "value", () => "synthetic-client");
     mock.method(ravelryClientSecret, "value", () => "synthetic-secret");
+    mock.method(ravelryCallbackUrl, "value", () => "https://callback.example/ravelryCallback");
     consumeState = async () => {
       assert.ok(stored);
       stored = { ...stored, usedAtMillis: now };
@@ -90,6 +101,10 @@ describe("production Ravelry HTTP callback with local responses", () => {
     });
     mock.method(stores, "createRavelryBackendStores", () => ({
       stateStore: {
+        async saveState(value: StoredOAuthState) {
+          stateWrites++;
+          stored = value;
+        },
         async bindBrowser(key: string, ticketHash: string, bindingHash: string) {
           browserBinds++;
           assert.ok(globalCalls >= 1);
@@ -183,6 +198,50 @@ describe("production Ravelry HTTP callback with local responses", () => {
       );
     }
     assert.equal(uidCalls, 0);
+  });
+
+  it("rejects unauthenticated callables and authenticated document-path aliases before creating stores", async () => {
+    let storeCalls = 0;
+    mock.method(stores, "createRavelryBackendStores", () => { storeCalls++; throw new Error("unexpected_store"); });
+    const callables = [ravelryAuthStatus, ravelryCompleteAuth, ravelryCurrentUser, ravelryDisconnect,
+      ravelryStartAuth, ravelryImportPatternById, ravelryImportPatternByUrl, ravelrySearchPatterns];
+    for (const auth of [undefined, { uid: "test-uid/" }, { uid: "/test-uid" },
+      { uid: "." }, { uid: ".." }, { uid: "__reserved__" }]) {
+      for (const callable of callables) {
+        await assert.rejects(callable.run({
+          auth, data: { uid: "other-user" },
+        } as Parameters<typeof callable.run>[0]), { code: auth ? "permission-denied" : "unauthenticated" });
+      }
+    }
+    assert.equal(storeCalls, 0);
+  });
+
+  it("rejects missing client configuration before saving an OAuth attempt", async () => {
+    mock.method(ravelryClientId, "value", () => "");
+
+    await assert.rejects(
+      ravelryStartAuth.run({
+        auth: { uid: "test-uid" }, data: {},
+      } as Parameters<typeof ravelryStartAuth.run>[0]),
+      { code: "unavailable" },
+    );
+    assert.equal(stateWrites, 0);
+  });
+
+  it("rejects malformed or insecure callback configuration before saving an OAuth attempt", async () => {
+    for (const url of [
+      "not a URL", "http://callback.example/ravelryCallback",
+      "https://synthetic-user@callback.example/ravelryCallback",
+    ]) {
+      mock.method(ravelryCallbackUrl, "value", () => url);
+      await assert.rejects(
+        ravelryStartAuth.run({
+          auth: { uid: "test-uid" }, data: {},
+        } as Parameters<typeof ravelryStartAuth.run>[0]),
+        { code: "unavailable" },
+      );
+      assert.equal(stateWrites, 0);
+    }
   });
 
   it("preserves the browser binding across overlapping login starts", async () => {
@@ -282,6 +341,9 @@ describe("production Ravelry HTTP callback with local responses", () => {
     {}, { state: "bad-state", code: "synthetic-code" }, { state: [state], code: "synthetic-code" },
     { state }, { state, code: "bad\ncode" }, { state, error: ["denied"] },
     { state, code: "x".repeat(2_049) }, { state, start: "bad-ticket" },
+    { state, code: "synthetic-code", error: "access_denied" },
+    { state, start: "t".repeat(43), code: "synthetic-code" },
+    { state, start: "t".repeat(43), error: "access_denied" },
   ]) {
     it(`rejects malformed ${JSON.stringify(Object.keys(query))} before quota and state access`, async () => {
       await invoke(query);
@@ -289,6 +351,7 @@ describe("production Ravelry HTTP callback with local responses", () => {
       assert.equal(globalCalls, 0);
       assert.equal(stateReads, 0);
       assert.equal(fetchCalls, 0);
+      assert.equal(stored?.usedAtMillis, null);
     });
   }
 

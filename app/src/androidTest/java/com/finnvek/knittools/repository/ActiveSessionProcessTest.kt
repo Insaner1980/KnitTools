@@ -31,14 +31,16 @@ class ActiveSessionProcessTest {
     private val seedPid = File(directory, "seed-pid.txt")
     private var now = SessionTimeSnapshot(1_700_000_000_000L, 5_000L, 7L, "Europe/Helsinki")
 
-    private fun open(): KnitToolsDatabase {
-        check(context.packageName.endsWith(".activepolicytest"))
-        directory.mkdirs()
-        return Room
+    private fun checkFixtureDirectory() {
+        check(context.packageName == "com.finnvek.knittools.activepolicytest")
+        check(directory.canonicalFile == File(context.cacheDir.canonicalFile, directory.name))
+    }
+
+    private fun open(): KnitToolsDatabase =
+        Room
             .databaseBuilder(context, KnitToolsDatabase::class.java, File(directory, "live.db").absolutePath)
             .addCallback(ActiveSessionSchemaConstraints.callback)
             .build()
-    }
 
     private fun repository(database: KnitToolsDatabase): CounterRepository {
         val fixture = RoomCounterTestFixture(database, context)
@@ -65,29 +67,33 @@ class ActiveSessionProcessTest {
     @Test fun seedSessionBeforeSeparateProcessRestart() =
         runBlocking {
             assumeTrue(InstrumentationRegistry.getArguments().getString("activeSessionProcessStage") == "seed")
-            check(!expectedRow.exists()) { "Previous process fixture must be resolved before seeding" }
-            val database = open()
+            checkFixtureDirectory()
+            check(directory.mkdir()) { "Could not create a fresh process fixture directory" }
             var seeded = false
             try {
-                val project =
-                    database.counterProjectDao().insert(
-                        CounterProjectEntity(name = "Process session", count = 10, stepSize = 2),
-                    )
-                val repository = repository(database)
-                assertTrue(repository.startSession(project) is StartSessionResult.Started)
-                now = now.copy(wallClockMillis = now.wallClockMillis + 61_000L, elapsedRealtimeMillis = 66_000L)
-                assertTrue(repository.applyMainCounterChange(project, MainCounterChange.Increment))
-                now = now.copy(wallClockMillis = now.wallClockMillis + 62_000L, elapsedRealtimeMillis = 128_000L)
-                assertTrue(repository.applyWidgetCountChange(project, true))
-                val active = checkNotNull(database.sessionDao().getActiveSession())
-                assertEquals(123L, active.checkpointedDurationSeconds)
-                assertEquals(4, active.trustedRowsWorked)
-                assertEquals(14, active.trustedLastObservedRow)
-                expectedRow.writeText(active.toString())
-                seedPid.writeText(Process.myPid().toString())
+                val database = open()
+                try {
+                    val project =
+                        database.counterProjectDao().insert(
+                            CounterProjectEntity(name = "Process session", count = 10, stepSize = 2),
+                        )
+                    val repository = repository(database)
+                    assertTrue(repository.startSession(project) is StartSessionResult.Started)
+                    now = now.copy(wallClockMillis = now.wallClockMillis + 61_000L, elapsedRealtimeMillis = 66_000L)
+                    assertTrue(repository.applyMainCounterChange(project, MainCounterChange.Increment))
+                    now = now.copy(wallClockMillis = now.wallClockMillis + 62_000L, elapsedRealtimeMillis = 128_000L)
+                    assertTrue(repository.applyWidgetCountChange(project, true))
+                    val active = checkNotNull(database.sessionDao().getActiveSession())
+                    assertEquals(123L, active.checkpointedDurationSeconds)
+                    assertEquals(4, active.trustedRowsWorked)
+                    assertEquals(14, active.trustedLastObservedRow)
+                    expectedRow.writeText(active.toString())
+                    seedPid.writeText(Process.myPid().toString())
+                } finally {
+                    database.close()
+                }
                 seeded = true
             } finally {
-                database.close()
                 if (!seeded) directory.deleteRecursively()
             }
         }
@@ -95,6 +101,7 @@ class ActiveSessionProcessTest {
     @Test fun restartedProcessKeepsEveryAnchorAndRecoveryFinalizesAtMostOnce() =
         runBlocking {
             assumeTrue(InstrumentationRegistry.getArguments().getString("activeSessionProcessStage") == "verify")
+            checkFixtureDirectory()
             check(expectedRow.isFile) { "Run seed, stop its isolated process, then run verification" }
             val database = open()
             try {

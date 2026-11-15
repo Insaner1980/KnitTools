@@ -15,7 +15,6 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -32,16 +31,13 @@ class InAppUpdateManager
         private val _downloadedUpdatePromptId = MutableStateFlow(0L)
         val downloadedUpdatePromptId: StateFlow<Long> = _downloadedUpdatePromptId.asStateFlow()
 
-        private var listenerRegistered = false
+        private var installStateListener: InstallStateUpdatedListener? = null
+        private var listenerOwner: Any? = null
         private var updateFlowInProgress = false
-        private var updateDownloadedNotified = false
-
-        private val installStateListener =
-            InstallStateUpdatedListener { state ->
-                if (state.installStatus() == InstallStatus.DOWNLOADED) {
-                    notifyUpdateDownloaded()
-                }
-            }
+        private var completingPromptId = 0L
+        private var lastPromptId = 0L
+        private var resumeCheck: Any? = null
+        private val pendingChecks = mutableMapOf<Any, (AppUpdateInfo) -> Unit>()
 
         /**
          * Tarkistaa päivityksen saatavuuden ja aloittaa flexible-latauksen taustalla.
@@ -54,16 +50,20 @@ class InAppUpdateManager
             registerListenerIfNeeded()
             if (updateFlowInProgress) return
 
+            val request = Any()
+            pendingChecks[request] = { info ->
+                if (!updateFlowInProgress &&
+                    completingPromptId == 0L &&
+                    _downloadedUpdatePromptId.value == 0L &&
+                    info.isFlexibleUpdateAvailable()
+                ) {
+                    startFlexibleUpdate(info, resultLauncher, canStartUpdateFlow)
+                }
+            }
             appUpdateManager.appUpdateInfo
-                .addOnSuccessListener { info ->
-                    if (updateFlowInProgress) return@addOnSuccessListener
-                    if (info.isFlexibleUpdateAvailable()) {
-                        startFlexibleUpdate(
-                            info = info,
-                            resultLauncher = resultLauncher,
-                            canStartUpdateFlow = canStartUpdateFlow,
-                        )
-                    }
+                .addOnCompleteListener { task ->
+                    val deliver = pendingChecks.remove(request)
+                    if (deliver != null && task.isSuccessful) deliver(task.result)
                 }
         }
 
@@ -72,10 +72,16 @@ class InAppUpdateManager
          * Kutsutaan Activityn onResumessa.
          */
         fun checkDownloadedOnResume() {
+            val request = Any()
+            resumeCheck = request
             appUpdateManager.appUpdateInfo
                 .addOnSuccessListener { info ->
+                    if (resumeCheck !== request) return@addOnSuccessListener
+                    resumeCheck = null
                     if (info.installStatus() == InstallStatus.DOWNLOADED) {
                         notifyUpdateDownloaded()
+                    } else {
+                        _downloadedUpdatePromptId.value = 0L
                     }
                 }
         }
@@ -87,22 +93,29 @@ class InAppUpdateManager
         }
 
         /** Käynnistää sovelluksen uudelleen asentaakseen ladatun päivityksen. */
-        fun completeUpdate() {
-            updateDownloadedNotified = false
+        fun completeUpdate(promptId: Long) {
+            if (promptId == 0L || _downloadedUpdatePromptId.value != promptId || completingPromptId != 0L) return
+            completingPromptId = promptId
+            resumeCheck = null
+            _downloadedUpdatePromptId.value = 0L
             appUpdateManager
                 .completeUpdate()
                 .addOnFailureListener {
-                    notifyUpdateDownloaded()
+                    if (completingPromptId == promptId) {
+                        completingPromptId = 0L
+                        notifyUpdateDownloaded()
+                    }
                 }
         }
 
         /** Poistaa kuuntelijan. Kutsutaan Activityn onDestroyssa. */
-        fun cleanup() {
-            if (listenerRegistered) {
-                appUpdateManager.unregisterListener(installStateListener)
-                listenerRegistered = false
-            }
-            updateFlowInProgress = false
+        fun cleanup(finishing: Boolean = false) {
+            pendingChecks.clear()
+            resumeCheck = null
+            listenerOwner = null
+            installStateListener?.let(appUpdateManager::unregisterListener)
+            installStateListener = null
+            if (finishing) updateFlowInProgress = false
         }
 
         private fun startFlexibleUpdate(
@@ -125,7 +138,9 @@ class InAppUpdateManager
                     updateFlowInProgress = false
                     return
                 }
-            if (!started) {
+            if (started) {
+                pendingChecks.clear()
+            } else {
                 updateFlowInProgress = false
             }
         }
@@ -136,15 +151,32 @@ class InAppUpdateManager
 
         private fun notifyUpdateDownloaded() {
             updateFlowInProgress = false
-            if (updateDownloadedNotified) return
-            updateDownloadedNotified = true
-            _downloadedUpdatePromptId.update { it + 1L }
+            if (completingPromptId != 0L || _downloadedUpdatePromptId.value != 0L) return
+            _downloadedUpdatePromptId.value = ++lastPromptId
         }
 
         private fun registerListenerIfNeeded() {
-            if (!listenerRegistered) {
-                appUpdateManager.registerListener(installStateListener)
-                listenerRegistered = true
-            }
+            if (installStateListener != null) return
+            val owner = Any()
+            listenerOwner = owner
+            val listener =
+                InstallStateUpdatedListener { state ->
+                    if (listenerOwner !== owner) return@InstallStateUpdatedListener
+                    val status = state.installStatus()
+                    if (status == InstallStatus.DOWNLOADED) {
+                        resumeCheck = null
+                        notifyUpdateDownloaded()
+                    } else if (status == InstallStatus.CANCELED ||
+                        status == InstallStatus.FAILED ||
+                        status == InstallStatus.INSTALLED
+                    ) {
+                        resumeCheck = null
+                        updateFlowInProgress = false
+                        completingPromptId = 0L
+                        _downloadedUpdatePromptId.value = 0L
+                    }
+                }
+            installStateListener = listener
+            appUpdateManager.registerListener(listener)
         }
     }

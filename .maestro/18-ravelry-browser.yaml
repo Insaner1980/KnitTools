@@ -1,0 +1,16 @@
+appId: com.finnvek.knittools
+name: Ravelry sign-in page and return navigation
+---
+- launchApp:
+    clearState: true
+- tapOn: "TOOLS"
+- tapOn: "Ravelry"
+- assertVisible: "Open a pattern and tap Download PDF to save it in KnitTools."
+- extendedWaitUntil:
+    visible: "Log In"
+    timeout: 30000
+- assertVisible: "Username"
+- assertVisible: "Password"
+- takeScreenshot: ravelry-login
+- tapOn: "Back"
+- assertVisible: "Increase / Decrease"

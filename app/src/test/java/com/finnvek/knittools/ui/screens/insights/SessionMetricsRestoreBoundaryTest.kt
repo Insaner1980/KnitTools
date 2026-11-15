@@ -54,6 +54,25 @@ class SessionMetricsRestoreBoundaryTest {
     }
 
     @Test
+    fun `accepted signed progress stays exact in totals and across chart midnights`() {
+        val start = -30_000L
+        val restored =
+            session.copy(
+                startedAt = start,
+                endedAt = start + 60_000L,
+                durationSeconds = 60L,
+                rowsWorked = Int.MIN_VALUE,
+            )
+        val sessions = listOf(restored, restored)
+
+        val summary = SessionMetrics.summarize(sessions, null, zone)
+        assertEquals(120L, summary.totalSeconds)
+        assertEquals(2L * Int.MIN_VALUE, summary.totalRows)
+        val buckets = SessionMetrics.paceBuckets(sessions, null, PaceGroupingInterval.DAY, zone)
+        assertEquals(listOf(Int.MIN_VALUE.toLong(), Int.MIN_VALUE.toLong()), buckets.values.map { it.totalRows })
+    }
+
+    @Test
     fun `legacy row difference cannot wrap negative`() {
         val legacy =
             session.copy(durationSeconds = 1L, startRow = Int.MIN_VALUE, endRow = Int.MAX_VALUE, rowsWorked = 0)

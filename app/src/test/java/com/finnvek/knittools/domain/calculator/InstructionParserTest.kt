@@ -5,6 +5,16 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class InstructionParserTest {
+    @Test(timeout = 3_000)
+    fun `long unmatched numeric and whitespace runs finish parsing`() {
+        listOf("9".repeat(10_000), "TENSION " + " ".repeat(9_992)).forEach { input ->
+            assertEquals(
+                ParsedInstruction.Failure("parse_failed", ParsedInstruction.ErrorType.PARSE_FAILED),
+                InstructionParser.parse(input),
+            )
+        }
+    }
+
     @Test
     fun `gauge accepts abbreviated singular and plural inches with numeric boundaries`() {
         listOf("4in", "4 in", "4 inch", "4 inches").forEach { unit ->
@@ -127,6 +137,15 @@ class InstructionParserTest {
     }
 
     @Test
+    fun `every nth increase accepts a count followed by punctuation`() {
+        assertEquals(
+            ParsedInstruction.IncreaseDecrease(96, 12, true),
+            InstructionParser.parse("Inc 1 st in every 8th st across 96."),
+        )
+        assertTrue(InstructionParser.parse("Inc 1 st in every 8th st across 4 sections") is ParsedInstruction.Failure)
+    }
+
+    @Test
     fun `regex - inc abbreviated`() {
         val result = InstructionParser.parseWithRegex("INC 10 STS ACROSS 80 STS")
         assertTrue(result is ParsedInstruction.IncreaseDecrease)
@@ -231,6 +250,25 @@ class InstructionParserTest {
                 InstructionParser.parse("${prefix}5.5 stitches and 7 rows per inch"),
             )
         }
+    }
+
+    @Test
+    fun `unrelated numbers do not complete a single per inch gauge axis`() {
+        listOf(
+            "Gauge on 4 mm needles: 5.5 stitches per inch",
+            "Gauge: 7 rows per inch on 4 mm needles",
+            "Gauge: 5.5 stitches per inch",
+        ).forEach { instruction ->
+            assertTrue(InstructionParser.parse(instruction) is ParsedInstruction.Failure)
+        }
+    }
+
+    @Test
+    fun `an explicit swatch unit is not taken from unrelated text`() {
+        assertEquals(
+            ParsedInstruction.GaugeSwatch(4.0, 22, lengthUnit = ParsedInstruction.LengthUnit.INCHES),
+            InstructionParser.parse("10 cm reference. Width 4 in; 22 stitches"),
+        )
     }
 
     @Test

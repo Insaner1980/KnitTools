@@ -3,6 +3,7 @@ package com.finnvek.knittools.domain.calculator
 import com.finnvek.knittools.domain.model.CastOnResult
 import com.finnvek.knittools.domain.model.GaugeBasis
 import com.finnvek.knittools.domain.model.MeasurementUnit
+import java.math.BigDecimal
 
 object CastOnCalculator {
     fun calculate(
@@ -23,7 +24,9 @@ object CastOnCalculator {
         return if (patternRepeat == null || patternRepeat <= 0) {
             calculateWithoutRepeat(bodyStitches, edgeStitches, density, unit)
         } else {
-            calculateWithRepeat(exactCount, patternRepeat, edgeStitches, density, unit)
+            val gaugeWidth = if (useInches) 4 else 10
+            val scaledBodyCount = desiredWidth.toBigDecimal() * stitchGauge.toBigDecimal()
+            calculateWithRepeat(scaledBodyCount, gaugeWidth, patternRepeat, edgeStitches, density, unit)
         }
     }
 
@@ -39,19 +42,22 @@ object CastOnCalculator {
     }
 
     private fun calculateWithRepeat(
-        bodyStitches: Double,
+        scaledBodyCount: BigDecimal,
+        gaugeWidth: Int,
         patternRepeat: Int,
         edgeStitches: Int,
         density: Double,
         unit: MeasurementUnit,
     ): CastOnResult? {
-        // Compare against the exact body count; ties select the lower usable repeat.
-        val nearestDown = (bodyStitches.toLong() / patternRepeat) * patternRepeat
+        // Compare in the entered decimal units so a true midpoint selects the lower repeat.
+        val scaledRepeat = (patternRepeat.toLong() * gaugeWidth).toBigDecimal()
+        val nearestDown = scaledBodyCount.divideToIntegralValue(scaledRepeat).longValueExact() * patternRepeat
         val nearestUp = nearestDown + patternRepeat
         val totalDown = nearestDown.takeIf { it > 0 }?.let { supportedCount(it + edgeStitches) }
         val totalUp = supportedCount(nearestUp + edgeStitches)
+        val scaledMidpoint = ((nearestDown + nearestUp) * gaugeWidth).toBigDecimal()
         val closerTotal =
-            if (totalDown != null && (totalUp == null || bodyStitches - nearestDown <= nearestUp - bodyStitches)) {
+            if (totalDown != null && (totalUp == null || scaledBodyCount + scaledBodyCount <= scaledMidpoint)) {
                 totalDown
             } else {
                 totalUp ?: return null

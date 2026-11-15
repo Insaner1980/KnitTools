@@ -267,8 +267,12 @@ class TrialNoticeRestorationTest {
             waitText("Trial notice target")
             assertNoNotice()
         } finally {
-            // The isolated package owns only synthetic fixtures.
-            runBlocking(Dispatchers.IO) { app.database.get().clearAllTables() }
+            runBlocking(Dispatchers.IO) {
+                app.database
+                    .get()
+                    .counterProjectDao()
+                    .delete(id)
+            }
         }
     }
 

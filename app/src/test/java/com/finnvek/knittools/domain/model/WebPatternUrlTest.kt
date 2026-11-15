@@ -42,6 +42,13 @@ class WebPatternUrlTest {
     }
 
     @Test
+    fun `internationalized host matches its browser identity without folding sharp s`() {
+        val international = validUrl("https://straße.de/pattern")
+        assertEquals("https://xn--strae-oqa.de/pattern", international.canonicalUrl)
+        assertTrue(international.canonicalUrl != validUrl("https://strasse.de/pattern").canonicalUrl)
+    }
+
+    @Test
     fun `canonical form removes default ports and normalizes empty root path`() {
         assertEquals("http://example.com/", validUrl("http://example.com:80").canonicalUrl)
         assertEquals("https://example.com/", validUrl("https://example.com:443/").canonicalUrl)
@@ -112,6 +119,7 @@ class WebPatternUrlTest {
             "https://example.com:0/pattern",
             "https://example.com:65536/pattern",
             "https://example.com:/pattern",
+            "https://example.com:\u0664\u0664\u0663/pattern",
             "https://example.com/%",
             "https://example.com/%2",
             "https://example.com/%GG",
@@ -171,6 +179,7 @@ class WebPatternUrlTest {
     @Test
     fun `rejects invalid IDNA hostname and overlong URL`() {
         assertInvalid("https://bad_host.example/pattern")
+        assertInvalid("https://%65xample.com/pattern")
         assertInvalid("https://example.com./pattern")
         assertInvalid("https://example.com/" + "a".repeat(2_100))
     }

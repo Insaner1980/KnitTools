@@ -219,8 +219,12 @@ class WebPatternEditorViewModel
             }
         }
 
-        fun resolveIncomingShare(useIncoming: Boolean) {
+        fun resolveIncomingShare(
+            requestId: Long,
+            useIncoming: Boolean,
+        ) {
             val incoming = mutableUiState.value.pendingIncomingShare ?: return
+            if (incoming.requestId != requestId) return
             if (useIncoming) {
                 applyIncomingShare(incoming)
             } else {

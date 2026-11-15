@@ -19,11 +19,13 @@ import io.mockk.mockk
 import io.mockk.verify
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -353,6 +355,25 @@ class PatternImageImportOwnershipTest {
         }
 
     @Test
+    fun `cancelled conversion handoff discards the unattached PDF`() =
+        runTest {
+            coEvery { storage.convertImagesToPdf(any(), 7, any(), any(), any()) } coAnswers {
+                currentCoroutineContext().cancel()
+                output(7)
+            }
+            val vm = newModel(SavedStateHandle(), StandardTestDispatcher(dispatcher.scheduler, "image IO"))
+            import(vm, 7, "a")
+            advanceUntilIdle()
+
+            vm.createPatternPdf(false)
+            advanceUntilIdle()
+
+            assertEquals(PatternImageImportPhase.CANCELLED, vm.uiState.value.phase)
+            verify(exactly = 1) { storage.deleteGeneratedPdf(context, output(7).first) }
+            coVerify(exactly = 0) { repository.attachPattern(any(), any(), any(), any(), any()) }
+        }
+
+    @Test
     fun `cancelled delayed attachment with unknown readback preserves drafts and output`() =
         runTest {
             val attachment = CompletableDeferred<ProjectDocumentMutationResult>()
@@ -505,17 +526,19 @@ class PatternImageImportOwnershipTest {
     private fun copyHandle(handle: SavedStateHandle): SavedStateHandle =
         SavedStateHandle(handle.keys().associateWith { handle.get<Any?>(it) })
 
-    private fun newModel(handle: SavedStateHandle) =
-        PatternImageImportViewModel(
-            storage,
-            repository,
-            context,
-            dispatcher,
-            handle,
-            proManager,
-            mockk(relaxed = true),
-            applicationScope,
-        )
+    private fun newModel(
+        handle: SavedStateHandle,
+        ioDispatcher: CoroutineDispatcher = dispatcher,
+    ) = PatternImageImportViewModel(
+        storage,
+        repository,
+        context,
+        ioDispatcher,
+        handle,
+        proManager,
+        mockk(relaxed = true),
+        applicationScope,
+    )
 
     private fun import(
         vm: PatternImageImportViewModel,

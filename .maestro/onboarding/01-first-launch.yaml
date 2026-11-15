@@ -1,0 +1,32 @@
+appId: com.finnvek.knittools.onboardingpreview
+name: First launch crochet onboarding
+---
+- launchApp:
+    clearState: true
+- assertVisible: "Welcome to KnitTools"
+- tapOn: "Let's get started"
+- tapOn: "I crochet"
+- tapOn: "Which round I'm on"
+- tapOn: "Try the counter"
+- tapOn: "Increase the example count by one"
+- tapOn: "Increase the example count by one"
+- assertVisible: "Come back any time. KnitTools opens right where you left off."
+- tapOn: "Continue"
+- tapOn: "Let's add your project"
+- tapOn:
+    text: "Project name"
+    index: 1
+- inputText: "Maestro First Crochet"
+- tapOn: "Create project"
+- assertVisible: "Your Project Is Ready"
+- tapOn: "Continue"
+- scrollUntilVisible:
+    element:
+      text: "Continue with the free version"
+    direction: DOWN
+- tapOn: "Continue with the free version"
+- assertVisible: "Maestro First Crochet"
+- launchApp
+- assertNotVisible: "Welcome to KnitTools"
+- assertVisible: "Maestro First Crochet"
+- takeScreenshot: onboarding-complete

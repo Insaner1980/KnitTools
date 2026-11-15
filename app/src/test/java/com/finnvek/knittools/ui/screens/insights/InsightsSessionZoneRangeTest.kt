@@ -63,6 +63,7 @@ class InsightsSessionZoneRangeTest {
             assertRange(state, "2026-10-01", "2026-10-01", 1, 1, 60)
             assertEnglish(state, "Active 1 of 1 day", "Oct 2026")
             assertEquals(listOf(30), state.chartBuckets.map { it.totalMinutes })
+            assertFalse(state.hasMeaningfulChartData)
         }
 
     @Test

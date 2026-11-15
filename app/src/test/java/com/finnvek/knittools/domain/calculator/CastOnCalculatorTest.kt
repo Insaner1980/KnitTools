@@ -247,6 +247,14 @@ class CastOnCalculatorTest {
     }
 
     @Test
+    fun `decimal midpoint is not shifted by floating point gauge conversion`() {
+        for ((width, expected) in listOf(12.49 to 12, 12.5 to 12, 12.51 to 14)) {
+            val result = requireNotNull(CastOnCalculator.calculate(width, 10.4, patternRepeat = 2))
+            assertEquals(expected, result.stitches)
+        }
+    }
+
+    @Test
     fun `repeat selection uses the unrounded body count around the midpoint`() {
         for ((width, expected) in listOf(11.6 to 8, 12.0 to 8, 12.4 to 16)) {
             val result = requireNotNull(CastOnCalculator.calculate(width, 10.0, patternRepeat = 8))

@@ -1,8 +1,13 @@
 package com.finnvek.knittools.data.backup
 
 import com.finnvek.knittools.data.local.KNITTOOLS_DATABASE_VERSION
-import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.decodeFromJsonElement
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.longOrNull
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileOutputStream
@@ -19,11 +24,12 @@ internal object BackupArchive {
         manifest: BackupManifest,
         check: () -> Unit = {},
     ) {
-        validateManifest(manifest)
+        val header = BackupFormat.json.encodeToString(manifest).encodeToByteArray()
+        validateManifest(manifest, header.size.toLong())
         FileOutputStream(archive).use { file ->
             ZipOutputStream(file.buffered()).use { zip ->
                 zip.putNextEntry(ZipEntry(BackupFormat.MANIFEST))
-                zip.write(BackupFormat.json.encodeToString(manifest).toByteArray(Charsets.UTF_8))
+                zip.write(header)
                 zip.closeEntry()
                 manifest.entries.forEach { entry ->
                     check()
@@ -65,10 +71,11 @@ internal object BackupArchive {
                 BackupFormat.requireValid(header.size in 1..BackupFormat.MAX_MANIFEST)
                 val bytes = ByteArrayOutputStream()
                 zip.getInputStream(header).use { BackupFormat.copy(it, bytes, BackupFormat.MAX_MANIFEST, check) }
+                BackupFormat.requireValid(bytes.size().toLong() == header.size)
                 val headerText = bytes.toString(Charsets.UTF_8.name())
                 BackupFormat.requireJsonDepth(headerText, 4)
-                val manifest = BackupFormat.json.decodeFromString<BackupManifest>(headerText)
-                validateManifest(manifest)
+                val manifest = decodeManifest(headerText)
+                validateManifest(manifest, header.size)
                 BackupFormat.requireValid(seen == manifest.entries.map { it.path }.toSet() + BackupFormat.MANIFEST)
                 val total =
                     manifest.entries.fold(0L) { current, entry ->
@@ -97,6 +104,30 @@ internal object BackupArchive {
                 manifest
             }
         return manifest
+    }
+
+    private fun decodeManifest(text: String): BackupManifest {
+        val header = BackupFormat.json.parseToJsonElement(text).jsonObject
+        // The default numeric decoder also accepts quoted numbers.
+        header.requirePrimitiveTypes(
+            strings = listOf("format", "versionName"),
+            numbers = listOf("formatVersion", "dataVersion", "schemaVersion", "createdAt", "versionCode"),
+        )
+        header.getValue("entries").jsonArray.forEach { entry ->
+            entry.jsonObject.requirePrimitiveTypes(strings = listOf("path", "sha256"), numbers = listOf("size"))
+        }
+        return BackupFormat.json.decodeFromJsonElement<BackupManifest>(header)
+    }
+
+    private fun JsonObject.requirePrimitiveTypes(
+        strings: List<String>,
+        numbers: List<String>,
+    ) {
+        strings.forEach { name -> BackupFormat.requireValid((get(name) as? JsonPrimitive)?.isString == true) }
+        numbers.forEach { name ->
+            val value = get(name) as? JsonPrimitive
+            BackupFormat.requireValid(value != null && !value.isString && value.longOrNull != null)
+        }
     }
 
     private fun verifyLocalHeaders(
@@ -134,7 +165,16 @@ internal object BackupArchive {
         }
     }
 
-    internal fun validateManifest(manifest: BackupManifest) {
+    internal fun validateManifest(
+        manifest: BackupManifest,
+        manifestBytes: Long =
+            BackupFormat.json
+                .encodeToString(manifest)
+                .encodeToByteArray()
+                .size
+                .toLong(),
+    ) {
+        BackupFormat.requireValid(manifestBytes in 1..BackupFormat.MAX_MANIFEST)
         BackupFormat.requireValid(manifest.format == "KnitTools", BackupError.INVALID)
         BackupFormat.requireValid(
             manifest.formatVersion == 1 &&
@@ -154,6 +194,7 @@ internal object BackupArchive {
         )
         BackupFormat.requireValid(manifest.entries.map { it.path }.containsAll(BackupFormat.tablePaths))
         val budget = BackupBudget()
+        budget.addManifest(manifestBytes)
         manifest.entries.forEach { entry ->
             BackupFormat.requireValid(BackupFormat.allowedPath(entry.path))
             BackupFormat.requireValid(entry.size in 0..BackupFormat.limit(entry.path))

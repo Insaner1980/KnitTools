@@ -224,6 +224,12 @@ fun PatternViewerScreen(
     }
     val selectedDocumentAvailable = selectedDocument?.let { documentState.isAvailable(it.id) } == true
     val patternUri = selectedDocument?.localPdfUri?.takeIf { selectedDocumentAvailable }
+    val unavailableDocumentError =
+        if (selectedDocument != null && documentState.availability[selectedDocument.id] == false) {
+            stringResource(R.string.project_documents_error_unavailable)
+        } else {
+            null
+        }
     val exportContext =
         selectedDocument?.takeIf { selectedDocumentAvailable }?.let { document ->
             PatternPdfExportContext(
@@ -243,9 +249,10 @@ fun PatternViewerScreen(
             currentPage = currentPage,
             onPageClamped = { page -> counterViewModel.updatePatternPage(page, selectedDocument?.id) },
         )
-    var rowCalibrationState by rememberSaveable(selectedDocument?.id, stateSaver = RowCalibrationState.Saver) {
-        mutableStateOf<RowCalibrationState?>(null)
-    }
+    var rowCalibrationState by
+        rememberSaveable(selectedDocument?.id, selectedDocument?.rowMapping, stateSaver = RowCalibrationState.Saver) {
+            mutableStateOf<RowCalibrationState?>(null)
+        }
     var readingLinePreviewYFraction by remember(selectedDocument?.id) {
         mutableFloatStateOf(selectedDocument?.readingLineYFraction ?: DEFAULT_READING_LINE_Y_FRACTION)
     }
@@ -429,6 +436,7 @@ fun PatternViewerScreen(
                                 rowCalibrationState =
                                     RowCalibrationState(
                                         rowInput = counterState.counter.count.toString(),
+                                        expectedMapping = selectedDocument?.rowMapping,
                                     )
                             },
                             onToggleAnnotationMode = annotationMode.toggle,
@@ -504,7 +512,7 @@ fun PatternViewerScreen(
                                 if (firstRow == null) {
                                     calibrationState.copy(showInvalidRowError = true)
                                 } else {
-                                    RowCalibrationState(
+                                    calibrationState.copy(
                                         firstMarker =
                                             RowMarker(
                                                 row = firstRow,
@@ -516,6 +524,7 @@ fun PatternViewerScreen(
                                                     ),
                                             ),
                                         rowInput = counterState.counter.count.toString(),
+                                        showInvalidRowError = false,
                                     )
                                 }
                         },
@@ -532,7 +541,7 @@ fun PatternViewerScreen(
                                 counterViewModel.mergePatternRowMarkers(
                                     markersToMerge = markers,
                                     documentId = selectedDocument?.id,
-                                    documentRowMapping = selectedDocument?.rowMapping,
+                                    documentRowMapping = calibrationState.expectedMapping,
                                 )
                                 rowCalibrationState = null
                             }
@@ -546,7 +555,7 @@ fun PatternViewerScreen(
                     stateProvider = {
                         PatternViewerContentState(
                             patternUri = patternUri,
-                            rendererError = renderState.rendererError,
+                            rendererError = renderState.rendererError ?: unavailableDocumentError,
                             renderedBitmap = renderState.renderedBitmap,
                             patternName = selectedDocument?.label,
                             currentRow = counterState.counter.count,
@@ -632,9 +641,16 @@ fun PatternViewerScreen(
     }
 
     if (showBookmarkSheet) {
+        val bookmarkDocumentKey = selectedDocument?.documentKey
+        val bookmarkPageCount = renderState.renderer?.pageCount ?: 0
         PatternBookmarkSheet(
             state = bookmarkState,
-            totalPages = renderState.renderer?.pageCount ?: 0,
+            totalPages = bookmarkPageCount,
+            canAddAtCurrentLocation =
+                renderState.canAnnotate &&
+                    currentPage in 0 until bookmarkPageCount &&
+                    bookmarkDocumentKey != null &&
+                    bookmarkState.documentKey == bookmarkDocumentKey,
             actions =
                 PatternBookmarkSheetActions(
                     onDismiss = { showBookmarkSheet = false },
@@ -648,6 +664,7 @@ fun PatternViewerScreen(
                                 } else {
                                     DEFAULT_READING_LINE_Y_FRACTION
                                 },
+                            expectedDocumentKey = bookmarkDocumentKey,
                         )
                     },
                     onJump = patternViewerViewModel::jumpToBookmark,
@@ -1222,6 +1239,7 @@ private data class RowCalibrationState(
     val firstMarker: RowMarker? = null,
     val rowInput: String,
     val showInvalidRowError: Boolean = false,
+    val expectedMapping: String? = null,
 ) {
     companion object {
         val Saver =
@@ -1236,6 +1254,7 @@ private data class RowCalibrationState(
                             state.firstMarker?.row ?: -1,
                             state.firstMarker?.page ?: 0,
                             state.firstMarker?.yPosition ?: 0f,
+                            state.expectedMapping.orEmpty(),
                         )
                     }
                 },
@@ -1246,6 +1265,7 @@ private data class RowCalibrationState(
                         RowCalibrationState(
                             rowInput = values[0] as String,
                             showInvalidRowError = values[1] as Boolean,
+                            expectedMapping = (values.getOrNull(5) as? String)?.ifEmpty { null },
                             firstMarker =
                                 (values[2] as Int).takeIf { it >= 0 }?.let {
                                     RowMarker(
@@ -1541,10 +1561,11 @@ internal fun rememberPatternRenderState(
             pendingRenderer = null
             createdRenderer
                 .onSuccess { pdfRenderer ->
-                    renderer = pdfRenderer
-                    val clampedPage = clampPatternPage(currentPage, pdfRenderer.pageCount)
-                    if (currentPage != clampedPage) {
-                        onPageClamped(clampedPage)
+                    if (pdfRenderer.pageCount > 0) {
+                        renderer = pdfRenderer
+                    } else {
+                        pdfRenderer.close()
+                        rendererError = patternOpenFailed
                     }
                 }.onFailure {
                     rendererError = patternOpenFailed
@@ -1552,6 +1573,13 @@ internal fun rememberPatternRenderState(
         } finally {
             pendingRenderer?.close()
         }
+    }
+
+    val pageCount = renderer?.pageCount ?: 0
+    val validPage = currentPage in 0 until pageCount
+    val latestOnPageClamped by rememberUpdatedState(onPageClamped)
+    LaunchedEffect(renderer, currentPage) {
+        if (pageCount > 0 && !validPage) latestOnPageClamped(clampPatternPage(currentPage, pageCount))
     }
 
     DisposableEffect(patternUri) {
@@ -1569,10 +1597,8 @@ internal fun rememberPatternRenderState(
             key2 = currentPage,
         ) {
             value = null
-            val activeRenderer =
-                renderer ?: run {
-                    return@produceState
-                }
+            val activeRenderer = renderer ?: return@produceState
+            if (!validPage) return@produceState
             var pendingBitmap: Bitmap? = null
             try {
                 val bitmap =
@@ -2163,14 +2189,14 @@ private fun PatternViewerContent(
                 )
             }
             when {
-                state.patternUri == null -> {
-                    PatternViewerMessage(message = stringResource(R.string.no_pattern_attached))
-                }
-
                 state.rendererError != null -> {
                     PatternViewerMessage(
                         message = state.rendererError.ifBlank { stringResource(R.string.pattern_open_failed) },
                     )
+                }
+
+                state.patternUri == null -> {
+                    PatternViewerMessage(message = stringResource(R.string.no_pattern_attached))
                 }
 
                 renderedImage == null -> {

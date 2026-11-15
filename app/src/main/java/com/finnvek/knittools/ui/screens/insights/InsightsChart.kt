@@ -177,7 +177,11 @@ private fun ChartPlot(
         }
 
     val haptics = LocalHapticFeedback.current
+    val currentBuckets by rememberUpdatedState(buckets)
     val currentOnSelectBucket by rememberUpdatedState(onSelectBucket)
+    val selectCurrentBucket: (Int) -> Unit = { index ->
+        if (buckets == currentBuckets && index in buckets.indices) currentOnSelectBucket(index)
+    }
     var plotSize by remember { mutableStateOf(IntSize.Zero) }
 
     // Eleiden oma sarakehaku; piirto laskee pitchin erikseen omasta DrawScopen koostaan.
@@ -198,7 +202,7 @@ private fun ChartPlot(
                 .onSizeChanged { plotSize = it }
                 .pointerInput(buckets, plotSize) {
                     detectTapGestures { offset ->
-                        chartBucketIndexAt(offset.x, size.width, buckets.size)?.let(currentOnSelectBucket)
+                        chartBucketIndexAt(offset.x, size.width, buckets.size)?.let(selectCurrentBucket)
                     }
                 }
                 // Vetoele tekee kapeista kuukausipylväistä käytettäviä: 12dp osumatarkkuus
@@ -213,7 +217,7 @@ private fun ChartPlot(
                             if (buckets.isEmpty()) return@detectHorizontalDragGestures
                             lastSelectedIndex = chartBucketIndexAt(offset.x, size.width, buckets.size)
                                 ?: return@detectHorizontalDragGestures
-                            currentOnSelectBucket(lastSelectedIndex)
+                            selectCurrentBucket(lastSelectedIndex)
                         },
                     ) { change, _ ->
                         if (buckets.isEmpty()) return@detectHorizontalDragGestures
@@ -223,7 +227,7 @@ private fun ChartPlot(
                         if (index != lastSelectedIndex) {
                             lastSelectedIndex = index
                             haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                            currentOnSelectBucket(index)
+                            selectCurrentBucket(index)
                         }
                     }
                 },

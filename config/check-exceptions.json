@@ -2,6 +2,21 @@
   "schemaVersion": 1,
   "exceptions": [
     {
+      "id": "knittools-sonar-pattern-selection-append-not-deprecated",
+      "tool": "sonar",
+      "rule": "kotlin:S1874",
+      "scope": "PatternImageImportViewModel call to the app-owned PatternImageSelection.append method",
+      "reason": "PatternImageSelection.append is declared in PatternImageImportState.kt without a Deprecated annotation. The reported call resolves to this application method, not a deprecated platform API. Classified as a false positive for this exact Sonar issue; no rule or source path is excluded from analysis.",
+      "owner": "project-maintainers",
+      "added": "2026-11-15",
+      "expires": "2027-01-15",
+      "tracking": "https://sonarcloud.io/project/issues?id=Insaner1980_KnitTools&pullRequest=261&issues=AaHd3oJ5GiVmDmX-mbcJ&open=AaHd3oJ5GiVmDmX-mbcJ",
+      "sourcePath": "app/src/main/java/com/finnvek/knittools/ui/screens/pattern/PatternImageImportViewModel.kt",
+      "selector": "state.selection.append(batch.pages)",
+      "findingPath": "app/src/main/java/com/finnvek/knittools/ui/screens/pattern/PatternImageImportViewModel.kt",
+      "findingSelectors": ["AaHd3oJ5GiVmDmX-mbcJ"]
+    },
+    {
       "id": "knittools-mobsf-counter-undo-test-document-key",
       "tool": "mobsfscan",
       "rule": "android_kotlin_hardcoded",

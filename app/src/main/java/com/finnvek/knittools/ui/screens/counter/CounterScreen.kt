@@ -321,7 +321,8 @@ fun ProjectContentHost(
             }
         }
     }
-    var showTargetDialog by rememberSaveable { mutableStateOf(false) }
+    var targetDialogProjectId by rememberSaveable { mutableStateOf<Long?>(null) }
+    val targetProjectId = targetDialogProjectId?.takeIf { it == state.projectId }
     var pendingProAction by rememberSaveable { mutableStateOf<PendingCounterProAction?>(null) }
     var pendingSecondaryProjectId by rememberSaveable { mutableStateOf<Long?>(null) }
     val requestWidgetPin = {
@@ -363,8 +364,10 @@ fun ProjectContentHost(
         pendingWebPatternProjectId = null
         showDocumentsSheet = false
         projectDocumentError = null
-        showTargetDialog = false
+        targetDialogProjectId = null
         projectActionTargetId = null
+        pendingProAction = null
+        pendingSecondaryProjectId = null
     }
 
     LaunchedEffect(state.projectId, state.isRestoringProject) {
@@ -610,7 +613,7 @@ fun ProjectContentHost(
                     performHaptic()
                     viewModel.incrementStitch()
                 },
-                onShowTargetDialog = { showTargetDialog = true },
+                onShowTargetDialog = { targetDialogProjectId = state.projectId },
                 onShowStepSize = { showStepSizeSheet = true },
                 onDismissReminder = viewModel::dismissReminder,
                 onStopSession = viewModel::stopWorkSession,
@@ -658,17 +661,17 @@ fun ProjectContentHost(
         }
     }
     CounterTargetRowsDialogHost(
-        showDialog = showTargetDialog,
+        showDialog = targetProjectId != null,
         currentTarget = state.targetRows,
         counterLabel = mainCounterLabelText(state.mainCounterLabelType, state.mainCounterCustomLabel),
-        onDismiss = { showTargetDialog = false },
+        onDismiss = { targetDialogProjectId = null },
         onConfirm = { target ->
-            viewModel.setTargetRows(target)
-            showTargetDialog = false
+            viewModel.setTargetRows(target, expectedProjectId = targetProjectId)
+            targetDialogProjectId = null
         },
         onRemove = {
-            viewModel.clearTarget()
-            showTargetDialog = false
+            viewModel.setTargetRows(null, expectedProjectId = targetProjectId)
+            targetDialogProjectId = null
         },
     )
 
@@ -981,7 +984,8 @@ fun ProjectContentHost(
         Toast.makeText(context, genericErrorUnknown, Toast.LENGTH_LONG).show()
     }
 
-    pendingProAction?.let { action ->
+    pendingProAction?.takeIf { previousOverlayProjectId == state.projectId }?.let { action ->
+        val promptProjectId = state.projectId
         val request =
             when (action) {
                 PendingCounterProAction.OpenReminder,
@@ -1003,6 +1007,7 @@ fun ProjectContentHost(
                 pendingProAction = null
                 val secondaryProjectId = pendingSecondaryProjectId
                 pendingSecondaryProjectId = null
+                if (viewModel.uiState.value.projectId != promptProjectId) return@ProPromptSheet
                 when (action) {
                     PendingCounterProAction.OpenCounter -> {
                         runForCurrentProject(dialogActionDependencies, viewModel) { showAddCounter = true }
@@ -1050,7 +1055,11 @@ fun ProjectContentHost(
     state.activeSession?.takeIf { state.showSessionRecoveryPrompt }?.let { activeSession ->
         val activeProjectName =
             state.projects.firstOrNull { it.id == activeSession.projectId }?.name
-                ?: state.projectName
+                ?: if (state.projectId == activeSession.projectId) {
+                    state.projectName
+                } else {
+                    stringResource(R.string.work_session_another_project)
+                }
         key(activeSession.sessionToken, activeSession.recoveryIntervalToken) {
             SessionRecoveryDialog(
                 projectName = activeProjectName,
@@ -1059,10 +1068,10 @@ fun ProjectContentHost(
                 trustedDurationSeconds = activeSession.timingAnchors.checkpointedDurationSeconds,
                 suggestedDurationSeconds = activeSession.recoverySuggestedDurationSeconds,
                 pendingRowsWorked = activeSession.pendingRowsWorked,
-                onAdd = viewModel::addRecoveryInterval,
-                onDiscard = viewModel::discardRecoveryInterval,
-                onEdit = viewModel::editRecoveryDurationAndStop,
-                onDismiss = viewModel::dismissRecoveryPrompt,
+                onAdd = { viewModel.addRecoveryInterval(it, activeSession) },
+                onDiscard = { viewModel.discardRecoveryInterval(activeSession) },
+                onEdit = { viewModel.editRecoveryDurationAndStop(it, activeSession) },
+                onDismiss = { viewModel.dismissRecoveryPrompt(activeSession) },
             )
         }
     }
@@ -1138,7 +1147,7 @@ fun ProjectContentHost(
             projectDocumentError != null,
             patternImportInProgress,
             showStepSizeSheet,
-            showTargetDialog,
+            targetProjectId != null,
             pendingProAction != null,
             overviewMenuOpen,
             setupMenuOpen,
@@ -1218,7 +1227,7 @@ fun ProjectContentHost(
                             onItemClick = { item ->
                                 openProjectContent {
                                     when (item) {
-                                        ProjectSetupItem.TARGET -> showTargetDialog = true
+                                        ProjectSetupItem.TARGET -> targetDialogProjectId = state.projectId
                                         ProjectSetupItem.PATTERN -> {
                                             patternPickerMode = PatternPickerMode.INITIAL_PROJECT_PATTERN
                                             showPatternPicker = true
@@ -1434,7 +1443,7 @@ internal fun SessionRecoveryDialog(
                         TextField(
                             colors = dialogTextFieldColors(),
                             value = hoursText,
-                            onValueChange = { hoursText = it.filter(Char::isDigit) },
+                            onValueChange = { hoursText = it },
                             label = { Text(stringResource(R.string.work_session_hours)) },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             isError = durationSeconds == null,
@@ -1444,7 +1453,7 @@ internal fun SessionRecoveryDialog(
                         TextField(
                             colors = dialogTextFieldColors(),
                             value = minutesText,
-                            onValueChange = { minutesText = it.filter(Char::isDigit) },
+                            onValueChange = { minutesText = it },
                             label = { Text(stringResource(R.string.work_session_minutes)) },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             isError = durationSeconds == null,
@@ -1691,9 +1700,10 @@ internal fun parseRecoveryDurationSeconds(
     hoursText: String,
     minutesText: String,
 ): Long? {
+    if (!hoursText.all(Char::isDigit) || !minutesText.all(Char::isDigit)) return null
     val hours = hoursText.toLongOrNull() ?: return null
     val minutes = minutesText.toLongOrNull() ?: return null
-    if (hours < 0L || minutes !in 0L..59L || hours > Long.MAX_VALUE / 3_600L) return null
+    if (minutes > 59L || hours > Long.MAX_VALUE / 3_600L) return null
     val hourSeconds = hours * 3_600L
     val minuteSeconds = minutes * 60L
     if (Long.MAX_VALUE - hourSeconds < minuteSeconds) return null

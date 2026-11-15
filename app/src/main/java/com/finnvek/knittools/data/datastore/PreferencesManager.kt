@@ -21,6 +21,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -58,6 +60,7 @@ class PreferencesManager
     ) {
         private val _storedAppLanguageApplied = MutableStateFlow(false)
         val storedAppLanguageApplied: StateFlow<Boolean> = _storedAppLanguageApplied.asStateFlow()
+        private val languageMutex = Mutex()
 
         val preferences: Flow<AppPreferences> =
             context.dataStore.safePreferencesData.map { prefs ->
@@ -87,16 +90,18 @@ class PreferencesManager
             }
         }
 
-        suspend fun setAppLanguage(language: AppLanguage) {
-            val saved =
-                context.dataStore.editPreferencesSafely {
-                    it[KEY_APP_LANGUAGE] = language.value
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                        it[KEY_APP_LANGUAGE_MIGRATED_TO_SYSTEM] = true
+        suspend fun setAppLanguage(language: AppLanguage): Boolean =
+            languageMutex.withLock {
+                val saved =
+                    context.dataStore.editPreferencesSafely {
+                        it[KEY_APP_LANGUAGE] = language.value
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                            it[KEY_APP_LANGUAGE_MIGRATED_TO_SYSTEM] = true
+                        }
                     }
-                }
-            if (saved) applyAppLanguage(language)
-        }
+                if (saved) applyAppLanguage(language)
+                saved
+            }
 
         suspend fun setHapticFeedback(enabled: Boolean) {
             context.dataStore.editPreferencesSafely {
@@ -134,31 +139,33 @@ class PreferencesManager
             }
         }
 
-        suspend fun applyStoredAppLanguage() {
-            try {
-                val prefs = context.dataStore.readPreferencesOrNull() ?: return
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                    migrateStoredLanguageToSystemIfNeeded(prefs)
-                } else {
-                    applyAppLanguage(AppLanguage.fromValue(prefs[KEY_APP_LANGUAGE]))
+        suspend fun applyStoredAppLanguage() =
+            languageMutex.withLock {
+                try {
+                    val prefs = context.dataStore.readPreferencesOrNull() ?: return@withLock
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        migrateStoredLanguageToSystemIfNeeded(prefs)
+                    } else {
+                        applyAppLanguage(AppLanguage.fromValue(prefs[KEY_APP_LANGUAGE]))
+                    }
+                } finally {
+                    _storedAppLanguageApplied.value = true
                 }
-            } finally {
-                _storedAppLanguageApplied.value = true
             }
-        }
 
         suspend fun syncAppLanguageFromSystem() {
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
 
-            val currentLanguage = currentAppLanguage()
-            context.dataStore.editPreferencesSafely { prefs ->
-                if (prefs[KEY_APP_LANGUAGE_MIGRATED_TO_SYSTEM] != true) {
-                    return@editPreferencesSafely
+            languageMutex.withLock {
+                val currentLanguage = currentAppLanguage()
+                context.dataStore.editPreferencesSafely { prefs ->
+                    if (prefs[KEY_APP_LANGUAGE_MIGRATED_TO_SYSTEM] != true) {
+                        return@editPreferencesSafely
+                    }
+                    if (AppLanguage.fromValue(prefs[KEY_APP_LANGUAGE]) != currentLanguage) {
+                        prefs[KEY_APP_LANGUAGE] = currentLanguage.value
+                    }
                 }
-                if (AppLanguage.fromValue(prefs[KEY_APP_LANGUAGE]) != currentLanguage) {
-                    prefs[KEY_APP_LANGUAGE] = currentLanguage.value
-                }
-                prefs[KEY_APP_LANGUAGE_MIGRATED_TO_SYSTEM] = true
             }
         }
 

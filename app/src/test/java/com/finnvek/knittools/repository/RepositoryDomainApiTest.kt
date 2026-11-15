@@ -36,6 +36,8 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
+import java.io.File
+import java.nio.file.Files
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class SavedPatternRepositoryDomainApiTest {
@@ -165,12 +167,25 @@ class SavedPatternRepositoryDomainApiTest {
                     UnconfinedTestDispatcher(testScheduler),
                 )
 
-            val importedId = repository.saveImportedPatternIfMissing("content://pattern", "Local pattern")
-            val ignoredId = repository.saveImportedPatternIfMissing("https://example.com/pattern", "Remote pattern")
+            val filesDir = Files.createTempDirectory("knittools-import").toFile()
+            val pdf = File(filesDir, "pattern.pdf")
+            try {
+                pdf.writeText("%PDF-1.7")
+                every { context.filesDir } returns filesDir
+                val uri = pdf.toPath().toUri().toString()
+                withParsedFileUrisForDomainApi(uri to pdf.absolutePath) {
+                    val importedId = repository.saveImportedPatternIfMissing(uri, "Local pattern")
+                    val ignoredId =
+                        repository.saveImportedPatternIfMissing("https://example.com/pattern", "Remote pattern")
 
-            assertEquals(99L, importedId)
-            assertNull(ignoredId)
-            assertEquals("Imported", dao.lastInserted?.designerName)
+                    assertEquals(99L, importedId)
+                    assertNull(ignoredId)
+                    assertEquals("Imported", dao.lastInserted?.designerName)
+                }
+            } finally {
+                pdf.delete()
+                filesDir.delete()
+            }
         }
 
     @Test
@@ -212,13 +227,9 @@ class SavedPatternRepositoryDomainApiTest {
         }
 
     @Test
-    fun `saved pattern repository prunes missing app owned pattern on viewer load`() =
+    fun `saved pattern observation preserves metadata for an unavailable local PDF`() =
         runTest {
             val missingUri = "file:///data/data/com.finnvek.knittools/files/pattern_pdfs/1/missing.pdf"
-            val filesDir =
-                java.nio.file.Files
-                    .createTempDirectory("knittools-files")
-                    .toFile()
             val dao =
                 FakeSavedPatternDao(
                     savedPatterns =
@@ -235,22 +246,20 @@ class SavedPatternRepositoryDomainApiTest {
                             ),
                         ),
                 )
-            every { context.filesDir } returns filesDir
-            withParsedFileUri(missingUri, java.io.File(filesDir, "pattern_pdfs/1/missing.pdf").absolutePath) {
-                val repository =
-                    SavedPatternRepository(
-                        dao,
-                        context,
-                        RepositoryDomainFakeCounterProjectDao(),
-                        ImmediateDatabaseTransactionRunner,
-                        UnconfinedTestDispatcher(testScheduler),
-                    )
+            val repository =
+                SavedPatternRepository(
+                    dao,
+                    context,
+                    RepositoryDomainFakeCounterProjectDao(),
+                    ImmediateDatabaseTransactionRunner,
+                    UnconfinedTestDispatcher(testScheduler),
+                )
 
-                val pattern = repository.getByIdIfAvailable(7L)
+            val pattern = repository.observeById(7L).first()
 
-                assertNull(pattern)
-                assertEquals(listOf(7L), dao.deletedIds)
-            }
+            assertEquals("Missing", pattern?.name)
+            assertEquals(missingUri, pattern?.localPdfUri)
+            assertEquals(emptyList<Long>(), dao.deletedIds)
         }
 
     @Test
@@ -423,6 +432,8 @@ internal class FakeSavedPatternDao(
     var lastRequestedIds: List<Long> = emptyList()
 
     override fun getAll(): Flow<List<SavedPatternEntity>> = flowOf(savedPatterns)
+
+    override fun observeById(id: Long): Flow<SavedPatternEntity?> = flowOf(savedPatterns.firstOrNull { it.id == id })
 
     override suspend fun getById(id: Long): SavedPatternEntity? = savedPatterns.firstOrNull { it.id == id }
 

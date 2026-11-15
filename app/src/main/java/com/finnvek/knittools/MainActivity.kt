@@ -172,6 +172,7 @@ class MainActivity : AppCompatActivity() {
     private var openProUpgradeRequest by mutableStateOf(false)
     private var openWidgetProPromptRequest by mutableStateOf(false)
     private var consumedCounterLaunchRequestId: String? = null
+    private var reviewAttemptedThisResume = false
     private var consumedPatternShareIntent = false
     private var startupThemeLoaded = false
     private var startupSplashRemoved by mutableStateOf(false)
@@ -284,7 +285,7 @@ class MainActivity : AppCompatActivity() {
                 counterLaunchRequest == null &&
                 !openProUpgradeRequest &&
                 !openWidgetProPromptRequest &&
-                patternShareImportRequest == null &&
+                (patternShareImportRequest == null || incomingPdf != null) &&
                 !receivingPdf &&
                 if (incomingPdf != null) pdfSurfaceReady else destinationReady
         // Register before either asynchronous language/theme early return. This does not hold the splash.
@@ -300,8 +301,11 @@ class MainActivity : AppCompatActivity() {
 
         val reviewEligible by
             inAppReviewManager.reviewEligibility.collectAsStateWithLifecycle(initialValue = false)
-        InAppReviewRequestEffect(reviewEligible) {
-            inAppReviewManager.maybeRequestReview(this@MainActivity)
+        InAppReviewRequestEffect(reviewEligible && lifecycleState == Lifecycle.State.RESUMED) {
+            if (!reviewAttemptedThisResume && lifecycle.currentState == Lifecycle.State.RESUMED) {
+                reviewAttemptedThisResume = true
+                inAppReviewManager.maybeRequestReview(this@MainActivity)
+            }
         }
 
         val snackbarHostState = remember { SnackbarHostState() }
@@ -478,13 +482,14 @@ class MainActivity : AppCompatActivity() {
         KnitToolsNavActions(
             onPurchasePro = billingManager::launchPurchaseFlow,
             onWebPdfDownload = incomingPdfViewModel::receiveDownload,
-            onCounterLaunchHandled = {
-                counterLaunchRequest?.let {
-                    consumedCounterLaunchRequestId = it.requestId
+            onCounterLaunchHandled = { requestId ->
+                if (counterLaunchRequest?.requestId == requestId) {
+                    consumedCounterLaunchRequestId = requestId
+                    counterLaunchRequest = null
+                    clearCounterLaunchIntent()
                 }
-                counterLaunchRequest = null
-                clearCounterLaunchIntent()
             },
+            isCurrentExternalCounterLaunch = { requestId -> counterLaunchRequest?.requestId == requestId },
             onProUpgradeLaunchHandled = {
                 openProUpgradeRequest = false
                 clearProUpgradeLaunchIntent()
@@ -515,9 +520,11 @@ class MainActivity : AppCompatActivity() {
         restoreCounterLaunchRequest(savedInstanceState)
         openProUpgradeRequest = intent?.action == ACTION_OPEN_PRO_UPGRADE
         openWidgetProPromptRequest = intent?.action == ACTION_OPEN_WIDGET_PRO_PROMPT
+        val restoredPdf = incomingPdfViewModel.restoreInterruptedReceive(intent, contentResolver)
+        val isTextShare = handlePatternShareIntentIfNeeded(intent)
         val isShareImport =
-            incomingPdfViewModel.restoreInterruptedReceive(intent) ||
-                handlePatternShareIntentIfNeeded(intent) ||
+            restoredPdf ||
+                isTextShare ||
                 incomingPdfViewModel.receiveFromIntent(intent, contentResolver)
         if (isShareImport) {
             counterLaunchRequest = null
@@ -541,9 +548,12 @@ class MainActivity : AppCompatActivity() {
     private suspend fun restoreCounterLaunchRequest(savedInstanceState: Bundle?) {
         consumedCounterLaunchRequestId = savedInstanceState?.getString(STATE_CONSUMED_COUNTER_LAUNCH_REQUEST_ID)
         counterLaunchRequest =
-            intent.toCounterLaunchRequest(
-                consumedRequestId = consumedCounterLaunchRequestId.takeIf { savedInstanceState != null },
-            )
+            savedInstanceState?.getString(STATE_PENDING_COUNTER_LAUNCH_REQUEST_ID)?.let { requestId ->
+                CounterLaunchRequest(
+                    requestId = requestId,
+                    projectId = savedInstanceState.getLong(STATE_PENDING_COUNTER_LAUNCH_PROJECT_ID).takeIf { it > 0L },
+                )
+            } ?: intent.toCounterLaunchRequest(consumedRequestId = consumedCounterLaunchRequestId)
     }
 
     private fun applyEdgeToEdgeIfNeeded(isDarkTheme: Boolean) {
@@ -564,6 +574,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        reviewAttemptedThisResume = false
         trialNoticeResumeGeneration += 1L
         inAppUpdateManager.checkDownloadedOnResume()
         lifecycleScope.launch {
@@ -586,6 +597,10 @@ class MainActivity : AppCompatActivity() {
         consumedCounterLaunchRequestId?.let {
             outState.putString(STATE_CONSUMED_COUNTER_LAUNCH_REQUEST_ID, it)
         }
+        counterLaunchRequest?.let { request ->
+            outState.putString(STATE_PENDING_COUNTER_LAUNCH_REQUEST_ID, request.requestId)
+            request.projectId?.let { outState.putLong(STATE_PENDING_COUNTER_LAUNCH_PROJECT_ID, it) }
+        }
         super.onSaveInstanceState(outState)
     }
 
@@ -596,20 +611,19 @@ class MainActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
-        inAppUpdateManager.cleanup()
+        inAppUpdateManager.cleanup(finishing = isFinishing)
     }
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        consumedPatternShareIntent = false
-        incomingPdfViewModel.pdfIntentConsumed = false
+        counterLaunchRequest = null
         setIntent(intent)
         launchRequestsReady = false
         openProUpgradeRequest = intent.action == ACTION_OPEN_PRO_UPGRADE
         openWidgetProPromptRequest = intent.action == ACTION_OPEN_WIDGET_PRO_PROMPT
         val isShareImport =
             handlePatternShareIntentIfNeeded(intent) ||
-                incomingPdfViewModel.receiveFromIntent(intent, contentResolver)
+                incomingPdfViewModel.receiveFromIntent(intent, contentResolver, isNewIntent = true)
         launchRequestJob?.cancel()
         launchRequestJob =
             lifecycleScope.launch {
@@ -670,7 +684,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun clearPatternShareIntent(sourceIntent: Intent? = intent) {
         sourceIntent
-            ?.takeIf { it.action == Intent.ACTION_SEND }
+            ?.takeIf { it.action == Intent.ACTION_SEND && it.type == MIME_TYPE_TEXT_PLAIN }
             ?.apply {
                 consumedPatternShareIntent = true
                 setAction(Intent.ACTION_MAIN)
@@ -720,6 +734,8 @@ class MainActivity : AppCompatActivity() {
         private const val SPLASH_LOGO_INSET = 0.1f
         private const val STATE_CONSUMED_COUNTER_LAUNCH_REQUEST_ID =
             "com.finnvek.knittools.state.CONSUMED_COUNTER_LAUNCH_REQUEST_ID"
+        private const val STATE_PENDING_COUNTER_LAUNCH_REQUEST_ID = "pending_counter_launch_request_id"
+        private const val STATE_PENDING_COUNTER_LAUNCH_PROJECT_ID = "pending_counter_launch_project_id"
 
         fun createCounterLaunchIntent(
             context: Context,
@@ -758,7 +774,7 @@ internal fun InAppReviewRequestEffect(
 internal fun DownloadedUpdatePromptEffect(
     downloadedUpdatePromptId: Long,
     snackbarHostState: SnackbarHostState,
-    onRestart: () -> Unit,
+    onRestart: (Long) -> Unit,
 ) {
     var lastShownDownloadedUpdatePromptId by remember(snackbarHostState) { mutableLongStateOf(0L) }
     val updateMessage = stringResource(R.string.update_downloaded)
@@ -773,7 +789,7 @@ internal fun DownloadedUpdatePromptEffect(
                     duration = SnackbarDuration.Indefinite,
                 )
             if (result == SnackbarResult.ActionPerformed) {
-                onRestart()
+                onRestart(downloadedUpdatePromptId)
             }
         }
     }

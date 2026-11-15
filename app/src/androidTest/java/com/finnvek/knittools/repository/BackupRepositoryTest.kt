@@ -113,19 +113,18 @@ class BackupRepositoryTest {
         val processPhase = BackupRestoreProcessProbe.phase()
         val processRun = InstrumentationRegistry.getArguments().getString("backupCrashRun").orEmpty()
         check(processRun.matches(Regex("[a-zA-Z0-9-]*")))
-        directory =
+        val fixtureDirectory =
             File(
                 app.cacheDir,
                 processPhase?.let { "backup-process-$it$processRun" } ?: "backup-test-${UUID.randomUUID()}",
             )
-        if (processPhase != null) {
-            val verifying = InstrumentationRegistry.getArguments().getString("backupCrashVerify") == "true"
-            check(directory.exists() == verifying)
-            processProbe = BackupRestoreProcessProbe(directory)
-        }
         retainProcessFixture = InstrumentationRegistry.getArguments().getString("backupCrashRetain") == "true"
         if (retainProcessFixture) checkNotNull(BackupRestoreProcessProbe.recoveryStage())
-        directory.mkdirs()
+        val verifying =
+            processPhase != null && InstrumentationRegistry.getArguments().getString("backupCrashVerify") == "true"
+        check(if (verifying) fixtureDirectory.isDirectory else fixtureDirectory.mkdir())
+        directory = fixtureDirectory
+        if (processPhase != null) processProbe = BackupRestoreProcessProbe(directory)
         context =
             object : ContextWrapper(app) {
                 override fun getApplicationContext(): Context = this
@@ -163,9 +162,12 @@ class BackupRepositoryTest {
     }
 
     @After fun tearDown() {
-        db.close()
-        scope.cancel()
-        if (!retainProcessFixture) directory.deleteRecursively()
+        try {
+            if (::db.isInitialized) db.close()
+        } finally {
+            scope.cancel()
+            if (::directory.isInitialized && !retainProcessFixture) directory.deleteRecursively()
+        }
     }
 
     private fun faultInjectingFactory() =

@@ -20,6 +20,7 @@ import com.finnvek.knittools.repository.YarnCardRepository
 import com.finnvek.knittools.repository.retryOnRepositoryReadFailure
 import com.finnvek.knittools.ui.screens.yarncard.ManualYarnCardInput
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -27,12 +28,18 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.util.concurrent.CancellationException
 import javax.inject.Inject
+
+internal data class SavedPatternDetail(
+    val pattern: SavedPattern,
+    val isLocalPdfAvailable: Boolean,
+)
 
 @HiltViewModel
 class LibraryViewModel
@@ -121,8 +128,14 @@ class LibraryViewModel
                 }
 
         fun loadSavedPattern(id: Long): Flow<SavedPattern?> =
-            flow { emit(savedPatternRepository.getByIdIfAvailable(id)) }
+            flow { emit(savedPatternRepository.getById(id)) }
                 .retryOnRepositoryReadFailure()
+
+        @OptIn(ExperimentalCoroutinesApi::class)
+        internal fun observeSavedPatternDetail(id: Long): Flow<SavedPatternDetail?> =
+            savedPatternRepository.observeById(id).mapLatest { pattern ->
+                pattern?.let { SavedPatternDetail(it, savedPatternRepository.isLocalPdfAvailable(it)) }
+            }
 
         fun deletePhoto(photo: ProgressPhoto) {
             viewModelScope.launch {

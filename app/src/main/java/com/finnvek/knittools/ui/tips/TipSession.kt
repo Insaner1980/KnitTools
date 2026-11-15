@@ -29,7 +29,7 @@ import kotlinx.coroutines.sync.withLock
 import javax.inject.Inject
 import javax.inject.Singleton
 
-data class TipPresentation(
+class TipPresentation(
     val routeKey: String,
     val id: TipId,
     val projectId: Long?,
@@ -253,6 +253,26 @@ class TipSession
             synchronized(lock) {
                 val presentation = mutableState.value.presentation ?: return
                 if (presentation.routeKey == routeKey && presentation.id == id) finishPresentation(presentation, acted)
+            }
+        }
+
+        internal fun releasePresentation(presentation: TipPresentation) {
+            synchronized(lock) {
+                val current = mutableState.value
+                if (current.presentation != presentation) return
+                if (visiblePresentation == presentation) {
+                    finishPresentation(presentation, acted = false)
+                } else {
+                    mutableState.update {
+                        it.copy(
+                            presentation = null,
+                            workSessionRequest =
+                                current.workSessionRequest?.let { request ->
+                                    TipPresentation(request.routeKey, request.id, request.projectId)
+                                },
+                        )
+                    }
+                }
             }
         }
 

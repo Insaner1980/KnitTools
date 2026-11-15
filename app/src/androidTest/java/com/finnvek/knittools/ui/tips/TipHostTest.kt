@@ -124,6 +124,26 @@ class TipHostTest {
     }
 
     @Test
+    fun automaticTipDelayStartsWhenTheRouteBecomesReady() {
+        compose.mainClock.autoAdvance = false
+        val ready = mutableStateOf(false)
+        showHost(context = { TipContext(TipScreen.TOOLS, screenReady = ready.value) }) {
+            Box(Modifier.fillMaxSize()) {
+                Button(onClick = {}, modifier = Modifier.align(Alignment.Center).tipAnchor(TipId.TOOLS_INTRO)) {
+                    Text("Tools")
+                }
+            }
+        }
+        compose.waitUntil(5_000) { session.state.value.loaded }
+        compose.mainClock.advanceTimeBy(2_500)
+        compose.runOnIdle { ready.value = true }
+        compose.mainClock.advanceTimeBy(1_000)
+        compose.runOnIdle { assertNull(session.state.value.presentation) }
+
+        waitForTip()
+    }
+
+    @Test
     fun widgetActionWaitsForReadyUnblockedHostAndRunsOnce() {
         compose.mainClock.autoAdvance = false
         val blocked = mutableStateOf(true)

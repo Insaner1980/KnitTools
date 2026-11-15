@@ -87,6 +87,14 @@ class WidgetEntitlementRuntimeTest {
         }
 
     @Test
+    fun oldRenderedCountActionCannotChangeNewlySelectedProject() =
+        withWidget {
+            query(purchased = true)
+            awaitCounter("0")
+            assertOldCountActionRejectedAfterSwitch()
+        }
+
+    @Test
     fun failedOwnershipQueryOffersWorkingRetryWithoutGrantingAccess() =
         withWidget(initialFailure = true) {
             assertRetry()
@@ -254,8 +262,26 @@ class WidgetEntitlementRuntimeTest {
         }
 
         suspend fun assertCountActionBlocked(expected: Int = 0) {
-            sendAction(CounterWidgetActions.incrementIntent(app))
+            sendAction(CounterWidgetActions.incrementIntent(app, projectId))
             assertEquals(expected, repository.getProject(projectId)?.count)
+        }
+
+        suspend fun assertOldCountActionRejectedAfterSwitch() {
+            val staleAction = CounterWidgetActions.incrementIntent(app, projectId)
+            val created = repository.createProject("New active widget project", canCreateAdditionalProjects = true)
+            check(created is ProjectCreationResult.Created)
+            try {
+                CounterWidgetState.save(app, checkNotNull(repository.getProject(created.projectId)).toWidgetData())
+                sendAction(staleAction)
+
+                assertEquals(0, repository.getProject(projectId)?.count)
+                assertEquals(0, repository.getProject(created.projectId)?.count)
+                awaitText("New active widget project")
+                click(app.getString(R.string.counter_increase), description = true)
+                await { repository.getProject(created.projectId)?.count == 1 }
+            } finally {
+                repository.deleteProject(created.projectId)
+            }
         }
 
         suspend fun sendAction(intent: Intent) {

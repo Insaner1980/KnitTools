@@ -89,7 +89,7 @@ class SavedPatternDetailSourceTest {
         assertTrue(navGraph.contains("savedPatternDetailRoute(navController)"))
         assertTrue(navGraph.contains("Screen.SavedPatternDetail.ROUTE"))
         assertTrue(navGraph.contains("SavedPatternDetailScreen("))
-        assertTrue(navGraph.contains("libraryViewModel.loadSavedPattern(savedPatternId)"))
+        assertTrue(navGraph.contains("libraryViewModel.observeSavedPatternDetail(savedPatternId)"))
         assertTrue(navGraph.contains("Screen.LibraryPatternViewer(savedPatternId).route"))
         assertTrue(navGraph.contains("counterViewModel.attachSavedPatternToProject(projectId, pattern.id)"))
         // Projektiin siirrytään vasta onnistuneen liitoksen jälkeen.
@@ -123,7 +123,7 @@ class SavedPatternDetailSourceTest {
         assertFalse(viewerRoute.contains("pattern.patternUrl"))
         assertTrue(
             viewerRoute.contains(
-                "navController.popBackStackOrNavigateToTopLevel(TopLevelDestination.Library)",
+                "RouteArgumentFallback({ navController }, TopLevelDestination.Library)",
             ),
         )
     }
@@ -142,9 +142,9 @@ class SavedPatternDetailSourceTest {
         assertTrue(detail.contains("pattern.designerName"))
         assertTrue(detail.contains("SavedPatternAvailabilityChip("))
         assertTrue(detail.contains("PatternAvailabilityBadge(availability = pattern.availability)"))
-        assertTrue(detail.contains("pattern.hasAttachedPdf"))
+        assertTrue(detail.contains("isLocalPdfAvailable"))
         assertTrue(detail.contains("pattern.isAvailableOffline"))
-        assertTrue(detail.contains("pattern.requiresRavelryAccess"))
+        assertTrue(detail.contains("requiresRavelryAccess"))
         assertTrue(detail.contains("ravelryUrl?.let(onOpenRavelry)"))
         assertTrue(detail.contains("onOpenPattern"))
         assertTrue(detail.contains("onAttachToProject"))

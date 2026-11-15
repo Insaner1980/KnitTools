@@ -42,6 +42,7 @@ class RavelryLinksTest {
             "https://www.ravelry.com/patterns/library/cozy-hat",
             ravelryPageUrlOrNull(" https://www.ravelry.com/patterns/library/cozy-hat "),
         )
+        assertEquals("https://ravelry.com/patterns/search", ravelryPageUrlOrNull("https://ravelry.com/patterns/search"))
     }
 
     @Test
@@ -53,6 +54,15 @@ class RavelryLinksTest {
     fun `ravelry page URL rejects host confusion`() {
         assertNull(ravelryPageUrlOrNull("https://www.ravelry.com.evil.example/patterns/library/cozy-hat"))
         assertNull(ravelryPageUrlOrNull("https://www.ravelry.com@evil.example/patterns/library/cozy-hat"))
+    }
+
+    @Test
+    fun `start url excludes subdomains that live navigation allows`() {
+        assertNull(ravelryPageUrlOrNull("https://forums.ravelry.com/topics/knitting"))
+        assertEquals(
+            RavelryNavigation.InApp,
+            ravelryNavigation("https", "forums.ravelry.com", "/topics/knitting", true, false),
+        )
     }
 
     @Test
@@ -70,6 +80,18 @@ class RavelryLinksTest {
     }
 
     @Test
+    fun `payment redirect recognizes fully qualified provider hosts`() {
+        assertEquals(
+            RavelryNavigation.Purchase,
+            ravelryNavigation("https", "www.paypal.com.", "/checkoutnow", true, true),
+        )
+        assertEquals(
+            RavelryNavigation.InApp,
+            ravelryNavigation("https", "www.paypal.com.example.", "/checkoutnow", true, true),
+        )
+    }
+
+    @Test
     fun `browsing and downloads stay in the app`() {
         assertFalse(isRavelryPurchaseUrl("www.ravelry.com", "/patterns/library/the-shift"))
         assertFalse(isRavelryPurchaseUrl("www.ravelry.com", "/patterns/library/819716/buy"))
@@ -80,7 +102,7 @@ class RavelryLinksTest {
     }
 
     @Test
-    fun `in-app browser shows only ravelry pages`() {
+    fun `navigation distinguishes direct links from redirects and subframes`() {
         fun nav(
             host: String,
             path: String = "/",

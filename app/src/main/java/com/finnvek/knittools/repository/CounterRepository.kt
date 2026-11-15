@@ -31,8 +31,11 @@ import com.finnvek.knittools.domain.calculator.MAX_TARGET_ROWS
 import com.finnvek.knittools.domain.calculator.ProjectCounterLogic
 import com.finnvek.knittools.domain.calculator.ProjectStartValues
 import com.finnvek.knittools.domain.calculator.ReadingLineLocationResolution
+import com.finnvek.knittools.domain.calculator.TargetInput
 import com.finnvek.knittools.domain.calculator.evaluateActiveSessionTime
 import com.finnvek.knittools.domain.calculator.parseMapping
+import com.finnvek.knittools.domain.calculator.parseProjectStartCount
+import com.finnvek.knittools.domain.calculator.parseTargetRows
 import com.finnvek.knittools.domain.calculator.resolveReadingLineLocation
 import com.finnvek.knittools.domain.calculator.saturatingAdd
 import com.finnvek.knittools.domain.model.ActiveSessionRecoveryReason
@@ -87,6 +90,7 @@ internal class SessionHistoryLimitReachedException : IllegalStateException()
 sealed interface ProjectCreationResult {
     data class Created(
         val projectId: Long,
+        val wasFirstProject: Boolean = false,
     ) : ProjectCreationResult
 
     data object LimitReached : ProjectCreationResult
@@ -237,10 +241,10 @@ class CounterRepository
                         return@withReferenceLock ProjectCreationResult.Created(it)
                     }
                     val count =
-                        draft.initialCount.ifBlank { "0" }.toIntOrNull()
+                        parseProjectStartCount(draft.initialCount)
                             ?: return@withReferenceLock ProjectCreationResult.InvalidProject
-                    val target = draft.targetRows.takeIf { it.isNotBlank() }?.toIntOrNull()
-                    if (draft.id.isBlank() || draft.targetRows.isNotBlank() && target == null) {
+                    val target = parseTargetRows(draft.targetRows)
+                    if (draft.id.isBlank() || target == TargetInput.Invalid) {
                         return@withReferenceLock ProjectCreationResult.InvalidProject
                     }
                     val pdfUri = draft.pdfUri
@@ -253,12 +257,12 @@ class CounterRepository
                         val result =
                             insertProjectInCurrentTransaction(
                                 name = draft.name,
-                                craftType = draft.craftType,
-                                mainCounterLabelType = draft.craftType.defaultMainCounterLabelType(),
+                                craftType = draft.projectCraftType,
+                                mainCounterLabelType = draft.projectCraftType.defaultMainCounterLabelType(),
                                 mainCounterCustomLabel = null,
                                 canCreateAdditionalProjects = canCreateAdditionalProjects,
                                 targetFolderId = null,
-                                startValues = ProjectStartValues(count, target),
+                                startValues = ProjectStartValues(count, (target as? TargetInput.Valid)?.value),
                             )
                         if (result !is ProjectCreationResult.Created) return@run result
                         pdfUri?.let { uri ->
@@ -293,15 +297,24 @@ class CounterRepository
         ): ProjectCreationResult =
             try {
                 transactionRunner.run {
-                    insertProjectInCurrentTransaction(
-                        name = name,
-                        craftType = craftType,
-                        mainCounterLabelType = mainCounterLabelType,
-                        mainCounterCustomLabel = mainCounterCustomLabel,
-                        canCreateAdditionalProjects = canCreateAdditionalProjects,
-                        targetFolderId = targetFolderId,
-                        startValues = startValues,
-                    )
+                    val wasFirstProject = !dao.hasAnyProject()
+                    val result =
+                        insertProjectInCurrentTransaction(
+                            name = name,
+                            craftType = craftType,
+                            mainCounterLabelType = mainCounterLabelType,
+                            mainCounterCustomLabel = mainCounterCustomLabel,
+                            canCreateAdditionalProjects = canCreateAdditionalProjects,
+                            targetFolderId = targetFolderId,
+                            startValues = startValues,
+                        )
+                    if (result is ProjectCreationResult.Created) {
+                        result.copy(
+                            wasFirstProject = wasFirstProject,
+                        )
+                    } else {
+                        result
+                    }
                 }
             } catch (cancelled: CancellationException) {
                 throw cancelled
@@ -328,6 +341,10 @@ class CounterRepository
                     return@withReferenceLock ProjectCreationResult.InvalidProject
                 }
                 transactionRunner.run {
+                    // A restored save can retry the same staged file after the original transaction committed.
+                    projectDocumentRepository.getFirstProjectIdByUri(patternUri)?.let { projectId ->
+                        return@run ProjectCreationResult.Created(projectId)
+                    }
                     val created =
                         insertProjectInCurrentTransaction(
                             name = name,
@@ -1460,12 +1477,14 @@ class CounterRepository
                 RecoveryResolutionResult.PersistenceFailure,
                 RecoveryResolutionResult.HistoryLimitReached,
             ) {
-                if (durationSeconds < 0L) return@runSessionMutation RecoveryResolutionResult.InvalidDuration
                 val active =
                     activeRecoverySession(sessionToken, recoveryIntervalToken)
                         ?: return@runSessionMutation RecoveryResolutionResult.StaleAction
-                val now = sessionTimeSource.snapshot()
                 val checkpointed = saturatingAdd(active.checkpointedDurationSeconds, durationSeconds)
+                if (durationSeconds < 0L || !canRepresentCompletedDuration(active.startedAtWallMillis, checkpointed)) {
+                    return@runSessionMutation RecoveryResolutionResult.InvalidDuration
+                }
+                val now = sessionTimeSource.snapshot()
                 val updated =
                     active.copy(
                         trustedRowsWorked = saturatingRows(active.trustedRowsWorked, active.pendingRowsWorked),
@@ -1801,7 +1820,8 @@ class CounterRepository
             fallbackZone: ZoneId,
         ): LocalDate? {
             val earliestStart = sessionDao.getFirstSessionStart(projectId) ?: return null
-            val latestStart = saturatingAdd(earliestStart, 36L * 60L * 60L * 1_000L)
+            val windowMillis = 36L * 60L * 60L * 1_000L
+            val latestStart = earliestStart.coerceAtMost(Long.MAX_VALUE - windowMillis) + windowMillis
             var first: LocalDate? = null
             var afterId = Long.MIN_VALUE
             // Vyöhykkeet kattavat -18..+18 tuntia. Myöhemmät alut eivät voi edeltää näitä paikallispäiviä.

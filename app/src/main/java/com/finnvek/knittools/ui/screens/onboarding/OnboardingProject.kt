@@ -23,6 +23,8 @@ import com.finnvek.knittools.domain.calculator.parseTargetRows
 import com.finnvek.knittools.domain.model.CraftType
 import com.finnvek.knittools.domain.model.OnboardingDraft
 import com.finnvek.knittools.domain.model.PatternDisplayNames
+import com.finnvek.knittools.ui.components.CraftTypeToggle
+import com.finnvek.knittools.ui.components.LabelWithInfo
 import com.finnvek.knittools.ui.components.LabeledTextField
 import com.finnvek.knittools.ui.components.NumberInputField
 import com.finnvek.knittools.ui.components.NumberInputOptions
@@ -35,7 +37,7 @@ internal fun JourneyProject(
     busy: Boolean,
     actions: OnboardingActions,
 ) {
-    val crochet = draft.craftType == CraftType.CROCHET
+    val crochet = draft.projectCraftType == CraftType.CROCHET
     val count = parseProjectStartCount(draft.initialCount)
     val target = parseTargetRows(draft.targetRows)
     val locale = rememberCurrentLocale()
@@ -46,8 +48,13 @@ internal fun JourneyProject(
         value = draft.name,
         onValueChange = { value -> actions.edit { it.copy(name = value) } },
         label = stringResource(R.string.project_name_label),
-        placeholder = stringResource(R.string.journey_name_placeholder, journeyExampleName(draft.craftType)),
+        placeholder = stringResource(R.string.journey_name_placeholder, journeyExampleName(draft.projectCraftType)),
         inputModifier = Modifier.testTag("onboarding_project_name"),
+    )
+    LabelWithInfo(label = stringResource(R.string.craft_type_label), info = null)
+    CraftTypeToggle(
+        selected = draft.projectCraftType,
+        onSelect = { craft -> actions.edit { it.copy(projectCraft = craft) } },
     )
     NumberInputField(
         value = draft.initialCount,
@@ -56,7 +63,7 @@ internal fun JourneyProject(
             stringResource(
                 if (crochet) R.string.project_start_count_label_rounds else R.string.project_start_count_label_rows,
             ),
-        options = NumberInputOptions(readOnly = busy),
+        options = NumberInputOptions(readOnly = busy, preserveRawInput = true),
         errorMessage =
             if (count ==
                 null
@@ -91,7 +98,7 @@ internal fun JourneyProject(
                 value = draft.targetRows,
                 onValueChange = { value -> actions.edit { it.copy(targetRows = value) } },
                 label = stringResource(R.string.project_target_label),
-                options = NumberInputOptions(readOnly = busy, isLast = true),
+                options = NumberInputOptions(readOnly = busy, isLast = true, preserveRawInput = true),
                 errorMessage =
                     if (target == TargetInput.Invalid) {
                         stringResource(

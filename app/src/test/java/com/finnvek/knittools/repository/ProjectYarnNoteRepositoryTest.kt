@@ -20,6 +20,7 @@ import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
@@ -96,9 +97,13 @@ class ProjectYarnNoteRepositoryTest {
                     transactionRunner = transactionRunner,
                 )
 
+            val beforeSave = System.currentTimeMillis()
             val yarnCardId = repository.saveToMyYarn(7L)
+            val savedCard = requireNotNull(yarnDao.lastUpserted)
 
             assertEquals(88L, yarnCardId)
+            assertTrue(savedCard.createdAt in beforeSave..System.currentTimeMillis())
+            assertEquals(123L, noteDao.getById(7L)?.createdAt)
             assertEquals("Project mohair", yarnDao.lastUpserted?.yarnName)
             assertEquals("Kid silk", yarnDao.lastUpserted?.fiberContent)
             assertEquals(3, yarnDao.lastUpserted?.quantityInStash)

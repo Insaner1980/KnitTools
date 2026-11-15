@@ -56,9 +56,13 @@ data class OnboardingDraft(
     val projectId: Long? = null,
     val completed: Boolean = false,
     val exitPending: Boolean = false,
+    val projectCraft: CraftType? = null,
 ) {
     val craftType: CraftType
         get() = if (craft == OnboardingCraft.Crochet) CraftType.CROCHET else CraftType.KNITTING
+
+    val projectCraftType: CraftType
+        get() = projectCraft ?: craftType
 
     /** Paluukortti näytetään, kun käyttäjä on itse laskenut vähintään kaksi riviä. */
     val demoReturnVisible: Boolean

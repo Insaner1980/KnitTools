@@ -6,6 +6,18 @@ import org.junit.Test
 
 class YarnEstimatorTest {
     @Test
+    fun `decimal multiples do not require an extra skein`() {
+        val below = requireNotNull(YarnEstimator.estimate(375.29, 125.1, 100.0))
+        val exact = requireNotNull(YarnEstimator.estimate(375.3, 125.1, 100.0))
+        val above = requireNotNull(YarnEstimator.estimate(375.31, 125.1, 100.0))
+
+        assertEquals(3, below.skeinsNeeded)
+        assertEquals(3, exact.skeinsNeeded)
+        assertEquals(300.0, exact.totalWeight, 0.0)
+        assertEquals(4, above.skeinsNeeded)
+    }
+
+    @Test
     fun `exact number of skeins`() {
         val result =
             requireNotNull(

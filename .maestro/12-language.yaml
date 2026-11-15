@@ -1,0 +1,15 @@
+appId: com.finnvek.knittools
+name: Runtime language switch and persistence
+---
+- launchApp:
+    clearState: true
+- tapOn: "SETTINGS"
+- tapOn: "App language"
+- tapOn: "Suomi"
+- assertVisible: "Sovelluksen kieli"
+- launchApp
+- tapOn: "ASETUKSET"
+- assertVisible: "Sovelluksen kieli"
+- tapOn: "Sovelluksen kieli"
+- tapOn: "English"
+- assertVisible: "App language"

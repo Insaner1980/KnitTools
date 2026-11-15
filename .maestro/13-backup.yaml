@@ -1,0 +1,64 @@
+appId: com.finnvek.knittools
+name: Backup export and replacement restore
+---
+- launchApp:
+    clearState: true
+- evalScript: ${output.backupFile = 'maestro-backup-' + Date.now() + '.knittools-backup'}
+- tapOn: "New Project"
+- tapOn:
+    text: "Project name"
+    index: 1
+- inputText: "Maestro Backup"
+- tapOn: "Create project"
+- tapOn: "Add row"
+- assertVisible: "Row 1"
+- tapOn: "SETTINGS"
+- scrollUntilVisible:
+    element:
+      text: "Backup & Restore"
+    direction: DOWN
+- tapOn: "Backup & Restore"
+- tapOn: "Export backup"
+- tapOn:
+    point: "45%, 95%"
+- longPressOn:
+    id: "android:id/title"
+    focused: true
+- runFlow:
+    when:
+      visible: "Select all"
+    commands:
+      - tapOn: "Select all"
+- eraseText: 1
+- inputText: ${output.backupFile}
+- hideKeyboard
+- assertVisible: ${output.backupFile}
+- tapOn: "Save"
+- assertVisible: "Backup exported."
+- launchApp
+- tapOn: "Continue Maestro Backup"
+- tapOn: "Add row"
+- assertVisible: "Row 2"
+- tapOn: "SETTINGS"
+- scrollUntilVisible:
+    element:
+      text: "Backup & Restore"
+    direction: DOWN
+- tapOn: "Backup & Restore"
+- tapOn: "Restore backup"
+- tapOn: "Show roots"
+- tapOn: "Downloads"
+- tapOn: ${output.backupFile}
+- scrollUntilVisible:
+    element:
+      text: "Restore backup"
+      enabled: true
+    direction: DOWN
+- tapOn:
+    text: "Restore backup"
+    enabled: true
+- tapOn: "Replace and restore"
+- assertVisible: "Backup restored."
+- launchApp
+- tapOn: "Continue Maestro Backup"
+- assertVisible: "Row 1"

@@ -423,7 +423,7 @@ class GaugeScreenTest {
                 LocalConfiguration provides localized.resources.configuration,
             ) {
                 KnitToolsTheme(isDarkTheme = false) {
-                    GaugeContent(state.value, onAction = {}, onBack = { backCount++ })
+                    GaugeContent(state.value, onAction = {}, onBack = { backCount++ }, onPaste = { false })
                 }
             }
         }
@@ -448,7 +448,15 @@ class GaugeScreenTest {
                 LocalConfiguration provides localized.resources.configuration,
             ) {
                 KnitToolsTheme(isDarkTheme = false) {
-                    GaugeContent(state.value, onAction = { actions += it }, onBack = {})
+                    GaugeContent(
+                        state.value,
+                        onAction = { actions += it },
+                        onBack = {},
+                        onPaste = {
+                            actions += GaugeAction.Paste(it)
+                            true
+                        },
+                    )
                 }
             }
         }

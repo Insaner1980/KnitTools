@@ -67,9 +67,10 @@ class ActiveProjectPolicyTest {
             val repository = repository()
             for (total in listOf(0, 5)) {
                 coEvery { dao.getProjectCount() } returns total
+                coEvery { dao.hasAnyProject() } returns (total > 0)
                 coEvery { dao.getActiveProjectCount() } returns 0
                 assertEquals(
-                    ProjectCreationResult.Created(8L),
+                    ProjectCreationResult.Created(8L, wasFirstProject = total == 0),
                     repository.createProject("Next", canCreateAdditionalProjects = false),
                 )
             }
@@ -87,6 +88,7 @@ class ActiveProjectPolicyTest {
     fun `trial and purchase permit both additions but stale authorization cannot`() =
         runTest {
             coEvery { dao.getActiveProjectCount() } returns 2
+            coEvery { dao.hasAnyProject() } returns true
             val repository = repository()
             for (entitlement in listOf(ProStatus.TRIAL_ACTIVE, ProStatus.PRO_PURCHASED)) {
                 status = entitlement

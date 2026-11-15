@@ -119,9 +119,11 @@ class OnboardingDraftTest {
                 projectId = 7,
                 completed = true,
                 exitPending = true,
+                projectCraft = CraftType.KNITTING,
             )
         assertEquals(draft, Json.decodeFromString<OnboardingDraft>(Json.encodeToString(draft)))
         assertEquals(CraftType.CROCHET, draft.craftType)
+        assertEquals(CraftType.KNITTING, draft.projectCraftType)
     }
 
     @Test fun `draft saved before the redesign still decodes without the removed field`() {

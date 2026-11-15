@@ -68,7 +68,9 @@ private fun GuideRoute(
         if (topic == null) viewModel.onOpened()
     }
     CollectWithLifecycleEffect({ viewModel.messages }) { message ->
-        Toast.makeText(context, resources.getString(message), Toast.LENGTH_SHORT).show()
+        if (navController.currentBackStackEntry?.id == entry.id) {
+            Toast.makeText(context, resources.getString(message), Toast.LENGTH_SHORT).show()
+        }
     }
     GuideScreen(
         topic = topic,
@@ -87,12 +89,14 @@ private fun GuideRoute(
                 } catch (cancelled: CancellationException) {
                     throw cancelled
                 } catch (_: Exception) {
-                    Toast
-                        .makeText(
-                            context,
-                            resources.getString(R.string.generic_error_unknown),
-                            Toast.LENGTH_SHORT,
-                        ).show()
+                    if (navController.currentBackStackEntry?.id == entry.id) {
+                        Toast
+                            .makeText(
+                                context,
+                                resources.getString(R.string.generic_error_unknown),
+                                Toast.LENGTH_SHORT,
+                            ).show()
+                    }
                 }
             }
         },

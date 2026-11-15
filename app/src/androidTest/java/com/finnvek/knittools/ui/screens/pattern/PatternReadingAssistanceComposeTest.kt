@@ -1,5 +1,6 @@
 package com.finnvek.knittools.ui.screens.pattern
 
+import android.content.Context
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
@@ -8,6 +9,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -32,15 +35,43 @@ import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
+import androidx.core.net.toUri
+import androidx.test.core.app.ApplicationProvider
+import com.finnvek.knittools.data.storage.writeOnePagePdf
 import com.finnvek.knittools.domain.model.PatternBookmark
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
+import java.io.File
 
 class PatternReadingAssistanceComposeTest {
     @get:Rule
     val composeRule = createComposeRule()
+
+    @Test
+    fun readerClampsPageChangesAfterRendererHasOpened() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val source = File.createTempFile("reader-page-boundary-", ".pdf", context.cacheDir)
+        val page = mutableIntStateOf(0)
+        val uri = mutableStateOf<String?>(source.toUri().toString())
+        var state: PatternRenderState? = null
+        try {
+            writeOnePagePdf(source)
+            composeRule.setContent {
+                state = rememberPatternRenderState(uri.value, page.intValue) { page.intValue = it }
+            }
+            composeRule.waitUntil(10_000) { state?.renderedBitmap != null }
+            composeRule.runOnIdle { page.intValue = 7 }
+            composeRule.waitForIdle()
+            composeRule.waitUntil(10_000) { state?.renderedBitmap != null }
+            composeRule.runOnIdle { assertEquals(0, page.intValue) }
+        } finally {
+            composeRule.runOnIdle { uri.value = null }
+            composeRule.waitForIdle()
+            source.delete()
+        }
+    }
 
     @Test
     fun bookmarkSheetShowsEmptyStateAndValidatesAddDialog() {
@@ -65,6 +96,21 @@ class PatternReadingAssistanceComposeTest {
         composeRule.onNodeWithText("Save").assertIsEnabled().performClick()
 
         composeRule.runOnIdle { assertEquals("Body", addedName) }
+    }
+
+    @Test
+    fun bookmarkSheetCannotSaveBeforePdfPageCountIsKnown() {
+        composeRule.setContent {
+            MaterialTheme {
+                PatternBookmarkSheet(
+                    state = PatternBookmarkUiState(documentKey = DOCUMENT_KEY, isLoading = false),
+                    totalPages = 0,
+                    actions = actions(),
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("Add bookmark").assertIsNotEnabled()
     }
 
     @Test

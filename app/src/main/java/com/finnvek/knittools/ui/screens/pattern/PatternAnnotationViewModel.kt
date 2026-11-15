@@ -7,10 +7,14 @@ import androidx.lifecycle.viewModelScope
 import com.finnvek.knittools.analytics.UsageAnalytics
 import com.finnvek.knittools.analytics.UsageDetail
 import com.finnvek.knittools.analytics.UsageEvent
+import com.finnvek.knittools.data.local.PatternAnnotationTextConflict
 import com.finnvek.knittools.data.storage.PATTERN_PDF_EXPORT_MAX_ANNOTATIONS
 import com.finnvek.knittools.data.storage.PATTERN_PDF_EXPORT_MAX_ANNOTATION_PAYLOAD_BYTES
+import com.finnvek.knittools.data.storage.PATTERN_PDF_EXPORT_MAX_TRACKER_CELLS
 import com.finnvek.knittools.data.storage.PatternAnnotationRenderStyle
 import com.finnvek.knittools.data.storage.PatternPdfExportBudget
+import com.finnvek.knittools.data.storage.PatternPdfExportLimitException
+import com.finnvek.knittools.data.storage.PatternPdfExportLimitReason
 import com.finnvek.knittools.data.storage.PatternPdfExportProgress
 import com.finnvek.knittools.data.storage.PatternPdfExporter
 import com.finnvek.knittools.domain.calculator.ChartTrackerHighlight
@@ -86,6 +90,7 @@ enum class PatternAnnotationLoadError {
 enum class PatternAnnotationWriteError {
     NONE,
     WRITE_FAILED,
+    TEXT_CONFLICT,
 }
 
 data class PatternStrokeDraft(
@@ -314,6 +319,11 @@ class PatternAnnotationViewModel
                 feedback,
                 ->
                 val topZIndex = annotations.topZIndex
+                val editableVisible =
+                    when (selection.owner) {
+                        is PatternAnnotationOwner.Project -> visibility.project
+                        is PatternAnnotationOwner.SavedPattern -> visibility.master
+                    }
                 val selectedAnnotation =
                     feedback.interaction.selectedAnnotationId?.let { selectedId ->
                         annotations.master.firstOrNull { it.id == selectedId }
@@ -358,12 +368,13 @@ class PatternAnnotationViewModel
                     savedDraftId = feedback.interaction.savedDraftId,
                     selectedAnnotationIsEditable =
                         selectedAnnotation != null &&
-                            selectedAnnotation.layerId == selection.editableLayerId,
+                            selectedAnnotation.layerId == selection.editableLayerId &&
+                            editableVisible,
                     selectedAnnotationSupportsChartTracker =
                         selectedAnnotation?.payload is ChartRegionPayload ||
                             selectedAnnotation?.payload is ChartTrackerPayload,
-                    canUndo = feedback.interaction.undoStack.isNotEmpty(),
-                    canRedo = feedback.interaction.redoStack.isNotEmpty(),
+                    canUndo = editableVisible && feedback.interaction.undoStack.isNotEmpty(),
+                    canRedo = editableVisible && feedback.interaction.redoStack.isNotEmpty(),
                     chartCounterOptions = feedback.counterContext.options,
                     trackerHighlights = feedback.trackerHighlights,
                     isExporting = feedback.interaction.isExporting,
@@ -386,10 +397,23 @@ class PatternAnnotationViewModel
 
         fun setMasterLayerVisible(visible: Boolean) {
             masterLayerVisible.value = visible
+            if (!visible && layers.value.owner is PatternAnnotationOwner.SavedPattern) discardHiddenLayerDraft()
         }
 
         fun setProjectLayerVisible(visible: Boolean) {
             projectLayerVisible.value = visible
+            if (!visible && layers.value.owner is PatternAnnotationOwner.Project) discardHiddenLayerDraft()
+        }
+
+        private val isEditableLayerVisible: Boolean
+            get() =
+                when (layers.value.owner) {
+                    is PatternAnnotationOwner.Project -> projectLayerVisible.value
+                    is PatternAnnotationOwner.SavedPattern -> masterLayerVisible.value
+                }
+
+        private fun discardHiddenLayerDraft() {
+            interaction.update { it.copy(draftStroke = null, selectedAnnotationId = null, textEdit = null) }
         }
 
         fun setActiveTool(tool: PatternAnnotationTool) {
@@ -438,7 +462,7 @@ class PatternAnnotationViewModel
         }
 
         fun beginStroke(point: NormalizedPatternPoint) {
-            if (uiState.value.loadError == PatternAnnotationLoadError.PAGE_LIMIT) return
+            if (!isEditableLayerVisible || uiState.value.loadError == PatternAnnotationLoadError.PAGE_LIMIT) return
             val state = interaction.value
             val style = state.styleForTool() ?: return
             val pressureEnabled = state.activeTool == PatternAnnotationTool.PEN && state.pressureEnabled
@@ -459,9 +483,16 @@ class PatternAnnotationViewModel
         fun appendStrokePoint(point: NormalizedPatternPoint) {
             interaction.update { state ->
                 val draft = state.draftStroke ?: return@update state
-                if (draft.points.size >= PatternAnnotationLimits.MAX_FREEHAND_POINTS) return@update state
                 val draftPoint = if (draft.pressureEnabled) point else point.copy(pressure = 1f)
-                state.copy(draftStroke = draft.copy(points = draft.points + draftPoint))
+                val points = draft.points + draftPoint
+                val boundedPoints =
+                    if (points.size <= PatternAnnotationLimits.MAX_FREEHAND_POINTS) {
+                        points
+                    } else {
+                        // Keep samples from the full stroke, including the newly reached endpoint.
+                        points.filterIndexed { index, _ -> index % 2 == 0 }
+                    }
+                state.copy(draftStroke = draft.copy(points = boundedPoints))
             }
         }
 
@@ -470,6 +501,7 @@ class PatternAnnotationViewModel
             val originalDraft = interactionState.draftStroke ?: return
             val layerId = uiState.value.editableLayerId ?: return
             if (
+                !isEditableLayerVisible ||
                 uiState.value.loadError == PatternAnnotationLoadError.PAGE_LIMIT ||
                 savingStroke?.draft === originalDraft ||
                 pendingStrokes.any { it.draft === originalDraft }
@@ -515,7 +547,12 @@ class PatternAnnotationViewModel
 
         fun cancelStroke() {
             interaction.update { state ->
-                if (state.isSaving) state else state.copy(draftStroke = null)
+                val draft = state.draftStroke
+                if (draft === savingStroke?.draft || pendingStrokes.any { it.draft === draft }) {
+                    state
+                } else {
+                    state.copy(draftStroke = null)
+                }
             }
         }
 
@@ -678,6 +715,7 @@ class PatternAnnotationViewModel
             text: String,
         ) {
             if (interaction.value.textEdit !== edit || interaction.value.isSaving || text.isBlank()) return
+            if (interaction.value.writeError == PatternAnnotationWriteError.TEXT_CONFLICT) return
             if (edit.owner != layers.value.owner || edit.annotation.layerId != layers.value.editableLayerId) return
             if (edit.annotation.page != currentPage.value ||
                 editableAnnotations().none { it.id == edit.annotation.id }
@@ -778,7 +816,7 @@ class PatternAnnotationViewModel
                         val annotations = loadExportAnnotations(request.layerIds)
                         coroutineContext.ensureActive()
                         if (!isCurrentExport(request)) return@launch
-                        val trackerHighlights = resolveTrackerHighlights(annotations, counterContext.value)
+                        val trackerHighlights = resolveExportTrackerHighlights(annotations, counterContext.value)
                         exporter.preflight(request.context.sourceUri, annotations, trackerHighlights)
                         coroutineContext.ensureActive()
                     }.onSuccess {
@@ -837,7 +875,7 @@ class PatternAnnotationViewModel
                             sourceUri = request.context.sourceUri,
                             destinationUri = destinationUri,
                             annotations = annotations,
-                            trackerHighlights = resolveTrackerHighlights(annotations, counterContext.value),
+                            trackerHighlights = resolveExportTrackerHighlights(annotations, counterContext.value),
                             style = style,
                         ) { progress ->
                             updateExportProgress(request, progress)
@@ -952,6 +990,7 @@ class PatternAnnotationViewModel
             }
 
         private fun selectedAnnotation(): PatternAnnotation? {
+            if (!isEditableLayerVisible) return null
             val selectedId = interaction.value.selectedAnnotationId ?: return null
             return editableAnnotations().firstOrNull { it.id == selectedId }
         }
@@ -988,7 +1027,12 @@ class PatternAnnotationViewModel
             command: PatternAnnotationCommand,
             onSuccess: (PatternAnnotationInteractionState) -> PatternAnnotationInteractionState = { it },
         ) {
-            if (interaction.value.isSaving || uiState.value.loadError == PatternAnnotationLoadError.PAGE_LIMIT) return
+            if (!isEditableLayerVisible ||
+                interaction.value.isSaving ||
+                uiState.value.loadError == PatternAnnotationLoadError.PAGE_LIMIT
+            ) {
+                return
+            }
             val commandContext = currentEditContext()
             interaction.update { it.copy(isSaving = true, writeError = PatternAnnotationWriteError.NONE) }
             persistCommand(command, commandContext, onSuccess)
@@ -1012,31 +1056,46 @@ class PatternAnnotationViewModel
                             )
                         }
                     }.onFailure { failure ->
-                        if (failure is CancellationException) {
-                            savingStroke = null
-                            interaction.update { state -> state.copy(isSaving = false) }
-                            throw failure
-                        }
-                        interaction.update { state ->
-                            if (currentEditContext() == commandContext) {
-                                state.copy(
-                                    isSaving = false,
-                                    writeError = PatternAnnotationWriteError.WRITE_FAILED,
-                                    failedStroke = savingStroke?.draft ?: state.failedStroke,
-                                )
-                            } else {
-                                state.copy(isSaving = false)
-                            }
-                        }
+                        handleCommandFailure(command, commandContext, failure)
                     }
                 savingStroke = null
                 persistNextStroke()
             }
         }
 
+        private fun handleCommandFailure(
+            command: PatternAnnotationCommand,
+            commandContext: AnnotationEditContext,
+            failure: Throwable,
+        ) {
+            if (failure is CancellationException) {
+                savingStroke = null
+                interaction.update { state -> state.copy(isSaving = false) }
+                throw failure
+            }
+            interaction.update { state ->
+                if (currentEditContext() == commandContext) {
+                    state.copy(
+                        isSaving = false,
+                        writeError =
+                            if (command is PatternAnnotationCommand.EditText &&
+                                failure is PatternAnnotationTextConflict
+                            ) {
+                                PatternAnnotationWriteError.TEXT_CONFLICT
+                            } else {
+                                PatternAnnotationWriteError.WRITE_FAILED
+                            },
+                        failedStroke = savingStroke?.draft ?: state.failedStroke,
+                    )
+                } else {
+                    state.copy(isSaving = false)
+                }
+            }
+        }
+
         private fun executeHistoryCommand(isUndo: Boolean) {
             val state = interaction.value
-            if (state.isSaving) return
+            if (!isEditableLayerVisible || state.isSaving) return
             val source = if (isUndo) state.undoStack else state.redoStack
             val command = source.lastOrNull() ?: return
             val commandContext = currentEditContext()
@@ -1343,6 +1402,23 @@ private fun resolveTrackerHighlights(
         }
     }
 }
+
+private fun resolveExportTrackerHighlights(
+    annotations: List<PatternAnnotation>,
+    counters: PatternCounterContext,
+): Map<Long, ChartTrackerHighlight> =
+    buildMap {
+        var remaining = PATTERN_PDF_EXPORT_MAX_TRACKER_CELLS
+        annotations.forEach { annotation ->
+            val tracker = annotation.payload as? ChartTrackerPayload ?: return@forEach
+            val highlight = resolveChartTrackerHighlight(tracker, counters.valueFor(tracker))
+            remaining -= highlight.cells.size.toLong()
+            if (remaining < 0L) {
+                throw PatternPdfExportLimitException(PatternPdfExportLimitReason.TRACKER_HIGHLIGHT_WORK)
+            }
+            put(annotation.id, highlight)
+        }
+    }
 
 private fun PatternStrokeDraft.toAnnotation(
     layerId: Long?,

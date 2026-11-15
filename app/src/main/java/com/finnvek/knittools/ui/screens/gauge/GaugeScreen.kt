@@ -75,6 +75,7 @@ fun GaugeScreen(
     GaugeContent(
         state = state,
         onAction = { viewModel.onAction(it, locale) },
+        onPaste = { viewModel.onAction(GaugeAction.Paste(it), locale) },
         onBack = onBack,
         onSeePro = onSeePro,
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -86,6 +87,7 @@ fun GaugeContent(
     state: GaugeUiState,
     onAction: (GaugeAction) -> Unit,
     onBack: () -> Unit,
+    onPaste: (ParsedInstruction) -> Boolean,
     modifier: Modifier = Modifier,
     onSeePro: () -> Unit = {},
     snackbarHost: @Composable () -> Unit = {},
@@ -131,7 +133,7 @@ fun GaugeContent(
                     when (state.task) {
                         GaugeTask.MEASURE -> SwatchFields(state, onAction)
                         GaugeTask.CALCULATE -> CalculateFields(state, onAction)
-                        GaugeTask.ADJUST -> AdjustmentFields(state, onAction, onSeePro)
+                        GaugeTask.ADJUST -> AdjustmentFields(state, onAction, onSeePro, onPaste)
                         GaugeTask.CONVERT -> Unit
                     }
                     GaugeWarning(state.task)
@@ -323,20 +325,14 @@ private fun AdjustmentFields(
     state: GaugeUiState,
     onAction: (GaugeAction) -> Unit,
     onSeePro: () -> Unit,
+    onPaste: (ParsedInstruction) -> Boolean,
 ) {
     PasteInstructionButton(
         proState = state.proState,
         proAccessReady = state.proAccessReady,
         onSeePro = onSeePro,
         hintText = stringResource(R.string.instruction_hint_gauge),
-        onResult = { parsed ->
-            if (parsed is ParsedInstruction.Gauge || parsed is ParsedInstruction.GaugeSwatch) {
-                onAction(GaugeAction.Paste(parsed))
-                true
-            } else {
-                false
-            }
-        },
+        onResult = onPaste,
     )
     ActualGaugeFields(state, onAction)
     ToolInputCard(title = stringResource(R.string.pattern_gauge)) {

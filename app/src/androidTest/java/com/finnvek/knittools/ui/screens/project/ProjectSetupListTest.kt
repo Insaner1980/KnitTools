@@ -112,6 +112,16 @@ class ProjectSetupListTest {
     }
 
     @Test
+    fun unavailableDocumentDoesNotCompleteThePatternSuggestion() {
+        state.value = threeStepsDone()
+        render()
+        compose.onNodeWithText(text(R.string.project_setup_pattern_done)).assertIsDisplayed()
+        compose.runOnIdle { state.value = state.value.copy(projectDocumentAvailability = mapOf(1L to false)) }
+        compose.onNodeWithText(text(R.string.project_setup_pattern)).performClick()
+        assertEquals(listOf(ProjectSetupItem.PATTERN), clickedItems)
+    }
+
+    @Test
     fun completionStaysForThisVisitAndHidesOnReturnOrNewProcess() {
         state.value = threeStepsDone()
         render()
@@ -149,7 +159,18 @@ class ProjectSetupListTest {
         compose.waitUntil { celebrations.get() == 1 }
     }
 
-    private fun render() {
+    @Test
+    fun returnHidesSetupWhileCelebrationPersistenceIsPending() {
+        state.value = threeStepsDone().copy(hasSessions = true)
+        render(persistCelebration = false)
+        compose.waitUntil { celebrations.get() == 1 }
+        title().assertIsDisplayed()
+        compose.runOnIdle { visit.value = ProjectSetupVisit(7L, 2L) }
+        title().assertDoesNotExist()
+        assertEquals(1, celebrations.get())
+    }
+
+    private fun render(persistCelebration: Boolean = true) {
         compose.setContent {
             val onboarding by repository.state.collectAsStateWithLifecycle(initialValue = null)
             KnitToolsTheme {
@@ -161,11 +182,11 @@ class ProjectSetupListTest {
                         celebratedVisit.value,
                         ProjectSetupActions(
                             onItemClick = { clickedItems += it },
-                            onHide = { scope.launch { repository.hideProjectSetup() } },
+                            onHide = { scope.launch { repository.hideProjectSetup(7L) } },
                             onCelebrate = {
                                 celebratedVisit.value = it
                                 celebrations.incrementAndGet()
-                                scope.launch { repository.markProjectSetupCelebrated() }
+                                if (persistCelebration) scope.launch { repository.markProjectSetupCelebrated() }
                             },
                         ),
                         canCelebrate = canCelebrate.value,
@@ -186,6 +207,7 @@ class ProjectSetupListTest {
             counter = CounterState(count = 37),
             targetRows = 120,
             projectDocuments = listOf(document()),
+            projectDocumentAvailability = mapOf(1L to true),
             linkedYarns = listOf(11L to "Project yarn"),
         )
 

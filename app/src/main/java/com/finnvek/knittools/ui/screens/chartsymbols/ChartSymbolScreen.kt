@@ -250,11 +250,17 @@ private fun DrawScope.drawIncreaseSymbol(
 
     when (id) {
         "m1l", "m1r", "lifted_inc_left", "lifted_inc_right" -> {
-            // CYC lists this branched slant for both M1 and lifted increases.
             val leftLeaning = id == "m1l" || id == "lifted_inc_left"
             val topX = if (leftLeaning) s * 0.28f else s * 0.72f
             val bottomX = s - topX
-            drawLine(tint, Offset(bottomX, s * 0.75f), Offset(topX, s * 0.25f), strokeWidth = 2f)
+            val slantStart =
+                if (id.startsWith("lifted_inc_")) {
+                    // Use the compact lifted-increase variant to distinguish it from M1.
+                    Offset((bottomX + center.x) / 2, s * 0.625f)
+                } else {
+                    Offset(bottomX, s * 0.75f)
+                }
+            drawLine(tint, slantStart, Offset(topX, s * 0.25f), strokeWidth = 2f)
             drawLine(tint, center, Offset(bottomX, s * 0.3f), strokeWidth = 2f)
         }
 

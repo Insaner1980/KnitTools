@@ -71,7 +71,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.IntOffset
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.calculator.formatIntegerForDisplay
-import com.finnvek.knittools.domain.calculator.parseProjectStartCount
 import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.domain.model.CraftType
 import com.finnvek.knittools.domain.model.DEMO_PATTERN_ROWS
@@ -573,7 +572,7 @@ private fun JourneyDemoCounter(
 }
 
 @Composable
-internal fun JourneyReady(draft: OnboardingDraft) {
+internal fun JourneyReady(project: CounterProject) {
     journeyIllustrationHeight(IllustrationDimens.Height)?.let { height ->
         CraftIllustration(R.drawable.onboarding_project_ready, height = height, entrance = IllustrationEntrance.Bounce)
     }
@@ -588,15 +587,12 @@ internal fun JourneyReady(draft: OnboardingDraft) {
         verticalArrangement = Arrangement.spacedBy(ComponentDimens.ContentSpacing),
     ) {
         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-        Text(draft.name, style = MaterialTheme.typography.titleLarge)
+        Text(project.name, style = MaterialTheme.typography.titleLarge)
         JourneyReadyRow(
             CrossStitchGlyph.COUNTER,
-            projectNextUpText(
-                parseProjectStartCount(draft.initialCount) ?: 0,
-                draft.craftType.defaultMainCounterLabelType(),
-            ),
+            projectNextUpText(project.count, project.mainCounterLabelType),
         )
-        draft.pdfName?.let { pdfName ->
+        project.patternName?.let { pdfName ->
             JourneyReadyRow(
                 CrossStitchGlyph.PATTERN,
                 stringResource(R.string.journey_ready_pattern, PatternDisplayNames.forDisplay(pdfName)),

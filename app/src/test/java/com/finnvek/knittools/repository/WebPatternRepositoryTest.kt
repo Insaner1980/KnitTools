@@ -120,6 +120,27 @@ class WebPatternRepositoryTest {
         }
 
     @Test
+    fun `legacy canonical host does not merge distinct browser destinations`() =
+        runTest {
+            val oldAscii = "https://strasse.de/pattern"
+            val international = "https://straße.de/pattern"
+            val legacy = webEntity(id = 8L).copy(originalUrl = international, canonicalUrl = oldAscii)
+            coEvery { dao.getByCanonicalUrl(oldAscii) } returns legacy
+            coEvery { dao.getAllOnce() } returns listOf(legacy)
+            coEvery { dao.insert(any()) } returns 9L
+
+            val repository = repository()
+            assertEquals(
+                WebPatternMutationResult.Created(9L),
+                repository.createWebPattern(WebPatternInput("Distinct pattern", "", oldAscii)),
+            )
+            assertEquals(
+                WebPatternMutationResult.Duplicate(8L),
+                repository.createWebPattern(WebPatternInput("Same pattern", "", international)),
+            )
+        }
+
+    @Test
     fun `create validates input and preserves Ravelry ownership`() =
         runTest {
             val repository = repository()
@@ -239,7 +260,11 @@ class WebPatternRepositoryTest {
     fun `update returns stale missing noneditable and other-record duplicate outcomes`() =
         runTest {
             val web = webEntity(id = 7L, updatedAt = 50L)
-            val other = webEntity(id = 8L)
+            val other =
+                webEntity(id = 8L).copy(
+                    originalUrl = "https://example.com/new",
+                    canonicalUrl = "https://example.com/new",
+                )
             val local =
                 web.copy(
                     id = 9L,

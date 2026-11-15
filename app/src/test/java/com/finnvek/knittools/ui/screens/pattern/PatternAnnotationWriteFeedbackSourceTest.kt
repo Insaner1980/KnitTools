@@ -31,13 +31,14 @@ class PatternAnnotationWriteFeedbackSourceTest {
         val toolbar = ProjectSourceFiles.read("$PATTERN/PatternAnnotationToolbar.kt")
         val edit = toolbar.substringAfter("state.textEdit?.let").substringBefore("if (showCalloutEditor)")
         assertTrue(edit.contains("writeFailed = state.writeError == PatternAnnotationWriteError.WRITE_FAILED"))
+        assertTrue(edit.contains("textConflict = state.writeError == PatternAnnotationWriteError.TEXT_CONFLICT"))
         val dialog =
             toolbar
                 .substringAfter("private fun PatternTextEditorDialog(")
                 .substringBefore("private fun PatternCalloutEditorDialog(")
         assertTrue(dialog.contains("var text by rememberSaveable { mutableStateOf(initialText) }"))
         assertTrue(dialog.contains("R.string.pattern_annotation_write_failed"))
-        assertTrue(dialog.contains("enabled = text.isNotBlank() && !isSaving"))
+        assertTrue(dialog.contains("enabled = text.isNotBlank() && !isSaving && !textConflict"))
     }
 
     @Test

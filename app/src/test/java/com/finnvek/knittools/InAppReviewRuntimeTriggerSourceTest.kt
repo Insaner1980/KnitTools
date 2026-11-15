@@ -17,7 +17,9 @@ class InAppReviewRuntimeTriggerSourceTest {
                 "inAppReviewManager.reviewEligibility.collectAsStateWithLifecycle(initialValue = false)",
             ),
         )
-        assertTrue(activity.contains("InAppReviewRequestEffect(reviewEligible)"))
+        assertTrue(
+            activity.contains("InAppReviewRequestEffect(reviewEligible && lifecycleState == Lifecycle.State.RESUMED)"),
+        )
         assertTrue(activity.contains("snapshotFlow { currentEligibility }.filter { it }.collect"))
         assertFalse(activity.contains("LaunchedEffect(reviewEligible)"))
     }

@@ -18,11 +18,14 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.finnvek.knittools.R
+import com.finnvek.knittools.domain.calculator.MAX_TARGET_ROWS
 import com.finnvek.knittools.domain.calculator.TargetInput
+import com.finnvek.knittools.domain.calculator.formatIntegerForDisplay
 import com.finnvek.knittools.domain.calculator.parseTargetRows
 import com.finnvek.knittools.ui.components.CancelButton
 import com.finnvek.knittools.ui.components.ScrollableFormDialog
 import com.finnvek.knittools.ui.components.dialogTextFieldColors
+import com.finnvek.knittools.ui.components.rememberCurrentLocale
 
 @Composable
 fun TargetRowsDialog(
@@ -33,7 +36,8 @@ fun TargetRowsDialog(
     onRemove: () -> Unit,
 ) {
     var text by rememberSaveable { mutableStateOf(currentTarget?.toString() ?: "") }
-    val parsed = (parseTargetRows(text) as? TargetInput.Valid)?.value
+    val parsed = parseTargetRows(text)
+    val locale = rememberCurrentLocale()
 
     ScrollableFormDialog(
         onDismissRequest = onDismiss,
@@ -41,8 +45,22 @@ fun TargetRowsDialog(
         text = {
             OutlinedTextField(
                 value = text,
-                onValueChange = { new -> text = new.filter { it.isDigit() }.take(5) },
+                onValueChange = { text = it },
                 label = { Text(counterLabel) },
+                isError = parsed == TargetInput.Invalid,
+                supportingText =
+                    if (parsed == TargetInput.Invalid) {
+                        {
+                            Text(
+                                stringResource(
+                                    R.string.project_target_error,
+                                    formatIntegerForDisplay(MAX_TARGET_ROWS.toLong(), locale),
+                                ),
+                            )
+                        }
+                    } else {
+                        null
+                    },
                 singleLine = true,
                 colors = dialogTextFieldColors(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
@@ -58,8 +76,14 @@ fun TargetRowsDialog(
                     Spacer(modifier = Modifier.width(8.dp))
                 }
                 TextButton(
-                    onClick = { parsed?.let(onConfirm) },
-                    enabled = parsed != null,
+                    onClick = {
+                        when (parsed) {
+                            is TargetInput.Valid -> onConfirm(parsed.value)
+                            TargetInput.NoTarget -> onRemove()
+                            TargetInput.Invalid -> Unit
+                        }
+                    },
+                    enabled = parsed is TargetInput.Valid || parsed == TargetInput.NoTarget && currentTarget != null,
                 ) {
                     Text(stringResource(android.R.string.ok))
                 }

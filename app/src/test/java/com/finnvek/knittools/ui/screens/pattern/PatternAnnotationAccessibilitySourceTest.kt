@@ -48,11 +48,12 @@ class PatternAnnotationAccessibilitySourceTest {
 
     @Test
     fun `selection actions require matching annotation capabilities`() {
-        val toolbar = ProjectSourceFiles.read(TOOLBAR)
+        val toolbar = ProjectSourceFiles.read(TOOLBAR).replace(Regex("\\s+"), " ")
 
         assertTrue(
             toolbar.contains(
-                "state.selectedAnnotationSupportsChartTracker && state.chartCounterOptions.isNotEmpty()",
+                "state.editableLayerVisible && state.selectedAnnotationSupportsChartTracker && " +
+                    "state.chartCounterOptions.isNotEmpty()",
             ),
         )
         assertTrue(toolbar.contains("if (state.selectedAnnotationIsEditable)"))

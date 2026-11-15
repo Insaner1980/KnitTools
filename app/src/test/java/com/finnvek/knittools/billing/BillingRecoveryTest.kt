@@ -9,6 +9,7 @@ import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.ProductDetailsResult
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchasesResult
+import com.android.billingclient.api.PurchasesUpdatedListener
 import com.android.billingclient.api.queryProductDetails
 import com.android.billingclient.api.queryPurchasesAsync
 import com.finnvek.knittools.data.datastore.AppPreferences
@@ -60,6 +61,7 @@ abstract class BillingRecoveryFixture {
     protected val client = mockk<BillingClient>(relaxed = true)
     protected val builder = mockk<BillingClient.Builder>(relaxed = true)
     protected lateinit var connection: BillingClientStateListener
+    protected lateinit var purchaseUpdates: PurchasesUpdatedListener
     protected lateinit var billing: BillingManager
     protected lateinit var trial: TrialManager
     protected val trialStates = MutableStateFlow(TrialState(hasStarted = true))
@@ -73,7 +75,10 @@ abstract class BillingRecoveryFixture {
         mockkStatic(BillingClient::class)
         mockkStatic("com.android.billingclient.api.BillingClientKotlinKt")
         every { BillingClient.newBuilder(any()) } returns builder
-        every { builder.setListener(any()) } returns builder
+        every { builder.setListener(any()) } answers {
+            purchaseUpdates = firstArg()
+            builder
+        }
         every { builder.enablePendingPurchases(any()) } returns builder
         every { builder.enableAutoServiceReconnection() } returns builder
         every { builder.build() } returns client
@@ -107,6 +112,7 @@ abstract class BillingRecoveryFixture {
             every { products } returns listOf(BillingManager.PRODUCT_ID)
             every { purchaseState } returns Purchase.PurchaseState.PURCHASED
             every { isAcknowledged } returns true
+            every { purchaseToken } returns "test-purchase-token"
         }
 
     protected fun result(code: Int): BillingResult = BillingResult.newBuilder().setResponseCode(code).build()
@@ -429,6 +435,28 @@ class BillingRecoveryTest : BillingRecoveryFixture() {
             assertFalse(billing.isProPurchased.value)
             assertFalse(billing.purchaseQueryFailed.value)
             assertEquals(BillingProductStatus.Loading, billing.productStatus.value)
+        }
+
+    @Test
+    fun `purchase updates from a retired client cannot affect its replacement`() =
+        runTest(dispatcher) {
+            val retiredUpdates = purchaseUpdates
+            billing.destroy()
+            val nextClient = mockk<BillingClient>(relaxed = true)
+            every { builder.build() } returns nextClient
+            billing.initialize()
+
+            val ok = result(BillingClient.BillingResponseCode.OK)
+            retiredUpdates.onPurchasesUpdated(ok, listOf(purchased()))
+            assertFalse(billing.isProPurchased.value)
+            assertFalse(billing.purchaseStateReady.value)
+
+            retiredUpdates.onPurchasesUpdated(result(BillingClient.BillingResponseCode.ITEM_ALREADY_OWNED), null)
+            coVerify(exactly = 0) { nextClient.queryPurchasesAsync(any()) }
+
+            purchaseUpdates.onPurchasesUpdated(ok, listOf(purchased()))
+            assertTrue(billing.isProPurchased.value)
+            assertTrue(billing.purchaseStateReady.value)
         }
 
     @Test

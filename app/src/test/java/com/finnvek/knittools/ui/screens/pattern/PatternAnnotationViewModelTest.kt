@@ -85,6 +85,57 @@ class PatternAnnotationPageLimitViewModelTest {
     }
 
     @Test
+    fun hidingEditableLayerRejectsPendingGestureAndOrdinaryWrites() =
+        runTest {
+            val route = projectRoute()
+            every { route.annotationRepository.observePage(any(), any()) } returns flowOf(emptyList())
+            val model = route.viewModel()
+            val store = androidx.lifecycle.ViewModelStore().apply { put("hidden-layer-writes", model) }
+            try {
+                runCurrent()
+                model.setActiveTool(PatternAnnotationTool.PEN)
+                model.beginStroke(NormalizedPatternPoint(0.1f, 0.2f))
+                model.appendStrokePoint(NormalizedPatternPoint(0.4f, 0.5f))
+                model.setProjectLayerVisible(false)
+                model.commitStroke(0f)
+                model.addTextBox("Hidden")
+                runCurrent()
+                assertEquals(null, model.uiState.value.inProgressAnnotation)
+
+                model.addTextBox("Still hidden")
+                runCurrent()
+                coVerify(exactly = 0) { route.annotationRepository.insertAnnotation(any()) }
+            } finally {
+                store.clear()
+            }
+        }
+
+    @Test
+    fun longStrokeKeepsItsEndpointAndStaysWithinThePayloadLimit() =
+        runTest {
+            val route = projectRoute()
+            every { route.annotationRepository.observePage(any(), any()) } returns flowOf(emptyList())
+            val model = route.viewModel()
+            val store = androidx.lifecycle.ViewModelStore().apply { put("long-stroke", model) }
+            try {
+                runCurrent()
+                model.setActiveTool(PatternAnnotationTool.PEN)
+                model.beginStroke(NormalizedPatternPoint(0f, 0.5f))
+                for (index in 1..3_000) {
+                    model.appendStrokePoint(NormalizedPatternPoint(index / 3_000f, 0.5f))
+                }
+                runCurrent()
+
+                val points = checkNotNull(model.uiState.value.draftStroke).points
+                assertTrue(points.size <= 2_048)
+                assertEquals(0f, points.first().x)
+                assertEquals(1f, points.last().x)
+            } finally {
+                store.clear()
+            }
+        }
+
+    @Test
     fun hiddenEditablePageCannotBeCleared() =
         runTest {
             val route = projectRoute()
@@ -1330,7 +1381,7 @@ class PatternAnnotationDocumentSelectionTest {
         }
 
     @Test
-    fun `export bounds tracker highlights across all document pages`() =
+    fun `export retains every highlight when actual work across all pages fits`() =
         runTest {
             val fixture = PdfExportFixture()
             val trackers =
@@ -1352,11 +1403,36 @@ class PatternAnnotationDocumentSelectionTest {
                     sourceUri = fixture.sourceUri,
                     destinationUri = fixture.destinationUri,
                     annotations = trackers,
-                    trackerHighlights = match { it.keys == setOf(101L, 102L) },
+                    trackerHighlights =
+                        match { highlights ->
+                            highlights.keys == setOf(101L, 102L, 103L) &&
+                                highlights.values.all { it.cells.size == 1 }
+                        },
                     style = fixture.style,
                     onProgress = any(),
                 )
             }
+        }
+
+    @Test
+    fun `export rejects excessive actual tracker highlight work instead of omitting highlights`() =
+        runTest {
+            val fixture = PdfExportFixture()
+            val project = fixture.route.project
+            project.value = project.value.copy(count = 9_999)
+            val trackers = (0..2).map { index -> trackerAnnotation(101L + index, 41L, index) }
+            every { fixture.route.annotationRepository.observePage(any(), any()) } returns flowOf(emptyList())
+            coEvery { fixture.route.annotationRepository.getForLayersForExport(any(), any(), any()) } returns trackers
+            val viewModel = fixture.route.viewModel(pdfExporter = fixture.exporter)
+            advanceUntilIdle()
+            every { fixture.sourceUri.toString() } returns "file:///document-51.pdf"
+            val context = PatternPdfExportContext(fixture.sourceUri, viewModel.uiState.value.owner, 51L)
+            viewModel.setExportContext(context)
+            viewModel.requestAnnotatedPdfExport(context)
+            advanceUntilIdle()
+
+            assertTrue(viewModel.uiState.value.exportFailed)
+            coVerify(exactly = 0) { fixture.exporter.preflight(any(), any(), any()) }
         }
 
     @Test
@@ -1775,7 +1851,7 @@ class PatternAnnotationWriteFeedbackTest {
             runCurrent()
             val edit = checkNotNull(fixture.vm.uiState.value.textEdit)
             val committed = fixture.rows.value
-            fixture.nextWrite = { throw IllegalStateException("text conflict") }
+            fixture.nextWrite = { throw IOException("transient write failure") }
             fixture.vm.saveTextEdit(edit, "Draft")
             advanceUntilIdle()
             assertFailed(fixture.vm)

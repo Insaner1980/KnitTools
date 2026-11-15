@@ -1,6 +1,6 @@
 package com.finnvek.knittools.domain.model
 
-import java.net.IDN
+import okhttp3.HttpUrl
 import java.net.URI
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
@@ -133,7 +133,7 @@ private fun parseWebPatternAuthority(rawAuthority: String): WebPatternAuthority?
 }
 
 private fun parseWebPatternPort(value: String): Int? {
-    if (value.isEmpty() || value.any { !it.isDigit() }) return null
+    if (value.isEmpty() || value.any { it !in '0'..'9' }) return null
     return value.toIntOrNull()?.takeIf { it in 1..65_535 }
 }
 
@@ -146,24 +146,33 @@ private fun normalizePublicHost(
         return address.takeUnless(::isNonPublicIpv6Address)?.toCanonicalIpv6Host()
     }
 
+    if ('%' in rawHost) return null
     val asciiHost =
-        runCatching { IDN.toASCII(rawHost, IDN.USE_STD3_ASCII_RULES) }
-            .getOrNull()
-            ?.lowercase(Locale.ROOT)
-            ?: return null
-    if (asciiHost.isEmpty() || asciiHost.length > 253 || asciiHost.endsWith('.')) return null
+        try {
+            HttpUrl
+                .Builder()
+                .scheme("https")
+                .host(rawHost)
+                .build()
+                .host
+        } catch (_: IllegalArgumentException) {
+            return null
+        }
+    if (asciiHost.length > 253 || asciiHost.split('.').any { !it.isValidHostLabel() }) return null
     if (asciiHost == "localhost" || asciiHost.endsWith(".localhost") || asciiHost.endsWith(".local")) {
         return null
     }
 
     val ipv4 = parseIpv4Literal(asciiHost)
-    if (ipv4 != null) {
-        if (isNonPublicIpv4Address(ipv4)) return null
-        return ipv4.joinToString(".")
+    return when {
+        ipv4 != null -> ipv4.takeUnless(::isNonPublicIpv4Address)?.joinToString(".")
+        asciiHost.all { it.isDigit() || it == '.' } || asciiHost.looksLikeNonCanonicalIpv4Literal() -> null
+        else -> asciiHost
     }
-    if (asciiHost.all { it.isDigit() || it == '.' } || asciiHost.looksLikeNonCanonicalIpv4Literal()) return null
-    return asciiHost
 }
+
+private fun String.isValidHostLabel(): Boolean =
+    length in 1..63 && first() != '-' && last() != '-' && all { it in 'a'..'z' || it in '0'..'9' || it == '-' }
 
 private fun parseIpv4Literal(host: String): IntArray? {
     val parts = host.split('.')

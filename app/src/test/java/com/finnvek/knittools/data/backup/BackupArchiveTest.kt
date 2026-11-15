@@ -109,6 +109,22 @@ class BackupArchiveTest {
         }
     }
 
+    @Test fun manifestRejectsQuotedCompatibilityVersionsAndEntrySizes() {
+        val (source, original) = fixture()
+        val manifest = original.copy(versionName = "Preview build")
+        val encoded = BackupFormat.json.encodeToString(manifest)
+        val entries = manifest.entries.associate { it.path to File(source, it.path).readBytes() }
+        val valid = rawZip(entries + (BackupFormat.MANIFEST to encoded.encodeToByteArray()))
+        assertEquals(manifest, BackupArchive.extract(valid, temporary.newFolder()))
+
+        for (field in listOf("formatVersion", "dataVersion", "schemaVersion", "size")) {
+            val number = requireNotNull(Regex("\"$field\":([0-9]+)").find(encoded)?.groups?.get(1))
+            val malformed = encoded.replaceRange(number.range, "\"${number.value}\"")
+            val archive = rawZip(entries + (BackupFormat.MANIFEST to malformed.encodeToByteArray()))
+            assertThrows(BackupException::class.java) { BackupArchive.extract(archive, temporary.newFolder()) }
+        }
+    }
+
     @Test fun truncatedArchiveIsRejectedEvenWhenAllEntryPayloadsExist() {
         val (source, manifest) = fixture()
         val archive = temporary.newFile()
@@ -148,6 +164,34 @@ class BackupArchiveTest {
         val central = buffer.getInt(bytes.size - 22 + 16)
         buffer.putInt(central + 20, buffer.getInt(central + 20) + 1)
         archive.writeBytes(bytes)
+        assertThrows(BackupException::class.java) { BackupArchive.extract(archive, temporary.newFolder()) }
+    }
+
+    @Test fun descriptorCannotHideContradictoryLocalCrcOrSizes() {
+        val (source, manifest) = fixture()
+        val archive = temporary.newFile()
+        BackupArchive.write(source, archive, manifest)
+        val original = archive.readBytes()
+        for (offset in listOf(14, 18, 22)) {
+            val modified = original.copyOf()
+            ByteBuffer.wrap(modified).order(ByteOrder.LITTLE_ENDIAN).putInt(offset, 1)
+            archive.writeBytes(modified)
+            assertThrows(BackupException::class.java) { BackupArchive.extract(archive, temporary.newFolder()) }
+        }
+    }
+
+    @Test fun bytesBetweenLocalEntriesAndCentralDirectoryAreRejected() {
+        val (source, manifest) = fixture()
+        val archive = temporary.newFile()
+        BackupArchive.write(source, archive, manifest)
+        val original = archive.readBytes()
+        val junk = ByteArray(4)
+        val buffer = ByteBuffer.wrap(original).order(ByteOrder.LITTLE_ENDIAN)
+        val directoryField = original.size - 6
+        val central = buffer.getInt(directoryField)
+        buffer.putInt(directoryField, central + junk.size)
+        archive.writeBytes(original.copyOfRange(0, central) + junk + original.copyOfRange(central, original.size))
+
         assertThrows(BackupException::class.java) { BackupArchive.extract(archive, temporary.newFolder()) }
     }
 
@@ -275,20 +319,6 @@ class BackupArchiveTest {
     }
 
     @Test fun manifestBudgetsAcceptExactMobileLimitsAndRejectLimitPlusOne() {
-        fun tableEntries(sizes: Map<String, Long> = emptyMap()) =
-            BackupFormat.tablePaths.map { path -> BackupEntry(path, sizes[path] ?: 0L, "0".repeat(64)) }
-
-        fun file(
-            index: Int,
-            size: Long,
-        ): BackupEntry {
-            val hash = index.toString(16).padStart(64, '0')
-            return BackupEntry("files/$hash.bin", size, hash)
-        }
-
-        fun manifest(entries: List<BackupEntry>) =
-            BackupManifest(createdAt = 1, versionCode = 1, versionName = "1.0", entries = entries)
-
         val tablePaths = BackupFormat.tablePaths.toList()
         val exact =
             tableEntries(
@@ -302,7 +332,16 @@ class BackupArchiveTest {
                     file(2, BackupLimits.MAX_DURABLE_FILE_BYTES),
                     file(3, BackupLimits.MAX_DURABLE_BYTES - 2 * BackupLimits.MAX_DURABLE_FILE_BYTES),
                 )
-        BackupArchive.validateManifest(manifest(exact))
+        val fullManifest = manifest(exact)
+        val manifestBytes =
+            BackupFormat.json
+                .encodeToString(fullManifest)
+                .encodeToByteArray()
+                .size
+                .toLong()
+        val fitting = exact.dropLast(1) + exact.last().copy(size = exact.last().size - manifestBytes)
+        BackupArchive.validateManifest(manifest(fitting))
+        assertThrows(BackupException::class.java) { BackupArchive.validateManifest(fullManifest) }
 
         assertThrows(BackupException::class.java) {
             BackupArchive.validateManifest(
@@ -339,7 +378,9 @@ class BackupArchiveTest {
                 ),
             )
         }
+    }
 
+    @Test fun manifestFileCountAcceptsExactLimitAndRejectsOneMore() {
         val exactFileCount =
             tableEntries() +
                 List(BackupLimits.MAX_DURABLE_FILE_COUNT.toInt()) { index -> file(index, 0) }
@@ -347,6 +388,20 @@ class BackupArchiveTest {
         assertThrows(BackupException::class.java) {
             BackupArchive.validateManifest(manifest(exactFileCount + file(Int.MAX_VALUE, 0)))
         }
+    }
+
+    private fun tableEntries(sizes: Map<String, Long> = emptyMap()) =
+        BackupFormat.tablePaths.map { path -> BackupEntry(path, sizes[path] ?: 0L, "0".repeat(64)) }
+
+    private fun manifest(entries: List<BackupEntry>) =
+        BackupManifest(createdAt = 1, versionCode = 1, versionName = "1.0", entries = entries)
+
+    private fun file(
+        index: Int,
+        size: Long,
+    ): BackupEntry {
+        val hash = index.toString(16).padStart(64, '0')
+        return BackupEntry("files/$hash.bin", size, hash)
     }
 
     private fun fixture(): Pair<File, BackupManifest> {

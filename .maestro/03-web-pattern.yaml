@@ -1,0 +1,30 @@
+appId: com.finnvek.knittools
+name: Web pattern validation and persistence
+---
+- launchApp:
+    clearState: true
+- tapOn: "LIBRARY"
+- tapOn: "Saved Patterns"
+- tapOn: "Add Web Pattern"
+- tapOn: "Pattern name"
+- inputText: "Maestro Pattern"
+- tapOn: "Website address"
+- inputText: "invalid"
+- tapOn: "Save"
+- assertVisible: "Only website addresses are supported"
+- tapOn: "Website address"
+- eraseText
+- inputText: "https://example.com/maestro-pattern"
+- tapOn: "Designer"
+- inputText: "Maestro Designer"
+- hideKeyboard
+- tapOn: "Save"
+- assertVisible: "Maestro Pattern"
+- tapOn: "Maestro Pattern"
+- assertVisible: "Maestro Designer"
+- assertVisible: "Open website"
+- launchApp
+- tapOn: "LIBRARY"
+- tapOn: "Saved Patterns"
+- tapOn: "Maestro Pattern"
+- assertVisible: "Maestro Designer"

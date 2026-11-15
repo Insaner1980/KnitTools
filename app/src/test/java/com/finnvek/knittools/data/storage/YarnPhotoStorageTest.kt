@@ -7,6 +7,7 @@ import org.junit.Test
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.IOException
+import java.io.InputStream
 
 class YarnPhotoStorageTest {
     @Test
@@ -35,6 +36,33 @@ class YarnPhotoStorageTest {
             copyYarnPhotoWithLimit(ByteArrayInputStream(ByteArray(5)), output, maxBytes = 4L)
         }
         assertEquals(0, output.size())
+    }
+
+    @Test
+    fun `yarn photo copy stops before a write that would use the reserve`() {
+        val input =
+            object : InputStream() {
+                private var nextByte = 1
+
+                override fun read(): Int = nextByte++
+
+                override fun read(
+                    buffer: ByteArray,
+                    offset: Int,
+                    length: Int,
+                ): Int {
+                    buffer[offset] = read().toByte()
+                    return 1
+                }
+            }
+        val output = ByteArrayOutputStream()
+        val reserve = YarnPhotoStorage.YARN_PHOTO_FREE_SPACE_RESERVE_BYTES
+
+        assertThrows(IOException::class.java) {
+            copyYarnPhotoWithLimit(input, output, usableSpace = { reserve + 1 - output.size() })
+        }
+
+        assertArrayEquals(byteArrayOf(1), output.toByteArray())
     }
 
     @Test

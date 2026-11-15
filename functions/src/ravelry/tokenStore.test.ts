@@ -230,7 +230,6 @@ describe("Ravelry token Firestore store", () => {
 
   it("updates only current-user metadata fields after validating generation", async () => {
     const updates: Record<string, unknown>[] = [];
-    const reference = {};
     const current = {
       uid: "uid",
       authType: "oauth2",
@@ -245,7 +244,7 @@ describe("Ravelry token Firestore store", () => {
       collection() {
         return {
           doc() {
-            return reference;
+            return { async get() { return { data: () => current }; } };
           },
         };
       },
@@ -261,15 +260,11 @@ describe("Ravelry token Firestore store", () => {
       },
     } as unknown as Firestore;
 
-    const saved = await createTokenStore(firestore).updateUserMetadataIfGenerationCurrent(
-      "uid",
-      {
-        ravelryUserId: "42",
-        ravelryUsername: "ada",
-        verifiedAtMillis: 1_500,
-      },
-      3,
-    );
+    const store = createTokenStore(firestore);
+    const update = { ravelryUserId: "42", ravelryUsername: "ada", verifiedAtMillis: 1_500 };
+    assert.equal(await store.getToken("other-uid"), null);
+    assert.equal(await store.updateUserMetadataIfGenerationCurrent("other-uid", update, 3), false);
+    const saved = await store.updateUserMetadataIfGenerationCurrent("uid", update, 3);
 
     assert.equal(saved, true);
     assert.equal(updates.length, 1);

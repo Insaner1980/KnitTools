@@ -7,6 +7,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -61,7 +62,7 @@ fun IncomingPdfSheet(
             ProFeature.UNLIMITED_PROJECTS,
             needsEntitlement = projects.isNotEmpty(),
         )
-    var name by rememberSaveable(pdf.localUri) { mutableStateOf(pdf.suggestedName) }
+    var name by key(pdf.localUri) { rememberSaveable { mutableStateOf(pdf.suggestedName) } }
     ModalBottomSheet(
         sheetMaxWidth = ContentWidthPolicy.Form.maxWidth,
         onDismissRequest = { if (!busy) actions.onDismiss() },

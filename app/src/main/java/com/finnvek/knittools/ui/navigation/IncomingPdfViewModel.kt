@@ -35,15 +35,15 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.NonCancellable
-import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -135,8 +135,23 @@ class IncomingPdfViewModel
                 }
             }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), null)
 
-        private val outcomeChannel = Channel<IncomingPdfOutcome>(Channel.BUFFERED)
-        val outcomes: Flow<IncomingPdfOutcome> = outcomeChannel.receiveAsFlow()
+        private val pendingOutcomes = MutableStateFlow<List<IncomingPdfOutcome>>(emptyList())
+
+        // The Activity host is the only collector. Acknowledge each result after its callback returns.
+        val outcomes: Flow<IncomingPdfOutcome> =
+            flow {
+                pendingOutcomes.collect {
+                    while (true) {
+                        val outcome = pendingOutcomes.value.firstOrNull() ?: break
+                        emit(outcome)
+                        pendingOutcomes.update { it.drop(1) }
+                    }
+                }
+            }
+
+        private fun postOutcome(outcome: IncomingPdfOutcome) {
+            pendingOutcomes.update { it + outcome }
+        }
 
         fun receive(uri: Uri) {
             analytics.track(UsageEvent.PDF_IMPORT_STARTED, UsageDetail.SOURCE_SHARED)
@@ -174,11 +189,11 @@ class IncomingPdfViewModel
                 }
             viewModelScope.launch {
                 if (!isPdf) {
-                    outcomeChannel.send(IncomingPdfOutcome.NotPdf)
+                    postOutcome(IncomingPdfOutcome.NotPdf)
                     return@launch
                 }
                 analytics.track(UsageEvent.PDF_IMPORT_STARTED, UsageDetail.SOURCE_RAVELRY)
-                outcomeChannel.send(IncomingPdfOutcome.Downloading)
+                postOutcome(IncomingPdfOutcome.Downloading)
                 val file =
                     try {
                         webPdfDownloader.download(download)
@@ -189,7 +204,7 @@ class IncomingPdfViewModel
                     }
                 if (file == null) {
                     analytics.track(UsageEvent.PDF_IMPORT_FAILED, UsageDetail.SOURCE_RAVELRY, UsageDetail.ERROR_READ)
-                    outcomeChannel.send(IncomingPdfOutcome.OpenFailed)
+                    if (requestVersion == incomingRequestVersion) postOutcome(IncomingPdfOutcome.OpenFailed)
                     return@launch
                 }
                 try {
@@ -226,7 +241,7 @@ class IncomingPdfViewModel
                 }
             if (copiedUri == null) {
                 analytics.track(UsageEvent.PDF_IMPORT_FAILED, source, UsageDetail.ERROR_READ)
-                outcomeChannel.send(IncomingPdfOutcome.OpenFailed)
+                if (requestVersion == incomingRequestVersion) postOutcome(IncomingPdfOutcome.OpenFailed)
                 return
             }
             val pdf = IncomingPdf(copiedUri, PatternDisplayNames.documentLabel(fileName), source)
@@ -272,10 +287,10 @@ class IncomingPdfViewModel
                     analytics.track(UsageEvent.PROJECT_CREATED, pdf.source)
                     analytics.track(UsageEvent.PDF_IMPORT_SUCCEEDED, pdf.source)
                     setPending(null)
-                    outcomeChannel.send(IncomingPdfOutcome.OpenProject(result.projectId))
+                    postOutcome(IncomingPdfOutcome.OpenProject(result.projectId))
                 } else {
                     analytics.track(UsageEvent.PDF_IMPORT_FAILED, pdf.source, UsageDetail.ERROR_WRITE)
-                    outcomeChannel.send(IncomingPdfOutcome.SaveFailed)
+                    postOutcome(IncomingPdfOutcome.SaveFailed)
                 }
             }
         }
@@ -292,11 +307,11 @@ class IncomingPdfViewModel
                     )
                 if (savedPatternId == null) {
                     analytics.track(UsageEvent.PDF_IMPORT_FAILED, pdf.source, UsageDetail.ERROR_WRITE)
-                    outcomeChannel.send(IncomingPdfOutcome.SaveFailed)
+                    postOutcome(IncomingPdfOutcome.SaveFailed)
                 } else {
                     setPending(null)
                     analytics.track(UsageEvent.PDF_IMPORT_SUCCEEDED, pdf.source)
-                    outcomeChannel.send(IncomingPdfOutcome.OpenSavedPattern(savedPatternId))
+                    postOutcome(IncomingPdfOutcome.OpenSavedPattern(savedPatternId))
                 }
             }
         }
@@ -331,7 +346,7 @@ class IncomingPdfViewModel
                 is ProjectDocumentMutationResult.Added -> {
                     analytics.track(UsageEvent.PDF_IMPORT_SUCCEEDED, pdf.source)
                     setPending(null)
-                    outcomeChannel.send(IncomingPdfOutcome.OpenProject(projectId))
+                    postOutcome(IncomingPdfOutcome.OpenProject(projectId))
                 }
 
                 // Sama ohje on jo projektissa: kopiota ei tarvita, ja projekti avataan silti.
@@ -342,12 +357,12 @@ class IncomingPdfViewModel
                     analytics.track(UsageEvent.PDF_IMPORT_SUCCEEDED, pdf.source)
                     setPending(null)
                     deleteUnusedCopy(pdf)
-                    outcomeChannel.send(IncomingPdfOutcome.OpenProject(projectId))
+                    postOutcome(IncomingPdfOutcome.OpenProject(projectId))
                 }
 
                 else -> {
                     analytics.track(UsageEvent.PDF_IMPORT_FAILED, pdf.source, UsageDetail.ERROR_WRITE)
-                    outcomeChannel.send(IncomingPdfOutcome.SaveFailed)
+                    postOutcome(IncomingPdfOutcome.SaveFailed)
                 }
             }
         }
@@ -375,7 +390,7 @@ class IncomingPdfViewModel
                             UsageDetail.ERROR_WRITE,
                         )
                     }
-                    outcomeChannel.send(IncomingPdfOutcome.SaveFailed)
+                    postOutcome(IncomingPdfOutcome.SaveFailed)
                 } finally {
                     mutableBusy.value = false
                 }

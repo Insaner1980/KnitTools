@@ -69,7 +69,8 @@ class CodeReviewPart09ImageRuntimeTest : CounterActivityTestFixture() {
             assertTrue(foreign.isFile)
         } finally {
             foreign.delete()
-            root.parentFile?.deleteRecursively()
+            root.deleteRecursively()
+            root.parentFile?.delete()
         }
     }
 

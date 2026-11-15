@@ -28,21 +28,14 @@ abstract class PatternAnnotationDao {
         expected: PatternAnnotation,
         text: String,
     ): PatternAnnotation {
-        val layer = checkNotNull(getTextEditLayer(expected.layerId)) { "Annotation layer no longer exists" }
-        val editable =
-            when (owner) {
-                is PatternAnnotationOwner.Project -> layer.projectId == owner.projectId && layer.isActive
-                is PatternAnnotationOwner.SavedPattern -> layer.savedPatternId == owner.savedPatternId
-            }
-        check(editable && layer.documentKey == owner.documentKey) { "Annotation layer is not editable" }
+        requireTextEditLayer(owner, expected.layerId)
         val current =
-            checkNotNull(getPageBounded(expected.layerId, expected.page).firstOrNull { it.id == expected.id }) {
-                "Annotation no longer exists"
-            }
+            getPageBounded(expected.layerId, expected.page).firstOrNull { it.id == expected.id }
+                ?: throw PatternAnnotationTextConflict()
         // Undo can restore the same content with a newer modification timestamp.
         val currentContent = current.toDomain()?.copy(updatedAt = expected.updatedAt)
-        check(expected.kind == PatternAnnotationKind.TEXT_BOX && currentContent == expected) {
-            "Annotation changed while editing"
+        if (expected.kind != PatternAnnotationKind.TEXT_BOX || currentContent != expected) {
+            throw PatternAnnotationTextConflict()
         }
         val json =
             requireNotNull(
@@ -61,6 +54,19 @@ abstract class PatternAnnotationDao {
             )
         update(updated)
         return checkNotNull(updated.toDomain())
+    }
+
+    private suspend fun requireTextEditLayer(
+        owner: PatternAnnotationOwner,
+        layerId: Long,
+    ) {
+        val layer = getTextEditLayer(layerId) ?: throw PatternAnnotationTextConflict()
+        val editable =
+            when (owner) {
+                is PatternAnnotationOwner.Project -> layer.projectId == owner.projectId && layer.isActive
+                is PatternAnnotationOwner.SavedPattern -> layer.savedPatternId == owner.savedPatternId
+            }
+        if (!editable || layer.documentKey != owner.documentKey) throw PatternAnnotationTextConflict()
     }
 
     suspend fun getForLayers(layerIds: List<Long>): List<PatternAnnotationEntity> =
@@ -252,3 +258,5 @@ data class PatternAnnotationExportStats(
     val annotationCount: Long,
     val payloadBytes: Long,
 )
+
+internal class PatternAnnotationTextConflict : IllegalStateException("Annotation changed while editing")

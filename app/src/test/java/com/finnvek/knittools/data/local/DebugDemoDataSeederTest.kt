@@ -4,10 +4,12 @@ import dagger.Lazy
 import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.io.IOException
 
 class DebugDemoDataSeederTest {
     @Test
@@ -62,6 +64,21 @@ class DebugDemoDataSeederTest {
             assertEquals(13, seed.insertedSessions.size)
         }
 
+    @Test
+    fun `demo transaction failure leaves sibling startup work running`() =
+        runTest {
+            val runner = mockk<DatabaseTransactionRunner>()
+            coEvery { runner.run<Unit>(any()) } throws IOException("demo database unavailable")
+            val seed = SeedState(0)
+            var siblingInitialized = false
+
+            seed.start(this, runner)
+            launch { siblingInitialized = true }.join()
+
+            assertTrue(siblingInitialized)
+            assertTrue(seed.projects.isEmpty())
+        }
+
     private class SeedState(
         private val existingSessions: Long,
     ) {
@@ -88,12 +105,15 @@ class DebugDemoDataSeederTest {
 
         fun completedCount(): Long = existingSessions + insertedSessions.size
 
-        fun start(scope: kotlinx.coroutines.CoroutineScope) {
+        fun start(
+            scope: kotlinx.coroutines.CoroutineScope,
+            runner: DatabaseTransactionRunner = ImmediateDatabaseTransactionRunner,
+        ) {
             DebugDemoDataSeeder.seedIfNeeded(
                 applicationScope = scope,
                 ioDispatcher = Dispatchers.Unconfined,
                 database = Lazy { database },
-                transactionRunner = Lazy { ImmediateDatabaseTransactionRunner },
+                transactionRunner = Lazy { runner },
                 addCounter = { 1L },
                 saveYarnCard = { 1L },
             )

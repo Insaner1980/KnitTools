@@ -251,10 +251,10 @@ internal object SessionMetrics {
             val cumulativeSeconds = scaledSeconds(activeSeconds, cumulativeFraction)
             val cumulativeRows = scaledRows(rows, cumulativeFraction)
             val segmentSeconds = (cumulativeSeconds - allocatedSeconds).coerceAtLeast(0L)
-            val segmentRows = (cumulativeRows - allocatedRows).coerceAtLeast(0)
+            val segmentRows = cumulativeRows - allocatedRows
             allocatedSeconds = cumulativeSeconds
             allocatedRows = cumulativeRows
-            if (seconds > 0.0 && (segmentSeconds > 0L || segmentRows > 0)) {
+            if (seconds > 0.0 && (segmentSeconds > 0L || segmentRows != 0)) {
                 val contribution = contributions.getOrPut(bucketStart) { PaceBucketContribution() }
                 contribution.seconds += seconds
                 contribution.rows += bucketRows
@@ -307,7 +307,7 @@ private fun KnitSession.activeDurationSeconds(): Long =
     when {
         durationSeconds > 0L -> durationSeconds
         durationMinutes > 0 -> durationMinutes.toLong() * 60L
-        workedRows() > 0 -> 1L
+        workedRows() != 0 -> 1L
         else -> 0L
     }
 
@@ -335,7 +335,7 @@ internal fun addSessionSeconds(
 
 private fun KnitSession.workedRows(): Int =
     when {
-        rowsWorked > 0 -> rowsWorked
+        rowsWorked != 0 -> rowsWorked
         endRow > startRow -> (endRow.toLong() - startRow.toLong()).coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
         else -> 0
     }
@@ -357,8 +357,8 @@ private fun scaledRows(
     rows: Int,
     fraction: Double,
 ): Int {
-    if (rows <= 0 || fraction <= 0.0) return 0
-    return (rows * fraction).roundToInt().coerceAtLeast(0)
+    if (fraction <= 0.0) return 0
+    return (rows * fraction).roundToInt()
 }
 
 internal fun secondsToDisplayMinutes(seconds: Long): Int =

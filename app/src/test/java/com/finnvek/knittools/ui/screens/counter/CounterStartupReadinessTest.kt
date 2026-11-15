@@ -2,6 +2,7 @@ package com.finnvek.knittools.ui.screens.counter
 
 import com.finnvek.knittools.data.datastore.AppPreferences
 import com.finnvek.knittools.domain.model.ActiveWorkSession
+import com.finnvek.knittools.domain.model.CounterProject
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -19,6 +20,34 @@ import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class CounterStartupReadinessTest : CounterViewModelFixture() {
+    @Test
+    fun `launch selection cannot replace the selected project after leaving its origin`() =
+        runTest {
+            val nextProject = observeOtherProject(count = 0)
+            val reply = CompletableDeferred<CounterProject>()
+            coEvery { repository.getProject(nextProject.id) } coAnswers { reply.await() }
+            val vm = viewModel()
+            runCurrent()
+            assertEquals(7L, vm.uiState.value.projectId)
+
+            var originCurrent = true
+            var selected = false
+            vm.selectProjectByIdForLaunch(nextProject.id, canSelect = { originCurrent }) { selected = it }
+            runCurrent()
+            originCurrent = false
+            reply.complete(nextProject)
+            runCurrent()
+
+            assertFalse(selected)
+            assertEquals(7L, vm.uiState.value.projectId)
+
+            originCurrent = true
+            vm.selectProjectByIdForLaunch(nextProject.id, canSelect = { originCurrent }) { selected = it }
+            runCurrent()
+            assertTrue(selected)
+            assertEquals(nextProject.id, vm.uiState.value.projectId)
+        }
+
     @Test
     fun `guidance waits for saved session facts again after switching projects`() =
         runTest {

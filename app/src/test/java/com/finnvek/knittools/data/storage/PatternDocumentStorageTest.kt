@@ -9,6 +9,7 @@ import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.spyk
 import io.mockk.unmockkStatic
+import io.mockk.verify
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
@@ -31,6 +32,24 @@ import java.util.UUID
 @OptIn(ExperimentalCoroutinesApi::class)
 class PatternDocumentStorageTest {
     @get:Rule val temporaryFolder = TemporaryFolder()
+
+    @Test
+    fun `invalid own provider paths do not fall through to resolver IO`() =
+        runTest {
+            val context = mockk<Context>()
+            val uri = mockk<Uri>()
+            val resolver = mockk<ContentResolver>()
+            every { context.packageName } returns "com.finnvek.knittools"
+            every { context.contentResolver } returns resolver
+            every { uri.scheme } returns "content"
+            every { uri.authority } returns "com.finnvek.knittools.fileprovider"
+            every { uri.pathSegments } returns listOf("unsupported-root", "missing.pdf")
+
+            assertNull(PatternDocumentStorage(Dispatchers.Unconfined).copyPdfToInternal(context, 7L, uri, "chart.pdf"))
+            assertNull(AppFileStorage.openReadDescriptor(context, uri))
+            verify(exactly = 0) { resolver.openInputStream(any()) }
+            verify(exactly = 0) { resolver.openFileDescriptor(any(), any()) }
+        }
 
     @Test
     fun `pdf copy moves storage access to injected dispatcher`() =
@@ -134,6 +153,28 @@ class PatternDocumentStorageTest {
         val recentCapture = File(targetDir, "recent.jpg").apply { writeText("recent") }
         val unknownAgeCapture = File(targetDir, "unknown.jpg").apply { writeText("unknown") }
         val now = 10L * ONE_DAY_MILLIS
+        val newSession =
+            File(targetDir, "new-session").apply {
+                mkdir()
+                setLastModified(now)
+            }
+        val staleSession =
+            File(targetDir, "stale-session").apply {
+                mkdir()
+                setLastModified(now - TWO_DAYS_MILLIS)
+            }
+        val futureSession =
+            File(targetDir, "future-session").apply {
+                mkdir()
+                setLastModified(now + ONE_HOUR_MILLIS)
+            }
+        val occupiedSession = File(targetDir, "occupied-session").apply { mkdir() }
+        val pendingCapture =
+            File(occupiedSession, "pending.jpg").apply {
+                writeText("pending")
+                setLastModified(now - ONE_HOUR_MILLIS)
+            }
+        occupiedSession.setLastModified(now - TWO_DAYS_MILLIS)
         oldCapture.setLastModified(now - TWO_DAYS_MILLIS)
         recentCapture.setLastModified(now - ONE_HOUR_MILLIS)
         unknownAgeCapture.setLastModified(0L)
@@ -149,6 +190,11 @@ class PatternDocumentStorageTest {
         assertFalse(oldCapture.exists())
         assertTrue(recentCapture.exists())
         assertTrue(unknownAgeCapture.exists())
+        assertTrue(newSession.isDirectory)
+        assertFalse(staleSession.exists())
+        assertTrue(futureSession.isDirectory)
+        assertTrue(occupiedSession.isDirectory)
+        assertEquals("pending", pendingCapture.readText())
         assertTrue(targetDir.exists())
     }
 

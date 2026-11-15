@@ -40,7 +40,7 @@ enum class PatternShareError {
 internal fun WebPatternShareParseResult.toPatternSharePayload(): PatternSharePayload =
     when (this) {
         is WebPatternShareParseResult.WebLink -> PatternSharePayload.WebLink(url.originalUrl, titleSuggestion)
-        is WebPatternShareParseResult.Ravelry -> PatternSharePayload.Ravelry(url.originalUrl, titleSuggestion)
+        is WebPatternShareParseResult.Ravelry -> PatternSharePayload.Ravelry(url.canonicalUrl, titleSuggestion)
         WebPatternShareParseResult.Empty -> PatternSharePayload.Error(PatternShareError.Empty)
         WebPatternShareParseResult.Invalid -> PatternSharePayload.Error(PatternShareError.Invalid)
         WebPatternShareParseResult.Ambiguous -> PatternSharePayload.Error(PatternShareError.Ambiguous)
@@ -74,17 +74,8 @@ class PatternShareCoordinatorViewModel
         val pending = mutablePending.asStateFlow()
 
         fun offer(payload: PatternSharePayload): PatternShareOfferResult {
-            mutablePending.value?.let { current ->
-                if (current.payload == payload) {
-                    return PatternShareOfferResult.Accepted(current)
-                }
-                savedStateHandle.restoreQueuedShareRequest()?.let { queued ->
-                    return if (queued.payload == payload) {
-                        PatternShareOfferResult.Queued(queued)
-                    } else {
-                        PatternShareOfferResult.Busy
-                    }
-                }
+            if (mutablePending.value != null) {
+                if (savedStateHandle.restoreQueuedShareRequest() != null) return PatternShareOfferResult.Busy
                 val queued = nextRequest(payload)
                 savedStateHandle.saveQueuedShareRequest(queued)
                 return PatternShareOfferResult.Queued(queued)

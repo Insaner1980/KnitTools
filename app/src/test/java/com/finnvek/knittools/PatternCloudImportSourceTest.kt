@@ -13,7 +13,7 @@ class PatternCloudImportSourceTest {
 
         assertTrue(picker.contains("ActivityResultContracts.OpenDocument()"))
         assertTrue(
-            viewModel.contains("takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)"),
+            viewModel.contains("takePersistableUriPermission(sourceUri, Intent.FLAG_GRANT_READ_URI_PERMISSION)"),
         )
         assertTrue(viewModel.contains("resolvePatternName(sourceUri, name)"))
         assertTrue(picker.contains("private const val PATTERN_PDF_MIME_TYPE = \"application/pdf\""))
@@ -38,14 +38,20 @@ class PatternCloudImportSourceTest {
         val finallyIndex = viewModel.indexOf("} finally {", copyIndex)
         val releaseIndex =
             viewModel.indexOf(
-                "releasePersistedReadPermissionIfHeld(context.contentResolver, sourceUri)",
+                "if (acquiredGrant)",
                 finallyIndex,
             )
 
         assertTrue(copyIndex >= 0)
         assertTrue(finallyIndex > copyIndex)
         assertTrue(releaseIndex > finallyIndex)
-        assertTrue(viewModel.contains("releasePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)"))
+        val release =
+            viewModel
+                .substring(releaseIndex)
+                .substringAfter("releasePersistableUriPermission(")
+                .substringBefore(")")
+        assertTrue(release.contains("sourceUri"))
+        assertTrue(release.contains("Intent.FLAG_GRANT_READ_URI_PERMISSION"))
     }
 
     @Test

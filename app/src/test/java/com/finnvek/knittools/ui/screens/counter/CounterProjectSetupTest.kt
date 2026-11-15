@@ -46,19 +46,38 @@ class CounterProjectSetupTest : CounterViewModelFixture() {
     fun `hiding setup survives clearing the project view model`() =
         runTest {
             val persisted = CompletableDeferred<Unit>()
-            coEvery { onboardingStateRepository.hideProjectSetup() } coAnswers {
+            coEvery { onboardingStateRepository.hideProjectSetup(7L) } coAnswers {
                 persisted.await()
                 onboardingState.value = onboardingState.value.copy(projectSetupHidden = true)
+                true
             }
             val vm = viewModel()
             advanceUntilIdle()
             val store = ViewModelStore().apply { put("counter", vm) }
-            vm.hideProjectSetup()
+            vm.hideProjectSetup(7L)
             runCurrent()
             store.clear()
             persisted.complete(Unit)
             runCurrent()
             assertEquals(true, onboardingState.value.projectSetupHidden)
-            coVerify(exactly = 1) { onboardingStateRepository.hideProjectSetup() }
+            coVerify(exactly = 1) { onboardingStateRepository.hideProjectSetup(7L) }
+        }
+
+    @Test
+    fun `failed setup hide reports the error and remains retryable`() =
+        runTest {
+            coEvery { onboardingStateRepository.hideProjectSetup(7L) } returnsMany listOf(false, true)
+            val vm = viewModel()
+            advanceUntilIdle()
+            val failures = collectErrors(vm.projectContentErrors)
+
+            vm.hideProjectSetup(7L)
+            runCurrent()
+            assertEquals(listOf(Unit), failures)
+            assertEquals(false, onboardingState.value.projectSetupHidden)
+
+            vm.hideProjectSetup(7L)
+            runCurrent()
+            coVerify(exactly = 2) { onboardingStateRepository.hideProjectSetup(7L) }
         }
 }

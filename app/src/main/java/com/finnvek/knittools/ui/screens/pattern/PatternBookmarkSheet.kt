@@ -68,6 +68,7 @@ internal fun PatternBookmarkSheet(
     state: PatternBookmarkUiState,
     totalPages: Int,
     actions: PatternBookmarkSheetActions,
+    canAddAtCurrentLocation: Boolean = true,
 ) {
     var showAddDialog by rememberSaveable { mutableStateOf(false) }
     var renameBookmarkId by rememberSaveable { mutableStateOf<Long?>(null) }
@@ -76,6 +77,7 @@ internal fun PatternBookmarkSheet(
     val errorDescription = state.error?.let { stringResource(it.messageRes()) }
     val renameBookmark = state.bookmarks.firstOrNull { it.id == renameBookmarkId }
     val deleteBookmark = state.bookmarks.firstOrNull { it.id == deleteBookmarkId }
+    val canAdd = canAddAtCurrentLocation && totalPages > 0 && state.documentKey != null && !state.isMutating
 
     ModalBottomSheet(
         sheetMaxWidth = ContentWidthPolicy.Form.maxWidth,
@@ -98,7 +100,7 @@ internal fun PatternBookmarkSheet(
                 OverviewTextAction(
                     label = stringResource(R.string.pattern_bookmark_add_here),
                     onClick = { showAddDialog = true },
-                    enabled = state.documentKey != null && !state.isMutating,
+                    enabled = canAdd,
                 )
             }
             errorDescription?.let { description ->
@@ -168,7 +170,7 @@ internal fun PatternBookmarkSheet(
         }
     }
 
-    if (showAddDialog) {
+    if (showAddDialog && canAdd) {
         PatternBookmarkNameDialog(
             title = stringResource(R.string.pattern_bookmark_add_title),
             initialName = "",

@@ -7,6 +7,9 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.TextUnit
@@ -99,18 +102,30 @@ class CounterWidget : GlanceAppWidget() {
         val manager = entryPoint.proManager()
         val initialAccess = manager.featureAccessAfterInitialLoad(ProFeature.WIDGET)
         val accessFlow = manager.featureAccessFlow(ProFeature.WIDGET)
-        val widgetData = CounterWidgetState.loadGlance(context, id)
-        if (initialAccess == ProActionAccess.Allowed || initialAccess == ProActionAccess.Trial) {
-            resolveInitialWidgetData(context, id, entryPoint, widgetData)
-        }
+        val sharedDataFlow = CounterWidgetState.observe(context)
+        val initialShared = CounterWidgetState.load(context)
+        val initialData =
+            if (initialAccess == ProActionAccess.Allowed || initialAccess == ProActionAccess.Trial) {
+                resolveWidgetData(context, entryPoint, initialShared, CounterWidgetState.loadGlance(context, id))
+            } else {
+                CounterWidgetState.defaultData(context)
+            }
 
         provideContent {
             val access by accessFlow.collectAsState(initialAccess)
+            val shared by sharedDataFlow.collectAsState(initialShared)
+            val refresh by CounterWidgetState.refreshes.collectAsState()
             val prefs = currentState<Preferences>()
-            val data = CounterWidgetState.fromPreferences(context, prefs)
-            LaunchedEffect(access) {
+            var data by remember { mutableStateOf(initialData) }
+            LaunchedEffect(access, shared, refresh) {
                 if (access == ProActionAccess.Allowed || access == ProActionAccess.Trial) {
-                    resolveInitialWidgetData(context, id, entryPoint, data)
+                    data =
+                        resolveWidgetData(
+                            context,
+                            entryPoint,
+                            shared,
+                            CounterWidgetState.fromPreferences(context, prefs),
+                        )
                 }
             }
             GlanceTheme(colors = ColorProviders(dark = WidgetDarkScheme, light = WidgetLightScheme)) {
@@ -119,23 +134,29 @@ class CounterWidget : GlanceAppWidget() {
         }
     }
 
-    private suspend fun resolveInitialWidgetData(
+    private suspend fun resolveWidgetData(
         context: Context,
-        id: GlanceId,
         entryPoint: WidgetEntryPoint,
+        sharedWidgetData: WidgetData,
         widgetData: WidgetData,
     ): WidgetData {
         // Widgetit seuraavat samaa aktiivista projektia. Peilaa jaettu tila myös silloin,
         // kun Glance-instanssille on jäänyt vanha projekti aiemmasta renderöinnistä.
         val repository = entryPoint.counterRepository()
-        val sharedWidgetData = CounterWidgetState.load(context)
+        val candidates =
+            if (sharedWidgetData.projectId > 0L) {
+                listOf(sharedWidgetData)
+            } else {
+                listOf(sharedWidgetData, widgetData)
+            }
         val resolvedData =
             repository.resolveWidgetDisplayData(
                 context = context,
-                candidates = listOf(sharedWidgetData, widgetData),
+                candidates = candidates,
             )
-        if (resolvedData != sharedWidgetData) CounterWidgetState.save(context, resolvedData)
-        if (resolvedData != widgetData) CounterWidgetState.saveGlance(context, id, resolvedData)
+        if (resolvedData != sharedWidgetData) {
+            CounterWidgetState.replaceIfCurrent(context, sharedWidgetData, resolvedData)
+        }
         return resolvedData
     }
 
@@ -180,6 +201,12 @@ private fun WidgetSizedContent(
     }
     val size = LocalSize.current
     val projectId = data.projectId.takeIf { it > 0L }
+    if (projectId == null) {
+        WidgetCard(projectId = null) {
+            WidgetProjectName(data, CounterWidgetDimens.SmallNameSize, TextAlign.Center)
+        }
+        return
+    }
     when {
         size.width >= CounterWidget.LARGE_SIZE.width && size.height >= CounterWidget.LARGE_SIZE.height -> {
             LargeWidget(data = data, projectId = projectId)
@@ -236,7 +263,7 @@ private fun WidgetAccessMessage(unknown: Boolean) {
 @androidx.compose.runtime.Composable
 private fun SmallWidget(
     data: WidgetData,
-    projectId: Long?,
+    projectId: Long,
 ) {
     val stacked = LocalSize.current.height >= CounterWidget.STACKED_SMALL_SIZE.height
     WidgetCard(
@@ -272,6 +299,7 @@ private fun SmallWidget(
             }
             WidgetCountButton(
                 action = WidgetCountAction.INCREMENT,
+                projectId = projectId,
                 size = CounterWidgetDimens.SmallButtonTouchSize,
                 imageInset = CounterWidgetDimens.SmallButtonInset,
             )
@@ -287,7 +315,7 @@ private fun SmallWidget(
 @androidx.compose.runtime.Composable
 private fun MediumWidget(
     data: WidgetData,
-    projectId: Long?,
+    projectId: Long,
 ) {
     WidgetCard(projectId = projectId, verticalPadding = mediumVerticalPadding()) {
         WidgetProjectName(data = data, fontSize = CounterWidgetDimens.NameSize, textAlign = TextAlign.Center)
@@ -304,9 +332,17 @@ private fun MediumWidget(
             modifier = GlanceModifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            WidgetCountButton(action = WidgetCountAction.DECREMENT, size = CounterWidgetDimens.ButtonSize)
+            WidgetCountButton(
+                action = WidgetCountAction.DECREMENT,
+                projectId = projectId,
+                size = CounterWidgetDimens.ButtonSize,
+            )
             Spacer(modifier = GlanceModifier.defaultWeight())
-            WidgetCountButton(action = WidgetCountAction.INCREMENT, size = CounterWidgetDimens.ButtonSize)
+            WidgetCountButton(
+                action = WidgetCountAction.INCREMENT,
+                projectId = projectId,
+                size = CounterWidgetDimens.ButtonSize,
+            )
         }
     }
 }
@@ -315,7 +351,7 @@ private fun MediumWidget(
 @androidx.compose.runtime.Composable
 private fun LargeWidget(
     data: WidgetData,
-    projectId: Long?,
+    projectId: Long,
 ) {
     WidgetCard(projectId = projectId) {
         WidgetProjectName(data = data, fontSize = CounterWidgetDimens.NameSize, textAlign = TextAlign.Center)
@@ -327,13 +363,21 @@ private fun LargeWidget(
             modifier = GlanceModifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            WidgetCountButton(action = WidgetCountAction.DECREMENT, size = CounterWidgetDimens.LargeButtonSize)
+            WidgetCountButton(
+                action = WidgetCountAction.DECREMENT,
+                projectId = projectId,
+                size = CounterWidgetDimens.LargeButtonSize,
+            )
             WidgetCount(
                 data = data,
                 fontSize = CounterWidgetDimens.LargeCountSize,
                 modifier = GlanceModifier.defaultWeight(),
             )
-            WidgetCountButton(action = WidgetCountAction.INCREMENT, size = CounterWidgetDimens.LargeButtonSize)
+            WidgetCountButton(
+                action = WidgetCountAction.INCREMENT,
+                projectId = projectId,
+                size = CounterWidgetDimens.LargeButtonSize,
+            )
         }
         WidgetTargetBar(data = data)
         WidgetCaptionRow(data = data)
@@ -535,6 +579,7 @@ private val WidgetProgressTrack =
 @androidx.compose.runtime.Composable
 private fun WidgetCountButton(
     action: WidgetCountAction,
+    projectId: Long,
     size: Dp,
     imageInset: Dp = 0.dp,
 ) {
@@ -542,8 +587,8 @@ private fun WidgetCountButton(
     val onClick =
         actionSendBroadcast(
             when (action) {
-                WidgetCountAction.DECREMENT -> CounterWidgetActions.decrementIntent(context)
-                WidgetCountAction.INCREMENT -> CounterWidgetActions.incrementIntent(context)
+                WidgetCountAction.DECREMENT -> CounterWidgetActions.decrementIntent(context, projectId)
+                WidgetCountAction.INCREMENT -> CounterWidgetActions.incrementIntent(context, projectId)
             },
         )
     val actionDescription =

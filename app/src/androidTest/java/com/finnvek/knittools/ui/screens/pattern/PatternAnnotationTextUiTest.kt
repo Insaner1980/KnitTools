@@ -176,7 +176,10 @@ class PatternAnnotationTextUiTest(
         compose.onNode(hasSetTextAction()).performTextReplacement("My draft")
         runBlocking { fixture.repository.updateText(fixture.owner, fixture.annotation(), "Competitor") }
         click(R.string.save)
-        runBlocking { fixture.awaitState { !it.isSaving && it.writeError == PatternAnnotationWriteError.WRITE_FAILED } }
+        runBlocking {
+            fixture.awaitState { !it.isSaving && it.writeError == PatternAnnotationWriteError.TEXT_CONFLICT }
+        }
+        node(R.string.save).assertIsNotEnabled()
         node(R.string.pattern_annotation_write_failed).performScrollTo().assertIsDisplayed()
         assertLabelsFit()
         compose

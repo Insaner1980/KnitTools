@@ -1,6 +1,8 @@
 package com.finnvek.knittools.ui.screens.notes
 
 import androidx.lifecycle.SavedStateHandle
+import com.finnvek.knittools.data.storage.NotesDraft
+import com.finnvek.knittools.data.storage.NotesDraftStorage
 import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.pro.ProFeature
 import com.finnvek.knittools.pro.ProManager
@@ -36,6 +38,7 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import java.util.UUID
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
@@ -449,6 +452,45 @@ class NotesEditorViewModelTest {
         }
 
     @Test
+    fun `discard serializes deletion behind old draft write without touching the new draft file`() =
+        runTest {
+            observeProjectWithBaseNotes()
+            val storage = mockk<NotesDraftStorage>()
+            val files = mutableMapOf<UUID, NotesDraft>()
+            val handle = SavedStateHandle(mapOf("projectId" to 1L))
+            val old = "a".repeat(17_000)
+            val newer = "b".repeat(17_000)
+            var finishOldWrite: (() -> Unit)? = null
+            coEvery { storage.write(1L, any(), any()) } coAnswers {
+                val id = secondArg<UUID>()
+                val draft = thirdArg<NotesDraft>()
+                if (draft.notes == old) {
+                    suspendCoroutine { continuation -> finishOldWrite = { continuation.resume(Unit) } }
+                }
+                files[id] = draft
+            }
+            coEvery { storage.delete(1L, any()) } answers {
+                files.remove(secondArg<UUID>())
+            }
+            val vm = NotesEditorViewModel(repository, proManager, applicationScope, handle, storage)
+            runCurrent()
+            vm.onNotesChanged(old)
+            runCurrent()
+            val oldId = UUID.fromString(handle.get<String>("notesDraftFileId"))
+
+            vm.discardChanges()
+            vm.onNotesChanged(newer)
+            runCurrent()
+            val newId = UUID.fromString(handle.get<String>("notesDraftFileId"))
+            requireNotNull(finishOldWrite).invoke()
+            runCurrent()
+
+            assertTrue(oldId != newId)
+            assertEquals(mapOf(newId to NotesDraft(newer, "Base")), files)
+            assertEquals(newId.toString(), handle.get<String>("notesDraftFileId"))
+        }
+
+    @Test
     fun `explicit discard cancels debounce and prevents the final persistence flush`() =
         runTest {
             observeProjectWithBaseNotes()
@@ -471,11 +513,91 @@ class NotesEditorViewModelTest {
             coVerify(exactly = 1) { repository.saveProjectNotes(any(), any(), any(), any()) }
         }
 
+    @Test
+    fun `discard retains an acknowledged save before its observation arrives`() =
+        runTest {
+            val viewModel = vm(notes = "Base")
+            runCurrent()
+            viewModel.onNotesChanged("Saved text")
+            viewModel.saveImmediately()
+            runCurrent()
+
+            viewModel.onNotesChanged("Abandoned edit")
+            viewModel.discardChanges()
+            advanceUntilIdle()
+
+            assertEquals("Saved text", viewModel.uiState.value.notes)
+            coVerify(exactly = 1) { repository.saveProjectNotes(any(), any(), any(), any()) }
+        }
+
     private fun observeProjectWithBaseNotes(): CounterProject {
         val project = CounterProject(id = 1L, name = "Test", notes = "Base", notesCreated = true)
         every { repository.observeProject(1L) } returns flowOf(project)
         return project
     }
+
+    @Test
+    fun `discard preserves an observation newer than the pending save result`() =
+        runTest {
+            val project = CounterProject(id = 1L, name = "Test", notes = "Base", notesCreated = true)
+            val projects = MutableStateFlow(project)
+            val result = CompletableDeferred<ProjectNotesSaveResult>()
+            every { repository.observeProject(1L) } returns projects
+            coEvery { repository.saveProjectNotes(any(), any(), any(), any()) } coAnswers { result.await() }
+            val viewModel =
+                NotesEditorViewModel(
+                    repository,
+                    proManager,
+                    applicationScope,
+                    SavedStateHandle(mapOf("projectId" to 1L)),
+                    mockk(),
+                )
+            runCurrent()
+            viewModel.onNotesChanged("Saved earlier")
+            viewModel.saveImmediately()
+            runCurrent()
+            projects.value = project.copy(notes = "Saved later by another editor")
+            runCurrent()
+            result.complete(ProjectNotesSaveResult.Saved(project.copy(notes = "Saved earlier")))
+            runCurrent()
+
+            viewModel.onNotesChanged("Abandoned edit")
+            viewModel.discardChanges()
+            advanceUntilIdle()
+
+            assertEquals("Saved later by another editor", viewModel.uiState.value.notes)
+            coVerify(exactly = 1) { repository.saveProjectNotes(any(), any(), any(), any()) }
+        }
+
+    @Test
+    fun `discard adopts the latest observed notes without saving the abandoned draft`() =
+        runTest {
+            val project = CounterProject(id = 1L, name = "Test", notes = "Base", notesCreated = true)
+            val projects = MutableStateFlow(project)
+            every { repository.observeProject(1L) } returns projects
+            val handle = SavedStateHandle(mapOf("projectId" to 1L))
+            val viewModel = NotesEditorViewModel(repository, proManager, applicationScope, handle, mockk())
+            runCurrent()
+
+            viewModel.onNotesChanged("Abandoned local edit")
+            projects.value = project.copy(notes = "Saved by another editor")
+            runCurrent()
+            assertEquals("Abandoned local edit", viewModel.uiState.value.notes)
+
+            viewModel.discardChanges()
+            advanceUntilIdle()
+
+            assertEquals("Saved by another editor", viewModel.uiState.value.notes)
+            assertNull(handle.get<String>("notesDraft"))
+            coVerify(exactly = 0) { repository.saveProjectNotes(any(), any(), any(), any()) }
+
+            viewModel.onNotesChanged("Saved by another editor\nNew edit")
+            viewModel.saveImmediately()
+            advanceUntilIdle()
+            coVerify(exactly = 1) {
+                repository.saveProjectNotes(1L, "Saved by another editor", "Saved by another editor\nNew edit", false)
+            }
+        }
 
     @Test
     fun `final persistence propagates repository cancellation`() =

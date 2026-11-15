@@ -111,6 +111,33 @@ class BackupZipStructureTest {
         assertThrows(BackupException::class.java) { BackupZipStructure.verify(archive) {} }
     }
 
+    @Test fun storedMemberCannotCountTrailingBytesAsCompressedData() {
+        val archive = temporary.newFile()
+        ZipOutputStream(archive.outputStream()).use { zip ->
+            zip.putNextEntry(
+                ZipEntry("manifest.json").apply {
+                    method = ZipEntry.STORED
+                    size = 0
+                    crc = 0
+                },
+            )
+            zip.closeEntry()
+        }
+        BackupZipStructure.verify(archive) {}
+
+        val original = archive.readBytes()
+        val buffer = ByteBuffer.wrap(original).order(ByteOrder.LITTLE_ENDIAN)
+        val directoryField = original.size - 6
+        val central = buffer.getInt(directoryField)
+        buffer.putInt(18, 1)
+        buffer.putInt(central + 20, 1)
+        buffer.putInt(directoryField, central + 1)
+        val modified = original.copyOfRange(0, central) + byteArrayOf(0) + original.copyOfRange(central, original.size)
+        archive.writeBytes(modified)
+
+        assertThrows(BackupException::class.java) { BackupZipStructure.verify(archive) {} }
+    }
+
     @Test fun eitherNonzeroClassicDiskFieldIsRejected() {
         val archive = archiveWithExampleEntry(withContent = false)
         val valid = archive.readBytes()

@@ -1,5 +1,8 @@
 package com.finnvek.knittools.ui.screens.insights
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -28,6 +31,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -72,6 +76,7 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.temporal.ChronoUnit
+import kotlin.math.roundToInt
 
 /** Aikaväli omana rivinään: sijamuodoton väliviivanotaatio, ei osa virkettä. */
 @Composable
@@ -94,14 +99,27 @@ internal fun InsightsRangeKicker(
  */
 @Composable
 internal fun InsightsHero(state: InsightsUiState) {
+    val animatedMinutes = remember { Animatable(0f) }
+    LaunchedEffect(state.totalMinutes) {
+        animatedMinutes.animateTo(
+            targetValue = state.totalMinutes.toFloat(),
+            animationSpec = tween(durationMillis = 500, easing = FastOutSlowInEasing),
+        )
+    }
     Column(
         modifier =
             Modifier
                 .fillMaxWidth()
                 .padding(top = InsightsDimens.HeroTopPadding, bottom = InsightsDimens.HeroBottomPadding),
     ) {
+        val displayedMinutes = animatedMinutes.value.roundToInt()
         DurationHero(
-            display = state.totalDuration,
+            display =
+                if (displayedMinutes == state.totalMinutes) {
+                    state.totalDuration
+                } else {
+                    DurationDisplayFormatter.fromMinutes(displayedMinutes)
+                },
             color = MaterialTheme.colorScheme.primary,
             modifier = Modifier.fillMaxWidth(),
         )

@@ -1,5 +1,8 @@
 package com.finnvek.knittools.ui.screens.insights
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -10,6 +13,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -143,6 +147,10 @@ private fun ChartPlot(
     maxMinutes: Int,
     onSelectBucket: (Int) -> Unit,
 ) {
+    val barGrowthProgress = remember(buckets) { Animatable(0f) }
+    LaunchedEffect(barGrowthProgress) {
+        barGrowthProgress.animateTo(1f, tween(durationMillis = 400, easing = FastOutSlowInEasing))
+    }
     val barWidth = chartBarWidth(timeRange)
     val fallbackBarColor = MaterialTheme.colorScheme.primary
     val gridColor = MaterialTheme.colorScheme.onSurface.copy(alpha = InsightsDimens.ChartGridlineAlpha)
@@ -258,14 +266,17 @@ private fun ChartPlot(
         // Maksimiarvo päättyy tasan yläapuviivaan: viivan paksuus varataan pois
         // mitta-alueesta, jottei korkein pylväs työnny sen yli.
         val plotHeightPx = (barBottomY - gridStrokePx).coerceAtLeast(0f)
+        val growthProgress = barGrowthProgress.value
 
         buckets.forEachIndexed { index, bucket ->
             val left = pitch * index + (pitch - barWidthPx) / 2f
             // Tyhjä päivä on tyhjä sarake: jatkuva perusviiva kertoo sen jo, ja
             // erillinen tikku lukeutui pieneksi arvoksi.
             if (bucket.totalMinutes <= 0 || maxMinutes <= 0) return@forEachIndexed
-            val barHeight =
+            val finalBarHeight =
                 maxOf(minBarHeightPx, plotHeightPx * bucket.totalMinutes / maxMinutes.toFloat())
+            val barHeight = chartBarGrowthHeight(finalBarHeight, growthProgress)
+            if (barHeight <= 0f) return@forEachIndexed
             val topLeft = Offset(left, barBottomY - barHeight)
             val barSize = Size(barWidthPx, barHeight)
             drawStackedBar(
@@ -309,6 +320,11 @@ private fun ChartPlot(
         }
     }
 }
+
+internal fun chartBarGrowthHeight(
+    finalHeight: Float,
+    progress: Float,
+): Float = finalHeight * progress
 
 internal fun chartBucketIndexAt(
     x: Float,

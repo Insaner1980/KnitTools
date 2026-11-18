@@ -46,6 +46,7 @@
     <!-- Screen titles -->
     <string name="tools_title">Outils</string>
     <string name="library_title">Bibliothèque</string>
+    <string name="insights_title">Statistiques</string>
     <string name="saved_patterns_title">Modèles enregistrés</string>
     <string name="my_yarn_title">Mon fil</string>
     <string name="all_photos_title">Photos</string>

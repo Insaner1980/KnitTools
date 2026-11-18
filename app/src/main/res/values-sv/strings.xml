@@ -46,6 +46,7 @@
     <!-- Screen titles -->
     <string name="tools_title">Verktyg</string>
     <string name="library_title">Bibliotek</string>
+    <string name="insights_title">Insikter</string>
     <string name="saved_patterns_title">Sparade mönster</string>
     <string name="my_yarn_title">Mitt garn</string>
     <string name="all_photos_title">Bilder</string>

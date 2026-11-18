@@ -1,43 +1,34 @@
 package com.finnvek.knittools.ui.screens.insights
 
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.requiredWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.selection.selectable
-import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -47,11 +38,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.collapse
 import androidx.compose.ui.semantics.expand
 import androidx.compose.ui.semantics.semantics
@@ -61,6 +51,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.calculator.DurationDisplayFormatter
 import com.finnvek.knittools.domain.calculator.formatIntegerForDisplay
+import com.finnvek.knittools.ui.components.SegmentedToggle
 import com.finnvek.knittools.ui.components.durationText
 import com.finnvek.knittools.ui.components.localizedDateTimePattern
 import com.finnvek.knittools.ui.components.rememberCurrentLocale
@@ -69,6 +60,7 @@ import com.finnvek.knittools.ui.theme.yarnColorForId
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun InsightsScreen(
     onProUpgrade: () -> Unit = {},
@@ -84,7 +76,22 @@ fun InsightsScreen(
     }
     val rangeLabel = insightsRangeLabel(uiState)
 
-    Scaffold(containerColor = MaterialTheme.colorScheme.background) { padding ->
+    Scaffold(
+        containerColor = MaterialTheme.colorScheme.background,
+        // Insights oli ainoa ylätason välilehti ilman otsikkoa: sisältö alkoi suoraan
+        // tilapalkin alta. Sama TopAppBar kuin Libraryssa ja Toolsissa.
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text(
+                        text = stringResource(R.string.insights_title),
+                        style = MaterialTheme.typography.headlineMedium,
+                    )
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
+            )
+        },
+    ) { padding ->
         LazyColumn(
             modifier =
                 Modifier
@@ -187,9 +194,6 @@ private fun LazyListScope.insightsContent(
     item { Spacer(modifier = Modifier.height(InsightsDimens.ContentBottomPadding)) }
 }
 
-internal fun useRangeSelectorFallback(fontScale: Float): Boolean =
-    fontScale > InsightsDimens.RANGE_SELECTOR_FALLBACK_FONT_SCALE
-
 @Composable
 private fun InsightsFilters(
     uiState: InsightsUiState,
@@ -201,9 +205,17 @@ private fun InsightsFilters(
             Modifier
                 .fillMaxWidth()
                 .padding(top = InsightsDimens.FiltersTopPadding),
-        verticalArrangement = Arrangement.spacedBy(InsightsDimens.RangeSelectorProjectSpacing),
+        verticalArrangement = Arrangement.spacedBy(InsightsDimens.FilterChipSpacing),
     ) {
-        InsightsRangeSelector(selectedRange = uiState.timeRange, onSelectRange = onSelectRange)
+        // Sama segmenttivalitsin kuin muualla sovelluksessa. Oma toteutus piirsi
+        // valitun leiman kahdesti, ja päällimmäiseksi jäänyt onSurfaceVariant-teksti
+        // antoi oranssia vasten vain 2:1 kontrastin.
+        SegmentedToggle(
+            options = insightsRangeOptions.map { stringResource(it.labelResource) },
+            selectedIndex = insightsRangeOptions.indexOfFirst { it.range == uiState.timeRange },
+            onSelect = { index -> onSelectRange(insightsRangeOptions[index].range) },
+            fraction = 1f,
+        )
         InsightsProjectFilter(uiState = uiState, onSelectProject = onSelectProject)
     }
 }
@@ -213,201 +225,13 @@ private data class InsightsRangeOption(
     val labelResource: Int,
 )
 
+/** Näyttöjärjestys, ei TimeRange-enumin oma järjestys. */
 private val insightsRangeOptions =
     listOf(
         InsightsRangeOption(TimeRange.THIS_WEEK, R.string.insights_this_week),
         InsightsRangeOption(TimeRange.THIS_MONTH, R.string.insights_this_month),
         InsightsRangeOption(TimeRange.ALL_TIME, R.string.insights_all_time),
     )
-
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-internal fun InsightsRangeSelector(
-    selectedRange: TimeRange,
-    onSelectRange: (TimeRange) -> Unit,
-) {
-    if (useRangeSelectorFallback(LocalDensity.current.fontScale)) {
-        InsightsRangeFallback(selectedRange = selectedRange, onSelectRange = onSelectRange)
-    } else {
-        InsightsSegmentedRangeSelector(selectedRange = selectedRange, onSelectRange = onSelectRange)
-    }
-}
-
-@Composable
-private fun InsightsSegmentedRangeSelector(
-    selectedRange: TimeRange,
-    onSelectRange: (TimeRange) -> Unit,
-) {
-    val selectedIndex = insightsRangeOptions.indexOfFirst { it.range == selectedRange }
-    val indicatorOffsetFraction by animateFloatAsState(
-        targetValue = selectedIndex.toFloat() / insightsRangeOptions.size,
-        animationSpec = tween(durationMillis = 220, easing = FastOutSlowInEasing),
-        label = "Insights range indicator",
-    )
-    BoxWithConstraints(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .heightIn(min = InsightsDimens.FilterChipMinTouchTarget)
-                .selectableGroup(),
-    ) {
-        val selectorWidth = maxWidth
-        val availableIndicatorWidth = maxWidth - (InsightsDimens.RangeSelectorIndicatorPadding * 2)
-        val indicatorWidth = availableIndicatorWidth / insightsRangeOptions.size
-        val indicatorOffset =
-            InsightsDimens.RangeSelectorIndicatorPadding + (availableIndicatorWidth * indicatorOffsetFraction)
-
-        Box(
-            modifier =
-                Modifier
-                    .align(Alignment.Center)
-                    .fillMaxWidth()
-                    .height(InsightsDimens.RangeSelectorHeight)
-                    .border(
-                        InsightsDimens.FilterChipBorderWidth,
-                        MaterialTheme.colorScheme.outlineVariant,
-                        InsightsDimens.FilterChipShape,
-                    ).clip(InsightsDimens.FilterChipShape),
-        ) {
-            Box(
-                modifier =
-                    Modifier
-                        .offset(x = indicatorOffset)
-                        .width(indicatorWidth)
-                        .fillMaxHeight()
-                        .padding(InsightsDimens.RangeSelectorIndicatorPadding)
-                        .clip(InsightsDimens.FilterChipShape)
-                        .background(MaterialTheme.colorScheme.primary),
-            )
-        }
-
-        Row(
-            modifier = Modifier.fillMaxSize(),
-        ) {
-            insightsRangeOptions.forEach { option ->
-                val selected = option.range == selectedRange
-                Box(
-                    modifier =
-                        Modifier
-                            .weight(1f)
-                            .fillMaxHeight()
-                            .selectable(
-                                selected = selected,
-                                role = Role.Tab,
-                                onClick = { onSelectRange(option.range) },
-                            ).padding(horizontal = InsightsDimens.RangeSelectorIndicatorPadding),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(
-                        text = stringResource(option.labelResource),
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-            }
-        }
-
-        Box(
-            modifier =
-                Modifier
-                    .align(Alignment.CenterStart)
-                    .offset(x = indicatorOffset)
-                    .width(indicatorWidth)
-                    .height(InsightsDimens.RangeSelectorHeight)
-                    .padding(InsightsDimens.RangeSelectorIndicatorPadding)
-                    .clip(InsightsDimens.FilterChipShape)
-                    .clearAndSetSemantics {},
-        ) {
-            Row(
-                modifier =
-                    Modifier
-                        .offset(x = -(indicatorOffset + InsightsDimens.RangeSelectorIndicatorPadding))
-                        .requiredWidth(selectorWidth)
-                        .fillMaxHeight(),
-            ) {
-                insightsRangeOptions.forEach { option ->
-                    Box(
-                        modifier =
-                            Modifier
-                                .weight(1f)
-                                .fillMaxHeight()
-                                .padding(horizontal = InsightsDimens.RangeSelectorIndicatorPadding),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Text(
-                            text = stringResource(option.labelResource),
-                            style = MaterialTheme.typography.labelLarge,
-                            color = MaterialTheme.colorScheme.onPrimary,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.clearAndSetSemantics {},
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun InsightsRangeFallback(
-    selectedRange: TimeRange,
-    onSelectRange: (TimeRange) -> Unit,
-) {
-    FlowRow(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .selectableGroup(),
-        horizontalArrangement = Arrangement.spacedBy(InsightsDimens.FilterChipSpacing),
-        verticalArrangement = Arrangement.spacedBy(InsightsDimens.FilterChipSpacing),
-    ) {
-        insightsRangeOptions.forEach { option ->
-            val selected = option.range == selectedRange
-            val backgroundModifier =
-                if (selected) {
-                    Modifier.background(MaterialTheme.colorScheme.primary)
-                } else {
-                    Modifier.border(
-                        InsightsDimens.FilterChipBorderWidth,
-                        MaterialTheme.colorScheme.outlineVariant,
-                        InsightsDimens.FilterChipShape,
-                    )
-                }
-            Box(
-                modifier =
-                    Modifier
-                        .heightIn(min = InsightsDimens.FilterChipMinTouchTarget)
-                        .clip(InsightsDimens.FilterChipShape)
-                        .then(backgroundModifier)
-                        .selectable(
-                            selected = selected,
-                            role = Role.Tab,
-                            onClick = { onSelectRange(option.range) },
-                        ).padding(
-                            horizontal = InsightsDimens.FilterChipHorizontalPadding,
-                            vertical = InsightsDimens.FilterChipVerticalPadding,
-                        ),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text = stringResource(option.labelResource),
-                    style = MaterialTheme.typography.labelLarge,
-                    color =
-                        if (selected) {
-                            MaterialTheme.colorScheme.onPrimary
-                        } else {
-                            MaterialTheme.colorScheme.onSurfaceVariant
-                        },
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-        }
-    }
-}
 
 /**
  * Projektisuodatin ei ole neljäs aikaväli, joten se ei koskaan saa täytettyä
@@ -429,11 +253,10 @@ private fun InsightsProjectFilter(
                 Modifier
                     .heightIn(min = InsightsDimens.FilterChipMinTouchTarget)
                     .clip(InsightsDimens.FilterChipShape)
-                    .border(
-                        InsightsDimens.FilterChipBorderWidth,
-                        MaterialTheme.colorScheme.outlineVariant,
-                        InsightsDimens.FilterChipShape,
-                    ).clickable(role = Role.DropdownList) { showProjectPicker = !showProjectPicker }
+                    // Täytetty pinta ääriviivan sijaan: kaksi eri levyistä
+                    // ääriviivastadionia päällekkäin luki yhtenä rikkinäisenä komponenttina.
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
+                    .clickable(role = Role.DropdownList) { showProjectPicker = !showProjectPicker }
                     .semantics {
                         if (showProjectPicker) {
                             collapse {

@@ -46,6 +46,7 @@
     <!-- Näyttöjen otsikot -->
     <string name="tools_title">Työkalut</string>
     <string name="library_title">Kirjasto</string>
+    <string name="insights_title">Tilastot</string>
     <string name="saved_patterns_title">Tallennetut ohjeet</string>
     <string name="my_yarn_title">Omat langat</string>
     <string name="all_photos_title">Valokuvat</string>

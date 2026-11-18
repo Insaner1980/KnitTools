@@ -11,7 +11,8 @@ import androidx.compose.ui.unit.sp
  * kuin laskurinäyttö [CounterDimens]-tokeneillaan. Type.kt:n perusrooleja ei muuteta.
  */
 object InsightsDimens {
-    val ScreenHorizontalPadding = 20.dp
+    // Sama vaakapehmuste kuin Libraryssa ja Toolsissa.
+    val ScreenHorizontalPadding = 16.dp
     val ContentBottomPadding = 32.dp
 
     // Suodatinsirut
@@ -25,11 +26,6 @@ object InsightsDimens {
     val FilterChipMinTouchTarget = 48.dp
     val FilterChipDotSize = 10.dp
     val FilterChipDotSpacing = 8.dp
-    val FilterChipBorderWidth = 1.dp
-    val RangeSelectorHeight = 44.dp
-    val RangeSelectorIndicatorPadding = 3.dp
-    val RangeSelectorProjectSpacing = 4.dp
-    const val RANGE_SELECTOR_FALLBACK_FONT_SCALE = 1.3f
 
     // Kicker
     val KickerTopPadding = 14.dp

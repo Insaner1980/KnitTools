@@ -46,6 +46,7 @@
     <!-- Screen titles -->
     <string name="tools_title">Strumenti</string>
     <string name="library_title">Libreria</string>
+    <string name="insights_title">Statistiche</string>
     <string name="saved_patterns_title">Modelli salvati</string>
     <string name="my_yarn_title">Il mio filato</string>
     <string name="all_photos_title">Foto</string>

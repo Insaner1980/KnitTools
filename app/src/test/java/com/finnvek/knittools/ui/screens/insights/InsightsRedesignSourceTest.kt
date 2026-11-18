@@ -109,16 +109,38 @@ class InsightsRedesignSourceTest {
     }
 
     @Test
-    fun `range chips announce their selection and meet the touch target minimum`() {
+    fun `the range selector reuses the shared segmented toggle`() {
         val screen = ProjectSourceFiles.read(INSIGHTS_SCREEN)
+        val toggle = ProjectSourceFiles.read(SEGMENTED_TOGGLE)
 
-        assertTrue("Range chips must use selectable semantics", screen.contains("selectable("))
-        assertTrue("Range chips must be grouped for screen readers", screen.contains("selectableGroup()"))
+        assertTrue("The range selector must be the shared component", screen.contains("SegmentedToggle("))
+        assertFalse(
+            "Insights must not grow its own segmented selector again",
+            screen.contains("InsightsSegmentedRangeSelector") || screen.contains("InsightsRangeChip"),
+        )
         assertTrue(
-            "Chips must reserve the centralized touch target",
+            "The project filter must reserve the centralized touch target",
             screen.contains("heightIn(min = InsightsDimens.FilterChipMinTouchTarget)"),
         )
-        assertFalse("Range chips must not fall back to plain clickable", screen.contains("clickable(role = Role.Tab)"))
+        assertTrue("The shared toggle must use selectable semantics", toggle.contains("selectable("))
+        assertTrue("The shared toggle must be grouped for screen readers", toggle.contains("selectableGroup()"))
+    }
+
+    @Test
+    fun `the selected range label is drawn exactly once`() {
+        val screen = ProjectSourceFiles.read(INSIGHTS_SCREEN)
+
+        // Oma valitsin piirsi jokaisen leiman kahdesti: alla oleva onSurfaceVariant-teksti
+        // jäi näkyviin oranssin päälle ja kontrasti oli 2:1.
+        assertEquals(
+            "The range labels may be resolved in exactly one place",
+            1,
+            Regex("""stringResource\(it\.labelResource\)""").findAll(screen).count(),
+        )
+        assertFalse(
+            "The mirrored overlay row must not come back",
+            screen.contains("requiredWidth("),
+        )
     }
 
     private companion object {
@@ -130,6 +152,8 @@ class InsightsRedesignSourceTest {
             "app/src/main/java/com/finnvek/knittools/ui/screens/insights/InsightsChart.kt"
         const val INSIGHTS_VIEW_MODEL =
             "app/src/main/java/com/finnvek/knittools/ui/screens/insights/InsightsViewModel.kt"
+        const val SEGMENTED_TOGGLE =
+            "app/src/main/java/com/finnvek/knittools/ui/components/SegmentedToggle.kt"
         const val STRINGS = "app/src/main/res/values/strings.xml"
 
         val INSIGHTS_FILES =

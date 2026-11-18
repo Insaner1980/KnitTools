@@ -3,7 +3,6 @@ package com.finnvek.knittools.repository
 import android.content.Context
 import android.database.sqlite.SQLiteException
 import androidx.room.Room
-import androidx.test.core.app.ApplicationProvider
 import com.finnvek.knittools.data.local.CounterProjectEntity
 import com.finnvek.knittools.data.local.DatabaseTransactionRunner
 import com.finnvek.knittools.data.local.KnitToolsDatabase
@@ -41,8 +40,7 @@ class CounterUndoIntegrityRoomTest {
 
     @Before
     fun setup() {
-        context = ApplicationProvider.getApplicationContext()
-        check(context.packageName == "com.finnvek.knittools.notestest")
+        context = isolatedRoomTestContext()
         open()
     }
 
@@ -53,8 +51,8 @@ class CounterUndoIntegrityRoomTest {
 
     @After
     fun teardown() {
-        database.close()
-        context.deleteDatabase(databaseName)
+        if (::database.isInitialized) database.close()
+        if (::context.isInitialized) context.deleteDatabase(databaseName)
     }
 
     @Test

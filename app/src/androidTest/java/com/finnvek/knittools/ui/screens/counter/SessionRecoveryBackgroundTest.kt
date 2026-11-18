@@ -23,10 +23,12 @@ import com.finnvek.knittools.data.local.CounterProjectEntity
 import com.finnvek.knittools.domain.model.ActiveSessionRecoveryReason
 import com.finnvek.knittools.repository.StartSessionResult
 import com.finnvek.knittools.repository.deleteTestActiveSession
+import com.finnvek.knittools.repository.isIsolatedRoomTestPackage
 import com.finnvek.knittools.ui.theme.KnitToolsTheme
 import com.finnvek.knittools.widget.WidgetEntryPoint
 import dagger.hilt.android.EntryPointAccessors
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -56,7 +58,7 @@ class SessionRecoveryBackgroundTest : CounterActivityTestFixture() {
 
     @Before
     fun setUp() {
-        check(app.packageName == "com.finnvek.knittools.notestest")
+        check(app.isIsolatedRoomTestPackage)
         rule.runOnUiThread { rule.activity.setContent { } }
         database = app.database.get()
         repository = EntryPointAccessors.fromApplication(app, WidgetEntryPoint::class.java).counterRepository()
@@ -117,6 +119,66 @@ class SessionRecoveryBackgroundTest : CounterActivityTestFixture() {
                 assertEquals(null, database.sessionDao().getActiveSession())
             }
         }
+    }
+
+    @Test
+    fun reviewedStopSurvivesHomeCheckpointAndSavesExactlyOnce() {
+        runBlocking(Dispatchers.IO) {
+            val recovery = requireNotNull(database.sessionDao().getActiveSession())
+            repository.addRecoveryInterval(recovery.sessionToken, requireNotNull(recovery.recoveryIntervalToken), 0L)
+        }
+        rule.waitUntil(10_000) {
+            model.uiState.value.activeSession
+                ?.needsRecoveryReview == false
+        }
+        rule.onNodeWithText(text(R.string.work_session_stop)).performScrollTo().performClick()
+        rule.onNodeWithText(text(R.string.work_session_stop_summary_title)).assertIsDisplayed()
+        val summary = requireNotNull(model.uiState.value.sessionStopSummary)
+        val activityBefore = rule.activity
+        val pidBefore = Process.myPid()
+        val pausesBefore = pauses.get()
+        val resumesBefore = resumes.get()
+        val instrumentation = InstrumentationRegistry.getInstrumentation()
+        rule.waitUntil(5_000) {
+            runBlocking(Dispatchers.IO) {
+                repository.activeSessionDurationSeconds(requireNotNull(repository.refreshActiveSession())) >
+                    summary.durationSeconds
+            }
+        }
+
+        assertTrue(instrumentation.uiAutomation.performGlobalAction(AccessibilityService.GLOBAL_ACTION_HOME))
+        rule.waitUntil(10_000) { pauses.get() > pausesBefore }
+        rule.waitUntil(10_000) {
+            runBlocking(Dispatchers.IO) {
+                val checkpoint = requireNotNull(database.sessionDao().getActiveSession())
+                checkpoint.checkpointedDurationSeconds > summary.durationSeconds
+            }
+        }
+        app.startActivity(
+            Intent(activityBefore.intent).setFlags(
+                Intent.FLAG_ACTIVITY_NEW_TASK or
+                    Intent.FLAG_ACTIVITY_REORDER_TO_FRONT or Intent.FLAG_ACTIVITY_SINGLE_TOP,
+            ),
+        )
+        rule.waitUntil(10_000) { resumes.get() > resumesBefore }
+        rule.waitForIdle()
+        assertSame(activityBefore, rule.activity)
+        assertEquals(pidBefore, Process.myPid())
+        assertEquals(summary, model.uiState.value.sessionStopSummary)
+        rule.onNodeWithText(text(R.string.work_session_save)).performClick()
+        rule.waitUntil(10_000) {
+            runBlocking(Dispatchers.IO) { database.sessionDao().getActiveSession() == null }
+        }
+        rule.runOnIdle { model.saveStoppedWorkSession() }
+        runBlocking(Dispatchers.IO) {
+            val saved = repository.getSessionsForProject(projectId).first().single()
+            assertEquals(summary.durationSeconds, saved.durationSeconds)
+            assertEquals(summary.rowsWorked, saved.rowsWorked)
+            assertEquals(summary.endRow, saved.endRow)
+        }
+        reportEvidence(
+            "Stop review: Home/return in same Activity and process, later checkpoint, reviewed duration saved once",
+        )
     }
 
     @Test

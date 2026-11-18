@@ -30,6 +30,8 @@ import com.finnvek.knittools.data.local.SessionEntity
 import com.finnvek.knittools.data.local.YarnCardEntity
 import com.finnvek.knittools.pro.ProPolicyTestControl
 import com.finnvek.knittools.repository.CounterRepository
+import com.finnvek.knittools.ui.components.localizedDateTimePattern
+import com.finnvek.knittools.ui.screens.insights.currentInsightsFirstDayOfWeek
 import com.finnvek.knittools.widget.WidgetEntryPoint
 import dagger.hilt.android.EntryPointAccessors
 import kotlinx.coroutines.Dispatchers
@@ -43,6 +45,10 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TestName
 import java.io.File
+import java.time.LocalDate
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.time.temporal.TemporalAdjusters
 
 /** Real routes, SQLite, windows, IME and accessibility in the disposable offline package only. */
 class AuditPart08RuntimeMatrixTest {
@@ -278,7 +284,7 @@ class AuditPart08RuntimeMatrixTest {
         tap("project_overview_open_photos")
         seeText("Audit photograph")
         runBlocking(Dispatchers.IO) { repository.deleteProject(projectId) }
-        see("no_photos")
+        see("new_project")
         assertFalse(nodes().any { it.isVisibleToUser && matches(it, "Audit photograph") })
     }
 
@@ -349,8 +355,26 @@ class AuditPart08RuntimeMatrixTest {
                 }
                 automation.waitForIdle(300, 5_000)
             }
-            pickerClick("Show roots")
-            pickerClick("Downloads")
+            await {
+                automation.rootInActiveWindow
+                    ?.packageName
+                    ?.toString()
+                    ?.contains("documentsui") == true
+            }
+            val pickerPackage = checkNotNull(automation.rootInActiveWindow?.packageName).toString()
+
+            fun shellText(command: String): String =
+                android.os.ParcelFileDescriptor.AutoCloseInputStream(automation.executeShellCommand(command)).use {
+                    it.bufferedReader().readText().trim()
+                }
+
+            val userId = shellText("am get-current-user").toInt()
+
+            fun pickerLabel(resourceName: String): String =
+                shellText("cmd overlay lookup --user $userId $pickerPackage $pickerPackage:string/$resourceName")
+
+            pickerClick(pickerLabel("drawer_open"))
+            pickerClick(pickerLabel("downloads_label"))
             pickerClick("KnitToolsAudit")
             pickerClick(name)
             await {
@@ -757,7 +781,6 @@ class AuditPart08RuntimeMatrixTest {
             library()
             tap("saved_patterns_title")
             tapText(patternName)
-            tap("saved_pattern_detail_open_pattern")
         }
         see("pattern_open_failed")
         capture("pdf-error")
@@ -1095,12 +1118,13 @@ class AuditPart08RuntimeMatrixTest {
 
     @Test
     fun p1315_weeklyChartDescriptionAndActionsUseTheSelectedLanguage() {
+        val zone = ZoneId.of("Europe/Helsinki")
+        val today = LocalDate.now(zone)
+        val latestSessionDay = today.minusDays(1)
         runBlocking(Dispatchers.IO) {
             val session = checkNotNull(db.sessionDao().getLatestSession(projectId))
             db.sessionDao().deleteById(session.id)
-            val zone = java.time.ZoneId.of("Europe/Helsinki")
-            val today = java.time.LocalDate.now(zone)
-            for (day in listOf(today.minusMonths(2), today.minusDays(1))) {
+            for (day in listOf(today.minusMonths(2), latestSessionDay)) {
                 val start =
                     day
                         .atTime(12, 0)
@@ -1112,25 +1136,43 @@ class AuditPart08RuntimeMatrixTest {
         }
         launch()
         tap("tab_insights")
+        seek(s("insights_section_week_by_week"))
         val prefix = s("insights_chart_a11y_weekly").substringBefore('%')
-        var chart: AccessibilityNodeInfo? = null
-        repeat(15) {
-            if (chart == null) {
-                chart = nodes().firstOrNull { it.isVisibleToUser && it.contentDescription?.startsWith(prefix) == true }
-                if (chart == null) scroll(true)
-            }
+
+        fun chartNode(): AccessibilityNodeInfo? =
+            nodes().firstOrNull { it.isVisibleToUser && it.contentDescription?.startsWith(prefix) == true }
+
+        fun AccessibilityNodeInfo.localizedAction(label: String): Int {
+            assertTrue("Weekly chart must be enabled", isEnabled)
+            return actionList.single { it.label?.toString() == label }.id
         }
-        val node = checkNotNull(chart) { "Weekly chart must expose its localized weekly description" }
-        val next = node.actionList.first { it.label?.toString() == s("insights_chart_a11y_next") }
-        val previous = node.actionList.first { it.label?.toString() == s("insights_chart_a11y_previous") }
+
+        await { chartNode() != null }
+        val node = checkNotNull(chartNode()) { "Weekly chart must expose its localized weekly description" }
+        val previous = s("insights_chart_a11y_previous")
+        val next = s("insights_chart_a11y_next")
+        node.localizedAction(next)
         if (withTalkBack) {
             node.performAction(AccessibilityNodeInfo.ACTION_ACCESSIBILITY_FOCUS)
             await { node.refresh() && node.isAccessibilityFocused }
         }
-        assertTrue(node.performAction(previous.id))
-        automation.waitForIdle(500, 5_000)
-        assertTrue(node.refresh())
-        assertTrue(node.performAction(next.id))
+        val locale = app.resources.configuration.locales[0]
+        val formatter = DateTimeFormatter.ofPattern(localizedDateTimePattern(locale, "MMMd"), locale)
+        val latestWeek = latestSessionDay.with(TemporalAdjusters.previousOrSame(currentInsightsFirstDayOfWeek()))
+        val latestWeekLabel = latestWeek.format(formatter).uppercase(locale)
+        val previousWeekLabel = latestWeek.minusWeeks(1).format(formatter).uppercase(locale)
+        assertTrue("Previous must select the preceding week", node.performAction(node.localizedAction(previous)))
+        seeText(previousWeekLabel)
+
+        // Resolve Next from the chart after the previous selection is visible in the header.
+        val updatedChart = checkNotNull(chartNode())
+        assertTrue(
+            "Next must return to the latest week",
+            updatedChart.performAction(updatedChart.localizedAction(next)),
+        )
+        await {
+            nodes().any { it.isVisibleToUser && it.text?.startsWith(latestWeekLabel) == true }
+        }
         capture("weekly-chart-actions")
     }
 

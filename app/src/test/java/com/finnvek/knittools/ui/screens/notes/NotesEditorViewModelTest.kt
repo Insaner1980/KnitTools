@@ -204,23 +204,43 @@ class NotesEditorViewModelTest {
         }
 
     @Test
-    fun `saveImmediately waits for repository save before callback`() =
+    fun `saveImmediately saves without waiting for the debounce`() =
         runTest {
-            val events = mutableListOf<String>()
             val viewModel = vm(notes = "Base")
-            advanceUntilIdle()
-            coEvery {
-                repository.saveProjectNotes(1L, "Base", "Local edit", false)
-            } coAnswers {
-                events += "saved"
-                ProjectNotesSaveResult.Saved(CounterProject(id = 1L, name = "Test", notes = "Local edit"))
-            }
+            runCurrent()
 
             viewModel.onNotesChanged("Local edit")
-            viewModel.saveImmediately { events += "callback" }
-            advanceUntilIdle()
+            viewModel.saveImmediately(exitAfterSave = true)
+            runCurrent()
 
-            assertEquals(listOf("saved", "callback"), events)
+            coVerify(exactly = 1) { repository.saveProjectNotes(1L, "Base", "Local edit", false) }
+            assertTrue(viewModel.consumeExitRequest())
+        }
+
+    @Test
+    fun `repeated immediate saves join the in-flight write and exit once`() =
+        runTest {
+            val viewModel = vm(notes = "Base")
+            val result = CompletableDeferred<ProjectNotesSaveResult>()
+            coEvery { repository.saveProjectNotes(1L, "Base", "Local edit", false) } coAnswers { result.await() }
+            runCurrent()
+
+            viewModel.onNotesChanged("Local edit")
+            advanceTimeBy(1_000)
+            runCurrent()
+            repeat(2) {
+                viewModel.saveImmediately(exitAfterSave = true)
+                runCurrent()
+            }
+            viewModel.saveImmediately()
+            runCurrent()
+            assertFalse(viewModel.consumeExitRequest())
+            result.complete(ProjectNotesSaveResult.Saved(CounterProject(id = 1L, name = "Test", notes = "Local edit")))
+            runCurrent()
+
+            coVerify(exactly = 1) { repository.saveProjectNotes(any(), any(), any(), any()) }
+            assertTrue(viewModel.consumeExitRequest())
+            assertFalse(viewModel.consumeExitRequest())
         }
 
     @Test
@@ -271,7 +291,7 @@ class NotesEditorViewModelTest {
         }
 
     @Test
-    fun `restored draft survives process recreation and is autosaved`() =
+    fun `reconstructed saved state restores the draft and autosaves it`() =
         runTest {
             val project = CounterProject(id = 1L, name = "Test", notes = "External edit")
             val mergedNotes = "Local edit\n\n---\n\nExternal edit"
@@ -312,7 +332,7 @@ class NotesEditorViewModelTest {
         }
 
     @Test
-    fun `late save completion preserves newer typing and rebases its next save`() =
+    fun `late merged save preserves both newer typing and the external addition`() =
         runTest {
             val project = observeProjectWithBaseNotes()
             val handle = SavedStateHandle(mapOf("projectId" to 1L))
@@ -320,8 +340,10 @@ class NotesEditorViewModelTest {
             coEvery { repository.saveProjectNotes(1L, "Base", "Draft A", false) } coAnswers {
                 suspendCoroutine { continuation -> completeFirstSave = { continuation.resume(it) } }
             }
-            coEvery { repository.saveProjectNotes(1L, "Draft A", "Draft B", false) } returns
-                ProjectNotesSaveResult.Saved(project.copy(notes = "Draft B"))
+            val firstMerge = "Draft A\nExternal addition"
+            val secondMerge = "Draft B\nExternal addition"
+            coEvery { repository.saveProjectNotes(1L, firstMerge, secondMerge, false) } returns
+                ProjectNotesSaveResult.Saved(project.copy(notes = secondMerge))
             val viewModel = NotesEditorViewModel(repository, proManager, applicationScope, handle, mockk())
             runCurrent()
 
@@ -330,18 +352,18 @@ class NotesEditorViewModelTest {
             runCurrent()
             viewModel.onNotesChanged("Draft B")
             runCurrent()
-            requireNotNull(completeFirstSave)(ProjectNotesSaveResult.Saved(project.copy(notes = "Draft A")))
+            requireNotNull(completeFirstSave)(ProjectNotesSaveResult.Saved(project.copy(notes = firstMerge)))
             runCurrent()
 
-            assertEquals("Draft B", viewModel.uiState.value.notes)
-            assertEquals("Draft B", handle.get<String>("notesDraft"))
-            assertEquals("Draft A", handle.get<String>("notesDraftBase"))
+            assertEquals(secondMerge, viewModel.uiState.value.notes)
+            assertEquals(secondMerge, handle.get<String>("notesDraft"))
+            assertEquals(firstMerge, handle.get<String>("notesDraftBase"))
 
             advanceTimeBy(1_000)
             runCurrent()
 
-            coVerify(exactly = 1) { repository.saveProjectNotes(1L, "Draft A", "Draft B", false) }
-            assertEquals("Draft B", viewModel.uiState.value.notes)
+            coVerify(exactly = 1) { repository.saveProjectNotes(1L, firstMerge, secondMerge, false) }
+            assertEquals(secondMerge, viewModel.uiState.value.notes)
             assertNull(handle.get<String>("notesDraft"))
             assertNull(handle.get<String>("notesDraftBase"))
         }
@@ -395,13 +417,11 @@ class NotesEditorViewModelTest {
                     draftStorage = mockk(),
                 )
             advanceUntilIdle()
-            var callbacks = 0
-
             viewModel.onNotesChanged("Local edit")
-            viewModel.saveImmediately { callbacks += 1 }
+            viewModel.saveImmediately(exitAfterSave = true)
             advanceUntilIdle()
 
-            assertEquals(0, callbacks)
+            assertFalse(viewModel.uiState.value.exitRequested)
             assertEquals("Local edit", viewModel.uiState.value.notes)
             assertEquals("Local edit", savedStateHandle.get<String>("notesDraft"))
         }
@@ -441,10 +461,9 @@ class NotesEditorViewModelTest {
             assertEquals("Local edit", viewModel.uiState.value.notes)
             coEvery { repository.saveProjectNotes(1L, "Base", "Local edit", false) } returns
                 ProjectNotesSaveResult.Saved(project.copy(notes = "External edit\n\nLocal edit"))
-            var exits = 0
-            viewModel.saveImmediately { exits++ }
+            viewModel.saveImmediately(exitAfterSave = true)
             advanceUntilIdle()
-            assertEquals(1, exits)
+            assertTrue(viewModel.uiState.value.exitRequested)
             assertFalse(viewModel.uiState.value.saveFailed)
             assertEquals("External edit\n\nLocal edit", viewModel.uiState.value.notes)
             assertNull(handle.get<String>("notesDraft"))

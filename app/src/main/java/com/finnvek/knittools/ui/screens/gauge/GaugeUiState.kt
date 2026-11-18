@@ -123,7 +123,7 @@ data class GaugeUiState(
         get() {
             val density = selectedDensity ?: return null
             val target = selectedTarget ?: return null
-            return MeasurementCalculator.countForSize(density, target)
+            return MeasurementCalculator.countForMeasuredSize(density, target)
         }
 
     val sizeResultMm: Double?

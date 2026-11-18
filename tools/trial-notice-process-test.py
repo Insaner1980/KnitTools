@@ -15,6 +15,7 @@ from pathlib import Path
 PACKAGE = "com.finnvek.knittools.activepolicytest"
 ACTIVITY = f"{PACKAGE}/com.finnvek.knittools.MainActivity"
 TITLE = "Your Pro Trial Has Ended"
+EMPTY_PROJECTS = "What's on Your Needles?"
 
 
 def require(condition, message):
@@ -90,7 +91,8 @@ def main():
             ["android", "layout", "--device", args.serial, "--flat", "--full", "--output", str(path)],
             check=True, capture_output=True, timeout=45,
         )
-        return json.loads(path.read_text(encoding="utf-8"))
+        windows = json.loads(path.read_text(encoding="utf-8"))
+        return [node for window in windows for node in window.get("content", [window])]
 
     def visible_text(nodes, text):
         return [
@@ -188,7 +190,7 @@ def main():
             lambda: [node for node in layout(f"{name}-recents") if node.get("content-desc", "").startswith("KnitTools")],
         )
         tap(cards[0])
-        wait_text(TITLE if pending else "No active projects", f"{name}-restored-ui")
+        wait_text(TITLE if pending else EMPTY_PROJECTS, f"{name}-restored-ui")
         new_pid = pid()
         require(new_pid.isdigit() and new_pid != old_pid, "No actual process replacement")
         restored_task, restored = activity(f"{name}-restored")
@@ -199,7 +201,7 @@ def main():
         cycles.append({"phase": name, "old_pid": old_pid, "new_pid": new_pid, "task": restored_task, "claim_consumed": True})
         if pending:
             tap(wait_text("Continue free", "continue-free")[0])
-            wait_text("No active projects", "dismissed-ui")
+            wait_text(EMPTY_PROJECTS, "dismissed-ui")
         require(not visible_text(layout(f"{name}-no-dialog"), TITLE), "Notice reappeared after consumption")
     # Recheck after initialization has settled; absence alone is insufficient, so Projects was required above.
     time.sleep(3)

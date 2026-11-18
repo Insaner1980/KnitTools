@@ -1,5 +1,7 @@
 package com.finnvek.knittools.billing
 
+import androidx.lifecycle.Lifecycle
+import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingResult
@@ -7,6 +9,10 @@ import com.android.billingclient.api.ProductDetails
 import com.android.billingclient.api.ProductDetailsResult
 import com.android.billingclient.api.Purchase
 import com.finnvek.knittools.App
+import com.finnvek.knittools.MainActivity
+import com.finnvek.knittools.pro.ProPolicyTestControl
+import com.finnvek.knittools.pro.ProStatus
+import com.finnvek.knittools.pro.TrialState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
@@ -40,6 +46,46 @@ class AuditPart15BillingTest {
     }
 
     @After fun close() = manager.destroy()
+
+    @Test
+    fun returningToTheAppReconcilesOwnershipWithoutAPurchaseCallback() =
+        runBlocking<Unit> {
+            val app = ApplicationProvider.getApplicationContext<App>()
+            val billing = app.billingManager.get()
+            val pro = app.proManager.get()
+            try {
+                withContext(Dispatchers.Main) {
+                    billing.destroy()
+                    BillingManager::class.java
+                        .getDeclaredField("billingClient")
+                        .apply { isAccessible = true }
+                        .set(billing, client)
+                    ProPolicyTestControl.setTrialState(TrialState(hasStarted = true))
+                    assertTrue(billing.queryPurchases())
+                }
+                ActivityScenario.launch(MainActivity::class.java).use { scenario ->
+                    scenario.moveToState(Lifecycle.State.CREATED)
+                    withContext(Dispatchers.Main) { client.purchases = listOf(purchase(acknowledged = true)) }
+                    scenario.moveToState(Lifecycle.State.RESUMED)
+                    withTimeout(5_000) { pro.proState.first { it.status == ProStatus.PRO_PURCHASED } }
+
+                    scenario.moveToState(Lifecycle.State.CREATED)
+                    withContext(Dispatchers.Main) { client.purchases = emptyList() }
+                    scenario.moveToState(Lifecycle.State.RESUMED)
+                    withTimeout(5_000) { pro.proState.first { it.status == ProStatus.TRIAL_EXPIRED } }
+                }
+            } finally {
+                withContext(Dispatchers.Main) {
+                    try {
+                        client.purchases = emptyList()
+                        billing.queryPurchases()
+                    } finally {
+                        ProPolicyTestControl.reset()
+                        billing.initialize()
+                    }
+                }
+            }
+        }
 
     @Test fun realSdkOfferParsingExcludesRentalAndPreorderAndBreaksTiesDeterministically() {
         fun offer(

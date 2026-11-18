@@ -4,6 +4,8 @@ import com.finnvek.knittools.domain.model.GaugeBasis
 import com.finnvek.knittools.domain.model.MeasurementAdjustmentResult
 import com.finnvek.knittools.domain.model.MeasurementCountResult
 import com.finnvek.knittools.domain.model.MeasurementUnit
+import kotlin.math.abs
+import kotlin.math.floor
 import kotlin.math.roundToInt
 
 object MeasurementCalculator {
@@ -37,6 +39,24 @@ object MeasurementCalculator {
         lengthMm: Double,
     ): MeasurementCountResult? {
         val exactCount = exactCountForSize(density, lengthMm) ?: return null
+        return countResult(exactCount, density)
+    }
+
+    internal fun countForMeasuredSize(
+        density: Double,
+        lengthMm: Double,
+    ): MeasurementCountResult? {
+        val exactCount = exactCountForSize(density, lengthMm) ?: return null
+        // Converting lengths and densities to millimeters can put a mathematical half a few bits off.
+        val half = floor(exactCount) + 0.5
+        val count = if (abs(exactCount - half) <= 2 * Math.ulp(half)) half else exactCount
+        return countResult(count, density)
+    }
+
+    private fun countResult(
+        exactCount: Double,
+        density: Double,
+    ): MeasurementCountResult? {
         val roundedCount = roundedWholeCount(exactCount, allowZero = true) ?: return null
         val roundedLength =
             if (roundedCount == 0) {
@@ -62,7 +82,7 @@ object MeasurementCalculator {
     ): MeasurementAdjustmentResult? {
         val originalLength = sizeFromCount(patternCount.toDouble(), patternDensity) ?: return null
         val unchangedLength = sizeFromCount(patternCount.toDouble(), actualDensity) ?: return null
-        val adjusted = countForSize(actualDensity, originalLength) ?: return null
+        val adjusted = countForMeasuredSize(actualDensity, originalLength) ?: return null
         val differencePercent = (actualDensity - patternDensity) / patternDensity * 100.0
         if (!differencePercent.isFinite()) return null
         return MeasurementAdjustmentResult(

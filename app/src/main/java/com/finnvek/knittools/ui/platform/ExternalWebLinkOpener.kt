@@ -43,7 +43,7 @@ fun openExternalWebLink(
     }
 
 internal fun createExternalWebLinkIntent(url: String): Intent =
-    Intent(Intent.ACTION_VIEW, url.toUri()).apply {
+    Intent(Intent.ACTION_VIEW, url.toUri().normalizeScheme()).apply {
         addCategory(Intent.CATEGORY_BROWSABLE)
         addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
     }

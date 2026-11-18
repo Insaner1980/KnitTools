@@ -87,14 +87,8 @@ class ProjectYarnNoteEditUiTest(
         runBlocking {
             check(base.packageName == "com.finnvek.knittools.activepolicytest")
             val args = InstrumentationRegistry.getArguments()
-            assertEquals(
-                requireNotNull(args.getString("yarnWidth")).toInt(),
-                base.resources.configuration.screenWidthDp,
-            )
-            assertEquals(
-                requireNotNull(args.getString("yarnFontScale")).toFloat(),
-                base.resources.configuration.fontScale,
-            )
+            args.getString("yarnWidth")?.let { assertEquals(it.toInt(), base.resources.configuration.screenWidthDp) }
+            args.getString("yarnFontScale")?.let { assertEquals(it.toFloat(), base.resources.configuration.fontScale) }
             database = Room.inMemoryDatabaseBuilder(base, KnitToolsDatabase::class.java).build()
             database.counterProjectDao().insert(
                 CounterProjectEntity(id = 1, name = "Synthetic project", count = 7, updatedAt = 10),
@@ -128,7 +122,7 @@ class ProjectYarnNoteEditUiTest(
 
     @After
     fun tearDown() {
-        database.close()
+        if (::database.isInitialized) database.close()
     }
 
     @Test
@@ -331,9 +325,11 @@ class ProjectYarnNoteEditUiTest(
         render()
         openEditor()
         input("name").performScrollTo().performTextReplacement("Pending draft")
+        input("name").assertIsFocused()
         val pending = CompletableDeferred<ProjectYarnNoteEditResult>()
         pendingSave = pending
         save()
+        compose.runOnIdle { assertEquals(1, attempts) }
         input("name").assertIsNotFocused()
         compose.onNodeWithText(context.getString(R.string.cancel)).performScrollTo().assertIsNotEnabled()
         Espresso.closeSoftKeyboard()
@@ -432,7 +428,11 @@ class ProjectYarnNoteEditUiTest(
         }
     }
 
-    private fun save() = compose.onNodeWithText(context.getString(R.string.save)).performScrollTo().performClick()
+    private fun save() =
+        compose
+            .onNodeWithText(context.getString(R.string.save))
+            .performScrollTo()
+            .performSemanticsAction(SemanticsActions.OnClick) { assertTrue("Save action was not handled", it()) }
 
     private fun editableTextEquals(value: String) =
         SemanticsMatcher("Editable text equals $value") { it.config[SemanticsProperties.EditableText].text == value }

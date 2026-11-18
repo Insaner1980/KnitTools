@@ -9,11 +9,17 @@ class PatternReaderModeSourceTest {
     @Test
     fun `downloaded pdf can be opened or shared straight into the app`() {
         val manifest = ProjectSourceFiles.read(MANIFEST)
-        val pdfFilter = manifest.blockBetween("<!-- Ladattu PDF-ohje", "</intent-filter>")
+        val pdfFilters =
+            manifest
+                .blockBetween("android:name=\".MainActivity\"", "</activity>")
+                .split("</intent-filter>")
+                .filter { it.contains("android:mimeType=\"application/pdf\"") }
+        val viewFilter = pdfFilters.single { it.contains("android.intent.action.VIEW") }
+        val sendFilter = pdfFilters.single { it.contains("android.intent.action.SEND") }
 
-        assertTrue(pdfFilter.contains("android.intent.action.VIEW"))
-        assertTrue(pdfFilter.contains("android.intent.action.SEND"))
-        assertTrue(pdfFilter.contains("android:mimeType=\"application/pdf\""))
+        assertTrue(viewFilter.contains("android:scheme=\"content\""))
+        assertFalse(viewFilter.contains("android.intent.action.SEND"))
+        assertFalse(sendFilter.contains("android:scheme="))
     }
 
     @Test

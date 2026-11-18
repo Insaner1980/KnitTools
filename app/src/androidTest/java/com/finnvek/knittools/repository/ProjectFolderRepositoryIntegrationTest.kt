@@ -19,6 +19,9 @@ import com.finnvek.knittools.data.storage.PatternDocumentStorage
 import com.finnvek.knittools.data.storage.ProgressPhotoStorage
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -130,6 +133,30 @@ class ProjectFolderRepositoryIntegrationTest {
         }
 
     @Test
+    fun failureOnSecondAssignmentRestoresBothOriginalMemberships() =
+        runTest {
+            val first = createProject("First", updatedAt = 1L)
+            val second = createProject("Second", updatedAt = 2L)
+            val source = (repository.createFolder("Source") as ProjectFolderMutationResult.Created).folder
+            val target = (repository.createFolder("Target") as ProjectFolderMutationResult.Created).folder
+            val projectIds = listOf(first, second)
+            repository.moveProjects(projectIds, source.id)
+            val assignmentsBefore = database.projectFolderDao().getAssignmentsForProjects(projectIds)
+            assertEquals(2, assignmentsBefore.size)
+
+            sql.execSQL(
+                "CREATE TRIGGER reject_second_folder_assignment " +
+                    "BEFORE INSERT ON project_folder_assignments " +
+                    "WHEN NEW.projectId = $second AND NEW.folderId = ${target.id} " +
+                    "BEGIN SELECT RAISE(ABORT, 'second assignment rejected'); END",
+            )
+
+            assertEquals(ProjectFolderMutationResult.PersistenceFailure, repository.moveProjects(projectIds, target.id))
+            assertEquals(assignmentsBefore, database.projectFolderDao().getAssignmentsForProjects(projectIds))
+            assertEquals(0L, assignmentCount(target.id))
+        }
+
+    @Test
     fun cancellationRollsBackTheFolderMutation() =
         runTest {
             val cancellingRepository =
@@ -168,6 +195,34 @@ class ProjectFolderRepositoryIntegrationTest {
                 scalarLong("SELECT folderId FROM project_folder_assignments WHERE projectId = ${created.projectId}"),
             )
             assertEquals(1L, assignmentCount(folder.id, created.projectId))
+        }
+
+    @Test
+    fun concurrentCreationInDifferentFoldersUsesOneGlobalFreeSlot() =
+        runTest {
+            val firstFolder = (repository.createFolder("First folder") as ProjectFolderMutationResult.Created).folder
+            val secondFolder = (repository.createFolder("Second folder") as ProjectFolderMutationResult.Created).folder
+            val results =
+                coroutineScope {
+                    listOf(firstFolder, secondFolder)
+                        .map { folder ->
+                            async {
+                                folder.id to
+                                    counterRepository.createProject(
+                                        name = "Project in ${folder.name}",
+                                        canCreateAdditionalProjects = false,
+                                        targetFolderId = folder.id,
+                                    )
+                            }
+                        }.awaitAll()
+                }
+
+            val (folderId, result) = results.single { (_, result) -> result is ProjectCreationResult.Created }
+            val projectId = (result as ProjectCreationResult.Created).projectId
+            assertEquals(1, results.count { (_, result) -> result == ProjectCreationResult.LimitReached })
+            assertEquals(1L, scalarLong("SELECT COUNT(*) FROM counter_projects"))
+            assertEquals(1L, assignmentCount())
+            assertEquals(folderId, database.projectFolderDao().getAssignment(projectId)?.folderId)
         }
 
     @Test

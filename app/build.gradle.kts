@@ -53,7 +53,13 @@ val posthogTokenValid = posthogProjectToken.map { it.matches(Regex("phc_[A-Za-z0
 val baseApplicationId = "com.finnvek.knittools"
 val optimizedSmoke = providers.gradleProperty("knittools.optimizedSmoke").orNull == "true"
 val isolatedProfileVariants = setOf("benchmarkRelease", "nonMinifiedRelease")
-val isolatedTestProfile: String? = providers.gradleProperty("knittools.isolatedTest").orNull
+// tc -Full invokes the connected task directly. Keep its fixtures out of the normal app.
+val runsConnectedDebugTests =
+    gradle.startParameter.taskNames.any {
+        it.substringAfterLast(':') in setOf("connectedAndroidTest", "connectedDebugAndroidTest")
+    }
+val isolatedTestProfile: String? =
+    providers.gradleProperty("knittools.isolatedTest").orNull ?: "activepolicy".takeIf { runsConnectedDebugTests }
 val isolatedTestPackageSuffix: String? =
     when (isolatedTestProfile) {
         null -> null
@@ -252,6 +258,17 @@ android {
         versionName = "1.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        if (runsConnectedDebugTests) {
+            // These dedicated layout and TalkBack checks run only on explicit request.
+            testInstrumentationRunnerArguments["notClass"] =
+                providers
+                    .fileContents(rootProject.layout.projectDirectory.file("config/manual-layout-device-tests.txt"))
+                    .asText
+                    .get()
+                    .lineSequence()
+                    .filter { it.isNotBlank() && !it.startsWith("#") }
+                    .joinToString(",")
+        }
     }
 
     sourceSets {

@@ -188,6 +188,7 @@ class BackupRepository
                     }
                     database.withTransaction {
                         replaceLiveData(directory, payload, source, check)
+                        check()
                     }
                 }
             }
@@ -511,11 +512,13 @@ class BackupRepository
             }
         }
 
-        private fun newDirectory(id: UUID = UUID.randomUUID()): File =
-            File(root, id.toString()).apply {
+        private fun newDirectory(id: UUID = UUID.randomUUID()): File {
+            val parent = root
+            BackupFormat.space(parent, 0)
+            return File(parent, id.toString()).apply {
                 BackupFormat.requireValid(mkdirs(), BackupError.SPACE)
-                BackupFormat.space(this, 0)
             }
+        }
 
         private fun databaseSpace(payload: File): Long {
             val tableBytes =

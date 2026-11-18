@@ -21,6 +21,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.runner.lifecycle.ActivityLifecycleMonitorRegistry
 import androidx.test.runner.lifecycle.Stage
 import androidx.webkit.WebViewFeature
+import androidx.window.layout.WindowMetricsCalculator
 import com.finnvek.knittools.MainActivity
 import com.finnvek.knittools.ui.navigation.awaitAdaptivePlatformTransition
 import org.junit.Assert.assertEquals
@@ -41,7 +42,10 @@ class RavelryBrowserNavigationTest {
 
     @Test
     fun platformTransitionsPreserveControlledHistoryAndBack() {
-        check(InstrumentationRegistry.getArguments().getString("adaptivePlatformAllowed") == "true")
+        assumeTrue(
+            "Requires the host-driven platform suite",
+            InstrumentationRegistry.getArguments().getString("adaptivePlatformAllowed") == "true",
+        )
         launchBrowser().use { scenario ->
             browseThreePages(scenario)
             for (step in 1..4) {
@@ -69,7 +73,10 @@ class RavelryBrowserNavigationTest {
 
     @Test
     fun adaptiveViewportKeepsControlledHistoryAcrossTheWindowMatrix() {
-        check(InstrumentationRegistry.getArguments().getString("adaptiveResizeAllowed") == "true")
+        assumeTrue(
+            "Requires the display-resize suite",
+            InstrumentationRegistry.getArguments().getString("adaptiveResizeAllowed") == "true",
+        )
 
         fun shell(command: String): String =
             InstrumentationRegistry
@@ -93,15 +100,14 @@ class RavelryBrowserNavigationTest {
                 var density = 1f
                 scenario.onActivity { density = it.resources.displayMetrics.density }
                 for ((width, height) in listOf(360 to 800, 800 to 400, 800 to 1280, 1280 to 800, 1600 to 900)) {
-                    shell("wm size ${(width * density).roundToInt()}x${(height * density).roundToInt()}")
-                    waitUntil {
+                    val widthPx = (width * density).roundToInt()
+                    val heightPx = (height * density).roundToInt()
+                    shell("wm size ${widthPx}x$heightPx")
+                    waitUntil("Window did not resize to ${width}x${height}dp (${widthPx}x${heightPx}px)") {
                         var resized = false
                         scenario.onActivity {
-                            resized =
-                                it.resources.configuration.let { config ->
-                                    config.screenWidthDp == width &&
-                                        config.screenHeightDp == height
-                                }
+                            val bounds = WindowMetricsCalculator.getOrCreate().computeCurrentWindowMetrics(it).bounds
+                            resized = bounds.width() == widthPx && bounds.height() == heightPx
                         }
                         resized
                     }
@@ -455,7 +461,7 @@ class RavelryBrowserNavigationTest {
     private fun awaitUrl(
         scenario: ActivityScenario<MainActivity>,
         url: String,
-    ) = awaitBrowserUrl(scenario, url, ::waitUntil)
+    ) = awaitBrowserUrl(scenario, url) { condition -> waitUntil(condition = condition) }
 
     private fun assertPreviousPages(view: WebView) {
         val history = view.copyBackForwardList()
@@ -559,10 +565,13 @@ class RavelryBrowserNavigationTest {
         }
     }
 
-    private fun waitUntil(condition: () -> Boolean) {
+    private fun waitUntil(
+        message: String = "Browser URL did not update within 10 seconds",
+        condition: () -> Boolean,
+    ) {
         val deadline = SystemClock.uptimeMillis() + 10_000
         while (!condition()) {
-            check(SystemClock.uptimeMillis() < deadline) { "Browser URL did not update within 10 seconds" }
+            check(SystemClock.uptimeMillis() < deadline) { message }
             SystemClock.sleep(50)
         }
     }

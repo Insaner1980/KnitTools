@@ -16,4 +16,11 @@ class ExternalWebLinkIntentTest {
         assertEquals(null, intent.`package`)
         assertEquals(null, intent.component)
     }
+
+    @Test
+    fun upperCaseWebSchemeIsNormalizedForAndroidRouting() {
+        val intent = createExternalWebLinkIntent("HTTPS://example.com/Pattern?Size=XL#Notes")
+
+        assertEquals("https://example.com/Pattern?Size=XL#Notes", intent.dataString)
+    }
 }

@@ -47,6 +47,21 @@
       "findingSelectors": ["android.database.sqlite", "execSQL("]
     },
     {
+      "id": "knittools-mobsf-project-document-rollback-test-sql",
+      "tool": "mobsfscan",
+      "rule": "android_kotlin_sql_raw_query",
+      "scope": "Fixed failure-injection trigger in ProjectDocumentRuntimeIntegrationTest.kt",
+      "reason": "The SQL creates and drops a fixed trigger in a test-owned database to verify rollback when document attachment fails. Neither statement includes external input.",
+      "owner": "project-maintainers",
+      "added": "2026-11-17",
+      "expires": "2027-01-18",
+      "tracking": "local-review:android-check-20261117T122317377-04853db9",
+      "sourcePath": "app/src/androidTest/java/com/finnvek/knittools/repository/ProjectDocumentRuntimeIntegrationTest.kt",
+      "selector": "CREATE TRIGGER reject_first_pdf",
+      "findingPath": "app/src/androidTest/java/com/finnvek/knittools/repository/ProjectDocumentRuntimeIntegrationTest.kt",
+      "findingSelectors": ["android.database.sqlite", "execSQL("]
+    },
+    {
       "id": "knittools-mobsf-backup-post-commit-test-document-key",
       "tool": "mobsfscan",
       "rule": "android_kotlin_hardcoded",

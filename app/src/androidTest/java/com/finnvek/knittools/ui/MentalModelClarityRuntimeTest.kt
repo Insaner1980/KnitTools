@@ -186,9 +186,17 @@ class MentalModelClarityRuntimeTest {
 
     @Test fun savedPdfStates() {
         val current = mutableStateOf(pattern())
+        val pdfAvailable = mutableStateOf(false)
         var openedPdf = false
         render {
-            SavedPatternDetailScreen(current.value, {}, { openedPdf = true }, { _, _ -> }, {})
+            SavedPatternDetailScreen(
+                current.value,
+                {},
+                { openedPdf = true },
+                { _, _ -> },
+                {},
+                isLocalPdfAvailable = pdfAvailable.value,
+            )
         }
         val explanation = text(R.string.saved_pattern_detail_no_pdf_explanation)
         rule.onNodeWithText(explanation).performScrollTo()
@@ -199,7 +207,10 @@ class MentalModelClarityRuntimeTest {
             .performScrollTo()
             .assertIsDisplayed()
             .assertIsEnabled()
-        rule.runOnIdle { current.value = pattern().copy(localPdfUri = "content://synthetic/unreadable.pdf") }
+        rule.runOnIdle { current.value = pattern().copy(localPdfUri = "content://synthetic/pattern.pdf") }
+        rule.onNodeWithText(text(R.string.pattern_open_failed)).performScrollTo().assertIsDisplayed()
+        rule.onNodeWithText(text(R.string.saved_pattern_detail_open_pattern)).assertDoesNotExist()
+        rule.runOnIdle { pdfAvailable.value = true }
         rule.onAllNodesWithText(explanation).assertCountEquals(0)
         val openPdf = rule.onNodeWithText(text(R.string.saved_pattern_detail_open_pattern))
         openPdf.performScrollTo().assertIsDisplayed().assertIsEnabled()

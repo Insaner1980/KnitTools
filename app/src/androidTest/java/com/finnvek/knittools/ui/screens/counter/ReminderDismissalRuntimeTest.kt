@@ -15,7 +15,7 @@ import com.finnvek.knittools.data.local.KnitToolsDatabase
 import com.finnvek.knittools.data.local.RowReminderEntity
 import com.finnvek.knittools.domain.model.MainCounterChange
 import com.finnvek.knittools.repository.RoomCounterTestFixture
-import com.finnvek.knittools.repository.notesTestContext
+import com.finnvek.knittools.repository.isolatedRoomTestContext
 import com.finnvek.knittools.ui.theme.KnitToolsTheme
 import com.finnvek.knittools.widget.WidgetEntryPoint
 import dagger.hilt.android.EntryPointAccessors
@@ -41,7 +41,7 @@ class ReminderDismissalRuntimeTest {
 
     @Before
     fun setup() {
-        context = notesTestContext()
+        context = isolatedRoomTestContext()
         database = Room.inMemoryDatabaseBuilder(context, KnitToolsDatabase::class.java).build()
     }
 

@@ -87,7 +87,7 @@
         database_schema-metodia, jota tässä Android-artefaktissa ei ole.
         Reference: https://www.zerodayinitiative.com/advisories/ZDI-24-1383/
         ]]></notes>
-        <packageUrl regex="true">^pkg:maven/com\.posthog/posthog-android@3\.75\.0$</packageUrl>
+        <packageUrl regex="true">^pkg:maven/com\.posthog/posthog-android@3\.76\.1$</packageUrl>
         <cve>CVE-2024-9710</cve>
     </suppress>
 

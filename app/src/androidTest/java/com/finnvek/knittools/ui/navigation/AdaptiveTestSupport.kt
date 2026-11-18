@@ -23,6 +23,7 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.window.layout.FoldingFeature
+import androidx.window.layout.WindowMetricsCalculator
 import com.finnvek.knittools.MainActivity
 import java.io.File
 import java.io.FileInputStream
@@ -49,9 +50,12 @@ internal fun AndroidComposeTestRule<*, MainActivity>.resizeWindow(
     height: Int,
     density: Float = activity.resources.displayMetrics.density,
 ) {
-    shell("wm size ${(width * density).roundToInt()}x${(height * density).roundToInt()}")
+    val widthPx = (width * density).roundToInt()
+    val heightPx = (height * density).roundToInt()
+    shell("wm size ${widthPx}x$heightPx")
     waitUntil(15_000) {
-        activity.resources.configuration.let { it.screenWidthDp == width && it.screenHeightDp == height }
+        val bounds = WindowMetricsCalculator.getOrCreate().computeCurrentWindowMetrics(activity).bounds
+        bounds.width() == widthPx && bounds.height() == heightPx
     }
     waitForIdle()
 }

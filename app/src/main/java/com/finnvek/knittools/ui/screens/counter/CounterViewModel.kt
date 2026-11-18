@@ -2849,7 +2849,7 @@ class CounterViewModel
                     ?.takeIf { attachment.reusableUri == null }
                     ?.let { failedUri ->
                         withContext(NonCancellable + ioDispatcher) {
-                            savedPatternRepository.deleteLocalPatternFileIfUnused(failedUri)
+                            runCatching { savedPatternRepository.deleteLocalPatternFileIfUnused(failedUri) }
                         }
                     }
             }

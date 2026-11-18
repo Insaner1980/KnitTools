@@ -11,6 +11,7 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.finnvek.knittools.data.local.ActiveSessionSchemaConstraints
 import com.finnvek.knittools.data.local.CounterProjectEntity
+import com.finnvek.knittools.data.local.DatabaseTransactionRunner
 import com.finnvek.knittools.data.local.KnitToolsDatabase
 import com.finnvek.knittools.data.local.PatternAnnotationEntity
 import com.finnvek.knittools.data.local.PatternAnnotationSchemaConstraints
@@ -23,6 +24,7 @@ import com.finnvek.knittools.domain.model.NormalizedPatternPoint
 import com.finnvek.knittools.domain.model.PatternAnnotationKind
 import com.finnvek.knittools.domain.model.PatternAnnotationPayloadCodec
 import com.finnvek.knittools.domain.model.ProjectDocument
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
@@ -127,6 +129,61 @@ class ProjectDocumentRuntimeIntegrationTest {
             val created = counter.createProjectWithImportedPdf("New project", false, uri, "First chart")
             val projectId = (created as ProjectCreationResult.Created).projectId
             assertEquals(uri, repository.getPrimary(projectId)?.localPdfUri)
+        }
+
+    @Test
+    fun cancelledAdditionalAttachmentRollsBackLibraryAndPreservesReaderState() =
+        runTest {
+            val projectId = database.counterProjectDao().insert(CounterProjectEntity(name = "Existing project"))
+            val original = addPdf(projectId, createPdf("original.pdf", Color.RED), "Original")
+            repository.updateViewerState(projectId, original.id, 0, "[]", true, 0.42f, false, true, 0.33f)
+            val before = database.auditSnapshot()
+            val incoming = createPdf("incoming.pdf", Color.BLUE)
+            val cancelled = CancellationException("Synthetic cancellation before commit")
+            val transactions =
+                object : DatabaseTransactionRunner {
+                    override suspend fun <T> run(block: suspend () -> T): T =
+                        RoomDatabaseTransactionRunner(database).run {
+                            block()
+                            throw cancelled
+                        }
+                }
+            val counter =
+                RoomCounterTestFixture(database, context)
+                    .counterRepository(documents = repository, transactions = transactions)
+
+            val failure =
+                runCatching {
+                    counter.attachPattern(projectId, Uri.fromFile(incoming).toString(), "Incoming", 0, null)
+                }.exceptionOrNull()
+
+            assertTrue(failure === cancelled)
+            assertEquals(before, database.auditSnapshot())
+            assertTrue(incoming.isFile)
+            renderEach(requireNotNull(repository.getDocument(original.id)))
+        }
+
+    @Test
+    fun lastReferenceDeletionWaitsForLibraryAndOtherProjects() =
+        runTest {
+            val firstProject = database.counterProjectDao().insert(CounterProjectEntity(name = "First"))
+            val secondProject = database.counterProjectDao().insert(CounterProjectEntity(name = "Second"))
+            val file = createPdf("retained-shared.pdf", Color.BLUE)
+            val first = addPdf(firstProject, file, "Shared")
+            val second = addPdf(secondProject, file, "Shared")
+
+            assertTrue(repository.remove(firstProject, first.id) is ProjectDocumentMutationResult.Removed)
+            assertTrue(file.isFile)
+            renderEach(requireNotNull(repository.getDocument(second.id)))
+            assertTrue(repository.remove(secondProject, second.id) is ProjectDocumentMutationResult.Removed)
+            assertTrue(file.isFile)
+            assertNull(repository.getPrimary(firstProject))
+            assertNull(repository.getPrimary(secondProject))
+
+            savedPatternRepository.deleteById(requireNotNull(first.savedPatternId))
+
+            assertFalse(file.exists())
+            assertTrue(database.savedPatternDao().getAllOnce().isEmpty())
         }
 
     @Test

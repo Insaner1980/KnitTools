@@ -1,15 +1,15 @@
 package com.finnvek.knittools.pro
 
 import android.accessibilityservice.AccessibilityServiceInfo
+import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
-import android.net.Uri
+import android.os.Build
+import android.provider.MediaStore
 import android.view.KeyEvent
 import android.view.accessibility.AccessibilityNodeInfo
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
-import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.lifecycle.Lifecycle
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
@@ -52,6 +52,7 @@ class TrialNoticeRestorationTest {
     private lateinit var trialManager: TrialManager
     private var scenario: ActivityScenario<MainActivity>? = null
     private var originalAccessibilityFlags: Int? = null
+    private var originalTrialPreferences: Preferences? = null
 
     @Before
     fun setup() =
@@ -73,14 +74,22 @@ class TrialNoticeRestorationTest {
             }
             app.preferencesManager.get().setAppLanguage(AppLanguage.ENGLISH)
             // These fixtures represent an existing user after onboarding.
-            app.onboardingStateRepository.get().dismissWelcome()
-            // Reuse the production singleton DataStore instead of opening a competing file owner.
-            trialDataStore().edit {
-                it.clear()
-                it[longPreferencesKey("trial_start_timestamp")] =
-                    System.currentTimeMillis() - TimeUnit.DAYS.toMillis(15)
-            }
-            trialManager = TrialManager(app, Dispatchers.IO, AndroidSessionTimeSource(app))
+            val onboarding = app.onboardingStateRepository.get()
+            onboarding.dismissWelcome()
+            onboarding.draft
+                .first()
+                ?.takeIf { !it.completed || it.exitPending }
+                ?.let { draft -> check(onboarding.saveDraft(draft.copy(completed = true, exitPending = false))) }
+            // The Activity claims notices through the application's TrialManager.
+            trialManager =
+                ProManager::class.java
+                    .getDeclaredField("trialManager")
+                    .apply { isAccessible = true }
+                    .get(app.proManager.get()) as TrialManager
+            val store = trialDataStore()
+            originalTrialPreferences = store.data.first()
+            val now = AndroidSessionTimeSource(app).snapshot()
+            store.seedTrialClock(now, TimeUnit.DAYS.toMillis(15))
             trialManager.initialize()
             ProPolicyTestControl.setTrialState(trialManager.trialState.value)
             withTimeout(10_000) {
@@ -93,11 +102,24 @@ class TrialNoticeRestorationTest {
 
     @After
     fun close() {
-        scenario?.onActivity { it.intent = launcherIntent() }
-        scenario?.close()
-        originalAccessibilityFlags?.let { original ->
-            instrumentation.uiAutomation.serviceInfo =
-                instrumentation.uiAutomation.serviceInfo.apply { flags = original }
+        try {
+            scenario?.onActivity { it.intent = launcherIntent() }
+            scenario?.close()
+        } finally {
+            try {
+                originalTrialPreferences?.let { previous ->
+                    runBlocking(Dispatchers.IO) {
+                        trialDataStore().updateData { previous }
+                        trialManager.initialize()
+                    }
+                }
+            } finally {
+                if (ProPolicyTestControl.isActive) ProPolicyTestControl.reset()
+                originalAccessibilityFlags?.let { original ->
+                    instrumentation.uiAutomation.serviceInfo =
+                        instrumentation.uiAutomation.serviceInfo.apply { flags = original }
+                }
+            }
         }
     }
 
@@ -233,16 +255,32 @@ class TrialNoticeRestorationTest {
 
     @Test
     fun incomingPdfSuppressesPendingNoticeAcrossRecreation() {
-        val file = File(app.cacheDir, "trial-notice-test.pdf")
+        val file = File.createTempFile("trial-notice-test-", ".pdf", app.cacheDir)
         try {
             writeOnePagePdf(file)
-            verifySuppressedLaunch(
-                Intent(app, MainActivity::class.java).apply {
-                    action = Intent.ACTION_VIEW
-                    setDataAndType(Uri.fromFile(file), "application/pdf")
-                },
-                R.string.incoming_pdf_title,
-            )
+            val resolver = app.contentResolver
+            val values =
+                ContentValues().apply {
+                    put(MediaStore.Downloads.DISPLAY_NAME, file.name)
+                    put(MediaStore.Downloads.MIME_TYPE, "application/pdf")
+                    put(MediaStore.Downloads.IS_PENDING, 1)
+                }
+            val source = checkNotNull(resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values))
+            try {
+                checkNotNull(resolver.openOutputStream(source)).use { output ->
+                    file.inputStream().use { it.copyTo(output) }
+                }
+                verifySuppressedLaunch(
+                    Intent(app, MainActivity::class.java).apply {
+                        action = Intent.ACTION_VIEW
+                        setDataAndType(source, "application/pdf")
+                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    },
+                    R.string.incoming_pdf_title,
+                )
+            } finally {
+                resolver.delete(source, null, null)
+            }
         } finally {
             file.delete()
         }
@@ -437,7 +475,10 @@ class TrialNoticeRestorationTest {
 
     private fun click(id: Int) = instrumentation.clickTrialText(text(id), includeContentDescription = true)
 
-    private fun findText(value: String) = instrumentation.findTrialText(value, includeContentDescription = true)
+    private fun findText(value: String): AccessibilityNodeInfo? {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) instrumentation.uiAutomation.clearCache()
+        return instrumentation.findTrialText(value, includeContentDescription = true)
+    }
 
     @Suppress("UNCHECKED_CAST")
     private fun trialDataStore(): DataStore<Preferences> =

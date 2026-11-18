@@ -37,6 +37,7 @@ class TrialNoticeProcessSeedTest {
                     .first { it }
             }
             app.preferencesManager.get().setAppLanguage(AppLanguage.ENGLISH)
+            app.onboardingStateRepository.get().dismissWelcome()
             val timeSource = AndroidSessionTimeSource(app)
             val now = timeSource.snapshot()
             val elapsed = TimeUnit.DAYS.toMillis(15)

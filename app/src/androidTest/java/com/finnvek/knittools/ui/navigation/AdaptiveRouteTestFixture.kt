@@ -14,6 +14,7 @@ import com.finnvek.knittools.data.datastore.AppLanguage
 import com.finnvek.knittools.data.datastore.ThemeMode
 import com.finnvek.knittools.pro.ProPolicyTestControl
 import com.finnvek.knittools.ui.TestContentSplashRule
+import org.junit.Assume.assumeTrue
 import org.junit.Rule
 
 abstract class AdaptiveRouteTestFixture {
@@ -32,8 +33,11 @@ abstract class AdaptiveRouteTestFixture {
     protected var initialized = false
 
     protected fun prepareResize() {
+        assumeTrue(
+            "Display-resize suite requires -e adaptiveResizeAllowed true on a dedicated test device",
+            InstrumentationRegistry.getArguments().getString("adaptiveResizeAllowed") == "true",
+        )
         check(app.packageName == "com.finnvek.knittools.activepolicytest")
-        check(InstrumentationRegistry.getArguments().getString("adaptiveResizeAllowed") == "true")
         originalSize =
             shell("wm size")
                 .lineSequence()

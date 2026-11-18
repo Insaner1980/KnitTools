@@ -43,14 +43,14 @@ internal object ProPolicyTestControl {
     }
 
     fun reset() {
-        requireActive()
+        requirePurchaseControl()
         purchasedOverride.value = null
         trialStateOverride.value = null
         trialStartResult = null
     }
 
     fun setPurchased(value: Boolean) {
-        requireActive()
+        requirePurchaseControl()
         purchasedOverride.value = value
     }
 
@@ -63,6 +63,8 @@ internal object ProPolicyTestControl {
         requireActive()
         trialStartResult = result
     }
+
+    private fun requirePurchaseControl() = check(isActive || BuildConfig.ONBOARDING_TEST)
 
     private fun requireActive() = check(isActive) { "Pro-tilan ohjaus on sallittu vain policy-testipaketissa" }
 }

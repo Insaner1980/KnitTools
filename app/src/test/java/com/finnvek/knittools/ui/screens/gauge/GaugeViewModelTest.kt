@@ -215,6 +215,55 @@ class GaugeViewModelTest {
     }
 
     @Test
+    fun `nearest count uses the physical half across manual and swatch inputs`() {
+        val vm = model()
+        vm.onAction(GaugeAction.Task(GaugeTask.CALCULATE))
+        vm.onAction(GaugeAction.SwatchInput(false))
+        vm.edit(GaugeField.ACTUAL_STITCHES, "20.2")
+        vm.edit(GaugeField.TARGET_WIDTH, "25")
+        val metricManual = requireNotNull(vm.state.value.countResult)
+        assertEquals(50.5, metricManual.exactCount, 0.0)
+        assertEquals(51, metricManual.roundedCount)
+
+        vm.onAction(GaugeAction.SwatchInput(true))
+        vm.edit(GaugeField.SWATCH_STITCHES, "19")
+        vm.edit(GaugeField.SWATCH_WIDTH, "14")
+        vm.edit(GaugeField.TARGET_WIDTH, "21")
+        val swatch = requireNotNull(vm.state.value.countResult)
+        assertEquals(28.5, swatch.exactCount, 0.0)
+        assertEquals(29, swatch.roundedCount)
+
+        vm.onAction(GaugeAction.Basis(GaugeBasis.PER_4_INCHES))
+        assertEquals(swatch, vm.state.value.countResult)
+        vm.onAction(GaugeAction.Basis(GaugeBasis.PER_10_CM))
+        vm.edit(GaugeField.TARGET_WIDTH, "20.99")
+        assertEquals(28, requireNotNull(vm.state.value.countResult).roundedCount)
+
+        vm.onAction(GaugeAction.Basis(GaugeBasis.PER_4_INCHES))
+        vm.onAction(GaugeAction.SwatchInput(false))
+        vm.edit(GaugeField.ACTUAL_STITCHES, "17")
+        vm.edit(GaugeField.TARGET_WIDTH, "6")
+        val imperialManual = requireNotNull(vm.state.value.countResult)
+        assertEquals(25.5, imperialManual.exactCount, 0.0)
+        assertEquals(26, imperialManual.roundedCount)
+    }
+
+    @Test
+    fun `pattern adjustment rounds a half count upward without rounding the dimensions`() {
+        val vm = model()
+        vm.onAction(GaugeAction.SwatchInput(false))
+        vm.edit(GaugeField.ACTUAL_STITCHES, "19")
+        vm.edit(GaugeField.PATTERN_STITCHES, "28")
+        vm.edit(GaugeField.PATTERN_STITCH_COUNT, "70")
+
+        val result = requireNotNull(vm.state.value.stitchAdjustment)
+        assertEquals(250.0, result.originalLengthMm, 1e-12)
+        assertEquals(47.5, result.exactCount, 0.0)
+        assertEquals(48, result.roundedCount)
+        assertEquals(252.63157894736842, result.roundedLengthMm, 1e-12)
+    }
+
+    @Test
     fun `converter unit changes retain canonical value and copy uses target unit`() {
         val vm = model()
         vm.onAction(GaugeAction.Task(GaugeTask.CONVERT))

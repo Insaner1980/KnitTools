@@ -24,6 +24,7 @@ import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
+import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.File
@@ -40,6 +41,7 @@ class AuditPart16ShareTest {
             val testPackage = InstrumentationRegistry.getInstrumentation().context.packageName
             val database = Room.inMemoryDatabaseBuilder(context, KnitToolsDatabase::class.java).build()
             val root = File(context.filesDir, "progress_photos/16076").apply { mkdirs() }
+            val outsideShareRoots = File.createTempFile("private-share-test-", ".pdf", context.filesDir)
             val replies = LinkedBlockingQueue<Intent>()
             val replyAction = context.packageName + ".AUDIT16." + UUID.randomUUID()
             val receiver =
@@ -71,6 +73,9 @@ class AuditPart16ShareTest {
                 val photo = repository.getPhotosForProject(16076).first().single()
                 val uri = requireNotNull(AppFileStorage.shareUriForAppOwnedFile(context, source.toUri()))
                 val other = AppFileStorage.fileProviderUri(context, sibling)
+                assertThrows(IllegalArgumentException::class.java) {
+                    AppFileStorage.shareUriForAppOwnedFile(context, outsideShareRoots.toUri())
+                }
 
                 fun launch(hold: Boolean) {
                     context.startActivity(
@@ -99,6 +104,7 @@ class AuditPart16ShareTest {
                 assertEquals("read", read.getStringExtra("stage"))
                 assertArrayEquals(bytes, read.getByteArrayExtra("bytes"))
                 assertTrue(read.getBooleanExtra("otherDenied", false))
+                assertTrue(read.getBooleanExtra("writeDenied", false))
                 InstrumentationRegistry.getInstrumentation().waitForIdleSync()
                 launch(false)
                 val missing = requireNotNull(replies.poll(15, TimeUnit.SECONDS))
@@ -110,6 +116,7 @@ class AuditPart16ShareTest {
                 context.unregisterReceiver(receiver)
                 database.close()
                 root.deleteRecursively()
+                outsideShareRoots.delete()
             }
         }
 }

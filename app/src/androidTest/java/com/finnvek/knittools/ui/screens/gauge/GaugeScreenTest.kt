@@ -1,5 +1,6 @@
 package com.finnvek.knittools.ui.screens.gauge
 
+import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.res.Configuration
@@ -42,12 +43,14 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performImeAction
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performSemanticsAction
+import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTextReplacement
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.core.view.ViewCompat
+import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.SAVED_STATE_REGISTRY_OWNER_KEY
 import androidx.lifecycle.SavedStateHandle
@@ -83,6 +86,7 @@ class GaugeScreenTest {
     private val context: Context = ApplicationProvider.getApplicationContext()
     private val viewModelStore = ViewModelStore()
     private var modelNumber = 0
+    private var previousClip: ClipData? = null
     private var copiedLabel: String? = null
     private var copiedText: String? = null
 
@@ -99,7 +103,7 @@ class GaugeScreenTest {
                         ?.text
                         ?.toString() == copiedText
                 ) {
-                    clipboard.clearPrimaryClip()
+                    previousClip?.let(clipboard::setPrimaryClip) ?: clipboard.clearPrimaryClip()
                 }
             }
         }
@@ -117,6 +121,13 @@ class GaugeScreenTest {
         edit(GaugeField.ACTUAL_STITCHES, "22")
         edit(GaugeField.PATTERN_STITCHES, "20")
         edit(GaugeField.PATTERN_STITCH_COUNT, "100")
+        val view = composeRule.activity.window.decorView
+        composeRule.runOnUiThread {
+            WindowCompat.getInsetsController(composeRule.activity.window, view).hide(WindowInsetsCompat.Type.ime())
+        }
+        composeRule.waitUntil(5_000) {
+            ViewCompat.getRootWindowInsets(view)?.isVisible(WindowInsetsCompat.Type.ime()) == false
+        }
 
         result("stitches_nearest_count", "110 stitches")
         result("stitches_original_size", "50 cm")
@@ -328,6 +339,7 @@ class GaugeScreenTest {
         choose("measurement_task", 0)
         edit(GaugeField.CONVERSION, " 12,7 ")
         result("conversion_converted", expectedInches)
+        preserveClipboard()
         composeRule
             .onNodeWithTag("measurement_copy")
             .performScrollTo()
@@ -356,6 +368,30 @@ class GaugeScreenTest {
     }
 
     @Test
+    fun restoredFinnishInputStaysValidWhenTheActivityUsesEnglish() {
+        render(locale = Locale.forLanguageTag("fi"), handle = activityHandle())
+        choose("measurement_task", 0)
+        field(GaugeField.CONVERSION).performScrollTo().performClick().performTextInput("12,")
+        composeRule.onNodeWithTag("measurement_results").assertDoesNotExist()
+        field(GaugeField.CONVERSION).performTextInput("7")
+
+        composeRule.activityRule.scenario.recreate()
+        val restored = createViewModel(activityHandle())
+        composeRule.runOnUiThread {
+            composeRule.activity.setContent { TestSurface(restored, Locale.US, false, false) }
+        }
+        composeRule.waitForIdle()
+        val input = field(GaugeField.CONVERSION).performScrollTo().performClick()
+        input.performImeAction()
+        input.assertEditableTextEquals("12,7").assert(noProperty(SemanticsProperties.Error))
+        result("conversion_converted", "5 in")
+
+        choose("measurement_from", 1)
+        field(GaugeField.CONVERSION).performScrollTo().assertEditableTextEquals("5")
+        result("conversion_converted", "5 in")
+    }
+
+    @Test
     fun stateRestoresAfterActivityRecreationAndCopyIsNotReplayed() {
         val handle = activityHandle()
         val model = render(handle = handle)
@@ -363,6 +399,7 @@ class GaugeScreenTest {
         edit(GaugeField.CONVERSION, "25.4")
         choose("measurement_from", 1)
         choose("measurement_to", 0)
+        preserveClipboard()
         composeRule.onNodeWithTag("measurement_copy").performScrollTo().performClick()
         composeRule.onNodeWithText("Result copied").assertIsDisplayed()
         assertTrue(ownClipboardText(localizedContext(Locale.US)).contains("25.4 cm"))
@@ -653,6 +690,12 @@ class GaugeScreenTest {
         expected: String,
     ) {
         composeRule.onNodeWithTag("measurement_result_" + id).performScrollTo().assertTextEquals(expected)
+    }
+
+    private fun preserveClipboard() {
+        composeRule.runOnUiThread {
+            previousClip = context.getSystemService(ClipboardManager::class.java).primaryClip
+        }
     }
 
     private fun ownClipboardText(localized: Context): String {

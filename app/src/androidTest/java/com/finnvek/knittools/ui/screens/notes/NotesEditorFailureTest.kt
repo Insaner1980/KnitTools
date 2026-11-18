@@ -27,6 +27,7 @@ import com.finnvek.knittools.repository.counterHistoryTestRepository
 import com.finnvek.knittools.ui.theme.KnitToolsTheme
 import com.finnvek.knittools.widget.WidgetEntryPoint
 import dagger.hilt.android.EntryPointAccessors
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -35,6 +36,7 @@ import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertSame
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -52,6 +54,13 @@ class NotesEditorFailureTest {
     private val visible = mutableStateOf(true)
 
     @Volatile private var failWrites = true
+
+    @Volatile private var writeStarted = false
+
+    private var writeGate: CompletableDeferred<Unit>? = null
+
+    @Volatile private var exitActivity: ComponentActivity? = null
+
     private var exits = 0
 
     @Before
@@ -70,6 +79,8 @@ class NotesEditorFailureTest {
                     notes: String,
                     updatedAt: Long,
                 ) {
+                    writeStarted = true
+                    writeGate?.await()
                     if (failWrites) throw IOException("Controlled note write failure")
                     dao.updateNotes(id, notes, updatedAt)
                 }
@@ -85,7 +96,7 @@ class NotesEditorFailureTest {
             viewModel =
                 NotesEditorViewModel(repository, proManager, scope, handle, NotesDraftStorage(context, Dispatchers.IO))
             store.put("notes", viewModel)
-            composeRule.activity.setContent(content = content)
+            setEditorContent()
         }
         composeRule.waitUntil(5_000) { viewModel.uiState.value.isLoaded }
     }
@@ -97,25 +108,51 @@ class NotesEditorFailureTest {
         database.close()
     }
 
-    private val content: @Composable () -> Unit = {
-        KnitToolsTheme {
-            if (visible.value) {
-                NotesEditorScreen(
-                    onBack = {
-                        exits++
-                        visible.value = false
-                        store.clear()
-                    },
-                    onSeePro = {},
-                    viewModelProvider = { viewModel },
-                )
+    private fun setEditorContent() {
+        val activity = composeRule.activity
+        activity.setContent(content = editorContent(activity))
+    }
+
+    private fun editorContent(activity: ComponentActivity): @Composable () -> Unit =
+        {
+            KnitToolsTheme {
+                if (visible.value) {
+                    NotesEditorScreen(
+                        onBack = {
+                            exitActivity = activity
+                            exits++
+                            visible.value = false
+                            store.clear()
+                        },
+                        onSeePro = {},
+                        viewModelProvider = { viewModel },
+                    )
+                }
             }
         }
-    }
 
     @Test fun toolbarBackFailureCanRetryAndPreservesConcurrentNotes() = retryAfterFailure(systemBack = false)
 
     @Test fun systemBackFailureCanRetryAndPreservesConcurrentNotes() = retryAfterFailure(systemBack = true)
+
+    @Test
+    fun saveCompletionUsesRecreatedActivity() {
+        failWrites = false
+        val gate = CompletableDeferred<Unit>()
+        writeGate = gate
+        composeRule.onNode(hasSetTextAction()).performTextReplacement("Save across recreation")
+        back(systemBack = false)
+        composeRule.waitUntil(5_000) { writeStarted }
+
+        composeRule.activityRule.scenario.recreate()
+        composeRule.runOnUiThread { setEditorContent() }
+        composeRule.onNode(hasSetTextAction()).assertTextContains("Save across recreation")
+        gate.complete(Unit)
+
+        composeRule.waitUntil(5_000) { exitActivity != null }
+        assertSame(composeRule.activity, exitActivity)
+        assertEquals("Save across recreation", runBlocking { database.counterProjectDao().getProject(1L)?.notes })
+    }
 
     private fun retryAfterFailure(systemBack: Boolean) {
         composeRule.onNode(hasSetTextAction()).performTextReplacement("Local edit")
@@ -127,7 +164,7 @@ class NotesEditorFailureTest {
             assertEquals("Local edit", handle.get<String>("notesDraft"))
         }
         composeRule.activityRule.scenario.recreate()
-        composeRule.runOnUiThread { composeRule.activity.setContent(content = content) }
+        composeRule.runOnUiThread { setEditorContent() }
         composeRule.onNode(hasSetTextAction()).assertTextContains("Local edit")
         back(systemBack)
         composeRule.onNodeWithText(context.getString(R.string.notes_discard_title)).assertIsDisplayed()

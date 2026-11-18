@@ -75,7 +75,6 @@ class PatternNotesNavigationRuntimeTest {
     @Before
     fun setUp() {
         // Puhelimella sallitaan vain erillinen verkkoluvaton testipaketti.
-        check(InstrumentationRegistry.getArguments().getString("notesNavigationIsolated") == "true")
         app = ApplicationProvider.getApplicationContext()
         if (app.packageName == "com.finnvek.knittools.notestest" ||
             app.packageName == "com.finnvek.knittools.activepolicytest"
@@ -89,6 +88,7 @@ class PatternNotesNavigationRuntimeTest {
                     android.content.pm.PackageManager.PERMISSION_DENIED,
             )
         } else {
+            check(InstrumentationRegistry.getArguments().getString("notesNavigationIsolated") == "true")
             check(shell("getprop ro.kernel.qemu").trim() == "1")
             check(app.getSystemService(ConnectivityManager::class.java).activeNetwork == null)
         }

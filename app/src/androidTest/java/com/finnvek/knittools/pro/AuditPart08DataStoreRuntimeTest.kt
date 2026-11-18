@@ -1,6 +1,9 @@
 package com.finnvek.knittools.pro
 
 import android.system.Os
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.PreferenceDataStoreFactory
+import androidx.datastore.preferences.core.Preferences
 import androidx.test.core.app.ApplicationProvider
 import com.finnvek.knittools.App
 import com.finnvek.knittools.data.datastore.PreferencesManager
@@ -8,39 +11,56 @@ import com.finnvek.knittools.data.time.AndroidSessionTimeSource
 import com.finnvek.knittools.data.time.SessionTimeSource
 import com.finnvek.knittools.domain.model.SessionTimeSnapshot
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.File
+import java.util.UUID
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 
-/** Run each method in a fresh, cleared isolated package. Persistence is real Android DataStore. */
+/** Persistence is real Android DataStore. Trial cases use a private store per method. */
 class AuditPart08DataStoreRuntimeTest {
+    private val storeJob = Job()
+    private var trialDirectory: File? = null
+
     private fun app(): App =
         ApplicationProvider.getApplicationContext<App>().also {
             check(it.packageName == "com.finnvek.knittools.activepolicytest")
-            ProPolicyTestControl.setPurchased(false)
         }
+
+    private fun trialStore(app: App): DataStore<Preferences> {
+        val directory = File(app.cacheDir, "trial-audit-${UUID.randomUUID()}")
+        check(directory.mkdir())
+        trialDirectory = directory
+        return PreferenceDataStoreFactory.create(scope = CoroutineScope(Dispatchers.IO + storeJob)) {
+            File(directory, "trial.preferences_pb")
+        }
+    }
+
+    @After
+    fun disposeTrialStore() {
+        runBlocking { storeJob.cancelAndJoin() }
+        trialDirectory?.deleteRecursively()
+    }
 
     @Test
     fun overlappingStartAndRefreshCannotPersistFalseClockTamper() =
         runBlocking {
             val app = app()
-            withTimeout(10_000) {
-                app.proManager
-                    .get()
-                    .initialStateReady
-                    .first { it }
-            }
+            val store = trialStore(app)
             val base = AndroidSessionTimeSource(app).snapshot()
             val firstEntered = CountDownLatch(1)
             val releaseFirst = CountDownLatch(1)
@@ -64,7 +84,7 @@ class AuditPart08DataStoreRuntimeTest {
                         return sample
                     }
                 }
-            val manager = TrialManager(app, Dispatchers.IO, clock)
+            val manager = TrialManager(store, Dispatchers.IO, clock)
             val first = async(Dispatchers.IO) { manager.startTrial() }
             try {
                 assertTrue(firstEntered.await(10, TimeUnit.SECONDS))
@@ -85,7 +105,7 @@ class AuditPart08DataStoreRuntimeTest {
                 assertEquals(1, results.count { it == TrialStartResult.AlreadyActive })
                 assertTrue(manager.trialState.value.isActive)
                 assertFalse(manager.trialState.value.clockTampered)
-                val reopened = TrialManager(app, Dispatchers.IO, clock)
+                val reopened = TrialManager(store, Dispatchers.IO, clock)
                 assertEquals(TrialStartResult.AlreadyActive, reopened.startTrial())
                 assertEquals(manager.trialState.value.startTimestamp, reopened.trialState.value.startTimestamp)
                 assertFalse(reopened.trialState.value.clockTampered)
@@ -99,15 +119,9 @@ class AuditPart08DataStoreRuntimeTest {
     fun failedTrialWriteDoesNotAdmitStartAndRetryPersistsOnce() =
         runBlocking {
             val app = app()
-            withTimeout(10_000) {
-                app.proManager
-                    .get()
-                    .initialStateReady
-                    .first { it }
-            }
-            val manager = TrialManager(app, Dispatchers.IO, AndroidSessionTimeSource(app))
-            val directory = File(app.filesDir, "datastore")
-            check(directory.isDirectory)
+            val store = trialStore(app)
+            val manager = TrialManager(store, Dispatchers.IO, AndroidSessionTimeSource(app))
+            val directory = checkNotNull(trialDirectory)
             val mode = Os.stat(directory.path).st_mode
             try {
                 Os.chmod(directory.path, 320) // Owner read/execute only: a real temp-file write must fail.

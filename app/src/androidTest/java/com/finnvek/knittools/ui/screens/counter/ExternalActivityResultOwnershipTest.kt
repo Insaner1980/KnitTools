@@ -1,14 +1,20 @@
 package com.finnvek.knittools.ui.screens.counter
 
 import android.Manifest
+import android.accessibilityservice.AccessibilityService
+import android.accessibilityservice.AccessibilityServiceInfo
 import android.app.Activity
 import android.content.ActivityNotFoundException
+import android.content.ContentValues
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.pdf.PdfDocument
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
+import android.provider.MediaStore
+import android.view.accessibility.AccessibilityNodeInfo
 import androidx.activity.compose.LocalActivityResultRegistryOwner
 import androidx.activity.compose.setContent
 import androidx.activity.result.ActivityResultRegistry
@@ -37,9 +43,11 @@ import androidx.core.app.ActivityOptionsCompat
 import androidx.lifecycle.DEFAULT_ARGS_KEY
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.MutableCreationExtras
+import androidx.test.platform.app.InstrumentationRegistry
 import com.finnvek.knittools.R
 import com.finnvek.knittools.data.local.CounterProjectEntity
 import com.finnvek.knittools.data.storage.AppFileStorage
+import com.finnvek.knittools.data.storage.PdfPageRenderer
 import com.finnvek.knittools.domain.model.NormalizedPatternPoint
 import com.finnvek.knittools.pro.ProPolicyTestControl
 import com.finnvek.knittools.pro.ProState
@@ -526,6 +534,168 @@ class ExternalActivityResultOwnershipTest : CounterActivityTestFixture() {
     }
 
     @Test
+    fun systemPdfPickerCancellationAndImportPreserveExistingReaderState() {
+        val source = pdfFixture()
+        rule.runOnUiThread { model.value!!.attachPattern(source.toString(), "Existing chart.pdf") }
+        rule.waitUntil(10_000) { documents(ownerA).size == 1 }
+        val document = documents(ownerA).single()
+        val file = requireNotNull(AppFileStorage.resolveAppOwnedFile(app, Uri.parse(document.localPdfUri)))
+        regressionFiles += file
+        runBlocking(Dispatchers.IO) {
+            database.projectDocumentDao().updateViewerState(
+                document.id,
+                ownerA,
+                0,
+                "[]",
+                true,
+                0.42f,
+                false,
+                true,
+                0.33f,
+                1234L,
+            )
+        }
+        val before = documents(ownerA)
+        val automation = InstrumentationRegistry.getInstrumentation().uiAutomation
+        val originalAccessibilityFlags = automation.serviceInfo.flags
+        var pickerSource: Uri? = null
+        try {
+            automation.serviceInfo =
+                automation.serviceInfo.apply {
+                    flags = flags or AccessibilityServiceInfo.FLAG_REPORT_VIEW_IDS
+                }
+            mount(gallery = false, standalone = true, systemPicker = true)
+            rule.onNodeWithText(text(R.string.pattern_picker_import_pdf)).performScrollTo().performClick()
+            rule.waitUntil(10_000) {
+                automation.rootInActiveWindow
+                    ?.packageName
+                    ?.toString()
+                    ?.contains("documentsui") == true
+            }
+
+            repeat(3) {
+                if (automation.rootInActiveWindow
+                        ?.packageName
+                        ?.toString()
+                        ?.contains("documentsui") == true
+                ) {
+                    assertTrue(automation.performGlobalAction(AccessibilityService.GLOBAL_ACTION_BACK))
+                    automation.waitForIdle(300, 5_000)
+                }
+            }
+            rule.waitUntil(10_000) { automation.rootInActiveWindow?.packageName?.toString() == app.packageName }
+
+            rule.onNodeWithText(text(R.string.pattern_picker_import_pdf)).assertIsDisplayed()
+            assertEquals(before, documents(ownerA))
+            assertTrue(file.isFile)
+            assertTrue(deliveredDocuments.isEmpty())
+            assertTrue(results.launches.isEmpty())
+
+            val displayName = "knittools-picker-$ownerA.pdf"
+            val values =
+                ContentValues().apply {
+                    put(MediaStore.Downloads.DISPLAY_NAME, displayName)
+                    put(MediaStore.Downloads.MIME_TYPE, "application/pdf")
+                    put(MediaStore.Downloads.IS_PENDING, 1)
+                }
+            val selected = requireNotNull(app.contentResolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values))
+            pickerSource = selected
+            requireNotNull(app.contentResolver.openOutputStream(selected)).use { output ->
+                file.inputStream().use { it.copyTo(output) }
+            }
+            values.clear()
+            values.put(MediaStore.Downloads.IS_PENDING, 0)
+            assertEquals(1, app.contentResolver.update(selected, values, null, null))
+            rule.onNodeWithText(text(R.string.pattern_picker_import_pdf)).performScrollTo().performClick()
+            rule.waitUntil(10_000) {
+                automation.rootInActiveWindow
+                    ?.packageName
+                    ?.toString()
+                    ?.contains("documentsui") == true
+            }
+            val pickerPackage = requireNotNull(automation.rootInActiveWindow.packageName).toString()
+
+            fun shellText(command: String): String =
+                android.os.ParcelFileDescriptor.AutoCloseInputStream(automation.executeShellCommand(command)).use {
+                    it.bufferedReader().readText().trim()
+                }
+
+            fun findVisibleNode(
+                node: AccessibilityNodeInfo?,
+                matches: (AccessibilityNodeInfo) -> Boolean,
+            ): AccessibilityNodeInfo? {
+                if (node == null) return null
+                if (node.isVisibleToUser && matches(node)) return node
+                return (0 until node.childCount).firstNotNullOfOrNull { findVisibleNode(node.getChild(it), matches) }
+            }
+
+            fun tapPickerLabel(
+                label: String,
+                containerId: String? = null,
+                matchDescription: Boolean = false,
+            ) {
+                var target: AccessibilityNodeInfo? = null
+                rule.waitUntil(conditionDescription = "clickable picker item $label", timeoutMillis = 10_000) {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) automation.clearCache()
+                    val root = automation.rootInActiveWindow?.takeIf { it.packageName?.toString() == pickerPackage }
+                    val container =
+                        if (containerId == null) {
+                            root
+                        } else {
+                            findVisibleNode(root) { it.viewIdResourceName == "$pickerPackage:id/$containerId" }
+                        }
+                    val match =
+                        findVisibleNode(container) {
+                            it.text?.toString() == label ||
+                                (matchDescription && it.contentDescription?.toString() == label)
+                        }
+                    target = generateSequence(match) { it.parent }.firstOrNull { it.isEnabled && it.isClickable }
+                    target != null
+                }
+                assertTrue(
+                    "Could not click the picker item $label",
+                    requireNotNull(target).performAction(AccessibilityNodeInfo.ACTION_CLICK),
+                )
+            }
+
+            val userId = shellText("am get-current-user").toInt()
+
+            fun pickerLabel(name: String): String =
+                shellText("cmd overlay lookup --user $userId $pickerPackage $pickerPackage:string/$name")
+
+            tapPickerLabel(pickerLabel("drawer_open"), matchDescription = true)
+            tapPickerLabel(pickerLabel("downloads_label"), containerId = "roots_list")
+            tapPickerLabel(displayName, containerId = "dir_list")
+            rule.waitUntil(10_000) { documents(ownerA).size == 2 }
+
+            val after = documents(ownerA)
+            assertEquals(before.single(), after.first { it.id == document.id })
+            assertEquals(document.id, after.single { it.isPrimary }.id)
+            val imported = after.single { it.id != document.id }
+            assertTrue(imported.localPdfUri != selected.toString())
+            regressionFiles += requireNotNull(AppFileStorage.resolveAppOwnedFile(app, Uri.parse(imported.localPdfUri)))
+            PdfPageRenderer(app, Uri.parse(imported.localPdfUri)).use { renderer ->
+                assertEquals(1, renderer.pageCount)
+                renderer.renderPage(0, 100).recycle()
+            }
+        } finally {
+            automation.serviceInfo = automation.serviceInfo.apply { flags = originalAccessibilityFlags }
+            pickerSource?.let { app.contentResolver.delete(it, null, null) }
+            runBlocking(Dispatchers.IO) {
+                val attached = database.projectDocumentDao().getForProject(ownerA)
+                attached.forEach {
+                    AppFileStorage.resolveAppOwnedFile(app, Uri.parse(it.localPdfUri))?.let(regressionFiles::add)
+                }
+                repository.deleteProject(ownerA)
+                attached
+                    .mapNotNull { it.savedPatternId }
+                    .distinct()
+                    .forEach { database.savedPatternDao().deleteById(it) }
+            }
+        }
+    }
+
+    @Test
     fun restoredPatternCameraResultKeepsItsPageWhileRoomRestores() {
         val request = preparePatternCapture()
         writeJpeg(request.input as Uri)
@@ -646,6 +816,7 @@ class ExternalActivityResultOwnershipTest : CounterActivityTestFixture() {
         restoreModel: Boolean = false,
         standalone: Boolean = false,
         initialCameraRequestId: String? = null,
+        systemPicker: Boolean = false,
     ) {
         rule.runOnUiThread {
             rule.activity.setContent {
@@ -663,7 +834,7 @@ class ExternalActivityResultOwnershipTest : CounterActivityTestFixture() {
                 val photos by current.allPhotos.collectAsState()
                 CompositionLocalProvider(
                     LocalSaveableStateRegistry provides saveables,
-                    LocalActivityResultRegistryOwner provides results,
+                    LocalActivityResultRegistryOwner provides if (systemPicker) rule.activity else results,
                 ) {
                     KnitToolsTheme(isDarkTheme = false) {
                         if (gallery) {

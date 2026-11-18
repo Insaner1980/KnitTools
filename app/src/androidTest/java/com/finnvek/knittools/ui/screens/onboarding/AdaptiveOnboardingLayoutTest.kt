@@ -1,15 +1,14 @@
 package com.finnvek.knittools.ui.screens.onboarding
 
 import android.content.Context
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.DeviceConfigurationOverride
+import androidx.compose.ui.test.ForcedSize
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.captureToImage
@@ -56,7 +55,7 @@ class AdaptiveOnboardingLayoutTest {
                 LocalConfiguration provides context.resources.configuration,
             ) {
                 KnitToolsTheme {
-                    Box(Modifier.size(size.value)) {
+                    DeviceConfigurationOverride(DeviceConfigurationOverride.ForcedSize(size.value)) {
                         OnboardingScreen(
                             draft.value,
                             OnboardingPriceState(ready = true),
@@ -169,7 +168,7 @@ class AdaptiveOnboardingLayoutTest {
                 LocalConfiguration provides context.resources.configuration,
             ) {
                 KnitToolsTheme {
-                    Box(Modifier.size(size.value)) {
+                    DeviceConfigurationOverride(DeviceConfigurationOverride.ForcedSize(size.value)) {
                         OnboardingScreen(
                             OnboardingDraft("adaptive", step = OnboardingStep.Price, name = "Retained draft"),
                             OnboardingPriceState(

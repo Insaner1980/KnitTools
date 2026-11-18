@@ -6,6 +6,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.saveable.LocalSaveableStateRegistry
 import androidx.compose.runtime.saveable.SaveableStateRegistry
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
@@ -18,7 +19,9 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTextReplacement
+import androidx.compose.ui.text.AnnotatedString
 import androidx.lifecycle.ViewModelProvider
 import androidx.test.core.app.ApplicationProvider
 import com.finnvek.knittools.App
@@ -115,10 +118,23 @@ class YarnCorrectionRuntimeTest {
             }
             node(R.string.project_overview_edit).performScrollTo().performClick()
             rule.onNode(hasSetTextAction() and hasText(label(R.string.quantity_label))).assertDoesNotExist()
-            fields()[0].performTextReplacement("$prefix-edited-$quantity")
-            node(R.string.save).performScrollTo().assertIsEnabled().performClick()
-            rule.waitUntil(5_000) { rows().single { it.id == id }.yarnName == "$prefix-edited-$quantity" }
-            assertEquals(before.copy(yarnName = "$prefix-edited-$quantity"), rows().single { it.id == id })
+            val editedName = "$prefix-edited-$quantity"
+            // Set the field through its accessibility action without starting the platform IME.
+            rule
+                .onNode(hasSetTextAction() and hasText(before.yarnName))
+                .assertIsEnabled()
+                .performSemanticsAction(SemanticsActions.SetText) { assertTrue(it(AnnotatedString(editedName))) }
+            rule.onNode(hasSetTextAction() and hasText(editedName)).assertIsDisplayed()
+            node(R.string.save)
+                .performScrollTo()
+                .assertIsDisplayed()
+                .assertIsEnabled()
+                .performClick()
+            node(R.string.edit_yarn_details).assertDoesNotExist()
+            rule.waitUntil(5_000) {
+                rows().single { it.id == id }.yarnName == editedName
+            }
+            assertEquals(before.copy(yarnName = editedName), rows().single { it.id == id })
             rule.runOnUiThread { rule.activity.setContent { } }
             rule.waitForIdle()
         }

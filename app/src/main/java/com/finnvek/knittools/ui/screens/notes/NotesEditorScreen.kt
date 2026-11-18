@@ -1,5 +1,6 @@
 package com.finnvek.knittools.ui.screens.notes
 
+import android.icu.text.BreakIterator
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -33,6 +34,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -41,14 +43,20 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.ParagraphStyle
 import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.input.OffsetMapping
 import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.input.TransformedText
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.withResumed
 import com.finnvek.knittools.R
 import com.finnvek.knittools.pro.ProActionAccess
 import com.finnvek.knittools.pro.ProFeature
@@ -99,15 +107,11 @@ fun NotesEditorScreen(
             showDiscardConfirmation = true
         } else {
             viewModel.cancelFirstNotesCreation()
-            viewModel.saveImmediately(onBack)
+            viewModel.saveImmediately(exitAfterSave = true)
         }
     }
 
-    LaunchedEffect(state.isMissingProject) {
-        if (state.isMissingProject) {
-            onBack()
-        }
-    }
+    NotesEditorExitEffect(viewModel, lifecycle, state.isMissingProject, state.exitRequested, onBack)
 
     BackHandler(onBack = requestBack)
 
@@ -184,6 +188,7 @@ fun NotesEditorScreen(
                             if (it.text != state.notes) viewModel.onNotesChanged(it.text)
                         },
                         enabled = state.canEditNotes,
+                        visualTransformation = NotesVisualTransformation,
                         modifier =
                             Modifier
                                 .fillMaxSize()
@@ -279,6 +284,58 @@ fun NotesEditorScreen(
     LaunchedEffect(state.isLoaded, state.canEditNotes) {
         if (state.isLoaded && state.canEditNotes) {
             focusRequester.requestFocus()
+        }
+    }
+}
+
+private const val MAX_LAYOUT_PARAGRAPH_LENGTH = 2048
+
+private val NotesVisualTransformation =
+    VisualTransformation { text ->
+        if (text.length <= MAX_LAYOUT_PARAGRAPH_LENGTH) {
+            return@VisualTransformation TransformedText(text, OffsetMapping.Identity)
+        }
+
+        val layout = AnnotatedString.Builder(text)
+        val characters = BreakIterator.getCharacterInstance().apply { setText(text.text) }
+        var lineStart = 0
+        while (lineStart < text.length) {
+            val lineEnd = text.text.indexOf('\n', lineStart).takeIf { it >= 0 } ?: text.length
+            var paragraphStart = lineStart
+            while (lineEnd - paragraphStart > MAX_LAYOUT_PARAGRAPH_LENGTH) {
+                val limit = paragraphStart + MAX_LAYOUT_PARAGRAPH_LENGTH
+                val space =
+                    (limit - 1 downTo paragraphStart + MAX_LAYOUT_PARAGRAPH_LENGTH / 2)
+                        .firstOrNull { text[it] == ' ' && characters.isBoundary(it + 1) }
+                val end =
+                    space?.plus(1)
+                        ?: characters.preceding(limit + 1).takeIf { it > paragraphStart }
+                        ?: characters.following(paragraphStart)
+                // Bound Android's native layout work for long unbroken text while preserving edit offsets.
+                layout.addStyle(ParagraphStyle(), paragraphStart, end)
+                paragraphStart = end
+            }
+            lineStart = lineEnd + 1
+        }
+        TransformedText(layout.toAnnotatedString(), OffsetMapping.Identity)
+    }
+
+@Composable
+private fun NotesEditorExitEffect(
+    viewModel: NotesEditorViewModel,
+    lifecycle: Lifecycle,
+    isMissingProject: Boolean,
+    exitRequested: Boolean,
+    onBack: () -> Unit,
+) {
+    val currentOnBack by rememberUpdatedState(onBack)
+    LaunchedEffect(viewModel, lifecycle, isMissingProject, exitRequested) {
+        if (isMissingProject || exitRequested) {
+            lifecycle.withResumed {
+                if (viewModel.consumeExitRequest() || viewModel.uiState.value.isMissingProject) {
+                    currentOnBack()
+                }
+            }
         }
     }
 }

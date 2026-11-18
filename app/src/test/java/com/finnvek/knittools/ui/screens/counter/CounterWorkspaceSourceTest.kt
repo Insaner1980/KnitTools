@@ -417,7 +417,8 @@ class CounterWorkspaceSourceTest {
             "enabled: Boolean = true",
             "Role.Button",
             "indication = null",
-            "painterResource(id = imageRes)",
+            "AsyncImage(",
+            "model = imageRes",
             "contentDescription = contentDescription",
         ).forEach { required -> assertTrue(source.imageButton.contains(required)) }
         assertTrue(

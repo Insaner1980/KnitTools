@@ -12,6 +12,7 @@ import com.finnvek.knittools.pro.ProFeature
 import com.finnvek.knittools.pro.ProManager
 import com.finnvek.knittools.repository.CounterRepository
 import com.finnvek.knittools.repository.ProjectNotesSaveResult
+import com.finnvek.knittools.repository.mergeProjectNotes
 import com.finnvek.knittools.ui.navigation.toPositiveRouteIdOrNull
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
@@ -22,8 +23,10 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.getAndUpdate
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -38,6 +41,7 @@ data class NotesEditorUiState(
     val canEditNotes: Boolean = false,
     val isMissingProject: Boolean = false,
     val saveFailed: Boolean = false,
+    val exitRequested: Boolean = false,
 )
 
 @HiltViewModel
@@ -59,6 +63,7 @@ class NotesEditorViewModel
         val uiState: StateFlow<NotesEditorUiState> = _uiState.asStateFlow()
 
         private var saveJob: Job? = null
+        private var activeWrite: NotesWrite? = null
         private var draftWriteJob: Job? = null
         private val draftFileMutex = Mutex()
         private var persistedNotes: String = ""
@@ -149,7 +154,7 @@ class NotesEditorViewModel
                         ) {
                             saveDraft(restoredDraft.orEmpty(), persistedNotes)
                         }
-                        scheduleSave(loadedProjectId, restoredDraft.orEmpty())
+                        scheduleSave(loadedProjectId)
                     }
                 }
             }
@@ -159,7 +164,7 @@ class NotesEditorViewModel
             val loadedProjectId = projectId ?: return
             val state = _uiState.value
             if (state.isMissingProject || !state.isLoaded || !state.canEditNotes) return
-            _uiState.update { it.copy(notes = text) }
+            _uiState.update { it.copy(notes = text, exitRequested = false) }
             hasLocalEdits = text != persistedNotes
             saveJob?.cancel()
             if (!hasLocalEdits) {
@@ -168,7 +173,7 @@ class NotesEditorViewModel
                 return
             }
             saveDraft(text, persistedNotes)
-            scheduleSave(loadedProjectId, text)
+            scheduleSave(loadedProjectId)
         }
 
         fun authorizeFirstNotesCreation() {
@@ -183,25 +188,30 @@ class NotesEditorViewModel
             }
         }
 
-        fun saveImmediately(onSaved: () -> Unit = {}) {
+        fun saveImmediately(exitAfterSave: Boolean = false) {
             val loadedProjectId = projectId
             val state = _uiState.value
             if (loadedProjectId == null || state.isMissingProject || !state.isLoaded || !state.canEditNotes) {
-                onSaved()
+                if (exitAfterSave) requestExit()
                 return
             }
-            saveJob?.cancel()
-            if (!hasLocalEdits && state.notes == persistedNotes) {
-                onSaved()
+            val write = activeWrite
+            if (write != null && saveJob?.isActive == true) {
+                if (exitAfterSave) write.exitAfterSave = true
                 return
             }
-            saveJob =
-                viewModelScope.launch {
-                    if (persistNotes(loadedProjectId, _uiState.value.notes)) {
-                        onSaved()
-                    }
-                }
+            if (!hasLocalEdits) {
+                if (exitAfterSave) requestExit()
+                return
+            }
+            scheduleSave(loadedProjectId, debounce = false, exitAfterSave = exitAfterSave)
         }
+
+        private fun requestExit() {
+            _uiState.update { it.copy(exitRequested = true) }
+        }
+
+        fun consumeExitRequest(): Boolean = _uiState.getAndUpdate { it.copy(exitRequested = false) }.exitRequested
 
         private var saveReported = false
 
@@ -243,10 +253,15 @@ class NotesEditorViewModel
             if (savedProject.notesCreated) {
                 savedStateHandle.remove<Boolean>(NOTES_CREATION_AUTHORIZED_KEY)
             }
-            val shouldApplySavedNotes = _uiState.value.notes == requestedNotes
-            hasLocalEdits = !shouldApplySavedNotes && _uiState.value.notes != persistedNotes
+            val notes =
+                mergeProjectNotes(
+                    baseNotes = requestedNotes,
+                    requestedNotes = _uiState.value.notes,
+                    currentNotes = persistedNotes,
+                )
+            hasLocalEdits = notes != persistedNotes
             if (hasLocalEdits) {
-                saveDraft(_uiState.value.notes, persistedNotes)
+                saveDraft(notes, persistedNotes)
             } else {
                 clearSavedDraft()
             }
@@ -254,7 +269,7 @@ class NotesEditorViewModel
                 state.copy(
                     projectName = savedProject.name,
                     notesCreated = savedProject.notesCreated,
-                    notes = if (shouldApplySavedNotes) savedProject.notes else state.notes,
+                    notes = notes,
                     isMissingProject = false,
                     saveFailed = false,
                 )
@@ -264,13 +279,22 @@ class NotesEditorViewModel
 
         private fun scheduleSave(
             loadedProjectId: Long,
-            notes: String,
+            debounce: Boolean = true,
+            exitAfterSave: Boolean = false,
         ) {
             saveJob?.cancel()
+            val write = NotesWrite(exitAfterSave)
+            activeWrite = if (debounce) null else write
             saveJob =
                 viewModelScope.launch {
-                    delay(DEBOUNCE_MS)
-                    persistNotes(loadedProjectId, notes)
+                    if (debounce) delay(DEBOUNCE_MS)
+                    activeWrite = write
+                    try {
+                        val saved = !hasLocalEdits || persistNotes(loadedProjectId, _uiState.value.notes)
+                        if (saved && isActive && write.exitAfterSave) requestExit()
+                    } finally {
+                        if (activeWrite === write) activeWrite = null
+                    }
                 }
         }
 
@@ -279,7 +303,7 @@ class NotesEditorViewModel
             persistedNotes = latestStoredNotes
             hasLocalEdits = false
             clearSavedDraft()
-            _uiState.update { it.copy(notes = persistedNotes, saveFailed = false) }
+            _uiState.update { it.copy(notes = persistedNotes, saveFailed = false, exitRequested = false) }
         }
 
         private fun saveDraft(
@@ -372,6 +396,10 @@ class NotesEditorViewModel
                 }
             }
         }
+
+        private class NotesWrite(
+            var exitAfterSave: Boolean,
+        )
 
         companion object {
             private const val DEBOUNCE_MS = 1000L

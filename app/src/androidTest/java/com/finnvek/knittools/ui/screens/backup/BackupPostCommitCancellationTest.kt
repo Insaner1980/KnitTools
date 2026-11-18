@@ -38,6 +38,7 @@ import com.finnvek.knittools.repository.OnboardingStateRepository
 import com.finnvek.knittools.repository.PatternFileReferenceCoordinator
 import com.finnvek.knittools.repository.YarnCardRepository
 import com.finnvek.knittools.repository.interceptTestDatabase
+import com.finnvek.knittools.repository.isIsolatedRoomTestPackage
 import com.finnvek.knittools.ui.theme.KnitToolsTheme
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -67,7 +68,7 @@ class BackupPostCommitCancellationTest {
     @Test
     fun finishingActivityAfterCommitPreservesReplacementAndReopenedBackupIsUsable() {
         val app = ApplicationProvider.getApplicationContext<Context>()
-        assumeTrue(app.packageName == "com.finnvek.knittools.notestest")
+        assumeTrue(app.isIsolatedRoomTestPackage)
         val root = File(app.cacheDir, "br-g04-${UUID.randomUUID()}").apply { mkdirs() }
         val context = BackupTestContext(app, root)
         val gate = CommitGate()

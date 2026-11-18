@@ -105,7 +105,8 @@ class WebPatternLocalizationArchitectureContractTest {
         // Kaksi jakokohdetta: verkko-ohjeen linkki (text/plain) ja ladattu PDF-ohje (application/pdf).
         assertEquals(2, Regex("android.intent.action.SEND").findAll(manifest).count())
         assertEquals(1, Regex("android:mimeType=\"text/plain\"").findAll(manifest).count())
-        assertEquals(1, Regex("android:mimeType=\"application/pdf\"").findAll(manifest).count())
+        // Both the SEND filter and the content-only VIEW filter accept PDFs.
+        assertEquals(2, Regex("android:mimeType=\"application/pdf\"").findAll(manifest).count())
         assertEquals(
             setOf(
                 "progress_photos" to "progress_photos/",

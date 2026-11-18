@@ -66,7 +66,7 @@ fun NumberInputField(
     options: NumberInputOptions = NumberInputOptions(),
     errorMessage: String? = null,
     semanticLabel: String? = null,
-    onFocusLost: () -> Unit = {},
+    onFocusLost: (() -> Unit)? = null,
     inputModifier: Modifier = Modifier,
     info: InfoTipText? = null,
 ) {
@@ -79,7 +79,8 @@ fun NumberInputField(
     var hasFocused by remember { mutableStateOf(false) }
     var hasBlurred by remember { mutableStateOf(false) }
     val localError =
-        if (!rawIntegerInput &&
+        if (onFocusLost == null &&
+            !rawIntegerInput &&
             hasBlurred &&
             value.isNotBlank()
         ) {
@@ -150,7 +151,7 @@ fun NumberInputField(
                             hasFocused = true
                         } else if (hasFocused) {
                             hasBlurred = true
-                            onFocusLost()
+                            onFocusLost?.invoke()
                         }
                     },
             isError = displayedError != null,

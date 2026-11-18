@@ -54,7 +54,6 @@ class NotesAuditBoundaryTest(
     private var fail = false
     private var attempts = 0
     private val commits = mutableListOf<String>()
-    private var callbacks = 0
 
     @Before
     fun setUp() {
@@ -110,7 +109,7 @@ class NotesAuditBoundaryTest(
             }
         }
 
-    private fun immediate() = model.saveImmediately { callbacks++ }
+    private fun immediate() = model.saveImmediately(exitAfterSave = true)
 
     private fun draft() = model.onNotesChanged("Draft")
 
@@ -138,12 +137,12 @@ class NotesAuditBoundaryTest(
         assertTrue(model.uiState.value.saveFailed)
         assertEquals("Draft", handle.get<String>("notesDraft"))
         assertEquals("Base", project.value.notes)
-        assertEquals(0, callbacks)
+        assertFalse(model.uiState.value.exitRequested)
         fail = false
         immediate()
         advanceUntilIdle()
         assertEquals(listOf("Draft"), commits)
-        assertEquals(1, callbacks)
+        assertTrue(model.uiState.value.exitRequested)
     }
 
     private fun TestScope.persistNewestDraft() {
@@ -159,7 +158,7 @@ class NotesAuditBoundaryTest(
         advanceUntilIdle()
         assertEquals(listOf("Newest"), commits)
         assertEquals("Newest", model.uiState.value.notes)
-        assertEquals(if (prompt == 917) 0 else 1, callbacks)
+        assertEquals(prompt != 917, model.uiState.value.exitRequested)
         assertNull(handle.get<String>("notesDraft"))
     }
 
@@ -241,7 +240,7 @@ class NotesAuditBoundaryTest(
         advanceUntilIdle()
         assertEquals(2, attempts)
         assertEquals(listOf("Draft"), commits)
-        assertEquals(0, callbacks)
+        assertFalse(model.uiState.value.exitRequested)
     }
 
     private fun TestScope.retainDraftAfterFailedFlush() {

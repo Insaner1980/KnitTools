@@ -99,6 +99,46 @@ class CounterPatternImportFeedbackTest : CounterViewModelFixture() {
         }
 
     @Test
+    fun `cleanup failure still reports the failed import and preserves existing reader state`() =
+        runTest {
+            coEvery { repository.attachPattern(7L, copied, any(), 0, null) } throws
+                IOException("Synthetic write failure")
+            coEvery { patterns.deleteLocalPatternFileIfUnused(copied) } throws IOException("Synthetic cleanup failure")
+            val vm = importViewModel()
+            val before = vm.uiState.value
+
+            selectPdf(vm)
+            advanceUntilIdle()
+
+            assertEquals(listOf(ProjectDocumentError.MUTATION_FAILURE), feedback)
+            assertEquals(before.projectDocuments, vm.uiState.value.projectDocuments)
+            assertEquals(before.primaryDocument, vm.uiState.value.primaryDocument)
+            assertEquals(before.currentPatternPage, vm.uiState.value.currentPatternPage)
+            assertEquals(before.patternRowMapping, vm.uiState.value.patternRowMapping)
+            assertFalse(vm.patternImportInProgress.value)
+            coVerify(exactly = 1) { patterns.deleteLocalPatternFileIfUnused(copied) }
+        }
+
+    @Test
+    fun `cleanup failure does not turn cancelled persistence into an uncaught import error`() =
+        runTest {
+            coEvery { repository.attachPattern(7L, copied, any(), 0, null) } throws
+                CancellationException("Synthetic cancelled write")
+            coEvery { patterns.deleteLocalPatternFileIfUnused(copied) } throws IOException("Synthetic cleanup failure")
+            val vm = importViewModel()
+            val before = vm.uiState.value
+
+            selectPdf(vm)
+            advanceUntilIdle()
+
+            assertTrue(feedback.isEmpty())
+            assertEquals(before.projectDocuments, vm.uiState.value.projectDocuments)
+            assertEquals(before.primaryDocument, vm.uiState.value.primaryDocument)
+            assertFalse(vm.patternImportInProgress.value)
+            coVerify(exactly = 1) { patterns.deleteLocalPatternFileIfUnused(copied) }
+        }
+
+    @Test
     fun `successful reselection after rejected copy clears failure feedback`() =
         runTest {
             coEvery { storage.copyPdfToInternal(context, 7L, uri, "pattern.pdf") } returnsMany listOf(null, copied)

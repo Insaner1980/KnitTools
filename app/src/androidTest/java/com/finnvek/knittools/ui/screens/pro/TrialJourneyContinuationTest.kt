@@ -6,6 +6,7 @@ import androidx.test.core.app.ActivityScenario
 import androidx.test.platform.app.InstrumentationRegistry
 import com.finnvek.knittools.MainActivity
 import com.finnvek.knittools.R
+import com.finnvek.knittools.pro.ProPolicyTestControl
 import com.finnvek.knittools.pro.ProStatus
 import com.finnvek.knittools.pro.clickTrialText
 import com.finnvek.knittools.pro.findTrialText
@@ -28,6 +29,7 @@ class TrialJourneyContinuationTest {
         val intent = Intent(context, MainActivity::class.java)
         val scenario = ActivityScenario.launch<MainActivity>(intent)
         try {
+            ProPolicyTestControl.setPurchased(false)
             lateinit var coordinator: TrialJourneyCoordinator
             scenario.onActivity { coordinator = it.trialJourneyCoordinator }
             waitForTrialUi("An existing active trial and project are required") {
@@ -76,7 +78,11 @@ class TrialJourneyContinuationTest {
             SystemClock.sleep(2_500)
             assertFalse(hasText(R.string.trial_started_screen_title))
         } finally {
-            scenario.close()
+            try {
+                scenario.close()
+            } finally {
+                ProPolicyTestControl.reset()
+            }
         }
     }
 

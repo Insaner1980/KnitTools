@@ -56,7 +56,12 @@ class IncomingPdfViewModelTest : IncomingPdfTestFixture() {
     @Test
     fun `only a PDF VIEW or a PDF SEND with a stream starts receipt`() =
         runTest {
-            val source = mockk<Uri> { every { lastPathSegment } returns "Chart.pdf" }
+            val source =
+                mockk<Uri> {
+                    every { scheme } returns ContentResolver.SCHEME_CONTENT
+                    every { authority } returns "synthetic.pdf.provider"
+                    every { lastPathSegment } returns "Chart.pdf"
+                }
             val resolver = context.contentResolver
             coEvery { storage.copyPdfToInternal(context, 0L, source, "Chart.pdf") } returns NEW_PDF_URI
             val model = viewModel(SavedStateHandle())
@@ -101,7 +106,12 @@ class IncomingPdfViewModelTest : IncomingPdfTestFixture() {
     @Test
     fun `interrupted share restarts once in a fresh owner`() =
         runTest {
-            val uri = mockk<Uri> { every { lastPathSegment } returns "Interrupted.pdf" }
+            val uri =
+                mockk<Uri> {
+                    every { scheme } returns ContentResolver.SCHEME_CONTENT
+                    every { authority } returns "synthetic.pdf.provider"
+                    every { lastPathSegment } returns "Interrupted.pdf"
+                }
             coEvery { storage.copyPdfToInternal(context, 0L, uri, "Interrupted.pdf") } coAnswers { awaitCancellation() }
             val state = SavedStateHandle()
             val receiving = viewModel(state)

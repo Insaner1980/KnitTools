@@ -49,7 +49,10 @@ class ProjectSetupNavigationTest {
     @Test
     fun workTimeReusesCounterAndTargetsItsActualEntry() {
         render()
-        compose.runOnIdle { nav.navigate(Screen.Counter.route) }
+        compose.runOnIdle {
+            nav.navigate(Screen.Counter.route)
+            nav.currentBackStackEntry!!.savedStateHandle[COUNTER_ENTRY_PROJECT_ID] = 7L
+        }
         val counterId = compose.runOnIdle { nav.currentBackStackEntry!!.id }
         compose.runOnIdle { actions().onProjectOverview(7L) }
         compose.runOnIdle { actions().onOpenCounterWithWorkSessionTip(7L) }

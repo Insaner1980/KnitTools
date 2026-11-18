@@ -333,6 +333,12 @@ class ActiveProjectPolicyRuntimeTest {
         typeName(name)
         click(R.string.create_project)
         waitFor { runBlocking { repository.getAllProjects().first().any { it.name == name } } }
+        val addRow = text(R.string.counter_add_row)
+        waitFor(failureMessage = { "Counter did not open for $name" }) {
+            val visible = currentNodes().filter { it.isVisibleToUser }
+            visible.any { it.text?.toString() == name } &&
+                visible.any { it.isEnabled && it.contentDescription?.toString() == addRow }
+        }
         idle()
     }
 
@@ -600,7 +606,12 @@ class ActiveProjectPolicyRuntimeTest {
     }
 
     private fun click(label: Int) {
-        if (label == R.string.create_project) scrollToText(label)
+        if (label == R.string.create_project ||
+            label == R.string.pro_prompt_not_now ||
+            label == R.string.pro_start_free_trial
+        ) {
+            scrollToText(label)
+        }
         waitText(text(label))
         val value = text(label)
         clickNode(value) { it.text?.toString()?.equals(value, ignoreCase = true) == true }
@@ -703,18 +714,22 @@ class ActiveProjectPolicyRuntimeTest {
         return null
     }
 
-    private fun currentNodes(): List<AccessibilityNodeInfo> {
+    private fun currentRoot(): AccessibilityNodeInfo? {
         val automation = InstrumentationRegistry.getInstrumentation().uiAutomation
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
             automation.clearCache()
         }
+        return automation.rootInActiveWindow
+    }
+
+    private fun currentNodes(): List<AccessibilityNodeInfo> {
         val nodes = mutableListOf<AccessibilityNodeInfo>()
 
         fun visit(node: AccessibilityNodeInfo) {
             nodes.add(node)
             for (index in 0 until node.childCount) node.getChild(index)?.let(::visit)
         }
-        automation.rootInActiveWindow?.let(::visit)
+        currentRoot()?.let(::visit)
         return nodes
     }
 
@@ -731,10 +746,7 @@ class ActiveProjectPolicyRuntimeTest {
             }
             return null
         }
-        return InstrumentationRegistry
-            .getInstrumentation()
-            .uiAutomation.rootInActiveWindow
-            ?.let(::visit)
+        return currentRoot()?.let(::visit)
     }
 
     private fun pressBack() {

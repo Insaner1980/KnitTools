@@ -10,9 +10,12 @@ import kotlinx.coroutines.flow.Flow
 interface ProjectYarnNoteDao {
     @Query(
         """
-        SELECT * FROM project_yarn_notes
-        WHERE projectId = :projectId
-        ORDER BY createdAt DESC, id DESC
+        SELECT note.id, note.projectId, note.name, note.description, note.quantity, note.notes,
+               card.id AS savedYarnCardId, note.createdAt, note.updatedAt
+        FROM project_yarn_notes AS note
+        LEFT JOIN yarn_cards AS card ON card.id = note.savedYarnCardId
+        WHERE note.projectId = :projectId
+        ORDER BY note.createdAt DESC, note.id DESC
         """,
     )
     fun observeForProject(projectId: Long): Flow<List<ProjectYarnNoteEntity>>

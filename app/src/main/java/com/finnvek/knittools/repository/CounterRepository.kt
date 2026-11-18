@@ -1437,7 +1437,8 @@ class CounterRepository
                         ?.totalDurationSeconds
                         ?: return@runSessionMutation StopSessionResult.NeedsRecoveryReview(active.toDomain())
                 if (
-                    reviewedDurationSeconds !in active.checkpointedDurationSeconds..currentDurationSeconds ||
+                    // Background checkpoints must not invalidate an unchanged Stop summary.
+                    reviewedDurationSeconds !in active.reviewedDurationBaselineSeconds..currentDurationSeconds ||
                     reviewedRowsWorked != active.trustedRowsWorked ||
                     reviewedEndRow != active.trustedLastObservedRow
                 ) {

@@ -78,8 +78,11 @@ class PseudolocaleNavigationTest {
     fun rtlKeepsNavigationFormsListsAndMixedDirectionValuesUsable() = exerciseLocale("ar-XB")
 
     private fun exerciseLocale(tag: String) {
+        org.junit.Assume.assumeTrue(
+            "Pseudolocale resize suite requires -e pseudoResizeAllowed true",
+            InstrumentationRegistry.getArguments().getString("pseudoResizeAllowed") == "true",
+        )
         check(app.packageName == "com.finnvek.knittools.activepolicytest")
-        check(InstrumentationRegistry.getArguments().getString("pseudoResizeAllowed") == "true")
         assertEquals(1f, rule.activity.resources.configuration.fontScale)
         val manager = app.getSystemService(LocaleManager::class.java)
         originalSize =

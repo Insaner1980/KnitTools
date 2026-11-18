@@ -469,7 +469,8 @@ class ProjectFoldersScreenTest {
         composeRule.onNodeWithContentDescription("More options").performClick()
         composeRule.onNodeWithText("Show Completed").performClick()
         composeRule.waitUntil(timeoutMillis = 5_000) {
-            viewModel.showCompleted.value && viewModel.completedProjects.value.map { it.id } == listOf(completedId)
+            val content = viewModel.content.value
+            content.preferences.showCompletedProjects && content.completed.map { it.id } == listOf(completedId)
         }
         composeRule.onNodeWithText("Gifts complete").assertIsDisplayed()
 
@@ -518,9 +519,10 @@ class ProjectFoldersScreenTest {
             ).performClick()
         composeRule.onNodeWithContentDescription("Move source. Project organization folder.").performClick()
         composeRule.waitUntil(timeoutMillis = 5_000) {
+            val content = viewModel.content.value
             viewModel.selectedFolderFilter.value == ProjectFolderFilter.Folder(source.id) &&
-                viewModel.activeProjects.value.map { it.id } == listOf(activeId) &&
-                viewModel.completedProjects.value.map { it.id } == listOf(completedId)
+                content.active.map { it.id } == listOf(activeId) &&
+                content.completed.map { it.id } == listOf(completedId)
         }
         composeRule
             .onNodeWithText("Completed move")

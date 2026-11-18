@@ -130,8 +130,9 @@ class ProjectListViewModel
                     ) { active, completed, session, organization, readiness ->
                         val (folders, filter) = organization
                         val (sessionRefreshed, hasAnyProject, welcomeDismissed) = readiness
+                        val waitingForFolders = folders.isLoading && filter != ProjectFolderFilter.AllProjects
                         ProjectListContent(
-                            isLoading = folders.isLoading || !sessionRefreshed,
+                            isLoading = waitingForFolders || !sessionRefreshed,
                             hasAnyProject = hasAnyProject,
                             activeProjectCount = active.size,
                             welcomeDismissed = welcomeDismissed,
@@ -322,6 +323,7 @@ class ProjectListViewModel
         // === Multi-select-toiminnot ===
 
         fun enterMultiSelectMode(initialProjectId: Long? = null) {
+            if (initialProjectId != null && !isVisibleProject(initialProjectId)) return
             _isMultiSelectMode.value = true
             _selectedProjectIds.value = if (initialProjectId != null) setOf(initialProjectId) else emptySet()
         }
@@ -334,9 +336,15 @@ class ProjectListViewModel
         }
 
         fun toggleProjectSelection(id: Long) {
+            if (!isMultiSelectMode.value || !isVisibleProject(id)) return
             _selectedProjectIds.update { current ->
                 if (id in current) current - id else current + id
             }
+        }
+
+        private fun isVisibleProject(id: Long): Boolean {
+            val visible = content.value
+            return !visible.isLoading && (visible.active.any { it.id == id } || visible.completed.any { it.id == id })
         }
 
         fun selectAllProjects() {
@@ -644,6 +652,8 @@ class ProjectListViewModel
 
         fun selectFolder(filter: ProjectFolderFilter) {
             if (filter == selectedFolderFilter.value) return
+            val folders = folderState.value.snapshot?.folders
+            if (filter is ProjectFolderFilter.Folder && folders?.none { it.id == filter.folderId } == true) return
             _selectedFolderFilter.value = filter
             savedStateHandle["project_folder_filter"] =
                 when (filter) {

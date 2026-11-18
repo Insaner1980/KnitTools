@@ -74,7 +74,7 @@ class MainCounterStepRoomTest {
     private val models = ViewModelStore()
 
     @Before fun setup() {
-        context = notesTestContext()
+        context = isolatedRoomTestContext()
         database = Room.databaseBuilder(context, KnitToolsDatabase::class.java, databaseName).build()
         fixture = RoomCounterTestFixture(database, context)
     }

@@ -27,7 +27,7 @@ internal fun IncomingPdfViewModel.restoreInterruptedReceive(
     intent: Intent?,
     contentResolver: ContentResolver,
 ): Boolean {
-    val uri = interruptedSourceUri ?: return false
+    val uri = interruptedSourceUri?.takeIf(Uri::isSharedContentUri) ?: return false
     if (receiving.value) pdfIntentConsumed = true
     consumePdfIntent(uri, intent?.takeIf { it.pdfUri(contentResolver) == uri })
     return true
@@ -37,18 +37,23 @@ private fun Intent.pdfUri(contentResolver: ContentResolver): Uri? =
     when (action) {
         Intent.ACTION_VIEW ->
             data?.takeIf { source ->
-                type == MIME_TYPE_PDF || runCatching { contentResolver.getType(source) }.getOrNull() == MIME_TYPE_PDF
+                source.isSharedContentUri() &&
+                    (type ?: runCatching { contentResolver.getType(source) }.getOrNull()) == MIME_TYPE_PDF
             }
 
         Intent.ACTION_SEND ->
             if (type == MIME_TYPE_PDF) {
-                IntentCompat.getParcelableExtra(this, Intent.EXTRA_STREAM, Uri::class.java)
+                IntentCompat
+                    .getParcelableExtra(this, Intent.EXTRA_STREAM, Uri::class.java)
+                    ?.takeIf(Uri::isSharedContentUri)
             } else {
                 null
             }
 
         else -> null
     }
+
+private fun Uri.isSharedContentUri(): Boolean = scheme == ContentResolver.SCHEME_CONTENT && !authority.isNullOrBlank()
 
 private fun IncomingPdfViewModel.consumePdfIntent(
     uri: Uri,

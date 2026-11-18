@@ -15,11 +15,13 @@ import com.finnvek.knittools.repository.OnboardingStateRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.util.UUID
 import javax.inject.Inject
 
@@ -91,8 +93,6 @@ class BackupViewModel
             analytics.track(UsageEvent.BACKUP_EXPORT_STARTED)
             run(BackupPhase.EXPORTING) {
                 repository.export(uri)
-                analytics.track(UsageEvent.BACKUP_EXPORT_SUCCEEDED)
-                recordOnboardingProgress(restored = false)
                 BackupUiState(BackupPhase.EXPORTED)
             }
         }
@@ -120,27 +120,24 @@ class BackupViewModel
             }
             run(BackupPhase.RESTORING) {
                 repository.restore(confirmedSelectionId)
-                analytics.track(UsageEvent.BACKUP_RESTORE_SUCCEEDED)
-                recordOnboardingProgress(restored = true)
                 BackupUiState(BackupPhase.RESTORED)
             }
         }
 
-        private suspend fun recordOnboardingProgress(restored: Boolean) {
-            currentCoroutineContext().ensureActive()
-            try {
-                if (restored) {
-                    onboardingStateRepository.markBasicTipsSeen()
-                } else {
-                    onboardingStateRepository
-                        .markBackupCreated()
+        private suspend fun recordOnboardingProgress(restored: Boolean) =
+            withContext(NonCancellable) {
+                try {
+                    if (restored) {
+                        onboardingStateRepository.markBasicTipsSeen()
+                    } else {
+                        onboardingStateRepository.markBackupCreated()
+                    }
+                } catch (failure: CancellationException) {
+                    throw failure
+                } catch (_: Exception) {
+                    // Opastuksen tallennusvirhe ei muuta jo valmistunutta varmuuskopiota epäonnistuneeksi.
                 }
-            } catch (failure: CancellationException) {
-                throw failure
-            } catch (_: Exception) {
-                // Opastuksen tallennusvirhe ei muuta jo valmistunutta varmuuskopiota epäonnistuneeksi.
             }
-        }
 
         fun cancel() {
             val phase = state.value.phase
@@ -191,6 +188,17 @@ class BackupViewModel
                         val result = block()
                         currentCoroutineContext().ensureActive()
                         mutableState.value = result
+                        when (result.phase) {
+                            BackupPhase.EXPORTED -> {
+                                analytics.track(UsageEvent.BACKUP_EXPORT_SUCCEEDED)
+                                recordOnboardingProgress(restored = false)
+                            }
+                            BackupPhase.RESTORED -> {
+                                analytics.track(UsageEvent.BACKUP_RESTORE_SUCCEEDED)
+                                recordOnboardingProgress(restored = true)
+                            }
+                            else -> Unit
+                        }
                     } catch (failure: CancellationException) {
                         throw failure
                     } catch (failure: BackupException) {

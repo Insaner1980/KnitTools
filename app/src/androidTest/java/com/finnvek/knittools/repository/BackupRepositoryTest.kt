@@ -488,6 +488,55 @@ class BackupRepositoryTest {
         }
     }
 
+    @Test fun cancellationDuringFinalReferenceCheckRollsBackReplacement() =
+        runBlocking {
+            seed()
+            val archive = File(directory, "cancel-before-commit.knittools-backup")
+            repository.export(archive.toUri())
+            val sql = db.openHelper.writableDatabase
+            sql.execSQL("UPDATE counter_projects SET name = 'Destination edit', count = 37")
+            val references = BackupTables.references(sql)
+            val originalFiles =
+                references.associateWith { reference ->
+                    checkNotNull(AppFileStorage.resolveAppOwnedFile(context, reference.toUri()))
+                }
+            val hashes = originalFiles.mapValues { BackupFormat.digest(it.value) }
+            val projectId = number("SELECT id FROM counter_projects")
+            val sequence = number("SELECT SUM(seq) FROM sqlite_sequence")
+            prepare(archive.toUri())
+
+            val validatingReplacement = CompletableDeferred<Unit>()
+            val resumeValidation = CountDownLatch(1)
+            var replacedRows = false
+            beforeSql = { if (it == "DELETE FROM `counter_projects`") replacedRows = true }
+            beforeQuery = { query ->
+                if (replacedRows &&
+                    query.startsWith("SELECT DISTINCT `patternUri`") &&
+                    validatingReplacement.complete(Unit)
+                ) {
+                    check(resumeValidation.await(20, TimeUnit.SECONDS))
+                }
+            }
+            val restore = scope.async { repository.restore(selectionId) }
+            try {
+                withTimeout(20_000) { validatingReplacement.await() }
+                restore.cancel()
+            } finally {
+                resumeValidation.countDown()
+                withTimeout(20_000) { restore.cancelAndJoin() }
+                beforeSql = {}
+                beforeQuery = {}
+            }
+
+            assertEquals("Destination edit", text("SELECT name FROM counter_projects"))
+            assertEquals(37L, number("SELECT count FROM counter_projects"))
+            assertEquals(projectId, number("SELECT id FROM counter_projects"))
+            assertEquals(sequence, number("SELECT SUM(seq) FROM sqlite_sequence"))
+            assertReferencesAndPreviewCleanedUp(references)
+            assertEquals(hashes, originalFiles.mapValues { BackupFormat.digest(it.value) })
+            assertFalse(context.filesDir.walkTopDown().any { it.isFile && it.name.startsWith("restore-") })
+        }
+
     @Test fun sequenceReseedFailureRollsBackEveryTableAndSequence() =
         runBlocking {
             seed()

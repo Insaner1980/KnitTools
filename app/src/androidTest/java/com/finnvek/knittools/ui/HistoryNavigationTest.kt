@@ -10,12 +10,15 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.finnvek.knittools.App
 import com.finnvek.knittools.MainActivity
 import com.finnvek.knittools.R
+import com.finnvek.knittools.pro.ProPolicyTestControl
 import com.finnvek.knittools.repository.CounterRepository
 import com.finnvek.knittools.repository.ProjectCreationResult
 import com.finnvek.knittools.widget.WidgetEntryPoint
 import dagger.hilt.android.EntryPointAccessors
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
 import org.junit.After
 import org.junit.Before
 import java.util.UUID
@@ -27,6 +30,7 @@ abstract class HistoryNavigationTest(
     protected lateinit var app: App
     protected lateinit var repository: CounterRepository
     protected lateinit var scenario: ActivityScenario<MainActivity>
+    private var purchaseOverridden = false
     protected var id = 0L
     protected val name = namePrefix + UUID.randomUUID().toString().take(8)
     protected val automation get() = InstrumentationRegistry.getInstrumentation().uiAutomation
@@ -52,8 +56,13 @@ abstract class HistoryNavigationTest(
         }
         repository = EntryPointAccessors.fromApplication(app, WidgetEntryPoint::class.java).counterRepository()
         runBlocking(Dispatchers.IO) {
+            if (ProPolicyTestControl.isActive) {
+                ProPolicyTestControl.setPurchased(true)
+                purchaseOverridden = true
+                withTimeout(15_000) { app.proManager.get().proState.first { it.isPro } }
+            }
             val created = repository.createProject(name, canCreateAdditionalProjects = true)
-            check(created is ProjectCreationResult.Created)
+            check(created is ProjectCreationResult.Created) { "Could not create history fixture: $created" }
             id = created.projectId
             stepSize?.let { repository.updateProjectStepSize(id, it) }
         }
@@ -64,7 +73,11 @@ abstract class HistoryNavigationTest(
         try {
             if (::scenario.isInitialized) scenario.close()
         } finally {
-            runBlocking(Dispatchers.IO) { if (id > 0) repository.deleteProject(id) }
+            try {
+                runBlocking(Dispatchers.IO) { if (id > 0) repository.deleteProject(id) }
+            } finally {
+                if (purchaseOverridden) ProPolicyTestControl.reset()
+            }
         }
     }
 

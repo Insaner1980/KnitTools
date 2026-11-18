@@ -110,6 +110,26 @@ class BackupViewModelTest {
             assertEquals(BackupPhase.EXPORTED, viewModel.state.value.phase)
         }
 
+    @Test fun completedExportCannotBeCancelledWhileOnboardingIsSaving() =
+        runTest(dispatcher) {
+            val saved = CompletableDeferred<Unit>()
+            coEvery { onboarding.markBackupCreated() } coAnswers { saved.await() }
+            val viewModel = BackupViewModel(repository, onboarding)
+            store.put("backup", viewModel)
+            viewModel.export(uri)
+            runCurrent()
+            try {
+                coVerify(exactly = 1) { onboarding.markBackupCreated() }
+                viewModel.cancel()
+                runCurrent()
+                assertEquals(BackupUiState(BackupPhase.EXPORTED), viewModel.state.value)
+                coVerify(exactly = 0) { repository.cancelPreview(any()) }
+            } finally {
+                saved.complete(Unit)
+                runCurrent()
+            }
+        }
+
     private fun cancellation(phase: BackupPhase) =
         runTest(dispatcher) {
             val cleanup = CompletableDeferred<Unit>()

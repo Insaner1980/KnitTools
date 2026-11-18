@@ -1,24 +1,18 @@
 package com.finnvek.knittools.ui.screens.library
 
 import android.Manifest
-import android.accessibilityservice.AccessibilityServiceInfo
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.graphics.Bitmap
-import android.graphics.Rect
-import android.os.SystemClock
-import android.view.InputDevice
-import android.view.MotionEvent
-import android.view.accessibility.AccessibilityNodeInfo
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasClickAction
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createEmptyComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
-import androidx.lifecycle.ViewModelProvider
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -27,19 +21,15 @@ import androidx.test.runner.lifecycle.Stage
 import com.finnvek.knittools.App
 import com.finnvek.knittools.MainActivity
 import com.finnvek.knittools.R
-import com.finnvek.knittools.ui.navigation.PatternShareCoordinatorViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
-import org.json.JSONObject
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
-import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.Timeout
 import org.junit.runner.RunWith
-import java.io.File
 
 @RunWith(AndroidJUnit4::class)
 class PatternShareQueueRuntimeTest {
@@ -50,7 +40,6 @@ class PatternShareQueueRuntimeTest {
     val rule = createEmptyComposeRule()
 
     private val instrumentation = InstrumentationRegistry.getInstrumentation()
-    private val automation get() = instrumentation.uiAutomation
     private val app: App = ApplicationProvider.getApplicationContext()
     private lateinit var activity: MainActivity
 
@@ -64,10 +53,6 @@ class PatternShareQueueRuntimeTest {
         assertEquals("com.finnvek.knittools.activepolicytest", app.packageName)
         assertEquals(PackageManager.PERMISSION_DENIED, app.checkSelfPermission(Manifest.permission.INTERNET))
         assertEquals(PackageManager.PERMISSION_DENIED, app.checkSelfPermission("com.android.vending.BILLING"))
-        automation.serviceInfo =
-            automation.serviceInfo.apply {
-                flags = flags or AccessibilityServiceInfo.FLAG_RETRIEVE_INTERACTIVE_WINDOWS
-            }
         launchActivity()
         val patternsBefore = savedPatterns()
 
@@ -82,7 +67,6 @@ class PatternShareQueueRuntimeTest {
             }
             assertChoice()
             assertDraft("Original draft", "original")
-            evidence("$useFirst-pending")
 
             choose(useFirst)
             assertDraft(if (useFirst) "First link" else "Original draft", if (useFirst) "first" else "original")
@@ -95,10 +79,9 @@ class PatternShareQueueRuntimeTest {
             choose(useFirst)
             assertDraft(if (useFirst) "Third link" else "Second link", if (useFirst) "third" else "second")
             waitUntil {
-                visibleText(R.string.web_pattern_keep_current_draft) == null &&
-                    visibleText(R.string.web_pattern_use_shared_link) == null
+                !hasChoice(R.string.web_pattern_keep_current_draft) &&
+                    !hasChoice(R.string.web_pattern_use_shared_link)
             }
-            evidence("$useFirst-resolved")
             instrumentation.runOnMainSync {
                 assertEquals(Intent.ACTION_MAIN, activity.intent.action)
                 assertNull(activity.intent.type)
@@ -186,104 +169,22 @@ class PatternShareQueueRuntimeTest {
             ?.getOrNull(SemanticsProperties.EditableText)
             ?.text
 
-    private fun nodes(root: AccessibilityNodeInfo?): List<AccessibilityNodeInfo> {
-        val result = mutableListOf<AccessibilityNodeInfo>()
+    private fun choice(resource: Int) = hasText(app.getString(resource)) and hasClickAction()
 
-        fun visit(node: AccessibilityNodeInfo) {
-            if (node.packageName?.toString() == app.packageName) result += node
-            repeat(node.childCount) { index -> node.getChild(index)?.let(::visit) }
-        }
-        root?.let(::visit)
-        return result
-    }
-
-    private fun visibleText(resource: Int): AccessibilityNodeInfo? =
-        automation.windows
-            .flatMap { nodes(it.root) }
-            .firstOrNull { it.isVisibleToUser && it.text?.toString() == app.getString(resource) }
+    private fun hasChoice(resource: Int): Boolean = rule.onAllNodes(choice(resource)).fetchSemanticsNodes().isNotEmpty()
 
     private fun assertChoice() {
         waitUntil {
-            visibleText(R.string.web_pattern_keep_current_draft) != null &&
-                visibleText(R.string.web_pattern_use_shared_link) != null
+            hasChoice(R.string.web_pattern_keep_current_draft) && hasChoice(R.string.web_pattern_use_shared_link)
         }
+        rule.onNode(choice(R.string.web_pattern_keep_current_draft)).assertIsDisplayed()
+        rule.onNode(choice(R.string.web_pattern_use_shared_link)).assertIsDisplayed()
     }
 
     private fun choose(useIncoming: Boolean) {
-        click(if (useIncoming) R.string.web_pattern_use_shared_link else R.string.web_pattern_keep_current_draft)
+        val label = if (useIncoming) R.string.web_pattern_use_shared_link else R.string.web_pattern_keep_current_draft
+        rule.onNode(choice(label)).assertIsDisplayed().performClick()
     }
 
-    private fun click(resource: Int) {
-        var target: AccessibilityNodeInfo? = null
-        waitUntil {
-            target = visibleText(resource)
-            target != null
-        }
-        val bounds = Rect().also { checkNotNull(target).getBoundsInScreen(it) }
-        assertTrue("Empty bounds for ${app.getString(resource)}", bounds.width() > 0 && bounds.height() > 0)
-        val down = SystemClock.uptimeMillis()
-        for (action in listOf(MotionEvent.ACTION_DOWN, MotionEvent.ACTION_UP)) {
-            val event =
-                MotionEvent.obtain(
-                    down,
-                    SystemClock.uptimeMillis(),
-                    action,
-                    bounds.exactCenterX(),
-                    bounds.exactCenterY(),
-                    0,
-                )
-            try {
-                event.source = InputDevice.SOURCE_TOUCHSCREEN
-                assertTrue(automation.injectInputEvent(event, true))
-            } finally {
-                event.recycle()
-            }
-        }
-    }
-
-    private fun waitUntil(condition: () -> Boolean) {
-        val deadline = SystemClock.uptimeMillis() + 10_000L
-        while (true) {
-            rule.waitForIdle()
-            if (condition()) return
-            if (SystemClock.uptimeMillis() >= deadline) {
-                evidence("failure")
-                error("Share queue UI condition did not become true within 10 seconds")
-            }
-            SystemClock.sleep(50L)
-        }
-    }
-
-    private fun evidence(name: String) {
-        val configuration = app.resources.configuration
-        var pendingTitle: String? = null
-        instrumentation.runOnMainSync {
-            if (::activity.isInitialized) {
-                val coordinator = ViewModelProvider(activity)[PatternShareCoordinatorViewModel::class.java]
-                pendingTitle =
-                    coordinator.pending.value
-                        ?.payload
-                        ?.titleSuggestion
-            }
-        }
-        val directory = File(app.filesDir, "share-queue-evidence").apply { mkdirs() }
-        val prefix = "${configuration.screenWidthDp}dp-font${configuration.fontScale}-$name"
-        File(directory, "$prefix.json").writeText(
-            JSONObject()
-                .put("widthDp", configuration.screenWidthDp)
-                .put("fontScale", configuration.fontScale)
-                .put("texts", editorTexts().joinToString("\n"))
-                .put("coordinatorPendingTitle", pendingTitle ?: JSONObject.NULL)
-                .toString(),
-        )
-        automation.takeScreenshot()?.let { bitmap ->
-            try {
-                File(directory, "$prefix.png").outputStream().use {
-                    bitmap.compress(Bitmap.CompressFormat.PNG, 100, it)
-                }
-            } finally {
-                bitmap.recycle()
-            }
-        }
-    }
+    private fun waitUntil(condition: () -> Boolean) = rule.waitUntil(timeoutMillis = 10_000L, condition = condition)
 }

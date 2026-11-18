@@ -16,6 +16,8 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.DeviceConfigurationOverride
+import androidx.compose.ui.test.ForcedSize
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.click
@@ -27,6 +29,7 @@ import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performScrollToKey
 import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import com.finnvek.knittools.domain.calculator.DurationDisplayFormatter
@@ -163,7 +166,7 @@ class AdaptiveInsightsContentTest {
         var size by mutableStateOf(360 to 700)
         rule.setContent {
             KnitToolsTheme(isDarkTheme = dark) {
-                Box(Modifier.requiredSize(size.first.dp, size.second.dp)) {
+                DeviceConfigurationOverride(DeviceConfigurationOverride.ForcedSize(DpSize(size.first.dp, size.second.dp))) {
                     InsightsScreenContent(state, {}, {})
                 }
             }
@@ -275,7 +278,7 @@ class AdaptiveInsightsContentTest {
                     }
                     assertTrue(
                         sorted.last().boundsInRoot.right - sorted.first().boundsInRoot.left <=
-                            nextWidth * rule.density.density,
+                            with(rule.density) { nextWidth.dp.roundToPx() },
                     )
                     if (timeRange == TimeRange.ALL_TIME) {
                         assertTrue(

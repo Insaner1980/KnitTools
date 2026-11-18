@@ -574,6 +574,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        billingManager.refreshPurchasesOnResume()
         reviewAttemptedThisResume = false
         trialNoticeResumeGeneration += 1L
         inAppUpdateManager.checkDownloadedOnResume()

@@ -157,6 +157,24 @@ class BillingManagerTest {
     }
 
     @Test
+    fun `checkout ignores a visible offer once ownership has been confirmed`() {
+        mockkStatic(TextUtils::class)
+        every { TextUtils.isEmpty(any()) } answers { firstArg<CharSequence?>().isNullOrEmpty() }
+        val client = mockk<BillingClient>(relaxed = true)
+        val manager = createManager(client)
+        val ok = billingResult(BillingClient.BillingResponseCode.OK)
+        manager.applyProductDetailsResult(productResult(launchProduct(1_000, 2_000)))
+        val displayedOffer = checkNotNull(manager.selectedOffer.value)
+        manager.onPurchasesUpdated(ok, listOf(proPurchase()))
+        assertTrue(manager.isProPurchased.value)
+
+        manager.launchPurchaseFlow(mockk<Activity>(), displayedOffer)
+
+        verify(exactly = 0) { client.launchBillingFlow(any(), any()) }
+        manager.destroy()
+    }
+
+    @Test
     fun `billing setup failure retries connection before marking product unavailable`() {
         val source =
             ProjectSourceFiles.read(

@@ -36,6 +36,7 @@ import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotSame
 import org.junit.Assert.assertTrue
+import org.junit.Assume.assumeTrue
 import org.junit.Rule
 import org.junit.Test
 import java.io.FileInputStream
@@ -52,7 +53,7 @@ class AdaptiveActivityTest {
 
     @Test
     fun platformTransitionsKeepActiveCounterSessionAndUndo() {
-        check(InstrumentationRegistry.getArguments().getString("adaptivePlatformAllowed") == "true")
+        assumeTrue("Requires the host-driven platform suite", InstrumentationRegistry.getArguments().getString("adaptivePlatformAllowed") == "true")
         val app = ApplicationProvider.getApplicationContext<App>()
         check(app.packageName == "com.finnvek.knittools.activepolicytest")
         val db = app.database.get()
@@ -102,7 +103,7 @@ class AdaptiveActivityTest {
 
     @Test
     fun platformTransitionsPreserveKeyboardDraftAndTabBackStack() {
-        check(InstrumentationRegistry.getArguments().getString("adaptivePlatformAllowed") == "true")
+        assumeTrue("Requires the host-driven platform suite", InstrumentationRegistry.getArguments().getString("adaptivePlatformAllowed") == "true")
         val app = ApplicationProvider.getApplicationContext<App>()
         check(app.packageName == "com.finnvek.knittools.activepolicytest")
         runBlocking { app.preferencesManager.get().setAppLanguage(AppLanguage.ENGLISH) }
@@ -153,7 +154,7 @@ class AdaptiveActivityTest {
 
     @Test
     fun realActivityResizeAndRotationPreserveToolDraftAndTabRestoration() {
-        check(InstrumentationRegistry.getArguments().getString("adaptiveResizeAllowed") == "true")
+        assumeTrue("Requires the display-resize suite", InstrumentationRegistry.getArguments().getString("adaptiveResizeAllowed") == "true")
         val app = ApplicationProvider.getApplicationContext<App>()
         check(app.packageName == "com.finnvek.knittools.activepolicytest")
         ProPolicyTestControl.setPurchased(false)

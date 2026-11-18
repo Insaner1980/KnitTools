@@ -34,12 +34,12 @@ public class AuditPart16ShareReceiver extends Activity {
                 } else {
                     registerReceiver(continuation, filter);
                 }
-                reply("opened", null, null, false);
+                reply("opened", null, null, false, false);
             } else {
                 readAndFinish();
             }
         } catch (Exception failure) {
-            reply("failed", null, failure.getClass().getSimpleName(), false);
+            reply("failed", null, failure.getClass().getSimpleName(), false, false);
             finish();
         }
     }
@@ -56,17 +56,22 @@ public class AuditPart16ShareReceiver extends Activity {
             try (InputStream other = getContentResolver().openInputStream(Uri.parse(getIntent().getStringExtra("other")))) {
                 if (other != null) other.read();
             } catch (SecurityException expected) { denied = true; }
-            reply("read", bytes.toByteArray(), null, denied);
+            boolean writeDenied = false;
+            Uri shared = getIntent().getClipData().getItemAt(0).getUri();
+            try (android.os.ParcelFileDescriptor ignored = getContentResolver().openFileDescriptor(shared, "rw")) {
+                // Opening is sufficient to detect an unintended write grant.
+            } catch (SecurityException expected) { writeDenied = true; }
+            reply("read", bytes.toByteArray(), null, denied, writeDenied);
         } catch (Exception failure) {
-            reply("failed", null, failure.getClass().getSimpleName(), false);
+            reply("failed", null, failure.getClass().getSimpleName(), false, false);
         } finally { finish(); }
     }
 
-    private void reply(String stage, byte[] bytes, String failure, boolean otherDenied) {
+    private void reply(String stage, byte[] bytes, String failure, boolean otherDenied, boolean writeDenied) {
         sendBroadcast(new Intent(getIntent().getStringExtra("replyAction"))
             .setPackage(getIntent().getStringExtra("owner"))
             .putExtra("stage", stage).putExtra("bytes", bytes).putExtra("failure", failure)
-            .putExtra("uid", Process.myUid()).putExtra("otherDenied", otherDenied));
+            .putExtra("uid", Process.myUid()).putExtra("otherDenied", otherDenied).putExtra("writeDenied", writeDenied));
     }
 
     @Override public void onDestroy() {

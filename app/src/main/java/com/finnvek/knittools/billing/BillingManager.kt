@@ -87,6 +87,9 @@ class BillingManager
         private var connectionAttempt = 0
         private var connectionRetryJob: Job? = null
 
+        private val shouldIgnorePurchaseRequest: Boolean
+            get() = _isProPurchased.value || _purchaseFlowInFlight.value || alreadyOwnedRecoveryJob?.isActive == true
+
         fun initialize() {
             if (billingClient != null) destroy()
             _purchaseStateReady.value = false
@@ -167,7 +170,7 @@ class BillingManager
             activity: Activity,
             displayedOffer: SelectedOneTimeOffer?,
         ) {
-            if (_purchaseFlowInFlight.value || alreadyOwnedRecoveryJob?.isActive == true) return
+            if (shouldIgnorePurchaseRequest) return
             if (_purchasePending.value) {
                 emitPurchaseMessage(BillingUserMessage.PURCHASE_PENDING)
                 return
@@ -222,8 +225,11 @@ class BillingManager
             applyPurchaseFlowResult(result)
         }
 
-        fun restorePurchases() {
-            scope.launch { queryPurchases() }
+        fun refreshPurchasesOnResume() {
+            if (!_purchaseStateReady.value && !_purchaseQueryFailed.value) return
+            scope.launch {
+                if (awaitInitialBillingConnection()) queryPurchases()
+            }
         }
 
         fun retryProductDetails() {

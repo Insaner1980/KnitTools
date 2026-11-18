@@ -472,6 +472,33 @@ class ProjectYarnUsageRepositoryTest {
         }
 
     @Test
+    fun deletedSavedCardCanBeReplacedWithoutReplacingTheNoteOrItsUsage() =
+        runTest {
+            seed()
+            val notes = noteRepository()
+            val originalNote = notes.observeForProject(1).first().single()
+            val usage = create()
+            val firstCard = requireNotNull(notes.saveToMyYarn(originalNote.id))
+            val savedNote = notes.observeForProject(1).first().single()
+            assertEquals(firstCard, savedNote.savedYarnCardId)
+
+            assertTrue(yarnRepository.deleteCard(firstCard))
+            val afterDeletion = notes.observeForProject(1).first().single()
+            assertEquals(originalNote.copy(updatedAt = afterDeletion.updatedAt), afterDeletion)
+
+            val replacement = requireNotNull(notes.saveToMyYarn(originalNote.id))
+            assertTrue(firstCard != replacement)
+            assertEquals(replacement, notes.saveToMyYarn(originalNote.id))
+            assertEquals(1L, yarnRepository.getCard(replacement)?.linkedProjectId)
+            assertEquals(replacement.toString(), database.counterProjectDao().getProject(1)?.yarnCardIds)
+            val tracked = requireNotNull(repository.observeForProject(1).first()).mapNotNull { it.usage }.single()
+            assertEquals(
+                usage.copy(source = YarnUsageSource(replacement, originalNote.id), updatedAt = tracked.updatedAt),
+                tracked,
+            )
+        }
+
+    @Test
     fun unlinkAndRenameKeepSnapshotAndAmountsWhileCompletionReopeningAndDeletionRespectOwnership() =
         runTest {
             seed()

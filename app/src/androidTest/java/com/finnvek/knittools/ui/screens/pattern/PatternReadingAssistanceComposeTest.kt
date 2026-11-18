@@ -37,6 +37,7 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import androidx.test.core.app.ApplicationProvider
+import com.finnvek.knittools.R
 import com.finnvek.knittools.data.storage.writeOnePagePdf
 import com.finnvek.knittools.domain.model.PatternBookmark
 import org.junit.Assert.assertEquals
@@ -203,6 +204,7 @@ class PatternReadingAssistanceComposeTest {
     // CPD-OFF: Kahden lukuohjaimen Compose-fixture pidetaan skenaarion yhteydessa.
     @Test
     fun simultaneousGuidesExposeFortyEightDpHandlesAndCustomActions() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
         var horizontal = 0.5f
         var vertical = 0.5f
         composeRule.setContent {
@@ -238,29 +240,34 @@ class PatternReadingAssistanceComposeTest {
             }
         }
 
-        val horizontalNode = composeRule.onNodeWithContentDescription("Horizontal reading line")
+        val horizontalNode = composeRule.onNodeWithContentDescription(context.getString(R.string.pattern_horizontal_reading_line))
         horizontalNode
             .assertWidthIsEqualTo(48.dp)
             .assertHeightIsAtLeast(48.dp)
             .assert(
                 SemanticsMatcher.expectValue(
                     SemanticsProperties.StateDescription,
-                    "50% from the top. Row following paused.",
+                    context.getString(R.string.pattern_reading_line_manual_state, 50),
                 ),
             )
-        val verticalNode = composeRule.onNodeWithContentDescription("Vertical guide")
+        val verticalNode = composeRule.onNodeWithContentDescription(context.getString(R.string.pattern_vertical_guide_description))
         verticalNode
             .assertWidthIsEqualTo(48.dp)
             .assertHeightIsAtLeast(48.dp)
-            .assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "50% from the left"))
+            .assert(
+                SemanticsMatcher.expectValue(
+                    SemanticsProperties.StateDescription,
+                    context.getString(R.string.pattern_vertical_guide_position_state, 50),
+                ),
+            )
 
         val horizontalActions =
             horizontalNode.fetchSemanticsNode().config[SemanticsActions.CustomActions]
         val verticalActions =
             verticalNode.fetchSemanticsNode().config[SemanticsActions.CustomActions]
         composeRule.runOnIdle {
-            horizontalActions.first { it.label == "Move reading line down" }.action()
-            verticalActions.first { it.label == "Move vertical guide left" }.action()
+            horizontalActions.first { it.label == context.getString(R.string.pattern_reading_line_move_down) }.action()
+            verticalActions.first { it.label == context.getString(R.string.pattern_vertical_guide_move_left) }.action()
         }
 
         composeRule.runOnIdle {

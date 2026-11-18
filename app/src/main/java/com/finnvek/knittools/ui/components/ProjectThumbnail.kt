@@ -8,6 +8,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.Dp
 import androidx.core.net.toUri
@@ -38,7 +40,8 @@ fun ProjectThumbnail(
                 CraftType.CROCHET -> FabricKind.CROCHET
             },
         fabricColor = yarnColorForId(projectId, MaterialTheme.knitToolsColors.yarnPalette),
-        modifier = modifier,
+        // Reuse the rasterized fabric while scrolling instead of replaying every strand.
+        modifier = modifier.graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen },
     )
 }
 

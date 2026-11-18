@@ -1,9 +1,11 @@
 package com.finnvek.knittools
 
+import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.SystemClock
+import android.provider.MediaStore
 import android.text.SpannableString
 import androidx.lifecycle.ViewModelProvider
 import androidx.test.core.app.ActivityScenario
@@ -23,6 +25,7 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.File
+import java.util.UUID
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
@@ -68,12 +71,73 @@ class PatternShareIntentRestoreTest {
     fun discardedPdfIsNotReopenedByRestorationAndANewShareIsAccepted() = verifyPdfIntentRestore(discard = true)
 
     @Test
-    fun restoredTextConsumptionDoesNotClearPdfSendIntent() {
+    fun privateCachePdfCannotBeOpenedByFileUri() {
         val launch = isolatedMainIntent()
         val context = ApplicationProvider.getApplicationContext<Context>()
-        val source = File.createTempFile("pdf-after-text-", ".pdf", context.cacheDir)
+        val source = File.createTempFile("private-pdf-", ".pdf", context.cacheDir)
         try {
             writeOnePagePdf(source)
+            val view = launch.setAction(Intent.ACTION_VIEW).setDataAndType(Uri.fromFile(source), "application/pdf")
+            verifyRejectedPdf(view)
+        } finally {
+            source.delete()
+        }
+    }
+
+    @Test
+    fun explicitlyUnsupportedMimeTypeCannotOpenPdfEvenIfTheProviderReportsPdf() =
+        withPdfSource { source ->
+            verifyRejectedPdf(isolatedMainIntent().setAction(Intent.ACTION_VIEW).setDataAndType(source, "image/png"))
+        }
+
+    @Test
+    fun pdfSendDoesNotFollowAnIntentInTheStreamExtra() {
+        val send =
+            isolatedMainIntent()
+                .setAction(Intent.ACTION_SEND)
+                .setType("application/pdf")
+                .putExtra(Intent.EXTRA_STREAM, Intent(Intent.ACTION_VIEW, Uri.parse("https://example.invalid/")))
+        verifyRejectedPdf(send)
+    }
+
+    private fun verifyRejectedPdf(delivery: Intent) {
+        val launch = isolatedMainIntent()
+        val current = AtomicReference<MainActivity>()
+        ActivityScenario.launch<MainActivity>(launch).use { scenario ->
+            scenario.onActivity {
+                current.set(it)
+                InstrumentationRegistry.getInstrumentation().callActivityOnNewIntent(it, delivery)
+            }
+            try {
+                val deadline = SystemClock.elapsedRealtime() + 15_000
+                while (SystemClock.elapsedRealtime() < deadline) {
+                    var receiving = true
+                    var staged = false
+                    onActivity(current) { activity ->
+                        val model = ViewModelProvider(activity)[IncomingPdfViewModel::class.java]
+                        receiving = model.receiving.value
+                        staged = model.pending.value != null
+                    }
+                    if (!receiving) {
+                        assertTrue("Unsupported input must not stage a PDF", !staged)
+                        return
+                    }
+                    SystemClock.sleep(50)
+                }
+                throw AssertionError("PDF intent did not settle")
+            } finally {
+                onActivity(current) {
+                    ViewModelProvider(it)[IncomingPdfViewModel::class.java].discard()
+                    it.intent = launch
+                }
+            }
+        }
+    }
+
+    @Test
+    fun restoredTextConsumptionDoesNotClearPdfSendIntent() {
+        val launch = isolatedMainIntent()
+        withPdfSource { source ->
             ActivityScenario.launch<MainActivity>(launch).use { scenario ->
                 scenario.onActivity {
                     val textShare =
@@ -95,7 +159,7 @@ class PatternShareIntentRestoreTest {
                                 Intent(launch).apply {
                                     action = Intent.ACTION_SEND
                                     type = "application/pdf"
-                                    putExtra(Intent.EXTRA_STREAM, Uri.fromFile(source))
+                                    putExtra(Intent.EXTRA_STREAM, source)
                                 }
                             current.set(activity)
                         }
@@ -113,8 +177,6 @@ class PatternShareIntentRestoreTest {
                     awaitPdfIntentSettled(current, expectedPending = false)
                 }
             }
-        } finally {
-            source.delete()
         }
     }
 
@@ -126,15 +188,12 @@ class PatternShareIntentRestoreTest {
 
     private fun verifyPdfIntentRestore(discard: Boolean) {
         val context = ApplicationProvider.getApplicationContext<Context>()
-        check(context.packageName.endsWith(".activepolicytest") || context.packageName.endsWith(".notestest"))
-        val source = File.createTempFile("pdf-intent-", ".pdf", context.cacheDir)
-        writeOnePagePdf(source)
-        val original =
-            Intent(context, MainActivity::class.java).apply {
-                action = Intent.ACTION_VIEW
-                setDataAndType(Uri.fromFile(source), "application/pdf")
-            }
-        try {
+        withPdfSource { source ->
+            val original =
+                Intent(context, MainActivity::class.java).apply {
+                    action = Intent.ACTION_VIEW
+                    setData(source)
+                }
             val launch = Intent(context, MainActivity::class.java).setAction(Intent.ACTION_MAIN)
             ActivityScenario.launch<MainActivity>(launch).use { scenario ->
                 val current = AtomicReference<MainActivity>()
@@ -197,8 +256,34 @@ class PatternShareIntentRestoreTest {
                     onActivity(current) { it.finish() }
                 }
             }
+        }
+    }
+
+    private fun withPdfSource(test: (Uri) -> Unit) {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        check(context.packageName.endsWith(".activepolicytest") || context.packageName.endsWith(".notestest"))
+        val resolver = context.contentResolver
+        val file = File.createTempFile("pdf-share-", ".pdf", context.cacheDir)
+        try {
+            writeOnePagePdf(file)
+            val values =
+                ContentValues().apply {
+                    put(MediaStore.Downloads.DISPLAY_NAME, "knittools-test-${UUID.randomUUID()}.pdf")
+                    put(MediaStore.Downloads.MIME_TYPE, "application/pdf")
+                    put(MediaStore.Downloads.IS_PENDING, 1)
+                }
+            val uri = checkNotNull(resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values))
+            try {
+                checkNotNull(resolver.openOutputStream(uri)).use { output ->
+                    file.inputStream().use { it.copyTo(output) }
+                }
+                assertEquals("application/pdf", resolver.getType(uri))
+                test(uri)
+            } finally {
+                resolver.delete(uri, null, null)
+            }
         } finally {
-            source.delete()
+            file.delete()
         }
     }
 

@@ -13,6 +13,7 @@ import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsFocused
@@ -24,7 +25,7 @@ import androidx.compose.ui.test.isDialog
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.longClick
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.performTextReplacement
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.text.AnnotatedString
 import androidx.core.net.toUri
@@ -40,6 +41,7 @@ import com.finnvek.knittools.pro.ProState
 import com.finnvek.knittools.pro.ProStatus
 import com.finnvek.knittools.repository.ProgressPhotoRepository
 import com.finnvek.knittools.ui.localeThemeCases
+import com.finnvek.knittools.ui.navigation.awaitKeyboard
 import com.finnvek.knittools.ui.theme.KnitToolsTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
@@ -141,16 +143,14 @@ class AuditPart12PhotoNoteUiTest(
             }
             val values = photoNoteEmojiCases() + ("b".repeat(101) to "b".repeat(100))
             for ((input, expected) in values) {
-                openEditor()
-                val field = compose.onNode(hasSetTextAction())
-                field.performClick().assertIsFocused().performTextReplacement(input)
-                field.assert(SemanticsMatcher.expectValue(SemanticsProperties.EditableText, AnnotatedString(expected)))
+                editNote(input).assert(SemanticsMatcher.expectValue(SemanticsProperties.EditableText, AnnotatedString(expected)))
                 val save = compose.onNode(hasText(localized.getString(R.string.confirm)) and hasAnyAncestor(isDialog()))
                 save.assertIsDisplayed()
                 val density = localized.resources.displayMetrics.density
                 val bounds = save.fetchSemanticsNode().touchBoundsInRoot
                 assertTrue(bounds.height / density >= 47.5f && bounds.width / density >= 47.5f)
                 save.performTouchInput { click() }
+                compose.awaitKeyboard(visible = false)
                 compose.waitForIdle()
                 assertEquals(
                     expected,
@@ -163,13 +163,13 @@ class AuditPart12PhotoNoteUiTest(
                     },
                 )
             }
-            openEditor()
-            compose.onNode(hasSetTextAction()).performTextReplacement("Cancelled change")
+            editNote("Cancelled change")
             compose
                 .onNode(
                     hasText(localized.getString(R.string.cancel)) and hasAnyAncestor(isDialog()),
                 ).assertIsDisplayed()
                 .performTouchInput { click() }
+            compose.awaitKeyboard(visible = false)
             assertEquals(
                 "b".repeat(100),
                 runBlocking {
@@ -195,9 +195,12 @@ class AuditPart12PhotoNoteUiTest(
         }
     }
 
-    private fun openEditor() {
+    private fun editNote(input: String): SemanticsNodeInteraction {
         compose.onNode(SemanticsMatcher.keyIsDefined(SemanticsActions.OnLongClick)).performTouchInput { longClick() }
-        compose.onNode(hasSetTextAction()).assertIsDisplayed()
+        val field = compose.onNode(hasSetTextAction() and hasAnyAncestor(isDialog()))
+        field.assertIsDisplayed().performClick()
+        compose.awaitKeyboard(visible = true)
+        return field.assertIsFocused().performSemanticsAction(SemanticsActions.SetText) { assertTrue(it(AnnotatedString(input))) }
     }
 
     companion object {

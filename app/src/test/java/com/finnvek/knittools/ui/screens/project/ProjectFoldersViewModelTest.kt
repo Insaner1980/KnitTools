@@ -5,6 +5,9 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModelStore
 import com.finnvek.knittools.data.datastore.AppPreferences
 import com.finnvek.knittools.data.datastore.PreferencesManager
+import com.finnvek.knittools.data.local.ImmediateDatabaseTransactionRunner
+import com.finnvek.knittools.data.local.ProjectFolderDao
+import com.finnvek.knittools.data.local.ProjectFolderOrganizationRow
 import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.domain.model.CraftType
 import com.finnvek.knittools.domain.model.MainCounterLabelType
@@ -29,10 +32,13 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
@@ -44,6 +50,7 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import java.io.IOException
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ProjectFoldersViewModelTest {
@@ -137,6 +144,7 @@ class ProjectFoldersViewModelTest {
         runTest {
             val vm = viewModel(emitSnapshot = false)
             assertTrue(vm.folderState.value.isLoading)
+            assertFalse(vm.content.value.isLoading)
             assertEquals(listOf(4L, 2L, 1L, 3L), vm.activeProjects.value.map(CounterProject::id))
         }
 
@@ -213,6 +221,54 @@ class ProjectFoldersViewModelTest {
         }
 
     @Test
+    fun `restored folder survives a failed first read and receives membership updates after retry`() =
+        runTest {
+            val folder = ProjectFolderOrganizationRow(1, "Gifts", 0, 1, 1, false)
+            val rows = MutableStateFlow(listOf(folder))
+            var failNextRead = true
+            val dao = mockk<ProjectFolderDao>()
+            every { dao.observeOrganizationRows() } returns
+                flow {
+                    if (failNextRead) {
+                        failNextRead = false
+                        throw IOException("Synthetic organization read failure")
+                    }
+                    emitAll(rows)
+                }
+            val realRepository = ProjectFolderRepository(dao, ImmediateDatabaseTransactionRunner)
+            every { folderRepository.observeOrganization(any()) } answers {
+                realRepository.observeOrganization(firstArg())
+            }
+
+            val filter = ProjectFolderFilter.Folder(1)
+            val vm = viewModel(SavedStateHandle(mapOf("project_folder_filter" to "folder:1")), emitSnapshot = false)
+            assertTrue(vm.folderState.value.readFailed)
+            assertTrue(vm.content.value.isLoading)
+            assertEquals(filter, vm.selectedFolderFilter.value)
+
+            advanceTimeBy(250)
+            runCurrent()
+            assertFalse(vm.folderState.value.readFailed)
+            assertFalse(vm.content.value.isLoading)
+            assertEquals(listOf(1L), vm.activeProjects.value.map(CounterProject::id))
+
+            rows.value = listOf(folder.copy(projectId = null, assignedFolderId = null, isCompleted = null))
+            assertTrue(vm.activeProjects.value.isEmpty())
+            assertEquals(filter, vm.selectedFolderFilter.value)
+        }
+
+    @Test
+    fun `stale folder click cannot select a folder already removed from the snapshot`() =
+        runTest {
+            val vm = viewModel()
+            organization.emit(snapshot.copy(folders = folders.filterNot { it.id == 3L }))
+
+            vm.selectFolder(ProjectFolderFilter.Folder(3))
+
+            assertEquals(ProjectFolderFilter.AllProjects, vm.selectedFolderFilter.value)
+        }
+
+    @Test
     fun `missing restored folder and empty loaded database fall back but a cold task does not inherit filter`() =
         runTest {
             val missing = viewModel(SavedStateHandle(mapOf("project_folder_filter" to "folder:99")))
@@ -263,9 +319,31 @@ class ProjectFoldersViewModelTest {
 
     // CPD-OFF: Kansiomuutosten skenaariokohtainen asetelma pidetaan testien yhteydessa.
     @Test
+    fun `stale row gestures cannot select projects moved out of the visible folder`() =
+        runTest {
+            val vm = viewModel()
+            vm.selectFolder(ProjectFolderFilter.Folder(1))
+            vm.enterMultiSelectMode(2)
+            organization.emit(
+                snapshot.copy(
+                    memberships = snapshot.memberships.map { if (it.projectId == 2L) it.copy(folderId = 2) else it },
+                ),
+            )
+            assertTrue(vm.selectedProjectIds.value.isEmpty())
+            vm.toggleProjectSelection(2)
+            assertTrue(vm.selectedProjectIds.value.isEmpty())
+
+            vm.exitMultiSelectMode()
+            vm.enterMultiSelectMode(2)
+            assertFalse(vm.isMultiSelectMode.value)
+            assertTrue(vm.selectedProjectIds.value.isEmpty())
+        }
+
+    @Test
     fun `bulk move commits before exiting selection and emits focusable success`() =
         runTest {
             val vm = viewModel()
+            vm.toggleShowCompleted()
             vm.enterMultiSelectMode(1)
             vm.toggleProjectSelection(5)
             val result = ProjectFolderMutationResult.ProjectsMoved(setOf(1L, 5L), 2L)
@@ -320,6 +398,7 @@ class ProjectFoldersViewModelTest {
     fun `bulk move success survives an absent collector after selection exits`() =
         runTest {
             val vm = viewModel()
+            vm.toggleShowCompleted()
             vm.enterMultiSelectMode(1)
             vm.toggleProjectSelection(5)
             val result = ProjectFolderMutationResult.ProjectsMoved(setOf(1L, 5L), 2L)
@@ -356,12 +435,12 @@ class ProjectFoldersViewModelTest {
         runTest {
             val vm = viewModel()
             vm.enterMultiSelectMode(1)
-            vm.toggleProjectSelection(99)
-            coEvery { folderRepository.moveProjects(setOf(1L, 99L), 2L) } returns
+            vm.toggleProjectSelection(2)
+            coEvery { folderRepository.moveProjects(setOf(1L, 2L), 2L) } returns
                 ProjectFolderMutationResult.ProjectMissing
             vm.moveSelectedProjects(2)
             assertTrue(vm.isMultiSelectMode.value)
-            assertEquals(setOf(1L, 99L), vm.selectedProjectIds.value)
+            assertEquals(setOf(1L, 2L), vm.selectedProjectIds.value)
             assertEquals(ProjectFolderMutationResult.ProjectMissing, vm.folderState.value.mutationError)
         }
 

@@ -14,9 +14,12 @@ import com.finnvek.knittools.data.local.ProjectDocumentSchemaConstraints
 import kotlinx.coroutines.CompletableDeferred
 import java.util.concurrent.atomic.AtomicReference
 
-internal fun notesTestContext(): Context =
+internal val Context.isIsolatedRoomTestPackage: Boolean
+    get() = packageName == "com.finnvek.knittools.notestest" || packageName == "com.finnvek.knittools.activepolicytest"
+
+internal fun isolatedRoomTestContext(): Context =
     ApplicationProvider.getApplicationContext<Context>().also {
-        check(it.packageName == "com.finnvek.knittools.notestest")
+        check(it.isIsolatedRoomTestPackage)
     }
 
 internal fun auditDatabase(context: Context): KnitToolsDatabase =

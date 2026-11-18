@@ -1,10 +1,12 @@
 package com.finnvek.knittools.ui.navigation
 
+import android.content.ContentValues
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.pdf.PdfDocument
-import android.net.Uri
+import android.os.Build
 import android.os.SystemClock
+import android.provider.MediaStore
 import android.view.KeyEvent
 import android.view.accessibility.AccessibilityNodeInfo
 import androidx.core.view.WindowInsetsControllerCompat
@@ -228,23 +230,30 @@ class StartupReadinessTest {
     @Test
     fun pdfViewAndShareWaitForTheCopiedDocumentAndProjectChoices() {
         seedProject()
-        val source = File(app.cacheDir, "startup-test.pdf")
-        val pdf = PdfDocument()
+        val values =
+            ContentValues().apply {
+                put(MediaStore.Downloads.DISPLAY_NAME, "startup-${SystemClock.elapsedRealtime()}.pdf")
+                put(MediaStore.Downloads.MIME_TYPE, "application/pdf")
+                put(MediaStore.Downloads.IS_PENDING, 1)
+            }
+        val resolver = app.contentResolver
+        val source = checkNotNull(resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values))
         try {
-            val page = pdf.startPage(PdfDocument.PageInfo.Builder(300, 400, 1).create())
-            pdf.finishPage(page)
-            source.outputStream().use(pdf::writeTo)
-        } finally {
-            pdf.close()
-        }
-        try {
+            val pdf = PdfDocument()
+            try {
+                val page = pdf.startPage(PdfDocument.PageInfo.Builder(300, 400, 1).create())
+                pdf.finishPage(page)
+                checkNotNull(resolver.openOutputStream(source)).use(pdf::writeTo)
+            } finally {
+                pdf.close()
+            }
             listOf(Intent.ACTION_VIEW, Intent.ACTION_SEND).forEach { action ->
                 completions.set(0)
-                val intent = launcherIntent().setAction(action)
+                val intent = launcherIntent().setAction(action).addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 if (action == Intent.ACTION_VIEW) {
-                    intent.setDataAndType(Uri.fromFile(source), "application/pdf")
+                    intent.setDataAndType(source, "application/pdf")
                 } else {
-                    intent.setType("application/pdf").putExtra(Intent.EXTRA_STREAM, Uri.fromFile(source))
+                    intent.setType("application/pdf").putExtra(Intent.EXTRA_STREAM, source)
                 }
                 withLaunch(intent) { activity ->
                     awaitReady(activity)
@@ -253,7 +262,7 @@ class StartupReadinessTest {
                 }
             }
         } finally {
-            source.delete()
+            resolver.delete(source, null, null)
         }
     }
 
@@ -314,19 +323,27 @@ class StartupReadinessTest {
         waitNode { it.text?.toString() in titles }
     }
 
-    private fun waitText(value: String) =
-        waitNode { it.text?.toString().equals(value, true) || it.contentDescription?.toString() == value }
+    private fun waitText(value: String) = waitNode { it.matchesLabel(value) }
 
     private fun clickText(value: String) {
-        var node = waitText(value)
-        while (!node.isClickable) node = checkNotNull(node.parent)
-        assertTrue(node.performAction(AccessibilityNodeInfo.ACTION_CLICK))
+        var target: AccessibilityNodeInfo? = null
+        waitNode { node ->
+            if (!node.matchesLabel(value)) return@waitNode false
+            target = generateSequence(node) { it.parent }.firstOrNull { it.isClickable && it.isEnabled }
+            target != null
+        }
+        assertTrue(checkNotNull(target).performAction(AccessibilityNodeInfo.ACTION_CLICK))
     }
+
+    private fun AccessibilityNodeInfo.matchesLabel(value: String): Boolean =
+        text?.toString().equals(value, true) || contentDescription?.toString() == value
 
     private fun waitNode(predicate: (AccessibilityNodeInfo) -> Boolean): AccessibilityNodeInfo {
         val deadline = SystemClock.uptimeMillis() + TIMEOUT
         while (SystemClock.uptimeMillis() < deadline) {
-            val root = instrumentation.uiAutomation.rootInActiveWindow
+            val automation = instrumentation.uiAutomation
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) automation.clearCache()
+            val root = automation.rootInActiveWindow
             if (root?.packageName?.toString() == app.packageName) {
                 findNode(root, predicate)?.let { return it }
             }

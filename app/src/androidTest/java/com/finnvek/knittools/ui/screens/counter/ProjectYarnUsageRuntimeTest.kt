@@ -153,19 +153,34 @@ class ProjectYarnUsageRuntimeTest {
         assertEquals(initial.amounts, currentUsage().amounts)
         val stash = runBlocking { database.yarnCardDao().getCard(cardId)?.quantityInStash }
 
+        scrollToNode("note saved to My Yarn") {
+            it.text?.toString().equals(text(R.string.saved_to_my_yarn), ignoreCase = true)
+        }
+        clickDescription(text(R.string.yarn_usage_edit_named, noteName))
+        edit(YarnUsageField.USED, "400")
+        save()
+        val paired = currentUsage()
+        assertEquals(initial.id, paired.id)
+        assertEquals(cardId, paired.source.yarnCardId)
+        assertEquals(noteId, paired.source.projectYarnNoteId)
+        assertEquals(initial.amounts.copy(usedMeters = 400.0), paired.amounts)
+
         scenario?.close()
         scenario = null
         runBlocking { counter.archiveProject(projectId, System.currentTimeMillis()) }
-        assertEquals(initial.amounts, currentUsage().amounts)
+        assertEquals(paired.amounts, currentUsage().amounts)
         runBlocking { counter.reactivateProject(projectId, counter.getProject(projectId)?.completedAt) }
-        assertEquals(initial.amounts, currentUsage().amounts)
+        assertEquals(paired.amounts, currentUsage().amounts)
         launchProject()
-        runBlocking { yarn.updateLinkedProjectId(cardId, null) }
-        assertEquals(initial.amounts, currentUsage().amounts)
-        runBlocking { database.projectYarnNoteDao().delete(noteId) }
-        scrollToNode("unlinked usage") { it.text?.toString() == text(R.string.yarn_usage_unlinked) }
+        clickDescription(text(R.string.unlink_yarn))
+        waitUntil("card unlinked") { runBlocking { requireNotNull(yarn.getCard(cardId)).linkedProjectId == null } }
+        assertEquals(paired.amounts, currentUsage().amounts)
         assertEquals(stash, runBlocking { database.yarnCardDao().getCard(cardId)?.quantityInStash })
-        runBlocking { yarn.deleteCard(cardId) }
+        assertTrue(runBlocking { yarn.deleteCard(cardId) })
+        scrollToNode("save note again") { it.text?.toString() == text(R.string.save_to_my_yarn) }
+        assertEquals(noteId, currentUsage().source.projectYarnNoteId)
+        assertEquals(paired.amounts, currentUsage().amounts)
+        runBlocking { database.projectYarnNoteDao().delete(noteId) }
         scrollToNode("orphan usage") { it.text?.toString() == text(R.string.yarn_usage_unavailable) }
         assertEquals(initial.sourceNameSnapshot, currentUsage().sourceNameSnapshot)
         clickDescription(text(R.string.yarn_usage_edit_named, noteName))

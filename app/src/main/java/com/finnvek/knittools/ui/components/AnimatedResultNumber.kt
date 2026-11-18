@@ -8,10 +8,12 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import com.finnvek.knittools.ui.theme.ComponentDimens
 
 @Composable
 fun AnimatedResultNumber(
@@ -20,22 +22,31 @@ fun AnimatedResultNumber(
     content: @Composable (String) -> Unit,
 ) {
     val density = LocalDensity.current
-    val offsetPx = with(density) { 6.dp.roundToPx() }
+    val offsetPx = with(density) { ComponentDimens.AnimatedResultOffset.roundToPx() }
 
     AnimatedContent(
         targetState = targetValue,
         modifier = modifier,
         transitionSpec = {
             (
-                fadeIn(tween(200, easing = FastOutSlowInEasing)) +
-                    slideInVertically(tween(200, easing = FastOutSlowInEasing)) { offsetPx }
+                fadeIn(tween(ComponentDimens.AnimatedResultEnterDurationMillis, easing = FastOutSlowInEasing)) +
+                    slideInVertically(
+                        tween(ComponentDimens.AnimatedResultEnterDurationMillis, easing = FastOutSlowInEasing),
+                    ) { offsetPx }
             ).togetherWith(
-                fadeOut(tween(150, easing = FastOutSlowInEasing)) +
-                    slideOutVertically(tween(150, easing = FastOutSlowInEasing)) { -offsetPx },
+                fadeOut(tween(ComponentDimens.AnimatedResultExitDurationMillis, easing = FastOutSlowInEasing)) +
+                    slideOutVertically(
+                        tween(ComponentDimens.AnimatedResultExitDurationMillis, easing = FastOutSlowInEasing),
+                    ) { -offsetPx },
             )
         },
         label = "resultNumber",
     ) { value ->
-        content(value)
+        Box(
+            modifier = if (value == targetValue) Modifier else Modifier.clearAndSetSemantics {},
+            propagateMinConstraints = true,
+        ) {
+            content(value)
+        }
     }
 }

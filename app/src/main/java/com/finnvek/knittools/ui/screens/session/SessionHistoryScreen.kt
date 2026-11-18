@@ -1,22 +1,22 @@
 package com.finnvek.knittools.ui.screens.session
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -26,20 +26,27 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.finnvek.knittools.R
+import com.finnvek.knittools.ui.components.CollectWithLifecycleEffect
 import com.finnvek.knittools.ui.components.ConfirmationDialog
+import com.finnvek.knittools.ui.components.ProjectNameLabel
 import com.finnvek.knittools.ui.components.SessionItem
 import com.finnvek.knittools.ui.components.ToolScreenScaffold
+import com.finnvek.knittools.ui.layout.ContentWidthPolicy
 
 @Composable
-fun SessionHistoryScreen(
-    onBack: () -> Unit,
-    onUpgradeToPro: () -> Unit = {},
-    viewModel: SessionHistoryViewModel = hiltViewModel(),
-) {
+fun SessionHistoryScreen(onBack: () -> Unit) {
+    val viewModel: SessionHistoryViewModel = hiltViewModel()
     val sessions by viewModel.sessions.collectAsStateWithLifecycle()
-    val isPro by viewModel.isPro.collectAsStateWithLifecycle()
     val projectMissing by viewModel.projectMissing.collectAsStateWithLifecycle()
+    val projectName by viewModel.projectName.collectAsStateWithLifecycle()
+    val listState = rememberLazyListState()
     var pendingDeleteSessionId by rememberSaveable { mutableStateOf<Long?>(null) }
+    val snackbarHostState = remember { SnackbarHostState() }
+    val deleteErrorMessage = stringResource(R.string.generic_error_unknown)
+
+    CollectWithLifecycleEffect({ viewModel.deleteErrors }) {
+        snackbarHostState.showSnackbar(deleteErrorMessage)
+    }
 
     LaunchedEffect(projectMissing) {
         if (projectMissing) {
@@ -62,8 +69,10 @@ fun SessionHistoryScreen(
     }
 
     ToolScreenScaffold(
+        contentWidthPolicy = ContentWidthPolicy.ListDetail,
         title = stringResource(R.string.session_history_title),
         onBack = onBack,
+        snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { padding ->
         Column(
             modifier =
@@ -71,29 +80,13 @@ fun SessionHistoryScreen(
                     .fillMaxSize()
                     .padding(padding),
         ) {
-            if (!isPro) {
-                Card(
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 8.dp)
-                            .clickable(onClick = onUpgradeToPro),
-                    shape = MaterialTheme.shapes.medium,
-                    colors =
-                        CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                        ),
-                ) {
-                    Text(
-                        text = stringResource(R.string.pro_full_history_hint),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.secondary,
-                        modifier = Modifier.padding(12.dp),
+            if (sessions.isEmpty()) {
+                projectName?.let { name ->
+                    ProjectNameLabel(
+                        name = name,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                     )
                 }
-            }
-
-            if (sessions.isEmpty()) {
                 Column(
                     modifier =
                         Modifier
@@ -110,9 +103,19 @@ fun SessionHistoryScreen(
                 }
             } else {
                 LazyColumn(
+                    state = listState,
                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
+                    // Insightsista tullessa otsikko on pelkkä "History", joten projekti
+                    // pitää lukea ruudulta. Sama osiomerkki kuin Libraryssa.
+                    projectName?.let { name ->
+                        item {
+                            ProjectNameLabel(
+                                name = name,
+                                modifier = Modifier.padding(bottom = 4.dp),
+                            )
+                        }
+                    }
                     items(sessions, key = { it.id }) { session ->
                         SessionItem(
                             startedAt = session.startedAt,
@@ -120,6 +123,7 @@ fun SessionHistoryScreen(
                             startRow = session.startRow,
                             endRow = session.endRow,
                             onDelete = { pendingDeleteSessionId = session.id },
+                            zoneId = session.zoneId,
                         )
                     }
                 }

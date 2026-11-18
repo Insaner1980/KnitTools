@@ -22,6 +22,8 @@ class DemoDataSeederSourceTest {
             "YarnCard(",
             "SavedPatternEntity(",
         ).forEach { expected -> assertTrue(source.contains(expected)) }
+        assertTrue(source.contains("source = SavedPatternSource.WebLink.persistedValue"))
+        assertFalse(source.contains("source = SavedPatternSource.Other.persistedValue"))
     }
 
     @Test
@@ -50,6 +52,19 @@ class DemoDataSeederSourceTest {
 
         assertTrue(source.contains(") = Unit"))
         assertFalse(source.contains("CounterProjectEntity"))
+    }
+
+    @Test
+    fun `debug seed and repository use the one completed session limit`() {
+        val seed = debugSeedWriterSource()
+        val repository = File("src/main/java/com/finnvek/knittools/repository/CounterRepository.kt").readText()
+        val dao = File("src/main/java/com/finnvek/knittools/data/local/SessionDao.kt").readText()
+
+        assertTrue(seed.contains("MAX_COMPLETED_SESSIONS - sessions.size"))
+        assertTrue(repository.contains("import com.finnvek.knittools.data.local.MAX_COMPLETED_SESSIONS"))
+        assertTrue(dao.contains("internal const val MAX_COMPLETED_SESSIONS = 100_000L"))
+        assertFalse(seed.contains("100_000L"))
+        assertFalse(repository.contains("const val MAX_COMPLETED_SESSIONS"))
     }
 
     private fun debugSeedWriterSource(): String =

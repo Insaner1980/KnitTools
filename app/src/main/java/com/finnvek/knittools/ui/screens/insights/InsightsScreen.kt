@@ -1,62 +1,59 @@
 package com.finnvek.knittools.ui.screens.insights
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
-import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.collapse
 import androidx.compose.ui.semantics.expand
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.calculator.DurationDisplayFormatter
 import com.finnvek.knittools.domain.calculator.formatIntegerForDisplay
-import com.finnvek.knittools.ui.components.SegmentedToggle
+import com.finnvek.knittools.domain.model.CounterProject
+import com.finnvek.knittools.ui.components.FilterMenuItem
+import com.finnvek.knittools.ui.components.HubListItem
+import com.finnvek.knittools.ui.components.ProjectFilterOption
+import com.finnvek.knittools.ui.components.ProjectFilterPill
+import com.finnvek.knittools.ui.components.ScreenTitleSelector
 import com.finnvek.knittools.ui.components.durationText
 import com.finnvek.knittools.ui.components.localizedDateTimePattern
 import com.finnvek.knittools.ui.components.rememberCurrentLocale
+import com.finnvek.knittools.ui.layout.AdaptiveDropdownMenu
+import com.finnvek.knittools.ui.layout.ContentWidthPolicy
+import com.finnvek.knittools.ui.layout.LocalAdaptiveModalWindow
+import com.finnvek.knittools.ui.layout.contentWidth
 import com.finnvek.knittools.ui.theme.InsightsDimens
-import com.finnvek.knittools.ui.theme.yarnColorForId
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
@@ -65,159 +62,537 @@ import java.time.format.DateTimeFormatter
 fun InsightsScreen(
     onProUpgrade: () -> Unit = {},
     onLaunchCounter: (Long) -> Unit = {},
-    viewModel: InsightsViewModel = hiltViewModel(),
+    onSessionHistory: (Long) -> Unit = {},
+    viewModelProvider: @Composable () -> InsightsViewModel = { hiltViewModel() },
+    weeklyChartRequestId: String? = null,
+    onWeeklyChartRequestHandled: (String) -> Unit = {},
 ) {
+    val viewModel = viewModelProvider()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    var selectedDataIndex by remember { mutableStateOf<Int?>(null) }
-
-    // Valinta on ohimenevää käyttöliittymätilaa: se nollautuu, kun aikaväli tai projektisuodatin vaihtuu.
-    LaunchedEffect(uiState.timeRange, uiState.selectedProjectId) {
-        selectedDataIndex = null
-    }
-    val rangeLabel = insightsRangeLabel(uiState)
-
-    Scaffold(
-        containerColor = MaterialTheme.colorScheme.background,
-        // Insights oli ainoa ylätason välilehti ilman otsikkoa: sisältö alkoi suoraan
-        // tilapalkin alta. Sama TopAppBar kuin Libraryssa ja Toolsissa.
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = stringResource(R.string.insights_title),
-                        style = MaterialTheme.typography.headlineMedium,
-                    )
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
-            )
-        },
-    ) { padding ->
-        LazyColumn(
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-                    .padding(horizontal = InsightsDimens.ScreenHorizontalPadding),
-        ) {
-            item {
-                InsightsFilters(
-                    uiState = uiState,
-                    onSelectRange = viewModel::selectTimeRange,
-                    onSelectProject = viewModel::selectProject,
-                )
-            }
-
-            when {
-                uiState.isLoading -> item { InsightsSkeleton() }
-                !uiState.hasAnySessionData -> item { InsightsEmptyState() }
-                else ->
-                    insightsContent(
-                        uiState = uiState,
-                        rangeLabel = rangeLabel,
-                        selectedDataIndex = selectedDataIndex,
-                        onSelectData = { selectedDataIndex = it },
-                        onProUpgrade = onProUpgrade,
-                        onLaunchCounter = onLaunchCounter,
-                    )
-            }
-        }
-    }
+    InsightsScreenContent(
+        uiState = uiState,
+        onSelectRange = viewModel::selectTimeRange,
+        onSelectProject = viewModel::selectProject,
+        onProUpgrade = onProUpgrade,
+        onLaunchCounter = onLaunchCounter,
+        onSessionHistory = onSessionHistory,
+        weeklyChartRequestId = weeklyChartRequestId,
+        onWeeklyChartRequestHandled = onWeeklyChartRequestHandled,
+        onWeeklyChartVisible = viewModel::onWeeklyChartVisible,
+    )
 }
 
-private fun LazyListScope.insightsContent(
-    uiState: InsightsUiState,
-    rangeLabel: String,
-    selectedDataIndex: Int?,
-    onSelectData: (Int) -> Unit,
-    onProUpgrade: () -> Unit,
-    onLaunchCounter: (Long) -> Unit,
-) {
-    item { InsightsRangeKicker(text = rangeLabel) }
-    item { InsightsHero(state = uiState) }
-    item { InsightsStrongRule() }
-    item { InsightsStatsRow(state = uiState) }
-    item { InsightsTrendLine(state = uiState) }
-    item { InsightsHairline() }
-
-    item {
-        InsightsSectionHeader(
-            title = stringResource(R.string.insights_section_every_day),
-            meta = daysMetaText(uiState),
-        )
-    }
-    item {
-        if (uiState.isPro) {
-            if (uiState.timeRange == TimeRange.ALL_TIME) {
-                uiState.fabric?.let { fabric ->
-                    InsightsFabric(
-                        model = fabric,
-                        selectedIndex = selectedDataIndex,
-                        onSelectDay = onSelectData,
-                    )
-                }
-            } else {
-                InsightsChart(
-                    buckets = uiState.chartBuckets,
-                    timeRange = uiState.timeRange,
-                    today = uiState.rangeEnd,
-                    selectedIndex = selectedDataIndex ?: defaultSelectedBucketIndex(uiState.chartBuckets),
-                    contentDescription = chartContentDescription(uiState, rangeLabel),
-                    onSelectBucket = onSelectData,
-                )
-            }
-        } else {
-            InsightsProChartCard(onProUpgrade = onProUpgrade)
-        }
-    }
-
-    item {
-        InsightsSectionHeader(title = stringResource(R.string.insights_section_where_time_went))
-    }
-    if (uiState.timePerProject.isEmpty()) {
-        item { InsightsRangeEmptyNote(timeRange = uiState.timeRange) }
-    } else {
-        item { InsightsHairline() }
-        itemsIndexed(uiState.timePerProject, key = { _, project -> project.projectId }) { index, project ->
-            InsightsProjectRow(
-                project = project,
-                today = uiState.rangeEnd,
-                rangeTotalMinutes = uiState.totalMinutes,
-                onClick = { onLaunchCounter(project.projectId) },
-            )
-            if (index < uiState.timePerProject.lastIndex) {
-                InsightsHairline()
-            }
-        }
-    }
-    item { InsightsHairline() }
-    item { InsightsFooterNote(text = stringResource(footerMessageResource())) }
-    item { Spacer(modifier = Modifier.height(InsightsDimens.ContentBottomPadding)) }
-}
-
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun InsightsFilters(
+internal fun InsightsScreenContent(
     uiState: InsightsUiState,
     onSelectRange: (TimeRange) -> Unit,
     onSelectProject: (Long?) -> Unit,
+    onProUpgrade: () -> Unit = {},
+    onLaunchCounter: (Long) -> Unit = {},
+    onSessionHistory: (Long) -> Unit = {},
+    weeklyChartRequestId: String? = null,
+    onWeeklyChartRequestHandled: (String) -> Unit = {},
+    onWeeklyChartVisible: () -> Unit = {},
 ) {
-    Column(
+    var selectedBucketDay by rememberSaveable(uiState.timeRange, uiState.selectedProjectId) {
+        mutableStateOf<Long?>(null)
+    }
+    var selectedFabricDay by rememberSaveable(uiState.timeRange, uiState.selectedProjectId) {
+        mutableStateOf<Long?>(null)
+    }
+    val selectedBucketIndex =
+        uiState.chartBuckets
+            .indexOfFirst { it.bucketStart.toEpochDay() == selectedBucketDay }
+            .takeIf { it >= 0 }
+    val selectedFabricDate = selectedFabricDay?.let(LocalDate::ofEpochDay)
+    // Loading has no authoritative buckets. Validate restored identities only after data arrives.
+    LaunchedEffect(uiState.isLoading, uiState.chartBuckets, uiState.projectFabric) {
+        if (!uiState.isLoading) {
+            if (selectedBucketIndex == null) selectedBucketDay = null
+            if (uiState.projectFabric?.days?.none { it.date == selectedFabricDate } != false) {
+                selectedFabricDay = null
+            }
+        }
+    }
+    val effectiveBucketIndex =
+        selectedBucketIndex ?: defaultSelectedBucketIndex(uiState.chartBuckets)
+    val rangeLabel = insightsRangeLabel(uiState)
+    val listState = rememberLazyListState()
+    InsightsJourneyEffects(
+        state = uiState,
+        listState = listState,
+        requestId = weeklyChartRequestId,
+        onPrepareWeeklyChart = {
+            onSelectProject(null)
+            onSelectRange(TimeRange.THIS_WEEK)
+        },
+        onRequestHandled = onWeeklyChartRequestHandled,
+        onChartVisible = onWeeklyChartVisible,
+    )
+
+    CompositionLocalProvider(LocalAdaptiveModalWindow provides true) {
+        // Otsikko kulkee sisältöpalstan vasemmassa reunassa myös hyvin leveässä ikkunassa.
+        Scaffold(
+            modifier = Modifier.fillMaxSize().wrapContentWidth().contentWidth(ContentWidthPolicy.Chart),
+            containerColor = MaterialTheme.colorScheme.background,
+            // Otsikko on valittu aikaväli, ei näytön nimi: alanavigaatio kertoo jo missä ollaan,
+            // ja aikavälivalitsin omana rivinään söi 124 dp ennen kuin yhtään dataa näkyi.
+            topBar = {
+                TopAppBar(
+                    title = { InsightsRangeTitle(uiState = uiState, onSelectRange = onSelectRange) },
+                    // Palkki maalaa oman taustansa, muuten vieritetty sisältö näkyy otsikon
+                    // takaa katkaistuina kirjaimina. Väri on sama kuin Scaffoldin.
+                    colors =
+                        TopAppBarDefaults.topAppBarColors(
+                            containerColor = MaterialTheme.colorScheme.background,
+                        ),
+                )
+            },
+        ) { padding ->
+            Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.TopCenter) {
+                // Do not measure the restored list against a one-item loading placeholder.
+                if (uiState.isLoading) {
+                    Box(Modifier.contentWidth(ContentWidthPolicy.Form).fillMaxWidth()) { InsightsSkeleton() }
+                } else {
+                    LazyColumn(
+                        state = listState,
+                        modifier =
+                            Modifier
+                                .contentWidth(ContentWidthPolicy.Chart)
+                                .fillMaxSize()
+                                .padding(horizontal = InsightsDimens.ScreenHorizontalPadding)
+                                .testTag("insights-list"),
+                    ) {
+                        when {
+                            !uiState.hasAnySessionData && !uiState.hasAnyCompletionData -> {
+                                insightsItem("empty") { InsightsEmptyState() }
+                            }
+
+                            else -> {
+                                insightsContent(
+                                    uiState = uiState,
+                                    rangeLabel = rangeLabel,
+                                    selectedBucketIndex = effectiveBucketIndex,
+                                    hasUserSelection = selectedBucketIndex != null,
+                                    selectedFabricDate = selectedFabricDate,
+                                    onSelectBucket = {
+                                        uiState.chartBuckets.getOrNull(it)?.let { bucket ->
+                                            selectedBucketDay = bucket.bucketStart.toEpochDay()
+                                        }
+                                    },
+                                    onSelectFabricDate = { selectedFabricDay = it.toEpochDay() },
+                                    onSelectProject = onSelectProject,
+                                    onProUpgrade = onProUpgrade,
+                                    onLaunchCounter = onLaunchCounter,
+                                    onSessionHistory = onSessionHistory,
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/** Keep the editorial left edge while giving each kind of content its shared reading width. */
+internal fun LazyListScope.insightsItem(
+    key: String,
+    policy: ContentWidthPolicy = ContentWidthPolicy.Form,
+    content: @Composable () -> Unit,
+) {
+    item(key = key) {
+        Box(Modifier.contentWidth(policy).fillMaxWidth().testTag("insights-$key")) { content() }
+    }
+}
+
+/** Aikaväli otsikkona: napautus avaa valikon. */
+@Composable
+private fun InsightsRangeTitle(
+    uiState: InsightsUiState,
+    onSelectRange: (TimeRange) -> Unit,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val selected = insightsRangeOptions.firstOrNull { it.range == uiState.timeRange }
+
+    Box {
+        ScreenTitleSelector(
+            label = stringResource(selected?.labelResource ?: R.string.insights_all_time),
+            onClick = { expanded = !expanded },
+            modifier =
+                Modifier.semantics {
+                    if (expanded) {
+                        collapse {
+                            expanded = false
+                            true
+                        }
+                    } else {
+                        expand {
+                            expanded = true
+                            true
+                        }
+                    }
+                },
+        )
+        AdaptiveDropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+            // Sama pinta ja muoto kuin projektivalikolla: kaksi eri näköistä pudotusvalikkoa
+            // samalla näytöllä luki huolimattomuutena.
+            shape = MaterialTheme.shapes.large,
+            containerColor = MaterialTheme.colorScheme.surface,
+        ) {
+            insightsRangeOptions.forEach { option ->
+                FilterMenuItem(
+                    label = stringResource(option.labelResource),
+                    selected = option.range == uiState.timeRange,
+                    onClick = {
+                        onSelectRange(option.range)
+                        expanded = false
+                    },
+                )
+            }
+        }
+    }
+}
+
+@Suppress("kotlin:S107") // LazyList-sisältö tarvitsee yhden näkymän erilliset valinta- ja aikavälitilat.
+private fun LazyListScope.insightsContent(
+    uiState: InsightsUiState,
+    rangeLabel: String,
+    selectedBucketIndex: Int?,
+    hasUserSelection: Boolean,
+    selectedFabricDate: LocalDate?,
+    onSelectBucket: (Int) -> Unit,
+    onSelectFabricDate: (LocalDate) -> Unit,
+    onSelectProject: (Long?) -> Unit,
+    onProUpgrade: () -> Unit,
+    onLaunchCounter: (Long) -> Unit,
+    onSessionHistory: (Long) -> Unit,
+) {
+    // Aikaväli ja projektisuodatin jakavat rivin: molemmat kertovat mitä katsotaan,
+    // eikä suodatin tarvitse omaa 52 dp risetiään puolityhjän rivin viereen.
+    insightsItem("context") {
+        InsightsContextRow(
+            rangeLabel = rangeLabel,
+            uiState = uiState,
+            onSelectProject = onSelectProject,
+        )
+    }
+    // Tyhjällä aikavälillä iso "0 min" kertoi saman kuin tyhjän tilan lause alempana.
+    if (uiState.totalMinutes > 0) {
+        insightsItem("hero") { InsightsHero(state = uiState) }
+        insightsItem("statistics") { InsightsStatsRow(state = uiState) }
+        insightsItem("trend") { InsightsTrendLine(state = uiState) }
+    }
+
+    chartSection(
+        uiState = uiState,
+        rangeLabel = rangeLabel,
+        selectedBucketIndex = selectedBucketIndex,
+        hasUserSelection = hasUserSelection,
+        onSelectBucket = onSelectBucket,
+        onProUpgrade = onProUpgrade,
+    )
+
+    projectFabricSection(
+        uiState = uiState,
+        selectedFabricDate = selectedFabricDate,
+        onSelectFabricDate = onSelectFabricDate,
+    )
+
+    completionSection(uiState)
+
+    projectBreakdownSection(uiState = uiState, onLaunchCounter = onLaunchCounter)
+
+    val selectedProjectId = uiState.selectedProjectId
+    // Istuntolista on jo olemassa omana näyttönään, joten Insights linkittää siihen eikä
+    // piirrä omaa kopiotaan. Linkki näkyy aina kun projekti on valittuna — myös silloin
+    // kun tällä aikavälillä ei ole istuntoja, koska juuri silloin haluaa tietää milloin
+    // projektia viimeksi teki.
+    if (selectedProjectId != null) {
+        insightsItem("session-history", ContentWidthPolicy.ListDetail) {
+            HubListItem(
+                title = stringResource(R.string.session_history_title),
+                description =
+                    uiState.selectedProjectName
+                        ?: stringResource(R.string.new_project_name_format, selectedProjectId),
+                onClick = { onSessionHistory(selectedProjectId) },
+                modifier = Modifier.padding(top = InsightsDimens.SectionTopPadding),
+            )
+        }
+    }
+    item(key = "bottom-spacing") { Spacer(modifier = Modifier.height(InsightsDimens.ContentBottomPadding)) }
+}
+
+private fun LazyListScope.projectBreakdownSection(
+    uiState: InsightsUiState,
+    onLaunchCounter: (Long) -> Unit,
+) {
+    // Yhdelle projektille suodatettuna osio on kolme kertaa sama tieto: suodatinpilleri,
+    // yksivärinen 100 %:n lankapalkki ja yksi rivi. Tyhjärivi näytetään silti.
+    val showsProjectMix = uiState.selectedProjectId == null
+    if (uiState.timePerProject.isEmpty()) {
+        insightsItem("range-empty") { InsightsRangeEmptyNote(timeRange = uiState.timeRange) }
+    } else if (!showsProjectMix) {
+        // Suodatettuna listaosio jää pois, mutta "viimeksi" on ainoa tieto jota
+        // hero, tilastot tai kaavio eivät kerro.
+        insightsItem("last-worked") {
+            InsightsLastWorkedNote(project = uiState.timePerProject.first(), today = uiState.rangeEnd)
+        }
+    } else {
+        insightsItem("projects-heading") {
+            InsightsSectionHeader(title = stringResource(R.string.insights_section_where_time_went))
+        }
+        // Osuudet luetaan yhdestä lankapalkista; rivit kertovat nimen ja keston.
+        insightsItem("project-mix", ContentWidthPolicy.ListDetail) {
+            InsightsProjectMixBar(
+                projects = uiState.timePerProject,
+                totalMinutes = uiState.totalMinutes,
+            )
+        }
+        items(uiState.timePerProject, key = { project -> "project-${project.projectId}" }) { project ->
+            Box(Modifier.contentWidth(ContentWidthPolicy.ListDetail).fillMaxWidth()) {
+                InsightsProjectRow(
+                    project = project,
+                    today = uiState.rangeEnd,
+                    onClick = { onLaunchCounter(project.projectId) },
+                )
+            }
+        }
+    }
+}
+
+private fun LazyListScope.projectFabricSection(
+    uiState: InsightsUiState,
+    selectedFabricDate: LocalDate?,
+    onSelectFabricDate: (LocalDate) -> Unit,
+) {
+    val model = uiState.projectFabric ?: return
+    insightsItem("fabric-heading") {
+        InsightsSectionHeader(
+            title = stringResource(R.string.insights_section_projects_by_day),
+            meta = projectFabricHeaderMeta(model, selectedFabricDate),
+            metaIsLive = true,
+        )
+    }
+    insightsItem("fabric", ContentWidthPolicy.Chart) {
+        val visibleRange = projectFabricRangeLabel(model)
+        InsightsProjectFabric(
+            model = model,
+            selectedDate = selectedFabricDate,
+            contentDescription =
+                pluralStringResource(
+                    R.plurals.insights_project_fabric_a11y_summary,
+                    model.activeDayCount,
+                    visibleRange,
+                    model.activeDayCount,
+                ),
+            previousActiveDayLabel = stringResource(R.string.insights_project_fabric_previous_active_day),
+            nextActiveDayLabel = stringResource(R.string.insights_project_fabric_next_active_day),
+            onSelectDay = onSelectFabricDate,
+        )
+    }
+    selectedFabricDate
+        ?.let { selectedDate -> model.days.firstOrNull { it.date == selectedDate } }
+        ?.let { day ->
+            insightsItem("fabric-selection") {
+                InsightsProjectFabricDayDetails(day = day, projects = uiState.projects)
+            }
+        }
+}
+
+@Composable
+private fun projectFabricHeaderMeta(
+    model: InsightsProjectFabricModel,
+    selectedDate: LocalDate?,
+): String = selectedDate?.let { projectFabricDateLabel(it) } ?: projectFabricRangeLabel(model)
+
+@Composable
+private fun projectFabricRangeLabel(model: InsightsProjectFabricModel): String {
+    val locale = rememberCurrentLocale()
+    val shortFormatter =
+        remember(locale) {
+            DateTimeFormatter.ofPattern(localizedDateTimePattern(locale, "MMMd"), locale)
+        }
+    val fullFormatter =
+        remember(locale) {
+            DateTimeFormatter.ofPattern(localizedDateTimePattern(locale, "yMMMd"), locale)
+        }
+    val labels =
+        projectFabricRangeDateLabels(
+            startDate = model.startDate,
+            endDate = model.endDate,
+            shortFormatter = shortFormatter,
+            fullFormatter = fullFormatter,
+        )
+    return stringResource(R.string.insights_range_format, labels.first, labels.second)
+}
+
+internal fun projectFabricRangeDateLabels(
+    startDate: LocalDate,
+    endDate: LocalDate,
+    shortFormatter: DateTimeFormatter,
+    fullFormatter: DateTimeFormatter,
+): Pair<String, String> {
+    val startLabel =
+        if (startDate.year == endDate.year) {
+            startDate.format(shortFormatter)
+        } else {
+            startDate.format(fullFormatter)
+        }
+    return startLabel to endDate.format(fullFormatter)
+}
+
+@Composable
+private fun projectFabricDateLabel(date: LocalDate): String {
+    val locale = rememberCurrentLocale()
+    val formatter =
+        remember(locale) {
+            DateTimeFormatter.ofPattern(localizedDateTimePattern(locale, "yMMMd"), locale)
+        }
+    return date.format(formatter)
+}
+
+@Composable
+private fun InsightsProjectFabricDayDetails(
+    day: InsightsProjectFabricDay,
+    projects: List<CounterProject>,
+) {
+    val projectNames = projects.associate { it.id to it.name }
+    val names =
+        day.projectIds.map { projectId ->
+            projectNames[projectId] ?: stringResource(R.string.new_project_name_format, projectId)
+        }
+    Text(
+        text = names.joinToString().ifEmpty { stringResource(R.string.insights_no_tracked_activity) },
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier =
             Modifier
                 .fillMaxWidth()
-                .padding(top = InsightsDimens.FiltersTopPadding),
-        verticalArrangement = Arrangement.spacedBy(InsightsDimens.FilterChipSpacing),
-    ) {
-        // Sama segmenttivalitsin kuin muualla sovelluksessa. Oma toteutus piirsi
-        // valitun leiman kahdesti, ja päällimmäiseksi jäänyt onSurfaceVariant-teksti
-        // antoi oranssia vasten vain 2:1 kontrastin.
-        SegmentedToggle(
-            options = insightsRangeOptions.map { stringResource(it.labelResource) },
-            selectedIndex = insightsRangeOptions.indexOfFirst { it.range == uiState.timeRange },
-            onSelect = { index -> onSelectRange(insightsRangeOptions[index].range) },
-            fraction = 1f,
+                .padding(top = InsightsDimens.ProjectFabricDetailTopPadding),
+    )
+}
+
+/**
+ * Ilman yhtäkään minuuttia kaavio olisi 168 dp tyhjää laatikkoa kahden apuviivan
+ * välissä. Koko osio jätetään silloin pois ja projektilistan tyhjärivi kertoo saman.
+ */
+private fun LazyListScope.chartSection(
+    uiState: InsightsUiState,
+    rangeLabel: String,
+    selectedBucketIndex: Int?,
+    hasUserSelection: Boolean,
+    onSelectBucket: (Int) -> Unit,
+    onProUpgrade: () -> Unit,
+) {
+    if (uiState.totalMinutes <= 0) return
+    // Yksi pylväs ei ole kaavio vaan luku: asteikko skaalautuu maksimiin, joten ainoa
+    // pylväs piirtyy aina täyskorkeana. Yhden minuutin istunto näytti yhtä isolta kuin
+    // kolmen tunnin urakka. Hero kertoo saman luvun rehellisemmin.
+    if (!uiState.hasMeaningfulChartData) return
+    insightsItem("chart-heading") {
+        InsightsSectionHeader(
+            title =
+                stringResource(
+                    when (uiState.chartInterval) {
+                        PaceGroupingInterval.MONTH -> R.string.insights_section_month_by_month
+                        PaceGroupingInterval.WEEK -> R.string.insights_section_week_by_week
+                        PaceGroupingInterval.DAY -> R.string.insights_section_every_day
+                    },
+                ),
+            // Sama rivi palvelee kahta tilaa: oletuksena aktiiviset päivät, ja
+            // kosketuksen jälkeen valitun ämpärin lukema. Erillinen lukemarivi varasi
+            // 25 dp näyttääkseen jotain mitä kukaan ei vielä kysynyt.
+            meta = chartHeaderMeta(uiState, selectedBucketIndex, hasUserSelection),
+            metaIsLive = true,
         )
-        InsightsProjectFilter(uiState = uiState, onSelectProject = onSelectProject)
     }
+    insightsItem("chart", if (uiState.isPro) ContentWidthPolicy.Chart else ContentWidthPolicy.Form) {
+        if (uiState.isPro) {
+            InsightsChart(
+                buckets = uiState.chartBuckets,
+                interval = uiState.chartInterval,
+                timeRange = uiState.timeRange,
+                today = uiState.rangeEnd,
+                selectedIndex = selectedBucketIndex,
+                contentDescription = chartContentDescription(uiState, rangeLabel),
+                onSelectBucket = onSelectBucket,
+            )
+        } else {
+            InsightsProChartPrompt(onProUpgrade = onProUpgrade)
+        }
+    }
+}
+
+/** Kaavio-osion mittaluku: aktiiviset päivät, tai valitun ämpärin lukema kosketuksen jälkeen. */
+@Composable
+private fun chartHeaderMeta(
+    uiState: InsightsUiState,
+    selectedBucketIndex: Int?,
+    hasUserSelection: Boolean,
+): String {
+    val bucket = selectedBucketIndex?.let(uiState.chartBuckets::getOrNull)
+    if (!hasUserSelection || bucket == null) return daysMetaText(uiState)
+    val label = bucketLabel(bucket.bucketStart, uiState.chartInterval)
+    if (bucket.totalMinutes <= 0) return label
+    return stringResource(
+        R.string.insights_project_sub_format,
+        label,
+        durationText(DurationDisplayFormatter.fromMinutes(bucket.totalMinutes)),
+    )
+}
+
+/** Aikavälirivi ja projektisuodatin samalla rivillä. */
+@Composable
+private fun InsightsContextRow(
+    rangeLabel: String,
+    uiState: InsightsUiState,
+    onSelectProject: (Long?) -> Unit,
+) {
+    // Aikaväli vain All Timessa. Viikko- ja kuukausinäkymässä otsikko sanoo jo
+    // "This Month" ja kaavion akseli näyttää samat päivät — kolmas toisto vain vei
+    // tilaa suodattimelta. All Timessa päivämäärät ovat aitoa uutta tietoa.
+    val showsKicker = uiState.timeRange == TimeRange.ALL_TIME
+    val rowModifier =
+        Modifier
+            .fillMaxWidth()
+            .padding(top = InsightsDimens.FiltersTopPadding)
+
+    if (showsKicker) {
+        FlowRow(
+            modifier = rowModifier,
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalArrangement = Arrangement.spacedBy(InsightsDimens.ContextRowGap),
+        ) {
+            // A long localized range and project name can wrap onto separate lines.
+            InsightsRangeKicker(
+                text = rangeLabel,
+                modifier = Modifier.padding(end = InsightsDimens.ContextRowGap).align(Alignment.CenterVertically),
+            )
+            InsightsProjectFilter(uiState = uiState, onSelectProject = onSelectProject)
+        }
+    } else {
+        // Yksin vasemmalla täytetty pilleri luki toisena otsikkona. Oikea yläkulma on
+        // paikka jossa kontrollit asuvat, joten se lukee siellä suodattimena.
+        Box(modifier = rowModifier, contentAlignment = Alignment.CenterEnd) {
+            InsightsProjectFilter(uiState = uiState, onSelectProject = onSelectProject)
+        }
+    }
+}
+
+@Composable
+private fun InsightsProjectFilter(
+    uiState: InsightsUiState,
+    onSelectProject: (Long?) -> Unit,
+) {
+    ProjectFilterPill(
+        projects = uiState.projects.map { ProjectFilterOption(it.id, it.name) },
+        selectedProjectId = uiState.selectedProjectId,
+        onSelectProject = onSelectProject,
+    )
 }
 
 private data class InsightsRangeOption(
@@ -234,99 +609,6 @@ private val insightsRangeOptions =
     )
 
 /**
- * Projektisuodatin ei ole neljäs aikaväli, joten se ei koskaan saa täytettyä
- * primary-tyyliä: valittu projekti tunnistetaan omasta väripisteestään, joka on
- * sama väri kuin kaaviossa ja listassa.
- */
-@Composable
-private fun InsightsProjectFilter(
-    uiState: InsightsUiState,
-    onSelectProject: (Long?) -> Unit,
-) {
-    var showProjectPicker by remember { mutableStateOf(false) }
-    val allProjectsLabel = stringResource(R.string.all_projects)
-    val selectedId = uiState.selectedProjectId
-
-    Box {
-        Row(
-            modifier =
-                Modifier
-                    .heightIn(min = InsightsDimens.FilterChipMinTouchTarget)
-                    .clip(InsightsDimens.FilterChipShape)
-                    // Täytetty pinta ääriviivan sijaan: kaksi eri levyistä
-                    // ääriviivastadionia päällekkäin luki yhtenä rikkinäisenä komponenttina.
-                    .background(MaterialTheme.colorScheme.surfaceVariant)
-                    .clickable(role = Role.DropdownList) { showProjectPicker = !showProjectPicker }
-                    .semantics {
-                        if (showProjectPicker) {
-                            collapse {
-                                showProjectPicker = false
-                                true
-                            }
-                        } else {
-                            expand {
-                                showProjectPicker = true
-                                true
-                            }
-                        }
-                    }.padding(
-                        horizontal = InsightsDimens.FilterChipHorizontalPadding,
-                        vertical = InsightsDimens.FilterChipVerticalPadding,
-                    ),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            if (selectedId != null) {
-                Box(
-                    modifier =
-                        Modifier
-                            .size(InsightsDimens.FilterChipDotSize)
-                            .background(yarnColorForId(selectedId), CircleShape),
-                )
-                Spacer(modifier = Modifier.width(InsightsDimens.FilterChipDotSpacing))
-            }
-            Text(
-                text = uiState.selectedProjectName ?: allProjectsLabel,
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f, fill = false),
-            )
-            Icon(
-                imageVector = Icons.Filled.ArrowDropDown,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier =
-                    Modifier
-                        .padding(start = InsightsDimens.FilterChipIndicatorSpacing)
-                        .size(InsightsDimens.FilterChipIndicatorSize),
-            )
-        }
-        DropdownMenu(
-            expanded = showProjectPicker,
-            onDismissRequest = { showProjectPicker = false },
-        ) {
-            DropdownMenuItem(
-                text = { Text(allProjectsLabel) },
-                onClick = {
-                    onSelectProject(null)
-                    showProjectPicker = false
-                },
-            )
-            uiState.projects.forEach { project ->
-                DropdownMenuItem(
-                    text = { Text(project.name) },
-                    onClick = {
-                        onSelectProject(project.id)
-                        showProjectPicker = false
-                    },
-                )
-            }
-        }
-    }
-}
-
-/**
  * Kaavio luetaan ruudunlukijalle yhtenä elementtinä: 31 nimeämätöntä pylvästä ei
  * palvele ketään.
  */
@@ -337,13 +619,20 @@ private fun chartContentDescription(
 ): String {
     val longestMinutes = uiState.chartBuckets.maxOfOrNull { it.totalMinutes } ?: 0
     return stringResource(
-        R.string.insights_chart_a11y_daily,
+        chartContentDescriptionResource(uiState.chartInterval),
         craftVerbText(uiState.craftMix),
         rangeLabel,
         daysMetaText(uiState),
         durationText(DurationDisplayFormatter.fromMinutes(longestMinutes)),
     )
 }
+
+internal fun chartContentDescriptionResource(interval: PaceGroupingInterval): Int =
+    when (interval) {
+        PaceGroupingInterval.DAY -> R.string.insights_chart_a11y_daily
+        PaceGroupingInterval.WEEK -> R.string.insights_chart_a11y_weekly
+        PaceGroupingInterval.MONTH -> R.string.insights_chart_a11y_monthly
+    }
 
 /** "19 / 28 päivää" — näytön informatiivisin luku. */
 @Composable
@@ -361,9 +650,11 @@ private fun insightsRangeLabel(uiState: InsightsUiState): String {
     val locale = rememberCurrentLocale()
     val start = uiState.rangeStart
     val end = uiState.rangeEnd
+    // Lyhyt kuukausi avoimelle välille: "July 2026 – August 2026" oli kaksi kertaa
+    // pidempi kuin muut aikavälit ja söi projektisuodattimen tilan.
     val monthFormatter =
         remember(locale) {
-            DateTimeFormatter.ofPattern(localizedDateTimePattern(locale, "yMMMM"), locale)
+            DateTimeFormatter.ofPattern(localizedDateTimePattern(locale, "yMMM"), locale)
         }
     val dayMonthPattern = remember(locale) { localizedDateTimePattern(locale, "MMMd") }
     val dayMonthFormatter =
@@ -371,7 +662,20 @@ private fun insightsRangeLabel(uiState: InsightsUiState): String {
             DateTimeFormatter.ofPattern(dayMonthPattern, locale)
         }
     return if (uiState.timeRange == TimeRange.ALL_TIME || start == null) {
-        stringResource(R.string.insights_range_open_format, (start ?: end).format(monthFormatter))
+        // Roikkuva ajatusviiva ("July 2026 –") luki katkenneena merkkijonona. Avoin väli
+        // esitetään samalla kaksipuolisella muodolla kuin muutkin; yhden kuukauden
+        // historia näyttää pelkän kuukauden.
+        val first = (start ?: end).withDayOfMonth(1)
+        val last = end.withDayOfMonth(1)
+        if (first == last) {
+            first.format(monthFormatter)
+        } else {
+            stringResource(
+                R.string.insights_range_format,
+                first.format(monthFormatter),
+                last.format(monthFormatter),
+            )
+        }
     } else {
         val startLabel =
             if (
@@ -387,6 +691,7 @@ private fun insightsRangeLabel(uiState: InsightsUiState): String {
     }
 }
 
+@Suppress("kotlin:S3776") // Lokalisoitu päivämääräkuvio jäsennetään merkkitasolla lainaukset huomioiden.
 internal fun datePatternPlacesDayBeforeMonth(pattern: String): Boolean {
     var quoted = false
     var dayIndex = -1
@@ -409,16 +714,4 @@ internal fun datePatternPlacesDayBeforeMonth(pattern: String): Boolean {
         index++
     }
     return dayIndex >= 0 && monthIndex >= 0 && dayIndex < monthIndex
-}
-
-private fun footerMessageResource(): Int {
-    val footerMessages =
-        listOf(
-            R.string.insights_footer_1,
-            R.string.insights_footer_2,
-            R.string.insights_footer_3,
-            R.string.insights_footer_4,
-            R.string.insights_footer_5,
-        )
-    return footerMessages[LocalDate.now().toEpochDay().mod(footerMessages.size)]
 }

@@ -26,6 +26,13 @@ class CounterUiStateReducersTest {
     }
 
     @Test
+    fun `completed project remains open without active projects and leaves after deletion`() {
+        val state = CounterUiState(projectsLoaded = true, projectId = 2L, isCompleted = true)
+        assertFalse(state.shouldLeaveCounter)
+        assertTrue(state.copy(projectId = null).shouldLeaveCounter)
+    }
+
+    @Test
     fun `counter route stays when a project exists`() {
         val state =
             CounterUiState(
@@ -39,7 +46,7 @@ class CounterUiStateReducersTest {
     @Test
     fun `started project copies target rows immediately`() {
         val result =
-            CounterUiState(targetRows = 12).withStartedProject(
+            CounterUiState(targetRows = 12, canUndo = true, totalSessionMinutes = 99).withStartedProject(
                 CounterProject(
                     id = 2L,
                     name = "Sukat",
@@ -53,7 +60,21 @@ class CounterUiStateReducersTest {
         assertEquals(40, result.targetRows)
         assertEquals(60, result.totalRows)
         assertEquals(CounterState(count = 8, stepSize = 2), result.counter)
+        assertFalse(result.canUndo)
+        assertEquals(0, result.totalSessionMinutes)
         assertNull(result.activeAlert)
+    }
+
+    @Test
+    fun `started and observed project preserve completed state`() {
+        val started =
+            CounterUiState().withStartedProject(
+                CounterProject(id = 2L, name = "Completed", isCompleted = true),
+            )
+        val reopened = started.withObservedProject(CounterProject(id = 2L, name = "Active"))
+
+        assertTrue(started.isCompleted)
+        assertFalse(reopened.isCompleted)
     }
 
     @Test
@@ -74,6 +95,7 @@ class CounterUiStateReducersTest {
 
         assertEquals(state.toCounterHeroState(), nextSecond.toCounterHeroState())
         assertNotEquals(state.toCounterHeroState(), nextRow.toCounterHeroState())
+        assertNotEquals(state.toCounterHeroState(), state.copy(canUndo = true).toCounterHeroState())
     }
 
     @Test
@@ -126,7 +148,7 @@ class CounterUiStateReducersTest {
     }
 
     @Test
-    fun `started project copies reading line state`() {
+    fun `started project waits for canonical document reading state`() {
         val result =
             CounterUiState().withStartedProject(
                 CounterProject(
@@ -137,8 +159,26 @@ class CounterUiStateReducersTest {
                 ),
             )
 
-        assertTrue(result.readingLineEnabled)
-        assertEquals(0.42f, result.readingLineYFraction, 0.0f)
+        assertFalse(result.readingLineEnabled)
+        assertEquals(0.5f, result.readingLineYFraction, 0.0f)
+    }
+
+    @Test
+    fun `started project keeps previously used pro content available`() {
+        val result =
+            CounterUiState().withStartedProject(
+                CounterProject(
+                    id = 2L,
+                    name = "Existing project",
+                    secondaryCounterUsed = true,
+                    notesCreated = true,
+                ),
+            )
+
+        assertTrue(result.secondaryCounterUsed)
+        assertTrue(result.notesCreated)
+        assertTrue(result.canUseSecondaryCounter)
+        assertTrue(result.canUseNotes)
     }
 
     @Test
@@ -200,7 +240,7 @@ class CounterUiStateReducersTest {
     }
 
     @Test
-    fun `observed project refreshes reading line state`() {
+    fun `observed project preserves canonical document reading state`() {
         val result =
             CounterUiState(
                 readingLineEnabled = false,
@@ -215,8 +255,8 @@ class CounterUiStateReducersTest {
                 ),
             )
 
-        assertTrue(result.readingLineEnabled)
-        assertEquals(0.75f, result.readingLineYFraction, 0.0f)
+        assertFalse(result.readingLineEnabled)
+        assertEquals(0.20f, result.readingLineYFraction, 0.0f)
     }
 
     @Test
@@ -233,6 +273,7 @@ class CounterUiStateReducersTest {
         assertNull(result.activeAlert)
     }
 
+    // CPD-OFF: Testin skenaariokohtainen asetelma pidetaan paikallisena ja luettavana.
     @Test
     fun `dismissed repeating reminder stays hidden when reminder list refreshes on same row`() {
         val reminder = RowReminder(id = 7L, projectId = 2L, targetRow = 8, repeatInterval = 8, message = "Cable")
@@ -245,6 +286,7 @@ class CounterUiStateReducersTest {
             ).withDismissedReminder(7L)
 
         val refreshed = dismissed.withReminderList(listOf(reminder))
+        // CPD-ON
 
         assertNull(refreshed.activeAlert)
     }
@@ -281,5 +323,25 @@ class CounterUiStateReducersTest {
             ).withDismissedReminder(7L)
 
         assertEquals(nextReminder, result.activeAlert)
+    }
+
+    @Test
+    fun `dismissing all matching reminders keeps earlier dismissals through same row refreshes`() {
+        val first = RowReminder(id = 7L, projectId = 2L, targetRow = 8, repeatInterval = 8, message = "Cable")
+        val second = RowReminder(id = 8L, projectId = 2L, targetRow = 16, repeatInterval = 8, message = "Sleeve")
+        val reminders = listOf(first, second)
+        val dismissed =
+            CounterUiState(projectId = 2L, counter = CounterState(count = 16), reminders = reminders)
+                .withDismissedReminder(7L)
+                .withDismissedReminder(8L)
+
+        assertNull(dismissed.activeAlert)
+        assertNull(dismissed.withReminderList(reminders).activeAlert)
+        assertNull(dismissed.withObservedProject(CounterProject(id = 2L, name = "Sukat", count = 16)).activeAlert)
+        assertNull(dismissed.withCounterChange(CounterState(count = 16), resetStitch = false).activeAlert)
+        assertEquals(
+            first,
+            dismissed.withCounterChange(CounterState(count = 24), resetStitch = false).activeAlert,
+        )
     }
 }

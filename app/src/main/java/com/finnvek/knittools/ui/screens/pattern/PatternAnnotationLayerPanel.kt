@@ -18,6 +18,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.model.PatternAnnotationOwner
+import com.finnvek.knittools.ui.theme.knitToolsColors
 
 @Composable
 internal fun PatternAnnotationLayerPanel(
@@ -25,10 +26,12 @@ internal fun PatternAnnotationLayerPanel(
     onMasterVisibilityChange: (Boolean) -> Unit,
     onProjectVisibilityChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
+    // Sheetissä otsikkona on SheetTitle, joten paneelin oma otsikko jätetään pois.
+    showTitle: Boolean = true,
 ) {
     val projectViewer = state.owner is PatternAnnotationOwner.Project
     Surface(
-        color = MaterialTheme.colorScheme.surfaceContainer,
+        color = MaterialTheme.knitToolsColors.cardContainer,
         contentColor = MaterialTheme.colorScheme.onSurface,
         modifier = modifier.fillMaxWidth(),
     ) {
@@ -36,10 +39,12 @@ internal fun PatternAnnotationLayerPanel(
             verticalArrangement = Arrangement.spacedBy(4.dp),
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
         ) {
-            Text(
-                text = stringResource(R.string.pattern_annotations_layers),
-                style = MaterialTheme.typography.labelLarge,
-            )
+            if (showTitle) {
+                Text(
+                    text = stringResource(R.string.pattern_annotations_layers),
+                    style = MaterialTheme.typography.labelLarge,
+                )
+            }
             PatternAnnotationLayerRow(
                 title = stringResource(R.string.pattern_annotations_master),
                 annotationCount = state.masterAnnotations.size,

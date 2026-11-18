@@ -2,14 +2,18 @@ package com.finnvek.knittools.repository
 
 import android.content.Context
 import android.net.Uri
+import com.finnvek.knittools.data.local.DatabaseTransactionRunner
 import com.finnvek.knittools.data.local.ProgressPhotoDao
 import com.finnvek.knittools.data.local.ProgressPhotoEntity
+import com.finnvek.knittools.data.local.distinctSqliteQueryChunks
 import com.finnvek.knittools.data.local.toDomain
 import com.finnvek.knittools.data.storage.ProgressPhotoStorage
 import com.finnvek.knittools.di.IoDispatcher
 import com.finnvek.knittools.domain.model.ProgressPhoto
+import com.finnvek.knittools.domain.model.takeWithoutSplittingSurrogatePair
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
@@ -28,7 +32,14 @@ class ProgressPhotoRepository
         private val storage: ProgressPhotoStorage,
         @param:ApplicationContext private val context: Context,
         @param:IoDispatcher private val ioDispatcher: CoroutineDispatcher,
+        private val transactionRunner: DatabaseTransactionRunner,
     ) {
+        fun observeLatestPhotoUris(): Flow<Map<Long, String>> =
+            dao
+                .observeLatestPhotosPerProject()
+                .map { photos -> availablePhotos(photos).associate { it.projectId to it.photoUri } }
+                .retryOnRepositoryReadFailure()
+
         fun getAllPhotos(): Flow<List<ProgressPhoto>> =
             dao
                 .getAllPhotos()
@@ -55,18 +66,29 @@ class ProgressPhotoRepository
 
         fun getPhotoCount(projectId: Long): Flow<Int> = dao.getPhotoCount(projectId).retryOnRepositoryReadFailure()
 
-        suspend fun createPhotoCaptureTarget(projectId: Long): Pair<File, Uri> =
-            withContext(ioDispatcher) {
-                storage.createPhotoFile(context, projectId)
+        suspend fun createPhotoCaptureTarget(projectId: Long): Pair<File, Uri> {
+            var unclaimedFile: File? = null
+            try {
+                val target =
+                    withContext(ioDispatcher) {
+                        storage.createPhotoFile(context, projectId).also { unclaimedFile = it.first }
+                    }
+                unclaimedFile = null
+                return target
+            } finally {
+                unclaimedFile?.let { file ->
+                    withContext(ioDispatcher + NonCancellable) {
+                        storage.deletePendingPhotoFile(file.absolutePath)
+                    }
+                }
             }
-
-        suspend fun getPhotoCountsByProjectIds(projectIds: List<Long>): Map<Long, Int> {
-            val distinctProjectIds = projectIds.distinct()
-            if (distinctProjectIds.isEmpty()) return emptyMap()
-            return dao
-                .getPhotoCountsByProjectIds(distinctProjectIds)
-                .associate { it.projectId to it.count }
         }
+
+        suspend fun getPhotoCountsByProjectIds(projectIds: List<Long>): Map<Long, Int> =
+            projectIds
+                .distinctSqliteQueryChunks()
+                .flatMap { chunk -> dao.getPhotoCountsByProjectIds(chunk) }
+                .associate { it.projectId to it.count }
 
         suspend fun savePhoto(
             projectId: Long,
@@ -81,13 +103,13 @@ class ProgressPhotoRepository
                     try {
                         storage.compressAndSave(context, sourceUri, file)
                     } catch (throwable: IOException) {
-                        runCatching { storage.deletePhoto(targetUri) }
+                        runCatching { storage.deletePhoto(context, projectId, targetUri) }
                         throw throwable
                     } finally {
                         storage.deleteTemporarySource(context, sourceUri)
                     }
                 if (!saved) {
-                    runCatching { storage.deletePhoto(targetUri) }
+                    runCatching { storage.deletePhoto(context, projectId, targetUri) }
                     return@withContext 0L
                 }
                 runCatching {
@@ -96,47 +118,66 @@ class ProgressPhotoRepository
                             projectId = projectId,
                             photoUri = targetUri,
                             rowNumber = rowNumber,
-                            note = note?.take(100),
+                            note = note?.takeWithoutSplittingSurrogatePair(100),
                         ),
                     )
-                }.onFailure {
-                    storage.deletePhoto(targetUri)
-                }.getOrThrow()
+                }.fold(
+                    onSuccess = { it },
+                    onFailure = { failure ->
+                        withContext(NonCancellable) {
+                            val mayBePublished =
+                                runCatching { dao.getAllPhotosOnce().any { it.photoUri == targetUri } }
+                                    .getOrDefault(true)
+                            if (!mayBePublished) {
+                                runCatching { storage.deletePhoto(context, projectId, targetUri) }
+                            }
+                        }
+                        throw failure
+                    },
+                )
             }
 
         suspend fun updatePhotoNote(
             id: Long,
             note: String?,
         ) {
-            dao.updateNote(id, note?.take(100)?.ifBlank { null })
+            dao.updateNote(id, note?.takeWithoutSplittingSurrogatePair(100)?.ifBlank { null })
         }
 
         suspend fun deletePhoto(photo: ProgressPhoto) {
-            withContext(ioDispatcher) {
-                storage.deletePhoto(photo.photoUri)
-            }
-            dao.delete(photo.id)
+            val stored = dao.getByIds(listOf(photo.id)).singleOrNull() ?: return
+            if (stored.projectId != photo.projectId) return
+            dao.delete(stored.id)
+            cleanupDeletedPhotos(listOf(stored))
         }
 
         suspend fun deletePhotos(ids: List<Long>) {
-            val photos = dao.getByIds(ids)
-            photos.forEach { photo ->
-                withContext(ioDispatcher) {
-                    storage.deletePhoto(photo.photoUri)
-                }
-                dao.delete(photo.id)
+            val idChunks = ids.distinctSqliteQueryChunks()
+            if (idChunks.isEmpty()) return
+            val photos = idChunks.flatMap { chunk -> dao.getByIds(chunk) }
+            if (photos.isEmpty()) return
+            transactionRunner.run {
+                photos
+                    .map { it.id }
+                    .distinctSqliteQueryChunks()
+                    .forEach { chunk -> dao.deleteByIds(chunk) }
             }
-        }
-
-        suspend fun deleteAllPhotosForProject(projectId: Long) {
-            withContext(ioDispatcher) {
-                storage.deleteProjectPhotos(context, projectId)
-            }
+            cleanupDeletedPhotos(photos)
         }
 
         suspend fun deletePendingPhotoFile(filePath: String?) {
             withContext(ioDispatcher) {
                 storage.deletePendingPhotoFile(filePath)
+            }
+        }
+
+        private suspend fun cleanupDeletedPhotos(photos: List<ProgressPhotoEntity>) {
+            withContext(ioDispatcher + NonCancellable) {
+                photos.forEach { photo ->
+                    runCatching {
+                        storage.deletePhoto(context, photo.projectId, photo.photoUri)
+                    }
+                }
             }
         }
 

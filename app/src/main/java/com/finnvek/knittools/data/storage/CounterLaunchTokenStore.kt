@@ -2,6 +2,7 @@ package com.finnvek.knittools.data.storage
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.content.SharedPreferences
 import java.util.UUID
 
 object CounterLaunchTokenStore {
@@ -54,7 +55,7 @@ object CounterLaunchTokenStore {
         return isUsable && persisted
     }
 
-    private fun android.content.SharedPreferences.readLaunchTokens(): List<LaunchToken> =
+    private fun SharedPreferences.readLaunchTokens(): List<LaunchToken> =
         getString(KEY_LAUNCH_IDS, null)
             ?.lineSequence()
             ?.mapNotNull(LaunchToken::parse)
@@ -63,7 +64,7 @@ object CounterLaunchTokenStore {
 
     // KTX edit ei palauta commit-tulosta, jota kertakäyttöisen tunnisteen kulutus tarvitsee.
     @SuppressLint("UseKtx")
-    private fun android.content.SharedPreferences.writeLaunchTokens(tokens: List<LaunchToken>): Boolean =
+    private fun SharedPreferences.writeLaunchTokens(tokens: List<LaunchToken>): Boolean =
         edit()
             .putString(KEY_LAUNCH_IDS, tokens.joinToString("\n", transform = LaunchToken::serialize))
             .commit()

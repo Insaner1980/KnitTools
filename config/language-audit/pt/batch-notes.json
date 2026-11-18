@@ -1,0 +1,117 @@
+{
+  "B01": {
+    "title": "Common controls and shared labels",
+    "reading": "Action infinitives, cancellation, retry, headings and units read in Portuguese. Selection is used for projects, photos, patterns and yarn cards: the fixed masculine plural was replaced by the invariant heading Seleção. Names are inserted unchanged; cm, mm, g, m and PDF are symbols, not inflected nouns.",
+    "evidence": "S-DROPS;RESOURCES"
+  },
+  "B02": {
+    "title": "Projects and folders",
+    "reading": "Projeto and pasta denote different objects. All Projects and Unfiled are filters; deleting a folder preserves its projects. Move counts describe selected projects, not folders. Complete/reopen acts on project state; deletion confirms permanent removal. Knitting/crochet and user-defined names remain distinct. FolderRepository deletion/move and CounterRepository deletion were inspected.",
+    "evidence": "SOURCE;RESOURCES"
+  },
+  "B03": {
+    "title": "Counter and widget",
+    "reading": "Carreira, volta and repetição are separately selected by MainCounterLabelType. CUSTOM inserts the user label without assuming grammatical gender. Targets and remaining/past-target compositions use CounterValueFormatter/MainCounterDisplayText. Add/decrease names and steps describe actual deltas; widget uses the shared neutral action contract. Compact secondary counter and stitch position are separate.",
+    "evidence": "S-R4;SOURCE;SHARED;RESOURCES"
+  },
+  "B04": {
+    "title": "Extra counters and reminders",
+    "reading": "Named/linked counters, shaping, repeats and sections were read with their forms and MultiCounterComponents. A reminder occurrence is an indexed repetition, not an imperative: Repetição replaces Repetir. The interval chooses the plural; occurrence is argument 1, interval argument 2. Start/current/end values and linked updates are not interchangeable.",
+    "evidence": "SOURCE;RESOURCES"
+  },
+  "B05": {
+    "title": "Sessions and Insights",
+    "reading": "Start/stop, recovery Add/Discard/Edit and date/range names were read against their actual state and argument use. DurationText substitutes its own localized number runs after quantity selection; h/min are invariant. Days-meta selects on range days, not active days. The bounded shared date correction prevents an active-day numerator exceeding the selected range. Completion counts are events, including repeat completions. Relative months use floor(days/30) and the current quantity resource in both last-worked contexts; há 1 m/há 2 m is intentionally compact. Historical row labels are not inferred from editable project units.",
+    "evidence": "SOURCE;SHARED;S-ANDROID;S-CLDR;RESOURCES"
+  },
+  "B06": {
+    "title": "My Yarn and care",
+    "reading": "Thickness is not package mass or ply construction. The eight retained English weight labels are industry/category identities, not untranslated sentences. Novelo and meada remain valid package words in their existing contexts. Labels were paired with all 20 care glyphs: wash temperatures/hand/cross, bleach triangle, tumble dots/cross, flat line, iron dots/cross and dry-clean circles. P and F are process classes, not solvent names; their descriptions now identify permitted solvent families. A is a legacy usual-solvents label, not a recommendation for every chemical.",
+    "evidence": "S-DROPS;S-R4-YARN;S-GINETEX;SHARED;RESOURCES"
+  },
+  "B07": {
+    "title": "Project yarn and usage",
+    "reading": "Planeado, reservado and utilizado are independent nullable inputs; the scope sentence wrongly excluded planned/used and was corrected. Remaining is allocated minus used; negative results are labelled overage and display absolute magnitude. Unknown is not zero. Gram/skein conversion requires a confirmed positive length/mass basis. Save to My Yarn preserves the project note and does not invent usage or reduce global stash. ICU selection follows the displayed decimal number; existing pt-BR/pt-PT Android evidence was reconciled.",
+    "evidence": "S-R4-YARN;SOURCE;ANDROID-REUSE;RESOURCES"
+  },
+  "B08": {
+    "title": "Saved/web/Ravelry patterns",
+    "reading": "Receita, modelo and padrão are retained where they clearly mean a knitting pattern. Metadata links, local PDFs and free/paid/unknown availability remain distinct. Ravelry chrome opens its own web sign-in and PDF download, not the removed API/OAuth flow. Unlinking web metadata clears only its link. Library deletion removes its master annotation layer while attached project PDFs and project overlays remain. Duplicate and unavailable messages match the saved-pattern state.",
+    "evidence": "SOURCE;RESOURCES"
+  },
+  "B09": {
+    "title": "PDF and image import",
+    "reading": "Photo/PDF wording does not promise OCR or cloud sync. Incoming PDF is copied before the Save pattern destination choice. Project-document name, order and primary selection describe document relations. Image order and 1-based page positions, duplicate skips, cancellation and copy/conversion failures were read. The source limits are 20 pages, 25 MiB/image, 200 MiB/session and a 100 MiB web PDF cap; resource messages that receive a limit use that supplied argument.",
+    "evidence": "SOURCE;RESOURCES"
+  },
+  "B10": {
+    "title": "Reading assistance",
+    "reading": "Page numbers are 1-based PDF pages, not counter values. Bookmark, guide and row marker meanings stay separate. Manual guide/page movement pauses following; calibration stores first/last values. Guardar primeira/última disagreed with Primeiro/Último valor and is corrected. Follow announcements insert selected counter-label text and page numbers; percent positions use an escaped percent sign.",
+    "evidence": "SOURCE;RESOURCES"
+  },
+  "B11": {
+    "title": "Markup and export",
+    "reading": "Read all 75 annotation resources, including tools, layers, selection, undo/redo, clear-page and export failures. Shared master notes are read-only in project readers; project notes are editable overlays. Clearing a page means its annotations, not deleting the PDF page. Export page/total and filename arguments are correctly ordered; the source document is preserved. The isolated tu imperatives in write failure now match Feche/tente and the established instruction voice.",
+    "evidence": "SOURCE;RESOURCES"
+  },
+  "B12": {
+    "title": "Notes and photos",
+    "reading": "Local note save/autosave and failed-save messages were checked against NotesEditorViewModel: debounced saves, explicit save and final persistence retain failure state rather than claim success. Photo captions, dates, import/camera actions, selected-photo deletion and share text were read. User names and note/photo contents themselves are data, not translation inputs.",
+    "evidence": "SOURCE;RESOURCES"
+  },
+  "B13": {
+    "title": "Measurements and gauge",
+    "reading": "Tensão denotes stitch/row density and amostra the measured swatch. Each axis retains independent manual/swatch provenance. MeasurementCalculator canonical mm and counts/mm are separate from display rounding; unit changes preserve values. Result and Copy text use localized numbers and units with explicit original/target/actual labels and estimate warnings. The tool does not promise automatic persistence.",
+    "evidence": "S-DROPS;S-R4;SOURCE;RESOURCES"
+  },
+  "B14": {
+    "title": "Increase/decrease",
+    "reading": "K/M1/K2tog are English knit-operation tokens. Their Portuguese legend was added to the existing visible flat/circular explanation. M1 adds between stitches; flat work has N-1 internal gaps and circular work N. A K2tog consumes two source stitches, reducing by one; invalid reductions retain their source-derived error counts. The paste hints explicitly require English: Increase 12 stitches evenly across 96 stitches, 22 stitches and 30 rows per 10cm, and width 30 cm, 22 stitches match the actual regex branches. No cloud parsing is claimed.",
+    "evidence": "S-CYC-ABBR;S-R4;SOURCE;SHARED;RESOURCES"
+  },
+  "B15": {
+    "title": "Cast On",
+    "reading": "Body width and total edge stitches were checked against actual arithmetic: repeats round the unrounded body count, ties choose the lower usable repeat, then edges are added. Actual width includes edges; alternative totals and units remain explicit. Stitches-result uses quantity selection. Metric gauge is per 10 cm; imperial is per 4 inches, not an exact relabelling of 10 cm.",
+    "evidence": "S-DROPS;SOURCE;SHARED;RESOURCES"
+  },
+  "B16": {
+    "title": "Yarn estimator",
+    "reading": "Required/per-package length yields exact decimal skeins; purchase count rounds upward. Reported total mass is whole purchased packages times package mass, so the weight label now states that scope. The decimal estimate label no longer forces a plural after a value that can be 1.00. Dye-lot variation is real, but always buying exactly one extra package was unsupported; the advice now says to consider extra yarn.",
+    "evidence": "S-R4-YARN;S-DYE;SOURCE;RESOURCES"
+  },
+  "B17": {
+    "title": "Needles and body-size tables",
+    "reading": "All 38 needle rows/four columns and 123 measurement cells across six categories were read. Exact Clover Japanese diameters are not nearest US equivalents; dashes mean no supplied mapping. US 000/00 made the old 0-50 range false. Body dimensions and range endpoints are retained; displayed inches derive from cm/2.54. Criança pequena distinguishes the toddler head range from Criança. Size-system identifiers and valid vocabulary such as quadris remain unchanged.",
+    "evidence": "SHARED;SOURCE;RESOURCES"
+  },
+  "B18": {
+    "title": "Abbreviations",
+    "reading": "Every token/meaning/description triple was read, including knit/purl, slip orientation, lean, yarn location, cable hold, fabrics, short rows and gauge. English tokens are now disclosed in the entry description. Meia makes knit-specific operations explicit without replacing generic tricotar everywhere. SSK slips separately knitwise; S2KP slips the pair together; M1 bar orientation is specified. WYIF/WYIB are working-yarn positions, not fixed fabric sides. WPI counts adjacent wraps, and short rows/gauge use carreiras.",
+    "evidence": "S-DROPS;S-R4;S-DMC;S-CYC-ABBR;S-CYC-WPI;RESOURCES"
+  },
+  "B19": {
+    "title": "Chart symbols",
+    "reading": "All 24 live glyph/name/description triples were compared with the current data/drawing mappings and CYC conventions. The legend now specifies the right-side view. Knit/purl back-loop distinctions, net decreases, lifted increases and front/back cable holds were reviewed. The slipped-purlwise glyph requires yarn behind on the right side. Repeat boundaries are square brackets. Unsupported knitwise-slip labels remain unused but were still read; no data/glyph edit was made.",
+    "evidence": "S-CYC-CHART;S-R4;SHARED;RESOURCES"
+  },
+  "B20": {
+    "title": "Settings and privacy",
+    "reading": "European-base controls Guardar/Definições/ecrã/ficheiro/câmara and polite instructions remain. Native language names and system-default choice are identities, not Portuguese translations. Analytics is optional/release-only and uses the allowlisted PostHog boundary with EU endpoint; capture/profile/replay defaults are disabled. Imperial settings initialize defaults; Measurements and Gauge can change units, so the old all-calculators absolute was corrected. Update/check/restart actions match their states.",
+    "evidence": "SOURCE;RESOURCES"
+  },
+  "B21": {
+    "title": "Backup and restore",
+    "reading": "Backup is a user-exported archive, not synchronization. Preview labels name project/pattern/yarn/file counts without singular agreement dependence. Restore explicitly replaces current content; archive validation and replacement precede success. Local files and database tables are included, but preferences, trial/purchases, account sessions and widgets are not transferred. Active work requires recovery after restore. Encryption is not promised. No user-data restore was performed.",
+    "evidence": "SOURCE;RESOURCES"
+  },
+  "B22": {
+    "title": "Pro and billing",
+    "reading": "Fourteen-day trial, explicit start, remaining-day quantity, single active free project and continued access to existing content were read against TrialManager/ProState and callers. Prices come from billing formattedPrice, not a hardcoded currency. Restore purchases is distinct from backup restore or cancelling a dialog. Debug feature override does not assert a real purchase. No payment or live purchase was performed.",
+    "evidence": "SOURCE;RESOURCES"
+  },
+  "B23": {
+    "title": "Reconciliation",
+    "reading": "All four Portuguese files and every declared quantity are accounted for. One alias resolves to the shared 120-character error. Manifest/widget XML identities are included; unused resources are retained and marked. Non-resource English abbreviation/category identities and debug sample data are explicitly classified. No unassigned Portuguese item or specific remaining comprehension question was found. Existing regional alternatives and short numeric labels are retained; no global normalization or new locale folder.",
+    "evidence": "SOURCE;RESOURCES"
+  }
+}

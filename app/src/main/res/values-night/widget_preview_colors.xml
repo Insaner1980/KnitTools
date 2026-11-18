@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Oma tiedosto: values-night/colors.xml on varattu pois, jotta käynnistysruutu ei saa toista teemahaaraa. -->
+<resources>
+    <!-- Widgetin esikatselun tumman teeman värit: samat kuin tumman teeman widgetissä (Surface,
+         TextPrimary ja avokadon lankaväri YarnColorsista), jotta esikatselu vastaa kotinäytölle tulevaa. -->
+    <color name="widget_preview_surface">#2E2E20</color>
+    <color name="widget_preview_text">#E8E4D0</color>
+    <color name="widget_preview_yarn">#8BA44A</color>
+</resources>

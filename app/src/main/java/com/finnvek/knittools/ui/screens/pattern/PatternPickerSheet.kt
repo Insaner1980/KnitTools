@@ -1,12 +1,11 @@
 package com.finnvek.knittools.ui.screens.pattern
 
-import android.Manifest
-import android.app.Activity
-import android.content.Intent
+import android.content.ActivityNotFoundException
 import android.net.Uri
-import android.provider.OpenableColumns
 import android.widget.Toast
+import androidx.activity.compose.LocalActivityResultRegistryOwner
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -14,18 +13,23 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -36,152 +40,479 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.core.app.ActivityCompat
-import androidx.core.net.toUri
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.repeatOnLifecycle
 import com.finnvek.knittools.R
-import com.finnvek.knittools.data.storage.PatternDocumentStorage
-import com.finnvek.knittools.di.AppDispatchers
 import com.finnvek.knittools.domain.model.SavedPattern
+import com.finnvek.knittools.domain.model.isWebPatternCompatible
+import com.finnvek.knittools.pro.ProActionAccess
+import com.finnvek.knittools.pro.ProFeature
+import com.finnvek.knittools.pro.ProState
+import com.finnvek.knittools.pro.proActionAccess
+import com.finnvek.knittools.ui.components.ConfirmationDialog
+import com.finnvek.knittools.ui.components.ProMarker
+import com.finnvek.knittools.ui.components.ProPromptRequest
+import com.finnvek.knittools.ui.components.ProPromptSheet
+import com.finnvek.knittools.ui.components.ProPromptSource
+import com.finnvek.knittools.ui.components.SectionLabel
+import com.finnvek.knittools.ui.components.SheetOptionRow
+import com.finnvek.knittools.ui.components.SheetTitle
+import com.finnvek.knittools.ui.layout.AdaptiveModalWindow
+import com.finnvek.knittools.ui.theme.knitToolsColors
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.io.File
 
 private data class PatternPickerActions(
+    val openWebPatternEditor: () -> Unit,
     val openRavelryImport: () -> Unit,
     val openDeviceFiles: () -> Unit,
     val openCloudProviderFiles: () -> Unit,
+    val chooseImages: () -> Unit,
+    val authorizeAndChooseImages: () -> Unit,
     val startCameraScan: () -> Unit,
+    val authorizeAndStartCameraScan: () -> Unit,
     val continueWithoutPattern: () -> Unit,
 )
 
-private data class CaptureResultRequest(
-    val success: Boolean,
-    val context: android.content.Context,
-    val projectId: Long?,
-    val canUseCameraScan: Boolean,
-    val patternStorage: PatternDocumentStorage,
-    val pendingImageUriString: String?,
-)
+enum class PatternPickerMode {
+    INITIAL_PROJECT_PATTERN,
+    ADD_READABLE_PROJECT_DOCUMENT,
+}
+
+internal fun shouldShowWebPatternEntry(mode: PatternPickerMode): Boolean =
+    mode == PatternPickerMode.INITIAL_PROJECT_PATTERN
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
+@Suppress("kotlin:S107", "kotlin:S3776") // Picker kokoaa kaikki tuontilähteet ja niiden eksplisiittiset callbackit.
 fun PatternPickerSheet(
     projectId: Long?,
     savedPatterns: List<SavedPattern>,
     canUseCameraScan: Boolean,
+    proState: ProState,
+    proAccessReady: Boolean,
+    hasExistingPattern: Boolean,
+    mode: PatternPickerMode = PatternPickerMode.INITIAL_PROJECT_PATTERN,
+    isRestoringProject: Boolean = false,
+    excludedSavedPatternIds: Set<Long> = emptySet(),
     onSavedPatternSelected: (SavedPattern) -> Unit,
-    onDocumentSelected: (String, String) -> Unit,
+    onDocumentSelected: (String, String, Long) -> Unit,
     onImportFromRavelry: () -> Unit,
+    onAddWebPattern: () -> Unit = {},
+    onSeePro: () -> Unit,
     onDismiss: () -> Unit,
+    initialCameraRequestId: String? = null,
 ) {
-    val actions =
-        rememberPatternPickerActions(
-            projectId = projectId,
-            canUseCameraScan = canUseCameraScan,
-            onDocumentSelected = onDocumentSelected,
-            onImportFromRavelry = onImportFromRavelry,
-            onDismiss = onDismiss,
-        )
+    val selectedProjectId by rememberUpdatedState(projectId)
+    key(projectId) {
+        val imageImportViewModel: PatternImageImportViewModel =
+            hiltViewModel(key = patternImageImportViewModelKey(projectId))
+        val imageImportState by imageImportViewModel.uiState.collectAsStateWithLifecycle()
+        val sessionId = imageImportState.sessionId
+        val completedBeforeOpening =
+            remember(imageImportViewModel) {
+                imageImportViewModel.uiState.value
+                    .takeIf { it.closeReady }
+                    ?.sessionId
+            }
+        var pendingProAction by rememberSaveable { mutableStateOf<PendingPatternProAction?>(null) }
+        var showDiscardConfirmation by rememberSaveable { mutableStateOf(false) }
+        val sheetState = rememberModalBottomSheetState()
+        val scope = rememberCoroutineScope()
+        val keepSelectedImages: () -> Unit = {
+            showDiscardConfirmation = false
+            scope.launch { sheetState.show() }
+        }
+        val actions =
+            rememberPatternPickerActions(
+                projectId = projectId,
+                isCurrentProject = { selectedProjectId == projectId },
+                isRestoringProject = isRestoringProject,
+                canUseCameraScan = canUseCameraScan,
+                imageImportViewModelProvider = { imageImportViewModel },
+                onDocumentSelected = onDocumentSelected,
+                onImportFromRavelry = onImportFromRavelry,
+                onAddWebPattern = onAddWebPattern,
+                onLockedGalleryImport = { pendingProAction = PendingPatternProAction.GalleryImages },
+                onLockedCameraScan = { pendingProAction = PendingPatternProAction.CameraCapture },
+                onDismiss = onDismiss,
+            )
 
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        containerColor = MaterialTheme.colorScheme.surface,
-    ) {
-        PatternPickerSheetContent(
-            savedPatterns = savedPatterns,
-            canUseCameraScan = canUseCameraScan,
-            projectId = projectId,
-            actions = actions,
-            onSavedPatternSelected = { pattern ->
-                onSavedPatternSelected(pattern)
+        var handledCameraRequestId by rememberSaveable { mutableStateOf<String?>(null) }
+        val lifecycleOwner = LocalLifecycleOwner.current
+        val currentCameraAction by rememberUpdatedState(actions.startCameraScan)
+        LaunchedEffect(initialCameraRequestId, projectId, isRestoringProject, proAccessReady, imageImportState.isBusy) {
+            val requestId = initialCameraRequestId ?: return@LaunchedEffect
+            if (handledCameraRequestId == requestId || projectId == null || isRestoringProject) return@LaunchedEffect
+            if (!proAccessReady || imageImportState.isBusy) return@LaunchedEffect
+            lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+                if (handledCameraRequestId != requestId) {
+                    handledCameraRequestId = requestId
+                    currentCameraAction()
+                }
+            }
+        }
+
+        LaunchedEffect(sessionId, imageImportState.closeReady) {
+            if (
+                imageImportState.closeReady &&
+                imageImportViewModel.consumeCloseRequest(sessionId) &&
+                sessionId != completedBeforeOpening
+            ) {
                 onDismiss()
+            }
+        }
+
+        pendingProAction?.let {
+            ProPromptSheet(
+                request =
+                    ProPromptRequest(
+                        source =
+                            when (pendingProAction) {
+                                PendingPatternProAction.GalleryImages -> ProPromptSource.PatternGallery
+
+                                PendingPatternProAction.CameraCapture,
+                                null,
+                                -> ProPromptSource.PatternCamera
+                            },
+                    ),
+                onDismiss = { pendingProAction = null },
+                onTrialStarted = {
+                    val action = pendingProAction
+                    pendingProAction = null
+                    when (action) {
+                        PendingPatternProAction.GalleryImages -> actions.authorizeAndChooseImages()
+                        PendingPatternProAction.CameraCapture -> actions.authorizeAndStartCameraScan()
+                        null -> Unit
+                    }
+                },
+                onSeePro = onSeePro,
+            )
+        }
+
+        ModalBottomSheet(
+            sheetState = sheetState,
+            onDismissRequest = {
+                when {
+                    imageImportState.isBusy -> imageImportViewModel.cancelImport(sessionId)
+                    imageImportState.selection.pages.isNotEmpty() -> showDiscardConfirmation = true
+                    else -> onDismiss()
+                }
             },
-        )
+            containerColor = MaterialTheme.colorScheme.surface,
+        ) {
+            AdaptiveModalWindow()
+            val showImageImport =
+                imageImportState.selection.pages.isNotEmpty() ||
+                    imageImportState.isBusy ||
+                    imageImportState.phase == PatternImageImportPhase.ERROR
+            if (showImageImport) {
+                PatternImageImportSurface(
+                    state = imageImportState,
+                    onAddMore = { if (imageImportViewModel.isCurrentSession(sessionId)) actions.chooseImages() },
+                    onMoveEarlier = { imageImportViewModel.moveEarlier(it, sessionId) },
+                    onMoveLater = { imageImportViewModel.moveLater(it, sessionId) },
+                    onRemove = { imageImportViewModel.removePage(it, sessionId) },
+                    onCreate = {
+                        if (imageImportState.replacementConfirmationPending) {
+                            imageImportViewModel.confirmReplacement(sessionId)
+                        } else {
+                            imageImportViewModel.createPatternPdf(hasExistingPattern, sessionId)
+                        }
+                    },
+                    onCancel = {
+                        if (imageImportState.replacementConfirmationPending) {
+                            imageImportViewModel.dismissReplacement(sessionId)
+                        } else {
+                            imageImportViewModel.cancelImport(sessionId)
+                        }
+                    },
+                    onPreviewFailed = { imageImportViewModel.markPreviewFailed(it, sessionId) },
+                )
+            } else {
+                PatternPickerSheetContent(
+                    savedPatterns =
+                        if (mode == PatternPickerMode.ADD_READABLE_PROJECT_DOCUMENT) {
+                            savedPatterns.filter {
+                                !it.localPdfUri.isNullOrBlank() && it.id !in excludedSavedPatternIds
+                            }
+                        } else {
+                            savedPatterns
+                        },
+                    proState = proState,
+                    proAccessReady = proAccessReady,
+                    projectId = projectId,
+                    mode = mode,
+                    actions = actions,
+                    onSavedPatternSelected = { pattern ->
+                        onSavedPatternSelected(pattern)
+                        if (!pattern.isWebPatternCompatible) {
+                            onDismiss()
+                        }
+                    },
+                )
+            }
+        }
+
+        if (showDiscardConfirmation) {
+            ConfirmationDialog(
+                title = stringResource(R.string.pattern_image_discard_title),
+                message = stringResource(R.string.pattern_image_discard_message),
+                confirmText = stringResource(R.string.pattern_image_discard_action),
+                isDestructive = true,
+                onConfirm = {
+                    showDiscardConfirmation = false
+                    imageImportViewModel.cancelImport(sessionId)
+                },
+                onDismiss = keepSelectedImages,
+            )
+        }
     }
 }
 
 @Composable
+@Suppress("kotlin:S107", "kotlin:S3776") // Muistetut picker-toiminnot sitovat eri tuontisopimukset yhteen omistajaan.
 private fun rememberPatternPickerActions(
     projectId: Long?,
+    isCurrentProject: () -> Boolean,
+    isRestoringProject: Boolean,
     canUseCameraScan: Boolean,
-    onDocumentSelected: (String, String) -> Unit,
+    imageImportViewModelProvider: @Composable () -> PatternImageImportViewModel,
+    onDocumentSelected: (String, String, Long) -> Unit,
     onImportFromRavelry: () -> Unit,
+    onAddWebPattern: () -> Unit,
+    onLockedGalleryImport: () -> Unit,
+    onLockedCameraScan: () -> Unit,
     onDismiss: () -> Unit,
 ): PatternPickerActions {
+    val imageImportViewModel = imageImportViewModelProvider()
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-    val patternStorage = remember { PatternDocumentStorage() }
     val currentProjectId by rememberUpdatedState(projectId)
     val currentCanUseCameraScan by rememberUpdatedState(canUseCameraScan)
+    var pendingDocumentProjectId by rememberSaveable { mutableStateOf<Long?>(null) }
+    var pendingDocumentUriString by rememberSaveable { mutableStateOf<String?>(null) }
+    val imageImportState by imageImportViewModel.uiState.collectAsStateWithLifecycle()
     var pendingCaptureImageUriString by rememberSaveable { mutableStateOf<String?>(null) }
     var pendingCaptureFilePath by rememberSaveable { mutableStateOf<String?>(null) }
+    var pendingCaptureAuthorized by rememberSaveable { mutableStateOf(false) }
+    var pendingCaptureProjectId by rememberSaveable { mutableStateOf<Long?>(null) }
+    var pendingCaptureSessionId by rememberSaveable { mutableStateOf<String?>(null) }
+    var pendingCaptureLaunch by rememberSaveable { mutableStateOf(false) }
+    var pendingCaptureResult by rememberSaveable { mutableStateOf<Boolean?>(null) }
+    val clearPendingCapture = {
+        pendingCaptureImageUriString = null
+        pendingCaptureFilePath = null
+        pendingCaptureAuthorized = false
+        pendingCaptureProjectId = null
+        pendingCaptureSessionId = null
+        pendingCaptureLaunch = false
+        pendingCaptureResult = null
+    }
+
+    DisposableEffect(imageImportViewModel) {
+        onDispose {
+            if (!isCurrentProject()) {
+                val uri = pendingCaptureImageUriString?.let(Uri::parse)
+                val file = pendingCaptureFilePath?.let(::File)
+                if (uri != null && file != null) {
+                    imageImportViewModel.discardCameraCapture(uri, file, pendingCaptureSessionId)
+                }
+            }
+        }
+    }
+
+    val registry = checkNotNull(LocalActivityResultRegistryOwner.current).activityResultRegistry
+    val requestId = imageImportState.pickerRequestId
+    DisposableEffect(registry, imageImportViewModel, requestId) {
+        // The stable request key also receives a pending result after this project's sheet is reopened.
+        val launcher =
+            requestId?.let {
+                registry.register("pattern-images-$requestId", PatternImagePickerContract()) { uris ->
+                    imageImportViewModel.onGalleryPickerResult(requestId, uris)
+                }
+            }
+        if (requestId != null && launcher != null && imageImportViewModel.markGalleryPickerLaunched(requestId)) {
+            try {
+                launcher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+            } catch (_: ActivityNotFoundException) {
+                imageImportViewModel.onGalleryPickerLaunchFailed(requestId)
+            } catch (_: IllegalStateException) {
+                imageImportViewModel.onGalleryPickerLaunchFailed(requestId)
+            } catch (_: SecurityException) {
+                imageImportViewModel.onGalleryPickerLaunchFailed(requestId)
+            }
+        }
+        onDispose { launcher?.unregister() }
+    }
 
     val openDocumentLauncher =
         rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-            uri ?: return@rememberLauncherForActivityResult
-            val flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
-            runCatching {
-                context.contentResolver.takePersistableUriPermission(uri, flags)
-            }
-            onDocumentSelected(uri.toString(), resolvePatternName(context, uri))
+            if (pendingDocumentProjectId == null) return@rememberLauncherForActivityResult
+            pendingDocumentUriString = uri?.toString()
+            if (uri == null) pendingDocumentProjectId = null
+        }
+    LaunchedEffect(pendingDocumentUriString, projectId, isRestoringProject) {
+        val uri = pendingDocumentUriString ?: return@LaunchedEffect
+        if (isRestoringProject) return@LaunchedEffect
+        val owner = pendingDocumentProjectId
+        pendingDocumentUriString = null
+        pendingDocumentProjectId = null
+        if (owner != null && owner == currentProjectId) {
+            onDocumentSelected(uri, "", owner)
             onDismiss()
         }
+    }
+    val captureSessionId = pendingCaptureSessionId
+    LaunchedEffect(imageImportState.sessionId, captureSessionId) {
+        if (imageImportState.cameraCapturePending && captureSessionId == null) {
+            imageImportViewModel.onCameraCaptureStateLost(imageImportState.sessionId)
+        }
+    }
     val cameraLauncher =
-        rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { success ->
-            scope.launch {
-                handleCaptureResult(
-                    request =
-                        CaptureResultRequest(
-                            success = success,
-                            context = context,
-                            projectId = currentProjectId,
-                            canUseCameraScan = currentCanUseCameraScan,
-                            patternStorage = patternStorage,
-                            pendingImageUriString = pendingCaptureImageUriString,
-                        ),
-                    onDocumentSelected = onDocumentSelected,
-                    onDismiss = onDismiss,
-                )
-                pendingCaptureFilePath?.let { path -> java.io.File(path).delete() }
-                pendingCaptureImageUriString = null
-                pendingCaptureFilePath = null
+        key(captureSessionId) {
+            rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { success ->
+                if (captureSessionId != null &&
+                    captureSessionId == pendingCaptureSessionId &&
+                    pendingCaptureImageUriString != null
+                ) {
+                    pendingCaptureResult = success
+                }
             }
         }
-    val permissionLauncher =
-        rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-            if (!granted) {
-                showCameraPermissionDeniedToast(context)
-                return@rememberLauncherForActivityResult
+    LaunchedEffect(pendingCaptureResult, projectId, isRestoringProject) {
+        val success = pendingCaptureResult ?: return@LaunchedEffect
+        if (success && isRestoringProject) return@LaunchedEffect
+        val imageUri = pendingCaptureImageUriString?.let(Uri::parse)
+        val imageFile = pendingCaptureFilePath?.let(::File)
+        val owner = pendingCaptureProjectId
+        val session = pendingCaptureSessionId
+        val authorized = pendingCaptureAuthorized
+        clearPendingCapture()
+        if (imageUri == null || imageFile == null) return@LaunchedEffect
+        val acceptedOwner =
+            owner?.takeIf {
+                it == currentProjectId && canStartPatternCameraScan(it, currentCanUseCameraScan || authorized)
             }
-            val pendingProjectId = currentProjectId ?: return@rememberLauncherForActivityResult
-            if (!canStartPatternCameraScan(pendingProjectId, currentCanUseCameraScan)) {
-                return@rememberLauncherForActivityResult
-            }
-            scope.launch {
-                val (file, uri) =
-                    withContext(AppDispatchers.IO) {
-                        patternStorage.createCaptureImageFile(context, pendingProjectId)
-                    }
+        if (success && acceptedOwner != null) {
+            imageImportViewModel.acceptCameraCapture(acceptedOwner, imageUri, imageFile, session)
+        } else {
+            imageImportViewModel.discardCameraCapture(imageUri, imageFile, session)
+        }
+    }
+    LaunchedEffect(pendingCaptureLaunch, captureSessionId, projectId, isRestoringProject) {
+        if (!pendingCaptureLaunch || isRestoringProject) return@LaunchedEffect
+        val owner = pendingCaptureProjectId
+        val session = captureSessionId ?: return@LaunchedEffect
+        if (owner == null ||
+            owner != currentProjectId ||
+            !canStartPatternCameraScan(owner, currentCanUseCameraScan || pendingCaptureAuthorized)
+        ) {
+            imageImportViewModel.cancelCameraCaptureRequest(session)
+            clearPendingCapture()
+            return@LaunchedEffect
+        }
+        try {
+            // Retain the created target even if this sheet closes while its bounded file write finishes.
+            val target = withContext(NonCancellable) { imageImportViewModel.createCameraCaptureTarget(owner, session) }
+            if (target != null) {
+                val (file, uri) = target
+                if (!isActive ||
+                    owner != currentProjectId ||
+                    owner != pendingCaptureProjectId ||
+                    session != pendingCaptureSessionId
+                ) {
+                    imageImportViewModel.discardCameraCapture(uri, file, session)
+                    if (session == pendingCaptureSessionId) clearPendingCapture()
+                    return@LaunchedEffect
+                }
                 pendingCaptureImageUriString = uri.toString()
                 pendingCaptureFilePath = file.absolutePath
-                cameraLauncher.launch(uri)
+
+                fun abandonCapture() {
+                    imageImportViewModel.discardCameraCapture(uri, file, session)
+                    clearPendingCapture()
+                    Toast.makeText(context, R.string.generic_error_unknown, Toast.LENGTH_SHORT).show()
+                }
+                try {
+                    cameraLauncher.launch(uri)
+                } catch (_: ActivityNotFoundException) {
+                    abandonCapture()
+                } catch (_: IllegalStateException) {
+                    abandonCapture()
+                } catch (_: SecurityException) {
+                    abandonCapture()
+                }
             }
+        } finally {
+            if (session == pendingCaptureSessionId) pendingCaptureLaunch = false
         }
+    }
 
-    val openPdfDocumentPicker = { openDocumentLauncher.launch(pdfMimeTypes()) }
+    val openPdfDocumentPicker: () -> Unit = {
+        currentProjectId?.let { owner ->
+            pendingDocumentProjectId = owner
+            openDocumentLauncher.launch(pdfMimeTypes())
+        }
+    }
+    val launchGalleryPicker = {
+        val pendingProjectId = currentProjectId
+        if (pendingProjectId != null) {
+            imageImportViewModel.authorizeGalleryPicker(pendingProjectId)
+        }
+    }
+    val launchCameraScan: () -> Unit = {
+        currentProjectId?.let { authorizedProjectId ->
+            val session = imageImportViewModel.authorizeCameraCapture(authorizedProjectId) ?: return@let
+            pendingCaptureSessionId = session
+            pendingCaptureProjectId = authorizedProjectId
+            pendingCaptureAuthorized = true
+            pendingCaptureLaunch = true
+        }
+    }
 
-    return remember(openDocumentLauncher, permissionLauncher, onDismiss, onImportFromRavelry) {
+    return remember(
+        imageImportViewModel,
+        openDocumentLauncher,
+        cameraLauncher,
+        onDismiss,
+        onAddWebPattern,
+        onImportFromRavelry,
+        onLockedCameraScan,
+        onLockedGalleryImport,
+    ) {
         PatternPickerActions(
+            openWebPatternEditor = {
+                onDismiss()
+                onAddWebPattern()
+            },
             openRavelryImport = {
                 onDismiss()
                 onImportFromRavelry()
             },
             openDeviceFiles = openPdfDocumentPicker,
             openCloudProviderFiles = openPdfDocumentPicker,
-            startCameraScan = {
+            chooseImages = {
                 if (canStartPatternCameraScan(currentProjectId, currentCanUseCameraScan)) {
-                    permissionLauncher.launch(Manifest.permission.CAMERA)
+                    launchGalleryPicker()
+                } else {
+                    onLockedGalleryImport()
                 }
             },
+            authorizeAndChooseImages = launchGalleryPicker,
+            startCameraScan = {
+                if (canStartPatternCameraScan(currentProjectId, currentCanUseCameraScan)) {
+                    launchCameraScan()
+                } else {
+                    onLockedCameraScan()
+                }
+            },
+            authorizeAndStartCameraScan = launchCameraScan,
             continueWithoutPattern = onDismiss,
         )
     }
@@ -190,73 +521,83 @@ private fun rememberPatternPickerActions(
 @Composable
 private fun PatternPickerSheetContent(
     savedPatterns: List<SavedPattern>,
-    canUseCameraScan: Boolean,
+    proState: ProState,
+    proAccessReady: Boolean,
     projectId: Long?,
+    mode: PatternPickerMode,
     actions: PatternPickerActions,
     onSavedPatternSelected: (SavedPattern) -> Unit,
 ) {
+    val cameraAccess = proActionAccess(proState, proAccessReady, ProFeature.PATTERN_CAMERA_SCAN)
+    val cameraActionReady =
+        cameraAccess != ProActionAccess.Unknown || proState.hasFeature(ProFeature.PATTERN_CAMERA_SCAN)
     Column(
         modifier =
             Modifier
                 .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
                 .padding(horizontal = 20.dp)
                 .padding(bottom = 32.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        Text(
-            text = stringResource(R.string.attach_pattern),
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onSurface,
+        // Dokumentin lisäyksessä otsikko kertoo mitä lisätään: pelkkä "Add" ei sanonut mitään.
+        SheetTitle(
+            text =
+                stringResource(
+                    if (mode == PatternPickerMode.ADD_READABLE_PROJECT_DOCUMENT) {
+                        R.string.project_content_add_pattern
+                    } else {
+                        R.string.attach_pattern
+                    },
+                ),
         )
 
         if (savedPatterns.isNotEmpty()) {
-            Text(
-                text = stringResource(R.string.pattern_picker_saved_patterns),
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.secondary,
-            )
+            SectionLabel(text = stringResource(R.string.pattern_picker_saved_patterns))
             PatternPickerSavedPatterns(
                 savedPatterns = savedPatterns,
                 onSavedPatternSelected = onSavedPatternSelected,
             )
         }
 
-        OutlinedButton(
-            onClick = actions.openRavelryImport,
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Text(stringResource(R.string.pattern_picker_import_from_ravelry))
+        if (shouldShowWebPatternEntry(mode)) {
+            PickerAction(stringResource(R.string.web_pattern_add), actions.openWebPatternEditor)
+            PickerAction(stringResource(R.string.pattern_picker_import_from_ravelry), actions.openRavelryImport)
         }
-
-        OutlinedButton(
-            onClick = actions.openDeviceFiles,
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Text(stringResource(R.string.pattern_picker_import_pdf))
-        }
-
-        OutlinedButton(
-            onClick = actions.openCloudProviderFiles,
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Text(stringResource(R.string.pattern_picker_import_cloud_pdf))
-        }
-
-        Button(
+        PickerAction(stringResource(R.string.pattern_picker_import_pdf), actions.openDeviceFiles)
+        PickerAction(stringResource(R.string.pattern_picker_import_cloud_pdf), actions.openCloudProviderFiles)
+        // Pro-toiminnot samalla painiketyylillä kuin muut: täytettyinä maksulliset vaihtoehdot näyttivät
+        // päätoiminnolta. PRO-merkki on aina oikeassa reunassa.
+        PickerAction(
+            label = stringResource(R.string.pattern_picker_choose_images),
+            onClick = actions.chooseImages,
+            enabled = projectId != null && cameraActionReady,
+            badge = { ProMarker(access = cameraAccess) },
+        )
+        PickerAction(
+            label = stringResource(R.string.pattern_picker_camera_scan),
             onClick = actions.startCameraScan,
-            enabled = canStartPatternCameraScan(projectId, canUseCameraScan),
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Text(stringResource(R.string.pattern_picker_camera_scan))
-        }
-
-        OutlinedButton(
-            onClick = actions.continueWithoutPattern,
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Text(stringResource(R.string.pattern_picker_continue_without_pattern))
+            enabled = projectId != null && cameraActionReady,
+            badge = { ProMarker(access = cameraAccess) },
+        )
+        if (mode == PatternPickerMode.INITIAL_PROJECT_PATTERN) {
+            PickerAction(
+                label = stringResource(R.string.pattern_picker_continue_without_pattern),
+                onClick = actions.continueWithoutPattern,
+            )
         }
     }
+}
+
+// Sama vaihtoehtorivi kuin langan valinnassa; ääriviivapillerit näyttivät eri listalta.
+@Composable
+private fun PickerAction(
+    label: String,
+    onClick: () -> Unit,
+    enabled: Boolean = true,
+    badge: (@Composable () -> Unit)? = null,
+) {
+    SheetOptionRow(title = label, onClick = onClick, enabled = enabled, badge = badge)
 }
 
 @Composable
@@ -264,14 +605,17 @@ private fun PatternPickerSavedPatterns(
     savedPatterns: List<SavedPattern>,
     onSavedPatternSelected: (SavedPattern) -> Unit,
 ) {
-    LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    LazyColumn(
+        modifier = Modifier.heightIn(max = 240.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
         items(savedPatterns, key = { it.id }) { pattern ->
             Column(
                 modifier =
                     Modifier
                         .fillMaxWidth()
                         .background(
-                            color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                            color = MaterialTheme.knitToolsColors.cardContainer,
                             shape = RoundedCornerShape(16.dp),
                         ).clickable { onSavedPatternSelected(pattern) }
                         .padding(16.dp),
@@ -296,39 +640,6 @@ private fun PatternPickerSavedPatterns(
     }
 }
 
-private suspend fun handleCaptureResult(
-    request: CaptureResultRequest,
-    onDocumentSelected: (String, String) -> Unit,
-    onDismiss: () -> Unit,
-) {
-    val pendingUri = request.pendingImageUriString?.toUri()
-    if (
-        !request.success ||
-        pendingUri == null ||
-        !canStartPatternCameraScan(request.projectId, request.canUseCameraScan)
-    ) {
-        return
-    }
-    val pendingProjectId = request.projectId ?: return
-    val fileName = "pattern-scan-${System.currentTimeMillis()}.pdf"
-    val converted =
-        withContext(AppDispatchers.IO) {
-            request.patternStorage.convertImageToPdf(
-                context = request.context,
-                projectId = pendingProjectId,
-                imageUri = pendingUri,
-                fileName = fileName,
-            )
-        }
-    if (converted != null) {
-        onDocumentSelected(converted.first, converted.second)
-        onDismiss()
-    } else {
-        val message = request.context.getString(R.string.pattern_scan_failed)
-        Toast.makeText(request.context, message, Toast.LENGTH_SHORT).show()
-    }
-}
-
 internal fun canStartPatternCameraScan(
     projectId: Long?,
     canUseCameraScan: Boolean,
@@ -336,32 +647,9 @@ internal fun canStartPatternCameraScan(
 
 private fun pdfMimeTypes(): Array<String> = arrayOf(PATTERN_PDF_MIME_TYPE)
 
-private fun showCameraPermissionDeniedToast(context: android.content.Context) {
-    val activity = context as? Activity
-    val permanentlyDenied =
-        activity != null &&
-            !ActivityCompat.shouldShowRequestPermissionRationale(activity, Manifest.permission.CAMERA)
-    val messageRes =
-        if (permanentlyDenied) {
-            R.string.camera_permission_denied_permanent
-        } else {
-            R.string.camera_permission_denied
-        }
-    Toast.makeText(context, context.getString(messageRes), Toast.LENGTH_SHORT).show()
-}
-
-private fun resolvePatternName(
-    context: android.content.Context,
-    uri: Uri,
-): String {
-    context.contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use { cursor ->
-        val columnIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
-        if (columnIndex >= 0 && cursor.moveToFirst()) {
-            val fileName = cursor.getString(columnIndex)
-            if (!fileName.isNullOrBlank()) return fileName
-        }
-    }
-    return uri.lastPathSegment ?: context.getString(R.string.pattern_pdf_fallback_name)
-}
-
 private const val PATTERN_PDF_MIME_TYPE = "application/pdf"
+
+private enum class PendingPatternProAction {
+    GalleryImages,
+    CameraCapture,
+}

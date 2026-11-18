@@ -4,11 +4,16 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
+import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.TemporaryFolder
+import java.io.ByteArrayInputStream
 import java.io.File
-import java.nio.file.Files
+import java.io.IOException
 
 class PatternDocumentFilesTest {
+    @get:Rule val temporaryFolder = TemporaryFolder()
+
     @Test
     fun `safe PDF name removes path segments and control characters`() {
         val name = PatternDocumentFiles.safePdfFileName("../folder\\evil\u0000 name")
@@ -104,5 +109,51 @@ class PatternDocumentFilesTest {
         assertTrue(directory.listFiles().orEmpty().isEmpty())
     }
 
-    private fun tempDirectory(): File = Files.createTempDirectory("pattern-documents").toFile()
+    @Test
+    fun `first unassigned PDF write removes interrupted copies and keeps live writes`() {
+        val directory = temporaryFolder.newFolder("pattern_pdfs", "0")
+        val interrupted = File(directory, "interrupted123.tmp").apply { writeText("partial") }
+        val saved = File(directory, "saved.pdf").apply { writeText("saved") }
+
+        val first =
+            PatternDocumentFiles.writeUniquePdf(directory, "first.pdf") { activeCopy ->
+                assertFalse(interrupted.exists())
+                val second = PatternDocumentFiles.writeUniquePdf(directory, "second.pdf") { it.writeText("second") }
+                assertEquals("second", second?.readText())
+                assertTrue(activeCopy.isFile)
+                activeCopy.writeText("first")
+            }
+
+        assertEquals("first", first?.readText())
+        assertEquals("saved", saved.readText())
+    }
+
+    @Test
+    fun `bounded PDF copy accepts the limit and rejects the next byte`() {
+        val directory = tempDirectory()
+        val accepted = File(directory, "accepted.tmp")
+        val rejected = File(directory, "rejected.tmp")
+
+        assertEquals(
+            3L,
+            PatternDocumentFiles.copyBounded(
+                input = ByteArrayInputStream(byteArrayOf(1, 2, 3)),
+                target = accepted,
+                maxBytes = 3L,
+            ),
+        )
+        assertEquals(listOf<Byte>(1, 2, 3), accepted.readBytes().toList())
+        try {
+            PatternDocumentFiles.copyBounded(
+                input = ByteArrayInputStream(byteArrayOf(1, 2, 3, 4)),
+                target = rejected,
+                maxBytes = 3L,
+            )
+            throw AssertionError("Expected the PDF copy limit to reject excess bytes")
+        } catch (_: IOException) {
+            // Odotettu raja suojaa levytilareservia.
+        }
+    }
+
+    private fun tempDirectory(): File = temporaryFolder.newFolder()
 }

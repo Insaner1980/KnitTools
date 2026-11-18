@@ -8,18 +8,13 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Inventory2
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
@@ -28,22 +23,27 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.finnvek.knittools.R
+import com.finnvek.knittools.analytics.UsageDetail
+import com.finnvek.knittools.domain.calculator.MeasurementNumberParser
 import com.finnvek.knittools.domain.calculator.YarnEstimator
 import com.finnvek.knittools.domain.calculator.formatDecimalForDisplay
 import com.finnvek.knittools.domain.model.YarnEstimate
+import com.finnvek.knittools.ui.TrackCalculatorResult
 import com.finnvek.knittools.ui.components.AnimatedResultNumber
 import com.finnvek.knittools.ui.components.BadgePill
 import com.finnvek.knittools.ui.components.InfoNote
 import com.finnvek.knittools.ui.components.NumberInputField
 import com.finnvek.knittools.ui.components.NumberInputOptions
+import com.finnvek.knittools.ui.components.OverviewTextAction
 import com.finnvek.knittools.ui.components.ResultCard
+import com.finnvek.knittools.ui.components.ResultPlaceholder
+import com.finnvek.knittools.ui.components.ToolInputCard
 import com.finnvek.knittools.ui.components.ToolScreenScaffold
 import com.finnvek.knittools.ui.components.rememberCurrentLocale
 import com.finnvek.knittools.ui.components.skeinCountText
@@ -57,7 +57,6 @@ fun YarnEstimatorScreen(
     onSavedYarns: () -> Unit = {},
     homeViewModel: HomeViewModel = hiltViewModel(),
 ) {
-    val snackbarHostState = remember { SnackbarHostState() }
     val useImperial by homeViewModel.useImperial.collectAsStateWithLifecycle()
 
     ToolScreenScaffold(
@@ -68,10 +67,6 @@ fun YarnEstimatorScreen(
             YarnEstimatorContent(
                 onSavedYarns = onSavedYarns,
                 useImperial = useImperial,
-            )
-            SnackbarHost(
-                hostState = snackbarHostState,
-                modifier = Modifier.align(Alignment.BottomCenter),
             )
         }
     }
@@ -85,66 +80,58 @@ private fun YarnEstimatorContent(
     var totalYarn by rememberSaveable { mutableStateOf("") }
     var yarnPerSkein by rememberSaveable { mutableStateOf("") }
     var weightPerSkein by rememberSaveable { mutableStateOf("") }
+    val locale = rememberCurrentLocale()
 
-    val result by remember(totalYarn, yarnPerSkein, weightPerSkein) {
-        derivedStateOf { calculateYarnEstimate(totalYarn, yarnPerSkein, weightPerSkein) }
+    val result by remember(totalYarn, yarnPerSkein, weightPerSkein, locale) {
+        derivedStateOf { calculateYarnEstimate(totalYarn, yarnPerSkein, weightPerSkein, locale) }
     }
 
-    val lengthUnit =
-        if (useImperial) {
-            stringResource(R.string.unit_yards)
-        } else {
-            stringResource(R.string.unit_meters)
-        }
+    TrackCalculatorResult(UsageDetail.TOOL_YARN, result != null)
 
     Column(
         modifier =
             Modifier
                 .fillMaxSize()
                 .padding(16.dp)
+                .imePadding()
                 .verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         SavedYarnActionBar(onSavedYarns = onSavedYarns)
 
-        Surface(
-            shape = RoundedCornerShape(18.dp),
-            color = MaterialTheme.colorScheme.surfaceVariant,
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Column(
-                modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                YarnInputFields(
-                    totalYarn = totalYarn,
-                    yarnPerSkein = yarnPerSkein,
-                    weightPerSkein = weightPerSkein,
-                    lengthUnit = lengthUnit,
-                    onTotalYarnChange = { totalYarn = it },
-                    onYarnPerSkeinChange = { yarnPerSkein = it },
-                    onWeightPerSkeinChange = { weightPerSkein = it },
-                )
-            }
+        ToolInputCard {
+            YarnInputFields(
+                totalYarn = totalYarn,
+                yarnPerSkein = yarnPerSkein,
+                weightPerSkein = weightPerSkein,
+                useImperial = useImperial,
+                onTotalYarnChange = { totalYarn = it },
+                onYarnPerSkeinChange = { yarnPerSkein = it },
+                onWeightPerSkeinChange = { weightPerSkein = it },
+            )
         }
 
-        result?.let { r -> YarnResultCard(r) }
+        val currentResult = result
+        if (currentResult == null) {
+            ResultPlaceholder(text = stringResource(R.string.yarn_result_placeholder))
+        } else {
+            YarnResultCard(currentResult)
+        }
     }
 }
 
+// Tekstitoiminto laatikkoikonin tilalla: ikonista ei voinut arvata, että se hakee langan My Yarnista.
 @Composable
 private fun SavedYarnActionBar(onSavedYarns: () -> Unit) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.End,
     ) {
-        IconButton(onClick = onSavedYarns) {
-            Icon(
-                Icons.Filled.Inventory2,
-                contentDescription = stringResource(R.string.saved_yarns),
-                tint = MaterialTheme.colorScheme.primary,
-            )
-        }
+        OverviewTextAction(
+            label = stringResource(R.string.choose_from_my_yarn),
+            onClick = onSavedYarns,
+            trailingIcon = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+        )
     }
 }
 
@@ -153,24 +140,28 @@ private fun YarnInputFields(
     totalYarn: String,
     yarnPerSkein: String,
     weightPerSkein: String,
-    lengthUnit: String,
+    useImperial: Boolean,
     onTotalYarnChange: (String) -> Unit,
     onYarnPerSkeinChange: (String) -> Unit,
     onWeightPerSkeinChange: (String) -> Unit,
 ) {
+    val lengthUnit = stringResource(if (useImperial) R.string.unit_yards else R.string.unit_meters)
+    // Esimerkit tyypillisestä villapuserosta ja 50 g:n kerästä yksikön mukaan.
+    val totalExample = if (useImperial) EXAMPLE_TOTAL_YARDS else EXAMPLE_TOTAL_METERS
+    val perSkeinExample = if (useImperial) EXAMPLE_YARDS_PER_SKEIN else EXAMPLE_METERS_PER_SKEIN
     NumberInputField(
         value = totalYarn,
         onValueChange = onTotalYarnChange,
         label = stringResource(R.string.total_yarn_needed),
         modifier = Modifier.fillMaxWidth(),
-        options = NumberInputOptions(isDecimal = true, suffix = lengthUnit),
+        options = NumberInputOptions(isDecimal = true, suffix = lengthUnit, placeholder = totalExample),
     )
     NumberInputField(
         value = yarnPerSkein,
         onValueChange = onYarnPerSkeinChange,
-        label = stringResource(R.string.yarn_per_skein, lengthUnit),
+        label = stringResource(R.string.length_per_skein),
         modifier = Modifier.fillMaxWidth(),
-        options = NumberInputOptions(isDecimal = true, suffix = lengthUnit),
+        options = NumberInputOptions(isDecimal = true, suffix = lengthUnit, placeholder = perSkeinExample),
     )
     NumberInputField(
         value = weightPerSkein,
@@ -182,9 +173,16 @@ private fun YarnInputFields(
                 isDecimal = true,
                 suffix = stringResource(R.string.unit_g),
                 isLast = true,
+                placeholder = EXAMPLE_GRAMS_PER_SKEIN,
             ),
     )
 }
+
+private const val EXAMPLE_TOTAL_METERS = "1200"
+private const val EXAMPLE_TOTAL_YARDS = "1300"
+private const val EXAMPLE_METERS_PER_SKEIN = "200"
+private const val EXAMPLE_YARDS_PER_SKEIN = "220"
+private const val EXAMPLE_GRAMS_PER_SKEIN = "50"
 
 @Composable
 private fun YarnResultCard(result: YarnEstimate) {
@@ -201,6 +199,7 @@ private fun YarnResultCard(result: YarnEstimate) {
         }
         Spacer(modifier = Modifier.height(8.dp))
         BadgePill(
+            uppercase = false,
             text =
                 stringResource(
                     R.string.total_weight,
@@ -226,11 +225,11 @@ private fun calculateYarnEstimate(
     totalYarn: String,
     yarnPerSkein: String,
     weightPerSkein: String,
+    locale: Locale,
 ): YarnEstimate? {
-    val total = totalYarn.toDoubleOrNull() ?: return null
-    val perSkein = yarnPerSkein.toDoubleOrNull() ?: return null
-    val weight = weightPerSkein.toDoubleOrNull() ?: return null
-    if (total <= 0 || perSkein <= 0 || weight <= 0) return null
+    val total = MeasurementNumberParser.parse(totalYarn, locale).value ?: return null
+    val perSkein = MeasurementNumberParser.parse(yarnPerSkein, locale).value ?: return null
+    val weight = MeasurementNumberParser.parse(weightPerSkein, locale).value ?: return null
     return YarnEstimator.estimate(total, perSkein, weight)
 }
 

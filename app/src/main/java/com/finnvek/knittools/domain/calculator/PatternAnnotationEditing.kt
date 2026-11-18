@@ -7,6 +7,8 @@ import com.finnvek.knittools.domain.model.FreehandPayload
 import com.finnvek.knittools.domain.model.NormalizedPatternBounds
 import com.finnvek.knittools.domain.model.NormalizedPatternPoint
 import com.finnvek.knittools.domain.model.PatternAnnotation
+import com.finnvek.knittools.domain.model.PatternAnnotationPageBudget
+import com.finnvek.knittools.domain.model.PatternAnnotationPageLimitException
 import com.finnvek.knittools.domain.model.ShapePayload
 import com.finnvek.knittools.domain.model.TextBoxPayload
 
@@ -14,11 +16,22 @@ fun topmostAnnotationAt(
     annotations: List<PatternAnnotation>,
     point: NormalizedPatternPoint,
     tolerance: Float,
-): PatternAnnotation? =
-    annotations
-        .asSequence()
-        .sortedWith(compareByDescending<PatternAnnotation> { it.zIndex }.thenByDescending { it.id })
-        .firstOrNull { annotation -> annotation.hitTest(point, tolerance) }
+): PatternAnnotation? {
+    if (annotations.size > PatternAnnotationPageBudget.MAX_ANNOTATIONS) throw PatternAnnotationPageLimitException()
+    val budget = PatternAnnotationPageBudget()
+    var topmost: PatternAnnotation? = null
+    // Syöte saa olla järjestämätön. Samoilla zIndex- ja ID-arvoilla ensimmäinen osuma säilyy.
+    for (annotation in annotations) {
+        budget.add(annotation.payload)
+        val previous = topmost
+        val above =
+            previous == null ||
+                annotation.zIndex > previous.zIndex ||
+                (annotation.zIndex == previous.zIndex && annotation.id > previous.id)
+        if (above && annotation.hitTest(point, tolerance)) topmost = annotation
+    }
+    return topmost
+}
 
 fun translatePatternAnnotation(
     annotation: PatternAnnotation,

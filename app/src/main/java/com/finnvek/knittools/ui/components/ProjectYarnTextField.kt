@@ -5,10 +5,8 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 
 @Composable
 internal fun ProjectYarnTextField(
@@ -18,6 +16,8 @@ internal fun ProjectYarnTextField(
     modifier: Modifier = Modifier,
     singleLine: Boolean = false,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
+    readOnly: Boolean = false,
+    trailingIcon: (@Composable () -> Unit)? = null,
 ) {
     TextField(
         value = value,
@@ -26,13 +26,10 @@ internal fun ProjectYarnTextField(
         label = { Text(label) },
         singleLine = singleLine,
         keyboardOptions = keyboardOptions,
+        readOnly = readOnly,
+        trailingIcon = trailingIcon,
         shape = MaterialTheme.shapes.medium,
         colors =
-            TextFieldDefaults.colors(
-                focusedContainerColor = MaterialTheme.colorScheme.surface,
-                unfocusedContainerColor = MaterialTheme.colorScheme.surface,
-                focusedIndicatorColor = Color.Transparent,
-                unfocusedIndicatorColor = Color.Transparent,
-            ),
+            cardTextFieldColors(),
     )
 }

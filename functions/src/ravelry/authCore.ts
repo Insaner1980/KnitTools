@@ -9,10 +9,14 @@ import type { RavelryCurrentUserClient } from "./client";
 import type { OAuthStateStore } from "./oauthStateStore";
 import type { OAuthTokenExchange, OAuthTokenRefresh } from "./oauth2";
 import { RAVELRY_AUTHORIZATION_URL } from "./oauth2";
+import type { RavelryRateLimiter } from "./rateLimit";
 import { getUsableRavelryToken } from "./tokenAccess";
 import type { RavelryTokenStore } from "./tokenStore";
 
-type RandomLabel = "state" | "code-verifier";
+type RandomLabel = "state" | "code-verifier" | "completion-proof";
+
+const MAX_OAUTH_CALLBACK_VALUE_LENGTH = 2_048;
+const CALLBACK_CONTROL_CHARACTERS = /[\u0000-\u001F\u007F-\u009F\u2028\u2029]/;
 
 interface StartOAuthOptions {
   readonly uid: string;
@@ -29,6 +33,17 @@ interface CompleteCallbackOptions {
   readonly stateStore: OAuthStateStore;
   readonly tokenStore: RavelryTokenStore;
   readonly exchange: OAuthTokenExchange;
+  readonly rateLimiter: RavelryRateLimiter;
+  readonly nowMillis?: () => number;
+  readonly randomString?: (label: RandomLabel) => string;
+}
+
+interface CompleteOAuthOptions {
+  readonly uid: string;
+  readonly state: string;
+  readonly completionProof: string;
+  readonly tokenStore: RavelryTokenStore;
+  readonly rateLimiter?: Pick<RavelryRateLimiter, "consumeUid">;
   readonly nowMillis?: () => number;
 }
 
@@ -87,11 +102,14 @@ function codeChallengeFor(verifier: string): string {
   return createHash("sha256").update(verifier).digest("base64url");
 }
 
-function appRedirectUrl(state: string, error?: string): string {
+function appRedirectUrl(state: string, error?: string, completionProof?: string): string {
   const url = new URL(KNITTOOLS_RAVELRY_AUTH_COMPLETE_DEEP_LINK);
   url.searchParams.set("state", state);
   if (error) {
     url.searchParams.set("error", error);
+  }
+  if (completionProof) {
+    url.searchParams.set("proof", completionProof);
   }
   return url.toString();
 }
@@ -104,11 +122,61 @@ function queryString(query: Record<string, unknown>, key: string): string | unde
   return typeof value === "string" && value.length > 0 ? value : undefined;
 }
 
+function boundedCallbackValue(
+  value: string | undefined,
+  field: "code" | "error",
+): string | undefined {
+  if (value == null) {
+    return undefined;
+  }
+  if (value.length > MAX_OAUTH_CALLBACK_VALUE_LENGTH || CALLBACK_CONTROL_CHARACTERS.test(value)) {
+    throw new RavelryAuthFlowError(`invalid_${field}`, 400);
+  }
+  return value;
+}
+
+function sanitizedOAuthError(value: string): string {
+  const normalized = value.toLowerCase();
+  return normalized === "access_denied" || normalized === "cancelled" || normalized === "canceled"
+    ? normalized
+    : "oauth_error";
+}
+
 function requireState(value: string | undefined): string {
   if (!value) {
     throw new RavelryAuthFlowError("missing_state", 400);
   }
+  if (!/^[A-Za-z0-9_-]{43}$/.test(value)) {
+    throw new RavelryAuthFlowError("invalid_state", 400);
+  }
   return value;
+}
+
+export function validateRavelryOAuthCallbackQuery(query: Record<string, unknown>) {
+  for (const field of ["state", "code", "error"] as const) {
+    if (query[field] != null && typeof query[field] !== "string") {
+      throw new RavelryAuthFlowError(`invalid_${field}`, 400);
+    }
+  }
+  const state = requireState(queryString(query, "state"));
+  if (query.code != null && query.error != null) {
+    throw new RavelryAuthFlowError("invalid_callback", 400);
+  }
+  const ravelryError = boundedCallbackValue(queryString(query, "error"), "error");
+  const code = boundedCallbackValue(queryString(query, "code"), "code");
+  if (!ravelryError && !code) throw new RavelryAuthFlowError("missing_code", 400);
+  return { state, ravelryError, code };
+}
+
+function requireCompletionProof(value: string): string {
+  if (!/^[A-Za-z0-9_-]{43}$/.test(value)) {
+    throw new RavelryAuthFlowError("invalid_completion", 400);
+  }
+  return value;
+}
+
+function completionProofHash(value: string): string {
+  return createHash("sha256").update(value).digest("base64url");
 }
 
 function redirectExpiredStateOrThrow(error: unknown, state: string): CallbackResponse {
@@ -181,6 +249,10 @@ export function resolveBackendCallbackUrl(
 ): string {
   const trimmedCallbackUrl = configuredCallbackUrl.trim();
   if (trimmedCallbackUrl.length > 0) {
+    const url = URL.parse(trimmedCallbackUrl);
+    if (!url || url.protocol !== "https:" || url.username || url.password || url.hash) {
+      throw new RavelryAuthFlowError("invalid_callback_url", 500);
+    }
     return trimmedCallbackUrl;
   }
 
@@ -230,6 +302,14 @@ export async function startRavelryOAuth({
     connectionGeneration,
   });
 
+  return {
+    authorizeUrl: ravelryAuthorizeUrl(clientId, backendCallbackUrl, state, codeChallenge),
+    state,
+    expiresAtMillis,
+  };
+}
+
+export function ravelryAuthorizeUrl(clientId: string, backendCallbackUrl: string, state: string, codeChallenge: string): string {
   const authorizeUrl = new URL(RAVELRY_AUTHORIZATION_URL);
   authorizeUrl.searchParams.set("response_type", "code");
   authorizeUrl.searchParams.set("client_id", clientId);
@@ -239,11 +319,7 @@ export async function startRavelryOAuth({
   authorizeUrl.searchParams.set("code_challenge", codeChallenge);
   authorizeUrl.searchParams.set("code_challenge_method", "S256");
 
-  return {
-    authorizeUrl: authorizeUrl.toString(),
-    state,
-    expiresAtMillis,
-  };
+  return authorizeUrl.toString();
 }
 
 export async function completeRavelryOAuthCallback({
@@ -251,17 +327,20 @@ export async function completeRavelryOAuthCallback({
   stateStore,
   tokenStore,
   exchange,
+  rateLimiter,
   nowMillis = Date.now,
+  randomString = randomBase64Url,
 }: CompleteCallbackOptions): Promise<CallbackResponse> {
-  const now = nowMillis();
-  const state = requireState(queryString(query, "state"));
-  const storedState = await loadUsableState(stateStore, state, now).catch((error: unknown) =>
+  const { state, ravelryError, code } = validateRavelryOAuthCallbackQuery(query);
+  await rateLimiter.consumeGlobal("callback");
+  const storedState = await loadUsableState(stateStore, state, nowMillis()).catch((error: unknown) =>
     redirectExpiredStateOrThrow(error, state),
   );
   if ("redirectUrl" in storedState) {
     return storedState;
   }
-  const ravelryError = queryString(query, "error");
+  await rateLimiter.consumeUid(storedState.uid, "callback");
+  const now = nowMillis();
 
   if (ravelryError) {
     const expiredResult = await markStateUsedOrReject(stateStore, state, now).catch((error: unknown) =>
@@ -270,10 +349,9 @@ export async function completeRavelryOAuthCallback({
     if (expiredResult) {
       return expiredResult;
     }
-    return { redirectUrl: appRedirectUrl(state, ravelryError) };
+    return { redirectUrl: appRedirectUrl(state, sanitizedOAuthError(ravelryError)) };
   }
 
-  const code = queryString(query, "code");
   if (!code) {
     throw new RavelryAuthFlowError("missing_code", 400);
   }
@@ -288,21 +366,53 @@ export async function completeRavelryOAuthCallback({
   if (await tokenStore.getConnectionGeneration(storedState.uid) !== connectionGeneration) {
     return { redirectUrl: appRedirectUrl(state, "state_expired") };
   }
-  const token = await exchange({
-    code,
-    codeVerifier: storedState.codeVerifier,
-    redirectUri: storedState.redirectUri,
-  });
+  let token: Awaited<ReturnType<OAuthTokenExchange>>;
+  try {
+    token = await exchange({
+      code,
+      codeVerifier: storedState.codeVerifier,
+      redirectUri: storedState.redirectUri,
+    });
+  } catch {
+    return { redirectUrl: appRedirectUrl(state, "oauth_error") };
+  }
 
-  const saved = await tokenStore.saveTokenIfGenerationCurrent(
-    tokenForStorage(storedState.uid, token, now, connectionGeneration),
+  const completionProof = randomString("completion-proof");
+  const saved = await tokenStore.savePendingTokenIfGenerationCurrent(
+    {
+      token: tokenForStorage(storedState.uid, token, now, connectionGeneration),
+      state,
+      completionProofHash: completionProofHash(completionProof),
+      expiresAtMillis: now + RAVELRY_OAUTH_STATE_TTL_MILLIS,
+    },
     connectionGeneration,
   );
   if (!saved) {
     return { redirectUrl: appRedirectUrl(state, "state_expired") };
   }
 
-  return { redirectUrl: appRedirectUrl(state) };
+  return { redirectUrl: appRedirectUrl(state, undefined, completionProof) };
+}
+
+export async function completeRavelryOAuth({
+  uid,
+  state,
+  completionProof,
+  tokenStore,
+  rateLimiter,
+  nowMillis = Date.now,
+}: CompleteOAuthOptions): Promise<{ connected: true }> {
+  const validState = requireState(state);
+  const validProof = requireCompletionProof(completionProof);
+  await rateLimiter?.consumeUid(uid, "auth");
+  const activated = await tokenStore.activatePendingToken(
+    uid,
+    validState,
+    completionProofHash(validProof),
+    nowMillis(),
+  );
+  if (!activated) throw new RavelryAuthFlowError("invalid_completion", 412);
+  return { connected: true };
 }
 
 export async function getRavelryAuthStatus({
@@ -343,13 +453,10 @@ export async function getRavelryCurrentUser({
   const currentUser = await client.getCurrentUser(token.accessToken);
   const now = nowMillis();
   const connectionGeneration = token.connectionGeneration ?? 0;
-  const saved = await tokenStore.saveTokenIfGenerationCurrent({
-    ...token,
+  const saved = await tokenStore.updateUserMetadataIfGenerationCurrent(uid, {
     ravelryUserId: currentUser.ravelryUserId,
     ravelryUsername: currentUser.ravelryUsername,
-    updatedAtMillis: now,
-    lastVerifiedAtMillis: now,
-    connectionGeneration,
+    verifiedAtMillis: now,
   }, connectionGeneration);
   if (!saved) {
     return { connected: false };

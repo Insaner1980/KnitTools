@@ -1,0 +1,61 @@
+appId: com.finnvek.knittools
+name: Project yarn usage and persistence
+---
+- launchApp:
+    clearState: true
+- tapOn: "New Project"
+- tapOn:
+    text: "Project name"
+    index: 1
+- inputText: "Maestro Usage"
+- tapOn: "Create project"
+- tapOn: "Add row"
+- scrollUntilVisible:
+    element:
+      text: "Yarn"
+    direction: DOWN
+- tapOn: "Yarn"
+- tapOn: "Add yarn to this project"
+- tapOn: "Yarn name"
+- inputText: "Maestro Project Wool"
+- hideKeyboard
+- scrollUntilVisible:
+    element:
+      text: "Save"
+    direction: DOWN
+- tapOn: "Save"
+- scrollUntilVisible:
+    element:
+      text: "Track usage for Maestro Project Wool"
+    direction: DOWN
+- tapOn: "Track usage for Maestro Project Wool"
+- tapOn:
+    text: 'Allocated to this project \(Meters\)'
+    index: 1
+- inputText: "200"
+- tapOn:
+    text: 'Used \(Meters\)'
+    index: 1
+- inputText: "75"
+- hideKeyboard
+- scrollUntilVisible:
+    element:
+      text: "Remaining: 125 m"
+    direction: DOWN
+- assertVisible: "Remaining: 125 m"
+- scrollUntilVisible:
+    element:
+      text: "Save"
+    direction: DOWN
+- tapOn: "Save"
+- assertVisible: "Used: 75 m"
+- assertVisible: "Remaining: 125 m"
+- launchApp
+- tapOn: "Continue Maestro Usage"
+- scrollUntilVisible:
+    element:
+      text: "Yarn"
+    direction: DOWN
+- tapOn: "Yarn"
+- assertVisible: "Used: 75 m"
+- assertVisible: "Remaining: 125 m"

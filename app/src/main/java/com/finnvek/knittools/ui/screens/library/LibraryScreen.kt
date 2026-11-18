@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
@@ -23,8 +24,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.calculator.formatIntegerForDisplay
 import com.finnvek.knittools.ui.components.HubListItem
-import com.finnvek.knittools.ui.components.localizedUppercase
+import com.finnvek.knittools.ui.components.SectionLabel
 import com.finnvek.knittools.ui.components.rememberCurrentLocale
+import com.finnvek.knittools.ui.layout.ContentWidthPolicy
+import com.finnvek.knittools.ui.layout.contentWidth
 import com.finnvek.knittools.ui.navigation.Screen
 import com.finnvek.knittools.ui.theme.knitToolsColors
 
@@ -32,16 +35,16 @@ import com.finnvek.knittools.ui.theme.knitToolsColors
 @Composable
 fun LibraryScreen(
     onNavigate: (Screen) -> Unit,
-    onUpgradeToPro: () -> Unit = {},
-    viewModel: LibraryViewModel = hiltViewModel(),
+    viewModelProvider: @Composable () -> LibraryViewModel = { hiltViewModel() },
 ) {
+    val viewModel = viewModelProvider()
     val locale = rememberCurrentLocale()
     val savedPatternCount by viewModel.savedPatternCount.collectAsStateWithLifecycle(initialValue = 0)
     val yarnCardCount by viewModel.yarnCardCount.collectAsStateWithLifecycle(initialValue = 0)
     val photoCount by viewModel.photoCount.collectAsStateWithLifecycle(initialValue = 0)
-    val canUseProgressPhotos by viewModel.canUseProgressPhotos.collectAsStateWithLifecycle()
 
     Scaffold(
+        modifier = Modifier.fillMaxSize().wrapContentWidth().contentWidth(ContentWidthPolicy.ListDetail),
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
@@ -65,10 +68,8 @@ fun LibraryScreen(
         ) {
             // MY COLLECTION -osio
             item {
-                Text(
-                    text = stringResource(R.string.library_my_collection).localizedUppercase(),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.knitToolsColors.brandWine,
+                SectionLabel(
+                    text = stringResource(R.string.library_my_collection),
                 )
             }
             item {
@@ -94,11 +95,7 @@ fun LibraryScreen(
                     title = stringResource(R.string.all_photos_title),
                     description = stringResource(R.string.desc_all_photos),
                     onClick = {
-                        if (canUseProgressPhotos) {
-                            onNavigate(Screen.AllPhotos)
-                        } else {
-                            onUpgradeToPro()
-                        }
+                        onNavigate(Screen.AllPhotos)
                     },
                     titleColor = MaterialTheme.colorScheme.tertiary,
                     trailingText = formatIntegerForDisplay(photoCount.toLong(), locale),
@@ -108,10 +105,8 @@ fun LibraryScreen(
             // REFERENCE -osio
             item {
                 Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = stringResource(R.string.library_reference).localizedUppercase(),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.knitToolsColors.brandWine,
+                SectionLabel(
+                    text = stringResource(R.string.library_reference),
                 )
             }
             item {

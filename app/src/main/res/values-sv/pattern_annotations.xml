@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="pattern_annotation_page_limit">Den här sidan har för många eller för komplexa markeringar för att visas säkert. Dina markeringar har bevarats.</string>
     <string name="pattern_annotations_layers">Anteckningslager</string>
     <string name="pattern_annotations_master">Mönsteranteckningar</string>
     <string name="pattern_annotations_project">Projektanteckningar</string>
     <string name="pattern_annotations_read_only">Skrivskyddad</string>
     <string name="pattern_annotations_count">%1$s (%2$d)</string>
-    <string name="pattern_annotation_tool_browse">Bläddra</string>
     <string name="pattern_annotation_tool_pen">Penna</string>
     <string name="pattern_annotation_tool_highlighter">Överstrykningspenna</string>
     <string name="pattern_annotation_tool_eraser">Suddgummi</string>
@@ -73,4 +73,7 @@
     <string name="pattern_annotation_export_failed">PDF-exporten misslyckades. Den ursprungliga PDF-filen ändrades inte.</string>
     <string name="pattern_annotation_export_default_name">mönster</string>
     <string name="pattern_annotation_export_filename">%1$s-med-anteckningar.pdf</string>
+    <string name="pattern_annotation_edit_text">Redigera text</string>
+    <string name="pattern_annotation_write_failed">Texten kunde inte sparas. Anteckningen kan ha ändrats. Stäng redigeraren och försök igen.</string>
+    <string name="pattern_annotation_command_failed">En ändring av en anteckning sparades inte. Stäng meddelandet och försök igen med markeringsverktygen.</string>
 </resources>

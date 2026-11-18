@@ -1,5 +1,7 @@
 # KnitTools PDF Reading Line - toteutussuunnitelma
 
+> **Historiallinen suunnitelma:** Tämä dokumentti kuvaa schema 13 -vaiheen lähtötilaa eikä nykyistä schemaa tai toteutusarkkitehtuuria. Nykyinen lähde on `PROJECT.md` ja toteutunut arkkitehtuuri on kuvattu `AGENTS.md`/`CODEX.md`-tiedostoissa.
+
 ## Yhteenveto
 
 Tavoite: tehdä PDF-patternin lukulinjasta kilpailukykyinen ilman AI:ta: käyttäjä voi näyttää viivan, siirtää sen oikealle riville, sitoa sen nykyiseen row-laskuriin, ja rivin pitää liikkua luotettavasti laskurin mukana.

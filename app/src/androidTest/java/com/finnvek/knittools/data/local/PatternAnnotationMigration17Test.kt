@@ -237,6 +237,72 @@ class PatternAnnotationMigration17Test {
     }
 
     @Test
+    fun invalidOwnerUpdatesPreserveLayersAndAnnotations() {
+        val testDb = "migration-test-v17-owner-updates"
+        helper.createDatabase(testDb, 16).close()
+        helper.runMigrationsAndValidate(testDb, 17, true, KnitToolsDatabase.MIGRATION_16_17).use { db ->
+            db.execSQL("PRAGMA foreign_keys = ON")
+            db.insertProject(id = 7L, linkedPatternId = null, patternUri = null)
+            db.insertSavedPattern(id = 12L)
+            db.execSQL(
+                """
+                INSERT INTO pattern_annotation_layers
+                    (id, projectId, savedPatternId, documentKey, isActive, createdAt, updatedAt)
+                VALUES (1, 7, NULL, 'project-document', 0, 1000, 2000),
+                       (2, NULL, 12, 'saved-document', 0, 3000, 4000)
+                """.trimIndent(),
+            )
+            db.execSQL(
+                """
+                INSERT INTO pattern_annotations
+                    (id, layerId, page, kind, payloadVersion, payloadJson, zIndex, createdAt, updatedAt)
+                VALUES (11, 1, 0, 'FREEHAND', 1, '{}', 0, 1000, 2000),
+                       (12, 2, 3, 'FREEHAND', 1, '{}', 2, 3000, 4000)
+                """.trimIndent(),
+            )
+
+            fun rows(table: String): List<List<String?>> =
+                db.query("SELECT * FROM $table ORDER BY id").use { cursor ->
+                    buildList {
+                        while (cursor.moveToNext()) {
+                            add(List(cursor.columnCount) { if (cursor.isNull(it)) null else cursor.getString(it) })
+                        }
+                    }
+                }
+
+            val originalLayers = rows("pattern_annotation_layers")
+            val originalAnnotations = rows("pattern_annotations")
+            listOf(1L, 2L).forEach { layerId ->
+                val invalidOwners =
+                    listOf(
+                        "projectId = NULL, savedPatternId = NULL",
+                        "projectId = 7, savedPatternId = 12",
+                    )
+                invalidOwners.forEach { owners ->
+                    val failure =
+                        runCatching {
+                            db.execSQL(
+                                "UPDATE pattern_annotation_layers SET $owners, documentKey = 'changed', updatedAt = 9999 WHERE id = ?",
+                                arrayOf(layerId),
+                            )
+                        }.exceptionOrNull()
+                    assertTrue(failure is SQLiteConstraintException)
+                    val expectedMessage = "pattern annotation layer requires exactly one owner"
+                    assertTrue(failure?.message.orEmpty().contains(expectedMessage))
+                    assertEquals(originalLayers, rows("pattern_annotation_layers"))
+                    assertEquals(originalAnnotations, rows("pattern_annotations"))
+                }
+            }
+
+            db.execSQL("UPDATE pattern_annotation_layers SET projectId = NULL, savedPatternId = 12 WHERE id = 1")
+            db.execSQL("UPDATE pattern_annotation_layers SET projectId = 7, savedPatternId = NULL WHERE id = 2")
+            assertSingleString(db, "SELECT savedPatternId FROM pattern_annotation_layers WHERE id = 1", "12")
+            assertSingleString(db, "SELECT projectId FROM pattern_annotation_layers WHERE id = 2", "7")
+            assertEquals(originalAnnotations, rows("pattern_annotations"))
+        }
+    }
+
+    @Test
     fun migrationChainsFromVersionsOneAndSixReachSchema17() {
         listOf(1, 6).forEach { startVersion ->
             val testDb = "migration-test-v$startVersion-to-v17-pattern-schema"

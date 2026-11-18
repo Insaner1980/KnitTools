@@ -8,20 +8,25 @@ const projectRoot = path.resolve(deepsecRoot, "..");
 const securityDecisionPath = path.join(projectRoot, "config", "security-decisions.md");
 const fileRecordsRoot = path.join(deepsecRoot, "data", "knittools", "files");
 
-const RAVELRY_ACCEPTED_RISK_FILES = new Set([
-  "app/build.gradle.kts",
-  "app/src/main/java/com/finnvek/knittools/auth/RavelryAuthManager.kt",
-  "app/src/main/java/com/finnvek/knittools/data/remote/RavelryApiService.kt",
+const RAVELRY_ACCEPTED_RISK_RUN = "20260514063758-293653dff198bae7";
+const RAVELRY_ACCEPTED_RISK_FILES = new Map([
+  ["app/build.gradle.kts", "finding_6e03ceb481162a46"],
+  ["app/src/main/java/com/finnvek/knittools/auth/RavelryAuthManager.kt", "finding_229838296fa8182a"],
+  ["app/src/main/java/com/finnvek/knittools/data/remote/RavelryApiService.kt", "finding_3049f506c2ba95c0"],
 ]);
 
 const RAVELRY_CREDENTIAL_PATTERNS = [
   {
-    regex: /BuildConfig\.RAVELRY_(?:BASIC_AUTH|OAUTH2)_[A-Z_]+/,
+    regex: /BuildConfig\.RAVELRY_(?:(?:BASIC_AUTH|OAUTH2)_[A-Z_]+|CLIENT_SECRET|ACCESS_TOKEN|REFRESH_TOKEN)\b/,
     label: "Ravelry credential BuildConfig read",
   },
   {
     regex: /KNITTOOLS_(?:ALLOW_EMBEDDED_RAVELRY_SECRETS|RAVELRY_[A-Z0-9_]+)/,
     label: "Ravelry credential environment gate",
+  },
+  {
+    regex: /buildConfigField\s*\(\s*["']String["']\s*,\s*["']RAVELRY_(?:(?:BASIC_AUTH|OAUTH2)_[A-Z_]+|CLIENT_SECRET|ACCESS_TOKEN|REFRESH_TOKEN)["']/,
+    label: "Ravelry credential BuildConfig declaration",
   },
   {
     regex: /Authorization["']?\s*,\s*["'](?:Basic|Bearer)\b/,
@@ -30,10 +35,18 @@ const RAVELRY_CREDENTIAL_PATTERNS = [
 ];
 
 const decision = fs.readFileSync(securityDecisionPath, "utf8");
-const hasRavelryDecision = decision.includes("Ravelry embedded credentials");
-const isAcceptedRisk = hasRavelryDecision && decision.includes("Status: Accepted risk");
-const isRemovedFromAndroid =
-  hasRavelryDecision && decision.includes("Status: Removed from Android");
+const headings = [...decision.matchAll(/^##[ \t]+Ravelry embedded credentials[ \t]*\r?$/gm)];
+if (headings.length !== 1) {
+  throw new Error("Exactly one Ravelry embedded credentials decision section is required.");
+}
+const sectionStart = headings[0].index + headings[0][0].length;
+const remaining = decision.slice(sectionStart);
+const nextHeading = /^#{1,2}[ \t]+/m.exec(remaining);
+const section = remaining.slice(0, nextHeading?.index ?? remaining.length);
+const statuses = [...section.matchAll(/^Status:[ \t]*(.*)$/gm)].map((match) => match[1].trim());
+const isAcceptedRisk = statuses.length === 1 && statuses[0] === "Accepted risk";
+const isRemovedFromAndroid = statuses.length === 1 &&
+  /^(?:Removed from Android|Removed from Android; superseded historical accepted risk)$/.test(statuses[0]);
 
 if (!isAcceptedRisk && !isRemovedFromAndroid) {
   throw new Error("Ravelry accepted-risk decision is missing or has an unknown status.");
@@ -78,11 +91,16 @@ function markRavelryCredentialFindings({ verdict, reasoning, runId }) {
 
   for (const recordPath of walkJsonFiles(fileRecordsRoot)) {
     const record = JSON.parse(fs.readFileSync(recordPath, "utf8"));
-    if (!RAVELRY_ACCEPTED_RISK_FILES.has(record.filePath)) continue;
+    const reviewedFindingId = RAVELRY_ACCEPTED_RISK_FILES.get(record.filePath);
+    if (!reviewedFindingId) continue;
 
     let changed = false;
     for (const finding of record.findings ?? []) {
-      if (!isRavelryCredentialFinding(finding)) continue;
+      if (
+        finding.findingId !== reviewedFindingId ||
+        finding.producedByRunId !== RAVELRY_ACCEPTED_RISK_RUN ||
+        finding.vulnSlug !== "secrets-exposure"
+      ) continue;
 
       finding.revalidation = {
         verdict,
@@ -103,16 +121,14 @@ function markRavelryCredentialFindings({ verdict, reasoning, runId }) {
   return updatedFindings;
 }
 
-function isRavelryCredentialFinding(finding) {
-  const text = `${finding.title ?? ""}\n${finding.description ?? ""}\n${finding.recommendation ?? ""}`;
-  return finding.vulnSlug === "secrets-exposure" && /Ravelry/i.test(text);
-}
-
 function currentRavelryCredentialMatches() {
   const matches = [];
   const sourcePaths = [
     path.join(projectRoot, "app", "build.gradle.kts"),
     ...walkKotlinFiles(path.join(projectRoot, "app", "src", "main", "java")),
+    ...walkKotlinFiles(path.join(projectRoot, "app", "src", "release", "java")),
+    ...walkKotlinFiles(path.join(projectRoot, "app", "src", "debug", "java")),
+    ...walkKotlinFiles(path.join(projectRoot, "app", "src", "debugShared", "kotlin")),
   ];
 
   for (const sourcePath of sourcePaths) {
@@ -121,7 +137,7 @@ function currentRavelryCredentialMatches() {
     const relativePath = path.relative(projectRoot, sourcePath).replaceAll(path.sep, "/");
     const patterns = /Ravelry/i.test(relativePath)
       ? RAVELRY_CREDENTIAL_PATTERNS
-      : RAVELRY_CREDENTIAL_PATTERNS.slice(0, 2);
+      : RAVELRY_CREDENTIAL_PATTERNS.slice(0, 3);
 
     for (const { regex, label } of patterns) {
       const flags = regex.flags.includes("g") ? regex.flags : `${regex.flags}g`;

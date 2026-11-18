@@ -1,10 +1,13 @@
 package com.finnvek.knittools.repository
 
 import android.content.Context
+import com.finnvek.knittools.data.local.ActiveSessionEntity
 import com.finnvek.knittools.data.local.CounterHistoryEntity
+import com.finnvek.knittools.data.local.CounterProjectEntity
 import com.finnvek.knittools.data.local.ImmediateDatabaseTransactionRunner
 import com.finnvek.knittools.data.local.SessionDao
 import com.finnvek.knittools.data.local.SessionEntity
+import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -68,28 +71,45 @@ class CounterRepositoryTargetRowsTest {
 // Apurakenteet
 // ---------------------------------------------------------------------------
 
-private fun buildRepository(dao: FakeCounterProjectDao): CounterRepository =
-    CounterRepository(
+// CPD-OFF: Testin repository-kooste pidetaan laskurifixturen yhteydessa.
+private fun buildRepository(dao: FakeCounterProjectDao): CounterRepository {
+    val projectCounterDao = mockk<com.finnvek.knittools.data.local.ProjectCounterDao>(relaxed = true)
+    every { projectCounterDao.getCountersForProject(any()) } returns flowOf(emptyList())
+    return CounterRepository(
         dao = dao,
-        projectCounterDao = mockk(relaxed = true),
+        projectCounterDao = projectCounterDao,
         sessionDao = StubSessionDao(),
         photoStorage = mockk(relaxed = true),
         patternDocumentStorage = mockk(relaxed = true),
         context = mockk<Context>(relaxed = true),
         yarnCardRepository = mockk(relaxed = true),
         savedPatternRepository = mockk(relaxed = true),
-        patternAnnotationLayerRepository = mockk(relaxed = true),
+        projectDocumentRepository = mockk(relaxed = true),
+        projectFolderDao = mockk(relaxed = true),
         transactionRunner = ImmediateDatabaseTransactionRunner,
         ioDispatcher = Dispatchers.Unconfined,
     )
+}
+// CPD-ON
 
 private class FakeCounterProjectDao(
     private val latestHistory: CounterHistoryEntity?,
 ) : StubCounterProjectDao() {
+    override fun observeHasAnyProject(): Flow<Boolean> = flowOf(true)
+
+    override suspend fun hasAnyProject(): Boolean = true
+
     var lastUpdateCount: Int? = null
     var lastDeletedHistoryId: Long? = null
     var lastTargetRows: Int? = null
     var targetRowsWasSetToNull: Boolean = false
+
+    override suspend fun getProject(id: Long): CounterProjectEntity =
+        CounterProjectEntity(
+            id = id,
+            name = "Test project",
+            count = latestHistory?.newValue ?: 0,
+        )
 
     override suspend fun getLatestHistory(projectId: Long): CounterHistoryEntity? = latestHistory
 
@@ -116,9 +136,21 @@ private class FakeCounterProjectDao(
 }
 
 private class StubSessionDao : SessionDao {
+    override fun observeActiveSession(): Flow<ActiveSessionEntity?> = flowOf(null)
+
+    override suspend fun getActiveSession(): ActiveSessionEntity? = null
+
+    override suspend fun insertActiveSession(session: ActiveSessionEntity) = Unit
+
+    override suspend fun updateActiveSession(session: ActiveSessionEntity): Int = 0
+
+    override suspend fun deleteActiveSession(sessionToken: String): Int = 0
+
     override fun getSessionsForProject(projectId: Long): Flow<List<SessionEntity>> = flowOf(emptyList())
 
     override suspend fun insert(session: SessionEntity): Long = 0L
+
+    override suspend fun countCompletedSessions(): Long = 0L
 
     override suspend fun deleteById(id: Long) = Unit
 
@@ -129,18 +161,53 @@ private class StubSessionDao : SessionDao {
 
     override suspend fun getTotalMinutes(projectId: Long): Int = 0
 
+    override suspend fun hasSessions(projectId: Long): Boolean = false
+
     override fun getAllSessions(projectId: Long?): Flow<List<SessionEntity>> = flowOf(emptyList())
 
-    override fun getAllSessionsForInsights(): Flow<List<SessionEntity>> = flowOf(emptyList())
+    override suspend fun getFirstSessionStart(): Long? = null
 
-    override fun getAllSessionsForInsightsSince(start: Long): Flow<List<SessionEntity>> = flowOf(emptyList())
+    override suspend fun getProjectFirstSessionStart(projectId: Long): Long? = null
 
-    override fun getProjectSessionsForInsights(projectId: Long): Flow<List<SessionEntity>> = flowOf(emptyList())
+    override suspend fun getInsightFirstDateBatch(
+        afterId: Long,
+        latestStart: Long,
+    ): List<com.finnvek.knittools.data.local.SessionStart> = emptyList()
 
-    override fun getProjectSessionsForInsightsSince(
+    override suspend fun getProjectInsightFirstDateBatch(
         projectId: Long,
+        afterId: Long,
+        latestStart: Long,
+    ): List<com.finnvek.knittools.data.local.SessionStart> = emptyList()
+
+    override fun observeSessionChanges(): Flow<Boolean> = flowOf(false)
+
+    override suspend fun hasAnySessions(): Boolean = false
+
+    override suspend fun getAllSessionProjectActivity(): List<com.finnvek.knittools.data.local.SessionProjectActivity> =
+        emptyList()
+
+    override suspend fun getProjectSessionActivity(
+        projectId: Long,
+    ): List<com.finnvek.knittools.data.local.SessionProjectActivity> = emptyList()
+
+    override suspend fun getInsightSessionBatch(afterId: Long): List<SessionEntity> = emptyList()
+
+    override suspend fun getInsightSessionBatchSince(
+        afterId: Long,
         start: Long,
-    ): Flow<List<SessionEntity>> = flowOf(emptyList())
+    ): List<SessionEntity> = emptyList()
+
+    override suspend fun getProjectInsightSessionBatch(
+        projectId: Long,
+        afterId: Long,
+    ): List<SessionEntity> = emptyList()
+
+    override suspend fun getProjectInsightSessionBatchSince(
+        projectId: Long,
+        afterId: Long,
+        start: Long,
+    ): List<SessionEntity> = emptyList()
 
     override suspend fun getLatestSession(projectId: Long): SessionEntity? = null
 

@@ -6,14 +6,13 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
+import com.finnvek.knittools.ui.theme.ComponentDimens
+import com.finnvek.knittools.ui.theme.knitToolsColors
 
 @Composable
 fun ResultCard(
@@ -23,21 +22,21 @@ fun ResultCard(
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(18.dp),
+        shape = MaterialTheme.shapes.large,
         colors =
             CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.10f),
+                containerColor = MaterialTheme.knitToolsColors.actionContainer,
             ),
-        border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.30f)),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        border =
+            BorderStroke(
+                ComponentDimens.ResultCardBorderWidth,
+                MaterialTheme.colorScheme.primary.copy(alpha = 0.30f),
+            ),
+        elevation = CardDefaults.cardElevation(defaultElevation = ComponentDimens.FlatElevation),
     ) {
-        Column(modifier = Modifier.padding(24.dp)) {
-            Text(
-                text = title.localizedUppercase(),
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.outline,
-            )
-            Spacer(modifier = Modifier.height(12.dp))
+        Column(modifier = Modifier.padding(ComponentDimens.LargeContentPadding)) {
+            SectionLabel(text = title)
+            Spacer(modifier = Modifier.height(ComponentDimens.ContentSpacing))
             content()
         }
     }

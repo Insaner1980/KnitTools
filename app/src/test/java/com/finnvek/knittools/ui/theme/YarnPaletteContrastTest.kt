@@ -1,0 +1,55 @@
+package com.finnvek.knittools.ui.theme
+
+import androidx.compose.ui.graphics.Color
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
+import org.junit.Test
+
+/**
+ * Lankavärit ovat kaavion pylväitä, projektilistan väripisteitä ja osuuspalkkeja
+ * eli graafisia elementtejä, joilta WCAG 1.4.11 vaatii 3:1 kontrastin taustaan.
+ * Kermatausta pudotti alkuperäisen paletin vaaleat sävyt 1,86–2,67:1 tasolle.
+ */
+class YarnPaletteContrastTest {
+    @Test
+    fun `every dark theme yarn colour clears the graphical minimum`() {
+        assertPaletteClearsMinimum(YarnColors, Background, "dark")
+        assertPaletteClearsMinimum(YarnColors, SurfaceHigh, "dark card")
+    }
+
+    @Test
+    fun `every light theme yarn colour clears the graphical minimum`() {
+        assertPaletteClearsMinimum(LightYarnColors, LightBackground, "light")
+        assertPaletteClearsMinimum(LightYarnColors, LightCardContainer, "light card")
+    }
+
+    @Test
+    fun `both palettes hold the same eight slots so an id keeps its identity`() {
+        assertEquals(YarnColors.size, LightYarnColors.size)
+    }
+
+    @Test
+    fun `light palette colours stay distinguishable from each other`() {
+        val distinct = LightYarnColors.distinct()
+
+        assertEquals(LightYarnColors.size, distinct.size)
+    }
+
+    private fun assertPaletteClearsMinimum(
+        palette: List<Color>,
+        background: Color,
+        themeName: String,
+    ) {
+        palette.forEachIndexed { index, color ->
+            val ratio = contrastRatio(color, background)
+            assertTrue(
+                "$themeName yarn colour $index is only ${"%.2f".format(ratio)}:1 against the background",
+                ratio >= MINIMUM_GRAPHICAL_CONTRAST,
+            )
+        }
+    }
+
+    private companion object {
+        const val MINIMUM_GRAPHICAL_CONTRAST = 3.0
+    }
+}

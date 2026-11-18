@@ -1,12 +1,17 @@
 package com.finnvek.knittools.ui.screens.counter
 
 import com.finnvek.knittools.ProjectSourceFiles
+import com.finnvek.knittools.ui.navigation.Screen
+import com.finnvek.knittools.ui.navigation.showsTopLevelNavigation
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.nio.file.Files
 
 class CounterWorkspaceSourceTest {
+    private val heroLayout: String
+        get() = ProjectSourceFiles.read(COUNTER_HERO_LAYOUT)
+
     @Test
     fun `counter content is implemented as one workspace lazy column`() {
         val counterScreen = ProjectSourceFiles.read(COUNTER_SCREEN)
@@ -23,9 +28,12 @@ class CounterWorkspaceSourceTest {
         assertTrue(workspace.contains(".padding(scaffoldPadding)"))
         assertFalse(workspace.contains("""key = "project-header""""))
         assertTrue(workspace.contains("""key = "counter-hero""""))
-        assertTrue(workspace.contains("modifier = Modifier.fillParentMaxHeight()"))
-        assertTrue(workspace.indexOf("""key = "counter-hero"""") < workspace.indexOf("ProjectContentCards("))
-        assertTrue(workspace.indexOf("ProjectContentCards(") < workspace.indexOf("""key = "extra-counters-title""""))
+        assertTrue(workspace.contains("modifier = Modifier.heightIn(min = heroLayout.minimumHeight)"))
+        assertFalse(workspace.contains("fillParentMaxHeight()"))
+        assertTrue(workspace.indexOf("""key = "counter-hero"""") in 0 until workspace.indexOf("ProjectContentCards("))
+        assertTrue(
+            workspace.indexOf("ProjectContentCards(") in 0 until workspace.indexOf("""key = "extra-counters-title""""),
+        )
         assertTrue(workspace.contains("verticalArrangement = Arrangement.spacedBy"))
         assertTrue(workspace.contains("key = { counter -> counter.id }"))
     }
@@ -70,7 +78,9 @@ class CounterWorkspaceSourceTest {
         val contentCards = ProjectSourceFiles.read(COUNTER_PROJECT_CONTENT_CARDS)
         val strings = ProjectSourceFiles.read(STRINGS)
 
-        assertTrue(workspace.contains("hasPattern = state.patternUri != null || state.linkedPattern != null"))
+        assertTrue(workspace.contains("hasProjectPatternContent("))
+        assertTrue(workspace.contains("hasMetadataLink = state.linkedPattern != null"))
+        assertTrue(workspace.contains("hasDocuments = state.projectDocuments.isNotEmpty()"))
         assertTrue(contentCards.contains("hasPattern: Boolean"))
         assertTrue(contentCards.contains("titleRes = patternContentTitleRes(hasPattern)"))
         assertTrue(
@@ -113,6 +123,21 @@ class CounterWorkspaceSourceTest {
     }
 
     @Test
+    fun `short counter reserves a separate feedback line before fitting the number`() {
+        val workspace = ProjectSourceFiles.read(COUNTER_WORKSPACE_SECTIONS)
+        val shortHero =
+            workspace
+                .substringAfter("private fun ShortCounterHero(")
+                .substringBefore("private fun ShortCounterSupportingControls(")
+        val feedback = shortHero.indexOf("CounterStepFeedback(")
+
+        assertTrue(feedback in 0 until shortHero.indexOf("CounterMainNumber("))
+        assertTrue(shortHero.contains("inlineStepFeedback = false"))
+        assertTrue(shortHero.contains("maxLines = 1"))
+        assertFalse(shortHero.contains("stepDelta != null"))
+    }
+
+    @Test
     fun `counter hero number measures available width before rolling digits`() {
         val workspace = ProjectSourceFiles.read(COUNTER_WORKSPACE_SECTIONS)
         val dimens = ProjectSourceFiles.read(COUNTER_DIMENS)
@@ -124,13 +149,13 @@ class CounterWorkspaceSourceTest {
         assertTrue(workspace.contains("contentAlignment = Alignment.Center"))
         assertTrue(workspace.contains("val textMeasurer = rememberTextMeasurer()"))
         assertTrue(workspace.contains("counterMainNumberFittedFontSize("))
-        assertTrue(workspace.contains("maxWidthPx = constraints.maxWidth"))
-        assertTrue(workspace.contains("measureWidth = { candidateFontSize ->"))
-        assertTrue(workspace.contains("baseTextStyle.copy(fontSize = candidateFontSize)"))
+        assertTrue(workspace.contains("maxWidthPx = (constraints.maxWidth -"))
+        assertTrue(workspace.contains("maxHeightPx = constraints.maxHeight"))
+        assertTrue(workspace.contains("style.copy(fontSize = candidate)"))
         assertTrue(workspace.contains("fontSize = fittedFontSize"))
-        assertTrue(workspace.contains("if (measureWidth(maxFontSize) <= maxWidthPx)"))
+        assertTrue(workspace.contains("if (fits(maxFontSize))"))
         assertTrue(workspace.contains("repeat(CounterDimens.CounterMainNumberFitIterations)"))
-        assertTrue(workspace.contains("if (measureWidth(candidateFontSize) <= maxWidthPx)"))
+        assertTrue(workspace.contains("if (fits(candidateFontSize))"))
         assertTrue(dimens.contains("CounterMainNumberMinimumFontSize = 48.sp"))
         assertTrue(dimens.contains("CounterMainNumberFitIterations = 8"))
     }
@@ -149,35 +174,43 @@ class CounterWorkspaceSourceTest {
                 "contentDescription = stringResource(R.string.counter_undo_last_change)",
             ),
         )
-        assertTrue(source.workspace.contains("visualSize = CounterDimens.CounterUndoVisualSize"))
-        assertTrue(source.workspace.contains(".size(CounterDimens.CounterUndoTouchSize)"))
+        assertTrue(source.workspace.contains("visualSize = if (undoBetween) betweenUndoSize else metrics.undoSize"))
+        assertTrue(source.workspace.contains(".size(metrics.undoSize)"))
         assertTrue(source.workspace.contains(".align(Alignment.BottomCenter)"))
         assertTrue(
-            source.workspace.indexOf("imageRes = R.drawable.counter_minus_button") <
+            source.workspace.indexOf("imageRes = R.drawable.counter_minus_button") in 0 until
                 source.workspace.indexOf("imageRes = R.drawable.counter_undo_button"),
         )
         assertTrue(
-            source.workspace.indexOf("imageRes = R.drawable.counter_plus_button") <
+            source.workspace.indexOf("imageRes = R.drawable.counter_plus_button") in 0 until
                 source.workspace.indexOf("imageRes = R.drawable.counter_undo_button"),
         )
-        assertTrue(source.workspace.contains("visualSize = CounterDimens.CounterMinusVisualSize"))
+        assertTrue(source.workspace.contains("visualSize = metrics.minusVisualSize"))
         assertTrue(source.workspace.contains("visualOffsetY = CounterDimens.CounterMinusOpticalOffsetY"))
-        assertTrue(source.workspace.contains("visualSize = CounterDimens.CounterPrimaryVisualSize"))
+        assertTrue(source.workspace.contains("visualSize = metrics.primaryVisualSize"))
         assertTrue(dimens.contains("CounterMinusVisualSize = 123.dp"))
         assertTrue(dimens.contains("CounterMinusOpticalOffsetY = 1.dp"))
         assertTrue(dimens.contains("CounterUndoVisualSize = 92.dp"))
         assertTrue(dimens.contains("CounterUndoTouchSize = CounterUndoVisualSize"))
         assertTrue(dimens.contains("CounterUndoVerticalSpacing = 16.dp"))
-        assertTrue(dimens.contains("CounterControlsHeight ="))
-        assertTrue(dimens.contains("CounterPrimaryTouchSize + CounterUndoVerticalSpacing + CounterUndoTouchSize"))
+        assertTrue(heroLayout.contains("primaryTouchSize + CounterDimens.CounterUndoVerticalSpacing + undoSize"))
     }
 
     @Test
-    fun `counter hero omits target progress line and lifts primary buttons`() {
+    fun `counter hero shows the count once and target progress with the shared bar`() {
         val workspace = ProjectSourceFiles.read(COUNTER_WORKSPACE_SECTIONS)
         val dimens = ProjectSourceFiles.read(COUNTER_DIMENS)
+        // Luvun yllä vain yksikkö: "Row 34 / 72" toisti ison luvun.
+        assertTrue(
+            workspace.contains(
+                "text = mainCounterLabelText(display.heroTitle.labelType, display.heroTitle.customLabel)",
+            ),
+        )
+        // Tavoite samalla palkilla kuin jatka-kortissa, ei omaa palkkikomponenttia.
+        assertTrue(workspace.contains("CounterTargetProgress(targetLine = targetLine"))
+        assertTrue(workspace.contains("ProjectProgressBar(fraction)"))
+        assertTrue(workspace.contains("R.string.counter_target_of_format"))
         assertFalse(workspace.contains("CounterTargetProgressBar("))
-        assertTrue(workspace.contains("CounterTargetHelperLabel("))
         assertFalse(workspace.contains("CounterProgressHeight"))
         assertFalse(workspace.contains("CounterProgressCornerRadius"))
         assertTrue(dimens.contains("HeroButtonSpacing = 64.dp"))
@@ -205,34 +238,36 @@ class CounterWorkspaceSourceTest {
             assertFalse("Counter project cards should not contain $forbidden", contentCards.contains(forbidden))
         }
         assertTrue(contentCards.contains("aspectRatio(1f)"))
-        assertTrue(contentCards.contains("take(4).chunked(2)"))
+        assertTrue(contentCards.contains("cards.chunked(columns)"))
         assertFalse(contentCards.contains("if (rowCards.size == 1)"))
-        assertTrue(contentCards.contains("Arrangement.Center"))
+        assertTrue(contentCards.contains("Alignment.CenterHorizontally"))
         assertTrue(contentCards.contains("onClickLabel = title"))
         assertTrue(contentCards.contains("role = Role.Button"))
         assertFalse(workspace.contains("""key = "counter-buttons""""))
         assertTrue(
-            workspace.indexOf("ProjectContentCards(") <
+            workspace.indexOf("ProjectContentCards(") in 0 until
                 workspace.indexOf("""key = "extra-counters-title""""),
         )
         assertFalse(workspace.contains("""key = "stitch-tracker""""))
     }
 
     @Test
-    fun `pattern card opens pdf viewer or saved pattern detail without preview UI`() {
+    fun `pattern card opens canonical primary or document recovery without preview UI`() {
         val counterScreen = ProjectSourceFiles.read(COUNTER_SCREEN)
         val workspace = ProjectSourceFiles.read(COUNTER_WORKSPACE_SECTIONS)
         val contentCards = ProjectSourceFiles.read(COUNTER_PROJECT_CONTENT_CARDS)
         val navGraph = ProjectSourceFiles.read(NAV_GRAPH)
 
-        assertTrue(workspace.contains("state.patternUri != null -> onOpenPattern()"))
-        assertTrue(workspace.contains("state.linkedPattern != null -> onOpenSavedPatternDetail()"))
+        assertTrue(workspace.contains("projectPatternCardAction("))
+        assertTrue(workspace.contains("ProjectPatternCardAction.OpenPrimaryDocument -> onOpenPattern()"))
+        assertTrue(workspace.contains("ProjectPatternCardAction.OpenDocumentRecovery -> onShowDocuments()"))
+        assertTrue(workspace.contains("ProjectPatternCardAction.OpenMetadataDetail -> onOpenSavedPatternDetail()"))
+        assertTrue(workspace.contains("ProjectPatternCardAction.OpenPicker -> onShowPatternPicker()"))
         assertFalse(workspace.contains("onShowPatternInfo"))
         assertTrue(counterScreen.contains("onSavedPatternDetail: (Long) -> Unit = {}"))
         assertTrue(
             counterScreen.contains(
-                "onOpenSavedPatternDetail = { " +
-                    "state.linkedPattern?.id?.let(onSavedPatternDetail) }",
+                "state.linkedPattern?.id?.let(onSavedPatternDetail)",
             ),
         )
         assertFalse(counterScreen.contains("PatternInfoSheet("))
@@ -249,14 +284,34 @@ class CounterWorkspaceSourceTest {
     }
 
     @Test
-    fun `counter route keeps bottom navigation visible`() {
-        val navGraph = ProjectSourceFiles.read(NAV_GRAPH)
+    fun `counter route keeps shared navigation visible`() {
+        assertTrue(showsTopLevelNavigation(Screen.Counter.route))
+    }
 
-        val hiddenRoutesBlock =
-            navGraph
-                .substringAfter("private val HIDE_BOTTOM_BAR_ROUTES =")
-                .substringBefore(")")
-        assertFalse(hiddenRoutesBlock.contains("Screen.Counter.route"))
+    @Test
+    fun `counter launch resolves requested project before rendering and rejects stale target`() {
+        val navGraph = ProjectSourceFiles.read(NAV_GRAPH)
+        val destination = ProjectSourceFiles.read(COUNTER_DESTINATION)
+
+        assertTrue(navGraph.contains("CounterDestination("))
+        assertTrue(destination.contains("counterLaunchRequest.projectId != counterState.projectId"))
+        assertTrue(destination.contains("canSelect = canSelect"))
+        assertTrue(destination.contains("currentLaunchRequest?.requestId == launchRequest.requestId"))
+        assertTrue(destination.contains("navController.currentBackStackEntry?.id == backStackEntry.id"))
+        assertTrue(destination.contains("loadedLaunchId = launchRequest.requestId.takeIf { loaded }"))
+        assertTrue(
+            destination.contains(
+                "if (!loaded || launchRequest.journeyAction == null) " +
+                    "onCounterLaunchHandled(launchRequest.requestId)",
+            ),
+        )
+        assertTrue(destination.contains("currentLaunchRequest?.requestId == requestId"))
+        assertTrue(destination.contains("unavailableLaunchId = launchRequest.requestId.takeUnless { loaded }"))
+        assertTrue(destination.contains("unavailableLaunchId != null || counterState.shouldLeaveCounter"))
+        assertTrue(
+            destination.indexOf("loadedLaunchId != counterLaunchRequest.requestId") in 0 until
+                destination.indexOf("ProjectContentHost("),
+        )
     }
 
     @Test
@@ -304,30 +359,36 @@ class CounterWorkspaceSourceTest {
     private fun assertHeroRevealOrdering(workspace: String) {
         assertTrue(workspace.contains("""key = "counter-hero-reveal-gap""""))
         assertTrue(
-            workspace.indexOf("""key = "counter-hero"""") <
+            workspace.indexOf("""key = "counter-hero"""") in 0 until
                 workspace.indexOf("""key = "counter-hero-reveal-gap""""),
         )
         assertTrue(
-            workspace.indexOf("""key = "counter-hero-reveal-gap"""") <
+            workspace.indexOf("""key = "counter-hero-reveal-gap"""") in 0 until
                 workspace.indexOf("ProjectContentCards("),
         )
     }
 
     private fun assertHeroControlStructure(source: CounterSourceFiles) {
         assertTrue(source.workspace.contains("CounterRepeatToRowSpacing"))
-        assertTrue(source.workspace.indexOf("CompactPatternRepeatRow(") < source.workspace.indexOf("CounterRowLabel("))
+        val stackedHero = source.workspace.substringAfter("private fun CounterHero(")
+        assertTrue(
+            stackedHero.indexOf("CompactPatternRepeatRow(") in 0 until
+                stackedHero.indexOf("CounterRowLabel("),
+        )
         assertTrue(source.workspace.contains("onUndo = actions.onUndo"))
         assertTrue(source.workspace.contains("onUndo: () -> Unit"))
         assertFalse(source.workspace.contains("CounterUndoButton("))
         assertTrue(source.workspace.contains("onClick = onUndo"))
-        assertTrue(source.workspace.contains("CounterControlsMaxWidth"))
-        assertTrue(source.workspace.contains("CounterControlsHeight"))
-        assertTrue(source.workspace.contains(".height(CounterDimens.CounterControlsHeight)"))
+        assertTrue(source.workspace.contains("metrics.controlsMaxWidth"))
+        assertTrue(
+            source.workspace.contains(".height(if (undoBetween) metrics.primaryTouchSize else metrics.controlsHeight)"),
+        )
         assertTrue(source.workspace.contains(".align(Alignment.TopStart)"))
         assertTrue(source.workspace.contains(".align(Alignment.TopEnd)"))
+        val controls = source.workspace.substringAfter("private fun CounterButtons(")
         assertTrue(
-            source.workspace.indexOf(".fillMaxWidth()") <
-                source.workspace.indexOf(".widthIn(max = CounterDimens.CounterControlsMaxWidth)"),
+            controls.indexOf(".widthIn(max = maxControlsWidth)") in 0 until
+                controls.indexOf(".fillMaxWidth()"),
         )
     }
 
@@ -378,8 +439,7 @@ class CounterWorkspaceSourceTest {
         assertTrue(dimens.contains("CounterProjectRevealGap = 48.dp"))
         assertTrue(dimens.contains("HeroButtonSpacing = 64.dp"))
         assertTrue(dimens.contains("CounterControlsMaxWidth = 360.dp"))
-        assertTrue(dimens.contains("CounterControlsHeight ="))
-        assertTrue(dimens.contains("CounterPrimaryTouchSize + CounterUndoVerticalSpacing + CounterUndoTouchSize"))
+        assertTrue(heroLayout.contains("primaryTouchSize + CounterDimens.CounterUndoVerticalSpacing + undoSize"))
         assertTrue(dimens.contains("CounterPrimaryTouchSize = 144.dp"))
         assertTrue(dimens.contains("CounterPrimaryVisualSize = 125.dp"))
         assertFalse(dimens.contains("CounterPrimaryIconSize"))
@@ -401,6 +461,8 @@ class CounterWorkspaceSourceTest {
     )
 
     private companion object {
+        private const val COUNTER_HERO_LAYOUT =
+            "app/src/main/java/com/finnvek/knittools/ui/screens/counter/CounterHeroLayout.kt"
         private const val COUNTER_SCREEN =
             "app/src/main/java/com/finnvek/knittools/ui/screens/counter/CounterScreen.kt"
         private const val COUNTER_WORKSPACE_SECTIONS =
@@ -409,6 +471,8 @@ class CounterWorkspaceSourceTest {
             "app/src/main/java/com/finnvek/knittools/ui/screens/counter/CounterProjectContentCards.kt"
         private const val NAV_GRAPH =
             "app/src/main/java/com/finnvek/knittools/ui/navigation/NavGraph.kt"
+        private const val COUNTER_DESTINATION =
+            "app/src/main/java/com/finnvek/knittools/ui/navigation/CounterDestination.kt"
         private const val COUNTER_DIMENS =
             "app/src/main/java/com/finnvek/knittools/ui/theme/CounterDimens.kt"
         private const val COUNTER_IMAGE_BUTTON =
@@ -428,6 +492,7 @@ class CounterWorkspaceSourceTest {
                 "app/src/main/res/values-nb/strings.xml",
                 "app/src/main/res/values-nl/strings.xml",
                 "app/src/main/res/values-pt/strings.xml",
+                "app/src/main/res/values-pt-rBR/strings.xml",
                 "app/src/main/res/values-sv/strings.xml",
             )
     }

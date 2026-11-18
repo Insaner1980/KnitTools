@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Widgetin taustan sileäneulepinta: tiilenä toistuva ⋁-silmukka FabricSwatchin mittasuhteilla.
+     Tiili on valkoinen ja haalea; CounterWidget värjää sen projektin lankavärillä. Toisto pitää
+     silmukan koon samana kaikissa widgetin koissa. -->
+<bitmap xmlns:android="http://schemas.android.com/apk/res/android"
+    android:src="@drawable/widget_knit_stitch_tile"
+    android:tileMode="repeat" />

@@ -1,24 +1,20 @@
 package com.finnvek.knittools.ui.components
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Delete
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import com.finnvek.knittools.R
+import com.finnvek.knittools.domain.calculator.DurationDisplayFormatter
+import com.finnvek.knittools.ui.theme.ComponentDimens
 import com.finnvek.knittools.ui.theme.knitToolsColors
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -31,50 +27,43 @@ fun SessionItem(
     endRow: Int,
     modifier: Modifier = Modifier,
     onDelete: (() -> Unit)? = null,
+    zoneId: String? = null,
 ) {
-    val dateFormat = rememberLocaleDateFormat("MMMd", includeTime = true)
+    val dateFormat = rememberLocaleDateFormat("MMMd", includeTime = true, eventZoneId = zoneId)
 
-    Surface(
-        modifier = modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.large,
-        color = MaterialTheme.colorScheme.surfaceVariant,
-        tonalElevation = 0.dp,
-        shadowElevation = 0.dp,
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
+    // Hiusviivarivi kuten projektinäkymän osiot. Poisto on rivin valikossa: punainen roskakori
+    // jokaisella rivillä oli helppo osua vahingossa ja korosti peruuttamatonta toimintoa.
+    Column(modifier = modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(vertical = ComponentDimens.StandardSpacing),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(ComponentDimens.CompactSpacing),
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = formatSessionDate(startedAt, dateFormat),
                     style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.weight(1f),
                 )
                 Text(
-                    text = formatDuration(durationMinutes),
+                    // "Rows 18 → 18" luki virheenä. Ilman edistystä riittää yksi rivinumero.
+                    text =
+                        if (endRow > startRow) {
+                            stringResource(R.string.session_row_range, startRow, endRow)
+                        } else {
+                            stringResource(R.string.session_row_single, startRow)
+                        },
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = MaterialTheme.knitToolsColors.onSurfaceMuted,
                 )
-                onDelete?.let { delete ->
-                    IconButton(onClick = delete) {
-                        Icon(
-                            imageVector = Icons.Outlined.Delete,
-                            contentDescription = stringResource(R.string.delete),
-                            tint = MaterialTheme.colorScheme.error,
-                        )
-                    }
-                }
             }
-            Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = stringResource(R.string.session_row_range, startRow, endRow),
+                text = formatDuration(durationMinutes),
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.knitToolsColors.onSurfaceMuted,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+            onDelete?.let { RowOverflowMenu(listOf(RowMenuAction(stringResource(R.string.delete), it))) }
         }
+        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
     }
 }
 
@@ -83,9 +72,10 @@ private fun formatSessionDate(
     dateFormat: SimpleDateFormat,
 ): String = dateFormat.format(Date(timestamp))
 
+/**
+ * Sama kestomuoto kuin muualla sovelluksessa. Oma apuri näytti alle tunnin istunnot
+ * muodossa "36m" ja yli tunnin muodossa "1t 5min" — kaksi eri minuuttilyhennettä
+ * peräkkäisillä riveillä samassa listassa.
+ */
 @Composable
-private fun formatDuration(minutes: Int): String =
-    when {
-        minutes < 60 -> stringResource(R.string.time_spent_minutes_format, minutes)
-        else -> stringResource(R.string.session_duration_format, minutes / 60, minutes % 60)
-    }
+private fun formatDuration(minutes: Int): String = durationText(DurationDisplayFormatter.fromMinutes(minutes))

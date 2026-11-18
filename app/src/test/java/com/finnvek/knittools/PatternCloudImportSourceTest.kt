@@ -9,16 +9,22 @@ class PatternCloudImportSourceTest {
     @Test
     fun `drive and dropbox import stays on the existing open document path`() {
         val picker = ProjectSourceFiles.read(PATTERN_PICKER_SHEET)
+        val viewModel = ProjectSourceFiles.read(COUNTER_VIEW_MODEL)
 
         assertTrue(picker.contains("ActivityResultContracts.OpenDocument()"))
-        assertTrue(picker.contains("takePersistableUriPermission(uri, flags)"))
+        assertTrue(
+            viewModel.contains("takePersistableUriPermission(sourceUri, Intent.FLAG_GRANT_READ_URI_PERMISSION)"),
+        )
+        assertTrue(viewModel.contains("resolvePatternName(sourceUri, name)"))
         assertTrue(picker.contains("private const val PATTERN_PDF_MIME_TYPE = \"application/pdf\""))
         assertTrue(picker.contains("private fun pdfMimeTypes(): Array<String> = arrayOf(PATTERN_PDF_MIME_TYPE)"))
-        assertTrue(picker.contains("val openPdfDocumentPicker = { openDocumentLauncher.launch(pdfMimeTypes()) }"))
+        assertTrue(picker.contains("pendingDocumentProjectId = owner"))
+        assertTrue(picker.contains("openDocumentLauncher.launch(pdfMimeTypes())"))
         assertTrue(picker.contains("openDeviceFiles = openPdfDocumentPicker"))
         assertTrue(picker.contains("openCloudProviderFiles = openPdfDocumentPicker"))
         assertTrue(picker.contains("R.string.pattern_picker_import_cloud_pdf"))
-        assertTrue(picker.contains("onDocumentSelected(uri.toString(), resolvePatternName(context, uri))"))
+        assertTrue(picker.contains("onDocumentSelected(uri, \"\", owner)"))
+        assertTrue(picker.contains("owner == currentProjectId"))
 
         listOf("OAuth", "oauth", "DropboxClient", "DriveScopes", "GoogleSignIn", "accessToken").forEach { token ->
             assertFalse("Pattern picker must not add provider-specific auth: $token", picker.contains(token))
@@ -32,14 +38,20 @@ class PatternCloudImportSourceTest {
         val finallyIndex = viewModel.indexOf("} finally {", copyIndex)
         val releaseIndex =
             viewModel.indexOf(
-                "releasePersistedReadPermissionIfHeld(context.contentResolver, sourceUri)",
+                "if (acquiredGrant)",
                 finallyIndex,
             )
 
         assertTrue(copyIndex >= 0)
         assertTrue(finallyIndex > copyIndex)
         assertTrue(releaseIndex > finallyIndex)
-        assertTrue(viewModel.contains("releasePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)"))
+        val release =
+            viewModel
+                .substring(releaseIndex)
+                .substringAfter("releasePersistableUriPermission(")
+                .substringBefore(")")
+        assertTrue(release.contains("sourceUri"))
+        assertTrue(release.contains("Intent.FLAG_GRANT_READ_URI_PERMISSION"))
     }
 
     @Test

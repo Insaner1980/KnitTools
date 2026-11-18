@@ -48,7 +48,10 @@ fun isPointNearStroke(
 ): Boolean {
     if (stroke.isEmpty()) return false
     if (stroke.size == 1) return distance(point, stroke.first()) <= tolerance
-    return stroke.zipWithNext().any { (start, end) -> pointSegmentDistance(point, start, end) <= tolerance }
+    for (index in 1 until stroke.size) {
+        if (pointSegmentDistance(point, stroke[index - 1], stroke[index]) <= tolerance) return true
+    }
+    return false
 }
 
 fun isPointNearShape(
@@ -130,7 +133,47 @@ private fun isPointNearEllipse(
                 ((point.y - centerY) / radiusY) * ((point.y - centerY) / radiusY),
         )
     if (shape.fillArgb != null && shape.fillAlpha > 0f && normalizedDistance <= 1f) return true
-    return abs(normalizedDistance - 1f) <= tolerance / minOf(radiusX, radiusY)
+    val x = abs(point.x - centerX).toDouble()
+    val y = abs(point.y - centerY).toDouble()
+    val distance =
+        if (radiusX >= radiusY) {
+            ellipseBoundaryDistance(x, y, radiusX.toDouble(), radiusY.toDouble())
+        } else {
+            ellipseBoundaryDistance(y, x, radiusY.toDouble(), radiusX.toDouble())
+        }
+    return distance <= tolerance
+}
+
+// Closest-point bisection in the first quadrant, with major radius a >= b.
+// See Eberly, Distance from a Point to an Ellipse, section 2.9.
+private fun ellipseBoundaryDistance(
+    x: Double,
+    y: Double,
+    a: Double,
+    b: Double,
+): Double {
+    if (a == b) return abs(hypot(x, y) - a)
+    if (x == 0.0) return abs(y - b)
+    if (y == 0.0) {
+        val numerator = a * x
+        val denominator = a * a - b * b
+        if (numerator >= denominator) return abs(x - a)
+        val cosine = numerator / denominator
+        return hypot(a * cosine - x, b * sqrt(1.0 - cosine * cosine))
+    }
+    val q0 = x / a
+    val q1 = y / b
+    val ratio = (a / b) * (a / b)
+    var lower = q1 - 1.0
+    var upper = if (q0 * q0 + q1 * q1 < 1.0) 0.0 else hypot(ratio * q0, q1) - 1.0
+    repeat(64) {
+        val middle = (lower + upper) / 2.0
+        val major = ratio * q0 / (middle + ratio)
+        val minor = q1 / (middle + 1.0)
+        if (major * major + minor * minor > 1.0) lower = middle else upper = middle
+    }
+    val root = (lower + upper) / 2.0
+    return hypot(ratio * x / (root + ratio) - x, y / (root + 1.0) - y)
 }
 
 private fun pointSegmentDistance(

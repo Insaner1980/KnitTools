@@ -24,11 +24,16 @@ object AppFileStorage {
     fun openReadDescriptor(
         context: Context,
         uri: Uri,
-    ): ParcelFileDescriptor? =
-        resolveAppOwnedFile(context, uri)
-            ?.takeIf(File::exists)
-            ?.let { file -> ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY) }
-            ?: context.contentResolver.openFileDescriptor(uri, "r")
+    ): ParcelFileDescriptor? {
+        val appOwnedFile = resolveAppOwnedFile(context, uri)
+        if (appOwnedFile != null) {
+            return appOwnedFile
+                .takeIf(File::isFile)
+                ?.let { file -> ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY) }
+        }
+        if (isInternalUri(context, uri)) return null
+        return context.contentResolver.openFileDescriptor(uri, "r")
+    }
 
     fun deleteUri(
         context: Context,
@@ -75,6 +80,20 @@ object AppFileStorage {
         context: Context,
         uri: Uri,
     ): Boolean = resolveAppOwnedFile(context, uri) != null
+
+    internal fun isInternalUri(
+        context: Context,
+        uri: Uri,
+    ): Boolean =
+        when (uri.scheme) {
+            "content" -> uri.authority == fileProviderAuthority(context)
+            "file" -> {
+                val path = uri.path.orEmpty()
+                val root = context.filesDir.absolutePath
+                path == root || path.startsWith(root + File.separator) || isAppOwnedUri(context, uri)
+            }
+            else -> false
+        }
 
     internal fun deleteFileOrDirectory(
         file: File,
@@ -137,11 +156,11 @@ object AppFileStorage {
         }
         file.deleteOnExit()
     }
+}
 
-    private fun File.isInside(root: File): Boolean {
-        val canonicalFile = canonicalFile
-        val canonicalRoot = root.canonicalFile
-        return canonicalFile == canonicalRoot ||
-            canonicalFile.path.startsWith(canonicalRoot.path + File.separator)
-    }
+private fun File.isInside(root: File): Boolean {
+    val canonicalFile = canonicalFile
+    val canonicalRoot = root.canonicalFile
+    return canonicalFile == canonicalRoot ||
+        canonicalFile.path.startsWith(canonicalRoot.path + File.separator)
 }

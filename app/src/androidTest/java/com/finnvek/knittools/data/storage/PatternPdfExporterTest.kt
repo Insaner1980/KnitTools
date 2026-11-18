@@ -13,6 +13,7 @@ import com.finnvek.knittools.domain.model.TextBoxPayload
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
+import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -29,7 +30,12 @@ class PatternPdfExporterTest {
     @Before
     fun setUp() {
         context = ApplicationProvider.getApplicationContext()
-        exporter = PatternPdfExporter(context, Dispatchers.IO)
+        exporter =
+            PatternPdfExporter.createForTest(
+                context = context,
+                ioDispatcher = Dispatchers.IO,
+                cacheSpaceProvider = { Long.MAX_VALUE },
+            )
         exportTempDirectory().deleteRecursively()
     }
 
@@ -100,6 +106,198 @@ class PatternPdfExporterTest {
             assertTempDirectoryEmpty()
         }
 
+    @Test
+    fun directExporterRejectsPageLimitBeforeRenderingOrDestinationWrite() =
+        runBlocking {
+            val source =
+                createPdf(
+                    "source-too-many-pages.pdf",
+                    pageCount = DEFAULT_PATTERN_PDF_EXPORT_LIMITS.maxPageCount + 1,
+                )
+            val destination = File(context.cacheDir, "annotated-page-limit.pdf").apply { writeBytes(SENTINEL) }
+            val progress = mutableListOf<PatternPdfExportProgress>()
+
+            val failure = exportEmptyPdfFailure(exporter, source, destination, progress)
+
+            assertLimitReason(PatternPdfExportLimitReason.PAGE_COUNT, failure)
+            assertTrue(progress.isEmpty())
+            assertArrayEquals(SENTINEL, destination.readBytes())
+            assertTempDirectoryEmpty()
+        }
+
+    @Test
+    fun directExporterRejectsAnnotationLimitBeforeDestinationWrite() =
+        runBlocking {
+            val source = createPdf("source-annotation-limit.pdf", pageCount = 1)
+            val destination = File(context.cacheDir, "annotated-annotation-limit.pdf").apply { writeBytes(SENTINEL) }
+            val annotations =
+                List(PATTERN_PDF_EXPORT_MAX_ANNOTATIONS + 1) { index ->
+                    unicodeTextAnnotation().copy(id = index.toLong(), zIndex = index.toLong())
+                }
+
+            val failure =
+                runCatching {
+                    exporter.export(
+                        sourceUri = source.toUri(),
+                        destinationUri = destination.toUri(),
+                        annotations = annotations,
+                        trackerHighlights = emptyMap(),
+                        style = renderStyle(),
+                        onProgress = {},
+                    )
+                }.exceptionOrNull()
+
+            assertLimitReason(PatternPdfExportLimitReason.ANNOTATIONS, failure)
+            assertArrayEquals(SENTINEL, destination.readBytes())
+            assertTempDirectoryEmpty()
+        }
+
+    @Test
+    fun insufficientCacheSpaceRejectsBeforeRendering() =
+        runBlocking {
+            val limits = DEFAULT_PATTERN_PDF_EXPORT_LIMITS
+            val requiredBytes = limits.maxTemporaryOutputBytes + limits.cacheReserveBytes
+            val lowSpaceExporter =
+                PatternPdfExporter.createForTest(
+                    context = context,
+                    ioDispatcher = Dispatchers.IO,
+                    limits = limits,
+                    cacheSpaceProvider = { requiredBytes - 1L },
+                )
+            val source = createPdf("source-low-cache.pdf", pageCount = 1)
+            val destination = File(context.cacheDir, "annotated-low-cache.pdf").apply { writeBytes(SENTINEL) }
+            val progress = mutableListOf<PatternPdfExportProgress>()
+
+            val failure = exportEmptyPdfFailure(lowSpaceExporter, source, destination, progress)
+
+            assertLimitReason(PatternPdfExportLimitReason.CACHE_SPACE, failure)
+            assertTrue(progress.isEmpty())
+            assertArrayEquals(SENTINEL, destination.readBytes())
+            assertTempDirectoryEmpty()
+        }
+
+    @Test
+    fun storageDropDuringExportPreservesReserveAndCleansTemporaryFile() =
+        runBlocking {
+            val limits = DEFAULT_PATTERN_PDF_EXPORT_LIMITS
+            var available = limits.maxTemporaryOutputBytes + limits.cacheReserveBytes
+            val exporter =
+                PatternPdfExporter.createForTest(
+                    context = context,
+                    ioDispatcher = Dispatchers.IO,
+                    cacheSpaceProvider = { available },
+                )
+            val source = createPdf("source-storage-drop.pdf", pageCount = 1)
+            val original = source.readBytes()
+            val destination = File(context.cacheDir, "annotated-storage-drop.pdf").apply { writeBytes(SENTINEL) }
+
+            val failure =
+                runCatching {
+                    exporter.export(
+                        sourceUri = source.toUri(),
+                        destinationUri = destination.toUri(),
+                        annotations = emptyList(),
+                        trackerHighlights = emptyMap(),
+                        style = renderStyle(),
+                        onProgress = { available = limits.cacheReserveBytes },
+                    )
+                }.exceptionOrNull()
+
+            assertLimitReason(PatternPdfExportLimitReason.CACHE_SPACE, failure)
+            assertArrayEquals(SENTINEL, destination.readBytes())
+            assertArrayEquals(original, source.readBytes())
+            assertTempDirectoryEmpty()
+        }
+
+    @Test
+    fun temporaryOutputHardCapRejectsPartialArchiveAndCleansTempFile() =
+        runBlocking {
+            val cappedExporter =
+                PatternPdfExporter.createForTest(
+                    context = context,
+                    ioDispatcher = Dispatchers.IO,
+                    limits =
+                        DEFAULT_PATTERN_PDF_EXPORT_LIMITS.copy(
+                            maxTemporaryOutputBytes = 1L,
+                            cacheReserveBytes = 0L,
+                        ),
+                    cacheSpaceProvider = { Long.MAX_VALUE },
+                )
+            val source = createPdf("source-output-cap.pdf", pageCount = 1)
+            val destination = File(context.cacheDir, "annotated-output-cap.pdf").apply { writeBytes(SENTINEL) }
+
+            val failure =
+                runCatching {
+                    cappedExporter.export(
+                        sourceUri = source.toUri(),
+                        destinationUri = destination.toUri(),
+                        annotations = emptyList(),
+                        trackerHighlights = emptyMap(),
+                        style = renderStyle(),
+                        onProgress = {},
+                    )
+                }.exceptionOrNull()
+
+            assertLimitReason(PatternPdfExportLimitReason.OUTPUT_BYTES, failure)
+            assertArrayEquals(SENTINEL, destination.readBytes())
+            assertTempDirectoryEmpty()
+        }
+
+    @Test
+    fun exportCannotOverwriteItsSource() =
+        runBlocking {
+            val source = createPdf("source-alias.pdf", pageCount = 2)
+            val original = source.readBytes()
+            val failure = exportEmptyPdfFailure(exporter, source, source, mutableListOf())
+            assertArrayEquals("The source PDF must stay byte-identical", original, source.readBytes())
+            assertTrue("An aliased destination must be rejected", failure != null)
+            assertTempDirectoryEmpty()
+        }
+
+    @Test
+    fun exportCannotOverwriteSourceThroughFileProviderAlias() =
+        runBlocking {
+            val source = File(context.filesDir, "pattern_captures/161992/source.pdf")
+            source.parentFile!!.mkdirs()
+            createPdf("alias-input.pdf", 1).copyTo(source, overwrite = true)
+            val before = source.readBytes()
+            try {
+                val failure =
+                    runCatching {
+                        exporter.export(
+                            source.toUri(),
+                            AppFileStorage.fileProviderUri(context, source),
+                            emptyList(),
+                            emptyMap(),
+                            renderStyle(),
+                        ) {
+                        }
+                    }.exceptionOrNull()
+                assertArrayEquals(before, source.readBytes())
+                assertTrue(failure != null)
+                assertTempDirectoryEmpty()
+            } finally {
+                source.delete()
+            }
+        }
+
+    private suspend fun exportEmptyPdfFailure(
+        pdfExporter: PatternPdfExporter,
+        source: File,
+        destination: File,
+        progress: MutableList<PatternPdfExportProgress>,
+    ): Throwable? =
+        runCatching {
+            pdfExporter.export(
+                sourceUri = source.toUri(),
+                destinationUri = destination.toUri(),
+                annotations = emptyList(),
+                trackerHighlights = emptyMap(),
+                style = renderStyle(),
+                onProgress = progress::add,
+            )
+        }.exceptionOrNull()
+
     private fun createPdf(
         name: String,
         pageCount: Int,
@@ -152,5 +350,17 @@ class PatternPdfExporterTest {
 
     private fun assertTempDirectoryEmpty() {
         assertTrue(exportTempDirectory().listFiles().isNullOrEmpty())
+    }
+
+    private fun assertLimitReason(
+        reason: PatternPdfExportLimitReason,
+        failure: Throwable?,
+    ) {
+        assertTrue(failure is PatternPdfExportLimitException)
+        assertEquals(reason, (failure as PatternPdfExportLimitException).reason)
+    }
+
+    private companion object {
+        val SENTINEL = byteArrayOf(1, 2, 3, 4)
     }
 }

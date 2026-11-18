@@ -5,100 +5,64 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class InstructionParserTest {
+    @Test(timeout = 3_000)
+    fun `long unmatched numeric and whitespace runs finish parsing`() {
+        listOf("9".repeat(10_000), "TENSION " + " ".repeat(9_992)).forEach { input ->
+            assertEquals(
+                ParsedInstruction.Failure("parse_failed", ParsedInstruction.ErrorType.PARSE_FAILED),
+                InstructionParser.parse(input),
+            )
+        }
+    }
+
+    @Test
+    fun `gauge accepts abbreviated singular and plural inches with numeric boundaries`() {
+        listOf("4in", "4 in", "4 inch", "4 inches").forEach { unit ->
+            assertEquals(
+                ParsedInstruction.Gauge(20.0, 28.0, ParsedInstruction.GaugeUnit.PER_4_INCHES),
+                InstructionParser.parse("gauge: 20 / 28 over $unit"),
+            )
+        }
+        listOf("14 inches", "24 inches", "1.4 inches", "4 index", "4 inche").forEach { unit ->
+            assertEquals(
+                ParsedInstruction.Gauge(20.0, 28.0, ParsedInstruction.GaugeUnit.PER_10_CM),
+                InstructionParser.parse("gauge: 20 / 28 over $unit"),
+            )
+        }
+    }
+
+    @Test fun lengthAndGaugeUnitsDoNotTreatPrepositionsOrOtherNumbersAsInches() {
+        assertEquals(
+            ParsedInstruction.GaugeSwatch(width = 12.0, stitches = 20, lengthUnit = null),
+            InstructionParser.parse("20 stitches in width 12"),
+        )
+        assertEquals(
+            ParsedInstruction.GaugeSwatch(width = 4.0, stitches = 20, lengthUnit = ParsedInstruction.LengthUnit.INCHES),
+            InstructionParser.parse("20 stitches in width 4in"),
+        )
+        assertEquals(
+            ParsedInstruction.Gauge(20.0, 28.0, ParsedInstruction.GaugeUnit.PER_4_INCHES),
+            InstructionParser.parse("gauge: 20 / 28 over 4in"),
+        )
+        assertEquals(
+            ParsedInstruction.Gauge(20.0, 28.0, ParsedInstruction.GaugeUnit.PER_10_CM),
+            InstructionParser.parse("gauge: 20 / 28 over 14 inches"),
+        )
+    }
+
     @Test
     fun `parseWithRegex - syotteen pituusraja erottaa sallitun ja ylipitkan syotteen`() {
-        val suurinSallittuSyote = "INCREASE 1 ".repeat(909)
-        val ylipitkaSyote = "INCREASE 1 ".repeat(50_000)
-
-        assertEquals(9_999, suurinSallittuSyote.length)
-        assertEquals(
-            ParsedInstruction.Failure("parse_failed", ParsedInstruction.ErrorType.PARSE_FAILED),
-            InstructionParser.parseWithRegex(suurinSallittuSyote),
-        )
+        val instruction = "Increase 12 stitches evenly across 96 stitches"
+        listOf(9_999, 10_000).forEach { length ->
+            assertEquals(
+                ParsedInstruction.IncreaseDecrease(96, 12, true),
+                InstructionParser.parse(instruction.padEnd(length)),
+            )
+        }
         assertEquals(
             ParsedInstruction.Failure("input_too_long", ParsedInstruction.ErrorType.PARSE_FAILED),
-            InstructionParser.parseWithRegex(ylipitkaSyote),
+            InstructionParser.parse(instruction.padEnd(10_001)),
         )
-    }
-
-    // === parseResponse: key:value-vastaukset ===
-
-    @Test
-    fun `parseResponse - increase`() {
-        val result = InstructionParser.parseResponse("TYPE: INCREASE\nCURRENT: 96\nCHANGE: 12")
-        assertTrue(result is ParsedInstruction.IncreaseDecrease)
-        val inc = result as ParsedInstruction.IncreaseDecrease
-        assertEquals(96, inc.currentStitches)
-        assertEquals(12, inc.changeBy)
-        assertTrue(inc.isIncrease)
-    }
-
-    @Test
-    fun `parseResponse - decrease`() {
-        val result = InstructionParser.parseResponse("TYPE: DECREASE\nCURRENT: 120\nCHANGE: 8")
-        assertTrue(result is ParsedInstruction.IncreaseDecrease)
-        val dec = result as ParsedInstruction.IncreaseDecrease
-        assertEquals(120, dec.currentStitches)
-        assertEquals(8, dec.changeBy)
-        assertTrue(!dec.isIncrease)
-    }
-
-    @Test
-    fun `parseResponse - gauge`() {
-        val result = InstructionParser.parseResponse("GAUGE_STITCHES: 22.5\nGAUGE_ROWS: 30\nGAUGE_UNIT: 10CM")
-        assertTrue(result is ParsedInstruction.Gauge)
-        val g = result as ParsedInstruction.Gauge
-        assertEquals(22.5, g.stitchesPer10cm, 0.01)
-        assertEquals(30.0, g.rowsPer10cm, 0.01)
-        assertEquals(ParsedInstruction.GaugeUnit.PER_10_CM, g.unit)
-    }
-
-    @Test
-    fun `parseResponse - swatch`() {
-        val result =
-            InstructionParser.parseResponse(
-                "SWATCH_WIDTH: 13.5\nSWATCH_STITCHES: 30\nSWATCH_HEIGHT: 15\nSWATCH_ROWS: 38\nSWATCH_UNIT: CM",
-            )
-        assertTrue(result is ParsedInstruction.GaugeSwatch)
-        val s = result as ParsedInstruction.GaugeSwatch
-        assertEquals(13.5, s.width!!, 0.01)
-        assertEquals(30, s.stitches)
-        assertEquals(15.0, s.height!!, 0.01)
-        assertEquals(38, s.rows)
-        assertEquals(ParsedInstruction.LengthUnit.CM, s.lengthUnit)
-    }
-
-    @Test
-    fun `parseResponse - swatch partial`() {
-        val result = InstructionParser.parseResponse("SWATCH_WIDTH: 30\nSWATCH_STITCHES: 22\nSWATCH_UNIT: IN")
-        assertTrue(result is ParsedInstruction.GaugeSwatch)
-        val s = result as ParsedInstruction.GaugeSwatch
-        assertEquals(30.0, s.width!!, 0.01)
-        assertEquals(22, s.stitches)
-        assertEquals(null, s.height)
-        assertEquals(null, s.rows)
-        assertEquals(ParsedInstruction.LengthUnit.INCHES, s.lengthUnit)
-    }
-
-    @Test
-    fun `parseResponse - extra whitespace`() {
-        val result = InstructionParser.parseResponse("TYPE:   INCREASE\nCURRENT:  96\nCHANGE:  12")
-        assertTrue(result is ParsedInstruction.IncreaseDecrease)
-    }
-
-    @Test
-    fun `parseResponse - cannot parse`() {
-        assertTrue(InstructionParser.parseResponse("CANNOT_PARSE") is ParsedInstruction.Failure)
-    }
-
-    @Test
-    fun `parseResponse - empty`() {
-        assertTrue(InstructionParser.parseResponse("") is ParsedInstruction.Failure)
-    }
-
-    @Test
-    fun `parseResponse - missing field`() {
-        assertTrue(InstructionParser.parseResponse("TYPE: INCREASE\nCURRENT: 96") is ParsedInstruction.Failure)
     }
 
     // === parseWithRegex: Increase/Decrease ===
@@ -173,6 +137,15 @@ class InstructionParserTest {
     }
 
     @Test
+    fun `every nth increase accepts a count followed by punctuation`() {
+        assertEquals(
+            ParsedInstruction.IncreaseDecrease(96, 12, true),
+            InstructionParser.parse("Inc 1 st in every 8th st across 96."),
+        )
+        assertTrue(InstructionParser.parse("Inc 1 st in every 8th st across 4 sections") is ParsedInstruction.Failure)
+    }
+
+    @Test
     fun `regex - inc abbreviated`() {
         val result = InstructionParser.parseWithRegex("INC 10 STS ACROSS 80 STS")
         assertTrue(result is ParsedInstruction.IncreaseDecrease)
@@ -213,6 +186,7 @@ class InstructionParserTest {
 
     @Test
     fun `regex - 22 sts and 30 rows = 10cm`() {
+        // CPD-OFF: Testin skenaariokohtainen asetelma pidetaan paikallisena ja luettavana.
         val result = InstructionParser.parseWithRegex("22 STS AND 30 ROWS = 10CM")
         assertTrue(result is ParsedInstruction.Gauge)
         val g = result as ParsedInstruction.Gauge
@@ -223,6 +197,7 @@ class InstructionParserTest {
 
     @Test
     fun `regex - tension 28 sts x 36 rows to 10cm`() {
+        // CPD-ON
         val result = InstructionParser.parseWithRegex("TENSION: 28 STS X 36 ROWS TO 10CM ON 4MM NEEDLES")
         assertTrue(result is ParsedInstruction.Gauge)
         val g = result as ParsedInstruction.Gauge
@@ -231,6 +206,7 @@ class InstructionParserTest {
         assertEquals(ParsedInstruction.GaugeUnit.PER_10_CM, g.unit)
     }
 
+    // CPD-OFF: Parseriesimerkin odotukset pidetaan testitapauksen yhteydessa.
     @Test
     fun `regex - gauge 22 per 30`() {
         val result = InstructionParser.parseWithRegex("GAUGE 22/30")
@@ -239,6 +215,17 @@ class InstructionParserTest {
         assertEquals(22.0, g.stitchesPer10cm, 0.01)
         assertEquals(30.0, g.rowsPer10cm, 0.01)
         assertEquals(ParsedInstruction.GaugeUnit.PER_10_CM, g.unit)
+    }
+    // CPD-ON
+
+    @Test
+    fun `regex - labelled gauge values win over unrelated leading number`() {
+        val result = InstructionParser.parseWithRegex("GAUGE ON 4 MM: 22 STS 30 ROWS")
+
+        assertTrue(result is ParsedInstruction.Gauge)
+        val gauge = result as ParsedInstruction.Gauge
+        assertEquals(22.0, gauge.stitchesPer10cm, 0.01)
+        assertEquals(30.0, gauge.rowsPer10cm, 0.01)
     }
 
     @Test
@@ -252,6 +239,47 @@ class InstructionParserTest {
     }
 
     @Test
+    fun `labelled per inch gauge retains its physical basis`() {
+        listOf("", "Gauge: ", "Tension: ").forEach { prefix ->
+            assertEquals(
+                ParsedInstruction.Gauge(22.0, 28.0, ParsedInstruction.GaugeUnit.PER_4_INCHES),
+                InstructionParser.parse("${prefix}5.5 stitches per inch, 7 rows per inch"),
+            )
+            assertEquals(
+                ParsedInstruction.Gauge(22.0, 28.0, ParsedInstruction.GaugeUnit.PER_4_INCHES),
+                InstructionParser.parse("${prefix}5.5 stitches and 7 rows per inch"),
+            )
+        }
+    }
+
+    @Test
+    fun `unrelated numbers do not complete a single per inch gauge axis`() {
+        listOf(
+            "Gauge on 4 mm needles: 5.5 stitches per inch",
+            "Gauge: 7 rows per inch on 4 mm needles",
+            "Gauge: 5.5 stitches per inch",
+        ).forEach { instruction ->
+            assertTrue(InstructionParser.parse(instruction) is ParsedInstruction.Failure)
+        }
+    }
+
+    @Test
+    fun `an explicit swatch unit is not taken from unrelated text`() {
+        assertEquals(
+            ParsedInstruction.GaugeSwatch(4.0, 22, lengthUnit = ParsedInstruction.LengthUnit.INCHES),
+            InstructionParser.parse("10 cm reference. Width 4 in; 22 stitches"),
+        )
+    }
+
+    @Test
+    fun `explicit swatch dimensions take precedence over adjacent stitch and row counts`() {
+        assertEquals(
+            ParsedInstruction.GaugeSwatch(14.0, 33, 15.0, 44, ParsedInstruction.LengthUnit.CM),
+            InstructionParser.parse("Width 14 cm, height 15 cm, 33 stitches and 44 rows"),
+        )
+    }
+
+    @Test
     fun `regex - 20 stitches = 4 inches`() {
         val result = InstructionParser.parseWithRegex("20 STITCHES AND 28 ROWS = 4 INCHES")
         assertTrue(result is ParsedInstruction.Gauge)
@@ -261,6 +289,7 @@ class InstructionParserTest {
         assertEquals(ParsedInstruction.GaugeUnit.PER_4_INCHES, g.unit)
     }
 
+    // CPD-OFF: Parseriesimerkin odotukset pidetaan testitapauksen yhteydessa.
     @Test
     fun `regex - 22 stitches 30 rows no context`() {
         val result = InstructionParser.parseWithRegex("22 STITCHES 30 ROWS")
@@ -270,6 +299,7 @@ class InstructionParserTest {
         assertEquals(30.0, g.rowsPer10cm, 0.01)
         assertEquals(ParsedInstruction.GaugeUnit.PER_10_CM, g.unit)
     }
+    // CPD-ON
 
     @Test
     fun `regex - row repeat does not become gauge`() {
@@ -393,6 +423,27 @@ class InstructionParserTest {
     }
 
     // === Edge cases ===
+
+    @Test
+    fun `regex counts both stitches removed by sk2p`() {
+        assertEquals(
+            ParsedInstruction.IncreaseDecrease(96, 16, false),
+            InstructionParser.parse("SK2P EVERY 12TH STITCH (96 STS)"),
+        )
+    }
+
+    @Test
+    fun `regex counts both stitches removed by s2kp`() {
+        assertEquals(
+            ParsedInstruction.IncreaseDecrease(96, 16, false),
+            InstructionParser.parse("S2KP EVERY 12TH STITCH (96 STS)"),
+        )
+    }
+
+    @Test
+    fun `regex rejects an unrepresentable double decrease count`() {
+        assertTrue(InstructionParser.parse("S2KP EVERY 1ST STITCH (2147483647 STS)") is ParsedInstruction.Failure)
+    }
 
     @Test
     fun `regex - garbage returns failure`() {

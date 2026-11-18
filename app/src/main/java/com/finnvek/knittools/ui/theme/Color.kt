@@ -4,7 +4,6 @@ import androidx.compose.ui.graphics.Color
 
 // === Taustat ===
 val Background = Color(0xFF1E1E12) // Päätausta — tumma oliivi
-val BackgroundAlt = Color(0xFF252518) // Hieman vaaleampi, kontrastialue
 
 // === Pinnat (tumma khaki/oliivi — EI valkoinen) ===
 val Surface = Color(0xFF2E2E20) // Korttien peruspinta
@@ -30,7 +29,6 @@ val TertiaryContainer = Color(0xFF3A3520)
 val TextPrimary = Color(0xFFE8E4D0) // Pääteksti — lämmin kerma
 val TextSecondary = Color(0xFFB8B4A0) // Kuvaukset, toissijainen info
 val TextMuted = Color(0xFFA8A491) // Hiljennetty teksti, chevronit, aikaleimat
-val TextDisabled = Color(0xFF5A5840) // Disabled-tila
 
 // === Aksentti ===
 val DustyRose = Color(0xFFB8908F) // Pro trial -teksti, yarn card
@@ -39,12 +37,10 @@ val DustyRose = Color(0xFFB8908F) // Pro trial -teksti, yarn card
 val Error = Color(0xFFC44D4D)
 val ErrorContainer = Color(0xFF3A2020)
 val Success = Color(0xFF8BA44A) // Onnistumisen vihreä
-val SuccessContainer = Color(0xFF3A4020)
 
 // === Navigaatio ===
 val NavBackground = OnAccent // Alanav-tausta — erittäin tumma
 val NavText = Color(0xFFB0AC92) // Inaktiiviset navikohteet — vaalennettu luettavuutta varten
-val NavActive = Color(0xFFC45100) // Aktiivinen kohde — poltettu oranssi
 val NavActiveBg = Color(0xFF3A2010) // Aktiivisen tabin indikaattoritausta
 
 // === Erotin ===
@@ -56,17 +52,27 @@ val LightRavelryTeal = Color(0xFF4A7172)
 
 // === Light-teeman taustat ===
 val LightBackground = Color(0xFFE8E4D0) // Lämmin kerma (app-ikonin tausta)
-val LightBackgroundAlt = Color(0xFFDDD8C3) // Hieman tummempi, kontrastialue
 
 // === Light-teeman pinnat (tummempi = korkeampi korotus) ===
 val LightSurface = Color(0xFFD2CDB5) // Korttien peruspinta
 val LightSurfaceHigh = Color(0xFFBBB59A) // Korotetut kortit, työkalu/referenssi-itemit
 val LightSurfaceMediumHigh = Color(0xFFC8C3A8) // Dialogit, popupit
-val LightSurfaceHighest = Color(0xFFA49D80) // Korkein korotus, syötekentät
+val LightSurfaceHighest = Color(0xFFA49D80) // Korkein korotus (Material-roolit, laskurin askelpainikkeet)
+
+// Kortit ja listarivit. Raskas khaki LightSurfaceHigh sai kortit näyttämään sameilta petroolin
+// heron vieressä; vaaleampana hero on ainoa voimakas pinta ja kaikki teksti erottuu kortilta paremmin.
+val LightCardContainer = Color(0xFFD6D0B8)
+
+// Syötekenttä kortissa, dialogissa ja sheetissä: vaaleassa teemassa aina pohjaansa vaaleampi.
+// Korttia tummempi kenttä (LightSurfaceHighest) luki käytöstä poistettuna.
+val LightInputField = Color(0xFFF3F0E3)
+
+// Tyhjän tilan teksti ("No yarn added yet"): himmeämpi kuin sisältö, jottei se lue oikeana sisältönä.
+// Taustalla 4,68:1; LightTextSecondary oli vain 1,5:1 erossa varsinaisesta tekstistä.
+val LightEmptyStateText = Color(0xFF6A6350)
 
 // === Light-teeman Secondary — Tummempi avokado (kontrasti vaalealla taustalla) ===
 val LightSecondary = Color(0xFF394B18)
-val LightSecondaryMuted = Color(0xFF5A7525)
 val LightSecondaryContainer = Color(0xFFD0DDB5)
 
 // === Light-teeman Tertiary — Tumma kulta/sinappi ===
@@ -77,15 +83,15 @@ val LightTertiaryContainer = Color(0xFFE8DFB5)
 val LightTextPrimary = Color(0xFF2E2A1E) // Tumma lämmin ruskea
 val LightTextSecondary = Color(0xFF4C4634) // Keskiväri ruskea
 val LightTextMuted = Color(0xFF4A473C) // Hiljennetty ruskea
-val LightTextDisabled = Color(0xFFC0BAA5) // Disabled-tila
-val LightCounterMinusIcon = Color(0xFF211E16)
 
 // === Light-teeman aksentti ===
 val LightDustyRose = Color(0xFF9E706E) // Syvempi dusty rose
 
+// Osio-otsikoiden tummempi dusty rose: LightDustyRose jäi kermataustalla 3,3:1, pieni teksti vaatii 4,5:1.
+val LightSectionLabel = Color(0xFF7F5452)
+
 // === Light-teeman status ===
 val LightErrorContainer = Color(0xFFEAD0D0)
-val LightSuccessContainer = Color(0xFFD0DDB5)
 
 // === Light-teeman navigaatio ===
 val LightNavBackground = Color(0xFFDDD8C3) // Lämmin navipalkki
@@ -96,25 +102,31 @@ val LightNavActiveBg = Color(0xFFEAD0B5) // Aktiivisen tabin indikaattoritausta
 val LightDivider = Color(0xFFC5C0A8)
 
 // === Lanka-ikonien väripaletti (deterministinen ID:n perusteella) ===
+
+/** Chart colors maintain at least 3:1 contrast against dark backgrounds and cards. */
 val YarnColors =
     listOf(
-        Color(0xFFC45100), // Poltettu oranssi
-        Color(0xFF8BA44A), // Avokado
-        Color(0xFFC9A435), // Sinappi
+        Color(0xFFCC6821), // Burnt orange
+        Color(0xFF8BA44A), // Avocado
+        Color(0xFFC9A435), // Mustard
         Color(0xFFB8908F), // Dusty rose
-        Color(0xFF9A6B4A), // Terrakotta
-        Color(0xFF5A8A7A), // Teal
-        Color(0xFF9A82AA), // Laventeli
-        Color(0xFFA85A3A), // Ruosteenpunainen
+        Color(0xFFA57B5D), // Terracotta
+        Color(0xFF5E8D7D), // Teal
+        Color(0xFF9A82AA), // Lavender
+        Color(0xFFB57357), // Rust
     )
 
-val InsightChartColors =
+/** Matching hues with at least 3:1 contrast against light backgrounds and cards. */
+val LightYarnColors =
     listOf(
-        Primary,
-        Secondary,
-        Tertiary,
-        DustyRose,
-        RavelryTeal,
+        Color(0xFFC45100), // Burnt orange
+        Color(0xFF687A38), // Avocado
+        Color(0xFF8A7024), // Mustard
+        Color(0xFF966765), // Dusty rose
+        Color(0xFF976949), // Terracotta
+        Color(0xFF517B6D), // Teal
+        Color(0xFF836A93), // Lavender
+        Color(0xFFA85A3A), // Rust
     )
 
 // === Insights — aktiviteettiruudukon ramppi (kylmä → lämmin), solidit värit ilman alpha-sekoitusta ===
@@ -122,6 +134,29 @@ val ActivityCellEmpty = Color(0xFF464633) // Tyhjä päivä — hieman korttia v
 val LightActivityCellEmpty = Color(0xFFAFA98C) // Tyhjä päivä light-teemassa — hieman korttia tummempi
 val LightActivityLow = Color(0xFFB8C47A) // Vaalea avokado, rampin matalin taso light-teemassa
 
-// === Insights — oranssisävyinen metriikkakortin konttitausta ===
-val PrimaryTintContainer = Color(0xFF3A2513)
-val LightPrimaryTintContainer = Color(0xFFE6CFAC)
+// === Päätoiminnon konttitausta (jatka-kortti, New Project, tuloskortti, tilamerkki) ===
+// Petrooli on oranssin vastaväri, joten jatka-nappi ja oranssi lukema erottuvat siitä.
+// Sävyt pitävät PrimaryReadablen ≥ 4,5:1 ja ison Primary-lukeman ≥ 3:1 (ProjectListContrastTest).
+val ActionContainer = Color(0xFF1A2E2B)
+val LightActionContainer = Color(0xFFC4D9D0)
+
+val LightPrimaryReadable = Color(0xFF9A3F00)
+val PrimaryReadable = Color(0xFFE8823A)
+
+// Neutraali lankatilkku, kun langasta ei ole kuvaa: langan oikeaa väriä ei tiedetä, joten sävy on teeman oma.
+val LightYarnSwatchNeutral = Color(0xFFBDB69A)
+val YarnSwatchNeutral = Color(0xFF4A4A38)
+
+// Esimerkin ohjesivu pysyy vaaleana myös tummassa teemassa kuten PDF-sivu.
+val PaperSurface = Color(0xFFECE8D8)
+val LightPaperSurface = Color(0xFFF7F4E8)
+val PaperInk = Color(0xFFB9B29A)
+val PaperText = Color(0xFF4C4634) // Ohjeen teksti paperilla, noin 8:1 vaalealla paperilla
+
+// Kudotun Pro-merkin värit; pieni teksti säilyttää kontrastin myös läpinäkyvällä kokeilumerkillä.
+val ProMarkerContainer = Color(0xFF3A3520)
+val ProMarkerContent = Color(0xFFE3C766)
+val ProMarkerStitch = Color(0xFFC9A435)
+val LightProMarkerContainer = Color(0xFFE8DFB5)
+val LightProMarkerContent = Color(0xFF6B5410)
+val LightProMarkerStitch = Color(0xFF9A7B18)

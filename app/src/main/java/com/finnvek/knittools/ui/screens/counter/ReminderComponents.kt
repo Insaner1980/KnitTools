@@ -4,7 +4,6 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -15,26 +14,18 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.outlined.AddCircle
-import androidx.compose.material.icons.outlined.DeleteOutline
-import androidx.compose.material.icons.outlined.Edit
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -48,62 +39,77 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.calculator.CounterValueFormatter
+import com.finnvek.knittools.domain.calculator.MeasurementNumberParser
+import com.finnvek.knittools.domain.calculator.ReminderLogic
 import com.finnvek.knittools.domain.model.RowReminder
+import com.finnvek.knittools.pro.ProActionAccess
+import com.finnvek.knittools.pro.ProFeature
+import com.finnvek.knittools.pro.ProState
+import com.finnvek.knittools.pro.proActionAccess
+import com.finnvek.knittools.ui.components.CancelButton
 import com.finnvek.knittools.ui.components.ConfirmationDialog
+import com.finnvek.knittools.ui.components.LabeledTextField
 import com.finnvek.knittools.ui.components.NumberInputField
 import com.finnvek.knittools.ui.components.NumberInputOptions
+import com.finnvek.knittools.ui.components.OverviewTextAction
+import com.finnvek.knittools.ui.components.ProMarker
+import com.finnvek.knittools.ui.components.RowMenuAction
+import com.finnvek.knittools.ui.components.RowOverflowMenu
+import com.finnvek.knittools.ui.components.ScrollableFormDialog
 import com.finnvek.knittools.ui.components.SegmentedToggle
+import com.finnvek.knittools.ui.components.SheetTitle
+import com.finnvek.knittools.ui.layout.ContentWidthPolicy
+import com.finnvek.knittools.ui.theme.ComponentDimens
+import com.finnvek.knittools.ui.theme.knitToolsColors
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RemindersSheet(
     reminders: List<RowReminder>,
     currentRow: Int,
+    proState: ProState,
+    proAccessReady: Boolean,
     onAdd: () -> Unit,
     onEdit: (RowReminder) -> Unit,
     onDelete: (Long) -> Unit,
     onDismiss: () -> Unit,
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val reminderAccess = proActionAccess(proState, proAccessReady, ProFeature.ROW_REMINDERS)
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        containerColor = MaterialTheme.colorScheme.background,
-        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+        containerColor = MaterialTheme.colorScheme.surface,
+        sheetMaxWidth = ContentWidthPolicy.Form.maxWidth,
     ) {
         Column(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .padding(start = 24.dp, end = 24.dp, bottom = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+                    .padding(horizontal = ComponentDimens.FormSheetHorizontalPadding)
+                    .padding(bottom = ComponentDimens.FormSheetBottomPadding),
+            verticalArrangement = Arrangement.spacedBy(ComponentDimens.FormSheetItemSpacing),
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    text = stringResource(R.string.reminders),
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
+            // Sama otsikko ja oikean reunan lisäystoiminto kuin muissa sheeteissä ja projektinäkymän osioissa.
+            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                SheetTitle(text = stringResource(R.string.reminders), modifier = Modifier.weight(1f))
+                OverviewTextAction(
+                    label = stringResource(R.string.project_overview_add),
+                    onClick = onAdd,
+                    enabled =
+                        reminderAccess != ProActionAccess.Unknown ||
+                            proState.hasFeature(
+                                ProFeature.ROW_REMINDERS,
+                            ),
+                    trailingContent = { ProMarker(reminderAccess) },
                 )
-                TextButton(onClick = onAdd) {
-                    Icon(
-                        imageVector = Icons.Outlined.AddCircle,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp),
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(stringResource(R.string.add_reminder))
-                }
             }
             if (reminders.isEmpty()) {
                 Text(
                     text = stringResource(R.string.no_reminders),
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(vertical = 12.dp),
+                    color = MaterialTheme.knitToolsColors.emptyStateText,
                 )
             } else {
                 ReminderList(
@@ -129,7 +135,7 @@ fun ReminderAlertCard(
             modifier
                 .fillMaxWidth()
                 .clip(MaterialTheme.shapes.medium)
-                .background(MaterialTheme.colorScheme.surfaceVariant)
+                .background(MaterialTheme.knitToolsColors.cardContainer)
                 .padding(start = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -185,15 +191,18 @@ fun ReminderList(
         }
     }
 
-    if (deleteTarget != null) {
-        val targetReminder = reminders.find { it.id == deleteTarget }
+    val targetReminder = reminders.find { it.id == deleteTarget }
+    LaunchedEffect(deleteTarget, targetReminder) {
+        if (deleteTarget != null && targetReminder == null) deleteTarget = null
+    }
+    targetReminder?.let { reminder ->
         ConfirmationDialog(
             title = stringResource(R.string.delete_reminder_title),
-            message = stringResource(R.string.delete_reminder_confirm, targetReminder?.message ?: ""),
+            message = stringResource(R.string.delete_reminder_confirm, reminder.message),
             confirmText = stringResource(R.string.delete),
             isDestructive = true,
             onConfirm = {
-                deleteTarget?.let { onDelete(it) }
+                onDelete(reminder.id)
                 deleteTarget = null
             },
             onDismiss = { deleteTarget = null },
@@ -201,6 +210,11 @@ fun ReminderList(
     }
 }
 
+/**
+ * Hiusviivarivi kuten istuntohistoriassa: viesti otsikkona, rivi ja toisto sen alla, muokkaus ja poisto
+ * ⋮-valikossa. Harmaa laatikko, toisto- ja pistekuvake sekä kynä ja roskakori jokaisella rivillä erosivat
+ * muista listoista.
+ */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun ReminderListItem(
@@ -210,73 +224,49 @@ private fun ReminderListItem(
     onClick: () -> Unit = {},
     onDeleteClick: () -> Unit = {},
 ) {
-    val isUpcoming = !reminder.isCompleted && reminder.targetRow <= currentRow + 5
-    val dotColor =
-        if (isUpcoming) {
-            MaterialTheme.colorScheme.primary
-        } else {
-            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
-        }
+    // Lähestyvä muistutus erottuu tekstin värillä eikä erillisellä pisteellä.
+    val isUpcoming = ReminderLogic.isUpcoming(reminder, currentRow, UPCOMING_ROW_WINDOW)
+    val detail =
+        listOfNotNull(
+            stringResource(R.string.row_label_format, reminder.targetRow),
+            CounterValueFormatter.forReminderRepeat(reminder, currentRow)?.asText(),
+        ).joinToString(", ")
 
-    Row(
-        modifier =
-            modifier
-                .fillMaxWidth()
-                .combinedClickable(
-                    onClick = onClick,
-                    onLongClick = onDeleteClick,
-                ).background(MaterialTheme.colorScheme.surface)
-                .padding(horizontal = 4.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        if (reminder.repeatInterval != null) {
-            Icon(
-                imageVector = Icons.Filled.Refresh,
-                contentDescription = stringResource(R.string.repeating),
-                modifier = Modifier.size(16.dp),
-                tint = MaterialTheme.colorScheme.primary,
-            )
-        } else {
-            Box(
-                modifier =
-                    Modifier
-                        .size(10.dp)
-                        .clip(CircleShape)
-                        .background(dotColor),
-            )
-        }
-        Spacer(modifier = Modifier.width(12.dp))
-        Text(
-            text = stringResource(R.string.row_label_format, reminder.targetRow),
-            style = MaterialTheme.typography.bodySmall,
-            fontWeight = FontWeight.Medium,
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.width(56.dp),
-        )
-        Text(
-            text = reminder.message,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.weight(1f),
-        )
-        IconButton(onClick = onClick) {
-            Icon(
-                imageVector = Icons.Outlined.Edit,
-                contentDescription = stringResource(R.string.edit_reminder),
-                modifier = Modifier.size(18.dp),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+    Column(modifier = modifier.fillMaxWidth()) {
+        Row(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .combinedClickable(onClick = onClick, onLongClick = onDeleteClick)
+                    .padding(vertical = ComponentDimens.StandardSpacing),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(ComponentDimens.CompactSpacing),
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(text = reminder.message, style = MaterialTheme.typography.titleMedium)
+                Text(
+                    text = detail,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color =
+                        if (isUpcoming) {
+                            MaterialTheme.knitToolsColors.primaryReadable
+                        } else {
+                            MaterialTheme.knitToolsColors.onSurfaceMuted
+                        },
+                )
+            }
+            RowOverflowMenu(
+                listOf(
+                    RowMenuAction(stringResource(R.string.edit_reminder), onClick),
+                    RowMenuAction(stringResource(R.string.delete), onDeleteClick),
+                ),
             )
         }
-        IconButton(onClick = onDeleteClick) {
-            Icon(
-                imageVector = Icons.Outlined.DeleteOutline,
-                contentDescription = stringResource(R.string.delete),
-                modifier = Modifier.size(18.dp),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
+        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
     }
 }
+
+private const val UPCOMING_ROW_WINDOW = 5
 
 @Composable
 fun AddReminderDialog(
@@ -295,7 +285,6 @@ fun AddReminderDialog(
     }
     var message by rememberSaveable(reminder?.id) { mutableStateOf(reminder?.message.orEmpty()) }
 
-    val isRepeating = selectedType == 1
     val form =
         ReminderDialogForm(
             rowText = rowText,
@@ -305,7 +294,7 @@ fun AddReminderDialog(
         )
     val validation = form.validation
 
-    AlertDialog(
+    ScrollableFormDialog(
         onDismissRequest = onDismiss,
         title = { ReminderDialogTitle(reminder = reminder) },
         text = {
@@ -320,18 +309,16 @@ fun AddReminderDialog(
         confirmButton = {
             ReminderDialogConfirmButton(
                 validation = validation,
-                isRepeating = isRepeating,
+                isRepeating = form.isRepeating,
                 message = message,
                 onSave = onSave,
             )
         },
         dismissButton = {
-            ReminderDialogDismissButton(onDismiss = onDismiss)
+            CancelButton(onClick = onDismiss)
         },
     )
 }
-
-private const val REMINDER_MESSAGE_MAX_LENGTH = 200
 
 private data class ReminderDialogForm(
     val rowText: String,
@@ -344,8 +331,8 @@ private data class ReminderDialogForm(
 
     val validation: ReminderDialogValidation
         get() {
-            val rowNumber = rowText.toIntOrNull()
-            val interval = intervalText.toIntOrNull()
+            val rowNumber = MeasurementNumberParser.parse(rowText, Locale.ROOT, integer = true).value?.toInt()
+            val interval = MeasurementNumberParser.parse(intervalText, Locale.ROOT, integer = true).value?.toInt()
             return ReminderDialogValidation(
                 rowNumber = rowNumber,
                 interval = interval,
@@ -400,18 +387,12 @@ private fun ReminderDialogFields(
                 options = NumberInputOptions(suffix = stringResource(R.string.repeat_every_rows)),
             )
         }
-        TextField(
+        // Sama kehys kuin kerrosnumerolla: tumma dialogikenttä ja kentän sisäinen nimike näyttivät eri lomakkeelta.
+        LabeledTextField(
             value = form.message,
             onValueChange = onMessageChange,
-            label = { Text(stringResource(R.string.reminder_message)) },
-            placeholder = { Text(stringResource(R.string.reminder_message_hint)) },
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth(),
-            colors =
-                TextFieldDefaults.colors(
-                    focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                ),
+            label = stringResource(R.string.reminder_message),
+            placeholder = stringResource(R.string.reminder_message_hint),
         )
     }
 }
@@ -435,14 +416,7 @@ private fun ReminderDialogConfirmButton(
     }
 }
 
-@Composable
-private fun ReminderDialogDismissButton(onDismiss: () -> Unit) {
-    TextButton(onClick = onDismiss) {
-        Text(stringResource(R.string.cancel))
-    }
-}
-
 private fun limitReminderMessage(
     current: String,
     next: String,
-): String = if (next.length <= REMINDER_MESSAGE_MAX_LENGTH) next else current
+): String = if (next.length <= ReminderLogic.MESSAGE_MAX_LENGTH) next else current

@@ -1,6 +1,8 @@
 package com.finnvek.knittools.ui.screens.insights
 
 import com.finnvek.knittools.domain.model.KnitSession
+import java.time.DayOfWeek
+import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -9,7 +11,7 @@ import kotlin.math.roundToLong
 
 internal data class SessionMetricSummary(
     val totalSeconds: Long,
-    val totalRows: Int,
+    val totalRows: Long,
     val sessionCount: Int,
 ) {
     val totalMinutes: Int
@@ -26,7 +28,7 @@ internal data class SessionMetricSummary(
 
 internal data class PaceBucketMetric(
     val totalSeconds: Long,
-    val totalRows: Int,
+    val totalRows: Long,
     val rowsPerHour: Float,
 )
 
@@ -37,12 +39,12 @@ internal object SessionMetrics {
         zone: ZoneId,
     ): SessionMetricSummary {
         var totalSeconds = 0L
-        var totalRows = 0
+        var totalRows = 0L
         var sessionCount = 0
 
         sessions.forEach { session ->
             val contribution = session.contributionFrom(rangeStartMillis, zone) ?: return@forEach
-            totalSeconds += contribution.seconds
+            totalSeconds = addSessionSeconds(totalSeconds, contribution.seconds)
             totalRows += contribution.rows
             sessionCount++
         }
@@ -65,20 +67,22 @@ internal object SessionMetrics {
             zone = zone,
         ).keys
 
-    fun dailyPaceBuckets(
+    fun paceBuckets(
         sessions: List<KnitSession>,
         rangeStartMillis: Long?,
+        interval: PaceGroupingInterval,
         zone: ZoneId,
+        firstDayOfWeek: DayOfWeek = DayOfWeek.MONDAY,
     ): Map<LocalDate, PaceBucketMetric> {
         val buckets = mutableMapOf<LocalDate, MutablePaceBucket>()
         sessions.forEach { session ->
             session
-                .dailyPaceBucketContributions(rangeStartMillis, zone)
+                .paceBucketContributions(rangeStartMillis, interval, zone, firstDayOfWeek)
                 .forEach { (bucketStart, contribution) ->
                     val bucket = buckets.getOrPut(bucketStart) { MutablePaceBucket() }
                     bucket.seconds += contribution.seconds
                     bucket.rows += contribution.rows
-                    bucket.totalSeconds += contribution.totalSeconds
+                    bucket.totalSeconds = addSessionSeconds(bucket.totalSeconds, contribution.totalSeconds)
                     bucket.totalRows += contribution.totalRows
                 }
         }
@@ -112,7 +116,7 @@ internal object SessionMetrics {
             session
                 .dailySecondContributions(earliestDate, zone)
                 .forEach { (date, seconds) ->
-                    secondsByDate[date] = (secondsByDate[date] ?: 0L) + seconds
+                    secondsByDate[date] = addSessionSeconds(secondsByDate[date] ?: 0L, seconds)
                 }
         }
         return secondsByDate
@@ -127,21 +131,13 @@ internal object SessionMetrics {
 
         val started = startedAt
         val ended = effectiveEndedAt()
-        val rangeStart =
-            rangeStartMillis?.let { start ->
-                Instant
-                    .ofEpochMilli(start)
-                    .atZone(zone)
-                    .toLocalDate()
-                    .atStartOfDay(zone)
-                    .toInstant()
-                    .toEpochMilli()
-            }
+        val rangeStart = calendarRangeStartMillis(rangeStartMillis, zone)
         val overlapStart = maxOf(started, rangeStart ?: started)
         val overlapEnd = maxOf(overlapStart, ended)
         if (overlapEnd <= overlapStart) return null
 
-        val fraction = (overlapEnd - overlapStart).toDouble() / (ended - started).coerceAtLeast(1L)
+        val fraction =
+            sessionMillisBetween(overlapStart, overlapEnd) / sessionMillisBetween(started, ended).coerceAtLeast(1.0)
         val seconds = scaledSeconds(activeSeconds, fraction)
         if (seconds <= 0L) return null
         return SessionContribution(
@@ -160,8 +156,24 @@ internal object SessionMetrics {
         val sessionZone = analyticsZoneOr(zone)
         val started = startedAt
         val ended = effectiveEndedAt()
-        var cursor = started
-        var allocatedSeconds = 0L
+        if (ended <= started) return emptyMap()
+        val sessionMillis = sessionMillisBetween(started, ended).coerceAtLeast(1.0)
+        val boundedEarliestDate =
+            maxOf(
+                earliestDate,
+                Instant
+                    .ofEpochMilli(ended - 1L)
+                    .atZone(sessionZone)
+                    .toLocalDate()
+                    .minusDays(MAX_SESSION_ANALYSIS_DAYS - 1L),
+            )
+        var cursor =
+            maxOf(
+                started,
+                boundedEarliestDate.atStartOfDay(sessionZone).toInstant().boundedEpochMillis(),
+            )
+        val initialFraction = sessionMillisBetween(started, cursor) / sessionMillis
+        var allocatedSeconds = scaledSeconds(activeSeconds, initialFraction)
         val contributions = mutableMapOf<LocalDate, Long>()
 
         while (cursor < ended) {
@@ -171,9 +183,9 @@ internal object SessionMetrics {
                     .plusDays(1)
                     .atStartOfDay(sessionZone)
                     .toInstant()
-                    .toEpochMilli()
+                    .boundedEpochMillis()
             val segmentEnd = minOf(ended, nextDayStart)
-            val cumulativeFraction = (segmentEnd - started).toDouble() / (ended - started).coerceAtLeast(1L)
+            val cumulativeFraction = sessionMillisBetween(started, segmentEnd) / sessionMillis
             val cumulativeSeconds = scaledSeconds(activeSeconds, cumulativeFraction)
             val seconds = (cumulativeSeconds - allocatedSeconds).coerceAtLeast(0L)
             allocatedSeconds = cumulativeSeconds
@@ -186,9 +198,11 @@ internal object SessionMetrics {
         return contributions
     }
 
-    private fun KnitSession.dailyPaceBucketContributions(
+    private fun KnitSession.paceBucketContributions(
         rangeStartMillis: Long?,
+        interval: PaceGroupingInterval,
         zone: ZoneId,
+        firstDayOfWeek: DayOfWeek,
     ): Map<LocalDate, PaceBucketContribution> {
         val activeSeconds = activeDurationSeconds()
         val rows = workedRows()
@@ -197,9 +211,19 @@ internal object SessionMetrics {
         val sessionZone = analyticsZoneOr(zone)
         val started = startedAt
         val ended = effectiveEndedAt()
-        var cursor = maxOf(started, rangeStartMillis ?: started)
-        val sessionMillis = (ended - started).coerceAtLeast(1L)
-        val initialFraction = (cursor - started).toDouble() / sessionMillis
+        if (ended <= started) return emptyMap()
+        val boundedStartMillis =
+            Instant
+                .ofEpochMilli(ended - 1L)
+                .atZone(sessionZone)
+                .toLocalDate()
+                .minusDays(MAX_SESSION_ANALYSIS_DAYS - 1L)
+                .atStartOfDay(sessionZone)
+                .toInstant()
+                .boundedEpochMillis()
+        var cursor = maxOf(started, calendarRangeStartMillis(rangeStartMillis, zone) ?: started, boundedStartMillis)
+        val sessionMillis = sessionMillisBetween(started, ended).coerceAtLeast(1.0)
+        val initialFraction = sessionMillisBetween(started, cursor) / sessionMillis
         var allocatedSeconds = scaledSeconds(activeSeconds, initialFraction)
         var allocatedRows = scaledRows(rows, initialFraction)
         val contributions = mutableMapOf<LocalDate, PaceBucketContribution>()
@@ -210,26 +234,27 @@ internal object SessionMetrics {
                     .ofEpochMilli(cursor)
                     .atZone(sessionZone)
                     .toLocalDate()
+                    .bucketStart(interval, firstDayOfWeek)
             val nextBucketStartMillis =
                 bucketStart
-                    .plusDays(1)
+                    .nextBucketStart(interval)
                     .atStartOfDay(sessionZone)
                     .toInstant()
-                    .toEpochMilli()
+                    .boundedEpochMillis()
             val segmentEnd = minOf(ended, nextBucketStartMillis)
             if (segmentEnd <= cursor) break
 
-            val fraction = (segmentEnd - cursor).toDouble() / sessionMillis
+            val fraction = sessionMillisBetween(cursor, segmentEnd) / sessionMillis
             val seconds = activeSeconds * fraction
             val bucketRows = rows * fraction
-            val cumulativeFraction = (segmentEnd - started).toDouble() / sessionMillis
+            val cumulativeFraction = sessionMillisBetween(started, segmentEnd) / sessionMillis
             val cumulativeSeconds = scaledSeconds(activeSeconds, cumulativeFraction)
             val cumulativeRows = scaledRows(rows, cumulativeFraction)
             val segmentSeconds = (cumulativeSeconds - allocatedSeconds).coerceAtLeast(0L)
-            val segmentRows = (cumulativeRows - allocatedRows).coerceAtLeast(0)
+            val segmentRows = cumulativeRows - allocatedRows
             allocatedSeconds = cumulativeSeconds
             allocatedRows = cumulativeRows
-            if (seconds > 0.0 && (segmentSeconds > 0L || segmentRows > 0)) {
+            if (seconds > 0.0 && (segmentSeconds > 0L || segmentRows != 0)) {
                 val contribution = contributions.getOrPut(bucketStart) { PaceBucketContribution() }
                 contribution.seconds += seconds
                 contribution.rows += bucketRows
@@ -241,7 +266,23 @@ internal object SessionMetrics {
 
         return contributions
     }
+
+    private fun KnitSession.calendarRangeStartMillis(
+        rangeStartMillis: Long?,
+        zone: ZoneId,
+    ): Long? =
+        rangeStartMillis?.let { start ->
+            Instant
+                .ofEpochMilli(start)
+                .atZone(zone)
+                .toLocalDate()
+                .atStartOfDay(analyticsZoneOr(zone))
+                .toInstant()
+                .boundedEpochMillis()
+        }
 }
+
+private const val MAX_SESSION_ANALYSIS_DAYS = 366L
 
 private data class SessionContribution(
     val seconds: Long,
@@ -259,24 +300,43 @@ private data class MutablePaceBucket(
     var seconds: Double = 0.0,
     var rows: Double = 0.0,
     var totalSeconds: Long = 0L,
-    var totalRows: Int = 0,
+    var totalRows: Long = 0L,
 )
 
 private fun KnitSession.activeDurationSeconds(): Long =
     when {
         durationSeconds > 0L -> durationSeconds
         durationMinutes > 0 -> durationMinutes.toLong() * 60L
-        workedRows() > 0 -> 1L
+        workedRows() != 0 -> 1L
         else -> 0L
     }
 
-private fun KnitSession.effectiveEndedAt(): Long =
-    endedAt.coerceAtLeast(startedAt + activeDurationSeconds().coerceAtLeast(1L) * 1_000L)
+private fun KnitSession.effectiveEndedAt(): Long {
+    val start = Instant.ofEpochMilli(startedAt)
+    val seconds = activeDurationSeconds().coerceAtLeast(1L)
+    val remainingSeconds = Duration.between(start, Instant.ofEpochMilli(Long.MAX_VALUE)).seconds
+    val durationEnd = if (seconds > remainingSeconds) Long.MAX_VALUE else start.plusSeconds(seconds).toEpochMilli()
+    return maxOf(endedAt, durationEnd)
+}
+
+private fun Instant.boundedEpochMillis(): Long =
+    coerceIn(Instant.ofEpochMilli(Long.MIN_VALUE), Instant.ofEpochMilli(Long.MAX_VALUE)).toEpochMilli()
+
+private fun sessionMillisBetween(
+    start: Long,
+    end: Long,
+): Double =
+    if (start < 0L && end > Long.MAX_VALUE + start) end.toDouble() - start.toDouble() else (end - start).toDouble()
+
+internal fun addSessionSeconds(
+    total: Long,
+    seconds: Long,
+): Long = total + seconds.coerceIn(0L, Long.MAX_VALUE - total)
 
 private fun KnitSession.workedRows(): Int =
     when {
-        rowsWorked > 0 -> rowsWorked
-        endRow > startRow -> endRow - startRow
+        rowsWorked != 0 -> rowsWorked
+        endRow > startRow -> (endRow.toLong() - startRow.toLong()).coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
         else -> 0
     }
 
@@ -297,14 +357,14 @@ private fun scaledRows(
     rows: Int,
     fraction: Double,
 ): Int {
-    if (rows <= 0 || fraction <= 0.0) return 0
-    return (rows * fraction).roundToInt().coerceAtLeast(0)
+    if (fraction <= 0.0) return 0
+    return (rows * fraction).roundToInt()
 }
 
 internal fun secondsToDisplayMinutes(seconds: Long): Int =
     when {
         seconds <= 0L -> 0
-        else -> ((seconds + 59L) / 60L).toInt()
+        else -> ((seconds - 1L) / 60L + 1L).coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
     }
 
 /**
@@ -318,13 +378,14 @@ internal fun secondsToDisplayMinutes(seconds: Long): Int =
  */
 internal fun apportionDisplayMinutes(secondsParts: List<Long>): List<Int> {
     if (secondsParts.isEmpty()) return emptyList()
-    val target = secondsToDisplayMinutes(secondsParts.sum())
+    val totalSeconds = secondsParts.fold(0L, ::addSessionSeconds)
+    val target = secondsToDisplayMinutes(totalSeconds)
     val minutes =
         IntArray(secondsParts.size) { index ->
             val seconds = secondsParts[index]
-            if (seconds <= 0L) 0 else maxOf(1, (seconds / 60L).toInt())
+            if (seconds <= 0L) 0 else maxOf(1, (seconds / 60L).coerceAtMost(Int.MAX_VALUE.toLong()).toInt())
         }
-    var remaining = target - minutes.sum()
+    var remaining = target.toLong() - minutes.sumOf { it.toLong() }
     if (remaining <= 0) return minutes.toList()
 
     // Loput minuutit suurimman jäännöksen mukaan, jotta pyöristys osuu sinne missä

@@ -7,21 +7,29 @@ import com.finnvek.knittools.data.local.CounterProjectEntity
 import com.finnvek.knittools.data.local.DatabaseTransactionRunner
 import com.finnvek.knittools.data.local.YarnCardDao
 import com.finnvek.knittools.data.local.YarnCardEntity
+import com.finnvek.knittools.data.local.distinctSqliteQueryChunks
 import com.finnvek.knittools.data.local.toDomain
 import com.finnvek.knittools.data.local.toEntity
 import com.finnvek.knittools.data.storage.AppFileStorage
 import com.finnvek.knittools.data.storage.YarnPhotoStorage
 import com.finnvek.knittools.di.IoDispatcher
+import com.finnvek.knittools.domain.model.YARN_CARD_IDS_MAX_TOKENS
 import com.finnvek.knittools.domain.model.YarnCard
 import com.finnvek.knittools.domain.model.YarnCardStatus
 import com.finnvek.knittools.domain.model.formatYarnCardIds
-import com.finnvek.knittools.domain.model.parseYarnCardIds
+import com.finnvek.knittools.domain.model.parseYarnCardIdsWithinLimits
+import com.finnvek.knittools.pro.ProFeature
+import com.finnvek.knittools.pro.ProManager
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.runInterruptible
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -36,7 +44,13 @@ class YarnCardRepository
         private val transactionRunner: DatabaseTransactionRunner,
         @param:IoDispatcher private val ioDispatcher: CoroutineDispatcher,
         private val yarnPhotoStorage: YarnPhotoStorage = YarnPhotoStorage(),
+        private val proManager: ProManager? = null,
     ) {
+        private val photoStorageMutex = Mutex()
+
+        internal suspend fun <T> withPhotoStorageLock(block: suspend () -> T): T =
+            photoStorageMutex.withLock { block() }
+
         fun getAllCards(): Flow<List<YarnCard>> =
             dao
                 .getAllCards()
@@ -51,21 +65,30 @@ class YarnCardRepository
 
         suspend fun getCard(id: Long): YarnCard? = dao.getCard(id)?.toDomain()
 
-        suspend fun getCards(ids: List<Long>): List<YarnCard> = dao.getCards(ids).map { it.toDomain() }
+        suspend fun getCards(ids: List<Long>): List<YarnCard> =
+            ids
+                .distinctSqliteQueryChunks()
+                .flatMap { chunk -> dao.getCards(chunk) }
+                .map { it.toDomain() }
 
-        suspend fun saveCard(card: YarnCard): Long =
+        suspend fun saveCard(card: YarnCard): Long? =
             transactionRunner.run {
                 saveCardInCurrentTransaction(card)
             }
 
-        internal suspend fun saveCardInCurrentTransaction(card: YarnCard): Long {
+        internal suspend fun saveCardInCurrentTransaction(card: YarnCard): Long? {
             val existingCard = card.id.takeIf { it != 0L }?.let { dao.getCard(it) }
+            if (card.id != 0L && existingCard == null) return null
+            if (existingCard == null && proManager?.hasFeature(ProFeature.UNLIMITED_YARN) == false) return null
+            if (card.quantityInStash < 0) return null
             val projects = counterProjectDao.getAllProjectsOnce()
             val cardWithPreservedDetails = card.preserveSameCardDetails(existingCard)
             val linkedProjectId =
                 cardWithPreservedDetails.linkedProjectId?.takeIf { projectId ->
                     projects.any { it.id == projectId }
                 }
+            val linkChanged = existingCard?.linkedProjectId != linkedProjectId
+            if (linkChanged && !canLinkCard(projects, card.id.takeIf { it != 0L }, linkedProjectId)) return null
             val normalizedCard =
                 cardWithPreservedDetails.copy(
                     status = YarnCardStatus.normalize(cardWithPreservedDetails.status),
@@ -73,8 +96,7 @@ class YarnCardRepository
                 )
             val upsertedId = dao.upsert(normalizedCard.toEntity())
             val savedId = normalizedCard.id.takeIf { it != 0L } ?: upsertedId
-            val linkChanged = existingCard?.linkedProjectId != linkedProjectId
-            if (linkedProjectId != null || linkChanged) {
+            if (linkChanged) {
                 updateProjectYarnLinks(
                     projects = projects,
                     cardId = savedId,
@@ -107,57 +129,89 @@ class YarnCardRepository
         suspend fun updateQuantity(
             id: Long,
             quantity: Int,
-        ): Boolean = dao.updateQuantity(id, quantity) > 0
+        ): Boolean {
+            if (quantity < 0) return false
+            return dao.updateQuantity(id, quantity) > 0
+        }
+
+        suspend fun changeQuantity(
+            id: Long,
+            delta: Int,
+        ): Boolean =
+            transactionRunner.run {
+                val current = dao.getCard(id) ?: return@run false
+                val quantity = current.quantityInStash.toLong() + delta.toLong()
+                if (quantity !in 0L..Int.MAX_VALUE.toLong()) return@run false
+                dao.updateQuantity(id, quantity.toInt()) > 0
+            }
 
         suspend fun updateStatus(
             id: Long,
             status: String,
-        ): Boolean = dao.updateStatus(id, status) > 0
+        ): Boolean = dao.updateStatus(id, YarnCardStatus.normalize(status)) > 0
 
         suspend fun updatePhotoUri(
             id: Long,
             sourceUri: Uri,
-        ): Boolean {
-            val currentCard = dao.getCard(id) ?: return false
-            val copiedPhotoUri =
-                withContext(ioDispatcher) {
-                    yarnPhotoStorage.copyPhoto(context, id, sourceUri)
+        ): Boolean =
+            photoStorageMutex.withLock {
+                val currentCard = dao.getCard(id) ?: return@withLock false
+                var unpublishedPhotoUri: String? = null
+                val copiedPhotoUri =
+                    try {
+                        withContext(ioDispatcher) {
+                            runInterruptible {
+                                yarnPhotoStorage.copyPhoto(context, id, sourceUri).also { unpublishedPhotoUri = it }
+                            }
+                        }
+                    } catch (failure: CancellationException) {
+                        unpublishedPhotoUri?.let { deleteAppOwnedPhoto(it) }
+                        throw failure
+                    }
+                val updateResult = runCatching { dao.updatePhotoUri(id, copiedPhotoUri) }
+                updateResult.exceptionOrNull()?.let { failure ->
+                    withContext(ioDispatcher + NonCancellable) {
+                        val isUnreferenced =
+                            runCatching { dao.getCard(id)?.photoUri != copiedPhotoUri }.getOrDefault(false)
+                        if (isUnreferenced) deleteAppOwnedPhoto(copiedPhotoUri)
+                    }
+                    throw failure
                 }
-            val updateResult = runCatching { dao.updatePhotoUri(id, copiedPhotoUri) }
-            updateResult.exceptionOrNull()?.let { failure ->
-                deleteAppOwnedPhoto(copiedPhotoUri)
-                throw failure
+                val updated = updateResult.getOrThrow() > 0
+                if (updated) {
+                    deleteAppOwnedPhoto(currentCard.photoUri)
+                } else {
+                    deleteAppOwnedPhoto(copiedPhotoUri)
+                }
+                updated
             }
-            val updated = updateResult.getOrThrow() > 0
-            if (updated) {
-                deleteAppOwnedPhoto(currentCard.photoUri)
-            } else {
-                deleteAppOwnedPhoto(copiedPhotoUri)
-            }
-            return updated
-        }
 
         suspend fun pruneUnreferencedPhotoFiles() {
-            val referencedPhotoUris =
-                dao
-                    .getAllCards()
-                    .first()
-                    .map { card -> card.photoUri }
-                    .filter { photoUri -> photoUri.isNotBlank() }
-                    .toSet()
-            withContext(ioDispatcher) {
-                yarnPhotoStorage.pruneUnreferencedPhotos(context, referencedPhotoUris)
+            photoStorageMutex.withLock {
+                val referencedPhotoUris =
+                    dao
+                        .getAllCards()
+                        .first()
+                        .map { card -> card.photoUri }
+                        .filter { photoUri -> photoUri.isNotBlank() }
+                        .toSet()
+                withContext(ioDispatcher) {
+                    yarnPhotoStorage.pruneUnreferencedPhotos(context, referencedPhotoUris)
+                }
             }
         }
 
         suspend fun updateLinkedProjectId(
             id: Long,
             projectId: Long?,
+            expectedLinkedProjectId: Long? = null,
         ): Boolean =
             transactionRunner.run {
-                if (dao.getCard(id) == null) return@run false
+                val card = dao.getCard(id) ?: return@run false
+                if (expectedLinkedProjectId != null && card.linkedProjectId != expectedLinkedProjectId) return@run false
                 val projects = counterProjectDao.getAllProjectsOnce()
                 if (projectId != null && projects.none { it.id == projectId }) return@run false
+                if (!canLinkCard(projects, id, projectId)) return@run false
 
                 updateProjectYarnLinks(
                     projects = projects,
@@ -172,24 +226,29 @@ class YarnCardRepository
 
         suspend fun deleteCard(id: Long) = deleteCards(listOf(id))
 
-        suspend fun deleteCards(ids: List<Long>) {
-            if (ids.isEmpty()) return
+        suspend fun deleteCards(ids: List<Long>): Boolean {
+            val idChunks = ids.distinctSqliteQueryChunks()
+            if (idChunks.isEmpty()) return true
+            val distinctIds = idChunks.flatten()
             val cards =
                 transactionRunner.run {
-                    val cards = dao.getCards(ids)
-                    removeCardIdsFromProjects(ids.toSet())
-                    dao.deleteByIds(ids)
+                    val cards = idChunks.flatMap { chunk -> dao.getCards(chunk) }
+                    if (!removeCardIdsFromProjects(distinctIds.toSet())) return@run null
+                    idChunks.forEach { chunk -> dao.deleteByIds(chunk) }
                     cards
-                }
+                } ?: return false
             withContext(ioDispatcher + NonCancellable) {
                 cards.forEach { card -> AppFileStorage.deleteIfAppOwned(context, card.photoUri) }
             }
+            return true
         }
 
-        private suspend fun removeCardIdsFromProjects(cardIds: Set<Long>) {
+        private suspend fun removeCardIdsFromProjects(cardIds: Set<Long>): Boolean {
             val updatedAt = System.currentTimeMillis()
-            counterProjectDao.getAllProjectsOnce().forEach { project ->
-                val currentIds = parseYarnCardIds(project.yarnCardIds)
+            val projects = counterProjectDao.getAllProjectsOnce()
+            if (projects.any { parseYarnCardIdsWithinLimits(it.yarnCardIds) == null }) return false
+            projects.forEach { project ->
+                val currentIds = checkNotNull(parseYarnCardIdsWithinLimits(project.yarnCardIds))
                 val nextIds = currentIds.filterNot { it in cardIds }
                 if (nextIds.size != currentIds.size) {
                     counterProjectDao.updateYarnCardIds(
@@ -199,6 +258,7 @@ class YarnCardRepository
                     )
                 }
             }
+            return true
         }
 
         private suspend fun updateProjectYarnLinks(
@@ -208,7 +268,7 @@ class YarnCardRepository
             updatedAt: Long,
         ) {
             projects.forEach { project ->
-                val currentIds = parseYarnCardIds(project.yarnCardIds)
+                val currentIds = checkNotNull(parseYarnCardIdsWithinLimits(project.yarnCardIds))
                 val nextIds =
                     if (project.id == projectId) {
                         if (cardId in currentIds) currentIds else currentIds + cardId
@@ -229,6 +289,17 @@ class YarnCardRepository
                     )
                 }
             }
+        }
+
+        private fun canLinkCard(
+            projects: List<CounterProjectEntity>,
+            cardId: Long?,
+            projectId: Long?,
+        ): Boolean {
+            if (projects.any { parseYarnCardIdsWithinLimits(it.yarnCardIds) == null }) return false
+            val project = projects.firstOrNull { it.id == projectId } ?: return projectId == null
+            val currentIds = checkNotNull(parseYarnCardIdsWithinLimits(project.yarnCardIds))
+            return (cardId != null && cardId in currentIds) || currentIds.size < YARN_CARD_IDS_MAX_TOKENS
         }
 
         private suspend fun deleteAppOwnedPhoto(photoUri: String) {

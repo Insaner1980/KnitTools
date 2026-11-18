@@ -1,0 +1,92 @@
+[
+  {
+    "evidence": "reports\\language-audit\\shared\\20261018\\final-input-hashes.tsv",
+    "path": "app/src/main/java/com/finnvek/knittools/domain/calculator/CastOnCalculator.kt",
+    "match": true,
+    "sha256": "20028963e810dea7d0b858290411aab19d30d959f0feee184018e820ab91b472"
+  },
+  {
+    "evidence": "reports\\language-audit\\shared\\20261018\\final-input-hashes.tsv",
+    "path": "app/src/main/java/com/finnvek/knittools/domain/calculator/ChartSymbolData.kt",
+    "match": true,
+    "sha256": "242384c1f2e1ff2eeb83d8df5a57ca2fd085eb11f39a314f2fa335ceb334685d"
+  },
+  {
+    "evidence": "reports\\language-audit\\shared\\20261018\\final-input-hashes.tsv",
+    "path": "app/src/main/java/com/finnvek/knittools/domain/calculator/IncreaseDecreaseCalculator.kt",
+    "match": true,
+    "sha256": "f95ec9533e15b4138e4a02f6db9e75f5e04669b3d21dfac25a022b1035ed6ef7"
+  },
+  {
+    "evidence": "reports\\language-audit\\shared\\20261018\\final-input-hashes.tsv",
+    "path": "app/src/main/java/com/finnvek/knittools/domain/calculator/NeedleSizeData.kt",
+    "match": true,
+    "sha256": "5cd76d92b0e86fdd596db513c3c0fb1dbafe9ae441d52406001a74494fbed2ea"
+  },
+  {
+    "evidence": "reports\\language-audit\\shared\\20261018\\final-input-hashes.tsv",
+    "path": "app/src/main/java/com/finnvek/knittools/domain/calculator/SizeChartData.kt",
+    "match": true,
+    "sha256": "05cfd462174881af17eb2bfbd3a9a84c328492d1a8a6d7784bae35cd1ee4d0f6"
+  },
+  {
+    "evidence": "reports\\language-audit\\shared\\20261018\\final-input-hashes.tsv",
+    "path": "app/src/main/java/com/finnvek/knittools/domain/model/StandardYarnWeight.kt",
+    "match": true,
+    "sha256": "ea1d11b8db1c6d50acd0d82c26982136e63a16d9cad2123e5b6f06065b30e54c"
+  },
+  {
+    "evidence": "reports\\language-audit\\shared\\20261018\\final-input-hashes.tsv",
+    "path": "app/src/main/java/com/finnvek/knittools/ui/components/BadgePill.kt",
+    "match": true,
+    "sha256": "41dedca13e4996a1cf0a3af9d03c3b9b1e92f76c76e53857eb2977f72ddac0da"
+  },
+  {
+    "evidence": "reports\\language-audit\\shared\\20261018\\final-input-hashes.tsv",
+    "path": "app/src/main/java/com/finnvek/knittools/ui/components/care/CareSymbolIcon.kt",
+    "match": true,
+    "sha256": "b728612f5aa9c0eed7cea84935d43561a7bbdcb64d8cae0c2d5934b87ebbaab8"
+  },
+  {
+    "evidence": "reports\\language-audit\\shared\\20261018\\final-input-hashes.tsv",
+    "path": "app/src/main/java/com/finnvek/knittools/ui/screens/chartsymbols/ChartSymbolScreen.kt",
+    "match": false,
+    "sha256": "92ae673a6d423574751ee90f001cffe626d7c570874fbfc9335fb5c8009a8136"
+  },
+  {
+    "evidence": "reports\\language-audit\\shared\\20261018\\final-input-hashes.tsv",
+    "path": "app/src/main/java/com/finnvek/knittools/ui/screens/insights/InsightsSections.kt",
+    "match": true,
+    "sha256": "d7a9ab6a58011ad65fe60c685fdfa55472b9ea67fa8e38d0e6153a916ac5c052"
+  },
+  {
+    "evidence": "reports\\language-audit\\shared\\20261018\\final-input-hashes.tsv",
+    "path": "app/src/main/java/com/finnvek/knittools/ui/screens/library/YarnWeightField.kt",
+    "match": true,
+    "sha256": "353c9ceba607857e9ac1efce2f2a835f8a5cf88e62c4244f42e5047c2d190f0a"
+  },
+  {
+    "evidence": "reports\\language-audit\\shared\\20261018-followup\\final-input-hashes.tsv",
+    "path": "app/src/main/java/com/finnvek/knittools/ui/screens/chartsymbols/ChartSymbolScreen.kt",
+    "match": true,
+    "sha256": "92ae673a6d423574751ee90f001cffe626d7c570874fbfc9335fb5c8009a8136"
+  },
+  {
+    "evidence": "reports\\language-audit\\shared\\20261019-b05\\final-input-hashes.json",
+    "path": "app/src/main/java/com/finnvek/knittools/ui/screens/insights/InsightsSessionAccumulator.kt",
+    "match": true,
+    "sha256": "24c1c653440da869f57e5ec6467dee2dbf066acc6e23437ffce54d46a55a8632"
+  },
+  {
+    "evidence": "reports\\language-audit\\shared\\20261019-b05\\final-input-hashes.json",
+    "path": "app/src/main/java/com/finnvek/knittools/ui/screens/insights/InsightsViewModel.kt",
+    "match": true,
+    "sha256": "48693f77a7580372c767f47d627ff291de450db7ff7d73f9826922988c799ff7"
+  },
+  {
+    "evidence": "reports\\language-audit\\shared\\20261019-b05\\final-input-hashes.json",
+    "path": "app/src/test/java/com/finnvek/knittools/ui/screens/insights/InsightsSessionZoneRangeTest.kt",
+    "match": true,
+    "sha256": "73d0565ad3a8c1e44d9586997a46df01b0558bbb67a34d567ffcc567f7461b4e"
+  }
+]

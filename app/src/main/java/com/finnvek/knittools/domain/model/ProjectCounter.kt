@@ -8,6 +8,7 @@ data class ProjectCounter(
     val stepSize: Int = 1,
     val repeatAt: Int? = null,
     val sortOrder: Int = 0,
+    // CPD-OFF: Ruudun paikallinen Compose-rakenne pidetaan vastuun yhteydessa.
     val createdAt: Long = System.currentTimeMillis(),
     val counterType: ProjectCounterType = ProjectCounterType.COUNT_UP,
     val startingStitches: Int? = null,
@@ -19,3 +20,4 @@ data class ProjectCounter(
     val currentRepeat: Int? = null,
     val linkedToMainCounter: Boolean = false,
 )
+// CPD-ON

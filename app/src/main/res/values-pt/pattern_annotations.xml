@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="pattern_annotation_page_limit">Esta página contém demasiadas anotações ou anotações demasiado complexas para serem apresentadas em segurança. As suas anotações foram preservadas.</string>
     <string name="pattern_annotations_layers">Camadas de anotações</string>
     <string name="pattern_annotations_master">Notas do padrão</string>
     <string name="pattern_annotations_project">Notas do projeto</string>
     <string name="pattern_annotations_read_only">Só de leitura</string>
     <string name="pattern_annotations_count">%1$s (%2$d)</string>
-    <string name="pattern_annotation_tool_browse">Navegar</string>
     <string name="pattern_annotation_tool_pen">Caneta</string>
     <string name="pattern_annotation_tool_highlighter">Marcador</string>
     <string name="pattern_annotation_tool_eraser">Borracha</string>
@@ -73,4 +73,7 @@
     <string name="pattern_annotation_export_failed">A exportação do PDF falhou. O PDF original não foi alterado.</string>
     <string name="pattern_annotation_export_default_name">padrão</string>
     <string name="pattern_annotation_export_filename">%1$s-anotado.pdf</string>
+    <string name="pattern_annotation_edit_text">Editar texto</string>
+    <string name="pattern_annotation_write_failed">Não foi possível guardar o texto. A anotação pode ter sido alterada. Feche o editor e tente novamente.</string>
+    <string name="pattern_annotation_command_failed">Uma alteração numa anotação não foi guardada. Feche esta mensagem e tente novamente com as ferramentas de anotação.</string>
 </resources>

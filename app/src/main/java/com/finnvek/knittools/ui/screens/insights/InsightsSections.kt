@@ -2,18 +2,20 @@ package com.finnvek.knittools.ui.screens.insights
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -30,18 +32,18 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontStyle
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -51,10 +53,23 @@ import com.finnvek.knittools.domain.calculator.MinutesPerRowDisplay
 import com.finnvek.knittools.domain.calculator.formatIntegerForDisplay
 import com.finnvek.knittools.domain.calculator.formatPercentForDisplay
 import com.finnvek.knittools.ui.components.DurationHero
+import com.finnvek.knittools.ui.components.SectionLabel
 import com.finnvek.knittools.ui.components.durationText
 import com.finnvek.knittools.ui.components.localizedUppercase
 import com.finnvek.knittools.ui.components.rememberCurrentLocale
 import com.finnvek.knittools.ui.theme.InsightsDimens
+import com.finnvek.knittools.ui.theme.insightsEmptyBody
+import com.finnvek.knittools.ui.theme.insightsEmptyRangeTitle
+import com.finnvek.knittools.ui.theme.insightsEmptyTitle
+import com.finnvek.knittools.ui.theme.insightsHeroLead
+import com.finnvek.knittools.ui.theme.insightsKicker
+import com.finnvek.knittools.ui.theme.insightsProCardBody
+import com.finnvek.knittools.ui.theme.insightsProCardTitle
+import com.finnvek.knittools.ui.theme.insightsProjectDuration
+import com.finnvek.knittools.ui.theme.insightsProjectName
+import com.finnvek.knittools.ui.theme.insightsProjectSub
+import com.finnvek.knittools.ui.theme.insightsStatValue
+import com.finnvek.knittools.ui.theme.insightsTrend
 import com.finnvek.knittools.ui.theme.knitToolsColors
 import com.finnvek.knittools.ui.theme.yarnColorForId
 import java.time.Instant
@@ -63,38 +78,17 @@ import java.time.ZoneId
 import java.time.temporal.ChronoUnit
 import kotlin.math.roundToInt
 
-/** Vahva viiva hero-lohkon alla. */
-@Composable
-internal fun InsightsStrongRule(modifier: Modifier = Modifier) {
-    HorizontalDivider(
-        modifier = modifier,
-        color = MaterialTheme.colorScheme.onSurface.copy(alpha = InsightsDimens.RuleStrongAlpha),
-    )
-}
-
-/** Hiusviiva osioiden ja listarivien välissä. */
-@Composable
-internal fun InsightsHairline(modifier: Modifier = Modifier) {
-    HorizontalDivider(
-        modifier = modifier,
-        color = MaterialTheme.colorScheme.onSurface.copy(alpha = InsightsDimens.RuleHairlineAlpha),
-    )
-}
-
 /** Aikaväli omana rivinään: sijamuodoton väliviivanotaatio, ei osa virkettä. */
 @Composable
-internal fun InsightsRangeKicker(text: String) {
+internal fun InsightsRangeKicker(
+    text: String,
+    modifier: Modifier = Modifier,
+) {
     Text(
+        modifier = modifier,
         text = text,
-        style =
-            MaterialTheme.typography.labelMedium.copy(
-                fontSize = InsightsDimens.KickerFontSize,
-                fontWeight = FontWeight.Medium,
-            ),
+        style = MaterialTheme.typography.insightsKicker,
         color = MaterialTheme.knitToolsColors.onSurfaceMuted,
-        maxLines = 1,
-        overflow = TextOverflow.Ellipsis,
-        modifier = Modifier.padding(top = InsightsDimens.KickerTopPadding),
     )
 }
 
@@ -118,9 +112,14 @@ internal fun InsightsHero(state: InsightsUiState) {
                 .fillMaxWidth()
                 .padding(top = InsightsDimens.HeroTopPadding, bottom = InsightsDimens.HeroBottomPadding),
     ) {
-        HeroSentenceText(text = heroLeadInText(state))
+        val displayedMinutes = animatedMinutes.value.roundToInt()
         DurationHero(
-            display = DurationDisplayFormatter.fromMinutes(animatedMinutes.value.roundToInt()),
+            display =
+                if (displayedMinutes == state.totalMinutes) {
+                    state.totalDuration
+                } else {
+                    DurationDisplayFormatter.fromMinutes(displayedMinutes)
+                },
             color = MaterialTheme.colorScheme.primary,
             modifier = Modifier.fillMaxWidth(),
         )
@@ -132,25 +131,10 @@ internal fun InsightsHero(state: InsightsUiState) {
 private fun HeroSentenceText(text: String) {
     Text(
         text = text,
-        style =
-            MaterialTheme.typography.headlineSmall.copy(
-                fontSize = InsightsDimens.HeroLeadFontSize,
-                fontWeight = FontWeight.Medium,
-            ),
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        style = MaterialTheme.typography.insightsHeroLead,
+        color = MaterialTheme.knitToolsColors.onSurfaceMuted,
     )
 }
-
-/** Aikaväli ei ole enää lauseessa: se luetaan kicker-riviltä, joten mikään kieli ei tarvitse sijamuotoa. */
-@Composable
-private fun heroLeadInText(state: InsightsUiState): String =
-    stringResource(
-        when (state.timeRange) {
-            TimeRange.THIS_WEEK -> R.string.insights_hero_lead_in_week
-            TimeRange.THIS_MONTH -> R.string.insights_hero_lead_in_month
-            TimeRange.ALL_TIME -> R.string.insights_hero_lead_in_all_time
-        },
-    )
 
 /**
  * Projektien määrä on konkreettisempi päätös kuin roikkuva gerundi, ja se on
@@ -158,10 +142,8 @@ private fun heroLeadInText(state: InsightsUiState): String =
  */
 @Composable
 private fun heroTrailingText(state: InsightsUiState): String? {
-    val projectName = state.selectedProjectName
-    if (projectName != null) {
-        return stringResource(R.string.insights_hero_trailing_project, projectName)
-    }
+    // Suodatinpilleri kertoo jo valitun projektin nimen, joten hero ei toista sitä.
+    if (state.selectedProjectName != null) return null
     val projectCount = state.timePerProject.size
     if (projectCount == 0) return null
     return pluralStringResource(
@@ -192,6 +174,10 @@ internal data class StreakStatDisplay(
     val label: StreakStatLabel,
 )
 
+/**
+ * Tilastosarake ei johda demotivoivalla nollalla, jos paras putki on olemassa:
+ * "0 DAY STREAK" oli monelle ensimmäinen luku jonka he lukivat.
+ */
 internal fun streakStatDisplay(
     currentStreak: Int,
     bestStreak: Int,
@@ -202,16 +188,37 @@ internal fun streakStatDisplay(
         else -> StreakStatDisplay(0, StreakStatLabel.DAY_STREAK)
     }
 
+/**
+ * Sama kynnys kuin tilastosarakkeella: yhden päivän "paras putki" on merkityksetön
+ * kummassakin paikassa. Trendirivi kertoo parhaan vain kun sarake näyttää nykyisen.
+ */
 internal fun allTimeBestStreakTrend(
     currentStreak: Int,
     bestStreak: Int,
-): Int? = bestStreak.takeIf { currentStreak > 0 && it > 0 }
+): Int? = bestStreak.takeIf { currentStreak > 0 && it > MINIMUM_MEANINGFUL_STREAK }
 
-/** Kolme yhtä leveää saraketta ilman taustoja. Ilman Pro-tilausta putki jätetään pois. */
+/**
+ * Toissijaiset luvut yhtenä rivinä. Sarake jätetään pois kun sillä ei ole kerrottavaa:
+ * ajatusviiva min/riviä varten ja "0 day streak" olivat tyhjiä lukuja jotka veivät
+ * saman tilan kuin oikeat.
+ *
+ * Sarakkeet ladotaan vasemmalta kiinteällä välillä eikä leviteä koko leveydelle:
+ * painotettuina kaksi jäljelle jäänyttä saraketta hakeutuivat vastakkaisiin reunoihin
+ * ja väliin jäi kolo, ja yksi sarake jäi yksin vasemmalle.
+ */
 @Composable
 internal fun InsightsStatsRow(state: InsightsUiState) {
     val locale = rememberCurrentLocale()
-    Row(
+    val streakDisplay = streakStatDisplay(state.currentStreak, state.bestStreak)
+    val showsRows = state.rowMetricsAvailable && state.totalRows > 0
+    val showsPace = showsRows && state.minutesPerRow != MinutesPerRowDisplay.Unavailable
+    val showsStreak = state.canUseStreak && streakDisplay.value > MINIMUM_MEANINGFUL_STREAK
+    // Nollasarake ei kerro mitään, joten koko rivi jää pois kun mikään sarake ei
+    // yllä kertomaan. Aiemmin yhden minuutin istunto ilman rivejä jätti ruudulle
+    // yksinäisen "0 ROWS" -sarakkeen.
+    if (!showsRows && !showsPace && !showsStreak) return
+
+    FlowRow(
         modifier =
             Modifier
                 .fillMaxWidth()
@@ -219,20 +226,22 @@ internal fun InsightsStatsRow(state: InsightsUiState) {
                     top = InsightsDimens.StatsRowTopPadding,
                     bottom = InsightsDimens.StatsRowBottomPadding,
                 ),
+        horizontalArrangement = Arrangement.spacedBy(InsightsDimens.StatColumnGap),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        InsightsStat(
-            value = formatIntegerForDisplay(state.totalRows.toLong(), locale),
-            label = stringResource(R.string.insights_stat_rows),
-            modifier = Modifier.weight(1f),
-        )
-        InsightsStat(
-            value = minutesPerRowText(state.minutesPerRow),
-            label = stringResource(R.string.insights_stat_min_per_row),
-            modifier = Modifier.weight(1f),
-            horizontalAlignment = if (state.canUseStreak) Alignment.Start else Alignment.End,
-        )
-        if (state.canUseStreak) {
-            val streakDisplay = streakStatDisplay(state.currentStreak, state.bestStreak)
+        if (showsRows) {
+            InsightsStat(
+                value = formatIntegerForDisplay(state.totalRows, locale),
+                label = stringResource(R.string.insights_stat_rows),
+            )
+        }
+        if (showsPace) {
+            InsightsStat(
+                value = minutesPerRowText(state.minutesPerRow),
+                label = stringResource(R.string.insights_stat_min_per_row),
+            )
+        }
+        if (showsStreak) {
             InsightsStat(
                 value = formatIntegerForDisplay(streakDisplay.value.toLong(), locale),
                 label =
@@ -242,12 +251,13 @@ internal fun InsightsStatsRow(state: InsightsUiState) {
                             StreakStatLabel.BEST_STREAK -> R.string.insights_stat_best_streak
                         },
                     ),
-                modifier = Modifier.weight(1f),
-                horizontalAlignment = Alignment.End,
             )
         }
     }
 }
+
+/** Yhden päivän putki ei ole putki: se on tämä päivä. */
+internal const val MINIMUM_MEANINGFUL_STREAK = 1
 
 /**
  * Yksi vaimea rivi tilastojen alla: kesken oleva jakso suhteessa edelliseen, tai
@@ -258,11 +268,7 @@ internal fun InsightsTrendLine(state: InsightsUiState) {
     val text = trendLineText(state) ?: return
     Text(
         text = text,
-        style =
-            MaterialTheme.typography.bodySmall.copy(
-                fontSize = InsightsDimens.TrendFontSize,
-                fontWeight = FontWeight.Medium,
-            ),
+        style = MaterialTheme.typography.insightsTrend,
         color = MaterialTheme.knitToolsColors.onSurfaceMuted,
         maxLines = 2,
         overflow = TextOverflow.Ellipsis,
@@ -283,20 +289,23 @@ private fun trendLineText(state: InsightsUiState): String? {
     val percent = formatPercentForDisplay(trend.percentChange / 100.0, locale)
     val isWeek = state.timeRange == TimeRange.THIS_WEEK
     return when (trend.direction) {
-        InsightsTrendDirection.UP ->
+        InsightsTrendDirection.UP -> {
             stringResource(
                 if (isWeek) R.string.insights_trend_more_week else R.string.insights_trend_more_month,
                 percent,
             )
+        }
 
-        InsightsTrendDirection.DOWN ->
+        InsightsTrendDirection.DOWN -> {
             stringResource(
                 if (isWeek) R.string.insights_trend_less_week else R.string.insights_trend_less_month,
                 percent,
             )
+        }
 
-        InsightsTrendDirection.FLAT ->
+        InsightsTrendDirection.FLAT -> {
             stringResource(if (isWeek) R.string.insights_trend_same_week else R.string.insights_trend_same_month)
+        }
     }
 }
 
@@ -315,17 +324,13 @@ private fun InsightsStat(
     value: String,
     label: String,
     modifier: Modifier = Modifier,
-    horizontalAlignment: Alignment.Horizontal = Alignment.Start,
 ) {
-    Column(modifier = modifier, horizontalAlignment = horizontalAlignment) {
+    Column(modifier = modifier) {
         BasicText(
             text = value,
             style =
-                TextStyle(
+                MaterialTheme.typography.insightsStatValue.copy(
                     color = MaterialTheme.colorScheme.onSurface,
-                    fontSize = InsightsDimens.StatValueFontSize,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = InsightsDimens.StatValueLetterSpacing,
                     fontFeatureSettings = "tnum",
                 ),
             autoSize =
@@ -336,23 +341,28 @@ private fun InsightsStat(
             maxLines = 1,
         )
         Text(
+            // Sama all-caps-rooli kuin Libraryn osiomerkeillä: labelMedium oli visuaalisesti
+            // melkein yhtä painava kuin itse luku.
             text = label.localizedUppercase(),
-            style = MaterialTheme.typography.labelMedium,
+            style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.knitToolsColors.onSurfaceMuted,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
             modifier = Modifier.padding(top = InsightsDimens.StatLabelTopMargin),
         )
     }
 }
 
-/** Osion otsikko ja valinnainen mittaluku oikealla. */
+/**
+ * Osion otsikko on yhteinen [SectionLabel] kuten Libraryssa ja Toolsissa.
+ * Aiempi 20 sp lihavoitu otsikko oli yksi neljästä kilpailevasta äänenvoimakkuudesta
+ * heron alla; kategoriamerkkinä se on hiljaisempi ja tunnistettavasti samaa sovellusta.
+ */
 @Composable
 internal fun InsightsSectionHeader(
     title: String,
     meta: String? = null,
+    metaIsLive: Boolean = false,
 ) {
-    Row(
+    Column(
         modifier =
             Modifier
                 .fillMaxWidth()
@@ -360,31 +370,22 @@ internal fun InsightsSectionHeader(
                     top = InsightsDimens.SectionTopPadding,
                     bottom = InsightsDimens.SectionHeaderBottomPadding,
                 ),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.Bottom,
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        Text(
-            text = title,
-            style =
-                MaterialTheme.typography.titleLarge.copy(
-                    fontSize = InsightsDimens.SectionTitleFontSize,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = InsightsDimens.SectionTitleLetterSpacing,
-                ),
-            color = MaterialTheme.colorScheme.onSurface,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
+        SectionLabel(text = title)
         if (meta != null) {
             Text(
                 text = meta,
-                style =
-                    MaterialTheme.typography.labelMedium.copy(
-                        fontSize = InsightsDimens.SectionMetaFontSize,
-                        fontWeight = FontWeight.Medium,
-                    ),
+                style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.knitToolsColors.onSurfaceMuted,
-                maxLines = 1,
+                // Kaavion lukema asuu tällä rivillä, joten uusi arvo on luettava ilman
+                // uutta fokusointia kun valinta siirtyy vedolla tai ruudunlukijan toiminnolla.
+                modifier =
+                    if (metaIsLive) {
+                        Modifier.semantics(mergeDescendants = true) { liveRegion = LiveRegionMode.Polite }
+                    } else {
+                        Modifier
+                    },
             )
         }
     }
@@ -395,7 +396,6 @@ internal fun InsightsSectionHeader(
 internal fun InsightsProjectRow(
     project: ProjectTime,
     today: LocalDate,
-    rangeTotalMinutes: Int,
     onClick: () -> Unit,
 ) {
     Row(
@@ -411,7 +411,10 @@ internal fun InsightsProjectRow(
             modifier =
                 Modifier
                     .size(InsightsDimens.ProjectDotSize)
-                    .background(yarnColorForId(project.projectId), CircleShape),
+                    .background(
+                        yarnColorForId(project.projectId, MaterialTheme.knitToolsColors.yarnPalette),
+                        CircleShape,
+                    ),
         )
         Spacer(modifier = Modifier.width(InsightsDimens.ProjectRowGap))
         Column(modifier = Modifier.weight(1f)) {
@@ -419,11 +422,7 @@ internal fun InsightsProjectRow(
                 text =
                     project.projectName
                         ?: stringResource(R.string.new_project_name_format, project.projectId),
-                style =
-                    MaterialTheme.typography.titleMedium.copy(
-                        fontSize = InsightsDimens.ProjectNameFontSize,
-                        fontWeight = FontWeight.SemiBold,
-                    ),
+                style = MaterialTheme.typography.insightsProjectName,
                 color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -432,119 +431,119 @@ internal fun InsightsProjectRow(
                 text =
                     stringResource(
                         R.string.insights_project_sub_format,
-                        pluralStringResource(
-                            R.plurals.insights_rows_count,
-                            project.totalRows,
-                            project.totalRows,
-                        ),
+                        stringResource(R.string.counter_progress_format, project.totalRows),
                         relativeDayText(project.lastSessionAt, today),
                     ),
-                style =
-                    MaterialTheme.typography.bodySmall.copy(
-                        fontSize = InsightsDimens.ProjectSubFontSize,
-                        fontWeight = FontWeight.Medium,
-                    ),
+                style = MaterialTheme.typography.insightsProjectSub,
                 color = MaterialTheme.knitToolsColors.onSurfaceMuted,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.padding(top = InsightsDimens.ProjectSubTopMargin),
             )
-            if (rangeTotalMinutes > 0) {
-                ProjectShareBar(
-                    projectId = project.projectId,
-                    projectTotalMinutes = project.totalMinutes,
-                    rangeTotalMinutes = rangeTotalMinutes,
-                )
-            }
         }
         Spacer(modifier = Modifier.width(InsightsDimens.ProjectRowGap))
         Column(horizontalAlignment = Alignment.End) {
             Text(
                 text = durationText(DurationDisplayFormatter.fromMinutes(project.totalMinutes)),
-                style =
-                    MaterialTheme.typography.titleMedium.copy(
-                        fontSize = InsightsDimens.ProjectDurationFontSize,
-                        fontWeight = FontWeight.Bold,
-                    ),
+                style = MaterialTheme.typography.insightsProjectDuration,
                 color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 1,
                 softWrap = false,
             )
-            // "Mihin aika meni" on osuuskysymys, joten osuus kuuluu riville.
-            if (rangeTotalMinutes > 0) {
-                Text(
-                    text =
-                        formatPercentForDisplay(
-                            project.totalMinutes / rangeTotalMinutes.toDouble(),
-                            rememberCurrentLocale(),
-                        ),
-                    style =
-                        MaterialTheme.typography.bodySmall.copy(
-                            fontSize = InsightsDimens.ProjectShareFontSize,
-                            fontWeight = FontWeight.Medium,
-                        ),
-                    color = MaterialTheme.knitToolsColors.onSurfaceMuted,
-                    maxLines = 1,
-                    softWrap = false,
-                    modifier = Modifier.padding(top = InsightsDimens.ProjectSubTopMargin),
-                )
-            }
         }
     }
 }
 
+/**
+ * Suodatetussa näkymässä "Where the time went" on pelkkää toistoa, mutta sen mukana
+ * katosi ainoa tieto jota mikään muu ei kerro: milloin projektia on viimeksi tehty.
+ * Yksi rivi listaosion tilalle.
+ */
 @Composable
-private fun ProjectShareBar(
-    projectId: Long,
-    projectTotalMinutes: Int,
-    rangeTotalMinutes: Int,
+internal fun InsightsLastWorkedNote(
+    project: ProjectTime,
+    today: LocalDate,
 ) {
-    BoxWithConstraints(
+    Text(
+        text =
+            stringResource(
+                R.string.insights_last_worked_format,
+                relativeDayText(project.lastSessionAt, today),
+            ),
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.knitToolsColors.onSurfaceMuted,
         modifier =
             Modifier
                 .fillMaxWidth()
-                .padding(top = InsightsDimens.ProjectShareBarTopMargin)
-                .height(InsightsDimens.ProjectShareBarHeight),
-    ) {
-        val targetFraction =
-            projectShareBarFraction(
-                projectTotalMinutes = projectTotalMinutes,
-                rangeTotalMinutes = rangeTotalMinutes,
-                containerWidth = maxWidth,
-            )
-        var hasEnteredComposition by remember { mutableStateOf(false) }
-        val animatedFraction by
-            animateFloatAsState(
-                targetValue = if (hasEnteredComposition) targetFraction else 0f,
-                animationSpec = tween(durationMillis = 350, easing = FastOutSlowInEasing),
-                label = "projectShare",
-            )
-
-        LaunchedEffect(Unit) { hasEnteredComposition = true }
-
-        Box(
-            modifier =
-                Modifier
-                    .fillMaxWidth(animatedFraction)
-                    .height(InsightsDimens.ProjectShareBarHeight)
-                    .background(
-                        color = yarnColorForId(projectId),
-                        shape = RoundedCornerShape(InsightsDimens.ProjectShareBarCorner),
-                    ),
-        )
-    }
+                .padding(top = InsightsDimens.SectionTopPadding),
+    )
 }
 
-internal fun projectShareBarFraction(
-    projectTotalMinutes: Int,
-    rangeTotalMinutes: Int,
-    containerWidth: Dp,
-): Float {
-    if (projectTotalMinutes <= 0 || rangeTotalMinutes <= 0 || containerWidth <= 0.dp) return 0f
+/**
+ * Koko aikaväli yhtenä lankana: vaakasuora palkki, joka on jaettu projektien
+ * väreihin niiden osuuksien mukaan. Viisi erillistä osuuspalkkia ei voinut verrata
+ * keskenään — osuudet piti lukea prosenteista. Yksi palkki vastaa "mihin aika meni"
+ * -kysymykseen yhdellä silmäyksellä, ja se kantaa neulepinnan reilusti paremmin kuin
+ * 3 dp viiva.
+ */
+@Composable
+internal fun InsightsProjectMixBar(
+    projects: List<ProjectTime>,
+    totalMinutes: Int,
+    modifier: Modifier = Modifier,
+) {
+    if (projects.isEmpty() || totalMinutes <= 0) return
+    val palette = MaterialTheme.knitToolsColors.yarnPalette
+    val density = LocalDensity.current
+    val shadowColor =
+        MaterialTheme.colorScheme.scrim.copy(alpha = InsightsDimens.ChartStitchShadowAlpha)
+    val shape = RoundedCornerShape(InsightsDimens.MixBarCorner)
 
-    val share = projectTotalMinutes.toFloat() / rangeTotalMinutes
-    val minimumVisibleShare = InsightsDimens.ProjectShareBarHeight / containerWidth
-    return share.coerceAtLeast(minimumVisibleShare).coerceAtMost(1f)
+    BoxWithConstraints(
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .padding(
+                    top = InsightsDimens.MixBarTopPadding,
+                    bottom = InsightsDimens.MixBarBottomPadding,
+                ).height(InsightsDimens.MixBarHeight)
+                .clip(shape),
+    ) {
+        val widthPx = with(density) { maxWidth.toPx() }
+        val heightPx = with(density) { InsightsDimens.MixBarHeight.toPx() }
+        val lattice =
+            remember(widthPx, heightPx, density) {
+                with(density) {
+                    knitStitchLattice(
+                        widthPx = widthPx,
+                        heightPx = heightPx,
+                        targetStitchWidthPx = InsightsDimens.ChartStitchTargetWidth.toPx(),
+                    )
+                }
+            }
+        Row(modifier = Modifier.fillMaxSize()) {
+            projects.forEach { project ->
+                val share = project.totalMinutes / totalMinutes.toFloat()
+                if (share <= 0f) return@forEach
+                Box(
+                    modifier =
+                        Modifier
+                            .weight(share)
+                            .fillMaxHeight()
+                            .background(yarnColorForId(project.projectId, palette)),
+                )
+            }
+        }
+        // Neulepinta koko palkin yli kerralla, jolloin silmukat jatkuvat
+        // värirajojen poikki kuten raidallisessa neuleessa.
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            drawPath(
+                path = lattice.path,
+                color = shadowColor,
+                style = Stroke(width = lattice.strokeWidthPx, cap = StrokeCap.Round),
+            )
+        }
+    }
 }
 
 /**
@@ -553,7 +552,7 @@ internal fun projectShareBarFraction(
  * ensimmäisen piirron kellonaikaan.
  */
 @Composable
-private fun relativeDayText(
+internal fun relativeDayText(
     timestamp: Long,
     today: LocalDate,
 ): String {
@@ -567,7 +566,10 @@ private fun relativeDayText(
         days == 1 -> stringResource(R.string.relative_time_yesterday)
         days < 7 -> stringResource(R.string.relative_time_days_ago, days)
         days < 30 -> stringResource(R.string.relative_time_weeks_ago, days / 7)
-        else -> stringResource(R.string.relative_time_months_ago, days / 30)
+        else -> {
+            val months = days / 30
+            pluralStringResource(R.plurals.relative_time_months_ago, months, months)
+        }
     }
 }
 
@@ -582,75 +584,83 @@ internal fun InsightsEmptyState() {
     ) {
         Text(
             text = stringResource(R.string.insights_empty_title),
-            style =
-                MaterialTheme.typography.headlineMedium.copy(
-                    fontSize = InsightsDimens.EmptyTitleFontSize,
-                    fontWeight = FontWeight.SemiBold,
-                ),
+            // CPD-OFF: Ruudun paikallinen Compose-rakenne pidetaan vastuun yhteydessa.
+            style = MaterialTheme.typography.insightsEmptyTitle,
             color = MaterialTheme.colorScheme.onSurface,
         )
         Text(
             text = stringResource(R.string.insights_empty_body),
-            style = MaterialTheme.typography.bodyLarge.copy(fontSize = InsightsDimens.EmptyBodyFontSize),
+            style = MaterialTheme.typography.insightsEmptyBody,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(top = InsightsDimens.EmptyBodyTopMargin),
         )
     }
 }
 
-/** Aikavälillä ei ole istuntoja, mutta muualla on. Yksi vaimea rivi listan tilalla. */
+/**
+ * Aikavälillä ei ole istuntoja, mutta muualla on. Sama kaksirivinen muoto kuin
+ * [InsightsEmptyState]lla: yksinäinen kuiva lause ison tyhjän yläpuolella näytti
+ * keskenjääneeltä, ei tarkoitukselliselta.
+ */
 @Composable
 internal fun InsightsRangeEmptyNote(timeRange: TimeRange) {
-    Text(
-        text =
-            stringResource(
-                when (timeRange) {
-                    TimeRange.THIS_WEEK -> R.string.insights_nothing_yet_week
-                    TimeRange.THIS_MONTH -> R.string.insights_nothing_yet_month
-                    TimeRange.ALL_TIME -> R.string.insights_nothing_yet_all_time
-                },
-            ),
-        style = MaterialTheme.typography.bodyMedium,
-        color = MaterialTheme.knitToolsColors.onSurfaceMuted,
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(vertical = InsightsDimens.EmptyRangeNoteVerticalPadding),
-    )
-}
-
-/** Kaavion tilalla ilman Pro-tilausta. Oikeita pylväitä ei himmennetä eikä keksittyä dataa piirretä. */
-@Composable
-internal fun InsightsProChartCard(onProUpgrade: () -> Unit) {
+// CPD-ON
     Column(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .padding(top = InsightsDimens.SectionTopPadding)
-                .border(
-                    width = InsightsDimens.ProCardBorderWidth,
-                    color = MaterialTheme.colorScheme.outlineVariant,
-                    shape = RoundedCornerShape(InsightsDimens.ProCardCornerRadius),
-                ).padding(InsightsDimens.ProCardPadding),
+                .padding(vertical = InsightsDimens.EmptyRangeNoteVerticalPadding),
     ) {
         Text(
-            text = stringResource(R.string.insights_pro_chart_title),
-            style =
-                MaterialTheme.typography.titleMedium.copy(
-                    fontSize = InsightsDimens.ProCardTitleFontSize,
-                    fontWeight = FontWeight.SemiBold,
+            text =
+                stringResource(
+                    when (timeRange) {
+                        TimeRange.THIS_WEEK -> R.string.insights_nothing_yet_week
+                        TimeRange.THIS_MONTH -> R.string.insights_nothing_yet_month
+                        TimeRange.ALL_TIME -> R.string.insights_nothing_yet_all_time
+                    },
                 ),
+            style = MaterialTheme.typography.insightsEmptyRangeTitle,
             color = MaterialTheme.colorScheme.onSurface,
         )
         Text(
+            text = stringResource(R.string.insights_empty_body),
+            style = MaterialTheme.typography.insightsEmptyBody,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = InsightsDimens.EmptyBodyTopMargin),
+        )
+    }
+}
+
+/** Kaavion paikalla ilman Pro-oikeutta. Oikeita pylväitä ei luovuteta eikä keksittyä dataa piirretä. */
+@Composable
+internal fun InsightsProChartPrompt(onProUpgrade: () -> Unit) {
+    Column(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(vertical = InsightsDimens.SectionTopPadding),
+    ) {
+        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+        Text(
+            text = stringResource(R.string.insights_pro_chart_title),
+            style = MaterialTheme.typography.insightsProCardTitle,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.padding(top = InsightsDimens.ProCardPadding),
+        )
+        Text(
             text = stringResource(R.string.insights_pro_chart_body),
-            style = MaterialTheme.typography.bodyMedium.copy(fontSize = InsightsDimens.ProCardBodyFontSize),
+            style = MaterialTheme.typography.insightsProCardBody,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(top = InsightsDimens.ProCardBodyTopMargin),
         )
         TextButton(onClick = onProUpgrade, contentPadding = PaddingValues(0.dp)) {
             Text(text = stringResource(R.string.upgrade_to_pro))
         }
+        HorizontalDivider(
+            color = MaterialTheme.colorScheme.outlineVariant,
+            modifier = Modifier.padding(top = InsightsDimens.ProCardPadding),
+        )
     }
 }
 
@@ -677,20 +687,5 @@ private fun SkeletonBlock(height: Dp) {
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = InsightsDimens.SkeletonAlpha),
                     shape = RoundedCornerShape(InsightsDimens.SkeletonCornerRadius),
                 ),
-    )
-}
-
-/** Kannustava lopetus, keskitettynä listan alle. */
-@Composable
-internal fun InsightsFooterNote(text: String) {
-    Text(
-        text = text,
-        style = MaterialTheme.typography.bodySmall.copy(fontStyle = FontStyle.Italic),
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        textAlign = TextAlign.Center,
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(vertical = InsightsDimens.SectionTopPadding),
     )
 }

@@ -19,7 +19,8 @@ class UiStateRetentionSourceTest {
 
         assertTrue(screen.contains("var previousOverlayProjectId by rememberSaveable"))
         assertTrue(screen.contains("hideProjectScopedOverlays()"))
-        assertTrue(screen.contains("LaunchedEffect(state.projectId)"))
+        assertTrue(screen.contains("LaunchedEffect(state.projectId, state.isRestoringProject)"))
+        assertTrue(screen.contains("if (state.isRestoringProject) return@LaunchedEffect"))
     }
 
     @Test
@@ -34,7 +35,7 @@ class UiStateRetentionSourceTest {
     }
 
     @Test
-    fun `foreground resume starts a fresh active session segment`() {
+    fun `process lifecycle refreshes and checkpoints without starting or finalizing a session`() {
         val viewModel = ProjectSourceFiles.read(COUNTER_VIEW_MODEL)
         val onResume =
             viewModel.substring(
@@ -42,8 +43,16 @@ class UiStateRetentionSourceTest {
                 viewModel.indexOf("override fun onPause"),
             )
 
-        assertTrue(onResume.contains("val state = _uiState.value"))
-        assertTrue(onResume.contains("restartSessionSegment(projectId, state.counter.count)"))
+        val onPause =
+            viewModel.substring(
+                viewModel.indexOf("override fun onPause"),
+                viewModel.indexOf("init {"),
+            )
+
+        assertTrue(onResume.contains("refreshActiveSession()"))
+        assertTrue(onPause.contains("repository.checkpointActiveSession()"))
+        assertFalse(onResume.contains("startSession("))
+        assertFalse(onPause.contains("stopSession("))
     }
 
     @Test
@@ -90,10 +99,11 @@ class UiStateRetentionSourceTest {
     }
 
     @Test
-    fun `snackbar triggers are consumed before suspending display calls`() {
-        val mainActivity = ProjectSourceFiles.read(MAIN_ACTIVITY)
+    fun `downloaded snackbar consumption shares the host lifetime`() {
+        val mainActivity =
+            ProjectSourceFiles.read(MAIN_ACTIVITY).substringAfter("internal fun DownloadedUpdatePromptEffect(")
 
-        assertTrue(mainActivity.contains("var lastShownDownloadedUpdatePromptId by rememberSaveable"))
+        assertTrue(mainActivity.contains("var lastShownDownloadedUpdatePromptId by remember(snackbarHostState)"))
         assertTrue(mainActivity.contains("downloadedUpdatePromptId > lastShownDownloadedUpdatePromptId"))
         assertTrue(mainActivity.contains("lastShownDownloadedUpdatePromptId = downloadedUpdatePromptId"))
         assertTrue(

@@ -4,6 +4,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -27,6 +28,7 @@ import com.finnvek.knittools.ui.theme.PatternAnnotationTokens
 import com.finnvek.knittools.ui.theme.rememberPatternAnnotationRenderStyle
 
 @Composable
+@Suppress("kotlin:S107") // Overlay välittää piirto-, näkyvyys- ja osoitintilat erillisinä arvoina.
 internal fun PatternAnnotationOverlay(
     masterAnnotations: List<PatternAnnotation>,
     projectAnnotations: List<PatternAnnotation>,
@@ -41,14 +43,20 @@ internal fun PatternAnnotationOverlay(
     val renderStyle = rememberPatternAnnotationRenderStyle()
     val selectionColor = MaterialTheme.colorScheme.primary
     val visibleAnnotations =
-        visiblePatternAnnotations(
-            masterAnnotations = masterAnnotations,
-            projectAnnotations = projectAnnotations,
-            masterVisible = masterVisible,
-            projectVisible = projectVisible,
-        )
+        remember(masterAnnotations, projectAnnotations, masterVisible, projectVisible) {
+            visiblePatternAnnotations(
+                masterAnnotations = masterAnnotations,
+                projectAnnotations = projectAnnotations,
+                masterVisible = masterVisible,
+                projectVisible = projectVisible,
+            )
+        }
     val annotationsWithDraft =
-        if (inProgressVisible) visibleAnnotations + listOfNotNull(inProgressAnnotation) else visibleAnnotations
+        if (inProgressVisible && inProgressAnnotation != null) {
+            visibleAnnotations + inProgressAnnotation
+        } else {
+            visibleAnnotations
+        }
     Canvas(modifier = modifier) {
         drawIntoCanvas { canvas ->
             PatternAnnotationCanvasRenderer.render(
@@ -96,21 +104,25 @@ internal fun PatternAnnotationInputOverlay(
         modifier =
             modifier.pointerInput(activeTool, coordinateTransform, viewportScale, pressureEnabled) {
                 val simplificationTolerance = 1f / (minOf(size.width, size.height) * viewportScale).coerceAtLeast(1f)
-                awaitEachGesture {
-                    var gestureState = PatternAnnotationPointerGestureState()
-                    while (!gestureState.finished) {
-                        val event = awaitPointerEvent()
-                        gestureState =
-                            processAnnotationPointerEvent(
-                                event = event,
-                                state = gestureState,
-                                activeTool = activeTool,
-                                coordinateTransform = coordinateTransform,
-                                pressureEnabled = pressureEnabled,
-                                simplificationTolerance = simplificationTolerance,
-                                actions = actions,
-                            )
+                try {
+                    awaitEachGesture {
+                        var gestureState = PatternAnnotationPointerGestureState()
+                        while (!gestureState.finished) {
+                            val event = awaitPointerEvent()
+                            gestureState =
+                                processAnnotationPointerEvent(
+                                    event = event,
+                                    state = gestureState,
+                                    activeTool = activeTool,
+                                    coordinateTransform = coordinateTransform,
+                                    pressureEnabled = pressureEnabled,
+                                    simplificationTolerance = simplificationTolerance,
+                                    actions = actions,
+                                )
+                        }
                     }
+                } finally {
+                    actions.onCancelStroke()
                 }
             },
     ) {}
@@ -167,6 +179,7 @@ private fun processAnnotationPointerEvent(
     }
 }
 
+@Suppress("kotlin:S107") // Osoitinele tarvitsee aktiivisen työkalun ja sen paine- sekä koordinaattitilan.
 private fun beginAnnotationPointerGesture(
     event: PointerEvent,
     state: PatternAnnotationPointerGestureState,
@@ -219,7 +232,10 @@ private fun updateAnnotationPointerGesture(
 ): PatternAnnotationPointerGestureState {
     val change = event.changes.firstOrNull { it.id.value == state.activePointerId }
     if (change == null || change.changedToUpIgnoreConsumed() || !change.pressed) {
-        if (state.gestureTool != PatternAnnotationTool.ERASER) {
+        if (
+            state.gestureTool != PatternAnnotationTool.ERASER &&
+            state.gestureTool != PatternAnnotationTool.SELECT
+        ) {
             actions.onCommitStroke(simplificationTolerance)
         }
         change?.consume()
@@ -240,7 +256,7 @@ private fun PointerInputChange.toNormalizedPoint(
     pressureEnabled: Boolean,
 ): NormalizedPatternPoint? {
     val normalized = transform.screenToPage(PatternScreenPoint(position.x, position.y)) ?: return null
-    return normalized.copy(pressure = if (pressureEnabled) pressure.coerceIn(0f, 1f) else 1f)
+    return normalized.copy(pressure = if (pressureEnabled && pressure.isFinite()) pressure.coerceIn(0f, 1f) else 1f)
 }
 
 private fun PointerType.toPatternInputPointerType(): PatternInputPointerType =

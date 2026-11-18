@@ -1,30 +1,34 @@
 package com.finnvek.knittools.ui.screens.session
 
 import androidx.lifecycle.SavedStateHandle
+import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.domain.model.KnitSession
-import com.finnvek.knittools.pro.ProFeature
-import com.finnvek.knittools.pro.ProManager
 import com.finnvek.knittools.repository.CounterRepository
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
-import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import java.io.IOException
 import java.util.concurrent.TimeUnit
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -33,17 +37,16 @@ class SessionHistoryViewModelTest {
     private val projectId = 42L
 
     private lateinit var repository: CounterRepository
-    private lateinit var proManager: ProManager
-    private lateinit var fullHistoryFeature: MutableStateFlow<Boolean>
+    private lateinit var project: MutableStateFlow<CounterProject?>
 
     @Before
     fun setup() {
         Dispatchers.setMain(testDispatcher)
         repository = mockk()
-        proManager = mockk()
-        fullHistoryFeature = MutableStateFlow(false)
-        every { proManager.hasFeature(ProFeature.FULL_HISTORY) } answers { fullHistoryFeature.value }
-        every { proManager.hasFeatureFlow(ProFeature.FULL_HISTORY) } returns fullHistoryFeature
+        project = MutableStateFlow(CounterProject(id = projectId, name = "Project"))
+        // Naytto lukee projektin nimen otsikkokontekstiksi, koska Insights on uusi
+        // sisaankaynti eika pelkka "History" kerro kenen istuntoja katsotaan.
+        every { repository.observeProject(projectId) } returns project
     }
 
     @After
@@ -53,7 +56,7 @@ class SessionHistoryViewModelTest {
 
     private fun createViewModel(): SessionHistoryViewModel {
         val savedState = SavedStateHandle(mapOf("projectId" to projectId))
-        return SessionHistoryViewModel(savedState, repository, proManager)
+        return SessionHistoryViewModel(savedState, repository)
     }
 
     private fun sessionAt(hoursAgo: Long): KnitSession {
@@ -72,45 +75,15 @@ class SessionHistoryViewModelTest {
     }
 
     @Test
-    fun `pro user sees all sessions`() =
+    fun `all saved sessions remain visible`() =
         runTest {
             val sessions = listOf(sessionAt(1), sessionAt(48), sessionAt(100))
-            coEvery { repository.getProject(projectId) } returns mockk()
             every { repository.getSessionsForProject(projectId) } returns flowOf(sessions)
-            fullHistoryFeature.value = true
 
             val vm = createViewModel()
             val result = vm.sessions.first()
 
             assertEquals(3, result.size)
-        }
-
-    @Test
-    fun `free user sees only last 24h sessions`() =
-        runTest {
-            val recentSession = sessionAt(2)
-            val oldSession = sessionAt(48)
-            coEvery { repository.getProject(projectId) } returns mockk()
-            every { repository.getSessionsForProject(projectId) } returns flowOf(listOf(recentSession, oldSession))
-
-            val vm = createViewModel()
-            val result = vm.sessions.first()
-
-            assertEquals(1, result.size)
-            assertEquals(recentSession.startedAt, result.first().startedAt)
-        }
-
-    @Test
-    fun `free user with no recent sessions sees empty list`() =
-        runTest {
-            val oldSessions = listOf(sessionAt(48), sessionAt(72))
-            coEvery { repository.getProject(projectId) } returns mockk()
-            every { repository.getSessionsForProject(projectId) } returns flowOf(oldSessions)
-
-            val vm = createViewModel()
-            val result = vm.sessions.first()
-
-            assertTrue(result.isEmpty())
         }
 
     @Test
@@ -131,9 +104,7 @@ class SessionHistoryViewModelTest {
                 )
             val tieLowId = older.copy(id = 2L, startedAt = timestamp)
             val tieHighId = older.copy(id = 3L, startedAt = timestamp)
-            coEvery { repository.getProject(projectId) } returns mockk()
             every { repository.getSessionsForProject(projectId) } returns flowOf(listOf(older, tieLowId, tieHighId))
-            fullHistoryFeature.value = true
 
             val result = createViewModel().sessions.first()
 
@@ -143,7 +114,6 @@ class SessionHistoryViewModelTest {
     @Test
     fun `deleteSession delegates to repository`() =
         runTest {
-            coEvery { repository.getProject(projectId) } returns mockk()
             every { repository.getSessionsForProject(projectId) } returns flowOf(emptyList())
             coEvery { repository.deleteSession(7L) } returns Unit
 
@@ -153,61 +123,106 @@ class SessionHistoryViewModelTest {
         }
 
     @Test
-    fun `isPro reflects proManager state`() =
+    fun `delete failure preserves observed sessions and permits retry`() =
         runTest {
-            coEvery { repository.getProject(projectId) } returns mockk()
+            val saved = listOf(sessionAt(7))
+            every { repository.getSessionsForProject(projectId) } returns flowOf(saved)
+            coEvery { repository.deleteSession(7L) } throws IOException("synthetic write failure")
+            val vm = createViewModel()
+            backgroundScope.launch(testDispatcher) { vm.sessions.collect() }
+            val errors = mutableListOf<Unit>()
+            backgroundScope.launch(testDispatcher) { vm.deleteErrors.collect { errors.add(it) } }
+
+            vm.deleteSession(7L)
+            assertEquals(saved, vm.sessions.value)
+            assertEquals(1, errors.size)
+            coEvery { repository.deleteSession(7L) } returns Unit
+            vm.deleteSession(7L)
+            io.mockk.coVerify(exactly = 2) { repository.deleteSession(7L) }
+            assertEquals(1, errors.size)
+        }
+
+    @Test
+    fun `delete cancellation is not reported as a write failure`() =
+        runTest {
             every { repository.getSessionsForProject(projectId) } returns flowOf(emptyList())
-
+            coEvery { repository.deleteSession(7L) } throws CancellationException("cancelled")
             val vm = createViewModel()
-            val job = launch { vm.isPro.collect {} }
-            advanceUntilIdle()
+            val errors = mutableListOf<Unit>()
+            backgroundScope.launch(testDispatcher) { vm.deleteErrors.collect { errors.add(it) } }
 
-            assertFalse(vm.isPro.value)
-            fullHistoryFeature.value = true
-            advanceUntilIdle()
-            assertTrue(vm.isPro.value)
+            vm.deleteSession(7L)
 
-            job.cancel()
+            assertTrue(errors.isEmpty())
         }
-
-    @Test
-    fun `sessions update when pro purchase is restored`() =
-        runTest {
-            val recentSession = sessionAt(2)
-            val oldSession = sessionAt(48)
-            coEvery { repository.getProject(projectId) } returns mockk()
-            every { repository.getSessionsForProject(projectId) } returns
-                MutableStateFlow(listOf(recentSession, oldSession))
-
-            val vm = createViewModel()
-            val job = launch { vm.sessions.collect {} }
-            advanceUntilIdle()
-
-            assertEquals(listOf(recentSession.id), vm.sessions.value.map { it.id })
-            fullHistoryFeature.value = true
-            advanceUntilIdle()
-            assertEquals(listOf(recentSession.id, oldSession.id), vm.sessions.value.map { it.id })
-
-            job.cancel()
-        }
-
-    @Test
-    fun `isPro reflects proManager state through initial value`() {
-        coEvery { repository.getProject(projectId) } returns mockk()
-        every { repository.getSessionsForProject(projectId) } returns flowOf(emptyList())
-
-        fullHistoryFeature.value = true
-        assertTrue(createViewModel().isPro.value)
-    }
 
     @Test
     fun `missing project marks history for fallback`() =
         runTest {
-            coEvery { repository.getProject(projectId) } returns null
+            project.value = null
             every { repository.getSessionsForProject(projectId) } returns flowOf(emptyList())
 
             val vm = createViewModel()
 
             assertTrue(vm.projectMissing.value)
+        }
+
+    @Test
+    fun `deleting observed project marks history for fallback`() =
+        runTest {
+            every { repository.getSessionsForProject(projectId) } returns flowOf(emptyList())
+            val vm = createViewModel()
+
+            project.value = null
+
+            assertTrue(vm.projectMissing.value)
+        }
+
+    @Test
+    fun `project name and missing state share one subscription while history is empty`() =
+        runTest {
+            val updates = MutableSharedFlow<CounterProject?>()
+            var subscriptions = 0
+            every { repository.observeProject(projectId) } returns
+                flow {
+                    subscriptions++
+                    updates.collect { emit(it) }
+                }
+            every { repository.getSessionsForProject(projectId) } returns flowOf(emptyList())
+            val vm = createViewModel()
+            val names = backgroundScope.launch(testDispatcher) { vm.projectName.collect() }
+            backgroundScope.launch(testDispatcher) { vm.projectMissing.collect() }
+            backgroundScope.launch(testDispatcher) { vm.sessions.collect() }
+
+            assertEquals(1, subscriptions)
+            assertFalse(vm.projectMissing.value)
+            assertNull(vm.projectName.value)
+            assertTrue(vm.sessions.value.isEmpty())
+
+            updates.emit(CounterProject(id = projectId, name = "First"))
+            assertEquals("First", vm.projectName.value)
+            assertFalse(vm.projectMissing.value)
+            updates.emit(CounterProject(id = projectId, name = "Renamed"))
+            assertEquals("Renamed", vm.projectName.value)
+
+            names.cancel()
+            backgroundScope.launch(testDispatcher) { vm.projectName.collect() }
+            assertEquals(1, subscriptions)
+            updates.emit(null)
+            assertTrue(vm.projectMissing.value)
+            assertNull(vm.projectName.value)
+        }
+
+    @Test
+    fun `invalid project route is missing without repository observation`() =
+        runTest {
+            for (id in listOf(null, 0L, -1L)) {
+                val vm = SessionHistoryViewModel(SavedStateHandle(mapOf("projectId" to id)), repository)
+                assertTrue(vm.projectMissing.value)
+                assertNull(vm.projectName.value)
+                assertTrue(vm.sessions.value.isEmpty())
+            }
+            io.mockk.verify(exactly = 0) { repository.observeProject(any()) }
+            io.mockk.verify(exactly = 0) { repository.getSessionsForProject(any()) }
         }
 }

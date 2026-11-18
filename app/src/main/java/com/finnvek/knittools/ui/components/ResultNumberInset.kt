@@ -8,7 +8,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.unit.dp
+import com.finnvek.knittools.ui.theme.ComponentDimens
 
 @Composable
 fun ResultNumberInset(
@@ -21,7 +21,7 @@ fun ResultNumberInset(
                 .fillMaxWidth()
                 .clip(MaterialTheme.shapes.medium)
                 .background(MaterialTheme.colorScheme.surfaceContainerLowest.copy(alpha = 0.2f))
-                .padding(20.dp),
+                .padding(ComponentDimens.ResultInsetPadding),
     ) {
         content()
     }

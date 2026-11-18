@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="pattern_annotation_page_limit">Denne siden har for mange eller for komplekse markeringer til å vises trygt. Markeringene dine er bevart.</string>
     <string name="pattern_annotations_layers">Merknadslag</string>
     <string name="pattern_annotations_master">Oppskriftsnotater</string>
     <string name="pattern_annotations_project">Prosjektnotater</string>
     <string name="pattern_annotations_read_only">Skrivebeskyttet</string>
     <string name="pattern_annotations_count">%1$s (%2$d)</string>
-    <string name="pattern_annotation_tool_browse">Bla gjennom</string>
     <string name="pattern_annotation_tool_pen">Penn</string>
     <string name="pattern_annotation_tool_highlighter">Markeringstusj</string>
     <string name="pattern_annotation_tool_eraser">Viskelær</string>
@@ -73,4 +73,7 @@
     <string name="pattern_annotation_export_failed">PDF-eksporten mislyktes. Den opprinnelige PDF-en ble ikke endret.</string>
     <string name="pattern_annotation_export_default_name">oppskrift</string>
     <string name="pattern_annotation_export_filename">%1$s-med-merknader.pdf</string>
+    <string name="pattern_annotation_edit_text">Rediger tekst</string>
+    <string name="pattern_annotation_write_failed">Teksten kunne ikke lagres. Merknaden kan ha blitt endret. Lukk redigeringen og prøv igjen.</string>
+    <string name="pattern_annotation_command_failed">En endring av en merknad ble ikke lagret. Lukk meldingen, og prøv handlingen igjen med markeringsverktøyene.</string>
 </resources>

@@ -22,6 +22,7 @@ class HomeViewModel
         preferencesManager: PreferencesManager,
     ) : ViewModel() {
         val proState: StateFlow<ProState> = proManager.proState
+        val proAccessReady: StateFlow<Boolean> = proManager.initialStateReady
 
         val useImperial: StateFlow<Boolean> =
             preferencesManager.preferences

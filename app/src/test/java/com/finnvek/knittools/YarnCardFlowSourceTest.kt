@@ -19,6 +19,7 @@ class YarnCardFlowSourceTest {
         assertTrue(navGraph.contains("val yarnDeleteErrorId by libraryViewModel.yarnDeleteErrorId"))
         assertTrue(navGraph.contains("deleteErrorId = yarnDeleteErrorId"))
         assertTrue(screen.contains("LaunchedEffect(state.deleteErrorId)"))
+        assertTrue(screen.contains("state.deleteErrorId > lastHandledDeleteErrorId"))
         assertTrue(screen.contains("SnackbarHost(hostState = snackbarHostState)"))
     }
 

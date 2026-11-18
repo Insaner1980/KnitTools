@@ -9,7 +9,7 @@ export const ravelryFirebaseCallableSurface: MatcherPlugin = {
   filePatterns: ["app/src/main/java/**/*.kt", "app/src/release/java/**/*.kt"],
   match(content, filePath): CandidateMatch[] {
     if (isTestFile(filePath)) return [];
-    if (!/\b(?:Firebase|Ravelry|ravelry)\b/.test(content)) return [];
+    if (!/firebase|ravelry/i.test(content)) return [];
 
     return regexCandidates("ravelry-firebase-callable-surface", content, [
       {
@@ -22,7 +22,7 @@ export const ravelryFirebaseCallableSurface: MatcherPlugin = {
       },
       {
         regex:
-          /["']ravelry(?:SearchPatterns|ImportPatternById|ImportPatternByUrl|OAuthStart|OAuthCallback|AuthStatus|Disconnect|CurrentUser)["']/,
+          /["']ravelry(?:SearchPatterns|ImportPatternById|ImportPatternByUrl|StartAuth|CompleteAuth|AuthStatus|Disconnect|CurrentUser)["']/,
         label: "Ravelry backend callable name",
       },
       {

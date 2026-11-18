@@ -2,7 +2,7 @@ package com.finnvek.knittools.data.storage
 
 import android.content.Context
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
+import android.graphics.ImageDecoder
 import android.net.Uri
 import androidx.core.graphics.scale
 import androidx.core.net.toUri
@@ -30,10 +30,7 @@ class ProgressPhotoStorage
             sourceUri: Uri,
             targetFile: File,
         ): Boolean {
-            val original =
-                runCatching {
-                    context.contentResolver.openInputStream(sourceUri)?.use(BitmapFactory::decodeStream)
-                }.getOrNull() ?: return false
+            val original = decodeBoundedBitmap(context, sourceUri, MAX_DIMENSION) ?: return false
 
             val scaled = scaleDown(original, MAX_DIMENSION)
             return try {
@@ -63,8 +60,19 @@ class ProgressPhotoStorage
 
         private fun createUniquePhotoFile(dir: File): File = StorageFileNames.uniqueTimestampedFile(dir, "", ".jpg")
 
-        fun deletePhoto(photoUri: String) {
-            deleteFileUri(photoUri.toUri())
+        fun deletePhoto(
+            context: Context,
+            projectId: Long,
+            photoUri: String,
+        ) {
+            val uri = photoUri.toUri()
+            val file = AppFileStorage.resolveAppOwnedFile(context, uri) ?: return
+            val projectRoot = File(context.filesDir, "progress_photos/$projectId")
+            if (!file.isInside(projectRoot)) return
+            AppFileStorage.deleteFileOrDirectory(
+                file = file,
+                failureMessagePrefix = "Progress photo file delete failed",
+            )
         }
 
         fun deletePendingPhotoFile(filePath: String?) {
@@ -99,14 +107,6 @@ class ProgressPhotoStorage
             AppFileStorage.deleteIfAppOwned(context, sourceUri)
         }
 
-        private fun deleteFileUri(uri: Uri) {
-            val file = File(uri.path ?: return)
-            AppFileStorage.deleteFileOrDirectory(
-                file = file,
-                failureMessagePrefix = "Progress photo file delete failed",
-            )
-        }
-
         private fun scaleDown(
             bitmap: Bitmap,
             maxDimension: Int,
@@ -116,13 +116,50 @@ class ProgressPhotoStorage
             if (width <= maxDimension && height <= maxDimension) return bitmap
 
             val ratio = maxDimension.toFloat() / maxOf(width, height)
-            val newWidth = (width * ratio).toInt()
-            val newHeight = (height * ratio).toInt()
+            val newWidth = (width * ratio).toInt().coerceAtLeast(1)
+            val newHeight = (height * ratio).toInt().coerceAtLeast(1)
             return bitmap.scale(newWidth, newHeight)
         }
+
+        private fun decodeBoundedBitmap(
+            context: Context,
+            sourceUri: Uri,
+            maxDimension: Int,
+        ): Bitmap? =
+            runCatching {
+                ImageDecoder.decodeBitmap(
+                    ImageDecoder.createSource(context.contentResolver, sourceUri),
+                ) { decoder, info, _ ->
+                    decoder.allocator = ImageDecoder.ALLOCATOR_SOFTWARE
+                    decoder.setTargetSampleSize(
+                        calculateBitmapInSampleSize(info.size.width, info.size.height, maxDimension),
+                    )
+                }
+            }.getOrNull()
 
         private companion object {
             const val MAX_DIMENSION = 1920
             const val JPEG_QUALITY = 80
         }
+
+        private fun File.isInside(root: File): Boolean {
+            val canonicalFile = canonicalFile
+            val canonicalRoot = root.canonicalFile
+            return canonicalFile == canonicalRoot ||
+                canonicalFile.path.startsWith(canonicalRoot.path + File.separator)
+        }
     }
+
+internal fun calculateBitmapInSampleSize(
+    width: Int,
+    height: Int,
+    maxDimension: Int,
+): Int {
+    val safeMaxDimension = maxDimension.coerceAtLeast(1)
+    val longestEdge = maxOf(width, height).coerceAtLeast(1)
+    var sampleSize = 1
+    while (longestEdge / sampleSize > safeMaxDimension && sampleSize <= Int.MAX_VALUE / 2) {
+        sampleSize *= 2
+    }
+    return sampleSize
+}

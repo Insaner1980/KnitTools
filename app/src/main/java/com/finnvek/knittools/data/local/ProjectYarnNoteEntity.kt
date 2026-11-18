@@ -6,6 +6,7 @@ import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
 
+// CPD-OFF: Room-viiteavainmaaritys on tarkoituksella eksplisiittinen.
 @Entity(
     tableName = "project_yarn_notes",
     foreignKeys = [
@@ -19,6 +20,7 @@ import androidx.room.PrimaryKey
     indices = [Index("projectId")],
 )
 data class ProjectYarnNoteEntity(
+    // CPD-ON
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
     val projectId: Long,

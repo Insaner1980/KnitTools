@@ -6,7 +6,15 @@ param(
     [string[]]$AdbArgs
 )
 
-& "C:\Dev\Android-check\tools\InstallDebugToDevice.ps1" `
+$checkerRoot = if (Test-Path -LiteralPath Env:ANDROID_CHECK_ROOT) { $env:ANDROID_CHECK_ROOT } else { "C:\Dev\Android-check" }
+if ([string]::IsNullOrWhiteSpace($checkerRoot)) {
+    throw "ANDROID_CHECK_ROOT must point to an Android-check directory."
+}
+$checkerScript = Join-Path $checkerRoot "tools\InstallDebugToDevice.ps1"
+if (-not (Test-Path -LiteralPath $checkerScript -PathType Leaf)) {
+    throw "Android-check script not found: $checkerScript (ANDROID_CHECK_ROOT)."
+}
+& $checkerScript `
     -ProjectRoot (Resolve-Path "$PSScriptRoot\..") `
     -ResolveOnly:$ResolveOnly `
     -NoBuild:$NoBuild `

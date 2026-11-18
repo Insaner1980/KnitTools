@@ -27,7 +27,27 @@ class AppStartupSourceTest {
     }
 
     @Test
-    fun `app startup schedules yarn photo orphan cleanup without blocking main thread`() {
+    fun `first composition waits until stored language application completes`() {
+        val preferencesManager = ProjectSourceFiles.read(PREFERENCES_MANAGER)
+        val mainActivity = ProjectSourceFiles.read(MAIN_ACTIVITY)
+
+        assertTrue(
+            preferencesManager.contains(
+                "val storedAppLanguageApplied: StateFlow<Boolean> = " +
+                    "_storedAppLanguageApplied.asStateFlow()",
+            ),
+        )
+        assertTrue(preferencesManager.contains("_storedAppLanguageApplied.value = true"))
+        assertTrue(
+            mainActivity.contains(
+                "preferencesManager.storedAppLanguageApplied.collectAsStateWithLifecycle()",
+            ),
+        )
+        assertTrue(mainActivity.contains("if (!storedAppLanguageApplied) return"))
+    }
+
+    @Test
+    fun `app startup recovers interrupted restores before yarn photo cleanup`() {
         val app = ProjectSourceFiles.read(APP)
 
         assertTrue(app.contains("import com.finnvek.knittools.repository.YarnCardRepository"))
@@ -35,10 +55,12 @@ class AppStartupSourceTest {
         assertTrue(
             app.contains(
                 "applicationScope.launch {\n" +
-                    "            yarnCardRepository.get().pruneUnreferencedPhotoFiles()\n" +
-                    "        }",
+                    "            try {\n" +
+                    "                backupRepository.get().recoverInterruptedOperations()\n" +
+                    "                yarnCardRepository.get().pruneUnreferencedPhotoFiles()",
             ),
         )
+        assertTrue(app.contains("Lankakuvien best-effort-siivous ei saa kaataa sovellusta."))
     }
 
     @Test
@@ -50,10 +72,11 @@ class AppStartupSourceTest {
         assertTrue(
             app.contains(
                 "applicationScope.launch(ioDispatcher) {\n" +
-                    "            patternDocumentStorage.get().pruneStaleCaptureImages(this@App)\n" +
-                    "        }",
+                    "            try {\n" +
+                    "                patternDocumentStorage.get().pruneStaleCaptureImages(this@App)",
             ),
         )
+        assertTrue(app.contains("Kaavakuvien best-effort-siivous ei saa kaataa sovellusta."))
     }
 
     @Test
@@ -69,9 +92,10 @@ class AppStartupSourceTest {
             ),
         )
         assertTrue(proManager.contains("suspend fun hasFeatureAfterInitialLoad(feature: ProFeature): Boolean"))
-        assertTrue(proManager.contains("billingManager.purchaseStateReady.first { it }"))
-        assertTrue(proManager.contains("billingManager.isProPurchased.value || hasFeature(feature)"))
-        assertTrue(widget.contains("hasFeatureAfterInitialLoad(ProFeature.WIDGET)"))
+        assertTrue(proManager.contains("purchaseStateReady(billingManager.purchaseStateReady).first { it }"))
+        assertTrue(proManager.contains("currentPurchased(billingManager.isProPurchased.value)"))
+        assertTrue(proManager.contains("ProActionAccess.Locked, ProActionAccess.Unknown -> false"))
+        assertTrue(widget.contains("featureAccessAfterInitialLoad(ProFeature.WIDGET)"))
         assertTrue(actions.contains("hasFeatureAfterInitialLoad(ProFeature.WIDGET)"))
         assertFalse(widget.contains("hasFeature(ProFeature.WIDGET)"))
         assertFalse(actions.contains("hasFeature(ProFeature.WIDGET)"))
@@ -90,23 +114,27 @@ class AppStartupSourceTest {
     }
 
     @Test
-    fun `widget pro gate changes refresh placed widgets after initial pro state`() {
+    fun `widget access changes refresh placed widgets including unresolved ownership`() {
         val app = ProjectSourceFiles.read(APP)
         val widgetState = ProjectSourceFiles.read(COUNTER_WIDGET_STATE)
 
         assertTrue(app.contains("import com.finnvek.knittools.pro.ProFeature"))
         assertTrue(app.contains("import com.finnvek.knittools.widget.CounterWidgetState"))
-        assertTrue(app.contains("manager.initialStateReady.first { it }"))
-        assertTrue(app.contains(".hasFeatureFlow(ProFeature.WIDGET)"))
-        assertTrue(app.contains(".collect { CounterWidgetState.refreshAll(this@App) }"))
+        assertFalse(app.contains("manager.initialStateReady.first { it }"))
+        assertTrue(app.contains(".featureAccessFlow(ProFeature.WIDGET)"))
+        assertTrue(app.contains("CounterWidgetState.refreshAll(this@App)"))
+        assertTrue(app.contains("catch (e: CancellationException)"))
         assertTrue(widgetState.contains("suspend fun refreshAll(context: Context)"))
         assertTrue(widgetState.contains("widget.update(context, glanceId)"))
     }
 
     private companion object {
         const val APP = "app/src/main/java/com/finnvek/knittools/App.kt"
+        const val MAIN_ACTIVITY = "app/src/main/java/com/finnvek/knittools/MainActivity.kt"
         const val BILLING_MANAGER = "app/src/main/java/com/finnvek/knittools/billing/BillingManager.kt"
         const val PRO_MANAGER = "app/src/main/java/com/finnvek/knittools/pro/ProManager.kt"
+        const val PREFERENCES_MANAGER =
+            "app/src/main/java/com/finnvek/knittools/data/datastore/PreferencesManager.kt"
         const val IN_APP_UPDATE_MANAGER = "app/src/main/java/com/finnvek/knittools/pro/InAppUpdateManager.kt"
         const val PREFERENCES_DATA_STORE_SAFETY =
             "app/src/main/java/com/finnvek/knittools/data/datastore/PreferencesDataStoreSafety.kt"

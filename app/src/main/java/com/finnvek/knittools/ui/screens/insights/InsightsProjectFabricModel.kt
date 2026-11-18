@@ -1,0 +1,97 @@
+package com.finnvek.knittools.ui.screens.insights
+
+import com.finnvek.knittools.domain.model.KnitSession
+import java.time.DayOfWeek
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
+import java.time.temporal.TemporalAdjusters
+
+internal const val PROJECT_FABRIC_WEEK_COUNT = 26
+
+internal data class InsightsProjectFabricDay(
+    val date: LocalDate,
+    val projectIds: List<Long>,
+)
+
+internal data class InsightsProjectFabricModel(
+    val startDate: LocalDate,
+    val endDate: LocalDate,
+    val firstDayOfWeek: DayOfWeek,
+    val days: List<InsightsProjectFabricDay>,
+) {
+    val activeDayCount: Int
+        get() = days.count { it.projectIds.isNotEmpty() }
+}
+
+/** Ruudukon enimmäisikkunan ensimmäinen päivä: [PROJECT_FABRIC_WEEK_COUNT] viikkoa tähän viikkoon asti. */
+internal fun projectFabricWindowStart(
+    today: LocalDate,
+    firstDayOfWeek: DayOfWeek,
+): LocalDate =
+    today
+        .with(TemporalAdjusters.previousOrSame(firstDayOfWeek))
+        .minusWeeks((PROJECT_FABRIC_WEEK_COUNT - 1).toLong())
+
+internal fun buildInsightsProjectFabric(
+    sessions: List<KnitSession>,
+    today: LocalDate,
+    zone: ZoneId,
+    firstDayOfWeek: DayOfWeek,
+    projectOrder: List<Long>,
+): InsightsProjectFabricModel? {
+    val startDate = projectFabricWindowStart(today, firstDayOfWeek)
+    val buckets =
+        SessionPaceAccumulator(
+            startDate.atStartOfDay(zone).toInstant().toEpochMilli(),
+            PaceGroupingInterval.DAY,
+            zone,
+            firstDayOfWeek,
+        )
+    sessions.forEach(buckets::add)
+    val firstSessionDate =
+        sessions.minOfOrNull { session ->
+            val sessionZone = session.analyticsZoneOr(zone)
+            Instant.ofEpochMilli(session.startedAt).atZone(sessionZone).toLocalDate()
+        }
+    return buildInsightsProjectFabric(buckets.values, today, firstDayOfWeek, projectOrder, firstSessionDate)
+}
+
+internal fun buildInsightsProjectFabric(
+    bucketsByProject: Map<Long, Map<LocalDate, PaceBucketMetric>>,
+    today: LocalDate,
+    firstDayOfWeek: DayOfWeek,
+    projectOrder: List<Long>,
+    firstSessionDate: LocalDate?,
+): InsightsProjectFabricModel? {
+    val windowStart = projectFabricWindowStart(today, firstDayOfWeek)
+    // Ruudukko alkaa ensimmäisen istunnon viikosta, kun historia on ikkunaa lyhyempi: kiinteä
+    // puolen vuoden ikkuna näytti otsikon aikaväliä pidemmän jakson ja kuukausia tyhjiä soluja.
+    val firstSessionWeek = firstSessionDate?.with(TemporalAdjusters.previousOrSame(firstDayOfWeek))
+    val startDate = maxOf(windowStart, firstSessionWeek ?: windowStart)
+    val projectRank = projectOrder.withIndex().associate { (index, projectId) -> projectId to index }
+    val orderedProjectIds =
+        bucketsByProject.keys.sortedWith(
+            compareBy({ projectRank[it] ?: projectOrder.size }, { it }),
+        )
+    val days =
+        generateSequence(startDate) { it.plusDays(1) }
+            .takeWhile { !it.isAfter(today) }
+            .map { date ->
+                InsightsProjectFabricDay(
+                    date = date,
+                    projectIds =
+                        orderedProjectIds.filter { projectId ->
+                            (bucketsByProject[projectId]?.get(date)?.totalSeconds ?: 0L) > 0L
+                        },
+                )
+            }.toList()
+
+    if (days.none { it.projectIds.isNotEmpty() }) return null
+    return InsightsProjectFabricModel(
+        startDate = startDate,
+        endDate = today,
+        firstDayOfWeek = firstDayOfWeek,
+        days = days,
+    )
+}

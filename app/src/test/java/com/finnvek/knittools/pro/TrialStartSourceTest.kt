@@ -1,0 +1,129 @@
+package com.finnvek.knittools.pro
+
+import com.finnvek.knittools.ProjectSourceFiles
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertThrows
+import org.junit.Assert.assertTrue
+import org.junit.Test
+
+class TrialStartSourceTest {
+    @Test
+    fun `startup only refreshes persisted trial state`() {
+        val source = ProjectSourceFiles.read(TRIAL_MANAGER)
+        val initializeBody = source.substringAfter("suspend fun initialize()").substringBefore("suspend fun startTrial")
+
+        assertTrue(initializeBody.contains("refreshTrialState()"))
+        assertFalse(initializeBody.contains("KEY_TRIAL_START"))
+    }
+
+    @Test
+    fun `trial start uses one atomic datastore edit`() {
+        val source = ProjectSourceFiles.read(TRIAL_MANAGER)
+        val startBody =
+            source
+                .substringAfter("suspend fun startTrial")
+                .substringBefore("suspend fun claimTrialEndNotice")
+        val cleanStartBody = source.substringAfter("private fun isCleanUnstartedState")
+
+        assertEqualsOne(needle = "editPreferencesSafely", source = startBody)
+        assertSnapshotInsideEdit(startBody)
+        assertTrue(startBody.contains("isCleanUnstartedState("))
+        assertTrue(cleanStartBody.contains("startTimestamp == 0L"))
+        assertTrue(cleanStartBody.contains("storedTiming == StoredTrialTiming.Legacy"))
+        assertTrue(startBody.contains("preferences[KEY_TRIAL_START] = now"))
+        assertTrue(startBody.contains("preferences.persistTrialEvaluation("))
+        assertTrue(startBody.contains("classifyExistingTrial"))
+    }
+
+    @Test
+    fun `trial start persistence includes every timing anchor in the same datastore edit`() {
+        val source = ProjectSourceFiles.read(TRIAL_MANAGER)
+        val persistenceBody =
+            source
+                .substringAfter("private fun MutablePreferences.persistTrialEvaluation")
+                .substringBefore("private suspend fun startRefreshLoop")
+
+        assertTrue(persistenceBody.contains("KEY_LAST_KNOWN_TIMESTAMP"))
+        assertTrue(persistenceBody.contains("KEY_CLOCK_TAMPERED"))
+        assertTrue(persistenceBody.contains("KEY_TRIAL_ELAPSED_DURATION"))
+        assertTrue(persistenceBody.contains("KEY_TRIAL_ANCHOR_WALL_CLOCK"))
+        assertTrue(persistenceBody.contains("KEY_TRIAL_ANCHOR_ELAPSED_REALTIME"))
+        assertTrue(persistenceBody.contains("KEY_TRIAL_ANCHOR_BOOT_COUNT"))
+    }
+
+    @Test
+    fun `trial progress updates derive and persist anchors inside one atomic edit`() {
+        assertAtomicProgress(refreshTrialStateBody(ProjectSourceFiles.read(TRIAL_MANAGER)))
+    }
+
+    @Test
+    fun `trial progress fails closed in memory when datastore write fails`() {
+        val refreshBody = refreshTrialStateBody(ProjectSourceFiles.read(TRIAL_MANAGER))
+
+        assertTrue(refreshBody.contains("if (didWrite)"))
+        assertTrue(refreshBody.contains("refreshedState?.let { _trialState.value = it }"))
+        assertTrue(refreshBody.contains("else {"))
+        assertTrue(refreshBody.contains("_trialState.value = TrialState()"))
+    }
+
+    @Test
+    fun `refresh boundary fails clearly when either delimiter is missing`() {
+        val source = ProjectSourceFiles.read(TRIAL_MANAGER)
+        for (delimiter in listOf(REFRESH_START, REFRESH_END)) {
+            val failure =
+                assertThrows(AssertionError::class.java) {
+                    refreshTrialStateBody(source.replace(delimiter, "missingDelimiter"))
+                }
+            assertTrue(failure.message.orEmpty().contains(delimiter))
+        }
+    }
+
+    @Test
+    fun `later functions cannot satisfy refresh atomic progress assertions`() {
+        val source = ProjectSourceFiles.read(TRIAL_MANAGER)
+        val body = refreshTrialStateBody(source)
+        val moved = source.replace(body, "\n        }\n\n") + "\nfun later() { $body }"
+
+        assertThrows(AssertionError::class.java) {
+            assertAtomicProgress(refreshTrialStateBody(moved))
+        }
+    }
+
+    private fun refreshTrialStateBody(source: String): String {
+        val start = source.indexOf(REFRESH_START)
+        assertTrue("Missing refreshTrialState start delimiter: $REFRESH_START", start >= 0)
+        val bodyStart = start + REFRESH_START.length
+        val end = source.indexOf(REFRESH_END, bodyStart)
+        assertTrue("Missing refreshTrialState end delimiter: $REFRESH_END", end >= bodyStart)
+        return source.substring(bodyStart, end)
+    }
+
+    private fun assertAtomicProgress(body: String) {
+        assertEqualsOne(needle = "editPreferencesSafely", source = body)
+        assertSnapshotInsideEdit(body)
+        assertFalse(body.contains("safePreferencesData.first()"))
+        assertTrue(body.contains("preferences.evaluateAndPersistTrialState(now)"))
+    }
+
+    private fun assertSnapshotInsideEdit(body: String) {
+        val edit = body.indexOf("{ preferences ->")
+        val snapshot = body.indexOf("sessionTimeSource.snapshot()")
+        assertTrue("Missing preferences edit", edit >= 0)
+        assertTrue("Missing clock snapshot", snapshot >= 0)
+        assertTrue(snapshot > edit)
+    }
+
+    private fun assertEqualsOne(
+        needle: String,
+        source: String,
+    ) {
+        assertTrue(source.indexOf(needle) >= 0)
+        assertTrue(source.indexOf(needle) == source.lastIndexOf(needle))
+    }
+
+    private companion object {
+        const val REFRESH_START = "private suspend fun refreshTrialStateLocked() {"
+        const val REFRESH_END = "private fun MutablePreferences.evaluateAndPersistTrialState"
+        const val TRIAL_MANAGER = "app/src/main/java/com/finnvek/knittools/pro/TrialManager.kt"
+    }
+}

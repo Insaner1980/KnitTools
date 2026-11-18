@@ -1,5 +1,7 @@
 # Firebase Cloud Functions setup for the Ravelry integration
 
+Historical and superseded for Android: on 2026-10-09 the app's Ravelry API/OAuth integration and Firebase Auth/Functions dependencies were removed. Android now uses the Ravelry website in its in-app browser and app-owned PDF imports. The retained backend code is not called by Android. This older setup guide does not authorize restoring that integration; see [PROJECT.md](PROJECT.md) and [security decisions](config/security-decisions.md).
+
 Current date: 2026-06-10
 
 This file is for the human setup work. Codex should not need your Ravelry secrets in the repository or in prompts. Codex can write the app and backend code, but you should create the Firebase project settings, enable the required Firebase products, set the secrets, and copy exact callback URLs into Ravelry.

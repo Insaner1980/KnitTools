@@ -7,6 +7,7 @@ import com.finnvek.knittools.data.local.CounterProjectEntity
 import com.finnvek.knittools.data.local.ImmediateDatabaseTransactionRunner
 import com.finnvek.knittools.data.local.PatternAnnotationDao
 import com.finnvek.knittools.data.local.PatternAnnotationEntity
+import com.finnvek.knittools.data.local.PatternAnnotationExportStats
 import com.finnvek.knittools.data.local.SavedPatternDao
 import com.finnvek.knittools.data.local.SavedPatternEntity
 import com.finnvek.knittools.data.local.YarnCardDao
@@ -17,6 +18,7 @@ import com.finnvek.knittools.domain.model.FreehandPayload
 import com.finnvek.knittools.domain.model.NormalizedPatternPoint
 import com.finnvek.knittools.domain.model.PatternAnnotation
 import com.finnvek.knittools.domain.model.PatternAnnotationKind
+import com.finnvek.knittools.domain.model.PatternAvailability
 import com.finnvek.knittools.domain.model.SavedPattern
 import com.finnvek.knittools.domain.model.SavedPatternSource
 import com.finnvek.knittools.domain.model.YarnCard
@@ -34,6 +36,8 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
+import java.io.File
+import java.nio.file.Files
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class SavedPatternRepositoryDomainApiTest {
@@ -109,6 +113,48 @@ class SavedPatternRepositoryDomainApiTest {
         }
 
     @Test
+    fun `saved pattern repository preserves all availability states`() =
+        runTest {
+            val dao =
+                FakeSavedPatternDao(
+                    savedPatterns =
+                        PatternAvailability.entries.mapIndexed { index, availability ->
+                            SavedPatternEntity(
+                                id = index.toLong() + 1L,
+                                source = SavedPatternSource.Ravelry.persistedValue,
+                                name = availability.persistedValue,
+                                designerName = "Designer",
+                                availability = availability.persistedValue,
+                            )
+                        },
+                )
+            val repository =
+                SavedPatternRepository(
+                    dao,
+                    context,
+                    RepositoryDomainFakeCounterProjectDao(),
+                    ImmediateDatabaseTransactionRunner,
+                    UnconfinedTestDispatcher(testScheduler),
+                )
+
+            assertEquals(
+                PatternAvailability.entries.toList(),
+                repository.getAll().first().map { it.availability },
+            )
+            PatternAvailability.entries.forEach { availability ->
+                repository.save(
+                    SavedPattern(
+                        source = SavedPatternSource.Ravelry,
+                        name = availability.persistedValue,
+                        designerName = "Designer",
+                        availability = availability,
+                    ),
+                )
+                assertEquals(availability.persistedValue, dao.lastInserted?.availability)
+            }
+        }
+
+    @Test
     fun `saved pattern repository creates imported pattern as domain id without exposing entity`() =
         runTest {
             val dao = FakeSavedPatternDao()
@@ -121,12 +167,25 @@ class SavedPatternRepositoryDomainApiTest {
                     UnconfinedTestDispatcher(testScheduler),
                 )
 
-            val importedId = repository.saveImportedPatternIfMissing("content://pattern", "Local pattern")
-            val ignoredId = repository.saveImportedPatternIfMissing("https://example.com/pattern", "Remote pattern")
+            val filesDir = Files.createTempDirectory("knittools-import").toFile()
+            val pdf = File(filesDir, "pattern.pdf")
+            try {
+                pdf.writeText("%PDF-1.7")
+                every { context.filesDir } returns filesDir
+                val uri = pdf.toPath().toUri().toString()
+                withParsedFileUrisForDomainApi(uri to pdf.absolutePath) {
+                    val importedId = repository.saveImportedPatternIfMissing(uri, "Local pattern")
+                    val ignoredId =
+                        repository.saveImportedPatternIfMissing("https://example.com/pattern", "Remote pattern")
 
-            assertEquals(99L, importedId)
-            assertNull(ignoredId)
-            assertEquals("Imported", dao.lastInserted?.designerName)
+                    assertEquals(99L, importedId)
+                    assertNull(ignoredId)
+                    assertEquals("Imported", dao.lastInserted?.designerName)
+                }
+            } finally {
+                pdf.delete()
+                filesDir.delete()
+            }
         }
 
     @Test
@@ -168,98 +227,9 @@ class SavedPatternRepositoryDomainApiTest {
         }
 
     @Test
-    fun `saved pattern repository reuses existing ravelry pattern`() =
-        runTest {
-            val dao =
-                FakeSavedPatternDao(
-                    savedPatterns =
-                        listOf(
-                            SavedPatternEntity(
-                                id = 7L,
-                                source = SavedPatternSource.Ravelry.persistedValue,
-                                ravelryPatternId = 42,
-                                name = "Old name",
-                                designerName = "Designer",
-                                canonicalUrl = "https://example.com/patterns/42",
-                            ),
-                        ),
-                )
-            val repository =
-                SavedPatternRepository(
-                    dao,
-                    context,
-                    RepositoryDomainFakeCounterProjectDao(),
-                    ImmediateDatabaseTransactionRunner,
-                    UnconfinedTestDispatcher(testScheduler),
-                )
-
-            val savedId =
-                repository.saveRavelryPatternIfMissing(
-                    SavedPattern(
-                        source = SavedPatternSource.Ravelry,
-                        ravelryPatternId = 42,
-                        name = "New name",
-                        designerName = "Designer",
-                        canonicalUrl = "https://example.com/patterns/42",
-                    ),
-                )
-
-            assertEquals(7L, savedId)
-            assertEquals(0, dao.insertCount)
-        }
-
-    @Test
-    fun `saved pattern repository reuses existing ravelry pattern by normalized original url`() =
-        runTest {
-            val dao =
-                FakeSavedPatternDao(
-                    savedPatterns =
-                        listOf(
-                            SavedPatternEntity(
-                                id = 7L,
-                                source = SavedPatternSource.Other.persistedValue,
-                                ravelryPatternId = null,
-                                name = "Old name",
-                                designerName = "Designer",
-                                originalUrl = "https://carts.ravelry.com/patterns/library/delight-cardigan/",
-                                canonicalUrl = "",
-                            ),
-                        ),
-                )
-            val repository =
-                SavedPatternRepository(
-                    dao,
-                    context,
-                    RepositoryDomainFakeCounterProjectDao(),
-                    ImmediateDatabaseTransactionRunner,
-                    UnconfinedTestDispatcher(testScheduler),
-                )
-
-            val savedId =
-                repository.saveRavelryPatternIfMissing(
-                    SavedPattern(
-                        source = SavedPatternSource.Ravelry,
-                        ravelryPatternId = 99,
-                        name = "Delight Cardigan",
-                        designerName = "Designer",
-                        originalUrl =
-                            "https://www.ravelry.com/patterns/library/delight-cardigan?utm_source=share#notes",
-                        canonicalUrl = "https://www.ravelry.com/patterns/library/delight-cardigan",
-                    ),
-                )
-
-            assertEquals(7L, savedId)
-            assertEquals(0, dao.insertCount)
-        }
-
-    @Test
-    fun `saved pattern repository prunes missing app owned pattern on viewer load`() =
+    fun `saved pattern observation preserves metadata for an unavailable local PDF`() =
         runTest {
             val missingUri = "file:///data/data/com.finnvek.knittools/files/pattern_pdfs/1/missing.pdf"
-            val filesDir =
-                java.nio.file.Files
-                    .createTempDirectory("knittools-files")
-                    .toFile()
             val dao =
                 FakeSavedPatternDao(
                     savedPatterns =
@@ -276,22 +246,20 @@ class SavedPatternRepositoryDomainApiTest {
                             ),
                         ),
                 )
-            every { context.filesDir } returns filesDir
-            withParsedFileUri(missingUri, java.io.File(filesDir, "pattern_pdfs/1/missing.pdf").absolutePath) {
-                val repository =
-                    SavedPatternRepository(
-                        dao,
-                        context,
-                        RepositoryDomainFakeCounterProjectDao(),
-                        ImmediateDatabaseTransactionRunner,
-                        UnconfinedTestDispatcher(testScheduler),
-                    )
+            val repository =
+                SavedPatternRepository(
+                    dao,
+                    context,
+                    RepositoryDomainFakeCounterProjectDao(),
+                    ImmediateDatabaseTransactionRunner,
+                    UnconfinedTestDispatcher(testScheduler),
+                )
 
-                val pattern = repository.getByIdIfAvailable(7L)
+            val pattern = repository.observeById(7L).first()
 
-                assertNull(pattern)
-                assertEquals(listOf(7L), dao.deletedIds)
-            }
+            assertEquals("Missing", pattern?.name)
+            assertEquals(missingUri, pattern?.localPdfUri)
+            assertEquals(emptyList<Long>(), dao.deletedIds)
         }
 
     @Test
@@ -465,24 +433,23 @@ internal class FakeSavedPatternDao(
 
     override fun getAll(): Flow<List<SavedPatternEntity>> = flowOf(savedPatterns)
 
-    override suspend fun getById(id: Long): SavedPatternEntity? = savedPatterns.firstOrNull { it.id == id }
+    override fun observeById(id: Long): Flow<SavedPatternEntity?> = flowOf(savedPatterns.firstOrNull { it.id == id })
 
-    override suspend fun getByRavelryPatternId(ravelryPatternId: Int): SavedPatternEntity? =
-        savedPatterns.firstOrNull { it.ravelryPatternId == ravelryPatternId }
+    override suspend fun getById(id: Long): SavedPatternEntity? = savedPatterns.firstOrNull { it.id == id }
 
     override suspend fun getByCanonicalUrl(canonicalUrl: String): SavedPatternEntity? =
         savedPatterns.firstOrNull { it.canonicalUrl == canonicalUrl }
 
-    override suspend fun getByOriginalUrl(originalUrl: String): SavedPatternEntity? =
-        savedPatterns.firstOrNull { it.originalUrl == originalUrl }
+    override suspend fun getByCanonicalUrlExcludingId(
+        canonicalUrl: String,
+        excludedId: Long,
+    ): SavedPatternEntity? = savedPatterns.firstOrNull { it.canonicalUrl == canonicalUrl && it.id != excludedId }
 
     override suspend fun getByLocalPdfUri(localPdfUri: String): SavedPatternEntity? =
         savedPatterns.firstOrNull { it.localPdfUri == localPdfUri }
 
-    override suspend fun getByTitleAndDesignerName(
-        name: String,
-        designerName: String,
-    ): SavedPatternEntity? = savedPatterns.firstOrNull { it.name == name && it.designerName == designerName }
+    override suspend fun getReferencedPdfUris(): List<String> =
+        savedPatterns.filterNot { it.id in deletedIds }.mapNotNull { it.localPdfUri }.distinct()
 
     override suspend fun getAllOnce(): List<SavedPatternEntity> = savedPatterns
 
@@ -501,6 +468,8 @@ internal class FakeSavedPatternDao(
         lastInserted = pattern
         return 99L
     }
+
+    override suspend fun update(pattern: SavedPatternEntity) = Unit
 
     override suspend fun deleteById(id: Long) {
         deletedIds = listOf(id)
@@ -596,40 +565,93 @@ internal class RepositoryDomainFakeCounterProjectDao(
 }
 
 internal class FakePatternAnnotationDao(
-    private val patternAnnotations: List<PatternAnnotationEntity> = emptyList(),
-) : PatternAnnotationDao {
-    var lastInserted: PatternAnnotationEntity? = null
+    patternAnnotations: List<PatternAnnotationEntity> = emptyList(),
+) : PatternAnnotationDao() {
+    var layerIsActive = true
 
-    override fun observePage(
+    override suspend fun getTextEditLayer(
+        layerId: Long,
+    ): com.finnvek.knittools.data.local.PatternAnnotationLayerEntity =
+        com.finnvek.knittools.data.local.PatternAnnotationLayerEntity(
+            id = layerId,
+            projectId = 7L,
+            savedPatternId = null,
+            documentKey = "project-document",
+            isActive = layerIsActive,
+            createdAt = 1L,
+            updatedAt = 1L,
+        )
+
+    private val patternAnnotations = patternAnnotations.toMutableList()
+    var lastInserted: PatternAnnotationEntity? = null
+    var lastExportQueryLimit: Int? = null
+
+    override fun observePageChanges(
         layerId: Long,
         page: Int,
-    ): Flow<List<PatternAnnotationEntity>> =
-        flowOf(patternAnnotations.filter { it.layerId == layerId && it.page == page })
+    ): Flow<Boolean> = flowOf(patternAnnotations.any { it.layerId == layerId && it.page == page })
 
-    override suspend fun getForLayers(layerIds: List<Long>): List<PatternAnnotationEntity> =
-        patternAnnotations.filter { it.layerId in layerIds }
+    override suspend fun getPageRows(
+        layerId: Long,
+        page: Int,
+    ): List<PatternAnnotationEntity> = patternAnnotations.filter { it.layerId == layerId && it.page == page }.take(257)
 
-    override suspend fun insert(annotation: PatternAnnotationEntity): Long {
+    override suspend fun getPageStats(
+        layerId: Long,
+        page: Int,
+    ): PatternAnnotationExportStats {
+        val rows = getPageRows(layerId, page)
+        return PatternAnnotationExportStats(
+            rows.size.toLong(),
+            rows.sumOf {
+                it.payloadJson
+                    .encodeToByteArray()
+                    .size
+                    .toLong()
+            },
+        )
+    }
+
+    override suspend fun getForLayersLimited(
+        layerIds: List<Long>,
+        limit: Int,
+    ): List<PatternAnnotationEntity> {
+        lastExportQueryLimit = limit
+        return patternAnnotations.filter { it.layerId in layerIds }.take(limit)
+    }
+
+    override suspend fun getExportStats(layerIds: List<Long>): PatternAnnotationExportStats {
+        val annotations = patternAnnotations.filter { it.layerId in layerIds }
+        return PatternAnnotationExportStats(
+            annotationCount = annotations.size.toLong(),
+            payloadBytes =
+                annotations.sumOf {
+                    it.payloadJson
+                        .encodeToByteArray()
+                        .size
+                        .toLong()
+                },
+        )
+    }
+
+    override suspend fun insertUnchecked(annotation: PatternAnnotationEntity): Long {
         lastInserted = annotation
+        patternAnnotations += annotation.copy(id = 77L)
         return 77L
     }
 
-    override suspend fun restoreBatch(annotations: List<PatternAnnotationEntity>) = Unit
+    override suspend fun restoreUnchecked(annotations: List<PatternAnnotationEntity>) = Unit
 
-    override suspend fun update(annotation: PatternAnnotationEntity) = Unit
+    override suspend fun updateUnchecked(annotation: PatternAnnotationEntity) = Unit
 
-    override suspend fun deleteForPage(
+    override suspend fun deleteForPageUnchecked(
         layerId: Long,
         page: Int,
     ) = Unit
 
-    override suspend fun deleteById(id: Long) = Unit
+    override suspend fun deleteByIdUnchecked(id: Long) = Unit
 
-    override suspend fun updateZIndex(
-        id: Long,
-        zIndex: Long,
-        updatedAt: Long,
-    ) = Unit
+    override suspend fun getAnnotationLayerId(id: Long): Long? = patternAnnotations.firstOrNull { it.id == id }?.layerId
 }
 
 internal suspend inline fun withParsedFileUrisForDomainApi(

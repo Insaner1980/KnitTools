@@ -9,7 +9,7 @@ class PreferenceAwareHapticFeedbackTest {
     @Test
     fun `enabled preference delegates haptic feedback`() {
         val delegate = RecordingHapticFeedback()
-        val feedback = PreferenceAwareHapticFeedback(enabled = true, delegate = delegate)
+        val feedback = PreferenceAwareHapticFeedback(enabled = { true }, delegate = delegate)
 
         feedback.performHapticFeedback(HapticFeedbackType.LongPress)
 
@@ -19,11 +19,16 @@ class PreferenceAwareHapticFeedbackTest {
     @Test
     fun `disabled preference suppresses haptic feedback`() {
         val delegate = RecordingHapticFeedback()
-        val feedback = PreferenceAwareHapticFeedback(enabled = false, delegate = delegate)
+        var enabled = false
+        val feedback = PreferenceAwareHapticFeedback(enabled = { enabled }, delegate = delegate)
 
         feedback.performHapticFeedback(HapticFeedbackType.LongPress)
+        enabled = true
+        feedback.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+        enabled = false
+        feedback.performHapticFeedback(HapticFeedbackType.LongPress)
 
-        assertEquals(emptyList<HapticFeedbackType>(), delegate.performedTypes)
+        assertEquals(listOf(HapticFeedbackType.TextHandleMove), delegate.performedTypes)
     }
 
     private class RecordingHapticFeedback : HapticFeedback {

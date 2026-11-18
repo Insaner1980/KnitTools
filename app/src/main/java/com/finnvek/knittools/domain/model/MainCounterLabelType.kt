@@ -20,7 +20,7 @@ enum class MainCounterLabelType(
 fun sanitizeMainCounterCustomLabel(label: String?): String? =
     label
         ?.trim()
-        ?.take(MAIN_COUNTER_CUSTOM_LABEL_MAX_LENGTH)
+        ?.takeWithoutSplittingSurrogatePair(MAIN_COUNTER_CUSTOM_LABEL_MAX_LENGTH)
         ?.takeIf { it.isNotEmpty() }
 
 fun resolvedMainCounterLabelType(

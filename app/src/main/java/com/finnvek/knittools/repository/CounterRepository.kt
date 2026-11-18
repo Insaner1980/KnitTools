@@ -1,43 +1,129 @@
 package com.finnvek.knittools.repository
 
 import android.content.Context
+import android.database.sqlite.SQLiteConstraintException
+import com.finnvek.knittools.data.local.ActiveSessionEntity
+import com.finnvek.knittools.data.local.CounterHistoryEntity
 import com.finnvek.knittools.data.local.CounterProjectDao
+import com.finnvek.knittools.data.local.CounterSessionUndo
 import com.finnvek.knittools.data.local.DatabaseTransactionRunner
+import com.finnvek.knittools.data.local.LinkedCounterDeltas
+import com.finnvek.knittools.data.local.MAX_COMPLETED_SESSIONS
+import com.finnvek.knittools.data.local.ProjectCompletionEntity
 import com.finnvek.knittools.data.local.ProjectCounterDao
+import com.finnvek.knittools.data.local.ProjectFolderAssignmentEntity
+import com.finnvek.knittools.data.local.ProjectFolderDao
 import com.finnvek.knittools.data.local.SessionDao
 import com.finnvek.knittools.data.local.SessionEntity
+import com.finnvek.knittools.data.local.SessionProjectActivity
 import com.finnvek.knittools.data.local.toDomain
 import com.finnvek.knittools.data.local.toEntity
 import com.finnvek.knittools.data.storage.PatternDocumentStorage
 import com.finnvek.knittools.data.storage.ProgressPhotoStorage
+import com.finnvek.knittools.data.time.SessionTimeSource
+import com.finnvek.knittools.data.time.UnavailableBootSessionTimeSource
 import com.finnvek.knittools.di.IoDispatcher
 import com.finnvek.knittools.domain.calculator.CounterLogic
 import com.finnvek.knittools.domain.calculator.CounterState
+import com.finnvek.knittools.domain.calculator.MAX_MAIN_COUNTER_STEP_SIZE
+import com.finnvek.knittools.domain.calculator.MAX_PROJECT_START_COUNT
+import com.finnvek.knittools.domain.calculator.MAX_TARGET_ROWS
 import com.finnvek.knittools.domain.calculator.ProjectCounterLogic
+import com.finnvek.knittools.domain.calculator.ProjectStartValues
+import com.finnvek.knittools.domain.calculator.ReadingLineLocationResolution
+import com.finnvek.knittools.domain.calculator.TargetInput
+import com.finnvek.knittools.domain.calculator.evaluateActiveSessionTime
+import com.finnvek.knittools.domain.calculator.parseMapping
+import com.finnvek.knittools.domain.calculator.parseProjectStartCount
+import com.finnvek.knittools.domain.calculator.parseTargetRows
+import com.finnvek.knittools.domain.calculator.resolveReadingLineLocation
+import com.finnvek.knittools.domain.calculator.saturatingAdd
+import com.finnvek.knittools.domain.model.ActiveSessionRecoveryReason
+import com.finnvek.knittools.domain.model.ActiveSessionTimeEvaluation
+import com.finnvek.knittools.domain.model.ActiveSessionTimingAnchors
+import com.finnvek.knittools.domain.model.ActiveWorkSession
+import com.finnvek.knittools.domain.model.CommittedMainCounterChange
+import com.finnvek.knittools.domain.model.CounterHistory
+import com.finnvek.knittools.domain.model.CounterHistoryAction
 import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.domain.model.CraftType
 import com.finnvek.knittools.domain.model.KnitSession
 import com.finnvek.knittools.domain.model.MainCounterChange
 import com.finnvek.knittools.domain.model.MainCounterLabelType
-import com.finnvek.knittools.domain.model.PatternAnnotationDocumentKey
+import com.finnvek.knittools.domain.model.ProjectCompletion
+import com.finnvek.knittools.domain.model.ProjectCompletionSnapshot
 import com.finnvek.knittools.domain.model.ProjectCounterType
+import com.finnvek.knittools.domain.model.ProjectDocument
 import com.finnvek.knittools.domain.model.ProjectSortOrder
 import com.finnvek.knittools.domain.model.SavedPattern
+import com.finnvek.knittools.domain.model.SessionTimeSnapshot
+import com.finnvek.knittools.domain.model.isWebPatternCompatible
 import com.finnvek.knittools.domain.model.resolvedMainCounterLabelType
 import com.finnvek.knittools.domain.model.sanitizeMainCounterCustomLabel
+import com.finnvek.knittools.domain.model.sanitizeReadingGuideFraction
 import com.finnvek.knittools.domain.model.sanitizeReadingLineYFraction
+import com.finnvek.knittools.pro.ProFeature
+import com.finnvek.knittools.pro.ProManager
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.withContext
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
+import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 
+internal class SessionHistoryLimitReachedException : IllegalStateException()
+
+sealed interface ProjectCreationResult {
+    data class Created(
+        val projectId: Long,
+        val wasFirstProject: Boolean = false,
+    ) : ProjectCreationResult
+
+    data object LimitReached : ProjectCreationResult
+
+    data object InvalidProject : ProjectCreationResult
+
+    data object FolderMissing : ProjectCreationResult
+}
+
+sealed interface ProjectReactivationResult {
+    data object Reactivated : ProjectReactivationResult
+
+    data object ProjectUnavailable : ProjectReactivationResult
+
+    data object LimitReached : ProjectReactivationResult
+
+    data object PersistenceFailure : ProjectReactivationResult
+}
+
+sealed interface ProjectNotesSaveResult {
+    data class Saved(
+        val project: CounterProject,
+    ) : ProjectNotesSaveResult
+
+    data object ProjectUnavailable : ProjectNotesSaveResult
+
+    data object FeatureUnavailable : ProjectNotesSaveResult
+
+    data object PersistenceFailure : ProjectNotesSaveResult
+}
+
 @Singleton
+@Suppress("LargeClass") // Pää- ja widget-laskurin atomiset invariantit kuuluvat samaan repository-rajaan.
 class CounterRepository
     @Inject
     constructor(
@@ -49,10 +135,46 @@ class CounterRepository
         @param:ApplicationContext private val context: Context,
         private val yarnCardRepository: YarnCardRepository,
         private val savedPatternRepository: SavedPatternRepository,
-        private val patternAnnotationLayerRepository: PatternAnnotationLayerRepository,
+        private val projectDocumentRepository: ProjectDocumentRepository,
+        private val projectFolderDao: ProjectFolderDao,
         private val transactionRunner: DatabaseTransactionRunner,
         @param:IoDispatcher private val ioDispatcher: CoroutineDispatcher,
+        private val sessionTimeSource: SessionTimeSource = UnavailableBootSessionTimeSource,
+        private val proManager: ProManager? = null,
+        private val fileReferenceCoordinator: PatternFileReferenceCoordinator = PatternFileReferenceCoordinator(),
     ) {
+        fun observeCounterHistory(projectId: Long): Flow<List<CounterHistory>> =
+            dao
+                .observeCounterHistory(projectId)
+                .map { entries ->
+                    entries.map { entry ->
+                        CounterHistory(
+                            id = entry.id,
+                            action = CounterHistoryAction.fromPersistedValue(entry.action),
+                            previousValue = entry.previousValue,
+                            newValue = entry.newValue,
+                            timestamp = entry.timestamp,
+                        )
+                    }
+                }.retryOnRepositoryReadFailure()
+                .flowOn(ioDispatcher)
+
+        fun observeCanUndo(projectId: Long): Flow<Boolean> =
+            dao
+                .observeProject(projectId)
+                .map { project ->
+                    project != null &&
+                        dao.getLatestHistory(projectId)?.isReversibleFor(projectId, project.count) == true
+                }.retryOnRepositoryReadFailure()
+                .flowOn(ioDispatcher)
+
+        fun observeCompletions(projectId: Long? = null): Flow<List<ProjectCompletion>> =
+            dao
+                .observeCompletions(projectId)
+                .map { events -> events.map { it.toDomain() } }
+                .retryOnRepositoryReadFailure()
+                .flowOn(ioDispatcher)
+
         fun getAllProjects(): Flow<List<CounterProject>> =
             dao
                 .getAllProjects()
@@ -87,9 +209,19 @@ class CounterRepository
             }.map { projects -> projects.map { it.toDomain() } }
                 .retryOnRepositoryReadFailure()
 
+        fun observeHasAnyProject(): Flow<Boolean> =
+            dao.observeHasAnyProject().retryOnRepositoryReadFailure().flowOn(ioDispatcher)
+
+        suspend fun hasAnyProject(): Boolean = dao.hasAnyProject()
+
         suspend fun getActiveProjectCount(): Int = dao.getActiveProjectCount()
 
         suspend fun getProject(id: Long): CounterProject? = dao.getProject(id)?.toDomain()
+
+        suspend fun isPatternDocumentAttached(
+            projectId: Long,
+            localPdfUri: String,
+        ): Boolean = projectDocumentRepository.getDocuments(projectId).any { it.localPdfUri == localPdfUri }
 
         fun observeProject(id: Long): Flow<CounterProject?> =
             dao
@@ -97,36 +229,217 @@ class CounterRepository
                 .map { it?.toDomain() }
                 .retryOnRepositoryReadFailure()
 
+        suspend fun findOnboardingProject(draftId: String): Long? = dao.findOnboardingProjectId(draftId)
+
+        suspend fun createOnboardingProject(
+            draft: com.finnvek.knittools.domain.model.OnboardingDraft,
+            canCreateAdditionalProjects: Boolean,
+        ): ProjectCreationResult =
+            withContext(ioDispatcher) {
+                fileReferenceCoordinator.withReferenceLock {
+                    dao.findOnboardingProjectId(draft.id)?.let {
+                        return@withReferenceLock ProjectCreationResult.Created(it)
+                    }
+                    val count =
+                        parseProjectStartCount(draft.initialCount)
+                            ?: return@withReferenceLock ProjectCreationResult.InvalidProject
+                    val target = parseTargetRows(draft.targetRows)
+                    if (draft.id.isBlank() || target == TargetInput.Invalid) {
+                        return@withReferenceLock ProjectCreationResult.InvalidProject
+                    }
+                    val pdfUri = draft.pdfUri
+                    val pdfName = draft.pdfName.orEmpty()
+                    if (pdfUri != null && projectDocumentRepository.preflightImportedPdf(pdfUri, pdfName) != null) {
+                        return@withReferenceLock ProjectCreationResult.InvalidProject
+                    }
+                    transactionRunner.run {
+                        dao.findOnboardingProjectId(draft.id)?.let { return@run ProjectCreationResult.Created(it) }
+                        val result =
+                            insertProjectInCurrentTransaction(
+                                name = draft.name,
+                                craftType = draft.projectCraftType,
+                                mainCounterLabelType = draft.projectCraftType.defaultMainCounterLabelType(),
+                                mainCounterCustomLabel = null,
+                                canCreateAdditionalProjects = canCreateAdditionalProjects,
+                                targetFolderId = null,
+                                startValues = ProjectStartValues(count, (target as? TargetInput.Valid)?.value),
+                            )
+                        if (result !is ProjectCreationResult.Created) return@run result
+                        pdfUri?.let { uri ->
+                            val added =
+                                projectDocumentRepository.addImportedPdfInCurrentTransaction(
+                                    result.projectId,
+                                    uri,
+                                    pdfName,
+                                )
+                            check(
+                                added is ProjectDocumentMutationResult.Added,
+                            ) { "Onboarding PDF attachment failed" }
+                            linkPrimaryDocumentPatternInTransaction(result.projectId, null, added)
+                        }
+                        dao.insertOnboardingProject(
+                            com.finnvek.knittools.data.local
+                                .OnboardingProjectEntity(draft.id, result.projectId),
+                        )
+                        result
+                    }
+                }
+            }
+
         suspend fun createProject(
             name: String,
             craftType: CraftType = CraftType.KNITTING,
             mainCounterLabelType: MainCounterLabelType = craftType.defaultMainCounterLabelType(),
             mainCounterCustomLabel: String? = null,
-        ): Long? {
-            val projectName = uniqueProjectName(name) ?: return null
+            canCreateAdditionalProjects: Boolean,
+            targetFolderId: Long? = null,
+            startValues: ProjectStartValues = ProjectStartValues(),
+        ): ProjectCreationResult =
+            try {
+                transactionRunner.run {
+                    val wasFirstProject = !dao.hasAnyProject()
+                    val result =
+                        insertProjectInCurrentTransaction(
+                            name = name,
+                            craftType = craftType,
+                            mainCounterLabelType = mainCounterLabelType,
+                            mainCounterCustomLabel = mainCounterCustomLabel,
+                            canCreateAdditionalProjects = canCreateAdditionalProjects,
+                            targetFolderId = targetFolderId,
+                            startValues = startValues,
+                        )
+                    if (result is ProjectCreationResult.Created) {
+                        result.copy(
+                            wasFirstProject = wasFirstProject,
+                        )
+                    } else {
+                        result
+                    }
+                }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (constraint: SQLiteConstraintException) {
+                if (targetFolderId != null && projectFolderDao.getById(targetFolderId) == null) {
+                    ProjectCreationResult.FolderMissing
+                } else {
+                    throw constraint
+                }
+            }
+
+        /**
+         * Uusi projekti ja tuotu PDF samassa transaktiossa: epäonnistunut liitos peruu myös projektin,
+         * jottei tyhjä projekti jää viemään ilmaisversion ainoaa aktiivista paikkaa.
+         */
+        suspend fun createProjectWithImportedPdf(
+            name: String,
+            canCreateAdditionalProjects: Boolean,
+            patternUri: String,
+            patternName: String,
+        ): ProjectCreationResult =
+            fileReferenceCoordinator.withReferenceLock {
+                if (projectDocumentRepository.preflightImportedPdf(patternUri, patternName) != null) {
+                    return@withReferenceLock ProjectCreationResult.InvalidProject
+                }
+                transactionRunner.run {
+                    // A restored save can retry the same staged file after the original transaction committed.
+                    projectDocumentRepository.getFirstProjectIdByUri(patternUri)?.let { projectId ->
+                        return@run ProjectCreationResult.Created(projectId)
+                    }
+                    val created =
+                        insertProjectInCurrentTransaction(
+                            name = name,
+                            craftType = CraftType.KNITTING,
+                            mainCounterLabelType = CraftType.KNITTING.defaultMainCounterLabelType(),
+                            mainCounterCustomLabel = null,
+                            canCreateAdditionalProjects = canCreateAdditionalProjects,
+                            targetFolderId = null,
+                        )
+                    if (created !is ProjectCreationResult.Created) return@run created
+                    val added =
+                        projectDocumentRepository.addImportedPdfInCurrentTransaction(
+                            created.projectId,
+                            patternUri,
+                            patternName,
+                        )
+                    // Poikkeus peruu koko transaktion, myös juuri luodun projektin.
+                    check(added is ProjectDocumentMutationResult.Added) { "Imported PDF attachment failed: $added" }
+                    linkPrimaryDocumentPatternInTransaction(created.projectId, currentLinkedPatternId = null, added)
+                    created
+                }
+            }
+
+        private suspend fun insertProjectInCurrentTransaction(
+            name: String,
+            craftType: CraftType,
+            mainCounterLabelType: MainCounterLabelType,
+            mainCounterCustomLabel: String?,
+            canCreateAdditionalProjects: Boolean,
+            targetFolderId: Long?,
+            startValues: ProjectStartValues = ProjectStartValues(),
+        ): ProjectCreationResult {
+            if (!canAddActiveProject(canCreateAdditionalProjects)) return ProjectCreationResult.LimitReached
+            val (initialCount, targetRows) = startValues
+            if (initialCount !in 0..MAX_PROJECT_START_COUNT ||
+                targetRows != null &&
+                targetRows !in 1..MAX_TARGET_ROWS
+            ) {
+                return ProjectCreationResult.InvalidProject
+            }
+            val projectName = uniqueProjectName(name) ?: return ProjectCreationResult.InvalidProject
             val labelType =
                 validatedMainCounterLabelType(
                     craftType = craftType,
                     labelType = mainCounterLabelType,
                     customLabel = mainCounterCustomLabel,
-                ) ?: return null
+                ) ?: return ProjectCreationResult.InvalidProject
+            if (targetFolderId != null && projectFolderDao.getById(targetFolderId) == null) {
+                return ProjectCreationResult.FolderMissing
+            }
             val now = System.currentTimeMillis()
-            return dao.insert(
-                CounterProject(
-                    name = projectName,
-                    craftType = craftType,
-                    mainCounterLabelType = labelType,
-                    mainCounterCustomLabel = sanitizeMainCounterCustomLabel(mainCounterCustomLabel),
-                    createdAt = now,
-                    updatedAt = now,
-                ).toEntity(),
+            val projectId =
+                dao.insert(
+                    CounterProject(
+                        name = projectName,
+                        craftType = craftType,
+                        mainCounterLabelType = labelType,
+                        mainCounterCustomLabel = sanitizeMainCounterCustomLabel(mainCounterCustomLabel),
+                        count = initialCount,
+                        targetRows = targetRows,
+                        createdAt = now,
+                        updatedAt = now,
+                    ).toEntity(),
+                )
+            if (targetFolderId != null) {
+                projectFolderDao.insertOrReplaceAssignment(
+                    ProjectFolderAssignmentEntity(projectId = projectId, folderId = targetFolderId),
+                )
+            }
+            return ProjectCreationResult.Created(projectId)
+        }
+
+        /** Ensisijainen tuotu PDF antaa projektille ohjeen tiedot, jos projektilla ei vielä ole niitä. */
+        private suspend fun linkPrimaryDocumentPatternInTransaction(
+            projectId: Long,
+            currentLinkedPatternId: Long?,
+            added: ProjectDocumentMutationResult.Added,
+        ) {
+            if (!added.document.isPrimary || currentLinkedPatternId != null) return
+            dao.updatePatternInformation(
+                id = projectId,
+                linkedPatternId = added.document.savedPatternId,
+                patternName = added.document.label,
+                updatedAt = System.currentTimeMillis(),
             )
         }
 
         suspend fun updateProject(project: CounterProject) {
-            val projectName = uniqueProjectName(project.name, excludedProjectId = project.id) ?: return
-            val normalized = normalizeProjectDetails(project.copy(name = projectName)) ?: return
-            dao.update(normalized.copy(updatedAt = System.currentTimeMillis()).toEntity())
+            transactionRunner.run {
+                val current = dao.getProject(project.id) ?: return@run
+                if (current.isCompleted != project.isCompleted) return@run
+                val projectName = uniqueProjectName(project.name, excludedProjectId = project.id) ?: return@run
+                val normalized = normalizeProjectDetails(project.copy(name = projectName)) ?: return@run
+                dao.update(normalized.copy(updatedAt = System.currentTimeMillis()).toEntity())
+            }
         }
 
         suspend fun updateProjectDetails(
@@ -135,78 +448,57 @@ class CounterRepository
             craftType: CraftType,
             mainCounterLabelType: MainCounterLabelType,
             mainCounterCustomLabel: String?,
-        ): CounterProject? {
-            val projectName = uniqueProjectName(name, excludedProjectId = id) ?: return null
-            val labelType =
-                validatedMainCounterLabelType(
-                    craftType = craftType,
-                    labelType = mainCounterLabelType,
-                    customLabel = mainCounterCustomLabel,
-                ) ?: return null
-            val customLabel = sanitizeMainCounterCustomLabel(mainCounterCustomLabel)
-            val updatedAt = System.currentTimeMillis()
-            dao.updateProjectDetails(
-                id = id,
-                name = projectName,
-                craftType = craftType.persistedValue,
-                mainCounterLabelType = labelType.persistedValue,
-                mainCounterCustomLabel = customLabel.takeIf { labelType == MainCounterLabelType.CUSTOM },
-                updatedAt = updatedAt,
-            )
-            return dao.getProject(id)?.toDomain()
-        }
-
-        suspend fun adjustProjectCount(
-            id: Long,
-            delta: Int,
-        ) = dao.adjustCount(id, delta, System.currentTimeMillis())
-
-        suspend fun adjustProjectCountWithHistory(
-            id: Long,
-            delta: Int,
-            stepSize: Int,
-            action: String,
-            previousValue: Int,
-            newValue: Int,
-        ) = dao.adjustCountWithHistory(
-            projectId = id,
-            delta = delta,
-            stepSize = stepSize,
-            action = action,
-            previousValue = previousValue,
-            newValue = newValue,
-            updatedAt = System.currentTimeMillis(),
-        )
-
-        suspend fun updateProjectCounterStateWithHistory(
-            id: Long,
-            count: Int,
-            stepSize: Int,
-            action: String,
-            previousValue: Int,
-            newValue: Int,
-        ) = dao.updateCounterStateWithHistory(
-            projectId = id,
-            count = count,
-            stepSize = stepSize,
-            action = action,
-            previousValue = previousValue,
-            newValue = newValue,
-            updatedAt = System.currentTimeMillis(),
-        )
+        ): CounterProject? =
+            transactionRunner.run {
+                val projectName = uniqueProjectName(name, excludedProjectId = id) ?: return@run null
+                val labelType =
+                    validatedMainCounterLabelType(
+                        craftType = craftType,
+                        labelType = mainCounterLabelType,
+                        customLabel = mainCounterCustomLabel,
+                    ) ?: return@run null
+                val customLabel = sanitizeMainCounterCustomLabel(mainCounterCustomLabel)
+                val updatedAt = System.currentTimeMillis()
+                dao.updateProjectDetails(
+                    id = id,
+                    name = projectName,
+                    craftType = craftType.persistedValue,
+                    mainCounterLabelType = labelType.persistedValue,
+                    mainCounterCustomLabel = customLabel.takeIf { labelType == MainCounterLabelType.CUSTOM },
+                    updatedAt = updatedAt,
+                )
+                dao.getProject(id)?.toDomain()
+            }
 
         suspend fun applyMainCounterChange(
             id: Long,
             change: MainCounterChange,
-        ): Boolean =
-            transactionRunner.run {
-                val project = dao.getProject(id)?.toDomain() ?: return@run false
-                if (project.isCompleted) return@run false
+        ): Boolean = applyMainCounterChangeWithResult(id, change) != null
 
-                when (change) {
-                    MainCounterChange.Undo -> undoMainCounterChange(id, project)
-                    else -> applyHistoryTrackedMainCounterChange(id, project, change)
-                }
+        suspend fun applyMainCounterChangeWithResult(
+            id: Long,
+            change: MainCounterChange,
+        ): CommittedMainCounterChange? =
+            transactionRunner.run {
+                val project = dao.getProject(id)?.toDomain() ?: return@run null
+                if (project.isCompleted) return@run null
+
+                val undoHistory =
+                    if (change == MainCounterChange.Undo) dao.getLatestHistory(id) else null
+                val changed =
+                    when (change) {
+                        MainCounterChange.Undo -> undoMainCounterChange(id, project, undoHistory)
+                        else -> applyHistoryTrackedMainCounterChange(id, project, change)
+                    }
+                if (!changed) return@run null
+                val updated = checkNotNull(dao.getProject(id))
+                checkpointActiveSessionForRowChange(
+                    projectId = id,
+                    newRow = updated.count,
+                    undoneReset = undoHistory?.action == MainCounterChange.Reset.historyAction,
+                    undoHistory = undoHistory,
+                )
+                CommittedMainCounterChange(project.count, updated.count, project.targetRows, change)
             }
 
         suspend fun applyWidgetCountChange(
@@ -218,62 +510,136 @@ class CounterRepository
                 change = if (increment) MainCounterChange.Increment else MainCounterChange.Decrement,
             )
 
-        suspend fun updateProjectName(
-            id: Long,
-            name: String,
-        ): String? {
-            val projectName = uniqueProjectName(name, excludedProjectId = id) ?: return null
-            dao.updateName(id, projectName, System.currentTimeMillis())
-            return projectName
-        }
-
-        suspend fun updateProjectNotes(
-            id: Long,
-            notes: String,
-        ) = dao.updateNotes(id, notes, System.currentTimeMillis())
-
         suspend fun saveProjectNotes(
             id: Long,
             baseNotes: String,
             requestedNotes: String,
-        ): CounterProject? =
-            transactionRunner.run {
-                val current = dao.getProject(id)?.toDomain() ?: return@run null
-                val notesToSave =
-                    mergeProjectNotes(
-                        baseNotes = baseNotes,
-                        requestedNotes = requestedNotes,
-                        currentNotes = current.notes,
+            creationAuthorized: Boolean = false,
+        ): ProjectNotesSaveResult =
+            try {
+                transactionRunner.run {
+                    val current =
+                        dao.getProject(id)?.toDomain()
+                            ?: return@run ProjectNotesSaveResult.ProjectUnavailable
+                    val canCreateNotes =
+                        current.notesCreated ||
+                            current.notes.isNotBlank() ||
+                            creationAuthorized ||
+                            proManager?.hasFeature(ProFeature.NOTES) == true
+                    if (!canCreateNotes && requestedNotes.isNotBlank()) {
+                        return@run ProjectNotesSaveResult.FeatureUnavailable
+                    }
+                    val notesToSave =
+                        mergeProjectNotes(
+                            baseNotes = baseNotes,
+                            requestedNotes = requestedNotes,
+                            currentNotes = current.notes,
+                        )
+                    val updatedAt = System.currentTimeMillis()
+                    dao.updateNotes(id, notesToSave, updatedAt)
+                    ProjectNotesSaveResult.Saved(
+                        current.copy(
+                            notes = notesToSave,
+                            notesCreated = current.notesCreated || notesToSave.isNotBlank(),
+                            updatedAt = updatedAt,
+                        ),
                     )
-                val updatedAt = System.currentTimeMillis()
-                dao.updateNotes(id, notesToSave, updatedAt)
-                current.copy(notes = notesToSave, updatedAt = updatedAt)
+                }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                ProjectNotesSaveResult.PersistenceFailure
             }
 
         suspend fun updateProjectSecondaryCount(
             id: Long,
             secondaryCount: Int,
-        ) = dao.updateSecondaryCount(id, secondaryCount, System.currentTimeMillis())
+        ): Boolean =
+            transactionRunner.run {
+                val project = dao.getProject(id)?.toDomain() ?: return@run false
+                if (project.isCompleted || secondaryCount < 0) return@run false
+                val canUseSecondaryCounter =
+                    project.secondaryCounterUsed ||
+                        proManager?.hasFeature(ProFeature.SECONDARY_COUNTER) != false
+                if (!canUseSecondaryCounter) return@run false
 
-        suspend fun updateProjectSectionName(
-            id: Long,
-            sectionName: String?,
-        ) = dao.updateSectionName(id, sectionName, System.currentTimeMillis())
+                dao.updateSecondaryCount(id, secondaryCount, System.currentTimeMillis())
+                true
+            }
 
         suspend fun updateProjectStitchCount(
             id: Long,
             stitchCount: Int?,
-        ) = dao.updateStitchCount(id, stitchCount, System.currentTimeMillis())
-
-        suspend fun updateCurrentStitch(
-            id: Long,
-            stitch: Int,
-        ) = dao.updateCurrentStitch(id, stitch, System.currentTimeMillis())
+            enableTracking: Boolean = false,
+        ): Boolean {
+            if (stitchCount != null && stitchCount <= 0) return false
+            return transactionRunner.run {
+                val project = dao.getProject(id)?.toDomain() ?: return@run false
+                if (project.isCompleted) return@run false
+                val trackingEnabled = stitchCount != null && (enableTracking || project.stitchTrackingEnabled)
+                val currentStitch =
+                    stitchCount
+                        ?.takeIf { trackingEnabled }
+                        ?.let { project.currentStitch.coerceIn(0, it) }
+                        ?: 0
+                dao.updateStitchState(
+                    id = id,
+                    stitchCount = stitchCount,
+                    trackingEnabled = trackingEnabled,
+                    currentStitch = currentStitch,
+                    updatedAt = System.currentTimeMillis(),
+                )
+                true
+            }
+        }
 
         suspend fun updateStitchTrackingEnabled(
             id: Long,
             enabled: Boolean,
-        ) = dao.updateStitchTrackingEnabled(id, enabled, System.currentTimeMillis())
+        ): Boolean =
+            transactionRunner.run {
+                val project = dao.getProject(id)?.toDomain() ?: return@run false
+                if (project.isCompleted || (enabled && project.stitchCount == null)) return@run false
+                val currentStitch = if (enabled) project.currentStitch else 0
+                dao.updateStitchState(
+                    id = id,
+                    stitchCount = project.stitchCount,
+                    trackingEnabled = enabled,
+                    currentStitch = currentStitch,
+                    updatedAt = System.currentTimeMillis(),
+                )
+                true
+            }
+
+        suspend fun applyStitchChange(
+            id: Long,
+            increment: Boolean,
+        ): Boolean =
+            transactionRunner.run {
+                val project = dao.getProject(id) ?: return@run false
+                val stitchCount = project.stitchCount ?: return@run false
+                if (
+                    project.isCompleted ||
+                    !project.stitchTrackingEnabled ||
+                    stitchCount <= 0 ||
+                    project.currentStitch !in 0..stitchCount
+                ) {
+                    return@run false
+                }
+                val nextStitch =
+                    if (increment) {
+                        (project.currentStitch.toLong() + 1L)
+                            .coerceAtMost(stitchCount.toLong())
+                            .toInt()
+                    } else {
+                        (project.currentStitch.toLong() - 1L)
+                            .coerceAtLeast(0L)
+                            .toInt()
+                    }
+                if (nextStitch == project.currentStitch) return@run false
+                dao.updateCurrentStitch(id, nextStitch, System.currentTimeMillis())
+                true
+            }
 
         suspend fun updatePattern(
             id: Long,
@@ -281,14 +647,13 @@ class CounterRepository
             patternName: String?,
             currentPatternPage: Int,
             patternRowMapping: String?,
-        ) = dao.updatePattern(
-            id = id,
-            patternUri = patternUri,
-            patternName = patternName,
-            currentPatternPage = currentPatternPage,
-            patternRowMapping = patternRowMapping,
-            updatedAt = System.currentTimeMillis(),
-        )
+        ) {
+            if (patternUri == null) {
+                detachPattern(id)
+            } else {
+                attachPattern(id, patternUri, patternName.orEmpty(), currentPatternPage, patternRowMapping)
+            }
+        }
 
         suspend fun attachPattern(
             id: Long,
@@ -296,136 +661,453 @@ class CounterRepository
             patternName: String,
             currentPatternPage: Int,
             patternRowMapping: String?,
-        ) {
-            val previousPatternUri = dao.getProject(id)?.patternUri
-            transactionRunner.run {
-                val linkedPatternId = savedPatternRepository.saveImportedPatternIfMissing(patternUri, patternName)
-                val documentKey =
-                    linkedPatternId?.let(PatternAnnotationDocumentKey::savedPattern)
-                        ?: PatternAnnotationDocumentKey.legacyProject(id)
-                patternAnnotationLayerRepository.activateProjectLayerInTransaction(id, documentKey)
-                updatePatternAttachment(
-                    id = id,
-                    linkedPatternId = linkedPatternId,
-                    patternUri = patternUri,
-                    patternName = patternName,
-                    currentPatternPage = currentPatternPage,
-                    patternRowMapping = patternRowMapping,
-                )
+        ): ProjectDocumentMutationResult {
+            val result =
+                fileReferenceCoordinator.withReferenceLock {
+                    val preflightFailure = projectDocumentRepository.preflightImportedPdf(patternUri, patternName)
+                    preflightFailure ?: transactionRunner.run {
+                        val project = dao.getProject(id)
+                        val added =
+                            projectDocumentRepository.addImportedPdfInCurrentTransaction(id, patternUri, patternName)
+                        if (added is ProjectDocumentMutationResult.Added) {
+                            linkPrimaryDocumentPatternInTransaction(id, project?.linkedPatternId, added)
+                            if (currentPatternPage != 0 || patternRowMapping != null) {
+                                check(
+                                    projectDocumentRepository.updateViewerStateInTransaction(
+                                        added.document.copy(
+                                            currentPage = currentPatternPage,
+                                            rowMapping = patternRowMapping,
+                                        ),
+                                    ),
+                                )
+                            }
+                        }
+                        added
+                    }
+                }
+            if (result !is ProjectDocumentMutationResult.Added &&
+                result != ProjectDocumentMutationResult.AlreadyAttached &&
+                result != ProjectDocumentMutationResult.DuplicateUri &&
+                result != ProjectDocumentMutationResult.DuplicateDocumentKey
+            ) {
+                error("Project document attachment failed: $result")
             }
-            previousPatternUri
-                ?.takeIf { it != patternUri }
-                ?.let { savedPatternRepository.deleteLocalPatternFileIfUnused(it) }
+            return result
         }
 
+        // Liitos validoidaan ja kirjoitetaan yhtenä atomisena polkuna.
         suspend fun attachSavedPattern(
             projectId: Long,
             savedPatternId: Long,
-        ): SavedPattern? {
-            val previousPatternUri = dao.getProject(projectId)?.patternUri
-            val pattern = savedPatternRepository.getById(savedPatternId) ?: return null
-            val patternUri = pattern.localPdfUri
-            transactionRunner.run {
-                patternAnnotationLayerRepository.activateProjectLayerInTransaction(
-                    projectId,
-                    PatternAnnotationDocumentKey.savedPattern(pattern.id),
+        ): SavedPattern? =
+            fileReferenceCoordinator.withReferenceLock {
+                val preparation = projectDocumentRepository.prepareSavedPatternDocument(projectId, savedPatternId)
+                if (preparation == SavedPatternDocumentPreparation.MissingSavedPattern ||
+                    preparation == SavedPatternDocumentPreparation.PdfUnavailable
+                ) {
+                    return@withReferenceLock null
+                }
+                transactionRunner.run {
+                    val project = dao.getProject(projectId) ?: return@run null
+                    val pattern = savedPatternRepository.getById(savedPatternId) ?: return@run null
+                    val result =
+                        attachPreparedSavedPattern(
+                            projectId = projectId,
+                            savedPatternId = savedPatternId,
+                            preparation = preparation,
+                            linkedPatternId = project.linkedPatternId,
+                            pattern = pattern,
+                        )
+                    if (!result.isSuccessfulSavedPatternAttachment()) return@run null
+                    pattern
+                }
+            }
+
+        private suspend fun attachPreparedSavedPattern(
+            projectId: Long,
+            savedPatternId: Long,
+            preparation: SavedPatternDocumentPreparation,
+            linkedPatternId: Long?,
+            pattern: SavedPattern,
+        ): ProjectDocumentMutationResult? =
+            when (preparation) {
+                SavedPatternDocumentPreparation.MetadataOnlyPattern ->
+                    attachMetadataOnlySavedPattern(projectId, linkedPatternId, pattern)
+                SavedPatternDocumentPreparation.AlreadyAttached ->
+                    if (
+                        projectDocumentRepository.hasSavedPatternDocumentInCurrentTransaction(
+                            projectId,
+                            savedPatternId,
+                        )
+                    ) {
+                        ProjectDocumentMutationResult.AlreadyAttached
+                    } else {
+                        null
+                    }
+                is SavedPatternDocumentPreparation.Ready ->
+                    attachSavedPatternDocument(
+                        projectId = projectId,
+                        savedPatternId = savedPatternId,
+                        verifiedLocalPdfUri = preparation.localPdfUri,
+                        linkedPatternId = linkedPatternId,
+                        pattern = pattern,
+                    )
+                SavedPatternDocumentPreparation.MissingSavedPattern,
+                SavedPatternDocumentPreparation.PdfUnavailable,
+                -> null
+            }
+
+        private suspend fun attachMetadataOnlySavedPattern(
+            projectId: Long,
+            linkedPatternId: Long?,
+            pattern: SavedPattern,
+        ): ProjectDocumentMutationResult? {
+            if (!pattern.localPdfUri.isNullOrBlank()) return null
+            if (
+                pattern.isWebPatternCompatible &&
+                linkedPatternId != null &&
+                linkedPatternId != pattern.id
+            ) {
+                return null
+            }
+            dao.updatePatternInformation(
+                id = projectId,
+                linkedPatternId = pattern.id,
+                patternName = pattern.name,
+                updatedAt = System.currentTimeMillis(),
+            )
+            return ProjectDocumentMutationResult.MetadataOnlyPattern
+        }
+
+        private suspend fun attachSavedPatternDocument(
+            projectId: Long,
+            savedPatternId: Long,
+            verifiedLocalPdfUri: String,
+            linkedPatternId: Long?,
+            pattern: SavedPattern,
+        ): ProjectDocumentMutationResult {
+            val added =
+                projectDocumentRepository.addSavedPatternInCurrentTransaction(
+                    projectId = projectId,
+                    savedPatternId = savedPatternId,
+                    verifiedLocalPdfUri = verifiedLocalPdfUri,
                 )
-                updatePatternAttachment(
+            if (added is ProjectDocumentMutationResult.Added && added.document.isPrimary && linkedPatternId == null) {
+                dao.updatePatternInformation(
                     id = projectId,
                     linkedPatternId = pattern.id,
-                    patternUri = patternUri,
                     patternName = pattern.name,
-                    currentPatternPage = 0,
-                    patternRowMapping = null,
+                    updatedAt = System.currentTimeMillis(),
                 )
             }
-            previousPatternUri
-                ?.takeIf { it != patternUri }
-                ?.let { savedPatternRepository.deleteLocalPatternFileIfUnused(it) }
-            return pattern
+            return added
         }
 
-        suspend fun detachPattern(id: Long) {
-            val patternUri = dao.getProject(id)?.patternUri
-            transactionRunner.run {
-                patternAnnotationLayerRepository.deactivateProjectLayersInTransaction(id)
-                updatePatternAttachment(
-                    id = id,
-                    linkedPatternId = null,
-                    patternUri = null,
-                    patternName = null,
-                    currentPatternPage = 0,
-                    patternRowMapping = null,
-                )
+        private fun ProjectDocumentMutationResult?.isSuccessfulSavedPatternAttachment(): Boolean =
+            this == ProjectDocumentMutationResult.MetadataOnlyPattern ||
+                this is ProjectDocumentMutationResult.Added ||
+                this == ProjectDocumentMutationResult.AlreadyAttached
+
+        @Suppress("kotlin:S3776") // Atominen korvauspolku pitää stale-action-tarkistukset samassa transaktiossa.
+        suspend fun attachSavedPatternMetadata(
+            projectId: Long,
+            savedPatternId: Long,
+            expectedExistingSavedPatternId: Long? = null,
+        ): SavedPatternMetadataMutationResult =
+            persistSavedPatternMetadataMutation {
+                transactionRunner.run {
+                    val project =
+                        dao.getProject(projectId)
+                            ?: return@run SavedPatternMetadataMutationResult.ProjectMissing
+                    val pattern =
+                        savedPatternRepository.getById(savedPatternId)
+                            ?: return@run SavedPatternMetadataMutationResult.PatternMissing
+                    if (!pattern.isWebPatternCompatible) {
+                        return@run SavedPatternMetadataMutationResult.NotWebPattern
+                    }
+                    if (project.linkedPatternId == savedPatternId && project.patternName == pattern.name) {
+                        return@run SavedPatternMetadataMutationResult.AlreadyAttached(savedPatternId)
+                    }
+                    if (project.linkedPatternId == null && expectedExistingSavedPatternId != null) {
+                        return@run SavedPatternMetadataMutationResult.StaleAction
+                    }
+                    if (project.linkedPatternId != null && project.linkedPatternId != savedPatternId) {
+                        if (expectedExistingSavedPatternId == null) {
+                            return@run SavedPatternMetadataMutationResult.ReplacementRequired(project.linkedPatternId)
+                        }
+                        if (expectedExistingSavedPatternId != project.linkedPatternId) {
+                            return@run SavedPatternMetadataMutationResult.StaleAction
+                        }
+                    }
+
+                    dao.updatePatternInformation(
+                        id = projectId,
+                        linkedPatternId = savedPatternId,
+                        patternName = pattern.name,
+                        updatedAt = System.currentTimeMillis(),
+                    )
+                    SavedPatternMetadataMutationResult.Attached(savedPatternId)
+                }
             }
-            patternUri?.let { savedPatternRepository.deleteLocalPatternFileIfUnused(it) }
+
+        suspend fun unlinkSavedPatternMetadata(
+            projectId: Long,
+            expectedSavedPatternId: Long,
+        ): SavedPatternMetadataMutationResult =
+            persistSavedPatternMetadataMutation {
+                transactionRunner.run {
+                    val project =
+                        dao.getProject(projectId)
+                            ?: return@run SavedPatternMetadataMutationResult.ProjectMissing
+                    if (project.linkedPatternId == null) {
+                        return@run SavedPatternMetadataMutationResult.AlreadyUnlinked
+                    }
+                    if (project.linkedPatternId != expectedSavedPatternId) {
+                        return@run SavedPatternMetadataMutationResult.StaleAction
+                    }
+
+                    val updated =
+                        dao.clearPatternInformationIfLinked(
+                            projectId = projectId,
+                            expectedSavedPatternId = expectedSavedPatternId,
+                            updatedAt = System.currentTimeMillis(),
+                        )
+                    if (updated == 1) {
+                        SavedPatternMetadataMutationResult.Unlinked
+                    } else {
+                        SavedPatternMetadataMutationResult.StaleAction
+                    }
+                }
+            }
+
+        suspend fun detachPattern(id: Long): ProjectDocumentMutationResult {
+            val primary =
+                projectDocumentRepository.getPrimary(id) ?: return ProjectDocumentMutationResult.MissingDocument
+            return projectDocumentRepository.remove(id, primary.id)
         }
 
-        private suspend fun updatePatternAttachment(
-            id: Long,
-            linkedPatternId: Long?,
-            patternUri: String?,
-            patternName: String?,
-            currentPatternPage: Int,
-            patternRowMapping: String?,
-        ) = dao.updatePatternAttachment(
-            id = id,
-            linkedPatternId = linkedPatternId,
-            patternUri = patternUri,
-            patternName = patternName,
-            currentPatternPage = currentPatternPage,
-            patternRowMapping = patternRowMapping,
-            updatedAt = System.currentTimeMillis(),
-        )
+        private suspend fun persistSavedPatternMetadataMutation(
+            mutation: suspend () -> SavedPatternMetadataMutationResult,
+        ): SavedPatternMetadataMutationResult =
+            try {
+                mutation()
+            } catch (cancellation: CancellationException) {
+                throw cancellation
+            } catch (_: Exception) {
+                SavedPatternMetadataMutationResult.PersistenceFailure
+            }
 
         suspend fun updateCurrentPatternPage(
             id: Long,
             page: Int,
-        ) = dao.updateCurrentPatternPage(id, page, System.currentTimeMillis())
+            documentId: Long? = null,
+        ) {
+            transactionRunner.run {
+                val document = viewerDocument(id, documentId) ?: return@run
+                check(
+                    projectDocumentRepository.updateViewerStateInTransaction(
+                        document.copy(
+                            currentPage = page.coerceAtLeast(0),
+                            readingLineFollowCurrentRow = false,
+                        ),
+                    ),
+                )
+            }
+        }
 
         suspend fun updatePatternRowMapping(
             id: Long,
             mapping: String?,
-        ) = dao.updatePatternRowMapping(id, mapping, System.currentTimeMillis())
+            documentId: Long? = null,
+        ) {
+            transactionRunner.run {
+                val project = dao.getProject(id)?.toDomain() ?: return@run
+                val document = viewerDocument(id, documentId) ?: return@run
+                val updatedDocument = document.copy(rowMapping = mapping)
+                if (updatedDocument.readingLineFollowCurrentRow) {
+                    applyReadingLineFollow(
+                        document = updatedDocument,
+                        previousRow = project.count,
+                        newRow = project.count,
+                    )
+                } else {
+                    check(projectDocumentRepository.updateViewerStateInTransaction(updatedDocument))
+                }
+            }
+        }
+
+        suspend fun updatePatternRowMappingIfUnchanged(
+            id: Long,
+            mapping: String?,
+            documentId: Long,
+            expectedMapping: String?,
+        ): Boolean =
+            transactionRunner.run {
+                val project = dao.getProject(id)?.toDomain() ?: return@run false
+                val document = viewerDocument(id, documentId) ?: return@run false
+                if (document.rowMapping != expectedMapping) return@run false
+                val updatedDocument = document.copy(rowMapping = mapping)
+                if (updatedDocument.readingLineFollowCurrentRow) {
+                    applyReadingLineFollow(updatedDocument, project.count, project.count)
+                } else {
+                    check(projectDocumentRepository.updateViewerStateInTransaction(updatedDocument))
+                }
+                true
+            }
 
         suspend fun updateReadingLine(
             id: Long,
             enabled: Boolean,
             yFraction: Float,
+            documentId: Long? = null,
         ) {
             val sanitizedYFraction = sanitizeReadingLineYFraction(yFraction)
-            dao.updateReadingLine(id, enabled, sanitizedYFraction, System.currentTimeMillis())
+            transactionRunner.run {
+                val document = viewerDocument(id, documentId) ?: return@run
+                check(
+                    projectDocumentRepository.updateViewerStateInTransaction(
+                        document.copy(readingLineEnabled = enabled, readingLineYFraction = sanitizedYFraction),
+                    ),
+                )
+            }
+        }
+
+        suspend fun updateReadingLineVisibility(
+            id: Long,
+            enabled: Boolean,
+            documentId: Long? = null,
+        ) {
+            transactionRunner.run {
+                val document = viewerDocument(id, documentId) ?: return@run
+                check(
+                    projectDocumentRepository.updateViewerStateInTransaction(
+                        document.copy(readingLineEnabled = enabled),
+                    ),
+                )
+            }
+        }
+
+        suspend fun commitManualReadingLinePosition(
+            id: Long,
+            yFraction: Float,
+            documentId: Long? = null,
+        ) {
+            transactionRunner.run {
+                val document = viewerDocument(id, documentId) ?: return@run
+                check(
+                    projectDocumentRepository.updateViewerStateInTransaction(
+                        document.copy(
+                            readingLineYFraction = sanitizeReadingLineYFraction(yFraction),
+                            readingLineFollowCurrentRow = false,
+                        ),
+                    ),
+                )
+            }
+        }
+
+        suspend fun setReadingLineFollowCurrentRow(
+            id: Long,
+            enabled: Boolean,
+            documentId: Long? = null,
+        ): ReadingLineLocationResolution? =
+            transactionRunner.run {
+                val project = dao.getProject(id)?.toDomain() ?: return@run null
+                val document = viewerDocument(id, documentId) ?: return@run null
+                if (!enabled) {
+                    check(
+                        projectDocumentRepository.updateViewerStateInTransaction(
+                            document.copy(readingLineFollowCurrentRow = false),
+                        ),
+                    )
+                    return@run null
+                }
+                applyReadingLineFollow(
+                    document = document.copy(readingLineFollowCurrentRow = true),
+                    previousRow = project.count,
+                    newRow = project.count,
+                )
+            }
+
+        suspend fun updateVerticalReadingGuide(
+            id: Long,
+            enabled: Boolean?,
+            xFraction: Float?,
+            documentId: Long? = null,
+        ) {
+            transactionRunner.run {
+                val document = viewerDocument(id, documentId) ?: return@run
+                check(
+                    projectDocumentRepository.updateViewerStateInTransaction(
+                        document.copy(
+                            verticalReadingGuideEnabled = enabled ?: document.verticalReadingGuideEnabled,
+                            verticalReadingGuideXFraction =
+                                xFraction?.let(::sanitizeReadingGuideFraction)
+                                    ?: document.verticalReadingGuideXFraction,
+                        ),
+                    ),
+                )
+            }
         }
 
         suspend fun updateProjectStepSize(
             id: Long,
             stepSize: Int,
-        ) = dao.updateStepSize(id, stepSize, System.currentTimeMillis())
-
-        suspend fun updateProjectYarnCardIds(
-            id: Long,
-            yarnCardIds: String,
-        ) = dao.updateYarnCardIds(id, yarnCardIds, System.currentTimeMillis())
+        ): Boolean =
+            withContext(ioDispatcher) {
+                if (stepSize !in 1..MAX_MAIN_COUNTER_STEP_SIZE) {
+                    return@withContext false
+                }
+                transactionRunner.run {
+                    if (dao.getProject(id) == null) return@run false
+                    dao.updateStepSize(id, stepSize, System.currentTimeMillis())
+                    true
+                }
+            }
 
         suspend fun archiveProject(
             id: Long,
-            totalRows: Int,
             completedAt: Long,
-        ) = dao.archiveProject(id, totalRows, completedAt, System.currentTimeMillis())
+        ) {
+            completeProjectWithSessionChoice(
+                projectId = id,
+                choice = null,
+                completedAtMillis = completedAt,
+            )
+        }
 
-        suspend fun reactivateProject(id: Long) = dao.reactivateProject(id, System.currentTimeMillis())
+        suspend fun reactivateProject(
+            id: Long,
+            expectedCompletedAt: Long?,
+            canCreateAdditionalProjects: Boolean = true,
+        ): ProjectReactivationResult =
+            try {
+                transactionRunner.run {
+                    val project = dao.getProject(id) ?: return@run ProjectReactivationResult.ProjectUnavailable
+                    if (!project.isCompleted || project.completedAt != expectedCompletedAt) {
+                        return@run ProjectReactivationResult.ProjectUnavailable
+                    }
+                    if (!canAddActiveProject(canCreateAdditionalProjects)) {
+                        return@run ProjectReactivationResult.LimitReached
+                    }
+                    dao.reactivateProject(id, System.currentTimeMillis())
+                    ProjectReactivationResult.Reactivated
+                }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                ProjectReactivationResult.PersistenceFailure
+            }
 
         suspend fun deleteProject(id: Long) {
-            withContext(ioDispatcher) {
-                photoStorage.deleteProjectPhotos(context, id)
-                patternDocumentStorage.deleteProjectCaptureImages(context, id)
-            }
-            val patternUri = dao.getProject(id)?.patternUri
-            transactionRunner.run {
-                yarnCardRepository.clearLinkedProject(id)
-                dao.delete(id) // CASCADE poistaa liittyvät rivit muista tauluista
-            }
-            patternUri?.let { savedPatternRepository.deleteLocalPatternFileIfUnused(it) }
+            val cleanup =
+                transactionRunner.run {
+                    if (sessionDao.getActiveSession()?.projectId == id) return@run null
+                    val capturedCleanup = captureProjectCleanup(id) ?: return@run null
+                    yarnCardRepository.clearLinkedProject(id)
+                    dao.delete(id)
+                    capturedCleanup
+                }
+            cleanup?.let { cleanupProjectFiles(it) }
         }
 
         suspend fun getProjectCount(): Int = dao.getProjectCount()
@@ -444,6 +1126,12 @@ class CounterRepository
                     .map { it.name }
                     .toList()
             return ProjectNameRules.uniqueName(name, existingNames)
+        }
+
+        private suspend fun canAddActiveProject(callerAllowsAdditionalProjects: Boolean): Boolean {
+            val activeCount = dao.getActiveProjectCount()
+            val hasCurrentAccess = proManager?.hasFeature(ProFeature.UNLIMITED_PROJECTS) ?: true
+            return activeCount == 0 || (callerAllowsAdditionalProjects && hasCurrentAccess)
         }
 
         private fun normalizeProjectDetails(project: CounterProject): CounterProject? {
@@ -482,32 +1170,108 @@ class CounterRepository
             if (after.count == before.count) return false
 
             val updatedAt = System.currentTimeMillis()
+            val linkedDeltas = applyLinkedCounterDelta(id, after.count - before.count)
             dao.updateCounterStateWithHistory(
                 projectId = id,
                 count = after.count,
                 stepSize = after.stepSize,
                 action = change.historyAction,
                 previousValue = before.count,
-                newValue = after.count,
                 updatedAt = updatedAt,
+                linkedCounterDeltasJson = LinkedCounterDeltas.encode(linkedDeltas),
             )
             resetCurrentStitchIfNeeded(id, project, updatedAt)
-            applyLinkedCounterDelta(id, after.count - before.count)
+            projectDocumentRepository.getActiveDocument(id)?.let { document ->
+                applyReadingLineFollow(
+                    document = document,
+                    previousRow = before.count,
+                    newRow = after.count,
+                )
+            }
             return true
         }
 
         private suspend fun undoMainCounterChange(
             id: Long,
             project: CounterProject,
+            history: CounterHistoryEntity?,
         ): Boolean {
-            val history = dao.getLatestHistory(id) ?: return false
+            if (history == null || !history.isReversibleFor(id, project.count)) return false
             val updatedAt = System.currentTimeMillis()
             dao.updateCount(id, history.previousValue, updatedAt)
             dao.deleteHistoryById(history.id)
             resetCurrentStitchIfNeeded(id, project, updatedAt)
-            applyLinkedCounterDelta(id, history.previousValue - history.newValue)
+            val linkedDeltas = history.linkedCounterDeltasJson?.let(LinkedCounterDeltas::decode)
+            applyLinkedCounterDelta(
+                id,
+                history.previousValue - history.newValue,
+                linkedDeltas?.mapValues { (_, delta) -> -delta },
+            )
+            projectDocumentRepository.getActiveDocument(id)?.let { document ->
+                applyReadingLineFollow(
+                    document = document,
+                    previousRow = project.count,
+                    newRow = history.previousValue,
+                )
+            }
             return true
         }
+
+        private fun CounterHistoryEntity.isReversibleFor(
+            expectedProjectId: Long,
+            currentCount: Int,
+        ): Boolean {
+            if (
+                projectId != expectedProjectId ||
+                previousValue < 0 ||
+                newValue != currentCount ||
+                previousValue == newValue
+            ) {
+                return false
+            }
+            return when (action) {
+                MainCounterChange.Increment.historyAction -> newValue > previousValue
+                MainCounterChange.Decrement.historyAction -> newValue < previousValue
+                MainCounterChange.Reset.historyAction -> newValue == 0 && previousValue > 0
+                else -> false
+            }
+        }
+
+        private suspend fun applyReadingLineFollow(
+            document: ProjectDocument,
+            previousRow: Int,
+            newRow: Int,
+        ): ReadingLineLocationResolution? {
+            if (!document.readingLineFollowCurrentRow) return null
+            val resolution =
+                resolveReadingLineLocation(
+                    markers = parseMapping(document.rowMapping),
+                    previousRow = previousRow,
+                    newRow = newRow,
+                    currentPage = document.currentPage,
+                    currentYFraction = document.readingLineYFraction,
+                )
+            check(
+                projectDocumentRepository.updateViewerStateInTransaction(
+                    document.copy(
+                        currentPage = resolution.targetPage,
+                        readingLineYFraction = resolution.targetYFraction,
+                        readingLineFollowCurrentRow = true,
+                    ),
+                ),
+            )
+            return resolution
+        }
+
+        private suspend fun viewerDocument(
+            projectId: Long,
+            documentId: Long?,
+        ): ProjectDocument? =
+            if (documentId == null) {
+                projectDocumentRepository.getActiveDocument(projectId)
+            } else {
+                projectDocumentRepository.getDocument(documentId)?.takeIf { it.projectId == projectId }
+            }
 
         private suspend fun resetCurrentStitchIfNeeded(
             id: Long,
@@ -539,8 +1303,10 @@ class CounterRepository
         private suspend fun applyLinkedCounterDelta(
             projectId: Long,
             delta: Int,
-        ) {
-            if (delta == 0) return
+            counterDeltas: Map<Long, Int>? = null,
+        ): Map<Long, Int> {
+            if (delta == 0) return emptyMap()
+            val appliedDeltas = mutableMapOf<Long, Int>()
             projectCounterDao
                 .getCountersForProject(projectId)
                 .first()
@@ -550,24 +1316,443 @@ class CounterRepository
                             ProjectCounterType.fromPersistedValue(counter.counterType),
                         )
                 }.forEach { counter ->
-                    val updatedCount = (counter.count + delta).coerceAtLeast(0)
+                    val requestedDelta = if (counterDeltas == null) delta else counterDeltas[counter.id] ?: 0
+                    val updatedCount =
+                        (counter.count.toLong() + requestedDelta)
+                            .coerceIn(0L, Int.MAX_VALUE.toLong())
+                            .toInt()
                     if (updatedCount != counter.count) {
                         projectCounterDao.updateCount(counter.id, updatedCount)
+                        appliedDeltas[counter.id] = updatedCount - counter.count
                     }
                 }
+            return appliedDeltas
         }
 
-        suspend fun deleteHistoryBefore(
-            projectId: Long,
-            before: Long,
-        ) = dao.deleteHistoryBefore(projectId, before)
-
-        suspend fun undoLastChange(projectId: Long) = dao.undoLastChange(projectId, System.currentTimeMillis())
+        suspend fun undoLastChange(projectId: Long) {
+            applyMainCounterChange(projectId, MainCounterChange.Undo)
+        }
 
         suspend fun setTargetRows(
             projectId: Long,
             targetRows: Int?,
         ) = dao.updateTargetRows(projectId, targetRows, System.currentTimeMillis())
+
+        fun observeActiveSession(): Flow<ActiveWorkSession?> =
+            sessionDao
+                .observeActiveSession()
+                .map { it?.toDomain() }
+                .distinctUntilChanged()
+                .retryOnRepositoryReadFailure()
+
+        suspend fun refreshActiveSession(): ActiveWorkSession? =
+            transactionRunner.run {
+                synchronizeActiveSession(sessionTimeSource.snapshot())?.toDomain()
+            }
+
+        suspend fun activeSessionDurationSeconds(session: ActiveWorkSession): Long =
+            withContext(ioDispatcher) {
+                when (val evaluation = evaluateActiveSessionTime(session.timingAnchors, sessionTimeSource.snapshot())) {
+                    is ActiveSessionTimeEvaluation.Trusted -> evaluation.totalDurationSeconds
+                    is ActiveSessionTimeEvaluation.NeedsReview ->
+                        saturatingAdd(
+                            session.timingAnchors.checkpointedDurationSeconds,
+                            session.recoverySuggestedDurationSeconds ?: 0L,
+                        )
+                }
+            }
+
+        suspend fun activeSessionNeedsRecovery(session: ActiveWorkSession): Boolean =
+            withContext(ioDispatcher) {
+                session.needsRecoveryReview ||
+                    evaluateActiveSessionTime(
+                        session.timingAnchors,
+                        sessionTimeSource.snapshot(),
+                    ) is ActiveSessionTimeEvaluation.NeedsReview
+            }
+
+        suspend fun startSession(projectId: Long): StartSessionResult =
+            runSessionMutation(StartSessionResult.PersistenceFailure, StartSessionResult.HistoryLimitReached) {
+                val project =
+                    dao.getProject(projectId)?.toDomain()
+                        ?: return@runSessionMutation StartSessionResult.ProjectMissing
+                if (project.isCompleted) return@runSessionMutation StartSessionResult.ProjectCompleted
+                val current = synchronizeActiveSession(sessionTimeSource.snapshot())
+                if (current != null) {
+                    val active = current.toDomain()
+                    return@runSessionMutation if (current.projectId == projectId) {
+                        StartSessionResult.AlreadyActive(active)
+                    } else {
+                        StartSessionResult.ProjectConflict(active, projectId)
+                    }
+                }
+
+                createStartedSession(projectId, project.count, sessionTimeSource.snapshot())
+            }
+
+        suspend fun checkpointActiveSession(): ActiveWorkSession? =
+            transactionRunner.run {
+                val now = sessionTimeSource.snapshot()
+                val active = synchronizeActiveSession(now) ?: return@run null
+                checkpointTrustedSession(active, now).toDomain()
+            }
+
+        suspend fun markRecoveryPromptShown(
+            sessionToken: String,
+            recoveryIntervalToken: String,
+        ): Boolean =
+            transactionRunner.run {
+                val active = sessionDao.getActiveSession() ?: return@run false
+                if (active.sessionToken != sessionToken || active.recoveryIntervalToken != recoveryIntervalToken) {
+                    return@run false
+                }
+                if (!active.recoveryPromptShown) {
+                    sessionDao.updateActiveSession(
+                        active.copy(
+                            recoveryPromptShown = true,
+                            updatedAtWallMillis = sessionTimeSource.snapshot().wallClockMillis,
+                        ),
+                    )
+                }
+                true
+            }
+
+        suspend fun stopSession(
+            sessionToken: String,
+            reviewedDurationSeconds: Long,
+            reviewedRowsWorked: Int,
+            reviewedEndRow: Int,
+        ): StopSessionResult =
+            runSessionMutation(StopSessionResult.PersistenceFailure, StopSessionResult.HistoryLimitReached) {
+                val now = sessionTimeSource.snapshot()
+                val active =
+                    synchronizeActiveSession(now)
+                        ?: return@runSessionMutation StopSessionResult.NoActiveSession
+                if (active.sessionToken != sessionToken) return@runSessionMutation StopSessionResult.StaleAction
+                if (active.recoveryReason != null) {
+                    return@runSessionMutation StopSessionResult.NeedsRecoveryReview(active.toDomain())
+                }
+                val currentDurationSeconds =
+                    (evaluateActiveSessionTime(active.timingAnchors(), now) as? ActiveSessionTimeEvaluation.Trusted)
+                        ?.totalDurationSeconds
+                        ?: return@runSessionMutation StopSessionResult.NeedsRecoveryReview(active.toDomain())
+                if (
+                    reviewedDurationSeconds !in active.checkpointedDurationSeconds..currentDurationSeconds ||
+                    reviewedRowsWorked != active.trustedRowsWorked ||
+                    reviewedEndRow != active.trustedLastObservedRow
+                ) {
+                    return@runSessionMutation StopSessionResult.StaleAction
+                }
+                val previousSessionCount = sessionDao.countCompletedSessions()
+                val completedSessionId =
+                    insertCompletedSession(
+                        active = active,
+                        durationSeconds = reviewedDurationSeconds,
+                        rowsWorked = reviewedRowsWorked,
+                        endRow = reviewedEndRow,
+                    )
+                sessionDao.deleteActiveSession(active.sessionToken)
+                StopSessionResult.Saved(
+                    completedSessionId,
+                    wasFirstCompletedSession = completedSessionId != null && previousSessionCount == 0L,
+                )
+            }
+
+        suspend fun discardActiveSession(sessionToken: String): StopSessionResult =
+            runSessionMutation(StopSessionResult.PersistenceFailure) {
+                val active =
+                    sessionDao.getActiveSession()
+                        ?: return@runSessionMutation StopSessionResult.NoActiveSession
+                if (active.sessionToken != sessionToken) return@runSessionMutation StopSessionResult.StaleAction
+                sessionDao.deleteActiveSession(sessionToken)
+                StopSessionResult.Discarded
+            }
+
+        suspend fun addRecoveryInterval(
+            sessionToken: String,
+            recoveryIntervalToken: String,
+            durationSeconds: Long,
+        ): RecoveryResolutionResult =
+            runSessionMutation(
+                RecoveryResolutionResult.PersistenceFailure,
+                RecoveryResolutionResult.HistoryLimitReached,
+            ) {
+                val active =
+                    activeRecoverySession(sessionToken, recoveryIntervalToken)
+                        ?: return@runSessionMutation RecoveryResolutionResult.StaleAction
+                val checkpointed = saturatingAdd(active.checkpointedDurationSeconds, durationSeconds)
+                if (durationSeconds < 0L || !canRepresentCompletedDuration(active.startedAtWallMillis, checkpointed)) {
+                    return@runSessionMutation RecoveryResolutionResult.InvalidDuration
+                }
+                val now = sessionTimeSource.snapshot()
+                val updated =
+                    active.copy(
+                        trustedRowsWorked = saturatingRows(active.trustedRowsWorked, active.pendingRowsWorked),
+                        pendingRowsWorked = 0,
+                        trustedLastObservedRow = active.lastObservedRow,
+                        reviewedRowsWorked = saturatingRows(active.trustedRowsWorked, active.pendingRowsWorked),
+                        reviewedLastObservedRow = active.lastObservedRow,
+                        unreviewedRowsWorked = 0,
+                        checkpointedDurationSeconds = checkpointed,
+                        reviewedDurationBaselineSeconds = checkpointed,
+                        segmentStartedAtWallMillis = now.wallClockMillis,
+                        segmentStartedElapsedRealtimeMillis = now.elapsedRealtimeMillis,
+                        bootCount = now.bootCount,
+                        recoveryReason = null,
+                        recoveryIntervalToken = null,
+                        recoverySuggestedDurationSeconds = null,
+                        recoveryPromptShown = false,
+                        updatedAtWallMillis = now.wallClockMillis,
+                    )
+                sessionDao.updateActiveSession(updated)
+                RecoveryResolutionResult.Continued(updated.toDomain())
+            }
+
+        suspend fun editRecoveryDurationAndStop(
+            sessionToken: String,
+            recoveryIntervalToken: String,
+            totalDurationSeconds: Long,
+        ): RecoveryResolutionResult =
+            runSessionMutation(
+                RecoveryResolutionResult.PersistenceFailure,
+                RecoveryResolutionResult.HistoryLimitReached,
+            ) {
+                val active =
+                    activeRecoverySession(sessionToken, recoveryIntervalToken)
+                        ?: return@runSessionMutation RecoveryResolutionResult.StaleAction
+                if (!canRepresentCompletedDuration(active.startedAtWallMillis, totalDurationSeconds)) {
+                    return@runSessionMutation RecoveryResolutionResult.InvalidDuration
+                }
+                val completedSessionId =
+                    insertCompletedSession(
+                        active = active,
+                        durationSeconds = totalDurationSeconds,
+                        rowsWorked = saturatingRows(active.trustedRowsWorked, active.pendingRowsWorked),
+                        endRow = active.lastObservedRow,
+                    )
+                sessionDao.deleteActiveSession(active.sessionToken)
+                RecoveryResolutionResult.EditedAndStopped(completedSessionId)
+            }
+
+        suspend fun discardRecoveryInterval(
+            sessionToken: String,
+            recoveryIntervalToken: String,
+        ): RecoveryResolutionResult =
+            runSessionMutation(
+                RecoveryResolutionResult.PersistenceFailure,
+                RecoveryResolutionResult.HistoryLimitReached,
+            ) {
+                val active =
+                    sessionDao.getActiveSession()
+                        ?: return@runSessionMutation RecoveryResolutionResult.StaleAction
+                if (
+                    active.sessionToken != sessionToken ||
+                    active.recoveryIntervalToken != recoveryIntervalToken ||
+                    active.recoveryReason == null
+                ) {
+                    return@runSessionMutation RecoveryResolutionResult.StaleAction
+                }
+                val completedSessionId =
+                    insertCompletedSession(
+                        active = active,
+                        durationSeconds = active.checkpointedDurationSeconds,
+                        rowsWorked = active.trustedRowsWorked,
+                        endRow = active.trustedLastObservedRow,
+                    )
+                sessionDao.deleteActiveSession(active.sessionToken)
+                RecoveryResolutionResult.DiscardedAndStopped(completedSessionId)
+            }
+
+        private suspend fun activeRecoverySession(
+            sessionToken: String,
+            recoveryIntervalToken: String,
+        ): ActiveSessionEntity? =
+            sessionDao.getActiveSession()?.takeIf { active ->
+                active.sessionToken == sessionToken &&
+                    active.recoveryIntervalToken == recoveryIntervalToken &&
+                    active.recoveryReason != null
+            }
+
+        suspend fun replaceActiveSession(
+            requestedProjectId: Long,
+            expectedSessionToken: String,
+            saveCurrent: Boolean,
+        ): StartSessionResult =
+            runSessionMutation(StartSessionResult.PersistenceFailure, StartSessionResult.HistoryLimitReached) {
+                val requested =
+                    dao.getProject(requestedProjectId)?.toDomain()
+                        ?: return@runSessionMutation StartSessionResult.ProjectMissing
+                if (requested.isCompleted) return@runSessionMutation StartSessionResult.ProjectCompleted
+                val now = sessionTimeSource.snapshot()
+                val current = synchronizeActiveSession(now)
+                if (current == null) {
+                    return@runSessionMutation createStartedSession(requestedProjectId, requested.count, now)
+                }
+                if (current.sessionToken != expectedSessionToken) {
+                    return@runSessionMutation StartSessionResult.ProjectConflict(current.toDomain(), requestedProjectId)
+                }
+                if (saveCurrent && current.recoveryReason != null) {
+                    return@runSessionMutation StartSessionResult.ProjectConflict(current.toDomain(), requestedProjectId)
+                }
+                if (saveCurrent) {
+                    saveAndDeleteActiveSession(current, now)
+                } else {
+                    sessionDao.deleteActiveSession(current.sessionToken)
+                }
+                createStartedSession(requestedProjectId, requested.count, now)
+            }
+
+        suspend fun completeProjectWithSessionChoice(
+            projectId: Long,
+            choice: ActiveSessionCompletionChoice?,
+            completedAtMillis: Long? = null,
+            expectedSession: ActiveWorkSession? = null,
+        ): ProjectCompletionResult =
+            runSessionMutation(
+                ProjectCompletionResult.PersistenceFailure,
+                ProjectCompletionResult.HistoryLimitReached,
+            ) {
+                val project = dao.getProject(projectId)
+                if (project == null) {
+                    return@runSessionMutation ProjectCompletionResult.ProjectUnavailable
+                }
+                if (project.isCompleted) return@runSessionMutation ProjectCompletionResult.Completed
+                val now = sessionTimeSource.snapshot()
+                val active = synchronizeActiveSession(now)
+                val activeSessionResult =
+                    finalizeActiveSessionForCompletion(projectId, choice, active, now, expectedSession)
+                if (activeSessionResult != null) return@runSessionMutation activeSessionResult
+                val completedAt = completedAtMillis ?: now.wallClockMillis
+                dao.archiveProject(projectId, project.count, completedAt, completedAt)
+                val eventId =
+                    dao.insertCompletion(
+                        ProjectCompletionEntity(projectId = projectId, completedAt = completedAt, zoneId = now.zoneId),
+                    )
+                ProjectCompletionResult.CompletedNow(
+                    ProjectCompletionSnapshot(
+                        eventId = eventId,
+                        completionZoneId = now.zoneId,
+                        project =
+                            project.toDomain().copy(
+                                isCompleted = true,
+                                totalRows = project.count,
+                                completedAt = completedAt,
+                                updatedAt = completedAt,
+                            ),
+                        totalSessionMinutes = sessionDao.getTotalMinutes(projectId),
+                    ),
+                )
+            }
+
+        private suspend fun finalizeActiveSessionForCompletion(
+            projectId: Long,
+            choice: ActiveSessionCompletionChoice?,
+            active: ActiveSessionEntity?,
+            now: SessionTimeSnapshot,
+            expectedSession: ActiveWorkSession?,
+        ): ProjectCompletionResult? {
+            if (active?.projectId != projectId) {
+                return if (expectedSession != null) ProjectCompletionResult.ProjectUnavailable else null
+            }
+            if (choice == null || !active.matchesDecision(expectedSession)) {
+                return ProjectCompletionResult.NeedsActiveSessionChoice(active.toDomain())
+            }
+            if (choice == ActiveSessionCompletionChoice.SAVE && active.recoveryReason != null) {
+                return ProjectCompletionResult.NeedsRecoveryReview(active.toDomain())
+            }
+            if (choice == ActiveSessionCompletionChoice.SAVE) {
+                saveAndDeleteActiveSession(active, now)
+            } else {
+                sessionDao.deleteActiveSession(active.sessionToken)
+            }
+            return null
+        }
+
+        suspend fun deleteProjectResolvingActiveSession(
+            id: Long,
+            discardActiveSession: Boolean,
+            expectedSession: ActiveWorkSession? = null,
+        ): ProjectDeletionResult =
+            try {
+                deleteProjectResolvingActiveSessionInternal(id, discardActiveSession, expectedSession)
+            } catch (cancellation: CancellationException) {
+                throw cancellation
+            } catch (_: Exception) {
+                ProjectDeletionResult.PersistenceFailure
+            }
+
+        private suspend fun deleteProjectResolvingActiveSessionInternal(
+            id: Long,
+            discardActiveSession: Boolean,
+            expectedSession: ActiveWorkSession?,
+        ): ProjectDeletionResult {
+            val conflict =
+                transactionRunner.run {
+                    val project = dao.getProject(id) ?: return@run ProjectDeletionResult.ProjectUnavailable
+                    val active = sessionDao.getActiveSession()
+                    if (active?.projectId == project.id &&
+                        (!discardActiveSession || !active.matchesDecision(expectedSession))
+                    ) {
+                        ProjectDeletionResult.NeedsActiveSessionDiscard(active.toDomain())
+                    } else {
+                        null
+                    }
+                }
+            if (conflict != null) return conflict
+
+            var cleanup: ProjectFileCleanup? = null
+            val result =
+                transactionRunner.run {
+                    val project = dao.getProject(id) ?: return@run ProjectDeletionResult.ProjectUnavailable
+                    val active = sessionDao.getActiveSession()
+                    if (active?.projectId == project.id) {
+                        if (!discardActiveSession || !active.matchesDecision(expectedSession)) {
+                            return@run ProjectDeletionResult.NeedsActiveSessionDiscard(active.toDomain())
+                        }
+                        sessionDao.deleteActiveSession(active.sessionToken)
+                    }
+                    cleanup = captureProjectCleanup(id) ?: return@run ProjectDeletionResult.ProjectUnavailable
+                    yarnCardRepository.clearLinkedProject(id)
+                    dao.delete(id)
+                    ProjectDeletionResult.Deleted
+                }
+            if (result == ProjectDeletionResult.Deleted) {
+                cleanup?.let { cleanupProjectFiles(it) }
+            }
+            return result
+        }
+
+        private fun ActiveSessionEntity.matchesDecision(expected: ActiveWorkSession?): Boolean =
+            expected != null &&
+                projectId == expected.projectId &&
+                sessionToken == expected.sessionToken &&
+                recoveryIntervalToken == expected.recoveryIntervalToken
+
+        private suspend fun captureProjectCleanup(id: Long): ProjectFileCleanup? {
+            val project = dao.getProject(id) ?: return null
+            val patternUris =
+                (projectDocumentRepository.getDistinctUris(id) + listOfNotNull(project.patternUri))
+                    .filter(String::isNotBlank)
+                    .distinct()
+            return ProjectFileCleanup(projectId = id, patternUris = patternUris)
+        }
+
+        private suspend fun cleanupProjectFiles(cleanup: ProjectFileCleanup) {
+            withContext(NonCancellable) {
+                withContext(ioDispatcher) {
+                    runCatching { photoStorage.deleteProjectPhotos(context, cleanup.projectId) }
+                    runCatching { patternDocumentStorage.deleteProjectCaptureImages(context, cleanup.projectId) }
+                }
+                cleanup.patternUris.forEach { patternUri ->
+                    runCatching { savedPatternRepository.deleteLocalPatternFileIfUnused(patternUri) }
+                }
+            }
+        }
+
+        private data class ProjectFileCleanup(
+            val projectId: Long,
+            val patternUris: List<String>,
+        )
 
         // Session-metodit
         fun getSessionsForProject(projectId: Long): Flow<List<KnitSession>> =
@@ -578,26 +1763,88 @@ class CounterRepository
 
         fun getCompletedProjectCount(): Flow<Int> = sessionDao.getCompletedProjectCount().retryOnRepositoryReadFailure()
 
-        fun getSessionsForInsights(
+        /** Koostaa yhden eheän tilannekuvan säilyttämättä istuntohistoriaa muistissa. */
+        @OptIn(ExperimentalCoroutinesApi::class)
+        fun <T> observeSessionsForInsights(
             projectId: Long?,
             start: Long?,
-        ): Flow<List<KnitSession>> {
-            val sessions =
-                when {
-                    projectId == null && start == null -> sessionDao.getAllSessionsForInsights()
-                    projectId == null && start != null -> sessionDao.getAllSessionsForInsightsSince(start)
-                    projectId != null && start == null -> sessionDao.getProjectSessionsForInsights(projectId)
-                    projectId != null && start != null ->
-                        sessionDao.getProjectSessionsForInsightsSince(
-                            projectId = projectId,
-                            start = start,
-                        )
-                    else -> sessionDao.getAllSessionsForInsights()
+            zone: ZoneId,
+            create: (SessionInsightsFacts) -> T,
+            accumulate: suspend (T, List<KnitSession>) -> Unit,
+        ): Flow<T> =
+            sessionDao
+                .observeSessionChanges()
+                .mapLatest {
+                    transactionRunner.run {
+                        val facts =
+                            SessionInsightsFacts(
+                                sessionDao.hasAnySessions(),
+                                sessionDao.getSessionProjectActivity(projectId),
+                            )
+                        val firstSessionDate = if (start == null) firstInsightDate(projectId, zone) else null
+                        val result = create(facts.copy(firstSessionDate = firstSessionDate))
+                        var afterId = Long.MIN_VALUE
+                        do {
+                            currentCoroutineContext().ensureActive()
+                            val batch =
+                                when {
+                                    projectId == null && start == null -> sessionDao.getInsightSessionBatch(afterId)
+                                    projectId == null && start != null ->
+                                        sessionDao.getInsightSessionBatchSince(
+                                            afterId,
+                                            start,
+                                        )
+                                    projectId != null && start == null ->
+                                        sessionDao.getProjectInsightSessionBatch(
+                                            projectId,
+                                            afterId,
+                                        )
+                                    else ->
+                                        sessionDao.getProjectInsightSessionBatchSince(
+                                            requireNotNull(projectId),
+                                            afterId,
+                                            requireNotNull(start),
+                                        )
+                                }
+                            if (batch.isEmpty()) break
+                            accumulate(result, batch.map { it.toDomain() })
+                            afterId = batch.last().id
+                        } while (true)
+                        result
+                    }
+                }.retryOnRepositoryReadFailure()
+                .flowOn(ioDispatcher)
+
+        private suspend fun firstInsightDate(
+            projectId: Long?,
+            fallbackZone: ZoneId,
+        ): LocalDate? {
+            val earliestStart = sessionDao.getFirstSessionStart(projectId) ?: return null
+            val windowMillis = 36L * 60L * 60L * 1_000L
+            val latestStart = earliestStart.coerceAtMost(Long.MAX_VALUE - windowMillis) + windowMillis
+            var first: LocalDate? = null
+            var afterId = Long.MIN_VALUE
+            // Vyöhykkeet kattavat -18..+18 tuntia. Myöhemmät alut eivät voi edeltää näitä paikallispäiviä.
+            do {
+                currentCoroutineContext().ensureActive()
+                val batch = sessionDao.getInsightFirstDateBatch(projectId, afterId, latestStart)
+                if (batch.isEmpty()) break
+                batch.forEach { row ->
+                    val zone = row.zoneId?.let { runCatching { ZoneId.of(it) }.getOrNull() } ?: fallbackZone
+                    val date =
+                        Instant
+                            .ofEpochMilli(row.startedAt)
+                            .atZone(zone)
+                            .toLocalDate()
+                    first = first?.let { minOf(it, date) } ?: date
                 }
-            return sessions.toDomainSessions()
+                afterId = batch.last().id
+            } while (true)
+            return first
         }
 
-        suspend fun insertSession(session: KnitSession): Long = sessionDao.insert(session.toEntity())
+        suspend fun insertSession(session: KnitSession): Long =
+            transactionRunner.run { insertCompletedSessionRow(session.toEntity()) }
 
         suspend fun deleteSession(id: Long) = sessionDao.deleteById(id)
 
@@ -608,7 +1855,314 @@ class CounterRepository
 
         suspend fun getTotalMinutesForProject(projectId: Long): Int = sessionDao.getTotalMinutes(projectId)
 
+        fun observeHasSessionsForProject(projectId: Long): Flow<Boolean> =
+            sessionDao
+                .observeSessionChanges()
+                .map { sessionDao.hasSessions(projectId) }
+                .retryOnRepositoryReadFailure()
+                .flowOn(ioDispatcher)
+
         suspend fun getLatestSession(projectId: Long): KnitSession? = sessionDao.getLatestSession(projectId)?.toDomain()
+
+        private suspend fun synchronizeActiveSession(now: SessionTimeSnapshot): ActiveSessionEntity? {
+            val active = sessionDao.getActiveSession() ?: return null
+            if (active.recoveryReason != null) {
+                if (active.recoveryIntervalToken != null) return active
+                val repaired =
+                    active.copy(
+                        recoveryReason = ActiveSessionRecoveryReason.INVALID_ANCHORS.name,
+                        recoveryIntervalToken = UUID.randomUUID().toString(),
+                        recoverySuggestedDurationSeconds = null,
+                        recoveryPromptShown = false,
+                        updatedAtWallMillis = now.wallClockMillis,
+                    )
+                sessionDao.updateActiveSession(repaired)
+                return repaired
+            }
+            if (
+                active.sessionToken.isBlank() ||
+                active.projectId <= 0L ||
+                runCatching { ZoneId.of(active.startZoneId) }.isFailure
+            ) {
+                val malformed =
+                    active.copy(
+                        recoveryReason = ActiveSessionRecoveryReason.INVALID_ANCHORS.name,
+                        recoveryIntervalToken = UUID.randomUUID().toString(),
+                        recoverySuggestedDurationSeconds = null,
+                        recoveryPromptShown = false,
+                        updatedAtWallMillis = now.wallClockMillis,
+                    )
+                sessionDao.updateActiveSession(malformed)
+                return malformed
+            }
+            return when (val evaluation = evaluateActiveSessionTime(active.timingAnchors(), now)) {
+                is ActiveSessionTimeEvaluation.Trusted -> active
+                is ActiveSessionTimeEvaluation.NeedsReview -> {
+                    val recoveryBase =
+                        if (evaluation.reason == ActiveSessionRecoveryReason.LONG_RUNNING) {
+                            active.copy(
+                                checkpointedDurationSeconds = active.reviewedDurationBaselineSeconds,
+                                trustedLastObservedRow = active.reviewedLastObservedRow,
+                                trustedRowsWorked = active.reviewedRowsWorked,
+                                pendingRowsWorked =
+                                    saturatingRows(active.pendingRowsWorked, active.unreviewedRowsWorked),
+                                unreviewedRowsWorked = 0,
+                            )
+                        } else {
+                            active
+                        }
+                    val recovery =
+                        recoveryBase.copy(
+                            recoveryReason = evaluation.reason.name,
+                            recoveryIntervalToken = UUID.randomUUID().toString(),
+                            recoverySuggestedDurationSeconds = evaluation.suggestedPendingDurationSeconds,
+                            recoveryPromptShown = false,
+                            updatedAtWallMillis = now.wallClockMillis,
+                        )
+                    sessionDao.updateActiveSession(recovery)
+                    recovery
+                }
+            }
+        }
+
+        private suspend fun checkpointTrustedSession(
+            active: ActiveSessionEntity,
+            now: SessionTimeSnapshot,
+        ): ActiveSessionEntity {
+            if (active.recoveryReason != null) return active
+            return when (val evaluation = evaluateActiveSessionTime(active.timingAnchors(), now)) {
+                is ActiveSessionTimeEvaluation.NeedsReview ->
+                    synchronizeActiveSession(now) ?: active
+                is ActiveSessionTimeEvaluation.Trusted -> {
+                    val remainingMillis =
+                        (now.elapsedRealtimeMillis - active.segmentStartedElapsedRealtimeMillis) % 1_000L
+                    val updated =
+                        active.copy(
+                            checkpointedDurationSeconds = evaluation.totalDurationSeconds,
+                            segmentStartedAtWallMillis = now.wallClockMillis - remainingMillis,
+                            segmentStartedElapsedRealtimeMillis = now.elapsedRealtimeMillis - remainingMillis,
+                            bootCount = now.bootCount,
+                            updatedAtWallMillis = now.wallClockMillis,
+                        )
+                    sessionDao.updateActiveSession(updated)
+                    updated
+                }
+            }
+        }
+
+        private suspend fun checkpointActiveSessionForRowChange(
+            projectId: Long,
+            newRow: Int,
+            undoneReset: Boolean,
+            undoHistory: CounterHistoryEntity?,
+        ) {
+            val now = sessionTimeSource.snapshot()
+            val synchronized = synchronizeActiveSession(now) ?: return
+            if (synchronized.projectId != projectId) return
+            if (undoHistory == null) {
+                dao.updateLatestHistorySessionUndo(projectId, CounterSessionUndo.capture(synchronized).encode())
+            } else {
+                val snapshot = undoHistory.sessionUndoJson?.let(CounterSessionUndo::decodeOrNull)
+                val checkpointed = checkpointTrustedSession(synchronized, now)
+                val restored = snapshot?.restoreRows(checkpointed)
+                if (restored != null) {
+                    sessionDao.updateActiveSession(
+                        restored.copy(lastObservedRow = newRow, updatedAtWallMillis = now.wallClockMillis),
+                    )
+                    return
+                }
+            }
+            val delta = newRow.toLong() - synchronized.lastObservedRow.toLong()
+            if (synchronized.recoveryReason != null) {
+                val pendingRowsWorked =
+                    if (undoneReset) {
+                        positiveRowDelta(synchronized.trustedLastObservedRow, newRow)
+                    } else {
+                        adjustRowsWorked(synchronized.pendingRowsWorked, delta)
+                    }
+                sessionDao.updateActiveSession(
+                    synchronized.copy(
+                        lastObservedRow = newRow,
+                        pendingRowsWorked = pendingRowsWorked,
+                        updatedAtWallMillis = now.wallClockMillis,
+                    ),
+                )
+                return
+            }
+            val checkpointed = checkpointTrustedSession(synchronized, now)
+            val unreviewedRowsWorked =
+                if (undoneReset) {
+                    positiveRowDelta(checkpointed.reviewedLastObservedRow, newRow)
+                } else {
+                    adjustRowsWorked(checkpointed.unreviewedRowsWorked, delta)
+                }
+            val trustedRowsWorked =
+                if (undoneReset) {
+                    saturatingRows(checkpointed.reviewedRowsWorked, unreviewedRowsWorked)
+                } else {
+                    adjustRowsWorked(checkpointed.trustedRowsWorked, delta)
+                }
+            sessionDao.updateActiveSession(
+                checkpointed.copy(
+                    lastObservedRow = newRow,
+                    trustedLastObservedRow = newRow,
+                    trustedRowsWorked = trustedRowsWorked,
+                    unreviewedRowsWorked = unreviewedRowsWorked,
+                    updatedAtWallMillis = now.wallClockMillis,
+                ),
+            )
+        }
+
+        private suspend fun saveAndDeleteActiveSession(
+            active: ActiveSessionEntity,
+            now: SessionTimeSnapshot,
+        ): Long? {
+            val evaluation = evaluateActiveSessionTime(active.timingAnchors(), now)
+            val trusted = evaluation as? ActiveSessionTimeEvaluation.Trusted
+            val completedSessionId =
+                insertCompletedSession(
+                    active = active,
+                    durationSeconds = trusted?.totalDurationSeconds ?: active.checkpointedDurationSeconds,
+                    rowsWorked = active.trustedRowsWorked,
+                    endRow = active.trustedLastObservedRow,
+                )
+            sessionDao.deleteActiveSession(active.sessionToken)
+            return completedSessionId
+        }
+
+        private suspend fun insertCompletedSession(
+            active: ActiveSessionEntity,
+            durationSeconds: Long,
+            rowsWorked: Int,
+            endRow: Int,
+        ): Long? {
+            val safeDuration = durationSeconds.coerceAtLeast(0L)
+            val safeRows = rowsWorked.coerceAtLeast(0)
+            if (safeDuration < 1L && safeRows == 0) return null
+            val durationMinutes =
+                saturatingAdd(safeDuration, 59L)
+                    .div(60L)
+                    .coerceAtMost(Int.MAX_VALUE.toLong())
+                    .toInt()
+            val durationMillis =
+                if (safeDuration > Long.MAX_VALUE / 1_000L) Long.MAX_VALUE else safeDuration * 1_000L
+            val endedAt = saturatingAdd(active.startedAtWallMillis.coerceAtLeast(0L), durationMillis)
+            return insertCompletedSessionRow(
+                SessionEntity(
+                    projectId = active.projectId,
+                    startedAt = active.startedAtWallMillis.coerceAtLeast(0L),
+                    endedAt = endedAt,
+                    startRow = active.startRow,
+                    endRow = endRow,
+                    durationMinutes = durationMinutes,
+                    durationSeconds = safeDuration,
+                    rowsWorked = safeRows,
+                    zoneId = active.startZoneId,
+                ),
+            )
+        }
+
+        private suspend fun insertCompletedSessionRow(session: SessionEntity): Long {
+            if (sessionDao.countCompletedSessions() >= MAX_COMPLETED_SESSIONS) {
+                throw SessionHistoryLimitReachedException()
+            }
+            return sessionDao.insert(session)
+        }
+
+        private suspend fun createStartedSession(
+            projectId: Long,
+            startRow: Int,
+            now: SessionTimeSnapshot,
+        ): StartSessionResult.Started {
+            if (sessionDao.countCompletedSessions() >= MAX_COMPLETED_SESSIONS) {
+                throw SessionHistoryLimitReachedException()
+            }
+            val session =
+                ActiveSessionEntity(
+                    sessionToken = UUID.randomUUID().toString(),
+                    projectId = projectId,
+                    startedAtWallMillis = now.wallClockMillis,
+                    startZoneId = now.zoneId,
+                    startRow = startRow,
+                    lastObservedRow = startRow,
+                    trustedLastObservedRow = startRow,
+                    trustedRowsWorked = 0,
+                    pendingRowsWorked = 0,
+                    reviewedRowsWorked = 0,
+                    reviewedLastObservedRow = startRow,
+                    unreviewedRowsWorked = 0,
+                    checkpointedDurationSeconds = 0L,
+                    reviewedDurationBaselineSeconds = 0L,
+                    segmentStartedAtWallMillis = now.wallClockMillis,
+                    segmentStartedElapsedRealtimeMillis = now.elapsedRealtimeMillis,
+                    bootCount = now.bootCount,
+                    recoveryReason = null,
+                    recoveryIntervalToken = null,
+                    recoverySuggestedDurationSeconds = null,
+                    recoveryPromptShown = false,
+                    updatedAtWallMillis = now.wallClockMillis,
+                )
+            sessionDao.insertActiveSession(session)
+            return StartSessionResult.Started((synchronizeActiveSession(now) ?: session).toDomain())
+        }
+
+        private fun ActiveSessionEntity.timingAnchors() =
+            ActiveSessionTimingAnchors(
+                segmentStartedAtWallMillis = segmentStartedAtWallMillis,
+                segmentStartedElapsedRealtimeMillis = segmentStartedElapsedRealtimeMillis,
+                bootCount = bootCount,
+                checkpointedDurationSeconds = checkpointedDurationSeconds,
+                reviewedDurationBaselineSeconds = reviewedDurationBaselineSeconds,
+            )
+
+        private fun adjustRowsWorked(
+            current: Int,
+            delta: Long,
+        ): Int =
+            (current.toLong() + delta)
+                .coerceIn(0L, Int.MAX_VALUE.toLong())
+                .toInt()
+
+        private fun positiveRowDelta(
+            previous: Int,
+            current: Int,
+        ): Int =
+            (current.toLong() - previous.toLong())
+                .coerceIn(0L, Int.MAX_VALUE.toLong())
+                .toInt()
+
+        private fun saturatingRows(
+            trusted: Int,
+            pending: Int,
+        ): Int =
+            (trusted.toLong() + pending.toLong())
+                .coerceIn(0L, Int.MAX_VALUE.toLong())
+                .toInt()
+
+        private fun canRepresentCompletedDuration(
+            startedAtWallMillis: Long,
+            durationSeconds: Long,
+        ): Boolean {
+            if (startedAtWallMillis < 0L || durationSeconds < 0L || durationSeconds > Long.MAX_VALUE / 1_000L) {
+                return false
+            }
+            return startedAtWallMillis <= Long.MAX_VALUE - durationSeconds * 1_000L
+        }
+
+        private suspend fun <T> runSessionMutation(
+            persistenceFailure: T,
+            historyLimitReached: T? = null,
+            block: suspend () -> T,
+        ): T =
+            try {
+                transactionRunner.run(block)
+            } catch (cancellation: CancellationException) {
+                throw cancellation
+            } catch (_: SessionHistoryLimitReachedException) {
+                historyLimitReached ?: persistenceFailure
+            } catch (_: Exception) {
+                persistenceFailure
+            }
 
         private fun Flow<List<SessionEntity>>.toDomainSessions(): Flow<List<KnitSession>> =
             distinctUntilChanged()
@@ -624,6 +2178,8 @@ internal fun mergeProjectNotes(
 ): String {
     if (currentNotes == baseNotes || currentNotes == requestedNotes) return requestedNotes
     if (requestedNotes == baseNotes) return currentNotes
+    if (currentNotes.containsMergedNoteBlock(requestedNotes)) return currentNotes
+    if (requestedNotes.containsMergedNoteBlock(currentNotes)) return requestedNotes
     if (baseNotes.isEmpty()) return combineNoteBlocks(requestedNotes, currentNotes)
 
     val requestedSuffix = requestedNotes.removeKnownPrefix(baseNotes)
@@ -651,5 +2207,16 @@ private fun combineNoteBlocks(
     when {
         primary.isBlank() -> secondary
         secondary.isBlank() -> primary
-        else -> "$primary\n\n---\n\n$secondary"
+        else -> "$primary$MERGED_NOTES_SEPARATOR$secondary"
     }
+
+private fun String.containsMergedNoteBlock(block: String): Boolean =
+    block.isNotEmpty() && split(MERGED_NOTES_SEPARATOR).any { it == block }
+
+private const val MERGED_NOTES_SEPARATOR = "\n\n---\n\n"
+
+data class SessionInsightsFacts(
+    val hasAnySessionData: Boolean,
+    val projects: List<SessionProjectActivity>,
+    val firstSessionDate: LocalDate? = null,
+)

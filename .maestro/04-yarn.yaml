@@ -1,0 +1,28 @@
+appId: com.finnvek.knittools
+name: Yarn creation and persistence
+---
+- launchApp:
+    clearState: true
+- tapOn: "LIBRARY"
+- tapOn: "My Yarn"
+- tapOn: "Add Yarn"
+- tapOn: "Yarn name"
+- inputText: "Maestro Merino"
+- tapOn: "Brand"
+- inputText: "Test Mill"
+- hideKeyboard
+- scrollUntilVisible:
+    element:
+      text: "Save"
+    direction: DOWN
+- tapOn: "Save"
+- tapOn: "Test Mill Maestro Merino"
+- assertVisible: "Test Mill"
+- tapOn: "Increase"
+- assertVisible: "2 skeins"
+- launchApp
+- tapOn: "LIBRARY"
+- tapOn: "My Yarn"
+- tapOn: "Test Mill Maestro Merino"
+- assertVisible: "Test Mill"
+- assertVisible: "2 skeins"

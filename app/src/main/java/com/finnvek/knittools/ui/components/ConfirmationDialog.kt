@@ -1,34 +1,63 @@
 package com.finnvek.knittools.ui.components
 
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.window.DialogProperties
 import com.finnvek.knittools.R
+import com.finnvek.knittools.ui.layout.AdaptiveModalWindow
+import com.finnvek.knittools.ui.layout.LocalAdaptiveModalWindow
+import com.finnvek.knittools.ui.layout.LocalWindowFolds
 
 /**
  * Yhtenäinen vahvistusdialogi destruktiivisille ja muille toiminnoille.
  * Destruktiivisissa (isDestructive=true) vahvista-nappi saa error-värin.
+ * [confirmEnabled] pitää vahvistuksen poissa käytöstä kesken tallennuksen, ja painikkeiden
+ * modifierit tuovat kosketuskoon ja testitunnisteet ilman omaa AlertDialogia.
  */
 @Composable
+@Suppress("kotlin:S107") // Valinnaiset parametrit korvaavat kutsukohtaiset AlertDialogit.
 fun ConfirmationDialog(
     title: String,
     message: String,
+    modifier: Modifier = Modifier,
     confirmText: String = stringResource(R.string.confirm),
     isDestructive: Boolean = false,
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
+    scrollableMessage: Boolean = true,
+    confirmEnabled: Boolean = true,
+    confirmModifier: Modifier = Modifier,
+    dismissModifier: Modifier = Modifier,
 ) {
+    val usePaneCoordinates =
+        LocalAdaptiveModalWindow.current && LocalWindowFolds.current.any { it.isSeparating || it.isOccluding }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(title) },
-        text = { Text(message) },
+        modifier = modifier,
+        properties = DialogProperties(decorFitsSystemWindows = !usePaneCoordinates),
+        title = {
+            AdaptiveModalWindow()
+            Text(title)
+        },
+        text = {
+            Text(
+                text = message,
+                modifier = if (scrollableMessage) Modifier.verticalScroll(rememberScrollState()) else Modifier,
+            )
+        },
         confirmButton = {
             TextButton(
                 onClick = onConfirm,
+                enabled = confirmEnabled,
+                modifier = confirmModifier,
                 colors =
                     if (isDestructive) {
                         ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
@@ -40,9 +69,7 @@ fun ConfirmationDialog(
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.cancel))
-            }
+            CancelButton(onClick = onDismiss, modifier = dismissModifier)
         },
     )
 }

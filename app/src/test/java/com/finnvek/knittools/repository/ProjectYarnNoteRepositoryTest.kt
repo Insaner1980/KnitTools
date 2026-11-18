@@ -8,6 +8,7 @@ import com.finnvek.knittools.data.local.ProjectYarnNoteDao
 import com.finnvek.knittools.data.local.ProjectYarnNoteEntity
 import com.finnvek.knittools.data.local.YarnCardDao
 import com.finnvek.knittools.data.local.YarnCardEntity
+import com.finnvek.knittools.data.local.toEntity
 import com.finnvek.knittools.domain.model.ProjectYarnNote
 import com.finnvek.knittools.domain.model.YarnCardStatus
 import io.mockk.mockk
@@ -19,6 +20,7 @@ import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
@@ -63,7 +65,8 @@ class ProjectYarnNoteRepositoryTest {
             assertEquals("Silk blend", dao.lastUpserted?.description)
             assertEquals(2, dao.lastUpserted?.quantity)
             assertEquals("Use only for cuffs", dao.lastUpserted?.notes)
-            assertEquals(listOf("Sleeve yarn"), notes.map { it.name })
+            assertEquals(listOf("Sleeve yarn", "Contrast cuff"), notes.map { it.name })
+            assertEquals("Contrast cuff", dao.getById(savedId)?.name)
         }
 
     @Test
@@ -94,9 +97,13 @@ class ProjectYarnNoteRepositoryTest {
                     transactionRunner = transactionRunner,
                 )
 
+            val beforeSave = System.currentTimeMillis()
             val yarnCardId = repository.saveToMyYarn(7L)
+            val savedCard = requireNotNull(yarnDao.lastUpserted)
 
             assertEquals(88L, yarnCardId)
+            assertTrue(savedCard.createdAt in beforeSave..System.currentTimeMillis())
+            assertEquals(123L, noteDao.getById(7L)?.createdAt)
             assertEquals("Project mohair", yarnDao.lastUpserted?.yarnName)
             assertEquals("Kid silk", yarnDao.lastUpserted?.fiberContent)
             assertEquals(3, yarnDao.lastUpserted?.quantityInStash)
@@ -116,6 +123,74 @@ class ProjectYarnNoteRepositoryTest {
             assertNull(repository.saveToMyYarn(404L))
         }
 
+    @Test
+    fun `edit reuses creation normalization and preserves the current library binding`() =
+        runTest {
+            val original = ProjectYarnNote(id = 7, projectId = 10, name = "Wool", createdAt = 100)
+            val current = original.copy(savedYarnCardId = 9, updatedAt = 200).toEntity()
+            val dao = FakeProjectYarnNoteDao(listOf(current))
+            val repository = buildRepository(dao)
+            assertEquals(
+                ProjectYarnNoteEditResult.InvalidName,
+                repository.edit(original, original.copy(name = "  ")),
+            )
+            assertNull(dao.lastUpserted)
+            val draft = original.copy(name = "  Silk  ", description = "  Blend  ", quantity = 0, notes = "  Cuffs  ")
+
+            assertEquals(ProjectYarnNoteEditResult.Saved, repository.edit(original, draft))
+            val edited = requireNotNull(dao.lastUpserted)
+            assertEquals(
+                current.copy(
+                    name = "Silk",
+                    description = "Blend",
+                    quantity = 1,
+                    notes = "Cuffs",
+                    updatedAt = edited.updatedAt,
+                ),
+                edited,
+            )
+            repository.save(draft.copy(id = 0))
+            val created = requireNotNull(dao.lastUpserted)
+            assertEquals(
+                listOf("Silk", "Blend", 1, "Cuffs"),
+                listOf(created.name, created.description, created.quantity, created.notes),
+            )
+        }
+
+    @Test
+    fun `edit rejects a concurrent change to any editable field without writing`() =
+        runTest {
+            val original = ProjectYarnNote(id = 7, projectId = 10, name = "Wool")
+            listOf(
+                original.copy(name = "Other"),
+                original.copy(description = "Other"),
+                original.copy(quantity = 2),
+                original.copy(notes = "Other"),
+            ).forEach { current ->
+                val dao = FakeProjectYarnNoteDao(listOf(current.toEntity()))
+                assertEquals(
+                    ProjectYarnNoteEditResult.Conflict,
+                    buildRepository(dao).edit(original, original.copy(name = "Silk", quantity = 3)),
+                )
+                assertNull(dao.lastUpserted)
+            }
+        }
+
+    @Test
+    fun `retry of an already committed normalized draft does not write again`() =
+        runTest {
+            val original = ProjectYarnNote(id = 7, projectId = 10, name = "Wool", createdAt = 100)
+            val current = original.copy(name = "Silk", quantity = 1, savedYarnCardId = 9, updatedAt = 200)
+            val dao = FakeProjectYarnNoteDao(listOf(current.toEntity()))
+
+            assertEquals(
+                ProjectYarnNoteEditResult.Saved,
+                buildRepository(dao).edit(original, original.copy(name = " Silk ", quantity = 0)),
+            )
+            assertNull(dao.lastUpserted)
+            assertEquals(current.toEntity(), dao.getById(7))
+        }
+
     private fun buildRepository(
         dao: ProjectYarnNoteDao,
         yarnCardRepository: YarnCardRepository =
@@ -129,6 +204,7 @@ class ProjectYarnNoteRepositoryTest {
             dao = dao,
             yarnCardRepository = yarnCardRepository,
             transactionRunner = transactionRunner,
+            usageDao = mockk(relaxed = true),
         )
 
     private fun buildYarnCardRepository(
@@ -145,21 +221,34 @@ class ProjectYarnNoteRepositoryTest {
         )
 
     private class FakeProjectYarnNoteDao(
-        private val notes: List<ProjectYarnNoteEntity> = emptyList(),
+        notes: List<ProjectYarnNoteEntity> = emptyList(),
     ) : ProjectYarnNoteDao {
+        private val stored = notes.associateBy { it.id }.toMutableMap()
         var lastUpserted: ProjectYarnNoteEntity? = null
         var savedYarnCardLink: Pair<Long, Long>? = null
         var deletedId: Long? = null
 
         override fun observeForProject(projectId: Long): Flow<List<ProjectYarnNoteEntity>> =
-            flowOf(notes.filter { it.projectId == projectId })
+            flowOf(
+                stored.values
+                    .filter { it.projectId == projectId }
+                    .sortedWith(compareByDescending<ProjectYarnNoteEntity> { it.createdAt }.thenByDescending { it.id }),
+            )
 
-        override suspend fun getById(id: Long): ProjectYarnNoteEntity? =
-            notes.firstOrNull { it.id == id } ?: lastUpserted?.takeIf { it.id == id }
+        override suspend fun getById(id: Long): ProjectYarnNoteEntity? = stored[id]
 
         override suspend fun upsert(note: ProjectYarnNoteEntity): Long {
             lastUpserted = note
-            return 77L
+            val id = note.id.takeIf { it > 0L } ?: maxOf(77L, (stored.keys.maxOrNull() ?: 0L) + 1L)
+            stored[id] = note.copy(id = id)
+            return id
+        }
+
+        override suspend fun update(note: ProjectYarnNoteEntity): Int {
+            if (note.id !in stored) return 0
+            lastUpserted = note
+            stored[note.id] = note
+            return 1
         }
 
         override suspend fun updateSavedYarnCardId(
@@ -167,12 +256,15 @@ class ProjectYarnNoteRepositoryTest {
             savedYarnCardId: Long,
             updatedAt: Long,
         ): Int {
+            val note = stored[id] ?: return 0
+            stored[id] = note.copy(savedYarnCardId = savedYarnCardId, updatedAt = updatedAt)
             savedYarnCardLink = id to savedYarnCardId
             return 1
         }
 
         override suspend fun delete(id: Long) {
             deletedId = id
+            stored.remove(id)
         }
     }
 

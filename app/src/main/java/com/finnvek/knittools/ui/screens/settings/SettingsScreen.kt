@@ -2,24 +2,31 @@ package com.finnvek.knittools.ui.screens.settings
 
 import android.widget.Toast
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -29,45 +36,62 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
-import androidx.core.net.toUri
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.finnvek.knittools.BuildConfig
 import com.finnvek.knittools.R
 import com.finnvek.knittools.data.datastore.AppLanguage
 import com.finnvek.knittools.data.datastore.ThemeMode
+import com.finnvek.knittools.pro.ProState
+import com.finnvek.knittools.pro.ProStatus
 import com.finnvek.knittools.ui.components.CollectWithLifecycleEffect
 import com.finnvek.knittools.ui.components.InfoTip
-import com.finnvek.knittools.ui.components.localizedUppercase
+import com.finnvek.knittools.ui.components.LabelWithInfo
+import com.finnvek.knittools.ui.components.SectionLabel
+import com.finnvek.knittools.ui.components.SegmentedToggle
+import com.finnvek.knittools.ui.components.SheetTitle
+import com.finnvek.knittools.ui.layout.ContentWidthPolicy
+import com.finnvek.knittools.ui.layout.contentWidth
+import com.finnvek.knittools.ui.platform.ExternalWebLinkOpenResult
+import com.finnvek.knittools.ui.platform.openExternalWebLink
 import com.finnvek.knittools.ui.theme.knitToolsColors
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
     onUpgradeToPro: () -> Unit,
-    viewModel: SettingsViewModel = hiltViewModel(),
+    onBackup: () -> Unit = {},
+    onGuide: () -> Unit = {},
+    viewModelProvider: @Composable () -> SettingsViewModel = { hiltViewModel() },
 ) {
+    val viewModel = viewModelProvider()
     val prefs by viewModel.preferences.collectAsStateWithLifecycle()
     val proState by viewModel.proState.collectAsStateWithLifecycle()
+    val proStateReady by viewModel.proStateReady.collectAsStateWithLifecycle()
+    val isRestoring by viewModel.isRestoring.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val resources = LocalResources.current
-    val showLanguageSheet = remember { mutableStateOf(false) }
+    val showLanguageSheet = rememberSaveable { mutableStateOf(false) }
 
-    CollectWithLifecycleEffect(viewModel.messages) { messageRes ->
+    CollectWithLifecycleEffect({ viewModel.messages }) { messageRes ->
         Toast.makeText(context, resources.getString(messageRes), Toast.LENGTH_SHORT).show()
     }
 
     Scaffold(
+        modifier = Modifier.fillMaxSize().wrapContentWidth().contentWidth(ContentWidthPolicy.Form),
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
@@ -91,7 +115,8 @@ fun SettingsScreen(
                     .padding(padding)
                     .verticalScroll(rememberScrollState()),
         ) {
-            SectionHeader(stringResource(R.string.settings_section_settings))
+            // "General": näytön otsikko on jo Settings, joten sama sana osio-otsikkona oli toistoa.
+            SettingsSectionLabel(stringResource(R.string.settings_section_general))
 
             SettingsSelectionRow(
                 label = stringResource(R.string.settings_language),
@@ -100,25 +125,14 @@ fun SettingsScreen(
                 onClick = { showLanguageSheet.value = true },
             )
 
-            HorizontalDivider()
+            SettingsDivider()
 
-            ThemeRow(
-                label = stringResource(R.string.theme_light),
-                selected = prefs.themeMode == ThemeMode.LIGHT,
-                onClick = { viewModel.setThemeMode(ThemeMode.LIGHT) },
-            )
-            ThemeRow(
-                label = stringResource(R.string.theme_dark),
-                selected = prefs.themeMode == ThemeMode.DARK,
-                onClick = { viewModel.setThemeMode(ThemeMode.DARK) },
-            )
-            ThemeRow(
-                label = stringResource(R.string.theme_system),
-                selected = prefs.themeMode == ThemeMode.SYSTEM,
-                onClick = { viewModel.setThemeMode(ThemeMode.SYSTEM) },
+            ThemeSelector(
+                selected = prefs.themeMode,
+                onSelect = viewModel::setThemeMode,
             )
 
-            HorizontalDivider()
+            SettingsDivider()
 
             SwitchRow(
                 label = stringResource(R.string.haptic_feedback),
@@ -137,40 +151,85 @@ fun SettingsScreen(
                 tipTitle = stringResource(R.string.tip_imperial_units_title),
                 tipDescription = stringResource(R.string.tip_imperial_units_desc),
             )
-            if (!proState.isPro) {
-                HorizontalDivider()
-                SectionHeader(stringResource(R.string.settings_section_pro))
+            SettingsDivider()
+            SettingsSectionLabel(stringResource(R.string.settings_section_pro))
 
+            SettingsSelectionRow(
+                label = stringResource(R.string.knittools_pro),
+                supportingText = stringResource(R.string.pro_content_stays_available),
+                valueText =
+                    proState.takeIf { proStateReady || it.status == ProStatus.TRIAL_ACTIVE }?.settingsStatusText(),
+                onClick = onUpgradeToPro,
+            )
+            if (proState.status != ProStatus.PRO_PURCHASED) {
+                SettingsDivider()
                 SettingsActionRow(
-                    label = stringResource(R.string.upgrade_to_pro),
-                    onClick = onUpgradeToPro,
-                )
-                HorizontalDivider()
-                SettingsActionRow(
-                    label = stringResource(R.string.restore_purchases),
+                    label =
+                        stringResource(
+                            if (isRestoring) {
+                                R.string.restore_purchases_checking
+                            } else {
+                                R.string.restore_purchases
+                            },
+                        ),
                     onClick = viewModel::restorePurchases,
+                    isInProgress = isRestoring,
+                    showChevron = false,
                 )
             }
 
-            HorizontalDivider()
-            SectionHeader(stringResource(R.string.settings_section_info))
+            // Varmuuskopio on omien tietojen hallintaa, ei tietoa sovelluksesta.
+            SettingsDivider()
+            SettingsSectionLabel(stringResource(R.string.settings_section_data))
+
+            SettingsActionRow(
+                label = stringResource(R.string.backup_title),
+                onClick = onBackup,
+            )
+
+            SettingsDivider()
+            SettingsSectionLabel(stringResource(R.string.settings_section_info))
+
+            SettingsActionRow(
+                label = stringResource(R.string.guide_entry_settings),
+                onClick = onGuide,
+            )
 
             SettingsActionRow(
                 label = stringResource(R.string.help_and_guide),
                 onClick = {
-                    val intent =
-                        androidx.browser.customtabs.CustomTabsIntent
-                            .Builder()
-                            .build()
-                    intent.launchUrl(context, "https://knittools.app/guide".toUri())
+                    val messageRes =
+                        when (openExternalWebLink(context, HELP_AND_GUIDE_URL)) {
+                            ExternalWebLinkOpenResult.Opened -> null
+
+                            ExternalWebLinkOpenResult.NoBrowser -> R.string.web_pattern_no_browser
+
+                            ExternalWebLinkOpenResult.InvalidUrl,
+                            ExternalWebLinkOpenResult.Failed,
+                            -> R.string.web_pattern_open_failed
+                        }
+                    messageRes?.let {
+                        Toast.makeText(context, resources.getString(it), Toast.LENGTH_SHORT).show()
+                    }
                 },
             )
 
-            HorizontalDivider()
+            SettingsActionRow(
+                label = stringResource(R.string.settings_show_tips_again),
+                onClick = viewModel::showTipsAgain,
+            )
+
+            SettingsDivider()
             SettingsInfoText(
                 text = stringResource(R.string.privacy_summary),
             )
-            HorizontalDivider()
+            SwitchRow(
+                label = stringResource(R.string.usage_analytics),
+                checked = prefs.usageAnalyticsEnabled,
+                onCheckedChange = viewModel::setUsageAnalyticsEnabled,
+            )
+            SettingsInfoText(text = stringResource(R.string.usage_analytics_description))
+            SettingsDivider()
             SettingsInfoText(
                 text = stringResource(R.string.version_format, BuildConfig.VERSION_NAME),
             )
@@ -190,25 +249,93 @@ fun SettingsScreen(
 }
 
 @Composable
-private fun SectionHeader(title: String) {
-    Text(
-        text = title.localizedUppercase(),
-        modifier =
-            Modifier
-                .padding(horizontal = 16.dp, vertical = 8.dp)
-                .semantics { heading() },
-        style = MaterialTheme.typography.labelSmall,
-        color = MaterialTheme.colorScheme.secondary,
-    )
+private fun ProState.settingsStatusText(): String =
+    when (status) {
+        // Aloittamaton kokeilu kerrotaan toimintona: "Not started" luki oranssina virheenä tai rikkinäisenä linkkinä.
+        ProStatus.TRIAL_NOT_STARTED -> {
+            stringResource(R.string.pro_start_14_day_trial)
+        }
+
+        ProStatus.TRIAL_ACTIVE -> {
+            pluralStringResource(
+                R.plurals.pro_status_trial_days,
+                trialDaysRemaining,
+                trialDaysRemaining,
+            )
+        }
+
+        ProStatus.TRIAL_EXPIRED -> {
+            stringResource(R.string.pro_status_trial_ended)
+        }
+
+        ProStatus.PRO_PURCHASED -> {
+            stringResource(R.string.pro_status_purchased)
+        }
+    }
+
+@Composable
+private fun SettingsSectionLabel(title: String) {
+    SectionLabel(text = title, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
 }
 
 @Composable
 private fun SettingsActionRow(
     label: String,
     onClick: () -> Unit,
+    isInProgress: Boolean = false,
+    showChevron: Boolean = true,
 ) {
-    SettingsClickableRow(onClick = onClick) {
-        Text(label)
+    SettingsClickableRow(onClick = onClick, enabled = !isInProgress) {
+        if (isInProgress) {
+            CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+            Spacer(modifier = Modifier.width(10.dp))
+        }
+        Text(
+            text = label,
+            modifier = Modifier.weight(1f).semantics { liveRegion = LiveRegionMode.Polite },
+        )
+        // Nuoli kertoo, että rivi avaa uuden näkymän; ilman sitä rivi näytti pelkältä tekstiltä.
+        if (showChevron) {
+            Icon(
+                Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+/** Sisennetty hiusviiva kuten projektinäkymässä; reunasta reunaan ulottuva viiva oli ainoa poikkeus. */
+@Composable
+private fun SettingsDivider() {
+    HorizontalDivider(
+        modifier = Modifier.padding(horizontal = 16.dp),
+        color = MaterialTheme.colorScheme.outlineVariant,
+    )
+}
+
+/** Teema samalla segmenttivalitsimella kuin muut valinnat, ei kolmella radiorivillä. */
+@Composable
+private fun ThemeSelector(
+    selected: ThemeMode,
+    onSelect: (ThemeMode) -> Unit,
+) {
+    val modes = listOf(ThemeMode.LIGHT, ThemeMode.DARK, ThemeMode.SYSTEM)
+    Column(
+        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        LabelWithInfo(label = stringResource(R.string.settings_theme), info = null)
+        SegmentedToggle(
+            options =
+                listOf(
+                    stringResource(R.string.theme_light),
+                    stringResource(R.string.theme_dark),
+                    stringResource(R.string.theme_system),
+                ),
+            selectedIndex = modes.indexOf(selected),
+            onSelect = { onSelect(modes[it]) },
+        )
     }
 }
 
@@ -216,18 +343,18 @@ private fun SettingsActionRow(
 private fun SettingsSelectionRow(
     label: String,
     supportingText: String,
-    valueText: String,
+    valueText: String?,
     onClick: () -> Unit,
 ) {
-    Row(
+    Column(
         modifier =
             Modifier
                 .fillMaxWidth()
                 .clickable(onClick = onClick)
                 .padding(horizontal = 16.dp, vertical = 14.dp),
-        verticalAlignment = Alignment.CenterVertically,
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        Column(modifier = Modifier.weight(1f)) {
+        Column {
             Text(
                 text = label,
                 style = MaterialTheme.typography.bodyLarge,
@@ -239,12 +366,15 @@ private fun SettingsSelectionRow(
                 color = MaterialTheme.knitToolsColors.onSurfaceMuted,
             )
         }
-        Spacer(modifier = Modifier.width(12.dp))
-        Text(
-            text = valueText,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.primary,
-        )
+        if (valueText == null) {
+            CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+        } else {
+            Text(
+                text = valueText,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.primary,
+            )
+        }
     }
 }
 
@@ -262,23 +392,28 @@ private fun SettingsInfoText(text: String) {
 private fun SwitchRow(
     label: String,
     checked: Boolean,
+    // CPD-OFF: Ruudun paikallinen Compose-rakenne pidetaan vastuun yhteydessa.
     onCheckedChange: (Boolean) -> Unit,
 ) {
     Row(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .clickable { onCheckedChange(!checked) }
-                .padding(horizontal = 16.dp, vertical = 12.dp),
+                .toggleable(
+                    value = checked,
+                    role = Role.Switch,
+                    onValueChange = onCheckedChange,
+                ).padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(label, modifier = Modifier.weight(1f))
-        Switch(checked = checked, onCheckedChange = onCheckedChange)
+        // CPD-ON
+        Switch(checked = checked, onCheckedChange = null)
     }
 }
 
 @Composable
-private fun SwitchRowWithTip(
+internal fun SwitchRowWithTip(
     label: String,
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
@@ -289,46 +424,41 @@ private fun SwitchRowWithTip(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .clickable { onCheckedChange(!checked) }
-                .padding(horizontal = 16.dp, vertical = 12.dp),
+                .toggleable(
+                    value = checked,
+                    role = Role.Switch,
+                    onValueChange = onCheckedChange,
+                ).padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(label, modifier = Modifier.weight(1f))
-        InfoTip(title = tipTitle, description = tipDescription)
-        Spacer(modifier = Modifier.width(12.dp))
-        Switch(checked = checked, onCheckedChange = onCheckedChange)
-    }
-}
-
-@Composable
-private fun ThemeRow(
-    label: String,
-    selected: Boolean,
-    onClick: () -> Unit,
-) {
-    SettingsClickableRow(onClick = onClick) {
-        RadioButton(selected = selected, onClick = onClick)
-        Spacer(modifier = Modifier.width(12.dp))
-        Text(label)
+        // Info nimikkeen vieressä, ei kytkimen vieressä.
+        Row(modifier = Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
+            Text(label, modifier = Modifier.weight(1f, fill = false))
+            InfoTip(title = tipTitle, description = tipDescription)
+        }
+        Switch(checked = checked, onCheckedChange = null)
     }
 }
 
 @Composable
 private fun SettingsClickableRow(
     onClick: () -> Unit,
-    content: @Composable () -> Unit,
+    enabled: Boolean = true,
+    content: @Composable RowScope.() -> Unit,
 ) {
     Row(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .clickable(onClick = onClick)
+                .clickable(enabled = enabled, onClick = onClick)
                 .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         content()
     }
 }
+
+private const val HELP_AND_GUIDE_URL = "https://knittoolsapp.com/articles/"
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -340,6 +470,7 @@ private fun LanguagePickerBottomSheet(
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     ModalBottomSheet(
+        sheetMaxWidth = ContentWidthPolicy.Form.maxWidth,
         onDismissRequest = onDismiss,
         sheetState = sheetState,
         containerColor = MaterialTheme.colorScheme.surface,
@@ -349,13 +480,10 @@ private fun LanguagePickerBottomSheet(
                 Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 24.dp)
+                    .verticalScroll(rememberScrollState())
                     .padding(bottom = 24.dp),
         ) {
-            Text(
-                text = stringResource(R.string.settings_language),
-                style = MaterialTheme.typography.titleLarge,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
+            SheetTitle(text = stringResource(R.string.settings_language))
             Spacer(modifier = Modifier.height(6.dp))
             Text(
                 text = stringResource(R.string.settings_language_change_hint),
@@ -384,8 +512,11 @@ private fun LanguageOptionRow(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .clickable(onClick = onClick)
-                .padding(vertical = 14.dp),
+                .selectable(
+                    selected = selected,
+                    role = Role.RadioButton,
+                    onClick = onClick,
+                ).padding(vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
@@ -413,6 +544,7 @@ private fun AppLanguage.labelResId(): Int =
         AppLanguage.FRENCH -> R.string.settings_language_french
         AppLanguage.SPANISH -> R.string.settings_language_spanish
         AppLanguage.PORTUGUESE -> R.string.settings_language_portuguese
+        AppLanguage.BRAZILIAN_PORTUGUESE -> R.string.settings_language_brazilian_portuguese
         AppLanguage.ITALIAN -> R.string.settings_language_italian
         AppLanguage.NORWEGIAN -> R.string.settings_language_norwegian
         AppLanguage.DANISH -> R.string.settings_language_danish

@@ -1,14 +1,15 @@
 package com.finnvek.knittools.ui.screens.needles
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -18,17 +19,25 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.calculator.NeedleSizeData
+import com.finnvek.knittools.domain.calculator.formatDecimalForDisplay
 import com.finnvek.knittools.domain.model.NeedleSize
 import com.finnvek.knittools.ui.components.InfoTip
 import com.finnvek.knittools.ui.components.SearchTextField
 import com.finnvek.knittools.ui.components.ToolScreenScaffold
+import com.finnvek.knittools.ui.components.rememberCurrentLocale
+import com.finnvek.knittools.ui.layout.ContentWidthPolicy
+import com.finnvek.knittools.ui.theme.knitToolsColors
+import java.text.DecimalFormatSymbols
+import java.util.Locale
 
 @Composable
 fun NeedleSizeScreen(onBack: () -> Unit) {
@@ -37,6 +46,7 @@ fun NeedleSizeScreen(onBack: () -> Unit) {
     val results = remember(query) { NeedleSizeData.search(query) }
 
     ToolScreenScaffold(
+        contentWidthPolicy = ContentWidthPolicy.ListDetail,
         title = stringResource(R.string.tool_needle_sizes),
         onBack = onBack,
     ) { padding ->
@@ -57,7 +67,7 @@ fun NeedleSizeScreen(onBack: () -> Unit) {
             item {
                 Row(
                     modifier = Modifier.padding(vertical = 8.dp),
-                    verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
                         text = stringResource(R.string.needle_size_disclaimer),
@@ -101,7 +111,7 @@ private fun HeaderRow() {
         modifier =
             Modifier
                 .fillMaxWidth()
-                .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+                .background(MaterialTheme.knitToolsColors.tableHeaderContainer)
                 .padding(vertical = 8.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
@@ -127,9 +137,10 @@ private fun NeedleRow(
     isSelected: Boolean,
     onClick: () -> Unit,
 ) {
+    val locale = rememberCurrentLocale()
     val bgColor =
         if (isSelected) {
-            MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+            MaterialTheme.knitToolsColors.selectedCardContainer
         } else {
             Color.Transparent
         }
@@ -138,16 +149,20 @@ private fun NeedleRow(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .clickable(onClick = onClick)
+                .selectable(
+                    selected = isSelected,
+                    role = Role.RadioButton,
+                    onClick = onClick,
+                ).heightIn(min = 48.dp)
                 .background(bgColor)
                 .padding(vertical = 12.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
         listOf(
-            needle.metricMm.toString(),
-            needle.us,
-            needle.ukCanadian,
-            needle.japanese,
+            formatDecimalForDisplay(needle.metricMm, locale, 0, 2),
+            localizedSizeLabel(needle.us, locale),
+            localizedSizeLabel(needle.ukCanadian, locale),
+            localizedSizeLabel(needle.japanese, locale),
         ).forEach { value ->
             Text(
                 text = value,
@@ -158,3 +173,19 @@ private fun NeedleRow(
         }
     }
 }
+
+/**
+ * Taulukon kokonimet ovat tekstiä ("1.5", "000"), joten desimaalikoko saa kielen erottimen samaan tapaan kuin
+ * mm-sarake: suomeksi samassa taulukossa näkyi "2,5" ja "1.5". Muut nimet jäävät ennalleen.
+ */
+internal fun localizedSizeLabel(
+    label: String,
+    locale: Locale,
+): String =
+    if (DECIMAL_SIZE_LABEL.matches(label)) {
+        label.replace('.', DecimalFormatSymbols.getInstance(locale).decimalSeparator)
+    } else {
+        label
+    }
+
+private val DECIMAL_SIZE_LABEL = Regex("""\d+\.\d+""")

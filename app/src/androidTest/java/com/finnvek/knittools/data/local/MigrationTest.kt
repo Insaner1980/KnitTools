@@ -14,8 +14,8 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 /**
- * Testaa Room-migraatiot v1->v17.
- * v1->v3: AutoMigration. v3->v17: manuaaliset muutokset.
+ * Testaa Room-migraatiot v1->v24.
+ * v1->v3: AutoMigration. v3->v24: manuaaliset muutokset.
  */
 @RunWith(AndroidJUnit4::class)
 class MigrationTest {
@@ -28,7 +28,75 @@ class MigrationTest {
 
     private val allMigrations = KnitToolsDatabase.ALL_MANUAL_MIGRATIONS
 
-    private val latestVersion = 17
+    private val latestVersion = KNITTOOLS_DATABASE_VERSION
+
+    @Test
+    fun migrate27to28PreservesHistoryAndAddsNullableSessionUndo() {
+        val testDb = "migration-test-v27-to-v28-session-undo"
+        helper.createDatabase(testDb, 1).apply {
+            execSQL(
+                "INSERT INTO counter_projects " +
+                    "(id, name, count, secondaryCount, stepSize, notes, createdAt, updatedAt) " +
+                    "VALUES (1, 'Undo', 7, 0, 1, '', 1000, 2000)",
+            )
+            close()
+        }
+        helper.runMigrationsAndValidate(testDb, 27, true, *allMigrations).apply {
+            execSQL(
+                "INSERT INTO counter_history " +
+                    "(id, projectId, action, previousValue, newValue, timestamp, linkedCounterDeltasJson) " +
+                    "VALUES (1, 1, 'reset', 7, 0, 3000, '{\"20\":-2}')",
+            )
+            close()
+        }
+        helper.runMigrationsAndValidate(testDb, 28, true, KnitToolsDatabase.MIGRATION_27_28).use { db ->
+            assertSingleRow(
+                db,
+                "SELECT previousValue, newValue, timestamp, linkedCounterDeltasJson, sessionUndoJson FROM counter_history",
+            ) {
+                assertEquals(7, getInt(0))
+                assertEquals(0, getInt(1))
+                assertEquals(3000L, getLong(2))
+                assertEquals(mapOf(20L to -2), LinkedCounterDeltas.decode(getString(3)))
+                assertTrue(isNull(4))
+            }
+        }
+    }
+
+    @Test
+    fun migrate26to27PreservesHistoryAndAddsNullableLinkedUndoDeltas() {
+        val testDb = "migration-test-v26-to-v27-linked-undo"
+        helper.createDatabase(testDb, 1).apply {
+            execSQL(
+                "INSERT INTO counter_projects " +
+                    "(id, name, count, secondaryCount, stepSize, notes, createdAt, updatedAt) " +
+                    "VALUES (1, 'Undo', 7, 0, 1, '', 1000, 2000)",
+            )
+            close()
+        }
+        helper.runMigrationsAndValidate(testDb, 26, true, *allMigrations).apply {
+            execSQL(
+                "INSERT INTO counter_history (id, projectId, action, previousValue, newValue, timestamp) " +
+                    "VALUES (1, 1, 'reset', 7, 0, 3000)",
+            )
+            close()
+        }
+
+        helper.runMigrationsAndValidate(testDb, 27, true, KnitToolsDatabase.MIGRATION_26_27).use { db ->
+            assertSingleRow(
+                db,
+                "SELECT previousValue, newValue, linkedCounterDeltasJson FROM counter_history WHERE id = 1",
+            ) {
+                assertEquals(7, getInt(0))
+                assertEquals(0, getInt(1))
+                assertTrue(isNull(2))
+            }
+            db.execSQL("UPDATE counter_history SET linkedCounterDeltasJson = '{\"20\":-2}' WHERE id = 1")
+            assertSingleRow(db, "SELECT linkedCounterDeltasJson FROM counter_history WHERE id = 1") {
+                assertEquals(mapOf(20L to -2), LinkedCounterDeltas.decode(getString(0)))
+            }
+        }
+    }
 
     private fun migrateToLatest(testDb: String): SupportSQLiteDatabase =
         helper.runMigrationsAndValidate(
@@ -141,6 +209,55 @@ class MigrationTest {
     }
 
     @Test
+    fun migrate17to18PreservesProjectsAndUnlocksPreviouslyCreatedContent() {
+        val testDb = "migration-test-v17-to-v18-pro-content-flags"
+
+        helper.createDatabase(testDb, 17).apply {
+            execSQL(
+                """
+                INSERT INTO counter_projects (
+                    id, name, count, secondaryCount, stepSize, notes, createdAt, updatedAt
+                ) VALUES (1, 'Existing project', 0, 0, 1, '', 1000, 2000)
+                """.trimIndent(),
+            )
+            close()
+        }
+
+        val db =
+            helper.runMigrationsAndValidate(
+                testDb,
+                18,
+                true,
+                KnitToolsDatabase.MIGRATION_17_18,
+            )
+
+        assertSingleRow(
+            db,
+            "SELECT name, secondaryCounterUsed, notesCreated FROM counter_projects WHERE id = 1",
+        ) {
+            assertEquals("Existing project", getString(0))
+            assertEquals(1, getInt(1))
+            assertEquals(1, getInt(2))
+        }
+
+        db.execSQL(
+            """
+            INSERT INTO counter_projects (
+                id, name, count, secondaryCount, stepSize, notes, createdAt, updatedAt
+            ) VALUES (2, 'New project', 0, 0, 1, '', 3000, 3000)
+            """.trimIndent(),
+        )
+        assertSingleRow(
+            db,
+            "SELECT secondaryCounterUsed, notesCreated FROM counter_projects WHERE id = 2",
+        ) {
+            assertEquals(0, getInt(0))
+            assertEquals(0, getInt(1))
+        }
+        db.close()
+    }
+
+    @Test
     fun migrate1to2() {
         val testDb = "migration-test-v1-to-v2"
 
@@ -171,6 +288,7 @@ class MigrationTest {
         assertEquals(1000L, projectCursor.getLong(5))
         assertEquals(2000L, projectCursor.getLong(6))
         assertFalse(projectCursor.moveToNext())
+        // CPD-OFF: Testin skenaariokohtainen asetelma pidetaan paikallisena ja luettavana.
         projectCursor.close()
 
         val historyCursor =
@@ -190,6 +308,7 @@ class MigrationTest {
         assertTrue(yarnCardsCursor.moveToFirst())
         assertEquals(0, yarnCardsCursor.getInt(0))
         yarnCardsCursor.close()
+        // CPD-ON
 
         db.close()
     }
@@ -341,6 +460,7 @@ class MigrationTest {
                 4,
                 true,
                 KnitToolsDatabase.MIGRATION_3_4,
+                // CPD-OFF: Testin skenaariokohtainen asetelma pidetaan paikallisena ja luettavana.
             )
 
         // Varmista uudet taulut luotiin
@@ -353,6 +473,7 @@ class MigrationTest {
         assertTrue(photoCursor.moveToFirst())
         assertEquals(0, photoCursor.getInt(0))
         photoCursor.close()
+        // CPD-ON
 
         // Legacy secondaryCount säilyy vain counter_projects-taulussa.
         val counterCursor =
@@ -647,6 +768,7 @@ class MigrationTest {
         assertTrue(counterCursor.isNull(0))
         assertTrue(counterCursor.isNull(1))
         assertTrue(counterCursor.isNull(2))
+        // CPD-OFF: Testin skenaariokohtainen asetelma pidetaan paikallisena ja luettavana.
         assertTrue(counterCursor.isNull(3))
         counterCursor.close()
 
@@ -654,6 +776,7 @@ class MigrationTest {
         assertTrue(annotationCursor.moveToFirst())
         assertEquals(0, annotationCursor.getInt(0))
         annotationCursor.close()
+        // CPD-ON
 
         db.close()
     }
@@ -838,14 +961,22 @@ class MigrationTest {
                 """
                 INSERT INTO sessions (
                     id, projectId, startedAt, endedAt, startRow, endRow, durationMinutes
-                ) VALUES (
-                    1, 1, 1000, 2000, 4, 9, 12
-                )
+                ) VALUES
+                    (1, 1, 1000, 2000, 4, 9, 12),
+                    (2, 1, 1000, 2000, 4, 9, -4),
+                    (3, 1, 1000, 2000, 4, 9, ${Int.MAX_VALUE}),
+                    (4, 1, 1000, 2000, 4, 9, ${Long.MAX_VALUE}),
+                    (5, 1, 1000, 2000, 4, 9, 1.5),
+                    (6, 1, 1000, 2000, 4, 'invalid', 12),
+                    (7, 1, 1000, 2000, 4, 9.5, 12),
+                    (8, 1, 1000, 2000, 4, ${Long.MAX_VALUE}, 12),
+                    (9, 1, 1000, 2000, 9, 4, 12)
                 """.trimIndent(),
             )
             close()
         }
 
+        // CPD-OFF: Migraation versionkohtainen asetelma ja tarkistus pidetaan yhdessa.
         val db =
             helper.runMigrationsAndValidate(
                 testDb,
@@ -860,6 +991,25 @@ class MigrationTest {
         ) {
             assertEquals(720L, getLong(0))
             assertEquals(5, getInt(1))
+            // CPD-ON
+        }
+        db
+            .query("SELECT durationSeconds, typeof(durationSeconds) FROM sessions WHERE id BETWEEN 2 AND 5 ORDER BY id")
+            .use { rows ->
+                listOf(0L, Int.MAX_VALUE.toLong() * 60L, 0L, 0L).forEach { seconds ->
+                    assertTrue(rows.moveToNext())
+                    assertEquals(seconds, rows.getLong(0))
+                    assertEquals("integer", rows.getString(1))
+                }
+                assertFalse(rows.moveToNext())
+            }
+        db.query("SELECT rowsWorked, typeof(rowsWorked) FROM sessions WHERE id >= 6 ORDER BY id").use { rows ->
+            repeat(4) {
+                assertTrue(rows.moveToNext())
+                assertEquals(0, rows.getInt(0))
+                assertEquals("integer", rows.getString(1))
+            }
+            assertFalse(rows.moveToNext())
         }
 
         db.close()
@@ -1199,7 +1349,7 @@ class MigrationTest {
             """
             SELECT source, ravelryPatternId, name, designerName, thumbnailUrl, difficulty,
                 gaugeStitches, gaugeRows, needleSize, yarnWeight, yardage,
-                isFree, originalUrl, canonicalUrl, localPdfUri, isAvailableOffline,
+                availability, originalUrl, canonicalUrl, localPdfUri, isAvailableOffline,
                 savedAt, updatedAt, lastSyncedAt
             FROM saved_patterns WHERE id = 1
             """.trimIndent(),
@@ -1215,7 +1365,7 @@ class MigrationTest {
             assertEquals("2.5 mm", getString(8))
             assertEquals("Fingering", getString(9))
             assertEquals(420, getInt(10))
-            assertEquals(0, getInt(11))
+            assertEquals("unknown", getString(11))
             assertEquals("https://example.test/pattern", getString(12))
             assertEquals("https://example.test/pattern", getString(13))
             assertTrue(isNull(14))
@@ -1270,6 +1420,13 @@ class MigrationTest {
                 )
                 """.trimIndent(),
             )
+            execSQL(
+                """
+                INSERT INTO saved_patterns (id, ravelryId, name, designerName, isFree, patternUrl, savedAt)
+                VALUES (20, 0, 'Deleted', '', 0, '', 4000)
+                """.trimIndent(),
+            )
+            execSQL("DELETE FROM saved_patterns WHERE id = 20")
             close()
         }
 
@@ -1331,6 +1488,17 @@ class MigrationTest {
             assertEquals(3000L, getLong(7))
             assertEquals(3000L, getLong(8))
             assertTrue(isNull(9))
+        }
+        db.execSQL(
+            """
+            INSERT INTO saved_patterns (
+                source, name, designerName, availability, originalUrl, canonicalUrl,
+                isAvailableOffline, savedAt, updatedAt
+            ) VALUES ('OTHER', 'New pattern', '', 'unknown', '', '', 0, 5000, 5000)
+            """.trimIndent(),
+        )
+        assertSingleRow(db, "SELECT id FROM saved_patterns WHERE name = 'New pattern'") {
+            assertEquals(21L, getLong(0))
         }
 
         db.close()

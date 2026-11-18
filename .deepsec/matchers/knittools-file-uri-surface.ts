@@ -9,10 +9,6 @@ export const knitToolsFileUriSurface: MatcherPlugin = {
   filePatterns: ["app/src/main/java/**/*.kt", "app/src/release/java/**/*.kt"],
   match(content, filePath): CandidateMatch[] {
     if (isTestFile(filePath)) return [];
-    if (!/\b(?:Uri|FileProvider|contentResolver|OpenDocument|CreateDocument|copyTo|copyRecursively|openReadDescriptor|openFileDescriptor)\b/.test(content)) {
-      return [];
-    }
-
     return regexCandidates("knittools-file-uri-surface", content, [
       {
         regex: /\bFileProvider\.getUriForFile\s*\(/,

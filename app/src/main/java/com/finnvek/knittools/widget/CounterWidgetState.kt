@@ -2,6 +2,7 @@ package com.finnvek.knittools.widget
 
 import android.content.Context
 import androidx.datastore.core.handlers.ReplaceFileCorruptionHandler
+import androidx.datastore.preferences.core.MutablePreferences
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.emptyPreferences
@@ -17,8 +18,19 @@ import androidx.glance.state.PreferencesGlanceStateDefinition
 import com.finnvek.knittools.R
 import com.finnvek.knittools.data.datastore.safePreferencesData
 import com.finnvek.knittools.data.datastore.updatePreferencesSafely
+import com.finnvek.knittools.di.AppDispatchers
+import com.finnvek.knittools.domain.calculator.CounterValueFormatter
 import com.finnvek.knittools.domain.model.CounterProject
+import com.finnvek.knittools.domain.model.MainCounterLabelType
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.withContext
+import java.io.IOException
 
 private val Context.widgetDataStore by preferencesDataStore(
     name = "counter_widget",
@@ -34,6 +46,8 @@ data class WidgetData(
     val currentStitch: Int = 0,
     val totalStitches: Int? = null,
     val stitchTrackingEnabled: Boolean = false,
+    val labelType: MainCounterLabelType = MainCounterLabelType.ROWS,
+    val customLabel: String? = null,
 )
 
 // Widgetit eivät ole projektisidonnaisia per instanssi, vaan kaikki instanssit
@@ -47,23 +61,41 @@ object CounterWidgetState {
     val KEY_CURRENT_STITCH = intPreferencesKey("current_stitch")
     val KEY_TOTAL_STITCHES = intPreferencesKey("total_stitches")
     val KEY_STITCH_TRACKING = booleanPreferencesKey("stitch_tracking")
+    val KEY_LABEL_TYPE = stringPreferencesKey("label_type")
+    val KEY_CUSTOM_LABEL = stringPreferencesKey("custom_label")
     private val KEY_REVISION = intPreferencesKey("rev")
+    private val refreshRevision = MutableStateFlow(0L)
+    internal val refreshes = refreshRevision.asStateFlow()
 
     fun defaultData(context: Context): WidgetData =
         WidgetData(projectName = context.getString(R.string.default_project_name))
 
-    suspend fun load(context: Context): WidgetData {
-        val prefs = context.widgetDataStore.safePreferencesData.first()
-        return fromPreferences(context, prefs)
-    }
+    internal fun observe(context: Context): Flow<WidgetData> =
+        context.widgetDataStore.safePreferencesData.map { fromPreferences(context, it) }
+
+    suspend fun load(context: Context): WidgetData = observe(context).first()
 
     suspend fun save(
         context: Context,
         data: WidgetData,
     ) {
-        context.widgetDataStore.updatePreferencesSafely {
-            applyWidgetData(data)
-        }
+        val saved =
+            context.widgetDataStore.updatePreferencesSafely {
+                applyWidgetData(data)
+            }
+        if (!saved) throw IOException("Unable to persist shared widget state")
+    }
+
+    internal suspend fun replaceIfCurrent(
+        context: Context,
+        expected: WidgetData,
+        replacement: WidgetData,
+    ) {
+        val saved =
+            context.widgetDataStore.updatePreferencesSafely {
+                if (fromPreferences(context, this) == expected) applyWidgetData(replacement)
+            }
+        if (!saved) throw IOException("Unable to persist shared widget state")
     }
 
     suspend fun loadGlance(
@@ -79,18 +111,6 @@ object CounterWidgetState {
         return fromPreferences(context, prefs)
     }
 
-    suspend fun saveGlance(
-        context: Context,
-        glanceId: GlanceId,
-        data: WidgetData,
-    ) {
-        updateAppWidgetState(context, PreferencesGlanceStateDefinition, glanceId) { prefs ->
-            prefs.toMutablePreferences().apply {
-                applyWidgetData(data)
-            }
-        }
-    }
-
     suspend fun syncAll(
         context: Context,
         data: WidgetData,
@@ -101,7 +121,7 @@ object CounterWidgetState {
         updatePlacedWidgets(context) { glanceId ->
             updateAppWidgetState(context, PreferencesGlanceStateDefinition, glanceId) { prefs ->
                 prefs.toMutablePreferences().apply {
-                    applyWidgetData(data)
+                    applyWidgetData(load(context))
                     this[KEY_REVISION] = (prefs[KEY_REVISION] ?: 0) + 1
                 }
             }
@@ -109,18 +129,30 @@ object CounterWidgetState {
     }
 
     suspend fun refreshAll(context: Context) {
+        refreshRevision.update { it + 1L }
         updatePlacedWidgets(context) {}
     }
 
+    @Suppress("TooGenericExceptionCaught")
     private suspend fun updatePlacedWidgets(
         context: Context,
         beforeUpdate: suspend (GlanceId) -> Unit,
     ) {
         val widget = CounterWidget()
-        val manager = GlanceAppWidgetManager(context)
-        manager.getGlanceIds(CounterWidget::class.java).forEach { glanceId ->
-            beforeUpdate(glanceId)
-            widget.update(context, glanceId)
+        val glanceIds =
+            withContext(AppDispatchers.IO) {
+                // Glance 1.1.1 queries AppWidgetManager synchronously, even in its suspend API.
+                GlanceAppWidgetManager(context).getGlanceIds(CounterWidget::class.java)
+            }
+        glanceIds.forEach { glanceId ->
+            try {
+                beforeUpdate(glanceId)
+                widget.update(context, glanceId)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                // A removed or unavailable instance must not prevent the remaining widgets from refreshing.
+            }
         }
     }
 
@@ -142,9 +174,13 @@ object CounterWidgetState {
             currentStitch = prefs[KEY_CURRENT_STITCH] ?: 0,
             totalStitches = prefs[KEY_TOTAL_STITCHES]?.takeIf { it > 0 },
             stitchTrackingEnabled = prefs[KEY_STITCH_TRACKING] ?: false,
+            labelType =
+                MainCounterLabelType.entries.firstOrNull { it.name == prefs[KEY_LABEL_TYPE] }
+                    ?: MainCounterLabelType.ROWS,
+            customLabel = prefs[KEY_CUSTOM_LABEL]?.takeIf { it.isNotBlank() },
         )
 
-    private fun androidx.datastore.preferences.core.MutablePreferences.applyWidgetData(data: WidgetData) {
+    private fun MutablePreferences.applyWidgetData(data: WidgetData) {
         this[KEY_PROJECT_NAME] = data.projectName
         this[KEY_COUNT] = data.count
         this[KEY_PROJECT_ID] = data.projectId
@@ -153,11 +189,14 @@ object CounterWidgetState {
         this[KEY_CURRENT_STITCH] = data.currentStitch
         data.totalStitches?.let { this[KEY_TOTAL_STITCHES] = it } ?: remove(KEY_TOTAL_STITCHES)
         this[KEY_STITCH_TRACKING] = data.stitchTrackingEnabled
+        this[KEY_LABEL_TYPE] = data.labelType.name
+        data.customLabel?.let { this[KEY_CUSTOM_LABEL] = it } ?: remove(KEY_CUSTOM_LABEL)
     }
 }
 
-fun CounterProject.toWidgetData(): WidgetData =
-    WidgetData(
+fun CounterProject.toWidgetData(): WidgetData {
+    val label = CounterValueFormatter.mainCounterLabel(craftType, mainCounterLabelType, mainCounterCustomLabel)
+    return WidgetData(
         projectName = name,
         count = count,
         projectId = id,
@@ -166,4 +205,7 @@ fun CounterProject.toWidgetData(): WidgetData =
         currentStitch = currentStitch,
         totalStitches = stitchCount,
         stitchTrackingEnabled = stitchTrackingEnabled,
+        labelType = label.labelType,
+        customLabel = label.customLabel,
     )
+}

@@ -1,4 +1,6 @@
 import com.android.build.api.variant.BuildConfigField
+import com.google.firebase.crashlytics.buildtools.gradle.CrashlyticsExtension
+import com.google.gms.googleservices.GoogleServicesTask
 import org.gradle.api.GradleException
 import org.gradle.testing.jacoco.tasks.JacocoReport
 import java.io.File
@@ -21,10 +23,52 @@ plugins {
     jacoco
 }
 
+composeStabilityAnalyzer {
+    stabilityConfigurationFiles.add(
+        rootProject.layout.projectDirectory.file("stability_config.conf"),
+    )
+}
+
 val releaseSigningEnvPrefix = "KNITTOOLS" // Change to your app name, e.g. "KNITTOOLS"
 val debugCredentialsFile = rootProject.layout.projectDirectory.file("debug.credentials.properties")
 val debugCredentialsText = providers.fileContents(debugCredentialsFile).asText.orElse("")
 val googleServicesJsonConfigFile = layout.projectDirectory.file("google-services.json")
+val posthogProjectToken =
+    providers
+        .environmentVariable("KNITTOOLS_POSTHOG_PROJECT_TOKEN")
+        .orElse(
+            providers
+                .fileContents(
+                    rootProject.layout.projectDirectory.file("posthog.properties"),
+                ).asText
+                .orElse("")
+                .map { text ->
+                    Properties().apply { StringReader(text).use { load(it) } }.getProperty("projectToken", "")
+                },
+        ).map(String::trim)
+val posthogTokenValid = posthogProjectToken.map { it.matches(Regex("phc_[A-Za-z0-9]+")) }
+
+// Erillinen, verkkoluvaton testipaketti laitetesteille, jotka tyhjentävät tietokannan tai ohjaavat Pro-tilaa.
+// Use -Pknittools.isolatedTest=activepolicy|notes|onboarding for isolated debug builds.
+val baseApplicationId = "com.finnvek.knittools"
+val optimizedSmoke = providers.gradleProperty("knittools.optimizedSmoke").orNull == "true"
+val isolatedProfileVariants = setOf("benchmarkRelease", "nonMinifiedRelease")
+val isolatedTestProfile: String? = providers.gradleProperty("knittools.isolatedTest").orNull
+val isolatedTestPackageSuffix: String? =
+    when (isolatedTestProfile) {
+        null -> null
+        "activepolicy" -> ".activepolicytest"
+        "notes" -> ".notestest"
+        "onboarding" -> ".onboardingpreview"
+        else ->
+            error(
+                "Tuntematon knittools.isolatedTest=$isolatedTestProfile (sallitut: activepolicy, notes, onboarding)",
+            )
+    }
+val isolatedTestManifest = layout.projectDirectory.file("src/isolatedTest/AndroidManifest.xml")
+if (isolatedTestProfile == "onboarding") {
+    layout.buildDirectory.set(layout.projectDirectory.dir("build/onboarding"))
+}
 
 // Variantit, jotka eivät päädy jakeluun ja joille riittää paikallinen placeholder-config.
 // benchmarkRelease ja nonMinifiedRelease tulevat baselineprofile-pluginista.
@@ -69,6 +113,14 @@ val googleServicesPlaceholderJson =
     """.trimIndent()
 
 apply(plugin = "com.google.gms.google-services")
+apply(plugin = "com.google.firebase.crashlytics")
+
+gradle.projectsEvaluated {
+    // Use the same file for release admission and resource generation.
+    tasks.withType<GoogleServicesTask>().matching { it.name == "processReleaseGoogleServices" }.configureEach {
+        googleServicesJsonFiles.set(listOf(googleServicesJsonConfigFile.asFile))
+    }
+}
 
 object GoogleServicesJsonTaskActions {
     private const val PLACEHOLDER_API_KEY = "debug-placeholder-api-key"
@@ -125,6 +177,9 @@ object GoogleServicesJsonTaskActions {
                     "Pidä tiedosto gitignored-polussa paikallisesti tai luo se CI:ssä " +
                     "KNITTOOLS_GOOGLE_SERVICES_JSON_BASE64 -salaisuudesta.",
             )
+        }
+        if (googleServicesJsonFile.readText(Charsets.UTF_8).contains(PLACEHOLDER_API_KEY)) {
+            error("Release Firebase -konfiguraatio ei saa olla paikallinen debug-placeholder.")
         }
     }
 }
@@ -184,7 +239,7 @@ android {
             .toInt()
 
     defaultConfig {
-        applicationId = "com.finnvek.knittools"
+        applicationId = baseApplicationId
         minSdk =
             libs.versions.androidMinSdk
                 .get()
@@ -201,6 +256,8 @@ android {
 
     sourceSets {
         getByName("androidTest").assets.directories.add("$projectDir/schemas")
+        getByName("androidTest").kotlin.directories.add("src/sharedTest/kotlin")
+        getByName("test").kotlin.directories.add("src/sharedTest/kotlin")
         getByName("debug").kotlin.directories.add("src/debugShared/kotlin")
     }
 
@@ -216,6 +273,17 @@ android {
     }
 
     buildTypes {
+        debug {
+            isPseudoLocalesEnabled = true
+            if (isolatedTestProfile == "onboarding") {
+                resValue("string", "onboarding_test_app_name", "KnitTools Preview")
+            }
+        }
+        configureEach {
+            configure<CrashlyticsExtension> {
+                mappingFileUploadEnabled = name == "release"
+            }
+        }
         release {
             isDebuggable = false
             isMinifyEnabled = true
@@ -238,6 +306,7 @@ android {
     buildFeatures {
         compose = true
         buildConfig = true
+        resValues = isolatedTestProfile == "onboarding"
     }
 
     lint {
@@ -275,6 +344,61 @@ android {
 }
 
 androidComponents {
+    onVariants { variant ->
+        val compileTaskName = "compile${variant.name.replaceFirstChar { it.uppercaseChar() }}Kotlin"
+        // Analyzer 0.15.0 realizes unrelated AGP Preview tasks through tasks.matching.
+        afterEvaluate {
+            listOf("${variant.name}StabilityCheck", "${variant.name}StabilityDump").forEach { taskName ->
+                tasks.named(taskName) {
+                    setDependsOn(listOf(compileTaskName))
+                }
+            }
+        }
+    }
+    onVariants { variant ->
+        variant.manifestPlaceholders.put("crashlyticsCollectionEnabled", (variant.name == "release").toString())
+        variant.buildConfigFields?.put(
+            "ONBOARDING_TEST",
+            BuildConfigField(
+                "boolean",
+                (variant.name == "debug" && isolatedTestProfile == "onboarding").toString(),
+                null,
+            ),
+        )
+        variant.buildConfigFields?.put(
+            "POSTHOG_PROJECT_TOKEN",
+            (
+                if (optimizedSmoke &&
+                    variant.name in isolatedProfileVariants
+                ) {
+                    providers.provider { "" }
+                } else {
+                    posthogProjectToken
+                }
+            ).map { token ->
+                val safeToken = token.takeIf { it.matches(Regex("phc_[A-Za-z0-9]+")) }.orEmpty()
+                BuildConfigField("String", "\"$safeToken\"", null)
+            },
+        )
+        variant.buildConfigFields?.put(
+            "POSTHOG_ENABLED",
+            BuildConfigField("boolean", (variant.name == "release").toString(), null),
+        )
+    }
+    onVariants { variant ->
+        if (optimizedSmoke && variant.name in isolatedProfileVariants) {
+            val target = android.buildTypes.getByName(variant.name)
+            check(!target.isDebuggable) { "Profile targets must not be debuggable." }
+            if (variant.name == "benchmarkRelease") {
+                check(target.isMinifyEnabled && target.isShrinkResources) {
+                    "Optimized smoke requires minification and resource shrinking."
+                }
+            }
+            check(target.signingConfig?.name == "debug") { "Optimized smoke requires nonproduction signing." }
+            variant.applicationId.set("$baseApplicationId.optimizedtest")
+            variant.sources.manifests.addStaticManifestFile("$projectDir/src/optimizedSmoke/AndroidManifest.xml")
+        }
+    }
     onVariants(selector().withBuildType("debug")) { variant ->
         val buildConfigFields =
             variant.buildConfigFields
@@ -284,23 +408,48 @@ androidComponents {
             "SENTRY_DSN",
             debugBuildConfigField("sentry.dsn", "KNITTOOLS_SENTRY_DSN", "SENTRY_DSN"),
         )
+        buildConfigFields.put(
+            "ACTIVE_POLICY_TEST",
+            BuildConfigField("boolean", (isolatedTestProfile == "activepolicy").toString(), null),
+        )
+        isolatedTestPackageSuffix?.let { suffix ->
+            variant.applicationId.set(baseApplicationId + suffix)
+            variant.manifestPlaceholders.put(
+                "isolatedTestAppLabel",
+                if (isolatedTestProfile == "onboarding") "@string/onboarding_test_app_name" else "@string/app_name",
+            )
+            // Poistaa INTERNET- ja BILLING-oikeudet: testipaketti ei voi tavoittaa verkkoa eikä Play-laskutusta.
+            variant.sources.manifests.addStaticManifestFile(isolatedTestManifest.asFile.path)
+        }
     }
 }
+
+// google-services.json tuntee vain perustunnuksen, joten testipaketin Firebase-resurssit generoidaan sille.
+// Lisäosa kytkee tunnuksen omassa konfiguroinnissaan, joten ylikirjoitus tehdään projektien arvioinnin jälkeen.
+if (isolatedTestPackageSuffix != null) {
+    gradle.projectsEvaluated {
+        tasks.withType<GoogleServicesTask>().matching { it.name == "processDebugGoogleServices" }.configureEach {
+            applicationId.set(baseApplicationId)
+        }
+    }
+}
+
+// Yksi lähde OWASP-tietokannan polulle: security-check antaa sen
+// DEPENDENCY_CHECK_DATA_DIRECTORY-muuttujassa, muuten käytetään projektin omaa oletusta.
+val dependencyCheckDataDirectory: String =
+    providers
+        .environmentVariable("DEPENDENCY_CHECK_DATA_DIRECTORY")
+        .orElse(
+            rootProject.layout.projectDirectory
+                .dir(".gradle/dependency-check-data")
+                .asFile.absolutePath,
+        ).get()
 
 dependencyCheck {
     formats = listOf("HTML", "JSON")
     outputDirectory = rootProject.layout.projectDirectory.dir("reports")
     data {
-        val defaultDataDirectory =
-            rootProject.layout.projectDirectory
-                .dir(".gradle/dependency-check-data")
-                .asFile.absolutePath
-
-        directory =
-            providers
-                .environmentVariable("DEPENDENCY_CHECK_DATA_DIRECTORY")
-                .orElse(defaultDataDirectory)
-                .get()
+        directory = dependencyCheckDataDirectory
     }
     autoUpdate =
         (providers.environmentVariable("DEPENDENCY_CHECK_AUTO_UPDATE").orNull ?: "true")
@@ -316,6 +465,8 @@ dependencyCheck {
             rootProject.file("config/dependency-check-suppressions.xml").absolutePath,
         )
     scanConfigurations = listOf("debugRuntimeClasspath", "releaseRuntimeClasspath")
+    // OWASP scans Gradle dependencies; OSV owns the repository's Node lockfiles.
+    setScanSet(emptyList<File>())
     skipTestGroups = true
     hostedSuppressions {
         enabled = false
@@ -370,6 +521,20 @@ dependencyCheck {
     }
 }
 
+// Plugin 13.0.0: DataExtension asettaa hakemiston jo konstruktorissaan set()-kutsulla, joten
+// ConfiguredTaskin convention(defaults.data.directory) ei pure eikä yllä oleva data.directory
+// mene perille — tietokanta päätyisi polkuun $GRADLE_USER_HOME/dependency-check-data/11.0.
+// Asetetaan sama polku suoraan taskeille. Korjattu upstreamissa, poistettavissa kun julkaistaan.
+tasks.withType<org.owasp.dependencycheck.gradle.tasks.ConfiguredTask>().configureEach {
+    data.directory.set(dependencyCheckDataDirectory)
+}
+
+// The shared checker expects reports at the root of the shared report archive.
+// Always run the analysis without snapshotting unrelated reports or broken links.
+tasks.matching { it.name in setOf("dependencyCheckAnalyze", "dependencyCheckAggregate") }.configureEach {
+    doNotTrackState("Dependency-Check shares its output directory with unrelated report archives")
+}
+
 gradle.taskGraph.whenReady {
     val appReleaseArtifactTasks =
         setOf(
@@ -412,6 +577,11 @@ gradle.taskGraph.whenReady {
                         "Puuttuvat release signing -muuttujat: " +
                             missingSigningEnvNames.joinToString(),
                     )
+                } else {
+                    val keystorePath = requiredReleaseEnv("${releaseSigningEnvPrefix}_KEYSTORE_PATH")
+                    if (!file(keystorePath).isFile) {
+                        add("${releaseSigningEnvPrefix}_KEYSTORE_PATH ei osoita olemassa olevaan tiedostoon.")
+                    }
                 }
             }
 
@@ -434,7 +604,7 @@ val writeGoogleServicesJsonFromEnv =
         val encodedConfig = googleServicesJsonBase64Env.orNull
 
         inputs.property("base64EnvName", envName)
-        inputs.property("encodedConfig", encodedConfig.orEmpty())
+        inputs.property("encodedConfigPresent", !encodedConfig.isNullOrBlank())
         outputs.file(targetFile)
         outputs.upToDateWhen { targetFile.isFile }
 
@@ -457,7 +627,7 @@ val writeGoogleServicesPlaceholderTasks =
             val placeholderJson = googleServicesPlaceholderJson
 
             inputs.files(rootFile).withPropertyName("rootGoogleServicesJsonFile")
-            inputs.property("encodedConfig", encodedConfig.orEmpty())
+            inputs.property("encodedConfigPresent", !encodedConfig.isNullOrBlank())
             inputs.property("placeholderJson", placeholderJson)
             outputs.file(targetFile)
             outputs.upToDateWhen {
@@ -476,6 +646,38 @@ val writeGoogleServicesPlaceholderTasks =
             }
         }
     }
+
+// Only the opt-in, non-distributable benchmark and profile-collection artifacts use this file.
+val optimizedSmokeGoogleServices = layout.buildDirectory.file("generated/optimizedSmoke/google-services.json")
+val writeOptimizedSmokeGoogleServices =
+    tasks.register("writeOptimizedSmokeGoogleServices") {
+        group = "build setup"
+        description = "Creates placeholder Firebase configuration for optimized smoke-test artifacts."
+        val config = googleServicesPlaceholderJson.replace(baseApplicationId, "$baseApplicationId.optimizedtest")
+        val output = optimizedSmokeGoogleServices
+        inputs.property("placeholder", config)
+        outputs.file(output)
+        doLast {
+            output.get().asFile.apply {
+                parentFile.mkdirs()
+                writeText(config)
+            }
+        }
+    }
+
+if (optimizedSmoke) {
+    gradle.projectsEvaluated {
+        tasks
+            .withType<GoogleServicesTask>()
+            .matching {
+                it.name in
+                    setOf("processBenchmarkReleaseGoogleServices", "processNonMinifiedReleaseGoogleServices")
+            }.configureEach {
+                googleServicesJsonFiles.set(optimizedSmokeGoogleServices.map { listOf(it.asFile) })
+                dependsOn(writeOptimizedSmokeGoogleServices)
+            }
+    }
+}
 
 val verifyGoogleServicesJson =
     tasks.register("verifyGoogleServicesJson") {
@@ -496,11 +698,32 @@ val firebaseConfiguredArtifactTaskNames =
     setOf(
         "assembleRelease",
         "bundleRelease",
+        "packageRelease",
+        "packageReleaseBundle",
+        "packageReleaseUniversalApk",
+        "signReleaseBundle",
+        "publishRelease",
     )
+
+val verifyPostHogConfig =
+    tasks.register("verifyPostHogConfig") {
+        group = "verification"
+        description = "Tarkistaa, että julkaisuversion PostHog-projektitunnus on kelvollinen."
+
+        val validToken = posthogTokenValid
+        doLast {
+            check(validToken.get()) {
+                "Release requires KNITTOOLS_POSTHOG_PROJECT_TOKEN or ignored posthog.properties with projectToken."
+            }
+        }
+    }
 
 tasks.configureEach {
     if (name.startsWith("process") && name.endsWith("GoogleServices")) {
-        dependsOn(writeGoogleServicesJsonFromEnv)
+        val smokeTask =
+            optimizedSmoke &&
+                name in setOf("processBenchmarkReleaseGoogleServices", "processNonMinifiedReleaseGoogleServices")
+        if (!smokeTask) dependsOn(writeGoogleServicesJsonFromEnv)
 
         // processBenchmarkReleaseGoogleServices -> benchmarkRelease
         val variantName =
@@ -508,16 +731,22 @@ tasks.configureEach {
                 .removePrefix("process")
                 .removeSuffix("GoogleServices")
                 .replaceFirstChar { it.lowercaseChar() }
-        writeGoogleServicesPlaceholderTasks[variantName]?.let { dependsOn(it) }
+        if (!smokeTask) writeGoogleServicesPlaceholderTasks[variantName]?.let { dependsOn(it) }
     }
 
     if (name in firebaseConfiguredArtifactTaskNames) {
         dependsOn(verifyGoogleServicesJson)
+        dependsOn(verifyPostHogConfig)
     }
 }
 
 room {
     schemaDirectory("$projectDir/schemas")
+}
+
+baselineProfile {
+    saveInSrc = true
+    automaticGenerationDuringBuild = false
 }
 
 hilt {
@@ -526,6 +755,7 @@ hilt {
 
 ktlint {
     android.set(true)
+    coloredOutput.set(false)
     ignoreFailures.set(false)
 
     filter {
@@ -598,11 +828,25 @@ tasks.register<JacocoReport>("jacocoDebugUnitTestReport") {
             fileTree(layout.buildDirectory.dir("intermediates/built_in_kotlinc/debug/compileDebugKotlin/classes")) {
                 exclude(*jacocoCoverageExclusions.toTypedArray())
             },
-            fileTree(layout.buildDirectory.dir("intermediates/javac/debug/classes")) {
+            fileTree(layout.buildDirectory.dir("intermediates/javac/debug/compileDebugJavaWithJavac/classes")) {
                 exclude(*jacocoCoverageExclusions.toTypedArray())
             },
         ),
     )
+
+    doFirst {
+        val hasClassFiles =
+            classDirectories.files.any { candidate ->
+                (candidate.isFile && candidate.extension == "class") ||
+                    (
+                        candidate.isDirectory &&
+                            candidate.walkTopDown().any { file -> file.isFile && file.extension == "class" }
+                    )
+            }
+        check(hasClassFiles) {
+            "JaCoCo debug -raportille ei löytynyt yhtään luokkatiedostoa. Tarkista AGP:n luokkahakemistot."
+        }
+    }
     executionData.setFrom(
         fileTree(layout.buildDirectory) {
             include(
@@ -656,6 +900,7 @@ dependencies {
 
     // Navigation
     implementation(libs.navigation.compose)
+    implementation(libs.window)
 
     // Lifecycle
     implementation(libs.lifecycle.process)
@@ -676,6 +921,7 @@ dependencies {
     // Coroutines
     implementation(libs.coroutines.core)
     implementation(libs.coroutines.android)
+    implementation(libs.coroutines.play.services)
 
     // Serialization
     implementation(libs.kotlinx.serialization.json)
@@ -687,6 +933,7 @@ dependencies {
     implementation(libs.core.ktx)
     implementation(libs.activity.compose)
     implementation(libs.appcompat)
+    implementation(libs.webkit)
 
     // SplashScreen
     implementation(libs.splashscreen)
@@ -706,20 +953,16 @@ dependencies {
 
     // Coil (image loading)
     implementation(libs.coil.compose)
+    implementation(libs.coil.network.ktor3)
 
-    // Ktor (HTTP client)
+    // Ktor (Coilin HTTP-moottori etäkuville)
     implementation(libs.ktor.client.core)
     implementation(libs.ktor.client.okhttp)
-    implementation(libs.ktor.client.content.negotiation)
-    implementation(libs.ktor.serialization.kotlinx.json)
 
-    // Browser (Custom Chrome Tabs)
-    implementation(libs.browser)
-
-    // Firebase backend integration
+    // Firebase Crashlytics
     implementation(platform(libs.firebase.bom))
-    implementation(libs.firebase.auth)
-    implementation(libs.firebase.functions)
+    implementation(libs.firebase.crashlytics)
+    implementation(libs.posthog.android)
 
     // Baseline Profiles
     implementation(libs.profileinstaller)
@@ -745,6 +988,8 @@ dependencies {
     androidTestImplementation(libs.androidx.test.espresso.core)
     androidTestImplementation(composeBom)
     androidTestImplementation(libs.compose.ui.test.junit4)
+    androidTestImplementation(libs.window.testing)
+    androidTestImplementation(libs.ktor.client.mock)
     androidTestImplementation(libs.room.testing)
     debugImplementation(libs.compose.ui.test.manifest)
 }

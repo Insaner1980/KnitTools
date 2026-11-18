@@ -1,10 +1,34 @@
 package com.finnvek.knittools
 
+import com.finnvek.knittools.data.local.KNITTOOLS_DATABASE_VERSION
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class ArchitectureSingleSourceSourceTest {
+    @Test
+    fun `additional counter name inputs use the domain limit`() {
+        val source = ProjectSourceFiles.read(MULTI_COUNTER_COMPONENTS)
+        val functions = source.split(Regex("\\bfun\\s+"))
+        mapOf(
+            "AddCounterDialog" to "onNameChange",
+            "RenameCounterDialog" to "onValueChange",
+        ).forEach { (name, handler) ->
+            val function = functions.single { Regex("^$name\\s*\\(").containsMatchIn(it) }
+            assertTrue(
+                "$name must reject overlong input using the domain limit",
+                function.replace(Regex("\\s+"), "").contains(
+                    "$handler={if(it.length<=ProjectCounterLogic.MAX_NAME_LENGTH)name=it}",
+                ),
+            )
+        }
+        assertFalse(
+            "Additional counter UI must not define a numeric name limit",
+            Regex("\\bval\\s+\\w*NAME\\w*\\s*(?::\\s*Int\\s*)?=\\s*\\d+").containsMatchIn(source),
+        )
+    }
+
     @Test
     fun `project counter type rules stay centralized`() {
         val projectCounter = ProjectSourceFiles.read(PROJECT_COUNTER)
@@ -43,6 +67,7 @@ class ArchitectureSingleSourceSourceTest {
         val yarnCardRepository = ProjectSourceFiles.read(YARN_CARD_REPOSITORY)
         val counterScreen = ProjectSourceFiles.read(COUNTER_SCREEN)
         val yarnCardLinks = ProjectSourceFiles.read(YARN_CARD_LINKS)
+        val yarnCardParser = yarnCardLinks.substringBefore("fun formatYarnCardIds")
         val yarnCard = ProjectSourceFiles.read(YARN_CARD)
 
         assertFalse(counterViewModel.contains(".split(\",\")"))
@@ -53,6 +78,9 @@ class ArchitectureSingleSourceSourceTest {
         assertFalse(counterScreen.contains("Yarn #"))
         assertTrue(yarnCardLinks.contains("fun parseYarnCardIds"))
         assertTrue(yarnCardLinks.contains("fun formatYarnCardIds"))
+        assertFalse(yarnCardParser.contains(".split("))
+        assertFalse(yarnCardParser.contains(".mapNotNull"))
+        assertFalse(yarnCardParser.contains(".distinct("))
         assertTrue(yarnCard.contains("fun YarnCard.displayName"))
     }
 
@@ -72,16 +100,6 @@ class ArchitectureSingleSourceSourceTest {
     }
 
     @Test
-    fun `pattern info labels use string resources`() {
-        val ravelryDetailScreen = ProjectSourceFiles.read(RAVELRY_DETAIL_SCREEN)
-
-        assertFalse(ravelryDetailScreen.contains("label = \"Yardage\""))
-        assertFalse(ravelryDetailScreen.contains("value = \"${'$'}it yards\""))
-        assertTrue(ravelryDetailScreen.contains("R.string.pattern_detail_yardage"))
-        assertTrue(ravelryDetailScreen.contains("R.string.yardage_format"))
-    }
-
-    @Test
     fun `top level navigation start routes reuse screen routes`() {
         val screen = ProjectSourceFiles.read(SCREEN)
 
@@ -96,14 +114,49 @@ class ArchitectureSingleSourceSourceTest {
     fun `PROJECT document matches current architecture decisions`() {
         val project = ProjectSourceFiles.read(PROJECT_MD)
 
-        assertTrue(project.contains("Room schema version: `17`"))
-        assertTrue(project.contains("Free-tason PDF-annotointi"))
+        assertTrue(project.contains("| Room schema | $KNITTOOLS_DATABASE_VERSION |"))
+        listOf(
+            "Pattern import uses SAF `OpenDocument(application/pdf)`",
+            "New project plus PDF is one repository transaction",
+            "Only explicit row-marker and two-point calibration actions write mappings.",
+            "A project viewer renders that reusable master read-only plus its own editable overlay",
+            "Marked PDF export uses SAF `CreateDocument(application/pdf)`",
+        ).forEach { contract ->
+            assertTrue("PROJECT.md must document: $contract", project.contains(contract))
+        }
         assertFalse(project.contains("VoiceCommandParser.kt"))
-        assertTrue(project.contains("ei voice/microphone/SpeechRecognizer/TextToSpeech"))
+        assertTrue(
+            project.contains(
+                "There is no `RECORD_AUDIO` permission, `SpeechRecognizer`, `TextToSpeech`, " +
+                    "conversational voice command, or production microphone flow.",
+            ),
+        )
         assertFalse(project.contains("YarnLabelPhotoStorage"))
     }
 
+    @Test
+    fun `repository instructions and current documentation stay aligned`() {
+        val agents = ProjectSourceFiles.read(AGENTS_MD)
+        val codex = ProjectSourceFiles.read(CODEX_MD)
+        val claude = ProjectSourceFiles.read(CLAUDE_MD)
+        val project = ProjectSourceFiles.read(PROJECT_MD)
+
+        assertEquals(agents, codex)
+        listOf(agents, codex).forEach { instructions ->
+            assertTrue(instructions.contains("commit the authoritative database mutation first"))
+            assertTrue(instructions.contains("per `project_documents` relation"))
+        }
+        assertTrue(claude.contains("Room v$KNITTOOLS_DATABASE_VERSION"))
+        assertTrue(claude.contains("auktoriteetti on `project_documents`"))
+        assertFalse(claude.contains("Room v21"))
+        assertFalse(claude.contains("valinta näkyy kaistana"))
+        assertTrue(project.contains("Database failure or pre-commit cancellation leaves files intact"))
+    }
+
     private companion object {
+        private const val AGENTS_MD = "AGENTS.md"
+        private const val CODEX_MD = "CODEX.md"
+        private const val CLAUDE_MD = "CLAUDE.md"
         private const val PROJECT_MD = "PROJECT.md"
         private const val PROJECT_COUNTER =
             "app/src/main/java/com/finnvek/knittools/domain/model/ProjectCounter.kt"
@@ -147,7 +200,5 @@ class ArchitectureSingleSourceSourceTest {
             "app/src/main/java/com/finnvek/knittools/ui/screens/counter/PhotoComponents.kt"
         private const val SCREEN =
             "app/src/main/java/com/finnvek/knittools/ui/navigation/Screen.kt"
-        private const val RAVELRY_DETAIL_SCREEN =
-            "app/src/main/java/com/finnvek/knittools/ui/screens/ravelry/RavelryDetailScreen.kt"
     }
 }

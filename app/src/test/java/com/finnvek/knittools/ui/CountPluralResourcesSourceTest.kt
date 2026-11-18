@@ -7,7 +7,7 @@ import org.junit.Test
 
 class CountPluralResourcesSourceTest {
     @Test
-    fun `row photo and pattern counts use plural resources in every locale`() {
+    fun `counts use plural resources in every locale`() {
         ProjectSourceFiles.localizedStringFiles().forEach { stringsFile ->
             val strings = ProjectSourceFiles.read(stringsFile)
 
@@ -24,6 +24,17 @@ class CountPluralResourcesSourceTest {
                     .containsMatchIn(ProjectSourceFiles.read(sourceFile)),
             )
         }
+        // Main-counter deltas can be rounds, repeats or custom units; their neutral
+        // progress label has no quantity-dependent noun. Keep actual row plurals elsewhere.
+        listOf(
+            "counter/CounterScreen.kt",
+            "counter/CounterWorkspaceSections.kt",
+            "insights/InsightsSections.kt",
+        ).forEach {
+            val source = ProjectSourceFiles.read("app/src/main/java/com/finnvek/knittools/ui/screens/$it")
+            assertTrue("$it must retain neutral counter progress", source.contains("R.string.counter_progress_format"))
+            assertFalse("$it must not relabel counter deltas as rows", source.contains("R.plurals.rows_format"))
+        }
     }
 
     private fun hasStringResource(
@@ -34,20 +45,31 @@ class CountPluralResourcesSourceTest {
     private companion object {
         val COUNT_PLURAL_KEYS =
             listOf(
-                "insights_rows_count",
+                "rows_format",
                 "delete_photos_confirm",
                 "delete_patterns_confirm",
+                "complete_n_projects",
+                "delete_n_projects",
+                "delete_yarn_cards_confirm",
+                "stitches_result",
+                "relative_time_months_ago",
             )
         val SOURCE_USAGES =
-            mapOf(
+            listOf(
                 "app/src/main/java/com/finnvek/knittools/ui/screens/insights/InsightsSections.kt" to
-                    "insights_rows_count",
+                    "relative_time_months_ago",
                 "app/src/main/java/com/finnvek/knittools/ui/screens/library/AllPhotosScreen.kt" to
                     "delete_photos_confirm",
                 "app/src/main/java/com/finnvek/knittools/ui/screens/library/SavedPatternsScreen.kt" to
                     "delete_patterns_confirm",
-                "app/src/main/java/com/finnvek/knittools/ui/screens/ravelry/RavelrySearchScreen.kt" to
-                    "delete_patterns_confirm",
+                "app/src/main/java/com/finnvek/knittools/ui/screens/project/ProjectListScreen.kt" to
+                    "complete_n_projects",
+                "app/src/main/java/com/finnvek/knittools/ui/screens/project/ProjectListScreen.kt" to
+                    "delete_n_projects",
+                "app/src/main/java/com/finnvek/knittools/ui/screens/library/MyYarnScreen.kt" to
+                    "delete_yarn_cards_confirm",
+                "app/src/main/java/com/finnvek/knittools/ui/screens/caston/CastOnScreen.kt" to
+                    "stitches_result",
             )
     }
 }

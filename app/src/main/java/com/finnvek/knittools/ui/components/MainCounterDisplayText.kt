@@ -1,5 +1,6 @@
 package com.finnvek.knittools.ui.components
 
+import androidx.annotation.StringRes
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -9,6 +10,40 @@ import com.finnvek.knittools.domain.calculator.MainCounterLabelSlot
 import com.finnvek.knittools.domain.calculator.MainCounterTargetSlot
 import com.finnvek.knittools.domain.model.CraftType
 import com.finnvek.knittools.domain.model.MainCounterLabelType
+import kotlin.math.absoluteValue
+
+sealed interface MainCounterTargetStatus {
+    data class Remaining(
+        val countSlot: MainCounterCountSlot,
+    ) : MainCounterTargetStatus
+
+    data object Reached : MainCounterTargetStatus
+
+    data class Past(
+        val countSlot: MainCounterCountSlot,
+    ) : MainCounterTargetStatus
+}
+
+fun mainCounterTargetStatus(targetLine: MainCounterTargetSlot?): MainCounterTargetStatus? {
+    val slot = targetLine?.takeIf { it.target > 0 } ?: return null
+    val remaining = slot.target - slot.count
+    val countSlot =
+        MainCounterCountSlot(
+            count = remaining.absoluteValue,
+            labelType = slot.labelType,
+            customLabel = slot.customLabel,
+        )
+    return when {
+        remaining > 0 -> MainCounterTargetStatus.Remaining(countSlot)
+        remaining == 0 -> MainCounterTargetStatus.Reached
+        else -> MainCounterTargetStatus.Past(countSlot)
+    }
+}
+
+fun mainCounterTargetFraction(targetLine: MainCounterTargetSlot?): Float? =
+    targetLine
+        ?.takeIf { it.target > 0 }
+        ?.let { slot -> (slot.count.toFloat() / slot.target).coerceIn(0f, 1f) }
 
 @Composable
 fun craftTypeLabel(craftType: CraftType): String =
@@ -21,13 +56,18 @@ fun craftTypeLabel(craftType: CraftType): String =
 fun mainCounterLabelText(
     labelType: MainCounterLabelType,
     customLabel: String?,
-): String =
-    when (labelType) {
-        MainCounterLabelType.ROWS -> stringResource(R.string.main_counter_rows)
-        MainCounterLabelType.ROUNDS -> stringResource(R.string.main_counter_rounds)
-        MainCounterLabelType.REPEATS -> stringResource(R.string.main_counter_repeats)
-        MainCounterLabelType.CUSTOM -> customLabel ?: stringResource(R.string.main_counter_custom)
-    }
+): String = customLabel.takeIf { labelType == MainCounterLabelType.CUSTOM } ?: stringResource(labelType.labelRes)
+
+/** Yksikön nimike resurssina, jotta Compose-näkymät ja Glance-widget käyttävät samaa tekstiä. */
+@get:StringRes
+val MainCounterLabelType.labelRes: Int
+    get() =
+        when (this) {
+            MainCounterLabelType.ROWS -> R.string.main_counter_rows
+            MainCounterLabelType.ROUNDS -> R.string.main_counter_rounds
+            MainCounterLabelType.REPEATS -> R.string.main_counter_repeats
+            MainCounterLabelType.CUSTOM -> R.string.main_counter_custom
+        }
 
 @Composable
 fun mainCounterCountText(slot: MainCounterCountSlot): String =
@@ -75,39 +115,57 @@ fun mainCounterProjectCardCountText(slot: MainCounterCountSlot): String =
     }
 
 @Composable
-fun mainCounterIncreaseContentDescription(slot: MainCounterLabelSlot): String =
-    when (slot.labelType) {
-        MainCounterLabelType.ROWS -> stringResource(R.string.counter_add_row)
-        MainCounterLabelType.ROUNDS -> stringResource(R.string.counter_add_round)
-        MainCounterLabelType.REPEATS -> stringResource(R.string.counter_add_repeat)
-        MainCounterLabelType.CUSTOM ->
-            stringResource(
-                R.string.counter_add_custom,
-                slot.customLabel ?: stringResource(R.string.main_counter_custom),
-            )
+fun mainCounterIncreaseContentDescription(
+    slot: MainCounterLabelSlot,
+    stepSize: Int = 1,
+): String =
+    if (stepSize > 1) {
+        stringResource(R.string.counter_step_increase, stepSize, mainCounterLabelText(slot.labelType, slot.customLabel))
+    } else {
+        when (slot.labelType) {
+            MainCounterLabelType.ROWS -> stringResource(R.string.counter_add_row)
+            MainCounterLabelType.ROUNDS -> stringResource(R.string.counter_add_round)
+            MainCounterLabelType.REPEATS -> stringResource(R.string.counter_add_repeat)
+            MainCounterLabelType.CUSTOM ->
+                stringResource(
+                    R.string.counter_add_custom,
+                    slot.customLabel ?: stringResource(R.string.main_counter_custom),
+                )
+        }
     }
 
 @Composable
-fun mainCounterDecreaseContentDescription(slot: MainCounterLabelSlot): String =
-    when (slot.labelType) {
-        MainCounterLabelType.ROWS -> stringResource(R.string.counter_decrease_row)
-        MainCounterLabelType.ROUNDS -> stringResource(R.string.counter_decrease_round)
-        MainCounterLabelType.REPEATS -> stringResource(R.string.counter_decrease_repeat)
-        MainCounterLabelType.CUSTOM ->
-            stringResource(
-                R.string.counter_decrease_custom,
-                slot.customLabel ?: stringResource(R.string.main_counter_custom),
-            )
+fun mainCounterDecreaseContentDescription(
+    slot: MainCounterLabelSlot,
+    stepSize: Int = 1,
+): String =
+    if (stepSize > 1) {
+        stringResource(R.string.counter_step_decrease, stepSize, mainCounterLabelText(slot.labelType, slot.customLabel))
+    } else {
+        when (slot.labelType) {
+            MainCounterLabelType.ROWS -> stringResource(R.string.counter_decrease_row)
+            MainCounterLabelType.ROUNDS -> stringResource(R.string.counter_decrease_round)
+            MainCounterLabelType.REPEATS -> stringResource(R.string.counter_decrease_repeat)
+            MainCounterLabelType.CUSTOM ->
+                stringResource(
+                    R.string.counter_decrease_custom,
+                    slot.customLabel ?: stringResource(R.string.main_counter_custom),
+                )
+        }
     }
 
 @Composable
-fun projectMetadataText(
-    craftType: CraftType,
+fun mainCounterStepTitle(
     labelType: MainCounterLabelType,
     customLabel: String?,
 ): String =
-    stringResource(
-        R.string.project_metadata_format,
-        craftTypeLabel(craftType),
-        mainCounterLabelText(labelType, customLabel),
-    )
+    when (labelType) {
+        MainCounterLabelType.ROWS -> stringResource(R.string.counter_step_rows_title)
+        MainCounterLabelType.ROUNDS -> stringResource(R.string.counter_step_rounds_title)
+        MainCounterLabelType.REPEATS -> stringResource(R.string.counter_step_repeats_title)
+        MainCounterLabelType.CUSTOM ->
+            stringResource(
+                R.string.counter_step_custom_title,
+                mainCounterLabelText(labelType, customLabel),
+            )
+    }

@@ -1,11 +1,13 @@
 *.iml
 .gradle/
+/.kotlin/
 /caches/
 /daemon/
 /kotlin-profile/
 /native/
 /notifications/
 /local.properties
+/.local/signing/
 /debug.credentials.properties
 .idea/
 /build/
@@ -61,6 +63,18 @@ app/src/*/google-services.json
 /screenshots/
 *.bak
 
+# Paikalliset kuvankäsittelyn välitulokset
+/dbg_carved.png
+/debug_green_palette_preview.png
+/debug_inpainted_orange_minus.png
+/debug_vertical_stroke_mask.png
+/final_green_minus_button.png
+/zoom_junction.png
+/zoom_top.png
+
+# Paikallinen riippuvuusartefakti
+/android/FakeDependency.jar
+
 # Paikalliset analyysi- ja jatkomuistiinpanot
 /jatka.md
 
@@ -81,8 +95,13 @@ app/src/*/google-services.json
 /functions/firebase-debug.log
 /functions/.runtimeconfig.json
 /functions/.secret.local
+/functions/.env.*
 
 # Compose-vakauden paikallinen tarkistus käyttää debug-baselinea.
 /app/stability/*
 !/app/stability/app-debug.stability
 .worktrees/
+/posthog.properties
+
+# Private recovery backups retained during report cleanup.
+/.local/report-recovery-backups/

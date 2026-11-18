@@ -12,6 +12,7 @@ import androidx.compose.ui.graphics.Color
 
 @Immutable
 data class KnitToolsExtendedColors(
+    val onPhotoScrim: Color = TextPrimary,
     val surfaceTint: Color,
     val secondaryOutline: Color,
     val onSurfaceMuted: Color,
@@ -20,9 +21,40 @@ data class KnitToolsExtendedColors(
     val inactiveContent: Color,
     val navBarContainer: Color,
     val navBarIndicator: Color,
-    val primaryTintContainer: Color,
+    /**
+     * --- Käyttötarkoituksen mukaiset pinnat: näkymät käyttävät näitä, eivät colorScheme.surface*-rooleja suoraan ---
+     * Kaikkien sisältökorttien, listarivien ja toimintopalkkien pohja (Libraryn kortin väri).
+     */
+    val cardContainer: Color,
+    /** Monivalinnassa valitun kortin pohja. */
+    val selectedCardContainer: Color,
+    /** Päätoiminnon pohja: jatka-kortti, uusi projekti ja laskurin valikon projektilinkki. */
+    val actionContainer: Color,
+    /** Pienet versaaliosio-otsikot kaikissa näkymissä. */
+    val sectionLabel: Color,
+    /** Taulukoiden otsikkorivi, joka erottuu kortin pohjasta. */
+    val tableHeaderContainer: Color,
+    /** Syötekentän pohja kortissa, dialogissa ja sheetissä (`NumberInputField`, `cardTextFieldColors`). */
+    val inputFieldContainer: Color,
+    /** Tekstikenttä suoraan näkymän taustalla (hakukentät): vaaleassa teemassa kortin sävy, ei raskas khaki. */
+    val screenFieldContainer: Color,
+    /** Tyhjän tilan teksti näkymän taustalla, selvästi himmeämpi kuin sisältö. */
+    val emptyStateText: Color,
+    /** Esimerkkiarvo syötekentässä: luettava kentän pohjalla mutta selvästi oikeaa arvoa haaleampi. */
+    val fieldPlaceholderText: Color,
+    val paperSurface: Color,
+    val paperInk: Color,
+    /** Luettava teksti paperipinnalla (onboardingin ohjedemo); paperi on vaalea molemmissa teemoissa. */
+    val paperText: Color,
+    val primaryReadable: Color,
+    val proMarkerContainer: Color,
+    val proMarkerContent: Color,
+    val proMarkerStitch: Color,
+    val yarnSwatchNeutral: Color,
     val activityCellEmpty: Color,
+    val transparentIndicator: Color,
     val activityRamp: List<Color>,
+    val yarnPalette: List<Color>,
 )
 
 val LocalKnitToolsColors =
@@ -36,9 +68,27 @@ val LocalKnitToolsColors =
             inactiveContent = Color.Unspecified,
             navBarContainer = Color.Unspecified,
             navBarIndicator = Color.Unspecified,
-            primaryTintContainer = Color.Unspecified,
+            cardContainer = Color.Unspecified,
+            selectedCardContainer = Color.Unspecified,
+            actionContainer = Color.Unspecified,
+            sectionLabel = Color.Unspecified,
+            tableHeaderContainer = Color.Unspecified,
+            inputFieldContainer = Color.Unspecified,
+            screenFieldContainer = Color.Unspecified,
+            emptyStateText = Color.Unspecified,
+            fieldPlaceholderText = Color.Unspecified,
+            paperSurface = Color.Unspecified,
+            paperInk = Color.Unspecified,
+            paperText = Color.Unspecified,
+            primaryReadable = Color.Unspecified,
+            proMarkerContainer = Color.Unspecified,
+            proMarkerContent = Color.Unspecified,
+            proMarkerStitch = Color.Unspecified,
+            yarnSwatchNeutral = Color.Unspecified,
             activityCellEmpty = Color.Unspecified,
+            transparentIndicator = Color.Transparent,
             activityRamp = emptyList(),
+            yarnPalette = YarnColors,
         )
     }
 
@@ -91,10 +141,32 @@ private val DarkExtendedColors =
         inactiveContent = NavText,
         navBarContainer = NavBackground,
         navBarIndicator = NavActiveBg,
-        primaryTintContainer = PrimaryTintContainer,
+        cardContainer = SurfaceHigh,
+        selectedCardContainer = Primary.copy(alpha = SELECTED_CARD_ALPHA),
+        actionContainer = ActionContainer,
+        sectionLabel = DustyRose,
+        tableHeaderContainer = SurfaceHighest,
+        inputFieldContainer = SurfaceHighest,
+        screenFieldContainer = SurfaceHighest,
+        emptyStateText = TextMuted,
+        // TextMuted jäi SurfaceHighest-kentässä 3,9:1:een, joten tummassa teemassa toissijainen teksti.
+        fieldPlaceholderText = TextSecondary,
+        paperSurface = PaperSurface,
+        paperInk = PaperInk,
+        paperText = PaperText,
+        primaryReadable = PrimaryReadable,
+        proMarkerContainer = ProMarkerContainer,
+        proMarkerContent = ProMarkerContent,
+        proMarkerStitch = ProMarkerStitch,
+        yarnSwatchNeutral = YarnSwatchNeutral,
         activityCellEmpty = ActivityCellEmpty,
+        transparentIndicator = Color.Transparent,
         activityRamp = listOf(SecondaryMuted, Secondary, Tertiary, PrimaryContainer),
+        yarnPalette = YarnColors,
     )
+
+// Valitun kortin oranssi sävy taustan päällä; sama kaikissa monivalintalistoissa.
+private const val SELECTED_CARD_ALPHA = 0.07f
 
 // === Light color scheme ===
 
@@ -141,9 +213,28 @@ private val LightExtendedColors =
         inactiveContent = LightNavText,
         navBarContainer = LightNavBackground,
         navBarIndicator = LightNavActiveBg,
-        primaryTintContainer = LightPrimaryTintContainer,
+        cardContainer = LightCardContainer,
+        selectedCardContainer = Primary.copy(alpha = SELECTED_CARD_ALPHA),
+        actionContainer = LightActionContainer,
+        sectionLabel = LightSectionLabel,
+        // Kortin sävy: tumma khakikaista oli vanhan paletin jäänne taulukoiden yläpuolella.
+        tableHeaderContainer = LightCardContainer,
+        inputFieldContainer = LightInputField,
+        screenFieldContainer = LightCardContainer,
+        emptyStateText = LightEmptyStateText,
+        fieldPlaceholderText = LightEmptyStateText,
+        paperSurface = LightPaperSurface,
+        paperInk = PaperInk,
+        paperText = PaperText,
+        primaryReadable = LightPrimaryReadable,
+        proMarkerContainer = LightProMarkerContainer,
+        proMarkerContent = LightProMarkerContent,
+        proMarkerStitch = LightProMarkerStitch,
+        yarnSwatchNeutral = LightYarnSwatchNeutral,
         activityCellEmpty = LightActivityCellEmpty,
+        transparentIndicator = Color.Transparent,
         activityRamp = listOf(LightActivityLow, Secondary, Tertiary, Primary),
+        yarnPalette = LightYarnColors,
     )
 
 @Composable

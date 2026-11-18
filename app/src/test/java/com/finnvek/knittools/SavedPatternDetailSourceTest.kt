@@ -1,10 +1,83 @@
 package com.finnvek.knittools
 
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.w3c.dom.Element
 import java.nio.file.Files
+import java.nio.file.Path
+import javax.xml.parsers.DocumentBuilder
+import javax.xml.parsers.DocumentBuilderFactory
 
 class SavedPatternDetailSourceTest {
+    @Test
+    fun `restored replacement prompt requires an admitted project owner`() {
+        val detail = ProjectSourceFiles.read(SAVED_PATTERN_DETAIL_SCREEN)
+        assertTrue(detail.contains("rememberSaveable(pattern.id) { mutableStateOf<Long?>(null) }"))
+        assertTrue(detail.contains("val replacementProjectId = attachmentState.projectId"))
+        assertTrue(
+            "A restored prompt must not render with a fresh ownerless attachment ViewModel",
+            Regex(
+                """if \(replacementProjectId != null\) \{\s*pendingReplacementId\?\.let \{ expectedExistingId ->\s*ConfirmationDialog\(""",
+            ).containsMatchIn(detail),
+        )
+        val confirmation =
+            detail
+                .substringAfter("val replacementProjectId = attachmentState.projectId")
+                .substringBefore("val scrollTitle")
+        assertTrue(confirmation.contains("startWebAttach(replacementProjectId, expectedExistingId)"))
+        assertTrue(confirmation.contains("onDismiss = { pendingReplacementId = null }"))
+        assertFalse(confirmation.contains("attachmentState.projectId?.let"))
+    }
+
+    @Test
+    fun `explicit project reselection clears the restored prompt before admitting another owner`() {
+        val detail = ProjectSourceFiles.read(SAVED_PATTERN_DETAIL_SCREEN)
+        val selection =
+            detail
+                .substringAfter("ProjectPickerSheet(")
+                .substringAfter("onSelect = { projectId ->")
+                .substringBefore("onDismiss =")
+        val discard = selection.indexOf("pendingReplacementId = null")
+        val admission = selection.indexOf("startWebAttach(projectId, null)")
+        assertTrue(
+            "Discard the old expected link before the new owner can emit state",
+            discard >= 0 && discard < admission,
+        )
+        assertTrue(detail.contains("onAttach = { showProjectPicker = true }"))
+        assertTrue(detail.contains("viewModel(key = \"web-attachment-${'$'}{pattern.id}\")"))
+        val resultEffect =
+            detail
+                .substringAfter("LaunchedEffect(attachmentState.result)")
+                .substringBefore("LaunchedEffect(deleteErrorId)")
+        assertTrue(
+            Regex("""attachmentViewModel\.consumeResult\(\)\s*handleWebAttachResult\(result\)""")
+                .containsMatchIn(resultEffect),
+        )
+    }
+
+    @Test
+    fun `confirmation messages scroll by default and saved pattern deletion opts in explicitly`() {
+        val dialog =
+            ProjectSourceFiles.read(
+                "app/src/main/java/com/finnvek/knittools/ui/components/ConfirmationDialog.kt",
+            )
+        assertTrue(dialog.contains("scrollableMessage: Boolean = true"))
+        assertTrue(
+            dialog.contains("if (scrollableMessage) Modifier.verticalScroll(rememberScrollState()) else Modifier"),
+        )
+        listOf(
+            SAVED_PATTERN_DETAIL_SCREEN,
+            "app/src/main/java/com/finnvek/knittools/ui/screens/library/SavedPatternsScreen.kt",
+        ).forEach { path ->
+            assertTrue(
+                "$path must allow the complete deletion warning to be read",
+                ProjectSourceFiles.read(path).contains("scrollableMessage = true"),
+            )
+        }
+    }
+
     @Test
     fun `saved pattern detail route loads saved pattern by id`() {
         val screen = ProjectSourceFiles.read(SCREEN)
@@ -16,10 +89,11 @@ class SavedPatternDetailSourceTest {
         assertTrue(navGraph.contains("savedPatternDetailRoute(navController)"))
         assertTrue(navGraph.contains("Screen.SavedPatternDetail.ROUTE"))
         assertTrue(navGraph.contains("SavedPatternDetailScreen("))
-        assertTrue(navGraph.contains("libraryViewModel.loadSavedPattern(savedPatternId)"))
+        assertTrue(navGraph.contains("libraryViewModel.observeSavedPatternDetail(savedPatternId)"))
         assertTrue(navGraph.contains("Screen.LibraryPatternViewer(savedPatternId).route"))
-        assertTrue(navGraph.contains("counterViewModel.attachSavedPattern(pattern)"))
-        assertTrue(navGraph.contains("navController.navigateSingleTopTo(Screen.Counter.route)"))
+        assertTrue(navGraph.contains("counterViewModel.attachSavedPatternToProject(projectId, pattern.id)"))
+        // Projektiin siirrytään vasta onnistuneen liitoksen jälkeen.
+        assertTrue(navGraph.contains("if (navController.currentBackStackEntry?.id == backStackEntryId && attached)"))
         assertTrue(navGraph.contains("libraryViewModel.deleteSavedPattern(savedPatternId)"))
         val detailRoute =
             navGraph
@@ -27,8 +101,31 @@ class SavedPatternDetailSourceTest {
                 .substringBefore("private fun NavGraphBuilder.libraryPatternViewerRoute")
         assertTrue(detailRoute.contains("libraryViewModel.patternDeleteErrorId.collectAsStateWithLifecycle()"))
         assertTrue(detailRoute.contains("deleteErrorId = patternDeleteErrorId"))
+        listOf(
+            detailRoute.substringAfter("onAttachToProject =").substringBefore("onAttachWebPattern ="),
+            detailRoute.substringAfter("onRemove =").substringBefore("onOpenRavelry ="),
+        ).forEach { completion ->
+            assertTrue(completion.contains("if (navController.currentBackStackEntry?.id == backStackEntryId"))
+        }
         assertTrue(viewModel.contains("fun deleteSavedPattern("))
         assertTrue(viewModel.contains("savedPatternRepository.deleteById(id)"))
+    }
+
+    @Test
+    fun `library pattern viewer requires a local pdf uri`() {
+        val navGraph = ProjectSourceFiles.read(NAV_GRAPH)
+        val viewerRoute =
+            navGraph
+                .substringAfter("private fun NavGraphBuilder.libraryPatternViewerRoute")
+                .substringBefore("private fun NavGraphBuilder.libraryMyYarnRoute")
+
+        assertTrue(viewerRoute.contains("pattern?.localPdfUri?.takeIf { it.isNotBlank() }"))
+        assertFalse(viewerRoute.contains("pattern.patternUrl"))
+        assertTrue(
+            viewerRoute.contains(
+                "RouteArgumentFallback({ navController }, TopLevelDestination.Library)",
+            ),
+        )
     }
 
     @Test
@@ -40,16 +137,22 @@ class SavedPatternDetailSourceTest {
         val detail = ProjectSourceFiles.read(detailPath)
 
         assertTrue(detail.contains("fun SavedPatternDetailScreen("))
-        assertTrue(detail.contains("AsyncImage("))
+        assertTrue(detail.contains("RemotePatternImage("))
         assertTrue(detail.contains("pattern.name"))
         assertTrue(detail.contains("pattern.designerName"))
         assertTrue(detail.contains("SavedPatternAvailabilityChip("))
-        assertTrue(detail.contains("pattern.hasAttachedPdf"))
+        assertTrue(detail.contains("PatternAvailabilityBadge(availability = pattern.availability)"))
+        assertTrue(detail.contains("isLocalPdfAvailable"))
         assertTrue(detail.contains("pattern.isAvailableOffline"))
-        assertTrue(detail.contains("pattern.requiresRavelryAccess"))
-        assertTrue(detail.contains("openRavelryUrl("))
+        assertTrue(detail.contains("requiresRavelryAccess"))
+        assertTrue(detail.contains("ravelryUrl?.let(onOpenRavelry)"))
         assertTrue(detail.contains("onOpenPattern"))
         assertTrue(detail.contains("onAttachToProject"))
+        // Liitä projektiin kysyy projektin eikä käytä laskurissa valittuna olevaa projektia.
+        assertTrue(detail.contains("ProjectPickerSheet("))
+        // Tuodulla PDF:llä ei ole Ravelry-osiota eikä tuntematonta saatavuutta.
+        assertTrue(detail.contains("if (pattern.source == SavedPatternSource.Ravelry || ravelryUrl != null)"))
+        assertEquals(2, detail.split("onAttach = { showProjectPicker = true }").size - 1)
         assertTrue(detail.contains("onRemove"))
         val detailSignature =
             detail
@@ -64,10 +167,84 @@ class SavedPatternDetailSourceTest {
         assertTrue(detail.contains("deleteErrorId: Long = 0L"))
         assertTrue(detail.contains("SnackbarHostState()"))
         assertTrue(detail.contains("LaunchedEffect(deleteErrorId)"))
+        assertTrue(detail.contains("deleteErrorId > lastHandledDeleteErrorId"))
         assertTrue(detail.contains("SnackbarHost(hostState = snackbarHostState)"))
 
         DETAIL_STRINGS.forEach { stringName ->
             assertTrue(strings.contains("name=\"$stringName\""))
+        }
+    }
+
+    // CPD-OFF: This independent localization contract verifies its own resource coverage before testing deletion wording.
+    @Test
+    fun `saved pattern deletion warnings cover pdf scope in every supported locale`() {
+        val builder = DocumentBuilderFactory.newInstance().newDocumentBuilder()
+        val expectedDirectories = ProjectSourceFiles.configuredResourceDirectories()
+        val files = ProjectSourceFiles.localizedStringFiles()
+        assertEquals(expectedDirectories, files.map { it.parent.fileName.toString() }.toSet())
+        // CPD-ON
+        files.forEach { file ->
+            assertDeletionWarnings(file, builder)
+        }
+    }
+
+    private fun assertDeletionWarnings(
+        file: Path,
+        builder: DocumentBuilder,
+    ) {
+        val document = builder.parse(file.toFile())
+        val resources = document.documentElement.childNodes
+        val messages = mutableListOf<Pair<String, List<String>>>()
+        val quantities = mutableSetOf<String>()
+        (0 until resources.length).forEach resourceLoop@{ index ->
+            val resource = resources.item(index) as? Element ?: return@resourceLoop
+            when (resource.getAttribute("name")) {
+                "saved_pattern_detail_remove_confirm" -> messages.add(resource.textContent to emptyList())
+                "web_pattern_delete_confirm_message" -> messages.add(resource.textContent to listOf("%1\$s"))
+                "delete_patterns_confirm" -> {
+                    val items = resource.getElementsByTagName("item")
+                    (0 until items.length).forEach { itemIndex ->
+                        val item = items.item(itemIndex) as Element
+                        quantities.add(item.getAttribute("quantity"))
+                        messages.add(item.textContent to listOf("%1\$d"))
+                    }
+                }
+            }
+        }
+        val expectedQuantities =
+            if (file.parent.fileName.toString() in
+                setOf("values-es", "values-fr", "values-it", "values-pt", "values-pt-rBR")
+            ) {
+                setOf("one", "many", "other")
+            } else {
+                setOf("one", "other")
+            }
+        assertEquals("$file plural forms", expectedQuantities, quantities)
+        assertEquals("$file confirmation messages", quantities.size + 2, messages.size)
+        val placeholders = Regex("""%(?:\d+\$)?[a-zA-Z]""")
+        messages.forEach { (message, expectedPlaceholders) ->
+            assertEquals(
+                "$file placeholders",
+                expectedPlaceholders,
+                placeholders.findAll(message).map { it.value }.toList(),
+            )
+            val paragraphs = message.split("\\n\\n")
+            assertEquals("$file must explain deletion before confirmation", 2, paragraphs.size)
+            assertTrue(
+                "$file must distinguish PDF annotations and attachments",
+                Regex("PDF").findAll(paragraphs[1]).count() >= 3,
+            )
+            if (file.parent.fileName.toString() == "values") {
+                assertTrue(message.contains("Any PDF annotations made in the Library"))
+                assertTrue(message.contains("will no longer appear in projects"))
+                assertTrue(
+                    message.contains(
+                        "PDFs already attached to projects and PDF annotations made within projects will be kept.",
+                    ),
+                )
+            } else {
+                assertFalse("$file must translate the warning", message.contains("Any PDF annotations"))
+            }
         }
     }
 

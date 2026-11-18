@@ -1,0 +1,408 @@
+{
+  "id": "LA-es-B05-58",
+  "date": "2026-10-19",
+  "decision": "AUDIT_PASS",
+  "native_review": "NOT_REQUESTED",
+  "prior_input_hashes_matched": 234,
+  "resource_impact": [
+    {
+      "path": "app/src/main/res/values/strings.xml",
+      "previous_type": "string",
+      "previous_text": "%1$dmo ago",
+      "type": "plurals",
+      "forms": {
+        "one": "%1$dmo ago",
+        "other": "%1$dmo ago"
+      },
+      "sha256": "03e6391014d013b2f5ab7640dc0c5995f1fc9f855ed820245ce8fe266e0a336e"
+    },
+    {
+      "path": "app/src/main/res/values-da/strings.xml",
+      "previous_type": "string",
+      "previous_text": "%1$dmdr siden",
+      "type": "plurals",
+      "forms": {
+        "one": "%1$dmdr siden",
+        "other": "%1$dmdr siden"
+      },
+      "sha256": "cecf670bf48fa37f304332f8eadfc11bd8b5720ac04a80c0ccb779a0977994aa"
+    },
+    {
+      "path": "app/src/main/res/values-de/strings.xml",
+      "previous_type": "string",
+      "previous_text": "vor %1$d Mon",
+      "type": "plurals",
+      "forms": {
+        "one": "vor %1$d Mon",
+        "other": "vor %1$d Mon"
+      },
+      "sha256": "425d680640272fc1f2afc1eebbaf25e2d5a6e99f0a22ccf9ac875df0e04f628d"
+    },
+    {
+      "path": "app/src/main/res/values-es/strings.xml",
+      "previous_type": "string",
+      "previous_text": "hace %1$d mes",
+      "type": "plurals",
+      "forms": {
+        "one": "hace %1$d mes",
+        "many": "hace %1$d meses",
+        "other": "hace %1$d meses"
+      },
+      "sha256": "73d6fd27de0effc82ea9f8e96cc0e5b88b2a694087cbad07cf2a3fdf1aa45590"
+    },
+    {
+      "path": "app/src/main/res/values-fi/strings.xml",
+      "previous_type": "string",
+      "previous_text": "%1$d kk sitten",
+      "type": "plurals",
+      "forms": {
+        "one": "%1$d kk sitten",
+        "other": "%1$d kk sitten"
+      },
+      "sha256": "2a158a218a13ce49259141ededc5335d47ef5e1f98174d98a73496ca4dd31906"
+    },
+    {
+      "path": "app/src/main/res/values-fr/strings.xml",
+      "previous_type": "string",
+      "previous_text": "il y a %1$d mois",
+      "type": "plurals",
+      "forms": {
+        "one": "il y a %1$d mois",
+        "many": "il y a %1$d mois",
+        "other": "il y a %1$d mois"
+      },
+      "sha256": "7fe3d4638a270f4b92917a9cc17c8ab11a957b57c7ccb76200366baa78ac9f80"
+    },
+    {
+      "path": "app/src/main/res/values-it/strings.xml",
+      "previous_type": "string",
+      "previous_text": "%1$d m fa",
+      "type": "plurals",
+      "forms": {
+        "one": "%1$d m fa",
+        "many": "%1$d m fa",
+        "other": "%1$d m fa"
+      },
+      "sha256": "a9777177e386fad5882fd3846ee7366600a92f6f30fc6f8350044350b803ae31"
+    },
+    {
+      "path": "app/src/main/res/values-nb/strings.xml",
+      "previous_type": "string",
+      "previous_text": "for %1$dmnd siden",
+      "type": "plurals",
+      "forms": {
+        "one": "for %1$dmnd siden",
+        "other": "for %1$dmnd siden"
+      },
+      "sha256": "22c1552bf1659a42e6c3a5f4050ea62883d41f8334f53224f5625c53c1753473"
+    },
+    {
+      "path": "app/src/main/res/values-nl/strings.xml",
+      "previous_type": "string",
+      "previous_text": "%1$dmnd geleden",
+      "type": "plurals",
+      "forms": {
+        "one": "%1$dmnd geleden",
+        "other": "%1$dmnd geleden"
+      },
+      "sha256": "700d74b54d3bf5ea7219491a6a74456b6829082c3b50ec3b4555b01acdc46193"
+    },
+    {
+      "path": "app/src/main/res/values-pt/strings.xml",
+      "previous_type": "string",
+      "previous_text": "há %1$d m",
+      "type": "plurals",
+      "forms": {
+        "one": "há %1$d m",
+        "many": "há %1$d m",
+        "other": "há %1$d m"
+      },
+      "sha256": "33381d91a581aa1854688654e9e1d08c1293e3e6f77b20d9dcb068b04bcd454a"
+    },
+    {
+      "path": "app/src/main/res/values-sv/strings.xml",
+      "previous_type": "string",
+      "previous_text": "%1$d mån sedan",
+      "type": "plurals",
+      "forms": {
+        "one": "%1$d mån sedan",
+        "other": "%1$d mån sedan"
+      },
+      "sha256": "3fbb7cdc703ff0f1c0a23c5a58c21bbe4c48c8c5ddeabfd39c3f6f8e7bef4e69"
+    }
+  ],
+  "unit_suites": [
+    {
+      "name": "com.finnvek.knittools.ReferenceResourceLocalizationTest",
+      "tests": "2",
+      "skipped": "0",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-10-19T12:01:39.181Z",
+      "hostname": "DESKTOP-V7H2VNQ",
+      "time": "0.578"
+    },
+    {
+      "name": "com.finnvek.knittools.ui.CountPluralResourcesSourceTest",
+      "tests": "1",
+      "skipped": "0",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-10-19T12:01:39.764Z",
+      "hostname": "DESKTOP-V7H2VNQ",
+      "time": "0.107"
+    },
+    {
+      "name": "com.finnvek.knittools.ui.screens.insights.InsightsCopySourceTest",
+      "tests": "3",
+      "skipped": "0",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-10-19T12:01:39.874Z",
+      "hostname": "DESKTOP-V7H2VNQ",
+      "time": "0.069"
+    }
+  ],
+  "android": {
+    "device": "Pixel 9",
+    "api": 37,
+    "package": "com.finnvek.knittools.activepolicytest",
+    "test": "InsightsRelativeMonthTextTest.spanishMonthsUseQuantityInBothLastWorkedContexts",
+    "result": "1 test PASS",
+    "cases": [
+      30,
+      59,
+      60,
+      90
+    ],
+    "months": [
+      1,
+      1,
+      2,
+      3
+    ],
+    "contexts": [
+      "InsightsProjectRow",
+      "InsightsLastWorkedNote"
+    ],
+    "neighbor_days": [
+      0,
+      1,
+      6,
+      7,
+      29
+    ],
+    "extra_resource_quantity": 1000000
+  },
+  "inventory": {
+    "keys": 1349,
+    "strings": 1317,
+    "plurals": 32,
+    "plural_items": 96,
+    "resource_variants": 1413,
+    "current_rows": 2110,
+    "historical_retired_rows": 2,
+    "total_rows": 2112,
+    "counts": {
+      "T": {
+        "PASS": 2110
+      },
+      "F": {
+        "PASS": 2109,
+        "NOT_APPLICABLE": 1
+      },
+      "L": {
+        "PASS": 2109,
+        "NOT_APPLICABLE": 1
+      },
+      "C": {
+        "PASS": 2110
+      },
+      "R": {
+        "PASS": 1681,
+        "NOT_APPLICABLE": 429
+      },
+      "V": {
+        "": 2110
+      }
+    }
+  },
+  "historical_failure_rows": [
+    {
+      "item_id": "es:string:relative_time_months_ago:default",
+      "locale": "es",
+      "batch": "B05",
+      "kind": "string",
+      "key_or_member": "relative_time_months_ago",
+      "variant": "default",
+      "resource_path": "app/src/main/res/values-es/strings.xml",
+      "context_id": "grouped-production",
+      "caller_refs": "app/src/main/java/com/finnvek/knittools/ui/screens/insights/InsightsSections.kt:551",
+      "text_or_case": "hace %1$d mes",
+      "input_hash": "cbc6dc18a9907983f1e02f500f934688436591720c05cf1b811f56fbe2e76f46",
+      "T": "PASS",
+      "F": "PASS",
+      "L": "FAIL",
+      "C": "FAIL",
+      "R": "PASS",
+      "V": "",
+      "evidence_refs": "READ-B05;RESOURCES;caller-inventory.json",
+      "finding_ids": "LA-es-B05-58",
+      "result_note": "CONFIRMED: days/30 produces 1 and 2+ but this string always says mes. 60 days -> hace 2 mes. Shared plural resource/caller fix required; no misleading resource-only workaround."
+    },
+    {
+      "item_id": "es:generated_output:format:relative_time_months_ago:default",
+      "locale": "es",
+      "batch": "B05",
+      "kind": "generated_output",
+      "key_or_member": "relative_time_months_ago",
+      "variant": "default",
+      "resource_path": "app/src/main/res/values-es/strings.xml",
+      "context_id": "source-composition",
+      "caller_refs": "app/src/main/java/com/finnvek/knittools/ui/screens/insights/InsightsSections.kt:551",
+      "text_or_case": "[2] -> hace 2 mes",
+      "input_hash": "cbc6dc18a9907983f1e02f500f934688436591720c05cf1b811f56fbe2e76f46",
+      "T": "PASS",
+      "F": "PASS",
+      "L": "FAIL",
+      "C": "FAIL",
+      "R": "PASS",
+      "V": "",
+      "evidence_refs": "COMPOSITION;READ-B05;RESOURCES;caller-inventory.json",
+      "finding_ids": "LA-es-B05-58",
+      "result_note": "Controlled substitution read with production argument roles; not an Android execution. Known monthly agreement failure, see handoff."
+    }
+  ],
+  "historical_month_caller": [
+    {
+      "path": "app/src/main/java/com/finnvek/knittools/ui/screens/insights/InsightsSections.kt",
+      "line": 551,
+      "context": "        days < 7 -> stringResource(R.string.relative_time_days_ago, days)\n        days < 30 -> stringResource(R.string.relative_time_weeks_ago, days / 7)\n        else -> stringResource(R.string.relative_time_months_ago, days / 30)\n    }\n}\n\n/** Käyttäjä ei ole koskaan tallentanut istuntoa: ei kaaviota, ei nollatilastoja. */\n@Composable\ninternal fun InsightsEmptyState() {"
+    }
+  ],
+  "evidence_directory": "reports/language-audit/es/20261019-month-plurals",
+  "preservation": "All non-month resource bytes and all other producer code unchanged; exact scope script and starting hashes retained. Unchanged row hashes retain their original evidence identity; no unrelated evidence renewed.",
+  "input_hash_changes": [
+    {
+      "path": "LANGUAGE_AUDIT.md",
+      "previous_sha256": "ed542df1df6dab4eb301e48db259417c986fce7b1d99569fe13c590b06a5d8d3",
+      "sha256": "b8b6eac67dff68c87aa352e181742910ea10dd96480544937cb8380121d8c231"
+    },
+    {
+      "path": "app/src/main/java/com/finnvek/knittools/ui/screens/insights/InsightsSections.kt",
+      "previous_sha256": "d7a9ab6a58011ad65fe60c685fdfa55472b9ea67fa8e38d0e6153a916ac5c052",
+      "sha256": "25ab459424026bc17cc9b81f22174a5c864d77108592f4271ee93889f01203d7"
+    },
+    {
+      "path": "app/src/main/res/values-da/strings.xml",
+      "previous_sha256": "7fbc93aaded89e781d16f3161f844abe3c89584c0d8339cfd2335715180d80d3",
+      "sha256": "cecf670bf48fa37f304332f8eadfc11bd8b5720ac04a80c0ccb779a0977994aa"
+    },
+    {
+      "path": "app/src/main/res/values-de/strings.xml",
+      "previous_sha256": "9079dfd664dd21fdc9af3b32aa6c712ada0ed620da7c279e69e3676eb1a49ff6",
+      "sha256": "425d680640272fc1f2afc1eebbaf25e2d5a6e99f0a22ccf9ac875df0e04f628d"
+    },
+    {
+      "path": "app/src/main/res/values-es/strings.xml",
+      "previous_sha256": "cbc6dc18a9907983f1e02f500f934688436591720c05cf1b811f56fbe2e76f46",
+      "sha256": "73d6fd27de0effc82ea9f8e96cc0e5b88b2a694087cbad07cf2a3fdf1aa45590"
+    },
+    {
+      "path": "app/src/main/res/values-fi/strings.xml",
+      "previous_sha256": "c9e3400b3c988b1e6ee41449e282ef62f03f01bb0e8cc433dffcbbce941f4dbb",
+      "sha256": "2a158a218a13ce49259141ededc5335d47ef5e1f98174d98a73496ca4dd31906"
+    },
+    {
+      "path": "app/src/main/res/values-fr/strings.xml",
+      "previous_sha256": "180e84ec6f79db397f6d3f5ded5b13ffd35a44a57be5e80e79d2f254a4ab781c",
+      "sha256": "7fe3d4638a270f4b92917a9cc17c8ab11a957b57c7ccb76200366baa78ac9f80"
+    },
+    {
+      "path": "app/src/main/res/values-it/strings.xml",
+      "previous_sha256": "fb7df21bc577b621b47e4e724c38ae64dd8ffbaf5aecb79d86fd27a5ff00fbc9",
+      "sha256": "a9777177e386fad5882fd3846ee7366600a92f6f30fc6f8350044350b803ae31"
+    },
+    {
+      "path": "app/src/main/res/values-nb/strings.xml",
+      "previous_sha256": "33701ddf7c25f3924ccfd2535d6774ccb6d408c32fd3272c2ace51fc459402b2",
+      "sha256": "22c1552bf1659a42e6c3a5f4050ea62883d41f8334f53224f5625c53c1753473"
+    },
+    {
+      "path": "app/src/main/res/values-nl/strings.xml",
+      "previous_sha256": "8969a8ca228d43fdbe3051e780f963259f1ccdbbfac7075d8ce10cf29f653578",
+      "sha256": "700d74b54d3bf5ea7219491a6a74456b6829082c3b50ec3b4555b01acdc46193"
+    },
+    {
+      "path": "app/src/main/res/values-pt/strings.xml",
+      "previous_sha256": "4c21d1e12d01a802c1d2b5d610db11ed45e25ee3604d94734bba4b1ca4424cd4",
+      "sha256": "33381d91a581aa1854688654e9e1d08c1293e3e6f77b20d9dcb068b04bcd454a"
+    },
+    {
+      "path": "app/src/main/res/values-sv/strings.xml",
+      "previous_sha256": "6ba664a793caff3d11031cb24213f2a45737312824f0dad423213e8f662d80f9",
+      "sha256": "3fbb7cdc703ff0f1c0a23c5a58c21bbe4c48c8c5ddeabfd39c3f6f8e7bef4e69"
+    },
+    {
+      "path": "app/src/main/res/values/strings.xml",
+      "previous_sha256": "ffbc9c55bc497a8a85834306412d53816f0107f217a51216f613124e28042fd3",
+      "sha256": "03e6391014d013b2f5ab7640dc0c5995f1fc9f855ed820245ce8fe266e0a336e"
+    },
+    {
+      "path": "app/src/test/java/com/finnvek/knittools/ui/CountPluralResourcesSourceTest.kt",
+      "previous_sha256": "e0e9f5743c9bceb892ca732f4b0ad573d2a602a89e3eb42e606825d1079a932e",
+      "sha256": "89ee529b5c36f371795a62d16836b8408b40623082766d367ec252483a073aa4"
+    },
+    {
+      "path": "config/language-audit/shared-fixes.md",
+      "previous_sha256": "e49c0770a0d388e66b44cb3bd29f04ed91a5d5098a972f0528e25be6e2f09913",
+      "sha256": "ccdc06fb7dee2bceb83280a3383fa28dc374133135547a3c14573048e98517b8"
+    }
+  ],
+  "new_test_inputs": {
+    "app/src/test/java/com/finnvek/knittools/ui/screens/insights/InsightsCopySourceTest.kt": "cb6596213fbe8810c9f43e9fcfb657fe388a03304347cc2d2cc57cb95e0cd15a",
+    "app/src/androidTest/java/com/finnvek/knittools/ui/screens/insights/InsightsRelativeMonthTextTest.kt": "0d6391bbc3a9b1ae3612bfb5cb7ce43c15fc8029f8875092b2886b3990d0a2b6"
+  },
+  "final_input_count": 236,
+  "english_registry_preservation": {
+    "historical_reference": "reports/language-audit/shared/20261019-b05/final-verification.json",
+    "current_hashes_match": {
+      "reports/language-audit/en/20261019-recheck/render-cases.tsv": "3fccd857a5c1521fb2a2552eb9e3610389d959c5124222899c2829964c2d2b24",
+      "reports/language-audit/en/20261019-recheck/remaining-render-cases.tsv": "3a3514ca2ffc8b6f5218142fa8c9a5029b381643a379071f44d9603a556583b5"
+    },
+    "remaining_cases": 231
+  },
+  "apk_hashes": [
+    {
+      "Path": "C:\\Dev\\KnitTools\\app\\build\\outputs\\apk\\debug\\app-debug.apk",
+      "Hash": "E5B63EF2A35713C65FACCECCFF8FC465074512A28FBE146A434A35BA22C357B7"
+    },
+    {
+      "Path": "C:\\Dev\\KnitTools\\app\\build\\outputs\\apk\\androidTest\\debug\\app-debug-androidTest.apk",
+      "Hash": "7ADADDC9C552A1ACD327DD77AC5E72DC6AE04FBF38A4827BB3D187C705092832"
+    }
+  ],
+  "process_closeout": {
+    "gradle_pids": [
+      8604,
+      36212
+    ],
+    "both_absent": true,
+    "kotlin_compiler": "in-process",
+    "instrumentation_target_process_absent": true,
+    "emulator_started": false,
+    "adb_server": "pre-existing; left running",
+    "temporary_processes_remaining": 0
+  },
+  "final_preservation": {
+    "starting_files": 1223,
+    "changed_starting_files": 22,
+    "unchanged_starting_files": 1201,
+    "new_files": [
+      "app/src/androidTest/java/com/finnvek/knittools/ui/screens/insights/InsightsRelativeMonthTextTest.kt",
+      "config/language-audit/es/month-fix-verification.json"
+    ],
+    "git_diff_check": "PASS",
+    "staged_files": 0
+  }
+}

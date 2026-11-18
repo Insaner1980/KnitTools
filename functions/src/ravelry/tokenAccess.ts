@@ -10,7 +10,8 @@ interface UsableTokenOptions {
 }
 
 function requiresRefresh(token: StoredRavelryToken, nowMillis: number): boolean {
-  return token.expiresAtMillis != null && token.expiresAtMillis <= nowMillis;
+  const expiry = token.expiresAtMillis;
+  return expiry != null && (!Number.isFinite(expiry) || expiry <= nowMillis);
 }
 
 function refreshedToken(
@@ -48,7 +49,10 @@ export async function getUsableRavelryToken({
   }
 
   const now = nowMillis();
-  if (!requiresRefresh(token, now)) {
+  // Cover the API request timeout when refresh is available; a valid token without
+  // refresh capability remains usable until its actual expiry.
+  const refreshDeadline = token.refreshToken && refresh ? now + 10_000 : now;
+  if (!requiresRefresh(token, refreshDeadline)) {
     return token;
   }
 
@@ -57,11 +61,28 @@ export async function getUsableRavelryToken({
   }
 
   await beforeRefresh?.();
-  const nextToken = refreshedToken(token, await refresh({ refreshToken: token.refreshToken }), now);
-  const connectionGeneration = token.connectionGeneration ?? 0;
-  const saved = await tokenStore.saveTokenIfGenerationCurrent(nextToken, connectionGeneration);
-  if (!saved) {
-    return null;
+  let refreshed: Awaited<ReturnType<OAuthTokenRefresh>>;
+  try {
+    refreshed = await refresh({ refreshToken: token.refreshToken });
+  } catch (error) {
+    const current = await tokenStore.getToken(uid).catch(() => null);
+    if (current &&
+      (current.connectionGeneration ?? 0) === (token.connectionGeneration ?? 0) &&
+      (current.accessToken !== token.accessToken || current.refreshToken !== token.refreshToken ||
+        current.expiresAtMillis !== token.expiresAtMillis) &&
+      !requiresRefresh(current, nowMillis())) {
+      return current;
+    }
+    throw error;
   }
-  return nextToken;
+  const nextToken = refreshedToken(token, refreshed, now);
+  const saved = await tokenStore.saveRefreshedTokenIfCurrent(nextToken, token);
+  if (saved) {
+    return requiresRefresh(saved, nowMillis()) ? null : saved;
+  }
+
+  const current = await tokenStore.getToken(uid);
+  return current &&
+    (current.connectionGeneration ?? 0) === (token.connectionGeneration ?? 0) &&
+    !requiresRefresh(current, nowMillis()) ? current : null;
 }

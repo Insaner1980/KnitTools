@@ -49,6 +49,19 @@ class PdfPageRendererSizeTest {
     }
 
     @Test
+    fun `export bitmap size caps the longest edge at 1800`() {
+        val size =
+            calculatePdfRenderBitmapSize(
+                pageWidth = 300,
+                pageHeight = 400,
+                targetWidth = PATTERN_PDF_EXPORT_MAX_BITMAP_DIMENSION,
+                maxBitmapDimension = PATTERN_PDF_EXPORT_MAX_BITMAP_DIMENSION,
+            )
+
+        assertEquals(PdfRenderBitmapSize(width = 1350, height = 1800), size)
+    }
+
+    @Test
     fun `bitmap size keeps invalid inputs allocatable`() {
         val size =
             calculatePdfRenderBitmapSize(

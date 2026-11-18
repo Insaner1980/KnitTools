@@ -1,0 +1,25 @@
+appId: com.finnvek.knittools
+name: Folder creation and project destination
+---
+- launchApp:
+    clearState: true
+- tapOn: "All Projects"
+- tapOn: "Create folder"
+- tapOn: "Folder name"
+- inputText: "Maestro Folder"
+- tapOn:
+    text: "Create folder"
+    index: 1
+- tapOn: "Maestro Folder"
+- assertVisible: "Maestro Folder has no projects."
+- tapOn: "New Project"
+- assertVisible: "New project destination: Maestro Folder"
+- tapOn:
+    text: "Project name"
+    index: 1
+- inputText: "Maestro Folder Project"
+- tapOn: "Create project"
+- assertVisible: "Maestro Folder Project"
+- tapOn: "Back"
+- assertVisible: "Maestro Folder"
+- assertVisible: "Maestro Folder Project"

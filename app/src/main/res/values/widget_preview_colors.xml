@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Oma tiedosto: values-night/colors.xml on varattu pois, jotta käynnistysruutu ei saa toista teemahaaraa. -->
+<resources>
+    <!-- Widgetin esikatselun värit: samat kuin vaalean teeman widgetissä (LightSurface, LightTextPrimary
+         ja avokadon lankaväri LightYarnColorsista). Esikatselu-layout ei voi lukea Compose-teemaa. -->
+    <color name="widget_preview_surface">#D2CDB5</color>
+    <color name="widget_preview_text">#2E2A1E</color>
+    <color name="widget_preview_yarn">#687A38</color>
+</resources>

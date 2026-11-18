@@ -5,6 +5,7 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.time.LocalDate
 
 /**
  * Ruudunlukijan valinnan siirto on tavallinen funktio, joten se testataan kutsumalla
@@ -15,8 +16,23 @@ import org.junit.Test
  */
 class InsightsChartSelectionTest {
     @Test
+    fun `touch coordinates follow the current width and clamp at both ends`() {
+        for (width in listOf(328, 568, 800, 1168)) {
+            for (count in listOf(2, 7, 31, 60)) {
+                repeat(count) { index ->
+                    assertEquals(index, chartBucketIndexAt((index + 0.5f) * width / count, width, count))
+                }
+                assertEquals(0, chartBucketIndexAt(-1f, width, count))
+                assertEquals(count - 1, chartBucketIndexAt(width + 1f, width, count))
+            }
+        }
+        assertNull(chartBucketIndexAt(10f, 0, 7))
+        assertNull(chartBucketIndexAt(10f, 100, 0))
+    }
+
+    @Test
     fun `empty chart cannot move and never selects anything`() {
-        val result = move(itemCount = 0, selectedIndex = null, step = STEP_NEXT)
+        val result = move(emptyList(), selectedIndex = null, step = STEP_NEXT)
 
         assertFalse(result.moved)
         assertNull(result.selected)
@@ -24,8 +40,8 @@ class InsightsChartSelectionTest {
 
     @Test
     fun `without a selection both directions land on the first bucket`() {
-        val forward = move(itemCount = 3, selectedIndex = null, step = STEP_NEXT)
-        val backward = move(itemCount = 3, selectedIndex = null, step = STEP_PREVIOUS)
+        val forward = move(buckets(3), selectedIndex = null, step = STEP_NEXT)
+        val backward = move(buckets(3), selectedIndex = null, step = STEP_PREVIOUS)
 
         assertTrue(forward.moved)
         assertEquals(0, forward.selected)
@@ -35,7 +51,7 @@ class InsightsChartSelectionTest {
 
     @Test
     fun `the first bucket reports failure instead of silently staying put`() {
-        val result = move(itemCount = 3, selectedIndex = 0, step = STEP_PREVIOUS)
+        val result = move(buckets(3), selectedIndex = 0, step = STEP_PREVIOUS)
 
         assertFalse(result.moved)
         assertNull(result.selected)
@@ -43,7 +59,7 @@ class InsightsChartSelectionTest {
 
     @Test
     fun `the last bucket reports failure instead of silently staying put`() {
-        val result = move(itemCount = 3, selectedIndex = 2, step = STEP_NEXT)
+        val result = move(buckets(3), selectedIndex = 2, step = STEP_NEXT)
 
         assertFalse(result.moved)
         assertNull(result.selected)
@@ -51,8 +67,8 @@ class InsightsChartSelectionTest {
 
     @Test
     fun `a mid range move steps one bucket in both directions`() {
-        val forward = move(itemCount = 5, selectedIndex = 2, step = STEP_NEXT)
-        val backward = move(itemCount = 5, selectedIndex = 2, step = STEP_PREVIOUS)
+        val forward = move(buckets(5), selectedIndex = 2, step = STEP_NEXT)
+        val backward = move(buckets(5), selectedIndex = 2, step = STEP_PREVIOUS)
 
         assertTrue(forward.moved)
         assertEquals(3, forward.selected)
@@ -68,13 +84,22 @@ class InsightsChartSelectionTest {
 
     private companion object {
         fun move(
-            itemCount: Int,
+            buckets: List<InsightsChartBucket>,
             selectedIndex: Int?,
             step: Int,
         ): SelectionResult {
             var selected: Int? = null
-            val moved = moveSelection(itemCount, selectedIndex, step) { selected = it }
+            val moved = moveChartSelection(buckets, selectedIndex, step) { selected = it }
             return SelectionResult(moved = moved, selected = selected)
         }
+
+        fun buckets(count: Int): List<InsightsChartBucket> =
+            (0 until count).map { index ->
+                InsightsChartBucket(
+                    bucketStart = LocalDate.of(2026, 7, 1).plusDays(index.toLong()),
+                    totalMinutes = 10 * (index + 1),
+                    totalRows = index + 1L,
+                )
+            }
     }
 }

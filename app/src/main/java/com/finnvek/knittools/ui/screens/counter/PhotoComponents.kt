@@ -2,19 +2,17 @@ package com.finnvek.knittools.ui.screens.counter
 
 import android.content.ClipData
 import android.content.Intent
+import android.widget.Toast
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
@@ -30,51 +28,20 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.core.net.toUri
-import coil3.compose.AsyncImage
 import com.finnvek.knittools.R
 import com.finnvek.knittools.data.storage.AppFileStorage
 import com.finnvek.knittools.domain.model.ProgressPhoto
 import com.finnvek.knittools.ui.components.ConfirmationDialog
 import com.finnvek.knittools.ui.components.rememberLocaleDateFormat
+import com.finnvek.knittools.ui.layout.AdaptiveModalWindow
+import com.finnvek.knittools.ui.theme.knitToolsColors
 import java.util.Date
-
-@Composable
-fun PhotoThumbnailStrip(
-    photos: List<ProgressPhoto>,
-    onPhotoClick: (ProgressPhoto) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    LazyRow(
-        modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        items(photos, key = { it.id }) { photo ->
-            Box(
-                modifier =
-                    Modifier
-                        .size(48.dp)
-                        .clip(MaterialTheme.shapes.small)
-                        .clickable { onPhotoClick(photo) },
-            ) {
-                AsyncImage(
-                    model = photo.photoUri.toUri(),
-                    contentDescription = stringResource(R.string.row_label_format, photo.rowNumber),
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop,
-                )
-            }
-        }
-    }
-}
 
 @Composable
 fun PhotoViewer(
@@ -103,22 +70,21 @@ fun PhotoViewer(
 
     Dialog(
         onDismissRequest = onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false),
+        properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false),
     ) {
+        AdaptiveModalWindow()
         Box(
             modifier =
                 Modifier
                     .fillMaxSize()
-                    .background(MaterialTheme.colorScheme.scrim.copy(alpha = 0.9f)),
+                    // Täysin peittävä: 90 %:n peitolla alla näkyivät otsikko, alanavigaatio ja Ota kuva -pilleri.
+                    .background(MaterialTheme.colorScheme.scrim)
+                    .safeDrawingPadding(),
         ) {
-            AsyncImage(
-                model = photo.photoUri.toUri(),
-                contentDescription = stringResource(R.string.progress_photos),
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .align(Alignment.Center),
-                contentScale = ContentScale.Fit,
+            PhotoViewport(
+                uri = photo.photoUri,
+                description = stringResource(R.string.progress_photos),
+                modifier = Modifier.fillMaxSize(),
             )
 
             // Yläpalkki: sulje + jakaa + poista
@@ -133,40 +99,40 @@ fun PhotoViewer(
                     Icon(
                         Icons.Filled.Close,
                         contentDescription = stringResource(R.string.cancel),
-                        tint = Color.White,
+                        tint = MaterialTheme.knitToolsColors.onPhotoScrim,
                     )
                 }
-                IconButton(
-                    onClick = {
-                        val contentUri =
-                            AppFileStorage.shareUriForAppOwnedFile(context, photo.photoUri.toUri())
-                                ?: return@IconButton
-                        val shareIntent =
-                            Intent(Intent.ACTION_SEND).apply {
-                                type = "image/jpeg"
-                                putExtra(Intent.EXTRA_STREAM, contentUri)
-                                clipData = ClipData.newUri(context.contentResolver, "photo", contentUri)
-                                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                Row(modifier = Modifier.align(Alignment.TopEnd)) {
+                    IconButton(onClick = { showDeleteConfirm = true }) {
+                        Icon(
+                            Icons.Filled.Delete,
+                            contentDescription = stringResource(R.string.delete_photo),
+                            tint = MaterialTheme.knitToolsColors.onPhotoScrim,
+                        )
+                    }
+                    IconButton(
+                        onClick = {
+                            val contentUri = AppFileStorage.shareUriForAppOwnedFile(context, photo.photoUri.toUri())
+                            if (contentUri == null) {
+                                Toast.makeText(context, R.string.photo_share_failed, Toast.LENGTH_SHORT).show()
+                                return@IconButton
                             }
-                        context.startActivity(Intent.createChooser(shareIntent, null))
-                    },
-                    modifier = Modifier.align(Alignment.CenterEnd),
-                ) {
-                    Icon(
-                        Icons.Filled.Share,
-                        contentDescription = stringResource(R.string.share_photo),
-                        tint = Color.White,
-                    )
-                }
-                IconButton(
-                    onClick = { showDeleteConfirm = true },
-                    modifier = Modifier.align(Alignment.TopEnd).padding(end = 48.dp),
-                ) {
-                    Icon(
-                        Icons.Filled.Delete,
-                        contentDescription = stringResource(R.string.delete_photo),
-                        tint = Color.White,
-                    )
+                            val shareIntent =
+                                Intent(Intent.ACTION_SEND).apply {
+                                    type = "image/jpeg"
+                                    putExtra(Intent.EXTRA_STREAM, contentUri)
+                                    clipData = ClipData.newUri(context.contentResolver, "photo", contentUri)
+                                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                }
+                            context.startActivity(Intent.createChooser(shareIntent, null))
+                        },
+                    ) {
+                        Icon(
+                            Icons.Filled.Share,
+                            contentDescription = stringResource(R.string.share_photo),
+                            tint = MaterialTheme.knitToolsColors.onPhotoScrim,
+                        )
+                    }
                 }
             }
 
@@ -181,13 +147,13 @@ fun PhotoViewer(
                 Text(
                     text = stringResource(R.string.row_label_format, photo.rowNumber),
                     style = MaterialTheme.typography.titleMedium,
-                    color = Color.White,
+                    color = MaterialTheme.knitToolsColors.onPhotoScrim,
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = dateFormat.format(Date(photo.createdAt)),
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color.White.copy(alpha = 0.7f),
+                    color = MaterialTheme.knitToolsColors.onPhotoScrim.copy(alpha = 0.7f),
                 )
             }
         }

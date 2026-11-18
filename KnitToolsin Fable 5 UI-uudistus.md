@@ -1,5 +1,7 @@
 # KnitToolsin Fable UI -uudistus ja ennen/jälkeen-version säilytys
 
+Historiallinen suunnitelma. Ennen alla kuvattua baseline-asennusta on tarkistettava asennetun sovelluksen paketti, variantti, versionCode ja allekirjoitus. `assembleDebug` soveltuu tietoja säilyttävään päivitykseen vain samalla debug-allekirjoituksella asennettuun pakettiin; muulloin tarvitaan varmennettu yhteensopiva variantti ja allekirjoitus. Älä poista sovellusta tai tyhjennä sen tietoja ristiriidan kiertämiseksi. Tämä dokumentti ei itsessään valtuuta asennusta, commitia tai pushia.
+
 ## Yhteenveto
 
 Toteutetaan Fablen koko raportti vain niiltä osin, jotka nykyinen lähdekoodi tai Pixel 9 -vertailu vahvistaa. Työ tehdään erillisessä `codex/fable-ui-uudistus`-haarassa ja `C:\Dev\KnitTools-fable-ui`-worktreessä. Nykyinen versio säilytetään tagilla, APK:lla, tarkistussummalla ja kuvakaappauksilla; valmis versio tallennetaan samalla tavalla.

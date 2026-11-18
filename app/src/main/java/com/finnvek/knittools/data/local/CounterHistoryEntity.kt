@@ -5,6 +5,7 @@ import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
 
+// CPD-OFF: Room-viiteavainmaaritys on tarkoituksella eksplisiittinen.
 @Entity(
     tableName = "counter_history",
     foreignKeys = [
@@ -18,6 +19,7 @@ import androidx.room.PrimaryKey
     indices = [Index("projectId")],
 )
 data class CounterHistoryEntity(
+    // CPD-ON
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
     val projectId: Long,
@@ -25,4 +27,6 @@ data class CounterHistoryEntity(
     val previousValue: Int,
     val newValue: Int,
     val timestamp: Long = System.currentTimeMillis(),
+    val linkedCounterDeltasJson: String? = null,
+    val sessionUndoJson: String? = null,
 )

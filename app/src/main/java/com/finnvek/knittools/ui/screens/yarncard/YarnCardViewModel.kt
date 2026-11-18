@@ -3,18 +3,27 @@ package com.finnvek.knittools.ui.screens.yarncard
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.finnvek.knittools.analytics.UsageAnalytics
+import com.finnvek.knittools.analytics.UsageEvent
 import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.domain.model.YarnCard
 import com.finnvek.knittools.domain.model.YarnCardStatus
 import com.finnvek.knittools.repository.CounterRepository
 import com.finnvek.knittools.repository.YarnCardRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -48,16 +57,13 @@ class YarnCardViewModel
     constructor(
         private val repository: YarnCardRepository,
         private val counterRepository: CounterRepository,
+        private val analytics: UsageAnalytics = UsageAnalytics.NONE,
     ) : ViewModel() {
         private val _formState = MutableStateFlow(YarnCardFormState())
         val formState: StateFlow<YarnCardFormState> = _formState.asStateFlow()
 
-        val savedCards: StateFlow<List<YarnCard>> =
-            repository.getAllCards().stateIn(
-                scope = viewModelScope,
-                started = SharingStarted.WhileSubscribed(5000),
-                initialValue = emptyList(),
-            )
+        private val mutationErrorsChannel = Channel<Unit>(Channel.BUFFERED)
+        val mutationErrors = mutationErrorsChannel.receiveAsFlow()
 
         val availableProjects: StateFlow<List<CounterProject>> =
             counterRepository
@@ -68,49 +74,20 @@ class YarnCardViewModel
                     initialValue = emptyList(),
                 )
 
+        @OptIn(ExperimentalCoroutinesApi::class)
         val linkedProjectName: StateFlow<String?> =
-            combine(availableProjects, formState) { projects, form ->
-                form.linkedProjectId?.let { id -> projects.firstOrNull { it.id == id }?.name }
-            }.stateIn(
-                scope = viewModelScope,
-                started = SharingStarted.WhileSubscribed(5000),
-                initialValue = null,
-            )
-
-        // Lankakortin linkitys kulkee repositorion kautta, jotta projektin vastalinkki pysyy mukana.
-        fun linkCardToProject(
-            cardId: Long,
-            projectId: Long,
-        ) {
-            viewModelScope.launch {
-                repository.updateLinkedProjectId(cardId, projectId)
-            }
-        }
-
-        fun loadCardById(id: Long) {
-            loadCardForDetail(id)
-        }
+            formState
+                .map { it.linkedProjectId }
+                .distinctUntilChanged()
+                .flatMapLatest { id ->
+                    if (id == null) flowOf(null) else counterRepository.observeProject(id).map { it?.name }
+                }.stateIn(
+                    scope = viewModelScope,
+                    started = SharingStarted.WhileSubscribed(5000),
+                    initialValue = null,
+                )
 
         fun observeCardForDetail(id: Long): Flow<YarnCard?> = repository.observeCard(id)
-
-        fun loadCardForDetail(
-            id: Long,
-            onLoaded: (Boolean) -> Unit = {},
-        ) {
-            viewModelScope.launch {
-                onLoaded(loadCardForDetailInternal(id))
-            }
-        }
-
-        private suspend fun loadCardForDetailInternal(id: Long): Boolean {
-            val card = repository.getCard(id)
-            if (card == null) {
-                clearFormState()
-                return false
-            }
-            loadFromCard(card)
-            return true
-        }
 
         fun loadFromCard(card: YarnCard) {
             _formState.value =
@@ -137,11 +114,11 @@ class YarnCardViewModel
 
         fun deleteCard(
             id: Long,
+            onFailure: () -> Unit = {},
             onDeleted: () -> Unit,
         ) {
-            viewModelScope.launch {
-                repository.deleteCard(id)
-                onDeleted()
+            launchCardMutation(onFailure) {
+                repository.deleteCard(id).also { deleted -> if (deleted) onDeleted() }
             }
         }
 
@@ -151,19 +128,29 @@ class YarnCardViewModel
 
         fun updateQuantity(delta: Int) {
             val cardId = _formState.value.editingCardId ?: return
-            val newQty = (_formState.value.quantityInStash + delta).coerceAtLeast(0)
-            viewModelScope.launch { repository.updateQuantity(cardId, newQty) }
+            launchCardMutation { repository.changeQuantity(cardId, delta) }
         }
 
         fun updateStatus(status: String) {
             if (!YarnCardStatus.isSupported(status)) return
             val cardId = _formState.value.editingCardId ?: return
-            viewModelScope.launch { repository.updateStatus(cardId, status) }
+            launchCardMutation { repository.updateStatus(cardId, status) }
         }
 
-        fun updatePhotoUri(uri: Uri) {
+        fun updatePhotoUri(
+            uri: Uri,
+            onFailure: () -> Unit = {},
+        ) {
             val cardId = _formState.value.editingCardId ?: return
-            viewModelScope.launch { repository.updatePhotoUri(cardId, uri) }
+            viewModelScope.launch {
+                try {
+                    if (!repository.updatePhotoUri(cardId, uri)) onFailure()
+                } catch (failure: CancellationException) {
+                    throw failure
+                } catch (_: Exception) {
+                    onFailure()
+                }
+            }
         }
 
         fun setLinkedProject(projectId: Long?) {
@@ -171,8 +158,13 @@ class YarnCardViewModel
             val previousProjectId = _formState.value.linkedProjectId
             if (previousProjectId == projectId) return
 
-            viewModelScope.launch {
-                repository.updateLinkedProjectId(cardId, projectId)
+            launchCardMutation {
+                repository
+                    .updateLinkedProjectId(
+                        cardId,
+                        projectId,
+                        expectedLinkedProjectId = previousProjectId.takeIf { projectId == null },
+                    ).also { saved -> if (saved && projectId != null) analytics.track(UsageEvent.YARN_LINKED) }
             }
         }
 
@@ -182,7 +174,7 @@ class YarnCardViewModel
             val yarnName = input.yarnName.trim()
             if (yarnName.isBlank()) return
 
-            viewModelScope.launch {
+            launchCardMutation {
                 repository.saveCard(
                     YarnCard(
                         id = cardId,
@@ -203,7 +195,27 @@ class YarnCardViewModel
                         status = form.status,
                         linkedProjectId = form.linkedProjectId,
                     ),
-                )
+                ) != null
+            }
+        }
+
+        private fun launchCardMutation(
+            onFailure: () -> Unit = {},
+            operation: suspend () -> Boolean,
+        ) {
+            viewModelScope.launch {
+                val succeeded =
+                    try {
+                        operation()
+                    } catch (cancellation: CancellationException) {
+                        throw cancellation
+                    } catch (_: Exception) {
+                        false
+                    }
+                if (!succeeded) {
+                    onFailure()
+                    mutationErrorsChannel.send(Unit)
+                }
             }
         }
     }

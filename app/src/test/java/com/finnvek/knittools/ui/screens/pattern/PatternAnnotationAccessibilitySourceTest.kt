@@ -10,7 +10,7 @@ class PatternAnnotationAccessibilitySourceTest {
     fun `every supported locale contains all annotation strings`() {
         val defaultNames = annotationNames(ProjectSourceFiles.read(DEFAULT_STRINGS))
 
-        LOCALES.forEach { locale ->
+        ProjectSourceFiles.configuredResourceDirectories().filter { it != "values" }.forEach { locale ->
             val localizedNames =
                 annotationNames(ProjectSourceFiles.read("app/src/main/res/$locale/pattern_annotations.xml"))
             assertEquals("Missing annotation strings in $locale", defaultNames, localizedNames)
@@ -48,11 +48,12 @@ class PatternAnnotationAccessibilitySourceTest {
 
     @Test
     fun `selection actions require matching annotation capabilities`() {
-        val toolbar = ProjectSourceFiles.read(TOOLBAR)
+        val toolbar = ProjectSourceFiles.read(TOOLBAR).replace(Regex("\\s+"), " ")
 
         assertTrue(
             toolbar.contains(
-                "state.selectedAnnotationSupportsChartTracker && state.chartCounterOptions.isNotEmpty()",
+                "state.editableLayerVisible && state.selectedAnnotationSupportsChartTracker && " +
+                    "state.chartCounterOptions.isNotEmpty()",
             ),
         )
         assertTrue(toolbar.contains("if (state.selectedAnnotationIsEditable)"))
@@ -69,18 +70,5 @@ class PatternAnnotationAccessibilitySourceTest {
             "app/src/main/java/com/finnvek/knittools/ui/screens/pattern/PatternAnnotationLayerPanel.kt"
         const val TOKENS = "app/src/main/java/com/finnvek/knittools/ui/theme/PatternAnnotationTokens.kt"
         val NAME_REGEX = Regex("name=\"(pattern_annotations?_[^\"]+)\"")
-        val LOCALES =
-            listOf(
-                "values-da",
-                "values-de",
-                "values-es",
-                "values-fi",
-                "values-fr",
-                "values-it",
-                "values-nb",
-                "values-nl",
-                "values-pt",
-                "values-sv",
-            )
     }
 }

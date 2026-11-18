@@ -1,0 +1,14 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "ravelryOAuthStates",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "uid", "order": "ASCENDING" },
+        { "fieldPath": "usedAtMillis", "order": "ASCENDING" },
+        { "fieldPath": "expiresAtMillis", "order": "ASCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}

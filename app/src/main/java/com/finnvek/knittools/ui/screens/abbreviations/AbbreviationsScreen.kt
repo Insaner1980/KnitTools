@@ -2,15 +2,13 @@ package com.finnvek.knittools.ui.screens.abbreviations
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -29,6 +27,8 @@ import com.finnvek.knittools.domain.model.CraftType
 import com.finnvek.knittools.domain.model.KnittingAbbreviation
 import com.finnvek.knittools.ui.components.SearchTextField
 import com.finnvek.knittools.ui.components.ToolScreenScaffold
+import com.finnvek.knittools.ui.layout.ContentWidthPolicy
+import com.finnvek.knittools.ui.theme.knitToolsColors
 
 @Composable
 fun AbbreviationsScreen(
@@ -41,6 +41,7 @@ fun AbbreviationsScreen(
     val results = remember(query, context, craftType) { AbbreviationData.search(context, query, craftType) }
 
     ToolScreenScaffold(
+        contentWidthPolicy = ContentWidthPolicy.ListDetail,
         title = stringResource(R.string.abbreviations_title),
         onBack = onBack,
     ) { padding ->
@@ -50,13 +51,14 @@ fun AbbreviationsScreen(
                     .fillMaxSize()
                     .padding(padding)
                     .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             item {
                 SearchTextField(
+                    modifier = Modifier.padding(bottom = 8.dp),
                     value = query,
                     onValueChange = { query = it },
                     label = stringResource(R.string.search_abbreviation),
+                    // CPD-OFF: Ruudun paikallinen Compose-rakenne pidetaan vastuun yhteydessa.
                 )
             }
             if (results.isEmpty()) {
@@ -70,14 +72,13 @@ fun AbbreviationsScreen(
                 }
             } else {
                 items(results, key = { it.abbreviation }) { abbreviation ->
+                    // CPD-ON
                     AbbreviationItem(
                         abbreviation = abbreviation,
                         isExpanded = expandedAbbreviation == abbreviation.abbreviation,
                         onClick = {
                             expandedAbbreviation =
-                                if (expandedAbbreviation ==
-                                    abbreviation.abbreviation
-                                ) {
+                                if (expandedAbbreviation == abbreviation.abbreviation) {
                                     null
                                 } else {
                                     abbreviation.abbreviation
@@ -96,20 +97,13 @@ private fun AbbreviationItem(
     isExpanded: Boolean,
     onClick: () -> Unit,
 ) {
-    Card(
-        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
-        shape = MaterialTheme.shapes.medium,
-        colors =
-            CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-            ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+    // Hiusviivarivi kuten Chart Symbolsissa: kortti per lyhenne mahdutti ruudulle vain kuusi riviä.
+    Column(modifier = Modifier.fillMaxWidth().clickable(onClick = onClick)) {
+        Column(modifier = Modifier.padding(vertical = 12.dp)) {
             Text(
                 text = abbreviation.abbreviation,
                 style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.primary,
+                color = MaterialTheme.knitToolsColors.primaryReadable,
             )
             Text(
                 text = stringResource(abbreviation.meaningResId),
@@ -124,5 +118,6 @@ private fun AbbreviationItem(
                 )
             }
         }
+        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
     }
 }

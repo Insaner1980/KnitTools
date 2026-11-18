@@ -9,22 +9,23 @@
       "kind": "android-application",
       "required": true,
       "variants": ["debug", "release"],
-      "sourceSets": ["main", "debug", "debugShared", "release", "test", "androidTest"]
+      "sourceSets": ["main", "debug", "debugShared", "release", "test", "testDebug", "sharedTest", "androidTest", "isolatedTest", "optimizedSmoke"]
     },
     {
       "path": ":baselineprofile",
       "relativePath": "baselineprofile",
       "kind": "android-test",
       "required": true,
-      "variants": ["benchmark"],
-      "sourceSets": ["main"]
+      "variants": ["benchmarkRelease"],
+      "sourceSets": ["main", "benchmarkRelease"]
     }
   ],
   "buildTasks": [":app:assembleDebug", ":baselineprofile:assemble"],
   "testTasks": [":app:testDebugUnitTest"],
+  "deviceTestTasks": [":app:connectedDebugAndroidTest"],
   "includedBuilds": [],
   "checks": {
-    "ktlintTasks": [":app:ktlintCheck"],
+    "ktlintTasks": [":app:ktlintCheck", ":baselineprofile:ktlintCheck"],
     "detektTasks": [":app:detekt"],
     "lintTasks": [":app:lintDebug"],
     "fullLintTasks": [":app:lintDebug", ":app:lintRelease"],

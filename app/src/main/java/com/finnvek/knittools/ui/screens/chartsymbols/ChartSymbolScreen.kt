@@ -21,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.res.stringResource
@@ -30,7 +31,9 @@ import com.finnvek.knittools.domain.calculator.ChartSymbolData
 import com.finnvek.knittools.domain.model.ChartSymbol
 import com.finnvek.knittools.domain.model.ChartSymbolCategory
 import com.finnvek.knittools.ui.components.InfoNote
+import com.finnvek.knittools.ui.components.SectionLabel
 import com.finnvek.knittools.ui.components.ToolScreenScaffold
+import com.finnvek.knittools.ui.layout.ContentWidthPolicy
 
 @Composable
 fun ChartSymbolScreen(onBack: () -> Unit) {
@@ -46,6 +49,7 @@ fun ChartSymbolScreen(onBack: () -> Unit) {
         )
 
     ToolScreenScaffold(
+        contentWidthPolicy = ContentWidthPolicy.ListDetail,
         title = stringResource(R.string.chart_symbols_title),
         onBack = onBack,
     ) { padding ->
@@ -68,9 +72,8 @@ fun ChartSymbolScreen(onBack: () -> Unit) {
                 val symbols = grouped[category] ?: return@forEach
 
                 item {
-                    Text(
+                    SectionLabel(
                         text = categoryNames[category] ?: category.name,
-                        style = MaterialTheme.typography.titleMedium,
                         modifier = Modifier.padding(top = 16.dp, bottom = 4.dp),
                     )
                 }
@@ -91,11 +94,11 @@ private fun ChartSymbolRow(symbol: ChartSymbol) {
         modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Canvas(modifier = Modifier.size(32.dp)) {
+        Canvas(modifier = Modifier.size(width = (32 * chartSymbolWidthUnits(symbol.id)).dp, height = 32.dp)) {
             drawSymbol(symbol.id, tint)
         }
         Spacer(modifier = Modifier.width(12.dp))
-        Column {
+        Column(Modifier.weight(1f)) {
             Text(
                 text = stringResource(symbol.nameResId),
                 style = MaterialTheme.typography.bodyMedium,
@@ -110,7 +113,7 @@ private fun ChartSymbolRow(symbol: ChartSymbol) {
 }
 
 // Piirtofunktiot neulontakaavion symboleille
-private fun DrawScope.drawSymbol(
+internal fun DrawScope.drawSymbol(
     id: String,
     tint: Color,
 ) {
@@ -118,13 +121,33 @@ private fun DrawScope.drawSymbol(
     val stroke = Stroke(width = 2f)
     val pad = s * 0.1f
 
+    if (id.startsWith("cable_")) {
+        drawCable(id, tint)
+        return
+    }
     // Pohjaruutu
     drawRect(tint, topLeft = Offset(pad, pad), size = Size(s - 2 * pad, s - 2 * pad), style = stroke)
 
     when (id) {
+        "knit", "purl", "yarn_over", "knit_tbl", "purl_tbl", "slip_purlwise" -> drawBasicSymbol(id, tint)
+        "k2tog", "ssk", "p2tog", "s2kp", "k3tog", "sk2p" -> drawDecreaseSymbol(id, tint)
+        "m1l", "m1r", "lifted_inc_left", "lifted_inc_right", "kfb" -> drawIncreaseSymbol(id, tint)
+        "no_stitch", "marker", "repeat" -> drawOtherSymbol(id, tint)
+    }
+}
+
+private fun DrawScope.drawBasicSymbol(
+    id: String,
+    tint: Color,
+) {
+    val s = size.minDimension
+    val pad = s * 0.1f
+    val stroke = Stroke(width = 2f)
+
+    when (id) {
+        // Tyhjä ruutu = oikealta puolelta neulottu silmukka
         "knit" -> { /* Pelkkä pohjaruutu, ei lisäpiirtoa */ }
 
-        // Tyhjä ruutu = oikealta puolelta neulottu silmukka
         "purl" -> {
             // Piste keskellä
             drawCircle(tint, radius = s * 0.08f, center = center)
@@ -134,25 +157,37 @@ private fun DrawScope.drawSymbol(
             drawCircle(tint, radius = s * 0.2f, center = center, style = stroke)
         }
 
-        "knit_tbl" -> {
-            drawVShape(tint, pad, s)
+        "knit_tbl", "purl_tbl" -> {
+            // CYC twisted loop: the legs cross below the loop.
+            val loop =
+                Path().apply {
+                    moveTo(s * 0.3f, s * 0.75f)
+                    cubicTo(s * 0.8f, s * 0.4f, s * 0.6f, s * 0.2f, s * 0.5f, s * 0.28f)
+                    cubicTo(s * 0.25f, s * 0.4f, s * 0.5f, s * 0.6f, s * 0.7f, s * 0.75f)
+                }
+            drawPath(loop, tint, style = stroke)
+            if (id == "purl_tbl") drawCircle(tint, s * 0.045f, Offset(s * 0.5f, s * 0.4f))
         }
 
-        "purl_tbl" -> {
-            drawCircle(tint, radius = s * 0.06f, center = center)
-            drawLine(
-                tint,
-                Offset(center.x, center.y + s * 0.12f),
-                Offset(center.x, s - pad - s * 0.1f),
-                strokeWidth = 2f,
-            )
+        "slip_purlwise" -> {
+            // Alaspäin osoittava V on yleisin nostetun silmukan merkki (Vogue Knitting); aiemmin
+            // molemmat nostot piirtyivät samana vaakaviivana eikä niitä erottanut toisistaan.
+            val top = pad + s * 0.2f
+            val bottom = s - pad - s * 0.2f
+            drawLine(tint, Offset(pad + s * 0.2f, top), Offset(center.x, bottom), strokeWidth = 2f)
+            drawLine(tint, Offset(center.x, bottom), Offset(s - pad - s * 0.2f, top), strokeWidth = 2f)
         }
+    }
+}
 
-        "slip_knitwise", "slip_purlwise" -> {
-            // Vaakaviiva
-            drawLine(tint, Offset(pad + s * 0.15f, center.y), Offset(s - pad - s * 0.15f, center.y), strokeWidth = 2f)
-        }
+private fun DrawScope.drawDecreaseSymbol(
+    id: String,
+    tint: Color,
+) {
+    val s = size.minDimension
+    val pad = s * 0.1f
 
+    when (id) {
         "k2tog" -> {
             // Oikealle kallistuva viiva (right-leaning)
             drawLine(
@@ -180,130 +215,71 @@ private fun DrawScope.drawSymbol(
                 Offset(s - pad - s * 0.15f, pad + s * 0.15f),
                 strokeWidth = 2f,
             )
-            drawCircle(tint, radius = s * 0.06f, center = Offset(s * 0.35f, s * 0.65f))
+            drawCircle(tint, radius = s * 0.06f, center = Offset(s * 0.35f, s * 0.35f))
         }
 
         "s2kp" -> {
-            // Käännetty V (centered double decrease)
+            // Keskitetty kaksoiskavennus: Λ ja keskiviiva. Ilman keskiviivaa merkki olisi sama kuin
+            // takareunasta neulottu silmukka, ja alaspäin osoittava V on nurin nostetun silmukan merkki.
+            drawVShape(tint, pad, s)
             drawLine(
                 tint,
-                Offset(pad + s * 0.1f, pad + s * 0.15f),
                 Offset(center.x, s - pad - s * 0.15f),
-                strokeWidth = 2f,
-            )
-            drawLine(
-                tint,
-                Offset(s - pad - s * 0.1f, pad + s * 0.15f),
-                Offset(center.x, s - pad - s * 0.15f),
+                Offset(center.x, pad + s * 0.15f),
                 strokeWidth = 2f,
             )
         }
 
-        "k3tog" -> {
-            drawLine(
-                tint,
-                Offset(pad + s * 0.15f, s - pad - s * 0.15f),
-                Offset(s - pad - s * 0.15f, pad + s * 0.15f),
-                strokeWidth = 2f,
-            )
-            drawLine(
-                tint,
-                Offset(center.x, s - pad - s * 0.15f),
-                Offset(s - pad - s * 0.15f, pad + s * 0.15f),
-                strokeWidth = 2f,
-            )
+        "k3tog", "sk2p" -> {
+            val left = s * 0.3f
+            val right = s * 0.7f
+            val topX = if (id == "k3tog") right else left
+            val bottomX = if (id == "k3tog") left else right
+            drawLine(tint, Offset(bottomX, s * 0.7f), Offset(topX, s * 0.3f), strokeWidth = 2f)
+            drawLine(tint, center, Offset(center.x, s * 0.7f), strokeWidth = 2f)
+            drawLine(tint, center, Offset(topX, s * 0.7f), strokeWidth = 2f)
         }
+    }
+}
 
-        "sk2p" -> {
-            drawLine(
-                tint,
-                Offset(s - pad - s * 0.15f, s - pad - s * 0.15f),
-                Offset(pad + s * 0.15f, pad + s * 0.15f),
-                strokeWidth = 2f,
-            )
-            drawLine(
-                tint,
-                Offset(center.x, s - pad - s * 0.15f),
-                Offset(pad + s * 0.15f, pad + s * 0.15f),
-                strokeWidth = 2f,
-            )
-        }
+private fun DrawScope.drawIncreaseSymbol(
+    id: String,
+    tint: Color,
+) {
+    val s = size.minDimension
 
-        "m1l" -> {
-            // Vasemmalle kallistuva viiva + palkki alhaalla
-            drawLine(
-                tint,
-                Offset(s - pad - s * 0.15f, s - pad - s * 0.2f),
-                Offset(pad + s * 0.15f, pad + s * 0.15f),
-                strokeWidth = 2f,
-            )
-            drawLine(
-                tint,
-                Offset(pad + s * 0.15f, s - pad - s * 0.15f),
-                Offset(s - pad - s * 0.15f, s - pad - s * 0.15f),
-                strokeWidth = 2f,
-            )
-        }
-
-        "m1r" -> {
-            drawLine(
-                tint,
-                Offset(pad + s * 0.15f, s - pad - s * 0.2f),
-                Offset(s - pad - s * 0.15f, pad + s * 0.15f),
-                strokeWidth = 2f,
-            )
-            drawLine(
-                tint,
-                Offset(pad + s * 0.15f, s - pad - s * 0.15f),
-                Offset(s - pad - s * 0.15f, s - pad - s * 0.15f),
-                strokeWidth = 2f,
-            )
+    when (id) {
+        "m1l", "m1r", "lifted_inc_left", "lifted_inc_right" -> {
+            val leftLeaning = id == "m1l" || id == "lifted_inc_left"
+            val topX = if (leftLeaning) s * 0.28f else s * 0.72f
+            val bottomX = s - topX
+            val slantStart =
+                if (id.startsWith("lifted_inc_")) {
+                    // Use the compact lifted-increase variant to distinguish it from M1.
+                    Offset((bottomX + center.x) / 2, s * 0.625f)
+                } else {
+                    Offset(bottomX, s * 0.75f)
+                }
+            drawLine(tint, slantStart, Offset(topX, s * 0.25f), strokeWidth = 2f)
+            drawLine(tint, center, Offset(bottomX, s * 0.3f), strokeWidth = 2f)
         }
 
         "kfb" -> {
-            drawVShape(tint, pad, s)
+            // CYC K1fb: upright stem with an upper-left branch.
+            drawLine(tint, Offset(s * 0.55f, s * 0.25f), Offset(s * 0.55f, s * 0.75f), strokeWidth = 2f)
+            drawLine(tint, Offset(s * 0.3f, s * 0.3f), Offset(s * 0.55f, s * 0.5f), strokeWidth = 2f)
         }
+    }
+}
 
-        "lifted_inc_left", "lifted_inc_right" -> {
-            val xStart = if (id == "lifted_inc_left") pad + s * 0.2f else s - pad - s * 0.2f
-            val xEnd = if (id == "lifted_inc_left") s - pad - s * 0.2f else pad + s * 0.2f
-            drawLine(tint, Offset(xStart, s - pad - s * 0.2f), Offset(xEnd, pad + s * 0.2f), strokeWidth = 2f)
-            // Nuoli
-            drawCircle(tint, radius = s * 0.05f, center = Offset(xEnd, pad + s * 0.2f))
-        }
+private fun DrawScope.drawOtherSymbol(
+    id: String,
+    tint: Color,
+) {
+    val s = size.minDimension
+    val pad = s * 0.1f
 
-        "cable_2_2_left", "cable_3_3_left" -> {
-            // Ristikkäiset viivat — vasen päälle
-            drawLine(
-                tint,
-                Offset(pad + s * 0.15f, pad + s * 0.15f),
-                Offset(s - pad - s * 0.15f, s - pad - s * 0.15f),
-                strokeWidth = 3f,
-            )
-            drawLine(
-                tint,
-                Offset(s - pad - s * 0.15f, pad + s * 0.15f),
-                Offset(pad + s * 0.15f, s - pad - s * 0.15f),
-                strokeWidth = 1.5f,
-            )
-        }
-
-        "cable_2_2_right", "cable_3_3_right" -> {
-            // Ristikkäiset viivat — oikea päälle
-            drawLine(
-                tint,
-                Offset(s - pad - s * 0.15f, pad + s * 0.15f),
-                Offset(pad + s * 0.15f, s - pad - s * 0.15f),
-                strokeWidth = 3f,
-            )
-            drawLine(
-                tint,
-                Offset(pad + s * 0.15f, pad + s * 0.15f),
-                Offset(s - pad - s * 0.15f, s - pad - s * 0.15f),
-                strokeWidth = 1.5f,
-            )
-        }
-
+    when (id) {
         "no_stitch" -> {
             // Harmaa täytetty ruutu
             drawRect(tint.copy(alpha = 0.3f), topLeft = Offset(pad, pad), size = Size(s - 2 * pad, s - 2 * pad))
@@ -359,7 +335,7 @@ private fun DrawScope.drawSymbol(
     }
 }
 
-// V-muoto symboleille knit_tbl ja kfb
+// Upward chevron forming the base of the CYC centered double decrease.
 private fun DrawScope.drawVShape(
     tint: Color,
     pad: Float,
@@ -377,4 +353,37 @@ private fun DrawScope.drawVShape(
         Offset(center.x, pad + s * 0.15f),
         strokeWidth = 2f,
     )
+}
+
+internal fun chartSymbolWidthUnits(id: String): Int =
+    when {
+        id.startsWith("cable_3_3") -> 3
+        id.startsWith("cable_2_2") -> 2
+        else -> 1
+    }
+
+private fun DrawScope.drawCable(
+    id: String,
+    tint: Color,
+) {
+    // Version 1: the uninterrupted band is the group held in front.
+    val w = size.width
+    val h = size.height
+    val leftCross = id.endsWith("left")
+
+    fun x(fraction: Float): Float = if (leftCross) w * (1f - fraction) else w * fraction
+    val top = h * 0.25f
+    val bottom = h * 0.75f
+    val cells = if (id.startsWith("cable_3_3")) 6 else 4
+    for (i in 0..cells) {
+        val tick = w * (0.05f + 0.9f * i / cells)
+        drawLine(tint, Offset(tick, top - h * 0.08f), Offset(tick, top), 2f)
+        drawLine(tint, Offset(tick, bottom), Offset(tick, bottom + h * 0.08f), 2f)
+    }
+    drawLine(tint, Offset(x(0.05f), top), Offset(x(0.95f), top), 2f)
+    drawLine(tint, Offset(x(0.05f), bottom), Offset(x(0.95f), bottom), 2f)
+    drawLine(tint, Offset(x(0.05f), bottom), Offset(x(0.5f), top), 2f)
+    drawLine(tint, Offset(x(0.5f), bottom), Offset(x(0.95f), top), 2f)
+    drawLine(tint, Offset(x(0.05f), top), Offset(x(0.275f), h * 0.5f), 2f)
+    drawLine(tint, Offset(x(0.725f), h * 0.5f), Offset(x(0.95f), bottom), 2f)
 }

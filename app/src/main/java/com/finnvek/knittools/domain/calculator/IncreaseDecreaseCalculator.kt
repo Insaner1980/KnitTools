@@ -19,17 +19,19 @@ object IncreaseDecreaseCalculator {
         if (changeBy <= 0) {
             return errorResult(IncreaseDecreaseMessage.ChangeMustBePositive)
         }
-        if (mode == IncreaseDecreaseMode.DECREASE && changeBy >= currentStitches) {
-            return errorResult(IncreaseDecreaseMessage.CannotDecreaseBy(changeBy, currentStitches))
-        }
         val requiredDecreaseStitches = changeBy.toLong() * 2
-        if (mode == IncreaseDecreaseMode.DECREASE && requiredDecreaseStitches > currentStitches.toLong()) {
-            return errorResult(
-                IncreaseDecreaseMessage.NotEnoughStitchesForDecrease(
-                    changeBy = changeBy,
-                    requiredStitches = requiredDecreaseStitches,
-                ),
-            )
+        if (mode == IncreaseDecreaseMode.DECREASE) {
+            if (changeBy >= currentStitches) {
+                return errorResult(IncreaseDecreaseMessage.CannotDecreaseBy(changeBy, currentStitches))
+            }
+            if (requiredDecreaseStitches > currentStitches.toLong()) {
+                return errorResult(
+                    IncreaseDecreaseMessage.NotEnoughStitchesForDecrease(
+                        changeBy = changeBy,
+                        requiredStitches = requiredDecreaseStitches,
+                    ),
+                )
+            }
         }
 
         val totalStitchesLong =
@@ -42,22 +44,21 @@ object IncreaseDecreaseCalculator {
         }
         val totalStitches = totalStitchesLong.toInt()
 
+        // M1 uses one existing bar between stitches, once per bar.
+        val availableBars = if (style == KnittingStyle.FLAT) currentStitches - 1 else currentStitches
+        if (mode == IncreaseDecreaseMode.INCREASE && (currentStitches < 2 || changeBy > availableBars)) {
+            return errorResult(IncreaseDecreaseMessage.NotEnoughBarsForIncrease)
+        }
+
         val availableForKnitLong =
             when (mode) {
                 IncreaseDecreaseMode.INCREASE -> currentStitches.toLong()
                 IncreaseDecreaseMode.DECREASE -> currentStitches.toLong() - requiredDecreaseStitches
             }
 
-        // For increase: M1 creates a stitch from nothing, so K stitches sum to currentStitches
+        // M1 does not consume an existing stitch, so K stitches sum to currentStitches.
         // For decrease: K2tog consumes 2 stitches, so plain K stitches = currentStitches - 2*changeBy
         val availableForKnit = availableForKnitLong.toInt()
-
-        val warningMessage =
-            if (mode == IncreaseDecreaseMode.INCREASE && changeBy > currentStitches) {
-                IncreaseDecreaseMessage.IncreaseMoreThanCurrent
-            } else {
-                null
-            }
 
         val easyPattern = buildEasyPattern(availableForKnit, changeBy, mode, style)
         val balancedPattern = buildBalancedPattern(availableForKnit, changeBy, mode, style)
@@ -67,7 +68,6 @@ object IncreaseDecreaseCalculator {
             easyPattern = easyPattern,
             balancedPattern = balancedPattern,
             isValid = true,
-            message = warningMessage,
         )
     }
 
@@ -77,12 +77,12 @@ object IncreaseDecreaseCalculator {
         mode: IncreaseDecreaseMode,
         style: KnittingStyle,
     ): String {
-        val actionAbbrev =
-            when (mode) {
-                IncreaseDecreaseMode.INCREASE -> "M1"
-                IncreaseDecreaseMode.DECREASE -> "K2tog"
-            }
-
+        val actionAbbrev = actionAbbreviation(mode)
+        if (mode == IncreaseDecreaseMode.INCREASE && style == KnittingStyle.FLAT) {
+            // Reserve a final stitch so the final M1 cannot land outside the flat edge.
+            val working = availableForKnit - 1
+            return buildFlatEasy(working / sections, sections, working % sections, actionAbbrev) + ", K1"
+        }
         val base = availableForKnit / sections
         val remainder = availableForKnit % sections
 
@@ -159,27 +159,14 @@ object IncreaseDecreaseCalculator {
         availableForKnit: Int,
         sections: Int,
         mode: IncreaseDecreaseMode,
-    ): String {
-        val groups =
-            buildBalancedActionGroups(
-                availableForKnit,
-                sections,
-                mode,
-            ).joinToString(", ")
-        return groups
-    }
+    ): String = buildBalancedActionGroups(availableForKnit, sections, mode).joinToString(", ")
 
     private fun buildBalancedActionGroups(
         availableForKnit: Int,
         sections: Int,
         mode: IncreaseDecreaseMode,
     ): List<String> {
-        val actionAbbrev =
-            when (mode) {
-                IncreaseDecreaseMode.INCREASE -> "M1"
-                IncreaseDecreaseMode.DECREASE -> "K2tog"
-            }
-
+        val actionAbbrev = actionAbbreviation(mode)
         val base = availableForKnit / sections
         val remainder = availableForKnit % sections
 
@@ -213,6 +200,12 @@ object IncreaseDecreaseCalculator {
 
         return parts
     }
+
+    private fun actionAbbreviation(mode: IncreaseDecreaseMode): String =
+        when (mode) {
+            IncreaseDecreaseMode.INCREASE -> "M1"
+            IncreaseDecreaseMode.DECREASE -> "K2tog"
+        }
 
     private fun formatActionGroup(
         knitStitches: Int,

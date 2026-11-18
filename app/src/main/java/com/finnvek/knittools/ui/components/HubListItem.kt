@@ -39,7 +39,7 @@ fun HubListItem(
     Surface(
         modifier = modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.large,
-        color = MaterialTheme.colorScheme.surfaceVariant,
+        color = MaterialTheme.knitToolsColors.cardContainer,
         tonalElevation = 0.dp,
         shadowElevation = 0.dp,
         onClick = onClick,

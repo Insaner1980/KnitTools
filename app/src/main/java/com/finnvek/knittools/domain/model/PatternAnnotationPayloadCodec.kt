@@ -2,6 +2,9 @@ package com.finnvek.knittools.domain.model
 
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.jsonObject
 import kotlin.math.pow
 import kotlin.math.round
 
@@ -29,6 +32,18 @@ object PatternAnnotationPayloadCodec {
         kind: PatternAnnotationKind,
         encoded: EncodedPatternAnnotationPayload,
     ): PatternAnnotationPayload? = decode(kind, encoded.payloadVersion, encoded.payloadJson)
+
+    fun replaceText(
+        payloadVersion: Int,
+        json: String,
+        text: String,
+    ): String? {
+        if (text.isBlank() || text.length > MAX_PAYLOAD_BYTES) return null
+        if (decode(PatternAnnotationKind.TEXT_BOX, payloadVersion, json) !is TextBoxPayload) return null
+        val fields = payloadJson.parseToJsonElement(json).jsonObject
+        val updated = JsonObject(fields + ("text" to JsonPrimitive(text))).toString()
+        return updated.takeIf { decode(PatternAnnotationKind.TEXT_BOX, payloadVersion, it) != null }
+    }
 
     fun decode(
         kind: PatternAnnotationKind,
@@ -116,9 +131,11 @@ private fun sanitizePayload(
 
         PatternAnnotationKind.LINE,
         PatternAnnotationKind.ARROW,
+        -> (payload as? ShapePayload)?.sanitize(requireArea = false)
+
         PatternAnnotationKind.RECTANGLE,
         PatternAnnotationKind.ELLIPSE,
-        -> (payload as? ShapePayload)?.sanitize()
+        -> (payload as? ShapePayload)?.sanitize(requireArea = true)
 
         PatternAnnotationKind.TEXT_BOX -> (payload as? TextBoxPayload)?.sanitize()
         PatternAnnotationKind.CALLOUT -> (payload as? CalloutPayload)?.sanitize()
@@ -134,17 +151,23 @@ private fun FreehandPayload.sanitize(): FreehandPayload? {
     return copy(points = sanitizedPoints, strokeWidth = sanitizedWidth)
 }
 
-private fun ShapePayload.sanitize(): ShapePayload? =
-    copy(
-        start = start.sanitize() ?: return null,
-        end = end.sanitize() ?: return null,
+private fun ShapePayload.sanitize(requireArea: Boolean): ShapePayload? {
+    val sanitizedStart = start.sanitize() ?: return null
+    val sanitizedEnd = end.sanitize() ?: return null
+    if (sanitizedStart == sanitizedEnd) return null
+    if (requireArea && (sanitizedStart.x == sanitizedEnd.x || sanitizedStart.y == sanitizedEnd.y)) return null
+    return copy(
+        start = sanitizedStart,
+        end = sanitizedEnd,
         strokeWidth = strokeWidth.sanitizeStrokeWidth() ?: return null,
         fillAlpha = fillAlpha.sanitizeUnit() ?: return null,
     )
+}
 
-private fun TextBoxPayload.sanitize(): TextBoxPayload? =
-    copy(
-        bounds = bounds.sanitize() ?: return null,
+private fun TextBoxPayload.sanitize(): TextBoxPayload? {
+    if (text.isBlank()) return null
+    return copy(
+        bounds = bounds.sanitizeArea() ?: return null,
         textSizeSp =
             textSizeSp
                 .takeIf(Float::isFinite)
@@ -152,15 +175,17 @@ private fun TextBoxPayload.sanitize(): TextBoxPayload? =
                 ?.roundToAnnotationPrecision() ?: return null,
         backgroundAlpha = backgroundAlpha.sanitizeUnit() ?: return null,
     )
+}
 
-private fun CalloutPayload.sanitize(): CalloutPayload? = copy(bounds = bounds.sanitize() ?: return null)
+private fun CalloutPayload.sanitize(): CalloutPayload? {
+    if (title.isBlank() && description.isBlank()) return null
+    return copy(bounds = bounds.sanitizeArea() ?: return null)
+}
 
-private fun ChartRegionPayload.sanitize(): ChartRegionPayload? =
-    copy(
-        bounds = bounds.sanitize() ?: return null,
-        rows = rows.coerceIn(1, 999),
-        columns = columns.coerceIn(1, 999),
-    )
+private fun ChartRegionPayload.sanitize(): ChartRegionPayload? {
+    if (name.isBlank() || !PatternAnnotationLimits.isValidChartDimensions(rows, columns)) return null
+    return copy(bounds = bounds.sanitizeArea() ?: return null)
+}
 
 private fun ChartTrackerPayload.sanitize(): ChartTrackerPayload? {
     val sanitizedExtraCounterId =
@@ -194,6 +219,9 @@ private fun NormalizedPatternBounds.sanitize(): NormalizedPatternBounds? {
         bottom = maxOf(sanitizedTop, sanitizedBottom),
     )
 }
+
+private fun NormalizedPatternBounds.sanitizeArea(): NormalizedPatternBounds? =
+    sanitize()?.takeIf { bounds -> bounds.left < bounds.right && bounds.top < bounds.bottom }
 
 private fun Float.sanitizeUnit(): Float? =
     takeIf(Float::isFinite)

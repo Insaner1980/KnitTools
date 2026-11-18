@@ -1,5 +1,7 @@
 # Photo Batch Delete — Implementation Plan
 
+**Historical plan:** current repository code owns deletion and commits database changes before best-effort file cleanup. The snippets below illustrate that ordering; follow current AGENTS.md/CODEX.md rather than implementing this old plan again.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Add multi-select batch deletion to AllPhotosScreen so users can long-press to enter selection mode, pick multiple photos, and delete them all at once.
@@ -105,10 +107,10 @@ Add below the existing `deletePhoto` method (line 64):
 ```kotlin
 suspend fun deletePhotos(ids: List<Long>) {
     val photos = dao.getByIds(ids)
+    dao.deleteByIds(ids)
     withContext(Dispatchers.IO) {
         photos.forEach { storage.deletePhoto(it.photoUri) }
     }
-    dao.deleteByIds(ids)
 }
 ```
 
@@ -174,18 +176,18 @@ class ProgressPhotoRepository
         }
 
         suspend fun deletePhoto(photo: ProgressPhotoEntity) {
+            dao.delete(photo.id)
             withContext(Dispatchers.IO) {
                 storage.deletePhoto(photo.photoUri)
             }
-            dao.delete(photo.id)
         }
 
         suspend fun deletePhotos(ids: List<Long>) {
             val photos = dao.getByIds(ids)
+            dao.deleteByIds(ids)
             withContext(Dispatchers.IO) {
                 photos.forEach { storage.deletePhoto(it.photoUri) }
             }
-            dao.deleteByIds(ids)
         }
 
         fun deleteAllPhotosForProject(projectId: Long) {

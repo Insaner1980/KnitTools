@@ -9,6 +9,7 @@ import androidx.compose.material.icons.outlined.Build
 import androidx.compose.material.icons.outlined.FolderOpen
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.lifecycle.Lifecycle
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.model.CraftType
 
@@ -23,7 +24,13 @@ sealed class Screen(
 
     data object IncreaseDecrease : Screen("increase_decrease")
 
-    data object Gauge : Screen("gauge")
+    data object Gauge : Screen("gauge") {
+        const val ARG_PROJECT_ID = "projectId"
+        const val ROUTE = "gauge?projectId={$ARG_PROJECT_ID}"
+
+        fun createRoute(projectId: Long?): String =
+            projectId?.takeIf { it > 0 }?.let { "$route?$ARG_PROJECT_ID=$it" } ?: route
+    }
 
     data object CastOn : Screen("cast_on")
 
@@ -44,6 +51,19 @@ sealed class Screen(
 
     data object Settings : Screen("settings")
 
+    data object Guide : Screen("guide")
+
+    data class GuideTopic(
+        val topicKey: String,
+    ) : Screen("guide/${Uri.encode(topicKey)}") {
+        companion object {
+            const val ARG_TOPIC = "topic"
+            const val ROUTE = "guide/{$ARG_TOPIC}"
+        }
+    }
+
+    data object Backup : Screen("backup")
+
     data object ProUpgrade : Screen("pro_upgrade")
 
     data class YarnCardDetail(
@@ -54,32 +74,23 @@ sealed class Screen(
         }
     }
 
-    data class LibraryRavelryDetail(
-        val patternId: Int,
-    ) : Screen("library_ravelry_detail/$patternId") {
-        companion object {
-            const val ROUTE = "library_ravelry_detail/{patternId}"
-        }
-    }
+    // Ravelry sovelluksen sisällä: Download PDF tallentuu suoraan KnitToolsiin.
+    data object RavelryBrowser : Screen("ravelry_browser") {
+        const val ARG_URL = "url"
+        const val ARG_REQUEST_ID = "requestId"
+        const val ROUTE = "ravelry_browser?url={$ARG_URL}&requestId={$ARG_REQUEST_ID}"
 
-    data object Ravelry : Screen("ravelry")
-
-    data class RavelryImport(
-        val url: String,
-    ) : Screen("ravelry_import/${Uri.encode(url)}") {
-        companion object {
-            const val ARG_IMPORT_URL = "importUrl"
-            const val ROUTE = "ravelry_import/{$ARG_IMPORT_URL}"
-
-            fun importUrl(routeArgument: String?): String? = routeArgument?.takeIf { it.isNotBlank() }
-        }
-    }
-
-    data class RavelryDetail(
-        val patternId: Int,
-    ) : Screen("ravelry_detail/$patternId") {
-        companion object {
-            const val ROUTE = "ravelry_detail/{patternId}"
+        /** Jaettu tai tallennettu Ravelry-linkki avautuu suoraan; ilman osoitetta näkyy kaavahaku. */
+        fun createRoute(
+            url: String? = null,
+            requestId: Long? = null,
+        ): String {
+            val pageRoute = url?.takeIf { it.isNotBlank() }?.let { "$route?url=${Uri.encode(it)}" } ?: route
+            return if (requestId == null) {
+                pageRoute
+            } else {
+                "$pageRoute${if ('?' in pageRoute) '&' else '?'}requestId=$requestId"
+            }
         }
     }
 
@@ -87,11 +98,31 @@ sealed class Screen(
 
     data object PhotoGallery : Screen("photo_gallery")
 
+    data class ProjectOverview(
+        val projectId: Long,
+    ) : Screen("project_overview/$projectId") {
+        companion object {
+            const val ROUTE = "project_overview/{projectId}"
+        }
+    }
+
     data class PatternViewer(
         val projectId: Long,
-    ) : Screen("pattern_viewer/$projectId") {
+        val selectedProjectDocumentId: Long? = null,
+    ) : Screen(
+            "pattern_viewer/$projectId" +
+                selectedProjectDocumentId?.let { "?selectedProjectDocumentId=$it" }.orEmpty(),
+        ) {
         companion object {
-            const val ROUTE = "pattern_viewer/{projectId}"
+            const val ROUTE = "pattern_viewer/{projectId}?selectedProjectDocumentId={selectedProjectDocumentId}"
+        }
+    }
+
+    data class CounterHistory(
+        val projectId: Long,
+    ) : Screen("counter_history/$projectId") {
+        companion object {
+            const val ROUTE = "counter_history/{projectId}"
         }
     }
 
@@ -124,6 +155,33 @@ sealed class Screen(
         }
     }
 
+    data object WebPatternEditor : Screen("web_pattern_editor") {
+        const val ARG_ORIGIN = "origin"
+        const val ARG_PROJECT_ID = "projectId"
+        const val ARG_PATTERN_ID = "patternId"
+        const val ROUTE =
+            "web_pattern_editor?origin={$ARG_ORIGIN}&projectId={$ARG_PROJECT_ID}&patternId={$ARG_PATTERN_ID}"
+
+        fun createRoute(
+            origin: WebPatternEditorOrigin,
+            projectId: Long? = null,
+            patternId: Long? = null,
+        ): String =
+            buildString {
+                append(route)
+                append("?origin=")
+                append(origin.persistedValue)
+                projectId?.takeIf { it > 0L }?.let {
+                    append("&projectId=")
+                    append(it)
+                }
+                patternId?.takeIf { it > 0L }?.let {
+                    append("&patternId=")
+                    append(it)
+                }
+            }
+    }
+
     data class LibraryPatternViewer(
         val savedPatternId: Long,
     ) : Screen("library_pattern_viewer/$savedPatternId") {
@@ -140,6 +198,54 @@ sealed class Screen(
     data object Insights : Screen("insights")
 }
 
+enum class WebPatternEditorOrigin(
+    val persistedValue: String,
+) {
+    Manual("manual"),
+    Project("project"),
+    Share("share"),
+    Edit("edit"),
+    ;
+
+    companion object {
+        fun fromPersistedValue(value: String?): WebPatternEditorOrigin? =
+            entries.firstOrNull { it.persistedValue == value }
+    }
+}
+
+data class WebPatternEditorRoute(
+    val origin: WebPatternEditorOrigin,
+    val projectId: Long? = null,
+    val patternId: Long? = null,
+) {
+    companion object {
+        fun from(
+            originValue: String?,
+            projectId: Long?,
+            patternId: Long?,
+        ): WebPatternEditorRoute? {
+            val origin = WebPatternEditorOrigin.fromPersistedValue(originValue) ?: return null
+            val positiveProjectId = projectId?.takeIf { it > 0L }
+            val positivePatternId = patternId?.takeIf { it > 0L }
+            return when (origin) {
+                WebPatternEditorOrigin.Manual,
+                WebPatternEditorOrigin.Share,
+                -> if (positiveProjectId == null && positivePatternId == null) WebPatternEditorRoute(origin) else null
+
+                WebPatternEditorOrigin.Project ->
+                    positiveProjectId
+                        ?.takeIf { positivePatternId == null }
+                        ?.let { WebPatternEditorRoute(origin, projectId = it) }
+
+                WebPatternEditorOrigin.Edit ->
+                    positivePatternId
+                        ?.takeIf { positiveProjectId == null }
+                        ?.let { WebPatternEditorRoute(origin, patternId = it) }
+            }
+        }
+    }
+}
+
 enum class TopLevelDestination(
     val route: String,
     @param:StringRes val labelRes: Int,
@@ -151,4 +257,23 @@ enum class TopLevelDestination(
     Tools("tools_tab", R.string.tab_tools, Icons.Outlined.Build, Screen.Tools.route),
     Insights("insights_tab", R.string.tab_insights, Icons.Outlined.BarChart, Screen.Insights.route),
     Settings("settings_tab", R.string.tab_settings, Icons.Outlined.Settings, Screen.Settings.route),
+}
+
+internal fun isStartupDestinationReady(
+    route: String?,
+    entryId: String?,
+    readyEntryId: String?,
+    lifecycle: Lifecycle.State?,
+): Boolean {
+    if (route == null || entryId == null) return false
+    return when (route) {
+        Screen.ProjectList.route,
+        Screen.Counter.route,
+        Screen.ProjectOverview.ROUTE,
+        Screen.ProUpgrade.route,
+        Screen.RavelryBrowser.ROUTE,
+        Screen.WebPatternEditor.ROUTE,
+        -> entryId == readyEntryId
+        else -> lifecycle == Lifecycle.State.RESUMED
+    }
 }

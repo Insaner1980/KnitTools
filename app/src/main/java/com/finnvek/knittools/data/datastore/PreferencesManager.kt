@@ -1,7 +1,9 @@
 package com.finnvek.knittools.data.datastore
 
+import android.app.LocaleManager
 import android.content.Context
 import android.os.Build
+import android.os.LocaleList
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.os.LocaleListCompat
 import androidx.datastore.core.handlers.ReplaceFileCorruptionHandler
@@ -10,12 +12,17 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
-import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.finnvek.knittools.domain.model.CraftType
 import com.finnvek.knittools.domain.model.ProjectSortOrder
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -40,6 +47,9 @@ data class AppPreferences(
     val useImperial: Boolean = false,
     val showCompletedProjects: Boolean = false,
     val projectSortOrder: ProjectSortOrder = ProjectSortOrder.DEFAULT,
+    val usageAnalyticsEnabled: Boolean = false,
+    val usageAnalyticsGeneration: String? = null,
+    val lastProjectCraftType: CraftType = CraftType.KNITTING,
 )
 
 @Singleton
@@ -48,6 +58,10 @@ class PreferencesManager
     constructor(
         @param:ApplicationContext private val context: Context,
     ) {
+        private val _storedAppLanguageApplied = MutableStateFlow(false)
+        val storedAppLanguageApplied: StateFlow<Boolean> = _storedAppLanguageApplied.asStateFlow()
+        private val languageMutex = Mutex()
+
         val preferences: Flow<AppPreferences> =
             context.dataStore.safePreferencesData.map { prefs ->
                 AppPreferences(
@@ -55,14 +69,20 @@ class PreferencesManager
                         ThemeMode.entries.firstOrNull {
                             it.value == (prefs[KEY_THEME_MODE] ?: 1)
                         } ?: ThemeMode.LIGHT,
-                    appLanguage = resolveAppLanguage(prefs),
+                    appLanguage = AppLanguage.fromValue(prefs[KEY_APP_LANGUAGE]),
                     hapticFeedback = prefs[KEY_HAPTIC_FEEDBACK] ?: true,
                     keepScreenAwake = prefs[KEY_KEEP_SCREEN_AWAKE] ?: false,
                     useImperial = prefs[KEY_USE_IMPERIAL] ?: false,
                     showCompletedProjects = prefs[KEY_SHOW_COMPLETED] ?: false,
                     projectSortOrder = ProjectSortOrder.fromPersistedValue(prefs[KEY_SORT_ORDER]),
+                    usageAnalyticsEnabled = prefs[USAGE_ANALYTICS_ENABLED] ?: false,
+                    usageAnalyticsGeneration = prefs[USAGE_ANALYTICS_GENERATION],
+                    lastProjectCraftType = CraftType.fromPersistedValue(prefs[KEY_LAST_PROJECT_CRAFT]),
                 )
             }
+
+        suspend fun setUsageAnalyticsEnabled(enabled: Boolean): Boolean =
+            context.dataStore.writeUsageAnalyticsConsent(enabled)
 
         suspend fun setThemeMode(mode: ThemeMode) {
             context.dataStore.editPreferencesSafely {
@@ -70,16 +90,18 @@ class PreferencesManager
             }
         }
 
-        suspend fun setAppLanguage(language: AppLanguage) {
-            val saved =
-                context.dataStore.editPreferencesSafely {
-                    it[KEY_APP_LANGUAGE] = language.value
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                        it[KEY_APP_LANGUAGE_MIGRATED_TO_SYSTEM] = true
+        suspend fun setAppLanguage(language: AppLanguage): Boolean =
+            languageMutex.withLock {
+                val saved =
+                    context.dataStore.editPreferencesSafely {
+                        it[KEY_APP_LANGUAGE] = language.value
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                            it[KEY_APP_LANGUAGE_MIGRATED_TO_SYSTEM] = true
+                        }
                     }
-                }
-            if (saved) applyAppLanguage(language)
-        }
+                if (saved) applyAppLanguage(language)
+                saved
+            }
 
         suspend fun setHapticFeedback(enabled: Boolean) {
             context.dataStore.editPreferencesSafely {
@@ -111,49 +133,50 @@ class PreferencesManager
             }
         }
 
-        // Tooltipit
-
-        val dismissedTooltips: Flow<Set<String>> =
-            context.dataStore.safePreferencesData.map { prefs ->
-                prefs[KEY_DISMISSED_TOOLTIPS] ?: emptySet()
-            }
-
-        suspend fun dismissTooltip(id: String) {
-            context.dataStore.editPreferencesSafely { prefs ->
-                val current = prefs[KEY_DISMISSED_TOOLTIPS] ?: emptySet()
-                prefs[KEY_DISMISSED_TOOLTIPS] = current + id
+        suspend fun setLastProjectCraftType(type: CraftType) {
+            context.dataStore.editPreferencesSafely {
+                it[KEY_LAST_PROJECT_CRAFT] = type.name
             }
         }
 
-        suspend fun applyStoredAppLanguage() {
-            val prefs = context.dataStore.readPreferencesOrNull() ?: return
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                migrateStoredLanguageToSystemIfNeeded(prefs)
-            } else {
-                applyAppLanguage(AppLanguage.fromValue(prefs[KEY_APP_LANGUAGE]))
+        suspend fun applyStoredAppLanguage() =
+            languageMutex.withLock {
+                try {
+                    val prefs = context.dataStore.readPreferencesOrNull() ?: return@withLock
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        migrateStoredLanguageToSystemIfNeeded(prefs)
+                    } else {
+                        applyAppLanguage(AppLanguage.fromValue(prefs[KEY_APP_LANGUAGE]))
+                    }
+                } finally {
+                    _storedAppLanguageApplied.value = true
+                }
             }
-        }
 
         suspend fun syncAppLanguageFromSystem() {
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
 
-            val currentLanguage = currentAppLanguage()
-            context.dataStore.editPreferencesSafely { prefs ->
-                if (prefs[KEY_APP_LANGUAGE_MIGRATED_TO_SYSTEM] != true) {
-                    return@editPreferencesSafely
+            languageMutex.withLock {
+                val currentLanguage = currentAppLanguage()
+                context.dataStore.editPreferencesSafely { prefs ->
+                    if (prefs[KEY_APP_LANGUAGE_MIGRATED_TO_SYSTEM] != true) {
+                        return@editPreferencesSafely
+                    }
+                    if (AppLanguage.fromValue(prefs[KEY_APP_LANGUAGE]) != currentLanguage) {
+                        prefs[KEY_APP_LANGUAGE] = currentLanguage.value
+                    }
                 }
-                if (AppLanguage.fromValue(prefs[KEY_APP_LANGUAGE]) != currentLanguage) {
-                    prefs[KEY_APP_LANGUAGE] = currentLanguage.value
-                }
-                prefs[KEY_APP_LANGUAGE_MIGRATED_TO_SYSTEM] = true
             }
         }
 
         private fun applyAppLanguage(language: AppLanguage) {
-            val locales =
-                language.languageTag?.let(LocaleListCompat::forLanguageTags)
-                    ?: LocaleListCompat.getEmptyLocaleList()
-            AppCompatDelegate.setApplicationLocales(locales)
+            val languageTags = language.languageTag.orEmpty()
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                context.getSystemService(LocaleManager::class.java)?.applicationLocales =
+                    LocaleList.forLanguageTags(languageTags)
+            } else {
+                AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(languageTags))
+            }
         }
 
         private suspend fun migrateStoredLanguageToSystemIfNeeded(prefs: Preferences) {
@@ -174,20 +197,19 @@ class PreferencesManager
             }
         }
 
-        private fun resolveAppLanguage(prefs: Preferences): AppLanguage {
-            val currentLanguage = currentAppLanguage()
-            if (currentLanguage != AppLanguage.SYSTEM) return currentLanguage
-
-            val migratedToSystem = prefs[KEY_APP_LANGUAGE_MIGRATED_TO_SYSTEM] ?: false
-            return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && migratedToSystem) {
-                AppLanguage.SYSTEM
-            } else {
-                AppLanguage.fromValue(prefs[KEY_APP_LANGUAGE])
-            }
+        private fun currentAppLanguage(): AppLanguage {
+            val languageTags =
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    context
+                        .getSystemService(LocaleManager::class.java)
+                        ?.applicationLocales
+                        ?.toLanguageTags()
+                        .orEmpty()
+                } else {
+                    AppCompatDelegate.getApplicationLocales().toLanguageTags()
+                }
+            return AppLanguage.fromLanguageTag(languageTags)
         }
-
-        private fun currentAppLanguage(): AppLanguage =
-            AppLanguage.fromLanguageTag(AppCompatDelegate.getApplicationLocales().toLanguageTags())
 
         private companion object {
             val KEY_THEME_MODE = intPreferencesKey("theme_mode")
@@ -199,6 +221,6 @@ class PreferencesManager
             val KEY_USE_IMPERIAL = booleanPreferencesKey("use_imperial")
             val KEY_SHOW_COMPLETED = booleanPreferencesKey("show_completed_projects")
             val KEY_SORT_ORDER = stringPreferencesKey("project_sort_order")
-            val KEY_DISMISSED_TOOLTIPS = stringSetPreferencesKey("dismissed_tooltips")
+            val KEY_LAST_PROJECT_CRAFT = stringPreferencesKey("last_project_craft_type")
         }
     }

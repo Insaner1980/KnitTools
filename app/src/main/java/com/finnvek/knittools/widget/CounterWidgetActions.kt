@@ -3,13 +3,15 @@ package com.finnvek.knittools.widget
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import com.finnvek.knittools.domain.model.CounterProject
+import androidx.core.net.toUri
+import com.finnvek.knittools.analytics.UsageEvent
 import com.finnvek.knittools.pro.ProFeature
-import com.finnvek.knittools.repository.CounterRepository
 import dagger.hilt.android.EntryPointAccessors
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 
 class CounterWidgetActions : BroadcastReceiver() {
     override fun onReceive(
@@ -23,7 +25,9 @@ class CounterWidgetActions : BroadcastReceiver() {
 
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                handleAction(appContext, action)
+                handleAction(appContext, action, intent.data?.lastPathSegment?.toLongOrNull())
+            } catch (cancelled: CancellationException) {
+                throw cancelled
             } catch (_: Exception) {
                 // Widget-toiminto on best effort; finish() ajetaan silti aina, eikä käyttäjädataa lokiteta.
             } finally {
@@ -35,16 +39,33 @@ class CounterWidgetActions : BroadcastReceiver() {
     private suspend fun handleAction(
         context: Context,
         action: String,
+        renderedProjectId: Long?,
     ) {
         val entryPoint = widgetEntryPoint(context)
+        if (action == ACTION_RETRY) {
+            withTimeoutOrNull(RETRY_TIMEOUT_MS) {
+                entryPoint.billingManager().restorePurchasesWithResult()
+                CounterWidgetState.refreshAll(context)
+            }
+            return
+        }
         if (!entryPoint.proManager().hasFeatureAfterInitialLoad(ProFeature.WIDGET)) {
             return
         }
 
-        val repository = entryPoint.counterRepository()
-        val widgetData = repository.loadActionWidgetData(context) ?: return
         val widgetAction = action.toWidgetAction() ?: return
-        applyCountChangeAndSync(context, repository, widgetData, widgetAction)
+        val repository = entryPoint.counterRepository()
+        val shared = CounterWidgetState.load(context)
+        val changed =
+            renderedProjectId != null &&
+                renderedProjectId > 0L &&
+                renderedProjectId == shared.projectId &&
+                repository.applyWidgetCountChange(renderedProjectId, widgetAction.increments)
+        val latestShared = CounterWidgetState.load(context)
+        val resolved = repository.resolveWidgetDisplayData(context, listOf(latestShared))
+        CounterWidgetState.replaceIfCurrent(context, latestShared, resolved)
+        CounterWidgetState.refreshAll(context)
+        if (changed) entryPoint.analytics().trackFromWidget(UsageEvent.WIDGET_COUNTER_CHANGED)
     }
 
     private fun widgetEntryPoint(context: Context): WidgetEntryPoint =
@@ -52,14 +73,6 @@ class CounterWidgetActions : BroadcastReceiver() {
             context,
             WidgetEntryPoint::class.java,
         )
-
-    private suspend fun CounterRepository.loadActionWidgetData(context: Context): WidgetData? {
-        val widgetData = CounterWidgetState.load(context)
-        if (widgetData.projectId == 0L) {
-            return null
-        }
-        return widgetData
-    }
 
     private fun String.toWidgetAction(): WidgetCounterAction? =
         when (this) {
@@ -76,42 +89,35 @@ class CounterWidgetActions : BroadcastReceiver() {
             }
         }
 
-    private suspend fun applyCountChangeAndSync(
-        context: Context,
-        repository: CounterRepository,
-        widgetData: WidgetData,
-        widgetAction: WidgetCounterAction,
-    ) {
-        repository.applyWidgetCountChange(widgetData.projectId, widgetAction.increments)
-        val updatedProject =
-            repository.activeWidgetProjectOrSyncFallback(context, widgetData) ?: return
-        CounterWidgetState.syncAll(context, updatedProject.toWidgetData())
-    }
-
-    private suspend fun CounterRepository.activeWidgetProjectOrSyncFallback(
-        context: Context,
-        widgetData: WidgetData,
-    ): CounterProject? =
-        getActiveWidgetProject(widgetData) ?: run {
-            syncFallbackWidgetData(context)
-            null
-        }
-
-    private suspend fun CounterRepository.syncFallbackWidgetData(context: Context) {
-        CounterWidgetState.syncAll(context, resolveWidgetDisplayData(context, emptyList()))
-    }
-
     private val WidgetCounterAction.increments: Boolean
         get() = this == WidgetCounterAction.Increment
 
     companion object {
+        private const val RETRY_TIMEOUT_MS = 8_000L
         private const val ACTION_INCREMENT = "com.finnvek.knittools.widget.INCREMENT"
         private const val ACTION_DECREMENT = "com.finnvek.knittools.widget.DECREMENT"
+        private const val ACTION_RETRY = "com.finnvek.knittools.widget.RETRY"
 
-        fun incrementIntent(context: Context): Intent =
-            Intent(context, CounterWidgetActions::class.java).setAction(ACTION_INCREMENT)
+        fun retryIntent(context: Context): Intent =
+            Intent(context, CounterWidgetActions::class.java).setAction(ACTION_RETRY)
 
-        fun decrementIntent(context: Context): Intent =
-            Intent(context, CounterWidgetActions::class.java).setAction(ACTION_DECREMENT)
+        fun incrementIntent(
+            context: Context,
+            projectId: Long,
+        ): Intent = countIntent(context, ACTION_INCREMENT, projectId)
+
+        fun decrementIntent(
+            context: Context,
+            projectId: Long,
+        ): Intent = countIntent(context, ACTION_DECREMENT, projectId)
+
+        private fun countIntent(
+            context: Context,
+            action: String,
+            projectId: Long,
+        ): Intent =
+            Intent(context, CounterWidgetActions::class.java)
+                .setAction(action)
+                .setData("knittools://widget/$projectId".toUri())
     }
 }

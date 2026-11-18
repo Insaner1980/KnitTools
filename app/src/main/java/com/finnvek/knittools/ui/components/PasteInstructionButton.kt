@@ -2,17 +2,19 @@ package com.finnvek.knittools.ui.components
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.FilterVintage
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -26,49 +28,87 @@ import androidx.compose.ui.unit.dp
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.calculator.InstructionParser
 import com.finnvek.knittools.domain.calculator.ParsedInstruction
+import com.finnvek.knittools.pro.ProActionAccess
+import com.finnvek.knittools.pro.ProFeature
+import com.finnvek.knittools.pro.ProState
+import com.finnvek.knittools.pro.proActionAccess
+import com.finnvek.knittools.ui.theme.ProjectOverviewDimens
 import kotlinx.coroutines.launch
 
 @Composable
 fun PasteInstructionButton(
-    isPro: Boolean,
+    proState: ProState,
+    proAccessReady: Boolean,
     onResult: (ParsedInstruction) -> Boolean,
+    onSeePro: () -> Unit,
     modifier: Modifier = Modifier,
     hintText: String? = null,
 ) {
     var expanded by rememberSaveable { mutableStateOf(false) }
-
-    if (!isPro) return
+    var showProPrompt by rememberSaveable { mutableStateOf(false) }
+    val canPaste = proState.hasFeature(ProFeature.INSTRUCTION_PASTE)
 
     Column(modifier = modifier) {
-        TextButton(
-            onClick = { expanded = !expanded },
-            colors =
-                androidx.compose.material3.ButtonDefaults.textButtonColors(
-                    containerColor = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.10f),
-                    contentColor = MaterialTheme.colorScheme.tertiary,
-                ),
-            shape =
-                androidx.compose.foundation.shape
-                    .RoundedCornerShape(14.dp),
-            modifier = Modifier.fillMaxWidth(),
-            contentPadding =
-                androidx.compose.foundation.layout
-                    .PaddingValues(vertical = 14.dp),
-        ) {
-            Icon(Icons.Outlined.FilterVintage, contentDescription = null, modifier = Modifier.padding(end = 4.dp))
-            Text(stringResource(R.string.paste_instruction))
-        }
+        PasteInstructionAction(proState, proAccessReady, { expanded = !expanded }, { showProPrompt = true })
 
-        AnimatedVisibility(visible = expanded) {
+        AnimatedVisibility(visible = expanded && canPaste) {
             InstructionInputForm(
                 onResult = { result ->
-                    val accepted = onResult(result)
+                    val accepted = canPaste && onResult(result)
                     if (accepted) expanded = false
                     accepted
                 },
                 hintText = hintText ?: stringResource(R.string.instruction_hint),
+                enabled = canPaste,
             )
         }
+    }
+    if (showProPrompt) {
+        ProPromptSheet(
+            request = ProPromptRequest(ProPromptSource.InstructionPaste),
+            onDismiss = { showProPrompt = false },
+            onTrialStarted = {
+                showProPrompt = false
+                expanded = true
+            },
+            onSeePro = {
+                showProPrompt = false
+                onSeePro()
+            },
+        )
+    }
+}
+
+@Composable
+private fun PasteInstructionAction(
+    proState: ProState,
+    proAccessReady: Boolean,
+    onOpen: () -> Unit,
+    onRequestPro: () -> Unit,
+) {
+    val pasteAccess = proActionAccess(proState, proAccessReady, ProFeature.INSTRUCTION_PASTE)
+    val canPaste = proState.hasFeature(ProFeature.INSTRUCTION_PASTE)
+    TextButton(
+        onClick = {
+            if (canPaste) {
+                onOpen()
+            } else if (pasteAccess == ProActionAccess.Locked) {
+                onRequestPro()
+            }
+        },
+        enabled = canPaste || pasteAccess == ProActionAccess.Locked,
+        colors =
+            ButtonDefaults.textButtonColors(
+                containerColor = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.10f),
+                contentColor = MaterialTheme.colorScheme.tertiary,
+            ),
+        shape = RoundedCornerShape(14.dp),
+        modifier = Modifier.fillMaxWidth(),
+        contentPadding = PaddingValues(vertical = 14.dp),
+    ) {
+        Icon(Icons.Outlined.FilterVintage, contentDescription = null, modifier = Modifier.padding(end = 4.dp))
+        Text(stringResource(R.string.paste_instruction), modifier = Modifier.weight(1f, fill = false))
+        ProMarker(pasteAccess, modifier = Modifier.padding(start = ProjectOverviewDimens.ContentGap))
     }
 }
 
@@ -76,6 +116,7 @@ fun PasteInstructionButton(
 private fun InstructionInputForm(
     onResult: (ParsedInstruction) -> Boolean,
     hintText: String,
+    enabled: Boolean,
 ) {
     var instructionText by rememberSaveable { mutableStateOf("") }
     var isParsing by remember { mutableStateOf(false) }
@@ -93,8 +134,10 @@ private fun InstructionInputForm(
         TextField(
             value = instructionText,
             onValueChange = {
-                instructionText = it
-                resultMessage = null
+                if (it.length <= InstructionParser.MAX_INPUT_LENGTH) {
+                    instructionText = it
+                    resultMessage = null
+                }
             },
             label = { Text(hintText) },
             modifier = Modifier.fillMaxWidth(),
@@ -106,17 +149,12 @@ private fun InstructionInputForm(
                 }
             },
             shape = MaterialTheme.shapes.medium,
-            colors =
-                TextFieldDefaults.colors(
-                    focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                    focusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent,
-                    unfocusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent,
-                ),
+            colors = highContainerTextFieldColors(),
         )
 
         TextButton(
             onClick = {
+                if (!enabled) return@TextButton
                 scope.launch {
                     isParsing = true
                     resultMessage = null
@@ -127,7 +165,7 @@ private fun InstructionInputForm(
                     if (clearInput) instructionText = ""
                 }
             },
-            enabled = instructionText.isNotBlank() && !isParsing,
+            enabled = enabled && instructionText.isNotBlank() && !isParsing,
         ) {
             Text(
                 if (isParsing) {

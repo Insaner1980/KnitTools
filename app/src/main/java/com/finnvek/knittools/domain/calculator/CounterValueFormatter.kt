@@ -1,6 +1,7 @@
 package com.finnvek.knittools.domain.calculator
 
 import com.finnvek.knittools.domain.model.CounterProject
+import com.finnvek.knittools.domain.model.CraftType
 import com.finnvek.knittools.domain.model.MainCounterLabelType
 import com.finnvek.knittools.domain.model.ProjectCounter
 import com.finnvek.knittools.domain.model.ProjectCounterType
@@ -74,25 +75,44 @@ data class MainCounterTargetSlot(
  * hajallaan olleet näyttölogiikat (lisälaskurit, toistojaksot, muistutukset).
  */
 object CounterValueFormatter {
-    fun forMainCounter(project: CounterProject): MainCounterValueDisplay {
-        val customLabel = sanitizeMainCounterCustomLabel(project.mainCounterCustomLabel)
-        val labelType =
+    /** Päälaskurin yksikkö käsityötyypin ja oman nimikkeen mukaan; sama laskurissa ja widgetissä. */
+    fun mainCounterLabel(
+        craftType: CraftType,
+        labelType: MainCounterLabelType,
+        customLabel: String?,
+    ): MainCounterLabelSlot {
+        val sanitizedLabel = sanitizeMainCounterCustomLabel(customLabel)
+        val resolvedType =
             resolvedMainCounterLabelType(
+                craftType = craftType,
+                labelType = labelType,
+                customLabel = sanitizedLabel,
+            )
+        return MainCounterLabelSlot(
+            labelType = resolvedType,
+            customLabel = sanitizedLabel.takeIf { resolvedType == MainCounterLabelType.CUSTOM },
+        )
+    }
+
+    fun forMainCounter(project: CounterProject): MainCounterValueDisplay {
+        val labelSlot =
+            mainCounterLabel(
                 craftType = project.craftType,
                 labelType = project.mainCounterLabelType,
-                customLabel = customLabel,
+                customLabel = project.mainCounterCustomLabel,
             )
-        val resolvedCustomLabel = customLabel.takeIf { labelType == MainCounterLabelType.CUSTOM }
+        val labelType = labelSlot.labelType
+        val resolvedCustomLabel = labelSlot.customLabel
         val target = project.targetRows?.takeIf { it > 0 }
-        val labelSlot = MainCounterLabelSlot(labelType = labelType, customLabel = resolvedCustomLabel)
+        val countSlot =
+            MainCounterCountSlot(
+                count = project.count,
+                labelType = labelType,
+                customLabel = resolvedCustomLabel,
+            )
 
         return MainCounterValueDisplay(
-            heroTitle =
-                MainCounterCountSlot(
-                    count = project.count,
-                    labelType = labelType,
-                    customLabel = resolvedCustomLabel,
-                ),
+            heroTitle = countSlot,
             targetLine =
                 target?.let {
                     MainCounterTargetSlot(
@@ -104,12 +124,7 @@ object CounterValueFormatter {
                 },
             increaseContentDescription = labelSlot,
             decreaseContentDescription = labelSlot,
-            projectCardCount =
-                MainCounterCountSlot(
-                    count = project.count,
-                    labelType = labelType,
-                    customLabel = resolvedCustomLabel,
-                ),
+            projectCardCount = countSlot,
         )
     }
 
@@ -132,7 +147,8 @@ object CounterValueFormatter {
         val length =
             when (counter.counterType) {
                 ProjectCounterType.SHAPING -> counter.shapeEveryN
-                else -> counter.repeatAt
+                ProjectCounterType.REPEATING -> counter.repeatAt
+                else -> null
             }?.takeIf { it > 0 }
         return if (length == null) {
             CounterValueDisplay.Plain(counter.count)
@@ -149,14 +165,13 @@ object CounterValueFormatter {
         counter: ProjectCounter,
         mainRowCount: Int,
     ): CounterValueDisplay {
-        val startRow = counter.repeatStartRow
-        val endRow = counter.repeatEndRow
-        val totalRepeats = counter.totalRepeats
-        if (counter.counterType != ProjectCounterType.REPEAT_SECTION ||
-            startRow == null ||
-            endRow == null ||
-            totalRepeats == null
-        ) {
+        if (counter.counterType != ProjectCounterType.REPEAT_SECTION) {
+            return CounterValueDisplay.Plain(counter.count)
+        }
+        val startRow = counter.repeatStartRow ?: return CounterValueDisplay.Plain(counter.count)
+        val endRow = counter.repeatEndRow ?: return CounterValueDisplay.Plain(counter.count)
+        val totalRepeats = counter.totalRepeats ?: return CounterValueDisplay.Plain(counter.count)
+        if (totalRepeats <= 0 || startRow <= 0 || endRow < startRow) {
             return CounterValueDisplay.Plain(counter.count)
         }
         if (RepeatSectionLogic.isComplete(counter, mainRowCount)) {

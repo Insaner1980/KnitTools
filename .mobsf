@@ -9,6 +9,3 @@ ignore-paths:
   - baselineprofile/build/
   - node_modules/
   - reports/
-severity-filter:
-  - WARNING
-  - ERROR

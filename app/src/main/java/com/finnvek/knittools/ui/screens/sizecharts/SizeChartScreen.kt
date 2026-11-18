@@ -1,23 +1,21 @@
 package com.finnvek.knittools.ui.screens.sizecharts
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuAnchorType
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -25,8 +23,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -35,12 +33,13 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.calculator.SizeChartData
 import com.finnvek.knittools.domain.model.SizeChartEntry
-import com.finnvek.knittools.domain.model.SizeLabel
+import com.finnvek.knittools.ui.components.SegmentedToggle
 import com.finnvek.knittools.ui.components.ToolScreenScaffold
 import com.finnvek.knittools.ui.components.rememberCurrentLocale
+import com.finnvek.knittools.ui.layout.ContentWidthPolicy
 import com.finnvek.knittools.ui.screens.home.HomeViewModel
+import com.finnvek.knittools.ui.theme.knitToolsColors
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SizeChartScreen(
     onBack: () -> Unit,
@@ -48,7 +47,6 @@ fun SizeChartScreen(
 ) {
     var selectedCategory by rememberSaveable { mutableStateOf(SizeChartData.Category.WOMEN) }
     val useImperial by homeViewModel.useImperial.collectAsStateWithLifecycle()
-    var dropdownExpanded by remember { mutableStateOf(false) }
 
     val headers = remember(selectedCategory) { SizeChartData.headers(selectedCategory) }
     val entries = remember(selectedCategory) { SizeChartData.entries(selectedCategory) }
@@ -64,77 +62,42 @@ fun SizeChartScreen(
         )
 
     ToolScreenScaffold(
+        contentWidthPolicy = ContentWidthPolicy.Chart,
         title = stringResource(R.string.size_charts_title),
         onBack = onBack,
     ) { padding ->
-        LazyColumn(
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-                    .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            // Kategoria-dropdown
-            item {
-                ExposedDropdownMenuBox(
-                    expanded = dropdownExpanded,
-                    onExpandedChange = { dropdownExpanded = it },
-                ) {
-                    TextField(
-                        value = categoryLabels[selectedCategory] ?: "",
-                        onValueChange = {},
-                        readOnly = true,
-                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = dropdownExpanded) },
-                        modifier =
-                            Modifier
-                                .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
-                                .fillMaxWidth()
-                                .padding(vertical = 8.dp),
-                        colors =
-                            TextFieldDefaults.colors(
-                                focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                                unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                                focusedIndicatorColor = Color.Transparent,
-                                unfocusedIndicatorColor = Color.Transparent,
-                            ),
+        BoxWithConstraints(Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp)) {
+            val tableWidth = maxOf(maxWidth, 112.dp * LocalDensity.current.fontScale * headers.size)
+            LazyColumn(
+                Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                item(key = "categories") {
+                    val categories = SizeChartData.Category.entries
+                    SegmentedToggle(
+                        options = categories.map { categoryLabels.getValue(it) },
+                        selectedIndex = categories.indexOf(selectedCategory),
+                        onSelect = { selectedCategory = categories[it] },
+                        modifier = Modifier.padding(vertical = 8.dp),
                     )
-                    ExposedDropdownMenu(
-                        expanded = dropdownExpanded,
-                        onDismissRequest = { dropdownExpanded = false },
-                    ) {
-                        SizeChartData.Category.entries.forEach { category ->
-                            DropdownMenuItem(
-                                text = { Text(categoryLabels[category] ?: category.name) },
-                                onClick = {
-                                    selectedCategory = category
-                                    dropdownExpanded = false
-                                },
-                            )
+                }
+                item(key = "table") {
+                    Box(Modifier.horizontalScroll(rememberScrollState())) {
+                        Column(
+                            Modifier.width(tableWidth),
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            SizeChartHeaderRow(headers)
+                            entries.forEach { entry ->
+                                SizeChartDataRow(entry, useImperial)
+                                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                            }
                         }
                     }
                 }
             }
-
-            // Taulukko-otsikko
-            item { SizeChartHeaderRow(headers) }
-
-            // Data-rivit
-            items(entries, key = { entry -> entry.lazyListKey(selectedCategory) }) { entry ->
-                SizeChartDataRow(entry, useImperial)
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-            }
         }
     }
-}
-
-private fun SizeChartEntry.lazyListKey(category: SizeChartData.Category): String {
-    val labelKey =
-        when (val label = sizeLabel) {
-            is SizeLabel.Resource -> "res:${label.resId}"
-        }
-
-    return "${category.name}:$labelKey"
 }
 
 @Composable
@@ -143,13 +106,13 @@ private fun SizeChartHeaderRow(headerResIds: List<Int>) {
         modifier =
             Modifier
                 .fillMaxWidth()
-                .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+                .background(MaterialTheme.knitToolsColors.tableHeaderContainer)
                 .padding(vertical = 8.dp),
     ) {
         headerResIds.forEach { resId ->
             Text(
                 text = stringResource(resId),
-                modifier = Modifier.weight(1f),
+                modifier = Modifier.weight(1f).padding(horizontal = 8.dp),
                 style = MaterialTheme.typography.labelMedium,
                 textAlign = TextAlign.Center,
             )
@@ -173,7 +136,7 @@ private fun SizeChartDataRow(
         // Ensimmäinen sarake = koon nimi
         Text(
             text = entry.sizeLabel.resolve(context),
-            modifier = Modifier.weight(1f),
+            modifier = Modifier.weight(1f).padding(horizontal = 8.dp),
             style = MaterialTheme.typography.bodyMedium,
             textAlign = TextAlign.Center,
         )
@@ -188,7 +151,7 @@ private fun SizeChartDataRow(
             val unit = if (useImperial) inchUnit else cmUnit
             Text(
                 text = stringResource(R.string.measurement_with_unit_format, measurementValue, unit),
-                modifier = Modifier.weight(1f),
+                modifier = Modifier.weight(1f).padding(horizontal = 8.dp),
                 style = MaterialTheme.typography.bodyMedium,
                 textAlign = TextAlign.Center,
             )

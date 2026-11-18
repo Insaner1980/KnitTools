@@ -8,8 +8,10 @@ import com.finnvek.knittools.domain.model.YarnCard
 import com.finnvek.knittools.domain.model.YarnCardStatus
 import com.finnvek.knittools.pro.ProFeature
 import com.finnvek.knittools.pro.ProManager
+import com.finnvek.knittools.pro.ProState
 import com.finnvek.knittools.repository.CounterRepository
 import com.finnvek.knittools.repository.ProgressPhotoRepository
+import com.finnvek.knittools.repository.SavedPatternDeleteResult
 import com.finnvek.knittools.repository.SavedPatternRepository
 import com.finnvek.knittools.repository.YarnCardRepository
 import com.finnvek.knittools.ui.screens.yarncard.ManualYarnCardInput
@@ -18,16 +20,19 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
@@ -36,6 +41,7 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import java.io.IOException
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class LibraryViewModelTest {
@@ -77,6 +83,7 @@ class LibraryViewModelTest {
         every { yarnCardRepository.getAllCards() } returns yarnCards
         every { progressPhotoRepository.getAllPhotos() } returns photos
         every { counterRepository.getAllProjects() } returns projects
+        every { proManager.proState } returns MutableStateFlow(ProState())
         every { proManager.hasFeature(ProFeature.PROGRESS_PHOTOS) } answers { progressPhotosFeature.value }
         every { proManager.hasFeatureFlow(ProFeature.PROGRESS_PHOTOS) } returns progressPhotosFeature
         every { proManager.hasFeature(ProFeature.UNLIMITED_YARN) } answers { yarnCardsFeature.value }
@@ -98,6 +105,113 @@ class LibraryViewModelTest {
         )
 
     @Test
+    fun failedManualCreationRetainsDraftAndRetryWaitsForCommittedSuccess() =
+        runTest {
+            val model = createViewModel()
+            runCurrent()
+            val pending = CompletableDeferred<Long?>()
+            coEvery { yarnCardRepository.saveCard(any()) } coAnswers { pending.await() }
+            val input = ManualYarnCardInput(yarnName = "Wool")
+            assertTrue(model.createManualYarnCard(input))
+            runCurrent()
+            assertTrue(model.isSavingYarnCard.value)
+            assertTrue(model.createManualYarnCard(input.copy(yarnName = "Ignored")))
+            pending.complete(null)
+            runCurrent()
+            assertEquals(1L, model.yarnSaveErrorId.value)
+            assertEquals(0L, model.yarnSaveSuccessId.value)
+            assertFalse(model.isSavingYarnCard.value)
+            coEvery { yarnCardRepository.saveCard(any()) } returns 19L
+            assertTrue(model.retryCreateManualYarnCard())
+            runCurrent()
+            assertEquals(1L, model.yarnSaveSuccessId.value)
+            coVerify(exactly = 2) { yarnCardRepository.saveCard(match { it.yarnName == "Wool" }) }
+            coVerify(exactly = 0) { yarnCardRepository.saveCard(match { it.yarnName == "Ignored" }) }
+        }
+
+    @Test
+    fun `leaving a pattern route cancels its load without affecting the next route`() =
+        runTest {
+            val pending = CompletableDeferred<SavedPattern?>()
+            coEvery { savedPatternRepository.getById(7L) } coAnswers { pending.await() }
+            coEvery { savedPatternRepository.getById(8L) } returns savedPattern(8L)
+            val viewModel = createViewModel()
+            var previousRouteCalled = false
+
+            val previousRoute =
+                launch {
+                    viewModel.loadSavedPattern(7L).first()
+                    previousRouteCalled = true
+                }
+            advanceUntilIdle()
+            previousRoute.cancel()
+            pending.complete(null)
+            advanceUntilIdle()
+
+            assertFalse(previousRouteCalled)
+            val currentPatternId = viewModel.loadSavedPattern(8L).first()?.id
+            advanceUntilIdle()
+            assertEquals(8L, currentPatternId)
+        }
+
+    @Test
+    fun `transient pattern route read failure retries before delivering the row`() =
+        runTest {
+            var attempts = 0
+            val pattern = savedPattern(7L)
+            coEvery { savedPatternRepository.getById(7L) } coAnswers {
+                if (++attempts == 1) throw IOException("transient read failure")
+                pattern
+            }
+            val results = mutableListOf<SavedPattern?>()
+            val viewModel = createViewModel()
+
+            launch { results += viewModel.loadSavedPattern(7L).first() }
+            advanceUntilIdle()
+
+            assertEquals(listOf(pattern), results)
+            assertEquals(2, attempts)
+        }
+
+    @Test
+    fun `leaving a pattern route during read backoff prevents retry and callback`() =
+        runTest {
+            coEvery { savedPatternRepository.getById(7L) } throws IOException("transient read failure")
+            val results = mutableListOf<SavedPattern?>()
+            val viewModel = createViewModel()
+            val loading = launch { results += viewModel.loadSavedPattern(7L).first() }
+            runCurrent()
+
+            loading.cancel()
+            advanceUntilIdle()
+
+            assertTrue(results.isEmpty())
+            coVerify(exactly = 1) { savedPatternRepository.getById(7L) }
+        }
+
+    @Test
+    fun `observed deletion cancels an in-flight file check without emitting stale details`() =
+        runTest {
+            val pattern = savedPattern(7L)
+            val observed = MutableStateFlow<SavedPattern?>(pattern)
+            val availability = CompletableDeferred<Boolean>()
+            every { savedPatternRepository.observeById(pattern.id) } returns observed
+            coEvery { savedPatternRepository.isLocalPdfAvailable(pattern) } coAnswers { availability.await() }
+            val results = mutableListOf<SavedPatternDetail?>()
+            val viewModel = createViewModel()
+
+            val collector = launch { viewModel.observeSavedPatternDetail(pattern.id).collect { results += it } }
+            runCurrent()
+            observed.value = null
+            advanceUntilIdle()
+            availability.complete(true)
+            advanceUntilIdle()
+
+            assertEquals(listOf<SavedPatternDetail?>(null), results)
+            collector.cancel()
+        }
+
+    @Test
     fun `failed pattern delete clears selection state`() =
         runTest {
             coEvery { savedPatternRepository.deleteByIds(listOf(1L)) } throws RuntimeException("delete failed")
@@ -110,6 +224,103 @@ class LibraryViewModelTest {
             assertFalse(viewModel.isPatternSelectMode.value)
             assertTrue(viewModel.selectedPatternIds.value.isEmpty())
             assertEquals(1L, viewModel.patternDeleteErrorId.value)
+        }
+
+    @Test
+    fun `single web pattern delete navigates only after typed deletion success`() =
+        runTest {
+            coEvery { savedPatternRepository.getById(7L) } returns webPattern(7L)
+            coEvery { savedPatternRepository.deleteWebPattern(7L) } returns SavedPatternDeleteResult.Deleted
+            val viewModel = createViewModel()
+            var deleted = false
+
+            viewModel.deleteSavedPattern(7L) { deleted = true }
+            advanceUntilIdle()
+
+            assertTrue(deleted)
+            assertEquals(0L, viewModel.patternDeleteErrorId.value)
+            coVerify(exactly = 1) { savedPatternRepository.deleteWebPattern(7L) }
+            coVerify(exactly = 0) { savedPatternRepository.deleteById(7L) }
+        }
+
+    @Test
+    fun `single pattern delete stops when the initial lookup finds no row`() =
+        runTest {
+            coEvery { savedPatternRepository.getById(7L) } returns null
+            val viewModel = createViewModel()
+            var deleted = false
+
+            viewModel.deleteSavedPattern(7L) { deleted = true }
+            advanceUntilIdle()
+
+            assertFalse(deleted)
+            assertEquals(0L, viewModel.patternDeleteErrorId.value)
+            coVerify(exactly = 0) { savedPatternRepository.deleteWebPattern(any()) }
+            coVerify(exactly = 0) { savedPatternRepository.deleteById(any()) }
+        }
+
+    @Test
+    fun `single pattern delete does not report a missing row as success or failure`() =
+        runTest {
+            coEvery { savedPatternRepository.getById(7L) } returns webPattern(7L)
+            coEvery { savedPatternRepository.deleteWebPattern(7L) } returns SavedPatternDeleteResult.PatternMissing
+            val viewModel = createViewModel()
+            var deleted = false
+
+            viewModel.deleteSavedPattern(7L) { deleted = true }
+            advanceUntilIdle()
+
+            assertFalse(deleted)
+            assertEquals(0L, viewModel.patternDeleteErrorId.value)
+            coVerify(exactly = 1) { savedPatternRepository.deleteWebPattern(7L) }
+            coVerify(exactly = 0) { savedPatternRepository.deleteById(any()) }
+        }
+
+    @Test
+    fun `single web pattern delete emits an error only for persistence failure`() =
+        runTest {
+            coEvery { savedPatternRepository.getById(7L) } returns webPattern(7L)
+            coEvery { savedPatternRepository.deleteWebPattern(7L) } returns
+                SavedPatternDeleteResult.PersistenceFailure
+            val viewModel = createViewModel()
+            var deleted = false
+
+            viewModel.deleteSavedPattern(7L) { deleted = true }
+            advanceUntilIdle()
+
+            assertFalse(deleted)
+            assertEquals(1L, viewModel.patternDeleteErrorId.value)
+        }
+
+    @Test
+    fun `single web pattern delete does not treat a changed record type as success or failure`() =
+        runTest {
+            coEvery { savedPatternRepository.getById(7L) } returns webPattern(7L)
+            coEvery { savedPatternRepository.deleteWebPattern(7L) } returns SavedPatternDeleteResult.NotWebPattern
+            val viewModel = createViewModel()
+            var deleted = false
+
+            viewModel.deleteSavedPattern(7L) { deleted = true }
+            advanceUntilIdle()
+
+            assertFalse(deleted)
+            assertEquals(0L, viewModel.patternDeleteErrorId.value)
+        }
+
+    @Test
+    fun `single non-web pattern delete preserves the existing generic path`() =
+        runTest {
+            coEvery { savedPatternRepository.getById(8L) } returns savedPattern(8L)
+            val viewModel = createViewModel()
+            var deleted = false
+
+            viewModel.deleteSavedPattern(8L) { deleted = true }
+            advanceUntilIdle()
+
+            assertTrue(deleted)
+            assertEquals(0L, viewModel.patternDeleteErrorId.value)
+            coVerify(exactly = 1) { savedPatternRepository.deleteById(8L) }
+            coVerify(exactly = 0) { savedPatternRepository.deleteWebPattern(8L) }
         }
 
     @Test
@@ -138,7 +349,7 @@ class LibraryViewModelTest {
                 ManualYarnCardInput(
                     yarnName = "  Blue sock yarn  ",
                     brand = "  Regia  ",
-                    quantity = 0,
+                    quantity = 2,
                     weightCategory = "  Fingering  ",
                     colorName = "  Blue  ",
                     colorNumber = "  123  ",
@@ -150,12 +361,35 @@ class LibraryViewModelTest {
             coVerify { yarnCardRepository.saveCard(capture(savedCard)) }
             assertEquals("Blue sock yarn", savedCard.captured.yarnName)
             assertEquals("Regia", savedCard.captured.brand)
-            assertEquals(1, savedCard.captured.quantityInStash)
+            assertEquals(2, savedCard.captured.quantityInStash)
             assertEquals("Fingering", savedCard.captured.weightCategory)
             assertEquals("Blue", savedCard.captured.colorName)
             assertEquals("123", savedCard.captured.colorNumber)
             assertEquals("A7", savedCard.captured.dyeLot)
             assertEquals(YarnCardStatus.IN_STASH, savedCard.captured.status)
+        }
+
+    @Test
+    fun `manual yarn creation reports a rejected repository write`() =
+        runTest {
+            coEvery { yarnCardRepository.saveCard(any()) } returns null
+            val viewModel = createViewModel()
+
+            assertTrue(viewModel.createManualYarnCard(ManualYarnCardInput(yarnName = "Blue")))
+            advanceUntilIdle()
+
+            assertEquals(1L, viewModel.yarnSaveErrorId.value)
+        }
+
+    @Test
+    fun `manual yarn creation rejects zero quantity`() =
+        runTest {
+            val viewModel = createViewModel()
+
+            viewModel.createManualYarnCard(ManualYarnCardInput(yarnName = "Blue", quantity = 0))
+            advanceUntilIdle()
+
+            coVerify(exactly = 0) { yarnCardRepository.saveCard(any()) }
         }
 
     @Test
@@ -179,6 +413,173 @@ class LibraryViewModelTest {
             advanceUntilIdle()
 
             coVerify(exactly = 0) { yarnCardRepository.saveCard(any()) }
+        }
+
+    @Test
+    fun `manual yarn retry without input reports no submission from a fresh owner`() =
+        runTest {
+            val viewModel = createViewModel()
+
+            val submitted = viewModel.retryCreateManualYarnCard()
+            advanceUntilIdle()
+
+            coVerify(exactly = 0) { yarnCardRepository.saveCard(any()) }
+            assertEquals(0L, viewModel.yarnSaveErrorId.value)
+            assertFalse(submitted)
+        }
+
+    @Test
+    fun `manual yarn retry submits the exact retained denied draft after entitlement arrives`() =
+        runTest {
+            yarnCardsFeature.value = false
+            coEvery { yarnCardRepository.saveCard(any()) } returns 9L
+            val viewModel = createViewModel()
+            backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+                viewModel.canUseYarnCards.collect()
+            }
+            val input =
+                ManualYarnCardInput(
+                    yarnName = "  Blue sock yarn  ",
+                    brand = "  Regia  ",
+                    quantity = 3,
+                    weightCategory = "  Fingering  ",
+                    colorName = "  Blue  ",
+                    colorNumber = "  123  ",
+                    dyeLot = "  A7  ",
+                )
+
+            assertFalse(viewModel.createManualYarnCard(input))
+            assertFalse(viewModel.retryCreateManualYarnCard())
+            runCurrent()
+            coVerify(exactly = 0) { yarnCardRepository.saveCard(any()) }
+
+            yarnCardsFeature.value = true
+            runCurrent()
+            assertTrue(viewModel.canUseYarnCards.value)
+            coVerify(exactly = 0) { yarnCardRepository.saveCard(any()) }
+
+            assertTrue(viewModel.retryCreateManualYarnCard())
+            runCurrent()
+
+            val savedCard = slot<YarnCard>()
+            coVerify(exactly = 1) { yarnCardRepository.saveCard(capture(savedCard)) }
+            assertEquals(
+                YarnCard(
+                    yarnName = "Blue sock yarn",
+                    brand = "Regia",
+                    quantityInStash = 3,
+                    weightCategory = "Fingering",
+                    colorName = "Blue",
+                    colorNumber = "123",
+                    dyeLot = "A7",
+                    status = YarnCardStatus.IN_STASH,
+                    createdAt = savedCard.captured.createdAt,
+                ),
+                savedCard.captured,
+            )
+        }
+
+    @Test
+    fun `manual yarn retry consumes input before persistence and cannot submit it twice`() =
+        runTest {
+            yarnCardsFeature.value = false
+            val persistence = CompletableDeferred<Long?>()
+            coEvery { yarnCardRepository.saveCard(any()) } coAnswers { persistence.await() }
+            val viewModel = createViewModel()
+            backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+                viewModel.canUseYarnCards.collect()
+            }
+            assertFalse(viewModel.createManualYarnCard(ManualYarnCardInput(yarnName = "Blue")))
+            yarnCardsFeature.value = true
+            runCurrent()
+
+            assertTrue(viewModel.retryCreateManualYarnCard())
+            assertFalse(viewModel.retryCreateManualYarnCard())
+            runCurrent()
+            assertFalse(persistence.isCompleted)
+            assertFalse(viewModel.retryCreateManualYarnCard())
+            coVerify(exactly = 1) { yarnCardRepository.saveCard(any()) }
+
+            persistence.complete(9L)
+            runCurrent()
+
+            assertFalse(viewModel.retryCreateManualYarnCard())
+            runCurrent()
+            coVerify(exactly = 1) { yarnCardRepository.saveCard(any()) }
+            assertEquals(0L, viewModel.yarnSaveErrorId.value)
+        }
+
+    @Test
+    fun `manual yarn retry without input permits deliberate resubmission of the recovered draft`() =
+        runTest {
+            coEvery { yarnCardRepository.saveCard(any()) } returns 9L
+            val viewModel = createViewModel()
+            val recoveredInput = ManualYarnCardInput(yarnName = "Recovered yarn", quantity = 4, dyeLot = "B2")
+
+            assertFalse(viewModel.retryCreateManualYarnCard())
+            runCurrent()
+            coVerify(exactly = 0) { yarnCardRepository.saveCard(any()) }
+
+            assertTrue(viewModel.createManualYarnCard(recoveredInput))
+            runCurrent()
+
+            val savedCard = slot<YarnCard>()
+            coVerify(exactly = 1) { yarnCardRepository.saveCard(capture(savedCard)) }
+            assertEquals("Recovered yarn", savedCard.captured.yarnName)
+            assertEquals(4, savedCard.captured.quantityInStash)
+            assertEquals("B2", savedCard.captured.dyeLot)
+            assertFalse(viewModel.retryCreateManualYarnCard())
+            runCurrent()
+            coVerify(exactly = 1) { yarnCardRepository.saveCard(any()) }
+        }
+
+    @Test
+    fun `manual yarn retry rejects and consumes invalid retained input`() =
+        runTest {
+            val invalidInputs =
+                listOf(
+                    ManualYarnCardInput(yarnName = " "),
+                    ManualYarnCardInput(yarnName = "Blue", quantity = 0),
+                )
+            for (input in invalidInputs) {
+                yarnCardsFeature.value = false
+                val viewModel = createViewModel()
+                backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+                    viewModel.canUseYarnCards.collect()
+                }
+                assertFalse(viewModel.createManualYarnCard(input))
+                yarnCardsFeature.value = true
+                runCurrent()
+
+                assertFalse(viewModel.retryCreateManualYarnCard())
+                assertFalse(viewModel.retryCreateManualYarnCard())
+                runCurrent()
+                assertEquals(0L, viewModel.yarnSaveErrorId.value)
+            }
+            coVerify(exactly = 0) { yarnCardRepository.saveCard(any()) }
+        }
+
+    @Test
+    fun `rejected yarn deletion reports an error and permits retry`() =
+        runTest {
+            coEvery { yarnCardRepository.deleteCards(listOf(3L)) } returns false
+            val viewModel = createViewModel()
+
+            viewModel.enterYarnSelectMode(3L)
+            viewModel.deleteSelectedYarn()
+            advanceUntilIdle()
+
+            assertEquals(1L, viewModel.yarnDeleteErrorId.value)
+            assertFalse(viewModel.isYarnSelectMode.value)
+            assertTrue(viewModel.selectedYarnIds.value.isEmpty())
+
+            coEvery { yarnCardRepository.deleteCards(listOf(3L)) } returns true
+            viewModel.enterYarnSelectMode(3L)
+            viewModel.deleteSelectedYarn()
+            advanceUntilIdle()
+
+            coVerify(exactly = 2) { yarnCardRepository.deleteCards(listOf(3L)) }
+            assertEquals(1L, viewModel.yarnDeleteErrorId.value)
         }
 
     @Test
@@ -285,6 +686,16 @@ class LibraryViewModelTest {
             ravelryPatternId = id.toInt(),
             name = "Pattern $id",
             designerName = "Designer",
+        )
+
+    private fun webPattern(id: Long) =
+        SavedPattern(
+            id = id,
+            source = SavedPatternSource.WebLink,
+            name = "Web pattern $id",
+            designerName = "",
+            originalUrl = "https://example.com/pattern-$id",
+            canonicalUrl = "https://example.com/pattern-$id",
         )
 
     private fun progressPhoto(id: Long) =

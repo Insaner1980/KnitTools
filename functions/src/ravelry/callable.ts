@@ -6,10 +6,14 @@ export interface BackendHttpError {
 }
 
 export function requireUid(auth: { uid?: string } | null | undefined): string {
-  if (!auth?.uid) {
+  const uid = auth?.uid;
+  if (typeof uid !== "string" || uid.length === 0) {
     throw new HttpsError("unauthenticated", "Firebase Auth is required for Ravelry backend calls.");
   }
-  return auth.uid;
+  if (uid.includes("/") || uid === "." || uid === ".." || /^__.*__$/s.test(uid)) {
+    throw new HttpsError("permission-denied", "invalid_ravelry_uid");
+  }
+  return uid;
 }
 
 function isBackendHttpError(error: unknown): error is BackendHttpError {
@@ -27,7 +31,7 @@ function functionsErrorCodeFor(httpStatus: number): FunctionsErrorCode {
   if (httpStatus === 400) {
     return "invalid-argument";
   }
-  if (httpStatus === 401) {
+  if (httpStatus === 401 || httpStatus === 403) {
     return "unauthenticated";
   }
   if (httpStatus === 404) {

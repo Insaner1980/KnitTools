@@ -2,6 +2,7 @@ package com.finnvek.knittools.ui.screens.settings
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.finnvek.knittools.R
 import com.finnvek.knittools.billing.BillingManager
 import com.finnvek.knittools.billing.RestorePurchasesResult
 import com.finnvek.knittools.data.datastore.AppLanguage
@@ -10,12 +11,14 @@ import com.finnvek.knittools.data.datastore.PreferencesManager
 import com.finnvek.knittools.data.datastore.ThemeMode
 import com.finnvek.knittools.pro.ProManager
 import com.finnvek.knittools.pro.ProState
+import com.finnvek.knittools.ui.tips.TipSession
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -27,6 +30,7 @@ class SettingsViewModel
         private val preferencesManager: PreferencesManager,
         private val billingManager: BillingManager,
         proManager: ProManager,
+        private val tipSession: TipSession,
     ) : ViewModel() {
         val preferences: StateFlow<AppPreferences> =
             preferencesManager.preferences.stateIn(
@@ -35,17 +39,30 @@ class SettingsViewModel
                 initialValue = AppPreferences(),
             )
         val proState: StateFlow<ProState> = proManager.proState
+        val proStateReady: StateFlow<Boolean> = proManager.initialStateReady
 
-        private val _messages = MutableSharedFlow<Int>()
-        val messages: SharedFlow<Int> = _messages.asSharedFlow()
+        private val messageChannel = Channel<Int>(Channel.BUFFERED)
+        val messages = messageChannel.receiveAsFlow()
+        private val _isRestoring = MutableStateFlow(false)
+        val isRestoring: StateFlow<Boolean> = _isRestoring.asStateFlow()
 
         fun setThemeMode(mode: ThemeMode) {
             viewModelScope.launch { preferencesManager.setThemeMode(mode) }
         }
 
+        fun setUsageAnalyticsEnabled(enabled: Boolean) {
+            viewModelScope.launch {
+                if (!preferencesManager.setUsageAnalyticsEnabled(enabled)) {
+                    messageChannel.send(R.string.generic_error_unknown)
+                }
+            }
+        }
+
         fun setAppLanguage(language: AppLanguage) {
             viewModelScope.launch {
-                preferencesManager.setAppLanguage(language)
+                if (!preferencesManager.setAppLanguage(language)) {
+                    messageChannel.send(R.string.generic_error_unknown)
+                }
             }
         }
 
@@ -62,22 +79,32 @@ class SettingsViewModel
         }
 
         fun restorePurchases() {
+            if (_isRestoring.value) return
+            _isRestoring.value = true
             viewModelScope.launch {
-                when (billingManager.restorePurchasesWithResult()) {
-                    RestorePurchasesResult.RESTORED -> {
-                        _messages.emit(com.finnvek.knittools.R.string.pro_restored)
-                    }
-
-                    RestorePurchasesResult.NOT_FOUND -> {
-                        _messages.emit(
-                            com.finnvek.knittools.R.string.no_purchases_found,
-                        )
-                    }
-
-                    RestorePurchasesResult.FAILED -> {
-                        _messages.emit(com.finnvek.knittools.R.string.generic_error_unknown)
-                    }
+                try {
+                    val messageRes =
+                        when (billingManager.restorePurchasesWithResult()) {
+                            RestorePurchasesResult.RESTORED -> R.string.pro_restored
+                            RestorePurchasesResult.NOT_FOUND -> R.string.no_purchases_found
+                            RestorePurchasesResult.FAILED -> R.string.generic_error_unknown
+                        }
+                    messageChannel.send(messageRes)
+                } finally {
+                    _isRestoring.value = false
                 }
+            }
+        }
+
+        fun showTipsAgain() {
+            viewModelScope.launch {
+                val message =
+                    if (tipSession.resetTips().await()) {
+                        R.string.settings_tips_reset_done
+                    } else {
+                        R.string.generic_error_unknown
+                    }
+                messageChannel.send(message)
             }
         }
     }

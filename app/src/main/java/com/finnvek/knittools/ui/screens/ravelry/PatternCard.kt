@@ -1,7 +1,9 @@
 package com.finnvek.knittools.ui.screens.ravelry
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,7 +14,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -21,14 +22,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import coil3.compose.AsyncImage
 import com.finnvek.knittools.R
-import com.finnvek.knittools.data.remote.PatternAvailability
-import com.finnvek.knittools.ui.theme.RavelryTeal
+import com.finnvek.knittools.domain.model.PatternAvailability
+import com.finnvek.knittools.ui.components.BadgePill
+import com.finnvek.knittools.ui.components.RemotePatternImage
+import com.finnvek.knittools.ui.theme.knitToolsColors
 
 data class PatternCardState(
     val name: String,
@@ -36,31 +37,50 @@ data class PatternCardState(
     val thumbnailUrl: String?,
     val difficulty: Float?,
     val availability: PatternAvailability,
+    // Libraryssa kaavan lähde (Ravelry, PDF); Ravelry-haussa lähde on itsestään selvä.
+    val sourceLabel: String? = null,
 )
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun PatternCard(
     state: PatternCardState,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    onLongClick: (() -> Unit)? = null,
     actionContent: (@Composable () -> Unit)? = null,
+    containerColor: Color = MaterialTheme.knitToolsColors.cardContainer,
 ) {
+    val interactionModifier =
+        if (onLongClick == null) {
+            Modifier.clickable(onClick = onClick)
+        } else {
+            Modifier.combinedClickable(onClick = onClick, onLongClick = onLongClick)
+        }
     Surface(
-        modifier = modifier.fillMaxWidth().clickable(onClick = onClick),
+        modifier = modifier.fillMaxWidth().then(interactionModifier),
         shape = MaterialTheme.shapes.large,
-        color = MaterialTheme.colorScheme.surfaceVariant,
+        color = containerColor,
     ) {
-        Row(
+        Column(
             modifier = Modifier.padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            PatternThumbnail(thumbnailUrl = state.thumbnailUrl, contentDescription = state.name)
+            RemotePatternImage(
+                imageUrl = state.thumbnailUrl,
+                modifier =
+                    Modifier
+                        .padding(end = 12.dp)
+                        .size(72.dp)
+                        .clip(RoundedCornerShape(8.dp)),
+            )
             PatternDetails(
                 name = state.name,
                 designerName = state.designerName,
                 difficulty = state.difficulty,
                 availability = state.availability,
-                modifier = Modifier.weight(1f),
+                sourceLabel = state.sourceLabel,
+                modifier = Modifier.fillMaxWidth(),
             )
             PatternCardActionSlot(actionContent = actionContent)
         }
@@ -71,31 +91,11 @@ fun PatternCard(
 private fun PatternCardActionSlot(actionContent: (@Composable () -> Unit)?) {
     if (actionContent == null) return
 
-    Spacer(modifier = Modifier.width(8.dp))
     Box(
-        modifier = Modifier.defaultMinSize(minWidth = 48.dp, minHeight = 48.dp),
+        modifier = Modifier.fillMaxWidth().defaultMinSize(minWidth = 48.dp, minHeight = 48.dp),
         contentAlignment = Alignment.CenterEnd,
     ) {
         actionContent()
-    }
-}
-
-@Composable
-private fun PatternThumbnail(
-    thumbnailUrl: String?,
-    contentDescription: String,
-) {
-    if (thumbnailUrl != null) {
-        AsyncImage(
-            model = thumbnailUrl,
-            contentDescription = contentDescription,
-            modifier =
-                Modifier
-                    .size(72.dp)
-                    .clip(RoundedCornerShape(8.dp)),
-            contentScale = ContentScale.Crop,
-        )
-        Spacer(modifier = Modifier.width(12.dp))
     }
 }
 
@@ -105,25 +105,22 @@ private fun PatternDetails(
     designerName: String,
     difficulty: Float?,
     availability: PatternAvailability,
+    sourceLabel: String?,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier) {
         Text(
             text = name,
             style = MaterialTheme.typography.titleMedium,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
         )
         Spacer(modifier = Modifier.height(2.dp))
         Text(
             text = designerName,
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
         )
         Spacer(modifier = Modifier.height(4.dp))
-        PatternBadgeRow(difficulty = difficulty, availability = availability)
+        PatternBadgeRow(difficulty = difficulty, availability = availability, sourceLabel = sourceLabel)
     }
 }
 
@@ -131,36 +128,37 @@ private fun PatternDetails(
 private fun PatternBadgeRow(
     difficulty: Float?,
     availability: PatternAvailability,
+    sourceLabel: String?,
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
+        sourceLabel?.let { BadgePill(text = it) }
         if (difficulty != null) {
             Text(
                 text = stringResource(R.string.difficulty_format, difficulty),
                 style = MaterialTheme.typography.labelSmall,
-                color = RavelryTeal,
+                color = MaterialTheme.knitToolsColors.tealAccent,
             )
         }
-        PriceBadge(availability = availability)
+        // Listassa vain tiedossa oleva saatavuus: "Availability unknown" jokaisella rivillä oli kohinaa.
+        // Kaavan sivu näyttää tuntemattomankin, eikä tuntematonta koskaan esitetä maksullisena.
+        if (availability != PatternAvailability.Unknown) {
+            PatternAvailabilityBadge(availability = availability)
+        }
     }
 }
 
 @Composable
-private fun PriceBadge(availability: PatternAvailability) {
+internal fun PatternAvailabilityBadge(availability: PatternAvailability) {
     val badgeColor =
         when (availability) {
             PatternAvailability.Free -> MaterialTheme.colorScheme.secondary
             PatternAvailability.Paid -> MaterialTheme.colorScheme.tertiary
             PatternAvailability.Unknown -> MaterialTheme.colorScheme.onSurfaceVariant
         }
-    val text =
-        when (availability) {
-            PatternAvailability.Free -> stringResource(R.string.free)
-            PatternAvailability.Paid -> stringResource(R.string.paid)
-            PatternAvailability.Unknown -> stringResource(R.string.availability_unknown)
-        }
+    val text = stringResource(patternAvailabilityLabelRes(availability))
     Box(
         modifier =
             Modifier
@@ -176,3 +174,10 @@ private fun PriceBadge(availability: PatternAvailability) {
         )
     }
 }
+
+internal fun patternAvailabilityLabelRes(availability: PatternAvailability): Int =
+    when (availability) {
+        PatternAvailability.Free -> R.string.free
+        PatternAvailability.Paid -> R.string.paid
+        PatternAvailability.Unknown -> R.string.availability_unknown
+    }

@@ -1,10 +1,273 @@
 import assert from "node:assert/strict";
+import fs from "node:fs";
+import path from "node:path";
 import { test } from "node:test";
+import { androidExportedComponent } from "./android-exported-component.js";
 import { androidIntentInputSurface } from "./android-intent-input-surface.js";
 import { androidKotlinEntrypointSurface } from "./android-kotlin-entrypoint-surface.js";
+import { androidUriShareWithoutClipData } from "./android-uri-share-without-clipdata.js";
+import { fileproviderBroadPath } from "./fileprovider-broad-path.js";
 import { knitToolsFileUriSurface } from "./knittools-file-uri-surface.js";
 import { ravelryFirebaseCallableSurface } from "./ravelry-firebase-callable-surface.js";
+import { ravelryCredentialSurface } from "./ravelry-credential-surface.js";
+import { sensitiveAndroidLog } from "./sensitive-android-log.js";
 import { widgetMutationSurface } from "./widget-mutation-surface.js";
+
+const productionPath = "app/src/main/java/com/finnvek/knittools/Surface.kt";
+
+test("standalone extra reads and deletions are not lost to prefilters", () => {
+  assert.equal(androidIntentInputSurface.match('getIntent().getStringExtra("name")', productionPath).length, 1);
+  assert.equal(knitToolsFileUriSurface.match("file.deleteRecursively()", productionPath).length, 1);
+});
+
+test("XML attributes accept either paired quote style", () => {
+  for (const quote of ['"', "'"]) {
+    assert.equal(androidExportedComponent.match(
+      "<activity android:exported=" + quote + "true" + quote + " />",
+      "app/src/main/AndroidManifest.xml").length, 1);
+    assert.equal(fileproviderBroadPath.match(
+      "<files-path path=" + quote + "." + quote + " />",
+      "app/src/main/res/xml/file_paths.xml").length, 1);
+  }
+});
+
+test("transcripts and direct Ravelry credentials remain review candidates", () => {
+  assert.equal(sensitiveAndroidLog.match("Log.d(TAG, transcript)", productionPath).length, 1);
+  for (const name of ["CLIENT_SECRET", "ACCESS_TOKEN", "REFRESH_TOKEN", "OAUTH2_SYNTHETIC"]) {
+    assert.equal(ravelryCredentialSurface.match("val value = BuildConfig.RAVELRY_" + name, productionPath).length, 1);
+  }
+});
+
+test("ClipData must contain the same URI as EXTRA_STREAM", () => {
+  for (const assignment of [
+    "clipData = null",
+    'clipData = ClipData.newPlainText("label", text)',
+    'clipData = ClipData.newRawUri("label", otherUri)',
+    'clipData = ClipData.newRawUri("label", uri); clipData = null',
+  ]) {
+    const content = 'Intent(Intent.ACTION_SEND).apply { putExtra(Intent.EXTRA_STREAM, uri); ' +
+      'addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION); ' + assignment + " }";
+    assert.equal(androidUriShareWithoutClipData.match(content, productionPath).length, 1, assignment);
+  }
+  assert.deepEqual(androidUriShareWithoutClipData.match(
+    'Intent(Intent.ACTION_SEND).apply { putExtra(Intent.EXTRA_STREAM, uri); ' +
+    'addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION); clipData = ClipData.newUri(resolver, "label", uri) }',
+    productionPath), []);
+});
+
+for (const [base, label] of [
+  ["AppCompatActivity", "Android activity entry point"],
+  ["GlanceAppWidgetReceiver", "Glance app widget receiver entry point"],
+  ["BroadcastReceiver", "Android broadcast receiver entry point"],
+  ["LifecycleService", "Android service entry point"],
+  ["CoroutineWorker", "WorkManager background execution entry point"],
+]) {
+  test("long constructor preserves the " + base + " entry point", () => {
+    const parameters = Array.from({ length: 40 }, (_, index) => "val argument" + index + ": String").join(", ");
+    const content = "class Entry(" + parameters + ") : " + base + "() {}";
+    assert.deepEqual(androidKotlinEntrypointSurface.match(content, productionPath)
+      .map(match => match.matchedPattern), [label]);
+    if (base === "BroadcastReceiver") {
+      assert.equal(widgetMutationSurface.match(content, productionPath).length, 1);
+    }
+  });
+  test(`class boundaries preserve names and lines for ${base}`, () => {
+    const content = [
+      "class Helper {}",
+      `class First : ${base}() {}`,
+      "class BodylessHelper",
+      "class Second(",
+      "  value: String,",
+      `) : android.example.${base}() {}`,
+    ].join("\n");
+    const matches = androidKotlinEntrypointSurface.match(content, productionPath);
+    assert.deepEqual(matches.map((match) => match.matchedPattern), [label, label]);
+    assert.deepEqual(matches.map((match) => match.lineNumbers), [[2], [4]]);
+    assert.deepEqual(matches.map((match) =>
+      content.split("\n")[match.lineNumbers[0] - 1].match(/class (\w+)/)?.[1]),
+    ["First", "Second"]);
+    if (base === "BroadcastReceiver") {
+      assert.deepEqual(widgetMutationSurface.match(content, productionPath)
+        .map((match) => match.lineNumbers), [[2], [4]]);
+    }
+  });
+  test(`constructor lambda defaults preserve the ${base} entry point`, () => {
+    const content = `class Helper {}\nclass Entry(val hook: () -> Unit = { run { } }) : ${base}() {}`;
+    assert.deepEqual(androidKotlinEntrypointSurface.match(content, productionPath)
+      .map((match) => [match.matchedPattern, match.lineNumbers]), [[label, [2]]]);
+    if (base === "BroadcastReceiver") {
+      assert.deepEqual(widgetMutationSurface.match(content, productionPath)
+        .map((match) => match.lineNumbers), [[2]]);
+    }
+  });
+  test(`function type bounds preserve the ${base} entry point`, () => {
+    const content = `class Helper {}\nabstract class Entry<T : () -> Unit> : ${base}()`;
+    assert.deepEqual(androidKotlinEntrypointSurface.match(content, productionPath)
+      .map((match) => [match.matchedPattern, match.lineNumbers]), [[label, [2]]]);
+    if (base === "BroadcastReceiver") {
+      assert.deepEqual(widgetMutationSurface.match(content, productionPath)
+        .map((match) => match.lineNumbers), [[2]]);
+    }
+  });
+}
+
+test("widget receiver matching cannot start in a previous class", () => {
+  const content = "class Helper {}\r\nclass Receiver\r\n : BroadcastReceiver() {}";
+  const matches = widgetMutationSurface.match(content, productionPath);
+  assert.deepEqual(matches.map((match) => match.lineNumbers), [[2]]);
+  assert.ok(matches[0].snippet.includes("class Receiver"));
+});
+
+test("constructor defaults still expose WorkManager scheduling", () => {
+  const content = "class Scheduler(val manager: WorkManager = WorkManager.getInstance(context)) {}";
+  assert.deepEqual(androidKotlinEntrypointSurface.match(content, productionPath)
+    .map((match) => match.matchedPattern), ["WorkManager scheduling surface"]);
+});
+
+for (const action of ["ACTION_SEND", "ACTION_SEND_MULTIPLE"]) {
+  test(`${action} cannot borrow grants from comments or strings`, () => {
+    for (const decoy of [
+      "// FLAG_GRANT_READ_URI_PERMISSION clipData",
+      'val hint = "FLAG_GRANT_READ_URI_PERMISSION ClipData.newRawUri"',
+    ]) {
+      const content = `fun share(uri: Uri) = Intent(Intent.${action}).apply {
+  putExtra(Intent.EXTRA_STREAM, uri)
+  ${decoy}
+}`;
+      assert.deepEqual(androidUriShareWithoutClipData.match(content, productionPath)
+        .map((match) => match.lineNumbers), [[1]]);
+    }
+  });
+  test(`${action} ignores decoy actions and streams in comments and strings`, () => {
+    const safe = `fun share(uri: Uri) = Intent(Intent.${action}).apply {
+  putExtra(Intent.EXTRA_STREAM, uri)
+  // Intent.${action} is not another share boundary
+  addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+  clipData = ClipData.newRawUri("PDF", uri)
+}`;
+    assert.deepEqual(androidUriShareWithoutClipData.match(safe, productionPath), []);
+    for (const decoy of [
+      `// Intent.${action} Intent.EXTRA_STREAM`,
+      `val text = "Intent.${action} Intent.EXTRA_STREAM"`,
+      `Intent(Intent.${action}).apply { /* Intent.EXTRA_STREAM */ }`,
+    ]) {
+      assert.deepEqual(androidUriShareWithoutClipData.match(decoy, productionPath), []);
+    }
+  });
+  test(`${action} keeps nested local functions inside the share boundary`, () => {
+    for (const grants of ["", "addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)",
+      'addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION); clipData = ClipData.newRawUri("PDF", uri)']) {
+      const content = `fun share(uri: Uri) = Intent(Intent.${action}).apply {
+  fun title(): String {
+    fun label() = "Pattern"
+    return label()
+  }
+  putExtra(Intent.EXTRA_TITLE, title())
+  putExtra(Intent.EXTRA_STREAM, uri)
+  ${grants}
+}
+private fun later() {
+  addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+  clipData = ClipData.newRawUri("synthetic", uri)
+}`;
+      const matches = androidUriShareWithoutClipData.match(content, productionPath);
+      assert.deepEqual(matches.map((match) => match.lineNumbers),
+        grants.includes("clipData") ? [] : [[1]]);
+      if (matches.length > 0) {
+        assert.equal(matches[0].matchedPattern, grants.includes("FLAG_GRANT")
+          ? "EXTRA_STREAM content URI share without ClipData"
+          : "EXTRA_STREAM content URI share without FLAG_GRANT_READ_URI_PERMISSION");
+      }
+    }
+  });
+  test(`${action} ignores fun inside strings and comments at the function boundary`, () => {
+    const content = `fun share(uri: Uri) = Intent(Intent.${action}).apply {
+  putExtra(Intent.EXTRA_TITLE, "A fun pattern")
+  // fun is a keyword, not a declaration here
+  putExtra(Intent.EXTRA_STREAM, uri)
+}
+private fun later() {
+  addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+  clipData = ClipData.newRawUri("synthetic", uri)
+}`;
+    assert.deepEqual(androidUriShareWithoutClipData.match(content, productionPath)
+      .map((match) => match.lineNumbers), [[1]]);
+  });
+  for (const grants of ["", "addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)",
+    'clipData = ClipData.newRawUri("synthetic", uri)']) {
+    test(`${action} cannot borrow later function permissions: ${grants || "neither"}`, () => {
+      const content = `fun share(uri: Uri) = Intent(Intent.${action}).apply {
+  putExtra(Intent.EXTRA_STREAM, uri)
+  ${grants}
+}
+private suspend fun later(uri: Uri) {
+  addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+  clipData = ClipData.newRawUri("synthetic", uri)
+}`;
+      const matches = androidUriShareWithoutClipData.match(content, productionPath);
+      assert.deepEqual(matches.map((match) => match.lineNumbers), [[1]]);
+      assert.equal(matches[0].matchedPattern, grants.includes("FLAG_GRANT")
+        ? "EXTRA_STREAM content URI share without ClipData"
+        : "EXTRA_STREAM content URI share without FLAG_GRANT_READ_URI_PERMISSION");
+    });
+  }
+  test(`${action} with both permissions is safe`, () => {
+    const content = `fun share(uri: Uri) = Intent(Intent.${action}).apply {
+  putExtra(Intent.EXTRA_STREAM, uri)
+  addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+  clipData = ClipData.newRawUri("synthetic", uri)
+}`;
+    assert.deepEqual(androidUriShareWithoutClipData.match(content, productionPath), []);
+  });
+}
+
+test("ACTION_SENDTO and longer identifiers are not stream share actions", () => {
+  for (const action of ["ACTION_SENDTO", "ACTION_SENDER", "ACTION_SEND_MULTIPLE_EXTRA"]) {
+    assert.deepEqual(androidUriShareWithoutClipData.match(
+      `Intent(Intent.${action}).putExtra(Intent.EXTRA_STREAM, uri)`, productionPath), []);
+  }
+});
+
+for (const expression of [
+  'format(normalize(value)) + syntheticToken',
+  '")" + syntheticToken',
+  String.raw`"escaped quote: \" )" + syntheticToken`,
+  String.raw`"escaped slash: \\" + syntheticToken`,
+  `'(' + format(value) + syntheticToken`,
+  '"""raw ) ( " text""" + syntheticToken',
+]) {
+  test(`sensitive argument survives log call boundaries: ${expression}`, () => {
+    const content = `android.util.Log.d(TAG, ${expression})`;
+    assert.deepEqual(sensitiveAndroidLog.match(content, productionPath)
+      .map((match) => match.lineNumbers), [[1]]);
+  });
+}
+
+test("safe logs end before a later sensitive identifier despite strings and escapes", () => {
+  const content = String.raw`Log.d(TAG, format(normalize(value)) + "( \" )" + '(' + "\\")
+val syntheticToken = "synthetic-only"
+Log.i(TAG, """raw ( ) " text""")`;
+  assert.deepEqual(sensitiveAndroidLog.match(content, productionPath), []);
+});
+
+for (const comment of [
+  "/* don't extend the call */",
+  "/* outer /* nested */ don't extend the call */",
+  "// don't extend the call\n",
+]) {
+  test(`safe log boundaries ignore comment apostrophes: ${comment}`, () => {
+    const content = `Log.d(TAG, ${comment} "ready")\nval password = "synthetic-only"`;
+    assert.deepEqual(sensitiveAndroidLog.match(content, productionPath), []);
+  });
+}
+
+test("FirebaseAuth identifiers pass the callable boundary pre-filter", () => {
+  const matches = ravelryFirebaseCallableSurface.match(
+    "val auth = FirebaseAuth.getInstance()",
+    productionPath,
+  );
+  assert.deepEqual(matches.map((match) => match.matchedPattern), ["Firebase Auth boundary"]);
+});
 
 test("flags Android Kotlin entry points without scanning test files", () => {
   const content = `
@@ -99,6 +362,24 @@ class RavelryBackendClient(
   );
 });
 
+test("widget boundaries do not require unrelated standalone widget text", () => {
+  const cases = [
+    ["fun persist() { CounterWidgetState.save(context, data) }", "Widget persisted state boundary"],
+    ["fun persist() { updateAppWidgetState(context, definition, id) {} }", "Glance widget persisted state write"],
+    ["fun persist() { preferences.updatePreferencesSafely(\"state\") {} }", "Widget persisted DataStore write"],
+    ["fun launch() { issueLaunchId(context) }", "Widget launch-token trust boundary"],
+    ["fun launch() { consumeLaunchId(context, id) }", "Widget launch-token trust boundary"],
+  ];
+  for (const [content, expected] of cases) {
+    assert.deepEqual(
+      widgetMutationSurface.match(content, "app/src/main/java/com/finnvek/knittools/widget/CounterWidgetState.kt")
+        .map(match => match.matchedPattern),
+      [expected],
+      content,
+    );
+  }
+});
+
 test("flags widget launch-token and persisted state write boundaries", () => {
   const tokenContent = `
 object CounterLaunchTokenStore {
@@ -161,5 +442,78 @@ fun button(context: Context) = actionSendBroadcast(CounterWidgetActions.incremen
       "Glance widget broadcast action",
       "Widget counter repository mutation",
     ],
+  );
+});
+
+test("checks every Android URI share independently", () => {
+  const content = `
+fun safeShare(uri: Uri) = Intent(Intent.ACTION_SEND).apply {
+  putExtra(Intent.EXTRA_STREAM, uri)
+  addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+  clipData = ClipData.newRawUri("PDF", uri)
+}
+
+fun unsafeShare(uri: Uri) = Intent(Intent.ACTION_SEND).apply {
+  putExtra(Intent.EXTRA_STREAM, uri)
+  addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+}`;
+
+  const matches = androidUriShareWithoutClipData.match(
+    content,
+    "app/src/main/java/com/finnvek/knittools/ui/PatternShare.kt",
+  );
+
+  assert.deepEqual(
+    matches.map((match) => match.matchedPattern),
+    ["EXTRA_STREAM content URI share without ClipData"],
+  );
+});
+
+test("flags broad external media FileProvider paths", () => {
+  const content = `<paths><external-media-path name="media" path="." /></paths>`;
+
+  const matches = fileproviderBroadPath.match(content, "app/src/main/res/xml/file_paths.xml");
+
+  assert.deepEqual(
+    matches.map((match) => match.matchedPattern),
+    ['FileProvider path="." or equivalent broad directory'],
+  );
+});
+
+test("flags each exported Android component without crossing manifest tags", () => {
+  const content = `
+<manifest>
+  <application>
+    <activity android:name=".PrivateActivity" android:exported="false" />
+    <provider android:name=".ExportedProvider" android:exported="true" />
+    <activity-alias android:name=".ExportedAlias" android:exported="true" />
+  </application>
+</manifest>`;
+
+  const matches = androidExportedComponent.match(content, "app/src/main/AndroidManifest.xml");
+
+  assert.equal(matches.length, 2);
+  assert.deepEqual(
+    matches.flatMap((match) => match.lineNumbers),
+    [5, 6],
+  );
+});
+
+test("flags sensitive multiline Android log calls", () => {
+  const content = `
+Log.w(
+  TAG,
+  "Ravelry token refresh failed",
+  error,
+)`;
+
+  const matches = sensitiveAndroidLog.match(
+    content,
+    "app/src/main/java/com/finnvek/knittools/data/remote/RavelryBackendClient.kt",
+  );
+
+  assert.deepEqual(
+    matches.map((match) => match.matchedPattern),
+    ["Sensitive term in Android log call"],
   );
 });

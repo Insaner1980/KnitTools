@@ -1,4 +1,4 @@
-import type { Firestore } from "firebase-admin/firestore";
+import { FieldValue, type Firestore } from "firebase-admin/firestore";
 
 import { RAVELRY_TOKENS_COLLECTION } from "../config";
 import { connectionGenerationFromData } from "./connectionGeneration";
@@ -17,6 +17,19 @@ export interface StoredRavelryToken {
   readonly connectionGeneration?: number;
 }
 
+export interface RavelryTokenUserMetadataUpdate {
+  readonly ravelryUserId?: string;
+  readonly ravelryUsername?: string;
+  readonly verifiedAtMillis: number;
+}
+
+export interface PendingRavelryToken {
+  readonly token: StoredRavelryToken;
+  readonly state: string;
+  readonly completionProofHash: string;
+  readonly expiresAtMillis: number;
+}
+
 export interface RavelryTokenStore {
   readonly collectionPath: string;
   getToken(uid: string): Promise<StoredRavelryToken | null>;
@@ -24,6 +37,25 @@ export interface RavelryTokenStore {
   saveToken(token: StoredRavelryToken): Promise<void>;
   saveTokenIfGenerationCurrent(
     token: StoredRavelryToken,
+    expectedGeneration: number,
+  ): Promise<boolean>;
+  savePendingTokenIfGenerationCurrent(
+    pending: PendingRavelryToken,
+    expectedGeneration: number,
+  ): Promise<boolean>;
+  activatePendingToken(
+    uid: string,
+    state: string,
+    completionProofHash: string,
+    nowMillis: number,
+  ): Promise<boolean>;
+  saveRefreshedTokenIfCurrent(
+    token: StoredRavelryToken,
+    expectedToken: StoredRavelryToken,
+  ): Promise<StoredRavelryToken | null>;
+  updateUserMetadataIfGenerationCurrent(
+    uid: string,
+    update: RavelryTokenUserMetadataUpdate,
     expectedGeneration: number,
   ): Promise<boolean>;
   deleteToken(uid: string, nowMillis?: number): Promise<void>;
@@ -58,6 +90,39 @@ function withoutUndefinedValues(token: StoredRavelryToken): Record<string, unkno
   );
 }
 
+function toPendingToken(value: FirebaseFirestore.DocumentData | undefined): PendingRavelryToken | null {
+  const pending = value?.pending;
+  if (typeof pending !== "object" || pending == null) return null;
+  const fields = pending as Record<string, unknown>;
+  const token = toStoredToken(fields.token as FirebaseFirestore.DocumentData | undefined);
+  if (
+    token == null ||
+    typeof fields.state !== "string" ||
+    typeof fields.completionProofHash !== "string" ||
+    typeof fields.expiresAtMillis !== "number"
+  ) {
+    return null;
+  }
+  return {
+    token,
+    state: fields.state,
+    completionProofHash: fields.completionProofHash,
+    expiresAtMillis: fields.expiresAtMillis,
+  };
+}
+
+function hasSameCredentials(
+  current: StoredRavelryToken | null,
+  expected: StoredRavelryToken,
+): current is StoredRavelryToken {
+  return current != null &&
+    current.uid === expected.uid &&
+    current.accessToken === expected.accessToken &&
+    current.refreshToken === expected.refreshToken &&
+    current.expiresAtMillis === expected.expiresAtMillis &&
+    (current.connectionGeneration ?? 0) === (expected.connectionGeneration ?? 0);
+}
+
 function disconnectedTokenMarker(
   uid: string,
   connectionGeneration: number,
@@ -80,7 +145,8 @@ export function createTokenStore(firestore: Firestore): RavelryTokenStore {
     collectionPath: RAVELRY_TOKENS_COLLECTION,
     async getToken(uid) {
       const snapshot = await collection.doc(uid).get();
-      return toStoredToken(snapshot.data());
+      const token = toStoredToken(snapshot.data());
+      return token?.uid === uid ? token : null;
     },
     async getConnectionGeneration(uid) {
       const snapshot = await collection.doc(uid).get();
@@ -108,6 +174,107 @@ export function createTokenStore(firestore: Firestore): RavelryTokenStore {
           ref,
           withoutUndefinedValues({ ...token, connectionGeneration: expectedGeneration }),
         );
+        return true;
+      });
+    },
+    async savePendingTokenIfGenerationCurrent(pending, expectedGeneration) {
+      const ref = collection.doc(pending.token.uid);
+      return firestore.runTransaction(async (transaction) => {
+        const snapshot = await transaction.get(ref);
+        if (connectionGenerationFromData(snapshot.data()) !== expectedGeneration) return false;
+        transaction.set(
+          ref,
+          {
+            uid: pending.token.uid,
+            connectionGeneration: expectedGeneration,
+            pending: {
+              token: withoutUndefinedValues({
+                ...pending.token,
+                connectionGeneration: expectedGeneration,
+              }),
+              state: pending.state,
+              completionProofHash: pending.completionProofHash,
+              expiresAtMillis: pending.expiresAtMillis,
+            },
+          },
+          { mergeFields: ["uid", "connectionGeneration", "pending"] },
+        );
+        return true;
+      });
+    },
+    async activatePendingToken(uid, state, completionProofHash, nowMillis) {
+      const ref = collection.doc(uid);
+      return firestore.runTransaction(async (transaction) => {
+        const snapshot = await transaction.get(ref);
+        const pending = toPendingToken(snapshot.data());
+        if (
+          pending == null ||
+          pending.token.uid !== uid ||
+          pending.state !== state ||
+          pending.completionProofHash !== completionProofHash ||
+          pending.expiresAtMillis <= nowMillis ||
+          (pending.token.connectionGeneration ?? 0) !== connectionGenerationFromData(snapshot.data())
+        ) {
+          return false;
+        }
+        // A new login invalidates responses from the previous login; refresh keeps its generation.
+        transaction.set(ref, withoutUndefinedValues({
+          ...pending.token,
+          connectionGeneration: connectionGenerationFromData(snapshot.data()) + 1,
+        }));
+        return true;
+      });
+    },
+    async saveRefreshedTokenIfCurrent(token, expectedToken) {
+      const ref = collection.doc(token.uid);
+      return firestore.runTransaction(async (transaction) => {
+        const snapshot = await transaction.get(ref);
+        const currentData = snapshot.data();
+        const current = toStoredToken(currentData);
+        if (!hasSameCredentials(current, expectedToken)) {
+          return null;
+        }
+
+        const persisted: StoredRavelryToken = {
+          uid: current.uid,
+          authType: current.authType,
+          accessToken: token.accessToken,
+          ...(token.refreshToken ? { refreshToken: token.refreshToken } : {}),
+          ...(token.expiresAtMillis != null ? { expiresAtMillis: token.expiresAtMillis } : {}),
+          ...(current.ravelryUserId ? { ravelryUserId: current.ravelryUserId } : {}),
+          ...(current.ravelryUsername ? { ravelryUsername: current.ravelryUsername } : {}),
+          createdAtMillis: current.createdAtMillis,
+          updatedAtMillis: token.updatedAtMillis,
+          ...(current.lastVerifiedAtMillis != null
+            ? { lastVerifiedAtMillis: current.lastVerifiedAtMillis }
+            : {}),
+          connectionGeneration: current.connectionGeneration ?? 0,
+        };
+        const pending = toPendingToken(currentData);
+        transaction.set(ref, {
+          ...withoutUndefinedValues(persisted),
+          ...(pending && (pending.token.connectionGeneration ?? 0) === persisted.connectionGeneration
+            ? { pending: currentData?.pending }
+            : {}),
+        });
+        return persisted;
+      });
+    },
+    async updateUserMetadataIfGenerationCurrent(uid, update, expectedGeneration) {
+      const ref = collection.doc(uid);
+      return firestore.runTransaction(async (transaction) => {
+        const snapshot = await transaction.get(ref);
+        const current = toStoredToken(snapshot.data());
+        if (!current || current.uid !== uid || (current.connectionGeneration ?? 0) !== expectedGeneration) {
+          return false;
+        }
+
+        transaction.update(ref, {
+          ravelryUserId: update.ravelryUserId ?? FieldValue.delete(),
+          ravelryUsername: update.ravelryUsername ?? FieldValue.delete(),
+          updatedAtMillis: update.verifiedAtMillis,
+          lastVerifiedAtMillis: update.verifiedAtMillis,
+        });
         return true;
       });
     },

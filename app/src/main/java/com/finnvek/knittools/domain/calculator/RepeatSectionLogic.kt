@@ -8,43 +8,30 @@ object RepeatSectionLogic {
         counter: ProjectCounter,
         mainRowCount: Int,
     ): ProjectCounter {
-        val startRow = counter.repeatStartRow ?: return counter
-        val endRow = counter.repeatEndRow ?: return counter
-        val totalRepeats = counter.totalRepeats ?: return counter
-        if (counter.counterType != ProjectCounterType.REPEAT_SECTION || endRow < startRow || totalRepeats <= 0) {
-            return counter
-        }
-
-        val rowRange = endRow - startRow + 1
-        if (mainRowCount < startRow) {
+        val section = validRepeatSection(counter) ?: return counter
+        if (mainRowCount < section.startRow) {
             return counter.copy(count = 0, currentRepeat = 1)
         }
 
-        val maxTrackedRow = startRow + (rowRange * totalRepeats) - 1
-        if (mainRowCount >= maxTrackedRow) {
-            return counter.copy(count = rowRange, currentRepeat = totalRepeats)
+        if (mainRowCount.toLong() >= section.finalRow) {
+            return counter.copy(
+                count = section.rowRange.coerceAtMost(Int.MAX_VALUE.toLong()).toInt(),
+                currentRepeat = section.totalRepeats,
+            )
         }
 
-        val relativeRow = mainRowCount - startRow
-        val currentRepeat = (relativeRow / rowRange) + 1
-        val rowInRepeat = (relativeRow % rowRange) + 1
-        return counter.copy(count = rowInRepeat, currentRepeat = currentRepeat)
+        val relativeRow = mainRowCount.toLong() - section.startRow
+        val currentRepeat = (relativeRow / section.rowRange) + 1L
+        val rowInRepeat = (relativeRow % section.rowRange) + 1L
+        return counter.copy(count = rowInRepeat.toInt(), currentRepeat = currentRepeat.toInt())
     }
 
     fun isComplete(
         counter: ProjectCounter,
         mainRowCount: Int,
     ): Boolean {
-        val startRow = counter.repeatStartRow ?: return false
-        val endRow = counter.repeatEndRow ?: return false
-        val totalRepeats = counter.totalRepeats ?: return false
-        if (counter.counterType != ProjectCounterType.REPEAT_SECTION || endRow < startRow || totalRepeats <= 0) {
-            return false
-        }
-
-        val rowRange = endRow - startRow + 1
-        val finalRow = startRow + (rowRange * totalRepeats) - 1
-        return mainRowCount >= finalRow
+        val section = validRepeatSection(counter) ?: return false
+        return mainRowCount.toLong() >= section.finalRow
     }
 
     fun currentRowInRepeat(
@@ -54,11 +41,11 @@ object RepeatSectionLogic {
         val updated = updatePosition(counter, mainRowCount)
         val startRow = counter.repeatStartRow ?: return updated.count
         val endRow = counter.repeatEndRow ?: return updated.count
-        if (counter.counterType != ProjectCounterType.REPEAT_SECTION || endRow < startRow) {
+        if (counter.counterType != ProjectCounterType.REPEAT_SECTION || startRow <= 0 || endRow < startRow) {
             return updated.count
         }
 
-        val rowRange = endRow - startRow + 1
+        val rowRange = (endRow.toLong() - startRow + 1L).coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
         return updated.count.coerceIn(1, rowRange)
     }
 
@@ -66,16 +53,34 @@ object RepeatSectionLogic {
         counter: ProjectCounter,
         mainRowCount: Int,
     ): Float {
-        val startRow = counter.repeatStartRow ?: return 0f
-        val endRow = counter.repeatEndRow ?: return 0f
-        val totalRepeats = counter.totalRepeats ?: return 0f
-        if (counter.counterType != ProjectCounterType.REPEAT_SECTION || endRow < startRow || totalRepeats <= 0) {
-            return 0f
-        }
-
-        val rowRange = endRow - startRow + 1
-        val totalTrackedRows = rowRange * totalRepeats
-        val completedRows = (mainRowCount - startRow + 1).coerceIn(0, totalTrackedRows)
+        val section = validRepeatSection(counter) ?: return 0f
+        val totalTrackedRows = section.rowRange * section.totalRepeats
+        val completedRows = (mainRowCount.toLong() - section.startRow + 1L).coerceIn(0L, totalTrackedRows)
         return completedRows.toFloat() / totalTrackedRows.toFloat()
+    }
+
+    private class RepeatSectionBounds(
+        val startRow: Int,
+        endRow: Int,
+        val totalRepeats: Int,
+    ) {
+        val rowRange: Long = endRow.toLong() - startRow + 1L
+        val finalRow: Long = startRow.toLong() + rowRange * totalRepeats - 1L
+    }
+
+    /** Palauttaa toistojakson rajat vain kokonaan ja johdonmukaisesti määritetylle REPEAT_SECTION-laskurille. */
+    private fun validRepeatSection(counter: ProjectCounter): RepeatSectionBounds? {
+        val startRow = counter.repeatStartRow ?: return null
+        val endRow = counter.repeatEndRow ?: return null
+        val totalRepeats = counter.totalRepeats ?: return null
+        if (
+            counter.counterType != ProjectCounterType.REPEAT_SECTION ||
+            startRow <= 0 ||
+            endRow < startRow ||
+            totalRepeats <= 0
+        ) {
+            return null
+        }
+        return RepeatSectionBounds(startRow, endRow, totalRepeats)
     }
 }

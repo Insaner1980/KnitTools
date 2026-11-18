@@ -1,0 +1,226 @@
+diff --git a/app/src/main/res/values-de/pattern_reading_assistance.xml b/app/src/main/res/values-de/pattern_reading_assistance.xml
+index 8d730530..89a9c784 100644
+--- a/app/src/main/res/values-de/pattern_reading_assistance.xml
++++ b/app/src/main/res/values-de/pattern_reading_assistance.xml
+@@ -29,24 +29,24 @@
+     <string name="pattern_hide_vertical_guide">Senkrechte Führung ausblenden</string>
+     <string name="pattern_center_vertical_guide">Senkrechte Führung zentrieren</string>
+     <string name="pattern_vertical_guide_description">Senkrechte Führung</string>
+-    <string name="pattern_follow_current_row_on">Aktueller Reihe folgen</string>
++    <string name="pattern_follow_current_row_on">Hauptzähler folgen</string>
+     <string name="pattern_follow_current_row_off">Folgen beenden</string>
+-    <string name="pattern_return_to_current_row">Zur aktuellen Reihe zurückkehren</string>
+-    <string name="pattern_follow_resumed">Das Folgen wurde bei der aktuellen Reihe fortgesetzt.</string>
+-    <string name="pattern_follow_resumed_uncalibrated">Die Reihenposition ist nicht kalibriert. Das Folgen wurde an der aktuellen Position fortgesetzt.</string>
+-    <string name="pattern_set_row_marker_here">Reihenmarke hier für Reihe %1$d setzen</string>
+-    <string name="pattern_follow_page_announcement">Reihe %1$d hat die Leselinie auf Seite %2$d von %3$d verschoben.</string>
+-    <string name="pattern_bookmark_jump_announcement">%1$s, Seite %2$d von %3$d. Reihenverfolgung pausiert.</string>
++    <string name="pattern_return_to_current_row">Zum aktuellen Zählerstand zurück</string>
++    <string name="pattern_follow_resumed">Folgen beim aktuellen Zählerstand fortgesetzt.</string>
++    <string name="pattern_follow_resumed_uncalibrated">Zählerposition nicht kalibriert. Folgen ab der aktuellen Position fortgesetzt.</string>
++    <string name="pattern_set_row_marker_here">Markierung hier für Zählerstand %1$d setzen</string>
++    <string name="pattern_follow_page_announcement">Zählerstand %1$d verschob die Leselinie auf Seite %2$d von %3$d.</string>
++    <string name="pattern_bookmark_jump_announcement">%1$s, Seite %2$d von %3$d. Zählerverfolgung pausiert.</string>
+     <string name="pattern_reading_line_move_up">Leselinie nach oben verschieben</string>
+     <string name="pattern_reading_line_move_down">Leselinie nach unten verschieben</string>
+     <string name="pattern_vertical_guide_move_left">Senkrechte Führung nach links verschieben</string>
+     <string name="pattern_vertical_guide_move_right">Senkrechte Führung nach rechts verschieben</string>
+     <string name="pattern_reading_line_position_state">%1$d%% vom oberen Rand</string>
+     <string name="pattern_vertical_guide_position_state">%1$d%% vom linken Rand</string>
+-    <string name="pattern_row_following_paused">Reihenverfolgung pausiert.</string>
+-    <string name="pattern_row_following_active">Aktuelle Reihe wird verfolgt.</string>
++    <string name="pattern_row_following_paused">Zählerverfolgung pausiert.</string>
++    <string name="pattern_row_following_active">Folgt dem Hauptzähler.</string>
+     <string name="pattern_guide_enabled_state">Aktiviert</string>
+     <string name="pattern_guide_disabled_state">Deaktiviert</string>
+-    <string name="pattern_reading_line_following_state">%1$d%% von oben. Aktuelle Reihe wird verfolgt.</string>
+-    <string name="pattern_reading_line_manual_state">%1$d%% von oben. Reihenverfolgung pausiert.</string>
++    <string name="pattern_reading_line_following_state">%1$d%% vom oberen Rand. Folgt dem Hauptzähler.</string>
++    <string name="pattern_reading_line_manual_state">%1$d%% vom oberen Rand. Zählerverfolgung pausiert.</string>
+ </resources>
+diff --git a/app/src/main/res/values-de/reference_strings.xml b/app/src/main/res/values-de/reference_strings.xml
+index 7c3a1058..d1d22890 100644
+--- a/app/src/main/res/values-de/reference_strings.xml
++++ b/app/src/main/res/values-de/reference_strings.xml
+@@ -19,14 +19,14 @@
+     <string name="size_row_adult_m">Erwachsene M</string>
+     <string name="size_row_adult_l">Erwachsener L</string>
+     <string name="size_row_adult_xl">Erwachsene XL</string>
+-    <string name="size_row_child_s">Kind S</string>
+-    <string name="size_row_child_m">Kind M</string>
+-    <string name="size_row_child_l">Kind L</string>
+-    <string name="size_row_age_0_3m">0–3 m</string>
+-    <string name="size_row_age_3_6m">3–6m</string>
+-    <string name="size_row_age_6_12m">6–12 m</string>
+-    <string name="size_row_age_12_18m">12–18 m</string>
+-    <string name="size_row_age_18_24m">18–24 m</string>
++    <string name="size_row_child_s">2–4 Jahre</string>
++    <string name="size_row_child_m">4–6 Jahre</string>
++    <string name="size_row_child_l">6–8 Jahre</string>
++    <string name="size_row_age_0_3m">3 m</string>
++    <string name="size_row_age_3_6m">6m</string>
++    <string name="size_row_age_6_12m">12 m</string>
++    <string name="size_row_age_12_18m">18 m</string>
++    <string name="size_row_age_18_24m">24 m</string>
+     <string name="size_row_child_2">2</string>
+     <string name="size_row_child_4">4</string>
+     <string name="size_row_child_6">6</string>
+@@ -35,24 +35,24 @@
+     <string name="size_row_child_12">12</string>
+     <string name="size_row_child_14">14</string>
+     <string name="size_row_child_16">16</string>
+-    <string name="size_row_women_xs_2_4">XS (2–4)</string>
+-    <string name="size_row_women_s_6_8">S (6–8)</string>
+-    <string name="size_row_women_m_10_12">M (10–12)</string>
+-    <string name="size_row_women_l_14_16">L (14–16)</string>
+-    <string name="size_row_women_xl_18_20">XL (18–20)</string>
+-    <string name="size_row_women_2xl_22_24">2XL (22–24)</string>
+-    <string name="size_row_women_3xl_26_28">3XL (26–28)</string>
+-    <string name="size_row_women_4xl_30_32">4XL (30–32)</string>
+-    <string name="size_row_women_5xl_34_36">5XL (34–36)</string>
++    <string name="size_row_women_xs_2_4">XS</string>
++    <string name="size_row_women_s_6_8">S</string>
++    <string name="size_row_women_m_10_12">M</string>
++    <string name="size_row_women_l_14_16">L</string>
++    <string name="size_row_women_xl_18_20">XL</string>
++    <string name="size_row_women_2xl_22_24">2XL</string>
++    <string name="size_row_women_3xl_26_28">3XL</string>
++    <string name="size_row_women_4xl_30_32">4XL</string>
++    <string name="size_row_women_5xl_34_36">5XL</string>
+     <string name="size_row_men_xs_30_32">XS (30–32)</string>
+-    <string name="size_row_men_s_34_36">S (34–36)</string>
+-    <string name="size_row_men_m_38_40">M (38–40)</string>
+-    <string name="size_row_men_l_42_44">L (42–44)</string>
+-    <string name="size_row_men_xl_46_48">XL (46–48)</string>
+-    <string name="size_row_men_2xl_50_52">2XL (50–52)</string>
+-    <string name="size_row_men_3xl_54_56">3XL (54–56)</string>
+-    <string name="size_row_men_4xl_58_60">4XL (58–60)</string>
+-    <string name="size_row_men_5xl_62_64">5XL (62–64)</string>
++    <string name="size_row_men_s_34_36">S</string>
++    <string name="size_row_men_m_38_40">M</string>
++    <string name="size_row_men_l_42_44">L</string>
++    <string name="size_row_men_xl_46_48">XL</string>
++    <string name="size_row_men_2xl_50_52">2XL</string>
++    <string name="size_row_men_3xl_54_56">3XL</string>
++    <string name="size_row_men_4xl_58_60">4XL</string>
++    <string name="size_row_men_5xl_62_64">5XL</string>
+     <string name="abbr_k_meaning">Rechts stricken</string>
+     <string name="abbr_k_desc">Nadel rechts einstechen, Garn umwickeln, durchziehen</string>
+     <string name="abbr_p_meaning">Links stricken</string>
+@@ -257,4 +257,5 @@
+     <string name="sym_marker_desc">Position des Maschenmarkierers</string>
+     <string name="sym_repeat_name">Wiederholen</string>
+     <string name="sym_repeat_desc">Musterwiederholungsklammer</string>
++    <string name="size_row_tween">Preteen</string>
+ </resources>
+diff --git a/app/src/main/res/values-de/strings.xml b/app/src/main/res/values-de/strings.xml
+index 4b8ec0fb..f4e32d46 100644
+--- a/app/src/main/res/values-de/strings.xml
++++ b/app/src/main/res/values-de/strings.xml
+@@ -143,14 +143,14 @@
+     <string name="pattern_open_failed">Die Anleitung konnte nicht geöffnet werden.</string>
+     <string name="pattern_show_reading_line">Leselinie anzeigen</string>
+     <string name="pattern_hide_reading_line">Leselinie ausblenden</string>
+-    <string name="pattern_clear_row_mark">Reihenmarkierung entfernen</string>
++    <string name="pattern_clear_row_mark">Zählermarkierung entfernen</string>
+     <string name="pattern_clear_page_marks">Seitenmarkierungen entfernen</string>
+-    <string name="pattern_calibrate_rows">Reihen kalibrieren</string>
+-    <string name="pattern_calibration_first_row">Erste Reihe</string>
+-    <string name="pattern_calibration_last_row">Letzte Reihe</string>
++    <string name="pattern_calibrate_rows">Zählerpositionen kalibrieren</string>
++    <string name="pattern_calibration_first_row">Erster Zählerstand</string>
++    <string name="pattern_calibration_last_row">Letzter Zählerstand</string>
+     <string name="pattern_calibration_save_first">Erste speichern</string>
+     <string name="pattern_calibration_save_last">Letzte speichern</string>
+-    <string name="pattern_calibration_invalid_row">Verwende zwei unterschiedliche Reihennummern</string>
++    <string name="pattern_calibration_invalid_row">Verwende zwei unterschiedliche Zählerstände</string>
+     <string name="pattern_page_jump">Zu Seite springen</string>
+     <string name="pattern_page_number">Seitennummer</string>
+     <string name="pattern_page_indicator">Seite %1$d von %2$d</string>
+@@ -235,8 +235,8 @@
+     <!-- Session History -->
+     <string name="session_history_title">Arbeitsverlauf</string>
+     <string name="no_sessions">Noch keine Sitzungen aufgezeichnet. Öffne ein Projekt und starte eine Arbeitssitzung, um deine Zeit hier zu erfassen.</string>
+-    <string name="session_row_range">Reihen %1$d \u2192 %2$d</string>
+-    <string name="session_row_single">Reihe %1$d</string>
++    <string name="session_row_range">Zähler: %1$d → %2$d</string>
++    <string name="session_row_single">Zählerstand %1$d</string>
+     <string name="delete_session_title">Sitzung löschen?</string>
+     <string name="delete_session_message">Diese Sitzung aus dem Verlauf löschen? Dies kann nicht rückgängig gemacht werden.</string>
+ 
+@@ -268,8 +268,8 @@
+     <string name="project_content_add_pattern">Anleitung hinzufügen</string>
+     <string name="stitch_tracker_label">Maschen</string>
+     <plurals name="reminder_repeat_occurrence_format">
+-        <item quantity="one">Wiederholung #%1$d jede Reihe</item>
+-        <item quantity="other">Wiederholung #%1$d alle %2$d Reihen</item>
++        <item quantity="one">Wiederholung #%1$d, Intervall %2$d</item>
++        <item quantity="other">Wiederholung #%1$d, Intervall %2$d</item>
+     </plurals>
+ 
+     <!-- Increase / Decrease -->
+@@ -294,7 +294,7 @@
+     <string name="increase_decrease_error_cannot_decrease">Verfügbare Maschenzahl: %2$d. Angeforderte Abnahme: %1$d.</string>
+     <string name="increase_decrease_error_not_enough_decrease">Erforderliche Maschenzahl: %1$d. Angeforderte Abnahmen: %2$d.</string>
+     <string name="increase_decrease_error_total_out_of_range">Das Ergebnis ist zu groß. Verwende kleinere Maschenzahlen.</string>
+-    <string name="increase_decrease_warning_increase_more_than_current">Es werden mehr Maschen zugenommen als aktuell vorhanden - einige Abschnitte haben keine Maschen zwischen den Zunahmen</string>
++    <string name="increase_decrease_error_not_enough_bars">Für diese M1-Zunahmen sind nicht genügend Zwischenräume zwischen den Maschen vorhanden. Verringere die Anzahl der Zunahmen.</string>
+ 
+     <!-- Gauge Converter -->
+     <string name="pattern_gauge">Maschenprobe der Anleitung</string>
+@@ -579,13 +579,13 @@
+     <string name="no_reminders">Noch keine Erinnerungen</string>
+     <string name="delete_reminder_title">Erinnerung löschen?</string>
+     <string name="delete_reminder_confirm">Erinnerung „%1$s“ löschen?</string>
+-    <string name="row_number">Reihennummer</string>
++    <string name="row_number">Zählerstand</string>
+     <string name="reminder_message">Nachricht</string>
+     <string name="reminder_message_hint">z. B. Zur Fersenwand wechseln</string>
+     <string name="one_time">Einmalig</string>
+     <string name="repeating">Wiederholend</string>
+     <string name="repeat_every">Wiederholen alle</string>
+-    <string name="repeat_every_rows">Reihen</string>
++    <string name="repeat_every_rows">Zählschritte</string>
+     <string name="dismiss">Ausblenden</string>
+ 
+     <!-- Multiple Counters -->
+@@ -601,11 +601,11 @@
+     <string name="repeat_section">Rapportabschnitt</string>
+     <string name="starting_stitches">Anfangsmaschenzahl</string>
+     <string name="stitch_change">Hinzugefügte/entfernte Maschen</string>
+-    <string name="shape_every_n">Alle N Reihen formen</string>
+-    <string name="repeat_section_start_row">Startreihe</string>
+-    <string name="repeat_section_end_row">Endreihe</string>
++    <string name="shape_every_n">Alle N Zählschritte formen</string>
++    <string name="repeat_section_start_row">Anfangswert</string>
++    <string name="repeat_section_end_row">Endwert</string>
+     <string name="total_repeats">Gesamtzahl der Wiederholungen</string>
+-    <string name="repeat_section_progress_format">Wiederholung %1$d/%2$d, Reihe %3$d/%4$d</string>
++    <string name="repeat_section_progress_format">Wiederholung %1$d/%2$d, Zählerstand %3$d/%4$d</string>
+     <string name="repeat_section_complete">Fertig</string>
+     <string name="rename_counter">Umbenennen</string>
+     <string name="reset_counter_name">Zurücksetzen</string>
+@@ -617,7 +617,7 @@
+     <string name="take_photo">Foto aufnehmen</string>
+     <string name="progress_photos">Fortschrittsfotos</string>
+     <string name="counters_list_empty">Keine zusätzlichen Zähler</string>
+-    <string name="row_label_format">Reihe %d</string>
++    <string name="row_label_format">Zählerstand %d</string>
+     <string name="share_photo">Teilen</string>
+     <string name="photo_share_failed">Das Foto konnte nicht geteilt werden.</string>
+     <string name="delete_photo">Foto löschen</string>
+@@ -726,7 +726,7 @@
+     <string name="work_session_recovery_needed">Sitzungszeit muss geprüft werden</string>
+     <string name="work_session_resolve">Klären</string>
+     <string name="work_session_recovery_title">Sitzungszeit prüfen</string>
+-    <string name="work_session_pending_rows_format">Ausstehender Reihenfortschritt: %1$d</string>
++    <string name="work_session_pending_rows_format">Ausstehender Zählerfortschritt: %1$d</string>
+     <string name="work_session_hours">Stunden</string>
+     <string name="work_session_minutes">Minuten</string>
+     <string name="work_session_add_and_continue">Hinzufügen und fortfahren</string>
+@@ -1108,4 +1108,5 @@
+     <string name="project_yarn_edit_missing">Diese Garnnotiz gehört nicht mehr zu diesem Projekt. Schließe den Editor.</string>
+     <string name="project_yarn_edit_invalid">Gib einen Garnnamen ein.</string>
+     <string name="project_yarn_edit_failed">Die Änderungen konnten nicht gespeichert werden. Dein Entwurf bleibt erhalten. Versuche es erneut.</string>
++    <string name="counter_progress_format">Zählerfortschritt: %1$d</string>
+ </resources>

@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="pattern_annotation_page_limit">Deze pagina bevat te veel of te complexe annotaties om veilig weer te geven. Je annotaties zijn behouden.</string>
     <string name="pattern_annotations_layers">Annotatielagen</string>
     <string name="pattern_annotations_master">Patroonnotities</string>
     <string name="pattern_annotations_project">Projectnotities</string>
     <string name="pattern_annotations_read_only">Alleen-lezen</string>
     <string name="pattern_annotations_count">%1$s (%2$d)</string>
-    <string name="pattern_annotation_tool_browse">Bladeren</string>
     <string name="pattern_annotation_tool_pen">Pen</string>
     <string name="pattern_annotation_tool_highlighter">Markeerstift</string>
     <string name="pattern_annotation_tool_eraser">Gum</string>
@@ -73,4 +73,7 @@
     <string name="pattern_annotation_export_failed">PDF-export mislukt. De oorspronkelijke PDF is niet gewijzigd.</string>
     <string name="pattern_annotation_export_default_name">patroon</string>
     <string name="pattern_annotation_export_filename">%1$s-geannoteerd.pdf</string>
+    <string name="pattern_annotation_edit_text">Tekst bewerken</string>
+    <string name="pattern_annotation_write_failed">De tekst kon niet worden opgeslagen. De aantekening is mogelijk gewijzigd. Sluit de editor en probeer het opnieuw.</string>
+    <string name="pattern_annotation_command_failed">Een wijziging aan een aantekening is niet opgeslagen. Sluit dit bericht en probeer de actie opnieuw met de markeergereedschappen.</string>
 </resources>

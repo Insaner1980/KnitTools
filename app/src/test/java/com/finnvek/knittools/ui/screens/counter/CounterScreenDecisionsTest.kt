@@ -5,6 +5,37 @@ import org.junit.Test
 
 class CounterScreenDecisionsTest {
     @Test
+    fun `pattern card action keeps metadata and document ownership separate`() {
+        assertEquals(
+            ProjectPatternCardAction.OpenPicker,
+            projectPatternCardAction(hasMetadataLink = false, hasPrimaryDocument = false, primaryAvailable = false),
+        )
+        assertEquals(
+            ProjectPatternCardAction.OpenMetadataDetail,
+            projectPatternCardAction(hasMetadataLink = true, hasPrimaryDocument = false, primaryAvailable = false),
+        )
+        assertEquals(
+            ProjectPatternCardAction.OpenPrimaryDocument,
+            projectPatternCardAction(hasMetadataLink = false, hasPrimaryDocument = true, primaryAvailable = true),
+        )
+        assertEquals(
+            ProjectPatternCardAction.OpenPrimaryDocument,
+            projectPatternCardAction(hasMetadataLink = true, hasPrimaryDocument = true, primaryAvailable = true),
+        )
+        assertEquals(
+            ProjectPatternCardAction.OpenDocumentRecovery,
+            projectPatternCardAction(hasMetadataLink = true, hasPrimaryDocument = true, primaryAvailable = false),
+        )
+    }
+
+    @Test
+    fun `pattern card title is open for either metadata or readable documents`() {
+        assertEquals(false, hasProjectPatternContent(hasMetadataLink = false, hasDocuments = false))
+        assertEquals(true, hasProjectPatternContent(hasMetadataLink = true, hasDocuments = false))
+        assertEquals(true, hasProjectPatternContent(hasMetadataLink = false, hasDocuments = true))
+    }
+
+    @Test
     fun `feature request opens feature when access is granted`() {
         val calls = mutableListOf<String>()
 

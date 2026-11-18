@@ -10,9 +10,10 @@ class CounterWorkspacePolishSourceTest {
     fun `extra counters stack the name above the centered control row with visible overflow actions`() {
         val source = ProjectSourceFiles.read(MULTI_COUNTER_COMPONENTS)
 
-        assertTrue(source.contains("maxLines = 2"))
-        assertTrue(source.contains("fontSize = 17.sp"))
-        assertTrue(source.contains("fontWeight = FontWeight.SemiBold"))
+        val nameBlock = source.substringAfter("text = counter.name,").substringBefore("CounterOverflowMenu(")
+        assertFalse(nameBlock.contains("maxLines"))
+        assertFalse(nameBlock.contains("TextOverflow.Ellipsis"))
+        assertTrue(source.contains("MaterialTheme.typography.counterExtraName"))
         assertTrue(source.contains("textAlign = TextAlign.Center"))
         assertTrue(source.contains("Icons.Filled.MoreVert"))
         assertTrue(source.contains("contentDescription = stringResource(R.string.counter_actions, counterName)"))
@@ -35,12 +36,24 @@ class CounterWorkspacePolishSourceTest {
         val projectCards = ProjectSourceFiles.read(COUNTER_PROJECT_CONTENT_CARDS)
         val stitchCounter = ProjectSourceFiles.read(STITCH_COUNTER)
 
-        assertTrue(workspace.contains("color = MaterialTheme.colorScheme.secondary"))
-        assertTrue(projectCards.contains("color = MaterialTheme.colorScheme.secondary"))
+        // Osio-otsikot tulevat yhteisestä SectionLabelista eivätkä määrittele omaa väriään.
+        assertTrue(workspace.contains("SectionLabel("))
+        assertTrue(projectCards.contains("SectionLabel("))
         assertTrue(workspace.contains("WorkspaceSectionAction("))
         assertTrue(workspace.contains("Icons.Filled.Add"))
         assertTrue(workspace.contains("R.string.stitch_tracker_label"))
         assertTrue(stitchCounter.contains("label: String"))
+    }
+
+    @Test
+    fun `stitch tracker uses named actions and a large font layout`() {
+        val stitchCounter = ProjectSourceFiles.read(STITCH_COUNTER)
+
+        assertTrue(stitchCounter.contains("R.string.counter_decrease_named, label"))
+        assertTrue(stitchCounter.contains("R.string.counter_increase_named, label"))
+        assertTrue(stitchCounter.contains("LocalDensity.current.fontScale >= FontScaleThresholds.LARGE"))
+        assertTrue(stitchCounter.contains("if (useLargeFontLayout)"))
+        assertTrue(stitchCounter.contains("Column("))
     }
 
     private companion object {

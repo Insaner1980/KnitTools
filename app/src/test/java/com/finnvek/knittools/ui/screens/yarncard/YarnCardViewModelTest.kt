@@ -10,9 +10,11 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
@@ -21,8 +23,10 @@ import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import java.io.IOException
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class YarnCardViewModelTest {
@@ -49,6 +53,120 @@ class YarnCardViewModelTest {
     private fun createViewModel() = YarnCardViewModel(repository, counterRepository)
 
     @Test
+    fun completedLinkedProjectKeepsItsNameAndUpdatesFromObservation() =
+        runTest {
+            val project =
+                kotlinx.coroutines.flow.MutableStateFlow<com.finnvek.knittools.domain.model.CounterProject?>(
+                    com.finnvek.knittools.domain.model
+                        .CounterProject(id = 9L, name = "Completed", isCompleted = true),
+                )
+            every { counterRepository.observeProject(9L) } returns project
+            val vm = createViewModel()
+            vm.loadFromCard(YarnCard(id = 7L, yarnName = "Yarn", linkedProjectId = 9L))
+            backgroundScope.launch(testDispatcher) { vm.linkedProjectName.collect {} }
+            assertEquals("Completed", vm.linkedProjectName.value)
+            project.value = project.value?.copy(name = "Renamed")
+            assertEquals("Renamed", vm.linkedProjectName.value)
+            project.value = null
+            assertNull(vm.linkedProjectName.value)
+        }
+
+    @Test
+    fun `detail write failures report errors without changing observed card and permit retry`() =
+        runTest {
+            val vm = createViewModel()
+            val card = YarnCard(id = 7L, yarnName = "Original", quantityInStash = 3)
+            vm.loadFromCard(card)
+            val original = vm.formState.value
+            val errors = mutableListOf<Unit>()
+            backgroundScope.launch(testDispatcher) { vm.mutationErrors.collect { errors.add(it) } }
+            coEvery { repository.changeQuantity(7L, 1) } throws IOException("quantity")
+            coEvery { repository.updateStatus(7L, YarnCardStatus.IN_USE) } throws IOException("status")
+            coEvery { repository.updateLinkedProjectId(7L, 99L) } throws IOException("link")
+            coEvery { repository.saveCard(any()) } throws IOException("details")
+
+            vm.updateQuantity(1)
+            vm.updateStatus(YarnCardStatus.IN_USE)
+            vm.setLinkedProject(99L)
+            vm.updateManualDetails(ManualYarnCardInput(yarnName = "Changed"))
+            advanceUntilIdle()
+
+            assertEquals(4, errors.size)
+            assertEquals(original, vm.formState.value)
+            coEvery { repository.changeQuantity(7L, 1) } returns true
+            vm.updateQuantity(1)
+            advanceUntilIdle()
+            coVerify(exactly = 2) { repository.changeQuantity(7L, 1) }
+            assertEquals(4, errors.size)
+        }
+
+    @Test
+    fun `rejected detail writes are reported rather than treated as success`() =
+        runTest {
+            val vm = createViewModel()
+            vm.loadFromCard(YarnCard(id = 7L, yarnName = "Original"))
+            val errors = mutableListOf<Unit>()
+            backgroundScope.launch(testDispatcher) { vm.mutationErrors.collect { errors.add(it) } }
+            coEvery { repository.changeQuantity(7L, 1) } returns false
+            coEvery { repository.updateStatus(7L, YarnCardStatus.IN_USE) } returns false
+            coEvery { repository.updateLinkedProjectId(7L, 99L) } returns false
+            coEvery { repository.saveCard(any()) } returns null
+
+            vm.updateQuantity(1)
+            vm.updateStatus(YarnCardStatus.IN_USE)
+            vm.setLinkedProject(99L)
+            vm.updateManualDetails(ManualYarnCardInput(yarnName = "Changed"))
+            advanceUntilIdle()
+
+            assertEquals(4, errors.size)
+        }
+
+    @Test
+    fun `failed delete invokes failure callback and only successful retry invokes navigation`() =
+        runTest {
+            val vm = createViewModel()
+            val errors = mutableListOf<Unit>()
+            backgroundScope.launch(testDispatcher) { vm.mutationErrors.collect { errors.add(it) } }
+            var failed = 0
+            var deleted = 0
+            coEvery { repository.deleteCard(7L) } throws IOException("delete")
+            vm.deleteCard(7L, onFailure = { failed++ }) { deleted++ }
+            advanceUntilIdle()
+            assertEquals(1, failed)
+            assertEquals(0, deleted)
+            assertEquals(1, errors.size)
+
+            coEvery { repository.deleteCard(7L) } returns false
+            vm.deleteCard(7L, onFailure = { failed++ }) { deleted++ }
+            advanceUntilIdle()
+            assertEquals(2, failed)
+            assertEquals(0, deleted)
+
+            coEvery { repository.deleteCard(7L) } returns true
+            vm.deleteCard(7L, onFailure = { failed++ }) { deleted++ }
+            advanceUntilIdle()
+            assertEquals(2, failed)
+            assertEquals(1, deleted)
+            assertEquals(2, errors.size)
+        }
+
+    @Test
+    fun `cancelled detail write does not report failure or successful deletion`() =
+        runTest {
+            val vm = createViewModel()
+            val errors = mutableListOf<Unit>()
+            backgroundScope.launch(testDispatcher) { vm.mutationErrors.collect { errors.add(it) } }
+            coEvery { repository.deleteCard(7L) } throws CancellationException("cancelled")
+            var callbacks = 0
+
+            vm.deleteCard(7L, onFailure = { callbacks++ }) { callbacks++ }
+            advanceUntilIdle()
+
+            assertEquals(0, callbacks)
+            assertTrue(errors.isEmpty())
+        }
+
+    @Test
     fun `loadFromCard sets editingCardId`() {
         val card =
             YarnCard(
@@ -69,23 +187,6 @@ class YarnCardViewModelTest {
     }
 
     @Test
-    fun `loadCardForDetail clears stale card state when card is missing`() =
-        runTest {
-            coEvery { repository.getCard(99L) } returns null
-            val vm = createViewModel()
-            vm.loadFromCard(YarnCard(id = 5L, brand = "Old", yarnName = "Card"))
-
-            var loaded: Boolean? = null
-            vm.loadCardForDetail(99L) { loaded = it }
-            advanceUntilIdle()
-
-            assertEquals(false, loaded)
-            assertNull(vm.formState.value.editingCardId)
-            assertEquals("", vm.formState.value.brand)
-            assertEquals("", vm.formState.value.yarnName)
-        }
-
-    @Test
     fun `updateStatus ignores unsupported values`() =
         runTest {
             val vm = createViewModel()
@@ -100,7 +201,7 @@ class YarnCardViewModelTest {
     @Test
     fun `updateQuantity leaves detail state unchanged when card update is rejected`() =
         runTest {
-            coEvery { repository.updateQuantity(7L, 4) } returns false
+            coEvery { repository.changeQuantity(7L, 1) } returns false
             val vm = createViewModel()
             vm.loadFromCard(YarnCard(id = 7L, quantityInStash = 3))
 
@@ -108,6 +209,7 @@ class YarnCardViewModelTest {
             advanceUntilIdle()
 
             assertEquals(3, vm.formState.value.quantityInStash)
+            coVerify { repository.changeQuantity(7L, 1) }
         }
 
     @Test
@@ -139,44 +241,45 @@ class YarnCardViewModelTest {
     @Test
     fun `updateManualDetails saves existing card with trimmed optional yarn details`() =
         runTest {
-            val savedCard = slot<YarnCard>()
-            coEvery { repository.saveCard(any()) } returns 7L
             val vm = createViewModel()
-            vm.loadFromCard(
-                YarnCard(
-                    id = 7L,
-                    brand = "Old brand",
-                    yarnName = "Old yarn",
-                    quantityInStash = 3,
-                    status = YarnCardStatus.IN_USE,
-                    linkedProjectId = 11L,
-                ),
-            )
+            for (quantity in listOf(0, 3)) {
+                val savedCard = slot<YarnCard>()
+                coEvery { repository.saveCard(capture(savedCard)) } returns 7L
+                vm.loadFromCard(
+                    YarnCard(
+                        id = 7L,
+                        brand = "Old brand",
+                        yarnName = "Old yarn",
+                        quantityInStash = quantity,
+                        status = YarnCardStatus.IN_USE,
+                        linkedProjectId = 11L,
+                    ),
+                )
 
-            vm.updateManualDetails(
-                ManualYarnCardInput(
-                    yarnName = "  Blue sock yarn  ",
-                    brand = "  Regia  ",
-                    quantity = 1,
-                    weightCategory = "  Fingering  ",
-                    colorName = "  Blue  ",
-                    colorNumber = "  123  ",
-                    dyeLot = "  A7  ",
-                ),
-            )
-            advanceUntilIdle()
+                vm.updateManualDetails(
+                    ManualYarnCardInput(
+                        yarnName = "  Blue sock yarn  ",
+                        brand = "  Regia  ",
+                        quantity = 1,
+                        weightCategory = "  Fingering  ",
+                        colorName = "  Blue  ",
+                        colorNumber = "  123  ",
+                        dyeLot = "  A7  ",
+                    ),
+                )
+                advanceUntilIdle()
 
-            coVerify { repository.saveCard(capture(savedCard)) }
-            assertEquals(7L, savedCard.captured.id)
-            assertEquals("Blue sock yarn", savedCard.captured.yarnName)
-            assertEquals("Regia", savedCard.captured.brand)
-            assertEquals(3, savedCard.captured.quantityInStash)
-            assertEquals(YarnCardStatus.IN_USE, savedCard.captured.status)
-            assertEquals(11L, savedCard.captured.linkedProjectId)
-            assertEquals("Fingering", savedCard.captured.weightCategory)
-            assertEquals("Blue", savedCard.captured.colorName)
-            assertEquals("123", savedCard.captured.colorNumber)
-            assertEquals("A7", savedCard.captured.dyeLot)
+                assertEquals(7L, savedCard.captured.id)
+                assertEquals("Blue sock yarn", savedCard.captured.yarnName)
+                assertEquals("Regia", savedCard.captured.brand)
+                assertEquals(quantity, savedCard.captured.quantityInStash)
+                assertEquals(YarnCardStatus.IN_USE, savedCard.captured.status)
+                assertEquals(11L, savedCard.captured.linkedProjectId)
+                assertEquals("Fingering", savedCard.captured.weightCategory)
+                assertEquals("Blue", savedCard.captured.colorName)
+                assertEquals("123", savedCard.captured.colorNumber)
+                assertEquals("A7", savedCard.captured.dyeLot)
+            }
         }
 
     @Test
@@ -228,23 +331,4 @@ class YarnCardViewModelTest {
         assertEquals("", form.yarnName)
         assertEquals("", form.photoUri)
     }
-
-    @Test
-    fun `linkCardToProject delegates consistent project link update`() =
-        runTest {
-            val vm = createViewModel()
-            vm.linkCardToProject(5L, 1L)
-
-            coVerify { repository.updateLinkedProjectId(5L, 1L) }
-        }
-
-    @Test
-    fun `linkCardToProject does not bypass yarn repository for duplicate checks`() =
-        runTest {
-            val vm = createViewModel()
-            vm.linkCardToProject(5L, 1L)
-
-            coVerify(exactly = 0) { counterRepository.updateProjectYarnCardIds(any(), any()) }
-            coVerify { repository.updateLinkedProjectId(5L, 1L) }
-        }
 }

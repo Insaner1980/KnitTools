@@ -2,37 +2,32 @@ package com.finnvek.knittools.ui.screens.library
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AutoStories
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.outlined.FolderOpen
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -40,47 +35,140 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
-import coil3.compose.AsyncImage
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.finnvek.knittools.R
+import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.domain.model.SavedPattern
 import com.finnvek.knittools.domain.model.SavedPatternSource
+import com.finnvek.knittools.domain.model.WebPatternUrl
+import com.finnvek.knittools.domain.model.isWebPatternCompatible
+import com.finnvek.knittools.domain.model.webPatternUrlOrNull
+import com.finnvek.knittools.repository.SavedPatternMetadataMutationResult
 import com.finnvek.knittools.ui.components.ConfirmationDialog
+import com.finnvek.knittools.ui.components.MoreOptionsIconButton
+import com.finnvek.knittools.ui.components.OverviewEmptyText
+import com.finnvek.knittools.ui.components.OverviewLinkRow
+import com.finnvek.knittools.ui.components.OverviewSectionHeader
+import com.finnvek.knittools.ui.components.ProjectPickerSheet
+import com.finnvek.knittools.ui.components.RemotePatternImage
 import com.finnvek.knittools.ui.components.ToolScreenScaffold
-import com.finnvek.knittools.ui.screens.ravelry.openRavelryUrl
-import com.finnvek.knittools.ui.screens.ravelry.ravelryExternalUrlOrNull
+import com.finnvek.knittools.ui.components.rememberScrollTitleState
+import com.finnvek.knittools.ui.layout.ContentWidthPolicy
+import com.finnvek.knittools.ui.platform.ExternalWebLinkOpenResult
+import com.finnvek.knittools.ui.platform.openExternalWebLink
+import com.finnvek.knittools.ui.screens.ravelry.PatternAvailabilityBadge
+import com.finnvek.knittools.ui.screens.ravelry.ravelryPageUrlOrNull
+import com.finnvek.knittools.ui.theme.ProjectOverviewDimens
+import com.finnvek.knittools.ui.theme.knitToolsColors
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
+@Suppress("kotlin:S107", "kotlin:S3776") // Detail-reitti välittää lähdekohtaiset käyttäjätoiminnot eksplisiittisesti.
 fun SavedPatternDetailScreen(
     pattern: SavedPattern,
     onBack: () -> Unit,
     onOpenPattern: () -> Unit,
-    onAttachToProject: () -> Unit,
+    onAttachToProject: (projectId: Long, onResult: (attached: Boolean) -> Unit) -> Unit,
     onRemove: () -> Unit,
     modifier: Modifier = Modifier,
+    onOpenWebsite: ((String) -> ExternalWebLinkOpenResult)? = null,
+    onOpenRavelry: (String) -> Unit = {},
+    onEditWebPattern: () -> Unit = {},
+    projects: List<CounterProject> = emptyList(),
+    onAttachWebPattern: (Long, Long?, (SavedPatternMetadataMutationResult) -> Unit) -> Unit = { _, _, onResult ->
+        onResult(SavedPatternMetadataMutationResult.PersistenceFailure)
+    },
+    onOpenProject: (projectId: Long) -> Unit = {},
     deleteErrorId: Long = 0L,
+    isLocalPdfAvailable: Boolean = false,
 ) {
     var showRemoveConfirmDialog by rememberSaveable { mutableStateOf(false) }
+    var pendingReplacementId by rememberSaveable(pattern.id) { mutableStateOf<Long?>(null) }
+    var showProjectPicker by rememberSaveable(pattern.id) { mutableStateOf(false) }
+    val attachmentViewModel: SavedPatternAttachmentViewModel = viewModel(key = "web-attachment-${pattern.id}")
+    val attachmentState by attachmentViewModel.state.collectAsStateWithLifecycle()
+    var lastHandledDeleteErrorId by rememberSaveable(pattern.id) { mutableLongStateOf(deleteErrorId) }
     val snackbarHostState = remember { SnackbarHostState() }
+    val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
-    val openFailedMessage = stringResource(R.string.pattern_open_failed)
-    val deleteFailedMessage = stringResource(R.string.generic_error_unknown)
     val ravelryUrl = pattern.ravelryUrlOrNull()
+    val webUrl = pattern.webPatternUrlOrNull
+    val isWebPattern = pattern.isWebPatternCompatible && webUrl != null
+    val deleteFailedMessage =
+        stringResource(
+            if (isWebPattern) R.string.web_pattern_delete_failed else R.string.generic_error_unknown,
+        )
+    val attachFailedMessage = stringResource(R.string.web_pattern_save_failed)
+    val projectUnavailableMessage = stringResource(R.string.web_pattern_project_unavailable)
+    val noBrowserMessage = stringResource(R.string.web_pattern_no_browser)
+    val webOpenFailedMessage = stringResource(R.string.web_pattern_open_failed)
+    val handleWebAttachResult: (SavedPatternMetadataMutationResult) -> Unit = { result ->
+        when (result) {
+            is SavedPatternMetadataMutationResult.Attached,
+            is SavedPatternMetadataMutationResult.AlreadyAttached,
+            -> {
+                pendingReplacementId = null
+                attachmentState.projectId?.let(onOpenProject)
+            }
+
+            is SavedPatternMetadataMutationResult.ReplacementRequired -> {
+                pendingReplacementId = result.existingSavedPatternId
+            }
+
+            SavedPatternMetadataMutationResult.ProjectMissing -> {
+                pendingReplacementId = null
+                coroutineScope.launch { snackbarHostState.showSnackbar(projectUnavailableMessage) }
+            }
+
+            SavedPatternMetadataMutationResult.PatternMissing,
+            SavedPatternMetadataMutationResult.NotWebPattern,
+            SavedPatternMetadataMutationResult.StaleAction,
+            SavedPatternMetadataMutationResult.PersistenceFailure,
+            SavedPatternMetadataMutationResult.Unlinked,
+            SavedPatternMetadataMutationResult.AlreadyUnlinked,
+            -> {
+                pendingReplacementId = null
+                coroutineScope.launch { snackbarHostState.showSnackbar(attachFailedMessage) }
+            }
+        }
+    }
+
+    LaunchedEffect(attachmentState.result) {
+        attachmentState.result?.let { result ->
+            attachmentViewModel.consumeResult()
+            handleWebAttachResult(result)
+        }
+    }
 
     LaunchedEffect(deleteErrorId) {
-        if (deleteErrorId > 0L) {
+        if (deleteErrorId > lastHandledDeleteErrorId) {
+            lastHandledDeleteErrorId = deleteErrorId
             snackbarHostState.showSnackbar(deleteFailedMessage)
         }
     }
 
     if (showRemoveConfirmDialog) {
         ConfirmationDialog(
-            title = stringResource(R.string.remove_pattern),
-            message = stringResource(R.string.saved_pattern_detail_remove_confirm),
-            confirmText = stringResource(R.string.remove_pattern),
+            scrollableMessage = true,
+            title =
+                stringResource(
+                    if (isWebPattern) R.string.web_pattern_delete_confirm_title else R.string.remove_pattern,
+                ),
+            message =
+                if (isWebPattern) {
+                    stringResource(R.string.web_pattern_delete_confirm_message, pattern.name)
+                } else {
+                    stringResource(R.string.saved_pattern_detail_remove_confirm)
+                },
+            confirmText =
+                stringResource(
+                    if (isWebPattern) R.string.web_pattern_delete else R.string.remove_pattern,
+                ),
             isDestructive = true,
             onConfirm = {
                 showRemoveConfirmDialog = false
@@ -89,108 +177,297 @@ fun SavedPatternDetailScreen(
             onDismiss = { showRemoveConfirmDialog = false },
         )
     }
+    val startWebAttach: (Long, Long?) -> Unit = { projectId, expectedExistingId ->
+        attachmentViewModel.attach(projectId, expectedExistingId) { expected, onResult ->
+            onAttachWebPattern(projectId, expected, onResult)
+        }
+    }
+    if (showProjectPicker) {
+        ProjectPickerSheet(
+            title = stringResource(R.string.saved_pattern_detail_attach_to_project),
+            projects = projects,
+            onSelect = { projectId ->
+                showProjectPicker = false
+                pendingReplacementId = null
+                if (isWebPattern) {
+                    startWebAttach(projectId, null)
+                } else {
+                    onAttachToProject(projectId) { attached ->
+                        if (!attached) coroutineScope.launch { snackbarHostState.showSnackbar(attachFailedMessage) }
+                    }
+                }
+            },
+            onDismiss = { showProjectPicker = false },
+        )
+    }
+    val replacementProjectId = attachmentState.projectId
+    if (replacementProjectId != null) {
+        pendingReplacementId?.let { expectedExistingId ->
+            ConfirmationDialog(
+                title = stringResource(R.string.web_pattern_replace_confirm_title),
+                message = stringResource(R.string.web_pattern_replace_confirm_message, pattern.name),
+                confirmText = stringResource(R.string.web_pattern_attach),
+                isDestructive = true,
+                onConfirm = { startWebAttach(replacementProjectId, expectedExistingId) },
+                onDismiss = { pendingReplacementId = null },
+            )
+        }
+    }
 
+    // Nimi on sisällön otsikkona; yläpalkki näyttää sen vasta kun nimi on vieritetty pois.
+    val scrollTitle = rememberScrollTitleState()
+    val openWebsite: () -> Unit = {
+        webUrl?.let { url ->
+            val result = onOpenWebsite?.invoke(url.originalUrl) ?: openExternalWebLink(context, url.originalUrl)
+            val message =
+                when (result) {
+                    ExternalWebLinkOpenResult.NoBrowser -> noBrowserMessage
+
+                    ExternalWebLinkOpenResult.InvalidUrl,
+                    ExternalWebLinkOpenResult.Failed,
+                    -> webOpenFailedMessage
+
+                    ExternalWebLinkOpenResult.Opened -> null
+                }
+            message?.let { coroutineScope.launch { snackbarHostState.showSnackbar(it) } }
+        }
+    }
+    val openRavelry: () -> Unit = {
+        // Sovelluksen oma Ravelry-selain, jotta Download PDF tallentuu suoraan KnitToolsiin.
+        ravelryUrl?.let(onOpenRavelry)
+    }
     ToolScreenScaffold(
+        contentWidthPolicy = ContentWidthPolicy.ListDetail,
         title = pattern.name,
         onBack = onBack,
         modifier = modifier,
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
+        showTitle = scrollTitle.showTitle,
+        actions = {
+            SavedPatternDetailMenu(
+                onEdit = onEditWebPattern.takeIf { isWebPattern },
+                deleteLabel =
+                    stringResource(if (isWebPattern) R.string.web_pattern_delete else R.string.remove_pattern),
+                onDelete = { showRemoveConfirmDialog = true },
+            )
+        },
     ) {
+        // Sama rakenne kuin projektinäkymässä ja langan sivulla: nimi, yksi päätoiminto ja
+        // hiusviivaosiot. Muokkaus ja poisto ovat ylivuotovalikossa eivätkä painikepinossa.
         Column(
             modifier =
                 Modifier
                     .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+                    .verticalScroll(scrollTitle.scrollState)
+                    .padding(
+                        start = ProjectOverviewDimens.ScreenHorizontalPadding,
+                        top = ProjectOverviewDimens.TopContentGap,
+                        end = ProjectOverviewDimens.ScreenHorizontalPadding,
+                        bottom = ProjectOverviewDimens.ContentBottomPadding,
+                    ),
         ) {
-            SavedPatternDetailHeader(pattern = pattern)
-            SavedPatternAvailability(pattern = pattern, canOpenRavelry = ravelryUrl != null)
-            SavedPatternDetailActions(
-                canOpenPattern = pattern.hasAttachedPdf,
-                canOpenRavelry = ravelryUrl != null,
-                onOpenPattern = onOpenPattern,
-                onOpenRavelry = {
-                    ravelryUrl?.let { url ->
-                        openRavelryUrl(
-                            context = context,
-                            url = url,
-                            failureMessage = openFailedMessage,
+            SavedPatternDetailHeader(
+                pattern = pattern,
+                showImage = !isWebPattern,
+                modifier = scrollTitle.headerModifier,
+            )
+            if (webUrl != null && isWebPattern) {
+                SavedPatternPrimaryAction(
+                    label = stringResource(R.string.web_pattern_open_website),
+                    onClick = openWebsite,
+                    description =
+                        stringResource(R.string.web_pattern_open_website_description, pattern.name, webUrl.host),
+                )
+                WebPatternSourceSection(url = webUrl)
+                SavedPatternProjectSection(
+                    label = stringResource(R.string.web_pattern_attach),
+                    description = stringResource(R.string.web_pattern_attach_description, pattern.name),
+                    onAttach = { showProjectPicker = true },
+                )
+            } else {
+                when {
+                    isLocalPdfAvailable -> {
+                        SavedPatternPrimaryAction(
+                            label = stringResource(R.string.saved_pattern_detail_open_pattern),
+                            onClick = onOpenPattern,
                         )
                     }
-                },
-                onAttachToProject = onAttachToProject,
-                onRemove = { showRemoveConfirmDialog = true },
-            )
+
+                    ravelryUrl != null -> {
+                        SavedPatternPrimaryAction(stringResource(R.string.open_in_ravelry), openRavelry)
+                    }
+                }
+                // Tuotu PDF ei ole Ravelry-ohje: sille ei näytetä Ravelry-osiota eikä tuntematonta saatavuutta.
+                if (pattern.source == SavedPatternSource.Ravelry || ravelryUrl != null) {
+                    RavelrySourceSection(
+                        pattern = pattern,
+                        isLocalPdfAvailable = isLocalPdfAvailable,
+                        canOpenRavelry = ravelryUrl != null,
+                        // Ravelry-linkki rivinä vain kun päätoiminto on PDF; muuten se on jo painike.
+                        onOpenRavelry = openRavelry.takeIf { isLocalPdfAvailable && ravelryUrl != null },
+                    )
+                }
+                if (!pattern.localPdfUri.isNullOrBlank() && !isLocalPdfAvailable) {
+                    OverviewEmptyText(R.string.pattern_open_failed)
+                } else {
+                    SavedPatternProjectSection(
+                        label = stringResource(R.string.saved_pattern_detail_attach_to_project),
+                        description = null,
+                        onAttach = { showProjectPicker = true },
+                    )
+                }
+            }
         }
     }
 }
 
 @Composable
-private fun SavedPatternDetailHeader(pattern: SavedPattern) {
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        pattern.thumbnailUrl
-            ?.takeIf { it.isNotBlank() }
-            ?.let { thumbnailUrl ->
-                AsyncImage(
-                    model = thumbnailUrl,
-                    contentDescription = stringResource(R.string.saved_pattern_detail_thumbnail),
-                    contentScale = ContentScale.Crop,
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .aspectRatio(1.4f)
-                            .clip(RoundedCornerShape(12.dp)),
-                )
-            }
-
-        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text(
-                text = pattern.name,
-                style = MaterialTheme.typography.headlineSmall,
-                color = MaterialTheme.colorScheme.onBackground,
-                fontWeight = FontWeight.SemiBold,
+private fun SavedPatternDetailMenu(
+    onEdit: (() -> Unit)?,
+    deleteLabel: String,
+    onDelete: () -> Unit,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    MoreOptionsIconButton(onClick = { expanded = true })
+    DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+        onEdit?.let { edit ->
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.web_pattern_edit)) },
+                onClick = {
+                    expanded = false
+                    edit()
+                },
             )
+        }
+        DropdownMenuItem(
+            text = { Text(deleteLabel) },
+            onClick = {
+                expanded = false
+                onDelete()
+            },
+        )
+    }
+}
+
+/** Nimi ja suunnittelija (Ravelry-kaavalla myös kuva); yläpalkin otsikko näkyy kun lohko on vieritetty pois. */
+@Composable
+private fun SavedPatternDetailHeader(
+    pattern: SavedPattern,
+    showImage: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(ProjectOverviewDimens.ContentGap)) {
+        if (showImage) {
+            RemotePatternImage(
+                imageUrl = pattern.thumbnailUrl,
+                contentScale = ContentScale.Crop,
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .height(ProjectOverviewDimens.HeroPhotoHeight)
+                        .clip(RoundedCornerShape(ProjectOverviewDimens.HeroPhotoCornerRadius)),
+            )
+        }
+        Text(
+            text = pattern.name,
+            style = MaterialTheme.typography.headlineMedium,
+            color = MaterialTheme.colorScheme.onBackground,
+        )
+        pattern.designerName.takeIf { it.isNotBlank() }?.let { designer ->
             Text(
-                text = pattern.designerName,
+                text = designer,
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
             )
         }
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+/** Kaavan ainoa täytetty painike: sivulla on yksi päätoiminto, kuten projektinäkymän jatka-kortti. */
 @Composable
-private fun SavedPatternAvailability(
-    pattern: SavedPattern,
-    canOpenRavelry: Boolean,
+private fun SavedPatternPrimaryAction(
+    label: String,
+    onClick: () -> Unit,
+    description: String? = null,
 ) {
-    FlowRow(
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+    Button(
+        onClick = onClick,
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(top = ProjectOverviewDimens.HeaderTopGap)
+                .heightIn(min = ProjectOverviewDimens.ActionTouchSize)
+                .semantics { description?.let { contentDescription = it } },
     ) {
-        if (pattern.hasAttachedPdf) {
+        Text(label)
+    }
+}
+
+@Composable
+private fun WebPatternSourceSection(url: WebPatternUrl) {
+    OverviewSectionHeader(R.string.web_pattern_website_label)
+    Column(verticalArrangement = Arrangement.spacedBy(ProjectOverviewDimens.ContentGap)) {
+        Text(text = url.host, style = MaterialTheme.typography.titleMedium)
+        SelectionContainer {
+            Text(
+                text = url.originalUrl,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        if (!url.isSecure) {
+            Text(
+                text = stringResource(R.string.web_pattern_http_warning),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.error,
+            )
+        }
+        listOf(
+            R.string.web_pattern_opens_original,
+            R.string.web_pattern_not_offline,
+            R.string.web_pattern_source_controlled,
+        ).forEach { OverviewEmptyText(it) }
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun RavelrySourceSection(
+    pattern: SavedPattern,
+    isLocalPdfAvailable: Boolean,
+    canOpenRavelry: Boolean,
+    onOpenRavelry: (() -> Unit)?,
+) {
+    val requiresRavelryAccess = pattern.source == SavedPatternSource.Ravelry && !isLocalPdfAvailable
+    OverviewSectionHeader(R.string.tool_ravelry)
+    FlowRow(
+        horizontalArrangement = Arrangement.spacedBy(ProjectOverviewDimens.ContentGap),
+        verticalArrangement = Arrangement.spacedBy(ProjectOverviewDimens.ContentGap),
+    ) {
+        PatternAvailabilityBadge(availability = pattern.availability)
+        if (isLocalPdfAvailable) {
             SavedPatternAvailabilityChip(text = stringResource(R.string.saved_pattern_detail_pdf_attached))
         }
-        if (pattern.isAvailableOffline) {
+        if (isLocalPdfAvailable && pattern.isAvailableOffline) {
             SavedPatternAvailabilityChip(text = stringResource(R.string.saved_pattern_detail_available_offline))
         }
         if (canOpenRavelry) {
             SavedPatternAvailabilityChip(text = stringResource(R.string.saved_pattern_detail_open_on_ravelry))
         }
-        if (pattern.requiresRavelryAccess) {
+        if (requiresRavelryAccess) {
             SavedPatternAvailabilityChip(text = stringResource(R.string.saved_pattern_detail_requires_ravelry))
         }
     }
+    if (requiresRavelryAccess) {
+        OverviewEmptyText(R.string.saved_pattern_detail_no_pdf_explanation)
+    }
+    onOpenRavelry?.let { OverviewLinkRow(stringResource(R.string.open_in_ravelry), null, null, onClick = it) }
 }
 
 @Composable
 private fun SavedPatternAvailabilityChip(text: String) {
     Surface(
-        color = MaterialTheme.colorScheme.surfaceContainerHighest,
+        color = MaterialTheme.knitToolsColors.cardContainer,
         shape = MaterialTheme.shapes.small,
     ) {
         Text(
@@ -203,64 +480,25 @@ private fun SavedPatternAvailabilityChip(text: String) {
 }
 
 @Composable
-private fun SavedPatternDetailActions(
-    canOpenPattern: Boolean,
-    canOpenRavelry: Boolean,
-    onOpenPattern: () -> Unit,
-    onOpenRavelry: () -> Unit,
-    onAttachToProject: () -> Unit,
-    onRemove: () -> Unit,
+private fun SavedPatternProjectSection(
+    label: String,
+    description: String?,
+    onAttach: () -> Unit,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Button(
-            onClick = onOpenPattern,
-            enabled = canOpenPattern,
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Icon(imageVector = Icons.Filled.AutoStories, contentDescription = null)
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(stringResource(R.string.saved_pattern_detail_open_pattern))
-        }
-        OutlinedButton(
-            onClick = onOpenRavelry,
-            enabled = canOpenRavelry,
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Icon(imageVector = Icons.Filled.AutoStories, contentDescription = null)
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(stringResource(R.string.open_in_ravelry))
-        }
-        OutlinedButton(
-            onClick = onAttachToProject,
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Icon(imageVector = Icons.Outlined.FolderOpen, contentDescription = null)
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(stringResource(R.string.saved_pattern_detail_attach_to_project))
-        }
-        TextButton(
-            onClick = onRemove,
-            modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
-        ) {
-            Icon(
-                imageVector = Icons.Filled.Delete,
-                contentDescription = null,
-                modifier = Modifier.size(18.dp),
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(stringResource(R.string.remove_pattern))
-        }
-    }
+    OverviewSectionHeader(R.string.project_content_title)
+    OverviewLinkRow(
+        title = label,
+        subtitle = null,
+        glyph = null,
+        onClick = onAttach,
+        modifier =
+            Modifier.semantics(mergeDescendants = true) {
+                description?.let { contentDescription = it }
+            },
+    )
 }
-
-private val SavedPattern.hasAttachedPdf: Boolean
-    get() = !localPdfUri.isNullOrBlank()
-
-private val SavedPattern.requiresRavelryAccess: Boolean
-    get() = source == SavedPatternSource.Ravelry && !hasAttachedPdf
 
 private fun SavedPattern.ravelryUrlOrNull(): String? =
     canonicalUrl
         .ifBlank { originalUrl }
-        .let(::ravelryExternalUrlOrNull)
+        .let(::ravelryPageUrlOrNull)

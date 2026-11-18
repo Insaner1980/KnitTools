@@ -3,7 +3,6 @@ package com.finnvek.knittools.ui.navigation
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
-import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class CounterLaunchRequestTest {
@@ -25,6 +24,7 @@ class CounterLaunchRequestTest {
         assertEquals("launch-1", consumedLaunchId)
         assertEquals("launch-1", request?.requestId)
         assertEquals(42L, request?.projectId)
+        assertNull(request?.journeyAction)
     }
 
     @Test
@@ -37,25 +37,6 @@ class CounterLaunchRequestTest {
             ).withValidatedCounterLaunchTrust { false }
 
         assertNull(CounterLaunchRequest.fromIntentData(intentData, consumedRequestId = null))
-    }
-
-    @Test
-    fun `oauth callback does not consume counter launch token`() {
-        var tokenConsumptionAttempted = false
-        val intentData =
-            CounterLaunchIntentData(
-                shouldOpenCounter = true,
-                projectId = 42L,
-                launchId = "launch-1",
-                isOAuthCallback = true,
-            ).withValidatedCounterLaunchTrust {
-                tokenConsumptionAttempted = true
-                true
-            }
-
-        assertTrue(intentData.isOAuthCallback)
-        assertNull(CounterLaunchRequest.fromIntentData(intentData, consumedRequestId = null))
-        assertEquals(false, tokenConsumptionAttempted)
     }
 
     @Test
@@ -149,24 +130,6 @@ class CounterLaunchRequestTest {
                         projectId = 42L,
                         launchId = "launch-1",
                         isTrustedCounterLaunch = false,
-                    ),
-                consumedRequestId = null,
-            )
-
-        assertNull(request)
-    }
-
-    @Test
-    fun `oauth callback launch does not create counter launch request even with counter extras`() {
-        val request =
-            CounterLaunchRequest.fromIntentData(
-                intentData =
-                    CounterLaunchIntentData(
-                        shouldOpenCounter = true,
-                        projectId = 42L,
-                        launchId = "launch-1",
-                        isTrustedCounterLaunch = false,
-                        isOAuthCallback = true,
                     ),
                 consumedRequestId = null,
             )

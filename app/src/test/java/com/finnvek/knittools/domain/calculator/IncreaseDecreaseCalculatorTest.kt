@@ -31,42 +31,18 @@ class IncreaseDecreaseCalculatorTest {
     fun `even increase produces clean pattern`() {
         val result = IncreaseDecreaseCalculator.calculate(80, 8, IncreaseDecreaseMode.INCREASE)
         assertTrue(result.isValid)
-        assertTrue(result.easyPattern.contains("K10"))
+        assertTrue(result.easyPattern.contains("K9"))
         assertTrue(result.easyPattern.contains("M1"))
         assertTrue(result.easyPattern.contains("× 8"))
     }
 
     @Test
     fun `decrease 8 from 35 flat uses correct stitch count`() {
-        // 35 st, decrease 8: availableForKnit = 35 - 8 = 27, 27/8 = 3 rem 3
-        // Easy: (K3, K2tog) × 5, (K4, K2tog) × 3 — NOT (K4, K2tog) × 8
-        // Verify: 5*(3+2) + 3*(4+2) = 25+18 = 43? No wait...
-        // Each section consumes K + 2 stitches (K2tog eats 2)
-        // Actually: availableForKnit already accounts for K2tog consuming extra
-        // Plain K stitches = 27, K2tog pairs = 8, total consumed = 27 + 8*2 = 27+16 = 43? No.
-        // Wait: currentStitches = 35, changeBy = 8
-        // availableForKnit = currentStitches - changeBy = 35 - 8 = 27
-        // This is the number of stitches that go into plain K
-        // Plus 8 K2tog operations each consuming 2 = 16
-        // Total consumed: 27 + 16 = 43 ≠ 35!
-        //
-        // Correction: K2tog consumes 2 stitches to produce 1.
-        // So it "removes" 1 stitch. To remove 8 stitches, we need 8 K2tog.
-        // Each K2tog takes 2 from the row. So stitches used = plain_K + 2*8 = plain_K + 16
-        // plain_K + 16 = 35 → plain_K = 19
-        // 19/8 = 2 rem 3
-        // Easy: (K2, K2tog) × 5, (K3, K2tog) × 3
-        // Verify: 5*(2+2) + 3*(3+2) = 20+15 = 35 ✓, output: 5*3 + 3*4 = 15+12 = 27 ✓
-        //
-        // So availableForKnit should be currentStitches - 2*changeBy for decrease
-        // but our code uses currentStitches - changeBy = 27. That's wrong.
-        // Let me re-check the fix...
+        // Each K2tog consumes two stitches and produces one, leaving 35 - 2 * 8 = 19 plain knits.
+        // K1, (K2, K2tog) x 8, K2 consumes 1 + 8 * 4 + 2 = 35 and produces 1 + 8 * 3 + 2 = 27.
         val result = IncreaseDecreaseCalculator.calculate(35, 8, IncreaseDecreaseMode.DECREASE, KnittingStyle.FLAT)
         assertTrue(result.isValid)
         assertEquals(27, result.totalStitches)
-        // Pattern must consume exactly 35 stitches
-        // With availableForKnit=27: (K3, K2tog)×5, (K4, K2tog)×3 = 5*5+3*6 = 43 ≠ 35 WRONG
-        // With availableForKnit=19: (K2, K2tog)×5, (K3, K2tog)×3 = 5*4+3*5 = 35 ✓
         assertEquals("K1, (K2, K2tog) × 8, K2", result.easyPattern)
     }
 
@@ -146,10 +122,10 @@ class IncreaseDecreaseCalculatorTest {
     }
 
     @Test
-    fun `increase more than current warns but still valid`() {
+    fun `increase more than available bars is invalid`() {
         val result = IncreaseDecreaseCalculator.calculate(35, 68, IncreaseDecreaseMode.INCREASE)
-        assertTrue(result.isValid)
-        assertEquals(IncreaseDecreaseMessage.IncreaseMoreThanCurrent, result.message)
+        assertFalse(result.isValid)
+        assertEquals(IncreaseDecreaseMessage.NotEnoughBarsForIncrease, result.message)
         assertNull(result.errorMessage)
     }
 
@@ -192,9 +168,9 @@ class IncreaseDecreaseCalculatorTest {
     @Test
     fun `increase more than current does not show zero-knit sections`() {
         val result = IncreaseDecreaseCalculator.calculate(3, 5, IncreaseDecreaseMode.INCREASE, KnittingStyle.CIRCULAR)
-        assertTrue(result.isValid)
-        assertEquals(8, result.totalStitches)
-        assertEquals(IncreaseDecreaseMessage.IncreaseMoreThanCurrent, result.message)
+        assertFalse(result.isValid)
+        assertEquals(0, result.totalStitches)
+        assertEquals(IncreaseDecreaseMessage.NotEnoughBarsForIncrease, result.message)
         assertFalse(result.easyPattern.contains("K0"))
         assertFalse(result.balancedPattern.contains("K0"))
     }
@@ -220,5 +196,57 @@ class IncreaseDecreaseCalculatorTest {
             IncreaseDecreaseMessage.NotEnoughStitchesForDecrease(Int.MAX_VALUE - 1, 4_294_967_292L),
             result.message,
         )
+    }
+
+    @Test
+    fun `M1 instructions use each available bar at most once`() {
+        for (style in KnittingStyle.entries) {
+            for (stitches in 2..50) {
+                val maxBars = if (style == KnittingStyle.FLAT) stitches - 1 else stitches
+                for (increases in 1..maxBars) {
+                    val result =
+                        IncreaseDecreaseCalculator.calculate(
+                            stitches,
+                            increases,
+                            IncreaseDecreaseMode.INCREASE,
+                            style,
+                        )
+                    assertTrue(result.isValid)
+                    for (pattern in listOf(result.easyPattern, result.balancedPattern)) {
+                        assertM1Pattern(pattern, stitches, increases, maxBars, style)
+                        assertEquals(stitches + increases, result.totalStitches)
+                    }
+                }
+            }
+        }
+        val flat = IncreaseDecreaseCalculator.calculate(96, 12, IncreaseDecreaseMode.INCREASE)
+        assertTrue(flat.easyPattern.endsWith("K1"))
+        assertFalse(IncreaseDecreaseCalculator.calculate(1, 3, IncreaseDecreaseMode.INCREASE).isValid)
+        assertFalse(IncreaseDecreaseCalculator.calculate(3, 3, IncreaseDecreaseMode.INCREASE).isValid)
+    }
+
+    private fun assertM1Pattern(
+        pattern: String,
+        stitches: Int,
+        increases: Int,
+        maxBars: Int,
+        style: KnittingStyle,
+    ) {
+        val expanded =
+            Regex("\\(([^)]+)\\) × (\\d+)").replace(pattern) {
+                List(it.groupValues[2].toInt()) { _ -> it.groupValues[1] }.joinToString(", ")
+            }
+        var worked = 0
+        val bars = mutableSetOf<Int>()
+        expanded.split(", ").forEach { step ->
+            if (step == "M1") {
+                assertTrue("$stitches+$increases $style: $pattern", worked in 1..maxBars)
+                assertTrue("A bar cannot be used twice: $pattern", bars.add(worked))
+            } else {
+                worked += step.removePrefix("K").toInt()
+            }
+        }
+        assertEquals(stitches, worked)
+        assertEquals(increases, bars.size)
     }
 }

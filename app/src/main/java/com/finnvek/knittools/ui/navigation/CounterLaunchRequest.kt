@@ -1,17 +1,18 @@
 package com.finnvek.knittools.ui.navigation
 
+import com.finnvek.knittools.pro.TrialJourneyAction
 import java.util.UUID
 
 data class CounterLaunchRequest(
     val requestId: String = UUID.randomUUID().toString(),
     val projectId: Long? = null,
+    val journeyAction: TrialJourneyAction? = null,
 ) {
     companion object {
         fun fromIntentData(
             intentData: CounterLaunchIntentData,
             consumedRequestId: String?,
         ): CounterLaunchRequest? {
-            if (intentData.isOAuthCallback) return null
             if (!intentData.shouldOpenCounter) return null
             if (!intentData.isTrustedCounterLaunch) return null
             val requestId = intentData.launchId ?: legacyRequestId(intentData.projectId)
@@ -19,6 +20,7 @@ data class CounterLaunchRequest(
             return CounterLaunchRequest(
                 requestId = requestId,
                 projectId = intentData.projectId,
+                journeyAction = null,
             )
         }
 
@@ -31,15 +33,8 @@ data class CounterLaunchIntentData(
     val projectId: Long?,
     val launchId: String?,
     val isTrustedCounterLaunch: Boolean = false,
-    val isOAuthCallback: Boolean = false,
 )
 
 internal fun CounterLaunchIntentData.withValidatedCounterLaunchTrust(
     consumeLaunchId: (String?) -> Boolean,
-): CounterLaunchIntentData =
-    copy(
-        isTrustedCounterLaunch =
-            shouldOpenCounter &&
-                !isOAuthCallback &&
-                consumeLaunchId(launchId),
-    )
+): CounterLaunchIntentData = copy(isTrustedCounterLaunch = shouldOpenCounter && consumeLaunchId(launchId))

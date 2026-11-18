@@ -7,17 +7,14 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -28,11 +25,12 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -44,25 +42,53 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.calculator.CounterValueDisplay
 import com.finnvek.knittools.domain.calculator.CounterValueFormatter
+import com.finnvek.knittools.domain.calculator.MeasurementNumberParser
+import com.finnvek.knittools.domain.calculator.ProjectCounterLogic
 import com.finnvek.knittools.domain.calculator.RepeatSectionLogic
 import com.finnvek.knittools.domain.calculator.formatIntegerForDisplay
 import com.finnvek.knittools.domain.model.ProjectCounter
 import com.finnvek.knittools.domain.model.ProjectCounterDraft
 import com.finnvek.knittools.domain.model.ProjectCounterType
+import com.finnvek.knittools.pro.ProActionAccess
+import com.finnvek.knittools.pro.ProFeature
+import com.finnvek.knittools.pro.ProState
+import com.finnvek.knittools.pro.proActionAccess
+import com.finnvek.knittools.ui.components.CancelButton
 import com.finnvek.knittools.ui.components.ConfirmationDialog
 import com.finnvek.knittools.ui.components.CounterStepSymbol
 import com.finnvek.knittools.ui.components.CounterStepperButton
+import com.finnvek.knittools.ui.components.FormSheet
+import com.finnvek.knittools.ui.components.FormSheetConfirm
+import com.finnvek.knittools.ui.components.LabeledTextField
 import com.finnvek.knittools.ui.components.NumberInputField
 import com.finnvek.knittools.ui.components.NumberInputOptions
+import com.finnvek.knittools.ui.components.ProMarker
+import com.finnvek.knittools.ui.components.ScrollableFormDialog
 import com.finnvek.knittools.ui.components.SegmentedToggle
+import com.finnvek.knittools.ui.components.dialogTextFieldColors
 import com.finnvek.knittools.ui.components.rememberCurrentLocale
 import com.finnvek.knittools.ui.theme.CounterDimens
+import com.finnvek.knittools.ui.theme.counterExtraName
+import com.finnvek.knittools.ui.theme.counterExtraValue
+import com.finnvek.knittools.ui.theme.knitToolsColors
+import java.util.Locale
 
 private const val DISABLED_CONTENT_ALPHA = 0.38f
+
+@Composable
+private fun CounterOverlayBlocker(
+    blocked: Boolean,
+    onBlockingSurfaceChanged: (Boolean) -> Unit,
+) {
+    val currentCallback by rememberUpdatedState(onBlockingSurfaceChanged)
+    DisposableEffect(blocked) {
+        currentCallback(blocked)
+        onDispose { currentCallback(false) }
+    }
+}
 
 data class CounterItemActions(
     val onIncrement: () -> Unit,
@@ -78,6 +104,7 @@ fun CounterListItem(
     counter: ProjectCounter,
     actions: CounterItemActions,
     modifier: Modifier = Modifier,
+    onBlockingSurfaceChanged: (Boolean) -> Unit = {},
 ) {
     val onIncrement = actions.onIncrement
     val onDecrement = actions.onDecrement
@@ -88,6 +115,10 @@ fun CounterListItem(
     var showRenameDialog by rememberSaveable(counter.id) { mutableStateOf(false) }
     var showResetDialog by rememberSaveable(counter.id) { mutableStateOf(false) }
     var showDeleteDialog by rememberSaveable(counter.id) { mutableStateOf(false) }
+    CounterOverlayBlocker(
+        showContextMenu || showRenameDialog || showResetDialog || showDeleteDialog,
+        onBlockingSurfaceChanged,
+    )
     val canDecrement = counter.count > 0
     val incrementProminent = extraCounterIncrementIsProminent(counter)
     val displayText = CounterValueFormatter.forExtraCounter(counter).asText()
@@ -98,10 +129,11 @@ fun CounterListItem(
                 .fillMaxWidth()
                 .heightIn(min = CounterDimens.ExtraCounterCardMinHeight)
                 .clip(RoundedCornerShape(CounterDimens.ExtraCounterCardCornerRadius))
-                .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                .background(MaterialTheme.knitToolsColors.cardContainer)
                 .combinedClickable(
-                    onClick = {},
+                    onClick = { showContextMenu = true },
                     onLongClick = { showContextMenu = true },
+                    // CPD-OFF: Ruudun paikallinen Compose-rakenne pidetaan vastuun yhteydessa.
                 ).padding(
                     horizontal = CounterDimens.ExtraCounterCardHorizontalPadding,
                     vertical = CounterDimens.ExtraCounterCardVerticalPadding,
@@ -114,14 +146,9 @@ fun CounterListItem(
         ) {
             Text(
                 text = counter.name,
-                style =
-                    MaterialTheme.typography.titleMedium.copy(
-                        fontSize = 17.sp,
-                        fontWeight = FontWeight.SemiBold,
-                    ),
+                // CPD-ON
+                style = MaterialTheme.typography.counterExtraName,
                 color = MaterialTheme.colorScheme.onSurface,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.weight(1f),
             )
 
@@ -135,9 +162,18 @@ fun CounterListItem(
             )
         }
 
+        Text(
+            text = displayText.replace(Regex("(?<=\\d) (?=\\d)"), "\u00a0"),
+            style = MaterialTheme.typography.counterExtraValue,
+            color = MaterialTheme.colorScheme.onSurface,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth(),
+        )
+
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
         ) {
             CounterStepperButton(
                 symbol = CounterStepSymbol.Minus,
@@ -146,19 +182,6 @@ fun CounterListItem(
                 onClick = onDecrement,
                 enabled = canDecrement,
             )
-
-            Spacer(modifier = Modifier.width(CounterDimens.ExtraCounterValueSpacing))
-
-            Text(
-                text = displayText,
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.weight(1f),
-            )
-
-            Spacer(modifier = Modifier.width(CounterDimens.ExtraCounterValueSpacing))
 
             CounterStepperButton(
                 symbol = CounterStepSymbol.Plus,
@@ -192,6 +215,7 @@ fun CounterListItem(
                 onReset()
             },
             onDismiss = { showResetDialog = false },
+            // CPD-OFF: Ruudun paikallinen Compose-rakenne pidetaan vastuun yhteydessa.
         )
     }
 
@@ -208,6 +232,7 @@ fun CounterListItem(
             onDismiss = { showDeleteDialog = false },
         )
     }
+    // CPD-ON
 }
 
 internal fun extraCounterIncrementIsProminent(counter: ProjectCounter): Boolean {
@@ -221,10 +246,15 @@ internal fun extraCounterIncrementIsProminent(counter: ProjectCounter): Boolean 
 @Composable
 internal fun CounterValueDisplay.asText(): String =
     when (this) {
-        is CounterValueDisplay.Plain -> formatIntegerForDisplay(count.toLong(), rememberCurrentLocale())
-        is CounterValueDisplay.Cycle ->
+        is CounterValueDisplay.Plain -> {
+            formatIntegerForDisplay(count.toLong(), rememberCurrentLocale())
+        }
+
+        is CounterValueDisplay.Cycle -> {
             stringResource(R.string.repeating_counter_value_format, current, length)
-        is CounterValueDisplay.Section ->
+        }
+
+        is CounterValueDisplay.Section -> {
             stringResource(
                 R.string.repeat_section_progress_format,
                 repeat,
@@ -232,15 +262,20 @@ internal fun CounterValueDisplay.asText(): String =
                 rowInRepeat,
                 rowsInRepeat,
             )
-        CounterValueDisplay.SectionComplete ->
+        }
+
+        CounterValueDisplay.SectionComplete -> {
             stringResource(R.string.repeat_section_complete)
-        is CounterValueDisplay.ReminderRepeat ->
+        }
+
+        is CounterValueDisplay.ReminderRepeat -> {
             pluralStringResource(
                 R.plurals.reminder_repeat_occurrence_format,
                 intervalRows,
                 occurrence,
                 intervalRows,
             )
+        }
     }
 
 @Composable
@@ -310,20 +345,16 @@ private fun RenameCounterDialog(
 ) {
     var name by rememberSaveable { mutableStateOf(currentName) }
 
-    AlertDialog(
+    ScrollableFormDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.rename_counter)) },
         text = {
             TextField(
                 value = name,
-                onValueChange = { if (it.length <= 50) name = it },
+                onValueChange = { if (it.length <= ProjectCounterLogic.MAX_NAME_LENGTH) name = it },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
-                colors =
-                    TextFieldDefaults.colors(
-                        focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                        unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                    ),
+                colors = dialogTextFieldColors(),
             )
         },
         confirmButton = {
@@ -335,9 +366,7 @@ private fun RenameCounterDialog(
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.cancel))
-            }
+            CancelButton(onClick = onDismiss)
         },
     )
 }
@@ -346,12 +375,15 @@ private fun RenameCounterDialog(
 fun AddCounterDialog(
     onSave: (ProjectCounterDraft) -> Unit,
     onDismiss: () -> Unit,
-    canUseRepeatSection: Boolean,
+    proState: ProState,
+    proAccessReady: Boolean,
+    onProRequired: () -> Unit,
+    initialCounterType: ProjectCounterType = ProjectCounterType.COUNT_UP,
 ) {
     var name by rememberSaveable { mutableStateOf("") }
     var selectedType by rememberSaveable {
-        mutableIntStateOf(0)
-    } // 0 = count up, 1 = repeating, 2 = shaping, 3 = repeat section
+        mutableIntStateOf(ProjectCounterType.entries.indexOf(initialCounterType))
+    } // 0 = tavallinen, 1 = toistuva, 2 = muotoilu, 3 = kerrosjakso
     var repeatAtText by rememberSaveable { mutableStateOf("") }
     var stepSizeText by rememberSaveable { mutableStateOf("1") }
     var startingStitchesText by rememberSaveable { mutableStateOf("") }
@@ -364,16 +396,16 @@ fun AddCounterDialog(
 
     val isRepeating = selectedType == 1
     val isShaping = selectedType == 2
-    val isRepeatSection = selectedType == 3 && canUseRepeatSection
+    val isRepeatSection = selectedType == 3
     val canLinkToMainCounter = !isRepeatSection
-    val repeatAt = repeatAtText.toIntOrNull()
-    val stepSize = stepSizeText.toIntOrNull() ?: 1
-    val startingStitches = startingStitchesText.toIntOrNull()
-    val stitchChange = stitchChangeText.toIntOrNull()
-    val shapeEveryN = shapeEveryNText.toIntOrNull()
-    val repeatStartRow = repeatStartRowText.toIntOrNull()
-    val repeatEndRow = repeatEndRowText.toIntOrNull()
-    val totalRepeats = totalRepeatsText.toIntOrNull()
+    val repeatAt = parseCounterInput(repeatAtText)
+    val stepSize = parseCounterInput(stepSizeText) ?: 0
+    val startingStitches = parseCounterInput(startingStitchesText)
+    val stitchChange = parseCounterInput(stitchChangeText, allowNegative = true)
+    val shapeEveryN = parseCounterInput(shapeEveryNText)
+    val repeatStartRow = parseCounterInput(repeatStartRowText)
+    val repeatEndRow = parseCounterInput(repeatEndRowText)
+    val totalRepeats = parseCounterInput(totalRepeatsText)
     val formParams =
         AddCounterFormParams(
             name = name,
@@ -390,55 +422,26 @@ fun AddCounterDialog(
             totalRepeats = totalRepeats,
             linkedToMainCounter = linkedToMainCounter && canLinkToMainCounter,
         )
-    val canSave =
-        isAddCounterFormValid(formParams)
+    val selectedFeature =
+        when (selectedType) {
+            2 -> ProFeature.SHAPING_COUNTER
+            3 -> ProFeature.REPEAT_SECTION
+            else -> ProFeature.MULTIPLE_COUNTERS
+        }
+    val selectedAccess = proActionAccess(proState, proAccessReady, selectedFeature)
+    val canUseSelectedType =
+        selectedAccess == ProActionAccess.Allowed ||
+            selectedAccess == ProActionAccess.Trial ||
+            proState.hasFeature(selectedFeature)
+    val canSave = isAddCounterFormValid(formParams) && canUseSelectedType
 
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.add_counter)) },
-        text = {
-            AddCounterDialogContent(
-                state =
-                    AddCounterDialogContentState(
-                        name = name,
-                        selectedType = selectedType,
-                        isRepeating = isRepeating,
-                        repeatAtText = repeatAtText,
-                        isShaping = isShaping,
-                        startingStitchesText = startingStitchesText,
-                        stitchChangeText = stitchChangeText,
-                        shapeEveryNText = shapeEveryNText,
-                        isRepeatSection = isRepeatSection,
-                        repeatStartRowText = repeatStartRowText,
-                        repeatEndRowText = repeatEndRowText,
-                        totalRepeatsText = totalRepeatsText,
-                        stepSizeText = stepSizeText,
-                        linkedToMainCounter = linkedToMainCounter && canLinkToMainCounter,
-                        canUseRepeatSection = canUseRepeatSection,
-                    ),
-                actions =
-                    AddCounterDialogContentActions(
-                        onNameChange = { if (it.length <= 50) name = it },
-                        onTypeChange = { index ->
-                            selectedType = index
-                            if (index == 3) {
-                                linkedToMainCounter = false
-                            }
-                        },
-                        onRepeatAtChange = { repeatAtText = it },
-                        onStartingStitchesChange = { startingStitchesText = it },
-                        onStitchChangeChange = { stitchChangeText = it },
-                        onShapeEveryNChange = { shapeEveryNText = it },
-                        onRepeatStartRowChange = { repeatStartRowText = it },
-                        onRepeatEndRowChange = { repeatEndRowText = it },
-                        onTotalRepeatsChange = { totalRepeatsText = it },
-                        onStepSizeChange = { stepSizeText = it },
-                        onLinkedToMainCounterChange = { linkedToMainCounter = it && canLinkToMainCounter },
-                    ),
-            )
-        },
-        confirmButton = {
-            TextButton(
+    // Sama lomakesheet kuin muissa lisäyslomakkeissa: dialogissa tyyppivalinta kellui ilman taustaa.
+    FormSheet(
+        title = stringResource(R.string.add_counter),
+        confirm =
+            FormSheetConfirm(
+                text = stringResource(R.string.save),
+                enabled = canSave,
                 onClick = {
                     onSave(
                         createProjectCounterDraft(
@@ -447,18 +450,66 @@ fun AddCounterDialog(
                         ),
                     )
                 },
-                enabled = canSave,
-            ) {
-                Text(stringResource(R.string.save))
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.cancel))
-            }
-        },
-    )
+            ),
+        onDismiss = onDismiss,
+    ) {
+        AddCounterDialogContent(
+            state =
+                AddCounterDialogContentState(
+                    name = name,
+                    selectedType = selectedType,
+                    isRepeating = isRepeating,
+                    repeatAtText = repeatAtText,
+                    isShaping = isShaping,
+                    startingStitchesText = startingStitchesText,
+                    stitchChangeText = stitchChangeText,
+                    shapeEveryNText = shapeEveryNText,
+                    isRepeatSection = isRepeatSection,
+                    repeatStartRowText = repeatStartRowText,
+                    repeatEndRowText = repeatEndRowText,
+                    totalRepeatsText = totalRepeatsText,
+                    stepSizeText = stepSizeText,
+                    linkedToMainCounter = linkedToMainCounter && canLinkToMainCounter,
+                    proState = proState,
+                    proAccessReady = proAccessReady,
+                ),
+            actions =
+                AddCounterDialogContentActions(
+                    onNameChange = { if (it.length <= ProjectCounterLogic.MAX_NAME_LENGTH) name = it },
+                    onProRequired = onProRequired,
+                    onTypeChange = { index ->
+                        selectedType = index
+                        if (index == 3) {
+                            linkedToMainCounter = false
+                        }
+                    },
+                    onRepeatAtChange = { repeatAtText = it },
+                    onStartingStitchesChange = { startingStitchesText = it },
+                    onStitchChangeChange = { stitchChangeText = it },
+                    onShapeEveryNChange = { shapeEveryNText = it },
+                    onRepeatStartRowChange = { repeatStartRowText = it },
+                    onRepeatEndRowChange = { repeatEndRowText = it },
+                    onTotalRepeatsChange = { totalRepeatsText = it },
+                    onStepSizeChange = { stepSizeText = it },
+                    onLinkedToMainCounterChange = { linkedToMainCounter = it && canLinkToMainCounter },
+                ),
+        )
+    }
 }
+
+internal fun parseCounterInput(
+    text: String,
+    allowNegative: Boolean = false,
+): Int? =
+    MeasurementNumberParser
+        .parse(
+            text = text,
+            locale = Locale.ROOT,
+            integer = true,
+            allowZero = true,
+            allowNegative = allowNegative,
+        ).value
+        ?.toInt()
 
 private fun createProjectCounterDraft(
     params: AddCounterFormParams,
@@ -468,7 +519,7 @@ private fun createProjectCounterDraft(
         name = params.name.trim(),
         repeatAt = if (params.isRepeating) params.repeatAt else null,
         stepSize = params.stepSize,
-        counterType = counterTypeFromIndex(selectedType),
+        counterType = counterTypeForDraft(selectedType, params.isRepeatSection),
         startingStitches = if (params.isShaping) params.startingStitches else null,
         stitchChange = if (params.isShaping) params.stitchChange else null,
         shapeEveryN = if (params.isShaping) params.shapeEveryN else null,
@@ -529,6 +580,16 @@ private fun counterTypeFromIndex(index: Int): ProjectCounterType =
         else -> ProjectCounterType.COUNT_UP
     }
 
+internal fun counterTypeForDraft(
+    selectedType: Int,
+    isRepeatSection: Boolean,
+): ProjectCounterType =
+    when {
+        selectedType == 3 && isRepeatSection -> ProjectCounterType.REPEAT_SECTION
+        selectedType == 3 -> ProjectCounterType.COUNT_UP
+        else -> counterTypeFromIndex(selectedType)
+    }
+
 // Data-luokka AddCounterDialogContent-parametrien ryhmittelyyn (S107)
 data class AddCounterDialogContentState(
     val name: String,
@@ -545,12 +606,14 @@ data class AddCounterDialogContentState(
     val totalRepeatsText: String,
     val stepSizeText: String,
     val linkedToMainCounter: Boolean,
-    val canUseRepeatSection: Boolean,
+    val proState: ProState,
+    val proAccessReady: Boolean,
 )
 
 data class AddCounterDialogContentActions(
     val onNameChange: (String) -> Unit,
     val onTypeChange: (Int) -> Unit,
+    val onProRequired: () -> Unit,
     val onRepeatAtChange: (String) -> Unit,
     val onStartingStitchesChange: (String) -> Unit,
     val onStitchChangeChange: (String) -> Unit,
@@ -567,19 +630,16 @@ private fun AddCounterDialogContent(
     state: AddCounterDialogContentState,
     actions: AddCounterDialogContentActions,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        TextField(
+    val shapingAccess = proActionAccess(state.proState, state.proAccessReady, ProFeature.SHAPING_COUNTER)
+    val repeatAccess = proActionAccess(state.proState, state.proAccessReady, ProFeature.REPEAT_SECTION)
+    Column(
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        LabeledTextField(
             value = state.name,
             onValueChange = actions.onNameChange,
-            label = { Text(stringResource(R.string.counter_name)) },
-            placeholder = { Text(stringResource(R.string.counter_name_hint)) },
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth(),
-            colors =
-                TextFieldDefaults.colors(
-                    focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                ),
+            label = stringResource(R.string.counter_name),
+            placeholder = stringResource(R.string.counter_name_hint),
         )
         SegmentedToggle(
             options =
@@ -587,12 +647,34 @@ private fun AddCounterDialogContent(
                     add(stringResource(R.string.count_up))
                     add(stringResource(R.string.repeating))
                     add(stringResource(R.string.shaping))
-                    if (state.canUseRepeatSection) {
-                        add(stringResource(R.string.repeat_section))
-                    }
+                    add(stringResource(R.string.repeat_section))
                 },
             selectedIndex = state.selectedType,
-            onSelect = actions.onTypeChange,
+            onSelect = { index ->
+                val access =
+                    when (index) {
+                        2 -> shapingAccess
+                        3 -> repeatAccess
+                        else -> ProActionAccess.Allowed
+                    }
+                val alreadyAllowed =
+                    when (index) {
+                        2 -> state.proState.hasFeature(ProFeature.SHAPING_COUNTER)
+                        3 -> state.proState.hasFeature(ProFeature.REPEAT_SECTION)
+                        else -> true
+                    }
+                if (access != ProActionAccess.Unknown || alreadyAllowed) {
+                    actions.onTypeChange(index)
+                    if (access == ProActionAccess.Locked) actions.onProRequired()
+                }
+            },
+            optionTrailingContent = { index ->
+                when (index) {
+                    2 -> ProMarker(shapingAccess)
+                    3 -> ProMarker(repeatAccess)
+                    else -> Unit
+                }
+            },
         )
         if (state.isRepeating) {
             NumberInputField(
@@ -736,6 +818,7 @@ fun RepeatSectionItem(
     mainRowCount: Int,
     onDelete: () -> Unit,
     modifier: Modifier = Modifier,
+    onBlockingSurfaceChanged: (Boolean) -> Unit = {},
 ) {
     if (counter.repeatStartRow == null || counter.repeatEndRow == null || counter.totalRepeats == null) {
         return
@@ -744,6 +827,7 @@ fun RepeatSectionItem(
     val isComplete = display is CounterValueDisplay.SectionComplete
     var showContextMenu by rememberSaveable(counter.id) { mutableStateOf(false) }
     var showDeleteDialog by rememberSaveable(counter.id) { mutableStateOf(false) }
+    CounterOverlayBlocker(showContextMenu || showDeleteDialog, onBlockingSurfaceChanged)
 
     if (showDeleteDialog) {
         ConfirmationDialog(
@@ -766,9 +850,9 @@ fun RepeatSectionItem(
                 .heightIn(min = CounterDimens.ExtraCounterCardMinHeight)
                 .clip(RoundedCornerShape(CounterDimens.ExtraCounterCardCornerRadius))
                 .combinedClickable(
-                    onClick = {},
+                    onClick = { showContextMenu = true },
                     onLongClick = { showContextMenu = true },
-                ).background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                ).background(MaterialTheme.knitToolsColors.cardContainer)
                 .padding(
                     horizontal = CounterDimens.ExtraCounterCardHorizontalPadding,
                     vertical = CounterDimens.ExtraCounterCardVerticalPadding,

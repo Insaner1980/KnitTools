@@ -29,6 +29,14 @@ class ProStateTest {
     fun `default state is not pro`() {
         val state = ProState()
         assertFalse(state.isPro)
+        assertEquals(ProStatus.TRIAL_NOT_STARTED, state.status)
+    }
+
+    @Test
+    fun `trial not started is not pro`() {
+        val state = ProState(status = ProStatus.TRIAL_NOT_STARTED)
+
+        assertFalse(state.isPro)
     }
 
     @Test
@@ -70,7 +78,11 @@ class ProStateTest {
         val state = ProState(status = ProStatus.TRIAL_EXPIRED)
 
         ProFeature.entries.forEach { feature ->
-            assertTrue("$feature pitäisi olla auki debug-overridella", state.hasFeature(feature))
+            assertEquals(!BuildConfig.ACTIVE_POLICY_TEST, state.hasFeature(feature))
+            assertTrue(
+                "$feature pitäisi olla auki debug-overridella",
+                state.hasFeature(feature, debugUnlockAllFeatures = true),
+            )
         }
         assertFalse(state.isPro)
         assertEquals(ProStatus.TRIAL_EXPIRED, state.status)

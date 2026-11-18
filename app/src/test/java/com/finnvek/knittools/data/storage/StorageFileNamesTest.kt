@@ -1,11 +1,14 @@
 package com.finnvek.knittools.data.storage
 
 import org.junit.Assert.assertEquals
+import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.TemporaryFolder
 import java.io.File
-import java.nio.file.Files
 
 class StorageFileNamesTest {
+    @get:Rule val temporaryFolder = TemporaryFolder()
+
     @Test
     fun `timestamped file appends suffix when timestamp name already exists`() {
         val directory = tempDirectory()
@@ -50,5 +53,5 @@ class StorageFileNamesTest {
         assertEquals("42_1.jpg", second.name)
     }
 
-    private fun tempDirectory(): File = Files.createTempDirectory("storage-file-names").toFile()
+    private fun tempDirectory(): File = temporaryFolder.newFolder()
 }

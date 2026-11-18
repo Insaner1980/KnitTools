@@ -35,6 +35,13 @@ class InsightsStreakDisplayTest {
     }
 
     @Test
+    fun `a one day best streak is meaningless in the trend row too`() {
+        // Sarake piilottaa arvon 1, joten trendirivi ei saa näyttää sitä takaovesta.
+        assertNull(allTimeBestStreakTrend(currentStreak = 1, bestStreak = 1))
+        assertEquals(2, allTimeBestStreakTrend(currentStreak = 1, bestStreak = 2))
+    }
+
+    @Test
     fun `all time best streak trend is shown alongside a current streak`() {
         assertEquals(9, allTimeBestStreakTrend(currentStreak = 4, bestStreak = 9))
     }

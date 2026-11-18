@@ -9,6 +9,7 @@ import com.finnvek.knittools.domain.model.PatternAnnotationKind
 import com.finnvek.knittools.domain.model.PatternAnnotationLayer
 import com.finnvek.knittools.domain.model.PatternAnnotationOwner
 import com.finnvek.knittools.domain.model.PatternAnnotationPayloadCodec
+import com.finnvek.knittools.domain.model.PatternAvailability
 import com.finnvek.knittools.domain.model.ProgressPhoto
 import com.finnvek.knittools.domain.model.ProjectCounter
 import com.finnvek.knittools.domain.model.ProjectCounterType
@@ -18,6 +19,7 @@ import com.finnvek.knittools.domain.model.SavedPattern
 import com.finnvek.knittools.domain.model.SavedPatternSource
 import com.finnvek.knittools.domain.model.YarnCard
 import com.finnvek.knittools.domain.model.sanitizeMainCounterCustomLabel
+import com.finnvek.knittools.domain.model.sanitizeReadingGuideFraction
 import com.finnvek.knittools.domain.model.sanitizeReadingLineYFraction
 
 fun CounterProjectEntity.toDomain(): CounterProject =
@@ -38,18 +40,31 @@ fun CounterProject.toEntity(): CounterProjectEntity =
         mainCounterLabelType = mainCounterLabelType.persistedValue,
     ).withDomainProjectDetails(this)
 
-private fun CounterProject.withEntityProjectDetails(entity: CounterProjectEntity): CounterProject =
-    copy(
+private fun CounterProject.withEntityProjectDetails(entity: CounterProjectEntity): CounterProject {
+    val validStitchCount = entity.stitchCount?.takeIf { it > 0 }
+    val trackingEnabled = entity.stitchTrackingEnabled && validStitchCount != null
+    val currentStitch =
+        validStitchCount
+            ?.takeIf { trackingEnabled }
+            ?.let { entity.currentStitch.coerceIn(0, it) }
+            ?: 0
+    return copy(
+        count = entity.count.coerceAtLeast(0),
         mainCounterCustomLabel = sanitizeMainCounterCustomLabel(entity.mainCounterCustomLabel),
         readingLineEnabled = entity.readingLineEnabled,
         readingLineYFraction = entity.readingLineYFraction.coerceIn(0f, 1f),
+        readingLineFollowCurrentRow = entity.readingLineFollowCurrentRow,
+        verticalReadingGuideEnabled = entity.verticalReadingGuideEnabled,
+        verticalReadingGuideXFraction = sanitizeReadingGuideFraction(entity.verticalReadingGuideXFraction),
         secondaryCount = entity.secondaryCount,
-        stepSize = entity.stepSize,
+        secondaryCounterUsed = entity.secondaryCounterUsed,
+        stepSize = entity.stepSize.coerceAtLeast(1),
         notes = entity.notes,
+        notesCreated = entity.notesCreated,
         createdAt = entity.createdAt,
         updatedAt = entity.updatedAt,
         sectionName = entity.sectionName,
-        stitchCount = entity.stitchCount,
+        stitchCount = validStitchCount,
         isCompleted = entity.isCompleted,
         totalRows = entity.totalRows,
         completedAt = entity.completedAt,
@@ -59,23 +74,37 @@ private fun CounterProject.withEntityProjectDetails(entity: CounterProjectEntity
         patternName = entity.patternName,
         currentPatternPage = entity.currentPatternPage,
         patternRowMapping = entity.patternRowMapping,
-        stitchTrackingEnabled = entity.stitchTrackingEnabled,
-        currentStitch = entity.currentStitch,
+        stitchTrackingEnabled = trackingEnabled,
+        currentStitch = currentStitch,
         targetRows = entity.targetRows,
     )
+}
 
-private fun CounterProjectEntity.withDomainProjectDetails(project: CounterProject): CounterProjectEntity =
-    copy(
+private fun CounterProjectEntity.withDomainProjectDetails(project: CounterProject): CounterProjectEntity {
+    val validStitchCount = project.stitchCount?.takeIf { it > 0 }
+    val trackingEnabled = project.stitchTrackingEnabled && validStitchCount != null
+    val currentStitch =
+        validStitchCount
+            ?.takeIf { trackingEnabled }
+            ?.let { project.currentStitch.coerceIn(0, it) }
+            ?: 0
+    return copy(
+        count = project.count.coerceAtLeast(0),
         mainCounterCustomLabel = sanitizeMainCounterCustomLabel(project.mainCounterCustomLabel),
         readingLineEnabled = project.readingLineEnabled,
         readingLineYFraction = sanitizeReadingLineYFraction(project.readingLineYFraction),
+        readingLineFollowCurrentRow = project.readingLineFollowCurrentRow,
+        verticalReadingGuideEnabled = project.verticalReadingGuideEnabled,
+        verticalReadingGuideXFraction = sanitizeReadingGuideFraction(project.verticalReadingGuideXFraction),
         secondaryCount = project.secondaryCount,
-        stepSize = project.stepSize,
+        secondaryCounterUsed = project.secondaryCounterUsed,
+        stepSize = project.stepSize.coerceAtLeast(1),
         notes = project.notes,
+        notesCreated = project.notesCreated,
         createdAt = project.createdAt,
         updatedAt = project.updatedAt,
         sectionName = project.sectionName,
-        stitchCount = project.stitchCount,
+        stitchCount = validStitchCount,
         isCompleted = project.isCompleted,
         totalRows = project.totalRows,
         completedAt = project.completedAt,
@@ -85,22 +114,24 @@ private fun CounterProjectEntity.withDomainProjectDetails(project: CounterProjec
         patternName = project.patternName,
         currentPatternPage = project.currentPatternPage,
         patternRowMapping = project.patternRowMapping,
-        stitchTrackingEnabled = project.stitchTrackingEnabled,
-        currentStitch = project.currentStitch,
+        stitchTrackingEnabled = trackingEnabled,
+        currentStitch = currentStitch,
         targetRows = project.targetRows,
     )
+}
 
-fun ProjectCounterEntity.toDomain(): ProjectCounter =
-    ProjectCounter(
+fun ProjectCounterEntity.toDomain(): ProjectCounter {
+    val type = ProjectCounterType.fromPersistedValue(counterType)
+    return ProjectCounter(
         id = id,
         projectId = projectId,
         name = name,
-        count = count,
-        stepSize = stepSize,
+        count = count.coerceAtLeast(0),
+        stepSize = stepSize.coerceAtLeast(1),
         repeatAt = repeatAt,
         sortOrder = sortOrder,
         createdAt = createdAt,
-        counterType = ProjectCounterType.fromPersistedValue(counterType),
+        counterType = type,
         startingStitches = startingStitches,
         stitchChange = stitchChange,
         shapeEveryN = shapeEveryN,
@@ -108,16 +139,17 @@ fun ProjectCounterEntity.toDomain(): ProjectCounter =
         repeatEndRow = repeatEndRow,
         totalRepeats = totalRepeats,
         currentRepeat = currentRepeat,
-        linkedToMainCounter = linkedToMainCounter,
+        linkedToMainCounter = linkedToMainCounter && type != ProjectCounterType.REPEAT_SECTION,
     )
+}
 
 fun ProjectCounter.toEntity(): ProjectCounterEntity =
     ProjectCounterEntity(
         id = id,
         projectId = projectId,
         name = name,
-        count = count,
-        stepSize = stepSize,
+        count = count.coerceAtLeast(0),
+        stepSize = stepSize.coerceAtLeast(1),
         repeatAt = repeatAt,
         sortOrder = sortOrder,
         createdAt = createdAt,
@@ -129,7 +161,7 @@ fun ProjectCounter.toEntity(): ProjectCounterEntity =
         repeatEndRow = repeatEndRow,
         totalRepeats = totalRepeats,
         currentRepeat = currentRepeat,
-        linkedToMainCounter = linkedToMainCounter,
+        linkedToMainCounter = linkedToMainCounter && counterType != ProjectCounterType.REPEAT_SECTION,
     )
 
 fun ProjectYarnNoteEntity.toDomain(): ProjectYarnNote =
@@ -203,6 +235,7 @@ fun ProgressPhoto.toEntity(): ProgressPhotoEntity =
 fun SavedPatternEntity.toDomain(): SavedPattern =
     SavedPattern(
         id = id,
+        // CPD-OFF: Eksplisiittinen kenttarakenne sailyttaa kerros- ja tietokantarajat.
         source = SavedPatternSource.fromPersistedValue(source),
         ravelryPatternId = ravelryPatternId,
         name = name,
@@ -214,7 +247,7 @@ fun SavedPatternEntity.toDomain(): SavedPattern =
         needleSize = needleSize,
         yarnWeight = yarnWeight,
         yardage = yardage,
-        isFree = isFree,
+        availability = PatternAvailability.fromPersistedValue(availability),
         originalUrl = originalUrl,
         canonicalUrl = canonicalUrl,
         localPdfUri = localPdfUri,
@@ -225,6 +258,7 @@ fun SavedPatternEntity.toDomain(): SavedPattern =
     )
 
 fun SavedPattern.toEntity(): SavedPatternEntity =
+// CPD-ON
     SavedPatternEntity(
         id = id,
         source = source.persistedValue,
@@ -238,7 +272,7 @@ fun SavedPattern.toEntity(): SavedPatternEntity =
         needleSize = needleSize,
         yarnWeight = yarnWeight,
         yardage = yardage,
-        isFree = isFree,
+        availability = availability.persistedValue,
         originalUrl = originalUrl,
         canonicalUrl = canonicalUrl,
         localPdfUri = localPdfUri,
@@ -249,6 +283,7 @@ fun SavedPattern.toEntity(): SavedPatternEntity =
     )
 
 fun YarnCardEntity.toDomain(): YarnCard =
+    // CPD-OFF: Eksplisiittinen kenttarakenne sailyttaa kerros- ja tietokantarajat.
     YarnCard(
         id = id,
         brand = brand,
@@ -271,6 +306,7 @@ fun YarnCardEntity.toDomain(): YarnCard =
     )
 
 fun YarnCard.toEntity(): YarnCardEntity =
+// CPD-ON
     YarnCardEntity(
         id = id,
         brand = brand,

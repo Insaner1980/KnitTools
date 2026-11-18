@@ -2,29 +2,84 @@ package com.finnvek.knittools.data.storage
 
 import android.content.Context
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
+import android.graphics.Color
+import android.graphics.ImageDecoder
 import android.graphics.pdf.PdfDocument
 import android.net.Uri
-import androidx.core.graphics.scale
+import android.os.storage.StorageManager
 import androidx.core.net.toUri
+import com.finnvek.knittools.di.IoDispatcher
+import com.finnvek.knittools.ui.screens.pattern.PatternImageImportLimits
+import com.finnvek.knittools.ui.screens.pattern.PatternImageSelection
+import com.finnvek.knittools.ui.screens.pattern.StagedPatternPage
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.withContext
 import java.io.File
+import java.io.IOException
+import java.io.InputStream
 import java.nio.file.FileAlreadyExistsException
 import java.nio.file.Files
 import java.util.Locale
+import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.coroutines.coroutineContext
 
 private const val PATTERN_CAPTURE_ROOT = "pattern_captures"
+
+internal enum class PatternImageFailureReason {
+    UNSUPPORTED,
+    ANIMATED,
+    INVALID_DIMENSIONS,
+}
+
+internal class PatternImageValidationException(
+    val reason: PatternImageFailureReason,
+    cause: Throwable? = null,
+) : Exception(cause)
+
+internal data class PatternImageInfo(
+    val width: Int,
+    val height: Int,
+)
+
+internal enum class PatternImageStageFailure {
+    PAGE_LIMIT,
+    IMAGE_TOO_LARGE,
+    TOTAL_TOO_LARGE,
+    LOW_STORAGE,
+    UNREADABLE,
+    UNSUPPORTED,
+    ANIMATED,
+}
+
+internal class PatternImageStageException(
+    val reason: PatternImageStageFailure,
+    cause: Throwable? = null,
+) : Exception(cause)
+
+internal data class PatternImageStageBatch(
+    val pages: List<StagedPatternPage>,
+    val duplicatesIgnored: Int,
+)
 
 @Singleton
 class PatternDocumentStorage
     @Inject
-    constructor() {
+    constructor(
+        @param:IoDispatcher private val ioDispatcher: CoroutineDispatcher,
+    ) {
         fun createCaptureImageFile(
             context: Context,
             projectId: Long,
+            sessionId: String? = null,
         ): Pair<File, Uri> {
-            val dir = patternCaptureDir(context, projectId)
+            val dir =
+                sessionId?.let { PatternImageStagingFiles.sessionDirectory(context.filesDir, projectId, it) }
+                    ?: patternCaptureDir(context, projectId)
             dir.mkdirs()
             val file = StorageFileNames.uniqueTimestampedFile(dir, "", ".jpg")
             val uri = AppFileStorage.fileProviderUri(context, file)
@@ -54,93 +109,412 @@ class PatternDocumentStorage
                 .walkBottomUp()
                 .filterNot { file -> file == root }
                 .forEach { file ->
-                    when {
-                        file.isFile && file.lastModified() <= staleBeforeMillis -> deleteCaptureFileIfPossible(file)
-                        file.isDirectory && file.listFiles()?.isEmpty() == true -> deleteCaptureFileIfPossible(file)
+                    val modifiedAt = file.lastModified()
+                    if (modifiedAt > 0L && modifiedAt <= nowMillis && modifiedAt <= staleBeforeMillis) {
+                        // Delete an empty directory atomically so a concurrent capture can never be swept recursively.
+                        if (file.isDirectory) deleteEmptySessionDirectory(file) else deleteCaptureFileIfPossible(file)
                     }
                 }
         }
 
-        fun convertImageToPdf(
+        internal suspend fun stageSelectedImages(
             context: Context,
             projectId: Long,
-            imageUri: Uri,
-            fileName: String? = null,
-        ): Pair<String, String>? {
-            val inputStream = context.contentResolver.openInputStream(imageUri) ?: return null
-            val original = inputStream.use(BitmapFactory::decodeStream) ?: return null
-            val scaled = scaleDown(original, MAX_DIMENSION)
-            val document = PdfDocument()
+            sessionId: String,
+            existingSelection: PatternImageSelection,
+            sourceUris: List<Uri>,
+        ): PatternImageStageBatch {
+            val (uniqueUris, duplicatesIgnored) = distinctSourceUris(existingSelection, sourceUris)
+            if (existingSelection.pages.size + uniqueUris.size > PatternImageImportLimits.MAX_PAGES) {
+                stageFailure(PatternImageStageFailure.PAGE_LIMIT)
+            }
+            if (uniqueUris.isEmpty()) return PatternImageStageBatch(emptyList(), duplicatesIgnored)
+
+            val sessionDirectory = PatternImageStagingFiles.sessionDirectory(context.filesDir, projectId, sessionId)
+            val stagedFiles = mutableListOf<File>()
+            val stagedPages = mutableListOf<StagedPatternPage>()
+            val stagingContext = coroutineContext
+            var batchBytes = 0L
+            var completed = false
             try {
-                val pageInfo = PdfDocument.PageInfo.Builder(scaled.width, scaled.height, 1).create()
-                val page = document.startPage(pageInfo)
-                page.canvas.drawBitmap(scaled, 0f, 0f, null)
-                document.finishPage(page)
-                val pdfDir = File(context.filesDir, "pattern_pdfs/$projectId")
-                val pdfFile =
-                    PatternDocumentFiles.writeUniquePdf(
-                        directory = pdfDir,
-                        fileName = fileName ?: "pattern-scan-${System.currentTimeMillis()}.pdf",
-                    ) { targetFile ->
-                        targetFile.outputStream().use(document::writeTo)
-                    } ?: return null
-                return pdfFile.toUri().toString() to pdfFile.name
+                uniqueUris.forEach { sourceUri ->
+                    stagingContext.ensureActive()
+                    val stagedFile = File(sessionDirectory, "page-${UUID.randomUUID()}.img")
+                    stagedFiles += stagedFile
+                    val copiedBytes = copySelectedImage(context, sourceUri, stagedFile)
+                    batchBytes += copiedBytes
+                    if (existingSelection.totalBytes + batchBytes > PatternImageImportLimits.MAX_TOTAL_BYTES) {
+                        stageFailure(PatternImageStageFailure.TOTAL_TOO_LARGE)
+                    }
+                    val info = validateStagedImage(stagedFile)
+                    stagedPages +=
+                        StagedPatternPage(
+                            id = UUID.randomUUID().toString(),
+                            sourceUri = sourceUri.toString(),
+                            stagedPath = stagedFile.absolutePath,
+                            byteCount = copiedBytes,
+                            width = info.width,
+                            height = info.height,
+                        )
+                    stagingContext.ensureActive()
+                }
+                completed = true
+                return PatternImageStageBatch(stagedPages, duplicatesIgnored)
             } finally {
-                document.close()
-                if (scaled !== original) scaled.recycle()
-                original.recycle()
+                if (!completed) {
+                    stagedFiles.forEach(::deleteCaptureFileIfPossible)
+                    deleteEmptySessionDirectory(sessionDirectory)
+                }
             }
         }
 
-        private fun scaleDown(
-            bitmap: Bitmap,
-            maxDimension: Int,
-        ): Bitmap {
-            val width = bitmap.width
-            val height = bitmap.height
-            if (width <= maxDimension && height <= maxDimension) return bitmap
+        private fun distinctSourceUris(
+            existingSelection: PatternImageSelection,
+            sourceUris: List<Uri>,
+        ): Pair<List<Uri>, Int> {
+            val seen = existingSelection.pages.mapTo(linkedSetOf(), StagedPatternPage::sourceUri)
+            var duplicatesIgnored = 0
+            val uniqueUris =
+                sourceUris.filter { uri ->
+                    val isNew = seen.add(uri.toString())
+                    if (!isNew) duplicatesIgnored += 1
+                    isNew
+                }
+            return uniqueUris to duplicatesIgnored
+        }
 
-            val ratio = maxDimension.toFloat() / maxOf(width, height)
-            val newWidth = (width * ratio).toInt().coerceAtLeast(1)
-            val newHeight = (height * ratio).toInt().coerceAtLeast(1)
-            return bitmap.scale(newWidth, newHeight)
+        private fun copySelectedImage(
+            context: Context,
+            sourceUri: Uri,
+            stagedFile: File,
+        ): Long {
+            val input =
+                try {
+                    context.contentResolver.openInputStream(sourceUri)
+                } catch (failure: IOException) {
+                    stageFailure(PatternImageStageFailure.UNREADABLE, failure)
+                } catch (failure: SecurityException) {
+                    stageFailure(PatternImageStageFailure.UNREADABLE, failure)
+                } ?: stageFailure(PatternImageStageFailure.UNREADABLE)
+            return try {
+                input.use {
+                    PatternImageStagingFiles.copyBounded(
+                        input = it,
+                        target = stagedFile,
+                        maxBytes = PatternImageImportLimits.MAX_BYTES_PER_IMAGE,
+                    )
+                }
+            } catch (failure: PatternImageTooLargeException) {
+                stageFailure(PatternImageStageFailure.IMAGE_TOO_LARGE, failure)
+            } catch (failure: PatternImageInsufficientSpaceException) {
+                stageFailure(PatternImageStageFailure.LOW_STORAGE, failure)
+            } catch (failure: IOException) {
+                stageFailure(PatternImageStageFailure.UNREADABLE, failure)
+            }
+        }
+
+        private fun validateStagedImage(stagedFile: File): PatternImageInfo =
+            try {
+                inspectStagedImage(stagedFile)
+            } catch (failure: PatternImageValidationException) {
+                val reason =
+                    if (failure.reason == PatternImageFailureReason.ANIMATED) {
+                        PatternImageStageFailure.ANIMATED
+                    } else {
+                        PatternImageStageFailure.UNSUPPORTED
+                    }
+                stageFailure(reason, failure)
+            }
+
+        internal fun deleteImportSession(
+            context: Context,
+            projectId: Long,
+            sessionId: String,
+        ) {
+            val sessionDirectory = validatedImportSessionDirectory(context, projectId, sessionId) ?: return
+            deleteCaptureFileIfPossible(sessionDirectory)
+        }
+
+        internal fun restoreStagedSelection(
+            context: Context,
+            projectId: Long?,
+            sessionId: String?,
+            selection: PatternImageSelection,
+        ): PatternImageSelection? {
+            if (projectId == null || sessionId == null) {
+                return null
+            }
+            return try {
+                val directory = validatedImportSessionDirectory(context, projectId, sessionId) ?: return null
+                var totalBytes = 0L
+                val pages =
+                    selection.pages.take(PatternImageImportLimits.MAX_PAGES).mapNotNull { page ->
+                        val file = File(page.stagedPath).canonicalFile
+                        val bytes = file.length()
+                        if (file.parentFile != directory ||
+                            !file.isFile ||
+                            bytes !in 1L..PatternImageImportLimits.MAX_BYTES_PER_IMAGE ||
+                            bytes > PatternImageImportLimits.MAX_TOTAL_BYTES - totalBytes
+                        ) {
+                            null
+                        } else {
+                            totalBytes += bytes
+                            page.copy(stagedPath = file.path, byteCount = bytes)
+                        }
+                    }
+                PatternImageSelection(pages)
+            } catch (_: IOException) {
+                null
+            }
+        }
+
+        private fun validatedImportSessionDirectory(
+            context: Context,
+            projectId: Long,
+            sessionId: String,
+        ): File? =
+            runCatching {
+                if (sessionId.isBlank() || File(sessionId).name != sessionId) return@runCatching null
+                val projectDirectory = patternCaptureDir(context, projectId).canonicalFile
+                val directory =
+                    PatternImageStagingFiles
+                        .sessionDirectory(context.filesDir, projectId, sessionId)
+                        .canonicalFile
+                directory.takeIf {
+                    projectDirectory.parentFile == patternCaptureRoot(context).canonicalFile &&
+                        directory.parentFile == projectDirectory &&
+                        directory.name == sessionId
+                }
+            }.getOrNull()
+
+        internal fun deleteStagedPage(page: StagedPatternPage) {
+            val file = File(page.stagedPath)
+            deleteCaptureFileIfPossible(file)
+            file.parentFile?.let(::deleteEmptySessionDirectory)
+        }
+
+        internal fun deleteGeneratedPdf(
+            context: Context,
+            uri: String,
+        ) {
+            AppFileStorage.deleteIfAppOwned(context, uri)
+        }
+
+        internal fun hasCreationSpace(
+            context: Context,
+            stagedBytes: Long,
+        ): Boolean =
+            try {
+                val storageManager = context.getSystemService(StorageManager::class.java)
+                val storageUuid = storageManager.getUuidForPath(context.filesDir)
+                storageManager.getAllocatableBytes(storageUuid) >=
+                    stagedBytes + PatternImageImportLimits.MIN_FREE_SPACE_RESERVE_BYTES
+            } catch (_: IOException) {
+                false
+            }
+
+        internal fun inspectStagedImage(file: File): PatternImageInfo {
+            val bitmap = decodeBoundedBitmap(file)
+            return try {
+                PatternImageInfo(bitmap.width, bitmap.height)
+            } finally {
+                bitmap.recycle()
+            }
+        }
+
+        internal fun inspectCameraCapture(file: File): PatternImageInfo {
+            if (file.length() > PatternImageImportLimits.MAX_BYTES_PER_IMAGE) {
+                stageFailure(PatternImageStageFailure.IMAGE_TOO_LARGE)
+            }
+            return validateStagedImage(file)
+        }
+
+        internal suspend fun convertImagesToPdf(
+            context: Context,
+            projectId: Long,
+            pages: List<StagedPatternPage>,
+            fileName: String,
+            onProgress: (currentPage: Int, totalPages: Int) -> Unit,
+        ): Pair<String, String> {
+            require(pages.isNotEmpty())
+            val document = PdfDocument()
+            try {
+                pages.forEachIndexed { index, stagedPage ->
+                    coroutineContext.ensureActive()
+                    val bitmap = decodeBoundedBitmap(File(stagedPage.stagedPath))
+                    try {
+                        val pageInfo = PdfDocument.PageInfo.Builder(bitmap.width, bitmap.height, index + 1).create()
+                        val pdfPage = document.startPage(pageInfo)
+                        try {
+                            pdfPage.canvas.drawColor(Color.WHITE)
+                            pdfPage.canvas.drawBitmap(bitmap, 0f, 0f, null)
+                        } finally {
+                            document.finishPage(pdfPage)
+                        }
+                    } finally {
+                        bitmap.recycle()
+                    }
+                    coroutineContext.ensureActive()
+                    onProgress(index + 1, pages.size)
+                }
+                val conversionContext = coroutineContext
+                val pdfFile =
+                    PatternDocumentFiles.writeUniquePdfOrThrow(
+                        directory = File(context.filesDir, "pattern_pdfs/$projectId"),
+                        fileName = fileName,
+                    ) { targetFile ->
+                        conversionContext.ensureActive()
+                        targetFile.outputStream().use(document::writeTo)
+                        if (!isReadablePdf(context, targetFile)) {
+                            throw IOException("Generated pattern PDF is not readable")
+                        }
+                        conversionContext.ensureActive()
+                    }
+                return pdfFile.toUri().toString() to pdfFile.name
+            } finally {
+                document.close()
+            }
+        }
+
+        private fun decodeBoundedBitmap(file: File): Bitmap {
+            if (!file.isFile || file.length() <= 0L) {
+                unsupportedImage()
+            }
+            return try {
+                ImageDecoder.decodeBitmap(ImageDecoder.createSource(file)) { decoder, info, _ ->
+                    configureImageDecoder(decoder, info)
+                }
+            } catch (failure: IOException) {
+                unsupportedImage(failure)
+            } catch (failure: IllegalArgumentException) {
+                unsupportedImage(failure)
+            }
+        }
+
+        private fun configureImageDecoder(
+            decoder: ImageDecoder,
+            info: ImageDecoder.ImageInfo,
+        ) {
+            if (info.isAnimated) {
+                throw PatternImageValidationException(PatternImageFailureReason.ANIMATED)
+            }
+            val width = info.size.width
+            val height = info.size.height
+            if (width <= 0 || height <= 0) {
+                throw PatternImageValidationException(PatternImageFailureReason.INVALID_DIMENSIONS)
+            }
+            val longEdge = maxOf(width, height)
+            if (longEdge > PatternImageImportLimits.MAX_LONG_EDGE_PIXELS) {
+                val ratio = PatternImageImportLimits.MAX_LONG_EDGE_PIXELS.toFloat() / longEdge
+                decoder.setTargetSize(
+                    (width * ratio).toInt().coerceAtLeast(1),
+                    (height * ratio).toInt().coerceAtLeast(1),
+                )
+            }
+            decoder.allocator = ImageDecoder.ALLOCATOR_SOFTWARE
         }
 
         /**
          * Kopioi ulkoisen content URI:n PDF sovelluksen sisäiseen tallennustilaan.
          * Palauttaa sisäisen content URI:n tai null jos kopiointi epäonnistuu.
          */
-        fun copyPdfToInternal(
+        suspend fun copyPdfToInternal(
             context: Context,
             projectId: Long,
             sourceUri: Uri,
             fileName: String,
         ): String? {
-            if (AppFileStorage.isAppOwnedUri(context, sourceUri)) return null
+            var undeliveredCopy: File? = null
+            try {
+                val copiedUri =
+                    withContext(ioDispatcher) {
+                        if (AppFileStorage.isInternalUri(context, sourceUri)) return@withContext null
+                        val maxCopyBytes = availablePdfCopyBytes(context) ?: return@withContext null
+                        val copyContext = coroutineContext
 
-            return try {
-                context.contentResolver.openInputStream(sourceUri)?.use { input ->
-                    val copiedFile =
-                        PatternDocumentFiles.writeUniquePdf(
-                            directory = File(context.filesDir, "pattern_pdfs/$projectId"),
-                            fileName = fileName,
-                        ) { targetFile ->
-                            targetFile.outputStream().use { output ->
-                                input.copyTo(output)
-                            }
+                        try {
+                            val copiedFile =
+                                PatternDocumentFiles.writeUniquePdf(
+                                    directory = File(context.filesDir, "pattern_pdfs/$projectId"),
+                                    // A discarded share must not make its URI available to a later request.
+                                    fileName = if (projectId == 0L) "${UUID.randomUUID()}.pdf" else fileName,
+                                ) { targetFile ->
+                                    val input =
+                                        context.contentResolver.openInputStream(sourceUri)
+                                            ?: throw IOException("Pattern PDF source is unavailable")
+                                    input.use {
+                                        PatternDocumentFiles.copyBounded(
+                                            input = it,
+                                            target = targetFile,
+                                            maxBytes = maxCopyBytes,
+                                        ) {
+                                            copyContext.ensureActive()
+                                        }
+                                    }
+                                    copyContext.ensureActive()
+                                    requireReadablePdf(context, targetFile)
+                                    copyContext.ensureActive()
+                                }
+                            undeliveredCopy = copiedFile
+                            copiedFile?.toUri()?.toString()
+                        } catch (failure: CancellationException) {
+                            throw failure
+                        } catch (_: Exception) {
+                            null
                         }
-                    copiedFile?.toUri()?.toString()
+                    }
+                undeliveredCopy = null
+                return copiedUri
+            } finally {
+                undeliveredCopy?.let { file ->
+                    withContext(NonCancellable + ioDispatcher) {
+                        if (!file.delete() && file.exists()) file.deleteOnExit()
+                    }
                 }
-            } catch (_: Exception) {
-                null
             }
         }
 
+        private fun requireReadablePdf(
+            context: Context,
+            file: File,
+        ) {
+            if (!isReadablePdf(context, file)) throw IOException("Pattern PDF is not readable")
+        }
+
+        private fun availablePdfCopyBytes(context: Context): Long? =
+            try {
+                val storageManager = context.getSystemService(StorageManager::class.java)
+                val storageUuid = storageManager.getUuidForPath(context.filesDir)
+                (
+                    storageManager.getAllocatableBytes(storageUuid) -
+                        PatternImageImportLimits.MIN_FREE_SPACE_RESERVE_BYTES
+                ).takeIf { it > 0L }
+            } catch (_: IOException) {
+                null
+            }
+
+        private fun isReadablePdf(
+            context: Context,
+            file: File,
+        ): Boolean =
+            runCatching {
+                PdfPageRenderer(context, file.toUri()).use { renderer ->
+                    renderer.pageCount > 0 && renderer.pageSize(0).let { it.width > 0 && it.height > 0 }
+                }
+            }.getOrDefault(false)
+
         private companion object {
             const val STALE_CAPTURE_MAX_AGE_MILLIS = 7L * 24L * 60L * 60L * 1000L
-            const val MAX_DIMENSION = 1800
         }
     }
+
+private fun stageFailure(
+    reason: PatternImageStageFailure,
+    cause: Throwable? = null,
+): Nothing = throw PatternImageStageException(reason, cause)
+
+private fun unsupportedImage(cause: Throwable? = null): Nothing =
+    throw PatternImageValidationException(PatternImageFailureReason.UNSUPPORTED, cause)
 
 private fun patternCaptureDir(
     context: Context,
@@ -158,7 +532,37 @@ private fun deleteCaptureFileIfPossible(file: File) {
     }
 }
 
+private fun deleteEmptySessionDirectory(directory: File) {
+    if (directory.isDirectory) {
+        // A concurrent capture may make the directory nonempty; leave it for a later cleanup.
+        runCatching { Files.delete(directory.toPath()) }
+    }
+}
+
 internal object PatternDocumentFiles {
+    fun copyBounded(
+        input: InputStream,
+        target: File,
+        maxBytes: Long,
+        onChunk: () -> Unit = {},
+    ): Long {
+        var copiedBytes = 0L
+        target.outputStream().use { output ->
+            val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+            while (true) {
+                onChunk()
+                val read = input.read(buffer)
+                if (read < 0) break
+                if (read.toLong() > maxBytes - copiedBytes) {
+                    throw IOException("Pattern PDF copy limit exceeded")
+                }
+                output.write(buffer, 0, read)
+                copiedBytes += read
+            }
+        }
+        return copiedBytes
+    }
+
     fun safePdfFileName(
         fileName: String?,
         fallbackName: String = FALLBACK_NAME,
@@ -189,15 +593,30 @@ internal object PatternDocumentFiles {
         directory: File,
         fileName: String,
         write: (File) -> Unit,
-    ): File? {
-        if (!directory.exists() && !directory.mkdirs()) return null
+    ): File? =
+        try {
+            writeUniquePdfOrThrow(directory, fileName, write)
+        } catch (failure: CancellationException) {
+            throw failure
+        } catch (_: Exception) {
+            null
+        }
+
+    fun writeUniquePdfOrThrow(
+        directory: File,
+        fileName: String,
+        write: (File) -> Unit,
+    ): File {
+        if (!directory.isDirectory && !directory.mkdirs() && !directory.isDirectory) {
+            throw IOException("Pattern PDF directory creation failed")
+        }
+        prepareUnassignedDirectory(directory)
         val safeFileName = safePdfFileName(fileName)
         val tempFile = createTempFile(directory, safeFileName)
         return try {
             write(tempFile)
             moveToUniquePdf(tempFile, directory, safeFileName)
-        } catch (_: Exception) {
-            null
+                ?: throw IOException("Pattern PDF publish failed")
         } finally {
             if (tempFile.exists() && !tempFile.delete()) {
                 tempFile.deleteOnExit()
@@ -205,6 +624,8 @@ internal object PatternDocumentFiles {
         }
     }
 
+    // On Android the existence check in Files.move and the rename may be separate operations.
+    @Synchronized
     private fun moveToUniquePdf(
         sourceFile: File,
         directory: File,
@@ -220,6 +641,22 @@ internal object PatternDocumentFiles {
                 index += 1
             } catch (_: Exception) {
                 return null
+            }
+        }
+    }
+
+    private val preparedUnassignedDirectories = mutableSetOf<File>()
+
+    private fun prepareUnassignedDirectory(directory: File) {
+        if (directory.name != "0" || directory.parentFile?.name != "pattern_pdfs") return
+        synchronized(preparedUnassignedDirectories) {
+            // All writers prepare the directory before creating their first temporary PDF.
+            if (preparedUnassignedDirectories.add(directory.canonicalFile)) {
+                directory.listFiles()?.forEach { file ->
+                    if (file.extension == "tmp" && file.isFile && !file.delete()) {
+                        file.deleteOnExit()
+                    }
+                }
             }
         }
     }

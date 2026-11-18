@@ -1,11 +1,20 @@
 package com.finnvek.knittools.ui.screens.pattern
 
 import com.finnvek.knittools.ProjectSourceFiles
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class PatternViewerSourceTest {
+    @Test
+    fun `source blocks reject missing or out of order markers`() {
+        listOf("body<end>", "<start>body", "<end>body<start>").forEach { source ->
+            assertThrows(IllegalStateException::class.java) { source.blockBetween("<start>", "<end>") }
+        }
+    }
+
     @Test
     fun `renderer errors are not displayed from raw exception messages`() {
         val source = ProjectSourceFiles.read(PATTERN_VIEWER_SCREEN)
@@ -18,10 +27,10 @@ class PatternViewerSourceTest {
     fun `project pattern viewer uses persisted reading line state`() {
         val source = ProjectSourceFiles.read(PATTERN_VIEWER_SCREEN)
 
-        assertTrue(source.contains("readingLineEnabled = counterState.readingLineEnabled"))
-        assertTrue(source.contains("readingLineYFraction = counterState.readingLineYFraction"))
-        assertTrue(source.contains("onReadingLineToggle = counterViewModel::setReadingLineEnabled"))
-        assertTrue(source.contains("onReadingLineYFractionChange = counterViewModel::updateReadingLineYFraction"))
+        assertTrue(source.contains("readingLineEnabled = selectedDocument?.readingLineEnabled == true"))
+        assertTrue(source.contains("readingLineYFraction = readingLinePreviewYFraction"))
+        assertTrue(source.contains("counterViewModel.setReadingLineEnabled(enabled, selectedDocument?.id)"))
+        assertTrue(manualReadingLineCommit.containsMatchIn(source))
     }
 
     @Test
@@ -40,7 +49,7 @@ class PatternViewerSourceTest {
         val libraryViewer =
             source.blockBetween(
                 "fun LibraryPatternViewerScreen(",
-                "@Composable\nprivate fun rememberPatternRenderState",
+                "@Composable\ninternal fun rememberPatternRenderState",
             )
 
         assertFalse(libraryViewer.contains("CounterViewModel"))
@@ -56,7 +65,9 @@ class PatternViewerSourceTest {
 
         assertTrue(source.contains("R.string.pattern_show_reading_line"))
         assertTrue(source.contains("R.string.pattern_hide_reading_line"))
-        assertTrue(viewport.contains(".transformable(state = transformableState)"))
+        assertTrue(
+            viewport.contains(".transformable(state = transformableState, canPan = { viewportState.scale > 1f })"),
+        )
         assertTrue(source.contains("ReadingLineOverlay("))
         assertTrue(source.contains("dragAmount / scale"))
         assertTrue(source.contains("READING_LINE_MIN_Y_FRACTION"))
@@ -77,16 +88,16 @@ class PatternViewerSourceTest {
     }
 
     @Test
-    fun `reading line label uses current row and localized theme styling`() {
+    fun `reading line label uses current count and localized theme styling`() {
         val source = ProjectSourceFiles.read(PATTERN_VIEWER_SCREEN)
         val documentBlock =
             source.blockBetween(
                 "PatternDocumentViewport(",
-                "@Composable\nprivate fun ReadingLineOverlay",
+                "internal fun ReadingLineOverlay(",
             )
         val overlayBlock =
             source.blockBetween(
-                "private fun ReadingLineOverlay(",
+                "internal fun ReadingLineOverlay(",
                 "// Tilan ja toimintojen ryhmittely PatternViewerBottomBarille",
             )
 
@@ -94,47 +105,53 @@ class PatternViewerSourceTest {
         assertTrue(overlayBlock.contains("currentRow: Int?"))
         assertTrue(overlayBlock.contains("currentRow?.let { currentRow ->"))
         assertTrue(overlayBlock.contains("ReadingLineRowLabel("))
-        assertTrue(overlayBlock.contains("stringResource(R.string.current_row_short, currentRow)"))
+        assertTrue(overlayBlock.contains("stringResource(R.string.row_label_format, currentRow)"))
+        assertFalse(overlayBlock.contains("R.string.current_row_short"))
         assertTrue(overlayBlock.contains("MaterialTheme.colorScheme.primaryContainer"))
         assertTrue(overlayBlock.contains("MaterialTheme.colorScheme.onPrimaryContainer"))
     }
 
     @Test
-    fun `reading line label does not hardcode visible row text`() {
+    fun `reading line label does not hardcode visible counter text`() {
         val source = ProjectSourceFiles.read(PATTERN_VIEWER_SCREEN)
         val overlayBlock =
             source.blockBetween(
-                "private fun ReadingLineOverlay(",
+                "internal fun ReadingLineOverlay(",
                 "// Tilan ja toimintojen ryhmittely PatternViewerBottomBarille",
             )
 
         assertFalse(overlayBlock.contains("\"Row "))
         assertFalse(overlayBlock.contains("\"Kerros "))
         assertFalse(overlayBlock.contains("Text(\""))
-        assertTrue(overlayBlock.contains("stringResource(R.string.current_row_short, currentRow)"))
+        assertTrue(overlayBlock.contains("stringResource(R.string.row_label_format, currentRow)"))
     }
 
+    // CPD-OFF: Testin skenaariokohtainen asetelma pidetaan paikallisena ja luettavana.
     @Test
-    fun `project reading line drag commit stores current row page anchor`() {
+    fun `project reading line drag commit pauses follow without creating a row marker`() {
         val source = ProjectSourceFiles.read(PATTERN_VIEWER_SCREEN)
         val projectViewer =
             source.blockBetween(
                 "fun PatternViewerScreen(",
-                "@Composable\nprivate fun TrackReadingLineForCurrentRow",
+                "@OptIn(ExperimentalMaterial3Api::class)\n@Composable\nfun LibraryPatternViewerScreen",
             )
         val libraryViewer =
             source.blockBetween(
                 "fun LibraryPatternViewerScreen(",
-                "@Composable\nprivate fun rememberPatternRenderState",
+                "@Composable\ninternal fun rememberPatternRenderState",
             )
 
         assertTrue(projectViewer.contains("onReadingLineYFractionCommit = { yFraction ->"))
+        // CPD-ON
         assertTrue(projectViewer.contains("val sanitizedYFraction = sanitizeReadingLineYFraction(yFraction)"))
-        assertTrue(projectViewer.contains("counterViewModel.updateReadingLineYFraction(sanitizedYFraction)"))
-        assertTrue(projectViewer.contains("counterViewModel.upsertPatternRowMarker("))
-        assertTrue(projectViewer.contains("row = counterState.counter.count"))
-        assertTrue(projectViewer.contains("page = currentPage"))
-        assertTrue(projectViewer.contains("yPosition = sanitizedYFraction"))
+        assertTrue(manualReadingLineCommit.containsMatchIn(projectViewer))
+        assertFalse(
+            projectViewer
+                .blockBetween(
+                    "onReadingLineYFractionCommit = { yFraction ->",
+                    "onReadingLineDragCancel = {",
+                ).contains("upsertPatternRowMarker"),
+        )
         assertFalse(libraryViewer.contains("upsertPatternRowMarker"))
     }
 
@@ -144,23 +161,23 @@ class PatternViewerSourceTest {
         val projectViewer =
             source.blockBetween(
                 "fun PatternViewerScreen(",
-                "@Composable\nprivate fun TrackReadingLineForCurrentRow",
+                "@OptIn(ExperimentalMaterial3Api::class)\n@Composable\nfun LibraryPatternViewerScreen",
             )
         val contentActions =
             projectViewer.blockBetween(
-                "actions =\n                    PatternViewerContentActions(",
-                "                modifier =\n",
+                "PatternViewerContentActions(",
+                "modifier =",
             )
 
-        assertTrue(projectViewer.contains("var readingLinePreviewYFraction by remember(patternUri)"))
-        assertTrue(projectViewer.contains("var isReadingLineDragging by remember(patternUri)"))
+        assertTrue(projectViewer.contains("var readingLinePreviewYFraction by remember(selectedDocument?.id)"))
+        assertTrue(projectViewer.contains("var isReadingLineDragging by remember(selectedDocument?.id)"))
         assertTrue(
             projectViewer.contains(
-                "LaunchedEffect(patternUri, counterState.readingLineYFraction, isReadingLineDragging)",
+                "LaunchedEffect(selectedDocument?.id, selectedDocument?.readingLineYFraction, isReadingLineDragging)",
             ),
         )
         assertTrue(projectViewer.contains("if (!isReadingLineDragging)"))
-        assertTrue(projectViewer.contains("readingLinePreviewYFraction = counterState.readingLineYFraction"))
+        assertTrue(projectViewer.contains("selectedDocument?.readingLineYFraction ?: DEFAULT_READING_LINE_Y_FRACTION"))
         assertTrue(projectViewer.contains("readingLineYFraction = readingLinePreviewYFraction"))
         assertTrue(projectViewer.contains("onReadingLineYFractionChange = { yFraction ->"))
         assertTrue(projectViewer.contains("isReadingLineDragging = true"))
@@ -176,17 +193,17 @@ class PatternViewerSourceTest {
         val projectViewer =
             source.blockBetween(
                 "fun PatternViewerScreen(",
-                "@Composable\nprivate fun TrackReadingLineForCurrentRow",
+                "@OptIn(ExperimentalMaterial3Api::class)\n@Composable\nfun LibraryPatternViewerScreen",
             )
         val overlayBlock =
             source.blockBetween(
-                "private fun ReadingLineOverlay(",
+                "internal fun ReadingLineOverlay(",
                 "// Tilan ja toimintojen ryhmittely PatternViewerBottomBarille",
             )
 
         assertTrue(projectViewer.contains("onReadingLineDragCancel = {"))
         assertTrue(projectViewer.contains("isReadingLineDragging = false"))
-        assertTrue(projectViewer.contains("readingLinePreviewYFraction = counterState.readingLineYFraction"))
+        assertTrue(projectViewer.contains("selectedDocument?.readingLineYFraction ?: DEFAULT_READING_LINE_Y_FRACTION"))
         assertFalse(projectViewer.contains("onReadingLineDragCancel = counterViewModel::updateReadingLineYFraction"))
         assertTrue(overlayBlock.contains("onDragCancel = { actions.onDragCancel() }"))
     }
@@ -196,17 +213,66 @@ class PatternViewerSourceTest {
         val source = ProjectSourceFiles.read(PATTERN_VIEWER_SCREEN)
         val overlayBlock =
             source.blockBetween(
-                "private fun ReadingLineOverlay(",
+                "internal fun ReadingLineOverlay(",
                 "// Tilan ja toimintojen ryhmittely PatternViewerBottomBarille",
             )
 
         assertTrue(overlayBlock.contains("actions: ReadingLineOverlayActions"))
-        assertTrue(source.contains("private data class ReadingLineOverlayActions("))
+        assertTrue(source.contains("internal data class ReadingLineOverlayActions("))
         assertTrue(source.contains("val onDragStart: () -> Unit"))
         assertTrue(source.contains("val onDragCancel: () -> Unit"))
         assertTrue(overlayBlock.contains("onDragStart = {"))
         assertTrue(overlayBlock.contains("actions.onDragStart()"))
         assertTrue(overlayBlock.contains("onDragCancel = { actions.onDragCancel() }"))
+    }
+
+    @Test
+    fun `bookmark jump focuses the persisted bookmark page`() {
+        val source = ProjectSourceFiles.read(PATTERN_VIEWER_SCREEN)
+        val jumpBlock =
+            source.blockBetween(
+                "is PatternViewerEvent.BookmarkJumped -> {",
+                "accessibilityAnnouncement =",
+            )
+
+        assertTrue(jumpBlock.contains("pageIndex = event.bookmark.pageIndex"))
+    }
+
+    @Test
+    fun `bookmark jump entry points keep feedback sheet open until success`() {
+        val source = ProjectSourceFiles.read(PATTERN_VIEWER_SCREEN)
+        val sheet = source.blockBetween("if (showBookmarkSheet) {", "if (showDocumentSheet) {")
+        val success = source.blockBetween("is PatternViewerEvent.BookmarkJumped -> {", "accessibilityAnnouncement =")
+
+        assertTrue(sheet.contains("onJump = patternViewerViewModel::jumpToBookmark"))
+        assertTrue(sheet.contains("onPrevious = patternViewerViewModel::jumpToPreviousBookmark"))
+        assertTrue(sheet.contains("onNext = patternViewerViewModel::jumpToNextBookmark"))
+        assertTrue(sheet.contains("onDismiss = { showBookmarkSheet = false }"))
+        assertTrue(sheet.contains("onClearError = patternViewerViewModel::clearError"))
+        assertFalse(sheet.substringAfter("onAdd =").contains("showBookmarkSheet = false"))
+        assertTrue(success.contains("showBookmarkSheet = false"))
+        assertTrue(success.contains("requestId = event.requestId"))
+        assertTrue(success.contains("yFraction = event.bookmark.yFraction"))
+        assertTrue(source.contains("if (viewportFocusRequest?.requestId == requestId)"))
+        assertTrue(source.contains("viewportFocusRequest = null"))
+    }
+
+    @Test
+    fun `bookmark failure surface localizes errors and retains jump retry and dismissal`() {
+        val sheet =
+            ProjectSourceFiles.read(
+                "app/src/main/java/com/finnvek/knittools/ui/screens/pattern/PatternBookmarkSheet.kt",
+            )
+
+        assertTrue(sheet.contains("state.error?.let { stringResource(it.messageRes()) }"))
+        assertTrue(sheet.contains("PatternBookmarkError.JUMP_FAILURE -> R.string.generic_error_unknown"))
+        assertTrue(sheet.contains("PatternBookmarkError.STALE_DOCUMENT -> R.string.pattern_bookmark_stale_document"))
+        assertTrue(sheet.contains("PatternBookmarkError.NOT_FOUND -> R.string.pattern_bookmark_not_found"))
+        assertTrue(sheet.contains("onClick = actions.onClearError"))
+        assertTrue(sheet.contains("onDismissRequest = actions.onDismiss"))
+        assertTrue(sheet.contains("onJump = { actions.onJump(bookmark.id) }"))
+        assertTrue(sheet.contains("enabled = state.canGoPrevious && !state.isMutating"))
+        assertTrue(sheet.contains("enabled = state.canGoNext && !state.isMutating"))
     }
 
     @Test
@@ -224,42 +290,51 @@ class PatternViewerSourceTest {
     }
 
     @Test
-    fun `project pattern viewer resolves reading line when current row changes`() {
-        val source = ProjectSourceFiles.read(PATTERN_VIEWER_SCREEN)
+    fun `project pattern viewer observes repository-owned reading line location`() {
+        val viewer = ProjectSourceFiles.read(PATTERN_VIEWER_SCREEN)
+        val repository = ProjectSourceFiles.read(COUNTER_REPOSITORY)
 
-        assertTrue(source.contains("TrackReadingLineForCurrentRow("))
-        assertTrue(source.contains("currentRow = counterState.counter.count"))
-        assertTrue(source.contains("patternRowMapping = counterState.patternRowMapping"))
-        assertTrue(source.contains("resolveReadingLineYFraction("))
-        assertTrue(source.contains("LaunchedEffect(currentRow, currentPage, patternRowMapping, readingLineEnabled)"))
+        assertFalse(viewer.contains("TrackReadingLineForCurrentRow("))
+        assertTrue(viewer.contains("val currentPage = selectedDocument?.currentPage ?: 0"))
+        assertTrue(repository.contains("resolveReadingLineLocation("))
+        assertTrue(repository.contains("updateViewerStateInTransaction("))
     }
 
     @Test
-    fun `project pattern viewer parses row mapping only when mapping changes`() {
+    fun `external document add returns duplicate feedback to the documents sheet`() {
         val source = ProjectSourceFiles.read(PATTERN_VIEWER_SCREEN)
-        val tracker =
-            source.blockBetween(
-                "@Composable\nprivate fun TrackReadingLineForCurrentRow",
-                "@OptIn(ExperimentalMaterial3Api::class)\n@Composable\nfun LibraryPatternViewerScreen",
-            )
 
-        assertTrue(tracker.contains("val rowMarkers = remember(patternRowMapping) { parseMapping(patternRowMapping) }"))
-        assertTrue(tracker.contains("markers = rowMarkers"))
-        assertFalse(tracker.contains("markers = parseMapping(patternRowMapping)"))
+        assertTrue(source.contains("patternViewerViewModel.handleDocumentAddResult(result)"))
+        assertTrue(source.contains("if (result !is ProjectDocumentMutationResult.Added)"))
+        assertTrue(source.contains("showDocumentSheet = true"))
     }
 
+    @Test
+    fun `repository parses row mapping before page-aware resolution`() {
+        val repository = ProjectSourceFiles.read(COUNTER_REPOSITORY)
+        val followBlock =
+            repository.blockBetween(
+                "private suspend fun applyReadingLineFollow(",
+                "private suspend fun applyLinkedCounterDelta(",
+            )
+
+        assertTrue(followBlock.contains("parseMapping(document.rowMapping)"))
+        assertTrue(followBlock.contains("resolveReadingLineLocation("))
+    }
+
+    // CPD-OFF: Lahdekooditesti toistaa tarkoituksella saman projektin ja kirjaston rajauksen.
     @Test
     fun `project pattern viewer exposes row marker controls only from project overflow`() {
         val source = ProjectSourceFiles.read(PATTERN_VIEWER_SCREEN)
         val projectViewer =
             source.blockBetween(
                 "fun PatternViewerScreen(",
-                "@Composable\nprivate fun TrackReadingLineForCurrentRow",
+                "@OptIn(ExperimentalMaterial3Api::class)\n@Composable\nfun LibraryPatternViewerScreen",
             )
         val libraryViewer =
             source.blockBetween(
                 "fun LibraryPatternViewerScreen(",
-                "@Composable\nprivate fun rememberPatternRenderState",
+                "@Composable\ninternal fun rememberPatternRenderState",
             )
 
         assertTrue(projectViewer.contains("currentRow = counterState.counter.count"))
@@ -270,11 +345,12 @@ class PatternViewerSourceTest {
         assertTrue(projectViewer.contains("row = counterState.counter.count"))
         assertTrue(projectViewer.contains("page = currentPage"))
         assertTrue(projectViewer.contains("onClearReadingLinePageMarkers = {"))
-        assertTrue(projectViewer.contains("counterViewModel.removePatternRowMarkersForPage(currentPage)"))
+        assertTrue(projectViewer.contains("counterViewModel.removePatternRowMarkersForPage("))
         assertFalse(libraryViewer.contains("removePatternRowMarker"))
         assertFalse(libraryViewer.contains("removePatternRowMarkersForPage"))
         assertFalse(libraryViewer.contains("pattern_save_line_as_row"))
     }
+    // CPD-ON
 
     @Test
     fun `project pattern viewer exposes two point calibration and merges accepted markers`() {
@@ -282,20 +358,23 @@ class PatternViewerSourceTest {
         val projectViewer =
             source.blockBetween(
                 "fun PatternViewerScreen(",
-                "@Composable\nprivate fun TrackReadingLineForCurrentRow",
+                "@OptIn(ExperimentalMaterial3Api::class)\n@Composable\nfun LibraryPatternViewerScreen",
             )
         val libraryViewer =
             source.blockBetween(
                 "fun LibraryPatternViewerScreen(",
-                "@Composable\nprivate fun rememberPatternRenderState",
+                "@Composable\ninternal fun rememberPatternRenderState",
             )
 
-        assertTrue(projectViewer.contains("var rowCalibrationState by remember"))
+        assertTrue(projectViewer.contains("var rowCalibrationState by"))
+        assertTrue(projectViewer.contains("rememberSaveable(selectedDocument?.id, selectedDocument?.rowMapping,"))
         assertTrue(projectViewer.contains("onStartRowCalibration = {"))
-        assertTrue(projectViewer.contains("counterViewModel.setReadingLineEnabled(true)"))
+        assertTrue(projectViewer.contains("counterViewModel.setReadingLineEnabled(true, selectedDocument?.id)"))
         assertTrue(projectViewer.contains("RowCalibrationPanel("))
         assertTrue(projectViewer.contains("createCalibrationRowMarkers("))
-        assertTrue(projectViewer.contains("counterViewModel.mergePatternRowMarkers(markers)"))
+        assertTrue(projectViewer.contains("counterViewModel.mergePatternRowMarkers("))
+        assertTrue(projectViewer.contains("expectedMapping = selectedDocument?.rowMapping"))
+        assertTrue(projectViewer.contains("documentRowMapping = calibrationState.expectedMapping"))
         assertTrue(projectViewer.contains("rowCalibrationState = null"))
         assertFalse(libraryViewer.contains("RowCalibrationPanel("))
         assertFalse(libraryViewer.contains("mergePatternRowMarkers"))
@@ -307,7 +386,7 @@ class PatternViewerSourceTest {
         val calibrationBlock =
             source.blockBetween(
                 "private data class RowCalibrationState(",
-                "@Composable\nprivate fun TrackReadingLineForCurrentRow",
+                "@OptIn(ExperimentalMaterial3Api::class)\n@Composable\nfun LibraryPatternViewerScreen",
             )
 
         assertTrue(calibrationBlock.contains("showInvalidRowError: Boolean"))
@@ -326,7 +405,7 @@ class PatternViewerSourceTest {
                 "@Composable\nprivate fun PatternPageJumpDialog",
             )
 
-        assertTrue(overflowMenu.contains("R.string.pattern_save_line_as_row"))
+        assertTrue(overflowMenu.contains("R.string.pattern_set_row_marker_here"))
         assertTrue(overflowMenu.contains("R.string.pattern_clear_row_mark"))
         assertTrue(overflowMenu.contains("R.string.pattern_clear_page_marks"))
         assertTrue(overflowMenu.contains("R.string.pattern_calibrate_rows"))
@@ -343,7 +422,7 @@ class PatternViewerSourceTest {
         val projectViewer =
             source.blockBetween(
                 "fun PatternViewerScreen(",
-                "@Composable\nprivate fun TrackReadingLineForCurrentRow",
+                "@OptIn(ExperimentalMaterial3Api::class)\n@Composable\nfun LibraryPatternViewerScreen",
             )
         val overflowMenu =
             source.blockBetween(
@@ -351,7 +430,7 @@ class PatternViewerSourceTest {
                 "@Composable\nprivate fun PatternPageJumpDialog",
             )
 
-        assertTrue(projectViewer.contains("val rowMarkers = remember(counterState.patternRowMapping)"))
+        assertTrue(projectViewer.contains("val rowMarkers = remember(selectedDocument?.rowMapping)"))
         assertTrue(projectViewer.contains("currentRow = counterState.counter.count.takeIf { patternUri != null }"))
         assertTrue(projectViewer.contains("hasCurrentRowMarker ="))
         assertTrue(projectViewer.contains("hasPageRowMarkers ="))
@@ -362,6 +441,11 @@ class PatternViewerSourceTest {
     @Test
     fun `counter view model can remove row markers by row page and by page`() {
         val source = ProjectSourceFiles.read(COUNTER_VIEW_MODEL)
+        val currentMarkersBlock =
+            source.blockBetween(
+                "private fun currentPatternRowMarkers(",
+                "private fun persistCount(",
+            )
         val removeRowBlock =
             source.blockBetween(
                 "fun removePatternRowMarker(",
@@ -373,14 +457,23 @@ class PatternViewerSourceTest {
                 "fun mergePatternRowMarkers(",
             )
 
-        assertTrue(removeRowBlock.contains("val currentMarkers = parseMapping(state.patternRowMapping)"))
+        assertTrue(removeRowBlock.contains("currentPatternRowMarkers(documentId, documentRowMapping)"))
         assertTrue(removeRowBlock.contains("filterNot { it.row == row && it.page == page }"))
         assertTrue(removeRowBlock.contains("if (markers.size == currentMarkers.size) return"))
-        assertTrue(removeRowBlock.contains("updatePatternRowMapping(serializeMapping(markers))"))
-        assertTrue(removePageBlock.contains("val currentMarkers = parseMapping(state.patternRowMapping)"))
+        assertTrue(
+            removeRowBlock.contains(
+                "updatePatternRowMapping(serializeMapping(markers), documentId, documentRowMapping)",
+            ),
+        )
+        assertTrue(removePageBlock.contains("currentPatternRowMarkers(documentId, documentRowMapping)"))
         assertTrue(removePageBlock.contains("filterNot { it.page == page }"))
         assertTrue(removePageBlock.contains("if (markers.size == currentMarkers.size) return"))
-        assertTrue(removePageBlock.contains("updatePatternRowMapping(serializeMapping(markers))"))
+        assertTrue(
+            removePageBlock.contains(
+                "updatePatternRowMapping(serializeMapping(markers), documentId, documentRowMapping)",
+            ),
+        )
+        assertTrue(currentMarkersBlock.contains("return parseMapping(mapping)"))
     }
 
     @Test
@@ -406,14 +499,25 @@ class PatternViewerSourceTest {
                 "fun mergePatternRowMarkers(",
                 "private fun persistCount(",
             )
+        val currentMarkersBlock =
+            source.blockBetween(
+                "private fun currentPatternRowMarkers(",
+                "private fun persistCount(",
+            )
 
         listOf(upsertBlock, removeRowBlock, removePageBlock, mergeBlock).forEach { block ->
-            assertTrue(block.contains("val state = _uiState.value"))
-            assertTrue(block.contains("if (state.patternUri == null) return"))
+            assertTrue(block.contains("currentPatternRowMarkers(documentId, documentRowMapping)"))
         }
-        assertTrue(removeRowBlock.contains("val currentMarkers = parseMapping(state.patternRowMapping)"))
+        assertTrue(currentMarkersBlock.contains("val state = _uiState.value"))
+        assertTrue(currentMarkersBlock.contains("if (documentId == null && state.patternUri == null) return null"))
+        assertTrue(
+            currentMarkersBlock.contains(
+                "val mapping = if (documentId == null) state.patternRowMapping else documentRowMapping",
+            ),
+        )
+        assertTrue(removeRowBlock.contains("currentPatternRowMarkers(documentId, documentRowMapping)"))
         assertTrue(removeRowBlock.contains("if (markers.size == currentMarkers.size) return"))
-        assertTrue(removePageBlock.contains("val currentMarkers = parseMapping(state.patternRowMapping)"))
+        assertTrue(removePageBlock.contains("currentPatternRowMarkers(documentId, documentRowMapping)"))
         assertTrue(removePageBlock.contains("if (markers.size == currentMarkers.size) return"))
     }
 
@@ -423,7 +527,6 @@ class PatternViewerSourceTest {
             val strings = ProjectSourceFiles.read(stringsFile)
 
             listOf(
-                "pattern_save_line_as_row",
                 "pattern_clear_row_mark",
                 "pattern_clear_page_marks",
                 "pattern_calibrate_rows",
@@ -456,7 +559,8 @@ class PatternViewerSourceTest {
         assertFalse(viewer.contains("rememberTransformableState"))
         assertTrue(viewport.contains("rememberTransformableState"))
         assertTrue(viewport.contains("viewportState.reset()"))
-        assertTrue(viewport.contains("verticalScroll(rememberScrollState())"))
+        assertTrue(viewport.contains("val scrollState = rememberScrollState()"))
+        assertTrue(viewport.contains(".verticalScroll(scrollState)"))
         assertTrue(viewport.contains("toPageCoordinateTransform(pageSize)"))
     }
 
@@ -464,11 +568,13 @@ class PatternViewerSourceTest {
     fun `hidden editable annotation layer disables pointer input`() {
         val viewer = ProjectSourceFiles.read(PATTERN_VIEWER_SCREEN)
         val interactionOverlay = viewer.blockBetween("interactionOverlay =", "PatternAnnotationInputOverlay(")
-        val normalizedGuard = interactionOverlay.replace(Regex("\\s+"), " ")
+        val normalizedGuard = interactionOverlay.replace(Regex("\\s+"), "")
 
         assertTrue(
             normalizedGuard.contains(
-                "if (editableLayerVisible && state.annotationState.activeTool != PatternAnnotationTool.BROWSE)",
+                // Lukutilassa ei piirretä, vaikka edellinen työkalu olisi vielä valittuna.
+                "if(state.annotationMode&&editableLayerVisible&&" +
+                    "state.annotationState.activeTool!=PatternAnnotationTool.BROWSE)",
             ),
         )
     }
@@ -476,7 +582,7 @@ class PatternViewerSourceTest {
     @Test
     fun `page render clears the previous bitmap before rendering the next page`() {
         val viewer = ProjectSourceFiles.read(PATTERN_VIEWER_SCREEN)
-        val renderProducer = viewer.blockBetween("val renderedBitmap by produceState", "return PatternRenderState(")
+        val renderProducer = viewer.blockBetween("produceState<Bitmap?>(", "return PatternRenderState(")
         val resetIndex = renderProducer.indexOf("value = null")
         val rendererLookupIndex = renderProducer.indexOf("val activeRenderer")
 
@@ -494,22 +600,95 @@ class PatternViewerSourceTest {
         assertFalse(viewer.contains("-annotated.pdf"))
     }
 
+    @Test
+    fun `annotated export preflights before opening SAF destination`() {
+        val viewer = ProjectSourceFiles.read(PATTERN_VIEWER_SCREEN)
+        val viewModel = ProjectSourceFiles.read(PATTERN_ANNOTATION_VIEW_MODEL)
+        val request =
+            viewModel.blockBetween(
+                "fun requestAnnotatedPdfExport(context: PatternPdfExportContext)",
+                "fun launchExportDestination(",
+            )
+        val preflightIndex = request.indexOf("exporter.preflight(")
+        val destinationRequestIndex = request.indexOf("exportDestinationChannel.trySend(request.id)")
+
+        assertTrue(preflightIndex >= 0)
+        assertTrue(destinationRequestIndex > preflightIndex)
+        assertTrue(request.contains("}.onSuccess {"))
+        // Vienti käynnistyy lukijan valikosta; kohde avataan vasta esitarkistuksen jälkeen.
+        assertEquals(
+            2,
+            Regex("exportContext\\?\\.let\\(annotationViewModel::requestAnnotatedPdfExport\\)").findAll(viewer).count(),
+        )
+        assertTrue(viewer.contains("CollectWithLifecycleEffect({ exportRequests }) { requestId ->"))
+        assertTrue(viewer.contains("annotationActions.onLaunchExportDestination(requestId, state.exportContext)"))
+        assertTrue(viewer.contains("exportLauncher.launch(exportFilename)"))
+        assertTrue(viewer.contains("pendingExportRequestId by rememberSaveable"))
+    }
+
+    @Test
+    fun `shared SAF callback captures request registration identity and consumes nullable destination`() {
+        val viewer = ProjectSourceFiles.read(PATTERN_VIEWER_SCREEN)
+        val callback = viewer.blockBetween("key(requestId) {", "val viewportFocusRequester")
+        assertTrue(callback.contains("rememberLauncherForActivityResult("))
+        assertTrue(callback.contains("ActivityResultContracts.CreateDocument(\"application/pdf\")"))
+        assertTrue(callback.contains("if (pendingExportRequestId == requestId) pendingExportRequestId = null"))
+        assertTrue(
+            callback.contains("annotationActions.onExport(requestId, state.exportContext, destination, exportStyle)"),
+        )
+        assertFalse(callback.contains("val requestId = pendingExportRequestId"))
+        assertFalse(callback.contains("destination != null"))
+        assertFalse(viewer.contains("pendingExportSource"))
+        assertTrue(viewer.contains("SideEffect { annotationActions.onExportContextChanged(state.exportContext) }"))
+        val disposal = viewer.blockBetween("DisposableEffect(exportRequests, activity)", "var pendingExportRequestId")
+        assertTrue(disposal.contains("onDispose {"))
+        assertTrue(
+            disposal.contains(
+                "if (activity?.isChangingConfigurations != true) annotationActions.onExportContextChanged(null)",
+            ),
+        )
+        assertTrue(callback.contains("destinationLaunched by rememberSaveable"))
+        assertTrue(callback.contains("if (requestId != null && !destinationLaunched)"))
+        val launchedIndex = callback.indexOf("destinationLaunched = true")
+        assertTrue(launchedIndex >= 0)
+        assertTrue(callback.indexOf("exportLauncher.launch(exportFilename)") > launchedIndex)
+        assertTrue(viewer.contains("owner = PatternAnnotationOwner.Project(document.projectId, document.documentKey)"))
+        assertTrue(viewer.contains("projectDocumentId = document.id"))
+        assertTrue(viewer.contains("PatternPdfExportContext(it.toUri(), annotationState.owner)"))
+    }
+
     private companion object {
+        val manualReadingLineCommit =
+            Regex(
+                """counterViewModel\.commitManualReadingLinePosition\(\s*""" +
+                    """sanitizedYFraction,\s*selectedDocument\?\.id,?\s*\)""",
+            )
         const val PATTERN_VIEWER_SCREEN =
             "app/src/main/java/com/finnvek/knittools/ui/screens/pattern/PatternViewerScreen.kt"
+        const val PATTERN_ANNOTATION_VIEW_MODEL =
+            "app/src/main/java/com/finnvek/knittools/ui/screens/pattern/PatternAnnotationViewModel.kt"
         const val PATTERN_DOCUMENT_VIEWPORT =
             "app/src/main/java/com/finnvek/knittools/ui/screens/pattern/PatternDocumentViewport.kt"
         const val COUNTER_SCREEN =
             "app/src/main/java/com/finnvek/knittools/ui/screens/counter/CounterScreen.kt"
         const val COUNTER_VIEW_MODEL =
             "app/src/main/java/com/finnvek/knittools/ui/screens/counter/CounterViewModel.kt"
+        const val COUNTER_REPOSITORY =
+            "app/src/main/java/com/finnvek/knittools/repository/CounterRepository.kt"
     }
 }
 
-private fun String.blockBetween(
+internal fun String.blockBetween(
     start: String,
     end: String,
-): String = substringAfter(start).substringBefore(end)
+): String {
+    val startIndex = indexOf(start)
+    check(startIndex >= 0) { "Missing start marker: $start" }
+    val contentStart = startIndex + start.length
+    val endIndex = indexOf(end, contentStart)
+    check(endIndex >= contentStart) { "Missing following end marker: $end" }
+    return substring(contentStart, endIndex)
+}
 
 private fun String.hasStringResource(key: String): Boolean =
     Regex("""<string\s+name="$key"(\s|>)""").containsMatchIn(this)

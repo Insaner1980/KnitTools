@@ -9,8 +9,28 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface CounterProjectDao {
+    @Query("SELECT projectId FROM onboarding_projects WHERE draftId = :draftId")
+    suspend fun findOnboardingProjectId(draftId: String): Long?
+
+    @Insert
+    suspend fun insertOnboardingProject(receipt: OnboardingProjectEntity)
+
+    @Insert
+    suspend fun insertCompletion(event: ProjectCompletionEntity): Long
+
+    @Query(
+        "SELECT * FROM project_completions WHERE (:projectId IS NULL OR projectId = :projectId) ORDER BY completedAt DESC, id DESC",
+    )
+    fun observeCompletions(projectId: Long?): Flow<List<ProjectCompletionEntity>>
+
     @Query("SELECT * FROM counter_projects ORDER BY updatedAt DESC")
     fun getAllProjects(): Flow<List<CounterProjectEntity>>
+
+    @Query("SELECT EXISTS(SELECT 1 FROM counter_projects)")
+    fun observeHasAnyProject(): Flow<Boolean>
+
+    @Query("SELECT EXISTS(SELECT 1 FROM counter_projects)")
+    suspend fun hasAnyProject(): Boolean
 
     @Query("SELECT * FROM counter_projects")
     suspend fun getAllProjectsOnce(): List<CounterProjectEntity>
@@ -26,36 +46,6 @@ interface CounterProjectDao {
 
     @Update
     suspend fun update(project: CounterProjectEntity)
-
-    @Query(
-        """
-        UPDATE counter_projects
-        SET count = CASE WHEN count + :delta < 0 THEN 0 ELSE count + :delta END,
-            updatedAt = :updatedAt
-        WHERE id = :id
-        """,
-    )
-    suspend fun adjustCount(
-        id: Long,
-        delta: Int,
-        updatedAt: Long,
-    )
-
-    @Query(
-        """
-        UPDATE counter_projects
-        SET count = CASE WHEN count + :delta < 0 THEN 0 ELSE count + :delta END,
-            stepSize = :stepSize,
-            updatedAt = :updatedAt
-        WHERE id = :id
-        """,
-    )
-    suspend fun adjustCountAndStepSize(
-        id: Long,
-        delta: Int,
-        stepSize: Int,
-        updatedAt: Long,
-    )
 
     @Query(
         """
@@ -100,7 +90,15 @@ interface CounterProjectDao {
         updatedAt: Long,
     )
 
-    @Query("UPDATE counter_projects SET notes = :notes, updatedAt = :updatedAt WHERE id = :id")
+    @Query(
+        """
+        UPDATE counter_projects
+        SET notes = :notes,
+            notesCreated = CASE WHEN TRIM(:notes) != '' THEN 1 ELSE notesCreated END,
+            updatedAt = :updatedAt
+        WHERE id = :id
+        """,
+    )
     suspend fun updateNotes(
         id: Long,
         notes: String,
@@ -111,6 +109,10 @@ interface CounterProjectDao {
         """
         UPDATE counter_projects
         SET secondaryCount = :secondaryCount,
+            secondaryCounterUsed = CASE
+                WHEN secondaryCount != :secondaryCount THEN 1
+                ELSE secondaryCounterUsed
+            END,
             updatedAt = :updatedAt
         WHERE id = :id
         """,
@@ -124,28 +126,18 @@ interface CounterProjectDao {
     @Query(
         """
         UPDATE counter_projects
-        SET sectionName = :sectionName,
-            updatedAt = :updatedAt
-        WHERE id = :id
-        """,
-    )
-    suspend fun updateSectionName(
-        id: Long,
-        sectionName: String?,
-        updatedAt: Long,
-    )
-
-    @Query(
-        """
-        UPDATE counter_projects
         SET stitchCount = :stitchCount,
+            stitchTrackingEnabled = :trackingEnabled,
+            currentStitch = :currentStitch,
             updatedAt = :updatedAt
         WHERE id = :id
         """,
     )
-    suspend fun updateStitchCount(
+    suspend fun updateStitchState(
         id: Long,
         stitchCount: Int?,
+        trackingEnabled: Boolean,
+        currentStitch: Int,
         updatedAt: Long,
     )
 
@@ -153,13 +145,6 @@ interface CounterProjectDao {
     suspend fun updateCurrentStitch(
         id: Long,
         stitch: Int,
-        updatedAt: Long,
-    )
-
-    @Query("UPDATE counter_projects SET stitchTrackingEnabled = :enabled, updatedAt = :updatedAt WHERE id = :id")
-    suspend fun updateStitchTrackingEnabled(
-        id: Long,
-        enabled: Boolean,
         updatedAt: Long,
     )
 
@@ -182,6 +167,51 @@ interface CounterProjectDao {
         patternRowMapping: String?,
         updatedAt: Long,
     )
+
+    @Query(
+        """
+        UPDATE counter_projects
+        SET linkedPatternId = :linkedPatternId,
+            patternName = :patternName,
+            updatedAt = :updatedAt
+        WHERE id = :id
+        """,
+    )
+    suspend fun updatePatternInformation(
+        id: Long,
+        linkedPatternId: Long?,
+        patternName: String?,
+        updatedAt: Long,
+    )
+
+    @Query(
+        """
+        UPDATE counter_projects
+        SET patternName = :patternName,
+            updatedAt = :updatedAt
+        WHERE linkedPatternId = :savedPatternId
+        """,
+    )
+    suspend fun updateLinkedPatternName(
+        savedPatternId: Long,
+        patternName: String,
+        updatedAt: Long,
+    )
+
+    @Query(
+        """
+        UPDATE counter_projects
+        SET linkedPatternId = NULL,
+            patternName = NULL,
+            updatedAt = :updatedAt
+        WHERE id = :projectId AND linkedPatternId = :expectedSavedPatternId
+        """,
+    )
+    suspend fun clearPatternInformationIfLinked(
+        projectId: Long,
+        expectedSavedPatternId: Long,
+        updatedAt: Long,
+    ): Int
 
     @Query(
         """
@@ -252,6 +282,68 @@ interface CounterProjectDao {
     @Query(
         """
         UPDATE counter_projects
+        SET readingLineEnabled = :enabled,
+            updatedAt = :updatedAt
+        WHERE id = :id
+        """,
+    )
+    suspend fun updateReadingLineVisibility(
+        id: Long,
+        enabled: Boolean,
+        updatedAt: Long,
+    )
+
+    @Query(
+        """
+        UPDATE counter_projects
+        SET currentPatternPage = :page,
+            readingLineYFraction = :yFraction,
+            readingLineFollowCurrentRow = :followCurrentRow,
+            updatedAt = :updatedAt
+        WHERE id = :id
+        """,
+    )
+    suspend fun updatePatternViewerLocation(
+        id: Long,
+        page: Int,
+        yFraction: Float,
+        followCurrentRow: Boolean,
+        updatedAt: Long,
+    )
+
+    @Query(
+        """
+        UPDATE counter_projects
+        SET readingLineFollowCurrentRow = :followCurrentRow,
+            updatedAt = :updatedAt
+        WHERE id = :id
+        """,
+    )
+    suspend fun updateReadingLineFollowState(
+        id: Long,
+        followCurrentRow: Boolean,
+        updatedAt: Long,
+    )
+
+    @Query(
+        """
+        UPDATE counter_projects
+        SET verticalReadingGuideEnabled = :enabled,
+            verticalReadingGuideXFraction = :xFraction,
+            updatedAt = :updatedAt
+        WHERE id = :id
+        """,
+    )
+    suspend fun updateVerticalReadingGuide(
+        id: Long,
+        enabled: Boolean,
+        xFraction: Float,
+        updatedAt: Long,
+    )
+
+    @Query(
+        """
+        UPDATE counter_projects
         SET stepSize = :stepSize,
             updatedAt = :updatedAt
         WHERE id = :id
@@ -281,6 +373,7 @@ interface CounterProjectDao {
         """
         UPDATE counter_projects
         SET linkedPatternId = NULL,
+            patternName = NULL,
             updatedAt = :updatedAt
         WHERE linkedPatternId IN (:patternIds)
         """,
@@ -292,6 +385,12 @@ interface CounterProjectDao {
 
     @Query("SELECT COUNT(*) FROM counter_projects WHERE patternUri = :patternUri")
     suspend fun countProjectsUsingPatternUri(patternUri: String): Int
+
+    @Query("UPDATE counter_projects SET patternUri = NULL WHERE id = :projectId AND patternUri = :patternUri")
+    suspend fun clearLegacyPatternUriIfMatching(
+        projectId: Long,
+        patternUri: String,
+    )
 
     @Query(
         """
@@ -352,35 +451,14 @@ interface CounterProjectDao {
     suspend fun insertHistory(entry: CounterHistoryEntity)
 
     @Transaction
-    suspend fun adjustCountWithHistory(
-        projectId: Long,
-        delta: Int,
-        stepSize: Int,
-        action: String,
-        previousValue: Int,
-        newValue: Int,
-        updatedAt: Long,
-    ) {
-        adjustCountAndStepSize(projectId, delta, stepSize, updatedAt)
-        insertHistory(
-            CounterHistoryEntity(
-                projectId = projectId,
-                action = action,
-                previousValue = previousValue,
-                newValue = newValue,
-            ),
-        )
-    }
-
-    @Transaction
     suspend fun updateCounterStateWithHistory(
         projectId: Long,
         count: Int,
         stepSize: Int,
         action: String,
         previousValue: Int,
-        newValue: Int,
         updatedAt: Long,
+        linkedCounterDeltasJson: String? = null,
     ) {
         updateCounterState(projectId, count, stepSize, updatedAt)
         insertHistory(
@@ -388,22 +466,29 @@ interface CounterProjectDao {
                 projectId = projectId,
                 action = action,
                 previousValue = previousValue,
-                newValue = newValue,
+                newValue = count,
+                linkedCounterDeltasJson = linkedCounterDeltasJson,
             ),
         )
     }
 
-    @Query("DELETE FROM counter_history WHERE projectId = :projectId AND timestamp < :before")
-    suspend fun deleteHistoryBefore(
-        projectId: Long,
-        before: Long,
-    )
-
     @Query(
         "SELECT * FROM counter_history WHERE projectId = :projectId " +
-            "ORDER BY timestamp DESC, id DESC LIMIT 1",
+            "ORDER BY id DESC LIMIT 1",
     )
     suspend fun getLatestHistory(projectId: Long): CounterHistoryEntity?
+
+    @Query(
+        "UPDATE counter_history SET sessionUndoJson = :snapshot " +
+            "WHERE id = (SELECT id FROM counter_history WHERE projectId = :projectId ORDER BY id DESC LIMIT 1)",
+    )
+    suspend fun updateLatestHistorySessionUndo(
+        projectId: Long,
+        snapshot: String,
+    )
+
+    @Query("SELECT * FROM counter_history WHERE projectId = :projectId ORDER BY timestamp DESC, id DESC")
+    fun observeCounterHistory(projectId: Long): Flow<List<CounterHistoryEntity>>
 
     @Query("DELETE FROM counter_history WHERE id = :id")
     suspend fun deleteHistoryById(id: Long)
@@ -437,7 +522,7 @@ interface CounterProjectDao {
     @Query("SELECT * FROM counter_projects WHERE isCompleted = 1 ORDER BY completedAt DESC, id DESC")
     fun getCompletedProjects(): Flow<List<CounterProjectEntity>>
 
-    @Query("SELECT * FROM counter_projects WHERE isCompleted = 1 ORDER BY name COLLATE NOCASE ASC")
+    @Query("SELECT * FROM counter_projects WHERE isCompleted = 1 ORDER BY name COLLATE NOCASE ASC, id DESC")
     fun getCompletedProjectsByName(): Flow<List<CounterProjectEntity>>
 
     @Query("SELECT * FROM counter_projects WHERE isCompleted = 1 ORDER BY createdAt DESC, id DESC")

@@ -1,0 +1,40 @@
+appId: com.finnvek.knittools
+name: Settings themes guide and backup entry
+---
+- launchApp:
+    clearState: true
+- tapOn: "SETTINGS"
+- tapOn: "Dark"
+- assertVisible: "App language"
+- takeScreenshot: settings-dark
+- tapOn: "Light"
+- assertVisible: "App language"
+- takeScreenshot: settings-light
+- scrollUntilVisible:
+    element:
+      text: "How to Use KnitTools"
+    direction: DOWN
+- tapOn: "How to Use KnitTools"
+- tapOn: "Continue a Project"
+- assertVisible: "Count as You Go"
+- tapOn: "Back"
+- tapOn: "Follow Your Pattern"
+- assertVisible: "Follow Your Pattern"
+- tapOn: "Back"
+- tapOn: "Keep Yarn Organized"
+- assertVisible: "Keep Yarn Organized"
+- tapOn: "Back"
+- tapOn: "Remember the Details"
+- assertVisible: "Remember the Details"
+- tapOn: "Back"
+- tapOn: "Calculate, Track and Back Up"
+- assertVisible: "Calculate, Track and Back Up"
+- tapOn: "Back"
+- tapOn: "Back"
+- scrollUntilVisible:
+    element:
+      text: "Backup & Restore"
+    direction: UP
+- tapOn: "Backup & Restore"
+- assertVisible: "Export backup"
+- assertVisible: "Restore backup"

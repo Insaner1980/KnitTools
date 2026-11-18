@@ -1,5 +1,7 @@
 # KnitTools Feature Decisions v1 - Toteutussuunnitelma
 
+> **Historiallinen suunnitelma:** Tämä dokumentti kuvaa schema 12 -> 13 -vaihetta eikä nykyistä schemaa tai toteutusarkkitehtuuria. Nykyinen lähde on `PROJECT.md` ja toteutunut arkkitehtuuri on kuvattu `AGENTS.md`/`CODEX.md`-tiedostoissa.
+
 ## Yhteenveto
 
 - Toteuta dokumentin `knittools-feature-decisions-updated.md` v1-sisältö vaiheittain: käsityötyyppi, päälaskurin joustava nimi, lukulinja PDF-katseluun, Linked counter, debug-only Pro unlock ja pilvipalveluista tuonti nykyisen PDF-tuonnin kautta.

@@ -6,6 +6,7 @@ import com.finnvek.knittools.domain.model.SavedPatternSource
 import com.finnvek.knittools.domain.model.YarnCard
 import com.finnvek.knittools.domain.model.YarnCardStatus
 import dagger.Lazy
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -14,6 +15,7 @@ object DebugDemoDataSeeder {
     private const val MARKER_PROJECT_NAME = "Forest Cardigan"
     private const val DAY_MILLIS = 24L * 60L * 60L * 1_000L
     private const val MINUTE_MILLIS = 60_000L
+    private const val DEFAULT_NEEDLE_SIZE = "4.0 mm"
 
     fun seedIfNeeded(
         applicationScope: CoroutineScope,
@@ -24,12 +26,18 @@ object DebugDemoDataSeeder {
         saveYarnCard: suspend (YarnCard) -> Long,
     ) {
         applicationScope.launch(ioDispatcher) {
-            transactionRunner.get().run {
-                seedDatabaseIfNeeded(
-                    database = database.get(),
-                    addCounter = addCounter,
-                    saveYarnCard = saveYarnCard,
-                )
+            try {
+                transactionRunner.get().run {
+                    seedDatabaseIfNeeded(
+                        database = database.get(),
+                        addCounter = addCounter,
+                        saveYarnCard = saveYarnCard,
+                    )
+                }
+            } catch (failure: CancellationException) {
+                throw failure
+            } catch (_: Exception) {
+                // The transaction has rolled back. Sample data is optional for startup.
             }
         }
     }
@@ -40,7 +48,7 @@ object DebugDemoDataSeeder {
         saveYarnCard: suspend (YarnCard) -> Long,
     ) {
         val projectDao = database.counterProjectDao()
-        if (projectDao.getAllProjectsOnce().any { it.name == MARKER_PROJECT_NAME }) {
+        if (projectDao.getAllProjectsOnce().isNotEmpty()) {
             return
         }
 
@@ -48,13 +56,13 @@ object DebugDemoDataSeeder {
         val woodlandPatternId =
             database.savedPatternDao().insert(
                 SavedPatternEntity(
-                    source = SavedPatternSource.Other.persistedValue,
+                    source = SavedPatternSource.WebLink.persistedValue,
                     name = "Woodland Cardigan",
                     designerName = "Maya Rowan",
                     difficulty = 3.5f,
                     gaugeStitches = 20f,
                     gaugeRows = 28f,
-                    needleSize = "4.0 mm",
+                    needleSize = DEFAULT_NEEDLE_SIZE,
                     yarnWeight = "DK",
                     yardage = 1_150,
                     originalUrl = "https://example.invalid/patterns/woodland-cardigan",
@@ -65,7 +73,7 @@ object DebugDemoDataSeeder {
             )
         database.savedPatternDao().insert(
             SavedPatternEntity(
-                source = SavedPatternSource.Other.persistedValue,
+                source = SavedPatternSource.WebLink.persistedValue,
                 name = "Harbor Socks",
                 designerName = "Elli North",
                 difficulty = 2.5f,
@@ -287,7 +295,7 @@ object DebugDemoDataSeeder {
                 fiberContent = "100% merino wool",
                 weightGrams = "100 g",
                 lengthMeters = "220 m",
-                needleSize = "4.0 mm",
+                needleSize = DEFAULT_NEEDLE_SIZE,
                 gaugeInfo = "20 sts / 28 rows",
                 colorName = "Forest Moss",
                 colorNumber = "318",
@@ -307,7 +315,7 @@ object DebugDemoDataSeeder {
                     fiberContent = "100% merino wool",
                     weightGrams = "100 g",
                     lengthMeters = "220 m",
-                    needleSize = "4.0 mm",
+                    needleSize = DEFAULT_NEEDLE_SIZE,
                     gaugeInfo = "20 sts / 28 rows",
                     colorName = "Natural Cream",
                     colorNumber = "101",
@@ -413,9 +421,13 @@ object DebugDemoDataSeeder {
                 DemoSession(blanketId, 10, 104, 112, 49),
                 DemoSession(beanieId, 14, 88, 96, 45),
             )
+        val sessionDao = database.sessionDao()
+        if (sessionDao.countCompletedSessions() > MAX_COMPLETED_SESSIONS - sessions.size) {
+            return
+        }
         sessions.forEach { session ->
             val endedAt = now - session.daysAgo * DAY_MILLIS - 2L * 60L * 60L * 1_000L
-            database.sessionDao().insert(
+            sessionDao.insert(
                 SessionEntity(
                     projectId = session.projectId,
                     startedAt = endedAt - session.minutes * MINUTE_MILLIS,

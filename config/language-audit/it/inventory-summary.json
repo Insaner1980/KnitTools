@@ -1,0 +1,64 @@
+{
+  "keys": 1349,
+  "strings": 1318,
+  "plurals": 31,
+  "resource_variants": 1411,
+  "rows": 1883,
+  "by_kind": {
+    "string": 1318,
+    "plural": 93,
+    "reference_data": 275,
+    "code_text": 88,
+    "symbol": 44,
+    "generated_output": 65
+  },
+  "by_batch": {
+    "B01": 27,
+    "B02": 116,
+    "B03": 88,
+    "B04": 45,
+    "B05": 144,
+    "B06": 92,
+    "B07": 71,
+    "B08": 78,
+    "B09": 80,
+    "B10": 68,
+    "B11": 78,
+    "B12": 33,
+    "B13": 84,
+    "B14": 35,
+    "B15": 23,
+    "B16": 13,
+    "B17": 349,
+    "B18": 234,
+    "B19": 82,
+    "B20": 35,
+    "B21": 30,
+    "B22": 72,
+    "B23": 6
+  },
+  "changed_variants": 101,
+  "changed_keys": 93,
+  "changed_files": [
+    "app/src/main/res/values-it/pattern_reading_assistance.xml",
+    "app/src/main/res/values-it/reference_strings.xml",
+    "app/src/main/res/values-it/strings.xml"
+  ],
+  "aliases": [
+    [
+      "web_pattern_error_designer_too_long",
+      "web_pattern_error_title_too_long"
+    ]
+  ],
+  "needle_rows": 38,
+  "size_rows": 46,
+  "abbreviation_tokens": 77,
+  "yarn_categories": 8,
+  "chart_symbols": 24,
+  "care_symbols": 20,
+  "shared_inputs": 24,
+  "shared_changes": [],
+  "unrelated_changes_since_start": [],
+  "input_files": 145,
+  "structural_result": "PASS"
+}

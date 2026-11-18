@@ -19,6 +19,7 @@ class AppLanguageTest {
         assertEquals(AppLanguage.FRENCH, AppLanguage.fromLanguageTag("fr"))
         assertEquals(AppLanguage.SPANISH, AppLanguage.fromLanguageTag("es"))
         assertEquals(AppLanguage.PORTUGUESE, AppLanguage.fromLanguageTag("pt"))
+        assertEquals(AppLanguage.BRAZILIAN_PORTUGUESE, AppLanguage.fromLanguageTag("pt-BR"))
         assertEquals(AppLanguage.ITALIAN, AppLanguage.fromLanguageTag("it"))
         assertEquals(AppLanguage.NORWEGIAN, AppLanguage.fromLanguageTag("nb"))
         assertEquals(AppLanguage.DANISH, AppLanguage.fromLanguageTag("da"))
@@ -27,8 +28,32 @@ class AppLanguageTest {
 
     @Test
     fun `regional locale tags map to supported base language`() {
-        assertEquals(AppLanguage.PORTUGUESE, AppLanguage.fromLanguageTag("pt-BR"))
+        assertEquals(AppLanguage.PORTUGUESE, AppLanguage.fromLanguageTag("pt-PT"))
+        assertEquals(AppLanguage.PORTUGUESE, AppLanguage.fromLanguageTag("pt-AO"))
         assertEquals(AppLanguage.NORWEGIAN, AppLanguage.fromLanguageTag("nb-NO"))
+        assertEquals(AppLanguage.ENGLISH, AppLanguage.fromLanguageTag("en-US"))
+        assertEquals(AppLanguage.FRENCH, AppLanguage.fromLanguageTag("fr-CA"))
+    }
+
+    @Test
+    fun `Brazilian Portuguese remains distinct in normalized and ordered tags`() {
+        assertEquals(AppLanguage.BRAZILIAN_PORTUGUESE, AppLanguage.fromLanguageTag("pt-br"))
+        assertEquals(AppLanguage.BRAZILIAN_PORTUGUESE, AppLanguage.fromLanguageTag(" PT-br ,en"))
+        assertEquals(AppLanguage.BRAZILIAN_PORTUGUESE, AppLanguage.fromLanguageTag("pt-BR,pt"))
+        assertEquals(AppLanguage.PORTUGUESE, AppLanguage.fromLanguageTag("pt,pt-BR"))
+    }
+
+    @Test
+    fun `every saved language and supported tag round trips without migration`() {
+        AppLanguage.entries.forEach { language ->
+            assertEquals(language, AppLanguage.fromValue(language.value))
+            assertEquals(language, AppLanguage.fromLanguageTag(language.languageTag))
+        }
+        assertEquals("pt", AppLanguage.PORTUGUESE.value)
+        assertEquals("pt-BR", AppLanguage.BRAZILIAN_PORTUGUESE.value)
+        assertEquals(AppLanguage.SYSTEM, AppLanguage.fromValue(null))
+        assertEquals(AppLanguage.SYSTEM, AppLanguage.fromValue("unknown"))
+        assertEquals(AppLanguage.SYSTEM, AppLanguage.fromLanguageTag("ja-JP"))
     }
 
     @Test

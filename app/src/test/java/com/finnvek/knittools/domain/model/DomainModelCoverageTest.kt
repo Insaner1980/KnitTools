@@ -24,7 +24,7 @@ class DomainModelCoverageTest {
     fun `saved pattern source and compatibility fields keep legacy fallbacks`() {
         assertEquals(SavedPatternSource.Ravelry, SavedPatternSource.fromPersistedValue("RAVELRY"))
         assertEquals(SavedPatternSource.LocalFile, SavedPatternSource.fromPersistedValue("LOCAL_FILE"))
-        assertEquals(SavedPatternSource.Other, SavedPatternSource.fromPersistedValue("missing"))
+        assertEquals(SavedPatternSource.Unknown, SavedPatternSource.fromPersistedValue("missing"))
 
         assertEquals(42, savedPattern(ravelryPatternId = 42).ravelryId)
         assertEquals(0, savedPattern(ravelryPatternId = null).ravelryId)
@@ -39,6 +39,10 @@ class DomainModelCoverageTest {
         assertEquals(
             "https://example.com/original",
             savedPattern(originalUrl = "https://example.com/original").patternUrl,
+        )
+        assertEquals(
+            "https://example.com/canonical",
+            savedPattern(localPdfUri = " ", canonicalUrl = "https://example.com/canonical").patternUrl,
         )
     }
 
@@ -83,6 +87,15 @@ class DomainModelCoverageTest {
             MainCounterLabelType.REPEATS,
             resolvedMainCounterLabelType(CraftType.CROCHET, MainCounterLabelType.REPEATS, null),
         )
+    }
+
+    @Test
+    fun `custom label truncation preserves complete Unicode characters`() {
+        val prefix = "x".repeat(MAIN_COUNTER_CUSTOM_LABEL_MAX_LENGTH - 1)
+
+        assertEquals(prefix, sanitizeMainCounterCustomLabel(prefix + "\uD83E\uDDF6"))
+        val fittingLabel = "x".repeat(MAIN_COUNTER_CUSTOM_LABEL_MAX_LENGTH - 2) + "\uD83E\uDDF6"
+        assertEquals(fittingLabel, sanitizeMainCounterCustomLabel(fittingLabel))
     }
 
     @Test

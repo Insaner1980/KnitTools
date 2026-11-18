@@ -7,11 +7,49 @@ import org.junit.Test
 
 class ProgressPhotoGallerySourceTest {
     @Test
-    fun `photo gallery requests camera permission before capture`() {
+    fun `capture failure uses localized feedback and null target cannot launch the camera`() {
+        val source = ProjectSourceFiles.read(PHOTO_GALLERY_SCREEN)
+        val navigation =
+            ProjectSourceFiles.read("app/src/main/java/com/finnvek/knittools/ui/navigation/PhotoGalleryDestination.kt")
+
+        assertTrue(navigation.contains("errorsProvider = { counterViewModel.photoErrors }"))
+        assertTrue(navigation.contains("createPhotoCaptureTarget = counterViewModel::createPhotoCaptureTarget"))
+        assertTrue(navigation.contains("cancelPhotoCreation = counterViewModel::cancelProgressPhotoCreation"))
+        assertTrue(source.contains("val errorMessage = stringResource(R.string.generic_error_unknown)"))
+        assertTrue(
+            source.contains(
+                "CollectWithLifecycleEffect({ errorsProvider() }) {\n" +
+                    "        snackbarHostState.showSnackbar(errorMessage)",
+            ),
+        )
+        val targetCallback =
+            source
+                .substringAfter("actions.createPhotoCaptureTarget(id) { captureTarget ->")
+                .substringBefore("@Composable")
+        assertTrue(targetCallback.contains("if (captureTarget == null) {"))
+        assertTrue(targetCallback.contains("actions.cancelPhotoCreation()"))
+        assertTrue(targetCallback.contains("onCaptureTargetReady(captureTarget)"))
+        assertTrue(source.contains("if (captureTarget == null) return@requestCameraCaptureTarget"))
+        assertTrue(source.contains("requestCameraCaptureTarget(ownerProjectId, actions) { captureTarget ->"))
+        assertTrue(source.contains("cameraLauncher.launch(captureTarget.uri)"))
+    }
+
+    @Test
+    fun `photo gallery delegates capture without requesting camera permission`() {
         val source = ProjectSourceFiles.read(PHOTO_GALLERY_SCREEN)
 
-        assertTrue(source.contains("ActivityResultContracts.RequestPermission()"))
-        assertTrue(source.contains("permissionLauncher.launch(Manifest.permission.CAMERA)"))
+        assertTrue(source.contains("ActivityResultContracts.TakePicture()"))
+        assertFalse(source.contains("ActivityResultContracts.RequestPermission"))
+        assertFalse(source.contains("Manifest.permission.CAMERA"))
+    }
+
+    @Test
+    fun `photo gallery cleans up when no camera handler can launch`() {
+        val source = ProjectSourceFiles.read(PHOTO_GALLERY_SCREEN)
+
+        assertTrue(source.contains("catch (_: ActivityNotFoundException)"))
+        assertTrue(source.contains("actions.deletePendingPhotoFile(captureTarget.filePath)"))
+        assertTrue(source.contains("actions.cancelPhotoCreation()"))
     }
 
     @Test
@@ -21,7 +59,8 @@ class ProgressPhotoGallerySourceTest {
         assertTrue(source.contains("pendingPhotoFilePath"))
         assertTrue(source.contains("actions.deletePendingPhotoFile"))
         assertTrue(source.contains("private fun handlePhotoCaptureResult("))
-        assertTrue(source.contains("} else {\n        actions.deletePendingPhotoFile(pendingPhotoFilePath)"))
+        assertTrue(source.contains("actions.savePhoto(it, pendingPhotoProjectId)"))
+        assertTrue(source.contains("if (!admitted) {\n        actions.deletePendingPhotoFile(pendingPhotoFilePath)"))
     }
 
     @Test
@@ -48,7 +87,7 @@ class ProgressPhotoGallerySourceTest {
 
         assertTrue(source.contains("suspend fun createPhotoCaptureTarget("))
         assertTrue(source.contains("suspend fun deletePendingPhotoFile("))
-        assertTrue(source.contains("withContext(ioDispatcher) {\n                storage.createPhotoFile"))
+        assertTrue(source.substringAfter("suspend fun createPhotoCaptureTarget(").contains("withContext(ioDispatcher)"))
         assertTrue(source.contains("withContext(ioDispatcher) {\n                storage.deletePendingPhotoFile"))
     }
 

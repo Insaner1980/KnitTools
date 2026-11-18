@@ -1,4 +1,9 @@
 <resources>
+    <string name="notes_save_failed">De notities konden niet worden opgeslagen. Je wijzigingen zijn er nog. Probeer het opnieuw.</string>
+    <string name="notes_discard_title">Niet-opgeslagen notities verwerpen?</string>
+    <string name="notes_discard_message">Je wijzigingen konden niet worden opgeslagen. Als je nu weggaat, worden niet-opgeslagen wijzigingen verworpen.</string>
+    <string name="notes_discard_action">Wijzigingen verwerpen</string>
+
     <string name="app_name">KnitTools</string>
 
     <!-- Navigation & common -->
@@ -17,23 +22,18 @@
     <string name="measurement_with_unit_format">%1$s %2$s</string>
     <string name="unit_inches">inch</string>
     <string name="unit_st">st</string>
-    <string name="unit_rows">toeren</string>
     <string name="unit_g">g</string>
     <string name="unit_meters">meter</string>
     <string name="unit_yards">yard</string>
     <string name="unit_st_per_10cm">st/10 cm</string>
     <string name="unit_st_per_4in">st/4 in</string>
-    <string name="unit_per_10cm">per 10 cm</string>
-    <string name="unit_per_4in">per 4 in</string>
 
     <!-- Home screen -->
     <string name="tool_increase_decrease">Meerderen / minderen</string>
-    <string name="tool_gauge_converter">Stekenproefcalculator</string>
+    <string name="tool_gauge_converter">Maten en stekenproef</string>
     <string name="tool_cast_on_calculator">Opzetcalculator</string>
     <string name="tool_yarn_estimator">Garencalculator</string>
     <string name="tool_needle_sizes">Naaldmaten</string>
-    <string name="pro_trial_days_left">Pro-proefperiode — nog %d dagen</string>
-    <string name="unlock_all_tools">Ontgrendel alle tools</string>
     <string name="desc_yarn_estimator_card">Bereken garenverbruik en aantal strengen</string>
 
     <!-- Bottom navigation tabs -->
@@ -46,22 +46,20 @@
     <!-- Screen titles -->
     <string name="tools_title">Tools</string>
     <string name="library_title">Bibliotheek</string>
-    <string name="insights_title">Inzichten</string>
     <string name="saved_patterns_title">Opgeslagen patronen</string>
     <string name="my_yarn_title">Mijn garen</string>
-    <string name="all_photos_title">Foto\'s</string>
+    <string name="all_photos_title">Voortgangsfoto\'s</string>
 
     <!-- Hub hero text -->
 
     <!-- Project List -->
-    <string name="project_list_title">Projecten</string>
     <string name="continue_knitting">Verder breien</string>
+    <string name="continue_crocheting">Verder haken</string>
     <string name="section_active">Actief</string>
     <string name="section_completed">Voltooid</string>
     <string name="new_project">Nieuw project</string>
     <string name="new_project_name_format">Project %1$d</string>
     <string name="create_project">Project maken</string>
-    <string name="project_details">Projectdetails</string>
     <string name="project_details_title">Projectdetails</string>
     <string name="new_project_details_title">Nieuw project</string>
     <string name="project_name_label">Projectnaam</string>
@@ -75,7 +73,6 @@
     <string name="main_counter_custom">Aangepast</string>
     <string name="main_counter_custom_label">Aangepast label</string>
     <string name="main_counter_custom_label_error">Voer een label in.</string>
-    <string name="project_metadata_format">%1$s, %2$s</string>
     <plurals name="rounds_format">
         <item quantity="one">%1$d ronde</item>
         <item quantity="other">%1$d rondes</item>
@@ -97,12 +94,13 @@
     <string name="counter_decrease_repeat">Herhaling aftrekken</string>
     <string name="counter_add_custom">%1$s toevoegen</string>
     <string name="counter_decrease_custom">%1$s aftrekken</string>
+    <string name="project_picker_empty">Nog geen projecten. Maak er een aan bij Projecten.</string>
     <string name="no_active_projects">Geen actieve projecten</string>
     <string name="no_completed_projects">Nog geen voltooide projecten</string>
     <string name="delete_project">Verwijderen</string>
     <string name="delete_project_message">%s verwijderen? Dit kan niet ongedaan worden gemaakt.</string>
-    <string name="rename_project">Naam wijzigen</string>
     <string name="complete_project">Voltooien</string>
+    <string name="reactivate_project">Opnieuw activeren</string>
     <string name="complete_project_message">%s voltooien? Het project wordt naar je voltooide projecten verplaatst.</string>
     <string name="more_options">Meer opties</string>
 
@@ -117,8 +115,15 @@
     <!-- Multi-select -->
     <string name="n_selected">%d geselecteerd</string>
     <string name="select_all">Alles selecteren</string>
-    <string name="complete_n_projects">%d projecten voltooien? Ze worden naar je voltooide projecten verplaatst.</string>
-    <string name="delete_n_projects">%d projecten verwijderen? Dit kan niet ongedaan worden gemaakt.</string>
+    <string name="select_photo">Foto selecteren</string>
+    <plurals name="complete_n_projects">
+        <item quantity="one">%d project voltooien? Het wordt naar je voltooide projecten verplaatst.</item>
+        <item quantity="other">%d projecten voltooien? Ze worden naar je voltooide projecten verplaatst.</item>
+    </plurals>
+    <plurals name="delete_n_projects">
+        <item quantity="one">%d project verwijderen? Dit kan niet ongedaan worden gemaakt.</item>
+        <item quantity="other">%d projecten verwijderen? Dit kan niet ongedaan worden gemaakt.</item>
+    </plurals>
     <plurals name="rows_format">
         <item quantity="one">%1$d toer</item>
         <item quantity="other">%1$d toeren</item>
@@ -126,8 +131,6 @@
     <string name="just_now">zojuist</string>
 
     <!-- Counter Screen -->
-    <string name="stitch_count_format">%s st</string>
-    <string name="set_stitches">Steken instellen</string>
     <string name="stitches_per_row">Steken per toer</string>
     <string name="track_stitches">Steken bijhouden</string>
     <string name="stitch_counter_compact_format">%1$d/%2$d</string>
@@ -140,16 +143,14 @@
     <string name="pattern_open_failed">Het patroon kon niet worden geopend.</string>
     <string name="pattern_show_reading_line">Leeslijn tonen</string>
     <string name="pattern_hide_reading_line">Leeslijn verbergen</string>
-    <string name="pattern_save_line_as_row">Lijn opslaan als toer %1$d</string>
-    <string name="pattern_clear_row_mark">Toermarkering wissen</string>
+    <string name="pattern_clear_row_mark">Tellermarkering wissen</string>
     <string name="pattern_clear_page_marks">Paginamarkeringen wissen</string>
-    <string name="pattern_calibrate_rows">Toeren kalibreren</string>
-    <string name="pattern_calibration_first_row">Eerste toer</string>
-    <string name="pattern_calibration_last_row">Laatste toer</string>
+    <string name="pattern_calibrate_rows">Tellerposities kalibreren</string>
+    <string name="pattern_calibration_first_row">Eerste stand</string>
+    <string name="pattern_calibration_last_row">Laatste stand</string>
     <string name="pattern_calibration_save_first">Eerste opslaan</string>
     <string name="pattern_calibration_save_last">Laatste opslaan</string>
-    <string name="pattern_calibration_invalid_row">Gebruik twee verschillende toernummers</string>
-    <string name="pattern_reading_line_description">Leeslijn</string>
+    <string name="pattern_calibration_invalid_row">Gebruik twee verschillende tellerstanden</string>
     <string name="pattern_page_jump">Ga naar pagina</string>
     <string name="pattern_page_number">Paginanummer</string>
     <string name="pattern_page_indicator">Pagina %1$d van %2$d</string>
@@ -160,16 +161,43 @@
     <string name="pattern_picker_import_cloud_pdf">Importeren uit Drive of Dropbox</string>
     <string name="pattern_picker_import_from_ravelry">Importeren uit Ravelry</string>
     <string name="pattern_picker_camera_scan">Patroonfoto maken</string>
+    <string name="pattern_picker_choose_images">Afbeeldingen kiezen</string>
+    <string name="pattern_image_import_title">Patroonpagina’s controleren</string>
+    <plurals name="pattern_images_selected"><item quantity="one">%1$d afbeelding geselecteerd</item><item quantity="other">%1$d afbeeldingen geselecteerd</item></plurals>
+    <string name="pattern_image_page_position">Pagina %1$d van %2$d</string>
+    <string name="pattern_image_add_more">Meer toevoegen</string>
+    <string name="pattern_image_move_earlier">Pagina %1$d naar voren verplaatsen</string>
+    <string name="pattern_image_move_later">Pagina %1$d naar achteren verplaatsen</string>
+    <string name="pattern_image_remove_page">Pagina %1$d verwijderen</string>
+    <string name="pattern_image_create_pdf">Patroon-PDF maken</string>
+    <string name="pattern_image_replace_title">Huidig patroon vervangen?</string>
+    <string name="pattern_image_replace_message">De huidige bijlage wordt vervangen zodra de nieuwe PDF klaar is.</string>
+    <string name="pattern_image_replace_action">Patroon vervangen</string>
+    <string name="pattern_image_conversion_progress">Pagina %1$d van %2$d maken</string>
+    <string name="pattern_image_attaching">Patroon-PDF bijvoegen</string>
+    <string name="pattern_image_cancel_conversion">Conversie annuleren</string>
+    <string name="pattern_image_discard_title">Geselecteerde afbeeldingen verwijderen?</string>
+    <string name="pattern_image_discard_message">De geselecteerde patroonpagina’s worden verwijderd.</string>
+    <string name="pattern_image_discard_action">Afbeeldingen verwijderen</string>
+    <plurals name="pattern_image_duplicates_ignored"><item quantity="one">%1$d dubbele afbeelding genegeerd</item><item quantity="other">%1$d dubbele afbeeldingen genegeerd</item></plurals>
+    <string name="pattern_image_error_max_count">Je kunt maximaal 20 afbeeldingen selecteren.</string>
+    <string name="pattern_image_error_image_too_large">Een afbeelding is groter dan de limiet van 25 MiB.</string>
+    <string name="pattern_image_error_total_too_large">De geselecteerde afbeeldingen overschrijden samen de limiet van 200 MiB.</string>
+    <string name="pattern_image_error_unsupported">Verwijder de niet-ondersteunde afbeelding voordat je de PDF maakt.</string>
+    <string name="pattern_image_error_unreadable">Een afbeelding kon niet worden gelezen. Je vorige selectie is behouden.</string>
+    <string name="pattern_image_error_animated">Geanimeerde afbeeldingen worden niet ondersteund.</string>
+    <string name="pattern_image_error_low_storage">Onvoldoende vrije opslagruimte om deze PDF te maken.</string>
+    <string name="pattern_image_error_staging">De afbeeldingen konden niet worden voorbereid. Je vorige selectie is behouden.</string>
+    <string name="pattern_image_error_conversion">De patroon-PDF kon niet worden gemaakt. Controleer de pagina’s en probeer opnieuw.</string>
+    <string name="pattern_image_error_attachment">De PDF kon niet worden bijgevoegd. Het huidige patroon is behouden.</string>
     <string name="pattern_picker_continue_without_pattern">Doorgaan zonder patroon</string>
-    <string name="pattern_scan_failed">De patroonfoto kon niet naar PDF worden omgezet.</string>
     <string name="imported_pattern_designer">Geïmporteerde PDF</string>
     <string name="current_row_short">Toer %1$d</string>
-    <string name="time_spent_minutes_format">%dm</string>
     <string name="unlink_yarn">Garen ontkoppelen</string>
     <string name="select_yarn_card">Garenkaart selecteren</string>
     <string name="linked_yarn_title">Gekoppeld garen</string>
     <string name="no_linked_yarn">Nog geen garen gekoppeld</string>
-    <string name="choose_from_my_yarn">Kiezen uit My Yarn</string>
+    <string name="choose_from_my_yarn">Kiezen uit Mijn garen</string>
     <string name="choose_from_my_yarn_body">Kies een opgeslagen garen</string>
     <string name="add_yarn_to_project">Garen aan dit project toevoegen</string>
     <string name="add_yarn_to_project_body">Sla een snelle garennotitie alleen voor dit project op</string>
@@ -183,51 +211,49 @@
     <string name="change_yarn_photo">Garenfoto wijzigen</string>
     <string name="manual_yarn_optional_details">Begin met een naam. Merk, garendikte, kleur en verfbad zijn optioneel.</string>
     <string name="project_yarn_quantity_format">Aantal: %d</string>
-    <string name="save_to_my_yarn">Opslaan in My Yarn</string>
-    <string name="saved_to_my_yarn">Opgeslagen in My Yarn</string>
-    <string name="yarn_count_format">%1$d garens</string>
+    <string name="save_to_my_yarn">Opslaan in Mijn garen</string>
+    <string name="saved_to_my_yarn">Opgeslagen in Mijn garen</string>
+    <string name="save_to_my_yarn_explanation">Kopieert de garennaam, beschrijving en hoeveelheid naar een garenkaart in Mijn garen die aan dit project is gekoppeld. Deze vermelding blijft hier; de notities worden niet gekopieerd.</string>
+    <string name="saved_to_my_yarn_explanation">Deze projectvermelding blijft apart bestaan. De notities zijn niet naar de garenkaart in Mijn garen gekopieerd.</string>
     <string name="linked_project_label">Gekoppeld project</string>
-    <string name="link_to_project_label">Aan project koppelen</string>
-    <string name="change_project_link">Wijzigen</string>
     <string name="remove_project_link">Koppeling verwijderen</string>
     <string name="select_project">Project selecteren</string>
-    <string name="status_label">Status</string>
     <string name="quantity_label">Aantal</string>
     <string name="status_in_stash">In voorraad</string>
     <string name="status_in_use">In gebruik</string>
     <string name="status_finished">Op</string>
     <string name="yarn_not_linked">Niet gekoppeld</string>
+    <string name="yarn_card_project_format">Project: %1$s</string>
     <string name="yarn_details_title">Details</string>
     <string name="yarn_details_empty_body">Merk, garendikte, kleur en verfbad zijn optioneel. Voeg alleen toe wat dit project helpt.</string>
     <string name="delete_yarn_card_message">Deze garenkaart verwijderen? Dit kan niet ongedaan worden gemaakt.</string>
-    <string name="skein_count_one">%1$d streng</string>
-    <string name="skein_count_many">%1$d strengen</string>
+    <plurals name="skein_count">
+        <item quantity="one">%1$d streng</item>
+        <item quantity="other">%1$d strengen</item>
+    </plurals>
 
     <!-- Session History -->
-    <string name="session_history_title">Geschiedenis</string>
-    <string name="no_sessions">Nog geen sessies geregistreerd. Begin met breien om hier je geschiedenis te zien.</string>
-    <string name="session_row_range">Toeren %1$d \u2192 %2$d</string>
-    <string name="session_duration_format">%1$du %2$dm</string>
+    <string name="session_history_title">Sessiegeschiedenis</string>
+    <string name="no_sessions">Nog geen sessies geregistreerd. Open een project en start een werksessie om je tijd hier vast te leggen.</string>
+    <string name="session_row_range">Teller: %1$d → %2$d</string>
+    <string name="session_row_single">Stand %1$d</string>
     <string name="delete_session_title">Sessie verwijderen?</string>
     <string name="delete_session_message">Deze sessie uit de geschiedenis verwijderen? Dit kan niet ongedaan worden gemaakt.</string>
-    <string name="pro_full_history_hint">Upgrade naar Pro voor volledige sessiegeschiedenis</string>
 
     <!-- Settings -->
     <!-- Row Counter -->
     <string name="default_project_name">Mijn project</string>
     <string name="reset_counter">Teller resetten</string>
     <string name="reset_counter_message">De teller resetten naar 0?</string>
-    <string name="pattern_repeat">Patroonherhaling</string>
     <string name="notes">Notities</string>
     <string name="add_note">Notitie toevoegen…</string>
-    <string name="notes_editor_title">Notities — %1$s</string>
     <string name="write_your_notes_here">Schrijf hier je notities…</string>
 
 
 
-    <string name="counter_decrease">Minderen</string>
-    <string name="counter_increase">Meerderen</string>
-    <string name="counter_value_of_target_format">Rij %1$d / %2$d</string>
+    <string name="counter_decrease">Verlagen</string>
+    <string name="counter_increase">Verhogen</string>
+    <string name="counter_value_of_target_format">Toer %1$d / %2$d</string>
     <string name="repeating_counter_value_format">%1$d van %2$d</string>
     <string name="counter_decrease_named">%1$s verlagen</string>
     <string name="counter_increase_named">%1$s verhogen</string>
@@ -236,13 +262,14 @@
     <string name="counter_decrease_row">Toer aftrekken</string>
     <string name="counter_undo_last_change">Laatste wijziging ongedaan maken</string>
     <string name="counter_target_remaining_format">Nog %1$s</string>
+    <string name="counter_target_of_format">van %1$d</string>
     <string name="counter_target_reached">Doel bereikt</string>
     <string name="counter_target_past_format">%1$s voorbij doel</string>
     <string name="project_content_add_pattern">Patroon toevoegen</string>
     <string name="stitch_tracker_label">Steken</string>
     <plurals name="reminder_repeat_occurrence_format">
-        <item quantity="one">Herhaal #%1$d elke toer</item>
-        <item quantity="other">Herhaal #%1$d elke %2$d toeren</item>
+        <item quantity="one">Herhaling #%1$d, interval %2$d</item>
+        <item quantity="other">Herhaling #%1$d, interval %2$d</item>
     </plurals>
 
     <!-- Increase / Decrease -->
@@ -250,9 +277,14 @@
     <string name="mode_decrease">Minderen</string>
     <string name="style_flat">Heen en weer</string>
     <string name="style_circular">Rond</string>
-    <string name="current_stitches">Huidige steken</string>
+    <string name="current_stitches">Huidig aantal steken</string>
     <string name="increase_by">Meerderen met</string>
     <string name="decrease_by">Minderen met</string>
+    <string name="increase_result_placeholder">Vul beide velden in om te zien waar je meerdert</string>
+    <string name="decrease_result_placeholder">Vul beide velden in om te zien waar je mindert</string>
+    <string name="cast_on_result_placeholder">Vul breedte en stekenverhouding in om te zien hoeveel steken je opzet</string>
+    <string name="yarn_result_placeholder">Vul de velden in om te zien hoeveel bollen je nodig hebt</string>
+    <string name="tool_result_placeholder">Vul de velden in om het resultaat te zien</string>
     <string name="invalid_input">Ongeldige invoer</string>
     <string name="easy_to_remember">Makkelijk te onthouden</string>
     <string name="balanced">Gebalanceerd</string>
@@ -261,40 +293,36 @@
     <string name="increase_decrease_error_change_positive">Het aantal te wijzigen steken moet groter zijn dan 0</string>
     <string name="increase_decrease_error_cannot_decrease">Beschikbaar aantal steken: %2$d. Gevraagde mindering: %1$d.</string>
     <string name="increase_decrease_error_not_enough_decrease">Vereist aantal steken: %1$d. Gevraagde minderingen: %2$d.</string>
-    <string name="increase_decrease_error_total_out_of_range">Het resultaat is te groot. Gebruik kleinere steekenaantallen.</string>
-    <string name="increase_decrease_warning_increase_more_than_current">Je meerdert meer dan het huidige aantal steken - sommige secties hebben geen gebreide steken tussen meerderingen</string>
+    <string name="increase_decrease_error_total_out_of_range">Het resultaat is te groot. Gebruik kleinere stekenaantallen.</string>
+    <string name="increase_decrease_error_not_enough_bars">Er zijn niet genoeg tussenruimtes tussen de steken voor deze M1-meerderingen. Begin met minstens 2 steken en verminder zo nodig het aantal meerderingen.</string>
 
     <!-- Gauge Converter -->
     <string name="pattern_gauge">Stekenproef van patroon</string>
     <string name="pattern_instructions">Patrooninstructies</string>
-    <string name="stitches_gauge">Steken %s</string>
-    <string name="rows_gauge">Toeren %s</string>
     <string name="stitches_in_pattern">Steken in patroon</string>
     <string name="rows_in_pattern">Toeren in patroon</string>
-    <string name="adjusted_for_your_gauge">Aangepast aan jouw stekenproef</string>
-    <string name="adjusted_result">%1$d steken, %2$d toeren</string>
-    <string name="exact_result">Exact: %1$s st, %2$s toeren</string>
-    <string name="stitch_gauge_diff">Stekenproef steken: %s%%</string>
-    <string name="row_gauge_diff">Stekenproef toeren: %s%%</string>
 
     <!-- Cast On Calculator -->
     <string name="desired_width">Gewenste breedte</string>
-    <string name="stitch_gauge">Stekenproef steken</string>
+    <string name="stitch_gauge">Stekenverhouding</string>
     <string name="pattern_repeat_optional">Patroonherhaling (optioneel)</string>
     <string name="edge_stitches_optional">Kantsteken totaal</string>
     <string name="edge_stitches_total_format">Kantsteken totaal: %1$d</string>
-    <string name="stitches_result">%d steken</string>
+    <plurals name="stitches_result">
+        <item quantity="one">%d steek</item>
+        <item quantity="other">%d steken</item>
+    </plurals>
     <string name="actual_width">Werkelijke breedte: %1$s %2$s</string>
     <string name="adjusted_down">Naar beneden aangepast: %1$d st (%2$s %3$s)</string>
     <string name="adjusted_up">Naar boven aangepast: %1$d st (%2$s %3$s)</string>
 
     <!-- Yarn Estimator -->
     <string name="total_yarn_needed">Totaal benodigd garen</string>
-    <string name="yarn_per_skein">%s per streng</string>
+    <string name="length_per_skein">Lengte per streng</string>
     <string name="weight_per_skein">Gewicht per streng</string>
-    <string name="total_weight">Totaal gewicht: %s g</string>
+    <string name="total_weight">Gewicht van hele strengen: %s g</string>
     <string name="estimated_skeins">Schatting: ongeveer %s strengen</string>
-    <string name="extra_skein_note">Koop altijd één extra streng — verfbaden kunnen verschillen</string>
+    <string name="extra_skein_note">Overweeg een extra streng — verfbaden kunnen verschillen</string>
 
     <!-- Needle Sizes -->
     <string name="search_size">Zoek maat…</string>
@@ -308,8 +336,10 @@
     <string name="theme_system">Systeem</string>
     <string name="theme_light">Licht</string>
     <string name="theme_dark">Donker</string>
-    <string name="settings_section_settings">Instellingen</string>
+    <string name="settings_section_general">Algemeen</string>
+    <string name="settings_theme">Thema</string>
     <string name="settings_section_pro">PRO</string>
+    <string name="settings_section_data">GEGEVENS</string>
     <string name="settings_section_info">INFO</string>
     <string name="settings_language">App-taal</string>
     <string name="settings_language_change_hint">De wijziging geldt meteen</string>
@@ -321,6 +351,7 @@
     <string name="settings_language_french">Français</string>
     <string name="settings_language_spanish">Español</string>
     <string name="settings_language_portuguese">Português</string>
+    <string name="settings_language_brazilian_portuguese">Português (Brasil)</string>
     <string name="settings_language_italian">Italiano</string>
     <string name="settings_language_norwegian">Norsk</string>
     <string name="settings_language_danish">Dansk</string>
@@ -330,73 +361,53 @@
     <string name="use_imperial_units">Imperiale eenheden gebruiken</string>
     <string name="upgrade_to_pro">Upgrade naar Pro</string>
     <string name="restore_purchases">Aankopen herstellen</string>
-    <string name="privacy_summary">Alle gegevens blijven op je apparaat. Geen analytics, geen cloudsynchronisatie, geen accounts.</string>
+    <string name="privacy_summary">Je projectgegevens blijven op je apparaat. Ravelry en Google Play gebruiken netwerkdiensten. Firebase Crashlytics stuurt crashrapporten naar Google. Gebruiksstatistieken zijn optioneel. Geen cloudsynchronisatie.</string>
+    <string name="usage_analytics">Gebruiksstatistieken delen</string>
+    <string name="usage_analytics_description">Als dit is ingeschakeld, stuurt KnitTools schermnamen, functiegebruik, gebruiksduur en app- en apparaatinformatie naar PostHog in de EU. Projectinhoud wordt niet verzonden. Je kunt dit op elk moment uitschakelen.</string>
     <string name="pro_restored">Pro hersteld</string>
     <string name="no_purchases_found">Geen aankopen gevonden</string>
     <string name="version_format">KnitTools %s</string>
 
     <!-- Pro Upgrade -->
-    <string name="you_have_pro">Je hebt KnitTools Pro!</string>
-    <string name="all_features_unlocked">Alle functies zijn ontgrendeld.</string>
-    <string name="pro_feature_unlimited_projects">Onbeperkt aantal telprojecten</string>
-    <string name="pro_feature_full_history">Volledige tellergeschiedenis</string>
-    <string name="pro_feature_notes">Notities per project</string>
-    <string name="pro_feature_secondary_counter">Secundaire teller</string>
-    <string name="pro_feature_multiple_counters">Extra tellers</string>
-    <string name="pro_feature_row_reminders">Rijherinneringen</string>
-    <string name="pro_feature_progress_photos">Voortgangsfoto’s</string>
-    <string name="pro_feature_unlimited_yarn">Onbeperkt aantal garenkaarten</string>
-    <string name="pro_feature_widget">Widget op het startscherm</string>
-    <string name="pro_feature_pattern_camera_scan">Patroonfoto</string>
-    <string name="pro_feature">Pro-functie</string>
-    <string name="upgrade_for_price">Upgrade voor %s</string>
     <string name="one_time_purchase">Eenmalige aankoop. Geen abonnement.</string>
     <string name="loading_price">Prijs laden…</string>
-    <string name="price_loading_hint">Verbinding maken met Google Play — controleer je internetverbinding als dit lang duurt</string>
     <string name="billing_purchase_cancelled">Aankoop geannuleerd</string>
-    <string name="billing_purchase_unavailable_button">Aankoop niet beschikbaar</string>
+    <string name="billing_price_refreshing">De huidige prijs wordt gecontroleerd. Probeer de aankoop zo opnieuw.</string>
     <string name="billing_purchase_unavailable">Deze aankoop is nu niet beschikbaar in Google Play.</string>
     <string name="billing_purchase_network_error">Kan Google Play niet bereiken. Controleer je internetverbinding en probeer opnieuw.</string>
     <string name="billing_purchase_failed">Aankoop kon niet worden voltooid. Probeer opnieuw.</string>
     <string name="billing_already_owned_restore_failed">Volgens Google Play bezit je deze aankoop al, maar deze kon niet worden hersteld. Probeer Aankopen herstellen.</string>
 
     <!-- Yarn Card -->
-    <string name="saved_yarns">Opgeslagen garens</string>
     <string name="fiber_content">Samenstelling</string>
-    <string name="weight_grams">Gewicht (g)</string>
-    <string name="length_meters">Lengte (m)</string>
     <string name="needle_size_label">Naaldmaat</string>
     <string name="gauge_label">Stekenproef</string>
     <string name="color_name">Kleurnaam</string>
     <string name="color_number">Kleurnummer</string>
     <string name="dye_lot">Verfbad</string>
+    <string name="yarn_color_number_short">nr. %1$s</string>
+    <string name="yarn_dye_lot_short">Verfbad %1$s</string>
     <string name="weight_category">Garendikte</string>
+    <string name="yarn_weight_other">Anders</string>
     <string name="care_symbols">Onderhoud</string>
     <string name="no_saved_yarns">Nog geen garenkaarten opgeslagen</string>
 
     <!-- Instruction parser -->
     <string name="paste_instruction">Instructie plakken</string>
     <string name="instruction_hint">Plak hier je brei-instructie</string>
-    <string name="instruction_hint_increase">bijv. "Meerder 12 steken gelijkmatig verdeeld over 96 steken"</string>
-    <string name="instruction_hint_gauge">bijv. "22 steken en 30 toeren per 10 cm" of "breedte 30 cm, 22 steken"</string>
+    <string name="instruction_hint_increase">Alleen Engelse instructies, bijv. \"Increase 12 stitches evenly across 96 stitches\"</string>
+    <string name="instruction_hint_gauge">Alleen Engelse instructies, bijv. \"22 stitches and 30 rows per 10cm\" of \"width 30 cm, 22 stitches\"</string>
     <string name="parsing_instruction">Verwerken…</string>
     <string name="instruction_parsed">Waarden ingevuld op basis van instructie</string>
     <string name="instruction_parse_failed">De instructie werd niet begrepen — probeer het anders te formuleren</string>
     <string name="generic_error_unknown">Er is iets misgegaan — probeer het opnieuw</string>
 
     <!-- Camera permission -->
-    <string name="camera_permission_denied">Cameratoestemming is nodig om foto’s te maken</string>
-    <string name="camera_permission_denied_permanent">Cameratoestemming geweigerd — schakel deze in via Instellingen</string>
 
     <!-- Care symbol categories -->
-    <string name="care_category_washing">Wassen</string>
-    <string name="care_category_bleaching">Bleken</string>
-    <string name="care_category_drying">Drogen</string>
-    <string name="care_category_ironing">Strijken</string>
-    <string name="care_category_dry_cleaning">Chemisch reinigen</string>
-    <string name="care_wash_30">30°</string>
-    <string name="care_wash_40">40°</string>
-    <string name="care_wash_60">60°</string>
+    <string name="care_wash_30">Wassen op 30 °C</string>
+    <string name="care_wash_40">Wassen op 40 °C</string>
+    <string name="care_wash_60">Wassen op 60 °C</string>
     <string name="care_wash_hand">Handwas</string>
     <string name="care_wash_do_not">Niet wassen</string>
     <string name="care_bleach_any">Alle bleekmiddelen</string>
@@ -410,9 +421,9 @@
     <string name="care_iron_medium">Strijken op gemiddelde temperatuur</string>
     <string name="care_iron_high">Strijken op hoge temperatuur</string>
     <string name="care_iron_do_not">Niet strijken</string>
-    <string name="care_dryclean_any">Alle oplosmiddelen</string>
-    <string name="care_dryclean_p">P-oplosmiddel</string>
-    <string name="care_dryclean_f">F-oplosmiddel</string>
+    <string name="care_dryclean_any">Chemisch reinigen (alle oplosmiddelen)</string>
+    <string name="care_dryclean_p">Chemisch reinigen (P)</string>
+    <string name="care_dryclean_f">Chemisch reinigen (F)</string>
     <string name="care_dryclean_do_not">Niet chemisch reinigen</string>
 
     <!-- Defaults -->
@@ -425,7 +436,7 @@
 
     <!-- Hubs -->
     <string name="desc_increase_decrease">Verdeel meerderingen of minderingen gelijkmatig over een toer</string>
-    <string name="desc_gauge_calculator">Bereken je stekenproef en zet patrooninstructies om</string>
+    <string name="desc_gauge_calculator">Reken lengtes om en bereken stekenproeven, aantallen en afmetingen</string>
     <string name="desc_cast_on">Bereken hoeveel steken je moet opzetten voor de gewenste breedte</string>
     <string name="desc_needle_sizes">Naaldmaten in metrisch, US-, UK- en Japans systeem</string>
     <string name="desc_size_charts">Standaard lichaamsmaten voor kledingmaten</string>
@@ -435,13 +446,12 @@
     <!-- Library — My Collection -->
     <string name="library_my_collection">Mijn collectie</string>
     <string name="library_reference">Naslag</string>
-    <string name="desc_saved_patterns">Patronen van Ravelry en PDF-bestanden</string>
+    <string name="desc_saved_patterns">Opgeslagen patronen van websites en PDF-bestanden</string>
     <string name="desc_my_yarn">Garennotities, hoeveelheden en gekoppelde projecten</string>
     <string name="desc_all_photos">Voortgangsfoto\'s van al je projecten</string>
-    <string name="empty_saved_patterns">Nog geen patronen opgeslagen.\nZoek patronen via Ravelry.</string>
+    <string name="empty_saved_patterns">Nog geen patronen opgeslagen.\nVoeg een webpatroon toe of importeer een PDF-bestand.</string>
     <string name="empty_my_yarn">Nog geen garennotities opgeslagen.</string>
-    <string name="empty_all_photos">Nog geen voortgangsfoto\'s.</string>
-    <string name="filter_all">Alles</string>
+    <string name="empty_all_photos">Foto\'s die je in je projecten maakt, verschijnen hier.</string>
 
     <!-- Insights -->
     <!-- Insights: kestot, hero ja kaavio -->
@@ -455,15 +465,10 @@
     </plurals>
     <string name="insights_duration_hours_minutes">%1$d u %2$d min</string>
     <string name="insights_range_format">%1$s – %2$s</string>
-    <string name="insights_range_open_format">%1$s –</string>
-    <string name="insights_hero_lead_in_week">Deze week besteedde je</string>
-    <string name="insights_hero_lead_in_month">Deze maand besteedde je</string>
-    <string name="insights_hero_lead_in_all_time">In totaal besteedde je</string>
     <plurals name="insights_hero_trailing_projects">
-        <item quantity="one">aan één project.</item>
-        <item quantity="other">aan %1$d projecten.</item>
+        <item quantity="one">%1$d project</item>
+        <item quantity="other">%1$d projecten</item>
     </plurals>
-    <string name="insights_hero_trailing_project">aan %1$s.</string>
     <string name="insights_craft_verb_knitting">breien</string>
     <string name="insights_craft_verb_crocheting">haken</string>
     <string name="insights_craft_verb_making">handwerken</string>
@@ -484,48 +489,48 @@
     <string name="insights_stat_no_value">—</string>
     <string name="insights_stat_under_one">&lt;1</string>
     <string name="insights_section_every_day">Elke dag</string>
+    <string name="insights_section_month_by_month">Maand voor maand</string>
+    <string name="insights_section_week_by_week">Week voor week</string>
     <string name="insights_section_where_time_went">Waar de tijd bleef</string>
-    <plurals name="insights_days_meta_format">
-        <item quantity="one">%1$d van %2$d dag</item>
-        <item quantity="other">%1$d van %2$d dagen</item>
+    <string name="insights_section_projects_by_day">Projecten per dag</string>
+    <plurals name="insights_project_fabric_a11y_summary">
+        <item quantity="one">Projecten per dag, %1$s, %2$d actieve dag</item>
+        <item quantity="other">Projecten per dag, %1$s, %2$d actieve dagen</item>
     </plurals>
-    <string name="insights_chart_hint_day">Tik of sleep over de dagen.</string>
+    <string name="insights_no_tracked_activity">Geen bijgehouden activiteit</string>
+    <string name="insights_project_fabric_previous_active_day">Vorige actieve dag</string>
+    <string name="insights_project_fabric_next_active_day">Volgende actieve dag</string>
+    <string name="insights_last_worked_format">Laatst gewerkt %1$s</string>
+    <plurals name="insights_days_meta_format">
+        <item quantity="one">Actief op %1$d van %2$d dag</item>
+        <item quantity="other">Actief op %1$d van %2$d dagen</item>
+    </plurals>
     <string name="insights_chart_axis_today">vandaag</string>
-    <string name="insights_chart_max_format">max. %1$s</string>
-    <string name="insights_no_sessions_yet">Nog geen sessies</string>
     <string name="insights_chart_a11y_daily">Dagelijkse tijd voor %1$s, %2$s, %3$s, langst %4$s</string>
+    <string name="insights_chart_a11y_weekly">Wekelijkse tijd voor %1$s, %2$s, %3$s, langst %4$s</string>
+    <string name="insights_chart_a11y_monthly">Maandelijkse tijd voor %1$s, %2$s, %3$s, langst %4$s</string>
     <string name="insights_chart_a11y_next">Volgende balk</string>
     <string name="insights_chart_a11y_previous">Vorige balk</string>
-    <string name="insights_fabric_a11y_summary">Stekenactiviteit: %1$d van %2$d weergegeven dagen actief, %3$s vastgelegd</string>
-    <string name="insights_fabric_a11y_next">Volgende dag</string>
-    <string name="insights_fabric_a11y_previous">Vorige dag</string>
     <string name="insights_project_sub_format">%1$s, %2$s</string>
-    <string name="insights_empty_title">Nog geen tijd op de naalden.</string>
-    <string name="insights_empty_body">Open een project en begin met tellen. Je tijd verschijnt hier.</string>
+    <string name="insights_empty_title">Nog geen werksessies.</string>
+    <string name="insights_empty_body">Open een project en start een werksessie om je tijd hier vast te leggen.</string>
     <string name="insights_nothing_yet_week">Deze week nog niets.</string>
     <string name="insights_nothing_yet_month">Deze maand nog niets.</string>
     <string name="insights_nothing_yet_all_time">Nog niets.</string>
-    <string name="insights_pro_chart_title">Zie je dagelijkse ritme</string>
-    <string name="insights_pro_chart_body">Pro toont elke sessie als grafiek, plus je reeks.</string>
+    <string name="insights_pro_chart_title">Bekijk je activiteit in de loop van de tijd</string>
+    <string name="insights_pro_chart_body">Pro groepeert je geregistreerde tijd in dagelijkse, wekelijkse of maandelijkse grafieken en voegt je activiteitenreeks toe.</string>
     <string name="all_projects">Alle projecten</string>
     <string name="insights_all_time">Altijd</string>
     <string name="insights_this_week">Deze week</string>
     <string name="insights_this_month">Deze maand</string>
-    <plurals name="insights_rows_count">
-        <item quantity="one">%1$d toer</item>
-        <item quantity="other">%1$d toeren</item>
-    </plurals>
-    <string name="insights_footer_1">Elke toer telt — ga zo door!</string>
-    <string name="insights_footer_2">Je project wacht op je.</string>
-    <string name="insights_footer_3">Nog één toer?</string>
-    <string name="insights_footer_4">Steek voor steek, toer voor toer.</string>
-    <string name="insights_footer_5">Mooie dingen beginnen met één steek.</string>
     <string name="relative_time_today">vandaag</string>
     <string name="relative_time_yesterday">gisteren</string>
     <string name="relative_time_days_ago">%1$dd geleden</string>
     <string name="relative_time_weeks_ago">%1$dw geleden</string>
-    <string name="relative_time_months_ago">%1$dmnd geleden</string>
-    <string name="insights_no_time_logged">Geen tijd geregistreerd</string>
+    <plurals name="relative_time_months_ago">
+        <item quantity="one">%1$d mnd. geleden</item>
+        <item quantity="other">%1$d mnd. geleden</item>
+    </plurals>
 
     <!-- Settings -->
     <string name="help_and_guide">Hulp en gids</string>
@@ -534,7 +539,6 @@
     <string name="your_gauge_section">Jouw stekenproef</string>
     <string name="measure_swatch">Stekenproef meten</string>
     <string name="enter_directly">Direct invoeren</string>
-    <string name="calculated_gauge_format">= %1$.1f st / %2$.1f toeren %3$s</string>
     <string name="measured_width">Gemeten breedte</string>
     <string name="stitch_count_in_swatch">Steken in proeflap</string>
     <string name="measured_height">Gemeten hoogte</string>
@@ -556,7 +560,7 @@
 
     <!-- Chart Symbols -->
     <string name="chart_symbols_title">Breischema-symbolen</string>
-    <string name="chart_symbols_disclaimer">Symbolen volgen standaardconventies. Controleer altijd de legenda van je patroon.</string>
+    <string name="chart_symbols_disclaimer">Symbolen volgen standaardconventies en tonen de steken vanaf de goede kant van het werk. Controleer altijd de legenda van je patroon.</string>
     <string name="category_basic">Basissteken</string>
     <string name="category_decreases">Minderingen</string>
     <string name="category_increases">Meerderingen</string>
@@ -573,13 +577,13 @@
     <string name="no_reminders">Nog geen herinneringen</string>
     <string name="delete_reminder_title">Herinnering verwijderen?</string>
     <string name="delete_reminder_confirm">Herinnering \"%1$s\" verwijderen?</string>
-    <string name="row_number">Toernummer</string>
+    <string name="row_number">Tellerstand</string>
     <string name="reminder_message">Bericht</string>
     <string name="reminder_message_hint">bijv. Overschakelen naar hielpand</string>
     <string name="one_time">Eenmalig</string>
     <string name="repeating">Herhalend</string>
     <string name="repeat_every">Herhaal elke</string>
-    <string name="repeat_every_rows">toeren</string>
+    <string name="repeat_every_rows">telstappen</string>
     <string name="dismiss">Sluiten</string>
 
     <!-- Multiple Counters -->
@@ -594,12 +598,12 @@
     <string name="shaping">Vormgeven</string>
     <string name="repeat_section">Sectie herhalen</string>
     <string name="starting_stitches">Beginaantal steken</string>
-    <string name="stitch_change">Steken om toe te voegen/verwijderen</string>
-    <string name="shape_every_n">Vorm elke N toeren</string>
-    <string name="repeat_section_start_row">Begintoer</string>
-    <string name="repeat_section_end_row">Eindtoer</string>
+    <string name="stitch_change">Te meerderen/minderen steken</string>
+    <string name="shape_every_n">Meerderen/minderen elke N telstappen</string>
+    <string name="repeat_section_start_row">Beginstand</string>
+    <string name="repeat_section_end_row">Eindstand</string>
     <string name="total_repeats">Totaal aantal herhalingen</string>
-    <string name="repeat_section_progress_format">Herhaling %1$d/%2$d, toer %3$d/%4$d</string>
+    <string name="repeat_section_progress_format">Herhaling %1$d/%2$d, stand %3$d/%4$d</string>
     <string name="repeat_section_complete">Voltooid</string>
     <string name="rename_counter">Naam wijzigen</string>
     <string name="reset_counter_name">Resetten</string>
@@ -611,8 +615,9 @@
     <string name="take_photo">Foto maken</string>
     <string name="progress_photos">Voortgangsfoto\'s</string>
     <string name="counters_list_empty">Geen extra tellers</string>
-    <string name="row_label_format">Toer %d</string>
+    <string name="row_label_format">Stand %d</string>
     <string name="share_photo">Delen</string>
+    <string name="photo_share_failed">De foto kon niet worden gedeeld.</string>
     <string name="delete_photo">Foto verwijderen</string>
     <string name="delete_photo_confirm">Deze foto verwijderen?</string>
     <plurals name="delete_photos_confirm">
@@ -620,103 +625,56 @@
         <item quantity="other">%1$d foto\'s verwijderen?</item>
     </plurals>
     <plurals name="delete_patterns_confirm">
-        <item quantity="one">%1$d patroon verwijderen?</item>
-        <item quantity="other">%1$d patronen verwijderen?</item>
+        <item quantity="one">%1$d patroon uit de bibliotheek verwijderen?\n\nEventuele PDF-annotaties die in de bibliotheek voor dit patroon zijn gemaakt, worden ook verwijderd en zijn niet meer zichtbaar in projecten. PDF-bestanden die al aan projecten zijn gekoppeld en PDF-annotaties die binnen projecten zijn gemaakt, blijven behouden.</item>
+        <item quantity="other">%1$d patronen uit de bibliotheek verwijderen?\n\nEventuele PDF-annotaties die in de bibliotheek voor de geselecteerde patronen zijn gemaakt, worden ook verwijderd en zijn niet meer zichtbaar in projecten. PDF-bestanden die al aan projecten zijn gekoppeld en PDF-annotaties die binnen projecten zijn gemaakt, blijven behouden.</item>
     </plurals>
     <string name="delete_pattern">Patroon verwijderen</string>
-    <string name="delete_yarn_cards_confirm">%d garenkaarten verwijderen?</string>
+    <plurals name="delete_yarn_cards_confirm">
+        <item quantity="one">%d garenkaart verwijderen?</item>
+        <item quantity="other">%d garenkaarten verwijderen?</item>
+    </plurals>
     <string name="delete_yarn_card">Garenkaart verwijderen</string>
-    <string name="no_photos">Nog geen foto\'s</string>
+    <string name="no_photos">Nog geen voortgangsfoto\'s</string>
+    <string name="photo_gallery_empty_body">Foto\'s die je van dit project maakt, verschijnen hier.</string>
     <string name="rename_photo">Foto hernoemen</string>
     <string name="photo_name_hint">bijv. Mouw klaar</string>
 
     <!-- Ravelry -->
     <string name="tool_ravelry">Ravelry</string>
-    <string name="desc_ravelry">Zoek patronen en sla favorieten op</string>
-    <string name="ravelry_search">Zoeken</string>
-    <string name="ravelry_saved_patterns">Opgeslagen patronen</string>
-    <string name="start_project">Project starten</string>
-    <string name="save_pattern">Patroon opslaan</string>
-    <string name="ravelry_open_saved_pattern">Openen</string>
+    <string name="desc_ravelry">Blader door patronen en sla pdf\'s op in KnitTools</string>
     <string name="open_in_ravelry">Openen in Ravelry</string>
-    <string name="pattern_saved">Patroon opgeslagen</string>
-    <string name="no_saved_patterns">Nog geen patronen opgeslagen</string>
-    <string name="search_hint">Zoek naar breipatronen…</string>
-    <string name="ravelry_search_requires_sign_in">Log in met Ravelry om patronen te zoeken.</string>
-    <string name="ravelry_import_loading">Patroon laden</string>
-    <string name="ravelry_import_title">Dit patroon opslaan?</string>
-    <string name="ravelry_import_already_saved">Patroon al opgeslagen</string>
-    <string name="ravelry_import_needs_sign_in">Log in met Ravelry om dit patroon op te slaan.</string>
     <string name="ravelry_import_could_not_import">Dit patroon kon niet worden geïmporteerd.</string>
-    <string name="ravelry_import_backend_unavailable">Ravelry-import is tijdelijk niet beschikbaar.</string>
     <string name="saved_pattern_detail_pdf_attached">PDF gekoppeld</string>
     <string name="saved_pattern_detail_available_offline">Offline beschikbaar</string>
     <string name="saved_pattern_detail_open_on_ravelry">Openen op Ravelry</string>
     <string name="saved_pattern_detail_requires_ravelry">Vereist Ravelry</string>
+    <string name="saved_pattern_detail_no_pdf_explanation">De patroongegevens zijn opgeslagen. Er is geen PDF gekoppeld om offline te lezen.</string>
     <string name="saved_pattern_detail_open_pattern">Patroon openen</string>
     <string name="saved_pattern_detail_attach_to_project">Aan project koppelen</string>
-    <string name="saved_pattern_detail_remove_confirm">Dit opgeslagen patroon verwijderen?</string>
-    <string name="saved_pattern_detail_thumbnail">Miniatuur van patroon</string>
-    <string name="filter_weight">Dikte</string>
-    <string name="filter_difficulty">Moeilijkheidsgraad</string>
+    <string name="saved_pattern_detail_remove_confirm">Dit opgeslagen patroon uit de bibliotheek verwijderen?\n\nEventuele PDF-annotaties die in de bibliotheek voor dit patroon zijn gemaakt, worden ook verwijderd en zijn niet meer zichtbaar in projecten. PDF-bestanden die al aan projecten zijn gekoppeld en PDF-annotaties die binnen projecten zijn gemaakt, blijven behouden.</string>
     <string name="free">Gratis</string>
     <string name="paid">Betaald</string>
     <string name="availability_unknown">Beschikbaarheid onbekend</string>
-    <string name="no_results">Geen patronen gevonden</string>
-    <string name="search_error">Patronen konden niet worden geladen. Controleer je internetverbinding.</string>
-    <string name="ravelry_search_rate_limited">Ravelry beperkt zoekopdrachten. Probeer het later opnieuw.</string>
-    <string name="ravelry_search_auth_error">De Ravelry-inlog kon niet worden gebruikt. Log opnieuw in en probeer het opnieuw.</string>
-    <string name="ravelry_search_service_error">Ravelry is tijdelijk niet beschikbaar. Probeer het later opnieuw.</string>
-    <string name="ravelry_sign_in">Inloggen met Ravelry</string>
-    <string name="ravelry_browse">Ravelry verkennen</string>
-    <string name="ravelry_disconnect">Ravelry loskoppelen</string>
-    <string name="ravelry_disconnect_confirm">Ravelry loskoppelen? Je moet opnieuw inloggen om de Ravelry-functies te gebruiken.</string>
-    <string name="ravelry_not_connected">Log in om Ravelry-patronen vanuit KnitTools te zoeken.</string>
-    <string name="ravelry_connecting">Verbinden met Ravelry…</string>
-    <string name="ravelry_auth_pending">Voltooi de Ravelry-login in de browser.</string>
-    <string name="ravelry_connected">Verbonden met Ravelry</string>
-    <string name="ravelry_connected_as">Verbonden als %1$s</string>
-    <string name="ravelry_auth_cancelled">Ravelry-login is geannuleerd.</string>
-    <string name="ravelry_auth_expired">Ravelry-login is verlopen. Log opnieuw in.</string>
-    <string name="ravelry_backend_unavailable">Ravelry-verbinding is tijdelijk niet beschikbaar.</string>
-    <string name="ravelry_disconnecting">Verbinding met Ravelry verbreken…</string>
     <string name="difficulty_format">%.1f / 5</string>
-    <string name="yardage_format">%d yard</string>
 
     <!-- Info tips -->
-    <string name="tip_your_gauge_title">Wat is stekenproef?</string>
-    <string name="tip_your_gauge_desc">Je stekenproef geeft aan hoeveel steken en toeren in een gemeten vlak passen. Brei een proeflapje en meet het om jouw persoonlijke stekenproef te bepalen. Zo komt het uiteindelijke werk overeen met de bedoelde maat van het patroon.</string>
     <string name="tip_pattern_repeat_title">Patroonherhaling</string>
     <string name="tip_pattern_repeat_desc">Als je stekenpatroon zich elke X steken herhaalt (bijv. een kabel elke 8 steken), vul dat getal hier in. De calculator rondt de steken van het middendeel, vóór de kantsteken, af naar het dichtstbijzijnde veelvoud zodat je patroon uitkomt.</string>
     <string name="tip_edge_stitches_title">Kantsteken</string>
     <string name="tip_edge_stitches_desc">Kantsteken zijn extra steken buiten de patroonherhaling. Vul het totale aantal op te zetten kantsteken in; de calculator telt ze op nadat de gewenste breedte is berekend, bijvoorbeeld 2 voor één steek aan elke kant.</string>
     <string name="tip_flat_vs_circular_title">Heen en weer vs. in het rond</string>
-    <string name="tip_flat_vs_circular_desc">Bij heen-en-weer breien werk je vooruit en terug op rechte of rondbreinaalden en keer je aan het einde van elke toer. Meerderen en minderen gebeuren aan beide kanten.\n\nBij rondbreien werk je in een doorlopende ronde. Meerderen en minderen worden gelijkmatig over de ronde verdeeld.</string>
+    <string name="tip_flat_vs_circular_desc">Bij heen-en-weer breien werk je vooruit en terug op rechte of rondbreinaalden en keer je aan het einde van elke toer.\n\nBij rondbreien werk je in een doorlopende ronde. Meerderen en minderen worden gelijkmatig over de ronde verdeeld.</string>
     <string name="tip_needle_sizes_title">Systemen voor naaldmaten</string>
-    <string name="tip_needle_sizes_desc">Metrisch (mm) is de universele standaard. US-maten gebruiken een nummersysteem (0–50). UK/Canadese maten gebruiken een ander nummersysteem. Japanse maten hebben hun eigen nummering. Controleer altijd de maat in mm om zeker te zijn.</string>
+    <string name="tip_needle_sizes_desc">Metrische maten geven de diameter in mm aan. US-maten gebruiken een nummersysteem. UK/Canadese maten gebruiken een ander nummersysteem. Japanse maten hebben hun eigen nummering. Controleer altijd de maat in mm om zeker te zijn.</string>
     <string name="tip_imperial_units_title">Imperiale eenheden</string>
-    <string name="tip_imperial_units_desc">Als dit is ingeschakeld, gebruiken alle rekenhulpen inch in plaats van centimeters en yard in plaats van meters. De stekenproef wordt dan gemeten per 4 inch in plaats van per 10 cm.</string>
-    <string name="pattern_row_highlight_description">Rij %1$d gemarkeerd op ongeveer %2$d procent van de pagina</string>
+    <string name="tip_imperial_units_desc">Als dit is ingeschakeld, gebruiken de rekenhulpen standaard inch in plaats van centimeters en yard in plaats van meters. De stekenproef wordt dan gemeten per 4 inch in plaats van per 10 cm. Bij Maten en stekenproef kun je de eenheden zelf kiezen.</string>
     <string name="open_notes_editor">Notitie-editor openen</string>
     <string name="restore_purchases_checking">Aankopen controleren…</string>
     <string name="retry">Opnieuw proberen</string>
-    <string name="widget_rows_remaining_format">%d rijen over</string>
-    <string name="widget_target_reached">Doel bereikt</string>
-    <string name="widget_stitches_format">Steken: %1$d / %2$d</string>
-    <string name="target_rows_dialog_title">Doelrijen instellen</string>
-    <string name="target_rows_set">Doel instellen…</string>
-    <string name="target_rows_edit">Doel bewerken</string>
+    <string name="target_rows_dialog_title">Doel instellen</string>
     <string name="target_rows_remove">Doel verwijderen</string>
-    <string name="target_rows_hint">Aantal rijen</string>
-    <string name="row_label_with_target">Rij %1$d / %2$d</string>
-    <string name="widget_undo_action">Ongedaan maken</string>
-    <string name="widget_undo_content_description">Laatste wijziging ongedaan maken</string>
-    <string name="search_more_error">Kan niet meer patronen laden. Controleer je internetverbinding.</string>
-    <string name="pattern_detail_error">Kan patroondetails niet laden. Controleer je internetverbinding.</string>
     <string name="project_actions_title">Projectacties</string>
-    <string name="project_actions_section_this_project">Dit project</string>
     <string name="project_actions_section_counter_tools">Tellerhulpmiddelen</string>
-    <string name="project_actions_section_project_actions">Projectacties</string>
     <string name="project_content_title">Project</string>
     <string name="project_content_yarn">Garen</string>
     <string name="project_content_notes">Notities</string>
@@ -727,10 +685,419 @@
 
     <!-- Täydennetyt lokalisoidut käyttöliittymätekstit -->
     <string name="yarn_card_number_fallback">Garen #%1$d</string>
-    <string name="pattern_detail_needles">Naalden</string>
-    <string name="pattern_detail_yardage">Looplengte</string>
-    <string name="pattern_detail_sizes">Maten</string>
-    <string name="pattern_saved_to_library">Opgeslagen in bibliotheek</string>
     <string name="show_more">Laat meer zien</string>
-    <string name="show_less">Laat minder zien</string>
+    <string name="pro_start_free_trial">Gratis proefperiode starten</string><string name="pro_start_14_day_trial">Gratis proefperiode van 14 dagen starten</string><string name="pro_trial_start_failed">De proefperiode kon niet worden gestart. Probeer het opnieuw.</string>
+    <string name="pro_prompt_not_now">Niet nu</string><string name="pro_prompt_see_pro">Pro bekijken</string>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <string name="pro_badge">PRO</string><string name="pro_badge_locked_description">Pro-functie</string><string name="pro_badge_trial_description">Pro-functie, beschikbaar tijdens de proefperiode</string><string name="knittools_pro">KnitTools Pro</string><string name="pro_content_stays_available">Alles wat je maakt, blijft beschikbaar.</string>
+    <plurals name="pro_status_trial_days"><item quantity="one">Proefperiode, nog %1$d dag</item><item quantity="other">Proefperiode, nog %1$d dagen</item></plurals>
+    <string name="pro_status_trial_ended">Proefperiode beëindigd</string><string name="pro_status_purchased">Gekocht</string><string name="pro_trial_ended_body">Alles wat je hebt gemaakt, blijft beschikbaar. Je kunt het blijven gebruiken en bewerken. Pro is alleen vereist voor nieuwe Pro-items en geavanceerde weergaven.</string><string name="pro_continue_free">Gratis doorgaan</string>
+
+    <string name="pro_page_purchased">Pro gekocht</string><string name="pro_buy_for_price">Pro kopen voor %1$s</string><string name="pro_price_unavailable">Prijs niet beschikbaar</string><string name="billing_purchase_pending">Je aankoop is in behandeling. Pro wordt beschikbaar zodra Google Play de betaling heeft voltooid.</string>
+    <string name="project_updated_format">Bijgewerkt %1$s</string>
+    <string name="project_completed_format">Voltooid %1$s</string>
+    <string name="project_section_count_format">%1$s %2$d</string>
+    <string name="project_continue_content_description">Doorgaan met %1$s</string>
+    <string name="work_session_start">Werksessie starten</string>
+    <string name="work_session_stop">Werksessie stoppen</string>
+    <string name="work_session_active">Werksessie actief</string>
+    <string name="work_session_recovery_needed">De sessietijd moet worden gecontroleerd</string>
+    <string name="work_session_resolve">Oplossen</string>
+    <string name="work_session_recovery_title">Sessietijd controleren</string>
+    <string name="work_session_pending_rows_format">Openstaande tellervoortgang: %1$d</string>
+    <string name="work_session_hours">Uren</string>
+    <string name="work_session_minutes">Minuten</string>
+    <string name="work_session_add_and_continue">Toevoegen en doorgaan</string>
+    <string name="work_session_discard_pending">Openstaand verwerpen en stoppen</string>
+    <string name="work_session_another_project">een ander project</string>
+    <string name="work_session_conflict_title">Er is al een sessie actief</string>
+    <string name="work_session_conflict_body">De actieve sessie hoort bij %1$s. Kies wat je wilt doen voordat je hier begint.</string>
+    <string name="work_session_return_to_active">Terug naar actief project</string>
+    <string name="work_session_save_then_start">Stoppen, opslaan en hier starten</string>
+    <string name="work_session_discard_then_start">Stoppen, verwerpen en hier starten</string>
+    <string name="work_session_complete_project_title">Project voltooien met actieve sessie?</string>
+    <string name="work_session_complete_project_body">Sla de actieve sessie op of verwerp deze voordat je het project voltooit.</string>
+    <string name="work_session_save_and_complete">Sessie opslaan en voltooien</string>
+    <string name="work_session_discard_and_complete">Sessie verwerpen en voltooien</string>
+    <string name="work_session_delete_project_title">Actieve sessie verwerpen en project verwijderen?</string>
+    <string name="work_session_delete_project_body">Als je het project verwijdert, worden ook de opgeslagen sessies verwijderd. De actieve sessie moet eerst worden verworpen.</string>
+    <string name="work_session_discard_and_delete">Sessie verwerpen en verwijderen</string>
+    <string name="work_session_duration_format">Duur: %1$s</string>
+    <string name="work_session_confirmed_time_format">Bevestigde tijd: %1$s</string>
+    <string name="work_session_time_while_away_format">Tijd tijdens afwezigheid: %1$s</string>
+    <string name="work_session_time_unavailable">De tijd tijdens de afwezigheid kon niet worden geschat.</string>
+    <string name="work_session_edit_total_duration">Bewerk de totale sessieduur. Opslaan stopt de sessie.</string>
+    <string name="work_session_invalid_duration">Ongeldige duur. Voer minimaal nul uur en minuten van 0 tot 59 in.</string>
+    <string name="work_session_save_edited_and_stop">Bewerkte duur opslaan en stoppen</string>
+    <string name="work_session_edit_duration">Duur bewerken</string>
+    <string name="work_session_reason_restarted">Het apparaat is opnieuw opgestart. Controleer de tijd sinds de laatste bevestiging.</string>
+    <string name="work_session_reason_long_running">De sessie loopt al lang. Bevestig het laatste interval.</string>
+    <string name="work_session_reason_clock_unavailable">KnitTools kon niet bevestigen of het apparaat opnieuw is opgestart.</string>
+    <string name="work_session_reason_clock_changed">KnitTools kon het laatste tijdsinterval niet verifiëren.</string>
+    <string name="work_session_stop_summary_title">Werksessie stoppen?</string>
+    <string name="work_session_save">Sessie opslaan</string>
+    <string name="work_session_discard">Sessie verwijderen</string>
+    <string name="work_session_active_description">Werksessie voor %1$s, %2$s verstreken</string>
+    <string name="work_session_could_not_start">Sessie kon niet worden gestart</string>
+    <string name="work_session_could_not_save">Sessie kon niet worden opgeslagen</string>
+    <string name="work_session_history_full">De sessiegeschiedenis is vol. Je bestaande sessies blijven bewaard.</string>
+    <string name="work_session_could_not_discard">Sessie kon niet worden verwijderd</string>
+    <string name="work_session_recovery_already_handled">Deze sessiecontrole is al afgehandeld.</string>
+    <string name="work_session_retry">Opnieuw proberen</string>
+    <string name="project_documents_title">Documenten</string>
+    <string name="project_documents_add">Toevoegen</string>
+    <string name="project_documents_actions">Acties voor %1$s</string>
+    <string name="project_documents_primary">Primair patroon</string>
+    <string name="project_documents_open">Huidig document</string>
+    <string name="project_documents_unavailable">PDF niet beschikbaar</string>
+    <string name="project_documents_rename">Naam wijzigen</string>
+    <string name="project_documents_make_primary">Als primair instellen</string>
+    <string name="project_documents_remove_action">Verwijderen</string>
+    <string name="project_documents_move_earlier">Eerder plaatsen</string>
+    <string name="project_documents_move_later">Later plaatsen</string>
+    <string name="project_documents_rename_title">Documentnaam wijzigen</string>
+    <string name="project_documents_label">Documentnaam</string>
+    <string name="project_documents_remove_title">Document verwijderen?</string>
+    <string name="project_documents_remove_message">%1$s uit dit project verwijderen?</string>
+    <string name="project_documents_error_invalid_label">Voer een naam van 1–50 tekens in.</string>
+    <string name="project_documents_error_duplicate">Deze PDF is al aan het project gekoppeld.</string>
+    <string name="project_documents_error_unavailable">Deze PDF is niet meer beschikbaar. Verwijder deze of voeg het bestand opnieuw toe.</string>
+    <string name="project_documents_error_stale">De documentenlijst is gewijzigd. Probeer het opnieuw.</string>
+    <string name="project_documents_error_generic">De documentwijziging kon niet worden opgeslagen.</string>
+    <string name="project_documents_secondary">Secundair document</string>
+    <string name="project_documents_available">PDF beschikbaar</string>
+    <string name="project_documents_position">Positie %1$d van %2$d</string>
+    <string name="project_documents_open_action">Document openen</string>
+    <string name="project_documents_remove_from_project">Uit project verwijderen</string>
+    <string name="project_documents_empty">Geen documenten</string>
+    <string name="project_documents_metadata_only">Alleen metadata</string>
+    <string name="project_documents_pattern_information">Patrooninformatie</string>
+    <string name="project_documents_remove_primary_message">%1$s verwijderen? Een ander document wordt primair.</string>
+    <string name="project_documents_remove_last_message">%1$s verwijderen? Het project heeft daarna geen leesbaar patroon meer.</string>
+    <string name="folder_sheet_title">Mappen</string>
+    <string name="folder_loading">Mappen laden</string>
+    <string name="folder_unfiled">Zonder map</string>
+    <string name="folder_create">Map maken</string>
+    <string name="folder_name">Mapnaam</string>
+    <string name="folder_rename">Map hernoemen</string>
+    <string name="folder_delete">Map verwijderen</string>
+    <string name="folder_move_earlier">Eerder verplaatsen</string>
+    <string name="folder_move_later">Later verplaatsen</string>
+    <string name="folder_move_to">Naar map verplaatsen</string>
+    <string name="folder_remove_from">Uit map verwijderen</string>
+    <string name="selection_action_move">Verplaatsen</string>
+    <string name="selection_action_complete">Voltooien</string>
+    <string name="folder_no_folders">Geen mappen</string>
+    <string name="folder_empty">%1$s heeft geen projecten.</string>
+    <string name="folder_no_unfiled">Geen projecten zonder map</string>
+    <string name="folder_hidden_completed">Deze map bevat verborgen voltooide projecten.</string>
+    <string name="folder_deleted">Map verwijderd. Projecten zijn behouden.</string>
+    <string name="folder_project_moved">Project verplaatst.</string>
+    <string name="folder_project_missing">Een geselecteerd project bestaat niet meer.</string>
+    <string name="folder_project_creation_destination">Bestemming nieuw project: %1$s</string>
+    <string name="folder_missing">Deze map bestaat niet meer.</string>
+    <string name="folder_load_error">Mappen konden niet worden geladen.</string>
+    <string name="folder_reorder_error">Mappen konden niet worden herschikt.</string>
+    <string name="folder_stale_action">De map is gewijzigd voordat de actie was voltooid.</string>
+    <string name="folder_create_error">Map kon niet worden gemaakt.</string>
+    <string name="folder_rename_error">Map kon niet worden hernoemd.</string>
+    <string name="folder_delete_error">Map kon niet worden verwijderd.</string>
+    <string name="folder_move_error">Project kon niet worden verplaatst.</string>
+    <string name="folder_name_required">Voer een mapnaam in.</string>
+    <string name="folder_name_max_length">Maximaal 50 tekens</string>
+    <string name="folder_name_duplicate">De mapnaam is al in gebruik.</string>
+    <string name="folder_name_invalid">Mapnamen mogen geen besturingstekens bevatten.</string>
+    <string name="folder_delete_title">Map verwijderen?</string>
+    <string name="folder_delete_message">%1$s verwijderen?</string>
+    <string name="folder_selected_description">%1$s Geselecteerd.</string>
+    <string name="folder_all_projects_description">Alle projecten. Virtuele weergave van elk project.</string>
+    <string name="folder_unfiled_description">Projecten zonder map.</string>
+    <string name="folder_user_description">%1$s. Map voor projectorganisatie.</string>
+    <string name="folder_actions_description">Acties voor %1$s</string>
+    <string name="folder_current_destination">%1$s. Huidige bestemming.</string>
+    <plurals name="folder_affected_projects">
+    <item quantity="one">%d project blijft behouden en komt zonder map te staan.</item>
+    <item quantity="other">%d projecten blijven behouden en komen zonder map te staan.</item>
+    </plurals>
+    <plurals name="folder_moved_projects">
+    <item quantity="one">%d project verplaatst.</item>
+    <item quantity="other">%d projecten verplaatst.</item>
+    </plurals>
+    <string name="folder_move_project_to">Verplaats %1$s naar map</string>
+    <string name="folder_rename_description">Map %1$s hernoemen</string>
+    <string name="folder_move_earlier_description">Map %1$s eerder verplaatsen</string>
+    <string name="folder_move_later_description">Map %1$s later verplaatsen</string>
+    <string name="folder_delete_description">Map %1$s verwijderen</string>
+    <plurals name="folder_move_selected_projects_count">
+    <item quantity="one">Verplaats %d geselecteerd project</item>
+    <item quantity="other">Verplaats %d geselecteerde projecten</item>
+    </plurals>
+    <plurals name="folder_move_projects_error">
+    <item quantity="one">Kan %d project niet verplaatsen.</item>
+    <item quantity="other">Kan %d projecten niet verplaatsen.</item>
+    </plurals>
+
+    <string name="measurement_title">Maten en stekenproef</string>
+    <string name="measurement_task">Taak</string>
+    <string name="measurement_convert">Maten omrekenen</string>
+    <string name="measurement_measure_gauge">Stekenproef meten</string>
+    <string name="measurement_calculate">Berekenen met de stekenproef</string>
+    <string name="measurement_adjust">Aantallen uit het patroon aanpassen</string>
+    <string name="measurement_operation">Berekening</string>
+    <string name="measurement_count_for_size">Aantal bij een afmeting</string>
+    <string name="measurement_size_from_count">Afmeting bij een aantal</string>
+    <string name="measurement_axis">Richting</string>
+    <string name="measurement_stitches_width">Steken en breedte</string>
+    <string name="measurement_rows_height">Toeren en hoogte</string>
+    <string name="gauge_stated_per">Stekenverhouding opgegeven</string>
+    <string name="measurement_from_unit">Van eenheid</string>
+    <string name="measurement_to_unit">Naar eenheid</string>
+    <string name="measurement_value">Waarde</string>
+    <string name="measurement_unit_cm">Centimeters</string>
+    <string name="measurement_unit_inch">Inches</string>
+    <string name="measurement_unit_inch_short">in</string>
+    <string name="measurement_unit_meter">Meters</string>
+    <string name="measurement_unit_meter_short">m</string>
+    <string name="measurement_unit_yard">Yards</string>
+    <string name="measurement_unit_yard_short">yd</string>
+    <string name="measurement_per_10cm">per 10 centimeter</string>
+    <string name="measurement_per_4in">per 4 inch</string>
+    <string name="measurement_actual_stitches">Jouw stekenverhouding</string>
+    <string name="measurement_actual_rows">Jouw toerenverhouding</string>
+    <string name="measurement_pattern_stitches">Stekenverhouding van het patroon</string>
+    <string name="measurement_pattern_rows">Toerenverhouding van het patroon</string>
+    <string name="measurement_target_width">Gewenste breedte</string>
+    <string name="measurement_target_height">Gewenste hoogte</string>
+    <string name="measurement_stitch_count">Aantal steken</string>
+    <string name="measurement_row_count">Aantal toeren</string>
+    <string name="measurement_calculated_count">Berekend aantal</string>
+    <string name="measurement_nearest_count">Dichtstbijzijnde gehele aantal</string>
+    <string name="measurement_original_size">Oorspronkelijke afmeting</string>
+    <string name="measurement_unchanged_size">Afmeting zonder aanpassing</string>
+    <string name="measurement_rounded_size">Afmeting na afronding</string>
+    <string name="measurement_result_size">Resulterende afmeting</string>
+    <string name="measurement_gauge_difference">Verschil in stekenproef</string>
+    <string name="measurement_copy">Resultaat kopiëren</string>
+    <string name="measurement_copied">Resultaat gekopieerd</string>
+    <string name="measurement_invalid_number">Voer een geldig getal in.</string>
+    <string name="measurement_positive_required">Voer een waarde groter dan nul in.</string>
+    <string name="measurement_too_large">De waarde valt buiten het ondersteunde bereik. Controleer de afmeting en het aantal.</string>
+    <string name="measurement_complete_number">Maak het getal af of corrigeer het voordat je de eenheid wijzigt.</string>
+    <string name="measurement_project_unavailable">Dit project is niet meer beschikbaar. Je kunt hier verder rekenen.</string>
+    <string name="measurement_project_context">Project: %1$s</string>
+    <string name="measurement_estimate">Schatting op basis van de ingevoerde stekenproef.</string>
+    <string name="measurement_adjust_warning">Wiskundige schatting op basis van de ingevoerde stekenproef. De vormgeving en constructie worden niet herschreven. Bewegingsruimte, patroonherhalingen, randen, armsgaten, halslijnen en mouwen moeten mogelijk apart worden aangepast. Meet een gewassen of geblokt proeflapje voor een bruikbaardere schatting.</string>
+    <string name="measurement_adjust_warning_short">Een schatting op basis van je stekenverhouding. Vormgeving moet mogelijk apart worden aangepast.</string>
+    <string name="measurement_swatch_hint">Meet het proeflapje na het wassen of blokken voor een bruikbaardere schatting.</string>
+    <string name="measurement_result">Resultaat</string>
+    <string name="measurement_value_unit_format">%1$s %2$s</string>
+    <string name="measurement_gauge_format">%1$s %2$s</string>
+    <string name="measurement_result_line">%1$s: %2$s</string>
+    <string name="measurement_field_with_unit">%1$s (%2$s)</string>
+    <plurals name="measurement_stitches">
+        <item quantity="one">%1$d steek</item>
+        <item quantity="other">%1$d steken</item>
+    </plurals>
+    <plurals name="measurement_rows">
+        <item quantity="one">%1$d toer</item>
+        <item quantity="other">%1$d toeren</item>
+    </plurals>
+    <string name="yarn_usage_title">Garenverbruik</string>
+    <string name="yarn_usage_scope">Houdt alleen het garenverbruik voor dit project bij. De hoeveelheden in Mijn garen blijven ongewijzigd.</string>
+    <string name="yarn_usage_unit">Hoeveelheidseenheid</string>
+    <string name="yarn_usage_grams">Gram</string>
+    <string name="yarn_usage_skeins">Strengen</string>
+    <string name="yarn_usage_planned">Gepland</string>
+    <string name="yarn_usage_allocated">Gereserveerd voor dit project</string>
+    <string name="yarn_usage_used">Gebruikt</string>
+    <string name="yarn_usage_length">Lengte per streng</string>
+    <string name="yarn_usage_weight">Gewicht per streng</string>
+    <string name="yarn_usage_add_conversion">Omrekening per streng toevoegen</string>
+    <string name="yarn_usage_remove_conversion">Omrekening per streng verwijderen</string>
+    <string name="yarn_usage_conversion_required">Voer zowel lengte als gewicht per streng in als positieve waarden om gram of strengen te gebruiken.</string>
+    <string name="yarn_usage_fix_before_switch">Corrigeer de hoeveelheden voordat je de eenheid wijzigt.</string>
+    <string name="yarn_usage_remaining_unknown">Resterende hoeveelheid onbekend</string>
+    <string name="yarn_usage_remaining_format">Resterend: %1$s</string>
+    <string name="yarn_usage_over_format">Overschreden met: %1$s</string>
+    <string name="yarn_usage_used_format">Gebruikt: %1$s</string>
+    <string name="yarn_usage_meters_format">%1$s m</string>
+    <string name="yarn_usage_yards_format">%1$s yd</string>
+    <string name="yarn_usage_grams_format">%1$s g</string>
+    <string name="yarn_usage_delete">Verbruiksregistratie verwijderen</string>
+    <string name="yarn_usage_delete_named">Verbruiksregistratie voor %1$s verwijderen</string>
+    <string name="yarn_usage_delete_title">Verbruiksregistratie verwijderen?</string>
+    <string name="yarn_usage_delete_body">Alleen de verbruiksregistratie voor %1$s wordt verwijderd. De garenkaart, de garennotitie van het project en andere projectgegevens blijven behouden.</string>
+    <string name="yarn_usage_invalid_amount">Voer een geldige hoeveelheid in.</string>
+    <string name="yarn_usage_nonnegative">De hoeveelheid mag niet negatief zijn.</string>
+    <string name="yarn_usage_positive">Voer een waarde groter dan nul in.</string>
+    <string name="yarn_usage_save_failed">Het verbruik kon niet worden opgeslagen. Je invoer blijft behouden. Probeer het opnieuw.</string>
+    <string name="yarn_usage_delete_failed">De verbruiksregistratie kon niet worden verwijderd. Probeer het opnieuw.</string>
+    <string name="yarn_usage_exists">Er bestaat al een verbruiksregistratie voor dit garen. Sluit de editor en open de opgeslagen registratie.</string>
+    <string name="yarn_usage_stale">Het project, de garenbron of de registratie is gewijzigd. Sluit de editor en open deze opnieuw.</string>
+    <string name="yarn_usage_track">Verbruik bijhouden</string>
+    <string name="yarn_usage_edit">Verbruik bewerken</string>
+    <string name="yarn_usage_track_named">Verbruik van %1$s bijhouden</string>
+    <string name="yarn_usage_edit_named">Verbruik van %1$s bewerken</string>
+    <string name="yarn_usage_unlinked">Bron niet meer gekoppeld aan dit project</string>
+    <string name="yarn_usage_unavailable">Garenbron niet beschikbaar</string>
+    <plurals name="yarn_usage_skeins_format">
+        <item quantity="one">%1$s streng</item>
+        <item quantity="other">%1$s strengen</item>
+    </plurals>
+    <string name="web_pattern_add">Webpatroon toevoegen</string>
+    <string name="web_pattern_label">Webpatroon</string>
+    <string name="pattern_source_pdf">PDF</string>
+    <string name="web_pattern_title_label">Patroonnaam</string>
+    <string name="web_pattern_designer_label">Ontwerper</string>
+    <string name="web_pattern_url_label">Websiteadres</string>
+    <string name="web_pattern_website_label">Website</string>
+    <string name="web_pattern_edit">Webpatroon bewerken</string>
+    <string name="web_pattern_edit_title">Webpatroon bewerken</string>
+    <string name="web_pattern_delete">Webpatroon verwijderen</string>
+    <string name="web_pattern_delete_confirm_title">Webpatroon verwijderen?</string>
+    <string name="web_pattern_delete_confirm_message">%1$s uit Opgeslagen patronen in de bibliotheek verwijderen?\n\nEventuele PDF-annotaties die in de bibliotheek voor dit patroon zijn gemaakt, worden ook verwijderd en zijn niet meer zichtbaar in projecten. PDF-bestanden die al aan projecten zijn gekoppeld en PDF-annotaties die binnen projecten zijn gemaakt, blijven behouden.</string>
+    <string name="web_pattern_attach">Aan project koppelen</string>
+    <string name="pattern_mark_up">Markeren</string>
+    <string name="pattern_mark_up_done">Klaar</string>
+    <string name="incoming_pdf_title">Patroon opslaan</string>
+    <string name="incoming_pdf_other_section">Of</string>
+    <string name="incoming_pdf_new_project">Nieuw project starten</string>
+    <string name="incoming_pdf_library_only">Alleen in Bibliotheek opslaan</string>
+    <string name="incoming_pdf_open_failed">Kan de pdf niet openen</string>
+    <string name="incoming_pdf_save_failed">Kan het patroon niet opslaan</string>
+    <string name="ravelry_browser_hint">Open een patroon en tik op Download PDF om het in KnitTools op te slaan.</string>
+    <string name="ravelry_purchase_in_browser">Afrekenen opent in je browser. Download het patroon na de aankoop hier uit je Ravelry-bibliotheek.</string>
+    <string name="incoming_pdf_downloading">Patroon downloaden…</string>
+    <string name="incoming_pdf_not_pdf">Alleen pdf-patronen kunnen worden opgeslagen</string>
+    <string name="web_pattern_unlink">Patroongegevens ontkoppelen</string>
+    <string name="web_pattern_replace_confirm_title">Patroongegevens vervangen?</string>
+    <string name="web_pattern_replace_confirm_message">De huidige patroongegevens vervangen door %1$s?</string>
+    <string name="web_pattern_open_website">Website openen</string>
+    <string name="web_pattern_open_website_description">De website voor %1$s openen op %2$s</string>
+    <string name="web_pattern_edit_description">Webpatroon %1$s bewerken</string>
+    <string name="web_pattern_attach_description">Webpatroon %1$s koppelen</string>
+    <string name="web_pattern_unlink_description">Patroongegevens voor %1$s ontkoppelen</string>
+    <string name="web_pattern_shared_link">Gedeelde link</string>
+    <string name="web_pattern_confirm_details">Patroongegevens bevestigen</string>
+    <string name="web_pattern_error_title_required">Patroonnaam is verplicht</string>
+    <string name="web_pattern_error_title_too_long">Maximaal 120 tekens</string>
+    <string name="web_pattern_error_designer_too_long">@string/web_pattern_error_title_too_long</string>
+    <string name="web_pattern_error_url_required">Websiteadres is verplicht</string>
+    <string name="web_pattern_error_url_invalid">Ongeldig websiteadres</string>
+    <string name="web_pattern_error_url_web_only">Alleen websiteadressen worden ondersteund</string>
+    <string name="web_pattern_http_warning">Dit adres gebruikt HTTP. De verbinding is mogelijk niet beveiligd.</string>
+    <string name="web_pattern_already_saved">Dit patroon is al opgeslagen</string>
+    <string name="web_pattern_save_failed">Het webpatroon kon niet worden opgeslagen</string>
+    <string name="web_pattern_update_failed">Het webpatroon kon niet worden bijgewerkt</string>
+    <string name="web_pattern_delete_failed">Het webpatroon kon niet worden verwijderd</string>
+    <string name="web_pattern_open_failed">De website kon niet worden geopend</string>
+    <string name="web_pattern_no_browser">Geen browser beschikbaar</string>
+    <string name="web_pattern_source_controlled">De bron bepaalt of dit patroon beschikbaar is</string>
+    <string name="web_pattern_not_offline">De pagina is niet opgeslagen voor offlinegebruik</string>
+    <string name="web_pattern_opens_original">Deze link opent de oorspronkelijke website</string>
+    <string name="web_pattern_keep_current_draft">Huidig concept behouden</string>
+    <string name="web_pattern_use_shared_link">Gedeelde link gebruiken</string>
+    <string name="web_pattern_discard_current_draft">Huidig concept weggooien</string>
+    <string name="web_pattern_share_ambiguous">Er is meer dan één websiteadres gedeeld</string>
+    <string name="web_pattern_project_unavailable">Het project is niet meer beschikbaar</string>
+    <string name="pattern_open_project_notes">Projectnotities openen</string>
+    <string name="insights_completions_title">Projectafrondingen</string>
+    <string name="insights_completions_period">%1$s – %2$s</string>
+    <plurals name="insights_completion_count">
+        <item quantity="one">%d afronding</item>
+        <item quantity="other">%d afrondingen</item>
+    </plurals>
+
+    <string name="backup_title">Back-up en herstel</string>
+    <string name="backup_description">Bewaar projecten, notities, patronen en lokale foto’s in één back-upbestand.</string>
+    <string name="backup_privacy">De back-up is niet versleuteld. Deze kan persoonlijke notities, foto’s en PDF-patronen bevatten. Bewaar het bestand op een vertrouwde plek.</string>
+    <string name="backup_exclusions">De instellingen en taal van dit apparaat blijven ongewijzigd. Proefperioden, aankopen, aanmeldingen en widgets worden niet overgezet. Een actieve werksessie moet na herstel worden gecontroleerd.</string>
+    <string name="backup_export">Back-up exporteren</string>
+    <string name="backup_restore">Back-up herstellen</string>
+    <string name="backup_preview_date">Back-updatum: %1$s</string>
+    <string name="backup_preview_version">KnitTools-versie: %1$s</string>
+    <string name="backup_preview_projects">Projecten: %1$d</string>
+    <string name="backup_preview_patterns">Opgeslagen patronen: %1$d</string>
+    <string name="backup_preview_yarn">Garenkaarten: %1$d</string>
+    <string name="backup_preview_files">Bestanden: %1$d</string>
+    <string name="backup_continue">Projecten openen</string>
+    <string name="backup_confirm_title">Huidige gegevens vervangen?</string>
+    <string name="backup_confirm_message">Herstellen vervangt alle huidige KnitTools-projecten, notities, patronen, foto’s en andere lokale inhoud. Dit kan niet ongedaan worden gemaakt. Exporteer eerst een back-up als je je huidige inhoud wilt behouden.</string>
+    <string name="backup_replace">Vervangen en herstellen</string>
+    <string name="backup_exporting">Back-up maken…</string>
+    <string name="backup_validating">Back-up controleren…</string>
+    <string name="backup_restoring">Gegevens herstellen. Even geduld…</string>
+    <string name="backup_restored">Back-up hersteld.</string>
+    <string name="backup_exported">Back-up geëxporteerd.</string>
+    <string name="backup_error_unsupported">Deze back-upversie wordt niet ondersteund. Werk KnitTools bij en probeer het opnieuw.</string>
+    <string name="backup_error_invalid">Dit is geen KnitTools-back-up. Kies een KnitTools-back-up.</string>
+    <string name="backup_error_corrupt">De back-up is beschadigd of bevat ongeldige gegevens. Kies een andere back-up. Je huidige gegevens zijn niet vervangen.</string>
+    <string name="backup_error_space">Er is onvoldoende vrije ruimte. Maak opslagruimte vrij en probeer het opnieuw.</string>
+    <string name="backup_error_read">De bron kon niet worden gelezen. Controleer of het bestand beschikbaar is en probeer het opnieuw.</string>
+    <string name="backup_error_write">De back-up kon niet worden opgeslagen. Controleer de bestemming en probeer het opnieuw. Verwijder eventuele onvolledige doelbestanden.</string>
+    <string name="backup_error_restore">Herstellen is mislukt. Je vorige inhoud is behouden. Probeer het opnieuw.</string>
+
+    <string name="counter_history_title">Tellergeschiedenis</string>
+    <string name="counter_history_empty_title">Nog geen tellergeschiedenis</string>
+    <string name="counter_history_empty_body">Wijzigingen aan de teller verschijnen hier terwijl je aan dit project werkt.</string>
+    <string name="counter_history_increase">Verhoging</string>
+    <string name="counter_history_decrease">Verlaging</string>
+    <string name="counter_history_reset">Teruggezet</string>
+    <string name="counter_history_changed">Teller gewijzigd</string>
+    <string name="counter_history_event_description">%1$s. Van %2$s naar %3$s. %4$s, %5$s.</string>
+    <string name="counter_history_transition">%1$s → %2$s</string>
+    <string name="project_overview_add_photo">Projectfoto toevoegen</string>
+    <string name="project_overview_edit">Bewerken</string>
+    <string name="project_overview_add">Toevoegen</string>
+    <string name="project_overview_see_all">Alles bekijken</string>
+    <string name="project_overview_section_pattern">Patroon en documenten</string>
+    <string name="project_overview_section_sessions">Werksessies</string>
+    <string name="project_overview_total_time">Totale tijd</string>
+    <string name="project_overview_yarn_planned">Gepland</string>
+    <string name="project_overview_yarn_allocated">Gereserveerd</string>
+    <string name="project_overview_yarn_used">Gebruikt</string>
+    <string name="project_overview_yarn_remaining">Resterend</string>
+    <string name="project_overview_yarn_empty">Nog geen garen toegevoegd</string>
+    <string name="project_overview_pattern_empty">Nog geen patroon toegevoegd</string>
+    <string name="project_overview_notes_empty">Nog geen notities</string>
+    <string name="project_overview_pdf_page_format">PDF-patroon, pagina %1$d</string>
+    <string name="project_card_open_overview_action">Project openen</string>
+    <string name="project_overview_edit_details">Details bewerken</string>
+    <string name="project_overview_open_photos">Foto\'s openen</string>
+    <string name="project_overview_yarn_add_amounts">Hoeveelheden toevoegen</string>
+    <string name="project_actions_overview_subtitle">Garen, patroon, notities en details</string>
+    <string name="project_actions_section_work_session">Werksessie</string>
+    <string name="project_overview_amount_unknown">Onbekend</string>
+    <string name="counter_step_rows_title">Toeren per tik</string>
+    <string name="counter_step_rounds_title">Rondes per tik</string>
+    <string name="counter_step_repeats_title">Herhalingen per tik</string>
+    <string name="counter_step_custom_title">%1$s per tik</string>
+    <string name="counter_step_description">Kies hoeveel elke tik toevoegt of aftrekt.</string>
+    <string name="counter_step_custom_amount">Eigen aantal</string>
+    <string name="counter_step_invalid">Voer een geheel getal van 1 tot %1$d in.</string>
+    <string name="counter_step_save_failed">De stapgrootte kon niet worden opgeslagen. Probeer het opnieuw.</string>
+    <string name="counter_step_change_description">%1$s: %2$d. Wijzigen.</string>
+    <string name="counter_step_increase">Verhoog met %1$d. %2$s.</string>
+    <string name="counter_step_decrease">Verlaag met %1$d. %2$s.</string>
+    <string name="counter_step_multiplier">×%1$d</string>
+    <string name="counter_step_delta">%1$+d</string>
+    <string name="project_yarn_edit_title">Projectgaren bewerken</string>
+    <string name="project_yarn_edit_conflict">Deze garennotitie is tijdens het bewerken gewijzigd. Sluit en open deze opnieuw om de nieuwste versie te bekijken.</string>
+    <string name="project_yarn_edit_missing">Deze garennotitie hoort niet meer bij dit project. Sluit de editor.</string>
+    <string name="project_yarn_edit_invalid">Voer een garennaam in.</string>
+    <string name="project_yarn_edit_failed">De wijzigingen konden niet worden opgeslagen. Je concept blijft bewaard. Probeer het opnieuw.</string>
+    <string name="counter_progress_format">Tellervoortgang: %1$d</string>
 </resources>

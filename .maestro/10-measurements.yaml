@@ -1,0 +1,23 @@
+appId: com.finnvek.knittools
+name: Measurement conversion and invalid numeric input
+---
+- launchApp:
+    clearState: true
+- tapOn: "TOOLS"
+- tapOn: "Measurements and Gauge"
+- tapOn: "Convert measurements"
+- tapOn: 'Value \(Centimeters\)'
+- inputText: "25.4"
+- hideKeyboard
+- scrollUntilVisible:
+    element:
+      text: "10 in"
+    direction: DOWN
+- assertVisible: "10 in"
+- tapOn: "Copy result"
+- assertVisible: "Result copied"
+- tapOn: 'Value \(Centimeters\)'
+- eraseText
+- inputText: "1..2"
+- hideKeyboard
+- assertVisible: "Enter a valid number."

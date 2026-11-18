@@ -142,7 +142,8 @@ function Test-Mutation {
         [scriptblock]$Mutate,
         [string]$ExpectedStatus,
         [string]$ExpectedCheck,
-        [string]$PassMessage
+        [string]$PassMessage,
+        [string]$ForbiddenOutput = ""
     )
 
     $fixture = New-Fixture -Name $Name
@@ -158,14 +159,15 @@ function Test-Mutation {
         }
 
     Add-SelfTestResult `
-        -Condition ($statusMatches -and $exitMatches) `
+        -Condition ($statusMatches -and $exitMatches -and (!$ForbiddenOutput -or !$result.Output.Contains($ForbiddenOutput))) `
         -Message $PassMessage `
-        -Details "exit=$($result.ExitCode); expected line '$expectedLine'; output=$($result.Output)"
+        -Details "exit=$($result.ExitCode); expected line '$expectedLine'"
 }
 
 function Test-SecretScanReadFailure {
     $fixture = New-Fixture -Name "secret-scan-read-failure"
-    $relativePath = "app/src/main/secret-read-failure.txt"
+    $probe = "phase9-secret-probe"
+    $relativePath = "app/src/main/$probe-read-failure.txt"
     $path = Join-Path $fixture $relativePath
     Set-FileText -Path $path -Text "locked fixture file"
 
@@ -173,7 +175,7 @@ function Test-SecretScanReadFailure {
     $previousSecret = [Environment]::GetEnvironmentVariable($secretName, "Process")
     $stream = $null
     try {
-        [Environment]::SetEnvironmentVariable($secretName, "phase9-secret-probe", "Process")
+        [Environment]::SetEnvironmentVariable($secretName, $probe, "Process")
         $stream = [System.IO.File]::Open(
             $path,
             [System.IO.FileMode]::Open,
@@ -182,11 +184,11 @@ function Test-SecretScanReadFailure {
         )
         $result = Run-ReleaseSurface -Fixture $fixture
         $expectedLine = "[FAIL] known-ravelry-secrets:"
-        $expectedMessage = "Unable to read checked file: $relativePath"
+        $expectedMessage = "Unable to read checked file: app/src/main/[redacted]-read-failure.txt"
         Add-SelfTestResult `
-            -Condition ($result.ExitCode -eq 1 -and $result.Output.Contains($expectedLine) -and $result.Output.Contains($expectedMessage)) `
+            -Condition ($result.ExitCode -eq 1 -and $result.Output.Contains($expectedLine) -and $result.Output.Contains($expectedMessage) -and !$result.Output.Contains($probe)) `
             -Message "known Ravelry secret scan fails closed when a checked file cannot be read" `
-            -Details "exit=$($result.ExitCode); expected line '$expectedLine'; expected message '$expectedMessage'; output=$($result.Output)"
+            -Details "exit=$($result.ExitCode); expected line '$expectedLine'; expected message '$expectedMessage'"
     } finally {
         if ($null -ne $stream) {
             $stream.Dispose()
@@ -222,6 +224,46 @@ try {
         Test-SecretScanReadFailure
         Test-GitReadFailure
 
+        Test-Mutation -Name "sdk23-permission" -ExpectedStatus "FAIL" -ExpectedCheck "permissions" -PassMessage "SDK-specific forbidden permission is detected" -Mutate {
+            param($fixture)
+            $path = Join-Path $fixture "app/src/main/AndroidManifest.xml"
+            $text = Get-Content -Raw -LiteralPath $path
+            Set-FileText $path ($text.Replace("<application", '<uses-permission-sdk-23 android:name="android.permission.RECORD_AUDIO" /><application'))
+        }
+        Test-Mutation -Name "direct-sentry-plugin" -ExpectedStatus "FAIL" -ExpectedCheck "sentry-boundary" -PassMessage "direct Sentry plugin is detected" -Mutate {
+            param($fixture)
+            Add-Content -LiteralPath (Join-Path $fixture "app/build.gradle.kts") -Value 'plugins { id("io.sentry.android.gradle") }'
+        }
+        Test-Mutation -Name "aliased-sentry-plugin" -ExpectedStatus "FAIL" -ExpectedCheck "sentry-boundary" -PassMessage "renamed catalog Sentry plugin is detected" -Mutate {
+            param($fixture)
+            Add-Content -LiteralPath (Join-Path $fixture "gradle/libs.versions.toml") -Value 'diagnostics = { id = "io.sentry.android.gradle", version = "1.0" }'
+            Add-Content -LiteralPath (Join-Path $fixture "app/build.gradle.kts") -Value 'plugins { alias(libs.plugins.diagnostics) }'
+        }
+        Test-Mutation -Name "room-branch-hole" -ExpectedStatus "FAIL" -ExpectedCheck "room-schema" -PassMessage "intermediate exported schema must reach current version" -Mutate {
+            param($fixture)
+            $path = Join-Path $fixture "app/src/main/java/com/finnvek/knittools/data/local/KnitToolsDatabase.kt"
+            $text = Get-Content -Raw -LiteralPath $path
+            $mutated = $text.Replace("AutoMigration(from = 1, to = 2)", "AutoMigration(from = 1, to = 3)").Replace("AutoMigration(from = 2, to = 3),", "")
+            if ($text -ceq $mutated) { throw "Expected auto-migrations are absent" }
+            Set-FileText $path $mutated
+        }
+        Test-Mutation -Name "missing-widget-source" -ExpectedStatus "FAIL" -ExpectedCheck "widget-oauth-boundary" -PassMessage "unreadable widget boundary fails closed" -Mutate {
+            param($fixture)
+            Remove-Item -LiteralPath (Join-Path $fixture "app/src/main/java/com/finnvek/knittools/ui/navigation/CounterLaunchRequest.kt")
+        }
+
+        Test-Mutation `
+            -Name "camera-permission" `
+            -ExpectedStatus "FAIL" `
+            -ExpectedCheck "permissions" `
+            -PassMessage "unnecessary CAMERA permission mutation detected" `
+            -Mutate {
+                param($fixture)
+                $path = Join-Path $fixture "app/src/main/AndroidManifest.xml"
+                $text = Get-Content -Raw -LiteralPath $path
+                Set-FileText -Path $path -Text ($text -replace '(<uses-permission android:name="android.permission.VIBRATE" />)', "`$1`r`n    <uses-permission android:name=`"android.permission.CAMERA`" />")
+            }
+
         Test-Mutation `
             -Name "record-audio" `
             -ExpectedStatus "FAIL" `
@@ -231,7 +273,7 @@ try {
                 param($fixture)
                 $path = Join-Path $fixture "app/src/main/AndroidManifest.xml"
                 $text = Get-Content -Raw -LiteralPath $path
-                Set-FileText -Path $path -Text ($text -replace '(<uses-permission android:name="android.permission.CAMERA" />)', "`$1`r`n    <uses-permission android:name=`"android.permission.RECORD_AUDIO`" />")
+                Set-FileText -Path $path -Text ($text -replace '(<uses-permission android:name="android.permission.VIBRATE" />)', "`$1`r`n    <uses-permission android:name=`"android.permission.RECORD_AUDIO`" />")
             }
 
         Test-Mutation `
@@ -316,6 +358,18 @@ try {
             }
 
         Test-Mutation `
+            -Name "analytics-dependency" `
+            -ExpectedStatus "FAIL" `
+            -ExpectedCheck "forbidden-dependencies" `
+            -PassMessage "Firebase Analytics remains forbidden after enabling Crashlytics" `
+            -Mutate {
+                param($fixture)
+                $path = Join-Path $fixture "app/build.gradle.kts"
+                $text = Get-Content -Raw -LiteralPath $path
+                Set-FileText -Path $path -Text ($text + "`nimplementation(libs.firebase.analytics)`n")
+            }
+
+        Test-Mutation `
             -Name "mlkit-dependency" `
             -ExpectedStatus "FAIL" `
             -ExpectedCheck "forbidden-dependencies" `
@@ -332,12 +386,11 @@ try {
             -ExpectedStatus "FAIL" `
             -ExpectedCheck "known-ravelry-secrets" `
             -PassMessage "known Ravelry secret value mutation detected without printing secret" `
+            -ForbiddenOutput "phase9-secret-probe" `
             -Mutate {
                 param($fixture)
-                $path = Join-Path $fixture "app/src/main/res/values/strings.xml"
-                $text = Get-Content -Raw -LiteralPath $path
-                $replacement = '    <string name="leaked_ravelry_secret">phase9-secret-probe</string>' + "`r`n`$1"
-                Set-FileText -Path $path -Text ($text -replace '(</resources>)', $replacement)
+                $path = Join-Path $fixture "app/src/main/phase9-secret-probe.txt"
+                Set-FileText -Path $path -Text "phase9-secret-probe"
                 $env:KNITTOOLS_RAVELRY_OAUTH2_CLIENT_SECRET = "phase9-secret-probe"
             }
 
@@ -372,7 +425,7 @@ try {
                 param($fixture)
                 $path = Join-Path $fixture "app/src/main/java/com/finnvek/knittools/data/local/KnitToolsDatabase.kt"
                 $text = Get-Content -Raw -LiteralPath $path
-                $versionPattern = [regex]'(?s)(@Database\s*\(.*?version\s*=\s*)(\d+)'
+                $versionPattern = [regex]'(?m)^(\s*const\s+val\s+KNITTOOLS_DATABASE_VERSION\s*=\s*)(\d+)'
                 $versionMatch = $versionPattern.Match($text)
                 if (-not $versionMatch.Success) {
                     throw "Room database version not found"
@@ -438,6 +491,22 @@ try {
             }
 
         Test-Mutation `
+            -Name "locale-region-undeclared" `
+            -ExpectedStatus "FAIL" `
+            -ExpectedCheck "locale-parity" `
+            -PassMessage "regional resource directory requires its BCP 47 declaration" `
+            -Mutate {
+                param($fixture)
+                $path = Join-Path $fixture "app/src/main/res/xml/locales_config.xml"
+                $text = Get-Content -Raw -LiteralPath $path
+                $mutated = $text.Replace('<locale android:name="pt-BR" />', '')
+                if ($mutated -ceq $text) {
+                    throw "Brazilian Portuguese locale declaration not found"
+                }
+                Set-FileText -Path $path -Text $mutated
+            }
+
+        Test-Mutation `
             -Name "locale-extra" `
             -ExpectedStatus "FAIL" `
             -ExpectedCheck "locale-parity" `
@@ -469,13 +538,13 @@ try {
             -Name "widget-oauth-counter-launch" `
             -ExpectedStatus "FAIL" `
             -ExpectedCheck "widget-oauth-boundary" `
-            -PassMessage "OAuth counter launch mutation detected" `
+            -PassMessage "OAuth callback reintroduction detected" `
             -Mutate {
                 param($fixture)
-                $path = Join-Path $fixture "app/src/main/java/com/finnvek/knittools/MainActivity.kt"
+                $path = Join-Path $fixture "app/src/main/AndroidManifest.xml"
                 $text = Get-Content -Raw -LiteralPath $path
-                $signature = "private fun handleOAuthCallbackIfNeeded(intent: Intent?): Boolean {"
-                Set-FileText -Path $path -Text ($text.Replace($signature, "$signature`r`n        createCounterLaunchIntent()"))
+                $filter = '<data android:scheme="knittools" android:host="ravelry-auth-complete" />'
+                Set-FileText -Path $path -Text ($text.Replace("</activity>", "$filter`r`n        </activity>"))
             }
     }
 } finally {
@@ -490,7 +559,15 @@ try {
     if ($KeepTemp) {
         Write-Output "[WARN] selftest: kept temp fixture root $TempRoot"
     } elseif (Test-Path -LiteralPath $TempRoot) {
+        $resolved = [IO.Path]::GetFullPath($TempRoot)
+        $tempParent = [IO.Path]::GetFullPath([IO.Path]::GetTempPath())
+        if (-not $resolved.StartsWith($tempParent, [StringComparison]::OrdinalIgnoreCase) -or
+            (Get-Item -LiteralPath $resolved).Attributes.HasFlag([IO.FileAttributes]::ReparsePoint) -or
+            @(Get-ChildItem -LiteralPath $resolved -Recurse -Force -Attributes ReparsePoint).Count -gt 0) {
+            throw "Unsafe fixture cleanup path: $resolved"
+        }
         Remove-Item -LiteralPath $TempRoot -Recurse -Force
+        if (Test-Path -LiteralPath $TempRoot) { throw "Fixture cleanup failed: $TempRoot" }
     }
 }
 

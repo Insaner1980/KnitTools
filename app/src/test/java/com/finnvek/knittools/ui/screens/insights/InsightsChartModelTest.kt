@@ -1,6 +1,8 @@
 package com.finnvek.knittools.ui.screens.insights
 
+import com.finnvek.knittools.R
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -11,14 +13,32 @@ class InsightsChartModelTest {
     private val monday = DayOfWeek.MONDAY
 
     @Test
+    fun `all time accessibility names the period actually used by its buckets`() {
+        val today = LocalDate.of(2026, 7, 28)
+        val cases =
+            listOf(
+                LocalDate.of(2026, 7, 20) to R.string.insights_chart_a11y_daily,
+                LocalDate.of(2026, 5, 20) to R.string.insights_chart_a11y_weekly,
+                LocalDate.of(2025, 5, 20) to R.string.insights_chart_a11y_monthly,
+            )
+        cases.forEach { (firstSessionDate, expectedDescription) ->
+            val axis = insightsChartAxis(TimeRange.ALL_TIME, today, firstSessionDate, monday)
+
+            assertEquals(expectedDescription, chartContentDescriptionResource(axis.interval))
+        }
+    }
+
+    @Test
     fun `week axis stops at today instead of drawing days that have not happened`() {
         val axis =
             insightsChartAxis(
                 timeRange = TimeRange.THIS_WEEK,
                 today = LocalDate.of(2026, 7, 28),
+                firstSessionDate = LocalDate.of(2026, 1, 1),
                 firstDayOfWeek = monday,
             )
 
+        assertEquals(PaceGroupingInterval.DAY, axis.interval)
         assertEquals(
             listOf(LocalDate.of(2026, 7, 27), LocalDate.of(2026, 7, 28)),
             axis.bucketStarts,
@@ -31,6 +51,7 @@ class InsightsChartModelTest {
             insightsChartAxis(
                 timeRange = TimeRange.THIS_WEEK,
                 today = LocalDate.of(2026, 8, 2),
+                firstSessionDate = LocalDate.of(2026, 1, 1),
                 firstDayOfWeek = monday,
             )
 
@@ -45,21 +66,93 @@ class InsightsChartModelTest {
             insightsChartAxis(
                 timeRange = TimeRange.THIS_MONTH,
                 today = LocalDate.of(2026, 7, 28),
+                firstSessionDate = LocalDate.of(2026, 1, 1),
                 firstDayOfWeek = monday,
             )
 
+        assertEquals(PaceGroupingInterval.DAY, axis.interval)
         assertEquals(28, axis.bucketStarts.size)
         assertEquals(LocalDate.of(2026, 7, 1), axis.bucketStarts.first())
         assertEquals(LocalDate.of(2026, 7, 28), axis.bucketStarts.last())
     }
 
-    @Test(expected = IllegalArgumentException::class)
-    fun `all time has no bar chart axis`() {
-        insightsChartAxis(
-            timeRange = TimeRange.ALL_TIME,
-            today = LocalDate.of(2026, 7, 28),
-            firstDayOfWeek = monday,
-        )
+    @Test
+    fun `all time caps at twelve monthly buckets`() {
+        val axis =
+            insightsChartAxis(
+                timeRange = TimeRange.ALL_TIME,
+                today = LocalDate.of(2026, 7, 28),
+                firstSessionDate = LocalDate.of(2021, 3, 4),
+                firstDayOfWeek = monday,
+            )
+
+        assertEquals(PaceGroupingInterval.MONTH, axis.interval)
+        assertEquals(ALL_TIME_MONTH_BUCKET_LIMIT, axis.bucketStarts.size)
+        assertEquals(LocalDate.of(2025, 8, 1), axis.bucketStarts.first())
+        assertEquals(LocalDate.of(2026, 7, 1), axis.bucketStarts.last())
+    }
+
+    @Test
+    fun `all time groups a few months into weeks instead of a couple of bars`() {
+        val axis =
+            insightsChartAxis(
+                timeRange = TimeRange.ALL_TIME,
+                today = LocalDate.of(2026, 7, 28),
+                firstSessionDate = LocalDate.of(2026, 5, 20),
+                firstDayOfWeek = monday,
+            )
+
+        // Kuukausiryhmittely olisi antanut kolme pylvästä koko historialle.
+        assertEquals(PaceGroupingInterval.WEEK, axis.interval)
+        assertEquals(LocalDate.of(2026, 5, 18), axis.bucketStarts.first())
+        assertEquals(LocalDate.of(2026, 7, 27), axis.bucketStarts.last())
+        assertTrue(axis.bucketStarts.size > 3)
+        assertTrue(axis.bucketStarts.zipWithNext().all { (a, b) -> a.plusWeeks(1) == b })
+    }
+
+    @Test
+    fun `all time starts at the first session month when history is long`() {
+        val axis =
+            insightsChartAxis(
+                timeRange = TimeRange.ALL_TIME,
+                today = LocalDate.of(2026, 7, 28),
+                firstSessionDate = LocalDate.of(2025, 11, 20),
+                firstDayOfWeek = monday,
+            )
+
+        assertEquals(PaceGroupingInterval.MONTH, axis.interval)
+        assertEquals(LocalDate.of(2025, 11, 1), axis.bucketStarts.first())
+        assertEquals(LocalDate.of(2026, 7, 1), axis.bucketStarts.last())
+    }
+
+    @Test
+    fun `all time day buckets start at the first session not at the month start`() {
+        val axis =
+            insightsChartAxis(
+                timeRange = TimeRange.ALL_TIME,
+                today = LocalDate.of(2026, 7, 28),
+                firstSessionDate = LocalDate.of(2026, 7, 2),
+                firstDayOfWeek = monday,
+            )
+
+        assertEquals(PaceGroupingInterval.DAY, axis.interval)
+        assertEquals(27, axis.bucketStarts.size)
+        assertEquals(LocalDate.of(2026, 7, 2), axis.bucketStarts.first())
+        assertEquals(LocalDate.of(2026, 7, 28), axis.bucketStarts.last())
+    }
+
+    @Test
+    fun `all time without sessions falls back to day buckets`() {
+        val axis =
+            insightsChartAxis(
+                timeRange = TimeRange.ALL_TIME,
+                today = LocalDate.of(2026, 7, 28),
+                firstSessionDate = null,
+                firstDayOfWeek = monday,
+            )
+
+        assertEquals(PaceGroupingInterval.DAY, axis.interval)
+        assertEquals(28, axis.bucketStarts.size)
     }
 
     @Test
@@ -68,6 +161,7 @@ class InsightsChartModelTest {
             insightsChartAxis(
                 timeRange = TimeRange.THIS_WEEK,
                 today = LocalDate.of(2026, 7, 28),
+                firstSessionDate = LocalDate.of(2026, 7, 27),
                 firstDayOfWeek = monday,
             )
         val measured =
@@ -109,34 +203,34 @@ class InsightsChartModelTest {
 
     @Test
     fun `trend reports growth against the previous period`() {
-        val trend = insightsTrend(currentMinutes = 120, previousMinutes = 100)
+        val trend = insightsTrend(currentSeconds = minutesAsSeconds(120), previousSeconds = minutesAsSeconds(100))
 
         assertEquals(InsightsTrend(percentChange = 20, direction = InsightsTrendDirection.UP), trend)
     }
 
     @Test
     fun `trend reports decline as a positive magnitude`() {
-        val trend = insightsTrend(currentMinutes = 80, previousMinutes = 100)
+        val trend = insightsTrend(currentSeconds = minutesAsSeconds(80), previousSeconds = minutesAsSeconds(100))
 
         assertEquals(InsightsTrend(percentChange = 20, direction = InsightsTrendDirection.DOWN), trend)
     }
 
     @Test
     fun `equal periods are flat`() {
-        val trend = insightsTrend(currentMinutes = 100, previousMinutes = 100)
+        val trend = insightsTrend(currentSeconds = minutesAsSeconds(100), previousSeconds = minutesAsSeconds(100))
 
         assertEquals(InsightsTrend(percentChange = 0, direction = InsightsTrendDirection.FLAT), trend)
     }
 
     @Test
     fun `trend is unavailable without a previous period to divide by`() {
-        assertNull(insightsTrend(currentMinutes = 90, previousMinutes = 0))
-        assertNull(insightsTrend(currentMinutes = 0, previousMinutes = 0))
+        assertNull(insightsTrend(currentSeconds = minutesAsSeconds(90), previousSeconds = 0L))
+        assertNull(insightsTrend(currentSeconds = 0L, previousSeconds = 0L))
     }
 
     @Test
     fun `dropping to zero is a full decline`() {
-        val trend = insightsTrend(currentMinutes = 0, previousMinutes = 100)
+        val trend = insightsTrend(currentSeconds = 0L, previousSeconds = minutesAsSeconds(100))
 
         assertEquals(InsightsTrend(percentChange = 100, direction = InsightsTrendDirection.DOWN), trend)
     }
@@ -150,19 +244,21 @@ class InsightsChartModelTest {
             mapOf(
                 LocalDate.of(2026, 7, 20) to minutesAsSeconds(30), // sisältyy: jakson ensimmäinen päivä
                 LocalDate.of(2026, 7, 23) to minutesAsSeconds(10), // sisältyy: viimeinen kulunut päivä
+                // CPD-OFF: Testin skenaariokohtainen asetelma pidetaan paikallisena ja luettavana.
                 LocalDate.of(2026, 7, 24) to minutesAsSeconds(600), // ei sisälly: tasan katkaisurajalla
                 LocalDate.of(2026, 7, 26) to minutesAsSeconds(999), // ei sisälly: viime viikon loppupää
             )
 
-        val minutes =
-            previousPeriodMinutes(
+        val seconds =
+            previousPeriodSeconds(
                 dailySeconds = dailySeconds,
                 previousStart = LocalDate.of(2026, 7, 20),
                 currentStart = LocalDate.of(2026, 7, 27),
                 today = LocalDate.of(2026, 7, 30),
+                // CPD-ON
             )
 
-        assertEquals(40, minutes)
+        assertEquals(2400L, seconds)
     }
 
     @Test
@@ -172,31 +268,33 @@ class InsightsChartModelTest {
         val dailySeconds =
             mapOf(
                 LocalDate.of(2026, 7, 20) to minutesAsSeconds(30),
+                // CPD-OFF: Testin skenaariokohtainen asetelma pidetaan paikallisena ja luettavana.
                 LocalDate.of(2026, 7, 26) to minutesAsSeconds(999),
             )
 
-        val minutes =
-            previousPeriodMinutes(
+        val seconds =
+            previousPeriodSeconds(
                 dailySeconds = dailySeconds,
                 previousStart = LocalDate.of(2026, 7, 20),
                 currentStart = LocalDate.of(2026, 7, 27),
                 today = LocalDate.of(2026, 8, 2),
             )
 
-        assertEquals(1029, minutes)
+        assertEquals(61_740L, seconds)
+        // CPD-ON
     }
 
     @Test
     fun `previous period without matching activity is zero`() {
-        val minutes =
-            previousPeriodMinutes(
+        val seconds =
+            previousPeriodSeconds(
                 dailySeconds = mapOf(LocalDate.of(2026, 6, 1) to minutesAsSeconds(45)),
                 previousStart = LocalDate.of(2026, 7, 20),
                 currentStart = LocalDate.of(2026, 7, 27),
                 today = LocalDate.of(2026, 7, 30),
             )
 
-        assertEquals(0, minutes)
+        assertEquals(0L, seconds)
     }
 
     @Test
@@ -209,18 +307,20 @@ class InsightsChartModelTest {
                 LocalDate.of(2026, 2, 1) to minutesAsSeconds(20), // sisältyy: edellisen jakson alku
                 LocalDate.of(2026, 2, 28) to minutesAsSeconds(25), // sisältyy: helmikuun viimeinen päivä
                 LocalDate.of(2026, 3, 1) to minutesAsSeconds(600), // ei sisälly: kuuluu nykyiseen jaksoon
+                // CPD-OFF: Testin skenaariokohtainen asetelma pidetaan paikallisena ja luettavana.
                 LocalDate.of(2026, 3, 3) to minutesAsSeconds(900), // ei sisälly: kuuluu nykyiseen jaksoon
             )
 
-        val minutes =
-            previousPeriodMinutes(
+        val seconds =
+            previousPeriodSeconds(
                 dailySeconds = dailySeconds,
                 previousStart = LocalDate.of(2026, 2, 1),
                 currentStart = LocalDate.of(2026, 3, 1),
                 today = LocalDate.of(2026, 3, 31),
+                // CPD-ON
             )
 
-        assertEquals(45, minutes)
+        assertEquals(2700L, seconds)
     }
 
     @Test
@@ -235,22 +335,20 @@ class InsightsChartModelTest {
                 LocalDate.of(2026, 2, 28) to minutesAsSeconds(900), // ei sisälly: kuluneiden päivien jälkeen
             )
 
-        val minutes =
-            previousPeriodMinutes(
+        val seconds =
+            previousPeriodSeconds(
                 dailySeconds = dailySeconds,
                 previousStart = LocalDate.of(2026, 2, 1),
                 currentStart = LocalDate.of(2026, 3, 1),
                 today = LocalDate.of(2026, 3, 10),
             )
 
-        assertEquals(45, minutes)
+        assertEquals(2700L, seconds)
     }
 
     @Test
-    fun `previous period rounds once over the window instead of once per active day`() {
-        // Kolme päivää, joista jokainen jäisi omalla pyöristyksellään minuutin yli:
-        // 3 x 90 s = 270 s = 5 min. Päiväkohtaisesti pyöristettynä summa olisi 6 min,
-        // eli vertailukohta kasvaisi ja trendi näyttäisi laskua jota ei ole.
+    fun `previous period retains exact seconds across active days`() {
+        // Display rounding would turn 270 seconds into five or six minutes.
         val dailySeconds =
             mapOf(
                 LocalDate.of(2026, 7, 20) to 90L,
@@ -258,15 +356,15 @@ class InsightsChartModelTest {
                 LocalDate.of(2026, 7, 22) to 90L,
             )
 
-        val minutes =
-            previousPeriodMinutes(
+        val seconds =
+            previousPeriodSeconds(
                 dailySeconds = dailySeconds,
                 previousStart = LocalDate.of(2026, 7, 20),
                 currentStart = LocalDate.of(2026, 7, 27),
                 today = LocalDate.of(2026, 8, 2),
             )
 
-        assertEquals(5, minutes)
+        assertEquals(270L, seconds)
     }
 
     private fun minutesAsSeconds(minutes: Int): Long = minutes * 60L
@@ -296,5 +394,13 @@ class InsightsChartModelTest {
     @Test
     fun `empty axis has no labels`() {
         assertEquals(emptyList<Int>(), axisLabelIndices(bucketCount = 0, maxLabels = 5))
+    }
+
+    @Test
+    fun `a tiny previous period never produces a percentage`() {
+        // 3 min → 18 min oli "500 % more than last week": kohinaa, ei tietoa.
+        assertNull(insightsTrend(currentSeconds = minutesAsSeconds(18), previousSeconds = minutesAsSeconds(3)))
+        assertNull(insightsTrend(currentSeconds = minutesAsSeconds(18), previousSeconds = 0L))
+        assertNotNull(insightsTrend(currentSeconds = minutesAsSeconds(90), previousSeconds = minutesAsSeconds(60)))
     }
 }

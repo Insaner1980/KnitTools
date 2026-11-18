@@ -1,16 +1,13 @@
 package com.finnvek.knittools.ui.screens.project
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -19,144 +16,302 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.layout.wrapContentWidth
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyGridItemScope
+import androidx.compose.foundation.lazy.grid.LazyGridScope
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalResources
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.finnvek.knittools.R
-import com.finnvek.knittools.domain.calculator.CounterValueFormatter
 import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.domain.model.CraftType
-import com.finnvek.knittools.domain.model.MainCounterLabelType
+import com.finnvek.knittools.domain.model.ProjectFolder
+import com.finnvek.knittools.domain.model.ProjectFolderFilter
+import com.finnvek.knittools.domain.model.ProjectFolderMoveDirection
 import com.finnvek.knittools.domain.model.ProjectSortOrder
+import com.finnvek.knittools.domain.tips.TipContext
+import com.finnvek.knittools.domain.tips.TipId
+import com.finnvek.knittools.domain.tips.TipScreen
+import com.finnvek.knittools.pro.ProFeature
+import com.finnvek.knittools.pro.ProState
+import com.finnvek.knittools.pro.proActionAccess
+import com.finnvek.knittools.repository.ProjectCreationResult
+import com.finnvek.knittools.repository.ProjectFolderMutationResult
+import com.finnvek.knittools.ui.components.CancelButton
 import com.finnvek.knittools.ui.components.CollectWithLifecycleEffect
 import com.finnvek.knittools.ui.components.ConfirmationDialog
+import com.finnvek.knittools.ui.components.ContinueProjectCard
+import com.finnvek.knittools.ui.components.LabeledCounterImageButton
+import com.finnvek.knittools.ui.components.ProMarker
+import com.finnvek.knittools.ui.components.ProPromptRequest
+import com.finnvek.knittools.ui.components.ProPromptSheet
+import com.finnvek.knittools.ui.components.ProPromptSource
 import com.finnvek.knittools.ui.components.ProjectCard
-import com.finnvek.knittools.ui.components.ProjectDetailsDialog
+import com.finnvek.knittools.ui.components.ProjectDetailsMode
+import com.finnvek.knittools.ui.components.ProjectDetailsSheet
 import com.finnvek.knittools.ui.components.ProjectDetailsValues
-import com.finnvek.knittools.ui.components.RenameProjectDialog
-import com.finnvek.knittools.ui.components.localizedUppercase
-import com.finnvek.knittools.ui.components.mainCounterProjectCardCountText
-import com.finnvek.knittools.ui.components.mainCounterTargetText
-import com.finnvek.knittools.ui.components.projectMetadataText
+import com.finnvek.knittools.ui.components.ScrollableFormDialog
+import com.finnvek.knittools.ui.components.SectionLabel
+import com.finnvek.knittools.ui.components.SelectionAction
+import com.finnvek.knittools.ui.components.SelectionActionBar
+import com.finnvek.knittools.ui.components.proMarkerDescription
+import com.finnvek.knittools.ui.components.workSessionStatusText
+import com.finnvek.knittools.ui.layout.ContentWidthPolicy
+import com.finnvek.knittools.ui.layout.LocalAdaptiveContentSize
+import com.finnvek.knittools.ui.layout.contentWidth
+import com.finnvek.knittools.ui.screens.counter.ActiveSessionCompletionDialog
+import com.finnvek.knittools.ui.screens.counter.ActiveSessionDeletionDialog
+import com.finnvek.knittools.ui.theme.ProjectListDimens
+import com.finnvek.knittools.ui.tips.InlineTipCard
+import com.finnvek.knittools.ui.tips.LocalTipBlocked
+import com.finnvek.knittools.ui.tips.TipHost
+import com.finnvek.knittools.ui.tips.tipAnchor
+import kotlinx.coroutines.launch
+import java.time.LocalDate
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
+@Suppress("kotlin:S3776") // Reitti omistaa listan sheetit, valinnat ja navigointipyynnöt.
 fun ProjectListScreen(
-    onProjectClick: (Long) -> Unit,
-    onNotesEditor: (Long) -> Unit = {},
-    onPhotoGallery: (Long) -> Unit = {},
-    onPatternViewer: (Long) -> Unit = {},
-    onYarnCard: (Long) -> Unit = {},
+    onOpenCounter: (Long) -> Unit,
+    onOpenOverview: (Long) -> Unit,
     onUpgradeToPro: () -> Unit = {},
-    viewModel: ProjectListViewModel = hiltViewModel(),
+    viewModelProvider: @Composable () -> ProjectListViewModel = { hiltViewModel() },
+    onStartupReady: (Boolean) -> Unit = {},
+    onOpenTools: () -> Unit = {},
+    onOpenBackup: () -> Unit = {},
+    counterCompletion: ProjectCompletionCelebration? = null,
+    onConsumeCounterCompletion: (Long) -> Unit = {},
+    createProjectRequestId: String? = null,
+    onCreateProjectRequestHandled: (String) -> Unit = {},
 ) {
-    val active by viewModel.activeProjects.collectAsStateWithLifecycle()
-    val completed by viewModel.completedProjects.collectAsStateWithLifecycle()
-    val continueKnitting by viewModel.continueKnittingProject.collectAsStateWithLifecycle()
-    val yarnNames by viewModel.projectYarnNames.collectAsStateWithLifecycle()
-    val yarnCardIds by viewModel.projectYarnCardIds.collectAsStateWithLifecycle()
-    val photoCounts by viewModel.projectPhotoCounts.collectAsStateWithLifecycle()
+    val viewModel = viewModelProvider()
+    val content by viewModel.content.collectAsStateWithLifecycle()
+    val proState by viewModel.proState.collectAsStateWithLifecycle()
+    val proAccessReady by viewModel.proAccessReady.collectAsStateWithLifecycle()
+    val listCompletion by viewModel.pendingCompletion.collectAsStateWithLifecycle()
+    val completion = counterCompletion ?: listCompletion
+    val lifecycle by LocalLifecycleOwner.current.lifecycle.currentStateFlow
+        .collectAsState()
+    var handledCreateProjectRequestId by rememberSaveable { mutableStateOf<String?>(null) }
+    val createProjectAccess =
+        proActionAccess(
+            proState = proState,
+            ready = proAccessReady && !content.isLoading,
+            feature = ProFeature.UNLIMITED_PROJECTS,
+            needsEntitlement = content.activeProjectCount >= 1,
+        )
+    val newProjectLabel = stringResource(R.string.new_project)
+    val createProjectDescription = proMarkerDescription(createProjectAccess)
+    val active = content.active
+    val completed = content.completed
+    val activeSession = content.activeSession
+    SideEffect { onStartupReady(!content.isLoading) }
+    val pendingCompletionSessionAction by viewModel.pendingCompletionSessionAction.collectAsStateWithLifecycle()
+    val pendingDeletionSessionAction by viewModel.pendingDeletionSessionAction.collectAsStateWithLifecycle()
+    val continueKnitting = content.continueKnitting
+    val latestPhotoUris by viewModel.projectLatestPhotoUris.collectAsStateWithLifecycle()
     val patternNames by viewModel.projectPatternNames.collectAsStateWithLifecycle()
-    val hasNotes by viewModel.projectHasNotes.collectAsStateWithLifecycle()
-    val showCompleted by viewModel.showCompleted.collectAsStateWithLifecycle()
+    val showCompleted = content.preferences.showCompletedProjects
     val isMultiSelectMode by viewModel.isMultiSelectMode.collectAsStateWithLifecycle()
+    val showFullWelcome =
+        !content.isLoading && !content.hasAnyProject && !content.welcomeDismissed && !isMultiSelectMode
     val selectedProjectIds by viewModel.selectedProjectIds.collectAsStateWithLifecycle()
-    val sortOrder by viewModel.sortOrder.collectAsStateWithLifecycle()
-    // FAB-luonnin jälkeen navigoi uuteen projektiin
-    CollectWithLifecycleEffect(viewModel.navigateToProject) { projectId ->
-        onProjectClick(projectId)
+    val sortOrder = content.preferences.projectSortOrder
+    val folderState by viewModel.folderState.collectAsStateWithLifecycle()
+    val selectedFolderFilter by viewModel.selectedFolderFilter.collectAsStateWithLifecycle()
+    val hasHiddenCompletedProjects by viewModel.hasHiddenCompletedProjects.collectAsStateWithLifecycle()
+    val projectCreationError by viewModel.projectCreationError.collectAsStateWithLifecycle()
+    val folders = folderState.snapshot?.folders.orEmpty()
+    val memberships = folderState.snapshot?.memberships.orEmpty()
+    val selectedActiveCount = active.count { it.id in selectedProjectIds }
+    val resources = LocalResources.current
+    val snackbarHostState = remember { SnackbarHostState() }
+    val coroutineScope = rememberCoroutineScope()
+    val folderSelectorFocus = remember { FocusRequester() }
+    var showFoldersSheet by rememberSaveable { mutableStateOf(false) }
+    var showFolderNameDialog by rememberSaveable { mutableStateOf(false) }
+    var editingFolderId by rememberSaveable { mutableStateOf<Long?>(null) }
+    var editingFolderName by rememberSaveable { mutableStateOf("") }
+    var deletingFolderId by rememberSaveable { mutableStateOf<Long?>(null) }
+    var showMoveSheet by rememberSaveable { mutableStateOf(false) }
+    var focusFolderId by rememberSaveable { mutableStateOf<Long?>(null) }
+    var focusCreateFolder by rememberSaveable { mutableStateOf(false) }
+    var restoreSelectorFocus by rememberSaveable { mutableStateOf(false) }
+    var creationFolderId by rememberSaveable { mutableStateOf<Long?>(null) }
+    var creationFolderName by rememberSaveable { mutableStateOf<String?>(null) }
+    var showCreateProjectDialog by rememberSaveable { mutableStateOf(false) }
+    val requestProjectCreation = {
+        creationFolderId = (selectedFolderFilter as? ProjectFolderFilter.Folder)?.folderId
+        creationFolderName = folders.firstOrNull { it.id == creationFolderId }?.name
+        viewModel.requestProjectCreation()
+    }
+    completion?.let { celebration ->
+        val consumeCompletion = {
+            if (counterCompletion != null) {
+                onConsumeCounterCompletion(celebration.snapshot.eventId)
+            } else {
+                viewModel.consumeCompletion(celebration.snapshot.eventId)
+            }
+        }
+        ProjectCompletedSheet(
+            celebration = celebration,
+            onClose = consumeCompletion,
+            onNextProject = {
+                consumeCompletion()
+                requestProjectCreation()
+            },
+        )
+    }
+    val projectPromptCount by viewModel.projectCreationPromptCount.collectAsStateWithLifecycle()
+    // Kansiovalitsin on yläpalkin otsikko, jota monivalinnassa ei näytetä: fokus palautetaan vasta sen jälkeen.
+    LaunchedEffect(restoreSelectorFocus, showMoveSheet, showFoldersSheet, isMultiSelectMode) {
+        if (restoreSelectorFocus && !showMoveSheet && !showFoldersSheet && !isMultiSelectMode) {
+            withFrameNanos { }
+            folderSelectorFocus.requestFocus()
+            restoreSelectorFocus = false
+        }
+    }
+    CollectWithLifecycleEffect({ viewModel.folderEvents }) { result ->
+        when (result) {
+            is ProjectFolderMutationResult.Created, is ProjectFolderMutationResult.Renamed -> {
+                showFolderNameDialog = false
+            }
+
+            is ProjectFolderMutationResult.Deleted -> {
+                deletingFolderId = null
+                val remaining = folders.filterNot { it.id == result.folder.id }
+                focusFolderId =
+                    remaining.firstOrNull { it.sortOrder >= result.folder.sortOrder }?.id
+                        ?: remaining.lastOrNull()?.id
+                focusCreateFolder = remaining.isEmpty()
+                coroutineScope.launch { snackbarHostState.showSnackbar(resources.getString(R.string.folder_deleted)) }
+            }
+
+            is ProjectFolderMutationResult.Assigned,
+            is ProjectFolderMutationResult.Unassigned,
+            is ProjectFolderMutationResult.ProjectsMoved,
+            is ProjectFolderMutationResult.AlreadyAssigned,
+            -> {
+                val count =
+                    when (result) {
+                        is ProjectFolderMutationResult.ProjectsMoved -> result.projectIds.size
+                        is ProjectFolderMutationResult.AlreadyAssigned -> result.projectIds.size
+                        else -> 1
+                    }
+                showMoveSheet = false
+                restoreSelectorFocus = true
+                coroutineScope.launch {
+                    snackbarHostState.showSnackbar(
+                        resources.getQuantityString(R.plurals.folder_moved_projects, count, count),
+                    )
+                }
+            }
+
+            else -> {}
+        }
+    }
+    CollectWithLifecycleEffect({ viewModel.sessionErrors }) { error ->
+        coroutineScope.launch { snackbarHostState.showSnackbar(resources.getString(error)) }
+    }
+    // Luonnin jälkeen navigoi uuteen projektiin
+    CollectWithLifecycleEffect({ viewModel.navigateToProject }) { projectId ->
+        showCreateProjectDialog = false
+        onOpenCounter(projectId)
     }
 
-    CollectWithLifecycleEffect(viewModel.upgradeToPro) {
-        onUpgradeToPro()
+    CollectWithLifecycleEffect({ viewModel.showCreateProjectDialog }) {
+        showCreateProjectDialog = true
     }
 
-    CollectWithLifecycleEffect(viewModel.navigateToNotesEditor) { projectId ->
-        onNotesEditor(projectId)
-    }
-
-    CollectWithLifecycleEffect(viewModel.navigateToPhotoGallery) { projectId ->
-        onPhotoGallery(projectId)
+    projectPromptCount?.let { count ->
+        ProPromptSheet(
+            request =
+                ProPromptRequest(
+                    source = ProPromptSource.Projects,
+                    existingProjectCount = count,
+                ),
+            onDismiss = viewModel::dismissPendingProjectCreation,
+            onTrialStarted = viewModel::retryPendingProjectCreation,
+            onSeePro = onUpgradeToPro,
+        )
     }
 
     // Multi-select back handler
-    BackHandler(enabled = isMultiSelectMode) {
-        viewModel.exitMultiSelectMode()
+    BackHandler(enabled = isMultiSelectMode || selectedFolderFilter != ProjectFolderFilter.AllProjects) {
+        if (isMultiSelectMode) {
+            viewModel.exitMultiSelectMode()
+        } else {
+            viewModel.selectFolder(ProjectFolderFilter.AllProjects)
+        }
     }
 
     // Dialogi-tilat
     var menuProjectId by rememberSaveable { mutableLongStateOf(0L) }
     var menuProjectName by rememberSaveable { mutableStateOf("") }
     var showDeleteDialog by rememberSaveable { mutableStateOf(false) }
-    var showRenameDialog by rememberSaveable { mutableStateOf(false) }
-    var renameText by rememberSaveable { mutableStateOf("") }
     var showOverflowMenu by rememberSaveable { mutableStateOf(false) }
     var showSortMenu by rememberSaveable { mutableStateOf(false) }
     var showMultiCompleteDialog by rememberSaveable { mutableStateOf(false) }
     var showMultiDeleteDialog by rememberSaveable { mutableStateOf(false) }
-    var showCreateProjectDialog by rememberSaveable { mutableStateOf(false) }
-
     ProjectListDialogs(
         state =
             ProjectListDialogState(
-                showRenameDialog = showRenameDialog,
-                renameText = renameText,
                 showDeleteDialog = showDeleteDialog,
                 deleteProjectName = menuProjectName,
                 showMultiCompleteDialog = showMultiCompleteDialog,
                 selectedCount = selectedProjectIds.size,
+                selectedActiveCount = selectedActiveCount,
                 showMultiDeleteDialog = showMultiDeleteDialog,
             ),
         actions =
             ProjectListDialogActions(
-                onRenameTextChange = { renameText = it },
-                onRenameConfirm = {
-                    viewModel.renameProject(menuProjectId, renameText.trim())
-                    showRenameDialog = false
-                },
-                onRenameDismiss = { showRenameDialog = false },
                 onDeleteConfirm = {
                     viewModel.deleteProject(menuProjectId)
                     showDeleteDialog = false
@@ -175,126 +330,395 @@ fun ProjectListScreen(
             ),
     )
 
-    if (showCreateProjectDialog) {
-        ProjectDetailsDialog(
+    if (pendingCompletionSessionAction != null) {
+        ActiveSessionCompletionDialog(
+            onSave = { viewModel.resolvePendingCompletion(saveSession = true) },
+            onDiscard = { viewModel.resolvePendingCompletion(saveSession = false) },
+            onCancel = viewModel::cancelPendingCompletion,
+        )
+    }
+
+    if (pendingDeletionSessionAction != null) {
+        ActiveSessionDeletionDialog(
+            onDiscardAndDelete = viewModel::resolvePendingDeletion,
+            onCancel = viewModel::cancelPendingDeletion,
+        )
+    }
+
+    if (showCreateProjectDialog && !content.isLoading) {
+        ProjectDetailsSheet(
             title = stringResource(R.string.new_project_details_title),
             confirmText = stringResource(R.string.create_project),
             initialValues =
                 ProjectDetailsValues(
                     name = "",
-                    craftType = CraftType.KNITTING,
-                    mainCounterLabelType = MainCounterLabelType.ROWS,
+                    craftType = content.preferences.lastProjectCraftType,
+                    mainCounterLabelType = content.preferences.lastProjectCraftType.defaultMainCounterLabelType(),
                     mainCounterCustomLabel = null,
                 ),
+            mode = ProjectDetailsMode.Create,
+            showPreview = !content.hasAnyProject,
             onConfirm = { values ->
                 viewModel.createProject(
                     values.name,
                     values.craftType,
                     values.mainCounterLabelType,
                     values.mainCounterCustomLabel,
+                    targetFolderId = creationFolderId,
+                    initialCount = values.initialCount,
+                    targetRows = values.targetRows,
                 )
+            },
+            onDismiss = {
+                viewModel.projectCreationDismissed()
                 showCreateProjectDialog = false
             },
-            onDismiss = { showCreateProjectDialog = false },
+            // Kohdekansio kerrotaan vain, kun kansioita on; ilman niitä "Unfiled" hämmensi uutta käyttäjää.
+            destinationText =
+                if (folders.isNotEmpty()) {
+                    stringResource(
+                        R.string.folder_project_creation_destination,
+                        creationFolderName ?: stringResource(R.string.folder_unfiled),
+                    )
+                } else {
+                    null
+                },
+            errorMessage =
+                if (projectCreationError == ProjectCreationResult.FolderMissing) {
+                    stringResource(R.string.folder_missing)
+                } else {
+                    null
+                },
         )
     }
 
-    Scaffold(
-        containerColor = MaterialTheme.colorScheme.background,
-        topBar = {
-            ProjectListTopBar(
-                state =
-                    ProjectListTopBarState(
-                        isMultiSelectMode = isMultiSelectMode,
-                        selectedCount = selectedProjectIds.size,
-                        showCompleted = showCompleted,
-                        sortOrder = sortOrder,
-                        showOverflowMenu = showOverflowMenu,
-                        showSortMenu = showSortMenu,
-                    ),
-                actions =
-                    ProjectListTopBarActions(
-                        onExitMultiSelect = { viewModel.exitMultiSelectMode() },
-                        onSelectAll = { viewModel.selectAllProjects() },
-                        onShowOverflowMenu = { showOverflowMenu = true },
-                        onDismissOverflowMenu = { showOverflowMenu = false },
-                        onEnterMultiSelect = {
-                            showOverflowMenu = false
-                            viewModel.enterMultiSelectMode()
-                        },
-                        onShowSortMenu = {
-                            showOverflowMenu = false
-                            showSortMenu = true
-                        },
-                        onDismissSortMenu = { showSortMenu = false },
-                        onToggleShowCompleted = { viewModel.toggleShowCompleted() },
-                        onSortOrderChange = { order ->
-                            viewModel.setSortOrder(order)
-                            showSortMenu = false
-                        },
-                    ),
+    if (showFoldersSheet) {
+        ProjectFoldersSheet(
+            folders = folders,
+            selectedFilter = selectedFolderFilter,
+            isLoading = folderState.isLoading,
+            errorMessage =
+                if (folderState.readFailed) {
+                    stringResource(R.string.folder_load_error)
+                } else {
+                    folderState.mutationError?.let { stringResource(it.errorResource(R.string.folder_reorder_error)) }
+                },
+            isMutating = folderState.isMutating,
+            onSelectFilter = {
+                viewModel.selectFolder(it)
+                showFoldersSheet = false
+                restoreSelectorFocus = true
+            },
+            onCreateFolder = {
+                viewModel.clearFolderError()
+                editingFolderId = null
+                editingFolderName = ""
+                showFolderNameDialog = true
+            },
+            onRenameFolder = { id ->
+                viewModel.clearFolderError()
+                editingFolderId = id
+                editingFolderName = folders.firstOrNull { it.id == id }?.name.orEmpty()
+                showFolderNameDialog = true
+            },
+            onMoveEarlier = { viewModel.moveFolder(it, ProjectFolderMoveDirection.EARLIER) },
+            onMoveLater = { viewModel.moveFolder(it, ProjectFolderMoveDirection.LATER) },
+            onDeleteFolder = {
+                viewModel.clearFolderError()
+                focusFolderId = null
+                focusCreateFolder = false
+                deletingFolderId = it
+            },
+            onRetry = viewModel::retryFolderLoading,
+            onDismiss = {
+                showFoldersSheet = false
+                restoreSelectorFocus = true
+            },
+            focusFolderId = focusFolderId,
+            focusCreateFolder = focusCreateFolder,
+        )
+    }
+    if (showFolderNameDialog) {
+        ProjectFolderNameDialog(
+            folderId = editingFolderId,
+            initialName = editingFolderName,
+            errorMessage =
+                folderState.mutationError?.let {
+                    stringResource(
+                        it.errorResource(
+                            if (editingFolderId == null) {
+                                R.string.folder_create_error
+                            } else {
+                                R.string.folder_rename_error
+                            },
+                        ),
+                    )
+                },
+            isSaving = folderState.isMutating,
+            onConfirm = { name ->
+                val id = editingFolderId
+                if (id == null) viewModel.createFolder(name) else viewModel.renameFolder(id, name)
+            },
+            onDismiss = { showFolderNameDialog = false },
+            onClearError = viewModel::clearFolderError,
+        )
+    }
+    deletingFolderId?.let { id ->
+        folders.firstOrNull { it.id == id }?.let { folder ->
+            DeleteProjectFolderDialog(
+                folder = folder,
+                assignedProjectCount = memberships.count { it.folderId == id },
+                isDeleting = folderState.isMutating,
+                errorMessage =
+                    folderState.mutationError?.let {
+                        stringResource(
+                            it.errorResource(R.string.folder_delete_error),
+                        )
+                    },
+                onConfirm = { viewModel.deleteFolder(id) },
+                onDismiss = { deletingFolderId = null },
             )
-        },
-        bottomBar = {
-            MultiSelectBottomBar(
-                isMultiSelectMode = isMultiSelectMode,
-                hasSelection = selectedProjectIds.isNotEmpty(),
-                onComplete = { showMultiCompleteDialog = true },
-                onDelete = { showMultiDeleteDialog = true },
-            )
-        },
-    ) { padding ->
-        Box(
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .padding(padding),
-        ) {
-            ProjectListContent(
-                state =
-                    ProjectListContentState(
-                        active = active,
-                        completed = completed,
-                        continueKnitting = continueKnitting,
-                        yarnNames = yarnNames,
-                        yarnCardIds = yarnCardIds,
-                        photoCounts = photoCounts,
-                        patternNames = patternNames,
-                        hasNotes = hasNotes,
-                        showCompleted = showCompleted,
-                        isMultiSelectMode = isMultiSelectMode,
-                        selectedProjectIds = selectedProjectIds,
-                    ),
-                actions =
-                    ProjectListContentActions(
-                        onProjectClick = onProjectClick,
-                        onNotesClick = viewModel::openNotesEditor,
-                        onPhotoGallery = viewModel::openPhotoGallery,
-                        onPatternViewer = onPatternViewer,
-                        onYarnCard = onYarnCard,
-                        onToggleSelection = { viewModel.toggleProjectSelection(it) },
-                        onEnterMultiSelect = { viewModel.enterMultiSelectMode(it) },
-                        onArchive = { viewModel.archiveProject(it) },
-                        onDeleteSwipe = { id, name ->
-                            menuProjectId = id
-                            menuProjectName = name
-                            showDeleteDialog = true
-                        },
-                    ),
-            )
+        }
+    }
+    if (showMoveSheet) {
+        val selectedMemberships = memberships.filter { it.projectId in selectedProjectIds }
+        val destinations = selectedMemberships.map { it.folderId }.toSet()
+        MoveToFolderSheet(
+            projectCount = selectedProjectIds.size,
+            currentFolderId = destinations.singleOrNull(),
+            hasCommonDestination = destinations.size == 1 && selectedMemberships.size == selectedProjectIds.size,
+            folders = folders,
+            isLoading = folderState.isLoading,
+            errorMessage =
+                when {
+                    folderState.readFailed -> {
+                        stringResource(R.string.folder_load_error)
+                    }
 
-            // FAB (ei multi-select-tilassa)
-            if (!isMultiSelectMode) {
-                FloatingActionButton(
-                    onClick = { showCreateProjectDialog = true },
-                    modifier =
+                    folderState.mutationError == ProjectFolderMutationResult.PersistenceFailure -> {
+                        pluralStringResource(
+                            R.plurals.folder_move_projects_error,
+                            selectedProjectIds.size,
+                            selectedProjectIds.size,
+                        )
+                    }
+
+                    else -> {
+                        folderState.mutationError?.let {
+                            stringResource(
+                                it.errorResource(R.string.folder_move_error),
+                            )
+                        }
+                    }
+                },
+            isMoving = folderState.isMutating,
+            onMoveToFolder = viewModel::moveSelectedProjects,
+            onRetry = viewModel::retryFolderLoading,
+            onDismiss = {
+                showMoveSheet = false
+                restoreSelectorFocus = true
+            },
+        )
+    }
+
+    val tipContext =
+        TipContext(
+            screen = TipScreen.PROJECTS,
+            projectCount = memberships.size,
+            today = LocalDate.now().toEpochDay(),
+            screenReady = !content.isLoading,
+            blocked =
+                listOf(
+                    isMultiSelectMode,
+                    showFoldersSheet,
+                    showFolderNameDialog,
+                    deletingFolderId != null,
+                    showMoveSheet,
+                    showCreateProjectDialog,
+                    projectPromptCount != null,
+                    projectCreationError != null,
+                    pendingCompletionSessionAction != null,
+                    pendingDeletionSessionAction != null,
+                    activeSession?.needsRecoveryReview == true,
+                    showDeleteDialog,
+                    showOverflowMenu,
+                    showSortMenu,
+                    showMultiCompleteDialog,
+                    showMultiDeleteDialog,
+                    completion != null,
+                    snackbarHostState.currentSnackbarData != null,
+                ).any { it },
+        )
+    val creationDataReady = !content.isLoading && !folderState.isLoading && folderState.snapshot != null
+    val creationReady = lifecycle == Lifecycle.State.RESUMED && creationDataReady && proAccessReady
+    val creationBlocked = tipContext.blocked || LocalTipBlocked.current || folderState.isMutating
+    LaunchedEffect(createProjectRequestId, creationReady, creationBlocked) {
+        val requestId = createProjectRequestId
+        if (requestId == null || requestId == handledCreateProjectRequestId || !creationReady || creationBlocked) {
+            return@LaunchedEffect
+        }
+        handledCreateProjectRequestId = requestId
+        onCreateProjectRequestHandled(requestId)
+        requestProjectCreation()
+    }
+    val newProjectButton: @Composable (Dp, Modifier) -> Unit = { visualSize, buttonModifier ->
+        LabeledCounterImageButton(
+            imageRes = R.drawable.counter_plus_button,
+            label = newProjectLabel,
+            visualSize = visualSize,
+            onClick = requestProjectCreation,
+            enabled = creationDataReady,
+            badgeContentDescription = createProjectDescription,
+            badge = createProjectDescription?.let { { ProMarker(createProjectAccess) } },
+            modifier = buttonModifier,
+        )
+    }
+    // Matalassa ikkunassa luontipainike on yläpalkissa; kelluvana se peitti listan ainoan näkyvän rivin.
+    val createButtonInTopBar = LocalAdaptiveContentSize.current.isCompactHeight
+    val showCreateButton = !isMultiSelectMode && !showFullWelcome
+    val showFloatingCreateButton = showCreateButton && !createButtonInTopBar
+    TipHost(context = tipContext, onAction = {}, modifier = Modifier.fillMaxSize()) {
+        Scaffold(
+            modifier = Modifier.fillMaxSize().wrapContentWidth().contentWidth(ContentWidthPolicy.ListDetail),
+            containerColor = MaterialTheme.colorScheme.background,
+            snackbarHost = { SnackbarHost(snackbarHostState) },
+            topBar = {
+                ProjectListTopBar(
+                    state =
+                        ProjectListTopBarState(
+                            isMultiSelectMode = isMultiSelectMode,
+                            selectedCount = selectedProjectIds.size,
+                            showCompleted = showCompleted,
+                            sortOrder = sortOrder,
+                            showOverflowMenu = showOverflowMenu,
+                            showSortMenu = showSortMenu,
+                        ),
+                    actions =
+                        ProjectListTopBarActions(
+                            onExitMultiSelect = { viewModel.exitMultiSelectMode() },
+                            onSelectAll = { viewModel.selectAllProjects() },
+                            onShowOverflowMenu = { showOverflowMenu = true },
+                            onDismissOverflowMenu = { showOverflowMenu = false },
+                            onEnterMultiSelect = {
+                                showOverflowMenu = false
+                                viewModel.enterMultiSelectMode()
+                            },
+                            onShowSortMenu = {
+                                showOverflowMenu = false
+                                showSortMenu = true
+                            },
+                            onDismissSortMenu = { showSortMenu = false },
+                            onToggleShowCompleted = { viewModel.toggleShowCompleted() },
+                            onSortOrderChange = { order ->
+                                viewModel.setSortOrder(order)
+                                showSortMenu = false
+                            },
+                        ),
+                    // Valittu kansio on näytön otsikko kuten Insightsin aikaväli: alanavigaatio kertoo jo
+                    // että ollaan Projectsissa, ja erillinen linkki otsikon alla kellui irrallaan.
+                    folderTitle = {
+                        Box(Modifier.tipAnchor(TipId.FOLDERS)) {
+                            ProjectFolderSelector(
+                                selectedFilter = selectedFolderFilter,
+                                folders = folders,
+                                onClick = {
+                                    viewModel.clearFolderError()
+                                    focusFolderId = null
+                                    focusCreateFolder = false
+                                    showFoldersSheet = true
+                                },
+                                enabled = !folderState.isMutating,
+                                focusRequester = folderSelectorFocus,
+                            )
+                        }
+                    },
+                    createAction =
+                        if (showCreateButton && createButtonInTopBar) {
+                            {
+                                newProjectButton(
+                                    ProjectListDimens.CreateButtonTopBarVisualSize,
+                                    Modifier.padding(end = ProjectListDimens.CreateButtonTopBarEndPadding),
+                                )
+                            }
+                        } else {
+                            null
+                        },
+                )
+            },
+            bottomBar = {
+                MultiSelectBottomBar(
+                    isMultiSelectMode = isMultiSelectMode,
+                    hasSelection = selectedProjectIds.isNotEmpty(),
+                    hasActiveSelection = selectedActiveCount > 0,
+                    onMove = {
+                        viewModel.clearFolderError()
+                        showMoveSheet = true
+                    },
+                    onComplete = { showMultiCompleteDialog = true },
+                    onDelete = { showMultiDeleteDialog = true },
+                )
+            },
+        ) { padding ->
+            Box(
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .padding(padding),
+            ) {
+                ProjectListContent(
+                    tipContext = tipContext,
+                    showFloatingCreateButton = showFloatingCreateButton,
+                    state =
+                        ProjectListContentState(
+                            active = active,
+                            completed = completed,
+                            continueKnitting = continueKnitting,
+                            latestPhotoUris = latestPhotoUris,
+                            patternNames = patternNames,
+                            showCompleted = showCompleted,
+                            isMultiSelectMode = isMultiSelectMode,
+                            selectedProjectIds = selectedProjectIds,
+                            activeSessionProjectId = activeSession?.projectId,
+                            activeSessionNeedsReview = activeSession?.needsRecoveryReview == true,
+                            selectedFolderFilter = selectedFolderFilter,
+                            folders = folders,
+                            hasHiddenCompletedProjects = hasHiddenCompletedProjects,
+                            isLoading = content.isLoading,
+                            hasAnyProject = content.hasAnyProject,
+                            welcomeDismissed = content.welcomeDismissed,
+                            lastCraftType = content.preferences.lastProjectCraftType,
+                            proState = proState,
+                            proAccessReady = proAccessReady && !content.isLoading,
+                        ),
+                    actions =
+                        ProjectListContentActions(
+                            onOpenCounter = onOpenCounter,
+                            onOpenOverview = onOpenOverview,
+                            onToggleSelection = { viewModel.toggleProjectSelection(it) },
+                            onEnterMultiSelect = { viewModel.enterMultiSelectMode(it) },
+                            onShowCompleted = viewModel::toggleShowCompleted,
+                            onCreateProject = requestProjectCreation,
+                            onDismissWelcome = viewModel::dismissWelcome,
+                            onOpenTools = { viewModel.chooseWelcomeTools(onOpenTools) },
+                            onDemoUsed = viewModel::recordWelcomeDemoUsed,
+                            onOpenPro = onUpgradeToPro,
+                            onOpenBackup = onOpenBackup,
+                            onDeleteSwipe = { id, name ->
+                                menuProjectId = id
+                                menuProjectName = name
+                                showDeleteDialog = true
+                            },
+                        ),
+                )
+
+                // Täysi aloitusnäkymä sisältää saman luontipainikkeen listan sisällä.
+                if (showFloatingCreateButton) {
+                    newProjectButton(
+                        ProjectListDimens.CreateButtonVisualSize,
                         Modifier
                             .align(Alignment.BottomEnd)
-                            .padding(16.dp),
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary,
-                ) {
-                    Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.new_project))
+                            .padding(ProjectListDimens.CreateButtonMargin),
+                    )
                 }
             }
         }
@@ -303,19 +727,15 @@ fun ProjectListScreen(
 
 // Data-luokat ProjectListDialogs-parametrien ryhmittelyyn (S107)
 data class ProjectListDialogState(
-    val showRenameDialog: Boolean,
-    val renameText: String,
     val showDeleteDialog: Boolean,
     val deleteProjectName: String,
     val showMultiCompleteDialog: Boolean,
     val selectedCount: Int,
     val showMultiDeleteDialog: Boolean,
+    val selectedActiveCount: Int = selectedCount,
 )
 
 data class ProjectListDialogActions(
-    val onRenameTextChange: (String) -> Unit,
-    val onRenameConfirm: () -> Unit,
-    val onRenameDismiss: () -> Unit,
     val onDeleteConfirm: () -> Unit,
     val onDeleteDismiss: () -> Unit,
     val onMultiCompleteConfirm: () -> Unit,
@@ -329,15 +749,6 @@ private fun ProjectListDialogs(
     state: ProjectListDialogState,
     actions: ProjectListDialogActions,
 ) {
-    if (state.showRenameDialog) {
-        RenameProjectDialog(
-            renameText = state.renameText,
-            onRenameTextChange = actions.onRenameTextChange,
-            onConfirm = actions.onRenameConfirm,
-            onDismiss = actions.onRenameDismiss,
-        )
-    }
-
     if (state.showDeleteDialog) {
         DeleteProjectDialog(
             projectName = state.deleteProjectName,
@@ -348,7 +759,7 @@ private fun ProjectListDialogs(
 
     if (state.showMultiCompleteDialog) {
         MultiCompleteDialog(
-            selectedCount = state.selectedCount,
+            selectedCount = state.selectedActiveCount,
             onConfirm = actions.onMultiCompleteConfirm,
             onDismiss = actions.onMultiCompleteDismiss,
         )
@@ -369,19 +780,17 @@ private fun MultiCompleteDialog(
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
 ) {
-    AlertDialog(
+    ScrollableFormDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.complete_project)) },
-        text = { Text(stringResource(R.string.complete_n_projects, selectedCount)) },
+        text = { Text(pluralStringResource(R.plurals.complete_n_projects, selectedCount, selectedCount)) },
         confirmButton = {
             TextButton(onClick = onConfirm) {
                 Text(stringResource(R.string.complete_project))
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.cancel))
-            }
+            CancelButton(onClick = onDismiss)
         },
     )
 }
@@ -394,7 +803,7 @@ private fun MultiDeleteDialog(
 ) {
     ConfirmationDialog(
         title = stringResource(R.string.delete_project),
-        message = stringResource(R.string.delete_n_projects, selectedCount),
+        message = pluralStringResource(R.plurals.delete_n_projects, selectedCount, selectedCount),
         confirmText = stringResource(R.string.delete_project),
         isDestructive = true,
         onConfirm = onConfirm,
@@ -415,6 +824,7 @@ data class ProjectListTopBarState(
 data class ProjectListTopBarActions(
     val onExitMultiSelect: () -> Unit,
     val onSelectAll: () -> Unit,
+    // CPD-OFF: Ruudun paikallinen Compose-rakenne pidetaan vastuun yhteydessa.
     val onShowOverflowMenu: () -> Unit,
     val onDismissOverflowMenu: () -> Unit,
     val onEnterMultiSelect: () -> Unit,
@@ -425,22 +835,33 @@ data class ProjectListTopBarActions(
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
+// CPD-ON
 @Composable
 private fun ProjectListTopBar(
     state: ProjectListTopBarState,
     actions: ProjectListTopBarActions,
+    folderTitle: @Composable () -> Unit,
+    createAction: (@Composable () -> Unit)? = null,
 ) {
     TopAppBar(
         title = {
-            Text(
-                text =
-                    if (state.isMultiSelectMode) {
-                        stringResource(R.string.n_selected, state.selectedCount)
-                    } else {
-                        stringResource(R.string.project_list_title)
-                    },
-                style = MaterialTheme.typography.headlineMedium,
-            )
+            if (state.isMultiSelectMode) {
+                FlowRow(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    itemVerticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = stringResource(R.string.n_selected, state.selectedCount),
+                        style = MaterialTheme.typography.headlineMedium,
+                    )
+                    TextButton(onClick = actions.onSelectAll) {
+                        Text(stringResource(R.string.select_all))
+                    }
+                }
+            } else {
+                folderTitle()
+            }
         },
         navigationIcon = {
             if (state.isMultiSelectMode) {
@@ -453,11 +874,8 @@ private fun ProjectListTopBar(
             }
         },
         actions = {
-            if (state.isMultiSelectMode) {
-                TextButton(onClick = actions.onSelectAll) {
-                    Text(stringResource(R.string.select_all))
-                }
-            } else {
+            createAction?.invoke()
+            if (!state.isMultiSelectMode) {
                 OverflowMenuWithSort(
                     state =
                         OverflowMenuState(
@@ -614,41 +1032,24 @@ private fun SortMenuItem(
 private fun MultiSelectBottomBar(
     isMultiSelectMode: Boolean,
     hasSelection: Boolean,
+    hasActiveSelection: Boolean,
+    onMove: () -> Unit,
     onComplete: () -> Unit,
     onDelete: () -> Unit,
 ) {
-    AnimatedVisibility(
+    SelectionActionBar(
         visible = isMultiSelectMode && hasSelection,
-        enter = slideInVertically(initialOffsetY = { it }),
-        exit = slideOutVertically(targetOffsetY = { it }),
-    ) {
-        Surface(color = MaterialTheme.colorScheme.surfaceVariant) {
-            Row(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                Button(
-                    onClick = onComplete,
-                    modifier = Modifier.weight(1f),
-                ) {
-                    Text(stringResource(R.string.complete_project))
-                }
-                Button(
-                    onClick = onDelete,
-                    modifier = Modifier.weight(1f),
-                    colors =
-                        ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.error,
-                        ),
-                ) {
-                    Text(stringResource(R.string.delete_project))
-                }
-            }
-        }
-    }
+        actions =
+            listOf(
+                SelectionAction(stringResource(R.string.selection_action_move), onMove),
+                SelectionAction(
+                    stringResource(R.string.selection_action_complete),
+                    onComplete,
+                    enabled = hasActiveSelection,
+                ),
+                SelectionAction(stringResource(R.string.delete_project), onDelete, destructive = true),
+            ),
+    )
 }
 
 // Data-luokat ProjectListContent-parametrien ryhmittelyyn (S107)
@@ -657,26 +1058,39 @@ data class ProjectListContentState(
     val active: List<CounterProject>,
     val completed: List<CounterProject>,
     val continueKnitting: ContinueKnittingProject?,
-    val yarnNames: Map<Long, String>,
-    val yarnCardIds: Map<Long, Long>,
-    val photoCounts: Map<Long, Int>,
+    val latestPhotoUris: Map<Long, String>,
     val patternNames: Map<Long, String>,
-    val hasNotes: Set<Long>,
     val showCompleted: Boolean,
     val isMultiSelectMode: Boolean,
     val selectedProjectIds: Set<Long>,
+    val activeSessionProjectId: Long?,
+    val activeSessionNeedsReview: Boolean,
+    val selectedFolderFilter: ProjectFolderFilter = ProjectFolderFilter.AllProjects,
+    val folders: List<ProjectFolder> = emptyList(),
+    val hasHiddenCompletedProjects: Boolean = false,
+    val isLoading: Boolean = false,
+    val hasAnyProject: Boolean = true,
+    val welcomeDismissed: Boolean = false,
+    val lastCraftType: CraftType = CraftType.KNITTING,
+    val proState: ProState = ProState(),
+    val proAccessReady: Boolean = false,
 )
 
+// CPD-OFF: Ruudun paikallinen Compose-rakenne pidetaan vastuun yhteydessa.
 data class ProjectListContentActions(
-    val onProjectClick: (Long) -> Unit,
-    val onNotesClick: (Long) -> Unit,
-    val onPhotoGallery: (Long) -> Unit,
-    val onPatternViewer: (Long) -> Unit,
-    val onYarnCard: (Long) -> Unit,
+    val onOpenCounter: (Long) -> Unit,
+    val onOpenOverview: (Long) -> Unit,
     val onToggleSelection: (Long) -> Unit,
     val onEnterMultiSelect: (Long) -> Unit,
-    val onArchive: (Long) -> Unit,
+    // CPD-ON
     val onDeleteSwipe: (Long, String) -> Unit,
+    val onShowCompleted: () -> Unit = {},
+    val onCreateProject: () -> Unit = {},
+    val onDismissWelcome: () -> Unit = {},
+    val onOpenTools: () -> Unit = {},
+    val onDemoUsed: () -> Unit = {},
+    val onOpenPro: () -> Unit = {},
+    val onOpenBackup: () -> Unit = {},
 )
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -685,6 +1099,8 @@ data class ProjectListContentActions(
 private fun ProjectListContent(
     state: ProjectListContentState,
     actions: ProjectListContentActions,
+    tipContext: TipContext,
+    showFloatingCreateButton: Boolean,
 ) {
     val isHeroVisible = !state.isMultiSelectMode && state.continueKnitting != null
     val heroProjectId = state.continueKnitting?.projectId
@@ -695,331 +1111,234 @@ private fun ProjectListContent(
             state.active
         }
 
-    LazyColumn(
-        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        // Continue Knitting -herokortti (ei multi-select-tilassa)
-        if (!state.isMultiSelectMode) {
-            state.continueKnitting?.let { ck ->
-                item {
-                    ContinueKnittingCard(
-                        state =
-                            ContinueKnittingCardState(
-                                projectName = ck.name,
-                                rowCount = ck.count,
-                                totalMinutes = ck.totalMinutes,
-                                sectionName = ck.sectionName,
-                                targetRows = ck.targetRows,
-                                craftType = ck.craftType,
-                                mainCounterLabelType = ck.mainCounterLabelType,
-                                mainCounterCustomLabel = ck.mainCounterCustomLabel,
-                            ),
-                        onClick = { actions.onProjectClick(ck.projectId) },
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                }
+    // Leveällä näytöllä kortit kahdessa sarakkeessa: yksi 808 dp:n kortti jätti sisällön vasempaan 200 dp:hen.
+    BoxWithConstraints {
+        val columns = projectListColumns(maxWidth - ProjectListDimens.ScreenHorizontalPadding * 2)
+        LazyVerticalGrid(
+            columns = GridCells.Fixed(columns),
+            horizontalArrangement = Arrangement.spacedBy(ProjectListDimens.CardSpacing),
+            contentPadding =
+                PaddingValues(
+                    start = ProjectListDimens.ScreenHorizontalPadding,
+                    top = ProjectListDimens.ListTopPadding,
+                    end = ProjectListDimens.ScreenHorizontalPadding,
+                    bottom =
+                        if (showFloatingCreateButton) {
+                            ProjectListDimens.ListBottomPaddingWithCreateButton
+                        } else {
+                            ProjectListDimens.ListBottomPadding
+                        },
+                ),
+        ) {
+            if (state.isLoading) {
+                fullWidthItem { Text(stringResource(R.string.folder_loading)) }
+                return@LazyVerticalGrid
             }
-        }
-
-        if (visibleActiveProjects.isNotEmpty() || !isHeroVisible) {
-            item {
-                SectionLabel(stringResource(R.string.section_active))
-            }
-
-            if (visibleActiveProjects.isEmpty()) {
-                item {
-                    Text(
-                        text = stringResource(R.string.no_active_projects),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(vertical = 8.dp),
+            if (!state.hasAnyProject && !state.isMultiSelectMode) {
+                fullWidthItem {
+                    ProjectsStartState(
+                        compact = state.welcomeDismissed,
+                        lastCraftType = state.lastCraftType,
+                        onCreateProject = actions.onCreateProject,
+                        onDismiss = actions.onDismissWelcome,
+                        onTools = actions.onOpenTools,
+                        onDemoUsed = actions.onDemoUsed,
+                        onOpenPro = actions.onOpenPro,
+                        proState = state.proState,
+                        proAccessReady = state.proAccessReady,
                     )
                 }
-            } else {
-                items(visibleActiveProjects, key = { it.id }) { project ->
-                    ActiveProjectItem(
-                        project = project,
-                        state =
-                            ActiveProjectItemState(
-                                isMultiSelectMode = state.isMultiSelectMode,
-                                isSelected = project.id in state.selectedProjectIds,
-                                yarnName = state.yarnNames[project.id],
-                                firstYarnCardId = state.yarnCardIds[project.id],
-                                photoCount = state.photoCounts[project.id] ?: 0,
+                return@LazyVerticalGrid
+            }
+            if (state.selectedFolderFilter != ProjectFolderFilter.AllProjects &&
+                state.active.isEmpty() &&
+                state.completed.isEmpty()
+            ) {
+                fullWidthItem {
+                    ProjectFolderEmptyState(
+                        filter = state.selectedFolderFilter,
+                        folders = state.folders,
+                        hasHiddenCompletedProjects = state.hasHiddenCompletedProjects,
+                        onShowCompleted = actions.onShowCompleted,
+                    )
+                }
+                fullWidthItem(key = "backup-tip") {
+                    InlineTipCard(id = TipId.BACKUP, context = tipContext, onAction = actions.onOpenBackup)
+                }
+                return@LazyVerticalGrid
+            }
+            // Continue Knitting -herokortti (ei multi-select-tilassa)
+            if (!state.isMultiSelectMode) {
+                state.continueKnitting?.let { ck ->
+                    fullWidthItem {
+                        val hasSession = ck.projectId == state.activeSessionProjectId
+                        ContinueProjectCard(
+                            project =
+                                CounterProject(
+                                    id = ck.projectId,
+                                    name = ck.name,
+                                    count = ck.count,
+                                    sectionName = ck.sectionName,
+                                    targetRows = ck.targetRows,
+                                    craftType = ck.craftType,
+                                    mainCounterLabelType = ck.mainCounterLabelType,
+                                    mainCounterCustomLabel = ck.mainCounterCustomLabel,
+                                ),
+                            sessionStatus =
+                                workSessionStatusText(hasSession, hasSession && state.activeSessionNeedsReview),
+                            // Heron runko avaa projektinäkymän kuten projektikortit; jatka-nappi avaa laskurin.
+                            onClick = { actions.onOpenOverview(ck.projectId) },
+                            onClickLabel = stringResource(R.string.project_card_open_overview_action),
+                            onOpenCounter = { actions.onOpenCounter(ck.projectId) },
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
+                }
+            }
+
+            if (visibleActiveProjects.isNotEmpty() || !isHeroVisible) {
+                fullWidthItem {
+                    // Lukumäärä sisältää myös heron projektin: se on aktiivinen, vaikka sillä ei ole omaa korttia.
+                    ProjectSectionLabel(
+                        text = stringResource(R.string.section_active),
+                        count = state.active.size,
+                    )
+                }
+
+                if (visibleActiveProjects.isEmpty()) {
+                    fullWidthItem {
+                        Text(
+                            text = stringResource(R.string.no_active_projects),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(vertical = 8.dp),
+                        )
+                    }
+                } else {
+                    itemsIndexed(
+                        items = visibleActiveProjects,
+                        key = { _, project -> project.id },
+                    ) { index, project ->
+                        // Ruudukon solu pinoaa lapsensa päällekkäin, joten väli tarvitsee oman sarakkeensa.
+                        Column {
+                            ProjectListItem(
+                                project = project,
+                                state = state,
+                                actions = actions,
                                 patternName = state.patternNames[project.id],
-                                hasNotes = project.id in state.hasNotes,
-                            ),
-                        actions =
-                            ActiveProjectItemActions(
-                                onProjectClick = actions.onProjectClick,
-                                onNotesClick = actions.onNotesClick,
-                                onPhotoGallery = actions.onPhotoGallery,
-                                onPatternViewer = actions.onPatternViewer,
-                                onYarnCard = actions.onYarnCard,
-                                onToggleSelection = actions.onToggleSelection,
-                                onEnterMultiSelect = actions.onEnterMultiSelect,
-                                onArchive = actions.onArchive,
-                            ),
-                    )
+                                statusText =
+                                    workSessionStatusText(
+                                        project.id == state.activeSessionProjectId,
+                                        project.id == state.activeSessionProjectId && state.activeSessionNeedsReview,
+                                    ),
+                            )
+                            if (index / columns < visibleActiveProjects.lastIndex / columns) {
+                                Spacer(modifier = Modifier.height(ProjectListDimens.CardSpacing))
+                            }
+                        }
+                    }
                 }
             }
-        }
 
-        // Completed-osio (näytetään vain kun toggle päällä)
-        if (state.showCompleted) {
-            item {
-                Spacer(modifier = Modifier.height(16.dp))
-                SectionLabel(stringResource(R.string.section_completed))
+            // Completed-osio (näytetään vain kun toggle päällä)
+            if (state.showCompleted) {
+                fullWidthItem {
+                    ProjectSectionLabel(
+                        text = stringResource(R.string.section_completed),
+                        count = state.completed.size,
+                    )
+                }
+
+                if (state.completed.isEmpty()) {
+                    fullWidthItem {
+                        Text(
+                            text = stringResource(R.string.no_completed_projects),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(vertical = 8.dp),
+                        )
+                    }
+                } else {
+                    itemsIndexed(
+                        items = state.completed,
+                        key = { _, project -> project.id },
+                    ) { index, project ->
+                        val completedDescription = stringResource(R.string.section_completed)
+                        Column {
+                            ProjectListItem(
+                                project = project.copy(count = project.totalRows ?: project.count),
+                                state = state,
+                                actions = actions,
+                                patternName = project.patternName,
+                                modifier = Modifier.semantics { stateDescription = completedDescription },
+                            )
+                            if (index / columns < state.completed.lastIndex / columns) {
+                                Spacer(modifier = Modifier.height(ProjectListDimens.CardSpacing))
+                            }
+                        }
+                    }
+                }
             }
-
-            if (state.completed.isEmpty()) {
-                item {
-                    Text(
-                        text = stringResource(R.string.no_completed_projects),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(vertical = 8.dp),
-                    )
-                }
-            } else {
-                items(state.completed, key = { it.id }) { project ->
-                    ProjectCard(
-                        name = project.name,
-                        rowCount = project.count,
-                        sectionName = project.sectionName,
-                        lastUpdated = project.completedAt ?: project.updatedAt,
-                        onClick = { actions.onProjectClick(project.id) },
-                        onLongClick = { actions.onDeleteSwipe(project.id, project.name) },
-                        totalRows = project.totalRows,
-                        metadataLine = projectCardMetadataLine(project),
-                        countText = projectCardCountText(project.copy(count = project.totalRows ?: project.count)),
-                    )
-                }
+            fullWidthItem(key = "backup-tip") {
+                InlineTipCard(id = TipId.BACKUP, context = tipContext, onAction = actions.onOpenBackup)
             }
         }
     }
 }
 
-// Data-luokat ActiveProjectItem-parametrien ryhmittelyyn (S107)
-data class ActiveProjectItemState(
-    val isMultiSelectMode: Boolean,
-    val isSelected: Boolean,
-    val yarnName: String?,
-    val firstYarnCardId: Long?,
-    val photoCount: Int,
-    val patternName: String?,
-    val hasNotes: Boolean = false,
-)
+internal fun projectListColumns(listWidth: Dp): Int = if (listWidth >= ProjectListDimens.TwoColumnMinWidth) 2 else 1
 
-data class ActiveProjectItemActions(
-    val onProjectClick: (Long) -> Unit,
-    val onNotesClick: (Long) -> Unit,
-    val onPhotoGallery: (Long) -> Unit,
-    val onPatternViewer: (Long) -> Unit,
-    val onYarnCard: (Long) -> Unit,
-    val onToggleSelection: (Long) -> Unit,
-    val onEnterMultiSelect: (Long) -> Unit,
-    val onArchive: (Long) -> Unit,
-)
+private fun LazyGridScope.fullWidthItem(
+    key: Any? = null,
+    content: @Composable LazyGridItemScope.() -> Unit,
+) = item(key = key, span = { GridItemSpan(maxLineSpan) }, content = content)
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun ActiveProjectItem(
+private fun ProjectListItem(
     project: CounterProject,
-    state: ActiveProjectItemState,
-    actions: ActiveProjectItemActions,
+    state: ProjectListContentState,
+    actions: ProjectListContentActions,
+    patternName: String?,
+    modifier: Modifier = Modifier,
+    statusText: String? = null,
 ) {
-    if (state.isMultiSelectMode) {
-        Row(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .then(
-                        if (state.isSelected) {
-                            Modifier.background(
-                                MaterialTheme.colorScheme.primary.copy(alpha = 0.07f),
-                                MaterialTheme.shapes.large,
-                            )
-                        } else {
-                            Modifier
-                        },
-                    ).clickable { actions.onToggleSelection(project.id) },
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Checkbox(
-                checked = state.isSelected,
-                onCheckedChange = { actions.onToggleSelection(project.id) },
-            )
-            ProjectCard(
-                name = project.name,
-                rowCount = project.count,
-                sectionName = project.sectionName,
-                lastUpdated = project.updatedAt,
-                onClick = { actions.onToggleSelection(project.id) },
-                modifier = Modifier.weight(1f),
-                metadataLine = projectCardMetadataLine(project),
-                countText = projectCardCountText(project),
-                yarnName = state.yarnName,
-                yarnColorSeed = state.firstYarnCardId,
-                photoCount = state.photoCount,
-                patternName = state.patternName,
-            )
-        }
-    } else {
-        ProjectCard(
-            name = project.name,
-            rowCount = project.count,
-            sectionName = project.sectionName,
-            lastUpdated = project.updatedAt,
-            onClick = { actions.onProjectClick(project.id) },
-            onLongClick = { actions.onEnterMultiSelect(project.id) },
-            metadataLine = projectCardMetadataLine(project),
-            countText = projectCardCountText(project),
-            yarnName = state.yarnName,
-            yarnColorSeed = state.firstYarnCardId,
-            photoCount = state.photoCount,
-            patternName = state.patternName,
-            hasPatternAttachment = !project.patternUri.isNullOrBlank(),
-            hasNotes = state.hasNotes,
-            onPatternClick = { actions.onPatternViewer(project.id) },
-            onNotesClick = { actions.onNotesClick(project.id) },
-            onPhotosClick = { actions.onPhotoGallery(project.id) },
-            onYarnClick =
-                state.firstYarnCardId?.let { yarnCardId ->
-                    { actions.onYarnCard(yarnCardId) }
-                },
-        )
-    }
-}
-
-private data class ContinueKnittingCardState(
-    val projectName: String,
-    val rowCount: Int,
-    val totalMinutes: Int,
-    val sectionName: String?,
-    val targetRows: Int?,
-    val craftType: CraftType,
-    val mainCounterLabelType: MainCounterLabelType,
-    val mainCounterCustomLabel: String?,
-)
-
-@Composable
-private fun ContinueKnittingCard(
-    state: ContinueKnittingCardState,
-    onClick: () -> Unit,
-) {
-    val mainCounterDisplay =
-        CounterValueFormatter.forMainCounter(
-            CounterProject(
-                name = state.projectName,
-                count = state.rowCount,
-                targetRows = state.targetRows,
-                craftType = state.craftType,
-                mainCounterLabelType = state.mainCounterLabelType,
-                mainCounterCustomLabel = state.mainCounterCustomLabel,
-            ),
-        )
-    val rowContext =
-        if (state.targetRows != null && state.targetRows > 0) {
-            mainCounterDisplay.targetLine?.let { mainCounterTargetText(it) }
-                ?: mainCounterProjectCardCountText(mainCounterDisplay.projectCardCount)
-        } else {
-            mainCounterProjectCardCountText(mainCounterDisplay.projectCardCount)
-        }
-    val rowAndTime = stringResource(R.string.project_metadata_format, rowContext, formatMinutes(state.totalMinutes))
-    val contextLine =
-        normalizedContinueKnittingSectionName(state.sectionName)?.let { sectionName ->
-            stringResource(R.string.project_metadata_format, sectionName, rowAndTime)
-        } ?: rowAndTime
-
-    Card(
-        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
-        shape = MaterialTheme.shapes.large,
-        colors =
-            CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.10f),
-            ),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.25f)),
-    ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = stringResource(R.string.continue_knitting).localizedUppercase(),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.primary,
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = state.projectName,
-                    style = MaterialTheme.typography.titleLarge,
-                )
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = contextLine,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+    ProjectCard(
+        project = project,
+        photoUri = state.latestPhotoUris[project.id],
+        modifier = modifier,
+        onClick = {
+            if (state.isMultiSelectMode) {
+                actions.onToggleSelection(project.id)
+            } else {
+                actions.onOpenOverview(project.id)
             }
-            Spacer(modifier = Modifier.width(12.dp))
-            Box(
-                modifier =
-                    Modifier
-                        .size(48.dp)
-                        .clip(CircleShape)
-                        .background(
-                            Brush.linearGradient(
-                                listOf(
-                                    MaterialTheme.colorScheme.primary,
-                                    MaterialTheme.colorScheme.primaryContainer,
-                                ),
-                            ),
-                        ),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.PlayArrow,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onPrimary,
-                    modifier = Modifier.size(24.dp),
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun projectCardMetadataLine(project: CounterProject): String =
-    projectMetadataText(
-        craftType = project.craftType,
-        labelType = project.mainCounterLabelType,
-        customLabel = project.mainCounterCustomLabel,
+        },
+        onLongClick =
+            if (state.isMultiSelectMode) {
+                null
+            } else {
+                { actions.onEnterMultiSelect(project.id) }
+            },
+        patternName = patternName,
+        selected = (project.id in state.selectedProjectIds).takeIf { state.isMultiSelectMode },
+        onToggleSelection = { actions.onToggleSelection(project.id) },
+        statusText = statusText,
     )
+}
 
 @Composable
-private fun projectCardCountText(project: CounterProject): String =
-    mainCounterProjectCardCountText(CounterValueFormatter.forMainCounter(project).projectCardCount)
-
-internal fun normalizedContinueKnittingSectionName(sectionName: String?): String? =
-    sectionName?.trim()?.takeIf(String::isNotEmpty)
-
-@Composable
-private fun formatMinutes(minutes: Int): String =
-    when {
-        minutes < 60 -> stringResource(R.string.time_spent_minutes_format, minutes)
-        else -> stringResource(R.string.session_duration_format, minutes / 60, minutes % 60)
-    }
-
-@Composable
-private fun SectionLabel(text: String) {
-    Text(
-        text = text.localizedUppercase(),
-        style = MaterialTheme.typography.labelSmall,
-        color = MaterialTheme.colorScheme.secondary,
-        modifier = Modifier.padding(vertical = 8.dp),
+private fun ProjectSectionLabel(
+    text: String,
+    count: Int,
+) {
+    SectionLabel(
+        text = stringResource(R.string.project_section_count_format, text, count),
+        modifier =
+            Modifier.padding(
+                top = ProjectListDimens.SectionTopSpacing,
+                bottom = ProjectListDimens.SectionBottomSpacing,
+            ),
     )
 }
 

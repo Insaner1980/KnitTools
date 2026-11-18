@@ -1,6 +1,9 @@
+import { readJsonResponse } from "./boundedResponse";
+
 export const RAVELRY_AUTHORIZATION_URL = "https://www.ravelry.com/oauth2/auth";
 export const RAVELRY_TOKEN_URL = "https://www.ravelry.com/oauth2/token";
 const RAVELRY_TOKEN_EXCHANGE_TIMEOUT_MILLIS = 10_000;
+const RAVELRY_TOKEN_RESPONSE_MAX_BYTES = 65_536;
 
 export interface OAuthTokenExchangeRequest {
   readonly code: string;
@@ -41,8 +44,14 @@ export interface OAuthTokenRefreshOptions extends OAuthTokenRefreshRequest {
 }
 
 export class OAuthTokenExchangeError extends Error {
+  readonly code: string;
+  readonly httpStatus: number;
+
   constructor(readonly statusCode: number) {
     super(`ravelry_token_exchange_failed_${statusCode}`);
+    const rejectedCredentials = statusCode === 400 || statusCode === 401;
+    this.code = rejectedCredentials ? "ravelry_not_connected" : "ravelry_token_exchange_failed";
+    this.httpStatus = rejectedCredentials ? 412 : statusCode;
   }
 }
 
@@ -74,6 +83,10 @@ async function requestOAuth2Token({
   readonly fetchImpl: typeof fetch;
   readonly nowMillis: () => number;
 }): Promise<OAuthTokenExchangeResult> {
+  if (!clientId.trim() || !clientSecret.trim()) {
+    throw new OAuthTokenExchangeError(503);
+  }
+
   let response: Response;
   try {
     response = await fetchImpl(RAVELRY_TOKEN_URL, {
@@ -83,39 +96,53 @@ async function requestOAuth2Token({
         "Content-Type": "application/x-www-form-urlencoded",
       },
       body: requestBody.toString(),
+      redirect: "error",
       signal: AbortSignal.timeout(RAVELRY_TOKEN_EXCHANGE_TIMEOUT_MILLIS),
     });
   } catch (error) {
     if (isAbortOrTimeoutError(error)) {
       throw new OAuthTokenExchangeError(504);
     }
-    throw error;
+    throw new OAuthTokenExchangeError(503);
   }
 
   if (!response.ok) {
     throw new OAuthTokenExchangeError(response.status);
   }
 
-  const body = (await response.json()) as {
+  let body: {
     access_token?: unknown;
     refresh_token?: unknown;
     expires_in?: unknown;
   };
-
-  if (typeof body.access_token !== "string" || body.access_token.length === 0) {
-    throw new OAuthTokenExchangeError(response.status);
+  try {
+    body = (await readJsonResponse(response, RAVELRY_TOKEN_RESPONSE_MAX_BYTES)) as typeof body;
+  } catch {
+    throw new OAuthTokenExchangeError(503);
   }
 
-  const expiresInSeconds =
-    typeof body.expires_in === "number" && Number.isFinite(body.expires_in)
-      ? body.expires_in
-      : undefined;
+  if (typeof body?.access_token !== "string" || body.access_token.length === 0) {
+    throw new OAuthTokenExchangeError(503);
+  }
+
+  let expiresAtMillis: number | undefined;
+  if (body.expires_in !== undefined) {
+    if (typeof body.expires_in !== "number" || !Number.isFinite(body.expires_in)) {
+      throw new OAuthTokenExchangeError(503);
+    }
+    expiresAtMillis = nowMillis() + Math.max(0, body.expires_in) * 1_000;
+    if (!Number.isFinite(expiresAtMillis)) {
+      throw new OAuthTokenExchangeError(503);
+    }
+  }
 
   return {
     accessToken: body.access_token,
-    refreshToken: typeof body.refresh_token === "string" ? body.refresh_token : undefined,
-    expiresAtMillis:
-      expiresInSeconds == null ? undefined : nowMillis() + Math.max(0, expiresInSeconds) * 1_000,
+    refreshToken:
+      typeof body.refresh_token === "string" && body.refresh_token.length > 0
+        ? body.refresh_token
+        : undefined,
+    expiresAtMillis,
   };
 }
 

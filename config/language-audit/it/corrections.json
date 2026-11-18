@@ -1,0 +1,1012 @@
+[
+  {
+    "key": "n_selected",
+    "variant": "default",
+    "file": "app/src/main/res/values-it/strings.xml",
+    "original": "%d selezionati",
+    "final": "Elementi selezionati: %d",
+    "problem": "Shared selection includes one item and feminine foto/schede; an invariant heading fixes number/gender without a shared API change.",
+    "batch": "B01",
+    "category": "LANGUAGE"
+  },
+  {
+    "key": "main_counter_rows",
+    "variant": "default",
+    "file": "app/src/main/res/values-it/strings.xml",
+    "original": "Ferri",
+    "final": "Righe",
+    "problem": "ROWS is selectable for crochet as well as knitting; ferri incorrectly names knitting rows/tools in flat crochet. Riga is craft-neutral.",
+    "batch": "B03",
+    "category": "CONTEXT"
+  },
+  {
+    "key": "current_row_short",
+    "variant": "default",
+    "file": "app/src/main/res/values-it/strings.xml",
+    "original": "Ferro %1$d",
+    "final": "Riga %1$d",
+    "problem": "ROWS is selectable for crochet as well as knitting; ferri incorrectly names knitting rows/tools in flat crochet. Riga is craft-neutral.",
+    "batch": "B03",
+    "category": "CONTEXT"
+  },
+  {
+    "key": "counter_value_of_target_format",
+    "variant": "default",
+    "file": "app/src/main/res/values-it/strings.xml",
+    "original": "Ferro %1$d / %2$d",
+    "final": "Riga %1$d / %2$d",
+    "problem": "ROWS is selectable for crochet as well as knitting; ferri incorrectly names knitting rows/tools in flat crochet. Riga is craft-neutral.",
+    "batch": "B03",
+    "category": "CONTEXT"
+  },
+  {
+    "key": "counter_add_row",
+    "variant": "default",
+    "file": "app/src/main/res/values-it/strings.xml",
+    "original": "Aggiungi ferro",
+    "final": "Aggiungi riga",
+    "problem": "ROWS is selectable for crochet as well as knitting; ferri incorrectly names knitting rows/tools in flat crochet. Riga is craft-neutral.",
+    "batch": "B03",
+    "category": "CONTEXT"
+  },
+  {
+    "key": "counter_decrease_row",
+    "variant": "default",
+    "file": "app/src/main/res/values-it/strings.xml",
+    "original": "Togli ferro",
+    "final": "Togli riga",
+    "problem": "ROWS is selectable for crochet as well as knitting; ferri incorrectly names knitting rows/tools in flat crochet. Riga is craft-neutral.",
+    "batch": "B03",
+    "category": "CONTEXT"
+  },
+  {
+    "key": "counter_step_rows_title",
+    "variant": "default",
+    "file": "app/src/main/res/values-it/strings.xml",
+    "original": "Ferri per tocco",
+    "final": "Righe per tocco",
+    "problem": "ROWS is selectable for crochet as well as knitting; ferri incorrectly names knitting rows/tools in flat crochet. Riga is craft-neutral.",
+    "batch": "B03",
+    "category": "CONTEXT"
+  },
+  {
+    "key": "rows_format",
+    "variant": "one",
+    "file": "app/src/main/res/values-it/strings.xml",
+    "original": "%1$d ferro",
+    "final": "%1$d riga",
+    "problem": "Project card ROWS count also applies to crochet.",
+    "batch": "B03",
+    "category": "CONTEXT"
+  },
+  {
+    "key": "rows_format",
+    "variant": "many",
+    "file": "app/src/main/res/values-it/strings.xml",
+    "original": "%1$d ferri",
+    "final": "%1$d righe",
+    "problem": "Project card ROWS count also applies to crochet.",
+    "batch": "B03",
+    "category": "CONTEXT"
+  },
+  {
+    "key": "rows_format",
+    "variant": "other",
+    "file": "app/src/main/res/values-it/strings.xml",
+    "original": "%1$d ferri",
+    "final": "%1$d righe",
+    "problem": "Project card ROWS count also applies to crochet.",
+    "batch": "B03",
+    "category": "CONTEXT"
+  },
+  {
+    "key": "stitches_per_row",
+    "variant": "default",
+    "file": "app/src/main/res/values-it/strings.xml",
+    "original": "Maglie per ferro",
+    "final": "Numero di maglie",
+    "problem": "This is a craft/unit-independent component; it cannot assert knitting rows.",
+    "batch": "B03",
+    "category": "CONTEXT"
+  },
+  {
+    "key": "widget_name",
+    "variant": "default",
+    "file": "app/src/main/res/values-it/strings.xml",
+    "original": "Contaferri",
+    "final": "Contatore",
+    "problem": "This is a craft/unit-independent component; it cannot assert knitting rows.",
+    "batch": "B03",
+    "category": "CONTEXT"
+  },
+  {
+    "key": "widget_description",
+    "variant": "default",
+    "file": "app/src/main/res/values-it/strings.xml",
+    "original": "Widget contaferri per il progetto attivo",
+    "final": "Widget contatore per il progetto attivo",
+    "problem": "This is a craft/unit-independent component; it cannot assert knitting rows.",
+    "batch": "B03",
+    "category": "CONTEXT"
+  },
+  {
+    "key": "counter_repeat_label",
+    "variant": "default",
+    "file": "app/src/main/res/values-it/strings.xml",
+    "original": "Ripeti",
+    "final": "Ripetizioni",
+    "problem": "This labels a count, not a Repeat command.",
+    "batch": "B04",
+    "category": "CONTEXT"
+  },
+  {
+    "key": "reminder_repeat_occurrence_format",
+    "variant": "one",
+    "file": "app/src/main/res/values-it/strings.xml",
+    "original": "Ripeti #%1$d, intervallo %2$d",
+    "final": "Ripetizione #%1$d, intervallo %2$d",
+    "problem": "The first argument is an occurrence ordinal, not an imperative.",
+    "batch": "B04",
+    "category": "CONTEXT"
+  },
+  {
+    "key": "reminder_repeat_occurrence_format",
+    "variant": "many",
+    "file": "app/src/main/res/values-it/strings.xml",
+    "original": "Ripeti #%1$d, intervallo %2$d",
+    "final": "Ripetizione #%1$d, intervallo %2$d",
+    "problem": "The first argument is an occurrence ordinal, not an imperative.",
+    "batch": "B04",
+    "category": "CONTEXT"
+  },
+  {
+    "key": "reminder_repeat_occurrence_format",
+    "variant": "other",
+    "file": "app/src/main/res/values-it/strings.xml",
+    "original": "Ripeti #%1$d, intervallo %2$d",
+    "final": "Ripetizione #%1$d, intervallo %2$d",
+    "problem": "The first argument is an occurrence ordinal, not an imperative.",
+    "batch": "B04",
+    "category": "CONTEXT"
+  },
+  {
+    "key": "insights_empty_title",
+    "variant": "default",
+    "file": "app/src/main/res/values-it/strings.xml",
+    "original": "Ancora nessun tempo sui ferri.",
+    "final": "Ancora nessun tempo registrato.",
+    "problem": "The empty state also serves crochet; sui ferri wrongly restricts it to knitting.",
+    "batch": "B05",
+    "category": "CONTEXT"
+  },
+  {
+    "key": "insights_days_meta_format",
+    "variant": "one",
+    "file": "app/src/main/res/values-it/strings.xml",
+    "original": "Attivo %1$d su %2$d giorno",
+    "final": "Giorni di attività: %1$d su %2$d",
+    "problem": "An invariant heading states active days versus range days without the incomplete Attivo construction or implicit gender.",
+    "batch": "B05",
+    "category": "LANGUAGE"
+  },
+  {
+    "key": "insights_days_meta_format",
+    "variant": "many",
+    "file": "app/src/main/res/values-it/strings.xml",
+    "original": "Attivo %1$d su %2$d giorni",
+    "final": "Giorni di attività: %1$d su %2$d",
+    "problem": "An invariant heading states active days versus range days without the incomplete Attivo construction or implicit gender.",
+    "batch": "B05",
+    "category": "LANGUAGE"
+  },
+  {
+    "key": "insights_days_meta_format",
+    "variant": "other",
+    "file": "app/src/main/res/values-it/strings.xml",
+    "original": "Attivo %1$d su %2$d giorni",
+    "final": "Giorni di attività: %1$d su %2$d",
+    "problem": "An invariant heading states active days versus range days without the incomplete Attivo construction or implicit gender.",
+    "batch": "B05",
+    "category": "LANGUAGE"
+  },
+  {
+    "key": "care_wash_30",
+    "variant": "default",
+    "file": "app/src/main/res/values-it/strings.xml",
+    "original": "30°",
+    "final": "Lavaggio a massimo 30 °C",
+    "problem": "Standalone visible/accessibility labels need the washing process and maximum Celsius temperature, not a bare degree number.",
+    "batch": "B06",
+    "category": "CONTEXT"
+  },
+  {
+    "key": "care_wash_40",
+    "variant": "default",
+    "file": "app/src/main/res/values-it/strings.xml",
+    "original": "40°",
+    "final": "Lavaggio a massimo 40 °C",
+    "problem": "Standalone visible/accessibility labels need the washing process and maximum Celsius temperature, not a bare degree number.",
+    "batch": "B06",
+    "category": "CONTEXT"
+  },
+  {
+    "key": "care_wash_60",
+    "variant": "default",
+    "file": "app/src/main/res/values-it/strings.xml",
+    "original": "60°",
+    "final": "Lavaggio a massimo 60 °C",
+    "problem": "Standalone visible/accessibility labels need the washing process and maximum Celsius temperature, not a bare degree number.",
+    "batch": "B06",
+    "category": "CONTEXT"
+  },
+  {
+    "key": "care_dryclean_any",
+    "variant": "default",
+    "file": "app/src/main/res/values-it/strings.xml",
+    "original": "Qualsiasi solvente",
+    "final": "Lavaggio a secco con qualsiasi solvente",
+    "problem": "Standalone label needs to identify the dry-cleaning process.",
+    "batch": "B06",
+    "category": "CONTEXT"
+  },
+  {
+    "key": "care_dryclean_p",
+    "variant": "default",
+    "file": "app/src/main/res/values-it/strings.xml",
+    "original": "Solvente P",
+    "final": "Lavaggio a secco (P)",
+    "problem": "P/F identify professional cleaning categories, not substances named solvent P/F.",
+    "batch": "B06",
+    "category": "FACT"
+  },
+  {
+    "key": "care_dryclean_f",
+    "variant": "default",
+    "file": "app/src/main/res/values-it/strings.xml",
+    "original": "Solvente F",
+    "final": "Lavaggio a secco (F)",
+    "problem": "P/F identify professional cleaning categories, not substances named solvent P/F.",
+    "batch": "B06",
+    "category": "FACT"
+  },
+  {
+    "key": "yarn_usage_scope",
+    "variant": "default",
+    "file": "app/src/main/res/values-it/strings.xml",
+    "original": "Registra solo il filato riservato a questo progetto. Le quantità in “Il mio filato” restano invariate.",
+    "final": "Registra l’utilizzo del filato per questo progetto. Le quantità in “Il mio filato” restano invariate.",
+    "problem": "Planned, allocated and used quantities are independent; only reserved yarn is a false restriction.",
+    "batch": "B07",
+    "category": "FACT"
+  },
+  {
+    "key": "yarn_usage_over_format",
+    "variant": "default",
+    "file": "app/src/main/res/values-it/strings.xml",
+    "original": "Eccedenza: %1$s",
+    "final": "Utilizzato in eccesso: %1$s",
+    "problem": "Negative remaining means overconsumption, while eccedenza can mean surplus remaining.",
+    "batch": "B07",
+    "category": "CONTEXT"
+  },
+  {
+    "key": "pattern_follow_current_row_off",
+    "variant": "default",
+    "file": "app/src/main/res/values-it/pattern_reading_assistance.xml",
+    "original": "Interrompi il seguito",
+    "final": "Smetti di seguire il contatore",
+    "problem": "Seguito means a sequel/following, not stopping the guide from following the counter.",
+    "batch": "B10",
+    "category": "LANGUAGE"
+  },
+  {
+    "key": "measurement_adjust",
+    "variant": "default",
+    "file": "app/src/main/res/values-it/strings.xml",
+    "original": "Adatta maglie e ferri del modello",
+    "final": "Adatta maglie e righe del modello",
+    "problem": "The measurement tool has no knitting-only restriction; the vertical axis also measures crochet rows, not ferri.",
+    "batch": "B13",
+    "category": "CONTEXT"
+  },
+  {
+    "key": "measurement_rows_height",
+    "variant": "default",
+    "file": "app/src/main/res/values-it/strings.xml",
+    "original": "Ferri e altezza",
+    "final": "Righe e altezza",
+    "problem": "The measurement tool has no knitting-only restriction; the vertical axis also measures crochet rows, not ferri.",
+    "batch": "B13",
+    "category": "CONTEXT"
+  },
+  {
+    "key": "measurement_actual_rows",
+    "variant": "default",
+    "file": "app/src/main/res/values-it/strings.xml",
+    "original": "Ferri del tuo campione",
+    "final": "Righe del tuo campione",
+    "problem": "The measurement tool has no knitting-only restriction; the vertical axis also measures crochet rows, not ferri.",
+    "batch": "B13",
+    "category": "CONTEXT"
+  },
+  {
+    "key": "measurement_pattern_rows",
+    "variant": "default",
+    "file": "app/src/main/res/values-it/strings.xml",
+    "original": "Ferri del campione del modello",
+    "final": "Righe del campione del modello",
+    "problem": "The measurement tool has no knitting-only restriction; the vertical axis also measures crochet rows, not ferri.",
+    "batch": "B13",
+    "category": "CONTEXT"
+  },
+  {
+    "key": "measurement_row_count",
+    "variant": "default",
+    "file": "app/src/main/res/values-it/strings.xml",
+    "original": "Numero di ferri",
+    "final": "Numero di righe",
+    "problem": "The measurement tool has no knitting-only restriction; the vertical axis also measures crochet rows, not ferri.",
+    "batch": "B13",
+    "category": "CONTEXT"
+  },
+  {
+    "key": "rows_in_pattern",
+    "variant": "default",
+    "file": "app/src/main/res/values-it/strings.xml",
+    "original": "Ferri del modello",
+    "final": "Righe del modello",
+    "problem": "The measurement tool has no knitting-only restriction; the vertical axis also measures crochet rows, not ferri.",
+    "batch": "B13",
+    "category": "CONTEXT"
+  },
+  {
+    "key": "row_count_in_swatch",
+    "variant": "default",
+    "file": "app/src/main/res/values-it/strings.xml",
+    "original": "Ferri del campione",
+    "final": "Righe del campione",
+    "problem": "The measurement tool has no knitting-only restriction; the vertical axis also measures crochet rows, not ferri.",
+    "batch": "B13",
+    "category": "CONTEXT"
+  },
+  {
+    "key": "measurement_rows",
+    "variant": "one",
+    "file": "app/src/main/res/values-it/strings.xml",
+    "original": "%1$d ferro",
+    "final": "%1$d riga",
+    "problem": "Gauge and Copy output must preserve the craft-neutral vertical axis.",
+    "batch": "B13",
+    "category": "CONTEXT"
+  },
+  {
+    "key": "measurement_rows",
+    "variant": "many",
+    "file": "app/src/main/res/values-it/strings.xml",
+    "original": "%1$d ferri",
+    "final": "%1$d righe",
+    "problem": "Gauge and Copy output must preserve the craft-neutral vertical axis.",
+    "batch": "B13",
+    "category": "CONTEXT"
+  },
+  {
+    "key": "measurement_rows",
+    "variant": "other",
+    "file": "app/src/main/res/values-it/strings.xml",
+    "original": "%1$d ferri",
+    "final": "%1$d righe",
+    "problem": "Gauge and Copy output must preserve the craft-neutral vertical axis.",
+    "batch": "B13",
+    "category": "CONTEXT"
+  },
+  {
+    "key": "total_weight",
+    "variant": "default",
+    "file": "app/src/main/res/values-it/strings.xml",
+    "original": "Peso totale: %s g",
+    "final": "Peso dei gomitoli interi: %s g",
+    "problem": "The value is whole packages rounded up times grams/package, not exact consumed mass.",
+    "batch": "B16",
+    "category": "FACT"
+  },
+  {
+    "key": "estimated_skeins",
+    "variant": "default",
+    "file": "app/src/main/res/values-it/strings.xml",
+    "original": "Stima: circa %s gomitoli",
+    "final": "Gomitoli stimati: circa %s",
+    "problem": "The estimate can be 1,00; invariant heading avoids unconditional plural after that number.",
+    "batch": "B16",
+    "category": "LANGUAGE"
+  },
+  {
+    "key": "extra_skein_note",
+    "variant": "default",
+    "file": "app/src/main/res/values-it/strings.xml",
+    "original": "Acquista sempre un gomitolo in più — i bagni di tintura possono variare",
+    "final": "Prevedi del filato extra se necessario e controlla che i bagni di tintura coincidano.",
+    "problem": "One extra ball is not always necessary or sufficient; matching lots is the actual material concern.",
+    "batch": "B16",
+    "category": "FACT"
+  },
+  {
+    "key": "tip_needle_sizes_desc",
+    "variant": "default",
+    "file": "app/src/main/res/values-it/strings.xml",
+    "original": "Il sistema metrico (mm) è lo standard universale. Le misure US usano un sistema numerato (0–50). Le misure UK/Canada usano un altro sistema numerato. Le misure giapponesi hanno una numerazione propria. Controlla sempre la misura in mm per sicurezza.",
+    "final": "Il diametro in millimetri (mm) è il riferimento più preciso. Le misure US usano un sistema numerato. Le misure UK/Canada usano un altro sistema numerato. Le misure giapponesi hanno una numerazione propria. Controlla sempre la misura in mm: la numerazione può variare secondo il produttore.",
+    "problem": "The actual table includes US 000/00 below 0; the universal 0-50 statement is incorrect.",
+    "batch": "B17",
+    "category": "FACT"
+  },
+  {
+    "key": "size_row_baby",
+    "variant": "default",
+    "file": "app/src/main/res/values-it/reference_strings.xml",
+    "original": "Bambino",
+    "final": "Bebè",
+    "problem": "Baby and older child otherwise both read Bambino in the same head table despite different ranges.",
+    "batch": "B17",
+    "category": "CONTEXT"
+  },
+  {
+    "key": "size_row_adult_l",
+    "variant": "default",
+    "file": "app/src/main/res/values-it/reference_strings.xml",
+    "original": "adulto l",
+    "final": "adulto L",
+    "problem": "Lowercase l corrupts the conventional size code L; retain word case.",
+    "batch": "B17",
+    "category": "LANGUAGE"
+  },
+  {
+    "key": "size_row_adult_xl",
+    "variant": "default",
+    "file": "app/src/main/res/values-it/reference_strings.xml",
+    "original": "AdultoXL",
+    "final": "Adulto XL",
+    "problem": "Missing word/code space joins the label into AdultoXL.",
+    "batch": "B17",
+    "category": "LANGUAGE"
+  },
+  {
+    "key": "tip_imperial_units_desc",
+    "variant": "default",
+    "file": "app/src/main/res/values-it/strings.xml",
+    "original": "Quando è attivo, tutti i calcolatori usano pollici invece di centimetri e yard invece di metri. Il campione viene quindi misurato su 4 pollici invece che su 10 cm.",
+    "final": "Imposta pollici e yard come unità predefinite dei calcolatori. Il campione è indicato per 4 pollici invece che per 10 cm. Puoi cambiare unità in Misure e campione.",
+    "problem": "GaugeViewModel uses only initial defaults and allows independent unit changes; tutti ... usano incorrectly promises forced units.",
+    "batch": "B20",
+    "category": "FACT"
+  },
+  {
+    "key": "pro_prompt_reminders_title",
+    "variant": "default",
+    "file": "app/src/main/res/values-it/strings.xml",
+    "original": "Aggiungi un promemoria di riga con Pro",
+    "final": "Aggiungi un promemoria con Pro",
+    "problem": "Reminders use the main count, also rounds/repeats/custom values.",
+    "batch": "B22",
+    "category": "CONTEXT"
+  },
+  {
+    "key": "pro_prompt_reminders_body",
+    "variant": "default",
+    "file": "app/src/main/res/values-it/strings.xml",
+    "original": "Per creare un nuovo promemoria di riga è necessario Pro. I promemoria esistenti continuano a funzionare e rimangono modificabili.",
+    "final": "Per creare un nuovo promemoria è necessario Pro. I promemoria esistenti continuano a funzionare e rimangono modificabili.",
+    "problem": "Reminders use the main count, also rounds/repeats/custom values.",
+    "batch": "B22",
+    "category": "CONTEXT"
+  },
+  {
+    "key": "pro_group_workflow_body",
+    "variant": "default",
+    "file": "app/src/main/res/values-it/strings.xml",
+    "original": "Usa il contatore compatto di ripetizioni, i contatori aggiuntivi, di ripetizione, sagomatura e sezione, i promemoria di riga, le foto del modello come PDF e il widget della schermata Home.",
+    "final": "Usa il contatore compatto di ripetizioni, i contatori aggiuntivi, di ripetizione, sagomatura e sezione, i promemoria, le foto del modello come PDF e il widget della schermata Home.",
+    "problem": "Reminders use the main count, also rounds/repeats/custom values.",
+    "batch": "B22",
+    "category": "CONTEXT"
+  },
+  {
+    "key": "abbr_k_desc",
+    "variant": "default",
+    "file": "app/src/main/res/values-it/reference_strings.xml",
+    "original": "Inserire l\\'ago a diritto, avvolgere il filo, farlo passare",
+    "final": "Inserire il ferro a diritto, avvolgere il filo, farlo passare",
+    "problem": "This tool holds/works live knitting stitches; use ferro, not the sewing needle ago.",
+    "batch": "B18",
+    "category": "TERM"
+  },
+  {
+    "key": "abbr_p_desc",
+    "variant": "default",
+    "file": "app/src/main/res/values-it/reference_strings.xml",
+    "original": "Inserire l\\'ago a rovescio, avvolgere il filo, farlo passare",
+    "final": "Inserire il ferro a rovescio, avvolgere il filo, farlo passare",
+    "problem": "This tool holds/works live knitting stitches; use ferro, not the sewing needle ago.",
+    "batch": "B18",
+    "category": "TERM"
+  },
+  {
+    "key": "abbr_sts_desc",
+    "variant": "default",
+    "file": "app/src/main/res/values-it/reference_strings.xml",
+    "original": "Uno o più anelli sull\\'ago",
+    "final": "Uno o più anelli sul ferro",
+    "problem": "This tool holds/works live knitting stitches; use ferro, not the sewing needle ago.",
+    "batch": "B18",
+    "category": "TERM"
+  },
+  {
+    "key": "abbr_yo_desc",
+    "variant": "default",
+    "file": "app/src/main/res/values-it/reference_strings.xml",
+    "original": "Avvolgi il filo attorno all\\'ago per creare un nuovo punto e un foro decorativo",
+    "final": "Avvolgi il filo attorno al ferro per creare un nuovo punto e un foro decorativo",
+    "problem": "This tool holds/works live knitting stitches; use ferro, not the sewing needle ago.",
+    "batch": "B18",
+    "category": "TERM"
+  },
+  {
+    "key": "abbr_pwise_desc",
+    "variant": "default",
+    "file": "app/src/main/res/values-it/reference_strings.xml",
+    "original": "Inserire l\\'ago come per lavorare a rovescio",
+    "final": "Inserire il ferro come per lavorare a rovescio",
+    "problem": "This tool holds/works live knitting stitches; use ferro, not the sewing needle ago.",
+    "batch": "B18",
+    "category": "TERM"
+  },
+  {
+    "key": "abbr_rem_desc",
+    "variant": "default",
+    "file": "app/src/main/res/values-it/reference_strings.xml",
+    "original": "Punti rimasti sull\\'ago",
+    "final": "Punti rimasti sul ferro",
+    "problem": "This tool holds/works live knitting stitches; use ferro, not the sewing needle ago.",
+    "batch": "B18",
+    "category": "TERM"
+  },
+  {
+    "key": "abbr_lh_desc",
+    "variant": "default",
+    "file": "app/src/main/res/values-it/reference_strings.xml",
+    "original": "Ago sinistro o lato sinistro",
+    "final": "Ferro sinistro o lato sinistro",
+    "problem": "This tool holds/works live knitting stitches; use ferro, not the sewing needle ago.",
+    "batch": "B18",
+    "category": "TERM"
+  },
+  {
+    "key": "abbr_rh_desc",
+    "variant": "default",
+    "file": "app/src/main/res/values-it/reference_strings.xml",
+    "original": "Ago destro o lato destro",
+    "final": "Ferro destro o lato destro",
+    "problem": "This tool holds/works live knitting stitches; use ferro, not the sewing needle ago.",
+    "batch": "B18",
+    "category": "TERM"
+  },
+  {
+    "key": "sym_yarn_over_desc",
+    "variant": "default",
+    "file": "app/src/main/res/values-it/reference_strings.xml",
+    "original": "Avvolgi il filo attorno all\\'ago per creare un buco",
+    "final": "Avvolgi il filo attorno al ferro per creare un buco",
+    "problem": "This tool holds/works live knitting stitches; use ferro, not the sewing needle ago.",
+    "batch": "B19",
+    "category": "TERM"
+  },
+  {
+    "key": "abbr_ws_desc",
+    "variant": "default",
+    "file": "app/src/main/res/values-it/reference_strings.xml",
+    "original": "Il lato privato/retro dell\\'opera",
+    "final": "Il lato interno/retro del lavoro",
+    "problem": "Privato is an inappropriate public/private calque for the reverse of fabric.",
+    "batch": "B18",
+    "category": "TERM"
+  },
+  {
+    "key": "abbr_ssk_meaning",
+    "variant": "default",
+    "file": "app/src/main/res/values-it/reference_strings.xml",
+    "original": "Scivolare, scivolare, lavorare a maglia",
+    "final": "Passare, passare, lavorare insieme a diritto",
+    "problem": "SSK requires stitch transfers and knitting together, not generic scivolare/lavorare a maglia.",
+    "batch": "B18",
+    "category": "TERM"
+  },
+  {
+    "key": "abbr_ssk_desc",
+    "variant": "default",
+    "file": "app/src/main/res/values-it/reference_strings.xml",
+    "original": "Diminuzione inclinata a sinistra: passare 2 maglie a diritto, lavorarle insieme a diritto attraverso l\\'asola dietro",
+    "final": "Diminuzione inclinata a sinistra: passare 2 maglie a diritto una alla volta, lavorarle insieme a diritto attraverso l’asola dietro",
+    "problem": "SSK slips stitches individually; together gives a different orientation.",
+    "batch": "B18",
+    "category": "FACT"
+  },
+  {
+    "key": "abbr_ssp_meaning",
+    "variant": "default",
+    "file": "app/src/main/res/values-it/reference_strings.xml",
+    "original": "Scivolare, scivolare, lavorare a rovescio",
+    "final": "Passare, passare, lavorare insieme a rovescio",
+    "problem": "Slip means transferring stitches; SSP purls the two together.",
+    "batch": "B18",
+    "category": "TERM"
+  },
+  {
+    "key": "abbr_ssp_desc",
+    "variant": "default",
+    "file": "app/src/main/res/values-it/reference_strings.xml",
+    "original": "Diminuzione del rovescio inclinato a sinistra",
+    "final": "Passare 2 maglie a diritto una alla volta, riportarle sul ferro sinistro e lavorarle insieme a rovescio ritorto",
+    "problem": "Original modifies rovescio instead of decrease and leaves view-dependent lean ambiguous; state the operation.",
+    "batch": "B18",
+    "category": "FACT"
+  },
+  {
+    "key": "abbr_skp_desc",
+    "variant": "default",
+    "file": "app/src/main/res/values-it/reference_strings.xml",
+    "original": "Decremento di sinistra, alternativo a SSK",
+    "final": "Diminuzione inclinata a sinistra, alternativa a SSK",
+    "problem": "Decremento di sinistra fails to name the stitch decrease/lean relationship.",
+    "batch": "B18",
+    "category": "TERM"
+  },
+  {
+    "key": "abbr_s2kp_meaning",
+    "variant": "default",
+    "file": "app/src/main/res/values-it/reference_strings.xml",
+    "original": "Passare 2 maglie, 1 maglia diritto, accavallare le maglie passate sopra",
+    "final": "Passare 2 maglie insieme a diritto, lavorare 1 diritto e accavallare le maglie passate",
+    "problem": "Centered double decrease requires slipping both together knitwise.",
+    "batch": "B18",
+    "category": "FACT"
+  },
+  {
+    "key": "abbr_m1_meaning",
+    "variant": "default",
+    "file": "app/src/main/res/values-it/reference_strings.xml",
+    "original": "Fai 1",
+    "final": "Aumentare 1 maglia",
+    "problem": "Fai 1 omits object and operation.",
+    "batch": "B18",
+    "category": "TERM"
+  },
+  {
+    "key": "abbr_m1_desc",
+    "variant": "default",
+    "file": "app/src/main/res/values-it/reference_strings.xml",
+    "original": "Riprendi la barra tra le maglie e lavora a diritto attraverso il filo dietro per aumentare",
+    "final": "Solleva il filo tra due maglie da davanti a dietro e lavoralo a diritto ritorto per aumentare",
+    "problem": "Back-loop completion needs the corresponding pickup direction; describes the left M1 version.",
+    "batch": "B18",
+    "category": "FACT"
+  },
+  {
+    "key": "abbr_m1l_meaning",
+    "variant": "default",
+    "file": "app/src/main/res/values-it/reference_strings.xml",
+    "original": "Ne fai 1 a sinistra",
+    "final": "Aumentare 1 maglia a sinistra",
+    "problem": "Ne fai 1 has no antecedent and omits the increase operation.",
+    "batch": "B18",
+    "category": "TERM"
+  },
+  {
+    "key": "abbr_m1l_desc",
+    "variant": "default",
+    "file": "app/src/main/res/values-it/reference_strings.xml",
+    "original": "Aumentare inclinandosi a sinistra utilizzando la barra tra le maglie",
+    "final": "Aumento inclinato a sinistra usando il filo tra le maglie",
+    "problem": "Inclinandosi makes the person lean, not the increase.",
+    "batch": "B18",
+    "category": "TERM"
+  },
+  {
+    "key": "abbr_m1r_meaning",
+    "variant": "default",
+    "file": "app/src/main/res/values-it/reference_strings.xml",
+    "original": "Fai 1 a destra",
+    "final": "Aumentare 1 maglia a destra",
+    "problem": "Fai 1 omits object and operation.",
+    "batch": "B18",
+    "category": "TERM"
+  },
+  {
+    "key": "abbr_sl_meaning",
+    "variant": "default",
+    "file": "app/src/main/res/values-it/reference_strings.xml",
+    "original": "Scivolare",
+    "final": "Passare una maglia",
+    "problem": "Standalone scivolare is intransitive; name the transfer without working.",
+    "batch": "B18",
+    "category": "TERM"
+  },
+  {
+    "key": "abbr_sl1p_meaning",
+    "variant": "default",
+    "file": "app/src/main/res/values-it/reference_strings.xml",
+    "original": "Scivolarne 1 a rovescio",
+    "final": "Passare 1 maglia a rovescio",
+    "problem": "Scivolarne 1 is not a natural transitive instruction.",
+    "batch": "B18",
+    "category": "TERM"
+  },
+  {
+    "key": "abbr_pu_meaning",
+    "variant": "default",
+    "file": "app/src/main/res/values-it/reference_strings.xml",
+    "original": "Raccogli",
+    "final": "Riprendere le maglie",
+    "problem": "Raccogli is generic gathering instead of the named pickup operation.",
+    "batch": "B18",
+    "category": "TERM"
+  },
+  {
+    "key": "abbr_pm_meaning",
+    "variant": "default",
+    "file": "app/src/main/res/values-it/reference_strings.xml",
+    "original": "Segnaposto",
+    "final": "Posizionare un segnapunto",
+    "problem": "PM is an instruction to place a marker, not the noun segnaposto.",
+    "batch": "B18",
+    "category": "TERM"
+  },
+  {
+    "key": "abbr_eor_meaning",
+    "variant": "default",
+    "file": "app/src/main/res/values-it/reference_strings.xml",
+    "original": "Ogni altra riga",
+    "final": "A ferri alterni",
+    "problem": "Ogni altra riga is ambiguous with every remaining row; EOR means alternate rows.",
+    "batch": "B18",
+    "category": "TERM"
+  },
+  {
+    "key": "abbr_dpn_meaning",
+    "variant": "default",
+    "file": "app/src/main/res/values-it/reference_strings.xml",
+    "original": "Aghi a doppia punta",
+    "final": "Ferri a doppia punta",
+    "problem": "Knitting tools are ferri, not sewing aghi.",
+    "batch": "B18",
+    "category": "TERM"
+  },
+  {
+    "key": "abbr_dpn_desc",
+    "variant": "default",
+    "file": "app/src/main/res/values-it/reference_strings.xml",
+    "original": "Aghi corti appuntiti su entrambe le estremità, utilizzati per lavorare a maglia con circonferenze piccole",
+    "final": "Ferri corti appuntiti su entrambe le estremità, utilizzati per lavorare a maglia con circonferenze piccole",
+    "problem": "Use the correct live-stitch tool name.",
+    "batch": "B18",
+    "category": "TERM"
+  },
+  {
+    "key": "abbr_circ_meaning",
+    "variant": "default",
+    "file": "app/src/main/res/values-it/reference_strings.xml",
+    "original": "Ago circolare",
+    "final": "Ferro circolare",
+    "problem": "A knitting needle is ferro, not sewing ago.",
+    "batch": "B18",
+    "category": "TERM"
+  },
+  {
+    "key": "abbr_circ_desc",
+    "variant": "default",
+    "file": "app/src/main/res/values-it/reference_strings.xml",
+    "original": "Due punte degli aghi collegate da un cavo",
+    "final": "Due punte collegate da un cavo",
+    "problem": "Names the connected knitting-tool tips.",
+    "batch": "B18",
+    "category": "TERM"
+  },
+  {
+    "key": "abbr_tbl_meaning",
+    "variant": "default",
+    "file": "app/src/main/res/values-it/reference_strings.xml",
+    "original": "Attraverso il passante posteriore",
+    "final": "Attraverso l’asola posteriore",
+    "problem": "Passante suggests a belt loop; this is a stitch back loop.",
+    "batch": "B18",
+    "category": "TERM"
+  },
+  {
+    "key": "abbr_ktbl_meaning",
+    "variant": "default",
+    "file": "app/src/main/res/values-it/reference_strings.xml",
+    "original": "Lavorare attraverso il filo dietro",
+    "final": "Lavorare a diritto attraverso il filo dietro",
+    "problem": "Ktbl explicitly requires knit, omitted from the original.",
+    "batch": "B18",
+    "category": "TERM"
+  },
+  {
+    "key": "abbr_wyif_desc",
+    "variant": "default",
+    "file": "app/src/main/res/values-it/reference_strings.xml",
+    "original": "Tieni il filo sul davanti (lato rovescio) del lavoro",
+    "final": "Tieni il filo davanti al lavoro, sul lato rivolto verso di te",
+    "problem": "Front is viewer-relative, not necessarily fabric wrong side.",
+    "batch": "B18",
+    "category": "FACT"
+  },
+  {
+    "key": "abbr_wyib_desc",
+    "variant": "default",
+    "file": "app/src/main/res/values-it/reference_strings.xml",
+    "original": "Tenere il filo sul retro (lato lavorato) del lavoro",
+    "final": "Tenere il filo dietro al lavoro, sul lato opposto a te",
+    "problem": "Back is viewer-relative, not necessarily the knit/right side.",
+    "batch": "B18",
+    "category": "FACT"
+  },
+  {
+    "key": "abbr_wt_desc",
+    "variant": "default",
+    "file": "app/src/main/res/values-it/reference_strings.xml",
+    "original": "Avvolgi la maglia successiva e gira il lavoro per modellare il ferro corto",
+    "final": "Avvolgi la maglia successiva e gira il lavoro per la sagomatura a ferri accorciati",
+    "problem": "Ferro corto means a short tool; W&T is short-row shaping.",
+    "batch": "B18",
+    "category": "TERM"
+  },
+  {
+    "key": "abbr_seed_st_desc",
+    "variant": "default",
+    "file": "app/src/main/res/values-it/reference_strings.xml",
+    "original": "Alternando K1, P1 con offset ogni riga",
+    "final": "Alterna 1 diritto e 1 rovescio; nei ferri successivi lavora a rovescio le maglie che si presentano a diritto e viceversa",
+    "problem": "Untranslated offset is unclear and positional alternation depends on parity; describe stitch relationship.",
+    "batch": "B18",
+    "category": "FACT"
+  },
+  {
+    "key": "abbr_alt_meaning",
+    "variant": "default",
+    "file": "app/src/main/res/values-it/reference_strings.xml",
+    "original": "Alternativo",
+    "final": "Alternato",
+    "problem": "Alternate is alternating/every other, not an alternative choice.",
+    "batch": "B18",
+    "category": "TERM"
+  },
+  {
+    "key": "abbr_alt_desc",
+    "variant": "default",
+    "file": "app/src/main/res/values-it/reference_strings.xml",
+    "original": "Ogni altra riga o punto",
+    "final": "A ferri alterni o a maglie alterne",
+    "problem": "Ogni altra ambiguously means all other items instead of alternating.",
+    "batch": "B18",
+    "category": "TERM"
+  },
+  {
+    "key": "abbr_selvage_meaning",
+    "variant": "default",
+    "file": "app/src/main/res/values-it/reference_strings.xml",
+    "original": "Punto cimosa/cimosa",
+    "final": "Maglia di vivagno/cimosa",
+    "problem": "Punto cimosa/cimosa duplicates the noun and fails to name the edge stitch.",
+    "batch": "B18",
+    "category": "TERM"
+  },
+  {
+    "key": "abbr_wpi_desc",
+    "variant": "default",
+    "file": "app/src/main/res/values-it/reference_strings.xml",
+    "original": "Misurazione dello spessore del filato: avvolge un righello per pollice",
+    "final": "Misura dello spessore del filato: numero di avvolgimenti affiancati, senza sovrapporli, in un pollice",
+    "problem": "The original fails to state that wraps within one inch are counted.",
+    "batch": "B18",
+    "category": "FACT"
+  },
+  {
+    "key": "abbr_gauge_meaning",
+    "variant": "default",
+    "file": "app/src/main/res/values-it/reference_strings.xml",
+    "original": "Calibro/tensione",
+    "final": "Campione/tensione",
+    "problem": "Calibro is a measuring tool/caliber, not knitting density/sample.",
+    "batch": "B18",
+    "category": "TERM"
+  },
+  {
+    "key": "sym_knit_tbl_desc",
+    "variant": "default",
+    "file": "app/src/main/res/values-it/reference_strings.xml",
+    "original": "Lavorare attraverso il filo dietro (ritorto)",
+    "final": "Lavorare a diritto attraverso il filo dietro (ritorto)",
+    "problem": "Knit is omitted; back-loop alone does not distinguish purl.",
+    "batch": "B19",
+    "category": "TERM"
+  },
+  {
+    "key": "sym_ssk_desc",
+    "variant": "default",
+    "file": "app/src/main/res/values-it/reference_strings.xml",
+    "original": "Scivolare, scivolare, lavorare a maglia: diminuzione inclinata a sinistra",
+    "final": "Passare 2 maglie a diritto una alla volta e lavorarle insieme a diritto ritorto: diminuzione inclinata a sinistra",
+    "problem": "Literal scivolare/lavorare a maglia fails to describe SSK.",
+    "batch": "B19",
+    "category": "TERM"
+  },
+  {
+    "key": "sym_sk2p_desc",
+    "variant": "default",
+    "file": "app/src/main/res/values-it/reference_strings.xml",
+    "original": "Scivolare 1, lavorare 2 insieme a diritto, accavallare la maglia passata sopra",
+    "final": "Passare 1 maglia, lavorare 2 insieme a diritto, accavallare la maglia passata sopra",
+    "problem": "Scivolare is intransitive rather than a stitch-transfer instruction.",
+    "batch": "B19",
+    "category": "TERM"
+  },
+  {
+    "key": "sym_m1l_desc",
+    "variant": "default",
+    "file": "app/src/main/res/values-it/reference_strings.xml",
+    "original": "Fai 1 a sinistra: aumento inclinato a sinistra",
+    "final": "Aumentare 1 maglia con inclinazione a sinistra",
+    "problem": "Fai 1 does not identify what is created.",
+    "batch": "B19",
+    "category": "TERM"
+  },
+  {
+    "key": "sym_m1r_desc",
+    "variant": "default",
+    "file": "app/src/main/res/values-it/reference_strings.xml",
+    "original": "Fai 1 a destra: aumento inclinato a destra",
+    "final": "Aumentare 1 maglia con inclinazione a destra",
+    "problem": "Fai 1 does not identify what is created.",
+    "batch": "B19",
+    "category": "TERM"
+  },
+  {
+    "key": "sym_kfb_desc",
+    "variant": "default",
+    "file": "app/src/main/res/values-it/reference_strings.xml",
+    "original": "Lavorare davanti e dietro – aumentare",
+    "final": "Lavorare a diritto davanti e dietro la stessa maglia – aumento",
+    "problem": "KFB works knit front/back of one stitch; original omits both restrictions.",
+    "batch": "B19",
+    "category": "TERM"
+  },
+  {
+    "key": "sym_lifted_inc_left_name",
+    "variant": "default",
+    "file": "app/src/main/res/values-it/reference_strings.xml",
+    "original": "Sollevato Inc a sinistra",
+    "final": "Aumento sollevato a sinistra",
+    "problem": "Inc is an untranslated noun, with inverted adjective syntax.",
+    "batch": "B19",
+    "category": "TERM"
+  },
+  {
+    "key": "sym_lifted_inc_right_name",
+    "variant": "default",
+    "file": "app/src/main/res/values-it/reference_strings.xml",
+    "original": "Sollevato Inc a destra",
+    "final": "Aumento sollevato a destra",
+    "problem": "Inc is an untranslated noun, with inverted adjective syntax.",
+    "batch": "B19",
+    "category": "TERM"
+  },
+  {
+    "key": "chart_symbols_disclaimer",
+    "variant": "default",
+    "file": "app/src/main/res/values-it/strings.xml",
+    "original": "I simboli seguono le convenzioni standard. Controlla sempre la legenda del tuo modello.",
+    "final": "I simboli descrivono le maglie viste dal diritto del lavoro. Controlla sempre la legenda del tuo modello.",
+    "problem": "CYC glyphs are right-side views; standard alone does not establish side-dependent reading.",
+    "batch": "B19",
+    "category": "FACT"
+  }
+]

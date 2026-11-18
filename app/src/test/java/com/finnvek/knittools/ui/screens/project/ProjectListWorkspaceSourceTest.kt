@@ -1,10 +1,13 @@
 package com.finnvek.knittools.ui.screens.project
 
 import com.finnvek.knittools.ProjectSourceFiles
+import com.finnvek.knittools.domain.model.CounterProject
+import com.finnvek.knittools.ui.components.normalizedContinueKnittingSectionName
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.nio.file.Files
 
 class ProjectListWorkspaceSourceTest {
     @Test
@@ -13,8 +16,132 @@ class ProjectListWorkspaceSourceTest {
 
         assertTrue(viewModel.contains("val sectionName: String?"))
         assertTrue(viewModel.contains("val targetRows: Int?"))
-        assertTrue(viewModel.contains("sectionName = candidate.sectionName"))
-        assertTrue(viewModel.contains("targetRows = candidate.targetRows"))
+        val hero =
+            ProjectListContent(
+                active =
+                    listOf(
+                        CounterProject(id = 7, name = "Cardigan", count = 12, sectionName = "Sleeve", targetRows = 40),
+                    ),
+            ).continueKnitting
+        assertEquals("Sleeve", hero?.sectionName)
+        assertEquals(40, hero?.targetRows)
+        assertFalse(viewModel.contains("val totalMinutes: Int"))
+        assertFalse(viewModel.contains("getTotalMinutesForProject"))
+    }
+
+    @Test
+    fun `continue card is shared by the hero and the overview with one physical continue button`() {
+        val card = ProjectSourceFiles.read(CONTINUE_CARD)
+        val screen = ProjectSourceFiles.read(PROJECT_LIST_SCREEN)
+        val overview = ProjectSourceFiles.read(PROJECT_OVERVIEW_SCREEN)
+        val continueAction = sourceFrom(card, "CounterImageButton(")
+
+        assertTrue(card.contains("mainCounterTargetStatus(display.targetLine)"))
+        assertTrue(card.contains("mainCounterTargetFraction(display.targetLine)"))
+        assertTrue(card.contains("if (progressFraction != null)"))
+        assertTrue(card.contains("ProjectProgressBar(progressFraction)"))
+        assertTrue(card.contains("MaterialTheme.knitToolsColors.primaryReadable"))
+        // Ylärivi seuraa käsityötyyppiä, eikä virkkausprojektille sanota "Continue knitting".
+        assertTrue(card.contains("project.craftType == CraftType.CROCHET -> R.string.continue_crocheting"))
+        assertTokensInOrder(
+            continueAction,
+            "imageRes = R.drawable.counter_continue_button",
+            "contentDescription = stringResource(R.string.project_continue_content_description, project.name)",
+            "visualSize = ProjectListDimens.HeroActionVisualSize",
+            "onClick = it",
+            "modifier = Modifier.size(ProjectListDimens.HeroActionTouchSize)",
+        )
+        // Iso lukema on samaa primary-oranssia kuin palkki ja painike.
+        assertTrue(card.contains("style = MaterialTheme.typography.projectHeroCount"))
+        assertTrue(card.contains("color = MaterialTheme.colorScheme.primary"))
+        // Listalla heron runko avaa projektinäkymän ja nappi laskurin; projektinäkymässä molemmat laskurin.
+        assertTokensInOrder(
+            screen,
+            "ContinueProjectCard(",
+            "onClick = { actions.onOpenOverview(ck.projectId) }",
+            "onClickLabel = stringResource(R.string.project_card_open_overview_action)",
+            "onOpenCounter = { actions.onOpenCounter(ck.projectId) }",
+        )
+        assertTokensInOrder(
+            overview,
+            "ContinueProjectCard(",
+            "onClick = onOpenCounter.takeUnless { state.isCompleted }",
+            "onOpenCounter = onOpenCounter.takeUnless { state.isCompleted }",
+            "showName = false",
+        )
+        assertFalse(overview.contains("R.string.project_overview_open_counter"))
+        assertTrue(
+            "counter_continue_button.webp is missing",
+            Files.exists(ProjectSourceFiles.file(COUNTER_CONTINUE_BUTTON_ASSET)),
+        )
+        assertFalse(screen.contains("DurationDisplayFormatter"))
+        assertFalse(screen.contains("formatMinutes"))
+        assertFalse(screen.contains("R.string.project_metadata_format"))
+        assertFalse(screen.contains("BorderStroke"))
+        assertFalse(screen.contains("Brush.linearGradient"))
+        assertFalse(screen.contains("imageVector = Icons.Filled.PlayArrow"))
+    }
+
+    @Test
+    fun `new project action uses the physical plus button outside multi select mode`() {
+        val screen = ProjectSourceFiles.read(PROJECT_LIST_SCREEN)
+        val screenFunction =
+            sourceBetween(screen, "fun ProjectListScreen(", "private fun ProjectListDialogs(")
+        val content =
+            sourceBetween(
+                screen,
+                "private fun ProjectListContent(",
+                "private fun ProjectSectionLabel(",
+            )
+        val createAction = sourceFrom(screenFunction, "LabeledCounterImageButton(")
+        val dimens = ProjectSourceFiles.read(PROJECT_LIST_DIMENS)
+
+        // Plus-napin vieressä on teksti: sama plus tarkoittaa laskurissa rivin lisäämistä.
+        assertTrue(screenFunction.contains("val newProjectLabel = stringResource(R.string.new_project)"))
+        assertTrue(screenFunction.contains("val showCreateButton = !isMultiSelectMode && !showFullWelcome"))
+        // Matalassa ikkunassa painike on yläpalkissa, muuten kelluvana oikeassa alakulmassa.
+        assertTrue(
+            screenFunction.contains("val createButtonInTopBar = LocalAdaptiveContentSize.current.isCompactHeight"),
+        )
+        assertTrue(normalizeWhitespace(screenFunction).contains("if (showFloatingCreateButton) { newProjectButton("))
+        assertTokensInOrder(
+            createAction,
+            "imageRes = R.drawable.counter_plus_button",
+            "label = newProjectLabel",
+            "onClick = requestProjectCreation",
+            "ProjectListDimens.CreateButtonTopBarVisualSize",
+            "ProjectListDimens.CreateButtonVisualSize",
+            ".align(Alignment.BottomEnd)",
+            ".padding(ProjectListDimens.CreateButtonMargin)",
+        )
+        assertTokensInOrder(
+            content,
+            "LazyVerticalGrid(",
+            "contentPadding =",
+            "PaddingValues(",
+            "start = ProjectListDimens.ScreenHorizontalPadding",
+            "top = ProjectListDimens.ListTopPadding",
+            "end = ProjectListDimens.ScreenHorizontalPadding",
+            "bottom =",
+            "if (showFloatingCreateButton)",
+            "ProjectListDimens.ListBottomPaddingWithCreateButton",
+            "else",
+            "ProjectListDimens.ListBottomPadding",
+        )
+        assertTrue(dimens.contains("val CreateButtonVisualSize = 64.dp"))
+        assertTrue(dimens.contains("val ListBottomPaddingWithCreateButton = 112.dp"))
+        assertTrue(dimens.contains("val ListBottomPadding = 16.dp"))
+        assertTrue(
+            "counter_plus_button.webp is missing",
+            Files.exists(ProjectSourceFiles.file(COUNTER_PLUS_BUTTON_ASSET)),
+        )
+        assertFalse(screen.contains("FloatingActionButton"))
+        assertFalse(screen.contains("ProBadge"))
+        assertTrue(screen.contains("viewModel.proState.collectAsStateWithLifecycle()"))
+        assertTrue(screen.contains("viewModel.proAccessReady.collectAsStateWithLifecycle()"))
+        assertTrue(screen.contains("ready = proAccessReady && !content.isLoading"))
+        assertTrue(screen.contains("needsEntitlement = content.activeProjectCount >= 1"))
+        assertFalse(screen.contains("viewModel.projectCount.collectAsStateWithLifecycle()"))
     }
 
     @Test
@@ -24,58 +151,169 @@ class ProjectListWorkspaceSourceTest {
     }
 
     @Test
-    fun `project cards open project photos from their photo indicator`() {
+    fun `welcome uses loaded unfiltered state and shares creation with the floating action`() {
         val screen = ProjectSourceFiles.read(PROJECT_LIST_SCREEN)
-        val navGraph = ProjectSourceFiles.read(NAV_GRAPH)
-
-        assertTrue(screen.contains("onPhotoGallery: (Long) -> Unit = {}"))
-        assertTrue(screen.contains("CollectWithLifecycleEffect(viewModel.navigateToPhotoGallery) { projectId ->"))
-        assertTrue(screen.contains("onPhotoGallery(projectId)"))
-        assertTrue(screen.contains("onPhotoGallery = viewModel::openPhotoGallery"))
-        assertTrue(screen.contains("onPhotosClick = { actions.onPhotoGallery(project.id) }"))
-        assertTrue(navGraph.contains("onPhotoGallery = { projectId ->"))
-        assertTrue(navGraph.contains("counterViewModel.selectProjectByIdForLaunch(projectId) { loaded ->"))
-        assertTrue(navGraph.contains("if (loaded) {"))
-        assertTrue(navGraph.contains("navController.navigateSingleTopTo(Screen.PhotoGallery.route)"))
+        val nav = ProjectSourceFiles.read(NAV_GRAPH)
+        assertTrue(screen.contains("isLoading = content.isLoading"))
+        assertTrue(screen.contains("hasAnyProject = content.hasAnyProject"))
+        assertTrue(screen.contains("compact = state.welcomeDismissed"))
+        assertTrue(screen.contains("onCreateProject = requestProjectCreation"))
+        assertTokensInOrder(
+            screen,
+            "val requestProjectCreation = {",
+            "creationFolderId = (selectedFolderFilter as? ProjectFolderFilter.Folder)?.folderId",
+            "creationFolderName = folders.firstOrNull { it.id == creationFolderId }?.name",
+            "viewModel.requestProjectCreation()",
+        )
+        assertTokensInOrder(
+            screen,
+            "if (state.isLoading)",
+            "if (!state.hasAnyProject && !state.isMultiSelectMode)",
+            "ProjectsStartState(",
+            "if (state.selectedFolderFilter != ProjectFolderFilter.AllProjects",
+            "ProjectFolderEmptyState(",
+        )
+        assertTrue(nav.contains("onOpenTools = { navController.navigateToTopLevel(TopLevelDestination.Tools) }"))
     }
 
     @Test
-    fun `project cards open only attached local patterns from their pattern indicator`() {
+    fun `cards open overview and only the continue hero opens counter`() {
         val screen = ProjectSourceFiles.read(PROJECT_LIST_SCREEN)
-        val navGraph = ProjectSourceFiles.read(NAV_GRAPH)
-
-        assertTrue(screen.contains("onPatternViewer: (Long) -> Unit = {}"))
-        assertTrue(screen.contains("onPatternViewer = onPatternViewer"))
-        assertTrue(screen.contains("hasPatternAttachment = !project.patternUri.isNullOrBlank()"))
-        assertTrue(screen.contains("onPatternClick = { actions.onPatternViewer(project.id) }"))
-        assertTrue(navGraph.contains("onPatternViewer = { projectId ->"))
-        assertTrue(navGraph.contains("navController.navigateSingleTopTo(Screen.PatternViewer(projectId).route)"))
+        val nav = ProjectSourceFiles.read(NAV_GRAPH)
+        // ContinueProjectCard ei kuulu laskuun: haetaan vain itsenäinen ProjectCard-kutsu.
+        assertEquals(1, "(?<![A-Za-z])ProjectCard\\(".toRegex().findAll(screen).count())
+        val content = sourceBetween(screen, "private fun ProjectListContent(", "private fun ProjectListItem(")
+        assertEquals(2, "ProjectListItem\\(".toRegex().findAll(content).count())
+        assertTrue(screen.contains("actions.onOpenOverview(project.id)"))
+        assertFalse(screen.contains("actions.onOpenCounter(project.id)"))
+        assertTrue(screen.contains("actions.onOpenCounter(ck.projectId)"))
+        assertTrue(screen.contains("actions.onOpenOverview(ck.projectId)"))
+        assertTrue(screen.contains("onOpenCounter(projectId)"))
+        assertTrue(nav.contains("Screen.ProjectOverview(projectId).route"))
+        val counterAction = sourceBetween(nav, "onOpenCounter = { projectId ->", "onUpgradeToPro =")
+        assertTokensInOrder(
+            counterAction,
+            "navController.currentBackStackEntry?.id == backStackEntry.id",
+            "onLaunchCounter(projectId)",
+        )
+        assertTrue(screen.contains("ProjectListDimens.CardSpacing"))
     }
 
     @Test
-    fun `project cards open first linked yarn card from their yarn row`() {
+    fun `section counts follow normal multi select hero only empty and completed states`() {
         val screen = ProjectSourceFiles.read(PROJECT_LIST_SCREEN)
-        val navGraph = ProjectSourceFiles.read(NAV_GRAPH)
+        val content =
+            sourceBetween(
+                screen,
+                "private fun ProjectListContent(",
+                "private fun ProjectSectionLabel(",
+            )
+        val sectionLabel =
+            sourceBetween(screen, "private fun ProjectSectionLabel(", "private fun DeleteProjectDialog(")
+        val visibleActiveFilter = sourceBetween(content, "val visibleActiveProjects =", "LazyVerticalGrid(")
+        val normalizedContent = normalizeWhitespace(content)
 
-        assertTrue(screen.contains("onYarnCard: (Long) -> Unit = {}"))
-        assertTrue(screen.contains("onYarnCard = onYarnCard"))
-        assertTrue(screen.contains("val yarnCardIds: Map<Long, Long>"))
-        assertTrue(screen.contains("firstYarnCardId = state.yarnCardIds[project.id]"))
-        assertTrue(screen.contains("onYarnClick ="))
-        assertTrue(screen.contains("state.firstYarnCardId?.let { yarnCardId ->"))
-        assertTrue(screen.contains("{ actions.onYarnCard(yarnCardId) }"))
-        assertFalse(screen.contains("parseYarnCardIds(project.yarnCardIds).firstOrNull()"))
-        assertTrue(navGraph.contains("onYarnCard = { cardId ->"))
-        assertTrue(navGraph.contains("navController.navigateToTopLevel(TopLevelDestination.Library)"))
-        assertTrue(navGraph.contains("navController.navigateSingleTopTo(Screen.YarnCardDetail(cardId).route)"))
+        assertTrue(content.contains("val isHeroVisible = !state.isMultiSelectMode && state.continueKnitting != null"))
+        assertTokensInOrder(
+            visibleActiveFilter,
+            "if (isHeroVisible)",
+            "state.active.filterNot",
+            "it.id == heroProjectId",
+            "else",
+            "state.active",
+        )
+        assertTrue(normalizedContent.contains("if (!state.isMultiSelectMode) { state.continueKnitting?.let"))
+        assertTrue(content.contains("if (visibleActiveProjects.isNotEmpty() || !isHeroVisible)"))
+        // Aktiivisten määrä sisältää heron projektin, vaikka sille ei piirretä omaa korttia.
+        assertTrue(content.contains("count = state.active.size"))
+        assertFalse(content.contains("count = visibleActiveProjects.size"))
+        assertTrue(content.contains("items = visibleActiveProjects"))
+        assertTrue(content.contains("if (visibleActiveProjects.isEmpty())"))
+        assertTrue(content.contains("text = stringResource(R.string.no_active_projects)"))
+        assertTrue(content.contains("if (state.showCompleted)"))
+        assertTrue(content.contains("count = state.completed.size"))
+        assertTokensInOrder(
+            sectionLabel,
+            "SectionLabel(",
+            "R.string.project_section_count_format",
+            "text",
+            "count",
+        )
     }
 
     @Test
-    fun `project card yarn color uses the linked yarn card id`() {
+    fun `completed rows use loaded data for context final count and completion time`() {
         val screen = ProjectSourceFiles.read(PROJECT_LIST_SCREEN)
+        val content =
+            sourceBetween(
+                screen,
+                "private fun ProjectListContent(",
+                "private fun ProjectListItem(",
+            )
+        val completedRows =
+            sourceBetween(
+                content,
+                "items = state.completed,",
+                "if (index / columns < state.completed.lastIndex / columns)",
+            )
+        val item =
+            sourceBetween(
+                screen,
+                "private fun ProjectListItem(",
+                "private fun ProjectSectionLabel(",
+            )
 
-        assertEquals(2, "yarnColorSeed = state.firstYarnCardId".toRegex().findAll(screen).count())
-        assertFalse(screen.contains("yarnColorSeed = project.id"))
+        assertTrue(completedRows.contains("project = project.copy(count = project.totalRows ?: project.count)"))
+        assertTrue(completedRows.contains("state = state"))
+        assertTrue(item.contains("photoUri = state.latestPhotoUris[project.id]"))
+        assertTrue(completedRows.contains("patternName = project.patternName"))
+        assertFalse(completedRows.contains("completedYarn"))
+        assertFalse(completedRows.contains("completedAttachment"))
+    }
+
+    @Test
+    fun `default project list count and completed formats match the workspace contract`() {
+        val strings = ProjectSourceFiles.read(DEFAULT_STRINGS)
+
+        assertTrue(strings.contains("<string name=\"project_completed_format\">Completed %1\$s</string>"))
+        assertTrue(strings.contains("<string name=\"project_section_count_format\">%1\$s %2\$d</string>"))
+    }
+
+    // CPD-OFF: Lahdekooditestin rajausapu pidetaan tarkistuksen yhteydessa.
+    private fun sourceBetween(
+        source: String,
+        start: String,
+        end: String,
+    ): String {
+        val startIndex = source.indexOf(start)
+        check(startIndex >= 0) { "Missing source marker: $start" }
+        val endIndex = source.indexOf(end, startIndex + start.length)
+        check(endIndex > startIndex) { "Missing source marker after $start: $end" }
+        return source.substring(startIndex, endIndex)
+    }
+
+    private fun sourceFrom(
+        source: String,
+        start: String,
+    ): String {
+        val startIndex = source.indexOf(start)
+        check(startIndex >= 0) { "Missing source marker: $start" }
+        return source.substring(startIndex)
+    }
+
+    private fun normalizeWhitespace(source: String): String = source.replace(WHITESPACE, " ").trim()
+    // CPD-ON
+
+    private fun assertTokensInOrder(
+        source: String,
+        vararg tokens: String,
+    ) {
+        var searchFrom = 0
+        tokens.forEach { token ->
+            val position = source.indexOf(token, searchFrom)
+            assertTrue("Missing or out-of-order source token: $token", position >= 0)
+            searchFrom = position + token.length
+        }
     }
 
     private companion object {
@@ -83,7 +321,21 @@ class ProjectListWorkspaceSourceTest {
             "app/src/main/java/com/finnvek/knittools/ui/screens/project/ProjectListViewModel.kt"
         private const val PROJECT_LIST_SCREEN =
             "app/src/main/java/com/finnvek/knittools/ui/screens/project/ProjectListScreen.kt"
+        private const val CONTINUE_CARD =
+            "app/src/main/java/com/finnvek/knittools/ui/components/ContinueProjectCard.kt"
+        private const val PROJECT_OVERVIEW_SCREEN =
+            "app/src/main/java/com/finnvek/knittools/ui/screens/project/ProjectOverviewScreen.kt"
+        private const val PROJECT_LIST_ITEM =
+            "app/src/main/java/com/finnvek/knittools/ui/components/ProjectCard.kt"
+        private const val PROJECT_LIST_DIMENS =
+            "app/src/main/java/com/finnvek/knittools/ui/theme/ProjectListDimens.kt"
         private const val NAV_GRAPH =
             "app/src/main/java/com/finnvek/knittools/ui/navigation/NavGraph.kt"
+        private const val DEFAULT_STRINGS = "app/src/main/res/values/strings.xml"
+        private const val COUNTER_CONTINUE_BUTTON_ASSET =
+            "app/src/main/res/drawable-nodpi/counter_continue_button.webp"
+        private const val COUNTER_PLUS_BUTTON_ASSET =
+            "app/src/main/res/drawable-nodpi/counter_plus_button.webp"
+        private val WHITESPACE = "\\s+".toRegex()
     }
 }

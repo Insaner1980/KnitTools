@@ -3,6 +3,7 @@ package com.finnvek.knittools.ui.screens.insights
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
+import com.finnvek.knittools.domain.calculator.DurationDisplayFormatter
 import com.finnvek.knittools.ui.theme.KnitToolsTheme
 import org.junit.Rule
 import org.junit.Test
@@ -19,6 +20,7 @@ class InsightsHeroAnimationTest {
                 InsightsHero(
                     state =
                         InsightsUiState(
+                            totalDuration = DurationDisplayFormatter.fromMinutes(45),
                             totalMinutes = 45,
                             timeRange = TimeRange.THIS_MONTH,
                         ),
@@ -42,6 +44,7 @@ class InsightsHeroAnimationTest {
                 InsightsHero(
                     state =
                         InsightsUiState(
+                            totalDuration = DurationDisplayFormatter.fromMinutes(targetMinutes.intValue),
                             totalMinutes = targetMinutes.intValue,
                             timeRange = TimeRange.THIS_MONTH,
                         ),

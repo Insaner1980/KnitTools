@@ -1,0 +1,111 @@
+{
+  "date": "2026-10-19",
+  "translatable_keys": 1349,
+  "translatable_variants": 1380,
+  "plural_keys": 31,
+  "aliases": [
+    [
+      [
+        "web_pattern_error_designer_too_long",
+        "value"
+      ],
+      "@string/web_pattern_error_title_too_long"
+    ]
+  ],
+  "missing_or_extra": [],
+  "placeholder_errors": [],
+  "coverage_rows": 2315,
+  "shared_source_hashes_reused_unchanged": 449,
+  "gradle_exit_code": 0,
+  "gradle_result": "BUILD SUCCESSFUL in 1m 14s",
+  "suites": [
+    {
+      "name": "com.finnvek.knittools.PatternReadingAssistanceLocalizationTest",
+      "tests": "1",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "sha256": "40646b5f1d4ce73a0f5876d1a98c0c0dfbd030094f9ec17dc970dfe505e38b78",
+      "methods": [
+        "all supported locales define the complete reading assistance string set"
+      ]
+    },
+    {
+      "name": "com.finnvek.knittools.ReferenceResourceLocalizationTest",
+      "tests": "2",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "sha256": "3c9d69c707de6fe90e8e002b0e4660df029dcef70347c5ccd4472d61c33c266d",
+      "methods": [
+        "text aliases resolve and plurals include other in every supported locale",
+        "supported locales define all translatable text resources with matching types"
+      ]
+    },
+    {
+      "name": "com.finnvek.knittools.ui.CountPluralResourcesSourceTest",
+      "tests": "1",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "sha256": "6a1fe2c1ffb6a5cdb18854c1f2a0028f579f8d11b79cf2934b49dcc370f59e97",
+      "methods": [
+        "counts use plural resources in every locale"
+      ]
+    },
+    {
+      "name": "com.finnvek.knittools.ui.screens.counter.CounterStringResourcesSourceTest",
+      "tests": "7",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "sha256": "2401340ed4f2a9298ab7549f35977082dba1915fbf5c9100eb2ace49fc71bdc6",
+      "methods": [
+        "localized counter strings avoid stale copy",
+        "counter scoped source does not use middle dot separators or old shaping string",
+        "repeat section progress format uses locked English and Finnish copy",
+        "localized counter strings include target helper plurals",
+        "repeat section progress format keeps placeholders in order in every locale",
+        "English repeat section progress format does not use old of structure",
+        "project card rows use plural resources in every locale"
+      ]
+    }
+  ],
+  "final_reconciliation": {
+    "preserved_entry_files": 1127,
+    "authorized_modified_entry_files": [
+      "app/src/main/res/values-fi/pattern_reading_assistance.xml",
+      "app/src/main/res/values-fi/strings.xml"
+    ],
+    "unauthorized_modified_entry_files": [],
+    "inverse_correction_check": [
+      {
+        "path": "app/src/main/res/values-fi/pattern_reading_assistance.xml",
+        "reversing_only_task_corrections_matches_entry": true
+      },
+      {
+        "path": "app/src/main/res/values-fi/strings.xml",
+        "reversing_only_task_corrections_matches_entry": true
+      }
+    ],
+    "git_diff_check": "PASS",
+    "staged_files": 0,
+    "all_input_hashes_match": 456,
+    "all_coverage_content_dimensions_closed": true,
+    "entry_inventory_reconciliation": [
+      {
+        "path": "ui-insights-päivitys.md",
+        "disposition": "Pre-existing tracked non-ASCII filename omitted by entry inventory quoted-path handling; current bytes equal HEAD and worktree is clean for this file.",
+        "sha256": "27913a131ec55893f188f3570def64166b9a42b5b310dbcdded4ff59ec444658"
+      }
+    ],
+    "task_created_paths_only_under_fi_records": true
+  },
+  "process_cleanup": {
+    "gradle_exec_session": 52343,
+    "exit_code": 0,
+    "single_use_daemon_pid": 28008,
+    "daemon_process_present_at_closeout": false,
+    "other_temporary_processes_started": []
+  }
+}

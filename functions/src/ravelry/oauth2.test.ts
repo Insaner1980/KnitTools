@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
+import { httpsErrorFor } from "./callable";
+
 import {
   OAuthTokenExchangeError,
   exchangeOAuth2CodeForToken,
@@ -8,10 +10,84 @@ import {
 } from "./oauth2";
 
 describe("Ravelry OAuth2 token exchange", () => {
+  for (const grant of ["exchange", "refresh"] as const) {
+    it(`rejects missing ${grant} configuration without sending a token request`, async () => {
+      let fetchCalls = 0;
+      const fetchImpl: typeof fetch = async () => {
+        fetchCalls++;
+        return Response.json({ access_token: "synthetic-access" });
+      };
+      for (const config of [
+        { clientId: "", clientSecret: "synthetic-secret" },
+        { clientId: "synthetic-client", clientSecret: "" },
+      ]) {
+        const request = grant === "exchange"
+          ? exchangeOAuth2CodeForToken({ ...config, fetchImpl, code: "synthetic-code",
+            codeVerifier: "synthetic-verifier", redirectUri: "https://callback.example/ravelry" })
+          : refreshOAuth2AccessToken({ ...config, fetchImpl, refreshToken: "synthetic-refresh" });
+        await assert.rejects(request, { statusCode: 503 });
+      }
+      assert.equal(fetchCalls, 0);
+    });
+
+    for (const failure of ["network", "missing-token", "empty-token", "null-body"] as const) {
+      it(`maps ${grant} ${failure} failures to sanitized unavailability`, async () => {
+        const fetchImpl: typeof fetch = async () => {
+          if (failure === "network") throw new Error("synthetic-private-provider-detail");
+          const body = failure === "null-body" ? null : failure === "empty-token" ? { access_token: "" } : {};
+          return Response.json(body);
+        };
+        const common = { clientId: "synthetic-client", clientSecret: "synthetic-secret", fetchImpl };
+        const request = grant === "exchange"
+          ? exchangeOAuth2CodeForToken({ ...common, code: "synthetic-code", codeVerifier: "synthetic-verifier",
+            redirectUri: "https://callback.example/ravelry" })
+          : refreshOAuth2AccessToken({ ...common, refreshToken: "synthetic-refresh" });
+
+        await assert.rejects(request, (error: unknown) => {
+          assert.ok(error instanceof OAuthTokenExchangeError);
+          assert.equal(error.statusCode, 503);
+          assert.equal(error.message, "ravelry_token_exchange_failed_503");
+          assert.equal(httpsErrorFor(error).code, "unavailable");
+          return true;
+        });
+      });
+    }
+  }
+
+  it("distinguishes absent expiry from malformed or overflowing provider deadlines", async () => {
+    for (const expiry of [null, "60", {}, Number.MAX_VALUE]) {
+      await assert.rejects(refreshOAuth2AccessToken({
+        clientId: "synthetic-client", clientSecret: "synthetic-secret", refreshToken: "synthetic-refresh",
+        fetchImpl: async () => Response.json({ access_token: "synthetic-access", expires_in: expiry }),
+      }), { statusCode: 503 });
+    }
+    const withoutExpiry = await refreshOAuth2AccessToken({
+      clientId: "synthetic-client", clientSecret: "synthetic-secret", refreshToken: "synthetic-refresh",
+      fetchImpl: async () => Response.json({ access_token: "synthetic-access" }),
+    });
+    assert.equal(withoutExpiry.expiresAtMillis, undefined);
+  });
+
+  it("maps rejected credentials and transient token failures to the callable contract", () => {
+    for (const status of [400, 401]) {
+      const mapped = httpsErrorFor(new OAuthTokenExchangeError(status));
+      assert.equal(mapped.code, "failed-precondition");
+      assert.equal(mapped.message, "ravelry_not_connected");
+    }
+    for (const status of [503, 504]) {
+      const mapped = httpsErrorFor(new OAuthTokenExchangeError(status));
+      assert.equal(mapped.code, "unavailable");
+      assert.equal(mapped.message, "ravelry_token_exchange_failed");
+    }
+    assert.equal(httpsErrorFor(new OAuthTokenExchangeError(429)).code, "resource-exhausted");
+  });
+
   it("passes a timeout signal to the token request", async () => {
     let capturedSignal: AbortSignal | undefined;
+    let capturedRedirect: RequestRedirect | undefined;
     const fetchImpl: typeof fetch = async (_input, init) => {
       capturedSignal = init?.signal ?? undefined;
+      capturedRedirect = init?.redirect;
       return new Response(
         JSON.stringify({
           access_token: "access-token",
@@ -34,6 +110,7 @@ describe("Ravelry OAuth2 token exchange", () => {
 
     assert.ok(capturedSignal instanceof AbortSignal);
     assert.equal(capturedSignal.aborted, false);
+    assert.equal(capturedRedirect, "error");
     assert.deepEqual(token, {
       accessToken: "access-token",
       refreshToken: "refresh-token",
@@ -106,5 +183,51 @@ describe("Ravelry OAuth2 token exchange", () => {
       refreshToken: "rotated-refresh-token",
       expiresAtMillis: 121_000,
     });
+  });
+
+  it("treats an empty rotated refresh token as absent", async () => {
+    const token = await refreshOAuth2AccessToken({
+      clientId: "client-id",
+      clientSecret: "client-secret",
+      refreshToken: "old-refresh-token",
+      fetchImpl: async () =>
+        new Response(
+          JSON.stringify({
+            access_token: "fresh-access-token",
+            refresh_token: "",
+            expires_in: 120,
+          }),
+          { status: 200 },
+        ),
+      nowMillis: () => 1_000,
+    });
+
+    assert.equal(token.accessToken, "fresh-access-token");
+    assert.equal(token.refreshToken, undefined);
+    assert.equal(token.expiresAtMillis, 121_000);
+  });
+
+  it("rejects an oversized token response before parsing it", async () => {
+    await assert.rejects(
+      exchangeOAuth2CodeForToken({
+        clientId: "client-id",
+        clientSecret: "client-secret",
+        code: "auth-code",
+        codeVerifier: "code-verifier",
+        redirectUri: "https://callback.example/ravelry",
+        fetchImpl: async () =>
+          new Response(
+            JSON.stringify({
+              access_token: "x".repeat(65_536),
+            }),
+            { status: 200 },
+          ),
+      }),
+      (error: unknown) => {
+        assert.ok(error instanceof OAuthTokenExchangeError);
+        assert.equal(error.statusCode, 503);
+        return true;
+      },
+    );
   });
 });

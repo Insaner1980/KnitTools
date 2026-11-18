@@ -6,6 +6,9 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class CounterStitchTrackingSourceTest {
+    private val heroLayout: String
+        get() = ProjectSourceFiles.read(COUNTER_HERO_LAYOUT)
+
     @Test
     fun `counter screen renders stitch tracker and exposes stitch count setup`() {
         val counterScreen = ProjectSourceFiles.read(COUNTER_SCREEN)
@@ -34,7 +37,7 @@ class CounterStitchTrackingSourceTest {
         assertFalse(workspace.contains("""item(key = "stitch-tracker")"""))
         assertTrue(hero.contains("CounterControlsToStitchTrackerSpacing"))
         assertTrue(hero.contains("CounterButtons("))
-        assertTrue(hero.indexOf("CounterButtons(") < hero.indexOf("CounterStitchTracker("))
+        assertTrue(hero.indexOf("CounterButtons(") in 0 until hero.indexOf("CounterStitchTracker("))
         assertTrue(stitchCounter.contains("symbol = CounterStepSymbol.Minus"))
         assertTrue(stitchCounter.contains("symbol = CounterStepSymbol.Plus"))
         assertFalse(stitchCounter.contains("Icons.Filled.Remove"))
@@ -77,8 +80,7 @@ class CounterStitchTrackingSourceTest {
         assertTrue(dimens.contains("CounterRepeatToRowSpacing = 32.dp"))
         assertTrue(dimens.contains("CounterUndoTouchSize = CounterUndoVisualSize"))
         assertTrue(dimens.contains("CounterUndoVerticalSpacing = 16.dp"))
-        assertTrue(dimens.contains("CounterControlsHeight ="))
-        assertTrue(dimens.contains("CounterPrimaryTouchSize + CounterUndoVerticalSpacing + CounterUndoTouchSize"))
+        assertTrue(heroLayout.contains("primaryTouchSize + CounterDimens.CounterUndoVerticalSpacing + undoSize"))
         assertTrue(dimens.contains("CounterControlsToStitchTrackerCompactSpacing = 8.dp"))
         assertTrue(dimens.contains("StitchTrackerMinHeight = 68.dp"))
         assertTrue(
@@ -116,14 +118,42 @@ class CounterStitchTrackingSourceTest {
         assertFalse(counterViewModel.contains("private fun persistCurrentStitchIfNeeded"))
         assertTrue(
             counterViewModel.contains(
-                "repository.applyMainCounterChange(projectId, action.toMainCounterChange())",
+                "repository.applyMainCounterChangeWithResult(projectId, change)",
             ),
         )
         assertTrue(counterRepository.contains("transactionRunner.run"))
         assertTrue(counterRepository.contains("dao.updateCurrentStitch(id, 0, updatedAt)"))
     }
 
+    @Test
+    fun `stitch settings and changes use repository transactions`() {
+        val counterViewModel = ProjectSourceFiles.read(COUNTER_VIEW_MODEL)
+        val counterRepository = ProjectSourceFiles.read(COUNTER_REPOSITORY)
+        val counterDao = ProjectSourceFiles.read(COUNTER_PROJECT_DAO)
+
+        assertTrue(counterRepository.contains("suspend fun applyStitchChange("))
+        assertTrue(counterRepository.contains("transactionRunner.run"))
+        assertTrue(counterRepository.contains("dao.updateStitchState("))
+        assertTrue(counterDao.contains("suspend fun updateStitchState("))
+        assertTrue(counterViewModel.contains("changeStitch(increment = true)"))
+        assertTrue(counterViewModel.contains("changeStitch(increment = false)"))
+        assertTrue(counterViewModel.contains("repository.applyStitchChange(projectId, increment)"))
+        assertFalse(counterViewModel.contains("repository.updateCurrentStitch(projectId"))
+    }
+
+    @Test
+    fun `stitch dialog rejects empty zero and overflow input instead of treating it as deletion`() {
+        val counterScreen = ProjectSourceFiles.read(COUNTER_SCREEN)
+
+        assertTrue(counterScreen.contains("stitchInput.toIntOrNull()?.takeIf { it > 0 }"))
+        assertTrue(counterScreen.contains("enabled = parsedStitchCount != null"))
+        assertTrue(counterScreen.contains("onClick = { parsedStitchCount?.let(onConfirm) }"))
+        assertTrue(counterScreen.contains("onClick = { onConfirm(null) }"))
+    }
+
     private companion object {
+        private const val COUNTER_HERO_LAYOUT =
+            "app/src/main/java/com/finnvek/knittools/ui/screens/counter/CounterHeroLayout.kt"
         private const val COUNTER_VIEW_MODEL =
             "app/src/main/java/com/finnvek/knittools/ui/screens/counter/CounterViewModel.kt"
         private const val COUNTER_SCREEN =
@@ -143,5 +173,7 @@ class CounterStitchTrackingSourceTest {
             "app/src/main/java/com/finnvek/knittools/widget/CounterWidgetActions.kt"
         private const val COUNTER_REPOSITORY =
             "app/src/main/java/com/finnvek/knittools/repository/CounterRepository.kt"
+        private const val COUNTER_PROJECT_DAO =
+            "app/src/main/java/com/finnvek/knittools/data/local/CounterProjectDao.kt"
     }
 }

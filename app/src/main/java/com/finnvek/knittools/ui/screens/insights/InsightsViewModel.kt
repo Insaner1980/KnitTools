@@ -1,35 +1,47 @@
 package com.finnvek.knittools.ui.screens.insights
 
+import androidx.compose.runtime.Immutable
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.finnvek.knittools.analytics.UsageAnalytics
+import com.finnvek.knittools.analytics.UsageDetail
+import com.finnvek.knittools.analytics.UsageEvent
+import com.finnvek.knittools.di.ApplicationScope
 import com.finnvek.knittools.di.IoDispatcher
 import com.finnvek.knittools.domain.calculator.DurationDisplay
 import com.finnvek.knittools.domain.calculator.DurationDisplayFormatter
 import com.finnvek.knittools.domain.calculator.MinutesPerRowDisplay
-import com.finnvek.knittools.domain.calculator.MinutesPerRowFormatter
 import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.domain.model.CraftType
 import com.finnvek.knittools.domain.model.KnitSession
+import com.finnvek.knittools.domain.model.ProjectCompletion
 import com.finnvek.knittools.pro.ProFeature
 import com.finnvek.knittools.pro.ProManager
+import com.finnvek.knittools.pro.ProStatus
 import com.finnvek.knittools.repository.CounterRepository
+import com.finnvek.knittools.repository.OnboardingStateRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.mapLatest
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.yield
 import java.time.DayOfWeek
 import java.time.Instant
 import java.time.LocalDate
@@ -37,10 +49,10 @@ import java.time.ZoneId
 import java.time.ZoneId.systemDefault
 import java.time.temporal.ChronoUnit
 import java.time.temporal.TemporalAdjusters
-import java.time.temporal.WeekFields
 import javax.inject.Inject
 
 private const val DATE_CHANGE_CHECK_INTERVAL_MILLIS = 60_000L
+private const val MINIMUM_MEANINGFUL_CHART_BUCKETS = 2
 
 private sealed interface RepositoryLoad<out T> {
     val value: T?
@@ -62,9 +74,15 @@ data class ProjectTime(
     val projectId: Long,
     val projectName: String?,
     val totalMinutes: Int,
-    val totalRows: Int,
+    val totalRows: Long,
     val lastSessionAt: Long,
 )
+
+enum class PaceGroupingInterval {
+    DAY,
+    WEEK,
+    MONTH,
+}
 
 enum class TimeRange {
     ALL_TIME,
@@ -79,11 +97,13 @@ enum class InsightsCraftMix {
     MIXED,
 }
 
-data class InsightsUiState(
+@Immutable
+internal data class InsightsUiState(
     val isLoading: Boolean = true,
     val totalDuration: DurationDisplay = DurationDisplayFormatter.fromMinutes(0),
     val totalMinutes: Int = 0,
-    val totalRows: Int = 0,
+    val totalRows: Long = 0L,
+    val rowMetricsAvailable: Boolean = false,
     val minutesPerRow: MinutesPerRowDisplay = MinutesPerRowDisplay.Unavailable,
     val activeDays: Int = 0,
     val daysInRange: Int = 0,
@@ -95,18 +115,21 @@ data class InsightsUiState(
     val selectedProjectName: String? = null,
     val craftMix: InsightsCraftMix = InsightsCraftMix.KNITTING,
     val timePerProject: List<ProjectTime> = emptyList(),
+    val projectFabric: InsightsProjectFabricModel? = null,
+    val chartInterval: PaceGroupingInterval = PaceGroupingInterval.DAY,
     val chartBuckets: List<InsightsChartBucket> = emptyList(),
-    val fabric: InsightsFabricModel? = null,
+    val hasMeaningfulChartData: Boolean = false,
     val rangeStart: LocalDate? = null,
     val rangeEnd: LocalDate = LocalDate.now(systemDefault()),
     val timeRange: TimeRange = TimeRange.ALL_TIME,
     val hasSessionData: Boolean = false,
     val hasAnySessionData: Boolean = false,
+    val hasAnyCompletionData: Boolean = false,
+    val completions: InsightsCompletions = InsightsCompletions(),
     val isPro: Boolean = false,
     val canUseStreak: Boolean = false,
 )
 
-@OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class InsightsViewModel
     @Inject
@@ -114,6 +137,10 @@ class InsightsViewModel
         private val counterRepository: CounterRepository,
         private val proManager: ProManager,
         @param:IoDispatcher private val ioDispatcher: CoroutineDispatcher,
+        private val savedStateHandle: SavedStateHandle,
+        private val onboardingStateRepository: OnboardingStateRepository,
+        @param:ApplicationScope private val applicationScope: CoroutineScope,
+        private val analytics: UsageAnalytics = UsageAnalytics.NONE,
     ) : ViewModel() {
         val isPro: StateFlow<Boolean> =
             proManager
@@ -146,16 +173,14 @@ class InsightsViewModel
                 ),
             )
 
-        private val _selectedProjectId = MutableStateFlow<Long?>(null)
-        private val _timeRange = MutableStateFlow(TimeRange.ALL_TIME)
-        val selectedProjectId: StateFlow<Long?> = _selectedProjectId.asStateFlow()
-        val timeRange: StateFlow<TimeRange> = _timeRange.asStateFlow()
-        private val currentDate: StateFlow<LocalDate> =
-            localDateChanges()
+        val selectedProjectId: StateFlow<Long?> = savedStateHandle.getStateFlow("selectedProjectId", null)
+        val timeRange: StateFlow<TimeRange> = savedStateHandle.getStateFlow("timeRange", TimeRange.ALL_TIME)
+        private val currentDate: StateFlow<InsightsCalendar> =
+            insightsCalendarChanges()
                 .stateIn(
                     viewModelScope,
                     SharingStarted.WhileSubscribed(5000),
-                    LocalDate.now(systemDefault()),
+                    captureInsightsCalendar(),
                 )
 
         private val projectLoad: StateFlow<RepositoryLoad<List<CounterProject>>> =
@@ -164,209 +189,223 @@ class InsightsViewModel
                 .distinctUntilChanged()
                 .withLoadingState()
                 .flowOn(ioDispatcher)
-                .stateIn(
+                .onEach { load ->
+                    val projects = load.value ?: return@onEach
+                    val selectedId = selectedProjectId.value ?: return@onEach
+                    if (projects.none { it.id == selectedId }) {
+                        selectProject(null)
+                    }
+                }.stateIn(
                     viewModelScope,
                     SharingStarted.WhileSubscribed(5000),
                     RepositoryLoad.Loading,
                 )
 
-        private val queryParams: StateFlow<InsightsQueryParams> =
+        private val queryParams: Flow<InsightsQueryParams> =
             combine(selectedProjectId, timeRange, currentDate) { projectId, activeTimeRange, date ->
                 InsightsQueryParams(
                     projectId = projectId,
                     timeRange = activeTimeRange,
-                    startMillis = rangeStartMillis(activeTimeRange, date),
-                    currentDate = date,
+                    startMillis =
+                        rangeStartDate(
+                            activeTimeRange,
+                            date.date,
+                            currentInsightsFirstDayOfWeek(),
+                        )?.atStartOfDay(date.zone)?.toInstant()?.toEpochMilli(),
+                    currentDate = date.date,
+                    zone = date.zone,
                 )
-            }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), InsightsQueryParams())
+            }.distinctUntilChanged()
 
-        /**
-         * Kaikki valitun projektin istunnot. Aikaväli rajataan muistissa, jolloin
-         * hero, kaavio ja "onko dataa lainkaan" -tarkistus tulevat yhdestä kyselystä.
-         */
-        private val sessionLoad: StateFlow<RepositoryLoad<List<KnitSession>>> =
-            selectedProjectId
-                .flatMapLatest { projectId ->
-                    counterRepository
-                        .getSessionsForInsights(projectId, null)
-                        .distinctUntilChanged()
-                        .withLoadingState()
+        private val completionLoad =
+            counterRepository
+                .observeCompletions()
+                .distinctUntilChanged()
+                .withLoadingState()
+
+        @OptIn(ExperimentalCoroutinesApi::class)
+        internal val uiState: StateFlow<InsightsUiState> =
+            queryParams
+                .flatMapLatest { params ->
+                    val sessions =
+                        counterRepository
+                            .observeSessionsForInsights(
+                                projectId = params.projectId,
+                                start = insightsQueryStart(params),
+                                zone = params.zone,
+                                create = { facts -> InsightsSessionAccumulator(params, facts) },
+                                accumulate = { accumulator, batch ->
+                                    batch.forEach { session ->
+                                        yield()
+                                        accumulator.add(session)
+                                    }
+                                },
+                            ).withLoadingState()
+                    combine(
+                        sessions,
+                        projectLoad,
+                        proFeatureGates,
+                        completionLoad,
+                    ) { loadedSessions, projects, gates, completions ->
+                        InsightsComputationInput(loadedSessions, projects, params, gates, completions)
+                    }.mapLatest { input ->
+                        val projectList = input.projects.value
+                        val sessionMetrics = input.sessions.value
+                        val completions = input.completions.value
+                        val selectedProjectMissing =
+                            params.projectId != null && projectList?.none { it.id == params.projectId } == true
+                        if (sessionMetrics == null ||
+                            projectList == null ||
+                            completions == null ||
+                            selectedProjectMissing
+                        ) {
+                            InsightsUiState(
+                                projects = projectList.orEmpty(),
+                                selectedProjectId = params.projectId,
+                                selectedProjectName = projectList?.firstOrNull { it.id == params.projectId }?.name,
+                                rangeStart =
+                                    rangeStartDate(
+                                        params.timeRange,
+                                        params.currentDate,
+                                        currentInsightsFirstDayOfWeek(),
+                                    ),
+                                rangeEnd = params.currentDate,
+                                timeRange = params.timeRange,
+                                isPro = input.featureGates.canUseCharts,
+                                canUseStreak = input.featureGates.canUseStreak,
+                            )
+                        } else {
+                            buildUiState(
+                                completions,
+                                sessionMetrics,
+                                projectList,
+                                params,
+                                input.featureGates,
+                            )
+                        }
+                    }
                 }.distinctUntilChanged()
                 .flowOn(ioDispatcher)
-                .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), RepositoryLoad.Loading)
+                .stateIn(
+                    viewModelScope,
+                    SharingStarted.WhileSubscribed(5000),
+                    InsightsUiState(timeRange = timeRange.value, selectedProjectId = selectedProjectId.value),
+                )
 
-        val uiState: StateFlow<InsightsUiState> =
-            combine(
-                sessionLoad,
-                projectLoad,
-                queryParams,
-                proFeatureGates,
-            ) { loadedSessions, loadedProjects, params, featureGates ->
-                val sessionList = loadedSessions.value
-                val projectList = loadedProjects.value
-                if (sessionList == null || projectList == null) {
-                    InsightsUiState(
-                        projects = projectList.orEmpty(),
-                        selectedProjectId = params.projectId,
-                        selectedProjectName = projectList?.firstOrNull { it.id == params.projectId }?.name,
-                        rangeStart =
-                            rangeStartDate(
-                                params.timeRange,
-                                params.currentDate,
-                                WeekFields.of(currentInsightsLocale()).firstDayOfWeek,
-                            ),
-                        rangeEnd = params.currentDate,
-                        timeRange = params.timeRange,
-                        isPro = featureGates.canUseCharts,
-                        canUseStreak = featureGates.canUseStreak,
-                    )
-                } else {
-                    buildUiState(
-                        sessions = sessionList,
-                        projectList = projectList,
-                        params = params,
-                        featureGates = featureGates,
-                    )
-                }
-            }.distinctUntilChanged()
-                .flowOn(ioDispatcher)
-                .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), InsightsUiState())
-
+        @Suppress("LongMethod") // Yksi koonti pitää Insights-tilan keskenään riippuvat laskelmat samassa paikassa.
         private fun buildUiState(
-            sessions: List<KnitSession>,
+            completions: List<ProjectCompletion>,
+            sessions: InsightsSessionAccumulator,
             projectList: List<CounterProject>,
             params: InsightsQueryParams,
             featureGates: InsightsProFeatureGates,
         ): InsightsUiState {
-            val zone = systemDefault()
             val today = params.currentDate
-            val firstDayOfWeek = WeekFields.of(currentInsightsLocale()).firstDayOfWeek
-            val allTimeMetrics = SessionMetrics.summarize(sessions, rangeStartMillis = null, zone = zone)
-            val rangeMetrics = SessionMetrics.summarize(sessions, params.startMillis, zone)
-            val firstSessionDate = firstSessionDate(sessions, zone)
-            val axis =
-                if (params.timeRange == TimeRange.ALL_TIME) {
-                    null
-                } else {
-                    insightsChartAxis(params.timeRange, today, firstDayOfWeek)
-                }
-            val timePerProject = buildTimePerProject(sessions, projectList, params.startMillis, zone)
-            val streakMetrics = buildStreakMetrics(sessions, params.startMillis, featureGates.canUseStreak)
-            val chartBuckets =
-                axis
-                    ?.let {
-                        buildChartBuckets(sessions, params, it, zone, timePerProject, featureGates.canUseCharts)
-                    }.orEmpty()
-            val fabric =
+            val firstDayOfWeek = currentInsightsFirstDayOfWeek()
+            val rangeMetrics = sessions.summary
+            // Match the chart's today-ended range when all stored-zone dates are later than device today.
+            val firstSessionDate = sessions.firstDate?.coerceAtMost(today)
+            val axis = insightsChartAxis(params.timeRange, today, firstSessionDate, firstDayOfWeek)
+            val timePerProject = sessions.timePerProject(projectList)
+            val projectOrder = timePerProject.map { it.projectId }
+            val projectFabric =
                 if (params.timeRange == TimeRange.ALL_TIME && featureGates.canUseCharts) {
-                    buildInsightsFabricModel(sessions, today, firstDayOfWeek, zone)
+                    buildInsightsProjectFabric(
+                        sessions.fabric.values,
+                        today,
+                        firstDayOfWeek,
+                        projectOrder,
+                        firstSessionDate,
+                    )
                 } else {
                     null
                 }
-            val minutesPerRow =
-                MinutesPerRowFormatter.fromSeconds(rangeMetrics.totalSeconds, rangeMetrics.totalRows)
-
+            val chartAccumulator = sessions.chart(axis.interval)
+            val measuredBuckets = chartBucketsFromMetrics(chartAccumulator.values, projectOrder)
+            val hasMeaningfulChartData =
+                axis.bucketStarts.count { (measuredBuckets[it]?.totalMinutes ?: 0) > 0 } >=
+                    MINIMUM_MEANINGFUL_CHART_BUCKETS
+            val chartBuckets =
+                if (featureGates.canUseCharts) fillChartBuckets(axis, measuredBuckets) else emptyList()
+            val completionHistory = buildInsightsCompletions(completions, params, firstDayOfWeek)
             return InsightsUiState(
                 isLoading = false,
+                hasAnyCompletionData = completions.isNotEmpty(),
+                completions =
+                    if (featureGates.canUseCharts) {
+                        completionHistory
+                    } else {
+                        completionHistory.copy(
+                            buckets = emptyList(),
+                        )
+                    },
                 totalDuration = DurationDisplayFormatter.fromMinutes(rangeMetrics.totalMinutes),
                 totalMinutes = rangeMetrics.totalMinutes,
                 totalRows = rangeMetrics.totalRows,
-                minutesPerRow = minutesPerRow,
-                activeDays = activeDaysInRange(sessions, params.startMillis, zone),
+                // Sessions do not store their counter unit. A project's editable current label
+                // cannot establish whether historical progress was measured in rows.
+                rowMetricsAvailable = false,
+                minutesPerRow = MinutesPerRowDisplay.Unavailable,
+                activeDays = sessions.activeDates.size,
                 daysInRange = daysInRange(params.timeRange, today, firstSessionDate, firstDayOfWeek),
-                currentStreak = streakMetrics.current,
-                bestStreak = streakMetrics.best,
-                trend = buildTrend(sessions, params, today, firstDayOfWeek, zone, rangeMetrics.totalMinutes),
+                currentStreak = if (featureGates.canUseStreak) currentStreak(sessions.activeDates, today) else 0,
+                bestStreak = if (featureGates.canUseStreak) sessions.activeDates.bestStreak() else 0,
+                trend = sessions.trend(),
                 projects = projectList,
                 selectedProjectId = params.projectId,
                 selectedProjectName = projectList.firstOrNull { it.id == params.projectId }?.name,
                 craftMix = craftMix(timePerProject, projectList),
                 timePerProject = timePerProject,
+                projectFabric = projectFabric,
+                chartInterval = axis.interval,
                 chartBuckets = chartBuckets,
-                fabric = fabric,
+                hasMeaningfulChartData = hasMeaningfulChartData,
                 rangeStart = rangeStartDate(params.timeRange, today, firstDayOfWeek) ?: firstSessionDate,
                 rangeEnd = today,
                 timeRange = params.timeRange,
                 hasSessionData = rangeMetrics.sessionCount > 0,
-                hasAnySessionData = allTimeMetrics.sessionCount > 0,
+                hasAnySessionData = sessions.facts.hasAnySessionData,
                 isPro = featureGates.canUseCharts,
                 canUseStreak = featureGates.canUseStreak,
             )
         }
 
-        private fun buildStreakMetrics(
-            sessions: List<KnitSession>,
-            rangeStartMillis: Long?,
-            canUseStreak: Boolean,
-        ): StreakMetrics =
-            if (canUseStreak) {
-                StreakMetrics(
-                    current = calculateCurrentStreak(sessions, rangeStartMillis = rangeStartMillis),
-                    best = calculateStreak(sessions, rangeStartMillis = rangeStartMillis),
-                )
-            } else {
-                StreakMetrics(current = 0, best = 0)
-            }
-
-        /**
-         * Kaavion ämpärit nolla-täydennettynä akselin mittaan. Ilman Pro-oikeutta
-         * kaaviota ei piirretä lainkaan, jolloin ämpäreitä ei myöskään lasketa.
-         *
-         * [timePerProject] antaa pinon järjestyksen: kaavio ja projektilista
-         * luetaan samassa järjestyksessä.
-         */
-        private fun buildChartBuckets(
-            sessions: List<KnitSession>,
-            params: InsightsQueryParams,
-            axis: InsightsChartAxis,
-            zone: ZoneId,
-            timePerProject: List<ProjectTime>,
-            canUseCharts: Boolean,
-        ): List<InsightsChartBucket> {
-            if (!canUseCharts) return emptyList()
-            val measured =
-                measuredChartBuckets(
-                    sessions = sessions,
-                    params = params,
-                    zone = zone,
-                    projectOrder = timePerProject.map { it.projectId },
-                )
-            return fillChartBuckets(axis, measured)
-        }
-
-        /** Niiden päivien määrä, joilla välillä on istuntoja. */
-        private fun activeDaysInRange(
-            sessions: List<KnitSession>,
-            rangeStartMillis: Long?,
-            zone: ZoneId,
-        ): Int = activityDates(sessions, rangeStartMillis, zone).size
-
-        /**
-         * Trendi vertaa välin minuutteja edelliseen samanmittaiseen jaksoon.
-         * All Timella vertailukohtaa ei ole, jolloin trendiä ei näytetä.
-         */
-        private fun buildTrend(
-            sessions: List<KnitSession>,
-            params: InsightsQueryParams,
-            today: LocalDate,
-            firstDayOfWeek: DayOfWeek,
-            zone: ZoneId,
-            totalMinutes: Int,
-        ): InsightsTrend? =
-            resolvePreviousPeriodMinutes(
-                sessions = sessions,
-                timeRange = params.timeRange,
-                today = today,
-                firstDayOfWeek = firstDayOfWeek,
-                zone = zone,
-            )?.let { insightsTrend(totalMinutes, it) }
-
         fun selectProject(projectId: Long?) {
-            _selectedProjectId.value = projectId
+            savedStateHandle["selectedProjectId"] = projectId
         }
 
         fun selectTimeRange(selectedTimeRange: TimeRange) {
-            _timeRange.value = selectedTimeRange
+            if (timeRange.value != selectedTimeRange) {
+                analytics.track(UsageEvent.INSIGHTS_RANGE_CHANGED, rangeDetail(selectedTimeRange))
+            }
+            savedStateHandle["timeRange"] = selectedTimeRange
+        }
+
+        private val reportedCharts = mutableSetOf<TimeRange>()
+
+        fun onWeeklyChartVisible() {
+            val state = uiState.value
+            if (!state.isLoading &&
+                state.isPro &&
+                state.hasMeaningfulChartData &&
+                reportedCharts.add(state.timeRange)
+            ) {
+                analytics.track(UsageEvent.INSIGHTS_CHART_VIEWED, rangeDetail(state.timeRange))
+            }
+            if (state.isLoading || state.timeRange != TimeRange.THIS_WEEK) return
+            if (!state.isPro || !state.hasMeaningfulChartData || state.totalMinutes <= 0) return
+            if (!proManager.initialStateReady.value) return
+            val proState = proManager.proState.value
+            if (proState.status != ProStatus.TRIAL_ACTIVE || proState.trialStartTimestamp <= 0L) return
+            applicationScope.launch {
+                try {
+                    onboardingStateRepository.markTrialChartSeen(proState.trialStartTimestamp)
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (_: Exception) {
+                    // Kaavion käyttö jatkuu, vaikka kokeilulistan merkintä ei tallennu.
+                }
+            }
         }
 
         companion object {
@@ -395,25 +434,12 @@ class InsightsViewModel
             fun calculateCurrentStreak(
                 sessions: List<KnitSession>,
                 rangeStartMillis: Long? = null,
+                zone: ZoneId = ZoneId.systemDefault(),
+                currentDate: LocalDate = LocalDate.now(zone),
             ): Int {
-                val zone = ZoneId.systemDefault()
                 val activeDates = activityDates(sessions, rangeStartMillis, zone)
                 if (activeDates.isEmpty()) return 0
-                val today = LocalDate.now(zone)
-                val anchor =
-                    when {
-                        activeDates.contains(today) -> today
-                        activeDates.contains(today.minusDays(1)) -> today.minusDays(1)
-                        else -> return 0
-                    }
-
-                var streak = 0
-                var currentDate = anchor
-                while (activeDates.contains(currentDate)) {
-                    streak++
-                    currentDate = currentDate.minusDays(1)
-                }
-                return streak
+                return currentStreak(activeDates, currentDate)
             }
 
             /**
@@ -431,19 +457,28 @@ class InsightsViewModel
             internal fun measuredChartBuckets(
                 sessions: List<KnitSession>,
                 params: InsightsQueryParams,
+                axis: InsightsChartAxis,
                 zone: ZoneId,
+                firstDayOfWeek: DayOfWeek,
                 projectOrder: List<Long> = emptyList(),
             ): Map<LocalDate, InsightsChartBucket> {
-                val bucketsByProject =
-                    sessions
-                        .groupBy { it.projectId }
-                        .mapValues { (_, projectSessions) ->
-                            SessionMetrics.dailyPaceBuckets(
-                                sessions = projectSessions,
-                                rangeStartMillis = params.startMillis,
-                                zone = zone,
-                            )
-                        }
+                val axisStartMillis =
+                    axis.bucketStarts
+                        .firstOrNull()
+                        ?.atStartOfDay(zone)
+                        ?.toInstant()
+                        ?.toEpochMilli()
+                val analysisStartMillis =
+                    listOfNotNull(params.startMillis, axisStartMillis).maxOrNull()
+                val buckets = SessionPaceAccumulator(analysisStartMillis, axis.interval, zone, firstDayOfWeek)
+                sessions.forEach(buckets::add)
+                return chartBucketsFromMetrics(buckets.values, projectOrder)
+            }
+
+            internal fun chartBucketsFromMetrics(
+                bucketsByProject: Map<Long, Map<LocalDate, PaceBucketMetric>>,
+                projectOrder: List<Long>,
+            ): Map<LocalDate, InsightsChartBucket> {
                 val rank = projectOrder.withIndex().associate { (index, id) -> id to index }
                 val orderedProjectIds =
                     bucketsByProject.keys.sortedWith(
@@ -466,7 +501,8 @@ class InsightsViewModel
                                 }.filter { it.minutes > 0 }
                         InsightsChartBucket(
                             bucketStart = bucketStart,
-                            totalMinutes = segments.sumOf { it.minutes },
+                            totalMinutes =
+                                segments.sumOf { it.minutes.toLong() }.coerceAtMost(Int.MAX_VALUE.toLong()).toInt(),
                             totalRows = contributions.sumOf { it.second.totalRows },
                             segments = segments,
                         )
@@ -502,53 +538,7 @@ class InsightsViewModel
                     rangeStartDate(timeRange, today, firstDayOfWeek)
                         ?: firstSessionDate
                         ?: return 0
-                return (ChronoUnit.DAYS.between(start, today) + 1).toInt().coerceAtLeast(0)
-            }
-
-            /**
-             * Projektien kestot jaetaan hero-lukeman sisällä: minuutit pyöristetään
-             * kerran koko välin sekunneista ja jaetaan projekteille, jolloin listan
-             * summa vastaa hero-lukemaa eikä eroa muutamaa minuuttia.
-             */
-            private fun buildTimePerProject(
-                sessions: List<KnitSession>,
-                projectList: List<CounterProject>,
-                rangeStartMillis: Long?,
-                zone: ZoneId,
-            ): List<ProjectTime> {
-                val projectNames = projectList.associate { it.id to it.name }
-                val measured =
-                    sessions
-                        .groupBy { it.projectId }
-                        .mapNotNull { (projectId, projectSessions) ->
-                            val summary =
-                                SessionMetrics.summarize(
-                                    sessions = projectSessions,
-                                    rangeStartMillis = rangeStartMillis,
-                                    zone = zone,
-                                )
-                            if (summary.sessionCount == 0) return@mapNotNull null
-                            MeasuredProject(
-                                projectId = projectId,
-                                totalSeconds = summary.totalSeconds,
-                                totalRows = summary.totalRows,
-                                lastSessionAt = projectSessions.maxOf { it.startedAt },
-                            )
-                        }
-                val displayMinutes = apportionDisplayMinutes(measured.map { it.totalSeconds })
-                return measured
-                    .mapIndexed { index, project ->
-                        ProjectTime(
-                            projectId = project.projectId,
-                            projectName = projectNames[project.projectId],
-                            totalMinutes = displayMinutes[index],
-                            totalRows = project.totalRows,
-                            lastSessionAt = project.lastSessionAt,
-                        )
-                    }.sortedWith(
-                        compareByDescending<ProjectTime> { it.totalMinutes }
-                            .thenByDescending { it.lastSessionAt },
-                    )
+                return (ChronoUnit.DAYS.between(start, today) + 1).coerceIn(0L, Int.MAX_VALUE.toLong()).toInt()
             }
 
             internal fun rangeStartDate(
@@ -561,41 +551,6 @@ class InsightsViewModel
                     TimeRange.THIS_WEEK -> today.with(TemporalAdjusters.previousOrSame(firstDayOfWeek))
                     TimeRange.THIS_MONTH -> today.withDayOfMonth(1)
                 }
-
-            private fun rangeStartMillis(
-                timeRange: TimeRange,
-                today: LocalDate,
-            ): Long? =
-                rangeStartDate(timeRange, today, WeekFields.of(currentInsightsLocale()).firstDayOfWeek)
-                    ?.atStartOfDay(systemDefault())
-                    ?.toInstant()
-                    ?.toEpochMilli()
-
-            /**
-             * Ratkaisee edellisen jakson rajat aikavälistä ja delegoi summauksen
-             * puhtaalle [previousPeriodMinutes]-funktiolle (InsightsChartModel.kt),
-             * jossa katkaisun päivämäärälaskenta on yksikkötestattu kiinteillä
-             * päivämäärillä. Sekunnit viedään perille pyöristämättöminä, jotta
-             * vertailukohta mitataan samalla tavalla kuin nykyinen jakso.
-             */
-            private fun resolvePreviousPeriodMinutes(
-                sessions: List<KnitSession>,
-                timeRange: TimeRange,
-                today: LocalDate,
-                firstDayOfWeek: DayOfWeek,
-                zone: ZoneId,
-            ): Int? {
-                if (timeRange == TimeRange.ALL_TIME) return null
-                val currentStart = rangeStartDate(timeRange, today, firstDayOfWeek) ?: return null
-                val previousStart =
-                    when (timeRange) {
-                        TimeRange.THIS_WEEK -> currentStart.minusWeeks(1)
-                        TimeRange.THIS_MONTH -> currentStart.minusMonths(1)
-                        TimeRange.ALL_TIME -> return null
-                    }
-                val dailySeconds = SessionMetrics.dailyActivitySeconds(sessions, previousStart, zone)
-                return previousPeriodMinutes(dailySeconds, previousStart, currentStart, today)
-            }
 
             internal fun firstSessionDate(
                 sessions: List<KnitSession>,
@@ -642,19 +597,65 @@ internal data class InsightsQueryParams(
     val projectId: Long? = null,
     val timeRange: TimeRange = TimeRange.ALL_TIME,
     val startMillis: Long? = null,
-    val currentDate: LocalDate = LocalDate.now(systemDefault()),
+    val zone: ZoneId = systemDefault(),
+    val currentDate: LocalDate = LocalDate.now(zone),
 )
 
 internal fun localDateChanges(
     nowMillis: () -> Long = System::currentTimeMillis,
     zoneProvider: () -> ZoneId = ZoneId::systemDefault,
-): Flow<LocalDate> =
+): Flow<LocalDate> = insightsCalendarChanges(nowMillis, zoneProvider).map { it.date }.distinctUntilChanged()
+
+private data class InsightsProFeatureGates(
+    val canUseCharts: Boolean,
+    val canUseStreak: Boolean,
+)
+
+private data class InsightsComputationInput(
+    val sessions: RepositoryLoad<InsightsSessionAccumulator>,
+    val projects: RepositoryLoad<List<CounterProject>>,
+    val params: InsightsQueryParams,
+    val featureGates: InsightsProFeatureGates,
+    val completions: RepositoryLoad<List<ProjectCompletion>>,
+)
+
+internal fun LocalDate.bucketStart(
+    interval: PaceGroupingInterval,
+    firstDayOfWeek: DayOfWeek,
+): LocalDate =
+    when (interval) {
+        PaceGroupingInterval.DAY -> this
+        PaceGroupingInterval.WEEK -> with(TemporalAdjusters.previousOrSame(firstDayOfWeek))
+        PaceGroupingInterval.MONTH -> withDayOfMonth(1)
+    }
+
+internal fun LocalDate.nextBucketStart(interval: PaceGroupingInterval): LocalDate =
+    when (interval) {
+        PaceGroupingInterval.DAY -> plusDays(1)
+        PaceGroupingInterval.WEEK -> plusWeeks(1)
+        PaceGroupingInterval.MONTH -> plusMonths(1)
+    }
+
+internal data class InsightsCalendar(
+    val date: LocalDate,
+    val zone: ZoneId,
+)
+
+private fun captureInsightsCalendar(): InsightsCalendar {
+    val zone = systemDefault()
+    return InsightsCalendar(LocalDate.now(zone), zone)
+}
+
+internal fun insightsCalendarChanges(
+    nowMillis: () -> Long = System::currentTimeMillis,
+    zoneProvider: () -> ZoneId = ZoneId::systemDefault,
+): Flow<InsightsCalendar> =
     flow {
         while (true) {
             val zone = zoneProvider()
             val now = nowMillis()
             val date = Instant.ofEpochMilli(now).atZone(zone).toLocalDate()
-            emit(date)
+            emit(InsightsCalendar(date, zone))
             val nextDayStart =
                 date
                     .plusDays(1)
@@ -665,20 +666,9 @@ internal fun localDateChanges(
         }
     }.distinctUntilChanged()
 
-private data class InsightsProFeatureGates(
-    val canUseCharts: Boolean,
-    val canUseStreak: Boolean,
-)
-
-private data class StreakMetrics(
-    val current: Int,
-    val best: Int,
-)
-
-/** Projektin mitatut arvot ennen minuuttien jakamista hero-lukeman sisään. */
-private data class MeasuredProject(
-    val projectId: Long,
-    val totalSeconds: Long,
-    val totalRows: Int,
-    val lastSessionAt: Long,
-)
+private fun rangeDetail(range: TimeRange): UsageDetail =
+    when (range) {
+        TimeRange.ALL_TIME -> UsageDetail.RANGE_ALL
+        TimeRange.THIS_WEEK -> UsageDetail.RANGE_WEEK
+        TimeRange.THIS_MONTH -> UsageDetail.RANGE_MONTH
+    }

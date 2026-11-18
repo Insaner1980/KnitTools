@@ -37,11 +37,23 @@ enum class PatternAnnotationKind {
 
 object PatternAnnotationLimits {
     const val MAX_FREEHAND_POINTS = 2_048
+    const val MAX_CHART_DIMENSION = 999
+    const val MAX_CHART_CELLS = 10_000
+    const val MAX_CHART_CELLS_PER_PAGE = 20_000
+    const val MAX_CHART_CELLS_PER_DOCUMENT = 20_000
     const val MIN_STROKE_WIDTH = 0.5f
     const val MAX_STROKE_WIDTH = 64f
     const val MIN_TEXT_SIZE_SP = 8f
     const val MAX_TEXT_SIZE_SP = 96f
     const val COORDINATE_DECIMAL_PLACES = 5
+
+    fun isValidChartDimensions(
+        rows: Int,
+        columns: Int,
+    ): Boolean =
+        rows in 1..MAX_CHART_DIMENSION &&
+            columns in 1..MAX_CHART_DIMENSION &&
+            rows.toLong() * columns.toLong() <= MAX_CHART_CELLS
 }
 
 sealed interface PatternAnnotationPayload

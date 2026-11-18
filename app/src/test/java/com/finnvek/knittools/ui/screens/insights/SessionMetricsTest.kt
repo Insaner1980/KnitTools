@@ -2,12 +2,61 @@ package com.finnvek.knittools.ui.screens.insights
 
 import com.finnvek.knittools.domain.model.KnitSession
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.ZonedDateTime
 
 class SessionMetricsTest {
+    @Test
+    fun `weekly and monthly totals agree with activity and pace dates after travel`() {
+        val deviceZone = ZoneId.of("UTC")
+        for (date in listOf(LocalDate.of(2026, 1, 1), LocalDate.of(2026, 1, 5))) {
+            val tokyo = ZoneId.of("Asia/Tokyo")
+            val losAngeles = ZoneId.of("America/Los_Angeles")
+            val includedStart =
+                date
+                    .atTime(0, 30)
+                    .atZone(tokyo)
+                    .toInstant()
+                    .toEpochMilli()
+            val excludedStart =
+                date
+                    .minusDays(1)
+                    .atTime(23, 30)
+                    .atZone(losAngeles)
+                    .toInstant()
+                    .toEpochMilli()
+            val sessions =
+                listOf(includedStart to tokyo, excludedStart to losAngeles).mapIndexed { index, (start, sessionZone) ->
+                    KnitSession(
+                        id = index + 1L,
+                        projectId = 1L,
+                        startedAt = start,
+                        endedAt = start + 1_800_000L,
+                        startRow = 0,
+                        endRow = 10,
+                        durationMinutes = 30,
+                        durationSeconds = 1_800L,
+                        rowsWorked = 10,
+                        zoneId = sessionZone.id,
+                    )
+                }
+            val rangeStart = date.atStartOfDay(deviceZone).toInstant().toEpochMilli()
+
+            val summary = SessionMetrics.summarize(sessions, rangeStart, deviceZone)
+            val activity = SessionMetrics.dailyActivitySeconds(sessions, date, deviceZone)
+            val pace = SessionMetrics.paceBuckets(sessions, rangeStart, PaceGroupingInterval.DAY, deviceZone)
+
+            assertEquals(1_800L, summary.totalSeconds)
+            assertEquals(10L, summary.totalRows)
+            assertEquals(1, summary.sessionCount)
+            assertEquals(summary.totalSeconds, activity.values.sum())
+            assertEquals(summary.totalSeconds, pace.values.sumOf { it.totalSeconds })
+        }
+    }
+
     @Test
     fun `rows per hour uses exact seconds instead of rounded minutes`() {
         val session =
@@ -135,9 +184,10 @@ class SessionMetricsTest {
                 zone = zone,
             )
         val paceBuckets =
-            SessionMetrics.dailyPaceBuckets(
+            SessionMetrics.paceBuckets(
                 sessions = listOf(session),
                 rangeStartMillis = null,
+                interval = PaceGroupingInterval.DAY,
                 zone = zone,
             )
 
@@ -176,9 +226,10 @@ class SessionMetricsTest {
 
         val bucket =
             SessionMetrics
-                .dailyPaceBuckets(
+                .paceBuckets(
                     sessions = listOf(productiveSession, zeroRowSession),
                     rangeStartMillis = null,
+                    interval = PaceGroupingInterval.DAY,
                     zone = zone,
                 ).values
                 .single()
@@ -213,6 +264,29 @@ class SessionMetricsTest {
     }
 
     @Test
+    fun `malformed multi year session expands into at most one bounded analysis year`() {
+        val zone = ZoneId.of("UTC")
+        val session =
+            KnitSession(
+                id = 1L,
+                projectId = 1L,
+                startedAt = instantMillis(1970, 1, 1, 0, 0, zone),
+                endedAt = instantMillis(2070, 1, 1, 0, 0, zone),
+                startRow = 0,
+                endRow = 100,
+                durationMinutes = 60,
+                durationSeconds = 3_600L,
+                rowsWorked = 100,
+            )
+
+        val activity = SessionMetrics.dailyActivitySeconds(listOf(session), LocalDate.MIN, zone)
+        val buckets = SessionMetrics.paceBuckets(listOf(session), null, PaceGroupingInterval.DAY, zone)
+
+        assertTrue(activity.size <= 366)
+        assertTrue(buckets.size <= 366)
+    }
+
+    @Test
     fun `apportioned minutes sum to the total instead of each part rounding up`() {
         // Erikseen ylöspäin pyöristettynä osuudet tuottaisivat 565 minuuttia.
         val parts = listOf(11_430L, 9_150L, 5_670L, 4_830L, 2_670L)
@@ -232,6 +306,28 @@ class SessionMetricsTest {
     fun `apportioned minutes stay empty without measured seconds`() {
         assertEquals(listOf(0, 0), apportionDisplayMinutes(listOf(0L, 0L)))
         assertEquals(emptyList<Int>(), apportionDisplayMinutes(emptyList()))
+    }
+
+    @Test
+    fun `display minutes do not wrap for large restored durations`() {
+        assertEquals(Int.MAX_VALUE, secondsToDisplayMinutes((Int.MAX_VALUE.toLong() + 1L) * 60L))
+        assertEquals(Int.MAX_VALUE, secondsToDisplayMinutes(Long.MAX_VALUE))
+        assertEquals(1, secondsToDisplayMinutes(59L))
+        assertEquals(1, secondsToDisplayMinutes(60L))
+        assertEquals(2, secondsToDisplayMinutes(61L))
+    }
+
+    @Test
+    fun `apportioned large durations preserve positive project minutes`() {
+        val largestMinutes = Int.MAX_VALUE.toLong() * 60L
+        assertEquals(
+            listOf(Int.MAX_VALUE, Int.MAX_VALUE),
+            apportionDisplayMinutes(listOf(largestMinutes, largestMinutes)),
+        )
+        assertEquals(
+            listOf(Int.MAX_VALUE, Int.MAX_VALUE, 1),
+            apportionDisplayMinutes(listOf(Long.MAX_VALUE, Long.MAX_VALUE, 1L)),
+        )
     }
 
     private fun instantMillis(

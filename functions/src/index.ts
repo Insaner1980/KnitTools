@@ -14,6 +14,7 @@ export {
 export {
   ravelryAuthStatus,
   ravelryCallback,
+  ravelryCompleteAuth,
   ravelryCurrentUser,
   ravelryDisconnect,
   ravelryStartAuth,

@@ -2,7 +2,6 @@ package com.finnvek.knittools.ui.screens.library
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -14,31 +13,22 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Close
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -46,20 +36,24 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.domain.model.ProgressPhoto
 import com.finnvek.knittools.ui.components.ConfirmationDialog
+import com.finnvek.knittools.ui.components.CrossStitchEmptyState
+import com.finnvek.knittools.ui.components.CrossStitchGlyph
+import com.finnvek.knittools.ui.components.ProjectFilterOption
+import com.finnvek.knittools.ui.components.ProjectFilterPill
+import com.finnvek.knittools.ui.components.cardContainerColor
 import com.finnvek.knittools.ui.components.rememberLocaleDateFormat
+import com.finnvek.knittools.ui.layout.PhotoGridCells
 import com.finnvek.knittools.ui.screens.counter.PhotoViewer
 import java.util.Date
 
@@ -70,9 +64,11 @@ data class AllPhotosState(
     val isSelectMode: Boolean,
     val selectedPhotoIds: Set<Long>,
     val deleteErrorId: Long = 0L,
+    val isLoading: Boolean = false,
 )
 
 data class AllPhotosActions(
+    // CPD-OFF: Ruudun paikallinen Compose-rakenne pidetaan vastuun yhteydessa.
     val onDeletePhoto: (ProgressPhoto) -> Unit,
     val onEnterSelectMode: (Long) -> Unit,
     val onToggleSelection: (Long) -> Unit,
@@ -85,15 +81,24 @@ data class AllPhotosActions(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AllPhotosScreen(
+// CPD-ON
     state: AllPhotosState,
     actions: AllPhotosActions,
 ) {
     var selectedProjectId by rememberSaveable { mutableStateOf<Long?>(null) }
     var viewingPhotoId by rememberSaveable { mutableStateOf<Long?>(null) }
     var showDeleteConfirmDialog by rememberSaveable { mutableStateOf(false) }
+    var lastHandledDeleteErrorId by rememberSaveable { mutableLongStateOf(state.deleteErrorId) }
     val snackbarHostState = remember { SnackbarHostState() }
+    val gridState = rememberLazyGridState()
     val deleteFailedMessage = stringResource(R.string.generic_error_unknown)
     val viewingPhoto = remember(viewingPhotoId, state.photos) { state.photos.firstOrNull { it.id == viewingPhotoId } }
+
+    LaunchedEffect(selectedProjectId, state.photos, state.isLoading) {
+        if (state.isLoading) return@LaunchedEffect
+        val selectedId = selectedProjectId ?: return@LaunchedEffect
+        if (state.photos.none { it.projectId == selectedId }) selectedProjectId = null
+    }
 
     val filteredPhotos =
         remember(selectedProjectId, state.photos) {
@@ -110,7 +115,8 @@ fun AllPhotosScreen(
     }
 
     LaunchedEffect(state.deleteErrorId) {
-        if (state.deleteErrorId > 0) {
+        if (state.deleteErrorId > lastHandledDeleteErrorId) {
+            lastHandledDeleteErrorId = state.deleteErrorId
             snackbarHostState.showSnackbar(deleteFailedMessage)
         }
     }
@@ -144,11 +150,12 @@ fun AllPhotosScreen(
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
-            AllPhotosTopBar(
-                state = state,
-                filteredPhotos = filteredPhotos,
+            LibraryTopBar(
+                isSelectMode = state.isSelectMode,
+                selectedCount = state.selectedPhotoIds.size,
+                titleRes = R.string.all_photos_title,
                 onExitSelectMode = actions.onExitSelectMode,
-                onSelectAll = actions.onSelectAll,
+                onSelectAll = { actions.onSelectAll(filteredPhotos.map { it.id }) },
                 onBack = actions.onBack,
             )
         },
@@ -160,26 +167,18 @@ fun AllPhotosScreen(
             )
         },
     ) { padding ->
-        if (state.photos.isEmpty()) {
-            Column(
-                modifier = Modifier.fillMaxSize().padding(padding).padding(32.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center,
-            ) {
-                Image(
-                    painter = painterResource(R.drawable.camera_icon),
-                    contentDescription = null,
-                    modifier = Modifier.size(240.dp),
-                    contentScale = ContentScale.Fit,
-                )
-                Spacer(modifier = Modifier.height(24.dp))
-                Text(
-                    text = stringResource(R.string.empty_all_photos),
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center,
-                )
+        if (state.isLoading) {
+            Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator()
             }
+        } else if (state.photos.isEmpty()) {
+            CrossStitchEmptyState(
+                glyph = CrossStitchGlyph.PHOTOS,
+                // Sama otsikko kuin projektin galleriassa; selitys kertoo, mistä kuvat tulevat.
+                title = stringResource(R.string.no_photos),
+                message = stringResource(R.string.empty_all_photos),
+                modifier = Modifier.padding(padding),
+            )
         } else {
             AllPhotosContent(
                 state = state,
@@ -189,6 +188,7 @@ fun AllPhotosScreen(
                 onProjectFilterClick = { selectedProjectId = it },
                 onPhotoClick = { viewingPhotoId = it.id },
                 padding = padding,
+                gridState = gridState,
             )
         }
     }
@@ -210,68 +210,6 @@ private fun AllPhotosDeleteDialog(
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun AllPhotosTopBar(
-    state: AllPhotosState,
-    filteredPhotos: List<ProgressPhoto>,
-    onExitSelectMode: () -> Unit,
-    onSelectAll: (List<Long>) -> Unit,
-    onBack: () -> Unit,
-) {
-    if (state.isSelectMode) {
-        TopAppBar(
-            title = {
-                Text(
-                    text = stringResource(R.string.n_selected, state.selectedPhotoIds.size),
-                    style = MaterialTheme.typography.titleLarge,
-                )
-            },
-            navigationIcon = {
-                IconButton(onClick = onExitSelectMode) {
-                    Icon(
-                        imageVector = Icons.Filled.Close,
-                        contentDescription = stringResource(R.string.cancel),
-                    )
-                }
-            },
-            actions = {
-                TextButton(onClick = { onSelectAll(filteredPhotos.map { it.id }) }) {
-                    Text(stringResource(R.string.select_all))
-                }
-            },
-            colors =
-                TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.Transparent,
-                    scrolledContainerColor = Color.Transparent,
-                ),
-        )
-    } else {
-        TopAppBar(
-            title = {
-                Text(
-                    text = stringResource(R.string.all_photos_title),
-                    style = MaterialTheme.typography.titleLarge,
-                )
-            },
-            navigationIcon = {
-                IconButton(onClick = onBack) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = stringResource(R.string.back),
-                        tint = MaterialTheme.colorScheme.outline,
-                    )
-                }
-            },
-            colors =
-                TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.Transparent,
-                    scrolledContainerColor = Color.Transparent,
-                ),
-        )
-    }
-}
-
 @Composable
 private fun AllPhotosContent(
     state: AllPhotosState,
@@ -281,18 +219,28 @@ private fun AllPhotosContent(
     onProjectFilterClick: (Long?) -> Unit,
     onPhotoClick: (ProgressPhoto) -> Unit,
     padding: PaddingValues,
+    gridState: LazyGridState,
 ) {
     val projectMap = remember(state.projects) { state.projects.associateBy { it.id } }
     val projectsWithPhotos = remember(state.photos) { state.photos.map { it.projectId }.distinct() }
 
     Column(modifier = Modifier.fillMaxSize().padding(padding)) {
-        // Suodatinsiput piilotetaan valintamoodissa
+        // Suodatin piilotetaan valintamoodissa
         if (!state.isSelectMode) {
-            ProjectFilterChips(
-                projectsWithPhotos = projectsWithPhotos,
-                projectMap = projectMap,
+            // Sama projektipilleri kuin Insightsissa: sirurivi ei skaalautunut projektimäärän kasvaessa.
+            ProjectFilterPill(
+                projects =
+                    projectsWithPhotos.map { projectId ->
+                        ProjectFilterOption(
+                            id = projectId,
+                            name =
+                                projectMap[projectId]?.name
+                                    ?: stringResource(R.string.new_project_name_format, projectId),
+                        )
+                    },
                 selectedProjectId = selectedProjectId,
-                onProjectFilterClick = onProjectFilterClick,
+                onSelectProject = onProjectFilterClick,
+                modifier = Modifier.padding(horizontal = 16.dp),
             )
             Spacer(modifier = Modifier.height(8.dp))
         }
@@ -302,42 +250,8 @@ private fun AllPhotosContent(
             actions = actions,
             projectMap = projectMap,
             onPhotoClick = onPhotoClick,
+            gridState = gridState,
         )
-    }
-}
-
-@Composable
-private fun ProjectFilterChips(
-    projectsWithPhotos: List<Long>,
-    projectMap: Map<Long, CounterProject>,
-    selectedProjectId: Long?,
-    onProjectFilterClick: (Long?) -> Unit,
-) {
-    LazyRow(
-        contentPadding = PaddingValues(horizontal = 16.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        item {
-            FilterChip(
-                selected = selectedProjectId == null,
-                onClick = { onProjectFilterClick(null) },
-                label = { Text(stringResource(R.string.filter_all)) },
-            )
-        }
-        items(projectsWithPhotos, key = { it }) { projectId ->
-            val name = projectMap[projectId]?.name ?: stringResource(R.string.new_project_name_format, projectId)
-            FilterChip(
-                selected = selectedProjectId == projectId,
-                onClick = { onProjectFilterClick(projectId) },
-                label = {
-                    Text(
-                        text = name,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                },
-            )
-        }
     }
 }
 
@@ -348,9 +262,11 @@ private fun PhotoGrid(
     actions: AllPhotosActions,
     projectMap: Map<Long, CounterProject>,
     onPhotoClick: (ProgressPhoto) -> Unit,
+    gridState: LazyGridState,
 ) {
     LazyVerticalGrid(
-        columns = GridCells.Fixed(2),
+        columns = PhotoGridCells,
+        state = gridState,
         contentPadding = PaddingValues(horizontal = 16.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -392,20 +308,22 @@ private fun PhotoGridItem(
 ) {
     val dateFormat = rememberLocaleDateFormat("MMMd")
 
-    // Valittu kortti saa kevyen primäärivärisen taustan
-    val backgroundColor =
-        if (isSelected) {
-            MaterialTheme.colorScheme.primary.copy(alpha = 0.07f)
-        } else {
-            MaterialTheme.colorScheme.surfaceVariant
-        }
+    val backgroundColor = cardContainerColor(selected = isSelected)
 
     Surface(
         modifier =
-            Modifier.combinedClickable(
-                onClick = onClick,
-                onLongClick = onLongClick,
-            ),
+            Modifier
+                .combinedClickable(
+                    onClick = onClick,
+                    onLongClick = onLongClick,
+                    onLongClickLabel = stringResource(R.string.select_photo),
+                ).then(
+                    if (isSelectMode) {
+                        Modifier.semantics { selected = isSelected }
+                    } else {
+                        Modifier
+                    },
+                ),
         shape = MaterialTheme.shapes.medium,
         color = backgroundColor,
     ) {
@@ -426,14 +344,10 @@ private fun PhotoGridItem(
                         text = projectName,
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.primary,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
                     )
                     Text(
                         text = photo.note ?: stringResource(R.string.row_label_format, photo.rowNumber),
                         style = MaterialTheme.typography.bodySmall,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
                     )
                     Text(
                         text = dateFormat.format(Date(photo.createdAt)),

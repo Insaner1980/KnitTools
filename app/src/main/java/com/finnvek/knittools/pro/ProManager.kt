@@ -31,11 +31,8 @@ class ProManager
         val proState: StateFlow<ProState> = _proState.asStateFlow()
         private val _initialStateReady = MutableStateFlow(false)
         val initialStateReady: StateFlow<Boolean> = _initialStateReady.asStateFlow()
-        val isProUser: Flow<Boolean> =
-            proState
-                .map { it.isPro }
-                .distinctUntilChanged()
-
+        private val _initialControlsReady = MutableStateFlow(false)
+        val initialControlsReady: StateFlow<Boolean> = _initialControlsReady.asStateFlow()
         private var initialized = false
 
         @Suppress("TooGenericExceptionCaught")
@@ -43,15 +40,18 @@ class ProManager
             if (initialized) return
             initialized = true
             _initialStateReady.value = false
+            _initialControlsReady.value = false
             scope.launch {
                 try {
                     trialManager.initialize()
 
+                    // Debugin policy-testipaketti voi ohjata tiloja; releasessa ne kulkevat sellaisenaan.
                     combine(
-                        trialManager.trialState,
-                        billingManager.isProPurchased,
-                        billingManager.purchaseStateReady,
-                    ) { trial, isPurchased, purchaseStateReady ->
+                        ProPolicyTestControl.trialState(trialManager.trialState),
+                        ProPolicyTestControl.purchased(billingManager.isProPurchased),
+                        ProPolicyTestControl.purchaseStateReady(billingManager.purchaseStateReady),
+                        billingManager.purchaseQueryFailed,
+                    ) { trial, isPurchased, purchaseStateReady, purchaseQueryFailed ->
                         val state =
                             when {
                                 isPurchased -> {
@@ -71,6 +71,10 @@ class ProManager
                                     )
                                 }
 
+                                !trial.hasStarted -> {
+                                    ProState(status = ProStatus.TRIAL_NOT_STARTED)
+                                }
+
                                 else -> {
                                     ProState(
                                         status = ProStatus.TRIAL_EXPIRED,
@@ -79,15 +83,17 @@ class ProManager
                                     )
                                 }
                             }
-                        state to purchaseStateReady
-                    }.collect { (state, purchaseStateReady) ->
+                        Triple(state, purchaseStateReady, purchaseStateReady || purchaseQueryFailed)
+                    }.collect { (state, purchaseStateReady, controlsReady) ->
                         _proState.value = state
                         _initialStateReady.value = purchaseStateReady
+                        _initialControlsReady.value = controlsReady
                     }
                 } catch (e: CancellationException) {
                     throw e
                 } catch (_: Exception) {
                     _initialStateReady.value = false
+                    _initialControlsReady.value = false
                     initialized = false
                 }
             }
@@ -95,11 +101,27 @@ class ProManager
 
         fun hasFeature(feature: ProFeature): Boolean = _proState.value.hasFeature(feature)
 
-        suspend fun hasFeatureAfterInitialLoad(feature: ProFeature): Boolean {
+        suspend fun startTrial(): TrialStartResult = ProPolicyTestControl.startTrial { trialManager.startTrial() }
+
+        suspend fun hasFeatureAfterInitialLoad(feature: ProFeature): Boolean =
+            when (featureAccessAfterInitialLoad(feature)) {
+                ProActionAccess.Allowed, ProActionAccess.Trial -> true
+                ProActionAccess.Locked, ProActionAccess.Unknown -> false
+            }
+
+        suspend fun featureAccessAfterInitialLoad(feature: ProFeature): ProActionAccess {
             waitForInitialProState()
             waitForInitialPurchaseState()
-            return billingManager.isProPurchased.value || hasFeature(feature)
+            if (ProPolicyTestControl.currentPurchased(billingManager.isProPurchased.value)) {
+                return ProActionAccess.Allowed
+            }
+            return featureAccessFlow(feature).first()
         }
+
+        fun featureAccessFlow(feature: ProFeature): Flow<ProActionAccess> =
+            combine(proState, initialStateReady) { state, ready ->
+                proActionAccess(state, ready = ready || state.hasFeature(feature), feature = feature)
+            }.distinctUntilChanged()
 
         fun hasFeatureFlow(feature: ProFeature): Flow<Boolean> =
             proState
@@ -109,9 +131,9 @@ class ProManager
         fun isPro(): Boolean = _proState.value.isPro
 
         private suspend fun waitForInitialPurchaseState() {
-            if (billingManager.purchaseStateReady.value) return
+            if (ProPolicyTestControl.currentPurchaseStateReady(billingManager.purchaseStateReady.value)) return
             withTimeoutOrNull(INITIAL_STATE_WAIT_TIMEOUT_MS) {
-                billingManager.purchaseStateReady.first { it }
+                ProPolicyTestControl.purchaseStateReady(billingManager.purchaseStateReady).first { it }
             }
         }
 

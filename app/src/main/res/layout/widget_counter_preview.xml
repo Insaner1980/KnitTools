@@ -1,60 +1,75 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<!-- Järjestelmän widgetvalitsimen ja kiinnitysdialogin esikatselu. Rakenne vastaa CounterWidgetin
+     leveää kokoa: lankavärillä värjätty sileäneulepinta, projektin nimi ja laskurin 3D-napit luvun
+     molemmin puolin. Esikatselu ei saa näyttää harmaalta paikkamerkiltä, koska se on käyttäjän
+     ensimmäinen kosketus widgetiin. -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:background="#FFD2CDB5"
-    android:paddingHorizontal="16dp"
-    android:paddingVertical="12dp"
+    android:background="@color/widget_preview_surface"
     tools:ignore="Overdraw">
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/widget_name"
-        android:textColor="#FF2E2A1E"
-        android:textSize="13sp"
-        android:textStyle="bold"
-        android:maxLines="1" />
+    <!-- RemoteViews tukee vain sallittuja layout- ja näkymäluokkia: pelkkä View sai launcherin näyttämään
+         "Couldn't add widget" -virheen. Kuvio piirretään siksi ImageViewillä, ja fitXY venyttää
+         toistuvan tiilen rajat koko pinnan kokoisiksi. -->
+    <ImageView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:importantForAccessibility="no"
+        android:scaleType="fitXY"
+        android:src="@drawable/widget_knit_texture"
+        android:tint="@color/widget_preview_yarn"
+        tools:ignore="UseAppTint" />
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:gravity="center_vertical"
-        android:orientation="horizontal"
-        tools:ignore="NestedWeights">
+        android:layout_height="match_parent"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:paddingHorizontal="14dp"
+        android:paddingVertical="8dp">
 
         <TextView
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:background="#FFC45100"
-            android:gravity="center"
-            android:text="@string/widget_preview_decrement"
-            android:textColor="#FFFFFFFF"
-            android:textSize="20sp"
-            android:textStyle="bold" />
-
-        <TextView
-            android:layout_width="0dp"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
             android:gravity="center"
-            android:text="@string/widget_preview_count"
-            android:textColor="#FF2E2A1E"
-            android:textSize="34sp"
-            android:textStyle="bold"
-            android:maxLines="1" />
-
-        <TextView
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:background="#FFC45100"
-            android:gravity="center"
-            android:text="@string/widget_preview_increment"
-            android:textColor="#FFFFFFFF"
-            android:textSize="20sp"
+            android:maxLines="1"
+            android:ellipsize="end"
+            android:text="@string/journey_example_name"
+            android:textColor="@color/widget_preview_text"
+            android:textSize="13sp"
             android:textStyle="bold" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:layout_width="56dp"
+                android:layout_height="56dp"
+                android:importantForAccessibility="no"
+                android:src="@drawable/counter_minus_button" />
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:maxLines="1"
+                android:text="@string/widget_preview_primary_count"
+                android:textColor="@color/widget_preview_text"
+                android:textSize="48sp"
+                android:textStyle="bold" />
+
+            <ImageView
+                android:layout_width="56dp"
+                android:layout_height="56dp"
+                android:importantForAccessibility="no"
+                android:src="@drawable/counter_plus_button" />
+        </LinearLayout>
     </LinearLayout>
-</LinearLayout>
+</FrameLayout>

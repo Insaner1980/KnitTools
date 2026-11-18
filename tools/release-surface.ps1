@@ -12,7 +12,7 @@ Tama vahti tarkistaa vain KnitToolsissa tarkoituksella paatettyja release- ja ar
 Se ei ole yleinen tietoturvaskanneri, eika se lue tai tulosta credential-arvoja.
 
 Odotetut sopimusarvot, varmistettu nykyisista lahdetiedostoista:
-- Manifest permissions: android.permission.INTERNET, android.permission.VIBRATE, android.permission.CAMERA.
+- Manifest permissions: android.permission.INTERNET, android.permission.VIBRATE.
 - android.permission.RECORD_AUDIO on kielletty, koska voice/microphone-ominaisuudet on poistettu tuote-/turvapaattoksella.
 - Application flags: usesCleartextTraffic=false, allowBackup=false, dataExtractionRules=@xml/data_extraction_rules,
   fullBackupContent=@xml/backup_rules, localeConfig=@xml/locales_config.
@@ -24,7 +24,8 @@ Odotetut sopimusarvot, varmistettu nykyisista lahdetiedostoista:
 - FileProvider rootit: files-path progress_photos -> progress_photos/ ja files-path pattern_captures -> pattern_captures/.
   yarn_photos, pattern_pdfs, broad files/cache/external roots ja external storage roots eivat kuulu jaettuun pintaan.
 - Release signing gate riippuu KNITTOOLS_* signing -ymparistomuuttujista.
-- Firebase Auth/Functions ja Google Services ovat sallittuja vain Ravelry-backendia varten.
+- Google Services -konfiguraatio on sallittu vain Firebase Crashlyticsia varten; Firebase Auth/Functions eivat kuulu Androidiin.
+  Firebase Crashlytics SDK ja Gradle-plugin ovat sallittuja julkaisuversion kaatumisraportointiin.
   app/google-services.json saa olla paikallinen ignoroitu tiedosto, ja debug-build voi luoda
   app/src/debug/google-services.json -placeholderin, mutta kumpikaan ei saa olla git-indexissa.
 - debug.credentials.properties on paikallinen, ignoroitu ja git-indexin ulkopuolella.
@@ -34,7 +35,7 @@ Odotetut sopimusarvot, varmistettu nykyisista lahdetiedostoista:
   resursseissa, BuildConfig/generoiduissa vakioissa, Gradle-tiedostoissa, manifesteissa, testeissa, APK:ssa tai AAB:ssa.
 - Room-version luetaan @Database-annotaatiosta. Schema exportin pitaa olla paalla, N.json pitaa loytya,
   ja auto/manual-migraatiopolun pitaa ulottua varhaisimmasta exportoidusta schemasta versioon N.
-- Widget counter launch on CounterLaunchTokenStore-tokenilla rajattu, ja OAuth callback ei saa muodostaa counter launchia.
+- Widget counter launch on CounterLaunchTokenStore-tokenilla rajattu, eikä poistettua Ravelry-OAuth-callbackia saa palauttaa.
 - locales_config.xml ja app/src/main/res/values* kielihakemistot ovat pariteetissa; default values vastaa localea en.
 #>
 
@@ -251,7 +252,7 @@ function Test-ManifestPermissions {
 
     try {
         $xml = Read-XmlFile $relativePath
-        $permissionNodes = @($xml.DocumentElement.SelectNodes("uses-permission"))
+        $permissionNodes = @($xml.DocumentElement.SelectNodes("uses-permission|uses-permission-sdk-23"))
         $actual = @(
             $permissionNodes |
                 ForEach-Object { Get-AndroidAttribute -Node $_ -Name "name" } |
@@ -259,8 +260,7 @@ function Test-ManifestPermissions {
         )
         $expected = @(
             "android.permission.INTERNET",
-            "android.permission.VIBRATE",
-            "android.permission.CAMERA"
+            "android.permission.VIBRATE"
         )
         $comparison = Compare-SetValues -Actual $actual -Expected $expected
 
@@ -339,7 +339,7 @@ function Test-ExportedSurface {
         }
 
         $components = @{}
-        foreach ($tag in @("activity", "receiver", "service", "provider")) {
+        foreach ($tag in @("activity", "activity-alias", "receiver", "service", "provider")) {
             foreach ($node in @($application.SelectNodes($tag))) {
                 $name = Get-AndroidAttribute -Node $node -Name "name"
                 if ([string]::IsNullOrWhiteSpace($name)) {
@@ -550,10 +550,8 @@ function Test-FirebaseBoundary {
         $requiredAnchors = @(
             [pscustomobject]@{ Path = "app/build.gradle.kts"; Text = $appGradle; Anchor = 'apply(plugin = "com.google.gms.google-services")' },
             [pscustomobject]@{ Path = "app/build.gradle.kts"; Text = $appGradle; Anchor = "implementation(platform(libs.firebase.bom))" },
-            [pscustomobject]@{ Path = "app/build.gradle.kts"; Text = $appGradle; Anchor = "implementation(libs.firebase.auth)" },
-            [pscustomobject]@{ Path = "app/build.gradle.kts"; Text = $appGradle; Anchor = "implementation(libs.firebase.functions)" },
-            [pscustomobject]@{ Path = "gradle/libs.versions.toml"; Text = $catalog; Anchor = 'firebase-auth = { group = "com.google.firebase", name = "firebase-auth" }' },
-            [pscustomobject]@{ Path = "gradle/libs.versions.toml"; Text = $catalog; Anchor = 'firebase-functions = { group = "com.google.firebase", name = "firebase-functions" }' },
+            [pscustomobject]@{ Path = "app/build.gradle.kts"; Text = $appGradle; Anchor = "implementation(libs.firebase.crashlytics)" },
+            [pscustomobject]@{ Path = "gradle/libs.versions.toml"; Text = $catalog; Anchor = 'firebase-crashlytics = { group = "com.google.firebase", name = "firebase-crashlytics" }' },
             [pscustomobject]@{ Path = "gradle/libs.versions.toml"; Text = $catalog; Anchor = 'google-services = { id = "com.google.gms.google-services"' }
         )
 
@@ -570,7 +568,7 @@ function Test-FirebaseBoundary {
         if ($problems.Count -gt 0) {
             Add-Fail -Check $check -Message ($problems -join "; ") -RelativePath $firstPath -Line $firstLine
         } else {
-            Add-Pass -Check $check -Message "Firebase Auth/Functions and ignored Google Services config match contract"
+            Add-Pass -Check $check -Message "Firebase Crashlytics and ignored Google Services config match contract"
         }
     } catch {
         Add-Fail -Check $check -Message $_.Exception.Message -RelativePath $firstPath -Line $firstLine
@@ -615,12 +613,14 @@ function Test-SentryBoundary {
         $gradleFiles = @(
             "build.gradle.kts",
             "app/build.gradle.kts",
-            "baselineprofile/build.gradle.kts"
+            "baselineprofile/build.gradle.kts",
+            "gradle/libs.versions.toml"
         ) | Where-Object { Test-Path -LiteralPath (Join-RepoPath $_) }
 
         foreach ($file in $gradleFiles) {
             foreach ($line in Get-CodeLines $file) {
-                if ($line.Text -match '^\s*(implementation|api|releaseImplementation|runtimeOnly|releaseRuntimeOnly|compileOnly|releaseCompileOnly)\s*\(.*(sentry|io\.sentry|libs\.sentry)') {
+                if ($line.Text -match '^\s*(implementation|api|releaseImplementation|runtimeOnly|releaseRuntimeOnly|compileOnly|releaseCompileOnly)\s*\(.*(sentry|io\.sentry|libs\.sentry)' -or
+                    $line.Text -match '\bid\s*(?:\(\s*|=\s*)["'']io\.sentry(?:\.[\w.-]+)?["'']|alias\s*\(\s*libs\.plugins\.sentry\b') {
                     $problems += "release-visible Sentry dependency in $file"
                     if ($null -eq $firstLine) {
                         $firstPath = $file
@@ -707,7 +707,7 @@ function Test-ForbiddenDependencies {
 
                 if ($line.Text -match '^\s*(implementation|api|runtimeOnly|compileOnly|debugImplementation|releaseImplementation|testImplementation|androidTestImplementation)\s*\(\s*libs\.firebase\.([A-Za-z0-9_.-]+)') {
                     $alias = $Matches[2]
-                    if ($alias -notin @("bom", "auth", "functions")) {
+                    if ($alias -notin @("bom", "crashlytics")) {
                         $problems += "unapproved Firebase dependency alias '$alias' found in $file"
                         if ($null -eq $firstLine) {
                             $firstPath = $file
@@ -718,7 +718,7 @@ function Test-ForbiddenDependencies {
 
                 if ($file -eq "gradle/libs.versions.toml" -and $line.Text -match '^\s*(firebase[-A-Za-z0-9_.]*)\s*=') {
                     $key = $Matches[1]
-                    if ($key -notin @("firebaseBom", "firebase-bom", "firebase-auth", "firebase-functions")) {
+                    if ($key -notin @("firebaseBom", "firebase-bom", "firebase-crashlytics")) {
                         $problems += "unapproved Firebase catalog entry '$key' found in $file"
                         if ($null -eq $firstLine) {
                             $firstPath = $file
@@ -727,7 +727,7 @@ function Test-ForbiddenDependencies {
                     }
                 }
 
-                if ($line.Text -match 'com\.google\.firebase' -and $line.Text -notmatch 'firebase-(bom|auth|functions)') {
+                if ($line.Text -match 'com\.google\.firebase' -and $line.Text -notmatch 'firebase-(bom|crashlytics)"|com\.google\.firebase\.crashlytics"|^import com\.google\.firebase\.crashlytics\.buildtools\.gradle\.CrashlyticsExtension$') {
                     $problems += "unapproved direct Firebase dependency found in $file"
                     if ($null -eq $firstLine) {
                         $firstPath = $file
@@ -821,36 +821,68 @@ function Test-BinaryFileContainsSecret {
 
     $path = Join-RepoPath $RelativePath
     if (-not (Test-Path -LiteralPath $path)) {
-        return $false
+        throw "Checked binary file is missing: $RelativePath"
+    }
+
+    if ([System.IO.Path]::GetExtension($path).ToLowerInvariant() -in @('.apk', '.aab')) {
+        Add-Type -AssemblyName System.IO.Compression.FileSystem
+        try {
+            $archive = [System.IO.Compression.ZipFile]::OpenRead($path)
+            try {
+                foreach ($entry in $archive.Entries) {
+                    $stream = $entry.Open()
+                    try {
+                        $reader = [System.IO.StreamReader]::new($stream, [System.Text.Encoding]::UTF8, $false)
+                        try {
+                            $text = $reader.ReadToEnd()
+                            foreach ($secret in $Secrets) {
+                                if ($secret.Length -gt 0 -and $text.IndexOf($secret, [System.StringComparison]::Ordinal) -ge 0) {
+                                    return $true
+                                }
+                            }
+                        } finally {
+                            $reader.Dispose()
+                        }
+                    } finally {
+                        $stream.Dispose()
+                    }
+                }
+            } finally {
+                $archive.Dispose()
+            }
+        } catch {
+            throw "Unable to read checked archive: $RelativePath"
+        }
     }
 
     $bytes = [System.IO.File]::ReadAllBytes($path)
+    $byteEncoding = [System.Text.Encoding]::GetEncoding(28591)
+    $haystack = $byteEncoding.GetString($bytes)
     foreach ($secret in $Secrets) {
         $needle = [System.Text.Encoding]::UTF8.GetBytes($secret)
         if ($needle.Length -eq 0 -or $bytes.Length -lt $needle.Length) {
             continue
         }
-
-        for ($index = 0; $index -le $bytes.Length - $needle.Length; $index++) {
-            $matched = $true
-            for ($offset = 0; $offset -lt $needle.Length; $offset++) {
-                if ($bytes[$index + $offset] -ne $needle[$offset]) {
-                    $matched = $false
-                    break
-                }
-            }
-
-            if ($matched) {
-                return $true
-            }
+        if ($haystack.IndexOf($byteEncoding.GetString($needle), [System.StringComparison]::Ordinal) -ge 0) {
+            return $true
         }
     }
 
     return $false
 }
 
+function Remove-SecretValuesFromDiagnostic {
+    param([string]$Text, [string[]]$Secrets)
+
+    foreach ($secret in ($Secrets | Sort-Object Length -Descending)) {
+        $Text = $Text.Replace($secret, "[redacted]")
+    }
+    return $Text
+}
+
 function Test-KnownRavelrySecrets {
     $check = "known-ravelry-secrets"
+    $secrets = @()
 
     try {
         $secrets = @(Get-KnownRavelrySecretValues)
@@ -895,13 +927,18 @@ function Test-KnownRavelrySecrets {
         }
 
         if ($matches.Count -gt 0) {
-            $firstPath = $matches[0]
+            $firstPath = Remove-SecretValuesFromDiagnostic -Text $matches[0] -Secrets $secrets
             Add-Fail -Check $check -Message "known Ravelry secret value found in $($matches.Count) checked file(s); value redacted" -RelativePath $firstPath
         } else {
             Add-Pass -Check $check -Message "known Ravelry secret values are absent from checked sources, resources, generated constants, tests, APKs, and bundles"
         }
     } catch {
-        Add-Fail -Check $check -Message $_.Exception.Message
+        $message = if ($secrets.Count -eq 0) {
+            "Unable to load known Ravelry secret values for comparison"
+        } else {
+            Remove-SecretValuesFromDiagnostic -Text $_.Exception.Message -Secrets $secrets
+        }
+        Add-Fail -Check $check -Message $message
     }
 }
 
@@ -1019,11 +1056,29 @@ function Test-RoomSchema {
         $databasePath = $databaseFiles[0]
         $firstPath = $databasePath
         $databaseText = Read-TextFile $databasePath
-        if ($databaseText -notmatch '(?s)@Database\s*\(.*?version\s*=\s*(\d+)') {
+        $versionMatch = [regex]::Match(
+            $databaseText,
+            '(?s)@Database\s*\(.*?version\s*=\s*([A-Za-z_][A-Za-z0-9_]*|\d+)'
+        )
+        if (-not $versionMatch.Success) {
             Add-Fail -Check $check -Message "database version could not be parsed" -RelativePath $databasePath -Line (Get-LineNumber -RelativePath $databasePath -Pattern "@Database")
             return
         }
-        $version = [int]$Matches[1]
+        $versionExpression = $versionMatch.Groups[1].Value
+        if ($versionExpression -match '^\d+$') {
+            $version = [int]$versionExpression
+        } else {
+            $escapedVersionName = [regex]::Escape($versionExpression)
+            $constantMatch = [regex]::Match(
+                $databaseText,
+                "(?m)^\s*const\s+val\s+$escapedVersionName\s*=\s*(\d+)\s*$"
+            )
+            if (-not $constantMatch.Success) {
+                Add-Fail -Check $check -Message "database version constant could not be resolved" -RelativePath $databasePath -Line (Get-LineNumber -RelativePath $databasePath -Pattern $versionExpression)
+                return
+            }
+            $version = [int]$constantMatch.Groups[1].Value
+        }
 
         $problems = @()
         if ($databaseText -notmatch '(?s)@Database\s*\(.*?exportSchema\s*=\s*true') {
@@ -1085,17 +1140,15 @@ function Test-RoomSchema {
         $edges = @($edges | Sort-Object From, To -Unique)
         $startVersion = [int]($schemaVersions | Measure-Object -Minimum).Minimum
         if ($startVersion -gt 1) {
-            if ($problems.Count -gt 0) {
-                Add-Fail -Check $check -Message ($problems -join "; ") -RelativePath $firstPath -Line $firstLine
-            }
-            Add-Warn -Check $check -Message "schema history starts at $startVersion; path checked from first exported schema only" -RelativePath $schemaRelativeDir
-            return
+            Add-Warn -Check $check -Message "schema history starts at $startVersion; paths checked from every exported schema" -RelativePath $schemaRelativeDir
         }
 
-        if (-not (Test-MigrationPath -Start $startVersion -Target $version -Edges $edges)) {
-            $problems += "migration path from $startVersion to $version is incomplete"
-            if ($null -eq $firstLine) {
-                $firstLine = Get-LineNumber -RelativePath $databasePath -Pattern "MIGRATION_|AutoMigration"
+        foreach ($sourceVersion in $schemaVersions | Where-Object { $_ -lt $version }) {
+            if (-not (Test-MigrationPath -Start $sourceVersion -Target $version -Edges $edges)) {
+                $problems += "migration path from $sourceVersion to $version is incomplete"
+                if ($null -eq $firstLine) {
+                    $firstLine = Get-LineNumber -RelativePath $databasePath -Pattern "MIGRATION_|AutoMigration"
+                }
             }
         }
 
@@ -1113,10 +1166,12 @@ function Test-WidgetOAuthBoundary {
     $check = "widget-oauth-boundary"
     $mainPath = "app/src/main/java/com/finnvek/knittools/MainActivity.kt"
     $requestPath = "app/src/main/java/com/finnvek/knittools/ui/navigation/CounterLaunchRequest.kt"
+    $manifestPath = "app/src/main/AndroidManifest.xml"
 
     try {
         $mainText = Read-TextFile $mainPath
         $requestText = Read-TextFile $requestPath
+        $manifestText = Read-TextFile $manifestPath
         $warnings = @()
         $firstPath = $mainPath
         $firstLine = $null
@@ -1124,7 +1179,6 @@ function Test-WidgetOAuthBoundary {
         $anchors = @(
             [pscustomobject]@{ Path = $mainPath; Text = $mainText; Pattern = "CounterLaunchTokenStore.consumeLaunchId"; Message = "token store consumption symbol not found" },
             [pscustomobject]@{ Path = $mainPath; Text = $mainText; Pattern = "CounterLaunchTokenStore.issueLaunchId"; Message = "token issue symbol not found" },
-            [pscustomobject]@{ Path = $requestPath; Text = $requestText; Pattern = "if (intentData.isOAuthCallback) return null"; Message = "OAuth callback null guard not found" },
             [pscustomobject]@{ Path = $requestPath; Text = $requestText; Pattern = "if (!intentData.isTrustedCounterLaunch) return null"; Message = "trusted launch guard not found" }
         )
 
@@ -1138,29 +1192,29 @@ function Test-WidgetOAuthBoundary {
             }
         }
 
-        $start = $mainText.IndexOf("private fun handleOAuthCallbackIfNeeded")
-        $end = $mainText.IndexOf("private fun clearOAuthCallbackIntent")
-        if ($start -ge 0 -and $end -gt $start) {
-            $oauthBody = $mainText.Substring($start, $end - $start)
-            if ($oauthBody -match 'toCounterLaunchRequest|CounterLaunchRequest\s*\(|createCounterLaunchIntent') {
-                $line = Get-LineNumber -RelativePath $mainPath -Pattern "handleOAuthCallbackIfNeeded"
-                Add-Fail -Check $check -Message "OAuth callback handling directly touches counter launch construction path" -RelativePath $mainPath -Line $line
+        # Ravelry-OAuth poistettiin Androidista 2026-10-09: paluuosoite ei saa palata, koska
+        # se ohittaisi laskurin avauksen token-portin ja toisi kirjautumisen takaisin sovellukseen.
+        $oauthSurfaces = @(
+            [pscustomobject]@{ Path = $mainPath; Text = $mainText; Pattern = "handleOAuthCallbackIfNeeded" },
+            [pscustomobject]@{ Path = $mainPath; Text = $mainText; Pattern = "isOAuthCallback" },
+            [pscustomobject]@{ Path = $requestPath; Text = $requestText; Pattern = "isOAuthCallback" },
+            [pscustomobject]@{ Path = $manifestPath; Text = $manifestText; Pattern = "ravelry-auth-complete" }
+        )
+        foreach ($surface in $oauthSurfaces) {
+            if ($surface.Text.Contains($surface.Pattern)) {
+                $line = Get-LineNumber -RelativePath $surface.Path -Pattern ([regex]::Escape($surface.Pattern))
+                Add-Fail -Check $check -Message "removed OAuth callback surface '$($surface.Pattern)' is back in $($surface.Path)" -RelativePath $surface.Path -Line $line
                 return
-            }
-        } else {
-            $warnings += "OAuth callback handler bounds could not be parsed"
-            if ($null -eq $firstLine) {
-                $firstLine = Get-LineNumber -RelativePath $mainPath -Pattern "OAuth|oauth"
             }
         }
 
         if ($warnings.Count -gt 0) {
             Add-Warn -Check $check -Message (($warnings -join "; ") + "; static drift detector only") -RelativePath $firstPath -Line $firstLine
         } else {
-            Add-Pass -Check $check -Message "token gate anchors and OAuth null-guard present"
+            Add-Pass -Check $check -Message "token gate anchors present and no OAuth callback surface"
         }
     } catch {
-        Add-Warn -Check $check -Message ("manual review needed: " + $_.Exception.Message) -RelativePath $mainPath
+        Add-Fail -Check $check -Message ("unable to inspect widget boundary: " + $_.Exception.Message) -RelativePath $mainPath
     }
 }
 
@@ -1177,7 +1231,7 @@ function Convert-ValuesDirectoryToLocale {
     $qualifier = $DirectoryName.Substring("values-".Length)
     if ($qualifier -match '^([a-z]{2,3})(-r([A-Z]{2}))?$') {
         if ($Matches[3]) {
-            return "$($Matches[1])-r$($Matches[3])"
+            return "$($Matches[1])-$($Matches[3])"
         }
         return $Matches[1]
     }

@@ -3,6 +3,8 @@ package com.finnvek.knittools
 import com.finnvek.knittools.data.local.DatabaseTransactionRunner
 import com.finnvek.knittools.data.local.DebugDemoDataSeeder
 import com.finnvek.knittools.data.local.KnitToolsDatabase
+import com.finnvek.knittools.pro.ProPolicyTestControl
+import com.finnvek.knittools.repository.ProjectCounterMutationResult
 import com.finnvek.knittools.repository.ProjectCounterRepository
 import com.finnvek.knittools.repository.YarnCardRepository
 import dagger.Lazy
@@ -17,12 +19,24 @@ object DemoDataSeeder {
         transactionRunner: Lazy<DatabaseTransactionRunner>,
         projectCounterRepository: Lazy<ProjectCounterRepository>,
         yarnCardRepository: Lazy<YarnCardRepository>,
-    ) = DebugDemoDataSeeder.seedIfNeeded(
-        applicationScope = applicationScope,
-        ioDispatcher = ioDispatcher,
-        database = database,
-        transactionRunner = transactionRunner,
-        addCounter = { counter -> projectCounterRepository.get().addCounter(counter) },
-        saveYarnCard = { card -> yarnCardRepository.get().saveCardInCurrentTransaction(card) },
-    )
+    ) {
+        // Onboarding and policy tests must start without sample projects.
+        if (BuildConfig.ONBOARDING_TEST || ProPolicyTestControl.isActive) return
+        DebugDemoDataSeeder.seedIfNeeded(
+            applicationScope = applicationScope,
+            ioDispatcher = ioDispatcher,
+            database = database,
+            transactionRunner = transactionRunner,
+            addCounter = { counter ->
+                when (val result = projectCounterRepository.get().addCounter(counter)) {
+                    is ProjectCounterMutationResult.Success -> result.counterId
+                    else -> error("Demolaskurin tallennus epäonnistui: ${result::class.simpleName}")
+                }
+            },
+            saveYarnCard = { card ->
+                yarnCardRepository.get().saveCardInCurrentTransaction(card)
+                    ?: error("Demolankakortin tallennus epäonnistui")
+            },
+        )
+    }
 }

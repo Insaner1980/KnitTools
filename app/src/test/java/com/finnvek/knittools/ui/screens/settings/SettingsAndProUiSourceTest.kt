@@ -1,0 +1,70 @@
+package com.finnvek.knittools.ui.screens.settings
+
+import com.finnvek.knittools.ProjectSourceFiles
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
+import org.junit.Test
+
+class SettingsAndProUiSourceTest {
+    @Test
+    fun `help opens the current guide through the safe web link boundary`() {
+        val source = ProjectSourceFiles.read(SETTINGS_SCREEN)
+
+        assertTrue(source.contains("https://knittoolsapp.com/articles/"))
+        assertTrue(source.contains("openExternalWebLink(context, HELP_AND_GUIDE_URL)"))
+        assertFalse(source.contains("https://knittools.app/guide"))
+    }
+
+    @Test
+    fun `settings and upgrade can show a known active trial before Play readiness`() {
+        val settings = ProjectSourceFiles.read(SETTINGS_SCREEN)
+        val upgrade = ProjectSourceFiles.read(PRO_UPGRADE_SCREEN)
+
+        assertTrue(settings.contains("proState.takeIf { proStateReady || it.status == ProStatus.TRIAL_ACTIVE }"))
+        assertTrue(upgrade.contains("if (proStateReady || proState.status == ProStatus.TRIAL_ACTIVE)"))
+        assertTrue(upgrade.contains("if (!proStateReady)"))
+    }
+
+    @Test
+    fun `purchase restore and status changes are announced politely`() {
+        val settings = ProjectSourceFiles.read(SETTINGS_SCREEN)
+        val upgrade = ProjectSourceFiles.read(PRO_UPGRADE_SCREEN)
+        val statusMessage = ProjectSourceFiles.read(STATUS_MESSAGE)
+
+        assertTrue(settings.contains("liveRegion = LiveRegionMode.Polite"))
+        assertTrue(upgrade.contains("liveRegion = LiveRegionMode.Polite"))
+        assertTrue(statusMessage.contains("liveRegion = LiveRegionMode.Polite"))
+    }
+
+    @Test
+    fun `initial billing failure exposes the production restore action before readiness`() {
+        val upgrade = ProjectSourceFiles.read(PRO_UPGRADE_SCREEN)
+        val initialSection = upgrade.substringAfter("if (!proStateReady)").substringBefore("return")
+
+        assertTrue(upgrade.contains("onRestore = viewModel::restorePurchases"))
+        assertTrue(initialSection.contains("if (purchaseQueryFailed)"))
+        assertTrue(initialSection.contains("ProRestoreButton(isRestoring = isRestoring, onRestore = onRestore)"))
+        assertTrue(upgrade.contains("enabled = !isRestoring"))
+    }
+
+    @Test
+    fun `billing failure leaves the local trial action available once controls load`() {
+        val upgrade = ProjectSourceFiles.read(PRO_UPGRADE_SCREEN)
+        val initialSection = upgrade.substringAfter("if (!proStateReady)").substringBefore("return@Column")
+        val trialCondition = "if ((proStateReady || controlsReady) && proState.status == ProStatus.TRIAL_NOT_STARTED)"
+        val trialSection = upgrade.substringAfter(trialCondition, "")
+
+        assertTrue(initialSection.contains("if (purchaseQueryFailed)"))
+        assertTrue(upgrade.contains("controlsReady = controlsReady"))
+        assertTrue(trialSection.contains("OutlinedButton(onClick = onStartTrial"))
+    }
+
+    private companion object {
+        const val SETTINGS_SCREEN =
+            "app/src/main/java/com/finnvek/knittools/ui/screens/settings/SettingsScreen.kt"
+        const val PRO_UPGRADE_SCREEN =
+            "app/src/main/java/com/finnvek/knittools/ui/screens/pro/ProUpgradeScreen.kt"
+        const val STATUS_MESSAGE =
+            "app/src/main/java/com/finnvek/knittools/ui/components/StatusMessage.kt"
+    }
+}

@@ -1,0 +1,714 @@
+package com.finnvek.knittools.ui.screens.pattern
+
+import android.content.Context
+import android.net.Uri
+import androidx.lifecycle.SavedStateHandle
+import com.finnvek.knittools.analytics.UsageAnalytics
+import com.finnvek.knittools.analytics.UsageDetail
+import com.finnvek.knittools.analytics.UsageEvent
+import com.finnvek.knittools.data.storage.PatternDocumentStorage
+import com.finnvek.knittools.data.storage.PatternImageInfo
+import com.finnvek.knittools.data.storage.PatternImageStageBatch
+import com.finnvek.knittools.data.storage.PatternImageStageException
+import com.finnvek.knittools.data.storage.PatternImageStageFailure
+import com.finnvek.knittools.domain.model.CounterProject
+import com.finnvek.knittools.pro.ProManager
+import com.finnvek.knittools.pro.ProState
+import com.finnvek.knittools.pro.ProStatus
+import com.finnvek.knittools.repository.CounterRepository
+import com.finnvek.knittools.repository.OnboardingStateRepository
+import com.finnvek.knittools.repository.ProjectDocumentMutationResult
+import io.mockk.coEvery
+import io.mockk.coVerify
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.verify
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runCurrent
+import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.setMain
+import org.junit.After
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotEquals
+import org.junit.Assert.assertTrue
+import org.junit.Before
+import org.junit.Test
+import java.io.File
+
+@OptIn(ExperimentalCoroutinesApi::class)
+class PatternImageImportViewModelTest {
+    private val dispatcher = StandardTestDispatcher()
+    private val applicationScope = CoroutineScope(dispatcher)
+    private val proManager = mockk<ProManager>()
+    private val onboardingStateRepository = mockk<OnboardingStateRepository>(relaxed = true)
+    private val analytics = mockk<UsageAnalytics>(relaxed = true)
+    private lateinit var storage: PatternDocumentStorage
+    private lateinit var repository: CounterRepository
+    private lateinit var context: Context
+    private lateinit var savedStateHandle: SavedStateHandle
+
+    @Before
+    fun setUp() {
+        Dispatchers.setMain(dispatcher)
+        every { proManager.initialStateReady } returns MutableStateFlow(false)
+        storage = mockk(relaxed = true)
+        every { storage.restoreStagedSelection(any(), any(), any(), any()) } answers { arg(3) }
+        repository = mockk(relaxed = true)
+        coEvery { repository.attachPattern(any(), any(), any(), any(), any()) } returns
+            ProjectDocumentMutationResult.AlreadyAttached
+        context = mockk()
+        every { context.filesDir } returns File("build/test-pattern-import")
+        savedStateHandle = SavedStateHandle()
+    }
+
+    @After
+    fun tearDown() {
+        applicationScope.cancel()
+        Dispatchers.resetMain()
+    }
+
+    // CPD-OFF: Tuontitestien skenaariokohtainen asetelma pidetaan testien yhteydessa.
+    @Test
+    fun `pending picker result waits for restored private pages before appending`() =
+        runTest {
+            val first = page("first")
+            val second = page("second")
+            val picked = uri("content://second")
+            val handle =
+                SavedStateHandle(
+                    mapOf(
+                        "pattern_image_project_id" to 7L,
+                        "pattern_image_session_id" to "session-a",
+                        "pattern_image_pages" to encodeStagedPatternPages(listOf(first)),
+                        "pattern_image_picker_request_id" to "pending",
+                        "pattern_image_picker_launched" to false,
+                    ),
+                )
+            coEvery {
+                storage.stageSelectedImages(
+                    any(),
+                    7L,
+                    "session-a",
+                    PatternImageSelection(listOf(first)),
+                    listOf(picked),
+                )
+            } returns
+                PatternImageStageBatch(listOf(second), 0)
+            val vm = viewModel(handle, settleRestoration = false)
+            assertTrue(
+                vm.uiState.value.selection.pages
+                    .isEmpty(),
+            )
+            assertTrue(vm.markGalleryPickerLaunched("pending"))
+            assertEquals(listOf(first), decodeStagedPatternPages(handle.get<String>("pattern_image_pages").orEmpty()))
+
+            vm.onGalleryPickerResult("pending", listOf(picked))
+            advanceUntilIdle()
+
+            assertEquals(listOf(first, second), vm.uiState.value.selection.pages)
+            assertEquals(null, vm.uiState.value.pickerRequestId)
+            assertEquals(PatternImageImportPhase.READY, vm.uiState.value.phase)
+        }
+
+    @Test
+    fun `restored pages preserve a picker failure reported during restoration`() =
+        runTest {
+            val first = page("first")
+            val handle =
+                SavedStateHandle(
+                    mapOf(
+                        "pattern_image_project_id" to 7L,
+                        "pattern_image_session_id" to "session-a",
+                        "pattern_image_pages" to encodeStagedPatternPages(listOf(first)),
+                        "pattern_image_picker_request_id" to "pending",
+                    ),
+                )
+            val vm = viewModel(handle, settleRestoration = false)
+
+            vm.onGalleryPickerLaunchFailed("pending")
+            advanceUntilIdle()
+
+            assertEquals(listOf(first), vm.uiState.value.selection.pages)
+            assertEquals(PatternImageImportPhase.ERROR, vm.uiState.value.phase)
+            assertEquals(PatternImageImportError.UNREADABLE, vm.uiState.value.error)
+            assertEquals(null, vm.uiState.value.pickerRequestId)
+        }
+
+    @Test
+    fun `another owner cannot adopt or discard the retained draft`() =
+        runTest {
+            val vm = viewModel()
+            val firstUri = uri("content://first")
+            val request = vm.authorizeGalleryPicker(7L)
+            coEvery { storage.stageSelectedImages(any(), 7L, any(), any(), listOf(firstUri)) } returns
+                PatternImageStageBatch(listOf(page("first")), duplicatesIgnored = 0)
+            vm.onGalleryPickerResult(request, listOf(firstUri))
+            advanceUntilIdle()
+            val draftA = vm.uiState.value
+
+            // The old B/Add more action silently replaced A's retained session.
+            assertEquals(null, vm.authorizeGalleryPicker(8L))
+            assertEquals(draftA, vm.uiState.value)
+            verify(exactly = 0) { storage.deleteImportSession(any(), any(), any()) }
+        }
+
+    @Test
+    fun `authorized picker result is staged once and stale result cannot append later`() =
+        runTest {
+            val firstPage = page("first")
+            val viewModel = viewModel()
+            val firstRequest = viewModel.authorizeGalleryPicker(7L)
+            val staleRequest = "stale-request"
+            val firstUri = uri("content://first")
+            val laterUri = uri("content://later")
+            coEvery {
+                storage.stageSelectedImages(any(), 7L, any(), any(), listOf(firstUri))
+            } returns PatternImageStageBatch(listOf(firstPage), duplicatesIgnored = 0)
+
+            viewModel.onGalleryPickerResult(firstRequest, listOf(firstUri))
+            advanceUntilIdle()
+            viewModel.onGalleryPickerResult(staleRequest, listOf(laterUri))
+            advanceUntilIdle()
+
+            assertEquals(listOf(firstPage), viewModel.uiState.value.selection.pages)
+            assertEquals(PatternImageImportPhase.READY, viewModel.uiState.value.phase)
+            coVerify(exactly = 1) { storage.stageSelectedImages(any(), 7L, any(), any(), any()) }
+        }
+
+    @Test
+    fun `picker result survives recreation between launch and result and stays consumed after another recreation`() =
+        runTest {
+            val firstPage = page("first")
+            val firstUri = uri("content://first")
+            val requestId = viewModel().authorizeGalleryPicker(7L)
+            val restoredHandle =
+                SavedStateHandle(savedStateHandle.keys().associateWith { savedStateHandle.get<Any?>(it) })
+            val restoredViewModel = viewModel(restoredHandle)
+            coEvery {
+                storage.stageSelectedImages(any(), 7L, any(), any(), listOf(firstUri))
+            } returns PatternImageStageBatch(listOf(firstPage), duplicatesIgnored = 0)
+
+            restoredViewModel.onGalleryPickerResult(requestId, listOf(firstUri))
+            advanceUntilIdle()
+
+            assertEquals(listOf(firstPage), restoredViewModel.uiState.value.selection.pages)
+            assertEquals(PatternImageImportPhase.READY, restoredViewModel.uiState.value.phase)
+
+            val consumedHandle =
+                SavedStateHandle(restoredHandle.keys().associateWith { restoredHandle.get<Any?>(it) })
+            viewModel(consumedHandle).onGalleryPickerResult(requestId, listOf(firstUri))
+            advanceUntilIdle()
+
+            coVerify(exactly = 1) { storage.stageSelectedImages(any(), 7L, any(), any(), any()) }
+        }
+
+    @Test
+    fun `empty picker result consumes saved authorization before recreation`() =
+        runTest {
+            val originalViewModel = viewModel()
+            val requestId = originalViewModel.authorizeGalleryPicker(7L)
+
+            originalViewModel.onGalleryPickerResult(requestId, emptyList())
+
+            val restoredHandle =
+                SavedStateHandle(savedStateHandle.keys().associateWith { savedStateHandle.get<Any?>(it) })
+            val restoredViewModel = viewModel(restoredHandle)
+            restoredViewModel.onGalleryPickerResult(requestId, listOf(uri("content://late-result")))
+            advanceUntilIdle()
+
+            assertTrue(
+                restoredViewModel.uiState.value.selection.pages
+                    .isEmpty(),
+            )
+            coVerify(exactly = 0) { storage.stageSelectedImages(any(), any(), any(), any(), any()) }
+        }
+
+    @Test
+    fun `failed add more batch preserves the previous ordered selection`() =
+        runTest {
+            val firstPage = page("first")
+            val handle =
+                SavedStateHandle(
+                    mapOf(
+                        "pattern_image_project_id" to 7L,
+                        "pattern_image_session_id" to "session-a",
+                        "pattern_image_pages" to encodeStagedPatternPages(listOf(firstPage)),
+                    ),
+                )
+            val viewModel = viewModel(handle)
+            advanceUntilIdle()
+            val request = viewModel.authorizeGalleryPicker(7L)
+            val brokenUri = uri("content://broken")
+            coEvery {
+                storage.stageSelectedImages(
+                    any(),
+                    any(),
+                    any(),
+                    any(),
+                    any(),
+                )
+            } throws PatternImageStageException(PatternImageStageFailure.UNREADABLE)
+
+            viewModel.onGalleryPickerResult(request, listOf(brokenUri))
+            advanceUntilIdle()
+
+            assertEquals(listOf(firstPage), viewModel.uiState.value.selection.pages)
+            assertEquals(PatternImageImportPhase.ERROR, viewModel.uiState.value.phase)
+            assertEquals(PatternImageImportError.UNREADABLE, viewModel.uiState.value.error)
+        }
+
+    @Test
+    fun `create is single flight and successful close is consumed before reopening`() =
+        runTest {
+            val page = page("first")
+            val handle =
+                SavedStateHandle(
+                    mapOf(
+                        "pattern_image_project_id" to 7L,
+                        "pattern_image_session_id" to "session-a",
+                        "pattern_image_pages" to encodeStagedPatternPages(listOf(page)),
+                    ),
+                )
+            val viewModel = viewModel(handle)
+            every { storage.hasCreationSpace(context, page.byteCount) } returns true
+            coEvery { storage.convertImagesToPdf(any(), 7L, listOf(page), any(), any()) } coAnswers {
+                arg<(Int, Int) -> Unit>(4).invoke(1, 1)
+                "file:///pattern_pdfs/7/generated.pdf" to "generated.pdf"
+            }
+            coEvery { repository.attachPattern(7L, any(), "generated.pdf", 0, null) } returns
+                ProjectDocumentMutationResult.AlreadyAttached
+
+            viewModel.createPatternPdf(replaceExisting = false)
+            viewModel.createPatternPdf(replaceExisting = false)
+            advanceUntilIdle()
+
+            assertEquals(null, viewModel.uiState.value.error)
+            assertEquals(PatternImageImportPhase.SUCCESS, viewModel.uiState.value.phase)
+            assertTrue(viewModel.uiState.value.closeReady)
+            coVerify(exactly = 1) { repository.attachPattern(7L, any(), "generated.pdf", 0, null) }
+            verify(exactly = 1) { storage.deleteImportSession(context, 7L, "session-a") }
+
+            viewModel.consumeCloseRequest()
+
+            assertFalse(viewModel.uiState.value.closeReady)
+        }
+
+    @Test
+    fun `replacement waits for confirmation before conversion`() =
+        runTest {
+            val page = page("first")
+            val handle =
+                SavedStateHandle(
+                    mapOf(
+                        "pattern_image_project_id" to 7L,
+                        "pattern_image_session_id" to "session-a",
+                        "pattern_image_pages" to encodeStagedPatternPages(listOf(page)),
+                    ),
+                )
+            val viewModel = viewModel(handle)
+
+            viewModel.createPatternPdf(replaceExisting = true)
+
+            assertTrue(viewModel.uiState.value.replacementConfirmationPending)
+            coVerify(exactly = 0) { storage.convertImagesToPdf(any(), any(), any(), any(), any()) }
+        }
+
+    @Test
+    fun `late preview failure keeps conversion and attachment busy`() =
+        runTest {
+            val page = page("first")
+            val outputUri = "file:///pattern_pdfs/7/generated.pdf"
+            val handle =
+                SavedStateHandle(
+                    mapOf(
+                        "pattern_image_project_id" to 7L,
+                        "pattern_image_session_id" to "session-a",
+                        "pattern_image_pages" to encodeStagedPatternPages(listOf(page)),
+                    ),
+                )
+            val viewModel = viewModel(handle)
+            val conversion = CompletableDeferred<Pair<String, String>>()
+            val attachment = CompletableDeferred<ProjectDocumentMutationResult>()
+            every { storage.hasCreationSpace(context, page.byteCount) } returns true
+            coEvery { storage.convertImagesToPdf(any(), 7L, listOf(page), any(), any()) } coAnswers {
+                conversion.await()
+            }
+            coEvery { repository.attachPattern(7L, outputUri, "generated.pdf", 0, null) } coAnswers {
+                attachment.await()
+            }
+
+            viewModel.createPatternPdf(replaceExisting = false)
+            runCurrent()
+            viewModel.markPreviewFailed(page.id)
+            val convertingState = viewModel.uiState.value
+            conversion.complete(outputUri to "generated.pdf")
+            runCurrent()
+            viewModel.markPreviewFailed(page.id)
+            val attachingState = viewModel.uiState.value
+            attachment.complete(ProjectDocumentMutationResult.AlreadyAttached)
+            advanceUntilIdle()
+
+            assertEquals(PatternImageImportPhase.CONVERTING, convertingState.phase)
+            assertTrue(convertingState.isBusy)
+            assertEquals(setOf(page.id), convertingState.invalidPageIds)
+            assertEquals(PatternImageImportPhase.ATTACHING, attachingState.phase)
+            assertTrue(attachingState.isBusy)
+            assertEquals(PatternImageImportPhase.SUCCESS, viewModel.uiState.value.phase)
+            verify(exactly = 0) { storage.deleteStagedPage(any()) }
+        }
+
+    @Test
+    fun `attachment failure keeps staged pages and removes unreferenced output`() =
+        runTest {
+            val page = page("first")
+            val handle =
+                SavedStateHandle(
+                    mapOf(
+                        "pattern_image_project_id" to 7L,
+                        "pattern_image_session_id" to "session-a",
+                        "pattern_image_pages" to encodeStagedPatternPages(listOf(page)),
+                    ),
+                )
+            val viewModel = viewModel(handle)
+            every { storage.hasCreationSpace(context, page.byteCount) } returns true
+            coEvery { storage.convertImagesToPdf(any(), 7L, listOf(page), any(), any()) } returns
+                ("file:///pattern_pdfs/7/generated.pdf" to "generated.pdf")
+            coEvery { repository.attachPattern(7L, any(), "generated.pdf", 0, null) } throws java.io.IOException("db")
+            coEvery { repository.getProject(7L) } returns CounterProject(id = 7L, name = "Project", patternUri = "old")
+
+            viewModel.createPatternPdf(replaceExisting = false)
+            advanceUntilIdle()
+
+            assertEquals(PatternImageImportPhase.ERROR, viewModel.uiState.value.phase)
+            assertEquals(PatternImageImportError.ATTACHMENT, viewModel.uiState.value.error)
+            assertEquals(listOf(page), viewModel.uiState.value.selection.pages)
+            verify { storage.deleteGeneratedPdf(context, "file:///pattern_pdfs/7/generated.pdf") }
+        }
+
+    @Test
+    fun `attachment exception after commit keeps the attached output and completes`() =
+        runTest {
+            val page = page("first")
+            val outputUri = "file:///pattern_pdfs/7/generated.pdf"
+            val handle =
+                SavedStateHandle(
+                    mapOf(
+                        "pattern_image_project_id" to 7L,
+                        "pattern_image_session_id" to "session-a",
+                        "pattern_image_pages" to encodeStagedPatternPages(listOf(page)),
+                    ),
+                )
+            val viewModel = viewModel(handle)
+            every { storage.hasCreationSpace(context, page.byteCount) } returns true
+            coEvery { storage.convertImagesToPdf(any(), 7L, listOf(page), any(), any()) } returns
+                (outputUri to "generated.pdf")
+            coEvery { repository.attachPattern(7L, outputUri, "generated.pdf", 0, null) } throws
+                java.io.IOException("late acknowledgement")
+            coEvery { repository.isPatternDocumentAttached(7L, outputUri) } returns true
+
+            viewModel.createPatternPdf(replaceExisting = false)
+            advanceUntilIdle()
+
+            assertEquals(PatternImageImportPhase.SUCCESS, viewModel.uiState.value.phase)
+            verify(exactly = 0) { storage.deleteGeneratedPdf(context, outputUri) }
+            verify { storage.deleteImportSession(context, 7L, "session-a") }
+        }
+
+    @Test
+    fun `unknown attachment outcome preserves output and retryable draft`() =
+        runTest {
+            val page = page("first")
+            val outputUri = "file:///pattern_pdfs/7/generated.pdf"
+            val handle =
+                SavedStateHandle(
+                    mapOf(
+                        "pattern_image_project_id" to 7L,
+                        "pattern_image_session_id" to "session-a",
+                        "pattern_image_pages" to encodeStagedPatternPages(listOf(page)),
+                    ),
+                )
+            val viewModel = viewModel(handle)
+            every { storage.hasCreationSpace(context, page.byteCount) } returns true
+            coEvery { storage.convertImagesToPdf(any(), 7L, listOf(page), any(), any()) } returns
+                (outputUri to "generated.pdf")
+            coEvery { repository.attachPattern(7L, outputUri, "generated.pdf", 0, null) } throws
+                java.io.IOException("late acknowledgement")
+            coEvery { repository.isPatternDocumentAttached(7L, outputUri) } throws
+                java.io.IOException("read unavailable")
+
+            viewModel.createPatternPdf(replaceExisting = false)
+            advanceUntilIdle()
+
+            assertEquals(PatternImageImportPhase.ERROR, viewModel.uiState.value.phase)
+            assertEquals(PatternImageImportError.ATTACHMENT, viewModel.uiState.value.error)
+            assertEquals(listOf(page), viewModel.uiState.value.selection.pages)
+            verify(exactly = 0) { storage.deleteGeneratedPdf(context, outputUri) }
+            verify(exactly = 0) { storage.deleteImportSession(any(), any(), any()) }
+        }
+
+    @Test
+    fun `cancelled ready import deletes its staging session and consumes close before reopening`() =
+        runTest {
+            val page = page("first")
+            val handle =
+                SavedStateHandle(
+                    mapOf(
+                        "pattern_image_project_id" to 7L,
+                        "pattern_image_session_id" to "session-a",
+                        "pattern_image_pages" to encodeStagedPatternPages(listOf(page)),
+                    ),
+                )
+            val viewModel = viewModel(handle)
+
+            viewModel.cancelImport()
+            advanceUntilIdle()
+
+            assertEquals(PatternImageImportPhase.CANCELLED, viewModel.uiState.value.phase)
+            assertTrue(viewModel.uiState.value.closeReady)
+            verify { storage.deleteImportSession(context, 7L, "session-a") }
+
+            viewModel.consumeCloseRequest()
+
+            assertFalse(viewModel.uiState.value.closeReady)
+        }
+
+    @Test
+    fun `new authorization token replaces old token`() {
+        val viewModel = viewModel()
+
+        val first = viewModel.authorizeGalleryPicker(7L)
+        val second = viewModel.authorizeGalleryPicker(7L)
+
+        assertNotEquals(first, second)
+        assertFalse(viewModel.uiState.value.closeReady)
+    }
+
+    @Test
+    fun `oversized camera capture is rejected and its target is removed`() =
+        runTest {
+            val viewModel = viewModel()
+            val imageUri = uri("content://camera-capture")
+            val imageFile = File("build/test-pattern-import/pattern_captures/7/session/camera.jpg")
+            viewModel.authorizeCameraCapture(7L)
+            every { storage.inspectCameraCapture(imageFile) } throws
+                PatternImageStageException(PatternImageStageFailure.IMAGE_TOO_LARGE)
+
+            viewModel.acceptCameraCapture(7L, imageUri, imageFile)
+            advanceUntilIdle()
+
+            assertEquals(PatternImageImportPhase.ERROR, viewModel.uiState.value.phase)
+            assertEquals(PatternImageImportError.IMAGE_TOO_LARGE, viewModel.uiState.value.error)
+            verify { storage.deleteStagedPage(any()) }
+        }
+
+    // CPD-ON
+
+    @Test
+    fun `cancelled failed gallery preview does not block a new gallery import`() =
+        verifyImportAfterFailedPreview(PatternImageImportOrigin.GALLERY)
+
+    @Test
+    fun `cancelled failed camera preview does not block a new camera import`() =
+        verifyImportAfterFailedPreview(PatternImageImportOrigin.CAMERA)
+
+    private fun verifyImportAfterFailedPreview(origin: PatternImageImportOrigin) =
+        runTest {
+            val vm = viewModel()
+
+            suspend fun acceptImage(id: String) {
+                val imageUri = uri("content://$id")
+                if (origin == PatternImageImportOrigin.GALLERY) {
+                    val request = vm.authorizeGalleryPicker(7L)
+                    coEvery { storage.stageSelectedImages(any(), 7L, any(), any(), listOf(imageUri)) } returns
+                        PatternImageStageBatch(listOf(page(id)), duplicatesIgnored = 0)
+                    vm.onGalleryPickerResult(request, listOf(imageUri))
+                } else {
+                    vm.authorizeCameraCapture(7L)
+                    val file = File("build/test-pattern-import/$id.jpg")
+                    every { storage.inspectCameraCapture(file) } returns PatternImageInfo(100, 200)
+                    vm.acceptCameraCapture(7L, imageUri, file)
+                }
+                advanceUntilIdle()
+            }
+
+            acceptImage("broken")
+            val oldSession = requireNotNull(vm.uiState.value.sessionId)
+            val brokenPage =
+                vm.uiState.value.selection.pages
+                    .single()
+                    .id
+            vm.markPreviewFailed(brokenPage)
+            assertEquals(setOf(brokenPage), vm.uiState.value.invalidPageIds)
+            assertEquals(PatternImageImportError.UNSUPPORTED, vm.uiState.value.error)
+            vm.createPatternPdf(replaceExisting = false)
+            advanceUntilIdle()
+            coVerify(exactly = 0) { storage.convertImagesToPdf(any(), any(), any(), any(), any()) }
+
+            vm.cancelImport()
+            advanceUntilIdle()
+            assertTrue(vm.uiState.value.closeReady)
+            verify(exactly = 1) { storage.deleteImportSession(context, 7L, oldSession) }
+            vm.consumeCloseRequest()
+            acceptImage("valid")
+
+            assertNotEquals(oldSession, vm.uiState.value.sessionId)
+            assertTrue(
+                vm.uiState.value.invalidPageIds
+                    .isEmpty(),
+            )
+            assertEquals(null, vm.uiState.value.error)
+            assertFalse(vm.uiState.value.closeReady)
+            val pages = vm.uiState.value.selection.pages
+            every { storage.hasCreationSpace(context, any()) } returns true
+            coEvery { storage.convertImagesToPdf(context, 7L, pages, any(), any()) } returns
+                ("file:///pattern_pdfs/7/valid.pdf" to "valid.pdf")
+
+            vm.createPatternPdf(replaceExisting = false)
+            advanceUntilIdle()
+
+            coVerify(exactly = 1) { storage.convertImagesToPdf(context, 7L, pages, any(), any()) }
+            coVerify(exactly = 1) {
+                repository.attachPattern(7L, "file:///pattern_pdfs/7/valid.pdf", "valid.pdf", 0, null)
+            }
+            assertEquals(PatternImageImportPhase.SUCCESS, vm.uiState.value.phase)
+        }
+
+    @Test
+    fun `successful camera and gallery pdfs mark the active trial after attachment`() =
+        runTest {
+            every { proManager.initialStateReady } returns MutableStateFlow(true)
+            every { proManager.proState } returns
+                MutableStateFlow(ProState(ProStatus.TRIAL_ACTIVE, trialStartTimestamp = 100L))
+            listOf(PatternImageImportOrigin.CAMERA, PatternImageImportOrigin.GALLERY).forEach { origin ->
+                val vm = readyTrialImport(origin)
+                vm.createPatternPdf(replaceExisting = false)
+                advanceUntilIdle()
+                assertEquals(PatternImageImportPhase.SUCCESS, vm.uiState.value.phase)
+            }
+            coVerify(exactly = 2) { onboardingStateRepository.markTrialPhotoPdfCreated(100L) }
+            verify(exactly = 1) { analytics.track(UsageEvent.PDF_IMPORT_SUCCEEDED, UsageDetail.SOURCE_CAMERA) }
+            verify(exactly = 1) { analytics.track(UsageEvent.PDF_IMPORT_SUCCEEDED, UsageDetail.SOURCE_GALLERY) }
+        }
+
+    @Test
+    fun `failed attachment never marks a photo pdf trial step`() =
+        runTest {
+            every { proManager.initialStateReady } returns MutableStateFlow(true)
+            every { proManager.proState } returns
+                MutableStateFlow(ProState(ProStatus.TRIAL_ACTIVE, trialStartTimestamp = 100L))
+            coEvery { repository.attachPattern(any(), any(), any(), any(), any()) } throws java.io.IOException("attach")
+            coEvery { repository.isPatternDocumentAttached(any(), any()) } returns false
+            val vm = readyTrialImport(PatternImageImportOrigin.CAMERA)
+
+            vm.createPatternPdf(replaceExisting = false)
+            advanceUntilIdle()
+
+            assertEquals(PatternImageImportPhase.ERROR, vm.uiState.value.phase)
+            coVerify(exactly = 0) { onboardingStateRepository.markTrialPhotoPdfCreated(any()) }
+        }
+
+    @Test
+    fun `typed attachment failure never counts as successful pdf import`() =
+        runTest {
+            coEvery { repository.attachPattern(any(), any(), any(), any(), any()) } returns
+                ProjectDocumentMutationResult.PersistenceFailure
+            coEvery { repository.isPatternDocumentAttached(any(), any()) } returns false
+            val vm = readyTrialImport(PatternImageImportOrigin.CAMERA)
+            vm.createPatternPdf(replaceExisting = false)
+            advanceUntilIdle()
+            assertEquals(PatternImageImportPhase.ERROR, vm.uiState.value.phase)
+            verify(exactly = 0) { analytics.track(UsageEvent.PDF_IMPORT_SUCCEEDED, any()) }
+            verify(exactly = 1) {
+                analytics.track(UsageEvent.PDF_IMPORT_FAILED, UsageDetail.SOURCE_CAMERA, UsageDetail.ERROR_WRITE)
+            }
+            verify { storage.deleteGeneratedPdf(context, "file:///pattern_pdfs/7/trial.pdf") }
+        }
+
+    @Test
+    fun `failed trial marker persistence preserves the committed pdf success`() =
+        runTest {
+            every { proManager.initialStateReady } returns MutableStateFlow(true)
+            every { proManager.proState } returns
+                MutableStateFlow(ProState(ProStatus.TRIAL_ACTIVE, trialStartTimestamp = 100L))
+            coEvery { onboardingStateRepository.markTrialPhotoPdfCreated(100L) } throws
+                java.io.IOException("preferences")
+            val vm = readyTrialImport(PatternImageImportOrigin.GALLERY)
+
+            vm.createPatternPdf(replaceExisting = false)
+            advanceUntilIdle()
+
+            assertEquals(PatternImageImportPhase.SUCCESS, vm.uiState.value.phase)
+            coVerify(exactly = 1) { onboardingStateRepository.markTrialPhotoPdfCreated(100L) }
+        }
+
+    @Test
+    fun `photo pdf success outside a loaded active trial has no trial marker`() =
+        runTest {
+            listOf(
+                false to ProStatus.TRIAL_ACTIVE,
+                true to ProStatus.TRIAL_EXPIRED,
+                true to ProStatus.PRO_PURCHASED,
+            ).forEach { (ready, status) ->
+                every { proManager.initialStateReady } returns MutableStateFlow(ready)
+                every { proManager.proState } returns MutableStateFlow(ProState(status, trialStartTimestamp = 100L))
+                val vm = readyTrialImport(PatternImageImportOrigin.GALLERY)
+                vm.createPatternPdf(replaceExisting = false)
+                advanceUntilIdle()
+                assertEquals(PatternImageImportPhase.SUCCESS, vm.uiState.value.phase)
+            }
+            coVerify(exactly = 0) { onboardingStateRepository.markTrialPhotoPdfCreated(any()) }
+        }
+
+    private fun readyTrialImport(origin: PatternImageImportOrigin): PatternImageImportViewModel {
+        val page = page("trial")
+        val handle =
+            SavedStateHandle(
+                mapOf(
+                    "pattern_image_project_id" to 7L,
+                    "pattern_image_session_id" to "session-a",
+                    "pattern_image_pages" to encodeStagedPatternPages(listOf(page)),
+                    "pattern_image_origin" to origin.name,
+                ),
+            )
+        every { storage.hasCreationSpace(context, page.byteCount) } returns true
+        coEvery { storage.convertImagesToPdf(any(), 7L, listOf(page), any(), any()) } returns
+            ("file:///pattern_pdfs/7/trial.pdf" to "trial.pdf")
+        return viewModel(handle)
+    }
+
+    private fun viewModel(
+        handle: SavedStateHandle = savedStateHandle,
+        settleRestoration: Boolean = true,
+    ) = PatternImageImportViewModel(
+        storage = storage,
+        repository = repository,
+        context = context,
+        ioDispatcher = dispatcher,
+        savedStateHandle = handle,
+        proManager = proManager,
+        onboardingStateRepository = onboardingStateRepository,
+        applicationScope = applicationScope,
+        analytics = analytics,
+    ).also { if (settleRestoration) dispatcher.scheduler.runCurrent() }
+
+    private fun page(id: String) =
+        StagedPatternPage(
+            id = id,
+            sourceUri = "content://$id",
+            stagedPath = "build/test-pattern-import/pattern_captures/7/session-a/$id.img",
+            byteCount = 10L,
+            width = 100,
+            height = 200,
+        )
+
+    private fun uri(value: String): Uri = mockk<Uri>().also { uri -> every { uri.toString() } returns value }
+}

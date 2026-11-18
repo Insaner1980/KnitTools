@@ -11,7 +11,7 @@ class SavedPatternSchema14SourceTest {
         val module = ProjectSourceFiles.read(DATABASE_MODULE)
         val entity = ProjectSourceFiles.read(SAVED_PATTERN_ENTITY)
 
-        assertTrue(database.contains("version = 17"))
+        assertTrue(database.contains("version = KNITTOOLS_DATABASE_VERSION"))
         assertTrue(database.contains("MIGRATION_13_14"))
         assertTrue(module.contains("KnitToolsDatabase.ALL_MANUAL_MIGRATIONS"))
         assertTrue(entity.contains("val source: String"))
@@ -20,10 +20,12 @@ class SavedPatternSchema14SourceTest {
         assertTrue(entity.contains("val canonicalUrl: String = \"\""))
         assertTrue(entity.contains("val localPdfUri: String? = null"))
         assertTrue(entity.contains("val isAvailableOffline: Boolean = false"))
+        assertTrue(entity.contains("val availability: String = \"unknown\""))
         assertTrue(entity.contains("val updatedAt: Long"))
         assertTrue(entity.contains("val lastSyncedAt: Long? = null"))
         assertFalse(entity.contains("val ravelryId: Int,"))
         assertFalse(entity.contains("val patternUrl: String = \"\""))
+        assertFalse(entity.contains("val isFree: Boolean"))
     }
 
     @Test
@@ -48,29 +50,6 @@ class SavedPatternSchema14SourceTest {
         assertTrue(database.contains("ELSE 'OTHER'"))
         assertTrue(database.contains("DROP TABLE `saved_patterns`"))
         assertTrue(database.contains("ALTER TABLE `saved_patterns_new` RENAME TO `saved_patterns`"))
-    }
-
-    @Test
-    fun `saved pattern repository detects duplicates by id canonical url original url then confirmed title designer`() {
-        val dao = ProjectSourceFiles.read(SAVED_PATTERN_DAO)
-        val repository = ProjectSourceFiles.read(SAVED_PATTERN_REPOSITORY)
-
-        assertTrue(dao.contains("getByRavelryPatternId"))
-        assertTrue(dao.contains("getByCanonicalUrl"))
-        assertTrue(dao.contains("getByOriginalUrl"))
-        assertTrue(dao.contains("getAllOnce"))
-        assertTrue(dao.contains("getByTitleAndDesignerName"))
-        assertTrue(repository.contains("findDuplicateCandidate"))
-        assertTrue(repository.contains("pattern.ravelryPatternId?.let"))
-        assertTrue(repository.contains("dao.getByRavelryPatternId"))
-        assertTrue(repository.contains("dao.getByCanonicalUrl"))
-        assertTrue(repository.contains("dao.getByOriginalUrl"))
-        assertTrue(repository.contains("normalizedOriginalUrl"))
-        assertTrue(repository.contains("includeTitleDesigner"))
-        assertTrue(repository.indexOf("dao.getByRavelryPatternId") < repository.indexOf("dao.getByCanonicalUrl"))
-        assertTrue(repository.indexOf("dao.getByCanonicalUrl") < repository.indexOf("dao.getByOriginalUrl"))
-        assertTrue(repository.indexOf("dao.getByOriginalUrl") < repository.indexOf("normalizedOriginalUrl"))
-        assertTrue(repository.indexOf("normalizedOriginalUrl") < repository.indexOf("if (includeTitleDesigner"))
     }
 
     private companion object {

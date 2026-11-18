@@ -1,11 +1,22 @@
 package com.finnvek.knittools.data.local
 
 import com.finnvek.knittools.ProjectSourceFiles
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class DaoQuerySourceTest {
+    @Test
+    fun `latest counter history follows insertion order not wall clock`() {
+        val dao = ProjectSourceFiles.read(COUNTER_PROJECT_DAO)
+        val latest = dao.substringBefore("suspend fun getLatestHistory(").substringAfterLast("@Query(")
+
+        // Schema 28: Kumoa peruu viimeksi lisätyn rivin, vaikka laitteen kelloa olisi siirretty taaksepäin.
+        assertTrue(latest.contains("ORDER BY id DESC LIMIT 1"))
+        assertFalse(latest.contains("ORDER BY timestamp"))
+    }
+
     @Test
     fun `created sort uses createdAt instead of row id`() {
         val dao = ProjectSourceFiles.read(COUNTER_PROJECT_DAO)
@@ -25,12 +36,18 @@ class DaoQuerySourceTest {
     }
 
     @Test
-    fun `active name sort uses stable row id tiebreaker`() {
+    fun `project name sort uses stable row id tiebreaker`() {
         val dao = ProjectSourceFiles.read(COUNTER_PROJECT_DAO)
 
         assertTrue(
             dao.contains(
                 "SELECT * FROM counter_projects WHERE isCompleted = 0 " +
+                    "ORDER BY name COLLATE NOCASE ASC, id DESC",
+            ),
+        )
+        assertTrue(
+            dao.contains(
+                "SELECT * FROM counter_projects WHERE isCompleted = 1 " +
                     "ORDER BY name COLLATE NOCASE ASC, id DESC",
             ),
         )
@@ -61,9 +78,7 @@ class DaoQuerySourceTest {
     fun `saved pattern single-row lookups are deterministic`() {
         val dao = ProjectSourceFiles.read(SAVED_PATTERN_DAO)
 
-        assertTrue(dao.contains("WHERE ravelryPatternId = :ravelryPatternId"))
         assertTrue(dao.contains("ORDER BY savedAt DESC, id DESC LIMIT 1"))
-        assertTrue(dao.contains("suspend fun getByRavelryPatternId(ravelryPatternId: Int): SavedPatternEntity?"))
         assertTrue(
             dao.contains(
                 "SELECT * FROM saved_patterns WHERE localPdfUri = :localPdfUri ORDER BY savedAt DESC, id DESC LIMIT 1",
@@ -74,12 +89,6 @@ class DaoQuerySourceTest {
                 "SELECT * FROM saved_patterns WHERE canonicalUrl = :canonicalUrl ORDER BY savedAt DESC, id DESC LIMIT 1",
             ),
         )
-        assertTrue(
-            dao.contains(
-                "SELECT * FROM saved_patterns WHERE originalUrl = :originalUrl ORDER BY savedAt DESC, id DESC LIMIT 1",
-            ),
-        )
-        assertTrue(dao.contains("suspend fun getByOriginalUrl(originalUrl: String): SavedPatternEntity?"))
     }
 
     @Test
@@ -99,7 +108,7 @@ class DaoQuerySourceTest {
     fun `project total minutes use exact session seconds`() {
         val dao = ProjectSourceFiles.read(SESSION_DAO)
 
-        assertTrue(dao.contains("SUM(durationSeconds)"))
+        assertTrue(dao.contains("TOTAL(durationSeconds)"))
         assertFalse(dao.contains("SUM(durationMinutes)"))
     }
 
@@ -111,7 +120,11 @@ class DaoQuerySourceTest {
 
         assertFalse(dao.contains("fun getSessionsForInsights("))
         assertFalse(dao.contains("(:start IS NULL OR endedAt >= :start)"))
-        assertTrue(dao.contains("WHERE endedAt >= :start"))
+        val boundedQuery = dao.substringBefore("suspend fun getInsightSessionBatchSince").substringAfterLast("@Query(")
+        assertTrue(boundedQuery.contains("WHERE id > :afterId"))
+        assertTrue(boundedQuery.contains("AND (endedAt >= :start OR endedAt < :start AND"))
+        assertEquals(1, ":afterId".toRegex().findAll(boundedQuery).count())
+        assertTrue(boundedQuery.contains("ORDER BY id LIMIT 256"))
         assertTrue(dao.contains("WHERE projectId = :projectId"))
         assertTrue(entity.contains("Index(value = [\"endedAt\", \"startedAt\"])"))
         assertTrue(entity.contains("Index(value = [\"projectId\", \"endedAt\", \"startedAt\"])"))

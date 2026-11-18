@@ -1,10 +1,23 @@
 package com.finnvek.knittools.ui.screens.pattern
 
 import com.finnvek.knittools.domain.model.PatternAnnotation
+import com.finnvek.knittools.domain.model.PatternAnnotationOwner
+import com.finnvek.knittools.domain.model.TextBoxPayload
 import com.finnvek.knittools.repository.PatternAnnotationRepository
 
 sealed interface PatternAnnotationCommand {
     suspend fun apply(repository: PatternAnnotationRepository): PatternAnnotationCommand
+
+    data class EditText(
+        val owner: PatternAnnotationOwner,
+        val before: PatternAnnotation,
+        val text: String,
+    ) : PatternAnnotationCommand {
+        override suspend fun apply(repository: PatternAnnotationRepository): PatternAnnotationCommand {
+            val after = repository.updateText(owner, before, text)
+            return EditText(owner, after, (before.payload as TextBoxPayload).text)
+        }
+    }
 
     data class Insert(
         val annotation: PatternAnnotation,
@@ -40,6 +53,16 @@ sealed interface PatternAnnotationCommand {
         override suspend fun apply(repository: PatternAnnotationRepository): PatternAnnotationCommand {
             repository.updateAnnotation(after)
             return Update(before = after, after = before)
+        }
+    }
+
+    data class UpdateBatch(
+        val before: List<PatternAnnotation>,
+        val after: List<PatternAnnotation>,
+    ) : PatternAnnotationCommand {
+        override suspend fun apply(repository: PatternAnnotationRepository): PatternAnnotationCommand {
+            repository.restoreBatch(after)
+            return UpdateBatch(before = after, after = before)
         }
     }
 

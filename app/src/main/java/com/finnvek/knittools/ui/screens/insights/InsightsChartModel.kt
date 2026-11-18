@@ -8,8 +8,13 @@ import kotlin.math.abs
 import kotlin.math.ceil
 import kotlin.math.roundToInt
 
-/** Kuinka monta viikkosaraketta All Time -silmukkakangas näyttää enintään. */
-internal const val FABRIC_MAX_WEEKS = 26
+/** Kuinka monta kuukausipylvästä All Time näyttää enintään. */
+internal const val ALL_TIME_MONTH_BUCKET_LIMIT = 12
+
+/** Tätä lyhyempi historia ryhmitellään viikkoihin, jottei kaavio ole kaksi pylvästä. */
+internal const val ALL_TIME_WEEK_BUCKET_MONTHS = 6
+
+internal const val ALL_TIME_WEEK_BUCKET_LIMIT = 26
 
 /** Yhden projektin osuus yhdestä pylväästä. Väri haetaan projektin id:llä. */
 data class InsightsChartSegment(
@@ -25,12 +30,13 @@ data class InsightsChartSegment(
 data class InsightsChartBucket(
     val bucketStart: LocalDate,
     val totalMinutes: Int,
-    val totalRows: Int,
+    val totalRows: Long,
     val segments: List<InsightsChartSegment> = emptyList(),
 )
 
 /** Kaavion akseli: ryhmittelyväli ja kaikki ämpärialut järjestyksessä. */
 data class InsightsChartAxis(
+    val interval: PaceGroupingInterval,
     val bucketStarts: List<LocalDate>,
 )
 
@@ -53,23 +59,24 @@ data class InsightsTrend(
  * väittäisi ettei käyttäjä tehnyt mitään päivänä jota ei ole vielä ollut, ja
  * ämpärimäärä vastaa näin osion "x / y päivää" -lukemaa.
  *
- * All Time käyttää erillistä silmukkakangasta eikä sillä ole pylväsakselia.
+ * All Time ryhmittelee kuukausiin, mutta jos dataa on alle kahdelta kuukaudelta,
+ * palataan päiväämpäreihin ensimmäisestä istunnosta alkaen, jottei kaavio ole yksi
+ * yksinäinen pylväs eikä ala tyhjillä päivillä ennen ensimmäistä istuntoa.
  */
 internal fun insightsChartAxis(
     timeRange: TimeRange,
     today: LocalDate,
+    firstSessionDate: LocalDate?,
     firstDayOfWeek: DayOfWeek,
-): InsightsChartAxis {
-    require(timeRange != TimeRange.ALL_TIME) { "All Time uses the stitch fabric" }
-    return when (timeRange) {
+): InsightsChartAxis =
+    when (timeRange) {
         TimeRange.THIS_WEEK ->
             dayAxis(today.with(TemporalAdjusters.previousOrSame(firstDayOfWeek)), today)
 
         TimeRange.THIS_MONTH -> dayAxis(today.withDayOfMonth(1), today)
 
-        TimeRange.ALL_TIME -> error("Checked above")
+        TimeRange.ALL_TIME -> allTimeAxis(today, firstSessionDate, firstDayOfWeek)
     }
-}
 
 private fun dayAxis(
     start: LocalDate,
@@ -78,7 +85,52 @@ private fun dayAxis(
     val firstDay = if (start.isAfter(today)) today else start
     val dayCount = ChronoUnit.DAYS.between(firstDay, today).toInt() + 1
     return InsightsChartAxis(
+        interval = PaceGroupingInterval.DAY,
         bucketStarts = (0 until dayCount).map { firstDay.plusDays(it.toLong()) },
+    )
+}
+
+/**
+ * All Time kolmella tasolla. Kynnys kuukausiin oli aiemmin binaarinen: yksi kuukausi
+ * historiaa antoi päiväpylväät, kaksi antoi tasan kaksi kuukausipylvästä. Puolen
+ * vuoden alle jäävä historia ryhmitellään nyt viikkoihin, jolloin kaaviossa on
+ * 9–26 pylvästä kahden sijaan.
+ */
+private fun weekAxis(
+    firstSessionDate: LocalDate,
+    today: LocalDate,
+    firstDayOfWeek: DayOfWeek,
+): InsightsChartAxis {
+    val currentWeek = today.with(TemporalAdjusters.previousOrSame(firstDayOfWeek))
+    val firstWeek = firstSessionDate.with(TemporalAdjusters.previousOrSame(firstDayOfWeek))
+    val earliestShownWeek = currentWeek.minusWeeks(ALL_TIME_WEEK_BUCKET_LIMIT - 1L)
+    val start = if (firstWeek.isAfter(earliestShownWeek)) firstWeek else earliestShownWeek
+    val bucketCount = ChronoUnit.WEEKS.between(start, currentWeek).toInt() + 1
+    return InsightsChartAxis(
+        interval = PaceGroupingInterval.WEEK,
+        bucketStarts = (0 until bucketCount).map { start.plusWeeks(it.toLong()) },
+    )
+}
+
+private fun allTimeAxis(
+    today: LocalDate,
+    firstSessionDate: LocalDate?,
+    firstDayOfWeek: DayOfWeek,
+): InsightsChartAxis {
+    val currentMonth = today.withDayOfMonth(1)
+    val firstMonth = firstSessionDate?.withDayOfMonth(1) ?: return dayAxis(currentMonth, today)
+    val monthSpan = ChronoUnit.MONTHS.between(firstMonth, currentMonth) + 1
+    if (monthSpan < 2) return dayAxis(firstSessionDate, today)
+    if (monthSpan <= ALL_TIME_WEEK_BUCKET_MONTHS) {
+        return weekAxis(firstSessionDate, today, firstDayOfWeek)
+    }
+
+    val earliestShownMonth = currentMonth.minusMonths(ALL_TIME_MONTH_BUCKET_LIMIT - 1L)
+    val start = if (firstMonth.isAfter(earliestShownMonth)) firstMonth else earliestShownMonth
+    val bucketCount = ChronoUnit.MONTHS.between(start, currentMonth).toInt() + 1
+    return InsightsChartAxis(
+        interval = PaceGroupingInterval.MONTH,
+        bucketStarts = (0 until bucketCount).map { start.plusMonths(it.toLong()) },
     )
 }
 
@@ -98,17 +150,22 @@ internal fun fillChartBuckets(
 internal fun defaultSelectedBucketIndex(buckets: List<InsightsChartBucket>): Int? =
     buckets.indexOfLast { it.totalMinutes > 0 }.takeIf { it >= 0 }
 
+/** Alle tämän jäävästä edellisestä jaksosta ei lasketa prosenttimuutosta. */
+internal const val TREND_MINIMUM_BASE_SECONDS = 30 * 60L
+
 /**
- * Ilman edellisen jakson minuutteja prosenttimuutosta ei ole olemassa: nollalla
- * jakaminen tuottaisi äärettömän kasvun, joka näyttäisi ensimmäisellä viikolla
- * mielivaltaiselta luvulta. Silloin rivi jätetään kokonaan pois.
+ * Ilman riittävää edellisen jakson pohjaa prosenttimuutosta ei lasketa: nollalla
+ * jakaminen tuottaisi äärettömän kasvun, ja muutaman minuutin pohja tuottaa lukuja
+ * kuten "500 % enemmän". Molemmissa tapauksissa rivi jätetään kokonaan pois.
  */
 internal fun insightsTrend(
-    currentMinutes: Int,
-    previousMinutes: Int,
+    currentSeconds: Long,
+    previousSeconds: Long,
 ): InsightsTrend? {
-    if (previousMinutes <= 0) return null
-    val change = ((currentMinutes - previousMinutes) * 100.0 / previousMinutes).roundToInt()
+    // Pieni vertailupohja tuottaa lukuja kuten "500 % enemmän kuin viime viikolla"
+    // kolmesta minuutista kahdeksaantoista. Se on kohinaa, ei tietoa, ja näyttää bugilta.
+    if (previousSeconds < TREND_MINIMUM_BASE_SECONDS) return null
+    val change = ((currentSeconds - previousSeconds) * 100.0 / previousSeconds).roundToInt()
     val direction =
         when {
             change > 0 -> InsightsTrendDirection.UP
@@ -123,10 +180,8 @@ internal fun insightsTrend(
  * verrataan viime viikon keskiviikkoon asti, ei koko viikkoon. Muuten kesken
  * oleva jakso näyttäisi aina laskulta.
  *
- * Mittatapa on sama kuin nykyisellä jaksolla: sekunnit summataan ikkunan yli ja
- * pyöristetään minuuteiksi vasta kerran lopuksi. Päiväkohtaisten minuuttien
- * summaaminen kasvatti vertailukohtaa jokaisen aktiivisen päivän pyöristyksellä
- * ja vinoutti trendin systemaattisesti laskun suuntaan.
+ * Keep exact seconds across the window so neither the minimum baseline nor
+ * the percentage depends on display-minute rounding.
  *
  * Puhdas funktio päivämäärien vertailulle: [today] ratkaisee kuinka monta
  * päivää nykyisestä jaksosta on kulunut, ja sama määrä päiviä lasketaan
@@ -138,20 +193,20 @@ internal fun insightsTrend(
  * 31.3. ikkuna olisi 1.2.–4.3. ja laskisi maaliskuun alun sekä vertailukohtaan
  * että nykyiseen jaksoon.
  */
-internal fun previousPeriodMinutes(
+internal fun previousPeriodSeconds(
     dailySeconds: Map<LocalDate, Long>,
     previousStart: LocalDate,
     currentStart: LocalDate,
     today: LocalDate,
-): Int {
+): Long {
     val elapsedDays = ChronoUnit.DAYS.between(currentStart, today) + 1
     val previousEndExclusive = minOf(previousStart.plusDays(elapsedDays), currentStart)
     val windowSeconds =
         dailySeconds
             .entries
             .filter { (date, _) -> date >= previousStart && date < previousEndExclusive }
-            .sumOf { (_, seconds) -> seconds }
-    return secondsToDisplayMinutes(windowSeconds)
+            .fold(0L) { total, (_, seconds) -> addSessionSeconds(total, seconds) }
+    return windowSeconds
 }
 
 /**

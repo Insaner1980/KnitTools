@@ -30,6 +30,31 @@ class ReminderLogicTest {
         message = "Test",
     )
 
+    @Test
+    fun `upcoming one-time reminders include the window edges and exclude overdue or completed rows`() {
+        assertTrue(ReminderLogic.isUpcoming(oneTime(10), 10, 5))
+        assertTrue(ReminderLogic.isUpcoming(oneTime(15), 10, 5))
+        assertFalse(ReminderLogic.isUpcoming(oneTime(9), 10, 5))
+        assertFalse(ReminderLogic.isUpcoming(oneTime(16), 10, 5))
+        assertFalse(ReminderLogic.isUpcoming(oneTime(12, isCompleted = true), 10, 5))
+    }
+
+    @Test
+    fun `upcoming repeating reminders use the next occurrence after the current row`() {
+        assertTrue(ReminderLogic.isUpcoming(repeating(8, 8), 11, 5))
+        assertFalse(ReminderLogic.isUpcoming(repeating(8, 8), 16, 5))
+        assertTrue(ReminderLogic.isUpcoming(repeating(8, 8), 19, 5))
+        assertFalse(ReminderLogic.isUpcoming(repeating(8, 0), 9, 5))
+        assertTrue(ReminderLogic.isUpcoming(repeating(8, 8), 3, 5))
+        assertFalse(ReminderLogic.isUpcoming(oneTime(0), 0, 5))
+    }
+
+    @Test
+    fun `upcoming window arithmetic does not wrap at the counter limit`() {
+        assertTrue(ReminderLogic.isUpcoming(oneTime(Int.MAX_VALUE), Int.MAX_VALUE - 2, 5))
+        assertFalse(ReminderLogic.isUpcoming(repeating(1, Int.MAX_VALUE), Int.MAX_VALUE, 5))
+    }
+
     // Kertaluonteiset
     @Test
     fun `one-time triggers at exact target row`() {
@@ -49,6 +74,11 @@ class ReminderLogicTest {
     @Test
     fun `one-time does not trigger when completed`() {
         assertFalse(ReminderLogic.shouldTrigger(oneTime(12, isCompleted = true), 12))
+    }
+
+    @Test
+    fun `completed repeating reminder does not trigger`() {
+        assertFalse(ReminderLogic.shouldTrigger(repeating(8, 8).copy(isCompleted = true), 8))
     }
 
     @Test
@@ -92,6 +122,11 @@ class ReminderLogicTest {
     @Test
     fun `repeating does not trigger at row 0`() {
         assertFalse(ReminderLogic.shouldTrigger(repeating(0, 8), 0))
+    }
+
+    @Test
+    fun `invalid repeating interval does not degrade to one-time reminder`() {
+        assertFalse(ReminderLogic.shouldTrigger(repeating(8, 0), 8))
     }
 
     // repeatCount

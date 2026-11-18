@@ -12,37 +12,39 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Description
-import androidx.compose.material.icons.outlined.EditNote
-import androidx.compose.material.icons.outlined.Inventory2
-import androidx.compose.material.icons.outlined.Notifications
-import androidx.compose.material.icons.outlined.PhotoLibrary
-import androidx.compose.material3.Icon
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.text.BasicText
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.TextUnit
 import com.finnvek.knittools.R
+import com.finnvek.knittools.domain.tips.TipId
+import com.finnvek.knittools.ui.components.CrossStitchGlyph
+import com.finnvek.knittools.ui.components.CrossStitchIcon
+import com.finnvek.knittools.ui.components.SectionLabel
 import com.finnvek.knittools.ui.theme.CounterDimens
+import com.finnvek.knittools.ui.theme.FontScaleThresholds
 import com.finnvek.knittools.ui.theme.knitToolsColors
+import com.finnvek.knittools.ui.tips.tipAnchor
 
-enum class ProjectContentCardKind {
-    PATTERN,
-    YARN,
-    NOTES,
-    PHOTOS,
-    REMINDER,
+enum class ProjectContentCardKind(
+    val glyph: CrossStitchGlyph,
+) {
+    PATTERN(CrossStitchGlyph.PATTERN),
+    YARN(CrossStitchGlyph.YARN),
+    NOTES(CrossStitchGlyph.NOTES),
+    PHOTOS(CrossStitchGlyph.PHOTOS),
+    REMINDER(CrossStitchGlyph.REMINDER),
 }
 
 data class ProjectContentCard(
@@ -85,46 +87,51 @@ fun ProjectContentCards(
     modifier: Modifier = Modifier,
 ) {
     val cards = projectContentCards(hasPattern)
-    Column(
-        modifier = modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(CounterDimens.ProjectCardGridSpacing),
-    ) {
-        Text(
-            text = stringResource(R.string.project_content_title),
-            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-            color = MaterialTheme.colorScheme.secondary,
-        )
-        cards.take(4).chunked(2).forEach { rowCards ->
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(CounterDimens.ProjectCardGridSpacing),
-            ) {
-                rowCards.forEach { card ->
-                    ProjectContentCardView(
-                        card = card,
-                        onClick = { onCardClick(card.kind) },
-                        modifier = Modifier.weight(1f),
-                    )
-                }
-            }
-        }
-        cards.getOrNull(4)?.let { card ->
+    // Kapeassa tilassa 2 + 2 + 1 enintään 360 dp:n levyisenä; leveässä 3 + 2 koko sisältöleveydellä, jolloin
+    // ruudukko on yhtä leveä kuin muut laskurin osiot eikä viides ruutu jää yksin omalle rivilleen.
+    BoxWithConstraints(modifier = modifier.fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
+        val columns = projectContentCardColumns(maxWidth)
+        Column(
+            modifier =
+                Modifier
+                    .then(if (columns == 2) Modifier.widthIn(max = CounterDimens.ProjectCardGridMaxWidth) else Modifier)
+                    .fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(CounterDimens.ProjectCardGridSpacing),
+        ) {
+            SectionLabel(text = stringResource(R.string.project_content_title))
             BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
-                val centeredTileWidth = (maxWidth - CounterDimens.ProjectCardGridSpacing) / 2
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.Center,
-                ) {
-                    ProjectContentCardView(
-                        card = card,
-                        onClick = { onCardClick(card.kind) },
-                        modifier = Modifier.width(centeredTileWidth),
-                    )
+                val spacing = CounterDimens.ProjectCardGridSpacing
+                val tileWidth = (maxWidth - spacing * (columns - 1)) / columns
+                Column(verticalArrangement = Arrangement.spacedBy(spacing)) {
+                    cards.chunked(columns).forEach { rowCards ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(spacing, Alignment.CenterHorizontally),
+                        ) {
+                            rowCards.forEach { card ->
+                                ProjectContentCardView(
+                                    card = card,
+                                    onClick = { onCardClick(card.kind) },
+                                    modifier =
+                                        Modifier.width(tileWidth).then(
+                                            if (card.kind == ProjectContentCardKind.PATTERN) {
+                                                Modifier.tipAnchor(TipId.PATTERN_TILE)
+                                            } else {
+                                                Modifier
+                                            },
+                                        ),
+                                )
+                            }
+                        }
+                    }
                 }
             }
         }
     }
 }
+
+internal fun projectContentCardColumns(availableWidth: Dp): Int =
+    if (availableWidth >= CounterDimens.ProjectCardThreeColumnMinWidth) 3 else 2
 
 @Composable
 private fun ProjectContentCardView(
@@ -133,7 +140,6 @@ private fun ProjectContentCardView(
     modifier: Modifier = Modifier,
 ) {
     val title = stringResource(card.titleRes)
-    val accent = card.kind.accentColor()
     Surface(
         modifier =
             modifier
@@ -143,8 +149,8 @@ private fun ProjectContentCardView(
                     role = Role.Button,
                     onClick = onClick,
                 ),
-        shape = RoundedCornerShape(CounterDimens.ProjectCardCornerRadius),
-        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        shape = MaterialTheme.shapes.medium,
+        color = MaterialTheme.knitToolsColors.cardContainer,
     ) {
         Column(
             modifier =
@@ -158,39 +164,33 @@ private fun ProjectContentCardView(
                     alignment = Alignment.CenterVertically,
                 ),
         ) {
-            Icon(
-                imageVector = card.kind.icon(),
-                contentDescription = null,
-                modifier = Modifier.size(CounterDimens.ProjectCardIconSize),
-                tint = accent,
+            CrossStitchIcon(
+                glyph = card.kind.glyph,
+                modifier =
+                    Modifier.size(
+                        if (LocalDensity.current.fontScale >= FontScaleThresholds.LARGE) {
+                            CounterDimens.ProjectCardCompactIconSize
+                        } else {
+                            CounterDimens.ProjectCardIconSize
+                        },
+                    ),
             )
-            Text(
+            BasicText(
                 text = title,
-                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold),
-                color = MaterialTheme.colorScheme.onSurface,
-                textAlign = TextAlign.Center,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
+                style =
+                    MaterialTheme.typography.labelLarge.copy(
+                        fontWeight = FontWeight.SemiBold,
+                        lineHeight = TextUnit.Unspecified,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        textAlign = TextAlign.Center,
+                    ),
+                autoSize =
+                    TextAutoSize.StepBased(
+                        minFontSize = MaterialTheme.typography.labelSmall.fontSize,
+                        maxFontSize = MaterialTheme.typography.labelLarge.fontSize,
+                    ),
+                maxLines = 3,
             )
         }
     }
 }
-
-@Composable
-private fun ProjectContentCardKind.accentColor(): Color =
-    when (this) {
-        ProjectContentCardKind.PATTERN -> MaterialTheme.colorScheme.primary
-        ProjectContentCardKind.YARN -> MaterialTheme.colorScheme.secondary
-        ProjectContentCardKind.NOTES -> MaterialTheme.knitToolsColors.brandWine
-        ProjectContentCardKind.PHOTOS -> MaterialTheme.colorScheme.tertiary
-        ProjectContentCardKind.REMINDER -> MaterialTheme.knitToolsColors.tealAccent
-    }
-
-private fun ProjectContentCardKind.icon(): ImageVector =
-    when (this) {
-        ProjectContentCardKind.PATTERN -> Icons.Outlined.Description
-        ProjectContentCardKind.YARN -> Icons.Outlined.Inventory2
-        ProjectContentCardKind.NOTES -> Icons.Outlined.EditNote
-        ProjectContentCardKind.PHOTOS -> Icons.Outlined.PhotoLibrary
-        ProjectContentCardKind.REMINDER -> Icons.Outlined.Notifications
-    }

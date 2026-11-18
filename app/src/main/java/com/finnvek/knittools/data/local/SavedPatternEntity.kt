@@ -28,7 +28,7 @@ data class SavedPatternEntity(
     val needleSize: String? = null,
     val yarnWeight: String? = null,
     val yardage: Int? = null,
-    val isFree: Boolean = true,
+    val availability: String = "unknown",
     val originalUrl: String = "",
     val canonicalUrl: String = "",
     val localPdfUri: String? = null,

@@ -2,20 +2,29 @@ package com.finnvek.knittools.di
 
 import android.content.Context
 import androidx.room.Room
+import com.finnvek.knittools.data.local.ActiveSessionSchemaConstraints
 import com.finnvek.knittools.data.local.CounterProjectDao
 import com.finnvek.knittools.data.local.DatabaseTransactionRunner
 import com.finnvek.knittools.data.local.KnitToolsDatabase
 import com.finnvek.knittools.data.local.PatternAnnotationDao
 import com.finnvek.knittools.data.local.PatternAnnotationLayerDao
 import com.finnvek.knittools.data.local.PatternAnnotationSchemaConstraints
+import com.finnvek.knittools.data.local.PatternBookmarkDao
+import com.finnvek.knittools.data.local.PreservingSQLiteOpenHelperFactory
 import com.finnvek.knittools.data.local.ProgressPhotoDao
 import com.finnvek.knittools.data.local.ProjectCounterDao
+import com.finnvek.knittools.data.local.ProjectDocumentDao
+import com.finnvek.knittools.data.local.ProjectDocumentSchemaConstraints
+import com.finnvek.knittools.data.local.ProjectFolderDao
 import com.finnvek.knittools.data.local.ProjectYarnNoteDao
+import com.finnvek.knittools.data.local.ProjectYarnUsageDao
 import com.finnvek.knittools.data.local.RoomDatabaseTransactionRunner
 import com.finnvek.knittools.data.local.RowReminderDao
 import com.finnvek.knittools.data.local.SavedPatternDao
 import com.finnvek.knittools.data.local.SessionDao
 import com.finnvek.knittools.data.local.YarnCardDao
+import com.finnvek.knittools.data.time.AndroidSessionTimeSource
+import com.finnvek.knittools.data.time.SessionTimeSource
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -35,14 +44,23 @@ object DatabaseModule {
     ): KnitToolsDatabase =
         Room
             .databaseBuilder(context, KnitToolsDatabase::class.java, DB_NAME)
+            .openHelperFactory(PreservingSQLiteOpenHelperFactory())
             .addMigrations(*KnitToolsDatabase.ALL_MANUAL_MIGRATIONS)
             .addCallback(PatternAnnotationSchemaConstraints.callback)
+            .addCallback(ActiveSessionSchemaConstraints.callback)
+            .addCallback(ProjectDocumentSchemaConstraints.callback)
             .build()
 
     @Provides
     @Singleton
     fun provideDatabaseTransactionRunner(database: KnitToolsDatabase): DatabaseTransactionRunner =
         RoomDatabaseTransactionRunner(database)
+
+    @Provides
+    @Singleton
+    fun provideSessionTimeSource(
+        @ApplicationContext context: Context,
+    ): SessionTimeSource = AndroidSessionTimeSource(context)
 
     @Provides
     fun provideCounterProjectDao(db: KnitToolsDatabase): CounterProjectDao = db.counterProjectDao()
@@ -74,4 +92,20 @@ object DatabaseModule {
 
     @Provides
     fun providePatternAnnotationDao(db: KnitToolsDatabase): PatternAnnotationDao = db.patternAnnotationDao()
+
+    @Provides
+    fun providePatternBookmarkDao(db: KnitToolsDatabase): PatternBookmarkDao = db.patternBookmarkDao()
+
+    @Provides
+    fun provideProjectDocumentDao(db: KnitToolsDatabase): ProjectDocumentDao = db.projectDocumentDao()
+}
+
+@Module
+@InstallIn(SingletonComponent::class)
+object ProjectFolderDatabaseModule {
+    @Provides
+    fun provideProjectYarnUsageDao(db: KnitToolsDatabase): ProjectYarnUsageDao = db.projectYarnUsageDao()
+
+    @Provides
+    fun provideProjectFolderDao(db: KnitToolsDatabase): ProjectFolderDao = db.projectFolderDao()
 }

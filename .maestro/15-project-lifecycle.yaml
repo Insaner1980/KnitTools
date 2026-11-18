@@ -1,0 +1,44 @@
+appId: com.finnvek.knittools
+name: Crochet project completion reactivation and deletion
+---
+- launchApp:
+    clearState: true
+- tapOn: "New Project"
+- tapOn:
+    text: "Project name"
+    index: 1
+- inputText: "Maestro Crochet"
+- hideKeyboard
+- tapOn: "Crochet"
+- tapOn:
+    text: "Rounds already done"
+    index: 1
+- inputText: "8"
+- tapOn: "Create project"
+- assertVisible: "Round 8"
+- tapOn: "Add round"
+- assertVisible: "Round 9"
+- tapOn: "Maestro Crochet"
+- tapOn: "Project actions"
+- tapOn: "Complete"
+- tapOn:
+    text: "Complete"
+    index: 1
+- assertVisible: "Fastened Off!"
+- tapOn: "Close"
+- tapOn: "More options"
+- tapOn: "Show Completed"
+- scrollUntilVisible:
+    element:
+      text: "Maestro Crochet"
+    direction: DOWN
+- tapOn: "Maestro Crochet"
+- tapOn: "Project actions"
+- tapOn: "Reactivate"
+- tapOn: "Project actions"
+- tapOn: "Delete"
+- tapOn:
+    text: "Delete"
+    index: 1
+- assertNotVisible: "Maestro Crochet"
+- assertVisible: "Forest Cardigan"

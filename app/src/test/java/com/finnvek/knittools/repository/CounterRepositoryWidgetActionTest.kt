@@ -27,15 +27,24 @@ class CounterRepositoryWidgetActionTest {
         runTest {
             val runner = RecordingTransactionRunner()
             val dao = mockk<CounterProjectDao>(relaxed = true)
-            coEvery { dao.getProject(7L) } returns
+            coEvery { dao.getProject(7L) } answers {
+                assertTrue(runner.inTransaction)
                 CounterProjectEntity(
                     id = 7L,
                     name = "Sukat",
                     count = 10,
                     stepSize = 5,
+                    stitchCount = 80,
                     stitchTrackingEnabled = true,
                     currentStitch = 12,
                 )
+            }
+            coEvery { dao.updateCounterStateWithHistory(any(), any(), any(), any(), any(), any(), any()) } answers {
+                assertTrue(runner.inTransaction)
+            }
+            coEvery { dao.updateCurrentStitch(any(), any(), any()) } answers {
+                assertTrue(runner.inTransaction)
+            }
             val repository = buildRepository(dao, runner)
 
             val changed = repository.applyWidgetCountChange(7L, increment = true)
@@ -49,8 +58,8 @@ class CounterRepositoryWidgetActionTest {
                     stepSize = 5,
                     action = "increment",
                     previousValue = 10,
-                    newValue = 15,
                     updatedAt = any(),
+                    linkedCounterDeltasJson = any(),
                 )
                 dao.updateCurrentStitch(7L, 0, any())
             }
@@ -89,7 +98,8 @@ class CounterRepositoryWidgetActionTest {
             context = mockk<Context>(relaxed = true),
             yarnCardRepository = mockk(relaxed = true),
             savedPatternRepository = mockk(relaxed = true),
-            patternAnnotationLayerRepository = mockk(relaxed = true),
+            projectDocumentRepository = mockk(relaxed = true),
+            projectFolderDao = mockk(relaxed = true),
             transactionRunner = transactionRunner,
             ioDispatcher = Dispatchers.Unconfined,
         )
@@ -101,10 +111,16 @@ class CounterRepositoryWidgetActionTest {
 
     private class RecordingTransactionRunner : DatabaseTransactionRunner {
         var runCount: Int = 0
+        var inTransaction = false
 
         override suspend fun <T> run(block: suspend () -> T): T {
             runCount += 1
-            return block()
+            inTransaction = true
+            return try {
+                block()
+            } finally {
+                inTransaction = false
+            }
         }
     }
 }

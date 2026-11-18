@@ -64,5 +64,10 @@ class CounterRepositoryStopSessionTest : CounterRepositoryActiveSessionFixture()
                 assertEquals(before, active)
                 assertTrue(completed.isEmpty())
             }
+            assertEquals(
+                StopSessionResult.Saved(1L, wasFirstCompletedSession = true),
+                repository.stopSession(started.session.sessionToken, 35L, 0, 12),
+            )
+            assertEquals(35L, completed.single().durationSeconds)
         }
 }

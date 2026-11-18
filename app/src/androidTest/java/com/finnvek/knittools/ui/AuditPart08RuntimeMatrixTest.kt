@@ -355,14 +355,21 @@ class AuditPart08RuntimeMatrixTest {
                 }
                 automation.waitForIdle(300, 5_000)
             }
-            await { automation.rootInActiveWindow?.packageName?.toString()?.contains("documentsui") == true }
+            await {
+                automation.rootInActiveWindow
+                    ?.packageName
+                    ?.toString()
+                    ?.contains("documentsui") == true
+            }
             val pickerPackage = checkNotNull(automation.rootInActiveWindow?.packageName).toString()
+
             fun shellText(command: String): String =
                 android.os.ParcelFileDescriptor.AutoCloseInputStream(automation.executeShellCommand(command)).use {
                     it.bufferedReader().readText().trim()
                 }
 
             val userId = shellText("am get-current-user").toInt()
+
             fun pickerLabel(resourceName: String): String =
                 shellText("cmd overlay lookup --user $userId $pickerPackage $pickerPackage:string/$resourceName")
 
@@ -1131,6 +1138,7 @@ class AuditPart08RuntimeMatrixTest {
         tap("tab_insights")
         seek(s("insights_section_week_by_week"))
         val prefix = s("insights_chart_a11y_weekly").substringBefore('%')
+
         fun chartNode(): AccessibilityNodeInfo? =
             nodes().firstOrNull { it.isVisibleToUser && it.contentDescription?.startsWith(prefix) == true }
 
@@ -1158,7 +1166,10 @@ class AuditPart08RuntimeMatrixTest {
 
         // Resolve Next from the chart after the previous selection is visible in the header.
         val updatedChart = checkNotNull(chartNode())
-        assertTrue("Next must return to the latest week", updatedChart.performAction(updatedChart.localizedAction(next)))
+        assertTrue(
+            "Next must return to the latest week",
+            updatedChart.performAction(updatedChart.localizedAction(next)),
+        )
         await {
             nodes().any { it.isVisibleToUser && it.text?.startsWith(latestWeekLabel) == true }
         }

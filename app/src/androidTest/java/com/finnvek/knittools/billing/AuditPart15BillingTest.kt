@@ -53,16 +53,16 @@ class AuditPart15BillingTest {
             val app = ApplicationProvider.getApplicationContext<App>()
             val billing = app.billingManager.get()
             val pro = app.proManager.get()
-            withContext(Dispatchers.Main) {
-                billing.destroy()
-                BillingManager::class.java
-                    .getDeclaredField("billingClient")
-                    .apply { isAccessible = true }
-                    .set(billing, client)
-                ProPolicyTestControl.setTrialState(TrialState(hasStarted = true))
-                assertTrue(billing.queryPurchases())
-            }
             try {
+                withContext(Dispatchers.Main) {
+                    billing.destroy()
+                    BillingManager::class.java
+                        .getDeclaredField("billingClient")
+                        .apply { isAccessible = true }
+                        .set(billing, client)
+                    ProPolicyTestControl.setTrialState(TrialState(hasStarted = true))
+                    assertTrue(billing.queryPurchases())
+                }
                 ActivityScenario.launch(MainActivity::class.java).use { scenario ->
                     scenario.moveToState(Lifecycle.State.CREATED)
                     withContext(Dispatchers.Main) { client.purchases = listOf(purchase(acknowledged = true)) }
@@ -76,8 +76,13 @@ class AuditPart15BillingTest {
                 }
             } finally {
                 withContext(Dispatchers.Main) {
-                    billing.destroy()
-                    ProPolicyTestControl.reset()
+                    try {
+                        client.purchases = emptyList()
+                        billing.queryPurchases()
+                    } finally {
+                        ProPolicyTestControl.reset()
+                        billing.initialize()
+                    }
                 }
             }
         }

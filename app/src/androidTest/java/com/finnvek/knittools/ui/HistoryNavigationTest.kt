@@ -59,7 +59,12 @@ abstract class HistoryNavigationTest(
             if (ProPolicyTestControl.isActive) {
                 ProPolicyTestControl.setPurchased(true)
                 purchaseOverridden = true
-                withTimeout(15_000) { app.proManager.get().proState.first { it.isPro } }
+                withTimeout(15_000) {
+                    app.proManager
+                        .get()
+                        .proState
+                        .first { it.isPro }
+                }
             }
             val created = repository.createProject(name, canCreateAdditionalProjects = true)
             check(created is ProjectCreationResult.Created) { "Could not create history fixture: $created" }

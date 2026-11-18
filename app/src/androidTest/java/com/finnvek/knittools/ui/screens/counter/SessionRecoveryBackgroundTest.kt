@@ -23,8 +23,8 @@ import com.finnvek.knittools.data.local.CounterProjectEntity
 import com.finnvek.knittools.domain.model.ActiveSessionRecoveryReason
 import com.finnvek.knittools.repository.StartSessionResult
 import com.finnvek.knittools.repository.deleteTestActiveSession
-import com.finnvek.knittools.ui.theme.KnitToolsTheme
 import com.finnvek.knittools.repository.isIsolatedRoomTestPackage
+import com.finnvek.knittools.ui.theme.KnitToolsTheme
 import com.finnvek.knittools.widget.WidgetEntryPoint
 import dagger.hilt.android.EntryPointAccessors
 import kotlinx.coroutines.Dispatchers

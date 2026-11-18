@@ -560,9 +560,10 @@ class ExternalActivityResultOwnershipTest : CounterActivityTestFixture() {
         val originalAccessibilityFlags = automation.serviceInfo.flags
         var pickerSource: Uri? = null
         try {
-            automation.serviceInfo = automation.serviceInfo.apply {
-                flags = flags or AccessibilityServiceInfo.FLAG_REPORT_VIEW_IDS
-            }
+            automation.serviceInfo =
+                automation.serviceInfo.apply {
+                    flags = flags or AccessibilityServiceInfo.FLAG_REPORT_VIEW_IDS
+                }
             mount(gallery = false, standalone = true, systemPicker = true)
             rule.onNodeWithText(text(R.string.pattern_picker_import_pdf)).performScrollTo().performClick()
             rule.waitUntil(10_000) {
@@ -573,7 +574,11 @@ class ExternalActivityResultOwnershipTest : CounterActivityTestFixture() {
             }
 
             repeat(3) {
-                if (automation.rootInActiveWindow?.packageName?.toString()?.contains("documentsui") == true) {
+                if (automation.rootInActiveWindow
+                        ?.packageName
+                        ?.toString()
+                        ?.contains("documentsui") == true
+                ) {
                     assertTrue(automation.performGlobalAction(AccessibilityService.GLOBAL_ACTION_BACK))
                     automation.waitForIdle(300, 5_000)
                 }
@@ -603,9 +608,13 @@ class ExternalActivityResultOwnershipTest : CounterActivityTestFixture() {
             assertEquals(1, app.contentResolver.update(selected, values, null, null))
             rule.onNodeWithText(text(R.string.pattern_picker_import_pdf)).performScrollTo().performClick()
             rule.waitUntil(10_000) {
-                automation.rootInActiveWindow?.packageName?.toString()?.contains("documentsui") == true
+                automation.rootInActiveWindow
+                    ?.packageName
+                    ?.toString()
+                    ?.contains("documentsui") == true
             }
             val pickerPackage = requireNotNull(automation.rootInActiveWindow.packageName).toString()
+
             fun shellText(command: String): String =
                 android.os.ParcelFileDescriptor.AutoCloseInputStream(automation.executeShellCommand(command)).use {
                     it.bufferedReader().readText().trim()
@@ -637,15 +646,20 @@ class ExternalActivityResultOwnershipTest : CounterActivityTestFixture() {
                         }
                     val match =
                         findVisibleNode(container) {
-                            it.text?.toString() == label || (matchDescription && it.contentDescription?.toString() == label)
+                            it.text?.toString() == label ||
+                                (matchDescription && it.contentDescription?.toString() == label)
                         }
                     target = generateSequence(match) { it.parent }.firstOrNull { it.isEnabled && it.isClickable }
                     target != null
                 }
-                assertTrue("Could not click the picker item $label", requireNotNull(target).performAction(AccessibilityNodeInfo.ACTION_CLICK))
+                assertTrue(
+                    "Could not click the picker item $label",
+                    requireNotNull(target).performAction(AccessibilityNodeInfo.ACTION_CLICK),
+                )
             }
 
             val userId = shellText("am get-current-user").toInt()
+
             fun pickerLabel(name: String): String =
                 shellText("cmd overlay lookup --user $userId $pickerPackage $pickerPackage:string/$name")
 

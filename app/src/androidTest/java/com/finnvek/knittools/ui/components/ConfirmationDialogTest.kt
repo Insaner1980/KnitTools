@@ -9,6 +9,7 @@ import android.view.accessibility.AccessibilityNodeInfo
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.width
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
@@ -21,6 +22,9 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.text.TextLayoutResult
+import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.constrainHeight
+import androidx.compose.ui.unit.constrainWidth
 import androidx.compose.ui.unit.dp
 import androidx.test.platform.app.InstrumentationRegistry
 import com.finnvek.knittools.R
@@ -70,6 +74,7 @@ class ConfirmationDialogTest(
         val message = context.getString(R.string.delete_project_message, name)
         val confirm = context.getString(R.string.delete)
         val height = 600.dp
+        var expectedSize = IntSize.Zero
         var confirmations = 0
         var dismissals = 0
         compose.setContent {
@@ -77,7 +82,19 @@ class ConfirmationDialogTest(
                 ConfirmationDialog(
                     title = context.getString(R.string.delete_project),
                     message = message,
-                    modifier = Modifier.width(width.dp).heightIn(max = height).testTag("confirmation-dialog"),
+                    modifier =
+                        Modifier
+                            .layout { measurable, constraints ->
+                                expectedSize =
+                                    IntSize(
+                                        constraints.constrainWidth(width.dp.roundToPx()),
+                                        constraints.constrainHeight(height.roundToPx()),
+                                    )
+                                val content = measurable.measure(constraints)
+                                layout(content.width, content.height) { content.placeRelative(0, 0) }
+                            }.width(width.dp)
+                            .heightIn(max = height)
+                            .testTag("confirmation-dialog"),
                     confirmText = confirm,
                     isDestructive = true,
                     onConfirm = { confirmations++ },
@@ -101,8 +118,7 @@ class ConfirmationDialogTest(
             "dark=$dark dialog=${actualWidth}x$actualHeight dp font=${density.fontScale} " +
                 "text=${layout.size.height}px viewport=${viewportHeight}px extent=${range.maxValue()}px",
         )
-        assertEquals("Dialog width in dp", width.toFloat(), actualWidth, 1f)
-        assertEquals("Dialog height in dp", height.value, actualHeight, 1f)
+        assertEquals("Dialog size within the window constraints", expectedSize, dialog.size)
         assertEquals("Effective message font scale", fontScale, density.fontScale, 0.01f)
         assertTrue("The entire message must be laid out", !layout.hasVisualOverflow)
         assertTrue("Long message must expose a reachable scroll extent", range.maxValue() > 0f)
@@ -159,7 +175,10 @@ class ConfirmationDialogTest(
         @Parameterized.Parameters(name = "width={0} font={1} dark={2}")
         fun configurations(): List<Array<Any>> {
             // The dialog uses the Android window's font scale. Run the matrix once per system setting.
-            val deviceConfiguration = InstrumentationRegistry.getInstrumentation().targetContext.resources.configuration
+            val deviceConfiguration =
+                InstrumentationRegistry
+                    .getInstrumentation()
+                    .targetContext.resources.configuration
             val font =
                 InstrumentationRegistry.getArguments().getString("confirmationFontScale")?.toFloat()
                     ?: deviceConfiguration.fontScale

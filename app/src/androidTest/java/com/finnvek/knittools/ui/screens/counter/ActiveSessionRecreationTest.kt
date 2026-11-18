@@ -22,8 +22,8 @@ import com.finnvek.knittools.data.datastore.AppLanguage
 import com.finnvek.knittools.data.local.ActiveSessionEntity
 import com.finnvek.knittools.data.local.CounterProjectEntity
 import com.finnvek.knittools.repository.deleteTestActiveSession
-import com.finnvek.knittools.ui.TestContentSplashRule
 import com.finnvek.knittools.repository.isIsolatedRoomTestPackage
+import com.finnvek.knittools.ui.TestContentSplashRule
 import com.finnvek.knittools.widget.WidgetEntryPoint
 import dagger.hilt.android.EntryPointAccessors
 import kotlinx.coroutines.Dispatchers

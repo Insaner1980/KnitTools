@@ -429,7 +429,8 @@ class ProjectYarnNoteEditUiTest(
     }
 
     private fun save() =
-        compose.onNodeWithText(context.getString(R.string.save))
+        compose
+            .onNodeWithText(context.getString(R.string.save))
             .performScrollTo()
             .performSemanticsAction(SemanticsActions.OnClick) { assertTrue("Save action was not handled", it()) }
 

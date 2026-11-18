@@ -99,7 +99,12 @@ class ProjectFoldersActivityTest {
         runBlocking {
             if (ProPolicyTestControl.isActive) {
                 setTestProStatus(ProStatus.TRIAL_NOT_STARTED)
-                withTimeout(15_000) { app.proManager.get().initialControlsReady.first { it } }
+                withTimeout(15_000) {
+                    app.proManager
+                        .get()
+                        .initialControlsReady
+                        .first { it }
+                }
             }
             transactionRunner.run {
                 check(database.sessionDao().getActiveSession() == null) {
@@ -232,7 +237,14 @@ class ProjectFoldersActivityTest {
         if (ProPolicyTestControl.isActive) {
             ProPolicyTestControl.setPurchased(true)
             val app = ApplicationProvider.getApplicationContext<App>()
-            runBlocking { withTimeout(15_000) { app.proManager.get().proState.first { it.isPro } } }
+            runBlocking {
+                withTimeout(15_000) {
+                    app.proManager
+                        .get()
+                        .proState
+                        .first { it.isPro }
+                }
+            }
         }
         launchFromRenderedWidget()
         assertWidgetProjectCounter()

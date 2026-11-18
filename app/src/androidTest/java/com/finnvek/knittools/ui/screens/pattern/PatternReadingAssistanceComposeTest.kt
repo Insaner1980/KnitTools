@@ -240,7 +240,10 @@ class PatternReadingAssistanceComposeTest {
             }
         }
 
-        val horizontalNode = composeRule.onNodeWithContentDescription(context.getString(R.string.pattern_horizontal_reading_line))
+        val horizontalNode =
+            composeRule.onNodeWithContentDescription(
+                context.getString(R.string.pattern_horizontal_reading_line),
+            )
         horizontalNode
             .assertWidthIsEqualTo(48.dp)
             .assertHeightIsAtLeast(48.dp)
@@ -250,7 +253,10 @@ class PatternReadingAssistanceComposeTest {
                     context.getString(R.string.pattern_reading_line_manual_state, 50),
                 ),
             )
-        val verticalNode = composeRule.onNodeWithContentDescription(context.getString(R.string.pattern_vertical_guide_description))
+        val verticalNode =
+            composeRule.onNodeWithContentDescription(
+                context.getString(R.string.pattern_vertical_guide_description),
+            )
         verticalNode
             .assertWidthIsEqualTo(48.dp)
             .assertHeightIsAtLeast(48.dp)

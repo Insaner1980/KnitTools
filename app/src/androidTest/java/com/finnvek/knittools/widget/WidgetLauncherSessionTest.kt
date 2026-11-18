@@ -131,11 +131,14 @@ class WidgetLauncherSessionTest {
                 }
             }
         } finally {
-            runBlocking(Dispatchers.IO) {
-                database.deleteTestActiveSession(projectId)
-                repository.deleteProject(projectId)
+            try {
+                runBlocking(Dispatchers.IO) {
+                    database.deleteTestActiveSession(projectId)
+                    repository.deleteProject(projectId)
+                }
+            } finally {
+                ProPolicyTestControl.reset()
             }
-            ProPolicyTestControl.setPurchased(false)
         }
     }
 }

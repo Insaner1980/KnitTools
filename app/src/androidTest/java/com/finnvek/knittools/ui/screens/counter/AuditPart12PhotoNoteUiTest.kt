@@ -143,7 +143,9 @@ class AuditPart12PhotoNoteUiTest(
             }
             val values = photoNoteEmojiCases() + ("b".repeat(101) to "b".repeat(100))
             for ((input, expected) in values) {
-                editNote(input).assert(SemanticsMatcher.expectValue(SemanticsProperties.EditableText, AnnotatedString(expected)))
+                editNote(
+                    input,
+                ).assert(SemanticsMatcher.expectValue(SemanticsProperties.EditableText, AnnotatedString(expected)))
                 val save = compose.onNode(hasText(localized.getString(R.string.confirm)) and hasAnyAncestor(isDialog()))
                 save.assertIsDisplayed()
                 val density = localized.resources.displayMetrics.density
@@ -200,7 +202,9 @@ class AuditPart12PhotoNoteUiTest(
         val field = compose.onNode(hasSetTextAction() and hasAnyAncestor(isDialog()))
         field.assertIsDisplayed().performClick()
         compose.awaitKeyboard(visible = true)
-        return field.assertIsFocused().performSemanticsAction(SemanticsActions.SetText) { assertTrue(it(AnnotatedString(input))) }
+        return field.assertIsFocused().performSemanticsAction(SemanticsActions.SetText) {
+            assertTrue(it(AnnotatedString(input)))
+        }
     }
 
     companion object {

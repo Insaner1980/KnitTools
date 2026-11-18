@@ -120,7 +120,8 @@ class YarnCorrectionRuntimeTest {
             rule.onNode(hasSetTextAction() and hasText(label(R.string.quantity_label))).assertDoesNotExist()
             val editedName = "$prefix-edited-$quantity"
             // Set the field through its accessibility action without starting the platform IME.
-            rule.onNode(hasSetTextAction() and hasText(before.yarnName))
+            rule
+                .onNode(hasSetTextAction() and hasText(before.yarnName))
                 .assertIsEnabled()
                 .performSemanticsAction(SemanticsActions.SetText) { assertTrue(it(AnnotatedString(editedName))) }
             rule.onNode(hasSetTextAction() and hasText(editedName)).assertIsDisplayed()

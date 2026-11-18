@@ -42,7 +42,10 @@ class RavelryBrowserNavigationTest {
 
     @Test
     fun platformTransitionsPreserveControlledHistoryAndBack() {
-        assumeTrue("Requires the host-driven platform suite", InstrumentationRegistry.getArguments().getString("adaptivePlatformAllowed") == "true")
+        assumeTrue(
+            "Requires the host-driven platform suite",
+            InstrumentationRegistry.getArguments().getString("adaptivePlatformAllowed") == "true",
+        )
         launchBrowser().use { scenario ->
             browseThreePages(scenario)
             for (step in 1..4) {
@@ -70,7 +73,10 @@ class RavelryBrowserNavigationTest {
 
     @Test
     fun adaptiveViewportKeepsControlledHistoryAcrossTheWindowMatrix() {
-        assumeTrue("Requires the display-resize suite", InstrumentationRegistry.getArguments().getString("adaptiveResizeAllowed") == "true")
+        assumeTrue(
+            "Requires the display-resize suite",
+            InstrumentationRegistry.getArguments().getString("adaptiveResizeAllowed") == "true",
+        )
 
         fun shell(command: String): String =
             InstrumentationRegistry

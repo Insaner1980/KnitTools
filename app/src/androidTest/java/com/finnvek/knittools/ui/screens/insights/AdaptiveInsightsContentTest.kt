@@ -166,7 +166,9 @@ class AdaptiveInsightsContentTest {
         var size by mutableStateOf(360 to 700)
         rule.setContent {
             KnitToolsTheme(isDarkTheme = dark) {
-                DeviceConfigurationOverride(DeviceConfigurationOverride.ForcedSize(DpSize(size.first.dp, size.second.dp))) {
+                DeviceConfigurationOverride(
+                    DeviceConfigurationOverride.ForcedSize(DpSize(size.first.dp, size.second.dp)),
+                ) {
                     InsightsScreenContent(state, {}, {})
                 }
             }

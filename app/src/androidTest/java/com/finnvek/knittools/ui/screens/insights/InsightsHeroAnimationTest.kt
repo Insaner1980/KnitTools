@@ -52,9 +52,11 @@ class InsightsHeroAnimationTest {
             }
         }
 
-        composeRule.mainClock.advanceTimeBy(250L)
+        composeRule.mainClock.advanceTimeBy(600L)
+        composeRule.onNodeWithText("1").assertExists()
         composeRule.runOnIdle { targetMinutes.intValue = 120 }
-        composeRule.onNodeWithText("2").assertDoesNotExist()
+        composeRule.mainClock.advanceTimeByFrame()
+        composeRule.onNodeWithText("1").assertExists()
 
         composeRule.mainClock.advanceTimeBy(600L)
         composeRule.onNodeWithText("2").assertExists()

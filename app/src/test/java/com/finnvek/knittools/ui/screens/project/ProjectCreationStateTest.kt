@@ -6,6 +6,7 @@ import com.finnvek.knittools.domain.calculator.ProjectStartValues
 import com.finnvek.knittools.domain.model.CraftType
 import com.finnvek.knittools.domain.model.MainCounterLabelType
 import com.finnvek.knittools.pro.ProFeature
+import com.finnvek.knittools.repository.ProjectCreationOptions
 import com.finnvek.knittools.repository.ProjectCreationResult
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -48,7 +49,7 @@ class ProjectCreationStateTest : ProjectListViewModelFixture() {
             every { proManager.hasFeature(ProFeature.UNLIMITED_PROJECTS) } returns true
             every { preferencesManager.preferences } returns
                 flowOf(AppPreferences(lastProjectCraftType = CraftType.CROCHET))
-            coEvery { repository.createProject(any(), any(), any(), any(), any(), any(), any(), any()) } returns
+            coEvery { repository.createProject(any(), any(), any(), any(), any(), any(), any()) } returns
                 ProjectCreationResult.Created(7L)
             val viewModel = createViewModel()
             val store = ViewModelStore().apply { put("projects", viewModel) }
@@ -58,8 +59,8 @@ class ProjectCreationStateTest : ProjectListViewModelFixture() {
                     CraftType.CROCHET,
                     MainCounterLabelType.ROUNDS,
                     null,
-                    initialCount = 37,
-                    targetRows = 120,
+                    startValues = ProjectStartValues(37, 120),
+                    attemptId = "blanket-attempt",
                 )
                 runCurrent()
                 coVerify {
@@ -70,8 +71,7 @@ class ProjectCreationStateTest : ProjectListViewModelFixture() {
                         null,
                         true,
                         null,
-                        ProjectStartValues(37, 120),
-                        any(),
+                        ProjectCreationOptions(ProjectStartValues(37, 120), "blanket-attempt"),
                     )
                 }
                 viewModel.createProject()
@@ -84,8 +84,7 @@ class ProjectCreationStateTest : ProjectListViewModelFixture() {
                         null,
                         true,
                         null,
-                        ProjectStartValues(),
-                        any(),
+                        options = match { it.startValues == ProjectStartValues() },
                     )
                 }
             } finally {

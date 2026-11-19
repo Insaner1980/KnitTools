@@ -76,21 +76,23 @@ class AuditPart15RoomTest {
     @Test fun committedCreationAttemptReusesProjectButNewAttemptWithSameNameSucceeds() =
         runBlocking {
             val repository = fixture.counterRepository()
+            val firstAttempt = ProjectCreationOptions(attemptId = "first")
             val first =
-                repository.createProject("Blanket", canCreateAdditionalProjects = false, attemptId = "first")
+                repository.createProject("Blanket", canCreateAdditionalProjects = false, options = firstAttempt)
                     as ProjectCreationResult.Created
             assertTrue(first.wasFirstProject)
             assertEquals(1, repository.getProjectCount())
 
             assertEquals(
                 first,
-                repository.createProject("Blanket", canCreateAdditionalProjects = false, attemptId = "first"),
+                repository.createProject("Blanket", canCreateAdditionalProjects = false, options = firstAttempt),
             )
             assertEquals(1, repository.getProjectCount())
 
             status(ProStatus.PRO_PURCHASED)
+            val secondAttempt = ProjectCreationOptions(attemptId = "second")
             val second =
-                repository.createProject("Blanket", canCreateAdditionalProjects = true, attemptId = "second")
+                repository.createProject("Blanket", canCreateAdditionalProjects = true, options = secondAttempt)
                     as ProjectCreationResult.Created
             assertEquals(2, repository.getProjectCount())
             assertEquals("Blanket (2)", db.counterProjectDao().getProject(second.projectId)?.name)

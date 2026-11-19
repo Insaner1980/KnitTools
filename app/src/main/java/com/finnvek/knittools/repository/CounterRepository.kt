@@ -88,6 +88,11 @@ import javax.inject.Singleton
 
 internal class SessionHistoryLimitReachedException : IllegalStateException()
 
+data class ProjectCreationOptions(
+    val startValues: ProjectStartValues = ProjectStartValues(),
+    val attemptId: String? = null,
+)
+
 sealed interface ProjectCreationResult {
     data class Created(
         val projectId: Long,
@@ -300,11 +305,11 @@ class CounterRepository
             mainCounterCustomLabel: String? = null,
             canCreateAdditionalProjects: Boolean,
             targetFolderId: Long? = null,
-            startValues: ProjectStartValues = ProjectStartValues(),
-            attemptId: String? = null,
+            options: ProjectCreationOptions = ProjectCreationOptions(),
         ): ProjectCreationResult =
             try {
                 transactionRunner.run {
+                    val attemptId = options.attemptId
                     if (attemptId != null) findProjectCreationResult(attemptId)?.let { return@run it }
                     val wasFirstProject = !dao.hasAnyProject()
                     val result =
@@ -315,7 +320,7 @@ class CounterRepository
                             mainCounterCustomLabel = mainCounterCustomLabel,
                             canCreateAdditionalProjects = canCreateAdditionalProjects,
                             targetFolderId = targetFolderId,
-                            startValues = startValues,
+                            startValues = options.startValues,
                         )
                     if (result is ProjectCreationResult.Created) {
                         if (attemptId != null) {

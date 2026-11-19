@@ -47,7 +47,7 @@ class ProjectListViewModelTest : ProjectListViewModelFixture() {
             every { proManager.hasFeature(ProFeature.UNLIMITED_PROJECTS) } returns false
             coEvery { repository.getActiveProjectCount() } returns 0
             coEvery { repository.getProjectCount() } returns 5
-            coEvery { repository.createProject(any(), any(), any(), any(), any(), any(), attemptId = any()) } returns
+            coEvery { repository.createProject(any(), any(), any(), any(), any(), any(), options = any()) } returns
                 ProjectCreationResult.Created(7L)
             val vm = createViewModel()
             var dialogs = 0
@@ -78,7 +78,7 @@ class ProjectListViewModelTest : ProjectListViewModelFixture() {
 
             assertEquals(1, upgradeEvents)
             coVerify(exactly = 0) {
-                repository.createProject(any(), any(), any(), any(), any(), any(), attemptId = any())
+                repository.createProject(any(), any(), any(), any(), any(), any(), options = any())
             }
         }
 
@@ -118,7 +118,7 @@ class ProjectListViewModelTest : ProjectListViewModelFixture() {
     fun `save rechecks project limit atomically`() =
         runTest {
             every { proManager.hasFeature(ProFeature.UNLIMITED_PROJECTS) } returns false
-            coEvery { repository.createProject(any(), any(), any(), any(), false, null, attemptId = any()) } returns
+            coEvery { repository.createProject(any(), any(), any(), any(), false, null, options = any()) } returns
                 ProjectCreationResult.LimitReached
 
             val vm = createViewModel()
@@ -142,7 +142,7 @@ class ProjectListViewModelTest : ProjectListViewModelFixture() {
         runTest {
             every { proManager.hasFeature(ProFeature.UNLIMITED_PROJECTS) } returns false
             coEvery { repository.getActiveProjectCount() } returns 1
-            coEvery { repository.createProject(any(), any(), any(), any(), false, null, attemptId = any()) } returnsMany
+            coEvery { repository.createProject(any(), any(), any(), any(), false, null, options = any()) } returnsMany
                 // CPD-ON
                 listOf(
                     ProjectCreationResult.LimitReached,
@@ -176,7 +176,7 @@ class ProjectListViewModelTest : ProjectListViewModelFixture() {
                     mainCounterLabelType = com.finnvek.knittools.domain.model.MainCounterLabelType.ROWS,
                     mainCounterCustomLabel = null,
                     canCreateAdditionalProjects = false,
-                    attemptId = any(),
+                    options = any(),
                 )
             }
         }
@@ -187,7 +187,7 @@ class ProjectListViewModelTest : ProjectListViewModelFixture() {
             val savedStateHandle = SavedStateHandle()
             every { proManager.hasFeature(ProFeature.UNLIMITED_PROJECTS) } returns false
             coEvery { repository.getActiveProjectCount() } returns 1
-            coEvery { repository.createProject(any(), any(), any(), any(), any(), null, attemptId = any()) } returnsMany
+            coEvery { repository.createProject(any(), any(), any(), any(), any(), null, options = any()) } returnsMany
                 listOf(
                     ProjectCreationResult.LimitReached,
                     ProjectCreationResult.Created(projectId = 42L),
@@ -216,7 +216,7 @@ class ProjectListViewModelTest : ProjectListViewModelFixture() {
                     mainCounterLabelType = com.finnvek.knittools.domain.model.MainCounterLabelType.ROWS,
                     mainCounterCustomLabel = null,
                     canCreateAdditionalProjects = any(),
-                    attemptId = any(),
+                    options = any(),
                 )
             }
             // CPD-ON
@@ -226,7 +226,7 @@ class ProjectListViewModelTest : ProjectListViewModelFixture() {
     fun `created project navigation waits for a collector after recreation`() =
         runTest {
             every { proManager.hasFeature(ProFeature.UNLIMITED_PROJECTS) } returns true
-            coEvery { repository.createProject(any(), any(), any(), any(), true, null, attemptId = any()) } returns
+            coEvery { repository.createProject(any(), any(), any(), any(), true, null, options = any()) } returns
                 ProjectCreationResult.Created(projectId = 42L)
             val vm = createViewModel()
 
@@ -245,7 +245,7 @@ class ProjectListViewModelTest : ProjectListViewModelFixture() {
         runTest {
             every { proManager.hasFeature(ProFeature.UNLIMITED_PROJECTS) } returns true
             val result = CompletableDeferred<ProjectCreationResult>()
-            coEvery { repository.createProject(any(), any(), any(), any(), true, null, attemptId = any()) } coAnswers {
+            coEvery { repository.createProject(any(), any(), any(), any(), true, null, options = any()) } coAnswers {
                 result.await()
             }
             // CPD-OFF: Sama kutsu toistetaan tarkoituksella kaksoisnapautuksen todentamiseksi.
@@ -267,7 +267,7 @@ class ProjectListViewModelTest : ProjectListViewModelFixture() {
             runCurrent()
 
             coVerify(exactly = 1) {
-                repository.createProject(any(), any(), any(), any(), true, null, attemptId = any())
+                repository.createProject(any(), any(), any(), any(), true, null, options = any())
             }
 
             result.complete(ProjectCreationResult.Created(42L))
@@ -565,7 +565,7 @@ class ProjectListViewModelTest : ProjectListViewModelFixture() {
     fun `creation failure reports an error and retains the exact draft for retry`() =
         runTest {
             every { proManager.hasFeature(ProFeature.UNLIMITED_PROJECTS) } returns true
-            coEvery { repository.createProject(any(), any(), any(), any(), any(), any(), attemptId = any()) } throws
+            coEvery { repository.createProject(any(), any(), any(), any(), any(), any(), options = any()) } throws
                 IOException("synthetic creation failure")
             val vm = createViewModel()
 
@@ -578,7 +578,7 @@ class ProjectListViewModelTest : ProjectListViewModelFixture() {
             )
             assertEquals(R.string.generic_error_unknown, withTimeoutOrNull(1) { vm.sessionErrors.first() })
             assertEquals(null, withTimeoutOrNull(1) { vm.navigateToProject.first() })
-            coEvery { repository.createProject(any(), any(), any(), any(), any(), any(), attemptId = any()) } returns
+            coEvery { repository.createProject(any(), any(), any(), any(), any(), any(), options = any()) } returns
                 ProjectCreationResult.Created(42L)
 
             vm.retryPendingProjectCreation()
@@ -593,7 +593,7 @@ class ProjectListViewModelTest : ProjectListViewModelFixture() {
                     "Circuits",
                     true,
                     12L,
-                    attemptId = any(),
+                    options = any(),
                 )
             }
         }
@@ -695,6 +695,32 @@ class ProjectListViewModelTest : ProjectListViewModelFixture() {
 @OptIn(ExperimentalCoroutinesApi::class)
 class ProjectSelectionViewModelTest : ProjectListViewModelFixture() {
     @Test
+    fun `bulk completion stops when a new selection includes a remaining project`() =
+        runTest {
+            val projects = (1L..2L).map { CounterProject(id = it, name = "Project $it") }
+            every { repository.getActiveProjects(ProjectSortOrder.UPDATED) } returns flowOf(projects)
+            projects.forEach { project -> coEvery { repository.getProject(project.id) } returns project }
+            val firstCompletion = CompletableDeferred<ProjectCompletionResult>()
+            coEvery { repository.completeProjectWithSessionChoice(1L, null) } coAnswers { firstCompletion.await() }
+            coEvery { repository.completeProjectWithSessionChoice(2L, null) } returns ProjectCompletionResult.Completed
+            val vm = createViewModel()
+            runCurrent()
+            vm.enterMultiSelectMode()
+            vm.selectAllProjects()
+            vm.completeSelectedProjects()
+            runCurrent()
+            coVerify(exactly = 1) { repository.completeProjectWithSessionChoice(1L, null) }
+
+            vm.exitMultiSelectMode()
+            vm.enterMultiSelectMode(2L)
+            firstCompletion.complete(ProjectCompletionResult.Completed)
+            runCurrent()
+
+            coVerify(exactly = 0) { repository.completeProjectWithSessionChoice(2L, null) }
+            assertEquals(setOf(2L), vm.selectedProjectIds.value)
+        }
+
+    @Test
     fun `committed bulk deletion continues after observation removes the deleted item`() =
         runTest {
             val projects = MutableStateFlow((1L..2L).map { CounterProject(id = it, name = "Project $it") })
@@ -714,6 +740,31 @@ class ProjectSelectionViewModelTest : ProjectListViewModelFixture() {
 
             coVerify(exactly = 1) { repository.deleteProjectResolvingActiveSession(2L, false) }
             assertFalse(vm.isMultiSelectMode.value)
+        }
+
+    @Test
+    fun `bulk deletion stops when a new selection includes a remaining project`() =
+        runTest {
+            val projects = (1L..2L).map { CounterProject(id = it, name = "Project $it") }
+            every { repository.getActiveProjects(ProjectSortOrder.UPDATED) } returns flowOf(projects)
+            val firstDeletion = CompletableDeferred<ProjectDeletionResult>()
+            coEvery { repository.deleteProjectResolvingActiveSession(1L, false) } coAnswers { firstDeletion.await() }
+            coEvery { repository.deleteProjectResolvingActiveSession(2L, false) } returns ProjectDeletionResult.Deleted
+            val vm = createViewModel()
+            runCurrent()
+            vm.enterMultiSelectMode()
+            vm.selectAllProjects()
+            vm.deleteSelectedProjects()
+            runCurrent()
+            coVerify(exactly = 1) { repository.deleteProjectResolvingActiveSession(1L, false) }
+
+            vm.exitMultiSelectMode()
+            vm.enterMultiSelectMode(2L)
+            firstDeletion.complete(ProjectDeletionResult.Deleted)
+            runCurrent()
+
+            coVerify(exactly = 0) { repository.deleteProjectResolvingActiveSession(2L, false) }
+            assertEquals(setOf(2L), vm.selectedProjectIds.value)
         }
 
     @Test

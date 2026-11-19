@@ -10,6 +10,7 @@ import com.finnvek.knittools.pro.ProManager
 import com.finnvek.knittools.pro.ProState
 import com.finnvek.knittools.repository.CounterRepository
 import com.finnvek.knittools.repository.OnboardingStateRepository
+import com.finnvek.knittools.repository.ProjectCreationOptions
 import com.finnvek.knittools.repository.ProjectCreationResult
 import com.finnvek.knittools.serializedCopy
 import io.mockk.coEvery
@@ -46,7 +47,7 @@ class ProjectCreationActionsTest {
         every { repository.getActiveProjects() } returns flowOf(emptyList())
         every { proManager.proState } returns MutableStateFlow(ProState())
         every { proManager.hasFeature(ProFeature.UNLIMITED_PROJECTS) } returns true
-        coEvery { repository.createProject(any(), any(), any(), any(), any(), any(), any(), any()) } returns
+        coEvery { repository.createProject(any(), any(), any(), any(), any(), any(), any()) } returns
             ProjectCreationResult.Created(7L, wasFirstProject = true)
     }
 
@@ -54,7 +55,7 @@ class ProjectCreationActionsTest {
     fun `a second creation cannot replace an in flight request`() =
         runTest {
             val gate = CompletableDeferred<ProjectCreationResult>()
-            coEvery { repository.createProject(any(), any(), any(), any(), any(), any(), any(), any()) } coAnswers
+            coEvery { repository.createProject(any(), any(), any(), any(), any(), any(), any()) } coAnswers
                 { gate.await() }
             val handle = SavedStateHandle()
             val actions = actions(handle)
@@ -68,10 +69,10 @@ class ProjectCreationActionsTest {
             assertEquals(listOf(7L), createdIds)
             assertNull(handle.get<PendingProjectCreation>(PENDING_KEY))
             coVerify(exactly = 1) {
-                repository.createProject("Blanket", any(), any(), any(), any(), any(), any(), any())
+                repository.createProject("Blanket", any(), any(), any(), any(), any(), any())
             }
             coVerify(exactly = 0) {
-                repository.createProject("Second", any(), any(), any(), any(), any(), any(), any())
+                repository.createProject("Second", any(), any(), any(), any(), any(), any())
             }
         }
 
@@ -90,8 +91,7 @@ class ProjectCreationActionsTest {
                     mainCounterCustomLabel = null,
                     canCreateAdditionalProjects = true,
                     targetFolderId = 5L,
-                    startValues = ProjectStartValues(37, 120),
-                    attemptId = request().attemptId,
+                    options = ProjectCreationOptions(ProjectStartValues(37, 120), request().attemptId),
                 )
             }
             coVerify { preferences.setLastProjectCraftType(CraftType.CROCHET) }
@@ -104,7 +104,7 @@ class ProjectCreationActionsTest {
     @Test
     fun `creation with existing projects updates craft without changing starter`() =
         runTest {
-            coEvery { repository.createProject(any(), any(), any(), any(), any(), any(), any(), any()) } returns
+            coEvery { repository.createProject(any(), any(), any(), any(), any(), any(), any()) } returns
                 ProjectCreationResult.Created(7L, wasFirstProject = false)
             actions().create(request())
             runCurrent()
@@ -119,7 +119,7 @@ class ProjectCreationActionsTest {
         runTest {
             val gate = CompletableDeferred<ProjectCreationResult>()
             coEvery {
-                repository.createProject(any(), any(), any(), any(), any(), any(), any(), any())
+                repository.createProject(any(), any(), any(), any(), any(), any(), any())
             } coAnswers { gate.await() }
             val actions = actions()
             actions.create(request())
@@ -148,7 +148,7 @@ class ProjectCreationActionsTest {
 
             assertEquals(listOf(7L), createdIds)
             assertTrue(failures.isEmpty())
-            coVerify(exactly = 1) { repository.createProject(any(), any(), any(), any(), any(), any(), any(), any()) }
+            coVerify(exactly = 1) { repository.createProject(any(), any(), any(), any(), any(), any(), any()) }
             coVerify(exactly = 1) { onboarding.setStarterProject(7L) }
         }
 
@@ -158,7 +158,7 @@ class ProjectCreationActionsTest {
             // CPD-OFF: Action- ja ViewModel-testit aloittavat samasta Pro-rajoituksen hylkäyksestä eri sopimuksille.
             every { proManager.hasFeature(ProFeature.UNLIMITED_PROJECTS) } returns false
             coEvery { repository.getActiveProjectCount() } returns 1
-            coEvery { repository.createProject(any(), any(), any(), any(), any(), any(), any(), any()) } returns
+            coEvery { repository.createProject(any(), any(), any(), any(), any(), any(), any()) } returns
                 ProjectCreationResult.LimitReached
             // CPD-ON
             val handle = SavedStateHandle()
@@ -170,7 +170,7 @@ class ProjectCreationActionsTest {
             initial.dismissPendingProjectCreation()
 
             every { proManager.hasFeature(ProFeature.UNLIMITED_PROJECTS) } returns true
-            coEvery { repository.createProject(any(), any(), any(), any(), any(), any(), any(), any()) } returns
+            coEvery { repository.createProject(any(), any(), any(), any(), any(), any(), any()) } returns
                 ProjectCreationResult.Created(7L)
             actions(restored).retryPendingProjectCreation()
             runCurrent()
@@ -183,7 +183,7 @@ class ProjectCreationActionsTest {
     @Test
     fun `persistence failure retains draft and does not update onboarding`() =
         runTest {
-            coEvery { repository.createProject(any(), any(), any(), any(), any(), any(), any(), any()) } throws
+            coEvery { repository.createProject(any(), any(), any(), any(), any(), any(), any()) } throws
                 IOException("write failed")
             val handle = SavedStateHandle()
             val actions = actions(handle)
@@ -209,7 +209,7 @@ class ProjectCreationActionsTest {
             assertEquals(1L, ObjectStreamClass.lookup(PendingProjectCreation::class.java).serialVersionUID)
             assertEquals(3, request().payloadVersion)
             assertTrue(failures.isEmpty())
-            coVerify(exactly = 0) { repository.createProject(any(), any(), any(), any(), any(), any(), any(), any()) }
+            coVerify(exactly = 0) { repository.createProject(any(), any(), any(), any(), any(), any(), any()) }
         }
 
     @Test
@@ -225,7 +225,15 @@ class ProjectCreationActionsTest {
             runCurrent()
 
             coVerify(exactly = 1) {
-                repository.createProject(any(), any(), any(), any(), false, any(), any(), draft.attemptId)
+                repository.createProject(
+                    any(),
+                    any(),
+                    any(),
+                    any(),
+                    false,
+                    any(),
+                    options = match { it.attemptId == draft.attemptId },
+                )
             }
             assertEquals(listOf(7L), createdIds)
             assertNull(actions.projectCreationPromptCount.value)

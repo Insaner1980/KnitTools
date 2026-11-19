@@ -93,7 +93,7 @@ class ProjectsStartStateViewModelTest : ProjectListViewModelFixture() {
                 assertEquals(listOf(UsageEvent.WELCOME_DEMO_USED), events)
                 coVerify(
                     exactly = 0,
-                ) { repository.createProject(any(), any(), any(), any(), any(), any(), any(), any()) }
+                ) { repository.createProject(any(), any(), any(), any(), any(), any(), any()) }
                 coVerify(exactly = 0) { onboardingStateRepository.dismissWelcome() }
                 coVerify(exactly = 0) { preferencesManager.setLastProjectCraftType(any()) }
             } finally {

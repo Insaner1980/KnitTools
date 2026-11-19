@@ -461,7 +461,7 @@ class ProjectFoldersViewModelTest {
         runTest {
             val vm = viewModel()
             vm.selectFolder(ProjectFolderFilter.Folder(1))
-            coEvery { repository.createProject(any(), any(), any(), any(), any(), 1L, attemptId = any()) } returnsMany
+            coEvery { repository.createProject(any(), any(), any(), any(), any(), 1L, options = any()) } returnsMany
                 listOf(ProjectCreationResult.LimitReached, ProjectCreationResult.Created(11))
             vm.createProject("New", CraftType.KNITTING, MainCounterLabelType.ROWS, null)
             vm.selectFolder(ProjectFolderFilter.Unfiled)
@@ -474,7 +474,7 @@ class ProjectFoldersViewModelTest {
                     null,
                     true,
                     1L,
-                    attemptId = any(),
+                    options = any(),
                 )
             }
         }
@@ -483,7 +483,7 @@ class ProjectFoldersViewModelTest {
     fun `missing creation destination is reported without success navigation`() =
         runTest {
             val vm = viewModel()
-            coEvery { repository.createProject(any(), any(), any(), any(), any(), 99L, attemptId = any()) } returns
+            coEvery { repository.createProject(any(), any(), any(), any(), any(), 99L, options = any()) } returns
                 ProjectCreationResult.FolderMissing
             var navigationEvents = 0
             backgroundScope.launch(

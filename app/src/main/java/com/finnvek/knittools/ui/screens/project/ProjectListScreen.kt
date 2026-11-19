@@ -69,6 +69,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.finnvek.knittools.R
+import com.finnvek.knittools.domain.calculator.ProjectStartValues
 import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.domain.model.CraftType
 import com.finnvek.knittools.domain.model.ProjectFolder
@@ -375,8 +376,7 @@ fun ProjectListScreen(
                     values.mainCounterLabelType,
                     values.mainCounterCustomLabel,
                     targetFolderId = creationFolderId,
-                    initialCount = values.initialCount,
-                    targetRows = values.targetRows,
+                    startValues = ProjectStartValues(values.initialCount, values.targetRows),
                     attemptId = attemptId,
                 )
             },

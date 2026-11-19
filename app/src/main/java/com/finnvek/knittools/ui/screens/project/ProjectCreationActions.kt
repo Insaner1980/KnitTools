@@ -11,6 +11,7 @@ import com.finnvek.knittools.pro.ProFeature
 import com.finnvek.knittools.pro.ProManager
 import com.finnvek.knittools.repository.CounterRepository
 import com.finnvek.knittools.repository.OnboardingStateRepository
+import com.finnvek.knittools.repository.ProjectCreationOptions
 import com.finnvek.knittools.repository.ProjectCreationResult
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -188,8 +189,11 @@ internal class ProjectCreationActions(
                         mainCounterCustomLabel = request.mainCounterCustomLabel,
                         canCreateAdditionalProjects = isPro,
                         targetFolderId = request.targetFolderId,
-                        startValues = ProjectStartValues(request.initialCount, request.targetRows),
-                        attemptId = request.attemptId,
+                        options =
+                            ProjectCreationOptions(
+                                startValues = ProjectStartValues(request.initialCount, request.targetRows),
+                                attemptId = request.attemptId,
+                            ),
                     )
                 if (result !is ProjectCreationResult.Created && pendingProjectCreation != request) return
                 limited = handleCreationResult(request, result)

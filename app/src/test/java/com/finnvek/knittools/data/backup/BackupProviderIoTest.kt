@@ -4,11 +4,16 @@ import android.net.Uri
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -20,6 +25,7 @@ import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
@@ -100,7 +106,7 @@ class BackupProviderIoTest {
                 val failure = runCatching { providerIo(request).read(mockk(), target, 1024) }.exceptionOrNull()
 
                 assertTrue(failure is IOException)
-                assertTrue(input.closed.get())
+                assertTrue(input.awaitClosed())
                 assertArrayEquals(prefix, target.readBytes())
             }
         }
@@ -118,7 +124,7 @@ class BackupProviderIoTest {
                 }.exceptionOrNull()
 
             assertTrue(failure is IOException)
-            assertTrue(output.closed.get())
+            assertTrue(output.awaitClosed())
             assertEquals("archive", output.bytes.toString(Charsets.UTF_8.name()))
         }
 
@@ -141,7 +147,7 @@ class BackupProviderIoTest {
             val failure = runCatching { providerIo(request).read(mockk(), temporary.newFile(), 1024) }.exceptionOrNull()
 
             assertTrue(cancelOpenStarted.await(2, TimeUnit.SECONDS))
-            assertTrue(handle.closed.get())
+            assertTrue(input.awaitClosed())
             assertTrue(failure is IOException)
             releaseCancelOpen.countDown()
         }
@@ -179,9 +185,143 @@ class BackupProviderIoTest {
             operation.cancel(CancellationException("user cancel"))
             val failure = runCatching { operation.await() }.exceptionOrNull()
 
-            assertTrue(input.closed.get())
+            assertTrue(input.awaitClosed())
             assertTrue(failure is CancellationException)
             assertEquals("user cancel", failure?.message)
+        }
+
+    @Test fun timeoutReturnsWhileReadAndAbortAreStuckAndDiscardsLateBytes() =
+        runBlocking {
+            val reading = CountDownLatch(1)
+            val releaseRead = CountDownLatch(1)
+            val returnedFromRead = CountDownLatch(1)
+            val aborting = CountDownLatch(1)
+            val releaseAbort = CountDownLatch(1)
+            val input =
+                object : InputStream() {
+                    override fun read(): Int = error("Single-byte reads are not used")
+
+                    override fun read(
+                        buffer: ByteArray,
+                        offset: Int,
+                        length: Int,
+                    ): Int {
+                        reading.countDown()
+                        try {
+                            assertTrue(releaseRead.await(5, TimeUnit.SECONDS))
+                            buffer[offset] = 42
+                            return 1
+                        } finally {
+                            returnedFromRead.countDown()
+                        }
+                    }
+                }
+            val openings = AtomicInteger()
+            val request =
+                TestRequest(
+                    open = { if (openings.getAndIncrement() == 0) TestHandle(input = input) else TestHandle() },
+                    closeDescriptor = {
+                        aborting.countDown()
+                        assertTrue(releaseAbort.await(5, TimeUnit.SECONDS))
+                    },
+                )
+            ProviderExecutors().use { executors ->
+                val io = executors.io(request, 500)
+                val target = temporary.newFile()
+                val rejected = File(temporary.root, "rejected.tmp")
+                try {
+                    val result =
+                        async(start = CoroutineStart.UNDISPATCHED) {
+                            runCatching { io.read(mockk(), target, 1024) }
+                        }
+                    assertTrue(reading.await(2, TimeUnit.SECONDS))
+                    assertEquals("Provider made no progress", result.await().exceptionOrNull()?.message)
+                    assertTrue(aborting.await(2, TimeUnit.SECONDS))
+                    assertEquals(1L, returnedFromRead.count)
+                    assertStillReserved(io, rejected)
+
+                    releaseRead.countDown()
+                    executors.worker.submit {}.get(2, TimeUnit.SECONDS)
+                    assertArrayEquals(byteArrayOf(), target.readBytes())
+                    assertStillReserved(io, rejected)
+
+                    releaseAbort.countDown()
+                    executors.closer.submit {}.get(2, TimeUnit.SECONDS)
+                    io.read(mockk(), rejected, 1024)
+                    assertTrue(rejected.isFile)
+                } finally {
+                    releaseRead.countDown()
+                    releaseAbort.countDown()
+                }
+            }
+        }
+
+    @Test fun cancellationClosesLocalTargetBeforeAProviderStreamReturns() =
+        runBlocking {
+            val creatingStream = CountDownLatch(1)
+            val releaseStream = CountDownLatch(1)
+            val openings = AtomicInteger()
+            val request =
+                TestRequest(
+                    open = {
+                        if (openings.getAndIncrement() == 0) {
+                            object : BackupProviderHandle {
+                                override fun inputStream(): InputStream {
+                                    creatingStream.countDown()
+                                    assertTrue(releaseStream.await(5, TimeUnit.SECONDS))
+                                    return ByteArrayInputStream(byteArrayOf(42))
+                                }
+
+                                override fun outputStream(): OutputStream = error("Unexpected output call")
+
+                                override fun close() = Unit
+                            }
+                        } else {
+                            TestHandle()
+                        }
+                    },
+                )
+            ProviderExecutors().use { executors ->
+                val io = executors.io(request, 5_000)
+                val target = temporary.newFile()
+                val scope = CoroutineScope(Dispatchers.Unconfined)
+                try {
+                    val result = scope.async(start = CoroutineStart.UNDISPATCHED) { io.read(mockk(), target, 1024) }
+                    assertTrue(creatingStream.await(2, TimeUnit.SECONDS))
+                    result.cancel(CancellationException("user cancel"))
+                    withTimeout(2_000) { result.join() }
+                    assertEquals("user cancel", runCatching { result.await() }.exceptionOrNull()?.message)
+                    assertTrue(target.delete())
+                    assertStillReserved(io, File(temporary.root, "rejected.tmp"))
+
+                    releaseStream.countDown()
+                    executors.worker.submit {}.get(2, TimeUnit.SECONDS)
+                    executors.closer.submit {}.get(2, TimeUnit.SECONDS)
+                    assertFalse(target.exists())
+                    io.read(mockk(), target, 1024)
+                    assertTrue(target.isFile)
+                } finally {
+                    releaseStream.countDown()
+                    scope.cancel()
+                }
+            }
+        }
+
+    @Test fun failureToOpenLocalFileReleasesProviderReservation() =
+        runBlocking {
+            val openings = AtomicInteger()
+            val request =
+                TestRequest(open = {
+                    openings.incrementAndGet()
+                    TestHandle()
+                })
+            val io = providerIo(request)
+            val missingParent = File(temporary.root, "missing-parent/target.tmp")
+
+            assertTrue(runCatching { io.read(mockk(), missingParent, 1024) }.exceptionOrNull() is IOException)
+            assertEquals(0, openings.get())
+            io.read(mockk(), temporary.newFile(), 1024)
+            assertEquals(1, openings.get())
         }
 
     @Test fun timelyProgressCanExceedTheTotalDeadlineAndValidTransfersPreserveBytes() =
@@ -214,6 +354,39 @@ class BackupProviderIoTest {
         },
         timeoutMillis,
     )
+
+    private suspend fun assertStillReserved(
+        io: BackupProviderIo,
+        target: File,
+    ) {
+        val failure = runCatching { io.read(mockk(), target, 1024) }.exceptionOrNull()
+        assertEquals("A previous provider operation is still running", failure?.message)
+        assertFalse(target.exists())
+    }
+
+    private class ProviderExecutors : AutoCloseable {
+        val worker = Executors.newSingleThreadExecutor()
+        val closer = Executors.newSingleThreadExecutor()
+        private val scheduler = Executors.newSingleThreadScheduledExecutor()
+
+        fun io(
+            request: BackupProviderRequest,
+            timeoutMillis: Long,
+        ): BackupProviderIo =
+            ContentResolverBackupProviderIo(
+                BackupProviderEndpoint { _, _ -> request },
+                timeoutMillis,
+                worker,
+                scheduler,
+                closer,
+            )
+
+        override fun close() {
+            val all = listOf(worker, scheduler, closer)
+            all.forEach { it.shutdownNow() }
+            all.forEach { assertTrue(it.awaitTermination(2, TimeUnit.SECONDS)) }
+        }
+    }
 
     private class TestRequest(
         private val open: () -> BackupProviderHandle?,
@@ -252,9 +425,10 @@ class BackupProviderIoTest {
         private val prefix: ByteArray = byteArrayOf(),
     ) : InputStream() {
         val started = CountDownLatch(1)
-        val closed = AtomicBoolean()
         private val released = CountDownLatch(1)
         private var offset = 0
+
+        fun awaitClosed(): Boolean = released.await(2, TimeUnit.SECONDS)
 
         override fun read(): Int = error("Single-byte reads are not used")
 
@@ -275,15 +449,15 @@ class BackupProviderIoTest {
         }
 
         override fun close() {
-            closed.set(true)
             released.countDown()
         }
     }
 
     private class BlockingFlushOutputStream : OutputStream() {
         val bytes = ByteArrayOutputStream()
-        val closed = AtomicBoolean()
         private val released = CountDownLatch(1)
+
+        fun awaitClosed(): Boolean = released.await(2, TimeUnit.SECONDS)
 
         override fun write(value: Int) = bytes.write(value)
 
@@ -299,7 +473,6 @@ class BackupProviderIoTest {
         }
 
         override fun close() {
-            closed.set(true)
             released.countDown()
         }
     }

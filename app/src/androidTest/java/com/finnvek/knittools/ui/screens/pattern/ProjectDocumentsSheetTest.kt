@@ -8,6 +8,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.test.assertHeightIsAtLeast
@@ -88,13 +91,14 @@ class ProjectDocumentsSheetTest {
 
     @Test
     fun metadataOnlyWebPatternRequiresConfirmationBeforeUnlinkAndShowsNoDocumentActions() {
-        var unlinked = 0
+        var metadata by mutableStateOf(webPattern())
+        var unlinkedId: Long? = null
         composeRule.setContent {
             MaterialTheme {
                 ProjectDocumentsSheet(
                     state = ProjectDocumentUiState(isLoading = false),
-                    metadataPattern = webPattern(),
-                    onUnlinkPatternInformation = { unlinked += 1 },
+                    metadataPattern = metadata,
+                    onUnlinkPatternInformation = { unlinkedId = it },
                     onDismiss = {},
                     onSelect = {},
                     onRename = { _, _ -> },
@@ -112,6 +116,7 @@ class ProjectDocumentsSheetTest {
         composeRule.onNodeWithText("Open PDF").assertDoesNotExist()
         composeRule.onNodeWithText("Unlink pattern information").performClick()
         val confirmationText = "Unlink pattern information for Web cardigan"
+        composeRule.runOnIdle { metadata = metadata.copy(id = 10L, name = "Replacement pattern") }
         composeRule.onNodeWithText(confirmationText).assertIsDisplayed()
         composeRule
             .onNode(
@@ -120,8 +125,8 @@ class ProjectDocumentsSheetTest {
                     hasAnyAncestor(isDialog() and hasAnyDescendant(hasText(confirmationText))) and
                     hasContentDescription(confirmationText).not(),
             ).performClick()
-        composeRule.waitUntil(timeoutMillis = 5_000) { unlinked == 1 }
-        composeRule.runOnIdle { assertEquals(1, unlinked) }
+        composeRule.waitUntil(timeoutMillis = 5_000) { unlinkedId != null }
+        composeRule.runOnIdle { assertEquals(9L, unlinkedId) }
     }
 
     @Test

@@ -6,7 +6,7 @@ import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 
-const val KNITTOOLS_DATABASE_VERSION = 28
+const val KNITTOOLS_DATABASE_VERSION = 29
 
 @Database(
     entities = [
@@ -29,6 +29,7 @@ const val KNITTOOLS_DATABASE_VERSION = 28
         ProjectYarnUsageEntity::class,
         ProjectCompletionEntity::class,
         OnboardingProjectEntity::class,
+        ProjectCreationReceiptEntity::class,
     ],
     version = KNITTOOLS_DATABASE_VERSION,
     exportSchema = true,
@@ -764,6 +765,22 @@ abstract class KnitToolsDatabase : RoomDatabase() {
                 }
             }
 
+        val MIGRATION_28_29 =
+            object : Migration(28, 29) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    db.execSQL(
+                        "CREATE TABLE IF NOT EXISTS `project_creation_receipts` (" +
+                            "`attemptId` TEXT NOT NULL, `projectId` INTEGER NOT NULL, `wasFirstProject` INTEGER NOT NULL, " +
+                            "PRIMARY KEY(`attemptId`), FOREIGN KEY(`projectId`) REFERENCES `counter_projects`(`id`) " +
+                            "ON UPDATE NO ACTION ON DELETE CASCADE)",
+                    )
+                    db.execSQL(
+                        "CREATE UNIQUE INDEX IF NOT EXISTS `index_project_creation_receipts_projectId` " +
+                            "ON `project_creation_receipts` (`projectId`)",
+                    )
+                }
+            }
+
         private fun replaceSavedPatternsTable(db: SupportSQLiteDatabase) {
             // A deleted pattern ID can still appear in a legacy project's soft link.
             db.execSQL(
@@ -805,6 +822,7 @@ abstract class KnitToolsDatabase : RoomDatabase() {
                     MIGRATION_25_26,
                     MIGRATION_26_27,
                     MIGRATION_27_28,
+                    MIGRATION_28_29,
                 )
     }
 }

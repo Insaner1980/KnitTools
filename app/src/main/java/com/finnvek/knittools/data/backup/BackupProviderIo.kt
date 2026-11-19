@@ -12,8 +12,6 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.NonCancellable
-import kotlinx.coroutines.withContext
 import java.io.Closeable
 import java.io.File
 import java.io.FileInputStream
@@ -87,11 +85,9 @@ internal class ContentResolverBackupProviderIo internal constructor(
         maxBytes: Long,
         check: () -> Unit,
     ) {
-        transfer(endpoint.request(source, "r")) { handle, deadline ->
-            val input = handle.inputStream()
-            FileOutputStream(target).use { output ->
-                copyFromProvider(input, output, maxBytes, deadline, check)
-            }
+        transfer(endpoint.request(source, "r"), { FileOutputStream(target) }) { handle, deadline, output ->
+            val input = deadline.call { handle.inputStream() }
+            copyFromProvider(input, output, maxBytes, deadline, check)
             deadline.call { handle.checkError() }
         }
     }
@@ -105,19 +101,18 @@ internal class ContentResolverBackupProviderIo internal constructor(
         if (destination.scheme == "file" && destination.path?.let(::File)?.canonicalFile == source.canonicalFile) {
             throw IOException("Backup destination must not overwrite its source archive")
         }
-        transfer(endpoint.request(destination, "wt")) { handle, deadline ->
-            val output = handle.outputStream()
-            FileInputStream(source).use { input ->
-                copyToProvider(input, output, maxBytes, deadline, check)
-            }
+        transfer(endpoint.request(destination, "wt"), { FileInputStream(source) }) { handle, deadline, input ->
+            val output = deadline.call { handle.outputStream() }
+            copyToProvider(input, output, maxBytes, deadline, check)
             deadline.call { output.flush() }
             deadline.call { handle.checkError() }
         }
     }
 
-    private suspend fun transfer(
+    private suspend fun <LocalStream : Closeable> transfer(
         request: BackupProviderRequest,
-        block: (BackupProviderHandle, ProviderDeadline) -> Unit,
+        openLocalStream: () -> LocalStream,
+        block: (BackupProviderHandle, ProviderDeadline, LocalStream) -> Unit,
     ) {
         if (!operationActive.compareAndSet(false, true)) {
             throw IOException("A previous provider operation is still running")
@@ -131,13 +126,20 @@ internal class ContentResolverBackupProviderIo internal constructor(
                 descriptorCloserExecutor,
                 onFinished = { operationActive.set(false) },
             ) { failure -> completion.complete(Result.failure(failure)) }
-        executeTransfer(request, block, deadline, completion)
-        try {
-            completion.await().getOrThrow()
-        } catch (cancelled: CancellationException) {
-            deadline.cancel(cancelled)
-            withContext(NonCancellable) { completion.await() }
-            throw cancelled
+        val stream =
+            runCatching(openLocalStream).getOrElse {
+                deadline.finish()
+                throw it
+            }
+        // The caller closes its local file before cleaning up the staging directory.
+        stream.use {
+            executeTransfer(request, { handle, timer -> block(handle, timer, stream) }, deadline, completion)
+            try {
+                completion.await().getOrThrow()
+            } catch (cancelled: CancellationException) {
+                deadline.cancel(cancelled)
+                throw cancelled
+            }
         }
     }
 
@@ -155,14 +157,13 @@ internal class ContentResolverBackupProviderIo internal constructor(
                         val openedHandle =
                             deadline.call { request.open() } ?: throw IOException("Provider returned no descriptor")
                         handle = openedHandle
-                        deadline.markOpened()
                         block(openedHandle, deadline)
                     }.exceptionOrNull()?.let(deadline::classify)
                 val closeFailure =
                     runCatching {
                         handle?.let { deadline.call { it.close() } }
                     }.exceptionOrNull()?.let(deadline::classify)
-                if (closeFailure != null) {
+                if (closeFailure != null && closeFailure !== failure) {
                     failure?.addSuppressed(closeFailure) ?: run { failure = closeFailure }
                 }
                 deadline.finish()
@@ -325,13 +326,12 @@ internal class ProviderDeadline(
     private val descriptorCloser: ExecutorService,
     private val onFinished: () -> Unit,
     private val nanoTime: () -> Long = System::nanoTime,
-    private val onOpenTimeout: (Throwable) -> Unit,
+    private val onStopped: (Throwable) -> Unit,
 ) {
     private val timeoutNanos = TimeUnit.MILLISECONDS.toNanos(timeoutMillis)
     private var deadlineNanos = 0L
     private var scheduled: ScheduledFuture<*>? = null
     private var deadlineGeneration = 0L
-    private var opening = true
     private var timedOut = false
     private var cancelled: CancellationException? = null
     private var finished = false
@@ -351,12 +351,6 @@ internal class ProviderDeadline(
     }
 
     @Synchronized
-    fun markOpened() {
-        opening = false
-        throwIfStopped()
-    }
-
-    @Synchronized
     fun classify(failure: Throwable): Throwable =
         when {
             cancelled != null -> checkNotNull(cancelled)
@@ -365,18 +359,16 @@ internal class ProviderDeadline(
         }
 
     fun cancel(cause: CancellationException) {
-        val completeOpening: Boolean
         val abort: Boolean
         synchronized(this) {
-            if (finished || cancelled != null) return
+            if (finished || cancelled != null || timedOut) return
             cancelled = cause
             scheduled?.cancel(false)
             scheduled = null
-            completeOpening = opening
             abort = reserveAbort()
         }
         if (abort) abortProvider()
-        if (completeOpening) onOpenTimeout(cause)
+        onStopped(cause)
     }
 
     @Synchronized
@@ -410,17 +402,15 @@ internal class ProviderDeadline(
     }
 
     private fun expire(generation: Long) {
-        val completeOpening: Boolean
         val abort: Boolean
         synchronized(this) {
             if (generation != deadlineGeneration || finished || timedOut || cancelled != null) return
             timedOut = true
             scheduled = null
-            completeOpening = opening
             abort = reserveAbort()
         }
         if (abort) abortProvider()
-        if (completeOpening) onOpenTimeout(ProviderNoProgressException())
+        onStopped(ProviderNoProgressException())
     }
 
     private fun reserveAbort(): Boolean {

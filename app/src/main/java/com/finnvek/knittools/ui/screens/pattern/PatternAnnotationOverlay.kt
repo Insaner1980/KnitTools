@@ -18,6 +18,7 @@ import androidx.compose.ui.input.pointer.changedToDownIgnoreConsumed
 import androidx.compose.ui.input.pointer.changedToUpIgnoreConsumed
 import androidx.compose.ui.input.pointer.pointerInput
 import com.finnvek.knittools.data.storage.PatternAnnotationCanvasRenderer
+import com.finnvek.knittools.data.storage.withEditableLegacyStroke
 import com.finnvek.knittools.domain.calculator.ChartTrackerHighlight
 import com.finnvek.knittools.domain.calculator.PatternPageCoordinateTransform
 import com.finnvek.knittools.domain.calculator.PatternScreenPoint
@@ -70,6 +71,7 @@ internal fun PatternAnnotationOverlay(
         }
         visibleAnnotations
             .firstOrNull { it.id == selectedAnnotationId }
+            ?.withEditableLegacyStroke(size.width, size.height)
             ?.let(::patternAnnotationBounds)
             ?.let { bounds ->
                 drawRect(
@@ -151,15 +153,19 @@ private fun processAnnotationPointerEvent(
         } else {
             pressedChanges
         }
+    val activeTouch = event.changes.any { it.id.value == state.activePointerId && it.type == PointerType.Touch }
+    val stylusTakesOver = stylusPresent && activeTouch
+    val gestureState = if (stylusTakesOver) PatternAnnotationPointerGestureState() else state
+    if (stylusTakesOver) actions.onCancelStroke()
     return when {
         annotationPointers.size >= 2 -> {
-            if (state.activePointerId != null) actions.onCancelStroke()
-            state.copy(finished = true)
+            if (gestureState.activePointerId != null) actions.onCancelStroke()
+            gestureState.copy(finished = true)
         }
-        state.activePointerId == null ->
+        gestureState.activePointerId == null ->
             beginAnnotationPointerGesture(
                 event = event,
-                state = state,
+                state = gestureState,
                 activeTool = activeTool,
                 coordinateTransform = coordinateTransform,
                 pressureEnabled = pressureEnabled,
@@ -170,7 +176,7 @@ private fun processAnnotationPointerEvent(
         else ->
             updateAnnotationPointerGesture(
                 event = event,
-                state = state,
+                state = gestureState,
                 coordinateTransform = coordinateTransform,
                 pressureEnabled = pressureEnabled,
                 simplificationTolerance = simplificationTolerance,
@@ -192,7 +198,10 @@ private fun beginAnnotationPointerGesture(
 ): PatternAnnotationPointerGestureState {
     val down =
         event.changes.firstOrNull { change ->
-            change.changedToDownIgnoreConsumed() && (!stylusPresent || change.type != PointerType.Touch)
+            change.changedToDownIgnoreConsumed() &&
+                !change.isConsumed &&
+                (!stylusPresent || change.type != PointerType.Touch) &&
+                coordinateTransform.contains(change.position)
         }
     val pointerType = down?.type?.toPatternInputPointerType()
     val handlesPointer =
@@ -231,14 +240,18 @@ private fun updateAnnotationPointerGesture(
     actions: PatternAnnotationInputActions,
 ): PatternAnnotationPointerGestureState {
     val change = event.changes.firstOrNull { it.id.value == state.activePointerId }
-    if (change == null || change.changedToUpIgnoreConsumed() || !change.pressed) {
+    if (change == null || change.isConsumed) {
+        actions.onCancelStroke()
+        return state.copy(finished = true)
+    }
+    if (change.changedToUpIgnoreConsumed() || !change.pressed) {
         if (
             state.gestureTool != PatternAnnotationTool.ERASER &&
             state.gestureTool != PatternAnnotationTool.SELECT
         ) {
             actions.onCommitStroke(simplificationTolerance)
         }
-        change?.consume()
+        change.consume()
         return state.copy(finished = true)
     }
     val point = change.toNormalizedPoint(coordinateTransform, pressureEnabled) ?: return state
@@ -249,6 +262,12 @@ private fun updateAnnotationPointerGesture(
     }
     change.consume()
     return state
+}
+
+private fun PatternPageCoordinateTransform.contains(position: Offset): Boolean {
+    val topLeft = pageToScreen(NormalizedPatternPoint(0f, 0f)) ?: return false
+    val bottomRight = pageToScreen(NormalizedPatternPoint(1f, 1f)) ?: return false
+    return position.x in topLeft.x..bottomRight.x && position.y in topLeft.y..bottomRight.y
 }
 
 private fun PointerInputChange.toNormalizedPoint(

@@ -48,7 +48,7 @@ class ProjectCreationStateTest : ProjectListViewModelFixture() {
             every { proManager.hasFeature(ProFeature.UNLIMITED_PROJECTS) } returns true
             every { preferencesManager.preferences } returns
                 flowOf(AppPreferences(lastProjectCraftType = CraftType.CROCHET))
-            coEvery { repository.createProject(any(), any(), any(), any(), any(), any(), any()) } returns
+            coEvery { repository.createProject(any(), any(), any(), any(), any(), any(), any(), any()) } returns
                 ProjectCreationResult.Created(7L)
             val viewModel = createViewModel()
             val store = ViewModelStore().apply { put("projects", viewModel) }
@@ -71,6 +71,7 @@ class ProjectCreationStateTest : ProjectListViewModelFixture() {
                         true,
                         null,
                         ProjectStartValues(37, 120),
+                        any(),
                     )
                 }
                 viewModel.createProject()
@@ -84,6 +85,7 @@ class ProjectCreationStateTest : ProjectListViewModelFixture() {
                         true,
                         null,
                         ProjectStartValues(),
+                        any(),
                     )
                 }
             } finally {

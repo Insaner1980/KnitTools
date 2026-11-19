@@ -12,7 +12,8 @@ class DataStoreErrorHandlingSourceTest {
 
         assertTrue(source.contains("context.dataStore.safePreferencesData"))
         assertTrue(source.contains("context.dataStore.readPreferencesOrNull"))
-        assertTrue(safety.contains("catch { exception ->"))
+        assertTrue(safety.contains("retryWhen"))
+        assertTrue(safety.contains("exception !is IOException"))
         assertTrue(safety.contains("emit(emptyPreferences())"))
     }
 

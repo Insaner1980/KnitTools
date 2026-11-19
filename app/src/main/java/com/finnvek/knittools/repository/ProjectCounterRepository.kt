@@ -90,7 +90,7 @@ class ProjectCounterRepository
             projectId: Long,
             id: Long,
         ): ProjectCounterMutationResult =
-            mutateOwnedCounter(projectId, id) { current ->
+            mutateOwnedCounter(projectId, id, requiresActiveProject = true) { current ->
                 if (current.count != 0) dao.updateCount(id, 0)
             }
 
@@ -118,7 +118,7 @@ class ProjectCounterRepository
             projectId: Long,
             id: Long,
         ): ProjectCounterMutationResult =
-            mutateOwnedCounter(projectId, id) { current ->
+            mutateOwnedCounter(projectId, id, requiresActiveProject = true) { current ->
                 if (current.counterType != ProjectCounterType.REPEAT_SECTION) {
                     throw MutationAbort(ProjectCounterMutationResult.InvalidCounter)
                 }
@@ -135,7 +135,7 @@ class ProjectCounterRepository
             requested: ProjectCounter,
             update: (ProjectCounter) -> ProjectCounter,
         ): ProjectCounterMutationResult =
-            mutateOwnedCounter(requested.projectId, requested.id) { current ->
+            mutateOwnedCounter(requested.projectId, requested.id, requiresActiveProject = true) { current ->
                 val updated = update(current)
                 if (updated.count != current.count) {
                     dao.updateCount(requested.id, updated.count)
@@ -145,11 +145,15 @@ class ProjectCounterRepository
         private suspend fun mutateOwnedCounter(
             projectId: Long,
             counterId: Long,
+            requiresActiveProject: Boolean = false,
             mutation: suspend (ProjectCounter) -> Unit,
         ): ProjectCounterMutationResult =
             runMutation {
-                if (projectDao.getProject(projectId) == null) {
-                    return@runMutation ProjectCounterMutationResult.ProjectUnavailable
+                val project =
+                    projectDao.getProject(projectId)
+                        ?: return@runMutation ProjectCounterMutationResult.ProjectUnavailable
+                if (requiresActiveProject && project.isCompleted) {
+                    return@runMutation ProjectCounterMutationResult.StaleAction
                 }
                 val current =
                     dao.getCounter(counterId)?.toDomain()

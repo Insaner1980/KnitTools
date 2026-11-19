@@ -58,7 +58,17 @@ export interface RavelryTokenStore {
     update: RavelryTokenUserMetadataUpdate,
     expectedGeneration: number,
   ): Promise<boolean>;
-  deleteToken(uid: string, nowMillis?: number): Promise<void>;
+  deleteToken(uid: string, nowMillis?: number): Promise<number>;
+}
+
+export interface BrowserRavelryTokenStore extends RavelryTokenStore {
+  hasPendingToken(
+    uid: string,
+    state: string,
+    completionProofHash: string,
+    expectedGeneration: number,
+    nowMillis: number,
+  ): Promise<boolean>;
 }
 
 function toStoredToken(value: FirebaseFirestore.DocumentData | undefined): StoredRavelryToken | null {
@@ -111,6 +121,24 @@ function toPendingToken(value: FirebaseFirestore.DocumentData | undefined): Pend
   };
 }
 
+function pendingTokenForAttempt(
+  data: FirebaseFirestore.DocumentData | undefined,
+  uid: string,
+  state: string,
+  completionProofHash: string,
+  nowMillis: number,
+): PendingRavelryToken | null {
+  const pending = toPendingToken(data);
+  return pending != null &&
+    pending.token.uid === uid &&
+    pending.state === state &&
+    pending.completionProofHash === completionProofHash &&
+    pending.expiresAtMillis > nowMillis &&
+    (pending.token.connectionGeneration ?? 0) === connectionGenerationFromData(data)
+    ? pending
+    : null;
+}
+
 function hasSameCredentials(
   current: StoredRavelryToken | null,
   expected: StoredRavelryToken,
@@ -138,7 +166,7 @@ function disconnectedTokenMarker(
   );
 }
 
-export function createTokenStore(firestore: Firestore): RavelryTokenStore {
+export function createTokenStore(firestore: Firestore): BrowserRavelryTokenStore {
   const collection = firestore.collection(RAVELRY_TOKENS_COLLECTION);
 
   return {
@@ -151,6 +179,11 @@ export function createTokenStore(firestore: Firestore): RavelryTokenStore {
     async getConnectionGeneration(uid) {
       const snapshot = await collection.doc(uid).get();
       return connectionGenerationFromData(snapshot.data());
+    },
+    async hasPendingToken(uid, state, completionProofHash, expectedGeneration, nowMillis) {
+      const data = (await collection.doc(uid).get()).data();
+      return connectionGenerationFromData(data) === expectedGeneration &&
+        pendingTokenForAttempt(data, uid, state, completionProofHash, nowMillis) != null;
     },
     async saveToken(token) {
       const ref = collection.doc(token.uid);
@@ -205,22 +238,13 @@ export function createTokenStore(firestore: Firestore): RavelryTokenStore {
     async activatePendingToken(uid, state, completionProofHash, nowMillis) {
       const ref = collection.doc(uid);
       return firestore.runTransaction(async (transaction) => {
-        const snapshot = await transaction.get(ref);
-        const pending = toPendingToken(snapshot.data());
-        if (
-          pending == null ||
-          pending.token.uid !== uid ||
-          pending.state !== state ||
-          pending.completionProofHash !== completionProofHash ||
-          pending.expiresAtMillis <= nowMillis ||
-          (pending.token.connectionGeneration ?? 0) !== connectionGenerationFromData(snapshot.data())
-        ) {
-          return false;
-        }
+        const data = (await transaction.get(ref)).data();
+        const pending = pendingTokenForAttempt(data, uid, state, completionProofHash, nowMillis);
+        if (!pending) return false;
         // A new login invalidates responses from the previous login; refresh keeps its generation.
         transaction.set(ref, withoutUndefinedValues({
           ...pending.token,
-          connectionGeneration: connectionGenerationFromData(snapshot.data()) + 1,
+          connectionGeneration: connectionGenerationFromData(data) + 1,
         }));
         return true;
       });
@@ -280,10 +304,11 @@ export function createTokenStore(firestore: Firestore): RavelryTokenStore {
     },
     async deleteToken(uid, nowMillis) {
       const ref = collection.doc(uid);
-      await firestore.runTransaction(async (transaction) => {
+      return firestore.runTransaction(async (transaction) => {
         const snapshot = await transaction.get(ref);
-        const nextGeneration = connectionGenerationFromData(snapshot.data()) + 1;
-        transaction.set(ref, disconnectedTokenMarker(uid, nextGeneration, nowMillis));
+        const generation = connectionGenerationFromData(snapshot.data());
+        transaction.set(ref, disconnectedTokenMarker(uid, generation + 1, nowMillis));
+        return generation;
       });
     },
   };

@@ -1,5 +1,6 @@
 package com.finnvek.knittools.ui.screens.pattern
 
+import android.content.ActivityNotFoundException
 import android.graphics.Bitmap
 import android.net.Uri
 import android.widget.Toast
@@ -19,6 +20,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.absoluteOffset
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -76,6 +78,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
+import androidx.compose.ui.AbsoluteAlignment
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -102,6 +105,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -224,11 +228,13 @@ fun PatternViewerScreen(
     }
     val selectedDocumentAvailable = selectedDocument?.let { documentState.isAvailable(it.id) } == true
     val patternUri = selectedDocument?.localPdfUri?.takeIf { selectedDocumentAvailable }
+    val documentError = documentState.error
     val unavailableDocumentError =
-        if (selectedDocument != null && documentState.availability[selectedDocument.id] == false) {
-            stringResource(R.string.project_documents_error_unavailable)
-        } else {
-            null
+        when {
+            selectedDocument != null && documentState.availability[selectedDocument.id] == false ->
+                stringResource(R.string.project_documents_error_unavailable)
+            selectedDocument == null && documentError != null -> stringResource(documentError.messageRes())
+            else -> null
         }
     val exportContext =
         selectedDocument?.takeIf { selectedDocumentAvailable }?.let { document ->
@@ -274,12 +280,12 @@ fun PatternViewerScreen(
         annotationViewModel.setCurrentPage(currentPage)
     }
 
-    LaunchedEffect(selectedDocument?.id, selectedDocument?.readingLineYFraction, isReadingLineDragging) {
+    LaunchedEffect(selectedDocument?.id, selectedDocument?.readingLineYFraction) {
         if (!isReadingLineDragging) {
             readingLinePreviewYFraction = selectedDocument?.readingLineYFraction ?: DEFAULT_READING_LINE_Y_FRACTION
         }
     }
-    LaunchedEffect(selectedDocument?.id, selectedDocument?.verticalReadingGuideXFraction, isVerticalGuideDragging) {
+    LaunchedEffect(selectedDocument?.id, selectedDocument?.verticalReadingGuideXFraction) {
         if (!isVerticalGuideDragging) {
             verticalGuidePreviewXFraction =
                 selectedDocument?.verticalReadingGuideXFraction ?: DEFAULT_READING_GUIDE_FRACTION
@@ -654,7 +660,7 @@ fun PatternViewerScreen(
             actions =
                 PatternBookmarkSheetActions(
                     onDismiss = { showBookmarkSheet = false },
-                    onAdd = { name ->
+                    onAdd = { name, onSaved ->
                         patternViewerViewModel.addBookmark(
                             name = name,
                             pageIndex = currentPage,
@@ -665,6 +671,7 @@ fun PatternViewerScreen(
                                     DEFAULT_READING_LINE_Y_FRACTION
                                 },
                             expectedDocumentKey = bookmarkDocumentKey,
+                            onSaved = onSaved,
                         )
                     },
                     onJump = patternViewerViewModel::jumpToBookmark,
@@ -712,20 +719,18 @@ fun PatternViewerScreen(
             onEditPatternInformation = {
                 counterState.linkedPattern?.id?.let(onEditWebPattern)
             },
-            onUnlinkPatternInformation = {
-                counterState.linkedPattern?.id?.let { expectedPatternId ->
-                    counterViewModel.unlinkSavedPatternMetadata(expectedPatternId) { result ->
-                        if (
-                            result != SavedPatternMetadataMutationResult.Unlinked &&
-                            result != SavedPatternMetadataMutationResult.AlreadyUnlinked
-                        ) {
-                            Toast
-                                .makeText(
-                                    context,
-                                    resources.getString(R.string.web_pattern_save_failed),
-                                    Toast.LENGTH_SHORT,
-                                ).show()
-                        }
+            onUnlinkPatternInformation = { expectedPatternId ->
+                counterViewModel.unlinkSavedPatternMetadata(expectedPatternId) { result ->
+                    if (
+                        result != SavedPatternMetadataMutationResult.Unlinked &&
+                        result != SavedPatternMetadataMutationResult.AlreadyUnlinked
+                    ) {
+                        Toast
+                            .makeText(
+                                context,
+                                resources.getString(R.string.web_pattern_save_failed),
+                                Toast.LENGTH_SHORT,
+                            ).show()
                     }
                 }
             },
@@ -752,7 +757,6 @@ fun PatternViewerScreen(
             canUseCameraScan = counterState.canUsePatternCameraScan,
             proState = counterState.proState,
             proAccessReady = counterState.proAccessReady,
-            hasExistingPattern = false,
             mode = PatternPickerMode.ADD_READABLE_PROJECT_DOCUMENT,
             excludedSavedPatternIds = documentState.documents.mapNotNullTo(mutableSetOf()) { it.savedPatternId },
             onSavedPatternSelected = { patternViewerViewModel.addSavedPattern(it.id) },
@@ -782,7 +786,7 @@ internal fun ProjectDocumentsSheet(
     onOpenPatternInformation: () -> Unit = {},
     onOpenPatternWebsite: () -> Unit = {},
     onEditPatternInformation: () -> Unit = {},
-    onUnlinkPatternInformation: () -> Unit = {},
+    onUnlinkPatternInformation: (Long) -> Unit = {},
     onDismiss: () -> Unit,
     onSelect: (Long) -> Unit,
     onRename: (Long, String) -> Unit,
@@ -798,7 +802,8 @@ internal fun ProjectDocumentsSheet(
     var removeDocumentId by rememberSaveable { mutableStateOf<Long?>(null) }
     val renameDocument = state.documents.firstOrNull { it.id == renameDocumentId }
     val removeDocument = state.documents.firstOrNull { it.id == removeDocumentId }
-    var showUnlinkConfirmation by rememberSaveable { mutableStateOf(false) }
+    var pendingUnlinkPatternId by rememberSaveable { mutableStateOf<Long?>(null) }
+    var pendingUnlinkPatternName by rememberSaveable { mutableStateOf("") }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val coroutineScope = rememberCoroutineScope()
 
@@ -892,6 +897,7 @@ internal fun ProjectDocumentsSheet(
                                 coroutineScope.launch {
                                     sheetState.hide()
                                     onOpenPatternWebsite()
+                                    onDismiss()
                                 }
                             },
                             modifier =
@@ -905,6 +911,7 @@ internal fun ProjectDocumentsSheet(
                                 coroutineScope.launch {
                                     sheetState.hide()
                                     onEditPatternInformation()
+                                    onDismiss()
                                 }
                             },
                             modifier =
@@ -914,7 +921,10 @@ internal fun ProjectDocumentsSheet(
                             title = stringResource(R.string.web_pattern_unlink),
                             subtitle = null,
                             glyph = null,
-                            onClick = { showUnlinkConfirmation = true },
+                            onClick = {
+                                pendingUnlinkPatternId = webPattern.id
+                                pendingUnlinkPatternName = webPattern.name
+                            },
                             modifier =
                                 Modifier.semantics(mergeDescendants = true) { contentDescription = unlinkDescription },
                         )
@@ -977,19 +987,19 @@ internal fun ProjectDocumentsSheet(
         }
     }
 
-    if (showUnlinkConfirmation) {
-        val patternName = metadataPattern?.name.orEmpty()
+    pendingUnlinkPatternId?.let { expectedPatternId ->
         ScrollableFormDialog(
-            onDismissRequest = { showUnlinkConfirmation = false },
+            onDismissRequest = { pendingUnlinkPatternId = null },
             title = { Text(stringResource(R.string.web_pattern_unlink)) },
-            text = { Text(stringResource(R.string.web_pattern_unlink_description, patternName)) },
+            text = { Text(stringResource(R.string.web_pattern_unlink_description, pendingUnlinkPatternName)) },
             confirmButton = {
                 TextButton(
                     onClick = {
-                        showUnlinkConfirmation = false
+                        pendingUnlinkPatternId = null
                         coroutineScope.launch {
                             sheetState.hide()
-                            onUnlinkPatternInformation()
+                            onUnlinkPatternInformation(expectedPatternId)
+                            onDismiss()
                         }
                     },
                 ) {
@@ -997,7 +1007,7 @@ internal fun ProjectDocumentsSheet(
                 }
             },
             dismissButton = {
-                CancelButton(onClick = { showUnlinkConfirmation = false })
+                CancelButton(onClick = { pendingUnlinkPatternId = null })
             },
         )
     }
@@ -1222,7 +1232,7 @@ private fun ProjectDocumentRow(
                     enabled = enabled && isAvailable,
                     onClickLabel = openLabel,
                     onClick = onSelect,
-                ).semantics { customActions = accessibilityActions },
+                ).semantics { customActions = if (enabled) accessibilityActions else emptyList() },
     )
 }
 
@@ -2116,7 +2126,12 @@ private fun PatternViewerContent(
             if (requestId != null && !destinationLaunched) {
                 if (annotationActions.onLaunchExportDestination(requestId, state.exportContext)) {
                     destinationLaunched = true
-                    exportLauncher.launch(exportFilename)
+                    try {
+                        exportLauncher.launch(exportFilename)
+                    } catch (_: ActivityNotFoundException) {
+                        if (pendingExportRequestId == requestId) pendingExportRequestId = null
+                        annotationActions.onExport(requestId, state.exportContext, null, exportStyle)
+                    }
                 } else {
                     if (pendingExportRequestId == requestId) pendingExportRequestId = null
                     annotationActions.onExport(requestId, state.exportContext, null, exportStyle)
@@ -2230,7 +2245,10 @@ private fun PatternViewerContent(
                                     inProgressVisible = editableLayerVisible,
                                     selectedAnnotationId = state.annotationState.selectedAnnotationId,
                                     trackerHighlights = state.annotationState.trackerHighlights,
-                                    modifier = Modifier.fillMaxSize(),
+                                    modifier =
+                                        Modifier.fillMaxSize().onSizeChanged(
+                                            annotationActions.onPageSizeChanged,
+                                        ),
                                 )
                                 if (state.readingLineEnabled) {
                                     ReadingLineOverlay(
@@ -2322,6 +2340,7 @@ private data class PatternViewerAnnotationActions(
     val onDismissWriteError: () -> Unit,
     val onMasterLayerVisibilityChange: (Boolean) -> Unit,
     val onProjectLayerVisibilityChange: (Boolean) -> Unit,
+    val onPageSizeChanged: (IntSize) -> Unit,
     val annotationInputActions: PatternAnnotationInputActions,
     val annotationToolbarActions: PatternAnnotationToolbarActions,
     val exportDestinationRequestsProvider: () -> Flow<String>,
@@ -2335,6 +2354,7 @@ private fun PatternAnnotationViewModel.patternContentAnnotationActions() =
         onDismissWriteError = ::dismissWriteError,
         onMasterLayerVisibilityChange = ::setMasterLayerVisible,
         onProjectLayerVisibilityChange = ::setProjectLayerVisible,
+        onPageSizeChanged = ::setAnnotationPageSize,
         annotationInputActions = patternInputActions(),
         annotationToolbarActions = patternToolbarActions(),
         exportDestinationRequestsProvider = { exportDestinationRequests },
@@ -2555,8 +2575,8 @@ internal fun VerticalReadingGuideOverlay(
         Canvas(
             modifier =
                 Modifier
-                    .align(Alignment.BottomStart)
-                    .offset(x = handleOffset)
+                    .align(AbsoluteAlignment.BottomLeft)
+                    .absoluteOffset(x = handleOffset)
                     .size(handleSize)
                     .minimumInteractiveComponentSize()
                     .semantics {

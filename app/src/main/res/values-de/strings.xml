@@ -170,9 +170,6 @@
     <string name="pattern_image_move_later">Seite %1$d nach hinten verschieben</string>
     <string name="pattern_image_remove_page">Seite %1$d entfernen</string>
     <string name="pattern_image_create_pdf">Anleitungs-PDF erstellen</string>
-    <string name="pattern_image_replace_title">Aktuelle Anleitung ersetzen?</string>
-    <string name="pattern_image_replace_message">Der aktuelle Anhang wird ersetzt, sobald die neue PDF fertig ist.</string>
-    <string name="pattern_image_replace_action">Anleitung ersetzen</string>
     <string name="pattern_image_conversion_progress">Seite %1$d von %2$d wird erstellt</string>
     <string name="pattern_image_attaching">Anleitungs-PDF wird angehängt</string>
     <string name="pattern_image_cancel_conversion">Konvertierung abbrechen</string>

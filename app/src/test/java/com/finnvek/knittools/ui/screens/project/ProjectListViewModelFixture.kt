@@ -16,6 +16,7 @@ import com.finnvek.knittools.repository.ProjectDocumentRepository
 import com.finnvek.knittools.repository.ProjectFolderRepository
 import com.finnvek.knittools.repository.SavedPatternRepository
 import com.finnvek.knittools.repository.YarnCardRepository
+import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
@@ -49,6 +50,7 @@ abstract class ProjectListViewModelFixture {
     fun setup() {
         Dispatchers.setMain(testDispatcher)
         repository = mockk(relaxed = true)
+        coEvery { repository.findProjectCreationResult(any()) } returns null
         every { repository.getActiveProjects(any()) } returns flowOf(emptyList())
         every { repository.getCompletedProjects(any()) } returns flowOf(emptyList())
         every { repository.observeActiveSession() } returns flowOf(null)

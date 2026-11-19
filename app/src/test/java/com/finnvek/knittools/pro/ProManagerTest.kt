@@ -12,7 +12,9 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.currentTime
 import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -73,6 +75,27 @@ class ProManagerTest {
             every { ProPolicyTestControl.isActive } returns false
             assertEquals(ProActionAccess.Allowed, manager.featureAccessFlow(ProFeature.WIDGET).first())
             assertFalse(manager.isPro())
+        }
+
+    @Test
+    fun `unresolved entitlement waits one timeout budget`() =
+        runTest {
+            val trial =
+                mockk<TrialManager>(relaxed = true) {
+                    every { trialState } returns MutableStateFlow(TrialState())
+                }
+            val billing =
+                mockk<BillingManager> {
+                    every { isProPurchased } returns MutableStateFlow(false)
+                    every { purchaseStateReady } returns MutableStateFlow(false)
+                    every { purchaseQueryFailed } returns MutableStateFlow(true)
+                }
+            val manager = ProManager(trial, billing)
+            manager.initialize()
+            val startedAt = currentTime
+
+            assertEquals(ProActionAccess.Unknown, manager.featureAccessAfterInitialLoad(ProFeature.WIDGET))
+            assertEquals(2_000L, currentTime - startedAt)
         }
 
     @Test

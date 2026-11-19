@@ -40,6 +40,7 @@ data class TrialState(
     val hasStarted: Boolean = false,
     val clockTampered: Boolean = false,
     val elapsedDurationMillis: Long = 0L,
+    val isAvailable: Boolean = true,
 )
 
 enum class TrialStartResult {
@@ -83,22 +84,22 @@ class TrialManager
             sessionTimeSource: SessionTimeSource = UnavailableBootSessionTimeSource,
         ) : this(context.trialDataStore, ioDispatcher, sessionTimeSource)
 
-        private val _trialState = MutableStateFlow(TrialState())
+        private val _trialState = MutableStateFlow(TrialState(isAvailable = false))
         val trialState: StateFlow<TrialState> = _trialState.asStateFlow()
+        private var lastKnownEvaluation: TrialTimingEvaluation? = null
         private val refreshScope = CoroutineScope(SupervisorJob() + ioDispatcher)
         private var refreshJob: Job? = null
         private val refreshLoopMutex = Mutex()
         private val stateMutex = Mutex()
 
         suspend fun initialize() {
-            refreshTrialState()
-            startRefreshLoop()
+            startRefreshLoop(refreshTrialState())
         }
 
         suspend fun startTrial(): TrialStartResult =
             stateMutex.withLock {
                 var startResult: TrialStartResult? = null
-                var evaluatedState: TrialState? = null
+                var evaluation: TrialTimingEvaluation? = null
                 val didWrite =
                     dataStore.editPreferencesSafely { preferences ->
                         val now = withContext(ioDispatcher) { sessionTimeSource.snapshot() }
@@ -116,7 +117,7 @@ class TrialManager
                         if (cleanUnstarted && isValidTimeSnapshot(now)) {
                             preferences[KEY_TRIAL_START] = now.wallClockMillis
                             val state = createTrialState(now.wallClockMillis, 0L, clockTampered = false)
-                            preferences.persistTrialEvaluation(
+                            val started =
                                 TrialTimingEvaluation(
                                     state = state,
                                     anchors =
@@ -127,21 +128,21 @@ class TrialManager
                                             anchorBootCount = now.bootCount,
                                         ),
                                     lastKnownTimestamp = now.wallClockMillis,
-                                ),
-                            )
-                            evaluatedState = state
+                                )
+                            preferences.persistTrialEvaluation(started)
+                            evaluation = started
                             startResult = TrialStartResult.Started
                         } else if (cleanUnstarted) {
                             startResult = TrialStartResult.Failed
                         } else {
-                            val state = preferences.evaluateAndPersistTrialState(now)
-                            evaluatedState = state
-                            startResult = classifyExistingTrial(state)
+                            val existing = preferences.evaluateAndPersistTrialState(now)
+                            evaluation = existing
+                            startResult = classifyExistingTrial(existing.state)
                         }
                     }
                 if (!didWrite) return@withLock TrialStartResult.Failed
 
-                evaluatedState?.let { _trialState.value = it }
+                evaluation?.let(::publishTrialEvaluation)
                 startResult ?: TrialStartResult.Failed
             }
 
@@ -162,12 +163,13 @@ class TrialManager
         suspend fun claimTrialThreeDayNotice(): Boolean =
             stateMutex.withLock {
                 var claimed = false
-                var evaluatedState: TrialState? = null
+                var evaluation: TrialTimingEvaluation? = null
                 val didWrite =
                     dataStore.editPreferencesSafely { preferences ->
                         val now = withContext(ioDispatcher) { sessionTimeSource.snapshot() }
-                        val state = preferences.evaluateAndPersistTrialState(now)
-                        evaluatedState = state
+                        val current = preferences.evaluateAndPersistTrialState(now)
+                        evaluation = current
+                        val state = current.state
                         if (state.isActive &&
                             !state.clockTampered &&
                             state.daysRemaining == 3 &&
@@ -177,7 +179,7 @@ class TrialManager
                             claimed = true
                         }
                     }
-                if (didWrite) evaluatedState?.let { _trialState.value = it }
+                if (didWrite) evaluation?.let(::publishTrialEvaluation)
                 didWrite && claimed
             }
 
@@ -191,31 +193,51 @@ class TrialManager
 
         private suspend fun refreshTrialState() = stateMutex.withLock { refreshTrialStateLocked() }
 
-        private suspend fun refreshTrialStateLocked() {
-            var refreshedState: TrialState? = null
+        private suspend fun refreshTrialStateLocked(): Boolean {
+            var evaluation: TrialTimingEvaluation? = null
             val didWrite =
                 dataStore.editPreferencesSafely { preferences ->
                     val now = withContext(ioDispatcher) { sessionTimeSource.snapshot() }
-                    refreshedState = preferences.evaluateAndPersistTrialState(now)
+                    evaluation = preferences.evaluateAndPersistTrialState(now)
                 }
             if (didWrite) {
-                refreshedState?.let { _trialState.value = it }
+                evaluation?.let(::publishTrialEvaluation)
             } else {
-                _trialState.value = TrialState()
+                _trialState.value = evaluation?.state ?: evaluateLastKnownTrial()
             }
+            return didWrite
         }
 
-        private fun MutablePreferences.evaluateAndPersistTrialState(now: SessionTimeSnapshot): TrialState {
+        private fun MutablePreferences.evaluateAndPersistTrialState(now: SessionTimeSnapshot): TrialTimingEvaluation {
             val evaluation =
                 evaluateTrialTiming(
                     now = now,
                     startTimestamp = this[KEY_TRIAL_START] ?: 0L,
                     lastKnownTimestamp = this[KEY_LAST_KNOWN_TIMESTAMP] ?: 0L,
-                    clockTamperedAlready = this[KEY_CLOCK_TAMPERED] ?: false,
+                    clockTamperedAlready = this[KEY_CLOCK_TAMPERED] == true || _trialState.value.clockTampered,
                     storedTiming = readStoredTrialTiming(),
                 )
             persistTrialEvaluation(evaluation)
-            return evaluation.state
+            return evaluation
+        }
+
+        private fun publishTrialEvaluation(evaluation: TrialTimingEvaluation) {
+            lastKnownEvaluation = evaluation
+            _trialState.value = evaluation.state
+        }
+
+        private suspend fun evaluateLastKnownTrial(): TrialState {
+            val lastKnown = lastKnownEvaluation ?: return TrialState(isAvailable = false)
+            if (!lastKnown.state.hasStarted) return lastKnown.state
+            if (_trialState.value.clockTampered) return _trialState.value
+            val now = withContext(ioDispatcher) { sessionTimeSource.snapshot() }
+            return evaluateTrialTiming(
+                now = now,
+                startTimestamp = lastKnown.state.startTimestamp,
+                lastKnownTimestamp = lastKnown.lastKnownTimestamp,
+                clockTamperedAlready = lastKnown.state.clockTampered,
+                storedTiming = lastKnown.anchors ?: StoredTrialTiming.Malformed,
+            ).state
         }
 
         private fun MutablePreferences.readStoredTrialTiming(): StoredTrialTiming {
@@ -250,16 +272,18 @@ class TrialManager
             }
         }
 
-        private suspend fun startRefreshLoop() =
+        private suspend fun startRefreshLoop(initialRefreshSucceeded: Boolean) =
             refreshLoopMutex.withLock {
                 if (refreshJob?.isActive == true) return@withLock
 
                 refreshJob =
                     refreshScope.launch {
+                        var refreshSucceeded = initialRefreshSucceeded
                         while (isActive) {
                             val currentState = _trialState.value
-                            delay(calculateTrialRefreshDelayMillis(currentState.elapsedDurationMillis))
-                            refreshTrialState()
+                            val normalDelay = calculateTrialRefreshDelayMillis(currentState.elapsedDurationMillis)
+                            delay(if (refreshSucceeded) normalDelay else minOf(normalDelay, TRIAL_REFRESH_RETRY_MS))
+                            refreshSucceeded = refreshTrialState()
                         }
                     }
             }
@@ -285,6 +309,7 @@ class TrialManager
                     },
             )
             private val TRIAL_REFRESH_POLL_INTERVAL_MS = TimeUnit.MINUTES.toMillis(15)
+            private val TRIAL_REFRESH_RETRY_MS = TimeUnit.SECONDS.toMillis(30)
             private val ROLLBACK_TOLERANCE_MILLIS = TimeUnit.HOURS.toMillis(1)
             private val TRIAL_DURATION_MILLIS = TimeUnit.DAYS.toMillis(TRIAL_DURATION_DAYS.toLong())
             private const val MIN_REFRESH_DELAY_MS = 1L

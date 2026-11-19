@@ -20,7 +20,7 @@ export const androidIntentInputSurface: MatcherPlugin = {
       },
       {
         regex:
-          /\bget(?:Boolean|Byte|Char|Short|Int|Long|Float|Double|String|CharSequence|Parcelable|Serializable|Bundle|StringArrayList|IntegerArrayList|ParcelableArrayList)?Extra\s*\((?!\s*Intent\.EXTRA_TEXT\b)/,
+          /\bget(?:(?:Boolean|Byte|Char|Short|Int|Long|Float|Double|String|CharSequence|Parcelable)(?:Array)?|Serializable|Bundle|StringArrayList|IntegerArrayList|ParcelableArrayList)?Extra\s*\((?!\s*Intent\.EXTRA_TEXT\b)/,
         label: "Android intent extra read",
       },
       {

@@ -11,6 +11,7 @@ $TempRoot = Join-Path ([System.IO.Path]::GetTempPath()) ("knittools-release-surf
 $Passed = 0
 $Failed = 0
 $OriginalRavelryClientSecret = [Environment]::GetEnvironmentVariable("KNITTOOLS_RAVELRY_OAUTH2_CLIENT_SECRET", "Process")
+$OriginalRavelrySecondarySecret = [Environment]::GetEnvironmentVariable("RAVELRY_CLIENT_SECRET", "Process")
 
 function Add-SelfTestResult {
     param(
@@ -143,7 +144,8 @@ function Test-Mutation {
         [string]$ExpectedStatus,
         [string]$ExpectedCheck,
         [string]$PassMessage,
-        [string]$ForbiddenOutput = ""
+        [string]$ForbiddenOutput = "",
+        [string]$ExpectedDetail = ""
     )
 
     $fixture = New-Fixture -Name $Name
@@ -159,7 +161,9 @@ function Test-Mutation {
         }
 
     Add-SelfTestResult `
-        -Condition ($statusMatches -and $exitMatches -and (!$ForbiddenOutput -or !$result.Output.Contains($ForbiddenOutput))) `
+        -Condition ($statusMatches -and $exitMatches -and
+            (!$ForbiddenOutput -or !$result.Output.Contains($ForbiddenOutput)) -and
+            (!$ExpectedDetail -or $result.Output.Contains($ExpectedDetail))) `
         -Message $PassMessage `
         -Details "exit=$($result.ExitCode); expected line '$expectedLine'"
 }
@@ -247,6 +251,19 @@ try {
             if ($text -ceq $mutated) { throw "Expected auto-migrations are absent" }
             Set-FileText $path $mutated
         }
+        Test-Mutation -Name "room-documented-annotation" -ExpectedStatus "PASS" -ExpectedCheck "room-schema" -PassMessage "KDoc does not count as a Room declaration" -Mutate {
+            param($fixture)
+            Set-FileText (Join-Path $fixture "app/src/main/java/DatabaseNote.kt") '/** The application uses @Database for persistence. */'
+        }
+        Test-Mutation -Name "room-greedy-dead-end" -ExpectedStatus "FAIL" -ExpectedCheck "room-schema" -ExpectedDetail "migration path from 25 to 28 is incomplete" -PassMessage "Room selects the highest eligible upgrade edge without backtracking" -Mutate {
+            param($fixture)
+            $path = Join-Path $fixture "app/src/main/java/com/finnvek/knittools/data/local/KnitToolsDatabase.kt"
+            $text = Get-Content -Raw -LiteralPath $path
+            $text = $text.Replace("MIGRATION_25_26,", "MIGRATION_25_26,`n                    MIGRATION_25_27,").
+                Replace("MIGRATION_26_27,", "MIGRATION_26_28,").Replace("MIGRATION_27_28,", "")
+            Set-FileText $path $text
+            Remove-Item -LiteralPath (Join-Path $fixture "app/schemas/com.finnvek.knittools.data.local.KnitToolsDatabase/27.json")
+        }
         Test-Mutation -Name "missing-widget-source" -ExpectedStatus "FAIL" -ExpectedCheck "widget-oauth-boundary" -PassMessage "unreadable widget boundary fails closed" -Mutate {
             param($fixture)
             Remove-Item -LiteralPath (Join-Path $fixture "app/src/main/java/com/finnvek/knittools/ui/navigation/CounterLaunchRequest.kt")
@@ -313,6 +330,40 @@ try {
                 $replacement = '    <files-path name="yarn_photos" path="yarn_photos/" />' + "`r`n`$1"
                 Set-FileText -Path $path -Text ($text -replace '(</paths>)', $replacement)
             }
+
+        Test-Mutation -Name "release-source-export" -ExpectedStatus "FAIL" -ExpectedCheck "exported-components" -ExpectedDetail "app/src/release/AndroidManifest.xml" -PassMessage "release source overlay cannot add an exported receiver" -Mutate {
+            param($fixture)
+            Set-FileText (Join-Path $fixture "app/src/release/AndroidManifest.xml") @'
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application><receiver android:name=".UnexpectedReceiver" android:exported="true" /></application>
+</manifest>
+'@
+        }
+        $builtFixture = New-Fixture -Name "packaged-release-exports"
+        $builtRelativePath = "app/build/intermediates/packaged_manifests/release/processReleaseManifestForPackage/AndroidManifest.xml"
+        $builtPath = Join-Path $builtFixture $builtRelativePath
+        New-Item -ItemType Directory -Force -Path (Split-Path -Parent $builtPath) | Out-Null
+        $builtManifest = (Get-Content -Raw -LiteralPath (Join-Path $builtFixture "app/src/main/AndroidManifest.xml")).
+            Replace('android:name=".MainActivity"', 'android:name="com.finnvek.knittools.MainActivity"').
+            Replace('android:name=".widget.', 'android:name="com.finnvek.knittools.widget.')
+        $guarded = '<service android:name="androidx.work.impl.background.systemjob.SystemJobService" android:exported="true" android:permission="android.permission.BIND_JOB_SERVICE" />'
+        Set-FileText $builtPath ($builtManifest.Replace("</application>", "$guarded</application>"))
+        $builtResult = Run-ReleaseSurface -Fixture $builtFixture
+        Add-SelfTestResult -Condition ($builtResult.ExitCode -eq 0 -and $builtResult.Output.Contains($builtRelativePath)) -Message "packaged manifest accepts an expected permission-guarded dependency service"
+        Set-FileText $builtPath ($builtManifest.Replace("</application>", ($guarded -replace ' android:permission="[^"]+"', '') + "</application>"))
+        $builtResult = Run-ReleaseSurface -Fixture $builtFixture
+        Add-SelfTestResult -Condition ($builtResult.ExitCode -eq 1 -and
+            $builtResult.Output.Contains("[FAIL] exported-components:") -and $builtResult.Output.Contains($builtRelativePath)) -Message "packaged manifest catches an exported service without its permission guard"
+
+        Test-Mutation -Name "local-only-ignore" -ExpectedStatus "FAIL" -ExpectedCheck "firebase-boundary" -ExpectedDetail "[FAIL] debug-credentials:" -PassMessage "Git's local excludes cannot replace tracked ignore rules" -Mutate {
+            param($fixture)
+            $ignore = Join-Path $fixture ".gitignore"
+            $rules = Get-Content -LiteralPath $ignore | Where-Object { $_ -notmatch 'google-services\.json|debug\.credentials\.properties' }
+            Set-Content -LiteralPath $ignore -Value $rules
+            Add-Content -LiteralPath (Join-Path $fixture ".git/info/exclude") -Value @(
+                '/debug.credentials.properties', 'app/google-services.json', 'app/src/*/google-services.json'
+            )
+        }
 
         Test-Mutation `
             -Name "google-services" `
@@ -393,6 +444,16 @@ try {
                 Set-FileText -Path $path -Text "phase9-secret-probe"
                 $env:KNITTOOLS_RAVELRY_OAUTH2_CLIENT_SECRET = "phase9-secret-probe"
             }
+
+        Test-Mutation -Name "known-ravelry-secret-variants" -ExpectedStatus "FAIL" -ExpectedCheck "known-ravelry-secrets" -ExpectedDetail "found in 2 checked file(s)" -ForbiddenOutput "SYNTHETIC-CASE-SECRET" -PassMessage "case-distinct known values are checked in variant sources without value output" -Mutate {
+            param($fixture)
+            $env:KNITTOOLS_RAVELRY_OAUTH2_CLIENT_SECRET = "synthetic-case-secret"
+            $env:RAVELRY_CLIENT_SECRET = "SYNTHETIC-CASE-SECRET"
+            $res = Join-Path $fixture "app/src/release/res/values"
+            New-Item -ItemType Directory -Force -Path $res | Out-Null
+            Set-FileText (Join-Path $res "probe1.xml") '<resources><string name="probe">synthetic-case-secret</string></resources>'
+            Set-FileText (Join-Path $res "probe2.xml") '<resources><string name="probe">SYNTHETIC-CASE-SECRET</string></resources>'
+        }
 
         Test-Mutation `
             -Name "release-sentry" `
@@ -534,6 +595,16 @@ try {
                 Set-FileText -Path $path -Text $mutated
             }
 
+        Test-Mutation -Name "locale-configuration-qualifiers" -ExpectedStatus "PASS" -ExpectedCheck "locale-parity" -PassMessage "car mode is excluded and language tags omit their configuration qualifiers" -Mutate {
+            param($fixture)
+            foreach ($directory in @("values-car", "values-b+sr+Latn-night", "values-fil")) {
+                New-Item -ItemType Directory -Path (Join-Path $fixture "app/src/main/res/$directory") | Out-Null
+            }
+            $path = Join-Path $fixture "app/src/main/res/xml/locales_config.xml"
+            $text = Get-Content -Raw -LiteralPath $path
+            Set-FileText $path ($text.Replace("</locale-config>", '<locale android:name="sr-Latn" /><locale android:name="fil" /></locale-config>'))
+        }
+
         Test-Mutation `
             -Name "widget-oauth-counter-launch" `
             -ExpectedStatus "FAIL" `
@@ -548,6 +619,7 @@ try {
             }
     }
 } finally {
+    Restore-ProcessEnvironmentVariable -Name "RAVELRY_CLIENT_SECRET" -Value $OriginalRavelrySecondarySecret
     Restore-ProcessEnvironmentVariable `
         -Name "KNITTOOLS_RAVELRY_OAUTH2_CLIENT_SECRET" `
         -Value $OriginalRavelryClientSecret

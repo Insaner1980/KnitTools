@@ -155,6 +155,7 @@ describe("Ravelry callable rate limits", () => {
       () => now,
       () => 0,
       createRavelryRateLimitRuntimeState(),
+      "sharded",
     );
 
     const olderAdmission = limiter.consumeGlobal("search");
@@ -163,10 +164,13 @@ describe("Ravelry callable rate limits", () => {
     for (let call = 0; call < rule.limit; call += 1) {
       await limiter.consumeGlobal("search");
     }
+    await assert.rejects(limiter.consumeGlobal("search"), RavelryRateLimitError);
     resumeOlderAdmission();
 
     await assert.rejects(olderAdmission, RavelryRateLimitError);
+    const transactionsAfterOlderAdmission = firestore.transactionCount;
     await assert.rejects(limiter.consumeGlobal("search"), RavelryRateLimitError);
+    assert.equal(firestore.transactionCount, transactionsAfterOlderAdmission);
     assert.equal(firestore.documents.get("search_global_0")?.windowStartMillis, 120_000);
     assert.equal(firestore.documents.get("search_global_0")?.count, 12);
   });
@@ -178,6 +182,7 @@ describe("Ravelry callable rate limits", () => {
       () => 61_000,
       () => 0,
       createRavelryRateLimitRuntimeState(),
+      "sharded",
     );
 
     await limiter.consumeUid("uid", "disconnect");
@@ -200,6 +205,7 @@ describe("Ravelry callable rate limits", () => {
       () => 61_000,
       () => 0,
       createRavelryRateLimitRuntimeState(),
+      "sharded",
     );
 
     await limiter.consumeGlobal("search");
@@ -216,6 +222,7 @@ describe("Ravelry callable rate limits", () => {
       () => 61_000,
       () => 0,
       createRavelryRateLimitRuntimeState(),
+      "sharded",
     );
 
     await limiter.consumeGlobal("import");
@@ -235,6 +242,7 @@ describe("Ravelry callable rate limits", () => {
       () => 61_000,
       () => 0,
       createRavelryRateLimitRuntimeState(),
+      "sharded",
     );
 
     await assert.rejects(
@@ -259,6 +267,7 @@ describe("Ravelry callable rate limits", () => {
       () => 61_000,
       () => 0,
       createRavelryRateLimitRuntimeState(),
+      "sharded",
     );
 
     await limiter.consume("uid", "search");
@@ -280,6 +289,7 @@ describe("Ravelry callable rate limits", () => {
       () => currentMillis,
       () => 0,
       createRavelryRateLimitRuntimeState(),
+      "sharded",
     );
 
     await limiter.consume("uid", "search");
@@ -301,6 +311,7 @@ describe("Ravelry callable rate limits", () => {
       () => 61_000,
       () => 0,
       createRavelryRateLimitRuntimeState(),
+      "sharded",
     );
 
     await limiter.consume("first-uid", "search");
@@ -327,6 +338,7 @@ describe("Ravelry callable rate limits", () => {
       () => 61_000,
       () => 0,
       createRavelryRateLimitRuntimeState(),
+      "sharded",
     );
 
     await assert.rejects(
@@ -337,6 +349,30 @@ describe("Ravelry callable rate limits", () => {
         error.limit === RAVELRY_GLOBAL_RATE_LIMIT_RULES.auth.limit,
     );
     assert.equal(firestore.documents.has("auth_global_0"), false);
+  });
+
+  it("routes admissions through a legacy window opened before the shard transaction", async () => {
+    for (const withUid of [false, true]) {
+      const firestore = new FakeFirestore();
+      const limiter = createRavelryRateLimiter(
+        firestore as unknown as Firestore,
+        () => 61_000,
+        () => {
+          firestore.documents.set("search_global", { windowStartMillis: 60_000, count: 5 });
+          return 0;
+        },
+        createRavelryRateLimitRuntimeState(),
+        "sharded",
+      );
+
+      if (withUid) await limiter.consume("uid", "search");
+      else await limiter.consumeGlobal("search");
+
+      assert.equal(firestore.documents.get("search_global")?.count, 6);
+      assert.equal(firestore.documents.has("search_global_0"), false);
+      assert.equal(firestore.documents.get(ravelryRateLimitTargets("uid", "search", 0)[0].documentId)?.count,
+        withUid ? 1 : undefined);
+    }
   });
 
   it("caches a saturated global window after checking every shard", async () => {
@@ -354,6 +390,7 @@ describe("Ravelry callable rate limits", () => {
       () => 61_000,
       () => 0,
       runtimeState,
+      "sharded",
     );
 
     await assert.rejects(
@@ -364,6 +401,7 @@ describe("Ravelry callable rate limits", () => {
         error.limit === RAVELRY_GLOBAL_RATE_LIMIT_RULES.import.limit,
     );
     const firstRejectionTransactions = firestore.transactionCount;
+    assert.equal(firstRejectionTransactions, 1 + RAVELRY_GLOBAL_RATE_LIMIT_SHARD_COUNT);
     assert.equal(
       runtimeState.saturatedGlobalWindows.get("import"),
       fixedWindowStartMillis(61_000, RAVELRY_GLOBAL_RATE_LIMIT_RULES.import.windowMillis),

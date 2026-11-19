@@ -73,6 +73,29 @@ class AuditPart15RoomTest {
             db.close()
         }
 
+    @Test fun committedCreationAttemptReusesProjectButNewAttemptWithSameNameSucceeds() =
+        runBlocking {
+            val repository = fixture.counterRepository()
+            val first =
+                repository.createProject("Blanket", canCreateAdditionalProjects = false, attemptId = "first")
+                    as ProjectCreationResult.Created
+            assertTrue(first.wasFirstProject)
+            assertEquals(1, repository.getProjectCount())
+
+            assertEquals(
+                first,
+                repository.createProject("Blanket", canCreateAdditionalProjects = false, attemptId = "first"),
+            )
+            assertEquals(1, repository.getProjectCount())
+
+            status(ProStatus.PRO_PURCHASED)
+            val second =
+                repository.createProject("Blanket", canCreateAdditionalProjects = true, attemptId = "second")
+                    as ProjectCreationResult.Created
+            assertEquals(2, repository.getProjectCount())
+            assertEquals("Blanket (2)", db.counterProjectDao().getProject(second.projectId)?.name)
+        }
+
     @Test fun allSevenGatesUseRealPolicyAndCounterYarnWritesAcrossFourStates() =
         runBlocking {
             val id = db.counterProjectDao().insert(CounterProjectEntity(name = "Gate matrix"))
@@ -127,7 +150,7 @@ class AuditPart15RoomTest {
             assertFalse(pro.hasFeature(ProFeature.PATTERN_CAMERA_SCAN))
             withContext(Dispatchers.Main) { model.acceptCameraCapture(id, target.second, target.first) }
             withTimeout(10_000) { model.uiState.first { it.phase == PatternImageImportPhase.READY } }
-            withContext(Dispatchers.Main) { model.createPatternPdf(replaceExisting = false) }
+            withContext(Dispatchers.Main) { model.createPatternPdf() }
             withTimeout(20_000) { model.uiState.first { it.closeReady } }
             val documents =
                 db.openHelper.readableDatabase.query(

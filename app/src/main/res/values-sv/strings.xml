@@ -170,9 +170,6 @@
     <string name="pattern_image_move_later">Flytta sida %1$d framåt</string>
     <string name="pattern_image_remove_page">Ta bort sida %1$d</string>
     <string name="pattern_image_create_pdf">Skapa mönster-PDF</string>
-    <string name="pattern_image_replace_title">Ersätta aktuellt mönster?</string>
-    <string name="pattern_image_replace_message">Den aktuella mönsterbilagan ersätts när den nya PDF-filen är klar.</string>
-    <string name="pattern_image_replace_action">Ersätt mönster</string>
     <string name="pattern_image_conversion_progress">Skapar sida %1$d av %2$d</string>
     <string name="pattern_image_attaching">Bifogar mönster-PDF</string>
     <string name="pattern_image_cancel_conversion">Avbryt konvertering</string>

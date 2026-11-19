@@ -167,7 +167,7 @@ class AuditPart16RestoreTest {
                             ).delete(),
                         )
                     }
-                    onMain { vm.createPatternPdf(replaceExisting = false) }
+                    onMain { vm.createPatternPdf() }
                     val result =
                         withTimeout(20_000) {
                             vm.uiState.first {

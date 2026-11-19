@@ -30,6 +30,7 @@ import com.finnvek.knittools.repository.ProjectFolderRepository
 import com.finnvek.knittools.repository.ProjectReactivationResult
 import com.finnvek.knittools.repository.SavedPatternRepository
 import com.finnvek.knittools.repository.isSuccess
+import com.finnvek.knittools.repository.retryOnRepositoryReadFailure
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
@@ -51,6 +52,7 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.util.UUID
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 
@@ -275,10 +277,12 @@ class ProjectListViewModel
                     .flatMapLatest { projects ->
                         projectDocumentRepository
                             .observeDocuments(projects.map(CounterProject::id))
-                            .map { documents -> projects to documents }
-                    }.collect { (projects, documentsByProject) ->
-                        _projectPatternNames.value =
-                            resolveProjectPatternNames(projects, documentsByProject, savedPatternRepository)
+                            .map { documents ->
+                                resolveProjectPatternNames(projects, documents, savedPatternRepository)
+                            }
+                    }.retryOnRepositoryReadFailure()
+                    .collect { names ->
+                        _projectPatternNames.value = names
                     }
             }
         }
@@ -322,13 +326,17 @@ class ProjectListViewModel
 
         // === Multi-select-toiminnot ===
 
+        private var selectionGeneration = 0L
+
         fun enterMultiSelectMode(initialProjectId: Long? = null) {
             if (initialProjectId != null && !isVisibleProject(initialProjectId)) return
+            selectionGeneration++
             _isMultiSelectMode.value = true
             _selectedProjectIds.value = if (initialProjectId != null) setOf(initialProjectId) else emptySet()
         }
 
         fun exitMultiSelectMode() {
+            selectionGeneration++
             _isMultiSelectMode.value = false
             _selectedProjectIds.value = emptySet()
             _pendingCompletionSessionAction.value = null
@@ -354,7 +362,7 @@ class ProjectListViewModel
         }
 
         fun completeSelectedProjects() {
-            launchSelectedProjectAction { selectedIds, active ->
+            launchSelectedProjectAction { selectedIds, active, generation ->
                 val activeIds = activeProjects.value.map { it.id }.toSet()
                 val ids = selectedIds.intersect(_selectedProjectIds.value).intersect(activeIds)
                 val celebrateCompletion = selectedIds.size == 1 && ids.size == 1
@@ -366,13 +374,13 @@ class ProjectListViewModel
                 if (ids.isNotEmpty() &&
                     completeProjects(ids, choice = null, selectedOnly = true, celebrateCompletion = celebrateCompletion)
                 ) {
-                    exitMultiSelectMode()
+                    if (selectionGeneration == generation) exitMultiSelectMode()
                 }
             }
         }
 
         fun deleteSelectedProjects() {
-            launchSelectedProjectAction { selectedIds, active ->
+            launchSelectedProjectAction { selectedIds, active, generation ->
                 val visibleIds = (activeProjects.value + completedProjects.value).map { it.id }.toSet()
                 val ids = selectedIds.intersect(_selectedProjectIds.value).intersect(visibleIds)
                 if (active != null && active.projectId in ids) {
@@ -380,12 +388,13 @@ class ProjectListViewModel
                     return@launchSelectedProjectAction
                 }
                 if (deleteProjects(ids, expectedSession = null, selectedOnly = true)) {
-                    exitMultiSelectMode()
+                    if (selectionGeneration == generation) exitMultiSelectMode()
                 }
             }
         }
 
-        private fun launchSelectedProjectAction(action: suspend (Set<Long>, ActiveWorkSession?) -> Unit) {
+        private fun launchSelectedProjectAction(action: suspend (Set<Long>, ActiveWorkSession?, Long) -> Unit) {
+            val generation = selectionGeneration
             viewModelScope.launch {
                 val selectedIds = _selectedProjectIds.value
                 val active =
@@ -397,7 +406,7 @@ class ProjectListViewModel
                         sessionErrorChannel.send(R.string.generic_error_unknown)
                         return@launch
                     }
-                action(selectedIds, active)
+                if (generation == selectionGeneration) action(selectedIds, active, generation)
             }
         }
 
@@ -405,7 +414,10 @@ class ProjectListViewModel
 
         fun requestProjectCreation() = creationActions.requestProjectCreation()
 
-        fun projectCreationDismissed() = analytics.track(UsageEvent.PROJECT_CREATION_CANCELLED)
+        fun projectCreationDismissed() {
+            creationActions.clearProjectCreationError()
+            analytics.track(UsageEvent.PROJECT_CREATION_CANCELLED)
+        }
 
         fun dismissPendingProjectCreation() = creationActions.dismissPendingProjectCreation()
 
@@ -433,6 +445,7 @@ class ProjectListViewModel
             targetFolderId: Long? = (selectedFolderFilter.value as? ProjectFolderFilter.Folder)?.folderId,
             initialCount: Int = 0,
             targetRows: Int? = null,
+            attemptId: String = UUID.randomUUID().toString(),
         ) {
             val request =
                 PendingProjectCreation(
@@ -443,6 +456,7 @@ class ProjectListViewModel
                     targetFolderId = targetFolderId,
                     initialCount = initialCount,
                     targetRows = targetRows,
+                    attemptId = attemptId,
                 )
             creationActions.create(request)
         }
@@ -495,7 +509,9 @@ class ProjectListViewModel
         fun resolvePendingCompletion(saveSession: Boolean) {
             val pending = _pendingCompletionSessionAction.value ?: return
             val selectedOnly = isMultiSelectMode.value
+            val generation = selectionGeneration
             viewModelScope.launch {
+                if (generation != selectionGeneration || _pendingCompletionSessionAction.value != pending) return@launch
                 if (saveSession && pending.session.needsRecoveryReview) {
                     _pendingCompletionSessionAction.value = null
                     exitMultiSelectMode()
@@ -515,7 +531,7 @@ class ProjectListViewModel
                                 ActiveSessionCompletionChoice.DISCARD
                             },
                     )
-                if (completed) {
+                if (completed && generation == selectionGeneration) {
                     _pendingCompletionSessionAction.value = null
                     exitMultiSelectMode()
                 }
@@ -529,8 +545,12 @@ class ProjectListViewModel
         fun resolvePendingDeletion() {
             val pending = _pendingDeletionSessionAction.value ?: return
             val selectedOnly = isMultiSelectMode.value
+            val generation = selectionGeneration
             viewModelScope.launch {
-                if (deleteProjects(pending.projectIds, pending.session, selectedOnly)) {
+                if (generation != selectionGeneration || _pendingDeletionSessionAction.value != pending) return@launch
+                if (deleteProjects(pending.projectIds, pending.session, selectedOnly) &&
+                    generation == selectionGeneration
+                ) {
                     _pendingDeletionSessionAction.value = null
                     exitMultiSelectMode()
                 }
@@ -711,11 +731,12 @@ class ProjectListViewModel
 
         fun moveSelectedProjects(folderId: Long?) {
             val ids = selectedProjectIds.value.toSet()
+            val generation = selectionGeneration
             mutateFolder {
                 folderRepository.moveProjects(ids, folderId).also { result ->
                     if (result.isSuccess) {
                         analytics.track(UsageEvent.PROJECTS_MOVED)
-                        exitMultiSelectMode()
+                        if (generation == selectionGeneration) exitMultiSelectMode()
                     }
                 }
             }

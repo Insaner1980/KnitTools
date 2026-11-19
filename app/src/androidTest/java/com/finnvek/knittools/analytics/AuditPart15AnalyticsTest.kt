@@ -4,6 +4,8 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LifecycleRegistry
 import com.posthog.PostHogInterface
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -37,6 +39,8 @@ class AuditPart15AnalyticsTest {
                     initializations++
                     PostHogConsentClient(client, AnalyticsDeliveryGate()) {}
                 },
+                CoroutineScope(Dispatchers.IO),
+                Dispatchers.IO,
             )
         val owner =
             object : LifecycleOwner {
@@ -57,9 +61,21 @@ class AuditPart15AnalyticsTest {
             val payload = captured.single { it.first == event.eventName }.second
             assertEquals(mapOf("\$geoip_disable" to true), payload)
         }
-        assertEquals(1, captured.count { it.first == "app opened" })
-        assertEquals(1, captured.count { it.first == "app backgrounded" })
-        assertEquals(1, captured.count { it.first == "screen exited" })
+        assertEquals(
+            listOf("app opened", "\$screen") + UsageEvent.entries.map { it.eventName } +
+                listOf("screen exited", "app backgrounded"),
+            captured.map { it.first },
+        )
+        val eventPropertyKeys =
+            mapOf(
+                "app opened" to emptySet(),
+                "\$screen" to setOf("\$screen_name"),
+                "screen exited" to setOf("screen", "duration_seconds"),
+                "app backgrounded" to setOf("duration_seconds"),
+            )
+        eventPropertyKeys.forEach { (event, keys) ->
+            assertEquals(keys + "\$geoip_disable", captured.single { it.first == event }.second.keys)
+        }
         assertEquals("pattern_viewer", captured.single { it.first == "\$screen" }.second["\$screen_name"])
         assertFalse(captured.toString().contains("987"))
         assertFalse(captured.toString().contains("private-text"))

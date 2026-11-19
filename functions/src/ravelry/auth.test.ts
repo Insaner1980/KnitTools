@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { afterEach, beforeEach, describe, it, mock } from "node:test";
+import { createHash } from "node:crypto";
 import timers from "node:timers/promises";
 
 import { ravelryCallbackUrl, ravelryClientId, ravelryClientSecret } from "../config";
@@ -29,6 +30,7 @@ describe("production Ravelry HTTP callback with local responses", () => {
   let consumeState: () => Promise<boolean>;
   let fetchResponse: () => Promise<Response>;
   let fetchCalls: number;
+  let fetchRequest: { url: string; options: RequestInit; usedAtMillis: number | null | undefined } | undefined;
   let globalCalls: number;
   let uidCalls: number;
   let stateReads: number;
@@ -38,6 +40,7 @@ describe("production Ravelry HTTP callback with local responses", () => {
   let body: unknown;
   let redirect: string | undefined;
   let failSave: boolean;
+  let failBrowserResultSave: boolean;
   let failRead: boolean;
   let limit: boolean;
   let failLimiter: boolean;
@@ -55,6 +58,7 @@ describe("production Ravelry HTTP callback with local responses", () => {
     pending = undefined;
     generation = 3;
     fetchCalls = 0;
+    fetchRequest = undefined;
     globalCalls = 0;
     uidCalls = 0;
     stateReads = 0;
@@ -64,6 +68,7 @@ describe("production Ravelry HTTP callback with local responses", () => {
     body = undefined;
     redirect = undefined;
     failSave = false;
+    failBrowserResultSave = false;
     failRead = false;
     limit = false;
     failLimiter = false;
@@ -86,17 +91,7 @@ describe("production Ravelry HTTP callback with local responses", () => {
     });
     mock.method(globalThis, "fetch", async (url: string, options: RequestInit) => {
       fetchCalls++;
-      assert.equal(url, "https://www.ravelry.com/oauth2/token");
-      assert.equal(stored?.usedAtMillis, now);
-      assert.equal(options.method, "POST");
-      assert.equal(options.redirect, "error");
-      assert.ok(options.signal);
-      assert.equal(new Headers(options.headers).get("Authorization"),
-        `Basic ${Buffer.from("synthetic-client:synthetic-secret").toString("base64")}`);
-      assert.deepEqual(Object.fromEntries(new URLSearchParams(String(options.body))), {
-        grant_type: "authorization_code", code: "synthetic-code",
-        code_verifier: "synthetic-verifier", redirect_uri: stored?.redirectUri,
-      });
+      fetchRequest = { url, options, usedAtMillis: stored?.usedAtMillis };
       return fetchResponse();
     });
     mock.method(stores, "createRavelryBackendStores", () => ({
@@ -122,6 +117,7 @@ describe("production Ravelry HTTP callback with local responses", () => {
         },
         async markStateUsed() { return consumeState(); },
         async saveBrowserResult(key: string, _bindingHash: string, result: string) {
+          if (failBrowserResultSave) throw new Error(rawError);
           if (!stored || key !== stored.state || stored.usedAtMillis == null) return false;
           stored = { ...stored, browserResult: result };
           return true;
@@ -129,6 +125,11 @@ describe("production Ravelry HTTP callback with local responses", () => {
       },
       tokenStore: {
         async getConnectionGeneration() { return generation; },
+        async hasPendingToken(uid: string, key: string, proofHash: string, expected: number, atMillis: number) {
+          return pending != null && pending.token.uid === uid && pending.state === key &&
+            pending.completionProofHash === proofHash && pending.expiresAtMillis > atMillis &&
+            pending.token.connectionGeneration === expected && generation === expected;
+        },
         async savePendingTokenIfGenerationCurrent(value: PendingRavelryToken, expected: number) {
           if (failSave) throw new Error(rawError);
           if (expected !== generation) return false;
@@ -153,6 +154,10 @@ describe("production Ravelry HTTP callback with local responses", () => {
   afterEach(() => { mock.restoreAll(); });
 
   async function invoke(query: Record<string, unknown> = { state, code: "synthetic-code" }, method = "GET", cookie?: string) {
+    status = 200;
+    body = undefined;
+    redirect = undefined;
+    responseCookie = undefined;
     await ravelryCallback(
       { query, body: query, method, ip: "127.0.0.1", headers: { cookie } } as Parameters<typeof ravelryCallback>[0],
       {
@@ -171,6 +176,22 @@ describe("production Ravelry HTTP callback with local responses", () => {
       assert.equal(output.includes(secret), false);
     }
     assert.deepEqual(logs, []);
+  }
+
+  function expectExchangeRequest() {
+    assert.ok(fetchRequest);
+    const { url, options, usedAtMillis } = fetchRequest;
+    assert.equal(url, "https://www.ravelry.com/oauth2/token");
+    assert.equal(usedAtMillis, now);
+    assert.equal(options.method, "POST");
+    assert.equal(options.redirect, "error");
+    assert.ok(options.signal);
+    assert.equal(new Headers(options.headers).get("Authorization"),
+      `Basic ${Buffer.from("synthetic-client:synthetic-secret").toString("base64")}`);
+    assert.deepEqual(Object.fromEntries(new URLSearchParams(String(options.body))), {
+      grant_type: "authorization_code", code: "synthetic-code",
+      code_verifier: "synthetic-verifier", redirect_uri: stored?.redirectUri,
+    });
   }
 
   function expectRedirect(error: string) {
@@ -316,9 +337,33 @@ describe("production Ravelry HTTP callback with local responses", () => {
     assert.equal(fetchCalls, 1);
 
     await invoke({ state, error: "access_denied" }, "GET", cookie);
+    assert.equal(status, 302);
     assert.equal(redirect, originalRedirect);
     assert.equal(uidCalls, 2);
     assert.equal(globalCalls, 2);
+    assert.equal(fetchCalls, 1);
+  });
+
+  it("recovers the browser proof from a committed pending token after the outcome write fails", async () => {
+    const secret = "b".repeat(43);
+    assert.ok(stored);
+    stored = { ...stored, browserBindingHash: browserSecretHash(secret) };
+    const cookie = `${BROWSER_AUTH_COOKIE}=${secret}`;
+    mock.method(timers, "setTimeout", async () => {});
+    failBrowserResultSave = true;
+
+    await invoke({ state, code: "synthetic-code" }, "GET", cookie);
+    assert.equal(status, 500);
+    assert.equal(stored.browserResult, undefined);
+    assert.ok(pending);
+    expectExchangeRequest();
+
+    await invoke({ state, code: "synthetic-code" }, "GET", cookie);
+    assert.equal(status, 302);
+    assert.ok(redirect);
+    const proof = new URL(redirect).searchParams.get("proof");
+    assert.ok(proof);
+    assert.equal(createHash("sha256").update(proof).digest("base64url"), pending.completionProofHash);
     assert.equal(fetchCalls, 1);
   });
 
@@ -429,7 +474,7 @@ describe("production Ravelry HTTP callback with local responses", () => {
       expectRedirect("oauth_error");
       assert.equal(fetchCalls, 1);
       assert.equal(stored?.usedAtMillis, now);
-      redirect = undefined;
+      expectExchangeRequest();
       await invoke();
       assert.equal(status, 400);
       assert.deepEqual(body, { code: "used_state" });
@@ -442,6 +487,7 @@ describe("production Ravelry HTTP callback with local responses", () => {
     await invoke();
     assert.equal(status, 302);
     assert.equal(fetchCalls, 1);
+    expectExchangeRequest();
     const url = new URL(redirect!);
     assert.equal(url.origin, "null");
     assert.equal(url.protocol, "knittools:");

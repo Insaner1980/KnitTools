@@ -38,7 +38,6 @@ import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.finnvek.knittools.R
 import com.finnvek.knittools.ui.components.CancelButton
-import com.finnvek.knittools.ui.components.ConfirmationDialog
 import com.finnvek.knittools.ui.theme.knitToolsColors
 import java.io.File
 
@@ -55,6 +54,12 @@ internal fun PatternImageImportSurface(
     onPreviewFailed: (String) -> Unit,
 ) {
     val busy = state.isBusy
+    val canEditPages = !busy && !state.attachmentPending
+    val cameraRetake =
+        state.origin == PatternImageImportOrigin.CAMERA &&
+            state.phase == PatternImageImportPhase.ERROR &&
+            state.selection.pages.isEmpty() &&
+            !state.cameraCapturePending
     Column(
         modifier =
             Modifier
@@ -112,7 +117,7 @@ internal fun PatternImageImportSurface(
                     page = page,
                     index = index,
                     totalPages = state.selection.pages.size,
-                    enabled = !busy,
+                    enabled = canEditPages,
                     onMoveEarlier = { onMoveEarlier(page.id) },
                     onMoveLater = { onMoveLater(page.id) },
                     onRemove = { onRemove(page.id) },
@@ -137,16 +142,28 @@ internal fun PatternImageImportSurface(
                 OutlinedButton(
                     onClick = onAddMore,
                     enabled =
-                        !busy &&
-                            state.origin == PatternImageImportOrigin.GALLERY &&
-                            state.selection.pages.size < PatternImageImportLimits.MAX_PAGES,
+                        cameraRetake ||
+                            (
+                                canEditPages &&
+                                    state.origin == PatternImageImportOrigin.GALLERY &&
+                                    state.selection.pages.size < PatternImageImportLimits.MAX_PAGES
+                            ),
                     modifier = Modifier.weight(1f).heightIn(min = 48.dp),
                 ) {
-                    Text(stringResource(R.string.pattern_image_add_more))
+                    Text(
+                        stringResource(
+                            if (cameraRetake) R.string.pattern_picker_camera_scan else R.string.pattern_image_add_more,
+                        ),
+                    )
                 }
                 Button(
                     onClick = onCreate,
-                    enabled = !busy && state.selection.pages.isNotEmpty() && state.invalidPageIds.isEmpty(),
+                    enabled =
+                        !busy &&
+                            (
+                                state.attachmentPending ||
+                                    (state.selection.pages.isNotEmpty() && state.invalidPageIds.isEmpty())
+                            ),
                     modifier = Modifier.weight(1f).heightIn(min = 48.dp),
                 ) {
                     Text(stringResource(R.string.pattern_image_create_pdf))
@@ -158,17 +175,6 @@ internal fun PatternImageImportSurface(
                 text = stringResource(if (busy) R.string.pattern_image_cancel_conversion else R.string.cancel),
             )
         }
-    }
-
-    if (state.replacementConfirmationPending) {
-        ConfirmationDialog(
-            title = stringResource(R.string.pattern_image_replace_title),
-            message = stringResource(R.string.pattern_image_replace_message),
-            confirmText = stringResource(R.string.pattern_image_replace_action),
-            isDestructive = true,
-            onConfirm = onCreate,
-            onDismiss = onCancel,
-        )
     }
 }
 

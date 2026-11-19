@@ -55,6 +55,7 @@ internal data class PatternPdfSourcePageSize(
 )
 
 internal data class PatternPdfExportPagePlan(
+    val sourceSize: PatternPdfSourcePageSize,
     val bitmapSize: PdfRenderBitmapSize,
     val renderedPixels: Long,
 )
@@ -102,7 +103,7 @@ internal object PatternPdfExportBudget {
             totalPixels =
                 addWithinLimit(totalPixels, pagePixels, limits.maxTotalRenderedPixels)
                     ?: fail(PatternPdfExportLimitReason.TOTAL_PIXELS)
-            pages += PatternPdfExportPagePlan(bitmapSize, pagePixels)
+            pages += PatternPdfExportPagePlan(sourceSize, bitmapSize, pagePixels)
         }
         return PatternPdfExportPlan(pages, totalPixels)
     }

@@ -14,7 +14,7 @@ internal fun insightsPreviousStart(params: InsightsQueryParams): LocalDate? {
         InsightsViewModel.rangeStartDate(
             params.timeRange,
             params.currentDate,
-            currentInsightsFirstDayOfWeek(),
+            params.firstDayOfWeek,
         ) ?: return null
     return when (params.timeRange) {
         TimeRange.THIS_WEEK -> start.minusWeeks(1)
@@ -32,7 +32,7 @@ internal class InsightsSessionAccumulator(
     private val params: InsightsQueryParams,
     val facts: SessionInsightsFacts,
 ) {
-    private val firstDay = currentInsightsFirstDayOfWeek()
+    private val firstDay = params.firstDayOfWeek
     private val rangeDate = params.startMillis?.let { Instant.ofEpochMilli(it).atZone(params.zone).toLocalDate() }
     private val previousStart = insightsPreviousStart(params)
     private val previousSeconds = mutableMapOf<LocalDate, Long>()

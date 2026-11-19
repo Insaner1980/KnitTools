@@ -867,7 +867,6 @@ class ExternalActivityResultOwnershipTest : CounterActivityTestFixture() {
                                 canUseCameraScan = captureAllowed.value,
                                 proState = ProState(status = ProStatus.PRO_PURCHASED),
                                 proAccessReady = true,
-                                hasExistingPattern = false,
                                 onSavedPatternSelected = {},
                                 isRestoringProject = state.isRestoringProject,
                                 onDocumentSelected = { uri, name, owner ->

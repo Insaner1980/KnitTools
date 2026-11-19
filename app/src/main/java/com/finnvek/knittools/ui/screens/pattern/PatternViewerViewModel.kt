@@ -25,6 +25,8 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import javax.inject.Inject
 
 enum class PatternBookmarkError {
@@ -94,9 +96,11 @@ private data class PatternBookmarkOperationState(
 )
 
 private data class ProjectDocumentOperationState(
-    val isMutating: Boolean = false,
+    val pendingMutations: Int = 0,
     val error: ProjectDocumentError? = null,
-)
+) {
+    val isMutating: Boolean get() = pendingMutations > 0
+}
 
 @HiltViewModel
 class PatternViewerViewModel
@@ -184,6 +188,8 @@ class PatternViewerViewModel
         private var nextRequestId = 1L
         private var bookmarkDocumentSelectionVersion = 0L
         private var initialDocumentSelectionApplied = false
+        private var pendingInitialDocumentId: Long? = null
+        private val documentMutationMutex = Mutex()
 
         init {
             viewModelScope.launch {
@@ -214,6 +220,13 @@ class PatternViewerViewModel
         }
 
         fun selectDocument(documentId: Long) {
+            selectDocument(documentId, onComplete = {})
+        }
+
+        private fun selectDocument(
+            documentId: Long,
+            onComplete: () -> Unit,
+        ) {
             val document =
                 documents.value?.firstOrNull { it.id == documentId }
                     ?: return setDocumentError(ProjectDocumentError.STALE_ACTION)
@@ -223,8 +236,10 @@ class PatternViewerViewModel
             runDocumentMutation(
                 mutation = { documentRepository.select(projectId, document.id) },
                 onSuccess = { _ ->
+                    initialDocumentSelectionApplied = true
                     updateSelectedDocument(document.id)
                 },
+                onComplete = onComplete,
             )
         }
 
@@ -300,6 +315,7 @@ class PatternViewerViewModel
             pageIndex: Int,
             yFraction: Float,
             expectedDocumentKey: String? = uiState.value.documentKey,
+            onSaved: () -> Unit = {},
         ) {
             if (operationState.value.isMutating) return
             val documentKey =
@@ -310,6 +326,7 @@ class PatternViewerViewModel
                 onSuccess = { bookmark ->
                     selectedBookmarkId.value = bookmark.id
                     analytics.track(UsageEvent.BOOKMARK_CREATED)
+                    onSaved()
                 },
                 failureError = PatternBookmarkError.SAVE_FAILURE,
             )
@@ -318,11 +335,15 @@ class PatternViewerViewModel
         fun renameBookmark(
             bookmarkId: Long,
             name: String,
+            onSaved: () -> Unit = {},
         ) {
             val documentKey = uiState.value.documentKey ?: return setError(PatternBookmarkError.STALE_DOCUMENT)
             runMutation(
                 mutation = { bookmarkRepository.rename(projectId, documentKey, bookmarkId, name) },
-                onSuccess = { bookmark -> selectedBookmarkId.value = bookmark.id },
+                onSuccess = { bookmark ->
+                    selectedBookmarkId.value = bookmark.id
+                    onSaved()
+                },
                 failureError = PatternBookmarkError.RENAME_FAILURE,
             )
         }
@@ -445,10 +466,14 @@ class PatternViewerViewModel
                     ?: primary
                     ?: ordered.first()
             if (!initialDocumentSelectionApplied || restored?.id != fallback.id) {
-                initialDocumentSelectionApplied = true
                 if (documentAvailability.value[fallback.id] == true) {
-                    selectDocument(fallback.id)
+                    if (pendingInitialDocumentId == fallback.id) return
+                    pendingInitialDocumentId = fallback.id
+                    selectDocument(fallback.id) {
+                        if (pendingInitialDocumentId == fallback.id) pendingInitialDocumentId = null
+                    }
                 } else {
+                    initialDocumentSelectionApplied = true
                     updateSelectedDocument(fallback.id)
                     setDocumentError(ProjectDocumentError.UNAVAILABLE)
                 }
@@ -458,43 +483,50 @@ class PatternViewerViewModel
         private fun runDocumentMutation(
             mutation: suspend () -> ProjectDocumentMutationResult,
             onSuccess: (ProjectDocumentMutationResult) -> Unit = {},
+            onComplete: () -> Unit = {},
         ) {
             viewModelScope.launch {
-                documentOperationState.value = ProjectDocumentOperationState(isMutating = true)
+                documentOperationState.update { it.copy(pendingMutations = it.pendingMutations + 1, error = null) }
                 try {
-                    when (val result = mutation()) {
-                        is ProjectDocumentMutationResult.Added,
-                        ProjectDocumentMutationResult.PrimaryChanged,
-                        ProjectDocumentMutationResult.Reordered,
-                        ProjectDocumentMutationResult.Renamed,
-                        ProjectDocumentMutationResult.Selected,
-                        is ProjectDocumentMutationResult.Removed,
-                        ProjectDocumentMutationResult.ViewerStateUpdated,
-                        -> onSuccess(result)
-                        ProjectDocumentMutationResult.InvalidLabel ->
-                            setDocumentError(ProjectDocumentError.INVALID_LABEL)
-                        ProjectDocumentMutationResult.AlreadyAttached,
-                        ProjectDocumentMutationResult.DuplicateUri,
-                        ProjectDocumentMutationResult.DuplicateDocumentKey,
-                        -> setDocumentError(ProjectDocumentError.DUPLICATE)
-                        ProjectDocumentMutationResult.PdfUnavailable ->
-                            setDocumentError(ProjectDocumentError.UNAVAILABLE)
-                        ProjectDocumentMutationResult.MissingDocument,
-                        ProjectDocumentMutationResult.MissingProject,
-                        ProjectDocumentMutationResult.MissingSavedPattern,
-                        ProjectDocumentMutationResult.MetadataOnlyPattern,
-                        ProjectDocumentMutationResult.StaleAction,
-                        -> setDocumentError(ProjectDocumentError.STALE_ACTION)
-                        ProjectDocumentMutationResult.PersistenceFailure ->
-                            setDocumentError(ProjectDocumentError.MUTATION_FAILURE)
-                    }
+                    documentMutationMutex.withLock { applyDocumentMutationResult(mutation(), onSuccess) }
                 } catch (cancellation: CancellationException) {
                     throw cancellation
                 } catch (_: Exception) {
                     setDocumentError(ProjectDocumentError.MUTATION_FAILURE)
                 } finally {
-                    documentOperationState.update { it.copy(isMutating = false) }
+                    documentOperationState.update { it.copy(pendingMutations = it.pendingMutations - 1) }
+                    onComplete()
                 }
+            }
+        }
+
+        private fun applyDocumentMutationResult(
+            result: ProjectDocumentMutationResult,
+            onSuccess: (ProjectDocumentMutationResult) -> Unit,
+        ) {
+            when (result) {
+                is ProjectDocumentMutationResult.Added,
+                ProjectDocumentMutationResult.PrimaryChanged,
+                ProjectDocumentMutationResult.Reordered,
+                ProjectDocumentMutationResult.Renamed,
+                ProjectDocumentMutationResult.Selected,
+                is ProjectDocumentMutationResult.Removed,
+                ProjectDocumentMutationResult.ViewerStateUpdated,
+                -> onSuccess(result)
+                ProjectDocumentMutationResult.InvalidLabel -> setDocumentError(ProjectDocumentError.INVALID_LABEL)
+                ProjectDocumentMutationResult.AlreadyAttached,
+                ProjectDocumentMutationResult.DuplicateUri,
+                ProjectDocumentMutationResult.DuplicateDocumentKey,
+                -> setDocumentError(ProjectDocumentError.DUPLICATE)
+                ProjectDocumentMutationResult.PdfUnavailable -> setDocumentError(ProjectDocumentError.UNAVAILABLE)
+                ProjectDocumentMutationResult.MissingDocument,
+                ProjectDocumentMutationResult.MissingProject,
+                ProjectDocumentMutationResult.MissingSavedPattern,
+                ProjectDocumentMutationResult.MetadataOnlyPattern,
+                ProjectDocumentMutationResult.StaleAction,
+                -> setDocumentError(ProjectDocumentError.STALE_ACTION)
+                ProjectDocumentMutationResult.PersistenceFailure ->
+                    setDocumentError(ProjectDocumentError.MUTATION_FAILURE)
             }
         }
 

@@ -1,9 +1,17 @@
 package com.finnvek.knittools.analytics
 
+import androidx.annotation.VisibleForTesting
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import com.finnvek.knittools.BuildConfig
+import com.finnvek.knittools.di.ApplicationScope
+import com.finnvek.knittools.di.IoDispatcher
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -13,12 +21,19 @@ class PostHogAnalytics
     @Inject
     constructor(
         private val clients: PostHogClientFactory,
+        @ApplicationScope private val applicationScope: CoroutineScope,
+        @IoDispatcher private val ioDispatcher: CoroutineDispatcher,
     ) : UsageAnalytics,
         DefaultLifecycleObserver {
         private var enabled = false
         private var requestedEnabled = false
         private var consentGeneration: String? = null
-        private var consentRevision = 0L
+
+        @VisibleForTesting
+        @Volatile
+        internal var consentRevision = 0L
+            private set
+        private var retryJob: Job? = null
         private var client: PostHogConsentClient? = null
         private val retiredClients = mutableListOf<PostHogConsentClient>()
         private val clientWorkLock = Any()
@@ -46,6 +61,8 @@ class PostHogAnalytics
                     requestedEnabled = allowed
                     consentGeneration = generation
                     consentRevision++
+                    retryJob?.cancel()
+                    retryJob = null
                     enabled = false
                     foregroundStarted = null
                     screenStarted = null
@@ -65,19 +82,37 @@ class PostHogAnalytics
                 val retired = synchronized(this) { retiredClients.toList().also { retiredClients.clear() } }
                 retired.forEach { safely { it.retire() } }
                 if (synchronized(this) { revision != consentRevision || !requestedEnabled }) return
-                initializeClient(revision)
+                if (!initializeClient(revision)) scheduleInitializationRetry(revision)
             }
         }
 
-        private fun initializeClient(revision: Long) {
+        @Synchronized
+        private fun scheduleInitializationRetry(revision: Long) {
+            if (revision != consentRevision || !requestedEnabled) return
+            retryJob =
+                applicationScope.launch(ioDispatcher) {
+                    var retryDelay = INITIAL_RETRY_DELAY_MS
+                    while (true) {
+                        delay(retryDelay)
+                        val finished =
+                            synchronized(clientWorkLock) {
+                                synchronized(
+                                    this@PostHogAnalytics,
+                                ) { revision != consentRevision || !requestedEnabled } ||
+                                    initializeClient(revision)
+                            }
+                        if (finished) return@launch
+                        retryDelay = (retryDelay * 2).coerceAtMost(MAX_RETRY_DELAY_MS)
+                    }
+                }
+        }
+
+        private fun initializeClient(revision: Long): Boolean {
             val initialized =
                 try {
                     clients.create()
                 } catch (_: RuntimeException) {
-                    synchronized(this) {
-                        if (revision == consentRevision) requestedEnabled = false
-                    }
-                    return
+                    return false
                 }
             val accepted =
                 synchronized(this) {
@@ -91,6 +126,7 @@ class PostHogAnalytics
                     }
                 }
             if (!accepted) safely { initialized.retire() }
+            return true
         }
 
         @Synchronized
@@ -169,6 +205,11 @@ class PostHogAnalytics
             } catch (_: RuntimeException) {
                 // Analytics must not interrupt app actions or expose exception details.
             }
+        }
+
+        private companion object {
+            private const val INITIAL_RETRY_DELAY_MS = 1_000L
+            private const val MAX_RETRY_DELAY_MS = 60_000L
         }
     }
 

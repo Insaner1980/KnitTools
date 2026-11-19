@@ -55,8 +55,8 @@ fun parseWebPatternSharedText(
         foundMatch = true
         val hasSurroundingText =
             firstTextIndex < match.range.first || lastTextIndex > match.range.last
-        val hasOpeningQuote = text.getOrNull(match.range.first - 1) == '\''
-        val candidate = match.value.trimSharedUrlPunctuation(hasSurroundingText, hasOpeningQuote)
+        val precedingCharacter = text.getOrNull(match.range.first - 1)
+        val candidate = match.value.trimSharedUrlPunctuation(hasSurroundingText, precedingCharacter)
         val validation =
             validateWebPatternUrl(candidate) as? WebPatternUrlValidation.Valid
                 ?: return WebPatternShareParseResult.Invalid
@@ -87,10 +87,16 @@ private fun sanitizeSharedWebPatternTitle(subject: String?): String {
 
 private fun String.trimSharedUrlPunctuation(
     hasSurroundingText: Boolean,
-    hasOpeningQuote: Boolean,
+    precedingCharacter: Char?,
 ): String {
-    val candidate = dropUnmatchedClosingSuffix()
-    if (hasOpeningQuote) {
+    val openingDelimiterIndex = precedingCharacter?.let { SHARED_OPENING_DELIMITERS.indexOf(it) } ?: -1
+    val candidate =
+        when {
+            openingDelimiterIndex >= 0 -> dropUnmatchedClosingSuffix(openingDelimiterIndex)
+            hasSurroundingText && '?' !in this && '#' !in this -> dropUnmatchedClosingSuffix()
+            else -> this
+        }
+    if (precedingCharacter == '\'') {
         val quoted = candidate.trimEnd { it in SHARED_SENTENCE_PUNCTUATION }
         if (quoted.endsWith('\'')) return quoted.dropLast(1)
     }
@@ -98,7 +104,7 @@ private fun String.trimSharedUrlPunctuation(
     return candidate.trimEnd { character -> character in SHARED_SENTENCE_PUNCTUATION }
 }
 
-private fun String.dropUnmatchedClosingSuffix(): String {
+private fun String.dropUnmatchedClosingSuffix(wrapperIndex: Int? = null): String {
     val delimiterBalances = delimiterBalances()
     var trimmedEnd = length
     var index = lastIndex
@@ -108,6 +114,7 @@ private fun String.dropUnmatchedClosingSuffix(): String {
         when {
             this[index] in SHARED_SENTENCE_PUNCTUATION -> index -= 1
             delimiterIndex >= 0 && delimiterBalances[delimiterIndex] > 0 -> {
+                if (wrapperIndex != null) return if (delimiterIndex == wrapperIndex) substring(0, index) else this
                 delimiterBalances[delimiterIndex] -= 1
                 trimmedEnd = index
                 index -= 1

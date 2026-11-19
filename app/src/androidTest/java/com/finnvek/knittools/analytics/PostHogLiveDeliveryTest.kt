@@ -1,13 +1,18 @@
 package com.finnvek.knittools.analytics
 
+import android.Manifest
 import android.content.Context
 import android.content.ContextWrapper
 import android.content.SharedPreferences
+import android.content.pm.PackageManager
 import androidx.test.platform.app.InstrumentationRegistry
 import com.finnvek.knittools.BuildConfig
 import com.posthog.PostHog
 import com.posthog.PostHogInterface
 import com.posthog.android.PostHogAndroid
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.cancel
 import okhttp3.OkHttpClient
 import okio.Buffer
 import org.json.JSONObject
@@ -27,8 +32,14 @@ class PostHogLiveDeliveryTest {
     @Test
     fun consentedAndroidEventsReachTheConfiguredEuProject() {
         assumeTrue(InstrumentationRegistry.getArguments().getString("posthogLive") == "true")
-        assertTrue(BuildConfig.POSTHOG_PROJECT_TOKEN.startsWith("phc_"))
         val base = InstrumentationRegistry.getInstrumentation().targetContext
+        assertEquals(
+            "The live PostHog test needs INTERNET. " +
+                "Assemble a network-enabled test APK and run it with adb on a disposable emulator.",
+            PackageManager.PERMISSION_GRANTED,
+            base.checkSelfPermission(Manifest.permission.INTERNET),
+        )
+        assertTrue(BuildConfig.POSTHOG_PROJECT_TOKEN.startsWith("phc_"))
         val prefix = "posthog-verification-${UUID.randomUUID()}"
         val root = File(base.cacheDir, prefix)
         val preferences = mutableSetOf<String>()
@@ -46,6 +57,7 @@ class PostHogLiveDeliveryTest {
                 }
             }
         val delivered = CopyOnWriteArrayList<String>()
+        val attempted = CopyOnWriteArrayList<String>()
         val acknowledged = CountDownLatch(3)
         val transport =
             OkHttpClient
@@ -80,6 +92,7 @@ class PostHogLiveDeliveryTest {
                             names.add(event.getString("event"))
                         }
                     }
+                    attempted.addAll(names)
                     chain.proceed(request).also { response ->
                         if (response.isSuccessful) {
                             names.forEach {
@@ -91,6 +104,7 @@ class PostHogLiveDeliveryTest {
                 }.build()
         var sdk: PostHogInterface? = null
         var instance: PostHogTestInstance? = null
+        val analyticsScope = CoroutineScope(Dispatchers.IO)
         val analytics =
             PostHogAnalytics(
                 postHogClientFactory(
@@ -105,8 +119,30 @@ class PostHogLiveDeliveryTest {
                         }
                     },
                 ),
+                analyticsScope,
+                Dispatchers.IO,
             )
-        try {
+        val cleanup =
+            AutoCloseable {
+                val workers = instance?.workers().orEmpty()
+                cleanupPostHogTest(
+                    { analytics.setEnabled(false) },
+                    { analyticsScope.cancel() },
+                    { workers.forEach { it.shutdownNow() } },
+                    *workers
+                        .map { worker ->
+                            { assertTrue(worker.awaitTermination(10, TimeUnit.SECONDS)) }
+                        }.toTypedArray(),
+                    {
+                        transport.dispatcher.executorService.shutdown()
+                        assertTrue(transport.dispatcher.executorService.awaitTermination(10, TimeUnit.SECONDS))
+                    },
+                    { transport.connectionPool.evictAll() },
+                    { synchronized(preferences) { preferences.forEach(base::deleteSharedPreferences) } },
+                    { assertTrue(!root.exists() || root.deleteRecursively()) },
+                )
+            }
+        cleanup.use {
             analytics.track(UsageEvent.PDF_IMPORT_FAILED, UsageDetail.VERIFICATION)
             assertEquals(null, sdk)
             analytics.setEnabled(true)
@@ -120,21 +156,23 @@ class PostHogLiveDeliveryTest {
             )
             analytics.setEnabled(false)
             analytics.track(UsageEvent.PDF_IMPORT_FAILED, UsageDetail.VERIFICATION)
+            val retired = requireNotNull(instance)
+            retired.sdk.flush()
+            retired.queue.flush()
+            retired.workers().forEach { worker ->
+                if (worker.isShutdown) {
+                    assertTrue(worker.awaitTermination(10, TimeUnit.SECONDS))
+                } else {
+                    worker.submit {}.get(10, TimeUnit.SECONDS)
+                }
+            }
+            retired.drain()
+            assertFalse("A revoked event must not enter transport", "pdf import failed" in attempted)
             assertEquals(
                 setOf("calculator result shown", "backup export succeeded", "guide topic opened"),
                 delivered.toSet(),
             )
             assertEquals(3, delivered.size)
-        } finally {
-            analytics.setEnabled(false)
-            val workers = instance?.workers().orEmpty()
-            workers.forEach { it.shutdownNow() }
-            workers.forEach { assertTrue(it.awaitTermination(10, TimeUnit.SECONDS)) }
-            transport.dispatcher.executorService.shutdown()
-            assertTrue(transport.dispatcher.executorService.awaitTermination(10, TimeUnit.SECONDS))
-            transport.connectionPool.evictAll()
-            synchronized(preferences) { preferences.forEach(base::deleteSharedPreferences) }
-            assertTrue(!root.exists() || root.deleteRecursively())
         }
     }
 }

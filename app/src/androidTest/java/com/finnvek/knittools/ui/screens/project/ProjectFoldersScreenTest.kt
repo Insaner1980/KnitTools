@@ -789,7 +789,8 @@ class ProjectFoldersScreenTest {
         val fixture =
             com.finnvek.knittools.repository
                 .RoomCounterTestFixture(database, context)
-        proManager = ProManager(TrialManager(context, Dispatchers.IO), BillingManager(context)).apply { initialize() }
+        val billing = BillingManager(context, CoroutineScope(Dispatchers.Main.immediate))
+        proManager = ProManager(TrialManager(context, Dispatchers.IO), billing).apply { initialize() }
         return ProjectListViewModel(
             repository = fixture.counterRepository(),
             proManager = proManager,

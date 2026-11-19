@@ -21,9 +21,8 @@ class BackupProviderDeadlineTest {
             mockk<ScheduledFuture<*>>(relaxed = true)
         }
         val closer = mockk<ExecutorService>(relaxed = true)
-        val deadline = ProviderDeadline(mockk(), 30_000, scheduler, closer, onFinished = {}, onOpenTimeout = {})
+        val deadline = ProviderDeadline(mockk(), 30_000, scheduler, closer, onFinished = {}, onStopped = {})
         deadline.call { Unit }
-        deadline.markOpened()
 
         val result =
             deadline.call {
@@ -48,7 +47,6 @@ class BackupProviderDeadlineTest {
         val closer = mockk<ExecutorService>(relaxed = true)
         val deadline = ProviderDeadline(mockk(), 30, scheduler, closer, onFinished = {}, nanoTime = { now }) {}
         deadline.call { Unit }
-        deadline.markOpened()
 
         assertEquals(0, deadline.call { 0 })
         now = TimeUnit.MILLISECONDS.toNanos(29)

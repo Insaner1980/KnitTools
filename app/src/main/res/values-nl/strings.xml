@@ -170,9 +170,6 @@
     <string name="pattern_image_move_later">Pagina %1$d naar achteren verplaatsen</string>
     <string name="pattern_image_remove_page">Pagina %1$d verwijderen</string>
     <string name="pattern_image_create_pdf">Patroon-PDF maken</string>
-    <string name="pattern_image_replace_title">Huidig patroon vervangen?</string>
-    <string name="pattern_image_replace_message">De huidige bijlage wordt vervangen zodra de nieuwe PDF klaar is.</string>
-    <string name="pattern_image_replace_action">Patroon vervangen</string>
     <string name="pattern_image_conversion_progress">Pagina %1$d van %2$d maken</string>
     <string name="pattern_image_attaching">Patroon-PDF bijvoegen</string>
     <string name="pattern_image_cancel_conversion">Conversie annuleren</string>

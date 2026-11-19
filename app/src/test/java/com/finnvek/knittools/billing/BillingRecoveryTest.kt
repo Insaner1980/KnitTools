@@ -30,6 +30,7 @@ import io.mockk.mockkStatic
 import io.mockk.unmockkAll
 import io.mockk.verify
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
@@ -89,7 +90,7 @@ abstract class BillingRecoveryFixture {
         coEvery { client.queryPurchasesAsync(any()) } returns purchases(BillingClient.BillingResponseCode.ERROR)
         coEvery { client.queryProductDetails(any()) } returns
             ProductDetailsResult(result(BillingClient.BillingResponseCode.OK), emptyList())
-        billing = BillingManager(mockk<Context>(relaxed = true))
+        billing = BillingManager(mockk<Context>(relaxed = true), CoroutineScope(Dispatchers.Main.immediate))
         trial = mockk<TrialManager>(relaxed = true)
         every { trial.trialState } returns trialStates
         pro = ProManager(trial, billing)
@@ -101,10 +102,19 @@ abstract class BillingRecoveryFixture {
 
     @After
     fun tearDown() {
-        billing.destroy()
-        viewModels.clear()
-        unmockkAll()
-        Dispatchers.resetMain()
+        try {
+            if (::billing.isInitialized) billing.destroy()
+        } finally {
+            try {
+                viewModels.clear()
+            } finally {
+                try {
+                    unmockkAll()
+                } finally {
+                    Dispatchers.resetMain()
+                }
+            }
+        }
     }
 
     protected fun purchased(): Purchase =
@@ -419,9 +429,14 @@ class BillingRecoveryTest : BillingRecoveryFixture() {
         runTest(dispatcher) {
             connection.onBillingSetupFinished(result(BillingClient.BillingResponseCode.OK))
             val oldConnection = connection
+            val entered = CompletableDeferred<Unit>()
             val pending = CompletableDeferred<PurchasesResult>()
-            coEvery { client.queryPurchasesAsync(any()) } coAnswers { pending.await() }
+            coEvery { client.queryPurchasesAsync(any()) } coAnswers {
+                entered.complete(Unit)
+                pending.await()
+            }
             val restore = async { billing.restorePurchasesWithResult() }
+            entered.await()
             billing.destroy()
             val nextClient = mockk<BillingClient>(relaxed = true)
             every { builder.build() } returns nextClient
@@ -435,6 +450,28 @@ class BillingRecoveryTest : BillingRecoveryFixture() {
             assertFalse(billing.isProPurchased.value)
             assertFalse(billing.purchaseQueryFailed.value)
             assertEquals(BillingProductStatus.Loading, billing.productStatus.value)
+        }
+
+    @Test
+    fun `resume refresh cannot supersede an in flight restore`() =
+        runTest(dispatcher) {
+            connection.onBillingSetupFinished(result(BillingClient.BillingResponseCode.OK))
+            val entered = CompletableDeferred<Unit>()
+            val pending = CompletableDeferred<PurchasesResult>()
+            coEvery { client.queryPurchasesAsync(any()) } coAnswers {
+                entered.complete(Unit)
+                pending.await()
+            }
+            val restore = async { billing.restorePurchasesWithResult() }
+            entered.await()
+
+            billing.refreshPurchasesOnResume()
+            runCurrent()
+            pending.complete(purchases(BillingClient.BillingResponseCode.OK, listOf(purchased())))
+
+            assertEquals(RestorePurchasesResult.RESTORED, restore.await())
+            assertTrue(billing.isProPurchased.value)
+            coVerify(exactly = 2) { client.queryPurchasesAsync(any()) }
         }
 
     @Test

@@ -127,7 +127,7 @@ internal data class PatternImageImportUiState(
     val pickerRequestId: String? = null,
     val pickerLaunched: Boolean = false,
     val cameraCapturePending: Boolean = false,
-    val replacementConfirmationPending: Boolean = false,
+    val attachmentPending: Boolean = false,
     val closeReady: Boolean = false,
     val invalidPageIds: Set<String> = emptySet(),
 ) {
@@ -138,12 +138,12 @@ internal data class PatternImageImportUiState(
                 phase == PatternImageImportPhase.ATTACHING
 
     fun beginConversion(): PatternImageImportUiState? =
-        takeIf { !isBusy && selection.pages.isNotEmpty() && invalidPageIds.isEmpty() }
+        takeIf { !isBusy && (attachmentPending || (selection.pages.isNotEmpty() && invalidPageIds.isEmpty())) }
             ?.copy(
-                phase = PatternImageImportPhase.CONVERTING,
+                phase =
+                    if (attachmentPending) PatternImageImportPhase.ATTACHING else PatternImageImportPhase.CONVERTING,
                 progress = null,
                 error = null,
-                replacementConfirmationPending = false,
             )
 
     fun withProgress(

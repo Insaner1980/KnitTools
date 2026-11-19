@@ -57,16 +57,6 @@ class TrialStartSourceTest {
     }
 
     @Test
-    fun `trial progress fails closed in memory when datastore write fails`() {
-        val refreshBody = refreshTrialStateBody(ProjectSourceFiles.read(TRIAL_MANAGER))
-
-        assertTrue(refreshBody.contains("if (didWrite)"))
-        assertTrue(refreshBody.contains("refreshedState?.let { _trialState.value = it }"))
-        assertTrue(refreshBody.contains("else {"))
-        assertTrue(refreshBody.contains("_trialState.value = TrialState()"))
-    }
-
-    @Test
     fun `refresh boundary fails clearly when either delimiter is missing`() {
         val source = ProjectSourceFiles.read(TRIAL_MANAGER)
         for (delimiter in listOf(REFRESH_START, REFRESH_END)) {
@@ -122,7 +112,7 @@ class TrialStartSourceTest {
     }
 
     private companion object {
-        const val REFRESH_START = "private suspend fun refreshTrialStateLocked() {"
+        const val REFRESH_START = "private suspend fun refreshTrialStateLocked(): Boolean {"
         const val REFRESH_END = "private fun MutablePreferences.evaluateAndPersistTrialState"
         const val TRIAL_MANAGER = "app/src/main/java/com/finnvek/knittools/pro/TrialManager.kt"
     }

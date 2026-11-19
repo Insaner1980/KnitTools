@@ -1517,11 +1517,14 @@ class BackupRepositoryTest {
             val firstId = UUID.randomUUID()
             val secondId = UUID.randomUUID()
             val first = async(Dispatchers.IO) { runCatching { racingRepository.prepare(mockUri("first"), firstId) } }
-            racingIo.firstStarted.await()
-
-            val second = async(Dispatchers.IO) { racingRepository.prepare(mockUri("second"), secondId) }
-            assertEquals(1, second.await().projects)
-            racingIo.releaseFirst.complete(Unit)
+            try {
+                withTimeout(20_000) {
+                    racingIo.firstStarted.await()
+                    assertEquals(1, racingRepository.prepare(mockUri("second"), secondId).projects)
+                }
+            } finally {
+                racingIo.releaseFirst.complete(Unit)
+            }
 
             assertTrue(first.await().exceptionOrNull() is CancellationException)
             racingRepository.cancelPreview(firstId)
@@ -1539,22 +1542,24 @@ class BackupRepositoryTest {
             val stalledIo = StalledReadProviderIo()
             val stalledRepository = createRepository(stalledIo)
             val export = async(Dispatchers.IO) { stalledRepository.export(mockUri("destination")) }
-            stalledIo.started.await()
-
-            withTimeout(2_000) {
-                stalledRepository.cancelPreview(null)
-                patternFiles.withReferenceLock {
-                    yarnCards.withPhotoStorageLock {
-                        db.withTransaction {
-                            db.openHelper.writableDatabase
-                                .query("SELECT COUNT(*) FROM yarn_cards")
-                                .close()
+            try {
+                withTimeout(20_000) { stalledIo.started.await() }
+                withTimeout(2_000) {
+                    stalledRepository.cancelPreview(null)
+                    patternFiles.withReferenceLock {
+                        yarnCards.withPhotoStorageLock {
+                            db.withTransaction {
+                                db.openHelper.writableDatabase
+                                    .query("SELECT COUNT(*) FROM yarn_cards")
+                                    .close()
+                            }
                         }
                     }
                 }
+            } finally {
+                export.cancelAndJoin()
             }
 
-            export.cancelAndJoin()
             assertTrue(File(context.noBackupFilesDir, "manual-backup").listFiles().orEmpty().isEmpty())
         }
 

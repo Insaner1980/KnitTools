@@ -44,3 +44,14 @@ internal class PostHogTestInstance(
                 it.get(sdk) as ExecutorService
             }.distinct()
 }
+
+internal fun cleanupPostHogTest(vararg actions: () -> Unit) {
+    var failure: Throwable? = null
+    actions.forEach { action ->
+        runCatching(action).exceptionOrNull()?.let { current ->
+            val first = failure
+            if (first == null) failure = current else first.addSuppressed(current)
+        }
+    }
+    failure?.let { throw it }
+}

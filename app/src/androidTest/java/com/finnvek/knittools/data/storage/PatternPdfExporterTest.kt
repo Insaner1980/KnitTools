@@ -55,7 +55,14 @@ class PatternPdfExporterTest {
                 onProgress = progress::add,
             )
 
-            PdfPageRenderer(context, destination.toUri()).use { rendered -> assertEquals(2, rendered.pageCount) }
+            PdfPageRenderer(context, source.toUri()).use { original ->
+                PdfPageRenderer(context, destination.toUri()).use { rendered ->
+                    assertEquals(2, rendered.pageCount)
+                    repeat(
+                        rendered.pageCount,
+                    ) { page -> assertEquals(original.pageSize(page), rendered.pageSize(page)) }
+                }
+            }
             assertEquals(PatternPdfExportProgress(2, 2), progress.last())
             assertTrue(destination.length() > 0L)
             assertTempDirectoryEmpty()

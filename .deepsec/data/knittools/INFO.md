@@ -9,7 +9,7 @@ High-value user data:
 - Billing/Pro entitlement state and widget actions that can mutate counters.
 
 Important trust boundaries:
-- `MainActivity` is exported for launcher, `knittools://ravelry-auth-complete` callbacks, and shared plain text. Treat all intent data, shared text, and callback parameters as untrusted.
+- `MainActivity` is exported for the launcher, shared plain text, and opening or sharing PDFs. Treat intent data, shared text, and PDF URIs as untrusted.
 - `CounterWidgetReceiver` is exported for AppWidget updates with `android.permission.BIND_APPWIDGET`; `CounterWidgetActions` should remain non-exported.
 - File sharing must use narrow FileProvider paths, temporary URI grants, and ClipData when sending content URIs to other apps.
 - Model-backed parsing, AI help, OCR, voice, and microphone commands are intentionally absent; do not reintroduce them without a new product/security decision.

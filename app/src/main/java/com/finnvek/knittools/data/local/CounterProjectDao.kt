@@ -15,6 +15,12 @@ interface CounterProjectDao {
     @Insert
     suspend fun insertOnboardingProject(receipt: OnboardingProjectEntity)
 
+    @Query("SELECT * FROM project_creation_receipts WHERE attemptId = :attemptId")
+    suspend fun findProjectCreationReceipt(attemptId: String): ProjectCreationReceiptEntity?
+
+    @Insert
+    suspend fun insertProjectCreationReceipt(receipt: ProjectCreationReceiptEntity)
+
     @Insert
     suspend fun insertCompletion(event: ProjectCompletionEntity): Long
 
@@ -94,7 +100,7 @@ interface CounterProjectDao {
         """
         UPDATE counter_projects
         SET notes = :notes,
-            notesCreated = CASE WHEN TRIM(:notes) != '' THEN 1 ELSE notesCreated END,
+            notesCreated = CASE WHEN :hasNotes THEN 1 ELSE notesCreated END,
             updatedAt = :updatedAt
         WHERE id = :id
         """,
@@ -103,6 +109,7 @@ interface CounterProjectDao {
         id: Long,
         notes: String,
         updatedAt: Long,
+        hasNotes: Boolean = notes.isNotBlank(),
     )
 
     @Query(

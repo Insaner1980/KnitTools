@@ -74,22 +74,22 @@
     <string name="main_counter_custom_label">Oma nimi</string>
     <string name="main_counter_custom_label_error">Anna nimi.</string>
     <plurals name="rounds_format">
-        <item quantity="one">%1$d kerros</item>
-        <item quantity="other">%1$d kerrosta</item>
+        <item quantity="one">%1$d kierros</item>
+        <item quantity="other">%1$d kierrosta</item>
     </plurals>
     <plurals name="repeats_format">
         <item quantity="one">%1$d toisto</item>
         <item quantity="other">%1$d toistoa</item>
     </plurals>
     <string name="main_counter_custom_count_format">%2$s: %1$d</string>
-    <string name="current_round_short">Kerros %1$d</string>
+    <string name="current_round_short">Kierros %1$d</string>
     <string name="current_repeat_short">Toisto %1$d</string>
     <string name="counter_round_value_of_target_format">Kierros %1$d / %2$d</string>
     <string name="counter_repeat_value_of_target_format">Toisto %1$d / %2$d</string>
     <string name="main_counter_custom_current_format">%1$s %2$d</string>
     <string name="counter_custom_value_of_target_format">%1$s %2$d / %3$d</string>
-    <string name="counter_add_round">Lisää kerros</string>
-    <string name="counter_decrease_round">Vähennä kerros</string>
+    <string name="counter_add_round">Lisää kierros</string>
+    <string name="counter_decrease_round">Vähennä kierros</string>
     <string name="counter_add_repeat">Lisää toisto</string>
     <string name="counter_decrease_repeat">Vähennä toisto</string>
     <string name="counter_add_custom">Lisää: %1$s</string>
@@ -170,9 +170,6 @@
     <string name="pattern_image_move_later">Siirrä sivua %1$d myöhemmäksi</string>
     <string name="pattern_image_remove_page">Poista sivu %1$d</string>
     <string name="pattern_image_create_pdf">Luo ohje-PDF</string>
-    <string name="pattern_image_replace_title">Korvataanko nykyinen ohje?</string>
-    <string name="pattern_image_replace_message">Nykyinen ohjeliite korvataan vasta, kun uusi PDF on valmis.</string>
-    <string name="pattern_image_replace_action">Korvaa ohje</string>
     <string name="pattern_image_conversion_progress">Luodaan sivua %1$d/%2$d</string>
     <string name="pattern_image_attaching">Liitetään ohje-PDF:ää</string>
     <string name="pattern_image_cancel_conversion">Peru muunnos</string>

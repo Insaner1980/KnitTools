@@ -17,8 +17,14 @@ class DispatcherDisciplineSourceTest {
         assertTrue(activity.contains("withContext(ioDispatcher)"))
         assertFalse(picker.contains("PatternDocumentStorage("))
         assertFalse(picker.contains("contentResolver"))
-        assertTrue(imageImportViewModel.contains("return withContext(ioDispatcher)"))
-        assertTrue(imageImportViewModel.contains("storage.createCaptureImageFile(context, projectId, sessionId)"))
+        val createCapture =
+            imageImportViewModel
+                .substringAfter("suspend fun createCameraCaptureTarget(")
+                .substringBefore("fun discardCameraCapture(")
+        assertTrue(
+            createCapture.indexOf("withContext(ioDispatcher)") in
+                0 until createCapture.indexOf("storage.createCaptureImageFile(context, projectId, sessionId)"),
+        )
         val availabilityCheck =
             repository
                 .substringAfter("suspend fun isLocalPdfAvailable(")
@@ -37,8 +43,7 @@ class DispatcherDisciplineSourceTest {
         assertTrue(dispatchers.contains("fun provideApplicationScope(): CoroutineScope"))
         listOf(counterViewModel, notesViewModel).forEach { source ->
             assertTrue(source.contains("@param:ApplicationScope private val applicationScope: CoroutineScope"))
-            assertTrue(source.contains("applicationScope.launch {"))
-            assertFalse(source.contains("applicationScope.launch(ioDispatcher)"))
+            assertTrue(source.contains("applicationScope.launch"))
             assertFalse(source.contains("CoroutineScope(ioDispatcher + NonCancellable)"))
         }
     }

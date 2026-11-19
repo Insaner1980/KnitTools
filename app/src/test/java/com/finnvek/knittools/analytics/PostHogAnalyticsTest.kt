@@ -9,6 +9,13 @@ import io.mockk.Called
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.advanceTimeBy
+import kotlinx.coroutines.test.runCurrent
+import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -25,6 +32,7 @@ class PostHogAnalyticsTest {
 
     private val client = mockk<PostHogConsentClient>(relaxed = true)
     private val owner = mockk<LifecycleOwner>()
+    private val scope = CoroutineScope(Dispatchers.IO)
     private var initializations = 0
     private val analytics =
         PostHogAnalytics(
@@ -32,6 +40,8 @@ class PostHogAnalyticsTest {
                 initializations++
                 client
             },
+            scope,
+            Dispatchers.IO,
         )
 
     @Test
@@ -182,7 +192,8 @@ class PostHogAnalyticsTest {
     fun `re-opt-in uses a new client and never reopens the retired client`() {
         val next = mockk<PostHogConsentClient>(relaxed = true)
         var creations = 0
-        val controller = PostHogAnalytics(PostHogClientFactory { if (creations++ == 0) client else next })
+        val controller =
+            PostHogAnalytics(PostHogClientFactory { if (creations++ == 0) client else next }, scope, Dispatchers.IO)
         controller.setEnabled(true)
         controller.setEnabled(false)
         controller.setEnabled(false)
@@ -195,23 +206,35 @@ class PostHogAnalyticsTest {
         verify(exactly = 1) { next.capture("project created", mapOf("\$geoip_disable" to true)) }
     }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     @Test
-    fun `failed client creation stays disabled and a later consent can retry`() {
-        var creations = 0
-        val controller =
-            PostHogAnalytics(
-                PostHogClientFactory {
-                    if (creations++ == 0) throw IllegalStateException("Initialization failed")
-                    client
-                },
-            )
-        controller.setEnabled(true)
-        controller.track(UsageEvent.PDF_IMPORT_FAILED)
-        verify { client wasNot Called }
-        controller.setEnabled(true)
-        controller.track(UsageEvent.PROJECT_CREATED)
-        verify(exactly = 1) { client.capture("project created", mapOf("\$geoip_disable" to true)) }
-    }
+    fun `failed initialization retries while consent stays current and revocation cancels the retry`() =
+        runTest {
+            var creations = 0
+            val controller =
+                PostHogAnalytics(
+                    PostHogClientFactory {
+                        if (++creations != 2) throw IllegalStateException("Initialization failed")
+                        client
+                    },
+                    backgroundScope,
+                    StandardTestDispatcher(testScheduler),
+                )
+            controller.setEnabled(true, "initial")
+            controller.track(UsageEvent.PDF_IMPORT_FAILED)
+            verify { client wasNot Called }
+            advanceTimeBy(1_000)
+            runCurrent()
+            controller.track(UsageEvent.PROJECT_CREATED)
+            verify(exactly = 1) { client.capture("project created", mapOf("\$geoip_disable" to true)) }
+            advanceTimeBy(60_000)
+            assertEquals(2, creations)
+
+            controller.setEnabled(true, "replacement")
+            controller.setEnabled(false, "revoked")
+            advanceTimeBy(60_000)
+            assertEquals(3, creations)
+        }
 
     @Test
     fun `SDK configuration disables automatic capture and optional features`() {

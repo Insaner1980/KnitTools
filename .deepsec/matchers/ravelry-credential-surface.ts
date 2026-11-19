@@ -16,6 +16,10 @@ export const ravelryCredentialSurface: MatcherPlugin = {
         label: "Ravelry credential read from BuildConfig",
       },
       {
+        regex: /\bbuildConfigField\s*\(\s*"String"\s*,\s*"RAVELRY_(?:(?:BASIC_AUTH|OAUTH2)_[A-Z_]+|CLIENT_SECRET|ACCESS_TOKEN|REFRESH_TOKEN)"/,
+        label: "Ravelry credential declared in BuildConfig",
+      },
+      {
         regex: /KNITTOOLS_(?:ALLOW_EMBEDDED_RAVELRY_SECRETS|RAVELRY_[A-Z0-9_]+)/,
         label: "Ravelry release credential environment gate",
       },

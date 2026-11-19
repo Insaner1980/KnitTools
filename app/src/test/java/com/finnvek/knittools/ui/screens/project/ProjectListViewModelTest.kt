@@ -47,7 +47,7 @@ class ProjectListViewModelTest : ProjectListViewModelFixture() {
             every { proManager.hasFeature(ProFeature.UNLIMITED_PROJECTS) } returns false
             coEvery { repository.getActiveProjectCount() } returns 0
             coEvery { repository.getProjectCount() } returns 5
-            coEvery { repository.createProject(any(), any(), any(), any(), any(), any()) } returns
+            coEvery { repository.createProject(any(), any(), any(), any(), any(), any(), attemptId = any()) } returns
                 ProjectCreationResult.Created(7L)
             val vm = createViewModel()
             var dialogs = 0
@@ -77,7 +77,9 @@ class ProjectListViewModelTest : ProjectListViewModelFixture() {
             vm.requestProjectCreation()
 
             assertEquals(1, upgradeEvents)
-            coVerify(exactly = 0) { repository.createProject(any(), any(), any(), any(), any(), any()) }
+            coVerify(exactly = 0) {
+                repository.createProject(any(), any(), any(), any(), any(), any(), attemptId = any())
+            }
         }
 
     @Test
@@ -116,7 +118,7 @@ class ProjectListViewModelTest : ProjectListViewModelFixture() {
     fun `save rechecks project limit atomically`() =
         runTest {
             every { proManager.hasFeature(ProFeature.UNLIMITED_PROJECTS) } returns false
-            coEvery { repository.createProject(any(), any(), any(), any(), false, null) } returns
+            coEvery { repository.createProject(any(), any(), any(), any(), false, null, attemptId = any()) } returns
                 ProjectCreationResult.LimitReached
 
             val vm = createViewModel()
@@ -140,7 +142,7 @@ class ProjectListViewModelTest : ProjectListViewModelFixture() {
         runTest {
             every { proManager.hasFeature(ProFeature.UNLIMITED_PROJECTS) } returns false
             coEvery { repository.getActiveProjectCount() } returns 1
-            coEvery { repository.createProject(any(), any(), any(), any(), false, null) } returnsMany
+            coEvery { repository.createProject(any(), any(), any(), any(), false, null, attemptId = any()) } returnsMany
                 // CPD-ON
                 listOf(
                     ProjectCreationResult.LimitReached,
@@ -174,6 +176,7 @@ class ProjectListViewModelTest : ProjectListViewModelFixture() {
                     mainCounterLabelType = com.finnvek.knittools.domain.model.MainCounterLabelType.ROWS,
                     mainCounterCustomLabel = null,
                     canCreateAdditionalProjects = false,
+                    attemptId = any(),
                 )
             }
         }
@@ -184,7 +187,7 @@ class ProjectListViewModelTest : ProjectListViewModelFixture() {
             val savedStateHandle = SavedStateHandle()
             every { proManager.hasFeature(ProFeature.UNLIMITED_PROJECTS) } returns false
             coEvery { repository.getActiveProjectCount() } returns 1
-            coEvery { repository.createProject(any(), any(), any(), any(), any(), null) } returnsMany
+            coEvery { repository.createProject(any(), any(), any(), any(), any(), null, attemptId = any()) } returnsMany
                 listOf(
                     ProjectCreationResult.LimitReached,
                     ProjectCreationResult.Created(projectId = 42L),
@@ -213,6 +216,7 @@ class ProjectListViewModelTest : ProjectListViewModelFixture() {
                     mainCounterLabelType = com.finnvek.knittools.domain.model.MainCounterLabelType.ROWS,
                     mainCounterCustomLabel = null,
                     canCreateAdditionalProjects = any(),
+                    attemptId = any(),
                 )
             }
             // CPD-ON
@@ -222,7 +226,7 @@ class ProjectListViewModelTest : ProjectListViewModelFixture() {
     fun `created project navigation waits for a collector after recreation`() =
         runTest {
             every { proManager.hasFeature(ProFeature.UNLIMITED_PROJECTS) } returns true
-            coEvery { repository.createProject(any(), any(), any(), any(), true, null) } returns
+            coEvery { repository.createProject(any(), any(), any(), any(), true, null, attemptId = any()) } returns
                 ProjectCreationResult.Created(projectId = 42L)
             val vm = createViewModel()
 
@@ -241,7 +245,7 @@ class ProjectListViewModelTest : ProjectListViewModelFixture() {
         runTest {
             every { proManager.hasFeature(ProFeature.UNLIMITED_PROJECTS) } returns true
             val result = CompletableDeferred<ProjectCreationResult>()
-            coEvery { repository.createProject(any(), any(), any(), any(), true, null) } coAnswers {
+            coEvery { repository.createProject(any(), any(), any(), any(), true, null, attemptId = any()) } coAnswers {
                 result.await()
             }
             // CPD-OFF: Sama kutsu toistetaan tarkoituksella kaksoisnapautuksen todentamiseksi.
@@ -262,7 +266,9 @@ class ProjectListViewModelTest : ProjectListViewModelFixture() {
             // CPD-ON
             runCurrent()
 
-            coVerify(exactly = 1) { repository.createProject(any(), any(), any(), any(), true, null) }
+            coVerify(exactly = 1) {
+                repository.createProject(any(), any(), any(), any(), true, null, attemptId = any())
+            }
 
             result.complete(ProjectCreationResult.Created(42L))
             runCurrent()
@@ -559,7 +565,7 @@ class ProjectListViewModelTest : ProjectListViewModelFixture() {
     fun `creation failure reports an error and retains the exact draft for retry`() =
         runTest {
             every { proManager.hasFeature(ProFeature.UNLIMITED_PROJECTS) } returns true
-            coEvery { repository.createProject(any(), any(), any(), any(), any(), any()) } throws
+            coEvery { repository.createProject(any(), any(), any(), any(), any(), any(), attemptId = any()) } throws
                 IOException("synthetic creation failure")
             val vm = createViewModel()
 
@@ -572,7 +578,7 @@ class ProjectListViewModelTest : ProjectListViewModelFixture() {
             )
             assertEquals(R.string.generic_error_unknown, withTimeoutOrNull(1) { vm.sessionErrors.first() })
             assertEquals(null, withTimeoutOrNull(1) { vm.navigateToProject.first() })
-            coEvery { repository.createProject(any(), any(), any(), any(), any(), any()) } returns
+            coEvery { repository.createProject(any(), any(), any(), any(), any(), any(), attemptId = any()) } returns
                 ProjectCreationResult.Created(42L)
 
             vm.retryPendingProjectCreation()
@@ -587,6 +593,7 @@ class ProjectListViewModelTest : ProjectListViewModelFixture() {
                     "Circuits",
                     true,
                     12L,
+                    attemptId = any(),
                 )
             }
         }

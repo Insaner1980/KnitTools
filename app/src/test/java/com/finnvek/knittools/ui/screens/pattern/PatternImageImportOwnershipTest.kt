@@ -70,6 +70,8 @@ class PatternImageImportOwnershipTest {
         coEvery { storage.convertImagesToPdf(any(), any(), any(), any(), any()) } coAnswers {
             output(arg(1))
         }
+        coEvery { repository.attachPattern(any(), any(), any(), any(), any()) } returns
+            ProjectDocumentMutationResult.AlreadyAttached
     }
 
     @After
@@ -132,7 +134,7 @@ class PatternImageImportOwnershipTest {
             )
             import(b, 8, "b")
             advanceUntilIdle()
-            b.createPatternPdf(false)
+            b.createPatternPdf()
             advanceUntilIdle()
 
             assertSame(a, model(7))
@@ -157,6 +159,7 @@ class PatternImageImportOwnershipTest {
 
             assertFalse(restored.markGalleryPickerLaunched(request))
             restored.onGalleryPickerResult(request, emptyList())
+            assertEquals(null, restored.uiState.value.pickerRequestId)
             restored.onGalleryPickerResult(request, listOf(uri("late")))
             val restoredAgain = newModel(copyHandle(saved))
             restoredAgain.onGalleryPickerResult(request, listOf(uri("late-again")))
@@ -169,6 +172,27 @@ class PatternImageImportOwnershipTest {
             )
             assertEquals(null, restoredAgain.uiState.value.pickerRequestId)
             coVerify(exactly = 1) { storage.stageSelectedImages(any(), any(), any(), any(), any()) }
+        }
+
+    @Test
+    fun `pending gallery result survives an unrestorable staging directory`() =
+        runTest {
+            val a = model(7)
+            import(a, 7, "first")
+            advanceUntilIdle()
+            val oldSession = a.uiState.value.sessionId
+            val request = requireNotNull(a.authorizeGalleryPicker(7))
+            assertTrue(a.markGalleryPickerLaunched(request))
+            every { storage.restoreStagedSelection(any(), any(), any(), any()) } returns null
+            val restored = newModel(copyHandle(handles.getValue(7)))
+
+            restored.onGalleryPickerResult(request, listOf(uri("new")))
+            advanceUntilIdle()
+
+            val restoredState = restored.uiState.value
+            assertNotEquals(oldSession, restoredState.sessionId)
+            assertEquals(null, restoredState.pickerRequestId)
+            assertEquals(listOf("new"), restoredState.selection.pages.map { it.sourceUri })
         }
 
     @Test
@@ -255,7 +279,7 @@ class PatternImageImportOwnershipTest {
             import(a, 7, "a")
             advanceUntilIdle()
             val oldSession = a.uiState.value.sessionId
-            a.createPatternPdf(false)
+            a.createPatternPdf()
             runCurrent()
             val b = model(8)
             import(b, 8, "b")
@@ -273,7 +297,7 @@ class PatternImageImportOwnershipTest {
             val newA = a.uiState.value
             oldProgress(2, 2)
             a.cancelImport(oldSession)
-            a.createPatternPdf(false, oldSession)
+            a.createPatternPdf(oldSession)
             a.removePage("new-a", oldSession)
             a.markPreviewFailed("new-a", oldSession)
 
@@ -298,11 +322,11 @@ class PatternImageImportOwnershipTest {
             val a = model(7)
             import(a, 7, "a")
             advanceUntilIdle()
-            a.createPatternPdf(false)
+            a.createPatternPdf()
             advanceUntilIdle()
             assertEquals(PatternImageImportError.CONVERSION, a.uiState.value.error)
             val session = a.uiState.value.sessionId
-            a.createPatternPdf(false)
+            a.createPatternPdf()
             runCurrent()
             callbacks.first()(9, 9)
             assertEquals(null, a.uiState.value.progress)
@@ -344,10 +368,12 @@ class PatternImageImportOwnershipTest {
                 a.uiState.value.selection.pages
                     .isEmpty(),
             )
-            val nextRequest = a.authorizeGalleryPicker(7)
+            val nextRequest = requireNotNull(a.authorizeGalleryPicker(7))
             val nextState = a.uiState.value
             a.onGalleryPickerResult(oldRequest, listOf(uri("late")))
+            assertEquals(nextRequest, a.uiState.value.pickerRequestId)
             a.onGalleryPickerResult(nextRequest, emptyList())
+            assertEquals(null, a.uiState.value.pickerRequestId)
             assertEquals(nextState.sessionId, a.uiState.value.sessionId)
             assertEquals(draftB, b.uiState.value)
             verify(exactly = 1) { storage.deleteImportSession(context, 7, requireNotNull(oldSession)) }
@@ -365,7 +391,7 @@ class PatternImageImportOwnershipTest {
             import(vm, 7, "a")
             advanceUntilIdle()
 
-            vm.createPatternPdf(false)
+            vm.createPatternPdf()
             advanceUntilIdle()
 
             assertEquals(PatternImageImportPhase.CANCELLED, vm.uiState.value.phase)
@@ -383,7 +409,7 @@ class PatternImageImportOwnershipTest {
             val a = model(7)
             import(a, 7, "a")
             advanceUntilIdle()
-            a.createPatternPdf(false)
+            a.createPatternPdf()
             runCurrent()
             assertEquals(PatternImageImportPhase.ATTACHING, a.uiState.value.phase)
             val b = model(8)
@@ -413,7 +439,7 @@ class PatternImageImportOwnershipTest {
             import(a, 7, "a")
             advanceUntilIdle()
             val sessionA = a.uiState.value.sessionId
-            a.createPatternPdf(false)
+            a.createPatternPdf()
             runCurrent()
             val b = model(8)
             import(b, 8, "b")
@@ -440,7 +466,7 @@ class PatternImageImportOwnershipTest {
             val a = model(7)
             import(a, 7, "a")
             advanceUntilIdle()
-            a.createPatternPdf(false)
+            a.createPatternPdf()
             advanceUntilIdle()
             assertEquals(PatternImageImportPhase.SUCCESS, a.uiState.value.phase)
             verify(exactly = 0) { storage.deleteGeneratedPdf(any(), any()) }
@@ -477,18 +503,17 @@ class PatternImageImportOwnershipTest {
         }
 
     @Test
-    fun `pending gallery result blocks an earlier confirmation until it is consumed`() =
+    fun `pending gallery result blocks creation until it is consumed`() =
         runTest {
             val a = model(7)
             import(a, 7, "a")
             advanceUntilIdle()
-            a.createPatternPdf(true)
             val request = a.authorizeGalleryPicker(7)
-            a.confirmReplacement()
+            a.createPatternPdf()
             advanceUntilIdle()
             coVerify(exactly = 0) { storage.convertImagesToPdf(any(), any(), any(), any(), any()) }
             a.onGalleryPickerResult(request, emptyList())
-            a.confirmReplacement()
+            a.createPatternPdf()
             advanceUntilIdle()
             coVerify(exactly = 1) { storage.convertImagesToPdf(any(), 7, any(), any(), any()) }
         }

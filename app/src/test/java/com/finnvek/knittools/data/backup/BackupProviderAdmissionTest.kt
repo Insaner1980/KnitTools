@@ -25,7 +25,6 @@ import kotlinx.coroutines.yield
 import org.junit.After
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -172,13 +171,15 @@ class BackupProviderAdmissionTest {
                 operation.cancel(CancellationException("user cancel"))
                 yield()
                 aborted.awaitBounded()
+                awaitClosers()
+                assertTrue(operation.isCompleted)
+                assertTrue(operation.isCancelled)
                 assertReadAndWriteRejected(io)
-                assertFalse(operation.isCompleted)
             } finally {
                 release.countDown()
                 operation.join()
+                awaitWorker()
             }
-            assertTrue(operation.isCancelled)
             assertArrayEquals(ByteArray(64 * 1024) { 7 }, output.toByteArray())
         }
 
@@ -216,7 +217,7 @@ class BackupProviderAdmissionTest {
                 assertEquals(BackupPhase.IDLE, viewModel.state.value.phase)
                 assertProviderRetriesRejected(viewModel, staging)
                 repository.recoverInterruptedOperations()
-                assertEquals(1, staging.listFiles().orEmpty().size)
+                assertTrue(staging.listFiles().orEmpty().isEmpty())
                 assertEquals(1, opens.get())
                 release.countDown()
                 awaitWorker()
@@ -285,7 +286,7 @@ class BackupProviderAdmissionTest {
             viewModel.prepare(uri)
             runCurrent()
             assertEquals(BackupError.READ, viewModel.state.value.error)
-            assertEquals(1, staging.listFiles().orEmpty().size)
+            assertTrue(staging.listFiles().orEmpty().isEmpty())
         }
     }
 

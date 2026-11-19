@@ -135,7 +135,23 @@ class PatternBookmarkDraftTest {
                                 },
                         ),
                     totalPages = 2,
-                    actions = PatternBookmarkSheetActions({}, onAdd, {}, {}, {}, onRename, {}, {}),
+                    actions =
+                        PatternBookmarkSheetActions(
+                            onDismiss = {},
+                            onAdd = { name, saved ->
+                                onAdd(name)
+                                saved()
+                            },
+                            onJump = {},
+                            onPrevious = {},
+                            onNext = {},
+                            onRename = { id, name, saved ->
+                                onRename(id, name)
+                                saved()
+                            },
+                            onDelete = {},
+                            onClearError = {},
+                        ),
                 )
             }
         }

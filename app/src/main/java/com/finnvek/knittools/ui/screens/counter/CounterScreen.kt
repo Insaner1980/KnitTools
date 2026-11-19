@@ -719,9 +719,6 @@ fun ProjectContentHost(
                 canUseCameraScan = state.canUsePatternCameraScan,
                 proState = state.proState,
                 proAccessReady = state.proAccessReady,
-                hasExistingPattern =
-                    patternPickerMode == PatternPickerMode.INITIAL_PROJECT_PATTERN &&
-                        state.projectDocuments.isNotEmpty(),
                 patternPickerMode = patternPickerMode,
                 attachedSavedPatternIds = state.projectDocuments.mapNotNullTo(mutableSetOf()) { it.savedPatternId },
             ),
@@ -775,15 +772,13 @@ fun ProjectContentHost(
             onEditPatternInformation = {
                 state.linkedPattern?.id?.let(onEditWebPattern)
             },
-            onUnlinkPatternInformation = {
-                state.linkedPattern?.id?.let { expectedPatternId ->
-                    viewModel.unlinkSavedPatternMetadata(expectedPatternId) { result ->
-                        if (
-                            result != SavedPatternMetadataMutationResult.Unlinked &&
-                            result != SavedPatternMetadataMutationResult.AlreadyUnlinked
-                        ) {
-                            showWebPatternSaveFailed()
-                        }
+            onUnlinkPatternInformation = { expectedPatternId ->
+                viewModel.unlinkSavedPatternMetadata(expectedPatternId) { result ->
+                    if (
+                        result != SavedPatternMetadataMutationResult.Unlinked &&
+                        result != SavedPatternMetadataMutationResult.AlreadyUnlinked
+                    ) {
+                        showWebPatternSaveFailed()
                     }
                 }
             },
@@ -1386,16 +1381,15 @@ internal fun SessionRecoveryDialog(
     onDismiss: () -> Unit,
 ) {
     val suggestedTotal = safeDurationSum(trustedDurationSeconds, suggestedDurationSeconds ?: 0L)
+    val initialHours = (suggestedTotal / 3_600L).toString()
+    val initialMinutes = ((suggestedTotal % 3_600L) / 60L).toString()
     var editing by rememberSaveable(recoveryIntervalToken) { mutableStateOf(false) }
-    var hoursText by
-        rememberSaveable(recoveryIntervalToken) {
-            mutableStateOf((suggestedTotal / 3_600L).toString())
+    var hoursText by rememberSaveable(recoveryIntervalToken) { mutableStateOf(initialHours) }
+    var minutesText by rememberSaveable(recoveryIntervalToken) { mutableStateOf(initialMinutes) }
+    val durationSeconds =
+        parseRecoveryDurationSeconds(hoursText, minutesText)?.let { editedSeconds ->
+            if (hoursText == initialHours && minutesText == initialMinutes) suggestedTotal else editedSeconds
         }
-    var minutesText by
-        rememberSaveable(recoveryIntervalToken) {
-            mutableStateOf(((suggestedTotal % 3_600L) / 60L).toString())
-        }
-    val durationSeconds = parseRecoveryDurationSeconds(hoursText, minutesText)
     val headingFocusRequester = remember { FocusRequester() }
     LaunchedEffect(recoveryIntervalToken) {
         headingFocusRequester.requestFocus()
@@ -1899,7 +1893,6 @@ data class CounterSheetState(
     val canUseCameraScan: Boolean,
     val proState: ProState,
     val proAccessReady: Boolean,
-    val hasExistingPattern: Boolean,
     val patternPickerMode: PatternPickerMode,
     val attachedSavedPatternIds: Set<Long>,
     val isRestoringProject: Boolean = false,
@@ -1979,7 +1972,6 @@ private fun CounterScreenSheets(
             canUseCameraScan = state.canUseCameraScan,
             proState = state.proState,
             proAccessReady = state.proAccessReady,
-            hasExistingPattern = state.hasExistingPattern,
             mode = state.patternPickerMode,
             excludedSavedPatternIds = state.attachedSavedPatternIds,
             onSavedPatternSelected = actions.onSavedPatternSelected,

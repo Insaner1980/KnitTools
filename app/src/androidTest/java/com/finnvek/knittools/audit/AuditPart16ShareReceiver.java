@@ -25,15 +25,16 @@ public class AuditPart16ShareReceiver extends Activity {
                 : getIntent().getParcelableExtra(Intent.EXTRA_STREAM);
             input = getContentResolver().openInputStream(uri);
             if (getIntent().getBooleanExtra("hold", false)) {
-                continuation = new BroadcastReceiver() {
+                BroadcastReceiver receiver = new BroadcastReceiver() {
                     @Override public void onReceive(Context context, Intent intent) { readAndFinish(); }
                 };
                 IntentFilter filter = new IntentFilter(getPackageName() + ".CONTINUE");
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                    registerReceiver(continuation, filter, RECEIVER_EXPORTED);
+                    registerReceiver(receiver, filter, RECEIVER_EXPORTED);
                 } else {
-                    registerReceiver(continuation, filter);
+                    registerReceiver(receiver, filter);
                 }
+                continuation = receiver;
                 reply("opened", null, null, false, false);
             } else {
                 readAndFinish();

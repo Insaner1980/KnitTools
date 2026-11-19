@@ -480,30 +480,36 @@ class NotesEditorViewModelTest {
             val old = "a".repeat(17_000)
             val newer = "b".repeat(17_000)
             var finishOldWrite: (() -> Unit)? = null
+            var oldId: UUID? = null
             coEvery { storage.write(1L, any(), any()) } coAnswers {
                 val id = secondArg<UUID>()
                 val draft = thirdArg<NotesDraft>()
                 if (draft.notes == old) {
+                    oldId = id
                     suspendCoroutine { continuation -> finishOldWrite = { continuation.resume(Unit) } }
                 }
                 files[id] = draft
+                true
             }
             coEvery { storage.delete(1L, any()) } answers {
                 files.remove(secondArg<UUID>())
             }
             val vm = NotesEditorViewModel(repository, proManager, applicationScope, handle, storage)
             runCurrent()
+            vm.onNotesChanged("Recoverable inline draft")
             vm.onNotesChanged(old)
             runCurrent()
-            val oldId = UUID.fromString(handle.get<String>("notesDraftFileId"))
+            assertNull(handle.get<String>("notesDraftFileId"))
+            assertEquals("Recoverable inline draft", handle.get<String>("notesDraft"))
 
             vm.discardChanges()
             vm.onNotesChanged(newer)
             runCurrent()
-            val newId = UUID.fromString(handle.get<String>("notesDraftFileId"))
+            assertNull(handle.get<String>("notesDraftFileId"))
             requireNotNull(finishOldWrite).invoke()
             runCurrent()
 
+            val newId = UUID.fromString(handle.get<String>("notesDraftFileId"))
             assertTrue(oldId != newId)
             assertEquals(mapOf(newId to NotesDraft(newer, "Base")), files)
             assertEquals(newId.toString(), handle.get<String>("notesDraftFileId"))

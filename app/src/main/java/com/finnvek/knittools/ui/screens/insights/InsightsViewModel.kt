@@ -210,10 +210,11 @@ class InsightsViewModel
                         rangeStartDate(
                             activeTimeRange,
                             date.date,
-                            currentInsightsFirstDayOfWeek(),
+                            date.firstDayOfWeek,
                         )?.atStartOfDay(date.zone)?.toInstant()?.toEpochMilli(),
                     currentDate = date.date,
                     zone = date.zone,
+                    firstDayOfWeek = date.firstDayOfWeek,
                 )
             }.distinctUntilChanged()
 
@@ -267,7 +268,7 @@ class InsightsViewModel
                                     rangeStartDate(
                                         params.timeRange,
                                         params.currentDate,
-                                        currentInsightsFirstDayOfWeek(),
+                                        params.firstDayOfWeek,
                                     ),
                                 rangeEnd = params.currentDate,
                                 timeRange = params.timeRange,
@@ -301,7 +302,7 @@ class InsightsViewModel
             featureGates: InsightsProFeatureGates,
         ): InsightsUiState {
             val today = params.currentDate
-            val firstDayOfWeek = currentInsightsFirstDayOfWeek()
+            val firstDayOfWeek = params.firstDayOfWeek
             val rangeMetrics = sessions.summary
             // Match the chart's today-ended range when all stored-zone dates are later than device today.
             val firstSessionDate = sessions.firstDate?.coerceAtMost(today)
@@ -599,6 +600,7 @@ internal data class InsightsQueryParams(
     val startMillis: Long? = null,
     val zone: ZoneId = systemDefault(),
     val currentDate: LocalDate = LocalDate.now(zone),
+    val firstDayOfWeek: DayOfWeek = currentInsightsFirstDayOfWeek(),
 )
 
 internal fun localDateChanges(
@@ -639,6 +641,7 @@ internal fun LocalDate.nextBucketStart(interval: PaceGroupingInterval): LocalDat
 internal data class InsightsCalendar(
     val date: LocalDate,
     val zone: ZoneId,
+    val firstDayOfWeek: DayOfWeek = currentInsightsFirstDayOfWeek(),
 )
 
 private fun captureInsightsCalendar(): InsightsCalendar {

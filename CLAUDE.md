@@ -10,7 +10,7 @@
 - `lint-check` (alias `lc`) — runs ktlint + detekt + Android lint, results in `reports/`
 - `security-check` (alias `sc`) — repo-local authoritative entrypoint is `tools/sc.ps1`, which delegates to the shared Android-check engine
 - `security-check-full` (alias `sc-full`) — compatibility alias täydelle security-ajolle
-- Don't run these scripts yourself — user runs them via `! lc` / `! sc`
+- Run these scripts when requested directly or in a requested script list.
 - `reports/` is gitignored, never commit it
 - Security risk decisions and temporary exceptions are documented in `config/security-decisions.md`
 - `scripts/security-check.sh` ja muut `scripts/security-check*.sh`-polut ovat vain fail-closed-yhteensopivuusdelegaatteja samaan `tools/sc.ps1`-entrypointiin.

@@ -21,6 +21,7 @@ import io.mockk.mockkStatic
 import io.mockk.unmockkStatic
 import io.mockk.verify
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
@@ -218,6 +219,10 @@ class BillingManagerTest {
     fun `terminal acknowledgement failure is not retried`() =
         runTest {
             val billingClient = mockk<BillingClient>(relaxed = true)
+            val purchase = proPurchase()
+            mockkStatic("com.android.billingclient.api.BillingClientKotlinKt")
+            coEvery { billingClient.queryPurchasesAsync(any()) } returns
+                PurchasesResult(billingResult(BillingClient.BillingResponseCode.OK), listOf(purchase))
             every { billingClient.acknowledgePurchase(any(), any()) } answers {
                 secondArg<AcknowledgePurchaseResponseListener>().onAcknowledgePurchaseResponse(
                     billingResult(BillingClient.BillingResponseCode.DEVELOPER_ERROR),
@@ -227,11 +232,35 @@ class BillingManagerTest {
 
             manager.onPurchasesUpdated(
                 billingResult(BillingClient.BillingResponseCode.OK),
-                listOf(proPurchase()),
+                listOf(purchase),
             )
             advanceUntilIdle()
 
             verify(exactly = 1) { billingClient.acknowledgePurchase(any(), any()) }
+            coVerify(exactly = 0) { billingClient.queryPurchasesAsync(any()) }
+        }
+
+    @Test
+    fun `acknowledgement recovery retries after the scheduled query fails`() =
+        runTest {
+            val billingClient = mockk<BillingClient>(relaxed = true)
+            val purchase = proPurchase()
+            val ok = billingResult(BillingClient.BillingResponseCode.OK)
+            val error = billingResult(BillingClient.BillingResponseCode.NETWORK_ERROR)
+            mockkStatic("com.android.billingclient.api.BillingClientKotlinKt")
+            coEvery { billingClient.queryPurchasesAsync(any()) } returnsMany
+                listOf(PurchasesResult(error, emptyList()), PurchasesResult(ok, listOf(purchase)))
+            val responses = listOf(error, ok).iterator()
+            every { billingClient.acknowledgePurchase(any(), any()) } answers {
+                secondArg<AcknowledgePurchaseResponseListener>().onAcknowledgePurchaseResponse(responses.next())
+            }
+            val manager = createManager(billingClient)
+
+            manager.onPurchasesUpdated(ok, listOf(purchase))
+            advanceUntilIdle()
+
+            coVerify(exactly = 2) { billingClient.queryPurchasesAsync(any()) }
+            verify(exactly = 2) { billingClient.acknowledgePurchase(any(), any()) }
         }
 
     @Test
@@ -268,8 +297,12 @@ class BillingManagerTest {
     @Test
     fun `pending pro purchase does not grant entitlement and reports pending state`() =
         runTest {
+            mockkStatic(TextUtils::class)
+            every { TextUtils.isEmpty(any()) } answers { firstArg<CharSequence?>().isNullOrEmpty() }
             val billingClient = mockk<BillingClient>(relaxed = true)
             val manager = createManager(billingClient)
+            manager.applyProductDetailsResult(productResult(launchProduct(1_000, 2_000)))
+            val displayedOffer = checkNotNull(manager.selectedOffer.value)
             val message = async(UnconfinedTestDispatcher(testScheduler)) { manager.purchaseMessages.first() }
 
             manager.onPurchasesUpdated(
@@ -280,7 +313,7 @@ class BillingManagerTest {
             assertFalse(manager.isProPurchased.value)
             assertEquals(BillingUserMessage.PURCHASE_PENDING, message.await())
             assertTrue(manager.purchasePending.value)
-            manager.launchPurchaseFlow(mockk<Activity>(), displayedOffer = null)
+            manager.launchPurchaseFlow(mockk<Activity>(), displayedOffer)
             verify(exactly = 0) { billingClient.launchBillingFlow(any(), any()) }
             verify(exactly = 0) { billingClient.acknowledgePurchase(any(), any()) }
             manager.onPurchasesUpdated(
@@ -289,11 +322,14 @@ class BillingManagerTest {
             )
             assertFalse(manager.purchasePending.value)
             assertTrue(manager.isProPurchased.value)
+            manager.destroy()
         }
 
     @Test
-    fun `older purchase query cannot clear a newly pending purchase`() =
+    fun `pending callback replaces the initial query and an older response cannot clear the pending purchase`() =
         runTest {
+            mockkStatic(TextUtils::class)
+            every { TextUtils.isEmpty(any()) } answers { firstArg<CharSequence?>().isNullOrEmpty() }
             mockkStatic("com.android.billingclient.api.BillingClientKotlinKt")
             val billingClient = mockk<BillingClient>(relaxed = true)
             val queryResult = CompletableDeferred<PurchasesResult>()
@@ -302,15 +338,23 @@ class BillingManagerTest {
             val restore = async { manager.restorePurchasesWithResult() }
             runCurrent()
 
+            val pendingPurchase = proPurchase(purchaseState = 4)
+            val ok = billingResult(BillingClient.BillingResponseCode.OK)
+            coEvery { billingClient.queryPurchasesAsync(any()) } returns PurchasesResult(ok, listOf(pendingPurchase))
+            manager.applyProductDetailsResult(productResult(launchProduct(1_000, 2_000)))
+            val displayedOffer = checkNotNull(manager.selectedOffer.value)
             manager.onPurchasesUpdated(
-                billingResult(BillingClient.BillingResponseCode.OK),
-                listOf(proPurchase(purchaseState = 4)),
+                ok,
+                listOf(pendingPurchase),
             )
-            queryResult.complete(PurchasesResult(billingResult(BillingClient.BillingResponseCode.OK), emptyList()))
+            queryResult.complete(PurchasesResult(ok, emptyList()))
             restore.await()
+            runCurrent()
 
+            assertTrue(manager.purchaseStateReady.value)
+            assertFalse(manager.isProPurchased.value)
             assertTrue(manager.purchasePending.value)
-            manager.launchPurchaseFlow(mockk<Activity>(), displayedOffer = null)
+            manager.launchPurchaseFlow(mockk<Activity>(), displayedOffer)
             verify(exactly = 0) { billingClient.launchBillingFlow(any(), any()) }
             manager.destroy()
         }
@@ -390,7 +434,7 @@ class BillingManagerTest {
         ProductDetailsResult(billingResult(BillingClient.BillingResponseCode.OK), listOf(product))
 
     private fun createManager(billingClient: BillingClient): BillingManager =
-        BillingManager(context).also { manager ->
+        BillingManager(context, CoroutineScope(Dispatchers.Main.immediate)).also { manager ->
             every { billingClient.isReady } returns true
             val field = BillingManager::class.java.getDeclaredField("billingClient")
             field.isAccessible = true
@@ -408,7 +452,7 @@ class BillingManagerTest {
                     billingResult(BillingClient.BillingResponseCode.OK),
                     listOf(proPurchase()),
                 )
-            val manager = BillingManager(context)
+            val manager = BillingManager(context, CoroutineScope(Dispatchers.Main.immediate))
             val clientField = BillingManager::class.java.getDeclaredField("billingClient")
             clientField.isAccessible = true
             clientField.set(manager, billingClient)
@@ -428,7 +472,7 @@ class BillingManagerTest {
 
     @Test
     fun `cancelled purchase leaves pro unpurchased`() {
-        val manager = BillingManager(context)
+        val manager = BillingManager(context, CoroutineScope(Dispatchers.Main.immediate))
 
         manager.onPurchasesUpdated(
             billingResult(BillingClient.BillingResponseCode.USER_CANCELED),
@@ -441,7 +485,7 @@ class BillingManagerTest {
     @Test
     fun `cancelled purchase emits cancellation message`() =
         runTest {
-            val manager = BillingManager(context)
+            val manager = BillingManager(context, CoroutineScope(Dispatchers.Main.immediate))
             val message = async(UnconfinedTestDispatcher(testScheduler)) { manager.purchaseMessages.first() }
 
             manager.onPurchasesUpdated(
@@ -455,7 +499,7 @@ class BillingManagerTest {
     @Test
     fun `network purchase failure emits network message`() =
         runTest {
-            val manager = BillingManager(context)
+            val manager = BillingManager(context, CoroutineScope(Dispatchers.Main.immediate))
             val message = async(UnconfinedTestDispatcher(testScheduler)) { manager.purchaseMessages.first() }
 
             manager.onPurchasesUpdated(
@@ -508,7 +552,7 @@ class BillingManagerTest {
     @Test
     fun `purchase flow result emits returned network failure`() =
         runTest {
-            val manager = BillingManager(context)
+            val manager = BillingManager(context, CoroutineScope(Dispatchers.Main.immediate))
             val message = async(UnconfinedTestDispatcher(testScheduler)) { manager.purchaseMessages.first() }
 
             manager.applyPurchaseFlowResult(
@@ -560,7 +604,7 @@ class BillingManagerTest {
 
     @Test
     fun `empty product details marks product unavailable`() {
-        val manager = BillingManager(context)
+        val manager = BillingManager(context, CoroutineScope(Dispatchers.Main.immediate))
 
         manager.applyProductDetailsResult(
             ProductDetailsResult(
@@ -577,7 +621,7 @@ class BillingManagerTest {
 
     @Test
     fun `only the one time Pro product can supply the purchase quote`() {
-        val manager = BillingManager(context)
+        val manager = BillingManager(context, CoroutineScope(Dispatchers.Main.immediate))
         val unrelated = launchProduct(1_000L, 2_000L)
         every { unrelated.productId } returns "unrelated"
         val subscription = launchProduct(1_000L, 2_000L)
@@ -598,7 +642,7 @@ class BillingManagerTest {
 
     @Test
     fun `network product details failure marks product network error`() {
-        val manager = BillingManager(context)
+        val manager = BillingManager(context, CoroutineScope(Dispatchers.Main.immediate))
 
         manager.applyProductDetailsResult(
             ProductDetailsResult(
@@ -632,7 +676,7 @@ class BillingManagerTest {
 
     @Test
     fun `developer error leaves pro unpurchased`() {
-        val manager = BillingManager(context)
+        val manager = BillingManager(context, CoroutineScope(Dispatchers.Main.immediate))
 
         manager.onPurchasesUpdated(
             billingResult(BillingClient.BillingResponseCode.DEVELOPER_ERROR),

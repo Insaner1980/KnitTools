@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
+import fs from "node:fs";
 import { describe, it } from "node:test";
 
 import {
@@ -8,6 +9,7 @@ import {
   disconnectRavelry,
   getRavelryAuthStatus,
   getRavelryCurrentUser,
+  resolveBackendCallbackUrl,
   startRavelryOAuth,
 } from "./authCore";
 import type { RavelryCurrentUserClient } from "./client";
@@ -54,9 +56,10 @@ class MemoryOAuthStateStore implements OAuthStateStore {
     return true;
   }
 
-  async expireUnusedStatesForUid(uid: string, expiresAtMillis: number): Promise<void> {
+  async expireUnusedStatesForUid(uid: string, generation: number, expiresAtMillis: number): Promise<void> {
     this.states.forEach((state, key) => {
-      if (state?.uid === uid && state.usedAtMillis == null) {
+      if (state?.uid === uid && (state.connectionGeneration ?? 0) === generation &&
+          state.usedAtMillis == null && state.expiresAtMillis > expiresAtMillis) {
         this.states.set(key, { ...state, expiresAtMillis });
       }
     });
@@ -171,14 +174,46 @@ class MemoryTokenStore implements RavelryTokenStore {
     return true;
   }
 
-  async deleteToken(uid: string, _nowMillis?: number): Promise<void> {
-    this.generations.set(uid, await this.getConnectionGeneration(uid) + 1);
+  async deleteToken(uid: string, _nowMillis?: number): Promise<number> {
+    const generation = await this.getConnectionGeneration(uid);
+    this.generations.set(uid, generation + 1);
     this.tokens.delete(uid);
     this.pending.delete(uid);
+    return generation;
   }
 }
 
 describe("Ravelry OAuth2 auth core", () => {
+  it("resolves the explicit project before looking at Firebase config", () => {
+    const config = { FIREBASE_CONFIG: "missing-firebase-config.json" };
+    for (const projectVar of ["GCLOUD_PROJECT", "GCP_PROJECT"]) {
+      assert.equal(resolveBackendCallbackUrl("", { ...config, [projectVar]: "demo-knittools" }),
+        "https://europe-west1-demo-knittools.cloudfunctions.net/ravelryCallback");
+    }
+  });
+
+  it("supports inline and file-based Firebase config", (context) => {
+    const config = '{"projectId":"demo-knittools"}';
+    const expected = "https://europe-west1-demo-knittools.cloudfunctions.net/ravelryCallback";
+    assert.equal(resolveBackendCallbackUrl("", { FIREBASE_CONFIG: config }), expected);
+    context.mock.method(fs, "readFileSync", (path: string, encoding: string) => {
+      assert.equal(path, "synthetic-firebase-config.json");
+      assert.equal(encoding, "utf8");
+      return config;
+    });
+    assert.equal(resolveBackendCallbackUrl("", { FIREBASE_CONFIG: "synthetic-firebase-config.json" }), expected);
+    assert.throws(() => resolveBackendCallbackUrl("", { FIREBASE_CONFIG: "{" }),
+      { code: "missing_callback_url" });
+  });
+
+  it("rejects callback routing parameters while permitting unrelated configured queries", () => {
+    const callback = "https://callback.example/ravelryCallback";
+    for (const key of ["start", "code", "state", "error", "%73tart"]) {
+      assert.throws(() => resolveBackendCallbackUrl(`${callback}?${key}=`), { code: "invalid_callback_url" });
+    }
+    assert.equal(resolveBackendCallbackUrl(`${callback}?region=eu`), `${callback}?region=eu`);
+  });
+
   it("starts OAuth with state, PKCE, expiry, and no returned secrets", async () => {
     const stateStore = new MemoryOAuthStateStore();
     const tokenStore = new MemoryTokenStore();

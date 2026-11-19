@@ -15,6 +15,7 @@ import com.posthog.android.PostHogAndroid
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -62,7 +63,14 @@ class PostHogAndroidConsentRuntimeTest {
             check(root.mkdirs())
             val harness = Harness(base, root)
             val owners = mutableListOf<ConsentOwner>()
-            try {
+            val cleanup =
+                AutoCloseable {
+                    cleanupPostHogTest(
+                        *owners.map { owner -> { runBlocking { owner.close() } } }.toTypedArray(),
+                        harness::close,
+                    )
+                }
+            cleanup.use {
                 val firstContext = harness.context()
                 val first = ConsentOwner(root, harness.controller(firstContext)).also(owners::add)
                 first.await(false, null)
@@ -155,9 +163,6 @@ class PostHogAndroidConsentRuntimeTest {
                         "preferences=${restarted.config.cachePreferences?.javaClass?.name}; " +
                         "requests=${harness.paths}; DNS=0",
                 )
-            } finally {
-                owners.forEach { it.close() }
-                harness.close()
             }
         }
 
@@ -190,10 +195,13 @@ class PostHogAndroidConsentRuntimeTest {
         }
 
         suspend fun close() {
-            collector.cancelAndJoin()
-            analytics.setEnabled(false)
-            scopeJob.cancelAndJoin()
-            applied.close()
+            try {
+                collector.cancelAndJoin()
+                analytics.setEnabled(false)
+            } finally {
+                scopeJob.cancelAndJoin()
+                applied.close()
+            }
         }
     }
 
@@ -201,6 +209,7 @@ class PostHogAndroidConsentRuntimeTest {
         private val base: Context,
         private val root: File,
     ) {
+        private val analyticsScope = CoroutineScope(Dispatchers.IO)
         val instances = mutableListOf<PostHogTestInstance>()
         val deliveries = CopyOnWriteArrayList<List<String>>()
         val paths = CopyOnWriteArrayList<String>()
@@ -292,6 +301,8 @@ class PostHogAndroidConsentRuntimeTest {
                             )
                         }.sdk
                 },
+                analyticsScope,
+                Dispatchers.IO,
             )
 
         fun latest(): PostHogTestInstance = instances.last()
@@ -322,46 +333,61 @@ class PostHogAndroidConsentRuntimeTest {
         }
 
         fun stopSdkWorkers() {
-            instances.filterNot { it in stopped }.forEach { instance ->
-                instance.sdk.close()
-                instance.drain()
-                val executors = instance.workers()
-                executors.forEach { it.shutdown() }
-                executors.forEach {
-                    assertTrue(
-                        "Task SDK worker terminated",
-                        it.awaitTermination(15, TimeUnit.SECONDS),
-                    )
-                }
-                stopped.add(instance)
-            }
+            cleanupPostHogTest(
+                *instances.filterNot { it in stopped }.map { instance -> { stopInstance(instance) } }.toTypedArray(),
+            )
+        }
+
+        private fun stopInstance(instance: PostHogTestInstance) {
+            val executors = instance.workers()
+            cleanupPostHogTest(
+                instance.sdk::close,
+                instance::drain,
+                { executors.forEach { it.shutdown() } },
+                *executors
+                    .map { worker ->
+                        { assertTrue("Task SDK worker terminated", worker.awaitTermination(15, TimeUnit.SECONDS)) }
+                    }.toTypedArray(),
+            )
+            stopped.add(instance)
         }
 
         fun close() {
-            stopSdkWorkers()
-            transport.dispatcher.executorService.shutdown()
-            assertTrue(transport.dispatcher.executorService.awaitTermination(15, TimeUnit.SECONDS))
-            transport.connectionPool.evictAll()
-            assertEquals(0, dnsAttempts.get())
-            assertEquals(0, inFlight.get())
-            preferenceNames.forEach { name ->
-                check(name.startsWith(root.name + "-"))
-                base
-                    .getSharedPreferences(name, Context.MODE_PRIVATE)
-                    .edit()
-                    .clear()
-                    .commit()
-                assertTrue(base.deleteSharedPreferences(name))
-                assertFalse(File(base.applicationInfo.dataDir, "shared_prefs/$name.xml").exists())
-            }
-            check(root.canonicalFile.parentFile == base.cacheDir.canonicalFile && root.name.startsWith("rw-07c-"))
-            assertTrue(root.deleteRecursively())
-            assertFalse(root.exists())
+            cleanupPostHogTest(
+                { analyticsScope.cancel() },
+                ::stopSdkWorkers,
+                {
+                    transport.dispatcher.executorService.shutdown()
+                    assertTrue(transport.dispatcher.executorService.awaitTermination(15, TimeUnit.SECONDS))
+                },
+                { transport.connectionPool.evictAll() },
+                { assertEquals(0, dnsAttempts.get()) },
+                { assertEquals(0, inFlight.get()) },
+                *preferenceNames.map { name -> { deletePreference(name) } }.toTypedArray(),
+                {
+                    check(
+                        root.canonicalFile.parentFile == base.cacheDir.canonicalFile && root.name.startsWith("rw-07c-"),
+                    )
+                    assertTrue(root.deleteRecursively())
+                    assertFalse(root.exists())
+                },
+            )
             evidence(
                 "Cleanup",
                 "root=${root.name}; SDK instances=${stopped.size}; private workers terminated by test only; " +
                     "DataStore owners joined; preferences=${preferenceNames.size} deleted; root removed; DNS=0",
             )
+        }
+
+        private fun deletePreference(name: String) {
+            check(name.startsWith(root.name + "-"))
+            base
+                .getSharedPreferences(name, Context.MODE_PRIVATE)
+                .edit()
+                .clear()
+                .commit()
+            assertTrue(base.deleteSharedPreferences(name))
+            assertFalse(File(base.applicationInfo.dataDir, "shared_prefs/$name.xml").exists())
         }
     }
 

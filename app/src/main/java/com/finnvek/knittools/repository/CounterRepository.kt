@@ -11,6 +11,7 @@ import com.finnvek.knittools.data.local.LinkedCounterDeltas
 import com.finnvek.knittools.data.local.MAX_COMPLETED_SESSIONS
 import com.finnvek.knittools.data.local.ProjectCompletionEntity
 import com.finnvek.knittools.data.local.ProjectCounterDao
+import com.finnvek.knittools.data.local.ProjectCreationReceiptEntity
 import com.finnvek.knittools.data.local.ProjectFolderAssignmentEntity
 import com.finnvek.knittools.data.local.ProjectFolderDao
 import com.finnvek.knittools.data.local.SessionDao
@@ -164,6 +165,7 @@ class CounterRepository
                 .observeProject(projectId)
                 .map { project ->
                     project != null &&
+                        !project.isCompleted &&
                         dao.getLatestHistory(projectId)?.isReversibleFor(projectId, project.count) == true
                 }.retryOnRepositoryReadFailure()
                 .flowOn(ioDispatcher)
@@ -286,6 +288,11 @@ class CounterRepository
                 }
             }
 
+        suspend fun findProjectCreationResult(attemptId: String): ProjectCreationResult.Created? =
+            dao.findProjectCreationReceipt(attemptId)?.let { receipt ->
+                ProjectCreationResult.Created(receipt.projectId, receipt.wasFirstProject)
+            }
+
         suspend fun createProject(
             name: String,
             craftType: CraftType = CraftType.KNITTING,
@@ -294,9 +301,11 @@ class CounterRepository
             canCreateAdditionalProjects: Boolean,
             targetFolderId: Long? = null,
             startValues: ProjectStartValues = ProjectStartValues(),
+            attemptId: String? = null,
         ): ProjectCreationResult =
             try {
                 transactionRunner.run {
+                    if (attemptId != null) findProjectCreationResult(attemptId)?.let { return@run it }
                     val wasFirstProject = !dao.hasAnyProject()
                     val result =
                         insertProjectInCurrentTransaction(
@@ -309,6 +318,11 @@ class CounterRepository
                             startValues = startValues,
                         )
                     if (result is ProjectCreationResult.Created) {
+                        if (attemptId != null) {
+                            dao.insertProjectCreationReceipt(
+                                ProjectCreationReceiptEntity(attemptId, result.projectId, wasFirstProject),
+                            )
+                        }
                         result.copy(
                             wasFirstProject = wasFirstProject,
                         )
@@ -536,11 +550,12 @@ class CounterRepository
                             currentNotes = current.notes,
                         )
                     val updatedAt = System.currentTimeMillis()
-                    dao.updateNotes(id, notesToSave, updatedAt)
+                    val hasNotes = notesToSave.isNotBlank()
+                    dao.updateNotes(id, notesToSave, updatedAt, hasNotes)
                     ProjectNotesSaveResult.Saved(
                         current.copy(
                             notes = notesToSave,
-                            notesCreated = current.notesCreated || notesToSave.isNotBlank(),
+                            notesCreated = current.notesCreated || hasNotes,
                             updatedAt = updatedAt,
                         ),
                     )
@@ -665,24 +680,32 @@ class CounterRepository
             val result =
                 fileReferenceCoordinator.withReferenceLock {
                     val preflightFailure = projectDocumentRepository.preflightImportedPdf(patternUri, patternName)
-                    preflightFailure ?: transactionRunner.run {
-                        val project = dao.getProject(id)
-                        val added =
-                            projectDocumentRepository.addImportedPdfInCurrentTransaction(id, patternUri, patternName)
-                        if (added is ProjectDocumentMutationResult.Added) {
-                            linkPrimaryDocumentPatternInTransaction(id, project?.linkedPatternId, added)
-                            if (currentPatternPage != 0 || patternRowMapping != null) {
-                                check(
-                                    projectDocumentRepository.updateViewerStateInTransaction(
-                                        added.document.copy(
-                                            currentPage = currentPatternPage,
-                                            rowMapping = patternRowMapping,
-                                        ),
-                                    ),
+                    preflightFailure ?: try {
+                        transactionRunner.run {
+                            val project = dao.getProject(id)
+                            val added =
+                                projectDocumentRepository.addImportedPdfInCurrentTransaction(
+                                    id,
+                                    patternUri,
+                                    patternName,
                                 )
+                            if (added is ProjectDocumentMutationResult.Added) {
+                                linkPrimaryDocumentPatternInTransaction(id, project?.linkedPatternId, added)
+                                if (currentPatternPage != 0 || patternRowMapping != null) {
+                                    check(
+                                        projectDocumentRepository.updateViewerStateInTransaction(
+                                            added.document.copy(
+                                                currentPage = currentPatternPage,
+                                                rowMapping = patternRowMapping,
+                                            ),
+                                        ),
+                                    )
+                                }
                             }
+                            added
                         }
-                        added
+                    } catch (aborted: ProjectDocumentRepository.MutationAborted) {
+                        aborted.result
                     }
                 }
             if (result !is ProjectDocumentMutationResult.Added &&
@@ -2186,8 +2209,11 @@ internal fun mergeProjectNotes(
     val requestedSuffix = requestedNotes.removeKnownPrefix(baseNotes)
     val currentSuffix = currentNotes.removeKnownPrefix(baseNotes)
 
+    if (requestedSuffix != null && currentSuffix != null) {
+        if (requestedSuffix.startsWith(currentSuffix)) return requestedNotes
+        if (currentSuffix.startsWith(requestedSuffix)) return currentNotes
+    }
     return when {
-        requestedSuffix != null && currentSuffix != null -> currentNotes + requestedSuffix
         requestedSuffix != null -> currentNotes + requestedSuffix
         currentSuffix != null -> requestedNotes + currentSuffix
         else -> combineNoteBlocks(requestedNotes, currentNotes)

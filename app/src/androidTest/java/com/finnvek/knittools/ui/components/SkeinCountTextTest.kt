@@ -40,6 +40,8 @@ class SkeinCountTextTest(
         val configuration = Configuration(baseContext.resources.configuration).apply { setLocale(locale) }
         val context = baseContext.createConfigurationContext(configuration)
         val quantities = listOf(0, 1, 2, 21, 1_000_000, 2_000_000, 1_000_001, Int.MAX_VALUE)
+        val rules = PluralRules.forLocale(locale)
+        val supportsMany = hasMany && "many" in rules.keywords
         val expectedWords =
             listOf(
                 if (zeroUsesOne) singular else plural,
@@ -57,12 +59,11 @@ class SkeinCountTextTest(
                 "one",
                 "other",
                 "other",
-                if (hasMany) "many" else "other",
-                if (hasMany) "many" else "other",
+                if (supportsMany) "many" else "other",
+                if (supportsMany) "many" else "other",
                 "other",
                 "other",
             )
-        val rules = PluralRules.forLocale(locale)
         val expectedTexts = quantities.zip(expectedWords) { quantity, word -> "$quantity $word" }
 
         quantities.forEachIndexed { index, quantity ->

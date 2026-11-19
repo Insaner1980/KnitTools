@@ -383,7 +383,12 @@ class PatternNotesNavigationRuntimeTest {
                             .systemBars(),
                     )
             bounds = Rect(origin[0], origin[1], origin[0] + decor.width, origin[1] + decor.height)
-            if (insets != null) bounds.inset(insets.left, insets.top, insets.right, insets.bottom)
+            if (insets != null) {
+                bounds.left += insets.left
+                bounds.top += insets.top
+                bounds.right -= insets.right
+                bounds.bottom -= insets.bottom
+            }
         }
         return bounds
     }

@@ -1,12 +1,16 @@
 class ResponseSizeLimitError extends Error {}
 
+export async function cancelResponseBody(response: Response): Promise<void> {
+  await response.body?.cancel().catch(() => undefined);
+}
+
 export async function readJsonResponse(
   response: Response,
   maxBytes: number,
 ): Promise<unknown> {
   const declaredLength = Number(response.headers.get("content-length"));
   if (Number.isFinite(declaredLength) && declaredLength > maxBytes) {
-    await response.body?.cancel().catch(() => undefined);
+    await cancelResponseBody(response);
     throw new ResponseSizeLimitError();
   }
 

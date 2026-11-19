@@ -57,7 +57,7 @@ export class RavelryPatternImportError extends Error {
   }
 }
 
-async function requireAccessToken({
+async function requireUsableToken({
   uid,
   tokenStore,
   refresh,
@@ -69,7 +69,7 @@ async function requireAccessToken({
   readonly refresh?: OAuthTokenRefresh;
   readonly beforeRefresh?: () => Promise<void>;
   readonly nowMillis?: () => number;
-}): Promise<string> {
+}) {
   const token = await getUsableRavelryToken({
     uid,
     tokenStore,
@@ -80,7 +80,7 @@ async function requireAccessToken({
   if (!token) {
     throw new RavelryPatternImportError("ravelry_not_connected", 412);
   }
-  return token.accessToken;
+  return token;
 }
 
 async function requireAccessTokenForOperation(
@@ -96,12 +96,15 @@ async function requireAccessTokenForOperation(
       consumedGlobal = true;
     }
   };
-  const accessToken = await requireAccessToken({
+  const token = await requireUsableToken({
     ...options,
     beforeRefresh: consumeGlobalRateLimit,
   });
   await consumeGlobalRateLimit();
-  return accessToken;
+  if (token.expiresAtMillis != null && token.expiresAtMillis <= (options.nowMillis ?? Date.now)()) {
+    return (await requireUsableToken(options)).accessToken;
+  }
+  return token.accessToken;
 }
 
 function withOriginalUrl(pattern: SanitizedPattern, originalUrl: string): SanitizedPattern {
@@ -243,7 +246,7 @@ export async function importPatternById(options: ImportPatternByIdOptions): Prom
 
   const accessToken = await requireAccessTokenForOperation(options, "import");
   const pattern = await options.client.getPatternById(accessToken, options.ravelryPatternId);
-  if (!pattern) {
+  if (pattern?.ravelryPatternId !== options.ravelryPatternId) {
     throw new RavelryPatternImportError("pattern_not_found", 404);
   }
   return pattern;

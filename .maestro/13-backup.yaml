@@ -19,6 +19,8 @@ name: Backup export and replacement restore
     direction: DOWN
 - tapOn: "Backup & Restore"
 - tapOn: "Export backup"
+- tapOn: "Show roots"
+- tapOn: "Downloads"
 - tapOn:
     point: "45%, 95%"
 - longPressOn:

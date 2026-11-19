@@ -169,6 +169,16 @@ class WebPatternTextTest {
     }
 
     @Test
+    fun `a bare closing parenthesis is retained in a shared URL query`() {
+        val url = "https://example.com/pattern?size=small)"
+        val plain = parseWebPatternSharedText(url, null) as WebPatternShareParseResult.WebLink
+        val wrapped = parseWebPatternSharedText("($url)", null) as WebPatternShareParseResult.WebLink
+
+        assertEquals(url, plain.url.originalUrl)
+        assertEquals(url, wrapped.url.originalUrl)
+    }
+
+    @Test
     fun `share parser accepts the 2048 character URL boundary`() {
         val prefix = "https://example.com/"
         val boundaryUrl = prefix + "a".repeat(WEB_PATTERN_URL_MAX_LENGTH - prefix.length)

@@ -4,6 +4,7 @@ import com.finnvek.knittools.data.local.CounterHistoryEntity
 import com.finnvek.knittools.data.local.CounterProjectDao
 import com.finnvek.knittools.data.local.CounterProjectEntity
 import com.finnvek.knittools.data.local.ProjectCompletionEntity
+import com.finnvek.knittools.data.local.ProjectCreationReceiptEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 
@@ -14,6 +15,10 @@ open class StubCounterProjectDao(
 
     override suspend fun insertOnboardingProject(receipt: com.finnvek.knittools.data.local.OnboardingProjectEntity) =
         Unit
+
+    override suspend fun findProjectCreationReceipt(attemptId: String): ProjectCreationReceiptEntity? = null
+
+    override suspend fun insertProjectCreationReceipt(receipt: ProjectCreationReceiptEntity) = Unit
 
     override suspend fun insertCompletion(event: ProjectCompletionEntity): Long = 0L
 
@@ -62,6 +67,7 @@ open class StubCounterProjectDao(
         id: Long,
         notes: String,
         updatedAt: Long,
+        hasNotes: Boolean,
     ) = Unit
 
     override suspend fun updateSecondaryCount(

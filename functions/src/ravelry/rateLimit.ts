@@ -141,7 +141,7 @@ export function fixedWindowStartMillis(nowMillis: number, windowMillis: number):
   return Math.floor(nowMillis / windowMillis) * windowMillis;
 }
 
-type RateLimitTransactionOutcome = "consumed" | "global-full" | "global-inactive";
+type RateLimitTransactionOutcome = "consumed" | "global-full" | "global-inactive" | "legacy-active";
 
 interface ReferencedRateLimitTarget extends RavelryRateLimitTarget {
   readonly ref: DocumentReference;
@@ -157,6 +157,7 @@ export function createRavelryRateLimiter(
   nowMillis: () => number = Date.now,
   random: () => number = Math.random,
   runtimeState: RavelryRateLimitRuntimeState = processRateLimitRuntimeState,
+  globalMode: "shared" | "sharded" = "shared",
 ): RavelryRateLimiter {
   const consumeGlobalCapacity = async (
     bucket: RavelryRateLimitBucket,
@@ -173,15 +174,18 @@ export function createRavelryRateLimiter(
     if (saturatedWindowStart === globalWindowStart) {
       throw globalRateLimitError(bucket);
     }
-    if (saturatedWindowStart != null) {
+    if (saturatedWindowStart != null && saturatedWindowStart < globalWindowStart) {
       runtimeState.saturatedGlobalWindows.delete(bucket);
     }
 
+    const legacyTarget = legacyGlobalRateLimitTarget(bucket);
+    const legacyReference = collection.doc(legacyTarget.documentId);
     const consumeTarget = async (
       globalTarget: RavelryRateLimitTarget,
       globalDecisionMillis: number,
       requireActiveGlobalWindow: boolean,
     ): Promise<RateLimitTransactionOutcome> => {
+      const legacyRef = globalTarget === legacyTarget ? undefined : legacyReference;
       if (uid == null) {
         return consumeGlobalRateLimitTarget({
           firestore,
@@ -190,6 +194,7 @@ export function createRavelryRateLimiter(
           currentMillis,
           globalDecisionMillis,
           requireActiveGlobalWindow,
+          legacyRef,
         });
       }
       return consumeRateLimitTargets({
@@ -200,13 +205,19 @@ export function createRavelryRateLimiter(
         currentMillis,
         globalDecisionMillis,
         requireActiveGlobalWindow,
+        legacyRef,
       });
     };
 
-    // Väliaikainen rollout-suoja poistetaan vasta, kun legacy-dokumentteja
-    // kirjoittavat revisiot on vahvistettu poistuneiksi liikenteestä.
+    // Old revisions only write this document, so both revisions must also open
+    // new windows here until the old writers and their quota windows drain.
+    if (globalMode === "shared") {
+      if (await consumeTarget(legacyTarget, currentMillis, false) === "consumed") return;
+      throw globalRateLimitError(bucket);
+    }
+
     const legacyOutcome = await consumeTarget(
-      legacyGlobalRateLimitTarget(bucket),
+      legacyTarget,
       currentMillis,
       true,
     );
@@ -231,9 +242,16 @@ export function createRavelryRateLimiter(
       if (outcome === "consumed") {
         return;
       }
+      if (outcome === "legacy-active") {
+        if (await consumeTarget(legacyTarget, currentMillis, true) === "consumed") return;
+        throw globalRateLimitError(bucket);
+      }
     }
 
-    runtimeState.saturatedGlobalWindows.set(bucket, globalWindowStart);
+    const latestSaturatedWindow = runtimeState.saturatedGlobalWindows.get(bucket);
+    if (latestSaturatedWindow == null || latestSaturatedWindow < globalWindowStart) {
+      runtimeState.saturatedGlobalWindows.set(bucket, globalWindowStart);
+    }
     throw globalRateLimitError(bucket);
   };
 
@@ -275,6 +293,7 @@ async function consumeGlobalRateLimitTarget({
   currentMillis,
   globalDecisionMillis,
   requireActiveGlobalWindow,
+  legacyRef,
 }: {
   readonly firestore: Firestore;
   readonly target: ReferencedRateLimitTarget;
@@ -282,9 +301,15 @@ async function consumeGlobalRateLimitTarget({
   readonly currentMillis: number;
   readonly globalDecisionMillis: number;
   readonly requireActiveGlobalWindow: boolean;
+  readonly legacyRef?: DocumentReference;
 }): Promise<RateLimitTransactionOutcome> {
   return firestore.runTransaction(async (transaction) => {
-    const snapshot = await transaction.get(target.ref);
+    const [snapshot, legacySnapshot] = await transaction.getAll(
+      target.ref, ...(legacyRef ? [legacyRef] : []),
+    );
+    if (legacySnapshot && activeRavelryRateLimitState(
+      legacySnapshot.data(), currentMillis, RAVELRY_GLOBAL_RATE_LIMIT_RULES[bucket],
+    )) return "legacy-active";
     const stored = snapshot.data();
     if (
       requireActiveGlobalWindow &&
@@ -316,6 +341,7 @@ async function consumeRateLimitTargets({
   currentMillis,
   globalDecisionMillis,
   requireActiveGlobalWindow,
+  legacyRef,
 }: {
   readonly firestore: Firestore;
   readonly targets: ReferencedRateLimitTargets;
@@ -324,12 +350,17 @@ async function consumeRateLimitTargets({
   readonly currentMillis: number;
   readonly globalDecisionMillis: number;
   readonly requireActiveGlobalWindow: boolean;
+  readonly legacyRef?: DocumentReference;
 }): Promise<RateLimitTransactionOutcome> {
   return firestore.runTransaction(async (transaction) => {
-    const [uidSnapshot, globalSnapshot] = await transaction.getAll(
+    const [uidSnapshot, globalSnapshot, legacySnapshot] = await transaction.getAll(
       targets.uid.ref,
       targets.global.ref,
+      ...(legacyRef ? [legacyRef] : []),
     );
+    if (legacySnapshot && activeRavelryRateLimitState(
+      legacySnapshot.data(), currentMillis, RAVELRY_GLOBAL_RATE_LIMIT_RULES[bucket],
+    )) return "legacy-active";
     const globalStored = globalSnapshot.data();
     if (
       requireActiveGlobalWindow &&

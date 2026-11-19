@@ -375,11 +375,14 @@ class PatternReadingAssistanceComposeTest {
         onNext: () -> Unit = {},
     ) = PatternBookmarkSheetActions(
         onDismiss = {},
-        onAdd = onAdd,
+        onAdd = { name, saved ->
+            onAdd(name)
+            saved()
+        },
         onJump = onJump,
         onPrevious = {},
         onNext = onNext,
-        onRename = { _, _ -> },
+        onRename = { _, _, _ -> },
         onDelete = {},
         onClearError = {},
     )

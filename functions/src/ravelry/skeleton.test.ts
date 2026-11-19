@@ -12,19 +12,16 @@ import {
 import {
   ravelryAuthStatus,
   ravelryCallback,
+  ravelryCompleteAuth,
   ravelryCurrentUser,
   ravelryDisconnect,
-  ravelryStartAuth,
-} from "./auth";
-import { createRavelryClient } from "./client";
-import {
-  importPatternById,
-  importPatternByUrl,
   ravelryImportPatternById,
   ravelryImportPatternByUrl,
   ravelrySearchPatterns,
-  searchPatternsForUser,
-} from "./patternImport";
+  ravelryStartAuth,
+} from "../index";
+import { createRavelryClient } from "./client";
+import { importPatternById, importPatternByUrl, searchPatternsForUser } from "./patternImport";
 import { toSanitizedPattern } from "./sanitizedTypes";
 import { createTokenStore } from "./tokenStore";
 import { parseRavelryPatternUrl } from "./urlParsing";
@@ -41,6 +38,7 @@ describe("Ravelry Firebase backend surface", () => {
     [
       ravelryStartAuth,
       ravelryCallback,
+      ravelryCompleteAuth,
       ravelryAuthStatus,
       ravelryDisconnect,
       ravelryCurrentUser,

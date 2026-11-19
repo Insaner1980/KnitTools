@@ -102,9 +102,9 @@ class WidgetEntitlementRuntimeTest {
             assertTrue(billing.purchaseQueryFailed.value)
             assertCountActionBlocked()
 
-            val queries = client.queries
+            val queries = withContext(Dispatchers.Main) { client.queries }
             click(app.getString(R.string.retry))
-            await { client.queries > queries }
+            await { withContext(Dispatchers.Main) { client.queries > queries } }
             assertRetry()
             assertFalse(billing.purchaseStateReady.value)
 
@@ -131,7 +131,7 @@ class WidgetEntitlementRuntimeTest {
     fun retryTimeoutKeepsUnknownStateAndReleasesReceiver() =
         withWidget(initialFailure = true) {
             assertRetry()
-            client.deferQueries = true
+            withContext(Dispatchers.Main) { client.deferQueries = true }
             sendAction(CounterWidgetActions.retryIntent(app))
             assertRetry()
             assertFalse(billing.purchaseStateReady.value)
@@ -144,6 +144,7 @@ class WidgetEntitlementRuntimeTest {
                     client.purchases,
                 )
             }
+            InstrumentationRegistry.getInstrumentation().waitForIdleSync()
             assertFalse("A cancelled retry must not grant access from its late response", billing.isProPurchased.value)
             click(app.getString(R.string.retry))
             awaitCounter("0")

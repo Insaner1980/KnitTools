@@ -38,6 +38,7 @@ gradle.afterProject { project ->
         $ErrorActionPreference = "Continue"
         $output =
             & $gradleWrapper `
+                --project-dir $repoRoot `
                 --no-daemon `
                 :app:printDependencyCheckPnpmPath `
                 --no-configuration-cache `

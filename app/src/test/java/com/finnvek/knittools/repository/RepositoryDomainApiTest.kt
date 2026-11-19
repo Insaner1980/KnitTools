@@ -620,19 +620,18 @@ internal class FakePatternAnnotationDao(
         return patternAnnotations.filter { it.layerId in layerIds }.take(limit)
     }
 
-    override suspend fun getExportStats(layerIds: List<Long>): PatternAnnotationExportStats {
-        val annotations = patternAnnotations.filter { it.layerId in layerIds }
-        return PatternAnnotationExportStats(
-            annotationCount = annotations.size.toLong(),
-            payloadBytes =
-                annotations.sumOf {
-                    it.payloadJson
-                        .encodeToByteArray()
-                        .size
-                        .toLong()
-                },
-        )
-    }
+    override suspend fun countForLayersLimited(
+        layerIds: List<Long>,
+        limit: Int,
+    ): Int = patternAnnotations.count { it.layerId in layerIds }.coerceAtMost(limit)
+
+    override suspend fun getExportPayloadBytes(layerIds: List<Long>): Long =
+        patternAnnotations.filter { it.layerId in layerIds }.sumOf {
+            it.payloadJson
+                .encodeToByteArray()
+                .size
+                .toLong()
+        }
 
     override suspend fun insertUnchecked(annotation: PatternAnnotationEntity): Long {
         lastInserted = annotation

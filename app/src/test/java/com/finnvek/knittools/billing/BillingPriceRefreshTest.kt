@@ -15,6 +15,7 @@ import io.mockk.mockkStatic
 import io.mockk.unmockkStatic
 import io.mockk.verify
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -61,7 +62,7 @@ class BillingPriceRefreshTest {
             every { client.launchBillingFlow(activity, any()) } returns ok
             val response = CompletableDeferred<ProductDetailsResult>()
             coEvery { client.queryProductDetails(any()) } coAnswers { response.await() }
-            val manager = BillingManager(mockk<Context>(relaxed = true))
+            val manager = BillingManager(mockk<Context>(relaxed = true), CoroutineScope(Dispatchers.Main.immediate))
             BillingManager::class.java.getDeclaredField("billingClient").apply {
                 isAccessible = true
                 set(manager, client)

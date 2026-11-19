@@ -17,6 +17,8 @@ const productionPath = "app/src/main/java/com/finnvek/knittools/Surface.kt";
 
 test("standalone extra reads and deletions are not lost to prefilters", () => {
   assert.equal(androidIntentInputSurface.match('getIntent().getStringExtra("name")', productionPath).length, 1);
+  assert.equal(androidIntentInputSurface.match('intent.getIntArrayExtra("ids")', productionPath).length, 1);
+  assert.equal(androidIntentInputSurface.match('intent.getParcelableArrayExtra(Intent.EXTRA_STREAM)', productionPath).length, 1);
   assert.equal(knitToolsFileUriSurface.match("file.deleteRecursively()", productionPath).length, 1);
 });
 
@@ -36,6 +38,9 @@ test("transcripts and direct Ravelry credentials remain review candidates", () =
   for (const name of ["CLIENT_SECRET", "ACCESS_TOKEN", "REFRESH_TOKEN", "OAUTH2_SYNTHETIC"]) {
     assert.equal(ravelryCredentialSurface.match("val value = BuildConfig.RAVELRY_" + name, productionPath).length, 1);
   }
+  assert.equal(ravelryCredentialSurface.match(
+    'buildConfigField("String", "RAVELRY_CLIENT_SECRET", configuredValue)',
+    "app/build.gradle.kts").length, 1);
 });
 
 test("ClipData must contain the same URI as EXTRA_STREAM", () => {
@@ -478,6 +483,12 @@ test("flags broad external media FileProvider paths", () => {
     matches.map((match) => match.matchedPattern),
     ['FileProvider path="." or equivalent broad directory'],
   );
+});
+
+test("flags FileProvider roots with a missing path and preserves narrow paths", () => {
+  const file = "app/src/main/res/xml/file_paths.xml";
+  assert.equal(fileproviderBroadPath.match('<paths><files-path name="files" /></paths>', file).length, 1);
+  assert.deepEqual(fileproviderBroadPath.match('<paths><files-path name="files" path="exports/" /></paths>', file), []);
 });
 
 test("flags each exported Android component without crossing manifest tags", () => {

@@ -175,9 +175,6 @@
     <string name="pattern_image_move_later">Mover la página %1$d después</string>
     <string name="pattern_image_remove_page">Eliminar la página %1$d</string>
     <string name="pattern_image_create_pdf">Crear PDF del patrón</string>
-    <string name="pattern_image_replace_title">¿Reemplazar el patrón actual?</string>
-    <string name="pattern_image_replace_message">El archivo adjunto actual se reemplazará cuando el nuevo PDF esté listo.</string>
-    <string name="pattern_image_replace_action">Reemplazar patrón</string>
     <string name="pattern_image_conversion_progress">Creando página %1$d de %2$d</string>
     <string name="pattern_image_attaching">Adjuntando PDF del patrón</string>
     <string name="pattern_image_cancel_conversion">Cancelar conversión</string>

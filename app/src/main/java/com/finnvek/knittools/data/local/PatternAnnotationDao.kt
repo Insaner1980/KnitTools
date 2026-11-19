@@ -141,14 +141,22 @@ abstract class PatternAnnotationDao {
 
     @Query(
         """
-        SELECT
-            COUNT(*) AS annotationCount,
-            COALESCE(SUM(LENGTH(CAST(payloadJson AS BLOB))), 0) AS payloadBytes
+        SELECT COUNT(*) FROM (SELECT id FROM pattern_annotations WHERE layerId IN (:layerIds) LIMIT :limit)
+        """,
+    )
+    protected abstract suspend fun countForLayersLimited(
+        layerIds: List<Long>,
+        limit: Int,
+    ): Int
+
+    @Query(
+        """
+        SELECT COALESCE(SUM(LENGTH(CAST(payloadJson AS BLOB))), 0)
         FROM pattern_annotations
         WHERE layerId IN (:layerIds)
         """,
     )
-    protected abstract suspend fun getExportStats(layerIds: List<Long>): PatternAnnotationExportStats
+    protected abstract suspend fun getExportPayloadBytes(layerIds: List<Long>): Long
 
     @Transaction
     open suspend fun getForLayersBounded(
@@ -158,9 +166,10 @@ abstract class PatternAnnotationDao {
     ): List<PatternAnnotationEntity> {
         require(maxAnnotations in 0..PATTERN_PDF_EXPORT_MAX_ANNOTATIONS)
         require(maxPayloadBytes in 0L..PATTERN_PDF_EXPORT_MAX_ANNOTATION_PAYLOAD_BYTES)
-        val stats = getExportStats(layerIds)
-        check(stats.annotationCount <= maxAnnotations.toLong()) { "Pattern annotation export limit exceeded" }
-        check(stats.payloadBytes <= maxPayloadBytes) { "Pattern annotation export payload limit exceeded" }
+        check(countForLayersLimited(layerIds, maxAnnotations + 1) <= maxAnnotations) {
+            "Pattern annotation export limit exceeded"
+        }
+        check(getExportPayloadBytes(layerIds) <= maxPayloadBytes) { "Pattern annotation export payload limit exceeded" }
         val annotations = getForLayersLimited(layerIds, maxAnnotations + 1)
         check(annotations.size <= maxAnnotations) { "Pattern annotation export limit exceeded" }
         validatePages(annotations)
@@ -187,13 +196,18 @@ abstract class PatternAnnotationDao {
     @Transaction
     open suspend fun update(annotation: PatternAnnotationEntity) {
         requireEditableLayer(annotation.layerId)
+        getAnnotationLayerId(annotation.id)?.let { requireEditableLayer(it) }
         updateUnchecked(annotation)
         getPageBounded(annotation.layerId, annotation.page)
     }
 
     @Transaction
     open suspend fun restoreBatch(annotations: List<PatternAnnotationEntity>) {
-        annotations.map { it.layerId }.distinct().forEach { requireEditableLayer(it) }
+        val editableLayers = annotations.mapTo(mutableSetOf()) { it.layerId }
+        for (id in annotations.map { it.id }.distinct()) {
+            getAnnotationLayerId(id)?.let(editableLayers::add)
+        }
+        editableLayers.forEach { requireEditableLayer(it) }
         restoreUnchecked(annotations)
         // Tarkistetaan REPLACE-erän lopputila myös toistuvilla ID-arvoilla ja sivun tai tason vaihtuessa.
         annotations.map { it.layerId to it.page }.distinct().forEach { (layerId, page) ->

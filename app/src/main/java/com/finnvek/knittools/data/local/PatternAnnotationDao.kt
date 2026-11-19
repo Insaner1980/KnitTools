@@ -247,24 +247,24 @@ abstract class PatternAnnotationDao {
         val layer = checkNotNull(getTextEditLayer(layerId)) { "Annotation layer no longer exists" }
         check(layer.projectId == null || layer.isActive) { "Annotation layer is not editable" }
     }
+}
 
-    private fun validatePages(annotations: List<PatternAnnotationEntity>) {
-        val budgets = mutableMapOf<Pair<Long, Int>, PatternAnnotationPageBudget>()
-        for (entity in annotations) {
-            if (entity.payloadJson.length > PatternAnnotationPayloadCodec.MAX_PAYLOAD_BYTES) {
-                throw PatternAnnotationPageLimitException()
-            }
-            val annotation = entity.toDomain() ?: throw PatternAnnotationPageLimitException()
-            budgets
-                .getOrPut(entity.layerId to entity.page) { PatternAnnotationPageBudget() }
-                .add(
-                    annotation.payload,
-                    entity.payloadJson
-                        .encodeToByteArray()
-                        .size
-                        .toLong(),
-                )
+private fun validatePages(annotations: List<PatternAnnotationEntity>) {
+    val budgets = mutableMapOf<Pair<Long, Int>, PatternAnnotationPageBudget>()
+    for (entity in annotations) {
+        if (entity.payloadJson.length > PatternAnnotationPayloadCodec.MAX_PAYLOAD_BYTES) {
+            throw PatternAnnotationPageLimitException()
         }
+        val annotation = entity.toDomain() ?: throw PatternAnnotationPageLimitException()
+        budgets
+            .getOrPut(entity.layerId to entity.page) { PatternAnnotationPageBudget() }
+            .add(
+                annotation.payload,
+                entity.payloadJson
+                    .encodeToByteArray()
+                    .size
+                    .toLong(),
+            )
     }
 }
 

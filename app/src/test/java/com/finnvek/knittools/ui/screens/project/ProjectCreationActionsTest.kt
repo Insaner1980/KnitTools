@@ -67,8 +67,12 @@ class ProjectCreationActionsTest {
             runCurrent()
             assertEquals(listOf(7L), createdIds)
             assertNull(handle.get<PendingProjectCreation>(PENDING_KEY))
-            coVerify(exactly = 1) { repository.createProject("Blanket", any(), any(), any(), any(), any(), any(), any()) }
-            coVerify(exactly = 0) { repository.createProject("Second", any(), any(), any(), any(), any(), any(), any()) }
+            coVerify(exactly = 1) {
+                repository.createProject("Blanket", any(), any(), any(), any(), any(), any(), any())
+            }
+            coVerify(exactly = 0) {
+                repository.createProject("Second", any(), any(), any(), any(), any(), any(), any())
+            }
         }
 
     @Test

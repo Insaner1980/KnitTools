@@ -126,11 +126,7 @@ internal class ContentResolverBackupProviderIo internal constructor(
                 descriptorCloserExecutor,
                 onFinished = { operationActive.set(false) },
             ) { failure -> completion.complete(Result.failure(failure)) }
-        val stream =
-            runCatching(openLocalStream).getOrElse {
-                deadline.finish()
-                throw it
-            }
+        val stream = runCatching(openLocalStream).onFailure { deadline.finish() }.getOrThrow()
         // The caller closes its local file before cleaning up the staging directory.
         stream.use {
             executeTransfer(request, { handle, timer -> block(handle, timer, stream) }, deadline, completion)

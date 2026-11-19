@@ -37,6 +37,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -274,16 +275,8 @@ class ProjectListViewModel
             }
             viewModelScope.launch {
                 activeProjects
-                    .flatMapLatest { projects ->
-                        projectDocumentRepository
-                            .observeDocuments(projects.map(CounterProject::id))
-                            .map { documents ->
-                                resolveProjectPatternNames(projects, documents, savedPatternRepository)
-                            }
-                    }.retryOnRepositoryReadFailure()
-                    .collect { names ->
-                        _projectPatternNames.value = names
-                    }
+                    .observeProjectPatternNames(projectDocumentRepository, savedPatternRepository)
+                    .collect { _projectPatternNames.value = it }
             }
         }
 
@@ -759,6 +752,17 @@ class ProjectListViewModel
             }
         }
     }
+
+@OptIn(ExperimentalCoroutinesApi::class)
+private fun Flow<List<CounterProject>>.observeProjectPatternNames(
+    projectDocumentRepository: ProjectDocumentRepository,
+    savedPatternRepository: SavedPatternRepository,
+): Flow<Map<Long, String>> =
+    flatMapLatest { projects ->
+        projectDocumentRepository.observeDocuments(projects.map(CounterProject::id)).map { documents ->
+            resolveProjectPatternNames(projects, documents, savedPatternRepository)
+        }
+    }.retryOnRepositoryReadFailure()
 
 private suspend fun resolveProjectPatternNames(
     projects: List<CounterProject>,

@@ -21,6 +21,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
@@ -74,13 +75,7 @@ class ProjectCreationPolicyTest : ProjectListViewModelFixture() {
             backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
                 vm.navigateToProject.collect { navigated += it }
             }
-            vm.createProject(
-                "Original",
-                com.finnvek.knittools.domain.model.CraftType.CROCHET,
-                com.finnvek.knittools.domain.model.MainCounterLabelType.CUSTOM,
-                "Circuits",
-                12L,
-            )
+            vm.createProject("Original", CROCHET, CUSTOM, "Circuits", 12L)
             runCurrent()
             assertEquals(1, vm.projectCreationPromptCount.value)
             val staleCount = CompletableDeferred<Int>()
@@ -205,11 +200,7 @@ class ProjectCreationPolicyTest : ProjectListViewModelFixture() {
             }
             val errors = mutableListOf<Throwable>()
             val reportedFailures = mutableListOf<Throwable>()
-            val scope =
-                CoroutineScope(
-                    SupervisorJob() + StandardTestDispatcher(testScheduler) +
-                        CoroutineExceptionHandler { _, e -> errors += e },
-                )
+            val scope = recordingScope(errors)
             try {
                 val actions =
                     ProjectCreationActions(
@@ -349,11 +340,7 @@ class ProjectCreationPolicyTest : ProjectListViewModelFixture() {
             { heldCreate.await() }
         val errors = mutableListOf<Throwable>()
         val reportedFailures = mutableListOf<Throwable>()
-        val scope =
-            CoroutineScope(
-                SupervisorJob() + StandardTestDispatcher(testScheduler) +
-                    CoroutineExceptionHandler { _, error -> errors += error },
-            )
+        val scope = recordingScope(errors)
         val handle = pendingDraftHandle()
         val navigated = mutableListOf<Long>()
         try {
@@ -403,6 +390,12 @@ class ProjectCreationPolicyTest : ProjectListViewModelFixture() {
             scope.cancel()
         }
     }
+
+    private fun TestScope.recordingScope(errors: MutableList<Throwable>): CoroutineScope =
+        CoroutineScope(
+            SupervisorJob() + StandardTestDispatcher(testScheduler) +
+                CoroutineExceptionHandler { _, error -> errors += error },
+        )
 
     private fun expectedPromptCount(
         dismiss: Boolean,

@@ -71,9 +71,7 @@ class ProManager
                                     )
                                 }
 
-                                !trial.hasStarted -> {
-                                    ProState(status = ProStatus.TRIAL_NOT_STARTED)
-                                }
+                                !trial.hasStarted -> ProState(status = ProStatus.TRIAL_NOT_STARTED)
 
                                 else -> {
                                     ProState(

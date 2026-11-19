@@ -40,7 +40,7 @@ Package entries are under `app/src/main/java/com/finnvek/knittools`. The applica
 
 ## Build And Test
 
-Use the checked-in wrapper with **JDK 17 (Eclipse Temurin)** and the configured Android SDK. Current configuration uses Gradle 9.8.1, compile/target SDK 37, minimum SDK 29, and Room schema 28. The version catalog and Gradle files are authoritative.
+Use the checked-in wrapper with **JDK 17 (Eclipse Temurin)** and the configured Android SDK. Current configuration uses Gradle 9.8.1, compile/target SDK 37, minimum SDK 29, and Room schema 29. The version catalog and Gradle files are authoritative.
 
 From Windows PowerShell:
 

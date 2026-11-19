@@ -770,7 +770,8 @@ abstract class KnitToolsDatabase : RoomDatabase() {
                 override fun migrate(db: SupportSQLiteDatabase) {
                     db.execSQL(
                         "CREATE TABLE IF NOT EXISTS `project_creation_receipts` (" +
-                            "`attemptId` TEXT NOT NULL, `projectId` INTEGER NOT NULL, `wasFirstProject` INTEGER NOT NULL, " +
+                            "`attemptId` TEXT NOT NULL, `projectId` INTEGER NOT NULL, " +
+                            "`wasFirstProject` INTEGER NOT NULL, " +
                             "PRIMARY KEY(`attemptId`), FOREIGN KEY(`projectId`) REFERENCES `counter_projects`(`id`) " +
                             "ON UPDATE NO ACTION ON DELETE CASCADE)",
                     )

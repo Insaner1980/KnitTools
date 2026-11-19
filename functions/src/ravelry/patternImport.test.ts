@@ -114,9 +114,11 @@ class MemoryTokenStore implements RavelryTokenStore {
     return true;
   }
 
-  async deleteToken(uid: string, _nowMillis?: number): Promise<void> {
-    this.generations.set(uid, await this.getConnectionGeneration(uid) + 1);
+  async deleteToken(uid: string, _nowMillis?: number): Promise<number> {
+    const generation = await this.getConnectionGeneration(uid);
+    this.generations.set(uid, generation + 1);
     this.tokens.delete(uid);
+    return generation;
   }
 }
 
@@ -567,9 +569,17 @@ describe("Ravelry backend search and import", () => {
   });
 
   it("maps missing search endpoints to errors while missing pattern details stay null", async () => {
-    const client = createRavelryClient(async () => new Response("", { status: 404 }));
+    let cancellations = 0;
+    const client = createRavelryClient(async () => new Response(new ReadableStream({
+      cancel() {
+        cancellations++;
+        throw new Error("synthetic cancellation error");
+      },
+    }), { status: 404 }));
     await assert.rejects(client.searchPatterns("synthetic", { query: "hat" }), /ravelry_http_404/);
     assert.equal(await client.getPatternById("synthetic", 1), null);
+    await assert.rejects(client.getCurrentUser("synthetic"), /ravelry_http_404/);
+    assert.equal(cancellations, 3);
   });
 
   it("rejects malformed current-user JSON shapes with a sanitized upstream error", async () => {
@@ -589,8 +599,10 @@ describe("Ravelry backend search and import", () => {
       updatedAtMillis: 1_000,
     });
 
+    const requests: string[] = [];
     const client = createRavelryClient(async (input) => {
       const url = typeof input === "string" ? input : input.toString();
+      requests.push(url);
       if (url.includes("/patterns/search.json")) {
         return new Response(
           JSON.stringify({
@@ -640,6 +652,9 @@ describe("Ravelry backend search and import", () => {
         availability: "free",
       },
     );
+    const detailUrl = "https://api.ravelry.com/patterns/42.json";
+    assert.deepEqual(requests, [detailUrl]);
+    requests.length = 0;
 
     const fromUrl = await importPatternByUrl({
       uid: "uid",
@@ -651,6 +666,23 @@ describe("Ravelry backend search and import", () => {
     assert.equal(fromUrl.designerName, "Ada Designer");
     assert.equal(fromUrl.originalUrl, "https://www.ravelry.com/patterns/library/cozy-hat?utm_source=share");
     assert.equal(JSON.stringify(fromUrl).includes("pdf_url"), false);
+    assert.deepEqual(requests, [
+      "https://api.ravelry.com/patterns/search.json?query=cozy-hat&page=1&page_size=10&sort=best",
+      detailUrl,
+    ]);
+  });
+
+  it("rejects detail metadata for a different pattern ID", async () => {
+    const tokenStore = new MemoryTokenStore();
+    await tokenStore.saveToken({
+      uid: "uid", authType: "oauth2", accessToken: "synthetic-access",
+      createdAtMillis: 1_000, updatedAtMillis: 1_000,
+    });
+    const client = createRavelryClient(async () => Response.json({
+      pattern: { id: 43, name: "Other Hat", permalink: "other-hat" },
+    }));
+    await assert.rejects(importPatternById({ uid: "uid", tokenStore, client, ravelryPatternId: 42 }),
+      { code: "pattern_not_found", httpStatus: 404 });
   });
 
   it("sanitizes the detail pattern author before the legacy designer field", async () => {
@@ -1215,6 +1247,36 @@ describe("Ravelry backend search and import", () => {
       updatedAtMillis: 1_000,
       connectionGeneration: 0,
     });
+  });
+
+  it("refreshes a token that expires during global admission without charging twice", async () => {
+    const tokenStore = new MemoryTokenStore();
+    await tokenStore.saveToken({
+      uid: "uid", authType: "oauth2", accessToken: "initial-access", refreshToken: "synthetic-refresh",
+      expiresAtMillis: 20_000, createdAtMillis: 0, updatedAtMillis: 0,
+    });
+    let now = 1_000;
+    const events: string[] = [];
+    const rateLimiter = new class extends RecordingRateLimiter {
+      override async consumeGlobal(bucket: RavelryRateLimitBucket) {
+        await super.consumeGlobal(bucket);
+        now = 20_000;
+      }
+    }(events);
+    const client = createRavelryClient(async (_input, init) => {
+      assert.equal(new Headers(init?.headers).get("Authorization"), "Bearer fresh-access");
+      events.push("search");
+      return Response.json({ patterns: [] });
+    });
+    await searchPatternsForUser({
+      uid: "uid", tokenStore, client, rateLimiter, nowMillis: () => now, query: { query: "hat" },
+      refresh: async ({ refreshToken }) => {
+        assert.equal(refreshToken, "synthetic-refresh");
+        events.push("refresh");
+        return { accessToken: "fresh-access", expiresAtMillis: 40_000 };
+      },
+    });
+    assert.deepEqual(events, ["uid:search", "global:search", "refresh", "search"]);
   });
 
   it("rejects global capacity before refreshing an expired token or calling Ravelry", async () => {

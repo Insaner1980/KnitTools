@@ -18,6 +18,10 @@ export const fileproviderBroadPath: MatcherPlugin = {
           /<(?:files-path|cache-path|external-files-path|external-cache-path|external-media-path)\b[^>]*\bpath\s*=\s*(["'])[\s.\/]*\1[^>]*>/i,
         label: 'FileProvider path="." or equivalent broad directory',
       },
+      {
+        regex: /<(?:files-path|cache-path|external-files-path|external-cache-path|external-media-path)\b(?![^>]*\spath\s*=)[^>]*>/i,
+        label: "FileProvider path omitted, exposing the base directory",
+      },
     ]);
   },
 };

@@ -478,7 +478,19 @@ class CounterRepositoryDomainApiTest {
             val result = repository.saveProjectNotes(7L, "", "First note")
 
             assertEquals(ProjectNotesSaveResult.FeatureUnavailable, result)
-            coVerify(exactly = 0) { projectDao.updateNotes(any(), any(), any()) }
+            coVerify(exactly = 0) { projectDao.updateNotes(any(), any(), any(), any()) }
+        }
+
+    @Test
+    fun `blank notes do not set the first-use flag`() =
+        runTest {
+            every { proManager.hasFeature(ProFeature.NOTES) } returns false
+            coEvery { projectDao.getProject(7L) } returns CounterProjectEntity(id = 7L)
+
+            val saved = repository.saveProjectNotes(7L, "", "\n\t") as ProjectNotesSaveResult.Saved
+
+            assertFalse(saved.project.notesCreated)
+            coVerify(exactly = 1) { projectDao.updateNotes(7L, "\n\t", any(), false) }
         }
 
     @Test
@@ -498,7 +510,7 @@ class CounterRepositoryDomainApiTest {
             val saved = result as ProjectNotesSaveResult.Saved
             assertEquals("", saved.project.notes)
             assertTrue(saved.project.notesCreated)
-            coVerify(exactly = 1) { projectDao.updateNotes(7L, "", any()) }
+            coVerify(exactly = 1) { projectDao.updateNotes(7L, "", any(), false) }
         }
 
     @Test

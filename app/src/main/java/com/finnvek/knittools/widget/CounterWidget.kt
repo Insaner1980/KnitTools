@@ -80,6 +80,7 @@ import com.finnvek.knittools.ui.theme.TextSecondary
 import com.finnvek.knittools.ui.theme.YarnColors
 import com.finnvek.knittools.ui.theme.yarnColorForId
 import dagger.hilt.android.EntryPointAccessors
+import java.io.IOException
 import androidx.glance.color.ColorProvider as DayNightColorProvider
 
 class CounterWidget : GlanceAppWidget() {
@@ -155,7 +156,11 @@ class CounterWidget : GlanceAppWidget() {
                 candidates = candidates,
             )
         if (resolvedData != sharedWidgetData) {
-            CounterWidgetState.replaceIfCurrent(context, sharedWidgetData, resolvedData)
+            try {
+                CounterWidgetState.replaceIfCurrent(context, sharedWidgetData, resolvedData)
+            } catch (_: IOException) {
+                // The current render can proceed without persisting the display mirror.
+            }
         }
         return resolvedData
     }

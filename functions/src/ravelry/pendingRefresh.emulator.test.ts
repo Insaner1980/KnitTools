@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { randomUUID } from "node:crypto";
 import { after, describe, it } from "node:test";
 
 import { Firestore } from "firebase-admin/firestore";
@@ -19,13 +20,14 @@ describe("Pending auth during refresh in local Firestore", {
   skip: emulatorHost ? false : "Requires an explicitly started local Firestore emulator",
 }, () => {
   let firestore: Firestore;
+  const runId = randomUUID();
   let sequence = 0;
   after(async () => { await firestore?.terminate(); });
 
   async function fixture() {
     assert.match(emulatorHost ?? "", /^(127\.0\.0\.1|localhost):\d+$/);
     firestore ??= new Firestore({ projectId: "demo-knittools-ravelry-regression" });
-    const uid = `pending-refresh-${++sequence}`;
+    const uid = `pending-refresh-${runId}-${++sequence}`;
     const tokenStore = createTokenStore(firestore);
     const stateStore = createOAuthStateStore(firestore);
     const ref = firestore.collection(tokenStore.collectionPath).doc(uid);

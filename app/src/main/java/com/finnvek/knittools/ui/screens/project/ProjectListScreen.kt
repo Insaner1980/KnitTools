@@ -69,6 +69,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.finnvek.knittools.R
+import com.finnvek.knittools.domain.calculator.ProjectStartValues
 import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.domain.model.CraftType
 import com.finnvek.knittools.domain.model.ProjectFolder
@@ -114,6 +115,7 @@ import com.finnvek.knittools.ui.tips.TipHost
 import com.finnvek.knittools.ui.tips.tipAnchor
 import kotlinx.coroutines.launch
 import java.time.LocalDate
+import java.util.UUID
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -300,15 +302,23 @@ fun ProjectListScreen(
     var showSortMenu by rememberSaveable { mutableStateOf(false) }
     var showMultiCompleteDialog by rememberSaveable { mutableStateOf(false) }
     var showMultiDeleteDialog by rememberSaveable { mutableStateOf(false) }
+    val hasSelection = selectedProjectIds.isNotEmpty()
+    LaunchedEffect(hasSelection) {
+        if (!hasSelection) {
+            showMultiCompleteDialog = false
+            showMultiDeleteDialog = false
+            showMoveSheet = false
+        }
+    }
     ProjectListDialogs(
         state =
             ProjectListDialogState(
                 showDeleteDialog = showDeleteDialog,
                 deleteProjectName = menuProjectName,
-                showMultiCompleteDialog = showMultiCompleteDialog,
+                showMultiCompleteDialog = showMultiCompleteDialog && hasSelection,
                 selectedCount = selectedProjectIds.size,
                 selectedActiveCount = selectedActiveCount,
-                showMultiDeleteDialog = showMultiDeleteDialog,
+                showMultiDeleteDialog = showMultiDeleteDialog && hasSelection,
             ),
         actions =
             ProjectListDialogActions(
@@ -346,6 +356,7 @@ fun ProjectListScreen(
     }
 
     if (showCreateProjectDialog && !content.isLoading) {
+        val attemptId = rememberSaveable { UUID.randomUUID().toString() }
         ProjectDetailsSheet(
             title = stringResource(R.string.new_project_details_title),
             confirmText = stringResource(R.string.create_project),
@@ -365,8 +376,8 @@ fun ProjectListScreen(
                     values.mainCounterLabelType,
                     values.mainCounterCustomLabel,
                     targetFolderId = creationFolderId,
-                    initialCount = values.initialCount,
-                    targetRows = values.targetRows,
+                    startValues = ProjectStartValues(values.initialCount, values.targetRows),
+                    attemptId = attemptId,
                 )
             },
             onDismiss = {
@@ -480,7 +491,7 @@ fun ProjectListScreen(
             )
         }
     }
-    if (showMoveSheet) {
+    if (showMoveSheet && hasSelection) {
         val selectedMemberships = memberships.filter { it.projectId in selectedProjectIds }
         val destinations = selectedMemberships.map { it.folderId }.toSet()
         MoveToFolderSheet(

@@ -81,9 +81,10 @@ class MemoryTokenStore implements RavelryTokenStore {
     return true;
   }
 
-  async deleteToken(): Promise<void> {
-    this.connectionGeneration += 1;
+  async deleteToken(): Promise<number> {
+    const generation = this.connectionGeneration++;
     this.token = null;
+    return generation;
   }
 }
 

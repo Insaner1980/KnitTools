@@ -53,6 +53,19 @@ class ProjectCounterRepositoryTest {
         }
 
     @Test
+    fun `completed project rejects progress updates but allows renaming its counters`() =
+        runTest {
+            val counter = ProjectCounter(id = 1L, projectId = 7L, name = "Repeat", count = 4)
+            fakeDao.store(counter)
+            coEvery { projectDao.getProject(7L) } returns CounterProjectEntity(id = 7L, isCompleted = true)
+
+            assertEquals(ProjectCounterMutationResult.StaleAction, repository.incrementCounter(counter))
+            assertEquals(ProjectCounterMutationResult.StaleAction, repository.resetCounter(7L, 1L))
+            assertEquals(ProjectCounterMutationResult.Success(1L), repository.renameCounter(7L, 1L, "New name"))
+            assertEquals(counter.copy(name = "New name"), repository.getAllCounters().first().single())
+        }
+
+    @Test
     fun `addCounter truncates name to 50 chars`() =
         runTest {
             val longName = "A".repeat(100)

@@ -515,8 +515,12 @@ private class AnnotationBoundaryDao(
         limit: Int,
     ): List<PatternAnnotationEntity> = error("Public read delegates to Room")
 
-    override suspend fun getExportStats(layerIds: List<Long>): PatternAnnotationExportStats =
-        error("Public read delegates to Room")
+    override suspend fun countForLayersLimited(
+        layerIds: List<Long>,
+        limit: Int,
+    ): Int = error("Public read delegates to Room")
+
+    override suspend fun getExportPayloadBytes(layerIds: List<Long>): Long = error("Public read delegates to Room")
 
     override suspend fun insertUnchecked(annotation: PatternAnnotationEntity): Long =
         error("Public write delegates to Room")

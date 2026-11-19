@@ -18,7 +18,9 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -30,6 +32,7 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import java.util.UUID
 import javax.inject.Inject
 
@@ -317,19 +320,26 @@ class NotesEditorViewModel
                 savedStateHandle[NOTES_DRAFT_BASE_KEY] = baseNotes
                 return
             }
-            savedStateHandle.remove<String>(NOTES_DRAFT_KEY)
-            savedStateHandle.remove<String>(NOTES_DRAFT_BASE_KEY)
-            val fileId = draftFileId() ?: UUID.randomUUID()
-            savedStateHandle[NOTES_DRAFT_FILE_ID_KEY] = fileId.toString()
+            val existingFileId = draftFileId()
+            val fileId = existingFileId ?: UUID.randomUUID()
             draftWriteJob?.cancel()
             draftWriteJob =
                 viewModelScope.launch {
                     draftFileMutex.withLock {
-                        draftStorage.write(
-                            loadedProjectId,
-                            fileId,
-                            NotesDraft(notes, baseNotes),
-                        )
+                        var published = false
+                        try {
+                            if (draftStorage.write(loadedProjectId, fileId, NotesDraft(notes, baseNotes))) {
+                                ensureActive()
+                                savedStateHandle[NOTES_DRAFT_FILE_ID_KEY] = fileId.toString()
+                                savedStateHandle.remove<String>(NOTES_DRAFT_KEY)
+                                savedStateHandle.remove<String>(NOTES_DRAFT_BASE_KEY)
+                                published = true
+                            }
+                        } finally {
+                            if (!published && existingFileId == null) {
+                                withContext(NonCancellable) { draftStorage.delete(loadedProjectId, fileId) }
+                            }
+                        }
                     }
                 }
         }
@@ -346,10 +356,10 @@ class NotesEditorViewModel
             }
 
         private fun clearDraftFile() {
+            draftWriteJob?.cancel()
             val loadedProjectId = projectId ?: return
             val fileId = draftFileId() ?: return
             savedStateHandle.remove<String>(NOTES_DRAFT_FILE_ID_KEY)
-            draftWriteJob?.cancel()
             applicationScope.launch {
                 draftFileMutex.withLock { draftStorage.delete(loadedProjectId, fileId) }
             }

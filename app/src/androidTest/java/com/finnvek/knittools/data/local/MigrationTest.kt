@@ -31,6 +31,33 @@ class MigrationTest {
     private val latestVersion = KNITTOOLS_DATABASE_VERSION
 
     @Test
+    fun migrate28to29KeepsExistingProjectAndAddsCreationReceipts() {
+        val testDb = "migration-test-v28-to-v29-creation-receipts"
+        helper.createDatabase(testDb, 1).use { db ->
+            db.execSQL(
+                "INSERT INTO counter_projects " +
+                    "(id, name, count, secondaryCount, stepSize, notes, createdAt, updatedAt) " +
+                    "VALUES (1, 'Original', 7, 0, 1, '', 1000, 2000)",
+            )
+        }
+        helper.runMigrationsAndValidate(testDb, 28, true, *allMigrations).use { db ->
+            db.execSQL("INSERT INTO onboarding_projects (draftId, projectId) VALUES ('starter', 1)")
+        }
+        helper.runMigrationsAndValidate(testDb, 29, true, KnitToolsDatabase.MIGRATION_28_29).use { db ->
+            assertSingleRow(db, "SELECT name, count FROM counter_projects WHERE id = 1") {
+                assertEquals("Original", getString(0))
+                assertEquals(7, getInt(1))
+            }
+            assertSingleRow(db, "SELECT projectId FROM onboarding_projects WHERE draftId = 'starter'") {
+                assertEquals(1L, getLong(0))
+            }
+            assertSingleRow(db, "SELECT COUNT(*) FROM project_creation_receipts") {
+                assertEquals(0, getInt(0))
+            }
+        }
+    }
+
+    @Test
     fun migrate27to28PreservesHistoryAndAddsNullableSessionUndo() {
         val testDb = "migration-test-v27-to-v28-session-undo"
         helper.createDatabase(testDb, 1).apply {

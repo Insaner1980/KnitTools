@@ -2,8 +2,9 @@ import { createHash, createHmac, randomBytes, timingSafeEqual } from "node:crypt
 import { setTimeout as delay } from "node:timers/promises";
 
 import { KNITTOOLS_RAVELRY_AUTH_COMPLETE_DEEP_LINK } from "../config";
-import { RavelryAuthFlowError, completeRavelryOAuthCallback, startRavelryOAuth } from "./authCore";
+import { RavelryAuthFlowError, completeRavelryOAuthCallback, completionProofHash, startRavelryOAuth } from "./authCore";
 import type { BrowserOAuthStateStore, StoredOAuthState } from "./oauthStateStore";
+import type { BrowserRavelryTokenStore } from "./tokenStore";
 
 export const BROWSER_AUTH_COOKIE = "__Host-knittools-ravelry-auth";
 
@@ -67,6 +68,7 @@ function completionProof(secret: string, stored: StoredOAuthState): string {
 export async function completeBrowserOAuthCallback(
   options: Parameters<typeof completeRavelryOAuthCallback>[0] & {
     stateStore: BrowserOAuthStateStore;
+    tokenStore: BrowserRavelryTokenStore;
     browserSecret: string;
   },
 ) {
@@ -78,15 +80,25 @@ export async function completeBrowserOAuthCallback(
 
   async function savedResult() {
     const current = requireBoundState(await options.stateStore.getState(state), secret, now());
-    if (await options.tokenStore.getConnectionGeneration(current.uid) !== (current.connectionGeneration ?? 0)) {
+    const generation = current.connectionGeneration ?? 0;
+    if (await options.tokenStore.getConnectionGeneration(current.uid) !== generation) {
       throw new RavelryAuthFlowError("expired_state", 400);
     }
-    if (!current.browserResult) return null;
-    if (current.usedAtMillis == null) throw new RavelryAuthFlowError("invalid_completion", 400);
+    if (current.usedAtMillis == null) {
+      if (current.browserResult) throw new RavelryAuthFlowError("invalid_completion", 400);
+      return null;
+    }
     const url = new URL(KNITTOOLS_RAVELRY_AUTH_COMPLETE_DEEP_LINK);
     url.searchParams.set("state", state);
     if (current.browserResult === "proof_ready") {
       url.searchParams.set("proof", completionProof(secret, current));
+    } else if (!current.browserResult) {
+      // The pending token may have committed before the browser outcome was saved.
+      const proof = completionProof(secret, current);
+      if (!await options.tokenStore.hasPendingToken(current.uid, state, completionProofHash(proof), generation, now())) {
+        return null;
+      }
+      url.searchParams.set("proof", proof);
     } else if (["oauth_error", "state_expired", "access_denied", "cancelled", "canceled"].includes(current.browserResult)) {
       url.searchParams.set("error", current.browserResult);
     } else {

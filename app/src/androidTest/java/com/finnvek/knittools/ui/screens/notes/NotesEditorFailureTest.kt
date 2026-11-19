@@ -78,11 +78,12 @@ class NotesEditorFailureTest {
                     id: Long,
                     notes: String,
                     updatedAt: Long,
+                    hasNotes: Boolean,
                 ) {
                     writeStarted = true
                     writeGate?.await()
                     if (failWrites) throw IOException("Controlled note write failure")
-                    dao.updateNotes(id, notes, updatedAt)
+                    dao.updateNotes(id, notes, updatedAt, hasNotes)
                 }
             }
         val repository = counterHistoryTestRepository(database, context, failingDao)

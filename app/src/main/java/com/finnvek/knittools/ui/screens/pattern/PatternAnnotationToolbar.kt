@@ -615,17 +615,19 @@ private fun PatternStrokeStyleControls(
         valueRange = PatternAnnotationLimits.MIN_STROKE_WIDTH..PatternAnnotationLimits.MAX_STROKE_WIDTH,
     )
     if (showPressureToggle) {
+        val pressureLabel = stringResource(R.string.pattern_annotation_pressure)
         Row(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                text = stringResource(R.string.pattern_annotation_pressure),
+                text = pressureLabel,
                 modifier = Modifier.weight(1f),
             )
             Switch(
                 checked = pressureEnabled,
                 onCheckedChange = onPressureEnabledChange,
+                modifier = Modifier.semantics { contentDescription = pressureLabel },
             )
         }
     }

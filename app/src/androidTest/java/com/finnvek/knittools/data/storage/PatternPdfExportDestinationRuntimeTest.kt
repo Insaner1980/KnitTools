@@ -22,6 +22,7 @@ import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import org.junit.Assume.assumeTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
@@ -93,7 +94,10 @@ class PatternPdfExportDestinationRuntimeTest {
         test: suspend (Fixture) -> Unit,
     ) = runBlocking {
         val app = ApplicationProvider.getApplicationContext<Context>()
-        assertEquals("com.finnvek.knittools.activepolicytest", app.packageName)
+        assumeTrue(
+            "Requires the activepolicy test profile",
+            app.packageName == "com.finnvek.knittools.activepolicytest",
+        )
         val root = File(app.cacheDir, "rw-03j-export-${UUID.randomUUID()}")
         assertTrue(root.mkdir())
         try {

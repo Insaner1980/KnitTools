@@ -13,6 +13,7 @@ import com.finnvek.knittools.MainActivity
 import com.finnvek.knittools.pro.ProPolicyTestControl
 import com.finnvek.knittools.pro.ProStatus
 import com.finnvek.knittools.pro.TrialState
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
@@ -38,14 +39,16 @@ class AuditPart15BillingTest {
         val app = ApplicationProvider.getApplicationContext<App>()
         check(app.packageName.endsWith(".activepolicytest"))
         client = AuditPart15BillingClient()
-        manager = BillingManager(app)
+        manager = BillingManager(app, CoroutineScope(Dispatchers.Main.immediate))
         BillingManager::class.java
             .getDeclaredField("billingClient")
             .apply { isAccessible = true }
             .set(manager, client)
     }
 
-    @After fun close() = manager.destroy()
+    @After fun close() {
+        if (::manager.isInitialized) manager.destroy()
+    }
 
     @Test
     fun returningToTheAppReconcilesOwnershipWithoutAPurchaseCallback() =

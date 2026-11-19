@@ -43,7 +43,7 @@ class PatternPickerSourceTest {
                     "sessionId != completedBeforeOpening ) { onDismiss()",
             ),
         )
-        assertTrue(picker.contains("imageImportViewModel.createPatternPdf(hasExistingPattern, sessionId)"))
+        assertTrue(picker.contains("imageImportViewModel.createPatternPdf(sessionId)"))
         assertTrue(
             picker.contains("imageImportViewModel.acceptCameraCapture(acceptedOwner, imageUri, imageFile, session)"),
         )

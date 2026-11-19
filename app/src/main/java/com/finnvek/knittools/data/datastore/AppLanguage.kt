@@ -35,8 +35,9 @@ enum class AppLanguage(
 
             entries.firstOrNull { it.languageTag?.equals(primaryTag, ignoreCase = true) == true }?.let { return it }
 
-            val language = Locale.forLanguageTag(primaryTag).language
-            return entries.firstOrNull { it.languageTag == language } ?: SYSTEM
+            val locale = Locale.forLanguageTag(primaryTag)
+            if (locale.language == "pt" && locale.country == "BR") return BRAZILIAN_PORTUGUESE
+            return entries.firstOrNull { it.languageTag == locale.language } ?: SYSTEM
         }
     }
 }

@@ -31,10 +31,13 @@ class BackupCoverageTest {
                         .getValue("tableName")
                         .jsonPrimitive.content
                 }.toSet()
-        // Draft receipts belong to the installation-local onboarding state, not backed-up project content.
-        assertEquals(setOf("onboarding_projects"), tables - BackupFormat.tables.toSet())
-        assertEquals(tables - "onboarding_projects", BackupFormat.tables.toSet())
-        assertFalse(BackupFormat.allowedPath("tables/onboarding_projects.jsonl"))
+        val installationLocalTables = setOf("onboarding_projects", "project_creation_receipts")
+        val backupTables = BackupFormat.tables.toSet()
+        assertEquals(installationLocalTables, tables - backupTables)
+        assertEquals(tables - installationLocalTables, backupTables)
+        installationLocalTables.forEach { table ->
+            assertFalse(BackupFormat.allowedPath("tables/$table.jsonl"))
+        }
     }
 
     @Test fun deeplyNestedInputIsRejectedBeforeDeserialization() {

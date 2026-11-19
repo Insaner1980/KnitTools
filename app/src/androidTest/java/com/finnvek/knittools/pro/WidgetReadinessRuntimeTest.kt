@@ -4,6 +4,7 @@ import android.os.SystemClock
 import androidx.test.core.app.ApplicationProvider
 import com.finnvek.knittools.App
 import com.finnvek.knittools.billing.BillingManager
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -66,6 +67,7 @@ class WidgetReadinessRuntimeTest {
         ProPolicyTestControl.reset()
         val app = ApplicationProvider.getApplicationContext<App>()
         // Do not initialize a BillingClient: its real response would race the synthetic delay.
-        return ProManager(TrialManager(app, Dispatchers.IO), BillingManager(app)).also { it.initialize() }
+        val billing = BillingManager(app, CoroutineScope(Dispatchers.Main.immediate))
+        return ProManager(TrialManager(app, Dispatchers.IO), billing).also { it.initialize() }
     }
 }

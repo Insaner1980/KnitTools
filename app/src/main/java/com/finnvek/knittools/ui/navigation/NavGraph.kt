@@ -901,7 +901,8 @@ private fun SavedPatternDetailContent(
     val projectsEntry =
         // CPD-ON
         remember(backStackEntry) {
-            navController.getBackStackEntry(TopLevelDestination.Projects.route)
+            runCatching { navController.getBackStackEntry(TopLevelDestination.Projects.route) }
+                .getOrDefault(parentEntry)
         }
     val counterViewModel: CounterViewModel = hiltViewModel(projectsEntry)
     val patternDeleteErrorId by libraryViewModel.patternDeleteErrorId.collectAsStateWithLifecycle()
@@ -1127,6 +1128,7 @@ private fun NavGraphBuilder.libraryYarnCardDetailRoute(
                             deletedCardId,
                             onFailure = { localDeleteInProgress = false },
                         ) {
+                            localDeleteInProgress = false
                             if (navController.currentBackStackEntry?.id == backStackEntry.id) {
                                 yarnCardViewModel.clearFormState()
                                 navController.popBackStackOrNavigateToTopLevel(TopLevelDestination.Library)

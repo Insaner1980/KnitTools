@@ -91,7 +91,7 @@ function Get-LineNumber {
         return $null
     }
 
-    $lines = Get-Content -LiteralPath $path
+    $lines = @(Get-Content -LiteralPath $path)
     for ($index = 0; $index -lt $lines.Count; $index++) {
         if ($lines[$index] -match $Pattern) {
             return ($index + 1)
@@ -169,7 +169,7 @@ function Get-CodeLines {
         return @()
     }
 
-    $rawLines = Get-Content -LiteralPath $path
+    $rawLines = @(Get-Content -LiteralPath $path)
     $result = @()
     for ($index = 0; $index -lt $rawLines.Count; $index++) {
         $code = ($rawLines[$index] -replace '//.*$', '') -replace '#.*$', ''
@@ -244,6 +244,19 @@ function Invoke-Git {
         ExitCode = $exitCode
         Output = @($output)
     }
+}
+
+function Test-RepositoryIgnoreRule {
+    param([string]$RelativePath)
+
+    $ignore = Invoke-Git -Arguments @("check-ignore", "--no-index", "-v", "--", $RelativePath)
+    if ($ignore.ExitCode -ne 0 -or $ignore.Output.Count -ne 1) { return $false }
+    if ($ignore.Output[0] -notmatch '^(?<file>(?:[^:\t]+/)?\.gitignore):\d+:[^!\t][^\t]*\t') {
+        return $false
+    }
+
+    $tracked = Invoke-Git -Arguments @("ls-files", "--error-unmatch", "--", $Matches.file)
+    return $tracked.ExitCode -eq 0
 }
 
 function Test-ManifestPermissions {
@@ -329,64 +342,93 @@ function Test-ExportedSurface {
     $relativePath = "app/src/main/AndroidManifest.xml"
 
     try {
-        $xml = Read-XmlFile $relativePath
-        $application = $xml.DocumentElement.SelectSingleNode("application")
+        $package = "com.finnvek.knittools"
         $expected = @{
-            "activity|.MainActivity" = "true"
-            "receiver|.widget.CounterWidgetReceiver" = "true"
-            "receiver|.widget.CounterWidgetActions" = "false"
+            "activity|${package}.MainActivity" = "true"
+            "receiver|${package}.widget.CounterWidgetReceiver" = "true"
+            "receiver|${package}.widget.CounterWidgetActions" = "false"
             "provider|androidx.core.content.FileProvider" = "false"
         }
+        $dependencyPermissions = @{
+            "service|androidx.glance.appwidget.GlanceRemoteViewsService" = "android.permission.BIND_REMOTEVIEWS"
+            "service|androidx.work.impl.background.systemjob.SystemJobService" = "android.permission.BIND_JOB_SERVICE"
+            "receiver|androidx.work.impl.diagnostics.DiagnosticsReceiver" = "android.permission.DUMP"
+            "receiver|androidx.profileinstaller.ProfileInstallReceiver" = "android.permission.DUMP"
+        }
 
-        $components = @{}
-        foreach ($tag in @("activity", "activity-alias", "receiver", "service", "provider")) {
-            foreach ($node in @($application.SelectNodes($tag))) {
-                $name = Get-AndroidAttribute -Node $node -Name "name"
-                if ([string]::IsNullOrWhiteSpace($name)) {
-                    continue
-                }
-                $key = "$tag|$name"
-                $components[$key] = Get-AndroidAttribute -Node $node -Name "exported"
-            }
+        $manifestInputs = @([pscustomobject]@{ Path = $relativePath; Overlay = $false; Built = $false })
+        $overlay = "app/src/release/AndroidManifest.xml"
+        if (Test-Path -LiteralPath (Join-RepoPath $overlay)) {
+            $manifestInputs += [pscustomobject]@{ Path = $overlay; Overlay = $true; Built = $false }
+        }
+        $built = @(
+            "app/build/intermediates/packaged_manifests/release/processReleaseManifestForPackage/AndroidManifest.xml",
+            "app/build/intermediates/merged_manifests/release/processReleaseManifest/AndroidManifest.xml"
+        ) | Where-Object { Test-Path -LiteralPath (Join-RepoPath $_) -PathType Leaf } | Select-Object -First 1
+        if ($built) {
+            $manifestInputs += [pscustomobject]@{ Path = $built; Overlay = $false; Built = $true }
         }
 
         $problems = @()
+        $firstPath = $null
         $firstLine = $null
-        foreach ($key in $expected.Keys) {
-            if (-not $components.ContainsKey($key)) {
-                $problems += "expected component '$key' missing"
-                if ($null -eq $firstLine) {
-                    $firstLine = Get-LineNumber -RelativePath $relativePath -Pattern ([regex]::Escape(($key -split "\|", 2)[1]))
+        foreach ($inputManifest in $manifestInputs) {
+            $relativePath = $inputManifest.Path
+            $xml = Read-XmlFile $relativePath
+            $components = @{}
+            $toolsNamespace = "http://schemas.android.com/tools"
+            foreach ($node in @($xml.DocumentElement.SelectNodes(
+                "application/activity|application/activity-alias|application/receiver|application/service|application/provider"
+            ))) {
+                $name = Get-AndroidAttribute -Node $node -Name "name"
+                $exported = Get-AndroidAttribute -Node $node -Name "exported"
+                $permission = Get-AndroidAttribute -Node $node -Name "permission"
+                $nodeOperation = $node.GetAttribute("node", $toolsNamespace)
+                if ($name -and $name.StartsWith(".")) {
+                    $key = "$($node.LocalName)|$package$name"
+                } elseif ($name -and !$name.Contains(".")) {
+                    $key = "$($node.LocalName)|$package.$name"
+                } else {
+                    $key = "$($node.LocalName)|$name"
                 }
-                continue
+                $components[$key] = $true
+                $problem = $null
+                if ($expected.ContainsKey($key)) {
+                    if ($nodeOperation -in @("remove", "removeAll")) {
+                        $problem = "expected component '$key' is removed"
+                    } elseif ((!$inputManifest.Overlay -or $exported -or $nodeOperation -eq "replace") -and
+                        $exported -ne $expected[$key]) {
+                        $problem = "component '$key' exported expected '$($expected[$key])' but was '$exported'"
+                    }
+                } elseif ($nodeOperation -notin @("remove", "removeAll") -and $exported -and $exported -ne "false" -and
+                    !($inputManifest.Built -and $exported -eq "true" -and
+                        $dependencyPermissions.ContainsKey($key) -and $permission -eq $dependencyPermissions[$key])) {
+                    $problem = "unexpected exported component '$key'"
+                }
+                if ($problem) {
+                    $problems += "$problem in $relativePath"
+                    if (!$firstPath) {
+                        $firstPath = $relativePath
+                        if ($name) {
+                            $firstLine = Get-LineNumber -RelativePath $relativePath -Pattern ([regex]::Escape($name))
+                        }
+                    }
+                }
             }
-            if ($components[$key] -ne $expected[$key]) {
-                $problems += "component '$key' exported expected '$($expected[$key])' but was '$($components[$key])'"
-                if ($null -eq $firstLine) {
-                    $firstLine = Get-LineNumber -RelativePath $relativePath -Pattern ([regex]::Escape(($key -split "\|", 2)[1]))
+            if (!$inputManifest.Overlay) {
+                foreach ($key in $expected.Keys | Where-Object { !$components.ContainsKey($_) }) {
+                    $problems += "expected component '$key' missing in $relativePath"
+                    if (!$firstPath) { $firstPath = $relativePath }
                 }
             }
         }
 
-        foreach ($key in $components.Keys) {
-            if ($components[$key] -eq "true" -and -not $expected.ContainsKey($key)) {
-                $problems += "unexpected exported true component '$key'"
-                if ($null -eq $firstLine) {
-                    $firstLine = Get-LineNumber -RelativePath $relativePath -Pattern ([regex]::Escape(($key -split "\|", 2)[1]))
-                }
-            }
-            if ($key.StartsWith("provider|") -and $components[$key] -eq "true") {
-                $problems += "provider '$key' must not be exported"
-                if ($null -eq $firstLine) {
-                    $firstLine = Get-LineNumber -RelativePath $relativePath -Pattern ([regex]::Escape(($key -split "\|", 2)[1]))
-                }
-            }
-        }
-
-        if ($problems.Count -eq 0) {
-            Add-Pass -Check $check -Message "exported component map matches contract"
+        if ($problems.Count -gt 0) {
+            Add-Fail -Check $check -Message ($problems -join "; ") -RelativePath $firstPath -Line $firstLine
+        } elseif ($built) {
+            Add-Pass -Check $check -Message "exported components match contract in source and $built"
         } else {
-            Add-Fail -Check $check -Message ($problems -join "; ") -RelativePath $relativePath -Line $firstLine
+            Add-Pass -Check $check -Message "main and release source manifest exported components match contract (built release manifest unavailable)"
         }
     } catch {
         Add-Fail -Check $check -Message $_.Exception.Message -RelativePath $relativePath
@@ -537,8 +579,7 @@ function Test-FirebaseBoundary {
                 $firstPath = $googleServicesPath
             }
 
-            $ignoredGoogleServices = Invoke-Git -Arguments @("check-ignore", "--no-index", "-q", "--", $googleServicesPath)
-            if ($ignoredGoogleServices.ExitCode -ne 0) {
+            if (-not (Test-RepositoryIgnoreRule $googleServicesPath)) {
                 $problems += ".gitignore does not cover $googleServicesPath"
                 $firstPath = $gitignorePath
                 $firstLine = Get-LineNumber -RelativePath $gitignorePath -Pattern "google-services\.json"
@@ -590,8 +631,7 @@ function Test-DebugCredentialsIgnored {
             return
         }
 
-        $ignored = Invoke-Git -Arguments @("check-ignore", "--no-index", "-q", "--", "debug.credentials.properties")
-        if ($ignored.ExitCode -ne 0) {
+        if (-not (Test-RepositoryIgnoreRule "debug.credentials.properties")) {
             $line = Get-LineNumber -RelativePath $relativePath -Pattern "debug\.credentials\.properties"
             Add-Fail -Check $check -Message ".gitignore does not cover debug.credentials.properties" -RelativePath $relativePath -Line $line
             return
@@ -757,7 +797,7 @@ function Get-KnownRavelrySecretValues {
         "RAVELRY_CLIENT_SECRET"
     )
 
-    $values = New-Object System.Collections.Generic.List[string]
+    $values = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
     foreach ($name in $secretNames) {
         $value = [Environment]::GetEnvironmentVariable($name)
         if (-not [string]::IsNullOrWhiteSpace($value)) {
@@ -767,7 +807,6 @@ function Get-KnownRavelrySecretValues {
 
     $debugCredentialsPath = Join-RepoPath "debug.credentials.properties"
     if (Test-Path -LiteralPath $debugCredentialsPath) {
-        $properties = New-Object System.Collections.Specialized.OrderedDictionary
         $rawLines = Get-Content -LiteralPath $debugCredentialsPath
         foreach ($line in $rawLines) {
             if ($line -notmatch '^\s*([^#!=:\s][^!=:]*)\s*[=:]\s*(.*)\s*$') {
@@ -787,8 +826,7 @@ function Get-KnownRavelrySecretValues {
             Where-Object {
                 $_.Length -ge 8 -and
                     $_ -notmatch '^(?i)(example|placeholder|dummy|test|knitter|secret|password|client)$'
-            } |
-            Sort-Object -Unique
+            }
     )
 }
 
@@ -892,9 +930,7 @@ function Test-KnownRavelrySecrets {
         }
 
         $textFiles = Get-RelativeFilesForRoots @(
-            "app/src/main",
-            "app/src/test",
-            "app/src/androidTest",
+            "app/src",
             "app/build/generated",
             "build.gradle.kts",
             "settings.gradle.kts",
@@ -949,27 +985,17 @@ function Test-MigrationPath {
         [object[]]$Edges
     )
 
-    $queue = New-Object System.Collections.Queue
-    $visited = @{}
-    $queue.Enqueue($Start)
-    $visited["$Start"] = $true
-
-    while ($queue.Count -gt 0) {
-        $current = [int]$queue.Dequeue()
-        if ($current -eq $Target) {
-            return $true
-        }
-
-        foreach ($edge in $Edges | Where-Object { $_.From -eq $current }) {
-            $next = [int]$edge.To
-            if (-not $visited.ContainsKey("$next")) {
-                $visited["$next"] = $true
-                $queue.Enqueue($next)
-            }
-        }
+    $current = $Start
+    while ($current -lt $Target) {
+        $next = $Edges |
+            Where-Object { $_.From -eq $current -and $_.To -gt $current -and $_.To -le $Target } |
+            Sort-Object To -Descending |
+            Select-Object -First 1
+        if ($null -eq $next) { return $false }
+        $current = [int]$next.To
     }
 
-    return $false
+    return $current -eq $Target
 }
 
 function Get-RegisteredManualMigrationEdges {
@@ -1038,27 +1064,39 @@ function Test-RoomSchema {
     $firstLine = $null
 
     try {
-        $databaseFiles = @(
-            Get-RelativeFiles -RelativeDirectory $sourceRoot -Filter "*.kt" |
-                Where-Object { (Read-TextFile $_).Contains("@Database") }
+        $declarationPattern = '(?m)^[ \t]*@(?:androidx\.room\.)?Database\s*\((?<options>(?:[^()]|(?<nested>\()|(?<-nested>\)))*)' +
+            '(?(nested)(?!))\)\s*(?:(?:public|internal)\s+)?abstract\s+class\s+(?<class>[A-Za-z_][A-Za-z0-9_]*)\s*:\s*(?:androidx\.room\.)?RoomDatabase\b'
+        $databases = @(
+            foreach ($file in Get-RelativeFiles -RelativeDirectory $sourceRoot -Filter "*.kt") {
+                $text = [string](Read-TextFile $file) -replace '(?s)/\*.*?\*/', ''
+                foreach ($declaration in [regex]::Matches($text, $declarationPattern)) {
+                    [pscustomobject]@{
+                        Path = $file
+                        Text = $text
+                        Options = $declaration.Groups["options"].Value
+                        Class = $declaration.Groups["class"].Value
+                    }
+                }
+            }
         )
 
-        if ($databaseFiles.Count -eq 0) {
+        if ($databases.Count -eq 0) {
             Add-Fail -Check $check -Message "@Database class not found" -RelativePath $sourceRoot
             return
         }
 
-        if ($databaseFiles.Count -gt 1) {
-            Add-Warn -Check $check -Message "multiple @Database classes found; manual review needed" -RelativePath $sourceRoot
+        if ($databases.Count -gt 1) {
+            Add-Fail -Check $check -Message "multiple @Database classes found; unable to identify the expected database" -RelativePath $sourceRoot
             return
         }
 
-        $databasePath = $databaseFiles[0]
+        $database = $databases[0]
+        $databasePath = $database.Path
         $firstPath = $databasePath
-        $databaseText = Read-TextFile $databasePath
+        $databaseText = $database.Text
         $versionMatch = [regex]::Match(
-            $databaseText,
-            '(?s)@Database\s*\(.*?version\s*=\s*([A-Za-z_][A-Za-z0-9_]*|\d+)'
+            $database.Options,
+            '\bversion\s*=\s*([A-Za-z_][A-Za-z0-9_]*|\d+)'
         )
         if (-not $versionMatch.Success) {
             Add-Fail -Check $check -Message "database version could not be parsed" -RelativePath $databasePath -Line (Get-LineNumber -RelativePath $databasePath -Pattern "@Database")
@@ -1081,20 +1119,17 @@ function Test-RoomSchema {
         }
 
         $problems = @()
-        if ($databaseText -notmatch '(?s)@Database\s*\(.*?exportSchema\s*=\s*true') {
+        if ($database.Options -notmatch '\bexportSchema\s*=\s*true\b') {
             $problems += "exportSchema=true missing"
             $firstLine = Get-LineNumber -RelativePath $databasePath -Pattern "exportSchema"
         }
 
         $packageName = ""
-        if ($databaseText -match 'package\s+([A-Za-z0-9_.]+)') {
+        if ($databaseText -match '(?m)^\s*package\s+([A-Za-z0-9_.]+)') {
             $packageName = $Matches[1]
         }
-        $className = ""
-        if ($databaseText -match 'abstract\s+class\s+([A-Za-z0-9_]+)\s*:\s*RoomDatabase') {
-            $className = $Matches[1]
-        }
-        if ([string]::IsNullOrWhiteSpace($packageName) -or [string]::IsNullOrWhiteSpace($className)) {
+        $className = $database.Class
+        if ([string]::IsNullOrWhiteSpace($packageName)) {
             Add-Fail -Check $check -Message "database package/class could not be parsed" -RelativePath $databasePath
             return
         }
@@ -1129,7 +1164,7 @@ function Test-RoomSchema {
         }
 
         $edges = @()
-        foreach ($match in [regex]::Matches($databaseText, 'AutoMigration\s*\(\s*from\s*=\s*(\d+)\s*,\s*to\s*=\s*(\d+)')) {
+        foreach ($match in [regex]::Matches($database.Options, 'AutoMigration\s*\(\s*from\s*=\s*(\d+)\s*,\s*to\s*=\s*(\d+)')) {
             $edges += [pscustomobject]@{ From = [int]$match.Groups[1].Value; To = [int]$match.Groups[2].Value }
         }
 
@@ -1229,14 +1264,15 @@ function Convert-ValuesDirectoryToLocale {
     }
 
     $qualifier = $DirectoryName.Substring("values-".Length)
-    if ($qualifier -match '^([a-z]{2,3})(-r([A-Z]{2}))?$') {
-        if ($Matches[3]) {
-            return "$($Matches[1])-$($Matches[3])"
+    if ($qualifier -match '^([a-z]{2,3})(?:-r([A-Z]{2}))?(?:-|$)') {
+        if ($Matches[1] -eq "car") { return $null }
+        if ($Matches.ContainsKey(2)) {
+            return "$($Matches[1])-$($Matches[2])"
         }
         return $Matches[1]
     }
 
-    if ($qualifier -match '^b\+(.+)$') {
+    if ($qualifier -match '^b\+([a-z]{2,8}(?:\+[a-z0-9]{1,8})*)(?:-|$)') {
         return ($Matches[1] -replace '\+', '-')
     }
 

@@ -191,11 +191,15 @@ class PatternAnnotationPageBudgetTest {
             val original = shape(1L)
             repository.insertAnnotation(original)
             layers.deactivateProjectLayers(1L)
+            val activeLayerId = layers.activateProjectLayer(1L, "other-document").id
+            val moved = original.copy(layerId = activeLayerId)
             val writes: List<suspend () -> Unit> =
                 listOf(
                     { repository.insertAnnotation(shape(2L)) },
                     { repository.updateAnnotation(original.copy(zIndex = 2L)) },
                     { repository.restoreBatch(listOf(original.copy(zIndex = 2L))) },
+                    { repository.updateAnnotation(moved) },
+                    { repository.restoreBatch(listOf(moved)) },
                     { repository.clearPage(layerId, 0) },
                     { repository.deleteAnnotation(original.id) },
                 )
@@ -205,6 +209,7 @@ class PatternAnnotationPageBudgetTest {
                     runCatching { write() }.exceptionOrNull() is IllegalStateException,
                 )
                 assertEquals(listOf(original), repository.getForLayers(listOf(layerId)))
+                assertTrue(repository.getForLayers(listOf(activeLayerId)).isEmpty())
             }
             assertEquals(layerId, layers.activateProjectLayer(1L, "document").id)
             val updated = original.copy(zIndex = 2L)

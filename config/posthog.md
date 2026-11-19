@@ -2,7 +2,7 @@
 
 ## Configuration
 
-- SDK: `com.posthog:posthog-android:3.75.0`, pinned in the version catalog.
+- SDK: `com.posthog:posthog-android`, pinned in the version catalog.
 - Ingestion: `https://eu.i.posthog.com`; project 274433.
 - Local config: ignored root `posthog.properties`, containing `projectToken=<project token>`.
 - CI alternative: `KNITTOOLS_POSTHOG_PROJECT_TOKEN`. The environment value takes precedence.
@@ -20,7 +20,7 @@ Each initialization uses a new, never-reused `cacheDir/knittools-usage-analytics
 
 DataStore remains authoritative. Turning off atomically rotates a local consent-generation marker so a collector that receives only the final state of a rapid off/on transition still retires the old client. The marker is never sent to PostHog. Consent takes effect at the controller's application of the persisted snapshot; preference persistence and observation are asynchronous. SDK consent persistence is disabled, and SDK pseudonymous identity preferences are retained. Re-opt-in creates a fresh client and permits only events captured under that new consent.
 
-The recorded acceptance checkpoint used publicly callable `PostHogInternal` HTTP-client and storage-prefix configuration in Android **3.72.1 / core 6.47.1**, under the user's scoped authorization. This is historical, version-specific evidence and does not by itself validate the currently pinned 3.75.0 SDK. Rerun the real-SDK acceptance tests when changing either SDK version. The implementation does not rely on `optOut()`, `reset()` or `close()` purging a queue, and uses no production reflection.
+The recorded acceptance checkpoint used publicly callable `PostHogInternal` HTTP-client and storage-prefix configuration in Android **3.72.1 / core 6.47.1**, under the user's scoped authorization. Rerun the real-SDK acceptance tests when changing either SDK version. The implementation retires its delivery gate and deletes its owned queue directory directly.
 
 RW-07A remains historical evidence of the previous capture-only contract. The initial [blocked investigation](../reports/rw-07b-20261028/REPORT.md) is preserved; the [dated continuation](../reports/rw-07b-20261028/CONTINUATION-20261028.md) records implementation, acceptance and limits. **The production correction is absent from the retained RW-11D/E candidate**, which was not rebuilt or overwritten.
 
@@ -58,5 +58,14 @@ Screen duration measures foreground time on a destination, including idle time. 
 Focused JVM tests cover consent defaults, no client initialization before consent, revocation, route sanitization, lifecycle deduplication, SDK failure isolation, SDK configuration, and preference-write failure. Real-SDK acceptance tests use actual disk queues, synthetic events/token and a terminal local recording transport installed before initialization for every URL; no request reaches a live service. Executor barriers, latches and a controlled SDK clock cover queued events, disabled capture/flush/retry/close, re-opt-in, prior-storage recreation, delayed writers, failed cleanup and the dispatch boundary. An actual file-backed DataStore test covers conflated consent changes and marker persistence. These are local JVM results, not Android/device, live-service/dashboard or signed-candidate acceptance. Native session replay, surveys, experiments, and an additional crash reporter are not enabled.
 
 The opt-in `PostHogLiveDeliveryTest` additionally exercises the production controller/factory with the real Android SDK and EU HTTP ingestion. It runs only with instrumentation argument `posthogLive=true`, uses isolated preferences/cache and three synthetic events carrying `traffic=verification`, and tears down its SDK workers and storage. Filter `traffic != verification` (including events without that property) in product reports. A successful HTTP acknowledgement is checked separately against the server event query; neither proves delivery from a published signed release. See [current verification](../reports/posthog-verification/VERIFICATION.md).
+
+The connected Gradle tasks use a network-free profile. For an authorized live check, use a disposable emulator without a personal KnitTools installation. Configure the project token, assemble the APKs without an isolation profile, and run only the live test. Replace `SERIAL` with that emulator's serial from `adb devices`.
+
+```powershell
+.\gradlew.bat :app:assembleDebug :app:assembleDebugAndroidTest
+adb -s SERIAL install app/build/outputs/apk/debug/app-debug.apk
+adb -s SERIAL install app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
+adb -s SERIAL shell am instrument -w -e class com.finnvek.knittools.analytics.PostHogLiveDeliveryTest -e posthogLive true com.finnvek.knittools.test/androidx.test.runner.AndroidJUnitRunner
+```
 
 References: [Android SDK](https://posthog.com/docs/libraries/android), [API keys and EU ingestion](https://posthog.com/docs/api).

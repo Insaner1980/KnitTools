@@ -6,6 +6,7 @@ import com.finnvek.knittools.domain.calculator.ProjectStartValues
 import com.finnvek.knittools.domain.model.CraftType
 import com.finnvek.knittools.domain.model.MainCounterLabelType
 import com.finnvek.knittools.pro.ProFeature
+import com.finnvek.knittools.repository.ProjectCreationOptions
 import com.finnvek.knittools.repository.ProjectCreationResult
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -58,8 +59,8 @@ class ProjectCreationStateTest : ProjectListViewModelFixture() {
                     CraftType.CROCHET,
                     MainCounterLabelType.ROUNDS,
                     null,
-                    initialCount = 37,
-                    targetRows = 120,
+                    startValues = ProjectStartValues(37, 120),
+                    attemptId = "blanket-attempt",
                 )
                 runCurrent()
                 coVerify {
@@ -70,7 +71,7 @@ class ProjectCreationStateTest : ProjectListViewModelFixture() {
                         null,
                         true,
                         null,
-                        ProjectStartValues(37, 120),
+                        ProjectCreationOptions(ProjectStartValues(37, 120), "blanket-attempt"),
                     )
                 }
                 viewModel.createProject()
@@ -83,7 +84,7 @@ class ProjectCreationStateTest : ProjectListViewModelFixture() {
                         null,
                         true,
                         null,
-                        ProjectStartValues(),
+                        options = match { it.startValues == ProjectStartValues() },
                     )
                 }
             } finally {

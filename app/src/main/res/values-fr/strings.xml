@@ -175,9 +175,6 @@
     <string name="pattern_image_move_later">Déplacer la page %1$d plus tard</string>
     <string name="pattern_image_remove_page">Supprimer la page %1$d</string>
     <string name="pattern_image_create_pdf">Créer le PDF du modèle</string>
-    <string name="pattern_image_replace_title">Remplacer le modèle actuel ?</string>
-    <string name="pattern_image_replace_message">La pièce jointe actuelle sera remplacée lorsque le nouveau PDF sera prêt.</string>
-    <string name="pattern_image_replace_action">Remplacer le modèle</string>
     <string name="pattern_image_conversion_progress">Création de la page %1$d sur %2$d</string>
     <string name="pattern_image_attaching">Ajout du PDF du modèle</string>
     <string name="pattern_image_cancel_conversion">Annuler la conversion</string>

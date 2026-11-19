@@ -63,7 +63,7 @@ class ActiveProjectPolicyRoomTest {
                 repository.createProject(
                     "Already started",
                     canCreateAdditionalProjects = false,
-                    startValues = ProjectStartValues(37, 120),
+                    options = ProjectCreationOptions(ProjectStartValues(37, 120)),
                 )
             assertTrue(result is ProjectCreationResult.Created)
             val project = repository.getAllProjects().first().single()
@@ -84,7 +84,7 @@ class ActiveProjectPolicyRoomTest {
                     repository.createProject(
                         "Invalid",
                         canCreateAdditionalProjects = false,
-                        startValues = ProjectStartValues(count, target),
+                        options = ProjectCreationOptions(ProjectStartValues(count, target)),
                     ),
                 )
             }

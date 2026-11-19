@@ -119,16 +119,19 @@ internal fun PatternDocumentViewport(
         }
         val transformableState =
             rememberTransformableState { _, zoomChange, panChange, _ ->
-                updateViewport(viewportState.applyTransform(zoomChange, panChange))
+                val current = PatternViewportState(scale, Offset(panX * pageSize.width, panY * pageSize.height))
+                updateViewport(current.applyTransform(zoomChange, panChange))
             }
         val layout = PatternViewportLayout(viewportState, viewportState.toPageCoordinateTransform(pageSize))
         // Keep the page-relative top anchor; pixel offsets from another viewport are not portable.
         LaunchedEffect(pageHeightPx, viewportHeightPx, scrollState.maxValue) {
             if (pageHeightPx <= 0 || viewportHeightPx <= 0) return@LaunchedEffect
             scrollState.scrollTo((scrollFraction * pageHeightPx).toInt().coerceIn(0, scrollState.maxValue))
+            var wasScrolling = false
             snapshotFlow { scrollState.value to scrollState.isScrollInProgress }.collect { (value, scrolling) ->
                 // Layout clamping during a resize must not overwrite the saved reading position.
-                if (scrolling) scrollFraction = value.toFloat() / pageHeightPx
+                if (scrolling || wasScrolling) scrollFraction = value.toFloat() / pageHeightPx
+                wasScrolling = scrolling
             }
         }
         val eligibleFocusRequest =
@@ -140,13 +143,15 @@ internal fun PatternDocumentViewport(
         LaunchedEffect(eligibleFocusRequest?.requestId, viewportHeightPx, pageHeightPx, scrollState.maxValue) {
             val request = eligibleFocusRequest ?: return@LaunchedEffect
             if (viewportHeightPx <= 0 || pageHeightPx <= 0) return@LaunchedEffect
+            val focusViewport = viewportState.reset()
+            updateViewport(focusViewport)
             val target =
                 patternViewportFocusScrollOffset(
                     pageHeightPx = pageHeightPx,
                     viewportHeightPx = viewportHeightPx,
                     yFraction = request.yFraction,
-                    scale = viewportState.scale,
-                    translationY = viewportState.offset.y,
+                    scale = focusViewport.scale,
+                    translationY = focusViewport.offset.y,
                 ).coerceIn(0, scrollState.maxValue)
             scrollState.animateScrollTo(target)
             scrollFraction = target.toFloat() / pageHeightPx

@@ -71,9 +71,7 @@ class ProManager
                                     )
                                 }
 
-                                !trial.hasStarted -> {
-                                    ProState(status = ProStatus.TRIAL_NOT_STARTED)
-                                }
+                                !trial.hasStarted -> ProState(status = ProStatus.TRIAL_NOT_STARTED)
 
                                 else -> {
                                     ProState(
@@ -83,7 +81,12 @@ class ProManager
                                     )
                                 }
                             }
-                        Triple(state, purchaseStateReady, purchaseStateReady || purchaseQueryFailed)
+                        val entitlementAvailable = trial.isAvailable || isPurchased
+                        Triple(
+                            state,
+                            entitlementAvailable && purchaseStateReady,
+                            entitlementAvailable && (purchaseStateReady || purchaseQueryFailed),
+                        )
                     }.collect { (state, purchaseStateReady, controlsReady) ->
                         _proState.value = state
                         _initialStateReady.value = purchaseStateReady
@@ -110,8 +113,12 @@ class ProManager
             }
 
         suspend fun featureAccessAfterInitialLoad(feature: ProFeature): ProActionAccess {
-            waitForInitialProState()
-            waitForInitialPurchaseState()
+            withTimeoutOrNull(INITIAL_STATE_WAIT_TIMEOUT_MS) {
+                initialStateReady.first { it }
+                if (!ProPolicyTestControl.currentPurchaseStateReady(billingManager.purchaseStateReady.value)) {
+                    ProPolicyTestControl.purchaseStateReady(billingManager.purchaseStateReady).first { it }
+                }
+            }
             if (ProPolicyTestControl.currentPurchased(billingManager.isProPurchased.value)) {
                 return ProActionAccess.Allowed
             }
@@ -129,20 +136,6 @@ class ProManager
                 .distinctUntilChanged()
 
         fun isPro(): Boolean = _proState.value.isPro
-
-        private suspend fun waitForInitialPurchaseState() {
-            if (ProPolicyTestControl.currentPurchaseStateReady(billingManager.purchaseStateReady.value)) return
-            withTimeoutOrNull(INITIAL_STATE_WAIT_TIMEOUT_MS) {
-                ProPolicyTestControl.purchaseStateReady(billingManager.purchaseStateReady).first { it }
-            }
-        }
-
-        private suspend fun waitForInitialProState() {
-            if (_initialStateReady.value) return
-            withTimeoutOrNull(INITIAL_STATE_WAIT_TIMEOUT_MS) {
-                initialStateReady.first { it }
-            }
-        }
 
         private companion object {
             private const val INITIAL_STATE_WAIT_TIMEOUT_MS = 2_000L

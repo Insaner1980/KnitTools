@@ -1,4 +1,4 @@
-import { readJsonResponse } from "./boundedResponse";
+import { cancelResponseBody, readJsonResponse } from "./boundedResponse";
 
 export const RAVELRY_AUTHORIZATION_URL = "https://www.ravelry.com/oauth2/auth";
 export const RAVELRY_TOKEN_URL = "https://www.ravelry.com/oauth2/token";
@@ -49,9 +49,8 @@ export class OAuthTokenExchangeError extends Error {
 
   constructor(readonly statusCode: number) {
     super(`ravelry_token_exchange_failed_${statusCode}`);
-    const rejectedCredentials = statusCode === 400 || statusCode === 401;
-    this.code = rejectedCredentials ? "ravelry_not_connected" : "ravelry_token_exchange_failed";
-    this.httpStatus = rejectedCredentials ? 412 : statusCode;
+    this.code = statusCode === 400 ? "ravelry_not_connected" : "ravelry_token_exchange_failed";
+    this.httpStatus = statusCode === 400 ? 412 : statusCode === 401 ? 503 : statusCode;
   }
 }
 
@@ -88,6 +87,7 @@ async function requestOAuth2Token({
   }
 
   let response: Response;
+  const requestStartedAtMillis = nowMillis();
   try {
     response = await fetchImpl(RAVELRY_TOKEN_URL, {
       method: "POST",
@@ -107,6 +107,7 @@ async function requestOAuth2Token({
   }
 
   if (!response.ok) {
+    await cancelResponseBody(response);
     throw new OAuthTokenExchangeError(response.status);
   }
 
@@ -130,7 +131,7 @@ async function requestOAuth2Token({
     if (typeof body.expires_in !== "number" || !Number.isFinite(body.expires_in)) {
       throw new OAuthTokenExchangeError(503);
     }
-    expiresAtMillis = nowMillis() + Math.max(0, body.expires_in) * 1_000;
+    expiresAtMillis = requestStartedAtMillis + Math.max(0, body.expires_in) * 1_000;
     if (!Number.isFinite(expiresAtMillis)) {
       throw new OAuthTokenExchangeError(503);
     }

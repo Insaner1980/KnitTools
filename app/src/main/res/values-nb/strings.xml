@@ -170,9 +170,6 @@
     <string name="pattern_image_move_later">Flytt side %1$d senere</string>
     <string name="pattern_image_remove_page">Fjern side %1$d</string>
     <string name="pattern_image_create_pdf">Lag oppskrifts-PDF</string>
-    <string name="pattern_image_replace_title">Erstatte gjeldende oppskrift?</string>
-    <string name="pattern_image_replace_message">Det gjeldende vedlegget erstattes når den nye PDF-en er klar.</string>
-    <string name="pattern_image_replace_action">Erstatt oppskrift</string>
     <string name="pattern_image_conversion_progress">Lager side %1$d av %2$d</string>
     <string name="pattern_image_attaching">Legger ved oppskrifts-PDF</string>
     <string name="pattern_image_cancel_conversion">Avbryt konvertering</string>

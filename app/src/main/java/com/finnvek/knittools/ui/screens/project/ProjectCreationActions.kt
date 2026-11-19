@@ -11,6 +11,7 @@ import com.finnvek.knittools.pro.ProFeature
 import com.finnvek.knittools.pro.ProManager
 import com.finnvek.knittools.repository.CounterRepository
 import com.finnvek.knittools.repository.OnboardingStateRepository
+import com.finnvek.knittools.repository.ProjectCreationOptions
 import com.finnvek.knittools.repository.ProjectCreationResult
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -23,6 +24,7 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import java.io.Serializable
+import java.util.UUID
 
 internal data class PendingProjectCreation(
     val name: String,
@@ -32,7 +34,8 @@ internal data class PendingProjectCreation(
     val targetFolderId: Long?,
     val initialCount: Int = 0,
     val targetRows: Int? = null,
-    val payloadVersion: Int = 2,
+    val payloadVersion: Int = 3,
+    val attemptId: String = UUID.randomUUID().toString(),
 ) : Serializable {
     private companion object {
         const val serialVersionUID = 1L
@@ -63,8 +66,8 @@ internal class ProjectCreationActions(
     private var pendingProjectCreation: PendingProjectCreation?
         get() {
             val restored = savedStateHandle.get<PendingProjectCreation>(PENDING_PROJECT_CREATION_KEY) ?: return null
-            // Java-UID pysyy samana: vanhan luonnoksen uusi versiokenttä purkautuu nollaksi ennen getterin kutsua.
-            if (restored.payloadVersion != 2) {
+            // Older submissions have no durable attempt ID and cannot be safely replayed.
+            if (restored.payloadVersion != 3) {
                 savedStateHandle.remove<PendingProjectCreation>(PENDING_PROJECT_CREATION_KEY)
                 return null
             }
@@ -102,6 +105,10 @@ internal class ProjectCreationActions(
         creationContinuationJob?.cancel()
     }
 
+    fun clearProjectCreationError() {
+        _projectCreationError.value = null
+    }
+
     private fun reconcilePendingCreation() {
         if (creationContinuationJob?.isActive == true || projectCreationInFlight) {
             creationReconciliationRequested = true
@@ -129,12 +136,17 @@ internal class ProjectCreationActions(
 
     private suspend fun reconcileCreationLimit() {
         val count = repository.getActiveProjectCount()
-        if (!pendingCreationOpening && pendingProjectCreation == null) return
+        val request = pendingProjectCreation
+        if (!pendingCreationOpening && request == null) return
         if (!isPro && count >= 1) {
-            _projectCreationPromptCount.value = count
-        } else {
-            resumePendingProjectCreation(reconsiderLimit = false)
+            val alreadyCreated = request?.let { repository.findProjectCreationResult(it.attemptId) } != null
+            if (!pendingCreationOpening && (request == null || pendingProjectCreation != request)) return
+            if (!alreadyCreated) {
+                _projectCreationPromptCount.value = count
+                return
+            }
         }
+        resumePendingProjectCreation(reconsiderLimit = false)
     }
 
     fun create(request: PendingProjectCreation) {
@@ -177,7 +189,11 @@ internal class ProjectCreationActions(
                         mainCounterCustomLabel = request.mainCounterCustomLabel,
                         canCreateAdditionalProjects = isPro,
                         targetFolderId = request.targetFolderId,
-                        startValues = ProjectStartValues(request.initialCount, request.targetRows),
+                        options =
+                            ProjectCreationOptions(
+                                startValues = ProjectStartValues(request.initialCount, request.targetRows),
+                                attemptId = request.attemptId,
+                            ),
                     )
                 if (result !is ProjectCreationResult.Created && pendingProjectCreation != request) return
                 limited = handleCreationResult(request, result)

@@ -1,4 +1,5 @@
 import { createHash, randomBytes } from "node:crypto";
+import { readFileSync } from "node:fs";
 
 import {
   KNITTOOLS_RAVELRY_AUTH_COMPLETE_DEEP_LINK,
@@ -175,7 +176,7 @@ function requireCompletionProof(value: string): string {
   return value;
 }
 
-function completionProofHash(value: string): string {
+export function completionProofHash(value: string): string {
   return createHash("sha256").update(value).digest("base64url");
 }
 
@@ -250,20 +251,24 @@ export function resolveBackendCallbackUrl(
   const trimmedCallbackUrl = configuredCallbackUrl.trim();
   if (trimmedCallbackUrl.length > 0) {
     const url = URL.parse(trimmedCallbackUrl);
-    if (!url || url.protocol !== "https:" || url.username || url.password || url.hash) {
+    if (!url || url.protocol !== "https:" || url.username || url.password || url.hash ||
+        ["start", "code", "error", "state"].some((key) => url.searchParams.has(key))) {
       throw new RavelryAuthFlowError("invalid_callback_url", 500);
     }
     return trimmedCallbackUrl;
   }
 
-  const firebaseConfigProjectId =
-    typeof env.FIREBASE_CONFIG === "string"
-      ? (JSON.parse(env.FIREBASE_CONFIG) as { projectId?: unknown }).projectId
-      : undefined;
-  const projectId =
-    env.GCLOUD_PROJECT ??
-    env.GCP_PROJECT ??
-    (typeof firebaseConfigProjectId === "string" ? firebaseConfigProjectId : undefined);
+  let projectId = env.GCLOUD_PROJECT?.trim() || env.GCP_PROJECT?.trim();
+  if (!projectId && env.FIREBASE_CONFIG) {
+    const config = env.FIREBASE_CONFIG;
+    try {
+      const contents = config.trimStart().startsWith("{") ? config : readFileSync(config, "utf8");
+      const parsed = JSON.parse(contents) as { projectId?: unknown } | null;
+      if (typeof parsed?.projectId === "string") projectId = parsed.projectId.trim();
+    } catch {
+      throw new RavelryAuthFlowError("missing_callback_url", 500);
+    }
+  }
 
   if (!projectId) {
     throw new RavelryAuthFlowError("missing_callback_url", 500);
@@ -476,7 +481,7 @@ export async function disconnectRavelry({
   nowMillis = Date.now,
 }: DisconnectOptions): Promise<{ disconnected: true }> {
   const now = nowMillis();
-  await tokenStore.deleteToken(uid, now);
-  await stateStore.expireUnusedStatesForUid(uid, now);
+  const disconnectedGeneration = await tokenStore.deleteToken(uid, now);
+  await stateStore.expireUnusedStatesForUid(uid, disconnectedGeneration, now);
   return { disconnected: true };
 }

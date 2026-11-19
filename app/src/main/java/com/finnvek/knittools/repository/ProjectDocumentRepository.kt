@@ -196,8 +196,8 @@ class ProjectDocumentRepository
             label: String,
             documentKey: String? = null,
         ): ProjectDocumentMutationResult {
-            preflightImportedPdf(localPdfUri, label, documentKey)?.let { return it }
             return fileReferenceCoordinator.withReferenceLock {
+                preflightImportedPdf(localPdfUri, label, documentKey)?.let { return@withReferenceLock it }
                 mutation {
                     transactionRunner.run {
                         addImportedPdfInCurrentTransaction(projectId, localPdfUri, label, documentKey)
@@ -295,13 +295,16 @@ class ProjectDocumentRepository
             val savedPatternId =
                 savedPatternRepository.saveImportedPatternIfMissingInCurrentTransaction(normalizedUri, normalizedLabel)
                     ?: return ProjectDocumentMutationResult.PersistenceFailure
-            return addDocumentInCurrentTransaction(
-                projectId = projectId,
-                savedPatternId = savedPatternId,
-                localPdfUri = normalizedUri,
-                label = normalizedLabel,
-                documentKey = normalizedRequestedKey ?: PatternAnnotationDocumentKey.savedPattern(savedPatternId),
-            )
+            val result =
+                addDocumentInCurrentTransaction(
+                    projectId = projectId,
+                    savedPatternId = savedPatternId,
+                    localPdfUri = normalizedUri,
+                    label = normalizedLabel,
+                    documentKey = normalizedRequestedKey ?: PatternAnnotationDocumentKey.savedPattern(savedPatternId),
+                )
+            if (result !is ProjectDocumentMutationResult.Added) abortMutation(result)
+            return result
         }
 
         suspend fun rename(
@@ -634,7 +637,7 @@ class ProjectDocumentRepository
             }
         }
 
-        private class MutationAborted(
+        internal class MutationAborted(
             val result: ProjectDocumentMutationResult,
         ) : RuntimeException()
     }

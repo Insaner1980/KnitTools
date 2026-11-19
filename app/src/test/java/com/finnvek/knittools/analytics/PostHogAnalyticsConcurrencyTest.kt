@@ -5,6 +5,8 @@ import com.posthog.PostHogInterface
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -13,10 +15,10 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
-import java.util.concurrent.atomic.AtomicReference
 
 class PostHogAnalyticsConcurrencyTest {
     private val owner = mockk<LifecycleOwner>()
+    private val scope = CoroutineScope(Dispatchers.IO)
 
     @Test
     fun `slow initialization does not block lifecycle and navigation callbacks`() {
@@ -114,6 +116,8 @@ class PostHogAnalyticsConcurrencyTest {
                 check(release.await(10, TimeUnit.SECONDS))
                 client
             },
+            scope,
+            Dispatchers.IO,
         )
 
     private fun checkSupersededInitialization(
@@ -143,21 +147,22 @@ class PostHogAnalyticsConcurrencyTest {
                         fresh
                     }
                 },
+                scope,
+                Dispatchers.IO,
             )
-        val workers = Executors.newFixedThreadPool(2)
+        val workers = Executors.newFixedThreadPool(3)
         try {
             val initializing = workers.submit { analytics.setEnabled(true, "first") }
             assertTrue(entered.await(5, TimeUnit.SECONDS))
             if (revokeFirst) workers.submit { analytics.setEnabled(false, "first") }.get(5, TimeUnit.SECONDS)
-            val nextThread = AtomicReference<Thread>()
+            val oldRevision = analytics.consentRevision
             val enabling =
                 workers.submit {
-                    nextThread.set(Thread.currentThread())
                     analytics.setEnabled(true, if (revokeFirst) "first" else "second")
                 }
-            awaitBlockedWorker(nextThread)
+            awaitNewConsent(analytics, oldRevision)
             // The newer request is waiting for serialized SDK work, without owning the state monitor.
-            updateForegroundScreen(analytics)
+            workers.submit { updateForegroundScreen(analytics) }.get(2, TimeUnit.SECONDS)
             release.countDown()
             initializing.get(5, TimeUnit.SECONDS)
             enabling.get(5, TimeUnit.SECONDS)
@@ -173,12 +178,15 @@ class PostHogAnalyticsConcurrencyTest {
         }
     }
 
-    private fun awaitBlockedWorker(worker: AtomicReference<Thread>) {
-        val deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5)
-        while (worker.get()?.state != Thread.State.BLOCKED && System.nanoTime() < deadline) {
+    private fun awaitNewConsent(
+        analytics: PostHogAnalytics,
+        oldRevision: Long,
+    ) {
+        val deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(2)
+        while (analytics.consentRevision == oldRevision && System.nanoTime() < deadline) {
             Thread.sleep(1)
         }
-        assertEquals(Thread.State.BLOCKED, worker.get()?.state)
+        assertEquals(oldRevision + 1L, analytics.consentRevision)
     }
 
     private fun checkSlowRetirement(blockShutdown: Boolean) {
@@ -193,7 +201,7 @@ class PostHogAnalyticsConcurrencyTest {
         }
         if (blockShutdown) every { sdk.close() } answers { block() }
         val client = PostHogConsentClient(sdk, gate) { if (!blockShutdown) block() }
-        val analytics = PostHogAnalytics(PostHogClientFactory { client })
+        val analytics = PostHogAnalytics(PostHogClientFactory { client }, scope, Dispatchers.IO)
         val workers = Executors.newFixedThreadPool(2)
         try {
             analytics.setEnabled(true)

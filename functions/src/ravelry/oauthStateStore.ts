@@ -24,7 +24,7 @@ export interface OAuthStateStore {
   saveState(state: StoredOAuthState): Promise<void>;
   getState(state: string): Promise<StoredOAuthState | null>;
   markStateUsed(state: string, usedAtMillis: number): Promise<boolean>;
-  expireUnusedStatesForUid(uid: string, expiresAtMillis: number): Promise<void>;
+  expireUnusedStatesForUid(uid: string, connectionGeneration: number, expiresAtMillis: number): Promise<void>;
 }
 
 export interface BrowserOAuthStateStore extends OAuthStateStore {
@@ -107,18 +107,26 @@ export function createOAuthStateStore(firestore: Firestore): BrowserOAuthStateSt
         return true;
       });
     },
-    async expireUnusedStatesForUid(uid, expiresAtMillis) {
+    async expireUnusedStatesForUid(uid, connectionGeneration, expiresAtMillis) {
       const snapshot = await collection
         .where("uid", "==", uid)
         .where("usedAtMillis", "==", null)
         .where("expiresAtMillis", ">", expiresAtMillis)
         .get();
-      if (snapshot.empty) return;
-      const batch = firestore.batch();
-      snapshot.docs.forEach((doc) => {
-        batch.update(doc.ref, { expiresAtMillis });
+      const references = snapshot.docs
+        .filter((doc) => connectionGenerationFromData(doc.data()) === connectionGeneration)
+        .map((doc) => doc.ref);
+      if (references.length === 0) return;
+      await firestore.runTransaction(async (transaction) => {
+        const current = await transaction.getAll(...references);
+        for (const doc of current) {
+          const stored = toStoredOAuthState(doc.data());
+          if (stored?.uid === uid && stored.connectionGeneration === connectionGeneration &&
+              stored.usedAtMillis == null && stored.expiresAtMillis > expiresAtMillis) {
+            transaction.update(doc.ref, { expiresAtMillis });
+          }
+        }
       });
-      await batch.commit();
     },
   };
 }

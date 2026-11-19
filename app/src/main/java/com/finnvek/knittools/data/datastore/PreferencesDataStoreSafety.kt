@@ -5,19 +5,19 @@ import androidx.datastore.preferences.core.MutablePreferences
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.retryWhen
 import java.io.IOException
 
 internal val DataStore<Preferences>.safePreferencesData: Flow<Preferences>
     get() =
-        data.catch { exception ->
-            if (exception is IOException) {
-                emit(emptyPreferences())
-            } else {
-                throw exception
-            }
+        data.retryWhen { exception, attempt ->
+            if (exception !is IOException) return@retryWhen false
+            if (attempt == 0L) emit(emptyPreferences())
+            delay(100L shl attempt.coerceAtMost(5L).toInt())
+            true
         }
 
 internal suspend fun DataStore<Preferences>.readPreferencesOrNull(): Preferences? =

@@ -158,7 +158,7 @@ class CounterRepositoryCreateProjectTest {
                 repository.createProject(
                     "Striped socks",
                     canCreateAdditionalProjects = false,
-                    startValues = ProjectStartValues(37, 120),
+                    options = ProjectCreationOptions(ProjectStartValues(37, 120)),
                 )
 
             assertEquals(ProjectCreationResult.Created(7L, wasFirstProject = true), result)
@@ -207,7 +207,7 @@ class CounterRepositoryCreateProjectTest {
             repository.createProject(
                 "Maximum project",
                 canCreateAdditionalProjects = false,
-                startValues = ProjectStartValues(MAX_PROJECT_START_COUNT, MAX_TARGET_ROWS),
+                options = ProjectCreationOptions(ProjectStartValues(MAX_PROJECT_START_COUNT, MAX_TARGET_ROWS)),
             )
 
             assertEquals(0, rows[0].count)
@@ -226,7 +226,7 @@ class CounterRepositoryCreateProjectTest {
                     repository.createProject(
                         "Invalid",
                         canCreateAdditionalProjects = false,
-                        startValues = ProjectStartValues(start, target),
+                        options = ProjectCreationOptions(ProjectStartValues(start, target)),
                     ),
                 )
             }
@@ -248,7 +248,7 @@ class CounterRepositoryCreateProjectTest {
                 ).createProject(
                     "Invalid",
                     canCreateAdditionalProjects = false,
-                    startValues = ProjectStartValues(initialCount = -1),
+                    options = ProjectCreationOptions(ProjectStartValues(initialCount = -1)),
                 )
 
             assertEquals(ProjectCreationResult.LimitReached, result)

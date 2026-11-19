@@ -164,6 +164,7 @@ class ReviewPart14RuntimeTest {
                     id: Long,
                     notes: String,
                     updatedAt: Long,
+                    hasNotes: Boolean,
                 ): Unit = throw IOException("Controlled write failure")
             }
         val repository = counterHistoryTestRepository(database, context, failingDao)

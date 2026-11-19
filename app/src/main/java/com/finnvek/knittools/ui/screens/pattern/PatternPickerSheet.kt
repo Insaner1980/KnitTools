@@ -97,7 +97,6 @@ fun PatternPickerSheet(
     canUseCameraScan: Boolean,
     proState: ProState,
     proAccessReady: Boolean,
-    hasExistingPattern: Boolean,
     mode: PatternPickerMode = PatternPickerMode.INITIAL_PROJECT_PATTERN,
     isRestoringProject: Boolean = false,
     excludedSavedPatternIds: Set<Long> = emptySet(),
@@ -215,24 +214,20 @@ fun PatternPickerSheet(
             if (showImageImport) {
                 PatternImageImportSurface(
                     state = imageImportState,
-                    onAddMore = { if (imageImportViewModel.isCurrentSession(sessionId)) actions.chooseImages() },
+                    onAddMore = {
+                        if (imageImportViewModel.isCurrentSession(sessionId)) {
+                            if (imageImportState.origin == PatternImageImportOrigin.CAMERA) {
+                                actions.startCameraScan()
+                            } else {
+                                actions.chooseImages()
+                            }
+                        }
+                    },
                     onMoveEarlier = { imageImportViewModel.moveEarlier(it, sessionId) },
                     onMoveLater = { imageImportViewModel.moveLater(it, sessionId) },
                     onRemove = { imageImportViewModel.removePage(it, sessionId) },
-                    onCreate = {
-                        if (imageImportState.replacementConfirmationPending) {
-                            imageImportViewModel.confirmReplacement(sessionId)
-                        } else {
-                            imageImportViewModel.createPatternPdf(hasExistingPattern, sessionId)
-                        }
-                    },
-                    onCancel = {
-                        if (imageImportState.replacementConfirmationPending) {
-                            imageImportViewModel.dismissReplacement(sessionId)
-                        } else {
-                            imageImportViewModel.cancelImport(sessionId)
-                        }
-                    },
+                    onCreate = { imageImportViewModel.createPatternPdf(sessionId) },
+                    onCancel = { imageImportViewModel.cancelImport(sessionId) },
                     onPreviewFailed = { imageImportViewModel.markPreviewFailed(it, sessionId) },
                 )
             } else {
@@ -420,7 +415,9 @@ private fun rememberPatternPickerActions(
         try {
             // Retain the created target even if this sheet closes while its bounded file write finishes.
             val target = withContext(NonCancellable) { imageImportViewModel.createCameraCaptureTarget(owner, session) }
-            if (target != null) {
+            if (target == null) {
+                if (session == pendingCaptureSessionId) clearPendingCapture()
+            } else {
                 val (file, uri) = target
                 if (!isActive ||
                     owner != currentProjectId ||
@@ -457,7 +454,12 @@ private fun rememberPatternPickerActions(
     val openPdfDocumentPicker: () -> Unit = {
         currentProjectId?.let { owner ->
             pendingDocumentProjectId = owner
-            openDocumentLauncher.launch(pdfMimeTypes())
+            try {
+                openDocumentLauncher.launch(pdfMimeTypes())
+            } catch (_: ActivityNotFoundException) {
+                pendingDocumentProjectId = null
+                Toast.makeText(context, R.string.generic_error_unknown, Toast.LENGTH_SHORT).show()
+            }
         }
     }
     val launchGalleryPicker = {
@@ -564,8 +566,16 @@ private fun PatternPickerSheetContent(
             PickerAction(stringResource(R.string.web_pattern_add), actions.openWebPatternEditor)
             PickerAction(stringResource(R.string.pattern_picker_import_from_ravelry), actions.openRavelryImport)
         }
-        PickerAction(stringResource(R.string.pattern_picker_import_pdf), actions.openDeviceFiles)
-        PickerAction(stringResource(R.string.pattern_picker_import_cloud_pdf), actions.openCloudProviderFiles)
+        PickerAction(
+            stringResource(R.string.pattern_picker_import_pdf),
+            actions.openDeviceFiles,
+            enabled = projectId != null,
+        )
+        PickerAction(
+            stringResource(R.string.pattern_picker_import_cloud_pdf),
+            actions.openCloudProviderFiles,
+            enabled = projectId != null,
+        )
         // Pro-toiminnot samalla painiketyylillä kuin muut: täytettyinä maksulliset vaihtoehdot näyttivät
         // päätoiminnolta. PRO-merkki on aina oikeassa reunassa.
         PickerAction(

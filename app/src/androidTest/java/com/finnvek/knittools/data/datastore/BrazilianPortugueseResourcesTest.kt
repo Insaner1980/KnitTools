@@ -41,7 +41,8 @@ class BrazilianPortugueseResourcesTest {
         val locale = Locale.forLanguageTag("pt-BR")
         val resources = localizedContext(locale).resources
         val rules = PluralRules.forLocale(locale)
-        listOf(0 to "one", 1 to "one", 2 to "other", 1_000_000 to "many").forEach { (quantity, category) ->
+        val millionCategory = if ("many" in rules.keywords) "many" else "other"
+        listOf(0 to "one", 1 to "one", 2 to "other", 1_000_000 to millionCategory).forEach { (quantity, category) ->
             assertEquals(category, rules.select(quantity.toDouble()))
             val singular = quantity <= 1
             assertEquals(

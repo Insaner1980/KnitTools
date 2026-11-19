@@ -44,23 +44,24 @@ class NotesDraftStorage
             projectId: Long,
             id: UUID,
             draft: NotesDraft,
-        ) {
+        ): Boolean =
             withContext(ioDispatcher) {
                 val file = file(projectId, id)
                 val output =
                     try {
                         file.startWrite()
                     } catch (_: IOException) {
-                        return@withContext
+                        return@withContext false
                     }
                 try {
                     output.write(Json.encodeToString(draft).encodeToByteArray())
                     file.finishWrite(output)
+                    true
                 } catch (_: IOException) {
                     file.failWrite(output)
+                    false
                 }
             }
-        }
 
         internal suspend fun delete(
             projectId: Long,

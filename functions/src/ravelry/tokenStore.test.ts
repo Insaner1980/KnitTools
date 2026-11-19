@@ -136,7 +136,7 @@ describe("Ravelry token Firestore store", () => {
       connectionGeneration: 3,
       disconnectedAtMillis: 100,
     };
-    const reference = {};
+    const reference = { get: async () => ({ data: () => stored }) };
     const firestore = {
       collection() {
         return {
@@ -147,9 +147,7 @@ describe("Ravelry token Firestore store", () => {
       },
       async runTransaction<T>(operation: (transaction: unknown) => Promise<T>): Promise<T> {
         return operation({
-          async get() {
-            return { data: () => stored };
-          },
+          get: reference.get,
           set(
             _reference: unknown,
             data: Record<string, unknown>,
@@ -181,12 +179,18 @@ describe("Ravelry token Firestore store", () => {
 
     assert.equal(saved, true);
     assert.equal(stored.accessToken, undefined);
+    assert.equal(await tokenStore.hasPendingToken("uid", "state", "proof-hash", 3, 1_500), true);
+    assert.equal(await tokenStore.hasPendingToken("uid", "state", "wrong-proof", 3, 1_500), false);
+    assert.equal(await tokenStore.hasPendingToken("uid", "other-state", "proof-hash", 3, 1_500), false);
+    assert.equal(await tokenStore.hasPendingToken("uid", "state", "proof-hash", 4, 1_500), false);
+    assert.equal(await tokenStore.hasPendingToken("uid", "state", "proof-hash", 3, 2_000), false);
     assert.equal(await tokenStore.activatePendingToken("other-uid", "state", "proof-hash", 1_500), false);
     assert.equal(await tokenStore.activatePendingToken("uid", "state", "wrong-proof", 1_500), false);
     assert.equal(stored.accessToken, undefined);
     assert.equal(await tokenStore.activatePendingToken("uid", "state", "proof-hash", 1_500), true);
     assert.equal(stored.accessToken, "new-access-token");
     assert.equal(stored.pending, undefined);
+    assert.equal(await tokenStore.hasPendingToken("uid", "state", "proof-hash", 3, 1_500), false);
     assert.equal(await tokenStore.activatePendingToken("uid", "state", "proof-hash", 1_500), false);
   });
 

@@ -69,12 +69,10 @@ describe("Ravelry OAuth2 token exchange", () => {
   });
 
   it("maps rejected credentials and transient token failures to the callable contract", () => {
-    for (const status of [400, 401]) {
-      const mapped = httpsErrorFor(new OAuthTokenExchangeError(status));
-      assert.equal(mapped.code, "failed-precondition");
-      assert.equal(mapped.message, "ravelry_not_connected");
-    }
-    for (const status of [503, 504]) {
+    const invalidGrant = httpsErrorFor(new OAuthTokenExchangeError(400));
+    assert.equal(invalidGrant.code, "failed-precondition");
+    assert.equal(invalidGrant.message, "ravelry_not_connected");
+    for (const status of [401, 503, 504]) {
       const mapped = httpsErrorFor(new OAuthTokenExchangeError(status));
       assert.equal(mapped.code, "unavailable");
       assert.equal(mapped.message, "ravelry_token_exchange_failed");
@@ -85,9 +83,11 @@ describe("Ravelry OAuth2 token exchange", () => {
   it("passes a timeout signal to the token request", async () => {
     let capturedSignal: AbortSignal | undefined;
     let capturedRedirect: RequestRedirect | undefined;
+    let clock = 1_000;
     const fetchImpl: typeof fetch = async (_input, init) => {
       capturedSignal = init?.signal ?? undefined;
       capturedRedirect = init?.redirect;
+      clock = 5_000;
       return new Response(
         JSON.stringify({
           access_token: "access-token",
@@ -105,7 +105,7 @@ describe("Ravelry OAuth2 token exchange", () => {
       codeVerifier: "code-verifier",
       redirectUri: "https://callback.example/ravelry",
       fetchImpl,
-      nowMillis: () => 1_000,
+      nowMillis: () => clock,
     });
 
     assert.ok(capturedSignal instanceof AbortSignal);
@@ -118,6 +118,20 @@ describe("Ravelry OAuth2 token exchange", () => {
     });
   });
 
+  it("cancels an unused token response body while preserving the HTTP error", async () => {
+    let cancellations = 0;
+    const response = new Response(new ReadableStream({
+      cancel() {
+        cancellations++;
+        throw new Error("synthetic cancellation error");
+      },
+    }), { status: 503 });
+    await assert.rejects(refreshOAuth2AccessToken({
+      clientId: "synthetic-client", clientSecret: "synthetic-secret", refreshToken: "synthetic-refresh",
+      fetchImpl: async () => response,
+    }), { statusCode: 503, message: "ravelry_token_exchange_failed_503" });
+    assert.equal(cancellations, 1);
+  });
   it("maps timeout aborts to a sanitized exchange error", async () => {
     const tokenLikeErrorText = "access-token refresh-token client-secret";
     const fetchImpl: typeof fetch = async () => {

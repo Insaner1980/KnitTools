@@ -175,9 +175,6 @@
     <string name="pattern_image_move_later">Mover a página %1$d para depois</string>
     <string name="pattern_image_remove_page">Remover página %1$d</string>
     <string name="pattern_image_create_pdf">Criar PDF da receita</string>
-    <string name="pattern_image_replace_title">Substituir a receita atual?</string>
-    <string name="pattern_image_replace_message">O anexo atual será substituído quando o novo PDF estiver pronto.</string>
-    <string name="pattern_image_replace_action">Substituir receita</string>
     <string name="pattern_image_conversion_progress">A criar página %1$d de %2$d</string>
     <string name="pattern_image_attaching">A anexar PDF da receita</string>
     <string name="pattern_image_cancel_conversion">Cancelar conversão</string>

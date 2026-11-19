@@ -23,7 +23,10 @@ class InstructionParserTest {
                 InstructionParser.parse("gauge: 20 / 28 over $unit"),
             )
         }
-        listOf("14 inches", "24 inches", "1.4 inches", "4 index", "4 inche").forEach { unit ->
+        listOf("14 inches", "24 inches", "1.4 inches").forEach { unit ->
+            assertTrue(InstructionParser.parse("gauge: 20 / 28 over $unit") is ParsedInstruction.Failure)
+        }
+        listOf("4 index", "4 inche").forEach { unit ->
             assertEquals(
                 ParsedInstruction.Gauge(20.0, 28.0, ParsedInstruction.GaugeUnit.PER_10_CM),
                 InstructionParser.parse("gauge: 20 / 28 over $unit"),
@@ -44,10 +47,7 @@ class InstructionParserTest {
             ParsedInstruction.Gauge(20.0, 28.0, ParsedInstruction.GaugeUnit.PER_4_INCHES),
             InstructionParser.parse("gauge: 20 / 28 over 4in"),
         )
-        assertEquals(
-            ParsedInstruction.Gauge(20.0, 28.0, ParsedInstruction.GaugeUnit.PER_10_CM),
-            InstructionParser.parse("gauge: 20 / 28 over 14 inches"),
-        )
+        assertTrue(InstructionParser.parse("gauge: 20 / 28 over 14 inches") is ParsedInstruction.Failure)
     }
 
     @Test
@@ -323,6 +323,19 @@ class InstructionParserTest {
     }
 
     // === parseWithRegex: Swatch ===
+
+    @Test
+    fun `measured stitch count is not interpreted as a swatch width`() {
+        val result = InstructionParser.parse("I measured 20 stitches over 10 cm") as ParsedInstruction.GaugeSwatch
+        assertEquals(10.0, result.width)
+        assertEquals(20, result.stitches)
+    }
+
+    @Test
+    fun `unsupported explicit gauge basis cannot use the default basis`() {
+        val result = InstructionParser.parse("Gauge: 20 sts and 30 rows per 5 cm")
+        assertTrue(result is ParsedInstruction.Failure)
+    }
 
     @Test
     fun `regex - measured width is 30 cm`() {

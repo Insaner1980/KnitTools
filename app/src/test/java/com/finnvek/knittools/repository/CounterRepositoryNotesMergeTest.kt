@@ -41,6 +41,15 @@ class CounterRepositoryNotesMergeTest {
     }
 
     @Test
+    fun `merge keeps the longer of two overlapping appends`() {
+        val shorter = "Base\nFirst addition"
+        val longer = "$shorter\nSecond addition"
+
+        assertEquals(longer, mergeProjectNotes("Base", longer, shorter))
+        assertEquals(longer, mergeProjectNotes("Base", shorter, longer))
+    }
+
+    @Test
     fun `merge keeps both conflicting replacements`() {
         val result =
             mergeProjectNotes(

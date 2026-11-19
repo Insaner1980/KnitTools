@@ -41,6 +41,7 @@ object InstructionParser {
     private const val ROWS = """(?:ROWS?|R)\b"""
     private const val LENGTH_UNIT = """(?:CM|IN(?:CH(?:ES)?)?)\b"""
     private const val PER_INCH = """(?:PER|/)\s*(?:INCH|IN)\b"""
+    private val explicitGaugeBasis = Regex("""(?:\b(?:PER|OVER|TO|IN|ACROSS)\s+|[=/]\s*)($DECIMAL)\s*($LENGTH_UNIT)""")
     private val gaugeStitchesPattern = Regex("""$NUMBER_START($DECIMAL)\s*$STITCHES""")
     private val gaugeRowsPattern = Regex("""^\s*(?:AND|[,/&X])?\s*($DECIMAL)\s*$ROWS""")
     private val perInchStitches = Regex("""$NUMBER_START($DECIMAL)\s*$STITCHES\s*$PER_INCH""")
@@ -227,13 +228,18 @@ object InstructionParser {
 
     // --- Gauge-patternien tunnistus ---
 
-    private fun parseGauge(upper: String): ParsedInstruction? =
-        parseGaugeStandard(upper)
-            ?: parseGaugePerInch(upper)
-            ?: parseGaugeSwatch(upper)
-            ?: parseGaugeTension(upper)
-            ?: parseGaugeFallback(upper)
-            ?: parseGaugeBareNumbers(upper)
+    private fun parseGauge(upper: String): ParsedInstruction? {
+        val explicit = parseGaugeStandard(upper) ?: parseGaugePerInch(upper) ?: parseGaugeSwatch(upper)
+        if (explicit != null) return explicit
+        if (explicitGaugeBasis.findAll(upper).any { basis ->
+                val standardLength = if (basis.groupValues[2] == "CM") 10.0 else 4.0
+                basis.groupValues[1].toDoubleOrNull() != standardLength
+            }
+        ) {
+            return null
+        }
+        return parseGaugeTension(upper) ?: parseGaugeFallback(upper) ?: parseGaugeBareNumbers(upper)
+    }
 
     // "X stitches/sts and Y rows per 10cm/4in" tai "X sts, Y rows = 10cm"
     @Suppress("kotlin:S5843") // Gauge-fallback hyväksyy useita "sts/rows per 10 cm / 4 in" -muotoja.
@@ -329,7 +335,8 @@ object InstructionParser {
     private fun parseMeasuredSwatch(upper: String): ParsedInstruction? {
         // "width/wide X", "measured width is X"
         val widthP =
-            Regex("""\b(?:WIDTH|WIDE|MEASURED(?:\s*WIDTH)?)\s*(?:(?:IS|=|:)\s*)?($DECIMAL)(?:\s*($LENGTH_UNIT))?""")
+            Regex("""\b(?:WIDTH|WIDE)\s*(?:(?:IS|=|:)\s*)?($DECIMAL)(?:\s*($LENGTH_UNIT))?""")
+        val measuredWidthP = Regex("""\bMEASURED\s*(?:(?:IS|=|:)\s*)?($DECIMAL)\s*($LENGTH_UNIT)""")
         // "height/tall/long X"
         val heightP = Regex("""\b(?:HEIGHT|TALL|LONG)\s*(?:(?:IS|=|:)\s*)?($DECIMAL)(?:\s*($LENGTH_UNIT))?""")
         // "X stitches/sts" (swatch-kontekstissa)
@@ -337,7 +344,7 @@ object InstructionParser {
         // "X rows" (swatch-kontekstissa)
         val swRowP = Regex("""$NUMBER_START($INTEGER)\s*$ROWS""")
 
-        val widthMatch = widthP.find(upper)
+        val widthMatch = widthP.find(upper) ?: measuredWidthP.find(upper)
         val heightMatch = heightP.find(upper)
         val swW = widthMatch?.groupValues?.get(1)?.toDoubleOrNull()
         val swH = heightMatch?.groupValues?.get(1)?.toDoubleOrNull()

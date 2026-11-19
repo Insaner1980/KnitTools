@@ -5,6 +5,7 @@ import android.graphics.Color
 import android.graphics.Matrix
 import android.graphics.Paint
 import android.graphics.Path
+import android.graphics.PathMeasure
 import android.graphics.RectF
 import android.text.Layout
 import android.text.StaticLayout
@@ -18,8 +19,10 @@ import com.finnvek.knittools.domain.model.ChartRegionPayload
 import com.finnvek.knittools.domain.model.ChartTrackerPayload
 import com.finnvek.knittools.domain.model.FreehandPayload
 import com.finnvek.knittools.domain.model.NormalizedPatternBounds
+import com.finnvek.knittools.domain.model.NormalizedPatternPoint
 import com.finnvek.knittools.domain.model.PatternAnnotation
 import com.finnvek.knittools.domain.model.PatternAnnotationKind
+import com.finnvek.knittools.domain.model.PatternAnnotationLimits
 import com.finnvek.knittools.domain.model.ShapePayload
 import com.finnvek.knittools.domain.model.TextBoxPayload
 import kotlin.math.atan2
@@ -86,6 +89,7 @@ object PatternAnnotationCanvasRenderer {
             val path = Path().apply { moveTo(first.x * width, first.y * height) }
             payload.points.drop(1).forEach { point -> path.lineTo(point.x * width, point.y * height) }
             if (payload.points.size == 1) {
+                paint.style = Paint.Style.FILL
                 canvas.drawCircle(first.x * width, first.y * height, paint.strokeWidth / 2f, paint)
             } else {
                 canvas.drawPath(path, paint)
@@ -102,12 +106,8 @@ object PatternAnnotationCanvasRenderer {
         payload: FreehandPayload,
         paint: Paint,
     ) {
-        val path =
-            runCatching { PathParser.createPathFromPathData(payload.legacyPathData.orEmpty()) }.getOrNull() ?: return
-
-        @Suppress("DEPRECATION")
-        val bounds = RectF().also { path.computeBounds(it, true) }
-        if (bounds.right <= NORMALIZED_LEGACY_PATH_LIMIT && bounds.bottom <= NORMALIZED_LEGACY_PATH_LIMIT) {
+        val path = payload.legacyStrokePath() ?: return
+        if (path.isNormalizedLegacyStroke()) {
             path.transform(Matrix().apply { setScale(width, height) })
         }
         canvas.drawPath(path, paint)
@@ -334,9 +334,52 @@ object PatternAnnotationCanvasRenderer {
         width: Float,
         height: Float,
     ) = RectF(left * width, top * height, right * width, bottom * height)
-
-    private const val NORMALIZED_LEGACY_PATH_LIMIT = 1.5f
 }
+
+internal fun PatternAnnotation.withEditableLegacyStroke(
+    pageWidth: Float,
+    pageHeight: Float,
+): PatternAnnotation {
+    val freehand = payload as? FreehandPayload ?: return this
+    if (freehand.points.isNotEmpty()) return this
+    val path = freehand.legacyStrokePath() ?: return this
+    val normalized = path.isNormalizedLegacyStroke()
+    if (!normalized && (pageWidth <= 0f || pageHeight <= 0f)) return this
+    // Freehand points describe one continuous stroke. Preserve other legacy contours as originally stored.
+    if (PathMeasure(path, false).nextContour()) return this
+    val coordinates = path.approximate(if (normalized) 0.001f else 1f)
+    val count = coordinates.size / 3
+    if (count == 0) return this
+    val maxPoints =
+        freehand.legacyPathData
+            .orEmpty()
+            .length
+            .coerceIn(2, PatternAnnotationLimits.MAX_FREEHAND_POINTS)
+    val sampleCount = count.coerceAtMost(maxPoints)
+    val points =
+        List(sampleCount) { index ->
+            val position = if (count <= maxPoints) index else (index * (count - 1L) / (maxPoints - 1L)).toInt()
+            val x = coordinates[position * 3 + 1]
+            val y = coordinates[position * 3 + 2]
+            NormalizedPatternPoint(
+                x = (if (normalized) x else x / pageWidth).coerceIn(0f, 1f),
+                y = (if (normalized) y else y / pageHeight).coerceIn(0f, 1f),
+            )
+        }
+    if (points.any { !it.x.isFinite() || !it.y.isFinite() }) return this
+    return copy(payload = freehand.copy(points = points, legacyPathData = null))
+}
+
+private fun FreehandPayload.legacyStrokePath(): Path? =
+    legacyPathData?.let { path -> runCatching { PathParser.createPathFromPathData(path) }.getOrNull() }
+
+private fun Path.isNormalizedLegacyStroke(): Boolean {
+    @Suppress("DEPRECATION")
+    val bounds = RectF().also { computeBounds(it, true) }
+    return bounds.right <= NORMALIZED_LEGACY_PATH_LIMIT && bounds.bottom <= NORMALIZED_LEGACY_PATH_LIMIT
+}
+
+private const val NORMALIZED_LEGACY_PATH_LIMIT = 1.5f
 
 data class PatternAnnotationRenderStyle(
     val referencePageSize: Float,

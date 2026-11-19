@@ -434,24 +434,33 @@ class PostHogQueueConsentTest {
                     val sdk = PostHog.with(config) as PostHog
                     PostHogTestInstance(sdk, config, timeoutSeconds = 10).also(instances::add).sdk
                 }
-            return PostHogAnalytics(factory).also(controllers::add)
+            return PostHogAnalytics(factory, CoroutineScope(Dispatchers.IO), Dispatchers.IO).also(controllers::add)
         }
 
         fun latest(): PostHogTestInstance = instances.last()
 
         fun close() {
-            controllers.forEach { it.setEnabled(false) }
-            instances.forEach { it.sdk.close() }
             val executors = instances.flatMap { it.workers() }.distinct()
-            executors.forEach { it.shutdown() }
-            executors.forEach { assertTrue("SDK executor terminated", it.awaitTermination(10, TimeUnit.SECONDS)) }
-            transport.dispatcher.executorService.shutdown()
-            assertTrue(transport.dispatcher.executorService.awaitTermination(10, TimeUnit.SECONDS))
-            transport.connectionPool.evictAll()
-            assertEquals(0, dnsAttempts.get())
-            check(root.name == "sdk" && requireNotNull(root.canonicalFile.parentFile).name.startsWith("junit"))
-            assertTrue(root.deleteRecursively())
-            assertFalse(root.exists())
+            cleanupPostHogTest(
+                *controllers.map { controller -> { controller.setEnabled(false) } }.toTypedArray(),
+                *instances.map { instance -> { instance.sdk.close() } }.toTypedArray(),
+                { executors.forEach { it.shutdown() } },
+                *executors
+                    .map { worker ->
+                        { assertTrue("SDK executor terminated", worker.awaitTermination(10, TimeUnit.SECONDS)) }
+                    }.toTypedArray(),
+                {
+                    transport.dispatcher.executorService.shutdown()
+                    assertTrue(transport.dispatcher.executorService.awaitTermination(10, TimeUnit.SECONDS))
+                },
+                { transport.connectionPool.evictAll() },
+                { assertEquals(0, dnsAttempts.get()) },
+                {
+                    check(root.name == "sdk" && requireNotNull(root.canonicalFile.parentFile).name.startsWith("junit"))
+                    assertTrue(root.deleteRecursively())
+                    assertFalse(root.exists())
+                },
+            )
             println("RW-07B cleanup: instances=${instances.size}, executors stopped, storage removed, DNS=0")
         }
     }

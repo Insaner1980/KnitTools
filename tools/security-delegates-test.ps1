@@ -32,6 +32,8 @@ exit "$DELEGATE_TEST_EXIT"
         @{ Name = 'options first'; Project = $caller; Args = @('--without-deps', '--plan-only'); Forwarded = @('--without-deps', '--plan-only') },
         @{ Name = 'project and options'; Project = $spaced; Args = @($spaced, '--plan-only', 'argument with spaces'); Forwarded = @('--plan-only', 'argument with spaces') }
     )
+    $launch = Join-Path $fixture 'delegate-launch.sh'
+    [IO.File]::WriteAllText($launch, 'export PATH=/usr/bin:/bin:$PATH; exec bash "$@"' + "`n", $utf8)
     $env:DELEGATE_TEST_OUTPUT = (Join-Path $fixture 'result.txt').Replace('\', '/')
     Push-Location $caller
     try {
@@ -39,9 +41,15 @@ exit "$DELEGATE_TEST_EXIT"
             foreach ($case in $cases) {
                 foreach ($exitCode in @(0, 37)) {
                     $env:DELEGATE_TEST_EXIT = "$exitCode"
+                    if (Test-Path -LiteralPath $env:DELEGATE_TEST_OUTPUT) {
+                        Remove-Item -LiteralPath $env:DELEGATE_TEST_OUTPUT
+                    }
                     $arguments = @($case.Args | ForEach-Object { $_.Replace('\', '/') })
-                    & $Bash -c 'export PATH=/usr/bin:/bin:$PATH; exec bash "$@"' delegate-test (Join-Path $repo "scripts/$name-global.sh").Replace('\', '/') @arguments
+                    & $Bash $launch.Replace('\', '/') (Join-Path $repo "scripts/$name-global.sh").Replace('\', '/') @arguments
                     if ($LASTEXITCODE -ne $exitCode) { throw "$name / $($case.Name): exit $LASTEXITCODE, expected $exitCode" }
+                    if (-not (Test-Path -LiteralPath $env:DELEGATE_TEST_OUTPUT -PathType Leaf)) {
+                        throw "$name / $($case.Name): delegate result was not created"
+                    }
                     $actual = [IO.File]::ReadAllLines($env:DELEGATE_TEST_OUTPUT)
                     $expected = @("$name.sh", $case.Project.Replace('\', '/'), $caller.Replace('\', '/'), "$($case.Forwarded.Count)") + $case.Forwarded
                     if (($actual -join "`n") -cne ($expected -join "`n")) { throw "$name / $($case.Name): actual=[$($actual -join '|')] expected=[$($expected -join '|')]" }

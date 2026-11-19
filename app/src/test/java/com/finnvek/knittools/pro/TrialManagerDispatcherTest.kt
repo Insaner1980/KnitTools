@@ -1,7 +1,9 @@
 package com.finnvek.knittools.pro
 
+import androidx.datastore.core.DataStore
 import androidx.datastore.core.okio.OkioStorage
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
+import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.PreferencesSerializer
 import androidx.datastore.preferences.core.longPreferencesKey
 import com.finnvek.knittools.data.time.SessionTimeSource
@@ -28,6 +30,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import java.io.File
+import java.io.IOException
 import java.util.concurrent.TimeUnit
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -96,6 +99,47 @@ class TrialManagerDispatcherTest {
             assertEquals(0, clock.reads)
             assertNull(dataStore.data.first()[longPreferencesKey("trial_start_timestamp")])
             assertFalse(manager.trialState.value.hasStarted)
+        }
+
+    @Test
+    fun `refresh storage failure preserves a verified trial and still applies its expiry`() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            try {
+                val ioScheduler = TestCoroutineScheduler()
+                val clock = TrialClock()
+                val delegate = store()
+                var readFails = false
+                val store =
+                    object : DataStore<Preferences> by delegate {
+                        override suspend fun updateData(transform: suspend (Preferences) -> Preferences): Preferences {
+                            if (readFails) throw IOException("Trial storage unavailable")
+                            return delegate.updateData(transform)
+                        }
+                    }
+                val manager = TrialManager(store, StandardTestDispatcher(ioScheduler), clock)
+                assertEquals(
+                    TrialStartResult.Started,
+                    runSnapshotOperation(ioScheduler, clock, 1) { manager.startTrial() },
+                )
+
+                readFails = true
+                runSnapshotOperation(ioScheduler, clock, 1) { manager.initialize() }
+                assertTrue(manager.trialState.value.isActive)
+                assertTrue(manager.trialState.value.hasStarted)
+
+                val elapsed = TimeUnit.DAYS.toMillis(14)
+                clock.now =
+                    clock.now.copy(
+                        wallClockMillis = clock.now.wallClockMillis + elapsed,
+                        elapsedRealtimeMillis = clock.now.elapsedRealtimeMillis + elapsed,
+                    )
+                runSnapshotOperation(ioScheduler, clock, 1) { manager.initialize() }
+                assertTrue(manager.trialState.value.hasStarted)
+                assertFalse(manager.trialState.value.isActive)
+            } finally {
+                Dispatchers.resetMain()
+            }
         }
 
     private suspend fun <T> TestScope.runSnapshotOperation(

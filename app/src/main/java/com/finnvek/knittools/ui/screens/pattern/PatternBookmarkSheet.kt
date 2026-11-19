@@ -53,11 +53,11 @@ import com.finnvek.knittools.ui.layout.ContentWidthPolicy
 
 internal data class PatternBookmarkSheetActions(
     val onDismiss: () -> Unit,
-    val onAdd: (String) -> Unit,
+    val onAdd: (String, () -> Unit) -> Unit,
     val onJump: (Long) -> Unit,
     val onPrevious: () -> Unit,
     val onNext: () -> Unit,
-    val onRename: (Long, String) -> Unit,
+    val onRename: (Long, String, () -> Unit) -> Unit,
     val onDelete: (Long) -> Unit,
     val onClearError: () -> Unit,
 )
@@ -103,7 +103,7 @@ internal fun PatternBookmarkSheet(
                     enabled = canAdd,
                 )
             }
-            errorDescription?.let { description ->
+            errorDescription?.takeUnless { showAddDialog || renameBookmark != null }?.let { description ->
                 Text(
                     text = description,
                     color = MaterialTheme.colorScheme.error,
@@ -130,14 +130,16 @@ internal fun PatternBookmarkSheet(
 
                 else -> {
                     state.bookmarks.forEach { bookmark ->
-                        PatternBookmarkRow(
-                            bookmark = bookmark,
-                            totalPages = totalPages,
-                            selected = bookmark.id == state.selectedBookmarkId,
-                            onJump = { actions.onJump(bookmark.id) },
-                            onRename = { renameBookmarkId = bookmark.id },
-                            onDelete = { deleteBookmarkId = bookmark.id },
-                        )
+                        key(bookmark.id) {
+                            PatternBookmarkRow(
+                                bookmark = bookmark,
+                                totalPages = totalPages,
+                                selected = bookmark.id == state.selectedBookmarkId,
+                                onJump = { actions.onJump(bookmark.id) },
+                                onRename = { renameBookmarkId = bookmark.id },
+                                onDelete = { deleteBookmarkId = bookmark.id },
+                            )
+                        }
                     }
                 }
             }
@@ -170,14 +172,15 @@ internal fun PatternBookmarkSheet(
         }
     }
 
-    if (showAddDialog && canAdd) {
+    if (showAddDialog) {
         PatternBookmarkNameDialog(
             title = stringResource(R.string.pattern_bookmark_add_title),
             initialName = "",
+            isSaving = state.isMutating,
+            failure = errorDescription,
             onDismiss = { showAddDialog = false },
             onConfirm = { name ->
-                actions.onAdd(name)
-                showAddDialog = false
+                actions.onAdd(name) { showAddDialog = false }
             },
         )
     }
@@ -186,10 +189,11 @@ internal fun PatternBookmarkSheet(
             PatternBookmarkNameDialog(
                 title = stringResource(R.string.pattern_bookmark_rename_title),
                 initialName = bookmark.name,
+                isSaving = state.isMutating,
+                failure = errorDescription,
                 onDismiss = { renameBookmarkId = null },
                 onConfirm = { name ->
-                    actions.onRename(bookmark.id, name)
-                    renameBookmarkId = null
+                    actions.onRename(bookmark.id, name) { renameBookmarkId = null }
                 },
             )
         }
@@ -314,6 +318,8 @@ private fun PatternBookmarkRow(
 private fun PatternBookmarkNameDialog(
     title: String,
     initialName: String,
+    isSaving: Boolean,
+    failure: String?,
     onDismiss: () -> Unit,
     onConfirm: (String) -> Unit,
 ) {
@@ -322,17 +328,19 @@ private fun PatternBookmarkNameDialog(
     val empty = trimmedName.isEmpty()
     val tooLong = trimmedName.length > PATTERN_BOOKMARK_NAME_MAX_LENGTH
     val valid = !empty && !tooLong
+    val canSave = valid && !isSaving
     ScrollableFormDialog(
-        onDismissRequest = onDismiss,
+        onDismissRequest = { if (!isSaving) onDismiss() },
         title = { Text(title) },
         text = {
             TextField(
                 value = name,
                 onValueChange = { name = it },
                 singleLine = true,
-                isError = !valid,
+                isError = !valid || failure != null,
+                enabled = !isSaving,
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                keyboardActions = KeyboardActions(onDone = { if (valid) onConfirm(trimmedName) }),
+                keyboardActions = KeyboardActions(onDone = { if (canSave) onConfirm(trimmedName) }),
                 label = { Text(stringResource(R.string.pattern_bookmark_name)) },
                 supportingText = {
                     Text(
@@ -344,6 +352,8 @@ private fun PatternBookmarkNameDialog(
                             tooLong -> {
                                 stringResource(R.string.pattern_bookmark_name_too_long)
                             }
+
+                            failure != null -> failure
 
                             else -> {
                                 stringResource(
@@ -359,7 +369,7 @@ private fun PatternBookmarkNameDialog(
         confirmButton = {
             TextButton(
                 onClick = { onConfirm(trimmedName) },
-                enabled = valid,
+                enabled = canSave,
                 modifier = Modifier.heightIn(min = 48.dp),
             ) {
                 Text(stringResource(R.string.save))
@@ -368,6 +378,7 @@ private fun PatternBookmarkNameDialog(
         dismissButton = {
             CancelButton(
                 onClick = onDismiss,
+                enabled = !isSaving,
                 modifier = Modifier.heightIn(min = 48.dp),
             )
         },

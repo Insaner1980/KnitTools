@@ -20,8 +20,8 @@ All repository links are relative to the root. Package shorthand such as `reposi
 | Application ID / namespace | `com.finnvek.knittools` |
 | App version | `1.0.0`, version code `1` |
 | Android SDK | Minimum 29; target and compile 37 |
-| Room schema | 28 |
-| Current database shape | 19 entities/tables, 214 columns; 28 exported schema versions |
+| Room schema | 29 |
+| Current database shape | 20 entities/tables, 217 columns and 29 exported schema versions |
 | Supported app languages | 12 locale options; System is a selection mode |
 | Resource inventory | 1,597 translatable strings and 34 plurals per locale; 1,631 names per locale across all text-resource files |
 | Modules | `:app` and `:baselineprofile` |
@@ -164,6 +164,7 @@ This task used local source and documentation checks. The dated Maestro, PostHog
     - [project_yarn_usage](#project_yarn_usage)
     - [project_completions](#project_completions)
     - [onboarding_projects](#onboarding_projects)
+    - [project_creation_receipts](#project_creation_receipts)
   - [Migration chain](#migration-chain)
   - [Preferences and other persisted state](#preferences-and-other-persisted-state)
   - [Column semantics and weak relationships](#column-semantics-and-weak-relationships)
@@ -1006,11 +1007,11 @@ Contextual prompts retain pending user actions so that a successful trial activa
 
 [BackupScreen.kt](app/src/main/java/com/finnvek/knittools/ui/screens/backup/BackupScreen.kt) and [BackupViewModel.kt](app/src/main/java/com/finnvek/knittools/ui/screens/backup/BackupViewModel.kt) expose user-selected SAF export and import preview. Confirmed restore **replaces all current project data**; it is not a merge. Preview/confirmation state is separate from a live mutation.
 
-[BackupRepository.kt](app/src/main/java/com/finnvek/knittools/repository/BackupRepository.kt) coordinates [data/backup](app/src/main/java/com/finnvek/knittools/data/backup). `.knittools-backup` is an `application/octet-stream` ZIP with format version 1, data version 1, current schema 28, `manifest.json`, 18 `tables/<table>.jsonl` streams, and content-addressed `files/<sha256>.bin` entries. Table streams use ordered column headers and primitive row arrays. It contains logical records, not a copied SQLite database/WAL.
+[BackupRepository.kt](app/src/main/java/com/finnvek/knittools/repository/BackupRepository.kt) coordinates [data/backup](app/src/main/java/com/finnvek/knittools/data/backup). `.knittools-backup` is an `application/octet-stream` ZIP with format version 1, data version 1, current schema 29, `manifest.json`, 18 `tables/<table>.jsonl` streams, and content-addressed `files/<sha256>.bin` entries. Table streams use ordered column headers and primitive row arrays. It contains logical records, not a copied SQLite database/WAL.
 
-The manifest identifies KnitTools format, creation time, app version, schema, and bounded file paths/sizes/hashes. Structural allowlists, duplicate/path checks, ZIP/ZIP64 local/central inventory agreement, trailing-data/decompression/depth checks, declared budgets, hashes, row validation, and a shadow Room database reject invalid archives before confirmation/replacement. App version is informational. The reader accepts format/data version 1 with **schema 25 through 28**; legacy counter-history headers can omit session snapshots and, for older history, linked-delta snapshots. Other versions are unsupported. SHA-256 detects inconsistent bytes but supplies no cryptographic authenticity. The archive is **unencrypted and unauthenticated**; project notes/photos/PDFs are readable by anyone who can access the file.
+The manifest identifies KnitTools format, creation time, app version, schema, and bounded file paths/sizes/hashes. Structural allowlists, duplicate/path checks, ZIP/ZIP64 local/central inventory agreement, trailing-data/decompression/depth checks, declared budgets, hashes, row validation, and a shadow Room database reject invalid archives before confirmation/replacement. App version is informational. The reader accepts format/data version 1 with **schema 25 through 29**. Legacy counter-history headers can omit session snapshots and, for older history, linked-delta snapshots. Other versions are unsupported. SHA-256 detects inconsistent bytes but supplies no cryptographic authenticity. The archive is **unencrypted and unauthenticated**; project notes/photos/PDFs are readable by anyone who can access the file.
 
-Included: 18 of the 19 tables, durable referenced PDFs, progress photos and yarn photos, relationships, annotation payloads, mappings/bookmarks, folders/usage/completions, and active-session recovery state. Excluded: onboarding project draft receipts, preferences/language/theme/consent, trial/Play state, credentials/WebView cookies, widget configurations/launch tokens, caches/pending capture sessions, diagnostics, and raw SQLite files. Destination settings remain destination-owned.
+Included: 18 of the 20 tables, durable referenced PDFs, progress photos and yarn photos, relationships, annotation payloads, mappings/bookmarks, folders/usage/completions, and active-session recovery state. Excluded: onboarding draft and ordinary project creation receipts, preferences/language/theme/consent, trial/Play state, credentials/WebView cookies, widget configurations/launch tokens, caches/pending capture sessions, diagnostics, and raw SQLite files. Destination settings remain destination-owned.
 
 ### Budgets and validation
 
@@ -1439,7 +1440,7 @@ Expected validation/missing/stale/feature failures use typed result models. Read
 
 ### Room ownership and constraints
 
-[KnitToolsDatabase.kt](app/src/main/java/com/finnvek/knittools/data/local/KnitToolsDatabase.kt) declares schema 28 and 19 entities. [DatabaseModule.kt](app/src/main/java/com/finnvek/knittools/di/DatabaseModule.kt) opens `knittools.db`, registers every manual migration plus Room auto-migrations, and installs constraints. Destructive fallback is not configured. Exported JSON schemas 1–28 are available in [app/schemas/com.finnvek.knittools.data.local.KnitToolsDatabase](app/schemas/com.finnvek.knittools.data.local.KnitToolsDatabase). Version 28's identity hash is `da23c177722e708f242c5d2998ed91e0`; schema 28 adds the nullable `counter_history.sessionUndoJson` session snapshot (`MIGRATION_27_28`).
+[KnitToolsDatabase.kt](app/src/main/java/com/finnvek/knittools/data/local/KnitToolsDatabase.kt) declares schema 29 and 20 entities. [DatabaseModule.kt](app/src/main/java/com/finnvek/knittools/di/DatabaseModule.kt) opens `knittools.db`, registers every manual migration plus Room auto-migrations, and installs constraints. Destructive fallback is not configured. Exported JSON schemas 1–29 are available in [app/schemas/com.finnvek.knittools.data.local.KnitToolsDatabase](app/schemas/com.finnvek.knittools.data.local.KnitToolsDatabase). Version 29's identity hash is `4c0b741c13546eb800be45cdbb893465`. Schema 29 adds `project_creation_receipts` (`MIGRATION_28_29`).
 
 | Table | Entity / DAO | Canonical writer / meaning |
 | --- | --- | --- |
@@ -1462,6 +1463,7 @@ Expected validation/missing/stale/feature failures use typed result models. Read
 | `project_yarn_usage` | `ProjectYarnUsageEntity` / `ProjectYarnUsageDao` | `ProjectYarnUsageRepository`; canonical independent meter amounts |
 | `project_completions` | `ProjectCompletionEntity` / `CounterProjectDao` | `CounterRepository`; every completion transition |
 | `onboarding_projects` | `OnboardingProjectEntity` / `CounterProjectDao` | `CounterRepository.createOnboardingProject`; idempotent draft receipt |
+| `project_creation_receipts` | `ProjectCreationReceiptEntity` / `CounterProjectDao` | `CounterRepository.createProject` records ordinary project creation attempts for safe retries |
 
 The table dictionary below reproduces column affinity, nullability, default, key, index, and FK metadata from the current exported schema. Kotlin booleans/enums/timestamps can use INTEGER/TEXT storage; affinity alone does not replace domain validation. Auto-generated primary IDs are distinct from the active-session singleton or project-keyed folder assignment.
 
@@ -1904,9 +1906,15 @@ Unique index: `index_onboarding_projects_projectId` (`projectId`).
 
 Foreign key: `projectId` → `counter_projects` (`id`), delete CASCADE, update NO ACTION. The draft receipt prevents duplicate project creation after retry and is excluded from logical backups.
 
+#### project_creation_receipts
+
+Primary key is `attemptId` (TEXT). `projectId` and `wasFirstProject` are required INTEGER columns. The unique `index_project_creation_receipts_projectId` covers `projectId`, which references `counter_projects.id` with delete CASCADE and update NO ACTION.
+
+`CounterRepository.createProject` stores the receipt in the same transaction as the project and any folder assignment. Retrying the same attempt returns the recorded result before the project limit is checked. Receipts are installation-local and excluded from backups.
+
 ### Migration chain
 
-Room exports every version 1–28. Versions 1→2 and 2→3 use declared auto-migrations; subsequent migrations are explicitly registered. Schema snapshots, migration implementation, constraint callbacks, and migration tests must change together for new persistent state.
+Room exports every version 1–29. Versions 1→2 and 2→3 use declared auto-migrations; subsequent migrations are explicitly registered. Schema snapshots, migration implementation, constraint callbacks, and migration tests must change together for new persistent state.
 
 | Transition | Implemented change / preservation boundary |
 | --- | --- |
@@ -1937,6 +1945,7 @@ Room exports every version 1–28. Versions 1→2 and 2→3 use declared auto-mi
 | 25→26 | Adds only onboarding project draft receipts and their unique project index; preserves earlier tables |
 | 26→27 | `MIGRATION_26_27` adds nullable `counter_history.linkedCounterDeltasJson` TEXT for actual linked-counter history deltas; preserves existing history with null snapshots |
 | 27→28 | `MIGRATION_27_28` adds nullable `counter_history.sessionUndoJson` TEXT for session row-accounting undo snapshots; preserves existing history with null snapshots |
+| 28→29 | `MIGRATION_28_29` adds ordinary project creation receipts and their unique project index |
 
 Migration 24→25 requires a credible completion timestamp at/after creation; it does not invent all historical completion cycles. Session null zones and completion null zones keep the established current-device-zone fallback. Migration 18→19 must preserve tables that reference the rebuilt saved-pattern table; a successful table rebuild without those rows is not a correct migration.
 
@@ -2556,7 +2565,7 @@ Use the contracts below to formulate focused questions. For each one, trace the 
 | Browser | Can an oversized/unsafe history fall back safely, a new request avoid old state, dead renderer callbacks remain inert, and redirects receive cookies for their own URL? |
 | Billing | Can expiry, a refreshed higher quote or a late product response launch an unreviewed price? Does the user need a fresh tap, and can an eligible offline trial/free use continue without a price? |
 | Pro readiness / widgets | Is Unknown distinct from Locked, and does the composed widget react to later entitlement results without starting a session or bypassing canonical count writes? |
-| Backup | Do schema 25–28 compatibility, embedded counter-ID remapping, cleared session snapshots, fresh live identities, file publication and replacement commit remain coherent after failure/cancellation? |
+| Backup | Do schema 25–29 compatibility, embedded counter-ID remapping, cleared session snapshots, fresh live identities, file publication and replacement commit remain coherent after failure/cancellation? |
 | Analytics | Can rapid off/on, SDK flush/close/retry, late initialization or failed queue deletion deliver old-consent events? Are already in-flight requests distinguished from newly denied delivery? |
 | Retained backend refresh | If an obsolete refresh fails after another request rotates the token, does the fallback require changed data, the same connection generation and current validity while preserving the original error otherwise? |
 | UI / localization | Do both theme tokens, actual content constraints, current locale/plurals, short-window Undo visibility, shared forms and merged action semantics survive the changed flow? Respect the explicit restriction on rerunning prior accessibility configurations. |
@@ -2690,7 +2699,7 @@ Do not use a plan's class name, an old `functions/` endpoint or an AI review cla
 | Root `App`, `MainActivity`, `MainActivityTheme` | Hilt startup/cleanup, theme/locale readiness, activity intents, review/update and navigation host |
 | `domain/model` | Typed project/craft/count/source/availability/folder/document/session/yarn/annotation models and validation |
 | `domain/calculator` | Counter/repeat/timing, numeric measurement/estimation, reference data, geometry/chart/reading-line and local instruction rules |
-| `data/local` | All 19 entities, DAOs, exported migration chain, schema constraints, safe open helper and SQL chunking |
+| `data/local` | All 20 entities, DAOs, exported migration chain, schema constraints, safe open helper and SQL chunking |
 | `data/datastore` | App preferences and locale migration/safe-read-write mechanisms |
 | `data/storage` | App-owned URI boundaries, photo/PDF pipelines, renderer/exporter and counter-launch trust tokens |
 | `data/backup` | Logical archive, bounded validation/provider IO, identity/file publication and recovery |
@@ -2750,7 +2759,7 @@ The last two categories are not permission to implement them. No new roadmap, mi
 | Source shaping description | Stored fields and actual cycle display replace the obsolete forecast claim; product intent for further shaping behavior is not inferred |
 | Large session history | 100,000-session writer/archive admission and bounded queries; maximum device latency/memory and writer blocking not measured here |
 | File/provider resilience | Bounded copy/ownership/journals exist; hostile provider cancellation can retain admission, partial exported output can remain |
-| Backup | Format/data 1, schemas 25–28 accepted; no merge, encryption or authenticity; other budgets can reject an otherwise permitted native history |
+| Backup | Format/data 1, schemas 25–29 accepted; no merge, encryption or authenticity; other budgets can reject an otherwise permitted native history |
 | Cleanup | SQL commits before best-effort file deletion; orphans possible, with directory-specific pruning rather than a universal sweep |
 | Browser | Arbitrary HTTPS redirect/subframe/download destinations can pass; retained website session, no native Disconnect/DNS firewall |
 | Ravelry permission | Recorded requirement to obtain written site permission before Play release; acquisition not established |
@@ -2771,7 +2780,7 @@ An unexecuted check is uncertainty, not automatically an implementation defect. 
 | --- | --- |
 | [AGENTS.md](AGENTS.md), [CODEX.md](CODEX.md) | Aligned working rules, ownership/security/UI conventions; unchanged here |
 | [CLAUDE.md](CLAUDE.md) | Product wording and visual direction; current implementation still decides exact behavior |
-| [README.md](README.md) | Short current overview; its Gradle 9.8.1 / schema 28 snapshot agrees with this working tree |
+| [README.md](README.md) | Short current overview with Gradle 9.8.1 and Room schema 29 |
 | [ONLINE_OFFLINE.md](ONLINE_OFFLINE.md) | Current network/offline distinctions, not the old native Firebase flow |
 | [PRIVACY-POLICY.md](PRIVACY-POLICY.md) | Updated technical draft with current browser/telemetry/backup model; publisher contact still required |
 | [config/security-decisions.md](config/security-decisions.md) | Recorded current browser, Crashlytics, analytics and removed-credential decisions |

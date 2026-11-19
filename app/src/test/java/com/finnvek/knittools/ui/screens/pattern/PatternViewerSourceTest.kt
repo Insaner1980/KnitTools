@@ -173,7 +173,7 @@ class PatternViewerSourceTest {
         assertTrue(projectViewer.contains("var isReadingLineDragging by remember(selectedDocument?.id)"))
         assertTrue(
             projectViewer.contains(
-                "LaunchedEffect(selectedDocument?.id, selectedDocument?.readingLineYFraction, isReadingLineDragging)",
+                "LaunchedEffect(selectedDocument?.id, selectedDocument?.readingLineYFraction)",
             ),
         )
         assertTrue(projectViewer.contains("if (!isReadingLineDragging)"))

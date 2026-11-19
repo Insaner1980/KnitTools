@@ -28,6 +28,26 @@ import org.junit.Test
 @OptIn(ExperimentalCoroutinesApi::class)
 class CounterViewModelCompletionTest : CounterViewModelFixture() {
     @Test
+    fun `switching projects invalidates an already displayed deletion choice`() =
+        runTest {
+            val session = activeSession().copy(projectId = 7L)
+            coEvery { repository.deleteProjectResolvingActiveSession(7L, false) } returns
+                ProjectDeletionResult.NeedsActiveSessionDiscard(session)
+            val viewModel = viewModel()
+            runCurrent()
+            viewModel.deleteProject(7L)
+            runCurrent()
+            assertEquals(session, viewModel.uiState.value.pendingProjectDeletionSession)
+
+            selectOtherProject(viewModel)
+            viewModel.deleteProjectDiscardingActiveSession()
+            runCurrent()
+
+            assertNull(viewModel.uiState.value.pendingProjectDeletionSession)
+            coVerify(exactly = 0) { repository.deleteProjectResolvingActiveSession(any(), true, any()) }
+        }
+
+    @Test
     fun `late deletion prompt cannot attach to another selected project`() =
         runTest {
             assertLateDeletionIgnored(

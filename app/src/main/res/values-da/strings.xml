@@ -170,9 +170,6 @@
     <string name="pattern_image_move_later">Flyt side %1$d senere</string>
     <string name="pattern_image_remove_page">Fjern side %1$d</string>
     <string name="pattern_image_create_pdf">Opret opskrifts-PDF</string>
-    <string name="pattern_image_replace_title">Erstat den aktuelle opskrift?</string>
-    <string name="pattern_image_replace_message">Den aktuelle vedhæftning erstattes, når den nye PDF er klar.</string>
-    <string name="pattern_image_replace_action">Erstat opskrift</string>
     <string name="pattern_image_conversion_progress">Opretter side %1$d af %2$d</string>
     <string name="pattern_image_attaching">Vedhæfter opskrifts-PDF</string>
     <string name="pattern_image_cancel_conversion">Annuller konvertering</string>

@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { randomUUID } from "node:crypto";
 import { after, describe, it, mock } from "node:test";
 
 import { Firestore, Query } from "firebase-admin/firestore";
@@ -18,7 +19,7 @@ describe("OAuth state invalidation in local Firestore", {
 
   it("reads and expires only this user's live unused states, including repeated disconnect", async () => {
     assert.match(emulatorHost ?? "", /^(127\.0\.0\.1|localhost):\d+$/);
-    firestore = new Firestore({ projectId: "demo-knittools-ravelry-regression" });
+    firestore ??= new Firestore({ projectId: "demo-knittools-ravelry-regression" });
     const stateStore = createOAuthStateStore(firestore);
     const tokenStore = createTokenStore(firestore);
     const now = 10_000;
@@ -92,6 +93,41 @@ describe("OAuth state invalidation in local Firestore", {
       mock.restoreAll();
       await Promise.all(fixtures.map((value) => states.doc(value.state).delete()));
       await tokenRef.delete();
+    }
+  });
+
+  it("preserves a newly started login and a state consumed during cleanup", async (context) => {
+    assert.match(emulatorHost ?? "", /^(127\.0\.0\.1|localhost):\d+$/);
+    firestore ??= new Firestore({ projectId: "demo-knittools-ravelry-regression" });
+    const stateStore = createOAuthStateStore(firestore);
+    const tokenStore = createTokenStore(firestore);
+    const now = 10_000;
+    const uid = `disconnect-race-${randomUUID()}`;
+    const pending: StoredOAuthState = {
+      state: `${uid}-old`, uid, authType: "oauth2", createdAtMillis: now - 1,
+      expiresAtMillis: now + 60_000, usedAtMillis: null, redirectUri: "https://callback.example",
+      codeVerifier: "synthetic-verifier", codeChallenge: "synthetic-challenge", codeChallengeMethod: "S256",
+      connectionGeneration: 0,
+    };
+    const reconnect: StoredOAuthState = { ...pending, state: `${uid}-new`, createdAtMillis: now };
+    const states = firestore.collection(RAVELRY_OAUTH_STATES_COLLECTION);
+    const tokenRef = firestore.collection(RAVELRY_TOKENS_COLLECTION).doc(uid);
+    const originalGet = Query.prototype.get;
+    try {
+      await stateStore.saveState(pending);
+      context.mock.method(Query.prototype, "get", async function(this: Query) {
+        const connectionGeneration = await tokenStore.getConnectionGeneration(uid);
+        assert.equal(connectionGeneration, 1);
+        await stateStore.saveState({ ...reconnect, connectionGeneration });
+        const result = await originalGet.call(this);
+        assert.equal(await stateStore.markStateUsed(pending.state, now), true);
+        return result;
+      });
+      await disconnectRavelry({ uid, tokenStore, stateStore, nowMillis: () => now });
+      assert.deepEqual(await stateStore.getState(pending.state), { ...pending, usedAtMillis: now });
+      assert.deepEqual(await stateStore.getState(reconnect.state), { ...reconnect, connectionGeneration: 1 });
+    } finally {
+      await Promise.all([states.doc(pending.state).delete(), states.doc(reconnect.state).delete(), tokenRef.delete()]);
     }
   });
 });

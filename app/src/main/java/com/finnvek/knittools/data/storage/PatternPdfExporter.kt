@@ -135,12 +135,16 @@ class PatternPdfExporter private constructor(
                     val pageInfo =
                         PdfDocument.PageInfo
                             .Builder(
-                                bitmap.width,
-                                bitmap.height,
+                                pagePlan.sourceSize.width,
+                                pagePlan.sourceSize.height,
                                 pageIndex + 1,
                             ).create()
                     val page = document.startPage(pageInfo)
                     try {
+                        page.canvas.scale(
+                            pagePlan.sourceSize.width.toFloat() / bitmap.width,
+                            pagePlan.sourceSize.height.toFloat() / bitmap.height,
+                        )
                         page.canvas.drawBitmap(bitmap, 0f, 0f, null)
                         PatternAnnotationCanvasRenderer.render(
                             canvas = page.canvas,

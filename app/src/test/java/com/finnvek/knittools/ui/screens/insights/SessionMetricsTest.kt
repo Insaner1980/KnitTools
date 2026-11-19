@@ -4,11 +4,37 @@ import com.finnvek.knittools.domain.model.KnitSession
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.ZonedDateTime
 
 class SessionMetricsTest {
+    @Test
+    fun `repeated midnight splits both activity and pace into the correct dates`() {
+        val zone = ZoneId.of("America/St_Johns")
+        val start = Instant.parse("2009-11-01T03:00:00Z").toEpochMilli()
+        val firstDate = LocalDate.of(2009, 10, 31)
+        val expected = mapOf(firstDate to 1_800L, firstDate.plusDays(1) to 600L)
+        val session =
+            KnitSession(
+                id = 1L,
+                projectId = 1L,
+                startedAt = start,
+                endedAt = start + 2_400_000L,
+                startRow = 0,
+                endRow = 4,
+                durationMinutes = 40,
+                durationSeconds = 2_400L,
+                rowsWorked = 4,
+                zoneId = zone.id,
+            )
+
+        assertEquals(expected, SessionMetrics.dailyActivitySeconds(listOf(session), firstDate, zone))
+        val pace = SessionMetrics.paceBuckets(listOf(session), null, PaceGroupingInterval.DAY, zone)
+        assertEquals(expected, pace.mapValues { it.value.totalSeconds })
+    }
+
     @Test
     fun `weekly and monthly totals agree with activity and pace dates after travel`() {
         val deviceZone = ZoneId.of("UTC")
@@ -300,6 +326,7 @@ class SessionMetricsTest {
     @Test
     fun `apportioned minutes give every measured part at least a minute`() {
         assertEquals(listOf(1, 0, 60), apportionDisplayMinutes(listOf(20L, 0L, 3_600L)))
+        assertEquals(listOf(1, 1, 1), apportionDisplayMinutes(listOf(1L, 1L, 120L)))
     }
 
     @Test

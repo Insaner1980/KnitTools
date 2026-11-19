@@ -179,12 +179,9 @@ internal object SessionMetrics {
         while (cursor < ended) {
             val date = Instant.ofEpochMilli(cursor).atZone(sessionZone).toLocalDate()
             val nextDayStart =
-                date
-                    .plusDays(1)
-                    .atStartOfDay(sessionZone)
-                    .toInstant()
-                    .boundedEpochMillis()
+                nextSessionBucketBoundary(cursor, date, PaceGroupingInterval.DAY, sessionZone, DayOfWeek.MONDAY)
             val segmentEnd = minOf(ended, nextDayStart)
+            if (segmentEnd <= cursor) break
             val cumulativeFraction = sessionMillisBetween(started, segmentEnd) / sessionMillis
             val cumulativeSeconds = scaledSeconds(activeSeconds, cumulativeFraction)
             val seconds = (cumulativeSeconds - allocatedSeconds).coerceAtLeast(0L)
@@ -236,11 +233,7 @@ internal object SessionMetrics {
                     .toLocalDate()
                     .bucketStart(interval, firstDayOfWeek)
             val nextBucketStartMillis =
-                bucketStart
-                    .nextBucketStart(interval)
-                    .atStartOfDay(sessionZone)
-                    .toInstant()
-                    .boundedEpochMillis()
+                nextSessionBucketBoundary(cursor, bucketStart, interval, sessionZone, firstDayOfWeek)
             val segmentEnd = minOf(ended, nextBucketStartMillis)
             if (segmentEnd <= cursor) break
 
@@ -367,6 +360,29 @@ internal fun secondsToDisplayMinutes(seconds: Long): Int =
         else -> ((seconds - 1L) / 60L + 1L).coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
     }
 
+private fun nextSessionBucketBoundary(
+    cursorMillis: Long,
+    bucketStart: LocalDate,
+    interval: PaceGroupingInterval,
+    zone: ZoneId,
+    firstDayOfWeek: DayOfWeek,
+): Long {
+    val cursor = Instant.ofEpochMilli(cursorMillis)
+    val midnight = bucketStart.nextBucketStart(interval).atStartOfDay(zone)
+    val firstMidnight = midnight.toInstant()
+    val calendarBoundary =
+        if (firstMidnight > cursor) firstMidnight else midnight.withLaterOffsetAtOverlap().toInstant()
+    var transition = zone.rules.nextTransition(cursor)
+    while (transition != null && transition.instant < calendarBoundary) {
+        val dateAfterTransition = transition.instant.atZone(zone).toLocalDate()
+        if (dateAfterTransition.bucketStart(interval, firstDayOfWeek) != bucketStart) {
+            return transition.instant.boundedEpochMillis()
+        }
+        transition = zone.rules.nextTransition(transition.instant)
+    }
+    return calendarBoundary.boundedEpochMillis()
+}
+
 /**
  * Jakaa osien sekunnit näyttöminuuteiksi niin, että osien summa on sama kuin
  * kokonaisuudesta laskettu minuuttiluku. Ilman tätä jokainen erikseen ylöspäin
@@ -386,6 +402,14 @@ internal fun apportionDisplayMinutes(secondsParts: List<Long>): List<Int> {
             if (seconds <= 0L) 0 else maxOf(1, (seconds / 60L).coerceAtMost(Int.MAX_VALUE.toLong()).toInt())
         }
     var remaining = target.toLong() - minutes.sumOf { it.toLong() }
+    if (remaining < 0L && target < Int.MAX_VALUE) {
+        for (index in minutes.indices.sortedByDescending { minutes[it] }) {
+            if (remaining == 0L || minutes[index] <= 1) break
+            val reduction = minOf(-remaining, minutes[index] - 1L).toInt()
+            minutes[index] -= reduction
+            remaining += reduction
+        }
+    }
     if (remaining <= 0) return minutes.toList()
 
     // Loput minuutit suurimman jäännöksen mukaan, jotta pyöristys osuu sinne missä

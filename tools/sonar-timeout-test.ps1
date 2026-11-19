@@ -4,9 +4,24 @@ $ErrorActionPreference = "Stop"
 
 $tempRoot = Join-Path ([IO.Path]::GetTempPath()) ("sonar-timeout-test-" + [Guid]::NewGuid().ToString("N"))
 $originalSonarToken = [Environment]::GetEnvironmentVariable("SONAR_TOKEN", "Process")
-$originalChildPidPath = [Environment]::GetEnvironmentVariable("SONAR_TEST_CHILD_PID", "Process")
 $originalPath = [Environment]::GetEnvironmentVariable("PATH", "Process")
-$childPid = $null
+$childPidPath = Join-Path $tempRoot "child.pid"
+$childScript = Join-Path $tempRoot "child.ps1"
+$gradleInvokedPath = Join-Path $tempRoot "gradle-invoked"
+$windowsPowerShell = Join-Path $env:SystemRoot "System32\WindowsPowerShell\v1.0\powershell.exe"
+
+function Get-FixtureChild {
+    if (-not (Test-Path -LiteralPath $childPidPath -PathType Leaf)) { return }
+    $fixturePid = 0
+    if (-not [int]::TryParse((Get-Content -LiteralPath $childPidPath -Raw), [ref]$fixturePid) -or $fixturePid -le 0) {
+        return
+    }
+    $process = Get-CimInstance Win32_Process -Filter "ProcessId=$fixturePid"
+    if ($null -ne $process -and $process.ExecutablePath -eq $windowsPowerShell -and
+        $process.CommandLine -match ('(?i)\s-File\s+"' + [regex]::Escape($childScript) + '"(?:\s|$)')) {
+        return $process
+    }
+}
 
 function Invoke-SonarFixture {
     param(
@@ -41,17 +56,20 @@ try {
         "sonar.host.url=https://example.invalid"
     )
 
-    $childPidPath = Join-Path $tempRoot "child.pid"
+    Set-Content -LiteralPath $childScript -Encoding ascii -Value @(
+        '$PID | Set-Content -LiteralPath (Join-Path $PSScriptRoot "child.pid") -Encoding ascii'
+        'Start-Sleep -Seconds 30'
+    )
     Set-Content -LiteralPath (Join-Path $tempRoot "gradlew.bat") -Encoding ascii -Value @(
         "@echo off"
+        'echo invoked>"%~dp0gradle-invoked"'
         "echo fake-gradle-stdout"
         "echo fake-gradle-stderr 1>&2"
-        "`"%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe`" -NoProfile -Command `"`$PID | Set-Content -LiteralPath `$env:SONAR_TEST_CHILD_PID -Encoding ascii; Start-Sleep -Seconds 30`""
+        '"%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -File "%~dp0child.ps1"'
     )
 
     $pwsh = (Get-Process -Id $PID -ErrorAction Stop).Path
     [Environment]::SetEnvironmentVariable("SONAR_TOKEN", "fixture-token", "Process")
-    [Environment]::SetEnvironmentVariable("SONAR_TEST_CHILD_PID", $childPidPath, "Process")
     [Environment]::SetEnvironmentVariable("PATH", (Join-Path $env:SystemRoot "System32"), "Process")
 
     $startedAt = [DateTimeOffset]::Now
@@ -83,14 +101,14 @@ try {
     if (-not (Test-Path -LiteralPath $childPidPath -PathType Leaf)) {
         throw "The fake Gradle child process did not publish its PID."
     }
-    $childPid = [int](Get-Content -LiteralPath $childPidPath -Raw)
     Start-Sleep -Milliseconds 250
-    if ($null -ne (Get-Process -Id $childPid -ErrorAction SilentlyContinue)) {
-        throw "Timed-out Gradle child process $childPid is still running."
+    if ($null -ne (Get-FixtureChild)) {
+        throw "Timed-out Gradle child process is still running."
     }
 
     # Ilman ulkoisen latauksen lupaa Gradlea ei saa käynnistää.
     Remove-Item -LiteralPath $childPidPath -Force
+    Remove-Item -LiteralPath $gradleInvokedPath -Force
     Remove-Item -LiteralPath (Join-Path $tempRoot "reports") -Recurse -Force
     $gateResult = Invoke-SonarFixture -PowerShellPath $pwsh -FixtureRoot $tempRoot -Arguments @()
     if ($gateResult.ExitCode -ne 2) {
@@ -100,7 +118,7 @@ try {
     if (-not $gateReport.Contains("ERROR: EXTERNAL_UPLOAD_APPROVAL_REQUIRED")) {
         throw "Approval-gate report is missing the EXTERNAL_UPLOAD_APPROVAL_REQUIRED marker."
     }
-    if (Test-Path -LiteralPath $childPidPath) {
+    if (Test-Path -LiteralPath $gradleInvokedPath) {
         throw "Gradle ran without external-upload approval."
     }
 
@@ -112,7 +130,7 @@ try {
     if (-not (($planResult.Output -join "`n").Contains("- Gradle sonar"))) {
         throw "PlanOnly output is missing the Gradle Sonar plan."
     }
-    if (Test-Path -LiteralPath $childPidPath) {
+    if (Test-Path -LiteralPath $gradleInvokedPath) {
         throw "Gradle ran during -PlanOnly."
     }
 
@@ -129,11 +147,11 @@ try {
     Write-Output "sonar-timeout-test: PASS"
 }
 finally {
-    if ($null -ne $childPid) {
-        Stop-Process -Id $childPid -Force -ErrorAction SilentlyContinue
+    $child = Get-FixtureChild
+    if ($null -ne $child) {
+        Stop-Process -Id $child.ProcessId -Force -ErrorAction SilentlyContinue
     }
     [Environment]::SetEnvironmentVariable("SONAR_TOKEN", $originalSonarToken, "Process")
-    [Environment]::SetEnvironmentVariable("SONAR_TEST_CHILD_PID", $originalChildPidPath, "Process")
     [Environment]::SetEnvironmentVariable("PATH", $originalPath, "Process")
     if (Test-Path -LiteralPath $tempRoot) {
         Remove-Item -LiteralPath $tempRoot -Recurse -Force

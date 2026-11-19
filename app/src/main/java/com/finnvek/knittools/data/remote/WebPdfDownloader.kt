@@ -44,6 +44,7 @@ class WebPdfDownloader
                 return withContext(ioDispatcher) {
                     var url = download.url
                     repeat(MAX_REDIRECTS + 1) {
+                        coroutineContext.ensureActive()
                         if (!url.startsWith("https://", ignoreCase = true)) return@withContext null
                         val connection = open(url, download)
                         try {

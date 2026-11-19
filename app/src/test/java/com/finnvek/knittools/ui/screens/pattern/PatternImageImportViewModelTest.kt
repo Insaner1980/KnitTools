@@ -11,7 +11,6 @@ import com.finnvek.knittools.data.storage.PatternImageInfo
 import com.finnvek.knittools.data.storage.PatternImageStageBatch
 import com.finnvek.knittools.data.storage.PatternImageStageException
 import com.finnvek.knittools.data.storage.PatternImageStageFailure
-import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.pro.ProManager
 import com.finnvek.knittools.pro.ProState
 import com.finnvek.knittools.pro.ProStatus
@@ -287,8 +286,8 @@ class PatternImageImportViewModelTest {
             coEvery { repository.attachPattern(7L, any(), "generated.pdf", 0, null) } returns
                 ProjectDocumentMutationResult.AlreadyAttached
 
-            viewModel.createPatternPdf(replaceExisting = false)
-            viewModel.createPatternPdf(replaceExisting = false)
+            viewModel.createPatternPdf()
+            viewModel.createPatternPdf()
             advanceUntilIdle()
 
             assertEquals(null, viewModel.uiState.value.error)
@@ -300,26 +299,6 @@ class PatternImageImportViewModelTest {
             viewModel.consumeCloseRequest()
 
             assertFalse(viewModel.uiState.value.closeReady)
-        }
-
-    @Test
-    fun `replacement waits for confirmation before conversion`() =
-        runTest {
-            val page = page("first")
-            val handle =
-                SavedStateHandle(
-                    mapOf(
-                        "pattern_image_project_id" to 7L,
-                        "pattern_image_session_id" to "session-a",
-                        "pattern_image_pages" to encodeStagedPatternPages(listOf(page)),
-                    ),
-                )
-            val viewModel = viewModel(handle)
-
-            viewModel.createPatternPdf(replaceExisting = true)
-
-            assertTrue(viewModel.uiState.value.replacementConfirmationPending)
-            coVerify(exactly = 0) { storage.convertImagesToPdf(any(), any(), any(), any(), any()) }
         }
 
     @Test
@@ -346,7 +325,7 @@ class PatternImageImportViewModelTest {
                 attachment.await()
             }
 
-            viewModel.createPatternPdf(replaceExisting = false)
+            viewModel.createPatternPdf()
             runCurrent()
             viewModel.markPreviewFailed(page.id)
             val convertingState = viewModel.uiState.value
@@ -383,9 +362,9 @@ class PatternImageImportViewModelTest {
             coEvery { storage.convertImagesToPdf(any(), 7L, listOf(page), any(), any()) } returns
                 ("file:///pattern_pdfs/7/generated.pdf" to "generated.pdf")
             coEvery { repository.attachPattern(7L, any(), "generated.pdf", 0, null) } throws java.io.IOException("db")
-            coEvery { repository.getProject(7L) } returns CounterProject(id = 7L, name = "Project", patternUri = "old")
+            coEvery { repository.isPatternDocumentAttached(7L, "file:///pattern_pdfs/7/generated.pdf") } returns false
 
-            viewModel.createPatternPdf(replaceExisting = false)
+            viewModel.createPatternPdf()
             advanceUntilIdle()
 
             assertEquals(PatternImageImportPhase.ERROR, viewModel.uiState.value.phase)
@@ -415,7 +394,7 @@ class PatternImageImportViewModelTest {
                 java.io.IOException("late acknowledgement")
             coEvery { repository.isPatternDocumentAttached(7L, outputUri) } returns true
 
-            viewModel.createPatternPdf(replaceExisting = false)
+            viewModel.createPatternPdf()
             advanceUntilIdle()
 
             assertEquals(PatternImageImportPhase.SUCCESS, viewModel.uiState.value.phase)
@@ -424,7 +403,7 @@ class PatternImageImportViewModelTest {
         }
 
     @Test
-    fun `unknown attachment outcome preserves output and retryable draft`() =
+    fun `unknown attachment outcome retries the same output without generating a second PDF`() =
         runTest {
             val page = page("first")
             val outputUri = "file:///pattern_pdfs/7/generated.pdf"
@@ -445,14 +424,24 @@ class PatternImageImportViewModelTest {
             coEvery { repository.isPatternDocumentAttached(7L, outputUri) } throws
                 java.io.IOException("read unavailable")
 
-            viewModel.createPatternPdf(replaceExisting = false)
+            viewModel.createPatternPdf()
             advanceUntilIdle()
 
             assertEquals(PatternImageImportPhase.ERROR, viewModel.uiState.value.phase)
             assertEquals(PatternImageImportError.ATTACHMENT, viewModel.uiState.value.error)
             assertEquals(listOf(page), viewModel.uiState.value.selection.pages)
+            assertTrue(viewModel.uiState.value.attachmentPending)
             verify(exactly = 0) { storage.deleteGeneratedPdf(context, outputUri) }
             verify(exactly = 0) { storage.deleteImportSession(any(), any(), any()) }
+
+            coEvery { repository.attachPattern(7L, outputUri, "generated.pdf", 0, null) } returns
+                ProjectDocumentMutationResult.DuplicateUri
+            viewModel.createPatternPdf()
+            advanceUntilIdle()
+
+            assertEquals(PatternImageImportPhase.SUCCESS, viewModel.uiState.value.phase)
+            coVerify(exactly = 1) { storage.convertImagesToPdf(any(), 7L, any(), any(), any()) }
+            coVerify(exactly = 2) { repository.attachPattern(7L, outputUri, "generated.pdf", 0, null) }
         }
 
     @Test
@@ -549,7 +538,7 @@ class PatternImageImportViewModelTest {
             vm.markPreviewFailed(brokenPage)
             assertEquals(setOf(brokenPage), vm.uiState.value.invalidPageIds)
             assertEquals(PatternImageImportError.UNSUPPORTED, vm.uiState.value.error)
-            vm.createPatternPdf(replaceExisting = false)
+            vm.createPatternPdf()
             advanceUntilIdle()
             coVerify(exactly = 0) { storage.convertImagesToPdf(any(), any(), any(), any(), any()) }
 
@@ -572,7 +561,7 @@ class PatternImageImportViewModelTest {
             coEvery { storage.convertImagesToPdf(context, 7L, pages, any(), any()) } returns
                 ("file:///pattern_pdfs/7/valid.pdf" to "valid.pdf")
 
-            vm.createPatternPdf(replaceExisting = false)
+            vm.createPatternPdf()
             advanceUntilIdle()
 
             coVerify(exactly = 1) { storage.convertImagesToPdf(context, 7L, pages, any(), any()) }
@@ -590,7 +579,7 @@ class PatternImageImportViewModelTest {
                 MutableStateFlow(ProState(ProStatus.TRIAL_ACTIVE, trialStartTimestamp = 100L))
             listOf(PatternImageImportOrigin.CAMERA, PatternImageImportOrigin.GALLERY).forEach { origin ->
                 val vm = readyTrialImport(origin)
-                vm.createPatternPdf(replaceExisting = false)
+                vm.createPatternPdf()
                 advanceUntilIdle()
                 assertEquals(PatternImageImportPhase.SUCCESS, vm.uiState.value.phase)
             }
@@ -609,7 +598,7 @@ class PatternImageImportViewModelTest {
             coEvery { repository.isPatternDocumentAttached(any(), any()) } returns false
             val vm = readyTrialImport(PatternImageImportOrigin.CAMERA)
 
-            vm.createPatternPdf(replaceExisting = false)
+            vm.createPatternPdf()
             advanceUntilIdle()
 
             assertEquals(PatternImageImportPhase.ERROR, vm.uiState.value.phase)
@@ -623,7 +612,7 @@ class PatternImageImportViewModelTest {
                 ProjectDocumentMutationResult.PersistenceFailure
             coEvery { repository.isPatternDocumentAttached(any(), any()) } returns false
             val vm = readyTrialImport(PatternImageImportOrigin.CAMERA)
-            vm.createPatternPdf(replaceExisting = false)
+            vm.createPatternPdf()
             advanceUntilIdle()
             assertEquals(PatternImageImportPhase.ERROR, vm.uiState.value.phase)
             verify(exactly = 0) { analytics.track(UsageEvent.PDF_IMPORT_SUCCEEDED, any()) }
@@ -643,7 +632,7 @@ class PatternImageImportViewModelTest {
                 java.io.IOException("preferences")
             val vm = readyTrialImport(PatternImageImportOrigin.GALLERY)
 
-            vm.createPatternPdf(replaceExisting = false)
+            vm.createPatternPdf()
             advanceUntilIdle()
 
             assertEquals(PatternImageImportPhase.SUCCESS, vm.uiState.value.phase)
@@ -661,7 +650,7 @@ class PatternImageImportViewModelTest {
                 every { proManager.initialStateReady } returns MutableStateFlow(ready)
                 every { proManager.proState } returns MutableStateFlow(ProState(status, trialStartTimestamp = 100L))
                 val vm = readyTrialImport(PatternImageImportOrigin.GALLERY)
-                vm.createPatternPdf(replaceExisting = false)
+                vm.createPatternPdf()
                 advanceUntilIdle()
                 assertEquals(PatternImageImportPhase.SUCCESS, vm.uiState.value.phase)
             }

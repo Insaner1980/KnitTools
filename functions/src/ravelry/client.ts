@@ -4,7 +4,7 @@ import type {
   SanitizedPattern,
   SanitizedPatternSearchResponse,
 } from "./sanitizedTypes";
-import { readJsonResponse } from "./boundedResponse";
+import { cancelResponseBody, readJsonResponse } from "./boundedResponse";
 import { toSanitizedPattern } from "./sanitizedTypes";
 
 const RAVELRY_API_BASE_URL = "https://api.ravelry.com";
@@ -222,10 +222,9 @@ async function ravelryJson(
     }),
   });
 
-  if (response.status === 404 && allowMissing) {
-    return null;
-  }
   if (!response.ok) {
+    await cancelResponseBody(response);
+    if (response.status === 404 && allowMissing) return null;
     throw new RavelryClientHttpError(response.status);
   }
 
@@ -266,6 +265,7 @@ export function createRavelryClient(fetchImpl: typeof fetch = fetch): RavelryCli
       });
 
       if (!response.ok) {
+        await cancelResponseBody(response);
         throw new RavelryClientHttpError(response.status);
       }
 

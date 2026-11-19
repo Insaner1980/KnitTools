@@ -1645,7 +1645,9 @@ class CounterViewModel
         }
 
         fun deleteProjectDiscardingActiveSession() {
-            val active = _uiState.value.pendingProjectDeletionSession ?: return
+            val state = _uiState.value
+            val active = state.pendingProjectDeletionSession ?: return
+            if (active.projectId != state.projectId) return
             launchProjectDeletion(active.projectId, discardActiveSession = true, expectedSession = active)
         }
 
@@ -1782,8 +1784,11 @@ class CounterViewModel
                         closeSelectedProject(selectionVersion)
                     }
                 }
-                is ProjectDeletionResult.NeedsActiveSessionDiscard ->
-                    _uiState.update { it.copy(pendingProjectDeletionSession = result.session) }
+                is ProjectDeletionResult.NeedsActiveSessionDiscard -> {
+                    if (_uiState.value.projectId == id) {
+                        _uiState.update { it.copy(pendingProjectDeletionSession = result.session) }
+                    }
+                }
                 ProjectDeletionResult.ProjectUnavailable -> Unit
                 ProjectDeletionResult.PersistenceFailure ->
                     showWorkSessionError(R.string.work_session_could_not_discard) { deleteProject(id) }
@@ -1948,12 +1953,11 @@ class CounterViewModel
                         count = updatedProject.count,
                         stepSize = updatedProject.stepSize,
                     )
-                val resetStitch =
-                    currentState.stitchTrackingEnabled &&
-                        updatedCounter.count != currentState.counter.count
                 _uiState.update { latestState ->
                     if (latestState.projectId == projectId) {
-                        latestState.withCounterChange(updatedCounter, resetStitch)
+                        latestState
+                            .withCounterChange(updatedCounter, resetStitch = false)
+                            .copy(currentStitch = updatedProject.currentStitch)
                     } else {
                         latestState
                     }

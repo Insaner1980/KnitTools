@@ -6,6 +6,8 @@ import android.graphics.Color
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.finnvek.knittools.domain.calculator.ChartCell
 import com.finnvek.knittools.domain.calculator.ChartTrackerHighlight
+import com.finnvek.knittools.domain.calculator.topmostAnnotationAt
+import com.finnvek.knittools.domain.calculator.translatePatternAnnotation
 import com.finnvek.knittools.domain.model.CalloutPayload
 import com.finnvek.knittools.domain.model.ChartColumnDirection
 import com.finnvek.knittools.domain.model.ChartCounterType
@@ -28,6 +30,25 @@ import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class PatternAnnotationCanvasRendererTest {
+    @Test
+    fun legacyPixelStrokeUsesTheVisiblePageForSelectionAndCanBeMoved() {
+        val original =
+            PatternAnnotation(
+                id = 1L,
+                layerId = 2L,
+                page = 0,
+                kind = PatternAnnotationKind.FREEHAND,
+                payload = FreehandPayload(emptyList(), Color.BLACK, 4f, legacyPathData = "M 20,30 L 80,30"),
+                zIndex = 0L,
+            )
+        val editable = original.withEditableLegacyStroke(pageWidth = 200f, pageHeight = 100f)
+        assertEquals(editable, topmostAnnotationAt(listOf(editable), NormalizedPatternPoint(0.2f, 0.3f), 0.01f))
+        val moved = translatePatternAnnotation(editable, 0.1f, 0.1f).payload as FreehandPayload
+        assertEquals(0.2f, moved.points.first().x, 0.001f)
+        assertEquals(0.4f, moved.points.first().y, 0.001f)
+        assertEquals(null, moved.legacyPathData)
+    }
+
     @Test
     fun constantPressurePayloadRendersUniformlyAndLegacyPressurePayloadStillVaries() {
         for (kind in listOf(PatternAnnotationKind.FREEHAND, PatternAnnotationKind.HIGHLIGHTER)) {

@@ -177,9 +177,6 @@
     <string name="pattern_image_move_later" tools:ignore="PluralsCandidate">Move page %1$d later</string>
     <string name="pattern_image_remove_page">Remove page %1$d</string>
     <string name="pattern_image_create_pdf">Create pattern PDF</string>
-    <string name="pattern_image_replace_title">Replace current pattern?</string>
-    <string name="pattern_image_replace_message">The current pattern attachment will be replaced after the new PDF is ready.</string>
-    <string name="pattern_image_replace_action">Replace pattern</string>
     <string name="pattern_image_conversion_progress">Creating page %1$d of %2$d</string>
     <string name="pattern_image_attaching">Attaching pattern PDF</string>
     <string name="pattern_image_cancel_conversion">Cancel conversion</string>

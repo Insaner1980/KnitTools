@@ -16,11 +16,11 @@ import com.android.billingclient.api.QueryProductDetailsParams
 import com.android.billingclient.api.QueryPurchasesParams
 import com.android.billingclient.api.queryProductDetails
 import com.android.billingclient.api.queryPurchasesAsync
+import com.finnvek.knittools.di.ApplicationScope
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancelChildren
@@ -42,8 +42,10 @@ class BillingManager
     @Inject
     constructor(
         @param:ApplicationContext private val context: Context,
+        @ApplicationScope applicationScope: CoroutineScope,
     ) {
-        private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+        private val scope =
+            CoroutineScope(applicationScope.coroutineContext + SupervisorJob(applicationScope.coroutineContext[Job]))
 
         private val _isProPurchased = MutableStateFlow(false)
         val isProPurchased: StateFlow<Boolean> = _isProPurchased.asStateFlow()
@@ -75,6 +77,7 @@ class BillingManager
         private var billingClient: BillingClient? = null
         private var purchaseUpdatesListener: PurchasesUpdatedListener? = null
         private var purchaseQueryGeneration = 0L
+        private var inFlightPurchaseQueryGeneration: Long? = null
         private var productQueryGeneration = 0L
         private var productQueryJob: Job? = null
         private var offerExpiryJob: Job? = null
@@ -228,7 +231,9 @@ class BillingManager
         fun refreshPurchasesOnResume() {
             if (!_purchaseStateReady.value && !_purchaseQueryFailed.value) return
             scope.launch {
-                if (awaitInitialBillingConnection()) queryPurchases()
+                if (awaitInitialBillingConnection() && inFlightPurchaseQueryGeneration != purchaseQueryGeneration) {
+                    queryPurchases()
+                }
             }
         }
 
@@ -284,9 +289,13 @@ class BillingManager
                                 }
 
                                 Purchase.PurchaseState.PENDING -> {
+                                    val interruptedInitialQuery =
+                                        !_purchaseStateReady.value &&
+                                            inFlightPurchaseQueryGeneration == purchaseQueryGeneration
                                     purchaseQueryGeneration++
                                     _purchasePending.value = true
                                     emitPurchaseMessage(BillingUserMessage.PURCHASE_PENDING)
+                                    if (interruptedInitialQuery) scope.launch { queryPurchases() }
                                 }
 
                                 else -> Unit
@@ -307,6 +316,7 @@ class BillingManager
 
         fun destroy() {
             purchaseUpdatesListener = null
+            purchaseQueryGeneration++
             _purchasePending.value = false
             resetProductDetails()
             priceNeedsReview = false
@@ -358,6 +368,7 @@ class BillingManager
         private suspend fun queryPurchasesInternal(): PurchaseQueryResult {
             val client = billingClient ?: return PurchaseQueryResult.Failure
             val generation = ++purchaseQueryGeneration
+            inFlightPurchaseQueryGeneration = generation
             val params =
                 QueryPurchasesParams
                     .newBuilder()
@@ -371,6 +382,8 @@ class BillingManager
                     throw e
                 } catch (_: Exception) {
                     null
+                } finally {
+                    if (inFlightPurchaseQueryGeneration == generation) inFlightPurchaseQueryGeneration = null
                 }
             if (billingClient !== client || generation != purchaseQueryGeneration) return PurchaseQueryResult.Failure
             if (result == null || result.billingResult.responseCode != BillingClient.BillingResponseCode.OK) {
@@ -531,7 +544,12 @@ class BillingManager
             scope.launch {
                 delay(ACKNOWLEDGEMENT_RETRY_DELAY_MS)
                 pendingAcknowledgementRetries.remove(purchaseToken)
-                queryPurchases()
+                if (!queryPurchases() &&
+                    purchaseToken !in finishedAcknowledgementTokens &&
+                    purchaseToken !in acknowledgementsInFlight
+                ) {
+                    scheduleAcknowledgementRetry(purchaseToken)
+                }
             }
         }
 

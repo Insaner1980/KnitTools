@@ -21,6 +21,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
@@ -34,7 +35,7 @@ class ProjectCreationPolicyTest : ProjectListViewModelFixture() {
         runTest {
             val result = CompletableDeferred<ProjectCreationResult>()
             every { proManager.hasFeature(ProFeature.UNLIMITED_PROJECTS) } returns true
-            coEvery { repository.createProject(any(), any(), any(), any(), any(), any()) } coAnswers
+            coEvery { repository.createProject(any(), any(), any(), any(), any(), any(), options = any()) } coAnswers
                 { result.await() }
             val events = mutableListOf<UsageEvent>()
             val actions =
@@ -64,7 +65,9 @@ class ProjectCreationPolicyTest : ProjectListViewModelFixture() {
             every { repository.getActiveProjects() } returns active
             every { proManager.hasFeature(ProFeature.UNLIMITED_PROJECTS) } returns false
             coEvery { repository.getActiveProjectCount() } answers { active.value.size }
-            coEvery { repository.createProject(any(), any(), any(), any(), any(), any()) } returnsMany
+            coEvery {
+                repository.createProject(any(), any(), any(), any(), any(), any(), options = any())
+            } returnsMany
                 listOf(ProjectCreationResult.LimitReached, ProjectCreationResult.Created(42L))
             val handle = SavedStateHandle()
             val vm = createViewModel(handle)
@@ -72,13 +75,7 @@ class ProjectCreationPolicyTest : ProjectListViewModelFixture() {
             backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
                 vm.navigateToProject.collect { navigated += it }
             }
-            vm.createProject(
-                "Original",
-                com.finnvek.knittools.domain.model.CraftType.CROCHET,
-                com.finnvek.knittools.domain.model.MainCounterLabelType.CUSTOM,
-                "Circuits",
-                12L,
-            )
+            vm.createProject("Original", CROCHET, CUSTOM, "Circuits", 12L)
             runCurrent()
             assertEquals(1, vm.projectCreationPromptCount.value)
             val staleCount = CompletableDeferred<Int>()
@@ -113,9 +110,11 @@ class ProjectCreationPolicyTest : ProjectListViewModelFixture() {
             runCurrent()
             assertEquals(listOf(42L), navigated)
             coVerify(exactly = 2) {
-                repository.createProject("Original", CROCHET, CUSTOM, "Circuits", false, 12L)
+                repository.createProject("Original", CROCHET, CUSTOM, "Circuits", false, 12L, options = any())
             }
-            coVerify(exactly = 2) { repository.createProject(any(), any(), any(), any(), any(), any()) }
+            coVerify(exactly = 2) {
+                repository.createProject(any(), any(), any(), any(), any(), any(), options = any())
+            }
         }
 
     @Test
@@ -132,7 +131,7 @@ class ProjectCreationPolicyTest : ProjectListViewModelFixture() {
             every { proManager.hasFeature(ProFeature.UNLIMITED_PROJECTS) } answers { entitlement.value.isPro }
             val count = CompletableDeferred<Int>()
             coEvery { repository.getActiveProjectCount() } coAnswers { count.await() }
-            coEvery { repository.createProject(any(), any(), any(), any(), any(), any()) } returns
+            coEvery { repository.createProject(any(), any(), any(), any(), any(), any(), options = any()) } returns
                 ProjectCreationResult.Created(42L)
             val handle = pendingDraftHandle()
             val vm = createViewModel(handle)
@@ -153,7 +152,9 @@ class ProjectCreationPolicyTest : ProjectListViewModelFixture() {
             runCurrent()
             assertEquals(listOf(42L), navigated)
             assertEquals(null, handle.get<PendingProjectCreation>("pending_project_creation"))
-            coVerify(exactly = 1) { repository.createProject(any(), any(), any(), any(), any(), any()) }
+            coVerify(exactly = 1) {
+                repository.createProject(any(), any(), any(), any(), any(), any(), options = any())
+            }
         }
 
     @Test
@@ -177,7 +178,9 @@ class ProjectCreationPolicyTest : ProjectListViewModelFixture() {
             runCurrent()
             assertEquals(null, handle.get<PendingProjectCreation>("pending_project_creation"))
             assertEquals(null, vm.projectCreationPromptCount.value)
-            coVerify(exactly = 0) { repository.createProject(any(), any(), any(), any(), any(), any()) }
+            coVerify(exactly = 0) {
+                repository.createProject(any(), any(), any(), any(), any(), any(), options = any())
+            }
             coVerify(exactly = 1) { repository.getActiveProjectCount() }
         }
 
@@ -197,11 +200,7 @@ class ProjectCreationPolicyTest : ProjectListViewModelFixture() {
             }
             val errors = mutableListOf<Throwable>()
             val reportedFailures = mutableListOf<Throwable>()
-            val scope =
-                CoroutineScope(
-                    SupervisorJob() + StandardTestDispatcher(testScheduler) +
-                        CoroutineExceptionHandler { _, e -> errors += e },
-                )
+            val scope = recordingScope(errors)
             try {
                 val actions =
                     ProjectCreationActions(
@@ -231,7 +230,9 @@ class ProjectCreationPolicyTest : ProjectListViewModelFixture() {
                 assertEquals(listOf("Count failed"), reportedFailures.map { it.message })
                 runCurrent()
                 assertEquals(3, reads)
-                coVerify(exactly = 0) { repository.createProject(any(), any(), any(), any(), any(), any()) }
+                coVerify(exactly = 0) {
+                    repository.createProject(any(), any(), any(), any(), any(), any(), options = any())
+                }
             } finally {
                 scope.cancel()
             }
@@ -250,7 +251,9 @@ class ProjectCreationPolicyTest : ProjectListViewModelFixture() {
             }
             val heldCreate = CompletableDeferred<ProjectCreationResult>()
             var attempts = 0
-            coEvery { repository.createProject(any(), any(), any(), any(), any(), any()) } coAnswers {
+            coEvery {
+                repository.createProject(any(), any(), any(), any(), any(), any(), options = any())
+            } coAnswers {
                 attempts++
                 if (attempts == 1) heldCreate.await() else ProjectCreationResult.Created(42L)
             }
@@ -289,9 +292,11 @@ class ProjectCreationPolicyTest : ProjectListViewModelFixture() {
             runCurrent()
             assertEquals(listOf(42L), navigated)
             coVerify(exactly = 2) {
-                repository.createProject("Original", CROCHET, CUSTOM, "Circuits", false, 12L)
+                repository.createProject("Original", CROCHET, CUSTOM, "Circuits", false, 12L, options = any())
             }
-            coVerify(exactly = 2) { repository.createProject(any(), any(), any(), any(), any(), any()) }
+            coVerify(exactly = 2) {
+                repository.createProject(any(), any(), any(), any(), any(), any(), options = any())
+            }
         }
 
     @Test
@@ -331,15 +336,11 @@ class ProjectCreationPolicyTest : ProjectListViewModelFixture() {
         coEvery { repository.getActiveProjectCount() } answers { active.value.size }
         val heldCreate = CompletableDeferred<ProjectCreationResult>()
         // CPD-ON
-        coEvery { repository.createProject(any(), any(), any(), any(), any(), any()) } coAnswers
+        coEvery { repository.createProject(any(), any(), any(), any(), any(), any(), options = any()) } coAnswers
             { heldCreate.await() }
         val errors = mutableListOf<Throwable>()
         val reportedFailures = mutableListOf<Throwable>()
-        val scope =
-            CoroutineScope(
-                SupervisorJob() + StandardTestDispatcher(testScheduler) +
-                    CoroutineExceptionHandler { _, error -> errors += error },
-            )
+        val scope = recordingScope(errors)
         val handle = pendingDraftHandle()
         val navigated = mutableListOf<Long>()
         try {
@@ -359,7 +360,9 @@ class ProjectCreationPolicyTest : ProjectListViewModelFixture() {
             assertEquals(1, actions.projectCreationPromptCount.value)
             active.value = emptyList()
             runCurrent()
-            coVerify(exactly = 1) { repository.createProject(any(), any(), any(), any(), any(), any()) }
+            coVerify(exactly = 1) {
+                repository.createProject(any(), any(), any(), any(), any(), any(), options = any())
+            }
             if (signal) {
                 active.value = listOf(CounterProject(id = 9L, name = "Active"))
                 runCurrent()
@@ -371,7 +374,9 @@ class ProjectCreationPolicyTest : ProjectListViewModelFixture() {
             if (failure == null || failCount) heldCreate.complete(result) else heldCreate.completeExceptionally(failure)
             runCurrent()
             runCurrent()
-            coVerify(exactly = 1) { repository.createProject(any(), any(), any(), any(), any(), any()) }
+            coVerify(exactly = 1) {
+                repository.createProject(any(), any(), any(), any(), any(), any(), options = any())
+            }
             val created = result is ProjectCreationResult.Created && !dismiss && failure == null
             assertEquals(if (created) listOf(42L) else emptyList<Long>(), navigated)
             val expectedPrompt = expectedPromptCount(dismiss, created, failure)
@@ -385,6 +390,12 @@ class ProjectCreationPolicyTest : ProjectListViewModelFixture() {
             scope.cancel()
         }
     }
+
+    private fun TestScope.recordingScope(errors: MutableList<Throwable>): CoroutineScope =
+        CoroutineScope(
+            SupervisorJob() + StandardTestDispatcher(testScheduler) +
+                CoroutineExceptionHandler { _, error -> errors += error },
+        )
 
     private fun expectedPromptCount(
         dismiss: Boolean,
@@ -416,7 +427,7 @@ class ProjectCreationPolicyTest : ProjectListViewModelFixture() {
         runTest {
             every { proManager.hasFeature(ProFeature.UNLIMITED_PROJECTS) } returns false
             coEvery { repository.getActiveProjectCount() } returns 1
-            coEvery { repository.createProject(any(), any(), any(), any(), any(), any()) } returns
+            coEvery { repository.createProject(any(), any(), any(), any(), any(), any(), options = any()) } returns
                 ProjectCreationResult.LimitReached
             val vm = createViewModel()
             vm.createProject(
@@ -447,7 +458,9 @@ class ProjectCreationPolicyTest : ProjectListViewModelFixture() {
             coEvery { repository.getActiveProjectCount() } answers { active.value.size }
             val firstResult = CompletableDeferred<ProjectCreationResult>()
             var attempts = 0
-            coEvery { repository.createProject(any(), any(), any(), any(), any(), any()) } coAnswers {
+            coEvery {
+                repository.createProject(any(), any(), any(), any(), any(), any(), options = any())
+            } coAnswers {
                 attempts++
                 if (attempts == 1) firstResult.await() else ProjectCreationResult.Created(42L)
                 // CPD-ON
@@ -475,7 +488,7 @@ class ProjectCreationPolicyTest : ProjectListViewModelFixture() {
             every { repository.getActiveProjects() } returns active
             every { proManager.hasFeature(ProFeature.UNLIMITED_PROJECTS) } returns false
             coEvery { repository.getActiveProjectCount() } answers { active.value.size }
-            coEvery { repository.createProject(any(), any(), any(), any(), any(), any()) } returns
+            coEvery { repository.createProject(any(), any(), any(), any(), any(), any(), options = any()) } returns
                 // CPD-ON
                 ProjectCreationResult.LimitReached
             val vm = createViewModel()
@@ -499,7 +512,9 @@ class ProjectCreationPolicyTest : ProjectListViewModelFixture() {
             active.value = emptyList()
             vm.retryPendingProjectCreation()
             runCurrent()
-            coVerify(exactly = 1) { repository.createProject(any(), any(), any(), any(), any(), any()) }
+            coVerify(exactly = 1) {
+                repository.createProject(any(), any(), any(), any(), any(), any(), options = any())
+            }
             assertEquals(null, vm.projectCreationPromptCount.value)
         }
 
@@ -536,7 +551,9 @@ class ProjectCreationPolicyTest : ProjectListViewModelFixture() {
             every { repository.getActiveProjects() } returns active
             every { proManager.hasFeature(ProFeature.UNLIMITED_PROJECTS) } returns false
             coEvery { repository.getActiveProjectCount() } answers { active.value.size }
-            coEvery { repository.createProject(any(), any(), any(), any(), any(), any()) } returnsMany
+            coEvery {
+                repository.createProject(any(), any(), any(), any(), any(), any(), options = any())
+            } returnsMany
                 listOf(ProjectCreationResult.LimitReached, ProjectCreationResult.Created(42L))
             val vm = createViewModel()
             val navigated = mutableListOf<Long>()
@@ -562,6 +579,7 @@ class ProjectCreationPolicyTest : ProjectListViewModelFixture() {
                     "Circuits",
                     false,
                     12L,
+                    options = any(),
                 )
             }
         }

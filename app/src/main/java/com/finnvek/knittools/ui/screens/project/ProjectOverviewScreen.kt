@@ -96,7 +96,7 @@ internal fun ProjectOverviewRouteContent(
     projectSetup: @Composable () -> Unit = {},
 ) {
     val projectId = state.projectId ?: return
-    val yarnModel: ProjectYarnUsageViewModel = hiltViewModel(key = "overview-yarn")
+    val yarnModel: ProjectYarnUsageViewModel = hiltViewModel(key = "overview-yarn-$projectId")
     val yarnItems by yarnModel.items.collectAsStateWithLifecycle()
     val yarnUnit by yarnModel.displayUnit.collectAsStateWithLifecycle()
     LaunchedEffect(projectId) { yarnModel.observe(projectId) }

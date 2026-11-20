@@ -46,8 +46,8 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.model.PatternAnnotationOwner
 import com.finnvek.knittools.domain.model.RowReminder
-import com.finnvek.knittools.ui.screens.counter.ActiveWorkSessionRow
 import com.finnvek.knittools.ui.screens.counter.ReminderAlertCard
+import com.finnvek.knittools.ui.screens.counter.WorkSessionStrip
 import com.finnvek.knittools.ui.screens.insights.ChartAxisLabels
 import com.finnvek.knittools.ui.screens.insights.InsightsChartBucket
 import com.finnvek.knittools.ui.screens.insights.InsightsProjectFabric
@@ -397,19 +397,30 @@ class AuditPart11ComponentsTest(
         var resolutions = 0
         compose.setContent {
             Frame {
-                ActiveWorkSessionRow(
-                    projectName = longName,
-                    durationSeconds = 360_061,
-                    rowsWorked = 12345,
-                    needsRecoveryReview = recovery.value,
-                    onStop = { stops++ },
-                    onResolve = { resolutions++ },
+                val duration = workSessionDurationText(360_061)
+                WorkSessionStrip(
+                    label =
+                        context.getString(
+                            if (recovery.value) R.string.work_session_recovery_needed else R.string.work_session_active,
+                        ),
+                    durationText = duration,
+                    actionLabel =
+                        context.getString(
+                            if (recovery.value) R.string.work_session_resolve else R.string.work_session_stop_short,
+                        ),
+                    onAction = { if (recovery.value) resolutions++ else stops++ },
+                    contentDescription =
+                        context.getString(
+                            R.string.work_session_active_description,
+                            longName,
+                            duration,
+                        ),
                 )
             }
         }
-        compose.onNodeWithText("100:01:01").assertIsDisplayed()
+        compose.onNodeWithText(context.getString(R.string.insights_duration_hours_minutes, 100, 1)).assertIsDisplayed()
         compose
-            .onNodeWithText(context.getString(R.string.work_session_stop))
+            .onNodeWithText(context.getString(R.string.work_session_stop_short))
             .assertHeightIsAtLeast(48.dp)
             .performClick()
         assertEquals(1, stops)

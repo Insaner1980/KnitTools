@@ -49,6 +49,8 @@ class ProUpgradeViewModel
             }
         }
 
+        fun retryPurchaseState() = billingManager.refreshPurchasesOnResume()
+
         fun restorePurchases() {
             if (_isRestoring.value) return
             _isRestoring.value = true

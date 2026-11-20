@@ -50,7 +50,7 @@ class InsightsCompletionSectionTest {
     }
 
     @Test
-    fun moreOpensOlderEventsAndTimelineExposesZeroCounts() {
+    fun moreOpensOlderEventsAndSingleNonemptyBucketOmitsTimeline() {
         val date = LocalDate.of(2026, 9, 13)
         val state =
             InsightsUiState(
@@ -72,14 +72,21 @@ class InsightsCompletionSectionTest {
                                     date.minusDays(it),
                                 )
                             },
-                        buckets = listOf(InsightsCompletionBucket(date, date, 0)),
+                        buckets =
+                            listOf(
+                                InsightsCompletionBucket(date.minusDays(1), date.minusDays(1), 0),
+                                InsightsCompletionBucket(date, date, 4),
+                            ),
                     ),
             )
         rule.setContent { KnitToolsTheme { LazyColumn { completionSection(state) } } }
         rule
             .onNodeWithText(
                 rule.activity.resources.getQuantityString(R.plurals.insights_completion_count, 0, 0),
-            ).assertIsDisplayed()
+            ).assertDoesNotExist()
+        rule
+            .onAllNodesWithText(rule.activity.resources.getQuantityString(R.plurals.insights_completion_count, 4, 4))
+            .assertCountEquals(1)
         rule.onNodeWithText(rule.activity.getString(R.string.show_more)).performScrollTo().performClick()
         rule.onNodeWithTag("completion_history").performScrollToNode(hasText("Older", substring = true))
         rule.onNodeWithText("Older", substring = true).assertIsDisplayed()

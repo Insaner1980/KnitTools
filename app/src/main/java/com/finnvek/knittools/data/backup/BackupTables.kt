@@ -5,6 +5,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 import com.finnvek.knittools.data.local.CounterSessionUndo
 import com.finnvek.knittools.data.local.KNITTOOLS_DATABASE_VERSION
 import com.finnvek.knittools.data.local.LinkedCounterDeltas
+import com.finnvek.knittools.data.local.SavedPatternMigration30
 import com.finnvek.knittools.domain.model.PatternAnnotationKind
 import com.finnvek.knittools.domain.model.PatternAnnotationPayloadCodec
 import com.finnvek.knittools.domain.model.ProjectFolderNameValidationResult
@@ -173,6 +174,7 @@ internal object BackupTables {
             }
         }
         budget.complete()
+        if (schemaVersion < 30) SavedPatternMigration30.clearLegacyImportedDesigners(db)
         verify(db)
     }
 

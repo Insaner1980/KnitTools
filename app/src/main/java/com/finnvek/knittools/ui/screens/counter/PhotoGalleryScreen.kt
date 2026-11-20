@@ -34,7 +34,6 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TextField
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -68,12 +67,12 @@ import com.finnvek.knittools.ui.components.CollectWithLifecycleEffect
 import com.finnvek.knittools.ui.components.CrossStitchEmptyState
 import com.finnvek.knittools.ui.components.CrossStitchGlyph
 import com.finnvek.knittools.ui.components.LabeledCounterImageButton
+import com.finnvek.knittools.ui.components.LabeledTextField
 import com.finnvek.knittools.ui.components.ProMarker
 import com.finnvek.knittools.ui.components.ProPromptRequest
 import com.finnvek.knittools.ui.components.ProPromptSheet
 import com.finnvek.knittools.ui.components.ProPromptSource
 import com.finnvek.knittools.ui.components.ScrollableFormDialog
-import com.finnvek.knittools.ui.components.dialogTextFieldColors
 import com.finnvek.knittools.ui.components.proMarkerDescription
 import com.finnvek.knittools.ui.components.rememberLocaleDateFormat
 import com.finnvek.knittools.ui.components.withExtraBottom
@@ -406,7 +405,7 @@ private fun PhotoGridItem(
     onLongClick: () -> Unit,
 ) {
     val dateFormat = rememberLocaleDateFormat("MMMd")
-    val displayName = photo.note ?: stringResource(R.string.row_label_format, photo.rowNumber)
+    val displayName = photo.note ?: stringResource(R.string.photo_count_label_format, photo.rowNumber)
 
     Card(
         modifier =
@@ -471,19 +470,17 @@ private fun RenamePhotoDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.rename_photo)) },
         text = {
-            TextField(
+            LabeledTextField(
                 value = text,
                 onValueChange = { text = it.takeWithoutSplittingSurrogatePair(100) },
-                singleLine = true,
-                placeholder = { Text(stringResource(R.string.photo_name_hint)) },
-                shape = MaterialTheme.shapes.medium,
-                colors = dialogTextFieldColors(),
+                label = stringResource(R.string.photo_name_label),
+                placeholder = stringResource(R.string.photo_name_hint),
                 modifier = Modifier.fillMaxWidth(),
             )
         },
         confirmButton = {
             TextButton(onClick = { onConfirm(text) }) {
-                Text(stringResource(R.string.confirm))
+                Text(stringResource(R.string.save))
             }
         },
         dismissButton = {

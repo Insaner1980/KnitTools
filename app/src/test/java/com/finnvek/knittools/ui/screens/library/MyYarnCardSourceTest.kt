@@ -63,7 +63,7 @@ class MyYarnCardSourceTest {
         assertTrue(screen.contains("val addLabel = stringResource(R.string.add_yarn_to_my_yarn)"))
         assertFalse(screen.contains("FloatingActionButton("))
         assertTrue(screen.contains("ManualYarnCardSheet("))
-        assertTrue(screen.contains("ProjectYarnTextField("))
+        assertTrue(screen.contains("LabeledTextField("))
         assertTrue(screen.contains("label = stringResource(R.string.project_yarn_name)"))
         assertTrue(
             screen.contains(

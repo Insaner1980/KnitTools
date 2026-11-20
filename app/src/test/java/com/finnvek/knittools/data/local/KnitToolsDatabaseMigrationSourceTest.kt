@@ -8,12 +8,46 @@ import io.mockk.just
 import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.unmockkStatic
+import io.mockk.verify
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class KnitToolsDatabaseMigrationSourceTest {
+    @Test
+    fun `migration 29 to 30 clears only old localized designer labels on imported PDFs`() {
+        val db = mockk<SupportSQLiteDatabase>(relaxed = true)
+
+        KnitToolsDatabase.MIGRATION_29_30.migrate(db)
+
+        verify {
+            db.execSQL(
+                match {
+                    it.contains("SET designerName = NULL") &&
+                        it.contains("source = 'LOCAL_FILE'") &&
+                        it.contains("localPdfUri IS NOT NULL")
+                },
+                match {
+                    it.toSet() ==
+                        setOf(
+                            "Imported PDF",
+                            "Tuotu PDF",
+                            "Importiertes PDF",
+                            "PDF importé",
+                            "PDF importado",
+                            "Importert PDF",
+                            "Geïmporteerde PDF",
+                            "PDF importato",
+                            "Importerad PDF",
+                            "Importeret PDF",
+                        )
+                },
+            )
+        }
+        assertTrue(KnitToolsDatabase.MIGRATION_29_30 in KnitToolsDatabase.ALL_MANUAL_MIGRATIONS)
+    }
+
     @Test
     fun `legacy document labels strip storage prefixes and preserve filename colons`() {
         val provider = "content://com.android.externalstorage.documents/document/"

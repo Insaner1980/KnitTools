@@ -9,9 +9,12 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
@@ -49,6 +52,7 @@ import com.finnvek.knittools.domain.model.SavedPatternSource
 import com.finnvek.knittools.domain.model.YarnUsageSource
 import com.finnvek.knittools.pro.ProState
 import com.finnvek.knittools.pro.ProStatus
+import com.finnvek.knittools.ui.screens.counter.LinkedYarnSummary
 import com.finnvek.knittools.ui.screens.counter.YarnManagementSheet
 import com.finnvek.knittools.ui.screens.counter.YarnManagementSheetActions
 import com.finnvek.knittools.ui.screens.library.SavedPatternDetailScreen
@@ -271,14 +275,28 @@ class MentalModelClarityRuntimeTest {
                     ProjectYarnNote(3, 1, "Third project yarn"),
                 ),
             )
-        var saved = 0L
+        val saved = mutableStateOf(0L)
+        val snackbar = SnackbarHostState()
         var usageOpened = false
         render {
+            LaunchedEffect(saved.value) {
+                if (saved.value != 0L) {
+                    snackbar.showSnackbar(
+                        text(R.string.saved_to_my_yarn_explanation),
+                        duration = SnackbarDuration.Indefinite,
+                    )
+                }
+            }
             YarnManagementSheet(
-                linkedYarns = emptyList(),
+                linkedYarns =
+                    listOf(
+                        LinkedYarnSummary(21L, "Willow DK", "Berry #14"),
+                        LinkedYarnSummary(22L, "Willow DK", "Ocean #23"),
+                    ),
                 projectYarnNotes = notes.value,
                 proState = ProState(status = ProStatus.PRO_PURCHASED),
                 proAccessReady = true,
+                snackbarHostState = snackbar,
                 actions =
                     YarnManagementSheetActions({
                     }, {
@@ -288,8 +306,9 @@ class MentalModelClarityRuntimeTest {
                         )
                     }, {
                     }, {
-                        saved =
-                            it
+                        saved.value = it
+                        notes.value =
+                            notes.value.map { note -> if (note.id == it) note.copy(savedYarnCardId = 21L) else note }
                     }, {}),
                 usageItems =
                     notes.value.map {
@@ -302,6 +321,9 @@ class MentalModelClarityRuntimeTest {
             )
         }
         rule.onNode(isDialog()).performTouchInput { swipeUp() }
+        rule.onNodeWithText("Berry #14").performScrollTo().assertIsDisplayed()
+        rule.onNodeWithText("Ocean #23").performScrollTo().assertIsDisplayed()
+        rule.onNodeWithText(text(R.string.saved_to_my_yarn_explanation)).assertDoesNotExist()
         rule.onAllNodesWithText(text(R.string.save_to_my_yarn_explanation))[0].performScrollTo()
         capture("yarn-unsaved")
         rule
@@ -309,10 +331,11 @@ class MentalModelClarityRuntimeTest {
             .performScrollTo()
             .assertIsEnabled()
             .performClick()
-        rule.runOnIdle { assertEquals(1L, saved) }
-        rule.onNodeWithText(text(R.string.saved_to_my_yarn_explanation)).performScrollTo()
+        rule.runOnIdle { assertEquals(1L, saved.value) }
+        rule.onNodeWithText(text(R.string.saved_to_my_yarn_explanation)).assertIsDisplayed()
         capture("yarn-saved")
-        assertReadable(text(R.string.saved_to_my_yarn_explanation))
+        rule.runOnIdle { snackbar.currentSnackbarData?.dismiss() }
+        rule.onNodeWithText(text(R.string.saved_to_my_yarn_explanation)).assertDoesNotExist()
         val usage = context.getString(R.string.yarn_usage_track_named, notes.value[1].name)
         rule
             .onNodeWithContentDescription(usage)

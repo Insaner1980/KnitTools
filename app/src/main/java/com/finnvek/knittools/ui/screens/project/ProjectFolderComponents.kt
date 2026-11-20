@@ -18,8 +18,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -27,10 +25,10 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TextField
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -66,9 +64,11 @@ import com.finnvek.knittools.domain.model.ProjectFolderFilter
 import com.finnvek.knittools.domain.model.ProjectFolderNameValidationResult
 import com.finnvek.knittools.domain.model.validateProjectFolderName
 import com.finnvek.knittools.ui.components.CancelButton
+import com.finnvek.knittools.ui.components.ConfirmationDialog
+import com.finnvek.knittools.ui.components.LabeledTextField
 import com.finnvek.knittools.ui.components.ScreenTitleSelector
+import com.finnvek.knittools.ui.components.ScrollableFormDialog
 import com.finnvek.knittools.ui.components.SheetTitle
-import com.finnvek.knittools.ui.components.dialogTextFieldColors
 import com.finnvek.knittools.ui.layout.ContentWidthPolicy
 import com.finnvek.knittools.ui.theme.ProjectListDimens
 
@@ -235,44 +235,40 @@ fun ProjectFolderNameDialog(
     onClearError: () -> Unit = {},
 ) {
     var name by rememberSaveable(folderId) { mutableStateOf(initialName) }
+    var touched by rememberSaveable(folderId) { mutableStateOf(false) }
     val validation = validateProjectFolderName(name)
-    val validationMessage = validationErrorMessage(validation)
+    val validationMessage = if (touched) validationErrorMessage(validation) else null
     val displayedError = validationMessage ?: errorMessage
     val validName = (validation as? ProjectFolderNameValidationResult.Valid)?.name
     val canConfirm = validName != null && errorMessage == null && !isSaving
     val isRename = folderId != null
 
-    AlertDialog(
+    ScrollableFormDialog(
         onDismissRequest = { if (!isSaving) onDismiss() },
         title = { Text(stringResource(if (isRename) R.string.folder_rename else R.string.folder_create)) },
         text = {
-            Column(
-                modifier =
-                    Modifier
-                        .heightIn(max = 320.dp)
-                        .imePadding()
-                        .verticalScroll(rememberScrollState()),
-            ) {
-                TextField(
-                    value = name,
-                    onValueChange = {
-                        name = it
-                        onClearError()
-                    },
-                    singleLine = true,
-                    isError = displayedError != null,
-                    label = { Text(stringResource(R.string.folder_name)) },
-                    supportingText = displayedError?.let { { Text(it) } },
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                    keyboardActions =
-                        KeyboardActions(
-                            onDone = { validName?.takeIf { canConfirm }?.let(onConfirm) },
-                        ),
-                    shape = MaterialTheme.shapes.large,
-                    colors = dialogTextFieldColors(),
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            }
+            LabeledTextField(
+                value = name,
+                onValueChange = {
+                    name = it
+                    touched = true
+                    onClearError()
+                },
+                label = stringResource(R.string.folder_name),
+                supportingText = stringResource(R.string.folder_name_max_length),
+                errorMessage = displayedError,
+                enabled = !isSaving,
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                keyboardActions =
+                    KeyboardActions(
+                        onDone = {
+                            touched = true
+                            validName?.takeIf { canConfirm }?.let(onConfirm)
+                        },
+                    ),
+                onFocusLost = { touched = true },
+                modifier = Modifier.fillMaxWidth(),
+            )
         },
         confirmButton = {
             TextButton(
@@ -280,7 +276,7 @@ fun ProjectFolderNameDialog(
                 enabled = canConfirm,
                 modifier = Modifier.heightIn(min = FolderActionMinHeight),
             ) {
-                Text(stringResource(if (isRename) R.string.save else R.string.folder_create))
+                Text(stringResource(R.string.save))
             }
         },
         dismissButton = {
@@ -302,50 +298,25 @@ fun DeleteProjectFolderDialog(
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
 ) {
-    AlertDialog(
-        onDismissRequest = { if (!isDeleting) onDismiss() },
-        title = { Text(stringResource(R.string.folder_delete_title)) },
-        text = {
-            Column(
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.heightIn(max = 320.dp).verticalScroll(rememberScrollState()),
-            ) {
-                Text(
-                    stringResource(R.string.folder_delete_message, folder.name),
-                )
-                Text(
-                    pluralStringResource(
-                        R.plurals.folder_affected_projects,
-                        assignedProjectCount,
-                        assignedProjectCount,
-                    ),
-                )
-                errorMessage?.let { message ->
-                    Text(
-                        text = message,
-                        color = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.semantics { liveRegion = LiveRegionMode.Assertive },
-                    )
-                }
-            }
-        },
-        confirmButton = {
-            TextButton(
-                onClick = onConfirm,
-                enabled = !isDeleting,
-                colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
-                modifier = Modifier.heightIn(min = FolderActionMinHeight),
-            ) {
-                Text(stringResource(R.string.folder_delete))
-            }
-        },
-        dismissButton = {
-            CancelButton(
-                onClick = onDismiss,
-                enabled = !isDeleting,
-                modifier = Modifier.heightIn(min = FolderActionMinHeight),
-            )
-        },
+    val deletion = stringResource(R.string.folder_delete_message, folder.name)
+    val impact =
+        if (assignedProjectCount == 0) {
+            stringResource(R.string.folder_delete_empty_message)
+        } else {
+            pluralStringResource(R.plurals.folder_affected_projects, assignedProjectCount, assignedProjectCount)
+        }
+    ConfirmationDialog(
+        title = stringResource(R.string.folder_delete_title),
+        message = "$deletion\n\n$impact",
+        confirmText = stringResource(R.string.delete),
+        isDestructive = true,
+        onConfirm = onConfirm,
+        onDismiss = onDismiss,
+        confirmEnabled = !isDeleting,
+        dismissEnabled = !isDeleting,
+        errorMessage = errorMessage,
+        confirmModifier = Modifier.heightIn(min = FolderActionMinHeight),
+        dismissModifier = Modifier.heightIn(min = FolderActionMinHeight),
     )
 }
 
@@ -587,6 +558,7 @@ private fun UserFolderRow(
                     label = R.string.folder_delete,
                     folderName = folder.name,
                     enabled = enabled,
+                    isDestructive = true,
                 ) {
                     menuExpanded = false
                     onDelete()
@@ -601,6 +573,7 @@ private fun FolderMenuItem(
     label: Int,
     folderName: String,
     enabled: Boolean,
+    isDestructive: Boolean = false,
     onClick: () -> Unit,
 ) {
     val labelText = stringResource(label)
@@ -617,6 +590,12 @@ private fun FolderMenuItem(
         )
     DropdownMenuItem(
         text = { Text(labelText) },
+        colors =
+            if (isDestructive) {
+                MenuDefaults.itemColors(textColor = MaterialTheme.colorScheme.error)
+            } else {
+                MenuDefaults.itemColors()
+            },
         onClick = onClick,
         enabled = enabled,
         modifier = Modifier.semantics { contentDescription = contentDescriptionText },

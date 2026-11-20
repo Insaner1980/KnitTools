@@ -692,6 +692,7 @@
       "selector": "counter-buttons",
       "findingPath": "app/src/test/java/com/finnvek/knittools/ui/screens/counter/CounterWorkspaceSourceTest.kt",
       "findingSelectors": [
+        "key = \"active-work-session\"\"\"\"",
         "key = \"counter-buttons\"\"\"\"",
         "key = \"counter-hero-reveal-gap\"\"\"\"",
         "key = \"counter-hero\"\"\"\"",
@@ -1158,10 +1159,10 @@
       "expires": "2026-11-30",
       "tracking": "local-review:knittools-mobsf-hardcoded-project-overview-keys",
       "sourcePath": "app/src/main/java/com/finnvek/knittools/ui/screens/project/ProjectOverviewScreen.kt",
-      "selector": "key = \"overview-yarn\"",
+      "selector": "key = \"overview-yarn-$projectId\"",
       "findingPath": "app/src/main/java/com/finnvek/knittools/ui/screens/project/ProjectOverviewScreen.kt",
       "findingSelectors": [
-        "key = \"overview-yarn\"",
+        "key = \"overview-yarn-$projectId\"",
         "key = \"photo\"",
         "key = \"name\"",
         "key = \"progress\"",

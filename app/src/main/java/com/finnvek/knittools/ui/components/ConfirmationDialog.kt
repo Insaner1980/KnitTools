@@ -1,5 +1,7 @@
 package com.finnvek.knittools.ui.components
 
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
@@ -10,11 +12,16 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
 import com.finnvek.knittools.R
 import com.finnvek.knittools.ui.layout.AdaptiveModalWindow
 import com.finnvek.knittools.ui.layout.LocalAdaptiveModalWindow
 import com.finnvek.knittools.ui.layout.LocalWindowFolds
+import com.finnvek.knittools.ui.layout.dialogWidth
 
 /**
  * Yhtenäinen vahvistusdialogi destruktiivisille ja muille toiminnoille.
@@ -36,22 +43,34 @@ fun ConfirmationDialog(
     confirmEnabled: Boolean = true,
     confirmModifier: Modifier = Modifier,
     dismissModifier: Modifier = Modifier,
+    dismissEnabled: Boolean = true,
+    errorMessage: String? = null,
+    dismissText: String = stringResource(R.string.cancel),
 ) {
     val usePaneCoordinates =
         LocalAdaptiveModalWindow.current && LocalWindowFolds.current.any { it.isSeparating || it.isOccluding }
     AlertDialog(
-        onDismissRequest = onDismiss,
-        modifier = modifier,
-        properties = DialogProperties(decorFitsSystemWindows = !usePaneCoordinates),
+        onDismissRequest = { if (dismissEnabled) onDismiss() },
+        modifier = modifier.dialogWidth(),
+        properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = !usePaneCoordinates),
         title = {
             AdaptiveModalWindow()
             Text(title)
         },
         text = {
-            Text(
-                text = message,
+            Column(
                 modifier = if (scrollableMessage) Modifier.verticalScroll(rememberScrollState()) else Modifier,
-            )
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Text(message)
+                errorMessage?.let { error ->
+                    Text(
+                        text = error,
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.semantics { liveRegion = LiveRegionMode.Assertive },
+                    )
+                }
+            }
         },
         confirmButton = {
             TextButton(
@@ -69,7 +88,7 @@ fun ConfirmationDialog(
             }
         },
         dismissButton = {
-            CancelButton(onClick = onDismiss, modifier = dismissModifier)
+            CancelButton(text = dismissText, onClick = onDismiss, modifier = dismissModifier, enabled = dismissEnabled)
         },
     )
 }

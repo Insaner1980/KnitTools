@@ -2,7 +2,6 @@ package com.finnvek.knittools.repository
 
 import android.content.Context
 import androidx.core.net.toUri
-import com.finnvek.knittools.R
 import com.finnvek.knittools.data.local.CounterProjectDao
 import com.finnvek.knittools.data.local.DatabaseTransactionRunner
 import com.finnvek.knittools.data.local.ProjectDocumentDao
@@ -200,7 +199,7 @@ class SavedPatternRepository
                 SavedPatternEntity(
                     source = SavedPatternSource.LocalFile.persistedValue,
                     name = name,
-                    designerName = context.getString(R.string.imported_pattern_designer),
+                    designerName = null,
                     originalUrl = patternUrl,
                     localPdfUri = patternUrl,
                     isAvailableOffline = true,

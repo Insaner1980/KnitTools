@@ -58,6 +58,23 @@ fun mainCounterLabelText(
     customLabel: String?,
 ): String = customLabel.takeIf { labelType == MainCounterLabelType.CUSTOM } ?: stringResource(labelType.labelRes)
 
+@Composable
+internal fun mainCounterLabelText(
+    labelType: MainCounterLabelType,
+    customLabel: String?,
+    @StringRes rows: Int,
+    @StringRes rounds: Int,
+    @StringRes repeats: Int,
+    @StringRes custom: Int,
+): String =
+    when (labelType) {
+        MainCounterLabelType.ROWS -> stringResource(rows)
+        MainCounterLabelType.ROUNDS -> stringResource(rounds)
+        MainCounterLabelType.REPEATS -> stringResource(repeats)
+        MainCounterLabelType.CUSTOM ->
+            stringResource(custom, mainCounterLabelText(labelType, customLabel))
+    }
+
 /** Yksikön nimike resurssina, jotta Compose-näkymät ja Glance-widget käyttävät samaa tekstiä. */
 @get:StringRes
 val MainCounterLabelType.labelRes: Int
@@ -81,6 +98,15 @@ fun mainCounterCountText(slot: MainCounterCountSlot): String =
                 slot.customLabel ?: stringResource(R.string.main_counter_custom),
                 slot.count,
             )
+    }
+
+@Composable
+fun mainCounterCountTextInline(slot: MainCounterCountSlot): String =
+    when (slot.labelType) {
+        MainCounterLabelType.ROWS -> stringResource(R.string.current_row_inline, slot.count)
+        MainCounterLabelType.ROUNDS -> stringResource(R.string.current_round_inline, slot.count)
+        MainCounterLabelType.REPEATS -> stringResource(R.string.current_repeat_inline, slot.count)
+        MainCounterLabelType.CUSTOM -> mainCounterCountText(slot)
     }
 
 @Composable

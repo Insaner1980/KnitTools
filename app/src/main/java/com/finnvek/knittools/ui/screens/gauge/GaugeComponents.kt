@@ -2,11 +2,11 @@ package com.finnvek.knittools.ui.screens.gauge
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -23,6 +23,7 @@ import com.finnvek.knittools.domain.model.MeasurementUnit
 import com.finnvek.knittools.ui.components.LabelWithInfo
 import com.finnvek.knittools.ui.components.NumberInputField
 import com.finnvek.knittools.ui.components.NumberInputOptions
+import com.finnvek.knittools.ui.components.ResultCard
 import com.finnvek.knittools.ui.components.ResultPlaceholder
 import com.finnvek.knittools.ui.components.SectionLabel
 import com.finnvek.knittools.ui.components.SegmentedToggle
@@ -144,30 +145,37 @@ internal fun GaugeResults(
         return
     }
     val focusManager = LocalFocusManager.current
-    Column(
+    ResultCard(
+        title = stringResource(R.string.measurement_result),
         modifier = modifier.fillMaxWidth().testTag("measurement_results"),
-        verticalArrangement = Arrangement.spacedBy(24.dp),
     ) {
-        SectionLabel(text = stringResource(R.string.measurement_result))
         presentation.sections.forEach { section ->
             Column(
                 modifier = Modifier.fillMaxWidth().testTag("measurement_result_" + section.id),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
+                verticalArrangement = Arrangement.spacedBy(ComponentDimens.ContentSpacing),
             ) {
                 if (section.id != "conversion") SectionLabel(text = section.title)
-                (section.inputs + section.results).forEach { line ->
-                    GaugeResultValue(section.id, line)
+                val singleResult = section.results.singleOrNull()
+                if (singleResult != null) {
+                    GaugeResultValue(section.id, singleResult, emphasized = true)
+                    section.inputs.forEach { input -> GaugeResultValue(section.id, input) }
+                } else {
+                    (section.inputs + section.results).forEach { line ->
+                        GaugeResultValue(section.id, line)
+                    }
                 }
             }
         }
-        Button(
-            onClick = {
-                onCopy(presentation.copyText)
-                focusManager.clearFocus()
-            },
-            modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("measurement_copy"),
-        ) {
-            Text(stringResource(R.string.measurement_copy))
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+            TextButton(
+                onClick = {
+                    onCopy(presentation.copyText)
+                    focusManager.clearFocus()
+                },
+                modifier = Modifier.testTag("measurement_copy"),
+            ) {
+                Text(stringResource(R.string.measurement_copy))
+            }
         }
     }
 }
@@ -176,24 +184,29 @@ internal fun GaugeResults(
 private fun GaugeResultValue(
     sectionId: String,
     line: GaugeResultLine,
+    emphasized: Boolean = false,
 ) {
     Column(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
-        Text(
-            line.label,
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+        if (sectionId != "conversion") {
+            Text(
+                line.label,
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
         Text(
             text = line.value,
             style =
-                if (line.id == "nearest_count") {
-                    MaterialTheme.typography.headlineSmall
-                } else {
-                    MaterialTheme.typography.bodyLarge
+                when {
+                    emphasized -> MaterialTheme.typography.displayMedium
+                    sectionId == "conversion" -> MaterialTheme.typography.bodyMedium
+                    line.id == "nearest_count" -> MaterialTheme.typography.headlineSmall
+                    else -> MaterialTheme.typography.bodyLarge
                 },
+            color = if (emphasized) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
             modifier =
                 Modifier
                     .fillMaxWidth()

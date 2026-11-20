@@ -22,9 +22,9 @@ import com.finnvek.knittools.pro.ProFeature
 import com.finnvek.knittools.pro.ProState
 import com.finnvek.knittools.pro.proActionAccess
 import com.finnvek.knittools.ui.components.CancelButton
+import com.finnvek.knittools.ui.components.LabeledTextField
 import com.finnvek.knittools.ui.components.ProMarker
 import com.finnvek.knittools.ui.components.ProjectOptionRows
-import com.finnvek.knittools.ui.components.ProjectYarnTextField
 import com.finnvek.knittools.ui.components.SectionLabel
 import com.finnvek.knittools.ui.components.SheetContentColumn
 import com.finnvek.knittools.ui.components.SheetOptionRow
@@ -71,7 +71,7 @@ fun IncomingPdfSheet(
         AdaptiveModalWindow()
         SheetContentColumn {
             SheetTitle(text = stringResource(R.string.incoming_pdf_title))
-            ProjectYarnTextField(
+            LabeledTextField(
                 value = name,
                 // Nimike tallentuu projektin dokumentiksi, jonka enimmäispituus on rajattu.
                 onValueChange = { name = it.takeWithoutSplittingSurrogatePair(PROJECT_DOCUMENT_LABEL_MAX_LENGTH) },

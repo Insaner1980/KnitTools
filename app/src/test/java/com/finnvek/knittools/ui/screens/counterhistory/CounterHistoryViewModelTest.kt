@@ -32,7 +32,7 @@ class CounterHistoryViewModelTest {
     private val repository = mockk<CounterRepository>()
     private val project = MutableStateFlow<CounterProject?>(CounterProject(id = 42, name = "Cardigan"))
     private val events = MutableStateFlow<List<CounterHistory>>(emptyList())
-    private val format = CounterHistoryFormat(Locale.UK, ZoneId.of("Europe/Helsinki"), "d MMM y", "HH:mm:ss")
+    private val format = CounterHistoryFormat(Locale.UK, ZoneId.of("Europe/Helsinki"), "d MMM y", "HH:mm")
 
     @Before fun setup() {
         Dispatchers.setMain(dispatcher)
@@ -129,14 +129,14 @@ class CounterHistoryViewModelTest {
             )
         }
 
-    @Test fun groupsUseOneLocalZoneAndKeepRepositoryTieOrderWithSecondPrecision() {
+    @Test fun groupsUseOneLocalZoneAndKeepRepositoryTieOrderAtMinutePrecision() {
         val rows =
             listOf(event(3, "2026-09-13T21:00:01Z"), event(2, "2026-09-13T21:00:01Z"), event(1, "2026-09-13T20:59:59Z"))
         val days = presentCounterHistory(rows, format)
         assertEquals(listOf("2026-09-14", "2026-09-13"), days.map { it.key })
         assertEquals(listOf(3L, 2L), days.first().rows.map { it.event.id })
         assertEquals(
-            "00:00:01",
+            "00:00",
             days
                 .first()
                 .rows
@@ -166,7 +166,7 @@ class CounterHistoryViewModelTest {
                 .event.action,
         )
         assertEquals(
-            "21:00:01",
+            "21:00",
             days
                 .single()
                 .rows

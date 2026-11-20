@@ -6,6 +6,7 @@ import android.os.Bundle
 import android.os.Process
 import androidx.activity.compose.setContent
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
@@ -131,7 +132,7 @@ class SessionRecoveryBackgroundTest : CounterActivityTestFixture() {
             model.uiState.value.activeSession
                 ?.needsRecoveryReview == false
         }
-        rule.onNodeWithText(text(R.string.work_session_stop)).performScrollTo().performClick()
+        rule.onNodeWithText(text(R.string.work_session_stop_short)).performScrollTo().performClick()
         rule.onNodeWithText(text(R.string.work_session_stop_summary_title)).assertIsDisplayed()
         val summary = requireNotNull(model.uiState.value.sessionStopSummary)
         val activityBefore = rule.activity
@@ -186,7 +187,7 @@ class SessionRecoveryBackgroundTest : CounterActivityTestFixture() {
         assertFalse(model.uiState.value.showSessionRecoveryPrompt)
         rule.onNodeWithText(text(R.string.work_session_resolve)).performScrollTo().performClick()
         rule.onNodeWithText(text(R.string.work_session_edit_duration)).performClick()
-        rule.onNodeWithText(text(R.string.work_session_minutes)).performTextReplacement("37")
+        rule.onNodeWithContentDescription(text(R.string.work_session_minutes)).performTextReplacement("37")
         rule.onNodeWithText("37").assertIsDisplayed()
         val before = runBlocking(Dispatchers.IO) { database.sessionDao().getActiveSession() }
         val completedBefore = runBlocking(Dispatchers.IO) { database.sessionDao().countCompletedSessions() }

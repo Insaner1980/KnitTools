@@ -452,8 +452,8 @@ class PatternNotesNavigationRuntimeTest {
         scrollToText(projectName)
         clickText(projectName)
         // Projektikortti avaa projektinäkymän, jonka Ohje ja dokumentit -osiossa dokumenttivalikko on.
-        scrollToText(text(R.string.project_documents_title))
-        clickText(text(R.string.project_documents_title))
+        scrollToText(text(R.string.project_documents_manage))
+        clickText(text(R.string.project_documents_manage))
         clickText(documentLabel)
         waitForText(documentLabel)
         waitFor { it.contentDescription?.toString() == text(R.string.more_options) }

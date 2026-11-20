@@ -60,7 +60,7 @@ class PatternImageImportSurfaceTest {
         }
 
         composeRule.onNodeWithText(plural(R.plurals.pattern_images_selected, 1, 1)).assertIsDisplayed()
-        composeRule.onNodeWithText(string(R.string.pattern_image_page_position, 1, 1)).assertIsDisplayed()
+        composeRule.onNodeWithText(string(R.string.pattern_page_indicator, 1, 1)).assertIsDisplayed()
         composeRule.onNodeWithContentDescription(string(R.string.pattern_image_move_earlier, 1)).assertIsNotEnabled()
         composeRule.onNodeWithContentDescription(string(R.string.pattern_image_move_later, 1)).assertIsNotEnabled()
         composeRule

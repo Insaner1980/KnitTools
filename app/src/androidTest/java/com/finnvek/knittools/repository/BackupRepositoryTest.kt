@@ -1273,6 +1273,31 @@ class BackupRepositoryTest {
             )
         }
 
+    @Test fun legacyArchiveRestoresImportedPdfWithoutItsOldDesignerLabel() =
+        runBlocking {
+            seed()
+            val importedPatterns = number("SELECT COUNT(*) FROM saved_patterns WHERE source = 'LOCAL_FILE'")
+            assertTrue(importedPatterns > 0)
+            db.openHelper.writableDatabase.execSQL(
+                "UPDATE saved_patterns SET designerName = 'Tuotu PDF' WHERE source = 'LOCAL_FILE'",
+            )
+            val archive = File(directory, "legacy-pdf-designer.knittools-backup")
+            repository.export(archive.toUri())
+            val payload = File(directory, "legacy-pdf-designer-payload").apply { mkdirs() }
+            val manifest = BackupArchive.extract(archive, payload)
+            rewriteArchive(payload, archive, manifest.copy(schemaVersion = 29))
+
+            prepare(archive.toUri())
+            repository.restore(selectionId)
+
+            assertEquals(
+                importedPatterns,
+                number(
+                    "SELECT COUNT(*) FROM saved_patterns WHERE source = 'LOCAL_FILE' AND designerName IS NULL",
+                ),
+            )
+        }
+
     @Test fun exportRefusesContentThatTheRestoreBudgetWouldReject() =
         runBlocking {
             seed()

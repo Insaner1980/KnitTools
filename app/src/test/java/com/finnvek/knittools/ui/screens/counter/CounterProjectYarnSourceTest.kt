@@ -64,33 +64,29 @@ class CounterProjectYarnSourceTest {
     }
 
     @Test
-    fun `save explanation stays in its entry and follows persisted saved state`() {
+    fun `save explanation stays under the action until a persisted save shows it in a snackbar`() {
         val row =
             ProjectSourceFiles
                 .read(YARN_MANAGEMENT_SHEET)
                 .substringAfter("private fun ProjectYarnNoteRow(")
-                .substringBefore("private fun ProjectYarnNote.summaryText")
-        val explanation = row.substringAfterLast("Text(")
+                .substringBefore("internal fun ProjectYarnForm(")
+        val explanation = row.substringAfter("R.string.save_to_my_yarn_explanation")
+        val screen = ProjectSourceFiles.read(COUNTER_SCREEN)
 
         assertTrue(row.contains("onClick = { onSaveProjectYarnNoteToMyYarn(note.id) }"))
         // Tallennettu tila on merkki eikä käytöstä poistettu painike.
         assertTrue(row.contains("BadgePill(text = stringResource(R.string.saved_to_my_yarn))"))
         assertFalse(row.contains("enabled = note.savedYarnCardId == null"))
-        val savedLabelIndex = row.indexOf("R.string.saved_to_my_yarn")
-        assertTrue(savedLabelIndex >= 0)
-        assertTrue(savedLabelIndex < row.indexOf("R.string.save_to_my_yarn_explanation"))
-        assertTrue(
-            Regex(
-                """if \(note.savedYarnCardId == null\) \{""" +
-                    """\s*R.string.save_to_my_yarn_explanation\s*""" +
-                    """} else \{\s*R.string.saved_to_my_yarn_explanation""",
-            ).containsMatchIn(explanation),
-        )
+        assertTrue(row.indexOf("R.string.save_to_my_yarn_explanation") in 1 until row.indexOf("BadgePill("))
+        assertFalse(row.contains("R.string.saved_to_my_yarn_explanation"))
         assertTrue(explanation.contains("MaterialTheme.typography.bodySmall"))
         assertTrue(explanation.contains("MaterialTheme.colorScheme.onSurfaceVariant"))
         assertFalse(explanation.contains("maxLines"))
         assertFalse(explanation.contains("TextOverflow.Ellipsis"))
         assertFalse(explanation.contains("proStatus"))
+        assertTrue(screen.contains("CollectWithLifecycleEffect({ viewModel.projectYarnSaved })"))
+        assertTrue(screen.contains("val yarnSavedMessage = stringResource(R.string.saved_to_my_yarn_explanation)"))
+        assertTrue(screen.contains("host.showSnackbar(yarnSavedMessage)"))
     }
 
     @Test

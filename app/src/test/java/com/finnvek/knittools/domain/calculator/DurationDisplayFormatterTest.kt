@@ -6,6 +6,22 @@ import org.junit.Test
 
 class DurationDisplayFormatterTest {
     @Test
+    fun `work session seconds use whole minutes and distinguish subminute durations`() {
+        val cases =
+            mapOf(
+                0L to null,
+                59L to null,
+                60L to DurationDisplay(DurationShape.MINUTES_ONLY, hours = null, minutes = 1),
+                3_599L to DurationDisplay(DurationShape.MINUTES_ONLY, hours = null, minutes = 59),
+                3_600L to DurationDisplay(DurationShape.WHOLE_HOURS, hours = 1, minutes = null),
+                3_660L to DurationDisplay(DurationShape.HOURS_AND_MINUTES, hours = 1, minutes = 1),
+            )
+        cases.forEach { (seconds, expected) ->
+            assertEquals("$seconds seconds", expected, DurationDisplayFormatter.fromWorkSessionSeconds(seconds))
+        }
+    }
+
+    @Test
     fun `zero minutes stays in the minutes only shape`() {
         val display = DurationDisplayFormatter.fromMinutes(0)
 

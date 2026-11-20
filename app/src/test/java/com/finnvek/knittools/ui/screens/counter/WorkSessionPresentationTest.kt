@@ -6,11 +6,6 @@ import org.junit.Test
 
 class WorkSessionPresentationTest {
     @Test
-    fun `duration formatting keeps hours beyond one day`() {
-        assertEquals("27:05:09", formatWorkSessionDuration(97_509L))
-    }
-
-    @Test
     fun `recovery editor accepts hours and bounded minutes`() {
         assertEquals(9_000L, parseRecoveryDurationSeconds("2", "30"))
         assertNull(parseRecoveryDurationSeconds("2", "60"))

@@ -16,21 +16,37 @@ import android.os.SystemClock
 import android.view.KeyEvent
 import android.view.ViewConfiguration
 import android.view.accessibility.AccessibilityNodeInfo
+import androidx.lifecycle.ViewModelProvider
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.platform.app.InstrumentationRegistry
 import com.finnvek.knittools.App
 import com.finnvek.knittools.MainActivity
+import com.finnvek.knittools.R
 import com.finnvek.knittools.data.datastore.AppLanguage
 import com.finnvek.knittools.data.datastore.ThemeMode
 import com.finnvek.knittools.data.local.CounterProjectEntity
 import com.finnvek.knittools.data.local.KnitToolsDatabase
+import com.finnvek.knittools.data.local.PatternAnnotationEntity
+import com.finnvek.knittools.data.local.PatternBookmarkEntity
 import com.finnvek.knittools.data.local.ProgressPhotoEntity
+import com.finnvek.knittools.data.local.ProjectCounterEntity
+import com.finnvek.knittools.data.local.ProjectFolderEntity
+import com.finnvek.knittools.data.local.ProjectYarnNoteEntity
+import com.finnvek.knittools.data.local.SavedPatternEntity
 import com.finnvek.knittools.data.local.SessionEntity
 import com.finnvek.knittools.data.local.YarnCardEntity
+import com.finnvek.knittools.domain.calculator.SizeChartData
+import com.finnvek.knittools.domain.model.FreehandPayload
+import com.finnvek.knittools.domain.model.NormalizedPatternPoint
+import com.finnvek.knittools.domain.model.PatternAnnotationKind
+import com.finnvek.knittools.domain.model.PatternAnnotationPayloadCodec
 import com.finnvek.knittools.pro.ProPolicyTestControl
 import com.finnvek.knittools.repository.CounterRepository
+import com.finnvek.knittools.repository.ProjectDocumentMutationResult
+import com.finnvek.knittools.repository.SavedPatternMetadataMutationResult
 import com.finnvek.knittools.ui.components.localizedDateTimePattern
+import com.finnvek.knittools.ui.navigation.IncomingPdfViewModel
 import com.finnvek.knittools.ui.screens.insights.currentInsightsFirstDayOfWeek
 import com.finnvek.knittools.widget.WidgetEntryPoint
 import dagger.hilt.android.EntryPointAccessors
@@ -630,6 +646,211 @@ class AuditPart08RuntimeMatrixTest {
         exerciseReader(project = false)
     }
 
+    @Test
+    fun round2PatternDocumentsAndBookmarks() {
+        val bookmarkName = "Sleeve chart"
+        val primary = runBlocking { checkNotNull(db.projectDocumentDao().getPrimary(projectId)) }
+        runBlocking {
+            db.patternBookmarkDao().insert(
+                PatternBookmarkEntity(
+                    projectId = projectId,
+                    documentKey = primary.documentKey,
+                    name = bookmarkName,
+                    pageIndex = 0,
+                    yFraction = 0.5f,
+                    createdAt = System.currentTimeMillis(),
+                ),
+            )
+        }
+
+        openRound2PatternReader()
+        tap("more_options")
+        tap("project_documents_title")
+        val documentActions = app.getString(com.finnvek.knittools.R.string.project_documents_actions, primary.label)
+        seeText(documentActions)
+        captureRound2Pattern("03-05-project-documents")
+        tapText(documentActions)
+        captureRound2Pattern("03-06-document-actions")
+        tap("project_documents_rename")
+        see("project_documents_rename_title")
+        captureRound2Pattern("03-07-rename-document")
+        tap("cancel")
+        tapText(documentActions)
+        tap("project_documents_remove_action")
+        see("project_documents_remove_title")
+        seeText(app.getString(com.finnvek.knittools.R.string.project_documents_remove_last_message, primary.label))
+        captureRound2Pattern("03-08-remove-document-confirmation")
+        tap("cancel")
+        back()
+
+        tap("pattern_bookmarks")
+        seeText(
+            app.getString(com.finnvek.knittools.R.string.pattern_bookmark_accessibility_description, bookmarkName, 1),
+        )
+        captureRound2Pattern("03-19-bookmarks")
+        tapText(
+            app.getString(
+                com.finnvek.knittools.R.string.pattern_bookmark_action_accessibility_description,
+                s("more_options"),
+                bookmarkName,
+            ),
+        )
+        see("delete")
+        captureRound2Pattern("03-20-bookmark-actions")
+        back()
+        back()
+
+        val webName = "Forest cardigan"
+        runBlocking {
+            val pdf = File(app.filesDir, "pattern_pdfs/$projectId/audit-appendix.pdf")
+            File(app.filesDir, "pattern_pdfs/$projectId/audit.pdf").copyTo(pdf, overwrite = true)
+            check(
+                repository.attachPattern(projectId, Uri.fromFile(pdf).toString(), "Appendix", 0, null)
+                    is ProjectDocumentMutationResult.Added,
+            )
+            val webId =
+                db.savedPatternDao().insert(
+                    SavedPatternEntity(
+                        source = "WEB_LINK",
+                        name = webName,
+                        designerName = "Maya Rowan",
+                        originalUrl = "https://example.invalid/pattern",
+                        canonicalUrl = "https://example.invalid/pattern",
+                    ),
+                )
+            check(
+                repository.attachSavedPatternMetadata(projectId, webId, expectedExistingSavedPatternId = patternId)
+                    is SavedPatternMetadataMutationResult.Attached,
+            )
+        }
+        tap("more_options")
+        tap("project_documents_title")
+        seeText(webName)
+        seeText("Maya Rowan")
+        see("web_pattern_label")
+        seek(app.getString(com.finnvek.knittools.R.string.project_documents_actions, "Appendix"))
+        captureRound2Pattern("03-33-multiple-documents")
+        back()
+        tap("back")
+        tap("tab_library")
+        tap("saved_patterns_title")
+        tapText("Appendix")
+        see("saved_pattern_detail_open_pattern")
+        captureRound2Pattern("07-23-pdf-pattern-detail")
+        tap("saved_pattern_detail_open_pattern")
+        seeText(app.getString(com.finnvek.knittools.R.string.pattern_page_indicator, 1, 3))
+        tap("pattern_mark_up")
+        see("pattern_annotation_tool_pen")
+        see("pattern_mark_up")
+        captureRound2Pattern("07-27-library-markup")
+    }
+
+    @Test
+    fun round2PatternIncomingPdfForm() {
+        val shared = File(app.cacheDir, "shared-pattern.pdf")
+        File(app.filesDir, "pattern_pdfs/$projectId/audit.pdf").copyTo(shared, overwrite = true)
+        try {
+            launch()
+            scenario!!.onActivity {
+                ViewModelProvider(it)[IncomingPdfViewModel::class.java].receive(Uri.fromFile(shared))
+            }
+            see("incoming_pdf_title")
+            val expand = AccessibilityNodeInfo.AccessibilityAction.ACTION_EXPAND
+            nodes().firstOrNull { it.isVisibleToUser && expand in it.actionList }?.performAction(expand.id)
+            see("web_pattern_title_label")
+            captureRound2Pattern("03-37-save-shared-pdf-options")
+            scenario!!.onActivity { ViewModelProvider(it)[IncomingPdfViewModel::class.java].discard() }
+        } finally {
+            shared.delete()
+        }
+    }
+
+    @Test
+    fun round2PatternMarkupAndCalibration() {
+        runBlocking {
+            val layer = checkNotNull(db.patternAnnotationLayerDao().getActiveProjectLayer(projectId))
+            val kind = PatternAnnotationKind.FREEHAND
+            val payload =
+                checkNotNull(
+                    PatternAnnotationPayloadCodec.encode(
+                        kind,
+                        FreehandPayload(
+                            points = listOf(NormalizedPatternPoint(0.1f, 0.13f), NormalizedPatternPoint(0.55f, 0.13f)),
+                            argb = Color.BLACK,
+                            strokeWidth = 3f,
+                        ),
+                    ),
+                )
+            db.patternAnnotationDao().insert(
+                PatternAnnotationEntity(
+                    layerId = layer.id,
+                    page = 0,
+                    kind = kind.name,
+                    payloadVersion = payload.payloadVersion,
+                    payloadJson = payload.payloadJson,
+                    zIndex = 0,
+                    createdAt = 1L,
+                    updatedAt = 1L,
+                ),
+            )
+        }
+
+        openRound2PatternReader()
+        captureRound2Pattern("03-10-project-pdf-reader")
+        tap("pattern_mark_up")
+        see("pattern_annotation_tool_pen")
+        see("pattern_mark_up")
+        val bookmarkY = round2PatternControlBounds("pattern_bookmarks").centerY()
+        assertEquals(round2PatternControlBounds("pattern_next_page").centerY(), bookmarkY)
+        captureRound2Pattern("03-22-markup-toolbar")
+        tap("pattern_annotation_tool_highlighter")
+        await {
+            nodes().any { node ->
+                node.isVisibleToUser &&
+                    matches(node, s("pattern_annotation_tool_highlighter")) &&
+                    generateSequence(node) { it.parent }.any { it.isSelected || it.isChecked }
+            }
+        }
+        assertEquals(bookmarkY, round2PatternControlBounds("pattern_bookmarks").centerY())
+        captureRound2Pattern("03-23-markup-extra-tools")
+        tap("more_options")
+        tap("pattern_annotation_clear_page")
+        see("pattern_annotation_clear_page_title")
+        see("pattern_annotation_clear_page_body")
+        captureRound2Pattern("03-25-clear-annotations")
+        tap("cancel")
+        tap("pattern_mark_up_done")
+        seeText(patternName)
+
+        tap("pattern_horizontal_reading_line")
+        tap("pattern_calibrate_rows")
+        see("pattern_calibration_first_row")
+        captureRound2Pattern("03-26-calibrate-counter-position")
+        tap("save")
+        see("pattern_calibration_last_row")
+        captureRound2Pattern("03-27-calibrate-second-position")
+        tap("cancel")
+    }
+
+    private fun openRound2PatternReader() {
+        overview()
+        seek(patternName)
+        tapText(patternName)
+        seeText(app.getString(com.finnvek.knittools.R.string.pattern_page_indicator, 1, 3))
+    }
+
+    private fun captureRound2Pattern(name: String) {
+        instrumentation.waitForIdleSync()
+        automation.waitForIdle(500, 5_000)
+        capture(name)
+    }
+
+    private fun round2PatternControlBounds(name: String): Rect {
+        see(name)
+        val node = nodes().first { it.isVisibleToUser && matches(it, s(name)) }
+        return Rect().also(node::getBoundsInScreen)
+    }
+
     private fun exerciseReader(project: Boolean) {
         // The controls appear before PdfRenderer has loaded this three-page fixture.
         seeText(app.getString(com.finnvek.knittools.R.string.pattern_page_indicator, 1, 3))
@@ -638,9 +859,9 @@ class AuditPart08RuntimeMatrixTest {
         capture("page-two")
         tap("pattern_previous_page")
         seeText(app.getString(com.finnvek.knittools.R.string.pattern_page_indicator, 1, 3))
-        tap("more_options")
+        tap("pattern_horizontal_reading_line")
         tap("pattern_show_reading_line")
-        tap("more_options")
+        tap("pattern_horizontal_reading_line")
         tap("pattern_show_vertical_guide")
         capture("reading-guides")
         if (project) {
@@ -1309,6 +1530,268 @@ class AuditPart08RuntimeMatrixTest {
         assertEquals(1, runBlocking { repository.getProject(projectId)!!.stepSize })
         assertEquals(42, runBlocking { repository.getProject(projectId)!!.count })
         capture("keyboard-step-editor")
+    }
+
+    @Test
+    fun round2ChildSizeChart() {
+        runBlocking(Dispatchers.IO) { app.preferencesManager.get().setUseImperial(false) }
+        launch()
+        tap("tab_library")
+        tap("size_charts_title")
+        tap("category_child_youth")
+        val sleeve = app.getString(R.string.size_chart_header_with_unit, s("size_col_arm"), s("unit_cm"))
+        seeText(sleeve)
+        val measurement =
+            SizeChartData
+                .entries(SizeChartData.Category.CHILD_YOUTH)
+                .first()
+                .measurements
+                .last()
+        val firstSleeve =
+            SizeChartData.formatMeasurementValue(measurement, false, app.resources.configuration.locales[0])
+        seeText(firstSleeve)
+        captureRound2("07-size-chart-child")
+        seek(s("size_chart_sleeve_note"))
+        captureRound2("07-size-chart-sleeve-note")
+    }
+
+    @Test
+    fun round2CounterAndReminderLabels() {
+        overview()
+        val reminders = s("reminders")
+        seek(reminders)
+        val visible = nodes().filter { it.isVisibleToUser }
+
+        fun centerY(node: AccessibilityNodeInfo): Int = Rect().also(node::getBoundsInScreen).centerY()
+        val headingPosition = centerY(visible.first { matches(it, reminders) })
+        val reminderAction =
+            visible
+                .filter { matches(it, s("project_overview_add")) }
+                .minBy { kotlin.math.abs(centerY(it) - headingPosition) }
+        val button = generateSequence(reminderAction) { it.parent }.first { it.isClickable }
+        assertTrue(button.performAction(AccessibilityNodeInfo.ACTION_CLICK))
+        see("reminder_at_row")
+        captureRound2("02-add-reminder")
+        tap("repeating")
+        see("repeat_every")
+        captureRound2("02-repeating-reminder")
+        tap("cancel")
+        top()
+        tapText(app.getString(R.string.project_continue_content_description, projectName))
+        tap("project_actions_title")
+        tap("stitches_per_row")
+        see("stitches_in_row_label")
+        captureRound2("04-stitches-per-row")
+    }
+
+    @Test
+    fun round2ProjectConfirmationCopy() {
+        overview()
+        tap("project_actions_title")
+        tap("complete_project")
+        seeText(app.getString(R.string.complete_project_message, projectName))
+        captureRound2("02-complete-project")
+        tap("cancel")
+        tap("project_actions_title")
+        tap("delete_project")
+        seeText(app.getString(R.string.delete_project_message, projectName))
+        captureRound2("02-delete-project-confirmation")
+    }
+
+    @Test
+    fun round2ExtraCounterDialogAndActiveSession() {
+        val counterName = "Sleeve increases"
+        runBlocking(Dispatchers.IO) {
+            db.projectCounterDao().insert(ProjectCounterEntity(projectId = projectId, name = counterName))
+            app.onboardingStateRepository.get().markBasicTipsSeen()
+        }
+        counter()
+        tap("main_counter_rows")
+        see("target_rows_remove")
+        captureRound2("04-target-rows")
+        tap("cancel")
+        tap("project_actions_title")
+        tap("counters")
+        tapText(app.getString(R.string.counter_actions, counterName))
+        captureRound2("04-extra-counter-actions")
+        tap("rename_counter")
+        see("rename_counter_title")
+        captureRound2("04-rename-extra-counter")
+        tap("cancel")
+        back()
+        tap("project_actions_title")
+        tap("work_session_start")
+        see("work_session_stop_short")
+        see("counter_undo_last_change")
+        captureRound2("04-active-work-session")
+        tap("back")
+        see("work_session_hero_under_minute")
+        captureRound2("02-overview-active-session")
+        tap("back")
+        see("work_session_hero_under_minute")
+        captureRound2("01-projects-active-session")
+    }
+
+    @Test
+    fun round2ConvertMeasurementsResultKeepsToolsSelected() {
+        launch()
+        tap("tab_tools")
+        tap("tool_gauge_converter")
+        tap("measurement_convert")
+        edit("10")
+        hideKeyboard()
+        seek(s("measurement_copy"))
+        seeSelectedToolsTab()
+        captureRound2("06-18-convert-measurements-result")
+    }
+
+    @Test
+    fun round2EmptyYarnPickerOpensAddFormOnTools() {
+        runBlocking(Dispatchers.IO) { db.yarnCardDao().delete(cardId) }
+        launch()
+        tap("tab_tools")
+        tap("tool_yarn_estimator")
+        seeSelectedToolsTab()
+        captureRound2("06-estimator-tools-tab")
+        tap("choose_from_my_yarn")
+        see("no_saved_yarns")
+        captureRound2("06-estimator-empty-yarn-picker")
+        tap("yarn_picker_empty_action")
+        see("manual_yarn_optional_details")
+        captureRound2("06-my-yarn-add-from-estimator")
+        tap("cancel")
+        seeSelectedToolsTab()
+    }
+
+    @Test
+    fun round2EstimatorFillsMetricAndImperialFields() {
+        runBlocking(Dispatchers.IO) {
+            app.preferencesManager.get().setUseImperial(false)
+            db.yarnCardDao().upsert(YarnCardEntity(yarnName = "Blue merino", lengthMeters = "200", weightGrams = "50"))
+            db.yarnCardDao().upsert(YarnCardEntity(yarnName = "Amber alpaca", lengthMeters = "100", weightGrams = "25"))
+        }
+        launch()
+        tap("tab_tools")
+        tap("tool_yarn_estimator")
+        for ((mode, length) in listOf("metric" to 200.0, "imperial" to 200.0 / 0.9144)) {
+            runBlocking(Dispatchers.IO) { app.preferencesManager.get().setUseImperial(mode == "imperial") }
+            tap("choose_from_my_yarn")
+            seeText("Blue merino")
+            seeText("Amber alpaca")
+            captureRound2("E2-estimator-picker-$mode")
+            tapText("Blue merino")
+            await {
+                nodes()
+                    .filter { it.isEditable }
+                    .mapNotNull {
+                        it.text
+                            ?.toString()
+                            ?.replace(',', '.')
+                            ?.toDoubleOrNull()
+                    }.containsAll(listOf(length, 50.0))
+            }
+            captureRound2("E2-estimator-prefilled-$mode")
+            if (mode == "metric") {
+                edit("1100")
+                hideKeyboard()
+                seek(app.getString(R.string.total_weight, "300"))
+                captureRound2("06-yarn-estimator-result")
+            }
+        }
+    }
+
+    @Test
+    fun round2NewProjectShowsSelectedFolder() {
+        val folderName = "Weekend projects"
+        runBlocking(Dispatchers.IO) {
+            db.projectFolderDao().insert(
+                ProjectFolderEntity(name = folderName, normalizedName = "weekend projects", sortOrder = 0),
+            )
+        }
+        launch()
+        tap("all_projects")
+        tapText(folderName)
+        tap("new_project")
+        seeText(app.getString(R.string.folder_project_creation_destination, folderName))
+        captureRound2("E3-new-project-folder")
+        tap("project_create_more_options")
+        captureRound2("01-new-project-more-options")
+    }
+
+    @Test
+    fun round2SettingsHelpAndCastOnPlaceholder() {
+        launch()
+        tap("tab_tools")
+        tap("tool_cast_on_calculator")
+        seek(s("cast_on_result_placeholder"))
+        captureRound2("06-cast-on")
+        tap("tab_settings")
+        seek(s("help_and_guide"))
+        captureRound2("09-settings-online-help")
+    }
+
+    @Test
+    fun round2YarnUsageFocusesPendingGramsConversion() {
+        val noteName = "Natural wool"
+        runBlocking(Dispatchers.IO) {
+            app.preferencesManager.get().setUseImperial(false)
+            db.projectYarnNoteDao().upsert(ProjectYarnNoteEntity(projectId = projectId, name = noteName))
+        }
+        counter()
+        tap("project_content_yarn")
+        tapText(app.getString(R.string.yarn_usage_track_named, noteName))
+        captureRound2("08-track-yarn-usage")
+        tap("yarn_usage_grams")
+        see("yarn_usage_length")
+        await { nodes().any { it.isFocused && it.isEditable } }
+        see("yarn_usage_grams")
+        captureRound2("E4-yarn-usage-pending-grams")
+    }
+
+    @Test
+    fun round2CompletionsOnlyChartDifferentDays() {
+        val zone = ZoneId.systemDefault()
+        val today = LocalDate.now(zone)
+
+        fun timestamp(day: LocalDate): Long = day.atStartOfDay(zone).toInstant().toEpochMilli()
+        runBlocking(Dispatchers.IO) { repository.archiveProject(secondId, timestamp(today.withDayOfMonth(1))) }
+        launch()
+        tap("tab_insights")
+        tap("insights_all_time")
+        tap("insights_this_month")
+        seek(s("insights_completions_title"))
+        val one = app.resources.getQuantityString(R.plurals.insights_completion_count, 1, 1)
+        val zero = app.resources.getQuantityString(R.plurals.insights_completion_count, 0, 0)
+        seeText(one)
+        assertEquals(1, nodes().count { it.isVisibleToUser && matches(it, one) })
+        assertFalse(nodes().any { it.isVisibleToUser && matches(it, zero) })
+        captureRound2("E1-project-completions-one")
+        // Three different days in the selected month must have elapsed.
+        org.junit.Assume.assumeTrue("Three elapsed date buckets are required", today.dayOfMonth >= 3)
+        runBlocking(Dispatchers.IO) {
+            repository.archiveProject(projectId, timestamp(today.withDayOfMonth(2)))
+            val third = db.counterProjectDao().insert(CounterProjectEntity(name = "Audit third project"))
+            repository.archiveProject(third, timestamp(today.withDayOfMonth(3)))
+        }
+        seeText(app.resources.getQuantityString(R.plurals.insights_completion_count, 3, 3))
+        await { nodes().count { it.isVisibleToUser && it.text?.toString()?.contains(one) == true } >= 2 }
+        assertFalse(nodes().any { it.isVisibleToUser && it.text?.toString()?.contains(zero) == true })
+        captureRound2("E1-project-completions-three")
+    }
+
+    private fun seeSelectedToolsTab() {
+        await {
+            nodes().any { node ->
+                node.isVisibleToUser &&
+                    matches(node, s("tab_tools")) &&
+                    generateSequence(node) { it.parent }.any { it.isSelected }
+            }
+        }
+    }
+
+    private fun captureRound2(name: String) {
+        automation.waitForIdle(500, 5_000)
+        capture(name)
     }
 
     private fun launch() {

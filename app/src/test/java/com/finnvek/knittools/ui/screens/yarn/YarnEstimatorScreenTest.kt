@@ -1,5 +1,6 @@
 package com.finnvek.knittools.ui.screens.yarn
 
+import com.finnvek.knittools.domain.model.YarnCard
 import com.finnvek.knittools.domain.model.YarnEstimate
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -41,19 +42,38 @@ class YarnEstimatorScreenTest {
     }
 
     @Test
-    fun `displayed skein estimate rounds up so whole skein result is not contradicted`() {
-        assertEquals("2.01", formatSkeinsEstimateForDisplay(2.0001, Locale.US))
-        assertEquals("2.25", formatSkeinsEstimateForDisplay(2.25, Locale.US))
-        assertEquals("2.00", formatSkeinsEstimateForDisplay(2.0, Locale.US))
-        assertEquals("2,25", formatSkeinsEstimateForDisplay(2.25, Locale.forLanguageTag("fi-FI")))
+    fun `whole skeins omit the exact line and fractional skeins use one localized decimal`() {
+        assertNull(exactSkeinsText(2.0, Locale.US))
+        assertEquals("2.3", exactSkeinsText(2.31, Locale.US))
+        assertEquals("2,3", exactSkeinsText(2.31, Locale.forLanguageTag("fi-FI")))
     }
 
-    private fun formatSkeinsEstimateForDisplay(
-        exactSkeins: Double,
-        locale: Locale,
-    ): String =
-        screenMethod("formatSkeinsEstimateForDisplay", Double::class.javaPrimitiveType!!, Locale::class.java)
-            .invoke(null, exactSkeins, locale) as String
+    @Test
+    fun `saved yarn prefill rounds lengths to whole units and preserves grams`() {
+        val card = YarnCard(lengthMeters = "200", weightGrams = "100")
+        assertEquals(YarnEstimatorSkeinFields("219", "100"), savedYarnSkeinFields(card, true, Locale.US))
+        assertEquals(
+            YarnEstimatorSkeinFields("241", "100"),
+            savedYarnSkeinFields(card.copy(lengthMeters = "220"), true, Locale.US),
+        )
+        assertEquals(
+            YarnEstimatorSkeinFields("221", "100"),
+            savedYarnSkeinFields(card.copy(lengthMeters = "220.5"), false, Locale.US),
+        )
+        assertEquals(
+            YarnEstimatorSkeinFields("", "100"),
+            savedYarnSkeinFields(card.copy(lengthMeters = ""), false, Locale.US),
+        )
+        assertEquals(
+            YarnEstimatorSkeinFields("1201", "100,5"),
+            savedYarnSkeinFields(
+                YarnCard(lengthMeters = "1200.5", weightGrams = "100.5"),
+                false,
+                Locale.forLanguageTag("fi"),
+            ),
+        )
+        assertNull(savedYarnSkeinFields(YarnCard(), false, Locale.US))
+    }
 
     private fun calculate(
         total: String,

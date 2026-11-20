@@ -38,6 +38,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -48,6 +49,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNot
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
@@ -57,6 +59,7 @@ import kotlinx.coroutines.launch
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
+import kotlin.time.Duration.Companion.seconds
 
 data class ContinueKnittingProject(
     val projectId: Long,
@@ -176,9 +179,12 @@ class ProjectListViewModel
             }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
         val activeSession: StateFlow<ActiveWorkSession?> =
-            content
-                .map { it.activeSession }
-                .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+            content.map { it.activeSession }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
+
+        val activeSessionDuration: StateFlow<Pair<String, Long>?> =
+            activeSession
+                .observeSessionDuration(repository)
+                .stateIn(viewModelScope, SharingStarted.WhileSubscribed(), null)
 
         val isPro: Boolean get() = proManager.hasFeature(ProFeature.UNLIMITED_PROJECTS)
 
@@ -751,6 +757,24 @@ class ProjectListViewModel
                     }
                 } finally {
                     _folderState.update { it.copy(isMutating = false) }
+                }
+            }
+        }
+    }
+
+private const val SECONDS_PER_MINUTE = 60L
+
+@OptIn(ExperimentalCoroutinesApi::class)
+private fun Flow<ActiveWorkSession?>.observeSessionDuration(repository: CounterRepository): Flow<Pair<String, Long>?> =
+    flatMapLatest { session ->
+        if (session == null || session.needsRecoveryReview) {
+            flowOf(null)
+        } else {
+            flow {
+                while (true) {
+                    val seconds = repository.activeSessionDurationSeconds(session)
+                    emit(session.sessionToken to seconds)
+                    delay((SECONDS_PER_MINUTE - seconds % SECONDS_PER_MINUTE).seconds)
                 }
             }
         }

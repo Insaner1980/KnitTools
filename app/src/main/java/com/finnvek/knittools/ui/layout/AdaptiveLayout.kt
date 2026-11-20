@@ -1,5 +1,6 @@
 package com.finnvek.knittools.ui.layout
 
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.compositionLocalOf
@@ -19,6 +20,8 @@ enum class ContentWidthPolicy(
 }
 
 fun Modifier.contentWidth(policy: ContentWidthPolicy): Modifier = widthIn(max = policy.maxWidth)
+
+internal fun Modifier.dialogWidth(): Modifier = contentWidth(ContentWidthPolicy.Form).fillMaxWidth(0.83f)
 
 enum class AdaptiveWidth {
     Compact,

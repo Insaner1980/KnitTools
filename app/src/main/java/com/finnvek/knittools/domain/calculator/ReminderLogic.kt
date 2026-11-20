@@ -37,26 +37,25 @@ object ReminderLogic {
         window: Int,
     ): Boolean {
         if (reminder.isCompleted || reminder.targetRow <= 0 || window < 0) return false
-        val current = currentRow.toLong()
-        val target = reminder.targetRow.toLong()
-        val interval = reminder.repeatInterval
         val next =
-            when {
-                interval == null -> target
-                interval <= 0 -> return false
-                current < target -> target
-                else -> target + ((current - target) / interval + 1) * interval
+            if (reminder.repeatInterval == null) {
+                reminder.targetRow
+            } else {
+                nextOccurrence(reminder, currentRow) ?: return false
             }
-        return next in current..minOf(current + window, Int.MAX_VALUE.toLong())
+        return next.toLong() in currentRow.toLong()..(currentRow.toLong() + window)
     }
 
-    fun repeatCount(
+    fun nextOccurrence(
         reminder: RowReminder,
         currentRow: Int,
-    ): Int {
-        val interval = reminder.repeatInterval ?: return 0
-        if (interval <= 0 || currentRow < reminder.targetRow) return 0
-        return (currentRow - reminder.targetRow) / interval + 1
+    ): Int? {
+        val target = reminder.targetRow.toLong()
+        val interval = reminder.repeatInterval?.takeIf { it > 0 } ?: return null
+        if (target <= 0 || reminder.isCompleted) return null
+        if (currentRow < target) return reminder.targetRow
+        val next = target + ((currentRow - target) / interval + 1) * interval
+        return next.takeIf { it <= Int.MAX_VALUE }?.toInt()
     }
 
     fun activeReminders(

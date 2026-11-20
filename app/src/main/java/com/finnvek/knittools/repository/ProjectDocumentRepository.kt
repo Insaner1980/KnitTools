@@ -11,6 +11,7 @@ import com.finnvek.knittools.domain.model.DEFAULT_READING_LINE_Y_FRACTION
 import com.finnvek.knittools.domain.model.PROJECT_DOCUMENT_LABEL_MAX_LENGTH
 import com.finnvek.knittools.domain.model.PatternAnnotationDocumentKey
 import com.finnvek.knittools.domain.model.PatternAnnotationOwner
+import com.finnvek.knittools.domain.model.PatternDisplayNames
 import com.finnvek.knittools.domain.model.ProjectDocument
 import com.finnvek.knittools.domain.model.ProjectDocumentLabelValidation
 import com.finnvek.knittools.domain.model.inDocumentOrder
@@ -273,6 +274,7 @@ class ProjectDocumentRepository
             localPdfUri: String,
             label: String,
             documentKey: String? = null,
+            makeLabelUnique: Boolean = false,
         ): ProjectDocumentMutationResult {
             val validatedLabel = validateProjectDocumentLabel(label)
             val normalizedLabel =
@@ -292,15 +294,24 @@ class ProjectDocumentRepository
             ) {
                 return ProjectDocumentMutationResult.DuplicateDocumentKey
             }
+            val documentLabel =
+                if (makeLabelUnique) {
+                    PatternDisplayNames.uniqueDocumentLabel(
+                        normalizedLabel,
+                        documentDao.getForProject(projectId).map { it.label }.toSet(),
+                    )
+                } else {
+                    normalizedLabel
+                }
             val savedPatternId =
-                savedPatternRepository.saveImportedPatternIfMissingInCurrentTransaction(normalizedUri, normalizedLabel)
+                savedPatternRepository.saveImportedPatternIfMissingInCurrentTransaction(normalizedUri, documentLabel)
                     ?: return ProjectDocumentMutationResult.PersistenceFailure
             val result =
                 addDocumentInCurrentTransaction(
                     projectId = projectId,
                     savedPatternId = savedPatternId,
                     localPdfUri = normalizedUri,
-                    label = normalizedLabel,
+                    label = documentLabel,
                     documentKey = normalizedRequestedKey ?: PatternAnnotationDocumentKey.savedPattern(savedPatternId),
                 )
             if (result !is ProjectDocumentMutationResult.Added) abortMutation(result)

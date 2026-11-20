@@ -31,6 +31,93 @@ class MigrationTest {
     private val latestVersion = KNITTOOLS_DATABASE_VERSION
 
     @Test
+    fun migrate29to30ClearsImportedDesignerLabelsAndPreservesReferences() {
+        val testDb = "migration-test-v29-to-v30-imported-pattern-designers"
+        helper.createDatabase(testDb, 1).use { db ->
+            db.execSQL(
+                """
+                INSERT INTO counter_projects (id, name, count, secondaryCount, stepSize, notes, createdAt, updatedAt)
+                VALUES (1, 'Linked project', 7, 0, 1, '', 1000, 2000)
+                """.trimIndent(),
+            )
+        }
+        helper.runMigrationsAndValidate(testDb, 29, true, *allMigrations).use(::insertLegacyImportedDesigners)
+
+        helper.runMigrationsAndValidate(testDb, 30, true, KnitToolsDatabase.MIGRATION_29_30).use { db ->
+            assertSingleRow(
+                db,
+                "SELECT COUNT(*) FROM saved_patterns WHERE id IN (1, 2) AND designerName IS NULL",
+            ) {
+                assertEquals(2, getInt(0))
+            }
+            assertSingleRow(db, "SELECT designerName FROM saved_patterns WHERE id = 3") {
+                assertEquals("Imported PDF", getString(0))
+            }
+            assertSingleRow(db, "SELECT designerName FROM saved_patterns WHERE id = 4") {
+                assertEquals("Jane Doe", getString(0))
+            }
+            assertSingleRow(db, "SELECT savedPatternId, currentPage FROM project_documents WHERE id = 10") {
+                assertEquals(1L, getLong(0))
+                assertEquals(2, getInt(1))
+            }
+            assertSingleRow(
+                db,
+                """
+                SELECT layers.savedPatternId, annotations.payloadJson
+                FROM pattern_annotation_layers AS layers
+                INNER JOIN pattern_annotations AS annotations ON annotations.layerId = layers.id
+                WHERE layers.id = 20 AND annotations.id = 21
+                """.trimIndent(),
+            ) {
+                assertEquals(1L, getLong(0))
+                assertEquals("{}", getString(1))
+            }
+            assertSingleRow(db, "SELECT seq FROM sqlite_sequence WHERE name = 'saved_patterns'") {
+                assertEquals(50L, getLong(0))
+            }
+            db.query("PRAGMA foreign_key_check").use { assertFalse(it.moveToFirst()) }
+        }
+    }
+
+    private fun insertLegacyImportedDesigners(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            """
+            INSERT INTO saved_patterns (
+                id, source, name, designerName, availability, originalUrl, canonicalUrl, localPdfUri,
+                isAvailableOffline, savedAt, updatedAt
+            ) VALUES
+                (1, 'LOCAL_FILE', 'Chart', 'Imported PDF', 'unknown', '', '', 'file:///chart.pdf', 1, 1, 2),
+                (2, 'LOCAL_FILE', 'Hat', 'Tuotu PDF', 'unknown', '', '', 'file:///hat.pdf', 1, 3, 4),
+                (3, 'WEB_LINK', 'Socks', 'Imported PDF', 'unknown', 'https://example.com', '', NULL, 0, 5, 6),
+                (4, 'LOCAL_FILE', 'Scarf', 'Jane Doe', 'unknown', '', '', 'file:///scarf.pdf', 1, 7, 8),
+                (50, 'LOCAL_FILE', 'Deleted', 'Imported PDF', 'unknown', '', '', 'file:///old.pdf', 1, 9, 10)
+            """.trimIndent(),
+        )
+        db.execSQL("DELETE FROM saved_patterns WHERE id = 50")
+        db.execSQL(
+            """
+            INSERT INTO project_documents (
+                id, projectId, savedPatternId, documentKey, label, localPdfUri, sortOrder, isPrimary,
+                currentPage, readingLineEnabled, readingLineYFraction, readingLineFollowCurrentRow,
+                verticalReadingGuideEnabled, verticalReadingGuideXFraction, createdAt, updatedAt
+            ) VALUES (10, 1, 1, 'saved:1:v1', 'Chart', 'file:///chart.pdf', 0, 1, 2, 1, 0.5, 0, 0, 0.5, 2, 3)
+            """.trimIndent(),
+        )
+        db.execSQL(
+            """
+            INSERT INTO pattern_annotation_layers (id, savedPatternId, documentKey, isActive, createdAt, updatedAt)
+            VALUES (20, 1, 'saved:1:v1', 1, 1000, 2000)
+            """.trimIndent(),
+        )
+        db.execSQL(
+            """
+            INSERT INTO pattern_annotations (id, layerId, page, kind, payloadVersion, payloadJson, zIndex, createdAt, updatedAt)
+            VALUES (21, 20, 2, 'FREEHAND', 1, '{}', 0, 1000, 2000)
+            """.trimIndent(),
+        )
+    }
+
+    @Test
     fun migrate28to29KeepsExistingProjectAndAddsCreationReceipts() {
         val testDb = "migration-test-v28-to-v29-creation-receipts"
         helper.createDatabase(testDb, 1).use { db ->

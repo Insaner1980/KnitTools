@@ -219,6 +219,7 @@ fun CrossStitchEmptyState(
     message: String,
     modifier: Modifier = Modifier,
     title: String? = null,
+    action: (@Composable () -> Unit)? = null,
 ) {
     Column(
         modifier = modifier.fillMaxSize().padding(CrossStitchDimens.EmptyStatePadding),
@@ -242,5 +243,9 @@ fun CrossStitchEmptyState(
             color = MaterialTheme.knitToolsColors.emptyStateText,
             textAlign = TextAlign.Center,
         )
+        if (action != null) {
+            Spacer(Modifier.height(CrossStitchDimens.EmptyStateActionGap))
+            action()
+        }
     }
 }

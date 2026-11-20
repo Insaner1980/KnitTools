@@ -15,13 +15,6 @@ import com.finnvek.knittools.ui.theme.knitToolsColors
 internal fun highContainerTextFieldColors(): TextFieldColors =
     fieldColors(MaterialTheme.knitToolsColors.screenFieldContainer)
 
-/**
- * Tekstikenttä dialogissa. Dialogin pinta on vaaleassa teemassa samaa sävyä kuin
- * [highContainerTextFieldColors], jolloin kenttä ei erottuisi: pohjana on taustan väri.
- */
-@Composable
-internal fun dialogTextFieldColors(): TextFieldColors = fieldColors(MaterialTheme.colorScheme.surfaceContainerLowest)
-
 /** Tekstikenttä kortin ([com.finnvek.knittools.ui.theme.KnitToolsExtendedColors.cardContainer]) tai sheetin sisällä. */
 @Composable
 internal fun cardTextFieldColors(): TextFieldColors = fieldColors(MaterialTheme.knitToolsColors.inputFieldContainer)
@@ -34,9 +27,14 @@ private fun fieldColors(container: Color): TextFieldColors =
         focusedContainerColor = container,
         unfocusedContainerColor = container,
         disabledContainerColor = container.copy(alpha = DISABLED_FIELD_CONTAINER_ALPHA),
+        errorContainerColor = container,
         focusedIndicatorColor = MaterialTheme.knitToolsColors.transparentIndicator,
         unfocusedIndicatorColor = MaterialTheme.knitToolsColors.transparentIndicator,
         disabledIndicatorColor = MaterialTheme.knitToolsColors.transparentIndicator,
+        errorIndicatorColor = MaterialTheme.knitToolsColors.transparentIndicator,
+        errorCursorColor = MaterialTheme.colorScheme.error,
+        errorLabelColor = MaterialTheme.colorScheme.error,
+        errorSupportingTextColor = MaterialTheme.colorScheme.error,
     )
 
 private const val DISABLED_FIELD_CONTAINER_ALPHA = 0.4f

@@ -1,14 +1,10 @@
 package com.finnvek.knittools.ui.screens.library
 
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
@@ -33,12 +29,12 @@ import com.finnvek.knittools.domain.model.WEB_PATTERN_TEXT_MAX_LENGTH
 import com.finnvek.knittools.domain.model.WebPatternDesignerValidation
 import com.finnvek.knittools.domain.model.WebPatternTitleValidation
 import com.finnvek.knittools.domain.model.WebPatternUrlValidation
-import com.finnvek.knittools.ui.components.CancelButton
 import com.finnvek.knittools.ui.components.CollectWithLifecycleEffect
+import com.finnvek.knittools.ui.components.ConfirmationDialog
 import com.finnvek.knittools.ui.components.FormSheet
 import com.finnvek.knittools.ui.components.FormSheetConfirm
 import com.finnvek.knittools.ui.components.LabelWithInfo
-import com.finnvek.knittools.ui.components.cardTextFieldColors
+import com.finnvek.knittools.ui.components.LabeledTextField
 import com.finnvek.knittools.ui.navigation.PatternShareImportRequest
 import com.finnvek.knittools.ui.navigation.WebPatternEditorOrigin
 
@@ -179,34 +175,24 @@ internal fun WebPatternEditorContent(
 
     val replacement = state.pendingReplacement
     if (replacement != null) {
-        AlertDialog(
-            onDismissRequest = onDismissReplacement,
-            title = { Text(stringResource(R.string.web_pattern_replace_confirm_title)) },
-            text = { Text(stringResource(R.string.web_pattern_replace_confirm_message, state.title)) },
-            confirmButton = {
-                TextButton(onClick = onConfirmReplacement, enabled = !state.isSaving) {
-                    Text(stringResource(R.string.web_pattern_attach), color = MaterialTheme.colorScheme.error)
-                }
-            },
-            dismissButton = {
-                CancelButton(onClick = onDismissReplacement, enabled = !state.isSaving)
-            },
+        ConfirmationDialog(
+            title = stringResource(R.string.web_pattern_replace_confirm_title),
+            message = stringResource(R.string.web_pattern_replace_confirm_message, state.title),
+            confirmText = stringResource(R.string.web_pattern_attach),
+            isDestructive = true,
+            confirmEnabled = !state.isSaving,
+            dismissEnabled = !state.isSaving,
+            onDismiss = onDismissReplacement,
+            onConfirm = onConfirmReplacement,
         )
     } else if (state.pendingIncomingShare != null) {
-        AlertDialog(
-            onDismissRequest = onKeepDraft,
-            title = { Text(stringResource(R.string.web_pattern_shared_link)) },
-            text = { Text(stringResource(R.string.web_pattern_discard_current_draft)) },
-            confirmButton = {
-                TextButton(onClick = onUseSharedLink) {
-                    Text(stringResource(R.string.web_pattern_use_shared_link))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = onKeepDraft) {
-                    Text(stringResource(R.string.web_pattern_keep_current_draft))
-                }
-            },
+        ConfirmationDialog(
+            title = stringResource(R.string.web_pattern_shared_link),
+            message = stringResource(R.string.web_pattern_discard_current_draft),
+            confirmText = stringResource(R.string.web_pattern_use_shared_link),
+            dismissText = stringResource(R.string.web_pattern_keep_current_draft),
+            onDismiss = onKeepDraft,
+            onConfirm = onUseSharedLink,
         )
     }
 }
@@ -239,48 +225,39 @@ private fun WebPatternEditorFields(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
-    TextField(
+    LabeledTextField(
         value = state.title,
         onValueChange = callbacks.onTitleChange,
-        modifier = Modifier.fillMaxWidth().focusRequester(focus.title).testTag(WEB_PATTERN_TITLE_FIELD_TAG),
+        inputModifier = Modifier.focusRequester(focus.title).testTag(WEB_PATTERN_TITLE_FIELD_TAG),
         enabled = editable,
-        label = { Text(stringResource(R.string.web_pattern_title_label)) },
-        minLines = 1,
+        label = stringResource(R.string.web_pattern_title_label),
+        singleLine = false,
         maxLines = 3,
-        isError = validationAttempted && state.titleValidation !is WebPatternTitleValidation.Valid,
-        supportingText = titleSupportingText(state, validationAttempted),
+        errorMessage = titleErrorText(state, validationAttempted),
         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
         keyboardActions = KeyboardActions(onNext = { focus.url.requestFocus() }),
-        shape = MaterialTheme.shapes.large,
-        colors = cardTextFieldColors(),
     )
-    TextField(
+    LabeledTextField(
         value = state.url,
         onValueChange = callbacks.onUrlChange,
-        modifier = Modifier.fillMaxWidth().focusRequester(focus.url).testTag(WEB_PATTERN_URL_FIELD_TAG),
+        inputModifier = Modifier.focusRequester(focus.url).testTag(WEB_PATTERN_URL_FIELD_TAG),
         enabled = editable,
-        label = { Text(stringResource(R.string.web_pattern_url_label)) },
+        label = stringResource(R.string.web_pattern_url_label),
         singleLine = true,
-        isError = validationAttempted && state.urlValidation !is WebPatternUrlValidation.Valid,
-        supportingText = urlSupportingText(state, validationAttempted),
+        errorMessage = urlErrorText(state, validationAttempted),
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, imeAction = ImeAction.Next),
         keyboardActions = KeyboardActions(onNext = { focus.designer.requestFocus() }),
-        shape = MaterialTheme.shapes.large,
-        colors = cardTextFieldColors(),
     )
-    TextField(
+    LabeledTextField(
         value = state.designer,
         onValueChange = callbacks.onDesignerChange,
-        modifier = Modifier.fillMaxWidth().focusRequester(focus.designer).testTag(WEB_PATTERN_DESIGNER_FIELD_TAG),
+        inputModifier = Modifier.focusRequester(focus.designer).testTag(WEB_PATTERN_DESIGNER_FIELD_TAG),
         enabled = editable,
-        label = { Text(stringResource(R.string.web_pattern_designer_label)) },
+        label = stringResource(R.string.web_pattern_designer_label),
         singleLine = true,
-        isError = validationAttempted && state.designerValidation !is WebPatternDesignerValidation.Valid,
-        supportingText = designerSupportingText(state, validationAttempted),
+        errorMessage = designerErrorText(state, validationAttempted),
         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
         keyboardActions = KeyboardActions(onDone = { callbacks.onDone() }),
-        shape = MaterialTheme.shapes.large,
-        colors = cardTextFieldColors(),
     )
     state.sourceHost?.let { host ->
         LabelWithInfo(label = stringResource(R.string.web_pattern_website_label), info = null)
@@ -294,12 +271,7 @@ private fun WebPatternEditorFields(
         )
     }
     Text(
-        text = stringResource(R.string.web_pattern_source_controlled),
-        style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-    )
-    Text(
-        text = stringResource(R.string.web_pattern_not_offline),
+        text = stringResource(R.string.web_pattern_offline_note),
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
@@ -327,64 +299,56 @@ private fun editorTitle(origin: WebPatternEditorOrigin?): String =
         },
     )
 
-private fun titleSupportingText(
+@Composable
+private fun titleErrorText(
     state: WebPatternEditorUiState,
     validationAttempted: Boolean,
-): (@Composable () -> Unit)? =
+): String? =
     if (!validationAttempted || state.titleValidation is WebPatternTitleValidation.Valid) {
         null
     } else {
-        {
-            Text(
-                stringResource(
-                    when {
-                        state.title.isBlank() -> R.string.web_pattern_error_title_required
-                        state.title.trim().length > WEB_PATTERN_TEXT_MAX_LENGTH ->
-                            R.string.web_pattern_error_title_too_long
-                        else -> R.string.generic_error_unknown
-                    },
-                ),
-            )
-        }
+        stringResource(
+            when {
+                state.title.isBlank() -> R.string.web_pattern_error_title_required
+                state.title.trim().length > WEB_PATTERN_TEXT_MAX_LENGTH -> R.string.web_pattern_error_title_too_long
+                else -> R.string.generic_error_unknown
+            },
+        )
     }
 
-private fun urlSupportingText(
+@Composable
+private fun urlErrorText(
     state: WebPatternEditorUiState,
     validationAttempted: Boolean,
-): (@Composable () -> Unit)? =
+): String? =
     if (!validationAttempted || state.urlValidation is WebPatternUrlValidation.Valid) {
         null
     } else {
-        {
-            Text(
-                stringResource(
-                    when (state.urlValidation) {
-                        WebPatternUrlValidation.Required -> R.string.web_pattern_error_url_required
-                        WebPatternUrlValidation.WebOnly -> R.string.web_pattern_error_url_web_only
-                        WebPatternUrlValidation.Invalid -> R.string.web_pattern_error_url_invalid
-                        is WebPatternUrlValidation.Valid -> error("Valid URL does not have supporting error text")
-                    },
-                ),
-            )
-        }
+        stringResource(
+            when (state.urlValidation) {
+                WebPatternUrlValidation.Required -> R.string.web_pattern_error_url_required
+                WebPatternUrlValidation.WebOnly -> R.string.web_pattern_error_url_web_only
+                WebPatternUrlValidation.Invalid -> R.string.web_pattern_error_url_invalid
+                is WebPatternUrlValidation.Valid -> error("Valid URL does not have supporting error text")
+            },
+        )
     }
 
-private fun designerSupportingText(
+@Composable
+private fun designerErrorText(
     state: WebPatternEditorUiState,
     validationAttempted: Boolean,
-): (@Composable () -> Unit)? =
+): String? =
     if (!validationAttempted || state.designerValidation is WebPatternDesignerValidation.Valid) {
         null
     } else {
-        {
-            Text(
-                if (state.designer.length > WEB_PATTERN_TEXT_MAX_LENGTH) {
-                    stringResource(R.string.web_pattern_error_designer_too_long)
-                } else {
-                    stringResource(R.string.generic_error_unknown)
-                },
-            )
-        }
+        stringResource(
+            if (state.designer.length > WEB_PATTERN_TEXT_MAX_LENGTH) {
+                R.string.web_pattern_error_designer_too_long
+            } else {
+                R.string.generic_error_unknown
+            },
+        )
     }
 
 @Composable

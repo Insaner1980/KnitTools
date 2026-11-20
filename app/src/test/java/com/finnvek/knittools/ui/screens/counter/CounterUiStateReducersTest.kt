@@ -115,7 +115,7 @@ class CounterUiStateReducersTest {
         val previousYarnNote = ProjectYarnNote(id = 30L, projectId = 1L, name = "Old yarn")
         val result =
             CounterUiState(
-                linkedYarns = listOf(40L to "Old linked yarn"),
+                linkedYarns = listOf(LinkedYarnSummary(40L, "Old linked yarn")),
                 projectYarnNotes = listOf(previousYarnNote),
                 reminders = listOf(previousReminder),
                 activeAlert = previousReminder,

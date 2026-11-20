@@ -25,7 +25,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.window.DialogProperties
 import com.finnvek.knittools.R
+import com.finnvek.knittools.ui.layout.dialogWidth
 import com.finnvek.knittools.ui.theme.ComponentDimens
 
 /** Vihjeen otsikko ja selitys; otsikko on myös ikonin ruudunlukijateksti. */
@@ -107,6 +109,8 @@ private fun InfoTipDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
+        modifier = Modifier.dialogWidth(),
+        properties = DialogProperties(usePlatformDefaultWidth = false),
         title = {
             Text(
                 text = info.title,

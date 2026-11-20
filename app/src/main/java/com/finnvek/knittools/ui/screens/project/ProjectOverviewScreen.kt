@@ -59,7 +59,7 @@ import com.finnvek.knittools.ui.components.OverviewLinkRow
 import com.finnvek.knittools.ui.components.OverviewTextAction
 import com.finnvek.knittools.ui.components.ProMarker
 import com.finnvek.knittools.ui.components.craftTypeLabel
-import com.finnvek.knittools.ui.components.workSessionStatusText
+import com.finnvek.knittools.ui.components.workSessionHeroStatusText
 import com.finnvek.knittools.ui.layout.AdaptiveDropdownMenu
 import com.finnvek.knittools.ui.layout.ContentWidthPolicy
 import com.finnvek.knittools.ui.layout.contentWidth
@@ -191,7 +191,14 @@ internal fun ProjectOverviewScreen(
                     }
                 }
                 item(key = "yarn") {
-                    ProjectOverviewYarn(yarnItems, yarnUnit, yarnCards, state.projectYarnNotes, contentActions.onYarn)
+                    ProjectOverviewYarn(
+                        items = yarnItems,
+                        unit = yarnUnit,
+                        cards = yarnCards,
+                        notes = state.projectYarnNotes,
+                        linkedYarns = state.linkedYarns,
+                        onEdit = contentActions.onYarn,
+                    )
                 }
                 item(key = "pattern") { ProjectOverviewPattern(state, actions, contentActions) }
                 item(key = "notes") { ProjectOverviewNotes(state) { actions.onNotesEditor(projectId) } }
@@ -334,7 +341,7 @@ private fun ProjectOverviewProgress(
 ) {
     // Sama jatka-kortti kuin listan herossa. Projektin nimi on jo sivun otsikkona, joten korttiin ei
     // toisteta sitä. Valmistuneella projektilla ei ole jatka-nappia: laskemaan pääsee uudelleenaktivoimalla.
-    val hasSession = state.activeSession?.projectId == state.projectId
+    val activeSession = state.activeSession?.takeIf { it.projectId == state.projectId }
     ContinueProjectCard(
         project =
             CounterProject(
@@ -348,7 +355,12 @@ private fun ProjectOverviewProgress(
                 mainCounterCustomLabel = state.mainCounterCustomLabel,
                 isCompleted = state.isCompleted,
             ),
-        sessionStatus = workSessionStatusText(hasSession, state.activeSession?.needsRecoveryReview == true),
+        sessionStatus =
+            workSessionHeroStatusText(
+                activeSession != null,
+                activeSession?.needsRecoveryReview == true,
+                state.sessionSeconds,
+            ),
         onClick = onOpenCounter.takeUnless { state.isCompleted },
         onClickLabel = stringResource(R.string.project_continue_content_description, state.projectName),
         onOpenCounter = onOpenCounter.takeUnless { state.isCompleted },

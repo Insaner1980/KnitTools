@@ -8,13 +8,13 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -23,7 +23,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
@@ -51,8 +50,9 @@ data class NumberInputOptions(
     val isLast: Boolean = false,
     val preserveRawInput: Boolean = false,
     val allowZero: Boolean = true,
-    // Esimerkkiarvo tyhjään kenttään: kertoo millaista lukua kysytään ilman erillistä ohjetekstiä.
+    // Example value shown when the field is empty.
     val placeholder: String? = null,
+    val placeholderIsExample: Boolean = true,
     val readOnly: Boolean = false,
 )
 
@@ -69,6 +69,8 @@ fun NumberInputField(
     onFocusLost: (() -> Unit)? = null,
     inputModifier: Modifier = Modifier,
     info: InfoTipText? = null,
+    supportingText: String? = null,
+    enabled: Boolean = true,
 ) {
     val focusManager = LocalFocusManager.current
     val interactionSource = remember { MutableInteractionSource() }
@@ -76,7 +78,7 @@ fun NumberInputField(
     val locale = rememberCurrentLocale()
     val rawIntegerInput = options.preserveRawInput && !options.isDecimal
     val useOwnBorder = !options.preserveRawInput || rawIntegerInput
-    var hasFocused by remember { mutableStateOf(false) }
+    var hadFocus by remember { mutableStateOf(false) }
     var hasBlurred by remember { mutableStateOf(false) }
     val localError =
         if (onFocusLost == null &&
@@ -121,6 +123,7 @@ fun NumberInputField(
         Spacer(modifier = Modifier.height(8.dp))
         TextField(
             value = value,
+            enabled = enabled,
             readOnly = options.readOnly,
             onValueChange = { newValue ->
                 onValueChange(
@@ -142,23 +145,37 @@ fun NumberInputField(
                     .fillMaxWidth()
                     .heightIn(min = 48.dp)
                     .then(
-                        if (useOwnBorder) Modifier.inputFieldBorder(isFocused) else Modifier,
+                        if (useOwnBorder || displayedError != null) {
+                            Modifier.inputFieldBorder(isFocused, displayedError != null)
+                        } else {
+                            Modifier
+                        },
                     ).semantics {
                         contentDescription = semanticLabel ?: label
                         displayedError?.let { error(it) }
                     }.onFocusChanged {
-                        if (it.isFocused) {
-                            hasFocused = true
-                        } else if (hasFocused) {
+                        if (hadFocus && !it.isFocused) {
                             hasBlurred = true
                             onFocusLost?.invoke()
                         }
+                        hadFocus = it.isFocused
                     },
             isError = displayedError != null,
-            supportingText = displayedError?.let { message -> { Text(message) } },
             placeholder =
                 options.placeholder?.let { example ->
-                    { Text(example, color = MaterialTheme.knitToolsColors.fieldPlaceholderText) }
+                    {
+                        Text(
+                            if (options.placeholderIsExample) {
+                                stringResource(
+                                    R.string.field_example_format,
+                                    example,
+                                )
+                            } else {
+                                example
+                            },
+                            color = MaterialTheme.knitToolsColors.fieldPlaceholderText,
+                        )
+                    }
                 },
             textStyle = MaterialTheme.typography.titleSmall,
             keyboardOptions =
@@ -184,9 +201,10 @@ fun NumberInputField(
                     }
                 },
             shape = InputFieldShape,
-            colors = inputFieldColors(),
+            colors = cardTextFieldColors(),
             interactionSource = interactionSource,
         )
+        InputFieldSupportingText(displayedError, supportingText)
     }
 }
 
@@ -195,6 +213,7 @@ fun NumberInputField(
  * reunus ja muoto. Samassa lomakkeessa olevat teksti- ja numerokentät näyttävät näin samalta.
  */
 @Composable
+@Suppress("kotlin:S107")
 fun LabeledTextField(
     value: String,
     onValueChange: (String) -> Unit,
@@ -205,24 +224,38 @@ fun LabeledTextField(
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
     keyboardActions: KeyboardActions = KeyboardActions.Default,
     errorMessage: String? = null,
+    supportingText: String? = null,
+    enabled: Boolean = true,
+    onFocusLost: (() -> Unit)? = null,
+    singleLine: Boolean = true,
+    maxLines: Int = if (singleLine) 1 else Int.MAX_VALUE,
+    readOnly: Boolean = false,
+    trailingIcon: (@Composable () -> Unit)? = null,
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isFocused by interactionSource.collectIsFocusedAsState()
+    var hadFocus by remember { mutableStateOf(false) }
     Column(modifier = modifier) {
         LabelWithInfo(label = label, info = null)
         Spacer(modifier = Modifier.height(8.dp))
         TextField(
             value = value,
+            enabled = enabled,
             onValueChange = onValueChange,
+            readOnly = readOnly,
+            trailingIcon = trailingIcon,
             modifier =
                 inputModifier
                     .tipBlockWhenFocused()
                     .fillMaxWidth()
                     .heightIn(min = 48.dp)
-                    .inputFieldBorder(isFocused)
+                    .inputFieldBorder(isFocused, errorMessage != null)
                     .semantics {
                         contentDescription = label
                         errorMessage?.let { error(it) }
+                    }.onFocusChanged {
+                        if (hadFocus && !it.isFocused) onFocusLost?.invoke()
+                        hadFocus = it.isFocused
                     },
             placeholder =
                 placeholder?.let { example ->
@@ -232,37 +265,52 @@ fun LabeledTextField(
             keyboardOptions = keyboardOptions,
             keyboardActions = keyboardActions,
             isError = errorMessage != null,
-            supportingText = errorMessage?.let { message -> { Text(message) } },
-            singleLine = true,
+            singleLine = singleLine,
+            maxLines = maxLines,
             shape = InputFieldShape,
-            colors = inputFieldColors(),
+            colors = cardTextFieldColors(),
             interactionSource = interactionSource,
         )
+        InputFieldSupportingText(errorMessage, supportingText)
     }
 }
 
 private val InputFieldShape = RoundedCornerShape(14.dp)
 
 @Composable
-private fun Modifier.inputFieldBorder(isFocused: Boolean): Modifier =
-    border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f), InputFieldShape)
-        .then(
-            if (isFocused) {
-                Modifier.border(2.dp, MaterialTheme.colorScheme.primaryContainer, InputFieldShape)
-            } else {
-                Modifier
-            },
-        )
+private fun Modifier.inputFieldBorder(
+    isFocused: Boolean,
+    isError: Boolean,
+): Modifier {
+    val color =
+        when {
+            isError -> MaterialTheme.colorScheme.error
+            isFocused -> MaterialTheme.colorScheme.primaryContainer
+            else -> MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+        }
+    return border(if (isFocused) 2.dp else 1.dp, color, InputFieldShape)
+}
 
 @Composable
-private fun inputFieldColors() =
-    TextFieldDefaults.colors(
-        focusedContainerColor = MaterialTheme.knitToolsColors.inputFieldContainer,
-        unfocusedContainerColor = MaterialTheme.knitToolsColors.inputFieldContainer,
-        focusedIndicatorColor = Color.Transparent,
-        unfocusedIndicatorColor = Color.Transparent,
-        disabledIndicatorColor = Color.Transparent,
+private fun InputFieldSupportingText(
+    errorMessage: String?,
+    supportingText: String?,
+) {
+    val message = errorMessage ?: supportingText ?: return
+    Text(
+        text = message,
+        style = MaterialTheme.typography.bodySmall,
+        color =
+            if (errorMessage !=
+                null
+            ) {
+                MaterialTheme.colorScheme.error
+            } else {
+                MaterialTheme.colorScheme.onSurfaceVariant
+            },
+        modifier = Modifier.padding(top = 4.dp),
     )
+}
 
 internal fun localizeDecimalSeparatorForDisplay(
     value: String,

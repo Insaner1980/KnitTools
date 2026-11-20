@@ -61,7 +61,11 @@ fun SessionItem(
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            onDelete?.let { RowOverflowMenu(listOf(RowMenuAction(stringResource(R.string.delete), it))) }
+            onDelete?.let {
+                RowOverflowMenu(
+                    listOf(RowMenuAction(stringResource(R.string.delete), isDestructive = true, onClick = it)),
+                )
+            }
         }
         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
     }

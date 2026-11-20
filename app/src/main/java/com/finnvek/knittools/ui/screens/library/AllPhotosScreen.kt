@@ -201,8 +201,13 @@ private fun AllPhotosDeleteDialog(
     onDismiss: () -> Unit,
 ) {
     ConfirmationDialog(
-        title = stringResource(R.string.delete_photo),
-        message = pluralStringResource(R.plurals.delete_photos_confirm, selectedCount, selectedCount),
+        title = stringResource(if (selectedCount == 1) R.string.delete_photo_title else R.string.delete_photos_title),
+        message =
+            if (selectedCount == 1) {
+                stringResource(R.string.delete_photo_confirm)
+            } else {
+                pluralStringResource(R.plurals.delete_photos_confirm, selectedCount, selectedCount)
+            },
         confirmText = stringResource(R.string.delete),
         isDestructive = true,
         onConfirm = onConfirm,
@@ -346,7 +351,7 @@ private fun PhotoGridItem(
                         color = MaterialTheme.colorScheme.primary,
                     )
                     Text(
-                        text = photo.note ?: stringResource(R.string.row_label_format, photo.rowNumber),
+                        text = photo.note ?: stringResource(R.string.photo_count_label_format, photo.rowNumber),
                         style = MaterialTheme.typography.bodySmall,
                     )
                     Text(

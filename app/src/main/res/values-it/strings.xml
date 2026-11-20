@@ -1,4 +1,5 @@
 <resources>
+    <string name="pattern_annotation_page_limit">Questa pagina contiene troppe annotazioni o annotazioni troppo complesse per essere visualizzate in modo sicuro. Le tue annotazioni sono state conservate.</string>
     <string name="notes_save_failed">Impossibile salvare le note. Le tue modifiche sono ancora qui. Riprova.</string>
     <string name="notes_discard_title">Scartare le note non salvate?</string>
     <string name="notes_discard_message">Non è stato possibile salvare le modifiche. Se esci ora, le modifiche non salvate verranno scartate.</string>
@@ -19,7 +20,6 @@
 
     <!-- Units -->
     <string name="unit_cm">cm</string>
-    <string name="measurement_with_unit_format">%1$s %2$s</string>
     <string name="unit_inches">pollici</string>
     <string name="unit_st">m</string>
     <string name="unit_g">g</string>
@@ -47,7 +47,11 @@
     <string name="tools_title">Strumenti</string>
     <string name="library_title">Libreria</string>
     <string name="saved_patterns_title">Modelli salvati</string>
+    <string name="empty_saved_patterns_title">Nessun schema salvato</string>
+    <string name="empty_saved_patterns_body">Salva qui un link a uno schema. Qui trovi anche i PDF allegati ai progetti o aperti con KnitTools.</string>
     <string name="my_yarn_title">Il mio filato</string>
+    <string name="empty_my_yarn_title">Nessun filato salvato</string>
+    <string name="empty_my_yarn_body">Salva il filato con il suo colore e lotto di tintura, poi collegalo a qualsiasi progetto.</string>
     <string name="all_photos_title">Foto di avanzamento</string>
 
     <!-- Hub hero text -->
@@ -85,7 +89,9 @@
     </plurals>
     <string name="main_counter_custom_count_format">%1$d %2$s</string>
     <string name="current_round_short">Giro %1$d</string>
+    <string name="current_round_inline">giro %d</string>
     <string name="current_repeat_short">Ripetizione %1$d</string>
+    <string name="current_repeat_inline">ripetizione %d</string>
     <string name="counter_round_value_of_target_format">Giro %1$d / %2$d</string>
     <string name="counter_repeat_value_of_target_format">Ripetizione %1$d / %2$d</string>
     <string name="main_counter_custom_current_format">%1$s %2$d</string>
@@ -100,10 +106,12 @@
     <string name="no_active_projects">Nessun progetto attivo</string>
     <string name="no_completed_projects">Nessun progetto completato per ora</string>
     <string name="delete_project">Elimina</string>
-    <string name="delete_project_message">Eliminare %s? Questa azione non può essere annullata.</string>
+    <string name="delete_project_message">%s e tutti i suoi dati, inclusi contatori, note, foto e cronologia delle sessioni, verranno eliminati. Questa azione non può essere annullata.</string>
+    <string name="delete_project_title">Eliminare il progetto?</string>
     <string name="complete_project">Completa</string>
     <string name="reactivate_project">Riattiva</string>
-    <string name="complete_project_message">Completare %s? Il progetto verrà spostato tra quelli completati.</string>
+    <string name="complete_project_message">%s passa ai progetti completati.</string>
+    <string name="complete_project_title">Completare il progetto?</string>
     <string name="more_options">Altre opzioni</string>
 
     <!-- Project List overflow -->
@@ -119,27 +127,35 @@
     <string name="select_all">Seleziona tutto</string>
     <string name="select_photo">Seleziona foto</string>
     <plurals name="complete_n_projects">
-        <item quantity="one">Completare %d progetto? Verrà spostato tra quelli completati.</item>
-        <item quantity="many">Completare %d progetti? Verranno spostati tra quelli completati.</item>
-        <item quantity="other">Completare %d progetti? Verranno spostati tra quelli completati.</item>
+        <item quantity="one">%d progetto passa ai progetti completati.</item>
+        <item quantity="many">%d progetti passano ai progetti completati.</item>
+        <item quantity="other">%d progetti passano ai progetti completati.</item>
     </plurals>
+    <string name="complete_projects_title">Completare i progetti?</string>
     <plurals name="delete_n_projects">
-        <item quantity="one">Eliminare %d progetto? Questa azione non può essere annullata.</item>
-        <item quantity="many">Eliminare %d progetti? Questa azione non può essere annullata.</item>
-        <item quantity="other">Eliminare %d progetti? Questa azione non può essere annullata.</item>
+        <item quantity="one">%d progetto verrà eliminato. Questa azione non può essere annullata.</item>
+        <item quantity="many">%d progetti verranno eliminati. Questa azione non può essere annullata.</item>
+        <item quantity="other">%d progetti verranno eliminati. Questa azione non può essere annullata.</item>
     </plurals>
+    <string name="delete_projects_title">Eliminare i progetti?</string>
     <plurals name="rows_format">
         <item quantity="one">%1$d riga</item>
         <item quantity="many">%1$d righe</item>
         <item quantity="other">%1$d righe</item>
     </plurals>
+    <string name="counter_unit_rows">ferri</string>
+    <string name="counter_unit_rounds">giri</string>
+    <string name="counter_unit_repeats">ripetizioni</string>
     <string name="just_now">proprio ora</string>
 
     <!-- Counter Screen -->
     <string name="stitches_per_row">Numero di maglie</string>
+    <string name="stitches_in_row_label">Maglie in una riga</string>
+    <string name="stitches_in_round_label">Maglie in un giro</string>
+    <string name="stitches_per_row_remove">Rimuovi</string>
     <string name="track_stitches">Tieni traccia delle maglie</string>
     <string name="stitch_counter_compact_format">%1$d/%2$d</string>
-    <string name="attach_pattern">Collega modello</string>
+    <string name="attach_pattern">Aggiungi schema</string>
     <string name="remove_pattern">Rimuovi modello</string>
     <string name="no_pattern_attached">Nessun modello collegato</string>
     <string name="pattern_viewer_title">Visualizzatore modello</string>
@@ -151,14 +167,22 @@
     <string name="pattern_clear_row_mark">Cancella il segno del contatore</string>
     <string name="pattern_clear_page_marks">Cancella segni della pagina</string>
     <string name="pattern_calibrate_rows">Calibra le posizioni del contatore</string>
-    <string name="pattern_calibration_first_row">Primo valore</string>
-    <string name="pattern_calibration_last_row">Ultimo valore</string>
-    <string name="pattern_calibration_save_first">Salva primo</string>
-    <string name="pattern_calibration_save_last">Salva ultimo</string>
+    <string name="pattern_calibration_first_row">Numero della riga attuale</string>
+    <string name="pattern_calibration_last_row">Numero della riga qui</string>
+    <string name="pattern_calibration_first_round">Numero del giro attuale</string>
+    <string name="pattern_calibration_last_round">Numero del giro qui</string>
+    <string name="pattern_calibration_first_repeat">Numero della ripetizione attuale</string>
+    <string name="pattern_calibration_last_repeat">Numero della ripetizione qui</string>
+    <string name="pattern_calibration_first_custom">Numero attuale (%1$s)</string>
+    <string name="pattern_calibration_last_custom">Numero qui (%1$s)</string>
     <string name="pattern_calibration_invalid_row">Usa due valori del contatore diversi</string>
+    <string name="pattern_calibration_step_first">Passaggio 1 di 2: sposta la linea sulla riga corrente, controlla il numero e salva.</string>
+    <string name="pattern_calibration_step_last">Passaggio 2 di 2: sposta la linea su una riga successiva, inseriscine il numero e salva.</string>
     <string name="pattern_page_jump">Vai alla pagina</string>
+    <string name="pattern_page_jump_go">Vai</string>
     <string name="pattern_page_number">Numero di pagina</string>
     <string name="pattern_page_indicator">Pagina %1$d di %2$d</string>
+    <string name="pattern_page_indicator_compact">%1$d / %2$d</string>
     <string name="pattern_previous_page">Pagina precedente</string>
     <string name="pattern_next_page">Pagina successiva</string>
     <string name="pattern_picker_saved_patterns">Modelli salvati</string>
@@ -169,7 +193,8 @@
     <string name="pattern_picker_choose_images">Scegli immagini</string>
     <string name="pattern_image_import_title">Rivedi le pagine del modello</string>
     <plurals name="pattern_images_selected"><item quantity="one">%1$d immagine selezionata</item><item quantity="many">%1$d immagini selezionate</item><item quantity="other">%1$d immagini selezionate</item></plurals>
-    <string name="pattern_image_page_position">Pagina %1$d di %2$d</string>
+    <string name="pattern_images_document_label">%1$s, foto dello schema</string>
+    <string name="pattern_images_document_fallback">Foto dello schema</string>
     <string name="pattern_image_add_more">Aggiungi altre</string>
     <string name="pattern_image_move_earlier">Sposta prima la pagina %1$d</string>
     <string name="pattern_image_move_later">Sposta dopo la pagina %1$d</string>
@@ -193,8 +218,8 @@
     <string name="pattern_image_error_conversion">Impossibile creare il PDF del modello. Rivedi le pagine e riprova.</string>
     <string name="pattern_image_error_attachment">Impossibile allegare il PDF. Il modello attuale è stato mantenuto.</string>
     <string name="pattern_picker_continue_without_pattern">Continua senza modello</string>
-    <string name="imported_pattern_designer">PDF importato</string>
     <string name="current_row_short">Riga %1$d</string>
+    <string name="current_row_inline">ferro %d</string>
     <string name="unlink_yarn">Scollega filato</string>
     <string name="select_yarn_card">Seleziona scheda filato</string>
     <string name="linked_yarn_title">Filato collegato</string>
@@ -228,7 +253,9 @@
     <string name="yarn_card_project_format">Progetto: %1$s</string>
     <string name="yarn_details_title">Dettagli</string>
     <string name="yarn_details_empty_body">Marca, spessore, colore e bagno sono facoltativi. Aggiungi solo ciò che aiuta questo progetto.</string>
-    <string name="delete_yarn_card_message">Eliminare questa scheda filato? Questa azione non può essere annullata.</string>
+    <string name="delete_yarn_card_message">Questa azione non può essere annullata. I progetti che usano questo filato conservano le proprie note sul filato.</string>
+    <string name="delete_yarn_card_title">Eliminare la scheda filato?</string>
+    <string name="delete_yarn_cards_title">Eliminare le schede filato?</string>
     <plurals name="skein_count">
         <item quantity="one">%1$d gomitolo</item>
         <item quantity="many">%1$d gomitoli</item>
@@ -241,13 +268,14 @@
     <string name="session_row_range">Contatore: %1$d → %2$d</string>
     <string name="session_row_single">Valore %1$d</string>
     <string name="delete_session_title">Eliminare la sessione?</string>
-    <string name="delete_session_message">Eliminare questa sessione dalla cronologia? Questa azione non può essere annullata.</string>
+    <string name="delete_session_message">Questa sessione verrà eliminata dalla cronologia. Questa azione non può essere annullata.</string>
 
     <!-- Settings -->
     <!-- Row Counter -->
     <string name="default_project_name">Il mio progetto</string>
     <string name="reset_counter">Reimposta contatore</string>
-    <string name="reset_counter_message">Reimpostare il contatore a 0?</string>
+    <string name="reset_counter_message">Il contatore verrà azzerato.</string>
+    <string name="reset_counter_title">Azzerare il contatore?</string>
     <string name="notes">Note</string>
     <string name="add_note">Aggiungi nota…</string>
     <string name="write_your_notes_here">Scrivi qui le tue note…</string>
@@ -270,11 +298,6 @@
     <string name="counter_target_past_format">Oltre l’obiettivo: %1$s</string>
     <string name="project_content_add_pattern">Aggiungi modello</string>
     <string name="stitch_tracker_label">Maglie</string>
-    <plurals name="reminder_repeat_occurrence_format">
-        <item quantity="one">Ripetizione #%1$d, intervallo %2$d</item>
-        <item quantity="many">Ripetizione #%1$d, intervallo %2$d</item>
-        <item quantity="other">Ripetizione #%1$d, intervallo %2$d</item>
-    </plurals>
 
     <!-- Increase / Decrease -->
     <string name="mode_increase">Aumenta</string>
@@ -284,12 +307,16 @@
     <string name="current_stitches">Numero attuale di maglie</string>
     <string name="increase_by">Aumenta di</string>
     <string name="decrease_by">Diminuisci di</string>
-    <string name="increase_result_placeholder">Compila entrambi i campi per vedere dove aumentare</string>
-    <string name="decrease_result_placeholder">Compila entrambi i campi per vedere dove diminuire</string>
-    <string name="cast_on_result_placeholder">Compila larghezza e campione per vedere quante maglie avviare</string>
+    <string name="increase_result_placeholder">Inserisci il numero di maglie per vedere dove aumentare</string>
+    <string name="decrease_result_placeholder">Inserisci il numero di maglie per vedere dove diminuire</string>
+    <string name="cast_on_result_placeholder">Inserisci larghezza e campione per calcolare l’avvio</string>
     <string name="yarn_result_placeholder">Compila i campi per vedere quanti gomitoli ti servono</string>
+    <string name="yarn_estimator_card_missing_values">Per questo filato non è ancora indicata la lunghezza o il peso per gomitolo.</string>
+    <string name="yarn_picker_empty_action">Aggiungi filato in «Il mio filato»</string>
+    <string name="estimated_skeins">Occorrenza esatta: %s gomitoli</string>
     <string name="tool_result_placeholder">Compila i campi per vedere il risultato</string>
     <string name="invalid_input">Inserimento non valido</string>
+    <string name="field_example_format">es. %1$s</string>
     <string name="easy_to_remember">Facile da ricordare</string>
     <string name="balanced">Bilanciato</string>
     <string name="total_stitches_format">Totale: %1$d %2$s</string>
@@ -311,7 +338,6 @@
     <string name="stitch_gauge">Campione maglie</string>
     <string name="pattern_repeat_optional">Ripetizione del motivo (facoltativa)</string>
     <string name="edge_stitches_optional">Maglie di vivagno totali</string>
-    <string name="edge_stitches_total_format">Maglie di vivagno totali: %1$d</string>
     <plurals name="stitches_result">
         <item quantity="one">%d maglia</item>
         <item quantity="many">%d maglie</item>
@@ -326,7 +352,6 @@
     <string name="length_per_skein">Lunghezza per gomitolo</string>
     <string name="weight_per_skein">Peso per gomitolo</string>
     <string name="total_weight">Peso dei gomitoli interi: %s g</string>
-    <string name="estimated_skeins">Gomitoli stimati: circa %s</string>
     <string name="extra_skein_note">Prevedi del filato extra se necessario e controlla che i bagni di tintura coincidano.</string>
 
     <!-- Needle Sizes -->
@@ -346,6 +371,8 @@
     <string name="settings_section_pro">PRO</string>
     <string name="settings_section_data">DATI</string>
     <string name="settings_section_info">INFO</string>
+    <string name="help_and_guide">Guida online</string>
+    <string name="external_link_description">si apre nel browser</string>
     <string name="settings_language">Lingua dell’app</string>
     <string name="settings_language_change_hint">La modifica si applica subito</string>
     <string name="settings_language_system">Segui il sistema</string>
@@ -454,8 +481,6 @@
     <string name="desc_saved_patterns">Modelli salvati da siti web e file PDF</string>
     <string name="desc_my_yarn">Note sul filato, quantità e progetti collegati</string>
     <string name="desc_all_photos">Foto di avanzamento di tutti i tuoi progetti</string>
-    <string name="empty_saved_patterns">Non ci sono ancora modelli salvati.\nAggiungi un modello web o importa un file PDF.</string>
-    <string name="empty_my_yarn">Nessuna nota sul filato salvata per ora.</string>
     <string name="empty_all_photos">Le foto scattate nei tuoi progetti compaiono qui.</string>
 
     <!-- Insights -->
@@ -511,6 +536,7 @@
     <string name="insights_project_fabric_previous_active_day">Giorno attivo precedente</string>
     <string name="insights_project_fabric_next_active_day">Giorno attivo successivo</string>
     <string name="insights_last_worked_format">Ultima volta %1$s</string>
+    <string name="insights_project_sub_format">%1$s, %2$s</string>
     <plurals name="insights_days_meta_format">
         <item quantity="one">Giorni di attività: %1$d su %2$d</item>
         <item quantity="many">Giorni di attività: %1$d su %2$d</item>
@@ -522,12 +548,14 @@
     <string name="insights_chart_a11y_monthly">Tempo mensile %1$s, %2$s, %3$s, il più lungo %4$s</string>
     <string name="insights_chart_a11y_next">Barra successiva</string>
     <string name="insights_chart_a11y_previous">Barra precedente</string>
-    <string name="insights_project_sub_format">%1$s, %2$s</string>
     <string name="insights_empty_title">Ancora nessun tempo registrato.</string>
     <string name="insights_empty_body">Apri un progetto e avvia una sessione di lavoro per registrare qui il tuo tempo.</string>
     <string name="insights_nothing_yet_week">Ancora nulla questa settimana.</string>
+    <string name="insights_no_sessions_week">Nessuna sessione di lavoro questa settimana.</string>
     <string name="insights_nothing_yet_month">Ancora nulla questo mese.</string>
+    <string name="insights_no_sessions_month">Nessuna sessione di lavoro questo mese.</string>
     <string name="insights_nothing_yet_all_time">Ancora nulla.</string>
+    <string name="insights_no_sessions_all_time">Ancora nessuna sessione di lavoro.</string>
     <string name="insights_pro_chart_title">Osserva la tua attività nel tempo</string>
     <string name="insights_pro_chart_body">Pro raggruppa il tempo registrato in grafici giornalieri, settimanali o mensili e aggiunge la tua serie di attività.</string>
     <string name="all_projects">Tutti i progetti</string>
@@ -545,7 +573,6 @@
     </plurals>
 
     <!-- Settings -->
-    <string name="help_and_guide">Aiuto e guida</string>
 
     <!-- Gauge Calculator — swatch section -->
     <string name="your_gauge_section">Il tuo campione</string>
@@ -558,6 +585,9 @@
 
     <!-- Size Charts -->
     <string name="size_charts_title">Tabelle taglie</string>
+    <string name="size_chart_header_with_unit">%1$s (%2$s)</string>
+    <string name="size_col_sleeve">Manica</string>
+    <string name="size_chart_sleeve_note">Manica: dal polso all’ascella.</string>
     <string name="category_baby">Bebè (0–24 mesi)</string>
     <string name="category_child_youth">Bambini e ragazzi (2–16)</string>
     <string name="category_women">Donna</string>
@@ -588,14 +618,33 @@
     <string name="edit_reminder">Modifica promemoria</string>
     <string name="no_reminders">Nessun promemoria ancora</string>
     <string name="delete_reminder_title">Eliminare il promemoria?</string>
-    <string name="delete_reminder_confirm">Eliminare il promemoria \"%1$s\"?</string>
-    <string name="row_number">Valore del contatore</string>
+    <string name="delete_reminder_confirm">Il promemoria «%1$s» verrà eliminato.</string>
     <string name="reminder_message">Messaggio</string>
+    <string name="reminder_at_row">Ricorda alla riga</string>
+    <string name="reminder_at_round">Ricorda al giro</string>
+    <string name="reminder_at_repeat">Ricorda alla ripetizione</string>
+    <string name="reminder_at_custom">Ricorda a %1$s</string>
     <string name="reminder_message_hint">es. Passa al tallone</string>
     <string name="one_time">Una volta</string>
     <string name="repeating">Ripetuto</string>
     <string name="repeat_every">Ripeti ogni</string>
-    <string name="repeat_every_rows">incrementi</string>
+    <string name="reminder_interval_custom">poi ogni %1$d (%2$s)</string>
+    <string name="reminder_next_format">prossimo: %1$s</string>
+    <plurals name="reminder_interval_rows">
+        <item quantity="one">poi a ogni ferro</item>
+        <item quantity="many">poi ogni %d ferri</item>
+        <item quantity="other">poi ogni %d ferri</item>
+    </plurals>
+    <plurals name="reminder_interval_rounds">
+        <item quantity="one">poi a ogni giro</item>
+        <item quantity="many">poi ogni %d giri</item>
+        <item quantity="other">poi ogni %d giri</item>
+    </plurals>
+    <plurals name="reminder_interval_repeats">
+        <item quantity="one">poi a ogni ripetizione</item>
+        <item quantity="many">poi ogni %d ripetizioni</item>
+        <item quantity="other">poi ogni %d ripetizioni</item>
+    </plurals>
     <string name="dismiss">Chiudi</string>
 
     <!-- Multiple Counters -->
@@ -618,6 +667,7 @@
     <string name="repeat_section_progress_format">Ripetizione %1$d/%2$d, valore %3$d/%4$d</string>
     <string name="repeat_section_complete">Completo</string>
     <string name="rename_counter">Rinomina</string>
+    <string name="rename_counter_title">Rinomina contatore</string>
     <string name="reset_counter_name">Reimposta</string>
     <string name="delete_counter">Elimina</string>
     <string name="delete_counter_title">Eliminare il contatore?</string>
@@ -627,32 +677,35 @@
     <string name="take_photo">Scatta foto</string>
     <string name="progress_photos">Foto di avanzamento</string>
     <string name="counters_list_empty">Nessun contatore extra</string>
-    <string name="row_label_format">Valore %d</string>
+    <string name="photo_count_label_format">Valore %d</string>
     <string name="share_photo">Condividi</string>
     <string name="photo_share_failed">Impossibile condividere la foto.</string>
     <string name="delete_photo">Elimina foto</string>
-    <string name="delete_photo_confirm">Eliminare questa foto?</string>
+    <string name="delete_photo_confirm">Questa azione non può essere annullata.</string>
+    <string name="delete_photo_title">Eliminare la foto?</string>
     <plurals name="delete_photos_confirm">
-        <item quantity="one">Eliminare %1$d foto?</item>
-        <item quantity="many">Eliminare %1$d foto?</item>
-        <item quantity="other">Eliminare %1$d foto?</item>
+        <item quantity="one">%1$d foto verrà eliminata. Questa azione non può essere annullata.</item>
+        <item quantity="many">%1$d foto verranno eliminate. Questa azione non può essere annullata.</item>
+        <item quantity="other">%1$d foto verranno eliminate. Questa azione non può essere annullata.</item>
     </plurals>
+    <string name="delete_photos_title">Eliminare le foto?</string>
     <plurals name="delete_patterns_confirm">
-        <item quantity="one">Eliminare %1$d modello dalla libreria?\n\nLe eventuali annotazioni PDF create nella libreria per questo modello verranno eliminate e non saranno più visibili nei progetti. I PDF già allegati ai progetti e le annotazioni PDF create nei progetti verranno conservati.</item>
-        <item quantity="many">Eliminare %1$d modelli dalla libreria?\n\nLe eventuali annotazioni PDF create nella libreria per i modelli selezionati verranno eliminate e non saranno più visibili nei progetti. I PDF già allegati ai progetti e le annotazioni PDF create nei progetti verranno conservati.</item>
-        <item quantity="other">Eliminare %1$d modelli dalla libreria?\n\nLe eventuali annotazioni PDF create nella libreria per i modelli selezionati verranno eliminate e non saranno più visibili nei progetti. I PDF già allegati ai progetti e le annotazioni PDF create nei progetti verranno conservati.</item>
+        <item quantity="one">%1$d modello verrà rimosso dalla libreria.\n\nLe eventuali annotazioni PDF create nella libreria per questo modello verranno eliminate e non saranno più visibili nei progetti. I PDF già allegati ai progetti e le annotazioni PDF create nei progetti verranno conservati.</item>
+        <item quantity="many">%1$d modelli verranno rimossi dalla libreria.\n\nLe eventuali annotazioni PDF create nella libreria per i modelli selezionati verranno eliminate e non saranno più visibili nei progetti. I PDF già allegati ai progetti e le annotazioni PDF create nei progetti verranno conservati.</item>
+        <item quantity="other">%1$d modelli verranno rimossi dalla libreria.\n\nLe eventuali annotazioni PDF create nella libreria per i modelli selezionati verranno eliminate e non saranno più visibili nei progetti. I PDF già allegati ai progetti e le annotazioni PDF create nei progetti verranno conservati.</item>
     </plurals>
     <string name="delete_pattern">Elimina modello</string>
     <plurals name="delete_yarn_cards_confirm">
-        <item quantity="one">Eliminare %d scheda filato?</item>
-        <item quantity="many">Eliminare %d schede filato?</item>
-        <item quantity="other">Eliminare %d schede filato?</item>
+        <item quantity="one">%d scheda filato verrà eliminata. Questa azione non può essere annullata.</item>
+        <item quantity="many">%d schede filato verranno eliminate. Questa azione non può essere annullata.</item>
+        <item quantity="other">%d schede filato verranno eliminate. Questa azione non può essere annullata.</item>
     </plurals>
     <string name="delete_yarn_card">Elimina scheda filato</string>
     <string name="no_photos">Nessuna foto di avanzamento per ora</string>
     <string name="photo_gallery_empty_body">Le foto che scatti di questo progetto compaiono qui.</string>
     <string name="rename_photo">Rinomina foto</string>
     <string name="photo_name_hint">es. Manica finita</string>
+    <string name="photo_name_label">Nome della foto</string>
 
     <!-- Ravelry -->
     <string name="tool_ravelry">Ravelry</string>
@@ -666,7 +719,7 @@
     <string name="saved_pattern_detail_no_pdf_explanation">I dettagli del modello sono salvati. Non è allegato alcun PDF per la lettura offline.</string>
     <string name="saved_pattern_detail_open_pattern">Apri modello</string>
     <string name="saved_pattern_detail_attach_to_project">Collega al progetto</string>
-    <string name="saved_pattern_detail_remove_confirm">Rimuovere questo modello salvato dalla libreria?\n\nLe eventuali annotazioni PDF create nella libreria per questo modello verranno eliminate e non saranno più visibili nei progetti. I PDF già allegati ai progetti e le annotazioni PDF create nei progetti verranno conservati.</string>
+    <string name="saved_pattern_detail_remove_confirm">Questo modello salvato verrà rimosso dalla libreria.\n\nLe eventuali annotazioni PDF create nella libreria per questo modello verranno eliminate e non saranno più visibili nei progetti. I PDF già allegati ai progetti e le annotazioni PDF create nei progetti verranno conservati.</string>
     <string name="free">Gratis</string>
     <string name="paid">A pagamento</string>
     <string name="availability_unknown">Disponibilità sconosciuta</string>
@@ -726,9 +779,92 @@
     <string name="project_completed_format">Completato %1$s</string>
     <string name="project_section_count_format">%1$s %2$d</string>
     <string name="project_continue_content_description">Continua con %1$s</string>
+    <string name="pattern_annotations_layers">Livelli di annotazione</string>
+    <string name="pattern_annotations_master">Note del modello</string>
+    <string name="pattern_annotations_project">Note del progetto</string>
+    <string name="pattern_annotations_read_only">Sola lettura</string>
+    <string name="pattern_annotations_count">%1$s (%2$d)</string>
+    <string name="pattern_annotation_tool_pen">Penna</string>
+    <string name="pattern_annotation_tool_highlighter">Evidenziatore</string>
+    <string name="pattern_annotation_tool_eraser">Gomma</string>
+    <string name="pattern_annotation_color_option">Colore annotazione: %1$s</string>
+    <string name="pattern_annotation_color_black">Nero</string>
+    <string name="pattern_annotation_color_red">Rosso</string>
+    <string name="pattern_annotation_color_blue">Blu</string>
+    <string name="pattern_annotation_color_green">Verde</string>
+    <string name="pattern_annotation_color_yellow">Giallo</string>
+    <string name="pattern_annotation_color_custom">Personalizzato</string>
+    <string name="pattern_annotation_stroke_width">Spessore: %1$.1f</string>
+    <string name="pattern_annotation_pressure">Penna sensibile alla pressione</string>
+    <string name="pattern_annotation_axis_free">Libero</string>
+    <string name="pattern_annotation_axis_horizontal">Orizzontale</string>
+    <string name="pattern_annotation_axis_vertical">Verticale</string>
+    <string name="pattern_annotation_axis_auto">Automatico</string>
+    <string name="pattern_annotation_tool_select">Seleziona</string>
+    <string name="pattern_annotation_tool_line">Linea</string>
+    <string name="pattern_annotation_tool_arrow">Freccia</string>
+    <string name="pattern_annotation_tool_rectangle">Rettangolo</string>
+    <string name="pattern_annotation_tool_ellipse">Ellisse</string>
+    <string name="pattern_annotation_tool_text">Testo</string>
+    <string name="pattern_annotation_tool_callout">Nota</string>
+    <string name="pattern_annotation_undo">Annulla</string>
+    <string name="pattern_annotation_redo">Ripeti</string>
+    <string name="pattern_annotation_clear_page">Cancella pagina</string>
+    <string name="pattern_annotation_clear_page_title">Cancellare questa pagina?</string>
+    <string name="pattern_annotation_clear_page_body">Tutti i tuoi segni su questa pagina verranno rimossi. Puoi annullare questa azione.</string>
+    <string name="pattern_annotation_move_left">Sinistra</string>
+    <string name="pattern_annotation_move_right">Destra</string>
+    <string name="pattern_annotation_move_up">Su</string>
+    <string name="pattern_annotation_move_down">Giù</string>
+    <string name="pattern_annotation_smaller">Più piccolo</string>
+    <string name="pattern_annotation_larger">Più grande</string>
+    <string name="pattern_annotation_duplicate">Duplica</string>
+    <string name="pattern_annotation_bring_forward">Porta avanti</string>
+    <string name="pattern_annotation_send_backward">Porta indietro</string>
+    <string name="pattern_annotation_delete">Elimina</string>
+    <string name="pattern_annotation_text_editor_title">Aggiungi testo</string>
+    <string name="pattern_annotation_text_label">Testo</string>
+    <string name="pattern_annotation_callout_editor_title">Aggiungi nota</string>
+    <string name="pattern_annotation_callout_title_label">Titolo</string>
+    <string name="pattern_annotation_callout_description_label">Descrizione</string>
+    <string name="pattern_annotation_tool_chart">Area schema</string>
+    <string name="pattern_annotation_link_chart">Collega lo schema selezionato a un contatore</string>
+    <string name="pattern_annotation_chart_setup_title">Monitoraggio schema</string>
+    <string name="pattern_annotation_chart_rows">Righe</string>
+    <string name="pattern_annotation_chart_columns">Colonne</string>
+    <string name="pattern_annotation_chart_bottom_to_top">Dal basso verso l’alto</string>
+    <string name="pattern_annotation_chart_top_to_bottom">Dall’alto verso il basso</string>
+    <string name="pattern_annotation_chart_left_to_right">Da sinistra a destra</string>
+    <string name="pattern_annotation_chart_right_to_left">Da destra a sinistra</string>
+    <string name="pattern_annotation_chart_alternating">Alternato</string>
+    <string name="pattern_annotation_chart_active_row">Riga attiva</string>
+    <string name="pattern_annotation_chart_active_column">Colonna attiva</string>
+    <string name="pattern_annotation_chart_crosshair">Mirino</string>
+    <string name="pattern_annotation_chart_completed">Celle completate</string>
+    <string name="pattern_annotation_chart_c2c">Diagonale C2C</string>
+    <string name="pattern_annotation_chart_grid_start">Indice della cella iniziale</string>
+    <string name="pattern_annotation_chart_wrap">Riprendi dall’inizio alla fine dello schema</string>
+    <string name="pattern_annotation_chart_top_left">In alto a sinistra</string>
+    <string name="pattern_annotation_chart_top_right">In alto a destra</string>
+    <string name="pattern_annotation_chart_bottom_left">In basso a sinistra</string>
+    <string name="pattern_annotation_chart_bottom_right">In basso a destra</string>
+    <string name="pattern_annotation_export_pdf">Esporta PDF annotato</string>
+    <string name="pattern_annotation_export_progress">Esportazione %1$d/%2$d</string>
+    <string name="pattern_annotation_export_failed">Esportazione PDF non riuscita. Il PDF originale non è stato modificato.</string>
+    <string name="pattern_annotation_export_default_name">modello</string>
+    <string name="pattern_annotation_export_filename">%1$s-annotato.pdf</string>
+    <string name="pattern_annotation_edit_text">Modifica testo</string>
+    <string name="pattern_annotation_write_failed">Impossibile salvare il testo. L’annotazione potrebbe essere cambiata. Chiudi l’editor e riprova.</string>
+    <string name="pattern_annotation_command_failed">Una modifica a un’annotazione non è stata salvata. Chiudi questo messaggio e riprova con gli strumenti di annotazione.</string>
+
     <string name="work_session_start">Avvia sessione di lavoro</string>
     <string name="work_session_stop">Termina sessione di lavoro</string>
+    <string name="work_session_stop_short">Ferma</string>
     <string name="work_session_active">Sessione di lavoro attiva</string>
+    <string name="work_session_active_short">Sessione</string>
+    <string name="work_session_under_minute">Meno di 1 min</string>
+    <string name="work_session_hero_duration_format">Sessione %1$s</string>
+    <string name="work_session_hero_under_minute">Sessione meno di 1 min</string>
     <string name="work_session_recovery_needed">Il tempo della sessione deve essere verificato</string>
     <string name="work_session_resolve">Risolvi</string>
     <string name="work_session_recovery_title">Verifica il tempo della sessione</string>
@@ -763,6 +899,7 @@
     <string name="work_session_reason_clock_unavailable">KnitTools non ha potuto confermare se il dispositivo è stato riavviato.</string>
     <string name="work_session_reason_clock_changed">KnitTools non ha potuto verificare l’ultimo intervallo di tempo.</string>
     <string name="work_session_stop_summary_title">Interrompere la sessione di lavoro?</string>
+    <string name="work_session_keep_running">Lascia attiva</string>
     <string name="work_session_save">Salva sessione</string>
     <string name="work_session_discard">Scarta sessione</string>
     <string name="work_session_active_description">Sessione di lavoro per %1$s, %2$s trascorsi</string>
@@ -774,9 +911,19 @@
     <string name="work_session_retry">Riprova</string>
     <string name="project_documents_title">Documenti</string>
     <string name="project_documents_add">Aggiungi</string>
+    <string name="project_content_add_document">Aggiungi documento</string>
+    <string name="project_documents_manage">Gestisci documenti</string>
+    <string name="project_documents_pdf_section">Documenti PDF</string>
+    <plurals name="project_documents_count">
+        <item quantity="one">%d PDF</item>
+        <item quantity="many">%d PDF</item>
+        <item quantity="other">%d PDF</item>
+    </plurals>
     <string name="project_documents_actions">Azioni per %1$s</string>
     <string name="project_documents_primary">Schema principale</string>
-    <string name="project_documents_open">Documento corrente</string>
+    <string name="project_documents_index">%1$d di %2$d</string>
+    <string name="project_documents_page">pagina %1$d</string>
+    <string name="project_documents_page_standalone">Pagina %1$d</string>
     <string name="project_documents_unavailable">PDF non disponibile</string>
     <string name="project_documents_rename">Rinomina</string>
     <string name="project_documents_make_primary">Imposta come principale</string>
@@ -785,23 +932,22 @@
     <string name="project_documents_move_later">Sposta dopo</string>
     <string name="project_documents_rename_title">Rinomina documento</string>
     <string name="project_documents_label">Nome documento</string>
+    <string name="project_documents_label_limit">Lunghezza massima del nome: %1$d</string>
     <string name="project_documents_remove_title">Rimuovere il documento?</string>
-    <string name="project_documents_remove_message">Rimuovere %1$s da questo progetto?</string>
+    <string name="project_documents_remove_message">%1$s verrà rimosso dal progetto.</string>
     <string name="project_documents_error_invalid_label">Inserisci un nome da 1 a 50 caratteri.</string>
     <string name="project_documents_error_duplicate">Questo PDF è già allegato al progetto.</string>
     <string name="project_documents_error_unavailable">Questo PDF non è più disponibile. Rimuovilo o aggiungi di nuovo il file.</string>
     <string name="project_documents_error_stale">L’elenco dei documenti è cambiato. Riprova.</string>
     <string name="project_documents_error_generic">Non è stato possibile salvare la modifica al documento.</string>
-    <string name="project_documents_secondary">Documento secondario</string>
-    <string name="project_documents_available">PDF disponibile</string>
-    <string name="project_documents_position">Posizione %1$d di %2$d</string>
     <string name="project_documents_open_action">Apri documento</string>
+    <string name="project_documents_open_now">Aperto ora</string>
     <string name="project_documents_remove_from_project">Rimuovi dal progetto</string>
     <string name="project_documents_empty">Nessun documento</string>
     <string name="project_documents_metadata_only">Solo metadati</string>
     <string name="project_documents_pattern_information">Informazioni sullo schema</string>
-    <string name="project_documents_remove_primary_message">Rimuovere %1$s? Un altro documento diventerà quello principale.</string>
-    <string name="project_documents_remove_last_message">Rimuovere %1$s? Il progetto non avrà più uno schema leggibile allegato.</string>
+    <string name="project_documents_remove_primary_message">%1$s verrà rimosso. Un altro documento diventerà quello principale.</string>
+    <string name="project_documents_remove_last_message">%1$s verrà rimosso. Il progetto resterà senza un modello PDF da leggere.</string>
     <string name="folder_sheet_title">Cartelle</string>
     <string name="folder_loading">Caricamento delle cartelle</string>
     <string name="folder_unfiled">Senza cartella</string>
@@ -822,7 +968,7 @@
     <string name="folder_deleted">Cartella eliminata. I progetti sono stati mantenuti.</string>
     <string name="folder_project_moved">Progetto spostato.</string>
     <string name="folder_project_missing">Un progetto selezionato non esiste più.</string>
-    <string name="folder_project_creation_destination">Destinazione del nuovo progetto: %1$s</string>
+    <string name="folder_project_creation_destination">Salvato in %1$s</string>
     <string name="folder_missing">Questa cartella non esiste più.</string>
     <string name="folder_load_error">Impossibile caricare le cartelle.</string>
     <string name="folder_reorder_error">Impossibile riordinare le cartelle.</string>
@@ -836,7 +982,8 @@
     <string name="folder_name_duplicate">Il nome della cartella è già in uso.</string>
     <string name="folder_name_invalid">I nomi delle cartelle non possono contenere caratteri di controllo.</string>
     <string name="folder_delete_title">Eliminare la cartella?</string>
-    <string name="folder_delete_message">Eliminare %1$s?</string>
+    <string name="folder_delete_message">%1$s verrà eliminata.</string>
+    <string name="folder_delete_empty_message">Questa cartella è vuota.</string>
     <string name="folder_selected_description">%1$s Selezionato.</string>
     <string name="folder_all_projects_description">Tutti i progetti. Vista virtuale di ogni progetto.</string>
     <string name="folder_unfiled_description">Progetti senza cartella.</string>
@@ -939,8 +1086,10 @@
     <string name="yarn_usage_title">Utilizzo del filato</string>
     <string name="yarn_usage_scope">Registra l’utilizzo del filato per questo progetto. Le quantità in “Il mio filato” restano invariate.</string>
     <string name="yarn_usage_unit">Unità di quantità</string>
+    <string name="segmented_option_pending_state">Richiede i dati del gomitolo</string>
     <string name="yarn_usage_grams">Grammi</string>
     <string name="yarn_usage_skeins">Matasse</string>
+    <string name="yarn_usage_skeins_suffix">matasse</string>
     <string name="yarn_usage_planned">Previsto</string>
     <string name="yarn_usage_allocated">Riservato a questo progetto</string>
     <string name="yarn_usage_used">Utilizzato</string>
@@ -990,7 +1139,7 @@
     <string name="web_pattern_edit_title">Modifica modello web</string>
     <string name="web_pattern_delete">Elimina modello web</string>
     <string name="web_pattern_delete_confirm_title">Eliminare il modello web?</string>
-    <string name="web_pattern_delete_confirm_message">Eliminare %1$s dai Modelli salvati nella libreria?\n\nLe eventuali annotazioni PDF create nella libreria per questo modello verranno eliminate e non saranno più visibili nei progetti. I PDF già allegati ai progetti e le annotazioni PDF create nei progetti verranno conservati.</string>
+    <string name="web_pattern_delete_confirm_message">%1$s verrà rimosso dai modelli salvati della libreria.\n\nLe eventuali annotazioni PDF create nella libreria per questo modello verranno eliminate e non saranno più visibili nei progetti. I PDF già allegati ai progetti e le annotazioni PDF create nei progetti verranno conservati.</string>
     <string name="web_pattern_attach">Collega a un progetto</string>
     <string name="pattern_mark_up">Annota</string>
     <string name="pattern_mark_up_done">Fatto</string>
@@ -1004,14 +1153,15 @@
     <string name="ravelry_purchase_in_browser">Il pagamento si apre nel browser. Dopo l\'acquisto, scarica il modello qui dalla tua libreria Ravelry.</string>
     <string name="incoming_pdf_downloading">Download del modello…</string>
     <string name="incoming_pdf_not_pdf">Si possono salvare solo modelli PDF</string>
-    <string name="web_pattern_unlink">Scollega le informazioni del modello</string>
+    <string name="web_pattern_unlink_title">Scollegare lo schema?</string>
+    <string name="web_pattern_unlink_body">Rimuovere i dettagli dello schema %1$s da questo progetto? Lo schema salvato e i PDF del progetto resteranno disponibili.</string>
+    <string name="web_pattern_unlink_confirm">Scollega</string>
     <string name="web_pattern_replace_confirm_title">Sostituire le informazioni del modello?</string>
-    <string name="web_pattern_replace_confirm_message">Sostituire le informazioni attuali del modello con %1$s?</string>
+    <string name="web_pattern_replace_confirm_message">Le informazioni attuali del modello verranno sostituite con quelle di %1$s.</string>
     <string name="web_pattern_open_website">Apri sito web</string>
+    <string name="web_pattern_offline_note">Si apre sul sito originale. Non viene salvato per l’uso offline.</string>
     <string name="web_pattern_open_website_description">Apri il sito web di %1$s su %2$s</string>
-    <string name="web_pattern_edit_description">Modifica il modello web %1$s</string>
     <string name="web_pattern_attach_description">Collega il modello web %1$s</string>
-    <string name="web_pattern_unlink_description">Scollega le informazioni del modello %1$s</string>
     <string name="web_pattern_shared_link">Link condiviso</string>
     <string name="web_pattern_confirm_details">Conferma i dettagli del modello</string>
     <string name="web_pattern_error_title_required">Il nome del modello è obbligatorio</string>
@@ -1027,9 +1177,6 @@
     <string name="web_pattern_delete_failed">Impossibile eliminare il modello web</string>
     <string name="web_pattern_open_failed">Impossibile aprire il sito web</string>
     <string name="web_pattern_no_browser">Nessun browser disponibile</string>
-    <string name="web_pattern_source_controlled">La disponibilità del modello dipende dal sito di origine</string>
-    <string name="web_pattern_not_offline">La pagina non è salvata per l’uso offline</string>
-    <string name="web_pattern_opens_original">Questo link apre il sito web originale</string>
     <string name="web_pattern_keep_current_draft">Mantieni la bozza attuale</string>
     <string name="web_pattern_use_shared_link">Usa il link condiviso</string>
     <string name="web_pattern_discard_current_draft">Scarta la bozza attuale</string>
@@ -1096,7 +1243,7 @@
     <string name="project_overview_yarn_empty">Nessun filato aggiunto</string>
     <string name="project_overview_pattern_empty">Nessun modello aggiunto</string>
     <string name="project_overview_notes_empty">Nessuna nota</string>
-    <string name="project_overview_pdf_page_format">Modello PDF, pagina %1$d</string>
+    <string name="project_overview_pdf_page_format">PDF, pagina %1$d</string>
     <string name="project_card_open_overview_action">Apri progetto</string>
     <string name="project_overview_edit_details">Modifica dettagli</string>
     <string name="project_overview_open_photos">Apri foto</string>

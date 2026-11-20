@@ -1,5 +1,6 @@
 package com.finnvek.knittools.ui.screens.counter
 
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
@@ -65,13 +66,18 @@ internal enum class CounterHeroArrangement {
     SideBySide,
 }
 
+internal enum class SupportingControlsPlacement { InHero, StitchTrackerBelowHero, BelowHero }
+
 @Immutable
 internal data class CounterHeroLayout(
     val arrangement: CounterHeroArrangement,
     val metrics: CounterHeroMetrics,
-    val minimumHeight: Dp,
-    // Vierekkäisen rivin enimmäiskorkeus: suurella fonttikoolla luku pienenee mahtuakseen näkymään.
+    val minimumBodyHeight: Dp,
     val maximumHeight: Dp = Dp.Unspecified,
+    val numberMaximumHeight: Dp = Dp.Unspecified,
+    val forceInlineSessionStrip: Boolean = false,
+    val sessionStripSpace: Dp = 0.dp,
+    val supportingControlsPlacement: SupportingControlsPlacement = SupportingControlsPlacement.InHero,
 )
 
 /**
@@ -86,45 +92,231 @@ internal fun rememberCounterHeroLayout(
 ): CounterHeroLayout {
     val viewportHeight = available.height - CounterDimens.ContentBottomPadding
     val contentWidth = (available.width - CounterDimens.ScreenHorizontalPadding * 2).coerceAtLeast(0.dp)
+    val session = state.activeSession
+    val stripWidth = minOf(contentWidth, CounterHeroMetrics.Regular.controlsMaxWidth)
+    // Reserve the same strip space before and after Start to keep the counter controls in place.
+    val stripHeight = workSessionStripHeight(stripWidth, forceInline = false)
+    val bodyViewportHeight = viewportHeight - stripHeight
     val largeCandidate =
         available.width >= CounterDimens.LargeHeroMinWidth && available.height >= CounterDimens.LargeHeroMinHeight
     val largeHeight =
         if (largeCandidate) {
-            stackedCounterHeroHeight(state, CounterHeroMetrics.Large, contentWidth, compactSpacing = false)
+            stackedCounterHeroHeight(
+                state,
+                CounterHeroMetrics.Large,
+                contentWidth,
+                compactSpacing = false,
+                numberHeight = counterNaturalNumberHeight(state, CounterHeroMetrics.Large, contentWidth),
+            )
         } else {
             null
         }
-    val useLarge = largeHeight != null && viewportHeight >= largeHeight
+    val useLarge = largeHeight != null && bodyViewportHeight >= largeHeight
     val metrics = if (useLarge) CounterHeroMetrics.Large else CounterHeroMetrics.Regular
+    val numberHeight = counterNaturalNumberHeight(state, metrics, contentWidth)
     val regularHeight =
         largeHeight?.takeIf { useLarge }
-            ?: stackedCounterHeroHeight(state, metrics, contentWidth, compactSpacing = false)
-    if (viewportHeight >= regularHeight) {
+            ?: stackedCounterHeroHeight(
+                state,
+                metrics,
+                contentWidth,
+                compactSpacing = false,
+                numberHeight = numberHeight,
+            )
+    if (bodyViewportHeight >= regularHeight) {
         return CounterHeroLayout(
             arrangement = CounterHeroArrangement.Stacked,
             metrics = metrics,
-            minimumHeight = minOf(viewportHeight, regularHeight + CounterDimens.HeroMaxExtraHeight),
+            minimumBodyHeight = minOf(bodyViewportHeight, regularHeight + CounterDimens.HeroMaxExtraHeight),
+            sessionStripSpace = stripHeight,
         )
     }
 
-    val compactHeight = stackedCounterHeroHeight(state, metrics, contentWidth, compactSpacing = true)
+    val compactHeight =
+        stackedCounterHeroHeight(state, metrics, contentWidth, compactSpacing = true, numberHeight = numberHeight)
+    if (bodyViewportHeight >= compactHeight) {
+        return CounterHeroLayout(
+            CounterHeroArrangement.StackedCompact,
+            metrics,
+            minimumBodyHeight = bodyViewportHeight,
+            sessionStripSpace = stripHeight,
+        )
+    }
+
+    val inlineStripHeight = workSessionStripHeight(stripWidth, forceInline = true)
+    val inlineBodyHeight = viewportHeight - inlineStripHeight
+    val minimumNumberHeight = counterMainNumberMinHeight()
+    val fullCompactNumberSpace = inlineBodyHeight - (compactHeight - numberHeight)
+    val omitStitchTracker =
+        fullCompactNumberSpace < minimumNumberHeight && LocalDensity.current.fontScale < FontScaleThresholds.LARGE
+    val compactNumberSpace =
+        if (omitStitchTracker) {
+            // The tracker and bottom spacing can scroll below the repeat, target and primary actions.
+            val primaryHeight =
+                stackedCounterHeroHeight(
+                    state,
+                    metrics,
+                    contentWidth,
+                    compactSpacing = true,
+                    numberHeight = 0.dp,
+                    includeStitchTracker = false,
+                ) - CounterDimens.HeroBottomBreathingSpace
+            inlineBodyHeight - primaryHeight
+        } else {
+            fullCompactNumberSpace
+        }
+    if (compactNumberSpace >= minimumNumberHeight) {
+        val stitchTrackerBelowHero = omitStitchTracker && state.visibleStitchTotal != null
+        return CounterHeroLayout(
+            CounterHeroArrangement.StackedCompact,
+            metrics,
+            minimumBodyHeight = if (stitchTrackerBelowHero) available.height - inlineStripHeight else inlineBodyHeight,
+            numberMaximumHeight = compactNumberSpace,
+            forceInlineSessionStrip = true,
+            sessionStripSpace = inlineStripHeight,
+            supportingControlsPlacement =
+                if (stitchTrackerBelowHero) {
+                    SupportingControlsPlacement.StitchTrackerBelowHero
+                } else {
+                    SupportingControlsPlacement.InHero
+                },
+        )
+    }
+
+    if (session == null && viewportHeight >= compactHeight) {
+        return CounterHeroLayout(CounterHeroArrangement.StackedCompact, metrics, viewportHeight)
+    }
+
+    val primaryNumberSpace =
+        if (session != null) {
+            inlineBodyHeight - counterHeroCaptionHeight(state, stripWidth) -
+                CounterHeroMetrics.Regular.controlsHeight - CounterDimens.HeroButtonCompactSpacing
+        } else {
+            0.dp
+        }
     return when {
-        viewportHeight >= compactHeight -> {
-            CounterHeroLayout(CounterHeroArrangement.StackedCompact, metrics, viewportHeight)
+        session != null && primaryNumberSpace >= minimumNumberHeight -> {
+            CounterHeroLayout(
+                CounterHeroArrangement.StackedCompact,
+                metrics,
+                minimumBodyHeight = 0.dp,
+                numberMaximumHeight = primaryNumberSpace,
+                forceInlineSessionStrip = true,
+                supportingControlsPlacement = SupportingControlsPlacement.BelowHero,
+            )
         }
 
         contentWidth >= CounterDimens.ShortHeroMinWidth -> {
             CounterHeroLayout(
                 CounterHeroArrangement.SideBySide,
                 CounterHeroMetrics.Regular,
-                0.dp,
-                available.height.coerceAtLeast(CounterHeroMetrics.Regular.primaryTouchSize),
+                minimumBodyHeight = 0.dp,
+                maximumHeight = available.height.coerceAtLeast(CounterDimens.StepRingMinimumSize),
+                sessionStripSpace =
+                    if (session == null) 0.dp else workSessionStripHeight(0.dp, forceInline = false),
+                supportingControlsPlacement = SupportingControlsPlacement.BelowHero,
+            )
+        }
+
+        session != null -> {
+            CounterHeroLayout(
+                CounterHeroArrangement.StackedCompact,
+                CounterHeroMetrics.Regular,
+                minimumBodyHeight = 0.dp,
+                numberMaximumHeight = minimumNumberHeight,
+                forceInlineSessionStrip = true,
+                supportingControlsPlacement = SupportingControlsPlacement.BelowHero,
             )
         }
 
         else -> {
             CounterHeroLayout(CounterHeroArrangement.StackedCompact, CounterHeroMetrics.Regular, 0.dp)
         }
+    }
+}
+
+internal fun shouldStackWorkSessionStrip(
+    width: Dp,
+    fontScale: Float,
+): Boolean = width < CounterDimens.WorkSessionStackBreakpoint || fontScale >= FontScaleThresholds.LARGE
+
+@Composable
+private fun workSessionStripHeight(
+    width: Dp,
+    forceInline: Boolean,
+): Dp {
+    val density = LocalDensity.current
+    val measurer = rememberTextMeasurer()
+    val typography = MaterialTheme.typography
+    val labelHeight =
+        measurer.measure(stringResource(R.string.work_session_active), typography.labelLarge, maxLines = 1).size.height
+    val durationHeight = measurer.measure("0", typography.bodyMedium, maxLines = 1).size.height
+    val statusHeight =
+        if (!forceInline && shouldStackWorkSessionStrip(width, density.fontScale)) {
+            labelHeight + durationHeight
+        } else {
+            maxOf(labelHeight, durationHeight)
+        }
+    val buttonHeight =
+        measurer
+            .measure(
+                stringResource(R.string.work_session_stop_short),
+                typography.labelLarge,
+                maxLines = 1,
+            ).size.height
+    val buttonPadding = ButtonDefaults.TextButtonContentPadding
+    return with(density) {
+        maxOf(
+            CounterDimens.WorkSessionStripMinHeight,
+            statusHeight.toDp(),
+            buttonHeight.toDp() + buttonPadding.calculateTopPadding() + buttonPadding.calculateBottomPadding(),
+        )
+    }
+}
+
+@Composable
+internal fun counterMainNumberMinHeight(): Dp {
+    val captionHeight = rememberTextMeasurer().measure("0", counterCaptionStyle(), maxLines = 1).size.height
+    return maxOf(CounterDimens.MainNumberMinHeight, with(LocalDensity.current) { captionHeight.toDp() * 2 })
+}
+
+@Composable
+internal fun counterHeroCaptionHeight(
+    state: CounterHeroState,
+    width: Dp,
+): Dp {
+    val measurer = rememberTextMeasurer()
+    val density = LocalDensity.current
+    val title = CounterValueFormatter.forMainCounter(state.toMainCounterProject()).heroTitle
+    val caption = mainCounterLabelText(title.labelType, title.customLabel)
+    val style = counterCaptionStyle()
+    return with(density) {
+        measurer
+            .measure(caption, style, constraints = Constraints(maxWidth = width.roundToPx()))
+            .size.height
+            .toDp()
+    }
+}
+
+@Composable
+private fun counterNaturalNumberHeight(
+    state: CounterHeroState,
+    metrics: CounterHeroMetrics,
+    contentWidth: Dp,
+): Dp {
+    val measurer = rememberTextMeasurer()
+    val density = LocalDensity.current
+    val widthPx = with(density) { minOf(contentWidth, metrics.controlsMaxWidth).roundToPx() }
+    val countText = formatIntegerForDisplay(state.counter.count.toLong(), rememberCurrentLocale())
+    val numberStyle = counterMainNumberStyle(metrics.numberFontSize)
+    return with(density) {
+        val feedbackWidth = if (state.counter.stepSize > 1) CounterDimens.StepFeedbackWidth.roundToPx() * 2 else 0
+        val numberWidth = (widthPx - feedbackWidth).coerceAtLeast(0)
+        val numberFontSize = measurer.fitCounterNumber(countText, numberStyle, numberWidth)
+        measurer
+            .measure(countText, numberStyle.copy(fontSize = numberFontSize), maxLines = 1)
+            .size.height
+            .toDp()
     }
 }
 
@@ -135,6 +327,8 @@ private fun stackedCounterHeroHeight(
     metrics: CounterHeroMetrics,
     contentWidth: Dp,
     compactSpacing: Boolean,
+    numberHeight: Dp,
+    includeStitchTracker: Boolean = true,
 ): Dp {
     val measurer = rememberTextMeasurer()
     val density = LocalDensity.current
@@ -142,26 +336,7 @@ private fun stackedCounterHeroHeight(
     val width = minOf(contentWidth, metrics.controlsMaxWidth)
     val widthPx = with(density) { width.roundToPx() }
     val captionStyle = counterCaptionStyle()
-    val caption = mainCounterLabelText(display.heroTitle.labelType, display.heroTitle.customLabel)
-    val captionHeight =
-        with(density) {
-            measurer
-                .measure(caption, captionStyle, constraints = Constraints(maxWidth = widthPx))
-                .size.height
-                .toDp()
-        }
-    val countText = formatIntegerForDisplay(state.counter.count.toLong(), rememberCurrentLocale())
-    val numberStyle = counterMainNumberStyle(metrics.numberFontSize)
-    val numberHeight =
-        with(density) {
-            val feedbackWidth = if (state.counter.stepSize > 1) CounterDimens.StepFeedbackWidth.roundToPx() * 2 else 0
-            val numberWidth = (widthPx - feedbackWidth).coerceAtLeast(0)
-            val numberFontSize = measurer.fitCounterNumber(countText, numberStyle, numberWidth)
-            measurer
-                .measure(countText, numberStyle.copy(fontSize = numberFontSize), maxLines = 1)
-                .size.height
-                .toDp()
-        }
+    val captionHeight = counterHeroCaptionHeight(state, width)
     val compact = compactSpacing || (state.canUseSecondaryCounter && state.visibleStitchTotal != null)
     var height = captionHeight + numberHeight + metrics.controlsHeight + CounterDimens.HeroBottomBreathingSpace
     height += if (compact) CounterDimens.HeroButtonCompactSpacing else CounterDimens.HeroButtonSpacing
@@ -191,7 +366,7 @@ private fun stackedCounterHeroHeight(
         height += CounterDimens.CounterTargetHelperSpacing * 2 + ProjectListDimens.ProgressTrackHeight + rowHeight
     }
     val stitchTotal = state.visibleStitchTotal
-    if (stitchTotal != null) {
+    if (includeStitchTracker && stitchTotal != null) {
         val stitchLabel = stringResource(R.string.stitch_tracker_label)
         val stitchValue =
             stringResource(

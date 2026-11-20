@@ -50,7 +50,6 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.finnvek.knittools.R
@@ -58,11 +57,13 @@ import com.finnvek.knittools.domain.model.SavedPattern
 import com.finnvek.knittools.domain.model.SavedPatternSource
 import com.finnvek.knittools.domain.model.isWebPatternCompatible
 import com.finnvek.knittools.domain.model.webPatternUrlOrNull
-import com.finnvek.knittools.ui.components.BadgePill
 import com.finnvek.knittools.ui.components.ConfirmationDialog
+import com.finnvek.knittools.ui.components.CrossStitchEmptyState
+import com.finnvek.knittools.ui.components.CrossStitchGlyph
 import com.finnvek.knittools.ui.components.LabeledCounterImageButton
 import com.finnvek.knittools.ui.components.SelectionAction
 import com.finnvek.knittools.ui.components.SelectionActionBar
+import com.finnvek.knittools.ui.components.WebPatternMetadata
 import com.finnvek.knittools.ui.components.cardContainerColor
 import com.finnvek.knittools.ui.layout.ContentWidthPolicy
 import com.finnvek.knittools.ui.layout.contentWidth
@@ -157,30 +158,20 @@ fun SavedPatternsScreen(
         },
     ) { padding ->
         if (state.patterns.isEmpty()) {
-            Column(
-                modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .padding(padding)
-                        .verticalScroll(rememberScrollState())
-                        .padding(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center,
-            ) {
-                Text(
-                    text = stringResource(R.string.empty_saved_patterns),
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center,
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-                LabeledCounterImageButton(
-                    imageRes = R.drawable.counter_plus_button,
-                    label = stringResource(R.string.web_pattern_add),
-                    visualSize = ProjectListDimens.CreateButtonVisualSize,
-                    onClick = actions.onAddWebPattern,
-                )
-            }
+            CrossStitchEmptyState(
+                glyph = CrossStitchGlyph.PATTERN,
+                title = stringResource(R.string.empty_saved_patterns_title),
+                message = stringResource(R.string.empty_saved_patterns_body),
+                modifier = Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()),
+                action = {
+                    LabeledCounterImageButton(
+                        imageRes = R.drawable.counter_plus_button,
+                        label = stringResource(R.string.web_pattern_add),
+                        visualSize = ProjectListDimens.CreateButtonVisualSize,
+                        onClick = actions.onAddWebPattern,
+                    )
+                },
+            )
         } else {
             SavedPatternsList(
                 listState = listState,
@@ -379,7 +370,6 @@ private fun WebPatternCard(
     onLongClick: () -> Unit,
     selection: Boolean?,
 ) {
-    val host = pattern.webPatternUrlOrNull?.host.orEmpty()
     Surface(
         modifier =
             Modifier
@@ -404,22 +394,7 @@ private fun WebPatternCard(
                 text = pattern.name,
                 style = MaterialTheme.typography.titleMedium,
             )
-            pattern.designerName.takeIf { it.isNotBlank() }?.let { designer ->
-                Text(
-                    text = designer,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            // Lähde samalla merkillä kuin Ravelry- ja PDF-kaavoilla.
-            BadgePill(text = stringResource(R.string.web_pattern_label))
-            if (host.isNotBlank()) {
-                Text(
-                    text = host,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
+            WebPatternMetadata(pattern.designerName, pattern.webPatternUrlOrNull?.host)
         }
     }
 }

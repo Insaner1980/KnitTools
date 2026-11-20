@@ -3,77 +3,48 @@ package com.finnvek.knittools.ui.screens.counter
 import com.finnvek.knittools.ProjectSourceFiles
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.util.Locale
 
-/**
- * Verifies that ReminderRepeat separates occurrence and interval using a
- * unit-neutral plural resource instead of the ambiguous fraction "Repeat 11/3".
- */
 class ReminderRepeatDisplaySourceTest {
     @Test
-    fun `reminder repeat resolves through plural resource and not the old fraction string`() {
-        val source = ProjectSourceFiles.read(MULTI_COUNTER_COMPONENTS)
-
-        assertFalse(
-            "ReminderRepeat must not use the old repeat_count_format string",
-            source.contains("R.string.repeat_count_format"),
-        )
-        assertTrue(
-            "ReminderRepeat must resolve via the reminder_repeat_occurrence_format plural",
-            source.contains("R.plurals.reminder_repeat_occurrence_format"),
-        )
-        assertTrue(
-            "ReminderRepeat must use pluralStringResource",
-            source.contains("pluralStringResource("),
-        )
-    }
-
-    @Test
-    fun `old repeat_count_format resource is removed from every locale`() {
-        ProjectSourceFiles.localizedStringFiles().forEach { stringsFile ->
-            val strings = ProjectSourceFiles.read(stringsFile)
-            assertFalse(
-                "repeat_count_format still present in $stringsFile",
-                strings.contains("name=\"repeat_count_format\""),
-            )
-            assertTrue(
-                "reminder_repeat_occurrence_format plural missing in $stringsFile",
-                strings.contains("<plurals name=\"reminder_repeat_occurrence_format\""),
-            )
+    fun `repeating reminders use the project unit and the next count`() {
+        val source =
+            ProjectSourceFiles.read("app/src/main/java/com/finnvek/knittools/ui/screens/counter/ReminderComponents.kt")
+        assertTrue(source.contains("ReminderLogic.nextOccurrence(reminder, currentRow)"))
+        assertTrue(source.contains("mainCounterCountText(target)"))
+        listOf("rows", "rounds", "repeats").forEach { unit ->
+            val pluralCall = Regex("""pluralStringResource\(\s*R\.plurals\.reminder_interval_$unit\s*,""")
+            assertTrue("Missing reminder interval plural for $unit", pluralCall.containsMatchIn(source))
         }
     }
 
     @Test
-    fun `occurrence 11 with interval 3 renders unit neutral copy and never the fraction`() {
-        val strings = ProjectSourceFiles.read(DEFAULT_STRINGS)
-        val other = pluralItem(strings, "reminder_repeat_occurrence_format", "other")
-        val one = pluralItem(strings, "reminder_repeat_occurrence_format", "one")
-
-        val rendered = String.format(java.util.Locale.ROOT, other, 11, 3)
-
-        assertEquals("Repeat #11, interval 3", rendered)
-        assertNotEquals("Repeat 11/3", rendered)
-        assertFalse("New copy must not contain a slash", rendered.contains("/"))
-        assertFalse("New copy must not contain a middle dot", rendered.contains(" · "))
-        assertEquals("Repeat #11, interval 1", String.format(java.util.Locale.ROOT, one, 11, 1))
+    fun `new interval and next occurrence resources replace the internal occurrence index in all locales`() {
+        ProjectSourceFiles.configuredResourceDirectories().forEach { directory ->
+            val strings = ProjectSourceFiles.textResources(directory)
+            assertFalse("repeat_count_format still exists in $directory", "repeat_count_format" in strings)
+            assertFalse(
+                "occurrence index is still available in $directory",
+                "reminder_repeat_occurrence_format" in strings,
+            )
+            listOf("rows", "rounds", "repeats").forEach { unit ->
+                assertEquals("plurals", strings.getValue("reminder_interval_$unit").tagName)
+            }
+            assertEquals("string", strings.getValue("reminder_next_format").tagName)
+        }
     }
 
-    private fun pluralItem(
-        strings: String,
-        name: String,
-        quantity: String,
-    ): String =
-        strings
-            .substringAfter("<plurals name=\"$name\"")
-            .substringBefore("</plurals>")
-            .substringAfter("quantity=\"$quantity\">")
-            .substringBefore("</item>")
-
-    private companion object {
-        const val MULTI_COUNTER_COMPONENTS =
-            "app/src/main/java/com/finnvek/knittools/ui/screens/counter/MultiCounterComponents.kt"
-        const val DEFAULT_STRINGS = "app/src/main/res/values/strings.xml"
+    @Test
+    fun `the English interval describes every row or the selected number of rows`() {
+        val rows =
+            ProjectSourceFiles
+                .textResources(
+                    "values",
+                ).getValue("reminder_interval_rows")
+                .getElementsByTagName("item")
+        assertEquals("then every row", rows.item(0).textContent)
+        assertEquals("then every 8 rows", String.format(Locale.ROOT, rows.item(1).textContent, 8))
     }
 }

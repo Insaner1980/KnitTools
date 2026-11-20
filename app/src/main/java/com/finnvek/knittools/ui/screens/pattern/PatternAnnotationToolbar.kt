@@ -16,13 +16,12 @@ import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -44,7 +43,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.model.ChartColumnDirection
@@ -55,12 +53,16 @@ import com.finnvek.knittools.domain.model.PatternAnnotationLimits
 import com.finnvek.knittools.domain.model.PatternCalloutSymbol
 import com.finnvek.knittools.domain.model.TextBoxPayload
 import com.finnvek.knittools.ui.components.CancelButton
+import com.finnvek.knittools.ui.components.LabeledTextField
+import com.finnvek.knittools.ui.components.NumberInputField
+import com.finnvek.knittools.ui.components.NumberInputOptions
 import com.finnvek.knittools.ui.components.ScrollableFormDialog
 import com.finnvek.knittools.ui.components.SegmentedToggle
-import com.finnvek.knittools.ui.components.dialogTextFieldColors
+import com.finnvek.knittools.ui.components.SegmentedToggleSurface
 import com.finnvek.knittools.ui.layout.ContentWidthPolicy
 import com.finnvek.knittools.ui.layout.contentWidth
 import com.finnvek.knittools.ui.theme.PatternAnnotationTokens
+import com.finnvek.knittools.ui.theme.knitToolsColors
 import java.util.UUID
 
 internal data class PatternAnnotationToolbarActions(
@@ -79,9 +81,6 @@ internal data class PatternAnnotationToolbarActions(
     val onSendSelectedBackward: () -> Unit,
     val onAddTextBox: (String, String) -> Unit,
     val onAddCallout: (String, String, PatternCalloutSymbol, String) -> Unit,
-    val onUndo: () -> Unit,
-    val onRedo: () -> Unit,
-    val onClearPage: () -> Unit,
     val onAddChartTracker: (PatternChartTrackerDraft, String) -> Unit,
     val onEditText: () -> Unit,
     val onCancelTextEdit: (PatternAnnotationTextEdit) -> Unit,
@@ -122,21 +121,40 @@ internal fun PatternAnnotationToolbar(
             showChartTrackerEditor = false
         }
     }
+    val highlighter = state.activeTool == PatternAnnotationTool.HIGHLIGHTER
+    val itemSpacing =
+        if (highlighter) {
+            PatternAnnotationTokens.HIGHLIGHTER_TOOLBAR_SPACING
+        } else {
+            PatternAnnotationTokens.TOOLBAR_ITEM_SPACING
+        }
+    val verticalPadding =
+        if (highlighter) {
+            PatternAnnotationTokens.HIGHLIGHTER_TOOLBAR_SPACING
+        } else {
+            PatternAnnotationTokens.TOOLBAR_VERTICAL_PADDING
+        }
     // Tabletilla paletti rajataan lomakkeen levyiseksi: koko leveydellä paksuuden liukusäädin oli 1250 dp ja
     // painekytkin yli tuhannen dp:n päässä nimikkeestään.
     Column(
-        verticalArrangement = Arrangement.spacedBy(PatternAnnotationTokens.TOOLBAR_ITEM_SPACING),
+        verticalArrangement = Arrangement.spacedBy(itemSpacing),
         modifier =
             modifier
                 .fillMaxWidth()
                 .wrapContentWidth(Alignment.Start)
                 .contentWidth(ContentWidthPolicy.Form)
                 .fillMaxWidth()
-                .heightIn(max = PatternAnnotationTokens.TOOLBAR_MAX_HEIGHT)
-                .verticalScroll(rememberScrollState())
-                .padding(
+                .then(
+                    if (highlighter) {
+                        Modifier
+                    } else {
+                        Modifier
+                            .heightIn(max = PatternAnnotationTokens.TOOLBAR_MAX_HEIGHT)
+                            .verticalScroll(rememberScrollState())
+                    },
+                ).padding(
                     horizontal = PatternAnnotationTokens.TOOLBAR_HORIZONTAL_PADDING,
-                    vertical = PatternAnnotationTokens.TOOLBAR_VERTICAL_PADDING,
+                    vertical = verticalPadding,
                 ),
     ) {
         Row(
@@ -204,7 +222,6 @@ internal fun PatternAnnotationToolbar(
 
             else -> Unit
         }
-        AnnotationHistoryControls(state, actions)
         if (state.editableLayerVisible &&
             state.selectedAnnotationSupportsChartTracker &&
             state.chartCounterOptions.isNotEmpty()
@@ -273,27 +290,6 @@ internal fun PatternAnnotationToolbar(
 }
 
 @Composable
-private fun AnnotationHistoryControls(
-    state: PatternAnnotationUiState,
-    actions: PatternAnnotationToolbarActions,
-) {
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
-        modifier = Modifier.horizontalScroll(rememberScrollState()),
-    ) {
-        TextButton(onClick = actions.onUndo, enabled = state.canUndo) {
-            Text(stringResource(R.string.pattern_annotation_undo))
-        }
-        TextButton(onClick = actions.onRedo, enabled = state.canRedo) {
-            Text(stringResource(R.string.pattern_annotation_redo))
-        }
-        TextButton(onClick = actions.onClearPage, enabled = state.editableLayerVisible && !state.isSaving) {
-            Text(stringResource(R.string.pattern_annotation_clear_page))
-        }
-    }
-}
-
-@Composable
 private fun AnnotationSelectionControls(actions: PatternAnnotationToolbarActions) {
     Row(
         horizontalArrangement = Arrangement.spacedBy(4.dp),
@@ -349,11 +345,11 @@ private fun PatternTextEditorDialog(
         title = { Text(stringResource(titleRes)) },
         text = {
             Column {
-                OutlinedTextField(
+                LabeledTextField(
                     value = text,
                     onValueChange = { text = it },
-                    label = { Text(stringResource(R.string.pattern_annotation_text_label)) },
-                    colors = dialogTextFieldColors(),
+                    label = stringResource(R.string.pattern_annotation_text_label),
+                    singleLine = false,
                     enabled = !isSaving,
                 )
                 if (textConflict) {
@@ -388,16 +384,18 @@ private fun PatternCalloutEditorDialog(
         title = { Text(stringResource(R.string.pattern_annotation_callout_editor_title)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(
+                LabeledTextField(
                     value = title,
                     onValueChange = { title = it },
-                    label = { Text(stringResource(R.string.pattern_annotation_callout_title_label)) },
+                    label = stringResource(R.string.pattern_annotation_callout_title_label),
+                    singleLine = false,
                     enabled = !isSaving,
                 )
-                OutlinedTextField(
+                LabeledTextField(
                     value = description,
                     onValueChange = { description = it },
-                    label = { Text(stringResource(R.string.pattern_annotation_callout_description_label)) },
+                    label = stringResource(R.string.pattern_annotation_callout_description_label),
+                    singleLine = false,
                     enabled = !isSaving,
                 )
                 if (writeFailed) Text(stringResource(R.string.pattern_annotation_write_failed))
@@ -447,22 +445,36 @@ private fun PatternChartTrackerDialog(
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedTextField(
+                    NumberInputField(
                         value = rows,
                         enabled = !isSaving,
                         onValueChange = { rows = it },
-                        label = { Text(stringResource(R.string.pattern_annotation_chart_rows)) },
-                        isError = !validDimensions,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        label = stringResource(R.string.pattern_annotation_chart_rows),
+                        errorMessage =
+                            if (!validDimensions) {
+                                stringResource(
+                                    R.string.measurement_invalid_number,
+                                )
+                            } else {
+                                null
+                            },
+                        options = NumberInputOptions(preserveRawInput = true),
                         modifier = Modifier.weight(1f),
                     )
-                    OutlinedTextField(
+                    NumberInputField(
                         value = columns,
                         enabled = !isSaving,
                         onValueChange = { columns = it },
-                        label = { Text(stringResource(R.string.pattern_annotation_chart_columns)) },
-                        isError = !validDimensions,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        label = stringResource(R.string.pattern_annotation_chart_columns),
+                        errorMessage =
+                            if (!validDimensions) {
+                                stringResource(
+                                    R.string.measurement_invalid_number,
+                                )
+                            } else {
+                                null
+                            },
+                        options = NumberInputOptions(preserveRawInput = true),
                         modifier = Modifier.weight(1f),
                     )
                 }
@@ -496,13 +508,20 @@ private fun PatternChartTrackerDialog(
                     label = { index -> counterOptions[index].name },
                     onSelected = { if (!isSaving) selectedCounterIndex = it },
                 )
-                OutlinedTextField(
+                NumberInputField(
                     value = gridStartIndex,
                     enabled = !isSaving,
                     onValueChange = { gridStartIndex = it },
-                    label = { Text(stringResource(R.string.pattern_annotation_chart_grid_start)) },
-                    isError = validGridStart == null,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    label = stringResource(R.string.pattern_annotation_chart_grid_start),
+                    errorMessage =
+                        if (validGridStart ==
+                            null
+                        ) {
+                            stringResource(R.string.measurement_invalid_number)
+                        } else {
+                            null
+                        },
+                    options = NumberInputOptions(preserveRawInput = true),
                 )
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(stringResource(R.string.pattern_annotation_chart_wrap), modifier = Modifier.weight(1f))
@@ -554,6 +573,7 @@ private fun <T> ChartChoiceRow(
 ) {
     // Valinnat ovat SegmentedToggle kuten muissakin dialogeissa, eivät FilterChip-rivejä.
     SegmentedToggle(
+        surface = SegmentedToggleSurface.Dialog,
         options = choices.map { label(it) },
         selectedIndex = choices.indexOf(selected),
         onSelect = { onSelected(choices[it]) },
@@ -605,15 +625,38 @@ private fun PatternStrokeStyleControls(
             )
         }
     }
-    Text(
-        text = stringResource(R.string.pattern_annotation_stroke_width, strokeWidth),
-        style = MaterialTheme.typography.labelMedium,
-    )
-    Slider(
-        value = strokeWidth,
-        onValueChange = onStrokeWidthChange,
-        valueRange = PatternAnnotationLimits.MIN_STROKE_WIDTH..PatternAnnotationLimits.MAX_STROKE_WIDTH,
-    )
+    val label: @Composable () -> Unit = {
+        Text(
+            text = stringResource(R.string.pattern_annotation_stroke_width, strokeWidth),
+            style = MaterialTheme.typography.labelMedium,
+        )
+    }
+    val slider: @Composable (Modifier) -> Unit = { modifier ->
+        Slider(
+            modifier = modifier,
+            value = strokeWidth,
+            onValueChange = onStrokeWidthChange,
+            valueRange = PatternAnnotationLimits.MIN_STROKE_WIDTH..PatternAnnotationLimits.MAX_STROKE_WIDTH,
+            colors =
+                SliderDefaults.colors(
+                    thumbColor = MaterialTheme.colorScheme.primary,
+                    activeTrackColor = MaterialTheme.colorScheme.primary,
+                    inactiveTrackColor = MaterialTheme.knitToolsColors.sliderInactiveTrack,
+                ),
+        )
+    }
+    if (showPressureToggle) {
+        label()
+        slider(Modifier)
+    } else {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(PatternAnnotationTokens.TOOLBAR_ITEM_SPACING),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            label()
+            slider(Modifier.weight(1f))
+        }
+    }
     if (showPressureToggle) {
         val pressureLabel = stringResource(R.string.pattern_annotation_pressure)
         Row(

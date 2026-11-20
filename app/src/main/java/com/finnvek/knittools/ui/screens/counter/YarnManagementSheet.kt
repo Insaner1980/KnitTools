@@ -24,6 +24,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetState
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -62,8 +64,8 @@ import com.finnvek.knittools.repository.ProjectYarnNoteEditResult
 import com.finnvek.knittools.ui.components.BadgePill
 import com.finnvek.knittools.ui.components.FormSheet
 import com.finnvek.knittools.ui.components.FormSheetConfirm
+import com.finnvek.knittools.ui.components.LabeledTextField
 import com.finnvek.knittools.ui.components.ProMarker
-import com.finnvek.knittools.ui.components.ProjectYarnTextField
 import com.finnvek.knittools.ui.components.RowMenuAction
 import com.finnvek.knittools.ui.components.RowOverflowMenu
 import com.finnvek.knittools.ui.components.SectionLabel
@@ -78,11 +80,12 @@ import kotlinx.coroutines.launch
 @Composable
 @Suppress("kotlin:S107") // Sheet välittää projektin erilliset lanka-, muistiinpano- ja käyttötilat.
 fun YarnManagementSheet(
-    linkedYarns: List<Pair<Long, String>>,
+    linkedYarns: List<LinkedYarnSummary>,
     projectYarnNotes: List<ProjectYarnNote>,
     proState: ProState,
     proAccessReady: Boolean,
     actions: YarnManagementSheetActions,
+    snackbarHostState: SnackbarHostState? = null,
     usageItems: List<ProjectYarnUsageItem> = emptyList(),
     onUsage: (YarnUsageOpenRequest) -> Unit = {},
     focusKey: String? = null,
@@ -115,78 +118,82 @@ fun YarnManagementSheet(
         LaunchedEffect(sheetState.currentValue, windowFocused, focusHeading) {
             if (sheetState.isVisible && windowFocused && focusHeading) headingFocus.requestFocus()
         }
-        Column(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 20.dp)
-                    .padding(bottom = 32.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            // Sama sheetin otsikko kuin muissa sheeteissä; linkitetyt langat ovat sen alla omana osionaan.
-            SheetTitle(
-                text = stringResource(R.string.project_content_yarn),
+        Box(Modifier.fillMaxWidth()) {
+            Column(
                 modifier =
                     Modifier
-                        .focusRequester(headingFocus)
-                        .focusable()
-                        .testTag("yarn_management_heading"),
-            )
-            SectionLabel(text = stringResource(R.string.linked_yarn_title))
-
-            if (linkedYarns.isEmpty() && projectYarnNotes.isEmpty() && usageItems.isEmpty()) {
-                Text(
-                    text = stringResource(R.string.no_linked_yarn),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState())
+                        .padding(horizontal = 20.dp)
+                        .padding(bottom = 32.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                // Sama sheetin otsikko kuin muissa sheeteissä; linkitetyt langat ovat sen alla omana osionaan.
+                SheetTitle(
+                    text = stringResource(R.string.project_content_yarn),
+                    modifier =
+                        Modifier
+                            .focusRequester(headingFocus)
+                            .focusable()
+                            .testTag("yarn_management_heading"),
                 )
-            }
+                SectionLabel(text = stringResource(R.string.linked_yarn_title))
 
-            linkedYarns.forEach { (id, label) ->
-                val usageItem =
-                    usageItems.firstOrNull {
-                        it.source.yarnCardId == id &&
-                            it.source.projectYarnNoteId == null &&
-                            it.status == YarnUsageSourceStatus.AVAILABLE
-                    }
-                LinkedYarnRow(
-                    id = id,
-                    label = label,
-                    onUnlinkYarn = actions.onUnlinkYarn,
-                ) {
-                    usageItem?.let { item ->
-                        YarnUsageRow(item, onUsage, sheetState.isVisible && focusKey == item.key, inCard = true)
+                if (linkedYarns.isEmpty() && projectYarnNotes.isEmpty() && usageItems.isEmpty()) {
+                    Text(
+                        text = stringResource(R.string.no_linked_yarn),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+
+                linkedYarns.forEach { yarn ->
+                    val usageItem =
+                        usageItems.firstOrNull {
+                            it.source.yarnCardId == yarn.id &&
+                                it.source.projectYarnNoteId == null &&
+                                it.status == YarnUsageSourceStatus.AVAILABLE
+                        }
+                    LinkedYarnRow(
+                        yarn = yarn,
+                        onUnlinkYarn = actions.onUnlinkYarn,
+                    ) {
+                        usageItem?.let { item ->
+                            YarnUsageRow(item, onUsage, sheetState.isVisible && focusKey == item.key, inCard = true)
+                        }
                     }
                 }
+
+                ProjectYarnNotesSection(
+                    notes = projectYarnNotes,
+                    proState = proState,
+                    proAccessReady = proAccessReady,
+                    onDeleteProjectYarnNote = actions.onDeleteProjectYarnNote,
+                    onEditProjectYarnNote = { editingNote = it },
+                    onSaveProjectYarnNoteToMyYarn = actions.onSaveProjectYarnNoteToMyYarn,
+                    usageItems = usageItems,
+                    onUsage = onUsage,
+                    focusKey = focusKey.takeIf { sheetState.isVisible },
+                )
+
+                usageItems.filter { it.status != YarnUsageSourceStatus.AVAILABLE }.forEach { item ->
+                    YarnUsageRow(item, onUsage, sheetState.isVisible && focusKey == item.key)
+                }
+
+                SheetOptionRow(
+                    title = stringResource(R.string.choose_from_my_yarn),
+                    body = stringResource(R.string.choose_from_my_yarn_body),
+                    onClick = actions.onAddYarn,
+                )
+                SheetOptionRow(
+                    title = stringResource(R.string.add_yarn_to_project),
+                    body = stringResource(R.string.add_yarn_to_project_body),
+                    onClick = { showProjectYarnForm = true },
+                )
             }
-
-            ProjectYarnNotesSection(
-                notes = projectYarnNotes,
-                proState = proState,
-                proAccessReady = proAccessReady,
-                onDeleteProjectYarnNote = actions.onDeleteProjectYarnNote,
-                onEditProjectYarnNote = { editingNote = it },
-                onSaveProjectYarnNoteToMyYarn = actions.onSaveProjectYarnNoteToMyYarn,
-                usageItems = usageItems,
-                onUsage = onUsage,
-                focusKey = focusKey.takeIf { sheetState.isVisible },
-            )
-
-            usageItems.filter { it.status != YarnUsageSourceStatus.AVAILABLE }.forEach { item ->
-                YarnUsageRow(item, onUsage, sheetState.isVisible && focusKey == item.key)
+            if (snackbarHostState != null) {
+                SnackbarHost(snackbarHostState, Modifier.align(Alignment.BottomCenter))
             }
-
-            SheetOptionRow(
-                title = stringResource(R.string.choose_from_my_yarn),
-                body = stringResource(R.string.choose_from_my_yarn_body),
-                onClick = actions.onAddYarn,
-            )
-            SheetOptionRow(
-                title = stringResource(R.string.add_yarn_to_project),
-                body = stringResource(R.string.add_yarn_to_project_body),
-                onClick = { showProjectYarnForm = true },
-            )
         }
     }
 
@@ -238,12 +245,12 @@ private fun Modifier.yarnEntryModifier(): Modifier =
 
 @Composable
 private fun LinkedYarnRow(
-    id: Long,
-    label: String,
+    yarn: LinkedYarnSummary,
     onUnlinkYarn: (Long) -> Unit,
     // Langan käyttö kortin sisällä nimen alla, ei irrallaan korttien välissä.
     usage: @Composable ColumnScope.() -> Unit = {},
 ) {
+    val (id, name, colorLine) = yarn
     Column(
         modifier = Modifier.yarnEntryModifier(),
     ) {
@@ -258,12 +265,16 @@ private fun LinkedYarnRow(
                         ),
             )
             Spacer(modifier = Modifier.width(LinkedYarnDotGap))
-            Text(
-                text = label,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.weight(1f),
-            )
+            Column(Modifier.weight(1f)) {
+                Text(name, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
+                colorLine?.let {
+                    Text(
+                        it,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
             IconButton(onClick = { onUnlinkYarn(id) }) {
                 Icon(
                     imageVector = Icons.Filled.Close,
@@ -338,18 +349,35 @@ private fun ProjectYarnNoteRow(
                 actions =
                     listOf(
                         RowMenuAction(stringResource(R.string.project_overview_edit)) { onEditProjectYarnNote(note) },
-                        RowMenuAction(stringResource(R.string.delete)) { onDeleteProjectYarnNote(note.id) },
+                        RowMenuAction(
+                            stringResource(R.string.delete),
+                            isDestructive = true,
+                        ) { onDeleteProjectYarnNote(note.id) },
                     ),
                 modifier = Modifier.testTag("project-yarn-actions-${note.id}"),
             )
         }
         Text(
-            text = note.summaryText(),
+            text = stringResource(R.string.project_yarn_quantity_format, note.quantity),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
         )
+        if (note.description.isNotBlank()) {
+            Text(
+                note.description,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        if (note.notes.isNotBlank()) {
+            Text(
+                note.notes,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
         if (note.savedYarnCardId == null) {
             val yarnAccess = proActionAccess(proState, proAccessReady, ProFeature.UNLIMITED_YARN)
             TextButton(
@@ -360,36 +388,17 @@ private fun ProjectYarnNoteRow(
                 Spacer(modifier = Modifier.width(6.dp))
                 ProMarker(access = yarnAccess)
             }
+            Text(
+                text = stringResource(R.string.save_to_my_yarn_explanation),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         } else {
             // Tehty tallennus on tila eikä toiminto: harmaana käytöstä poistettuna painikkeena se näytti rikkinäiseltä.
             BadgePill(text = stringResource(R.string.saved_to_my_yarn))
         }
-        Text(
-            text =
-                stringResource(
-                    if (note.savedYarnCardId == null) {
-                        R.string.save_to_my_yarn_explanation
-                    } else {
-                        R.string.saved_to_my_yarn_explanation
-                    },
-                ),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
         usage()
     }
-}
-
-@Composable
-private fun ProjectYarnNote.summaryText(): String {
-    val quantity = stringResource(R.string.project_yarn_quantity_format, quantity)
-    val details =
-        listOf(
-            quantity,
-            description.takeIf(String::isNotBlank),
-            notes.takeIf(String::isNotBlank),
-        )
-    return details.filterNotNull().joinToString(", ")
 }
 
 @Composable
@@ -438,25 +447,25 @@ internal fun ProjectYarnForm(
         LaunchedEffect(saving) {
             if (saving) focusManager.clearFocus()
         }
-        ProjectYarnTextField(
+        LabeledTextField(
             value = name,
-            modifier = Modifier.testTag("project-yarn-name"),
+            inputModifier = Modifier.testTag("project-yarn-name"),
             readOnly = saving,
             onValueChange = { name = it },
             label = stringResource(R.string.project_yarn_name),
             singleLine = true,
         )
-        ProjectYarnTextField(
+        LabeledTextField(
             value = description,
-            modifier = Modifier.testTag("project-yarn-description"),
+            inputModifier = Modifier.testTag("project-yarn-description"),
             readOnly = saving,
             onValueChange = { description = it },
             label = stringResource(R.string.project_yarn_description),
             singleLine = true,
         )
-        ProjectYarnTextField(
+        LabeledTextField(
             value = quantity,
-            modifier = Modifier.testTag("project-yarn-quantity"),
+            inputModifier = Modifier.testTag("project-yarn-quantity"),
             readOnly = saving,
             onValueChange = { candidate ->
                 val digits = candidate.filter(Char::isDigit).take(Int.MAX_VALUE.toString().length)
@@ -468,12 +477,13 @@ internal fun ProjectYarnForm(
             singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
         )
-        ProjectYarnTextField(
+        LabeledTextField(
             value = notes,
-            modifier = Modifier.testTag("project-yarn-notes"),
+            inputModifier = Modifier.testTag("project-yarn-notes"),
             readOnly = saving,
             onValueChange = { notes = it },
             label = stringResource(R.string.notes),
+            singleLine = false,
         )
         val error =
             when (result) {

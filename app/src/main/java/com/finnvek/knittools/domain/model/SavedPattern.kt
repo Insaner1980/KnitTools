@@ -21,7 +21,7 @@ data class SavedPattern(
     val source: SavedPatternSource,
     val ravelryPatternId: Int? = null,
     val name: String,
-    val designerName: String,
+    val designerName: String?,
     val thumbnailUrl: String? = null,
     val difficulty: Float? = null,
     val gaugeStitches: Float? = null,

@@ -3,6 +3,8 @@ package com.finnvek.knittools.ui.components
 import androidx.compose.foundation.layout.Box
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -17,6 +19,7 @@ import androidx.compose.ui.Modifier
 /** Rivin toiminto: valikossa näkyvä teksti ja sen käsittelijä. */
 data class RowMenuAction(
     val label: String,
+    val isDestructive: Boolean = false,
     val onClick: () -> Unit,
 )
 
@@ -41,6 +44,12 @@ fun RowOverflowMenu(
             actions.forEach { action ->
                 DropdownMenuItem(
                     text = { Text(action.label) },
+                    colors =
+                        if (action.isDestructive) {
+                            MenuDefaults.itemColors(textColor = MaterialTheme.colorScheme.error)
+                        } else {
+                            MenuDefaults.itemColors()
+                        },
                     onClick = {
                         expanded = false
                         action.onClick()

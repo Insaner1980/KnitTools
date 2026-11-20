@@ -12,11 +12,8 @@ import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -50,7 +47,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
@@ -65,7 +61,6 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -77,8 +72,10 @@ import androidx.lifecycle.repeatOnLifecycle
 import com.finnvek.knittools.R
 import com.finnvek.knittools.data.widget.CounterWidgetPinHost
 import com.finnvek.knittools.data.widget.requestCounterWidgetPin
+import com.finnvek.knittools.domain.calculator.MainCounterLabelSlot
 import com.finnvek.knittools.domain.calculator.ProjectSetupItem
 import com.finnvek.knittools.domain.model.ActiveSessionRecoveryReason
+import com.finnvek.knittools.domain.model.MainCounterLabelType
 import com.finnvek.knittools.domain.model.ProjectCounter
 import com.finnvek.knittools.domain.model.ProjectCounterDraft
 import com.finnvek.knittools.domain.model.ProjectCounterType
@@ -86,7 +83,6 @@ import com.finnvek.knittools.domain.model.ProjectYarnNote
 import com.finnvek.knittools.domain.model.RowReminder
 import com.finnvek.knittools.domain.model.SavedPattern
 import com.finnvek.knittools.domain.model.YarnCard
-import com.finnvek.knittools.domain.model.displayName
 import com.finnvek.knittools.domain.model.isWebPatternCompatible
 import com.finnvek.knittools.domain.model.webPatternUrlOrNull
 import com.finnvek.knittools.domain.tips.TipContext
@@ -103,6 +99,8 @@ import com.finnvek.knittools.repository.SavedPatternMetadataMutationResult
 import com.finnvek.knittools.ui.components.CancelButton
 import com.finnvek.knittools.ui.components.CollectWithLifecycleEffect
 import com.finnvek.knittools.ui.components.ConfirmationDialog
+import com.finnvek.knittools.ui.components.NumberInputField
+import com.finnvek.knittools.ui.components.NumberInputOptions
 import com.finnvek.knittools.ui.components.ProPromptRequest
 import com.finnvek.knittools.ui.components.ProPromptSheet
 import com.finnvek.knittools.ui.components.ProPromptSource
@@ -110,11 +108,13 @@ import com.finnvek.knittools.ui.components.ProjectDetailsSheet
 import com.finnvek.knittools.ui.components.ProjectDetailsValues
 import com.finnvek.knittools.ui.components.ScrollableFormDialog
 import com.finnvek.knittools.ui.components.SheetTitle
+import com.finnvek.knittools.ui.components.YarnCardPickerSheet
 import com.finnvek.knittools.ui.components.cardTextFieldColors
-import com.finnvek.knittools.ui.components.dialogTextFieldColors
 import com.finnvek.knittools.ui.components.mainCounterLabelText
+import com.finnvek.knittools.ui.components.workSessionDurationText
 import com.finnvek.knittools.ui.findActivity
 import com.finnvek.knittools.ui.layout.ContentWidthPolicy
+import com.finnvek.knittools.ui.layout.LocalAdaptiveContentSize
 import com.finnvek.knittools.ui.navigation.CounterLaunchRequest
 import com.finnvek.knittools.ui.platform.ExternalWebLinkOpenResult
 import com.finnvek.knittools.ui.platform.openExternalWebLink
@@ -128,7 +128,6 @@ import com.finnvek.knittools.ui.screens.project.ProjectOverviewContentActions
 import com.finnvek.knittools.ui.screens.project.ProjectOverviewRouteContent
 import com.finnvek.knittools.ui.screens.project.ProjectSetupRoute
 import com.finnvek.knittools.ui.theme.CounterDimens
-import com.finnvek.knittools.ui.theme.knitToolsColors
 import com.finnvek.knittools.ui.tips.TipEnvironment
 import com.finnvek.knittools.ui.tips.TipHost
 import com.finnvek.knittools.ui.tips.tipAnchor
@@ -223,6 +222,7 @@ fun ProjectContentHost(
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val patternImportInProgress by viewModel.patternImportInProgress.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
+    val yarnSnackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
     val resources = LocalResources.current
     val context = LocalContext.current
@@ -630,6 +630,7 @@ fun ProjectContentHost(
             CounterDialogState(
                 showAddReminder = showAddReminder,
                 editingReminder = reminderBeingEdited,
+                reminderLabel = MainCounterLabelSlot(state.mainCounterLabelType, state.mainCounterCustomLabel),
                 showAddCounter = showAddCounter && projectActionTargetId == state.projectId,
                 initialCounterType = addCounterInitialType,
                 showResetDialog = showResetDialog && projectActionTargetId == state.projectId,
@@ -723,6 +724,7 @@ fun ProjectContentHost(
                 attachedSavedPatternIds = state.projectDocuments.mapNotNullTo(mutableSetOf()) { it.savedPatternId },
             ),
         actions = sheetActions,
+        yarnSnackbarHostState = yarnSnackbarHostState,
     )
 
     if (showDocumentsSheet) {
@@ -940,6 +942,7 @@ fun ProjectContentHost(
         RemindersSheet(
             reminders = state.reminders,
             currentRow = state.counter.count,
+            label = MainCounterLabelSlot(state.mainCounterLabelType, state.mainCounterCustomLabel),
             proState = state.proState,
             proAccessReady = state.proAccessReady,
             onAdd = {
@@ -977,6 +980,16 @@ fun ProjectContentHost(
     CollectWithLifecycleEffect({ viewModel.projectContentErrors }) {
         contentErrorAt = System.nanoTime()
         Toast.makeText(context, genericErrorUnknown, Toast.LENGTH_LONG).show()
+    }
+    val yarnSavedMessage = stringResource(R.string.saved_to_my_yarn_explanation)
+    CollectWithLifecycleEffect({ viewModel.projectYarnSaved }) { projectId ->
+        if (state.projectId == projectId) {
+            val host = if (showYarnManagementSheet) yarnSnackbarHostState else snackbarHostState
+            host.showSnackbar(yarnSavedMessage)
+        }
+    }
+    LaunchedEffect(showYarnManagementSheet) {
+        if (!showYarnManagementSheet) yarnSnackbarHostState.currentSnackbarData?.dismiss()
     }
 
     pendingProAction?.takeIf { previousOverlayProjectId == state.projectId }?.let { action ->
@@ -1415,14 +1428,14 @@ internal fun SessionRecoveryDialog(
                 Text(
                     stringResource(
                         R.string.work_session_confirmed_time_format,
-                        formatWorkSessionDuration(trustedDurationSeconds),
+                        workSessionDurationText(trustedDurationSeconds),
                     ),
                 )
                 Text(
                     if (suggestedDurationSeconds != null) {
                         stringResource(
                             R.string.work_session_time_while_away_format,
-                            formatWorkSessionDuration(suggestedDurationSeconds),
+                            workSessionDurationText(suggestedDurationSeconds),
                         )
                     } else {
                         stringResource(R.string.work_session_time_unavailable)
@@ -1434,30 +1447,25 @@ internal fun SessionRecoveryDialog(
                 if (editing) {
                     Text(stringResource(R.string.work_session_edit_total_duration))
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        TextField(
-                            colors = dialogTextFieldColors(),
+                        NumberInputField(
                             value = hoursText,
                             onValueChange = { hoursText = it },
-                            label = { Text(stringResource(R.string.work_session_hours)) },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            isError = durationSeconds == null,
-                            singleLine = true,
+                            label = stringResource(R.string.work_session_hours),
+                            options = NumberInputOptions(preserveRawInput = true),
                             modifier = Modifier.weight(1f),
                         )
-                        TextField(
-                            colors = dialogTextFieldColors(),
+                        NumberInputField(
                             value = minutesText,
                             onValueChange = { minutesText = it },
-                            label = { Text(stringResource(R.string.work_session_minutes)) },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            isError = durationSeconds == null,
-                            singleLine = true,
+                            label = stringResource(R.string.work_session_minutes),
+                            options = NumberInputOptions(isLast = true, preserveRawInput = true),
                             modifier = Modifier.weight(1f),
                         )
                     }
                     if (durationSeconds == null) {
                         Text(
                             text = stringResource(R.string.work_session_invalid_duration),
+                            style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.error,
                         )
                     }
@@ -1608,7 +1616,7 @@ internal fun SessionStopSummaryDialog(
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(projectName, style = MaterialTheme.typography.titleMedium)
-                Text(stringResource(R.string.work_session_duration_format, formatWorkSessionDuration(durationSeconds)))
+                Text(stringResource(R.string.work_session_duration_format, workSessionDurationText(durationSeconds)))
                 Text(stringResource(R.string.counter_progress_format, rowsWorked))
             }
         },
@@ -1617,10 +1625,18 @@ internal fun SessionStopSummaryDialog(
                 TextButton(onClick = onSave, modifier = Modifier.defaultMinSize(minHeight = 48.dp)) {
                     Text(stringResource(R.string.work_session_save))
                 }
-                TextButton(onClick = onDiscard, modifier = Modifier.defaultMinSize(minHeight = 48.dp)) {
+                TextButton(
+                    onClick = onDiscard,
+                    modifier = Modifier.defaultMinSize(minHeight = 48.dp),
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                ) {
                     Text(stringResource(R.string.work_session_discard))
                 }
-                CancelButton(onClick = onCancel, modifier = Modifier.defaultMinSize(minHeight = 48.dp))
+                CancelButton(
+                    onClick = onCancel,
+                    text = stringResource(R.string.work_session_keep_running),
+                    modifier = Modifier.defaultMinSize(minHeight = 48.dp),
+                )
             }
         },
         dismissButton = {},
@@ -1737,6 +1753,7 @@ private fun TriggerAlertHaptic(
 data class CounterDialogState(
     val showAddReminder: Boolean,
     val editingReminder: RowReminder?,
+    val reminderLabel: MainCounterLabelSlot = MainCounterLabelSlot(MainCounterLabelType.ROWS),
     val showAddCounter: Boolean,
     val showResetDialog: Boolean,
     val showCompleteDialog: Boolean,
@@ -1773,6 +1790,7 @@ private fun CounterScreenDialogs(
     if (state.showAddReminder) {
         AddReminderDialog(
             reminder = state.editingReminder,
+            label = state.reminderLabel,
             onSave = actions.onAddReminderSave,
             onDismiss = actions.onAddReminderDismiss,
         )
@@ -1789,7 +1807,7 @@ private fun CounterScreenDialogs(
     }
     if (state.showResetDialog) {
         ConfirmationDialog(
-            title = stringResource(R.string.reset_counter),
+            title = stringResource(R.string.reset_counter_title),
             message = stringResource(R.string.reset_counter_message),
             confirmText = stringResource(R.string.reset),
             onConfirm = actions.onResetConfirm,
@@ -1798,7 +1816,7 @@ private fun CounterScreenDialogs(
     }
     if (state.showCompleteDialog) {
         ConfirmationDialog(
-            title = stringResource(R.string.complete_project),
+            title = stringResource(R.string.complete_project_title),
             message = stringResource(R.string.complete_project_message, state.projectName),
             confirmText = stringResource(R.string.complete_project),
             onConfirm = actions.onCompleteConfirm,
@@ -1807,7 +1825,7 @@ private fun CounterScreenDialogs(
     }
     if (state.showDeleteDialog) {
         ConfirmationDialog(
-            title = stringResource(R.string.delete_project),
+            title = stringResource(R.string.delete_project_title),
             message = stringResource(R.string.delete_project_message, state.projectName),
             confirmText = stringResource(R.string.delete_project),
             isDestructive = true,
@@ -1819,6 +1837,7 @@ private fun CounterScreenDialogs(
     if (state.showStitchDialog) {
         StitchCountDialog(
             currentStitchCount = state.currentStitchCount,
+            labelType = state.reminderLabel.labelType,
             onConfirm = {
                 actions.onStitchConfirm(it)
                 actions.onStitchDismiss()
@@ -1829,8 +1848,9 @@ private fun CounterScreenDialogs(
 }
 
 @Composable
-private fun StitchCountDialog(
+internal fun StitchCountDialog(
     currentStitchCount: Int?,
+    labelType: MainCounterLabelType,
     onConfirm: (Int?) -> Unit,
     onDismiss: () -> Unit,
 ) {
@@ -1842,14 +1862,29 @@ private fun StitchCountDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.stitches_per_row)) },
         text = {
-            TextField(
-                value = stitchInput,
-                onValueChange = { stitchInput = it.filter { c -> c.isDigit() } },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                shape = MaterialTheme.shapes.large,
-                colors = dialogTextFieldColors(),
-            )
+            Column {
+                NumberInputField(
+                    value = stitchInput,
+                    onValueChange = { stitchInput = it.filter { c -> c.isDigit() } },
+                    label =
+                        stringResource(
+                            if (labelType == MainCounterLabelType.ROUNDS) {
+                                R.string.stitches_in_round_label
+                            } else {
+                                R.string.stitches_in_row_label
+                            },
+                        ),
+                    options = NumberInputOptions(isLast = true, preserveRawInput = true, allowZero = false),
+                )
+                if (currentStitchCount != null && currentStitchCount > 0) {
+                    TextButton(
+                        onClick = { onConfirm(null) },
+                        colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                    ) {
+                        Text(stringResource(R.string.stitches_per_row_remove))
+                    }
+                }
+            }
         },
         confirmButton = {
             TextButton(
@@ -1859,22 +1894,7 @@ private fun StitchCountDialog(
                 Text(stringResource(R.string.save))
             }
         },
-        dismissButton = {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                if (currentStitchCount != null && currentStitchCount > 0) {
-                    TextButton(
-                        onClick = { onConfirm(null) },
-                        colors =
-                            ButtonDefaults.textButtonColors(
-                                contentColor = MaterialTheme.colorScheme.error,
-                            ),
-                    ) {
-                        Text(stringResource(R.string.delete))
-                    }
-                }
-                CancelButton(onClick = onDismiss)
-            }
-        },
+        dismissButton = { CancelButton(onClick = onDismiss) },
     )
 }
 
@@ -1883,7 +1903,7 @@ data class CounterSheetState(
     val showYarnPicker: Boolean,
     val showYarnManagementSheet: Boolean,
     val savedYarnCards: List<YarnCard>,
-    val linkedYarns: List<Pair<Long, String>>,
+    val linkedYarns: List<LinkedYarnSummary>,
     val projectYarnNotes: List<ProjectYarnNote>,
     val showNotesSheet: Boolean,
     val notes: String,
@@ -1926,11 +1946,12 @@ data class CounterSheetActions(
 private fun CounterScreenSheets(
     state: CounterSheetState,
     actions: CounterSheetActions,
+    yarnSnackbarHostState: SnackbarHostState,
 ) {
     if (state.showYarnPicker) {
-        YarnPickerSheet(
+        YarnCardPickerSheet(
             savedYarnCards = state.savedYarnCards,
-            onSelect = actions.onYarnSelect,
+            onSelect = { actions.onYarnSelect(it.id) },
             onDismiss = actions.onYarnPickerDismiss,
         )
     }
@@ -1941,6 +1962,7 @@ private fun CounterScreenSheets(
             projectYarnNotes = state.projectYarnNotes,
             proState = state.proState,
             proAccessReady = state.proAccessReady,
+            snackbarHostState = yarnSnackbarHostState,
             actions =
                 YarnManagementSheetActions(
                     onUnlinkYarn = actions.onUnlinkYarn,
@@ -1998,6 +2020,12 @@ private fun CounterTopBar(
     actions: CounterTopBarActions,
 ) {
     TopAppBar(
+        expandedHeight =
+            if (LocalAdaptiveContentSize.current.isCompactHeight) {
+                CounterDimens.CompactTopBarHeight
+            } else {
+                TopAppBarDefaults.TopAppBarExpandedHeight
+            },
         title = {
             CounterTopBarTitle(
                 state = state,
@@ -2130,86 +2158,6 @@ private fun CountersListSheet(
                     }
                 }
             }
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-// CPD-OFF: Ruudun paikallinen valintaikkuna pidetaan kayttokohteen yhteydessa.
-private fun YarnPickerSheet(
-    savedYarnCards: List<YarnCard>,
-    onSelect: (Long) -> Unit,
-    onDismiss: () -> Unit,
-) {
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        containerColor = MaterialTheme.colorScheme.surface,
-        sheetMaxWidth = ContentWidthPolicy.Form.maxWidth,
-    ) {
-        Column(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 20.dp)
-                    .padding(bottom = 32.dp),
-        ) {
-            // CPD-ON
-            SheetTitle(
-                text = stringResource(R.string.select_yarn_card),
-                modifier = Modifier.padding(bottom = 12.dp),
-            )
-            if (savedYarnCards.isEmpty()) {
-                Text(
-                    text = stringResource(R.string.no_saved_yarns),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(vertical = 16.dp),
-                )
-            } else {
-                LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    items(savedYarnCards, key = { it.id }) { card ->
-                        YarnPickerItem(card = card, onSelect = { onSelect(card.id) })
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun YarnPickerItem(
-    card: YarnCard,
-    onSelect: () -> Unit,
-) {
-    val fallbackYarnName = stringResource(R.string.yarn_card_number_fallback, card.id)
-    val name = card.displayName { fallbackYarnName }
-    Column(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .clip(MaterialTheme.shapes.medium)
-                .background(MaterialTheme.knitToolsColors.cardContainer)
-                .clickable(onClick = onSelect)
-                .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        Column {
-            Text(text = name, style = MaterialTheme.typography.titleMedium)
-            if (card.colorName.isNotBlank()) {
-                Text(
-                    text = card.colorName,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        }
-        if (card.weightCategory.isNotBlank()) {
-            Text(
-                text = card.weightCategory,
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.secondary,
-            )
         }
     }
 }

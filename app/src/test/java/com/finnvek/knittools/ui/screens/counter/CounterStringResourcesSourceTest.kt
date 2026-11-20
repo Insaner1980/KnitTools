@@ -192,7 +192,6 @@ class CounterStringResourcesSourceTest {
         val MANY_QUANTITY_LOCALES = setOf("values-es", "values-fr", "values-it", "values-pt", "values-pt-rBR")
         val COUNTER_PLURAL_KEYS =
             listOf(
-                "reminder_repeat_occurrence_format",
                 "rows_format",
             )
         val EXPECTED_REPEAT_SECTION_PLACEHOLDERS = listOf("%1\$d", "%2\$d", "%3\$d", "%4\$d")

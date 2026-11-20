@@ -120,6 +120,7 @@ internal fun OverviewLinkRow(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     done: Boolean = false,
+    trailingIcon: ImageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
 ) {
     Row(
         modifier
@@ -153,7 +154,7 @@ internal fun OverviewLinkRow(
             }
         }
         Icon(
-            if (done) Icons.Default.Check else Icons.AutoMirrored.Filled.KeyboardArrowRight,
+            if (done) Icons.Default.Check else trailingIcon,
             null,
             tint = if (done) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onSurfaceVariant,
         )

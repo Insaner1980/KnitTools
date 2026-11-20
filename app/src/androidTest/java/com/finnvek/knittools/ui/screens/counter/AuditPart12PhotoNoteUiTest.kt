@@ -146,7 +146,7 @@ class AuditPart12PhotoNoteUiTest(
                 editNote(
                     input,
                 ).assert(SemanticsMatcher.expectValue(SemanticsProperties.EditableText, AnnotatedString(expected)))
-                val save = compose.onNode(hasText(localized.getString(R.string.confirm)) and hasAnyAncestor(isDialog()))
+                val save = compose.onNode(hasText(localized.getString(R.string.save)) and hasAnyAncestor(isDialog()))
                 save.assertIsDisplayed()
                 val density = localized.resources.displayMetrics.density
                 val bounds = save.fetchSemanticsNode().touchBoundsInRoot

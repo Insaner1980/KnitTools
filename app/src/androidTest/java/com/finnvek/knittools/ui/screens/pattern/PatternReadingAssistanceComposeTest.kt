@@ -26,6 +26,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertWidthIsEqualTo
+import androidx.compose.ui.test.isDisplayed
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
@@ -93,7 +94,7 @@ class PatternReadingAssistanceComposeTest {
             .assertIsEnabled()
             .assertHeightIsAtLeast(48.dp)
             .performClick()
-        composeRule.onNodeWithText("Bookmark name").performTextInput("Body")
+        composeRule.onNodeWithContentDescription("Bookmark name").performTextInput("Body")
         composeRule.onNodeWithText("Save").assertIsEnabled().performClick()
 
         composeRule.runOnIdle { assertEquals("Body", addedName) }
@@ -140,7 +141,11 @@ class PatternReadingAssistanceComposeTest {
             }
         }
 
-        composeRule.onNodeWithText("This bookmark no longer belongs to this pattern.").assertIsDisplayed()
+        composeRule.waitUntil(timeoutMillis = 5_000) { composeRule.onNodeWithText("Bookmarks").isDisplayed() }
+        composeRule
+            .onNodeWithText("This bookmark no longer belongs to this pattern.")
+            .performScrollTo()
+            .assertIsDisplayed()
         composeRule.onNodeWithText("Previous bookmark").performScrollTo().assertIsNotEnabled()
         composeRule
             .onNodeWithText("Next bookmark")
@@ -148,12 +153,12 @@ class PatternReadingAssistanceComposeTest {
             .assertIsEnabled()
             .assertHeightIsAtLeast(48.dp)
             .performClick()
-        composeRule.onNodeWithContentDescription("Jump to bookmark Sleeve, page 3").performClick()
-        composeRule.onNodeWithContentDescription("More options: Body").performClick()
+        composeRule.onNodeWithContentDescription("Jump to bookmark Sleeve, page 3").performScrollTo().performClick()
+        composeRule.onNodeWithContentDescription("More options: Body").performScrollTo().performClick()
         composeRule.onNodeWithContentDescription("Rename bookmark: Body").performClick()
         composeRule.onNodeWithText("Rename bookmark").assertIsDisplayed()
         composeRule.onNodeWithText("Cancel").performClick()
-        composeRule.onNodeWithContentDescription("More options: Body").performClick()
+        composeRule.onNodeWithContentDescription("More options: Body").performScrollTo().performClick()
         composeRule.onNodeWithContentDescription("Delete: Body").performClick()
         composeRule.onNodeWithText("Delete bookmark?").assertIsDisplayed()
 

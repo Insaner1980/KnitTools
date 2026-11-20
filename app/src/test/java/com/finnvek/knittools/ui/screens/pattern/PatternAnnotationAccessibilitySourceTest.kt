@@ -12,7 +12,7 @@ class PatternAnnotationAccessibilitySourceTest {
 
         ProjectSourceFiles.configuredResourceDirectories().filter { it != "values" }.forEach { locale ->
             val localizedNames =
-                annotationNames(ProjectSourceFiles.read("app/src/main/res/$locale/pattern_annotations.xml"))
+                annotationNames(ProjectSourceFiles.read("app/src/main/res/$locale/strings.xml"))
             assertEquals("Missing annotation strings in $locale", defaultNames, localizedNames)
         }
     }

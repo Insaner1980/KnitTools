@@ -20,8 +20,8 @@ All repository links are relative to the root. Package shorthand such as `reposi
 | Application ID / namespace | `com.finnvek.knittools` |
 | App version | `1.0.0`, version code `1` |
 | Android SDK | Minimum 29; target and compile 37 |
-| Room schema | 29 |
-| Current database shape | 20 entities/tables, 217 columns and 29 exported schema versions |
+| Room schema | 30 |
+| Current database shape | 20 entities/tables, 217 columns and 30 exported schema versions |
 | Supported app languages | 12 locale options; System is a selection mode |
 | Resource inventory | 1,597 translatable strings and 34 plurals per locale; 1,631 names per locale across all text-resource files |
 | Modules | `:app` and `:baselineprofile` |
@@ -1007,7 +1007,7 @@ Contextual prompts retain pending user actions so that a successful trial activa
 
 [BackupScreen.kt](app/src/main/java/com/finnvek/knittools/ui/screens/backup/BackupScreen.kt) and [BackupViewModel.kt](app/src/main/java/com/finnvek/knittools/ui/screens/backup/BackupViewModel.kt) expose user-selected SAF export and import preview. Confirmed restore **replaces all current project data**; it is not a merge. Preview/confirmation state is separate from a live mutation.
 
-[BackupRepository.kt](app/src/main/java/com/finnvek/knittools/repository/BackupRepository.kt) coordinates [data/backup](app/src/main/java/com/finnvek/knittools/data/backup). `.knittools-backup` is an `application/octet-stream` ZIP with format version 1, data version 1, current schema 29, `manifest.json`, 18 `tables/<table>.jsonl` streams, and content-addressed `files/<sha256>.bin` entries. Table streams use ordered column headers and primitive row arrays. It contains logical records, not a copied SQLite database/WAL.
+[BackupRepository.kt](app/src/main/java/com/finnvek/knittools/repository/BackupRepository.kt) coordinates [data/backup](app/src/main/java/com/finnvek/knittools/data/backup). `.knittools-backup` is an `application/octet-stream` ZIP with format version 1, data version 1, current schema 30, `manifest.json`, 18 `tables/<table>.jsonl` streams, and content-addressed `files/<sha256>.bin` entries. Table streams use ordered column headers and primitive row arrays. It contains logical records, not a copied SQLite database/WAL.
 
 The manifest identifies KnitTools format, creation time, app version, schema, and bounded file paths/sizes/hashes. Structural allowlists, duplicate/path checks, ZIP/ZIP64 local/central inventory agreement, trailing-data/decompression/depth checks, declared budgets, hashes, row validation, and a shadow Room database reject invalid archives before confirmation/replacement. App version is informational. The reader accepts format/data version 1 with **schema 25 through 29**. Legacy counter-history headers can omit session snapshots and, for older history, linked-delta snapshots. Other versions are unsupported. SHA-256 detects inconsistent bytes but supplies no cryptographic authenticity. The archive is **unencrypted and unauthenticated**; project notes/photos/PDFs are readable by anyone who can access the file.
 
@@ -1440,7 +1440,7 @@ Expected validation/missing/stale/feature failures use typed result models. Read
 
 ### Room ownership and constraints
 
-[KnitToolsDatabase.kt](app/src/main/java/com/finnvek/knittools/data/local/KnitToolsDatabase.kt) declares schema 29 and 20 entities. [DatabaseModule.kt](app/src/main/java/com/finnvek/knittools/di/DatabaseModule.kt) opens `knittools.db`, registers every manual migration plus Room auto-migrations, and installs constraints. Destructive fallback is not configured. Exported JSON schemas 1–29 are available in [app/schemas/com.finnvek.knittools.data.local.KnitToolsDatabase](app/schemas/com.finnvek.knittools.data.local.KnitToolsDatabase). Version 29's identity hash is `4c0b741c13546eb800be45cdbb893465`. Schema 29 adds `project_creation_receipts` (`MIGRATION_28_29`).
+[KnitToolsDatabase.kt](app/src/main/java/com/finnvek/knittools/data/local/KnitToolsDatabase.kt) declares schema 30 and 20 entities. [DatabaseModule.kt](app/src/main/java/com/finnvek/knittools/di/DatabaseModule.kt) opens `knittools.db`, registers every manual migration plus Room auto-migrations, and installs constraints. Destructive fallback is not configured. Exported JSON schemas 1–30 are available in [app/schemas/com.finnvek.knittools.data.local.KnitToolsDatabase](app/schemas/com.finnvek.knittools.data.local.KnitToolsDatabase). Version 30's identity hash is `ace4bffcc35c1793691d11a906a75b63`. Schema 29 adds `project_creation_receipts` (`MIGRATION_28_29`). Schema 30 allows a missing designer on saved patterns and clears localized placeholders from imported PDF rows.
 
 | Table | Entity / DAO | Canonical writer / meaning |
 | --- | --- | --- |
@@ -2780,7 +2780,7 @@ An unexecuted check is uncertainty, not automatically an implementation defect. 
 | --- | --- |
 | [AGENTS.md](AGENTS.md), [CODEX.md](CODEX.md) | Aligned working rules, ownership/security/UI conventions; unchanged here |
 | [CLAUDE.md](CLAUDE.md) | Product wording and visual direction; current implementation still decides exact behavior |
-| [README.md](README.md) | Short current overview with Gradle 9.8.1 and Room schema 29 |
+| [README.md](README.md) | Short current overview with Gradle 9.8.1 and Room schema 30 |
 | [ONLINE_OFFLINE.md](ONLINE_OFFLINE.md) | Current network/offline distinctions, not the old native Firebase flow |
 | [PRIVACY-POLICY.md](PRIVACY-POLICY.md) | Updated technical draft with current browser/telemetry/backup model; publisher contact still required |
 | [config/security-decisions.md](config/security-decisions.md) | Recorded current browser, Crashlytics, analytics and removed-credential decisions |

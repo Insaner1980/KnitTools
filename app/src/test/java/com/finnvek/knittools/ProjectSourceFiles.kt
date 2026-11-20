@@ -13,6 +13,14 @@ import java.nio.file.Path
 import javax.xml.parsers.DocumentBuilderFactory
 
 internal object ProjectSourceFiles {
+    // French and Portuguese use "one" for both zero and one.
+    fun reminderIntervalUsesQuantityInSingular(
+        name: String,
+        directory: String,
+    ): Boolean =
+        name in setOf("reminder_interval_rows", "reminder_interval_rounds", "reminder_interval_repeats") &&
+            directory in setOf("values-fr", "values-pt", "values-pt-rBR")
+
     fun read(relativePath: String): String = read(file(relativePath))
 
     fun read(path: Path): String =

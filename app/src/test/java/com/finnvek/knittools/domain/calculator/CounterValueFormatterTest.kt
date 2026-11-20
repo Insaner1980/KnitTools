@@ -5,7 +5,6 @@ import com.finnvek.knittools.domain.model.CraftType
 import com.finnvek.knittools.domain.model.MainCounterLabelType
 import com.finnvek.knittools.domain.model.ProjectCounter
 import com.finnvek.knittools.domain.model.ProjectCounterType
-import com.finnvek.knittools.domain.model.RowReminder
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
@@ -43,17 +42,6 @@ class CounterValueFormatterTest {
         repeatStartRow = repeatStartRow,
         repeatEndRow = repeatEndRow,
         totalRepeats = totalRepeats,
-    )
-
-    private fun reminder(
-        targetRow: Int = 4,
-        repeatInterval: Int? = null,
-    ) = RowReminder(
-        id = 1,
-        projectId = 1,
-        targetRow = targetRow,
-        repeatInterval = repeatInterval,
-        message = "Reminder",
     )
 
     private fun mainProject(
@@ -300,31 +288,6 @@ class CounterValueFormatterTest {
         assertEquals(
             CounterValueDisplay.Plain(invertedRows.count),
             CounterValueFormatter.forRepeatSection(invertedRows, 2),
-        )
-    }
-
-    @Test
-    fun `reminder repeat reports occurrence and interval`() {
-        // targetRow = 4, interval = 3, currentRow = 13 -> (13 - 4) / 3 + 1 = 4
-        assertEquals(
-            CounterValueDisplay.ReminderRepeat(occurrence = 4, intervalRows = 3),
-            CounterValueFormatter.forReminderRepeat(reminder(targetRow = 4, repeatInterval = 3), currentRow = 13),
-        )
-    }
-
-    @Test
-    fun `non repeating reminder has no repeat display`() {
-        assertNull(
-            CounterValueFormatter.forReminderRepeat(
-                reminder(targetRow = 4, repeatInterval = null),
-                currentRow = 13,
-            ),
-        )
-        assertNull(
-            CounterValueFormatter.forReminderRepeat(
-                reminder(targetRow = 4, repeatInterval = 0),
-                currentRow = 13,
-            ),
         )
     }
 }

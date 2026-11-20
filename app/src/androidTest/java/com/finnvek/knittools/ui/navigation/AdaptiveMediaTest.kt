@@ -25,6 +25,7 @@ import androidx.compose.ui.test.isSelectable
 import androidx.compose.ui.test.longClick
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onLast
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
@@ -269,13 +270,11 @@ class AdaptiveMediaTest : AdaptiveRouteTestFixture() {
             text(R.string.pattern_bookmarks).assertIsDisplayed()
             text(R.string.pattern_mark_up).performClick()
             text(R.string.pattern_mark_up_done).assertIsDisplayed()
-            val toolbar =
-                rule
-                    .onAllNodes(
-                        vertical and hasAnyDescendant(hasText(label(R.string.pattern_annotation_clear_page))),
-                    ).onLast()
-            repeat(4) { toolbar.performTouchInput { swipeUp() } }
-            text(R.string.pattern_annotation_clear_page).assertIsDisplayed()
+            rule.onNodeWithContentDescription(label(R.string.pattern_annotation_undo)).assertIsDisplayed()
+            rule.onNodeWithContentDescription(label(R.string.pattern_annotation_redo)).assertIsDisplayed()
+            menu()
+            scrollTo(label(R.string.pattern_annotation_clear_page)).assertIsDisplayed()
+            back()
             screenshot("pdf-markup-$width-$height")
             text(R.string.pattern_mark_up_done).performClick()
             menu()
@@ -364,7 +363,7 @@ class AdaptiveMediaTest : AdaptiveRouteTestFixture() {
     @Test
     fun calibrationDraftRetainsItsFirstPointAcrossShortWindowRecreation() {
         openSecondaryPdf()
-        menu()
+        rule.onNodeWithContentDescription(label(R.string.pattern_horizontal_reading_line)).performClick()
         scrollTo(label(R.string.pattern_calibrate_rows)).performClick()
         // Starting calibration explicitly enables the guide and updates its timestamp.
         rule.waitUntil(10_000) { documents().last().updatedAt > 1 }
@@ -372,15 +371,15 @@ class AdaptiveMediaTest : AdaptiveRouteTestFixture() {
         rule.onNode(hasSetTextAction()).performTextReplacement("20")
         Espresso.closeSoftKeyboard()
         keyboard(false)
-        text(R.string.pattern_calibration_save_first).performClick()
+        text(R.string.save).performClick()
         rule.onNode(hasSetTextAction()).performTextReplacement("31")
         Espresso.closeSoftKeyboard()
         keyboard(false)
         resize(800, 400)
         rule.activityRule.scenario.recreate()
-        waitText(label(R.string.pattern_calibration_save_last))
+        waitText(label(R.string.pattern_calibration_step_last))
         rule.onNode(hasSetTextAction()).assertTextContains("31")
-        text(R.string.pattern_calibration_save_last).assertIsDisplayed()
+        text(R.string.pattern_calibration_step_last).assertIsDisplayed()
         text(R.string.cancel).performClick()
         assertEquals(before, documents())
     }
@@ -442,7 +441,7 @@ class AdaptiveMediaTest : AdaptiveRouteTestFixture() {
             assertWindowOutside(fold)
             text(R.string.cancel).performClick()
             menu()
-            scrollTo(label(R.string.project_documents_title)).performClick()
+            scrollTo(label(R.string.project_documents_manage)).performClick()
             text("Media PDF 2").performScrollTo().assertIsDisplayed()
             assertWindowOutside(fold)
             text(rule.activity.getString(R.string.project_documents_actions, "Media PDF 2")).performClick()
@@ -508,7 +507,7 @@ class AdaptiveMediaTest : AdaptiveRouteTestFixture() {
 
     private fun openSecondaryPdf() {
         text("Media cardigan").performClick()
-        scrollTo(label(R.string.project_documents_title)).performClick()
+        scrollTo(label(R.string.project_documents_manage)).performClick()
         scrollTo("Media PDF 2").performClick()
         waitText(label(R.string.pattern_mark_up))
         text("Media PDF 2").assertIsDisplayed()

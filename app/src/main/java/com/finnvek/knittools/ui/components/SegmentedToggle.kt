@@ -1,6 +1,7 @@
 package com.finnvek.knittools.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,8 +17,10 @@ import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.text.TextAutoSize
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.movableContentOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -26,16 +29,23 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.finnvek.knittools.R
 import com.finnvek.knittools.ui.theme.ComponentDimens
 import com.finnvek.knittools.ui.theme.FontScaleThresholds
+import com.finnvek.knittools.ui.theme.knitToolsColors
 
 private val PillContainerShape = RoundedCornerShape(50)
 private val PillItemShape = RoundedCornerShape(50)
 private val GridContainerShape = RoundedCornerShape(16.dp)
 private val GridItemShape = RoundedCornerShape(12.dp)
+
+enum class SegmentedToggleSurface { Default, Dialog }
 
 @Composable
 fun SegmentedToggle(
@@ -44,12 +54,23 @@ fun SegmentedToggle(
     onSelect: (Int) -> Unit,
     modifier: Modifier = Modifier,
     itemTestTagPrefix: String? = null,
+    surface: SegmentedToggleSurface = SegmentedToggleSurface.Default,
+    pendingIndex: Int? = null,
     optionTrailingContent: @Composable (Int) -> Unit = {},
 ) {
     val isGrid = options.size > 3
     val expandedLabels = LocalDensity.current.fontScale >= FontScaleThresholds.LARGE
     val containerShape: Shape = if (isGrid || expandedLabels) GridContainerShape else PillContainerShape
     val itemShape: Shape = if (isGrid || expandedLabels) GridItemShape else PillItemShape
+    val inDialog = surface == SegmentedToggleSurface.Dialog
+    val trackColor =
+        if (inDialog) MaterialTheme.knitToolsColors.segmentedTrackOnDialog else MaterialTheme.colorScheme.surfaceVariant
+    val unselectedTextColor =
+        if (inDialog) {
+            MaterialTheme.knitToolsColors.onSegmentedTrackOnDialog
+        } else {
+            MaterialTheme.colorScheme.onSurfaceVariant
+        }
 
     Box(
         modifier =
@@ -57,28 +78,32 @@ fun SegmentedToggle(
                 // Täysleveä: keskitetty 70 %:n valitsin ei linjautunut kenttien reunoihin.
                 .fillMaxWidth()
                 .clip(containerShape)
-                .background(MaterialTheme.colorScheme.surfaceVariant)
+                .background(trackColor)
                 .selectableGroup()
                 .padding(ComponentDimens.SegmentedContainerPadding),
     ) {
-        if (isGrid) {
-            SegmentedToggleGrid(
-                options = options,
-                selectedIndex = selectedIndex,
-                onSelect = onSelect,
-                itemShape = itemShape,
-                itemTestTagPrefix = itemTestTagPrefix,
-                optionTrailingContent = optionTrailingContent,
-            )
-        } else {
-            SegmentedTogglePill(
-                options = options,
-                selectedIndex = selectedIndex,
-                onSelect = onSelect,
-                itemShape = itemShape,
-                itemTestTagPrefix = itemTestTagPrefix,
-                optionTrailingContent = optionTrailingContent,
-            )
+        CompositionLocalProvider(LocalContentColor provides unselectedTextColor) {
+            if (isGrid) {
+                SegmentedToggleGrid(
+                    options = options,
+                    selectedIndex = selectedIndex,
+                    pendingIndex = pendingIndex,
+                    onSelect = onSelect,
+                    itemShape = itemShape,
+                    itemTestTagPrefix = itemTestTagPrefix,
+                    optionTrailingContent = optionTrailingContent,
+                )
+            } else {
+                SegmentedTogglePill(
+                    options = options,
+                    selectedIndex = selectedIndex,
+                    pendingIndex = pendingIndex,
+                    onSelect = onSelect,
+                    itemShape = itemShape,
+                    itemTestTagPrefix = itemTestTagPrefix,
+                    optionTrailingContent = optionTrailingContent,
+                )
+            }
         }
     }
 }
@@ -87,6 +112,7 @@ fun SegmentedToggle(
 private fun SegmentedToggleGrid(
     options: List<String>,
     selectedIndex: Int,
+    pendingIndex: Int?,
     onSelect: (Int) -> Unit,
     itemShape: Shape,
     itemTestTagPrefix: String?,
@@ -98,6 +124,7 @@ private fun SegmentedToggleGrid(
                 options = options,
                 rowStart = rowStart,
                 selectedIndex = selectedIndex,
+                pendingIndex = pendingIndex,
                 onSelect = onSelect,
                 itemShape = itemShape,
                 itemTestTagPrefix = itemTestTagPrefix,
@@ -112,6 +139,7 @@ private fun SegmentedToggleGridRow(
     options: List<String>,
     rowStart: Int,
     selectedIndex: Int,
+    pendingIndex: Int?,
     onSelect: (Int) -> Unit,
     itemShape: Shape,
     itemTestTagPrefix: String?,
@@ -127,6 +155,7 @@ private fun SegmentedToggleGridRow(
             SegmentedToggleItem(
                 label = options[index],
                 isSelected = index == selectedIndex,
+                isPending = index == pendingIndex,
                 onClick = { onSelect(index) },
                 shape = itemShape,
                 modifier = Modifier.weight(1f).fillMaxHeight().itemTestTag(itemTestTagPrefix, index),
@@ -142,6 +171,7 @@ private fun SegmentedToggleGridRow(
 private fun SegmentedTogglePill(
     options: List<String>,
     selectedIndex: Int,
+    pendingIndex: Int?,
     onSelect: (Int) -> Unit,
     itemShape: Shape,
     itemTestTagPrefix: String?,
@@ -152,6 +182,7 @@ private fun SegmentedTogglePill(
             SegmentedToggleItem(
                 label = label,
                 isSelected = index == selectedIndex,
+                isPending = index == pendingIndex,
                 onClick = { onSelect(index) },
                 shape = itemShape,
                 modifier = Modifier.weight(1f).itemTestTag(itemTestTagPrefix, index),
@@ -165,6 +196,7 @@ private fun SegmentedTogglePill(
 private fun SegmentedToggleItem(
     label: String,
     isSelected: Boolean,
+    isPending: Boolean,
     onClick: () -> Unit,
     shape: Shape,
     modifier: Modifier = Modifier,
@@ -172,18 +204,22 @@ private fun SegmentedToggleItem(
     // Ruudukossa merkki (esim. PRO tai TRIAL) on nimen alla: rinnalla se kavensi nimen kahdelle riville.
     stackTrailing: Boolean = false,
 ) {
+    val primary = MaterialTheme.colorScheme.primary
+    val selectionAppearance =
+        when {
+            isSelected -> Modifier.background(primary)
+            isPending -> {
+                val description = stringResource(R.string.segmented_option_pending_state)
+                Modifier.border(1.5.dp, primary, shape).semantics { stateDescription = description }
+            }
+            else -> Modifier
+        }
     val itemModifier =
         modifier
             .heightIn(min = ComponentDimens.SegmentedItemMinHeight)
             .clip(shape)
-            .then(
-                // Tasainen kuten muut oranssit painikkeet: liukuväri teki valinnasta eri näköisen.
-                if (isSelected) {
-                    Modifier.background(MaterialTheme.colorScheme.primary)
-                } else {
-                    Modifier
-                },
-            ).selectable(
+            .then(selectionAppearance)
+            .selectable(
                 selected = isSelected,
                 onClick = onClick,
                 role = Role.RadioButton,
@@ -223,7 +259,7 @@ private fun SegmentedToggleLabel(
         if (isSelected) {
             MaterialTheme.colorScheme.onPrimary
         } else {
-            MaterialTheme.colorScheme.onSurfaceVariant
+            LocalContentColor.current
         }
     BasicText(
         modifier =

@@ -19,6 +19,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.calculator.CounterValueFormatter
 import com.finnvek.knittools.domain.model.CounterProject
@@ -69,70 +70,84 @@ fun ContinueProjectCard(
                 containerColor = MaterialTheme.knitToolsColors.actionContainer,
             ),
     ) {
-        Row(
-            modifier = Modifier.padding(ProjectListDimens.HeroPadding),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
+        Column(Modifier.padding(ProjectListDimens.HeroPadding)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(ProjectListDimens.HeroContentGap),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
                 Text(
                     text = stringResource(continueKickerRes(project)).localizedUppercase(),
+                    modifier = Modifier.weight(1f),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.knitToolsColors.primaryReadable,
+                    maxLines = if (sessionStatus == null) Int.MAX_VALUE else 1,
+                    overflow = TextOverflow.Ellipsis,
                 )
-                if (showName) {
-                    Spacer(modifier = Modifier.height(ProjectListDimens.ItemLineGap))
-                    Text(text = project.name, style = MaterialTheme.typography.titleLarge)
-                }
                 sessionStatus?.let {
                     Text(
                         text = it,
-                        style = MaterialTheme.typography.labelMedium,
+                        style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                     )
-                }
-                normalizedContinueKnittingSectionName(project.sectionName)?.let {
-                    Spacer(modifier = Modifier.height(ProjectListDimens.ItemLineGap))
-                    Text(
-                        text = it,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-                Spacer(modifier = Modifier.height(ProjectListDimens.ProgressGroupTopGap))
-                FlowRow(
-                    horizontalArrangement = Arrangement.spacedBy(ProjectListDimens.HeroContentGap),
-                    verticalArrangement = Arrangement.spacedBy(ProjectListDimens.ItemLineGap),
-                ) {
-                    Text(
-                        text = countText,
-                        style = MaterialTheme.typography.projectHeroCount,
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.alignByBaseline(),
-                    )
-                    targetStatus?.let {
-                        Text(
-                            text = projectListTargetStatusText(it),
-                            style = MaterialTheme.typography.labelLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.alignByBaseline(),
-                        )
-                    }
-                }
-                if (progressFraction != null) {
-                    Spacer(modifier = Modifier.height(ProjectListDimens.ItemLineGap))
-                    ProjectProgressBar(progressFraction)
                 }
             }
-            onOpenCounter?.let {
-                Spacer(modifier = Modifier.width(ProjectListDimens.HeroContentGap))
-                CounterImageButton(
-                    imageRes = R.drawable.counter_continue_button,
-                    contentDescription = stringResource(R.string.project_continue_content_description, project.name),
-                    visualSize = ProjectListDimens.HeroActionVisualSize,
-                    onClick = it,
-                    enabled = enabled,
-                    modifier = Modifier.size(ProjectListDimens.HeroActionTouchSize),
-                )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(modifier = Modifier.weight(1f)) {
+                    if (showName) {
+                        Spacer(modifier = Modifier.height(ProjectListDimens.ItemLineGap))
+                        Text(text = project.name, style = MaterialTheme.typography.titleLarge)
+                    }
+                    normalizedContinueKnittingSectionName(project.sectionName)?.let {
+                        Spacer(modifier = Modifier.height(ProjectListDimens.ItemLineGap))
+                        Text(
+                            text = it,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(ProjectListDimens.ProgressGroupTopGap))
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(ProjectListDimens.HeroContentGap),
+                        verticalArrangement = Arrangement.spacedBy(ProjectListDimens.ItemLineGap),
+                    ) {
+                        Text(
+                            text = countText,
+                            style = MaterialTheme.typography.projectHeroCount,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.alignByBaseline(),
+                        )
+                        targetStatus?.let {
+                            Text(
+                                text = projectListTargetStatusText(it),
+                                style = MaterialTheme.typography.labelLarge,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.alignByBaseline(),
+                            )
+                        }
+                    }
+                    if (progressFraction != null) {
+                        Spacer(modifier = Modifier.height(ProjectListDimens.ItemLineGap))
+                        ProjectProgressBar(progressFraction)
+                    }
+                }
+                onOpenCounter?.let {
+                    Spacer(modifier = Modifier.width(ProjectListDimens.HeroContentGap))
+                    CounterImageButton(
+                        imageRes = R.drawable.counter_continue_button,
+                        contentDescription =
+                            stringResource(
+                                R.string.project_continue_content_description,
+                                project.name,
+                            ),
+                        visualSize = ProjectListDimens.HeroActionVisualSize,
+                        onClick = it,
+                        enabled = enabled,
+                        modifier = Modifier.size(ProjectListDimens.HeroActionTouchSize),
+                    )
+                }
             }
         }
     }

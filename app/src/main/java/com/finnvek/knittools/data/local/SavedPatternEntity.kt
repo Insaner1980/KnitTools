@@ -20,7 +20,7 @@ data class SavedPatternEntity(
     val source: String,
     val ravelryPatternId: Int? = null,
     val name: String,
-    val designerName: String,
+    val designerName: String?,
     val thumbnailUrl: String? = null,
     val difficulty: Float? = null,
     val gaugeStitches: Float? = null,

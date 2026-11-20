@@ -148,6 +148,9 @@ class ProjectYarnUsageRuntimeTest {
                     null
             }
         }
+        waitUntil("save confirmation in the yarn sheet") {
+            findNode { it.text?.toString() == text(R.string.saved_to_my_yarn_explanation) } != null
+        }
         cardId = runBlocking { requireNotNull(database.projectYarnNoteDao().getById(noteId)?.savedYarnCardId) }
         assertEquals(initial.id, currentUsage().id)
         assertEquals(initial.amounts, currentUsage().amounts)
@@ -236,17 +239,7 @@ class ProjectYarnUsageRuntimeTest {
     ) {
         val label =
             text(
-                R.string.measurement_field_with_unit,
-                text(
-                    if (field ==
-                        YarnUsageField.ALLOCATED
-                    ) {
-                        R.string.yarn_usage_allocated
-                    } else {
-                        R.string.yarn_usage_used
-                    },
-                ),
-                text(R.string.measurement_unit_meter),
+                if (field == YarnUsageField.ALLOCATED) R.string.yarn_usage_allocated else R.string.yarn_usage_used,
             )
         var node: AccessibilityNodeInfo? = scrollToNode(label) { it.contentDescription?.toString() == label }
         while (node != null && !node.isEditable) node = node.parent

@@ -84,7 +84,6 @@ import com.finnvek.knittools.pro.ProState
 import com.finnvek.knittools.pro.proActionAccess
 import com.finnvek.knittools.repository.ProjectCreationResult
 import com.finnvek.knittools.repository.ProjectFolderMutationResult
-import com.finnvek.knittools.ui.components.CancelButton
 import com.finnvek.knittools.ui.components.CollectWithLifecycleEffect
 import com.finnvek.knittools.ui.components.ConfirmationDialog
 import com.finnvek.knittools.ui.components.ContinueProjectCard
@@ -97,11 +96,11 @@ import com.finnvek.knittools.ui.components.ProjectCard
 import com.finnvek.knittools.ui.components.ProjectDetailsMode
 import com.finnvek.knittools.ui.components.ProjectDetailsSheet
 import com.finnvek.knittools.ui.components.ProjectDetailsValues
-import com.finnvek.knittools.ui.components.ScrollableFormDialog
 import com.finnvek.knittools.ui.components.SectionLabel
 import com.finnvek.knittools.ui.components.SelectionAction
 import com.finnvek.knittools.ui.components.SelectionActionBar
 import com.finnvek.knittools.ui.components.proMarkerDescription
+import com.finnvek.knittools.ui.components.workSessionHeroStatusText
 import com.finnvek.knittools.ui.components.workSessionStatusText
 import com.finnvek.knittools.ui.layout.ContentWidthPolicy
 import com.finnvek.knittools.ui.layout.LocalAdaptiveContentSize
@@ -154,6 +153,7 @@ fun ProjectListScreen(
     val active = content.active
     val completed = content.completed
     val activeSession = content.activeSession
+    val activeSessionDuration by viewModel.activeSessionDuration.collectAsStateWithLifecycle()
     SideEffect { onStartupReady(!content.isLoading) }
     val pendingCompletionSessionAction by viewModel.pendingCompletionSessionAction.collectAsStateWithLifecycle()
     val pendingDeletionSessionAction by viewModel.pendingDeletionSessionAction.collectAsStateWithLifecycle()
@@ -691,6 +691,8 @@ fun ProjectListScreen(
                             selectedProjectIds = selectedProjectIds,
                             activeSessionProjectId = activeSession?.projectId,
                             activeSessionNeedsReview = activeSession?.needsRecoveryReview == true,
+                            activeSessionDurationSeconds =
+                                activeSessionDuration?.takeIf { it.first == activeSession?.sessionToken }?.second ?: 0L,
                             selectedFolderFilter = selectedFolderFilter,
                             folders = folders,
                             hasHiddenCompletedProjects = hasHiddenCompletedProjects,
@@ -791,18 +793,21 @@ private fun MultiCompleteDialog(
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
 ) {
-    ScrollableFormDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.complete_project)) },
-        text = { Text(pluralStringResource(R.plurals.complete_n_projects, selectedCount, selectedCount)) },
-        confirmButton = {
-            TextButton(onClick = onConfirm) {
-                Text(stringResource(R.string.complete_project))
-            }
-        },
-        dismissButton = {
-            CancelButton(onClick = onDismiss)
-        },
+    ConfirmationDialog(
+        title =
+            stringResource(
+                if (selectedCount ==
+                    1
+                ) {
+                    R.string.complete_project_title
+                } else {
+                    R.string.complete_projects_title
+                },
+            ),
+        message = pluralStringResource(R.plurals.complete_n_projects, selectedCount, selectedCount),
+        confirmText = stringResource(R.string.complete_project),
+        onConfirm = onConfirm,
+        onDismiss = onDismiss,
     )
 }
 
@@ -813,7 +818,16 @@ private fun MultiDeleteDialog(
     onDismiss: () -> Unit,
 ) {
     ConfirmationDialog(
-        title = stringResource(R.string.delete_project),
+        title =
+            stringResource(
+                if (selectedCount ==
+                    1
+                ) {
+                    R.string.delete_project_title
+                } else {
+                    R.string.delete_projects_title
+                },
+            ),
         message = pluralStringResource(R.plurals.delete_n_projects, selectedCount, selectedCount),
         confirmText = stringResource(R.string.delete_project),
         isDestructive = true,
@@ -1076,6 +1090,7 @@ data class ProjectListContentState(
     val selectedProjectIds: Set<Long>,
     val activeSessionProjectId: Long?,
     val activeSessionNeedsReview: Boolean,
+    val activeSessionDurationSeconds: Long,
     val selectedFolderFilter: ProjectFolderFilter = ProjectFolderFilter.AllProjects,
     val folders: List<ProjectFolder> = emptyList(),
     val hasHiddenCompletedProjects: Boolean = false,
@@ -1196,7 +1211,11 @@ private fun ProjectListContent(
                                     mainCounterCustomLabel = ck.mainCounterCustomLabel,
                                 ),
                             sessionStatus =
-                                workSessionStatusText(hasSession, hasSession && state.activeSessionNeedsReview),
+                                workSessionHeroStatusText(
+                                    hasSession,
+                                    state.activeSessionNeedsReview,
+                                    state.activeSessionDurationSeconds,
+                                ),
                             // Heron runko avaa projektinäkymän kuten projektikortit; jatka-nappi avaa laskurin.
                             onClick = { actions.onOpenOverview(ck.projectId) },
                             onClickLabel = stringResource(R.string.project_card_open_overview_action),
@@ -1360,7 +1379,7 @@ private fun DeleteProjectDialog(
     onDismiss: () -> Unit,
 ) {
     ConfirmationDialog(
-        title = stringResource(R.string.delete_project),
+        title = stringResource(R.string.delete_project_title),
         message = stringResource(R.string.delete_project_message, projectName),
         confirmText = stringResource(R.string.delete_project),
         isDestructive = true,

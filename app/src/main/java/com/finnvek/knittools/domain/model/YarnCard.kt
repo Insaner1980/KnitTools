@@ -21,8 +21,14 @@ data class YarnCard(
     val linkedProjectId: Long? = null,
 )
 
-fun YarnCard.displayName(fallbackName: (Long) -> String): String =
-    listOfNotNull(
-        brand.takeIf { it.isNotBlank() },
-        yarnName.takeIf { it.isNotBlank() },
-    ).joinToString(" ").ifEmpty { fallbackName(id) }
+fun YarnCard.displayName(fallbackName: (Long) -> String): String {
+    val trimmedBrand = brand.trim()
+    val trimmedName = yarnName.trim()
+    return when {
+        trimmedBrand.isEmpty() -> trimmedName.ifEmpty { fallbackName(id) }
+        trimmedName.isEmpty() -> trimmedBrand
+        trimmedName.equals(trimmedBrand, ignoreCase = true) -> trimmedName
+        trimmedName.startsWith("$trimmedBrand ", ignoreCase = true) -> trimmedName
+        else -> "$trimmedBrand $trimmedName"
+    }
+}

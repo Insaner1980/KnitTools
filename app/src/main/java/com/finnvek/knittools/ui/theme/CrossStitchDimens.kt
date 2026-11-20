@@ -28,4 +28,5 @@ object CrossStitchDimens {
     val EmptyStatePadding = 32.dp
     val EmptyStateGlyphGap = 24.dp
     val EmptyStateTextGap = 8.dp
+    val EmptyStateActionGap = 16.dp
 }

@@ -35,6 +35,11 @@ class ProjectListWorkspaceSourceTest {
         val screen = ProjectSourceFiles.read(PROJECT_LIST_SCREEN)
         val overview = ProjectSourceFiles.read(PROJECT_OVERVIEW_SCREEN)
         val continueAction = sourceFrom(card, "CounterImageButton(")
+        val contentDescriptionCall =
+            Regex(
+                """contentDescription\s*=\s*stringResource\(\s*""" +
+                    """R\.string\.project_continue_content_description,\s*project\.name\s*,?\s*\)""",
+            )
 
         assertTrue(card.contains("mainCounterTargetStatus(display.targetLine)"))
         assertTrue(card.contains("mainCounterTargetFraction(display.targetLine)"))
@@ -46,7 +51,7 @@ class ProjectListWorkspaceSourceTest {
         assertTokensInOrder(
             continueAction,
             "imageRes = R.drawable.counter_continue_button",
-            "contentDescription = stringResource(R.string.project_continue_content_description, project.name)",
+            checkNotNull(contentDescriptionCall.find(continueAction)) { "Missing continue button description" }.value,
             "visualSize = ProjectListDimens.HeroActionVisualSize",
             "onClick = it",
             "modifier = Modifier.size(ProjectListDimens.HeroActionTouchSize)",

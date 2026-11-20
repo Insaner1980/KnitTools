@@ -91,8 +91,13 @@ class UiStateRetentionSourceTest {
 
         assertTrue(navGraph.contains("route = Screen.SavedPatterns.route"))
         assertTrue(navGraph.contains("clearSelection = libraryViewModel::exitPatternSelectMode"))
-        assertTrue(navGraph.contains("route = Screen.MyYarn.route"))
-        assertTrue(navGraph.contains("clearSelection = libraryViewModel::exitYarnSelectMode"))
+        val yarnRoute = navGraph.substringAfter("private fun NavGraphBuilder.libraryMyYarnRoute(")
+        assertTrue(yarnRoute.contains("Screen.MyYarnFromEstimator.route else Screen.MyYarn.route"))
+        assertTrue(
+            Regex(
+                """route = route,\s+clearSelection = libraryViewModel::exitYarnSelectMode""",
+            ).containsMatchIn(yarnRoute),
+        )
         assertTrue(navGraph.contains("route = Screen.AllPhotos.route"))
         assertTrue(navGraph.contains("clearSelection = libraryViewModel::exitPhotoSelectMode"))
         assertTrue(navGraph.contains("NavController.OnDestinationChangedListener"))

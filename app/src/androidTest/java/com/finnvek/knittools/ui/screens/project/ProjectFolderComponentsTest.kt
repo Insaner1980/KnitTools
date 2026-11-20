@@ -29,7 +29,6 @@ import androidx.compose.ui.test.click
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createComposeRule
-import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -126,7 +125,7 @@ class ProjectFolderComponentsTest {
             KnitToolsTheme(isDarkTheme = false) {
                 ProjectFolderNameDialog(
                     folderId = 1L,
-                    initialName = "x".repeat(51),
+                    initialName = "",
                     errorMessage = null,
                     isSaving = false,
                     onConfirm = { confirmedName = it },
@@ -136,8 +135,14 @@ class ProjectFolderComponentsTest {
         }
 
         composeRule.onNodeWithText("Maximum 50 characters").assertIsDisplayed()
+        val required = composeRule.onNodeWithText("Enter a folder name.")
+        required.assertDoesNotExist()
         composeRule.onNodeWithText("Save").assertIsNotEnabled()
-        composeRule.onNodeWithText("Folder name").performTextReplacement("Gifts")
+        val name = composeRule.onNodeWithContentDescription("Folder name")
+        name.performTextReplacement(" ")
+        required.assertIsDisplayed()
+        composeRule.onNodeWithText("Maximum 50 characters").assertDoesNotExist()
+        name.performTextReplacement("Gifts")
         composeRule.onNodeWithText("Save").assertIsEnabled().performClick()
         composeRule.runOnIdle { assertEquals("Gifts", confirmedName) }
         captureScreenshot("rename-dialog-validation-light")
@@ -160,8 +165,8 @@ class ProjectFolderComponentsTest {
         }
 
         composeRule.onNodeWithText("Delete folder?").assertIsDisplayed()
-        composeRule.onNodeWithText("2 projects will be kept and become Unfiled.").assertIsDisplayed()
-        composeRule.onNodeWithText("Delete folder").assertHeightIsAtLeast(48.dp).performClick()
+        composeRule.onNodeWithText("2 projects will be kept and become Unfiled.", substring = true).assertIsDisplayed()
+        composeRule.onNodeWithText("Delete").assertHeightIsAtLeast(48.dp).performClick()
         composeRule.runOnIdle { assertEquals(true, deleted) }
         captureScreenshot("delete-folder-two-projects-light")
     }
@@ -306,15 +311,15 @@ class ProjectFolderComponentsTest {
             }
         }
 
-        composeRule.onAllNodesWithText("Create folder")[0].assertIsDisplayed()
+        composeRule.onNodeWithText("Create folder").assertIsDisplayed()
         composeRule.onNodeWithText("Folder name already in use.").assertIsDisplayed()
-        composeRule.onAllNodesWithText("Create folder")[1].assertIsNotEnabled()
+        composeRule.onNodeWithText("Save").assertIsNotEnabled()
         captureScreenshot("create-folder-duplicate-light")
     }
 
     @Test
     @SdkSuppress(minSdkVersion = 30)
-    fun createDialogKeepsCreateReachableWhileKeyboardIsActuallyVisible() {
+    fun createDialogKeepsSaveReachableWhileKeyboardIsActuallyVisible() {
         var createdName: String? = null
         composeRule.setContent {
             KnitToolsTheme(isDarkTheme = false) {
@@ -330,14 +335,14 @@ class ProjectFolderComponentsTest {
         }
 
         try {
-            composeRule.onNodeWithText("Folder name").performTouchInput { click() }
+            composeRule.onNodeWithContentDescription("Folder name").performTouchInput { click() }
             composeRule.waitUntil(timeoutMillis = 5_000) { isKeyboardVisible() }
             composeRule
-                .onNode(hasText("Create folder") and hasClickAction())
+                .onNode(hasText("Save") and hasClickAction())
                 .assertIsDisplayed()
             captureScreenshot("create-folder-ime-open-light")
             composeRule
-                .onNode(hasText("Create folder") and hasClickAction())
+                .onNode(hasText("Save") and hasClickAction())
                 .performTouchInput { click() }
             composeRule.runOnIdle { assertEquals("Gifts", createdName) }
         } finally {

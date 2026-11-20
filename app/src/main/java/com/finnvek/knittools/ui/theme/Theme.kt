@@ -36,6 +36,9 @@ data class KnitToolsExtendedColors(
     val tableHeaderContainer: Color,
     /** Syötekentän pohja kortissa, dialogissa ja sheetissä (`NumberInputField`, `cardTextFieldColors`). */
     val inputFieldContainer: Color,
+    val segmentedTrackOnDialog: Color,
+    val onSegmentedTrackOnDialog: Color,
+    val sliderInactiveTrack: Color,
     /** Tekstikenttä suoraan näkymän taustalla (hakukentät): vaaleassa teemassa kortin sävy, ei raskas khaki. */
     val screenFieldContainer: Color,
     /** Tyhjän tilan teksti näkymän taustalla, selvästi himmeämpi kuin sisältö. */
@@ -74,6 +77,9 @@ val LocalKnitToolsColors =
             sectionLabel = Color.Unspecified,
             tableHeaderContainer = Color.Unspecified,
             inputFieldContainer = Color.Unspecified,
+            segmentedTrackOnDialog = Color.Unspecified,
+            onSegmentedTrackOnDialog = Color.Unspecified,
+            sliderInactiveTrack = Color.Unspecified,
             screenFieldContainer = Color.Unspecified,
             emptyStateText = Color.Unspecified,
             fieldPlaceholderText = Color.Unspecified,
@@ -147,6 +153,9 @@ private val DarkExtendedColors =
         sectionLabel = DustyRose,
         tableHeaderContainer = SurfaceHighest,
         inputFieldContainer = SurfaceHighest,
+        segmentedTrackOnDialog = DarkSurfaceDialogTrack,
+        onSegmentedTrackOnDialog = TextPrimary,
+        sliderInactiveTrack = DarkSliderInactiveTrack,
         screenFieldContainer = SurfaceHighest,
         emptyStateText = TextMuted,
         // TextMuted jäi SurfaceHighest-kentässä 3,9:1:een, joten tummassa teemassa toissijainen teksti.
@@ -220,6 +229,9 @@ private val LightExtendedColors =
         // Kortin sävy: tumma khakikaista oli vanhan paletin jäänne taulukoiden yläpuolella.
         tableHeaderContainer = LightCardContainer,
         inputFieldContainer = LightInputField,
+        segmentedTrackOnDialog = LightSurfaceHighest,
+        onSegmentedTrackOnDialog = LightTextPrimary,
+        sliderInactiveTrack = LightSliderInactiveTrack,
         screenFieldContainer = LightCardContainer,
         emptyStateText = LightEmptyStateText,
         fieldPlaceholderText = LightEmptyStateText,

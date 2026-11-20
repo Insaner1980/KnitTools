@@ -29,11 +29,11 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.isDisplayed
 import androidx.compose.ui.test.isFocused
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
-import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
@@ -209,6 +209,16 @@ class ProjectYarnUsageScreenTest {
         render()
         openNote()
         chooseUnit(2)
+        composeRule.onNodeWithTag("yarn_usage_unit_option_0").assertIsSelected()
+        composeRule
+            .onNodeWithTag("yarn_usage_unit_option_2")
+            .assertIsDisplayed()
+            .assertIsNotSelected()
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "Needs skein details"))
+        field(YarnUsageField.LENGTH).assertIsFocused().assertIsDisplayed()
+        composeRule
+            .onAllNodesWithText("Enter both length and weight per skein as positive values to use grams or skeins.")
+            .assertCountEquals(1)
         composeRule.onNodeWithTag("yarn_usage_save").performScrollTo().assertIsNotEnabled()
         capture("missing-conversion")
         edit(YarnUsageField.LENGTH, "200")
@@ -506,7 +516,13 @@ class ProjectYarnUsageScreenTest {
                 val scope = rememberCoroutineScope()
                 ProjectYarnUsageFlow(
                     1,
-                    cards.filter { it.linkedProjectId == 1L }.map { it.id to it.yarnName },
+                    cards.filter { it.linkedProjectId == 1L }.map {
+                        LinkedYarnSummary(
+                            it.id,
+                            it.yarnName,
+                            it.colorName,
+                        )
+                    },
                     notes,
                     ProState(status = ProStatus.TRIAL_EXPIRED),
                     true,
@@ -574,13 +590,7 @@ class ProjectYarnUsageScreenTest {
     }
 
     private fun remaining(text: String) {
-        // Viimeisen kentän IME-toiminto sulkee näppäimistön; muunnoksen ollessa päällä viimeinen on paino.
-        val conversionVisible =
-            composeRule
-                .onAllNodesWithTag("yarn_usage_input_${YarnUsageField.WEIGHT.name}")
-                .fetchSemanticsNodes()
-                .isNotEmpty()
-        field(if (conversionVisible) YarnUsageField.WEIGHT else YarnUsageField.USED).performImeAction()
+        field(YarnUsageField.USED).performImeAction()
         composeRule.waitUntil(5_000) { !shell("dumpsys input_method").contains("mInputShown=true") }
         composeRule.waitUntil(5_000) {
             composeRule.onNodeWithTag("yarn_usage_remaining").performScrollTo()

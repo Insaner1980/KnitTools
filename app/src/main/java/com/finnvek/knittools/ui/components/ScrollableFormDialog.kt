@@ -19,7 +19,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.DialogProperties
 import com.finnvek.knittools.ui.layout.AdaptiveModalWindow
+import com.finnvek.knittools.ui.layout.dialogWidth
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -35,7 +37,8 @@ internal fun ScrollableFormDialog(
         onDismissRequest = onDismissRequest,
         // Let Android fit the floating window around the IME. Applying IME padding to the
         // wrap-content window itself can make its height oscillate as the insets change.
-        modifier = modifier,
+        modifier = modifier.dialogWidth(),
+        properties = DialogProperties(usePlatformDefaultWidth = false),
     ) {
         AdaptiveModalWindow()
         Surface(

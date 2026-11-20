@@ -21,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
@@ -28,9 +29,8 @@ import androidx.core.net.toUri
 import coil3.compose.AsyncImage
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.calculator.DurationDisplayFormatter
-import com.finnvek.knittools.domain.calculator.MainCounterCountSlot
+import com.finnvek.knittools.domain.calculator.MainCounterLabelSlot
 import com.finnvek.knittools.domain.calculator.YarnUsageCalculator
-import com.finnvek.knittools.domain.model.PatternDisplayNames
 import com.finnvek.knittools.domain.model.ProjectYarnNote
 import com.finnvek.knittools.domain.model.ProjectYarnUsageItem
 import com.finnvek.knittools.domain.model.YarnCard
@@ -49,9 +49,11 @@ import com.finnvek.knittools.ui.components.OverviewTextAction
 import com.finnvek.knittools.ui.components.ProMarker
 import com.finnvek.knittools.ui.components.YarnThumbnail
 import com.finnvek.knittools.ui.components.durationText
-import com.finnvek.knittools.ui.components.mainCounterCountText
+import com.finnvek.knittools.ui.components.projectDocumentDisplayName
 import com.finnvek.knittools.ui.screens.counter.CounterScreenActions
 import com.finnvek.knittools.ui.screens.counter.CounterUiState
+import com.finnvek.knittools.ui.screens.counter.LinkedYarnSummary
+import com.finnvek.knittools.ui.screens.counter.reminderDetailText
 import com.finnvek.knittools.ui.screens.counter.yarnUsageAmount
 import com.finnvek.knittools.ui.theme.ProjectListDimens
 import com.finnvek.knittools.ui.theme.ProjectOverviewDimens
@@ -63,51 +65,84 @@ internal fun ProjectOverviewYarn(
     unit: YarnUsageUnit,
     cards: List<YarnCard>,
     notes: List<ProjectYarnNote>,
+    linkedYarns: List<LinkedYarnSummary>,
     onEdit: () -> Unit,
 ) {
+    val displayedCardIds =
+        items
+            .orEmpty()
+            .mapNotNull { item ->
+                item.source.yarnCardId.takeIf { item.source.projectYarnNoteId == null }
+            }.toSet()
+    // A note and its saved card share one usage record, while both entries stay visible.
+    val additionalLinkedYarns = linkedYarns.filterNot { it.id in displayedCardIds }
     // Osiolla on yksi toiminto: sen nimi kertoo mitä puuttuu, eikä riveillä ole omia linkkejä.
     val action =
         when {
-            items.isNullOrEmpty() -> R.string.project_overview_add
-            items.any { it.usage == null } -> R.string.project_overview_yarn_add_amounts
+            items.isNullOrEmpty() && additionalLinkedYarns.isEmpty() -> R.string.project_overview_add
+            items?.any { it.usage == null } == true -> R.string.project_overview_yarn_add_amounts
             else -> R.string.project_overview_edit
         }
     OverviewSectionHeader(R.string.project_content_yarn, action, onEdit)
     // Latauksen ajan osio jää tyhjäksi: iso latausindikaattori välähti joka avauksella.
     if (items == null) {
         return
-    } else if (items.isEmpty()) {
+    } else if (items.isEmpty() && additionalLinkedYarns.isEmpty()) {
         OverviewEmptyText(R.string.project_overview_yarn_empty)
     } else {
         Column(verticalArrangement = Arrangement.spacedBy(ProjectOverviewDimens.HeaderTopGap)) {
             items.forEach { item ->
                 val note = notes.firstOrNull { it.id == item.source.projectYarnNoteId }
                 val card = cards.firstOrNull { it.id == (item.source.yarnCardId ?: note?.savedYarnCardId) }
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(ProjectOverviewDimens.ContentGap),
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .heightIn(min = ProjectOverviewDimens.RowMinHeight)
-                            .clickable(onClick = onEdit),
-                ) {
-                    // Ilman kuvaa rivi on pelkkää tekstiä: neutraali laatta ei kertonut langasta mitään.
-                    card?.photoUri?.takeIf(String::isNotBlank)?.let { photoUri ->
-                        YarnThumbnail(photoUri = photoUri, size = ProjectOverviewDimens.YarnSwatchSize)
-                    }
-                    Column(Modifier.weight(1f)) {
-                        Text(item.name, style = MaterialTheme.typography.titleMedium)
-                        (note?.description ?: card?.colorName)?.takeIf(String::isNotBlank)?.let { description ->
-                            Text(
-                                description,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                    }
-                }
+                val linkedYarn = linkedYarns.firstOrNull { it.id == item.source.yarnCardId }
+                ProjectOverviewYarnRow(
+                    name = if (note == null) linkedYarn?.name ?: item.name else item.name,
+                    description = note?.description ?: linkedYarn?.colorLine ?: card?.colorName,
+                    photoUri = card?.photoUri,
+                    onEdit = onEdit,
+                )
                 item.usage?.amounts?.let { ProjectOverviewYarnAmounts(it, unit) }
+            }
+            additionalLinkedYarns.forEach { yarn ->
+                ProjectOverviewYarnRow(
+                    yarn.name,
+                    yarn.colorLine,
+                    cards.firstOrNull { it.id == yarn.id }?.photoUri,
+                    onEdit,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ProjectOverviewYarnRow(
+    name: String,
+    description: String?,
+    photoUri: String?,
+    onEdit: () -> Unit,
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(ProjectOverviewDimens.ContentGap),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .heightIn(min = ProjectOverviewDimens.RowMinHeight)
+                .clickable(onClick = onEdit),
+    ) {
+        photoUri
+            ?.takeIf(
+                String::isNotBlank,
+            )?.let { YarnThumbnail(photoUri = it, size = ProjectOverviewDimens.YarnSwatchSize) }
+        Column(Modifier.weight(1f)) {
+            Text(name, style = MaterialTheme.typography.titleMedium)
+            description?.takeIf(String::isNotBlank)?.let {
+                Text(
+                    it,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
         }
     }
@@ -173,11 +208,29 @@ internal fun ProjectOverviewPattern(
         R.string.project_overview_add,
         content.onAddPattern,
     )
+    val metadata =
+        state.linkedPattern?.takeIf { pattern ->
+            state.projectDocuments.none { it.savedPatternId == pattern.id }
+        }
+    metadata?.let {
+        OverviewLinkRow(
+            it.name,
+            stringResource(
+                if (it.isWebPatternCompatible) {
+                    R.string.web_pattern_label
+                } else {
+                    R.string.project_documents_pattern_information
+                },
+            ),
+            CrossStitchGlyph.PATTERN,
+            content.onDocuments,
+        )
+    }
     val primary = state.primaryDocument
     if (primary != null) {
         val available = state.projectDocumentAvailability[primary.id] == true
         OverviewLinkRow(
-            PatternDisplayNames.forDisplay(primary.label),
+            projectDocumentDisplayName(primary.label),
             if (available) {
                 stringResource(
                     R.string.project_overview_pdf_page_format,
@@ -195,28 +248,10 @@ internal fun ProjectOverviewPattern(
                 }
             },
         )
-        // Dokumenttivalikko tarjoaa myös yksittäisen PDF:n nimeämisen, ensisijaisuuden ja poiston.
+        val documentCount = state.projectDocuments.size
         OverviewLinkRow(
-            stringResource(R.string.project_documents_title),
-            null,
-            CrossStitchGlyph.PATTERN,
-            content.onDocuments,
-        )
-    }
-    val metadata =
-        state.linkedPattern?.takeIf { pattern ->
-            state.projectDocuments.none { it.savedPatternId == pattern.id }
-        }
-    metadata?.let {
-        OverviewLinkRow(
-            it.name,
-            stringResource(
-                if (it.isWebPatternCompatible) {
-                    R.string.web_pattern_label
-                } else {
-                    R.string.project_documents_pattern_information
-                },
-            ),
+            stringResource(R.string.project_documents_manage),
+            pluralStringResource(R.plurals.project_documents_count, documentCount, documentCount),
             CrossStitchGlyph.PATTERN,
             content.onDocuments,
         )
@@ -279,7 +314,7 @@ internal fun ProjectOverviewPhotos(
         state.latestPhotos.take(3).forEach { photo ->
             AsyncImage(
                 model = photo.photoUri.toUri(),
-                contentDescription = stringResource(R.string.row_label_format, photo.rowNumber),
+                contentDescription = stringResource(R.string.photo_count_label_format, photo.rowNumber),
                 contentScale = ContentScale.Crop,
                 modifier =
                     Modifier
@@ -322,8 +357,10 @@ internal fun ProjectOverviewReminders(
     } else {
         OverviewLinkRow(
             next.message,
-            mainCounterCountText(
-                MainCounterCountSlot(next.targetRow, state.mainCounterLabelType, state.mainCounterCustomLabel),
+            reminderDetailText(
+                next,
+                state.counter.count,
+                MainCounterLabelSlot(state.mainCounterLabelType, state.mainCounterCustomLabel),
             ),
             CrossStitchGlyph.REMINDER,
             actions.onReminders,

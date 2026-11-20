@@ -15,18 +15,22 @@ import androidx.lifecycle.ViewModelStore
 import androidx.test.core.app.ApplicationProvider
 import com.finnvek.knittools.App
 import com.finnvek.knittools.R
+import com.finnvek.knittools.data.local.RoomDatabaseTransactionRunner
 import com.finnvek.knittools.domain.model.CraftType
+import com.finnvek.knittools.domain.model.YarnCard
+import com.finnvek.knittools.repository.YarnCardRepository
 import com.finnvek.knittools.ui.screens.abbreviations.AbbreviationsScreen
 import com.finnvek.knittools.ui.screens.caston.CastOnScreen
 import com.finnvek.knittools.ui.screens.home.HomeViewModel
 import com.finnvek.knittools.ui.screens.increase.IncreaseDecreaseScreen
 import com.finnvek.knittools.ui.screens.sizecharts.SizeChartScreen
 import com.finnvek.knittools.ui.screens.yarn.YarnEstimatorScreen
+import com.finnvek.knittools.ui.screens.yarn.YarnEstimatorViewModel
 import com.finnvek.knittools.ui.theme.KnitToolsTheme
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
-import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -97,26 +101,39 @@ class AuditPart14ToolsRuntimeTest {
         rule.onNodeWithText(decreased).assertDoesNotExist()
     }
 
-    @Test fun yarnPurchaseWeightAndChooseActionKeepCurrentInputs() {
-        var chosen = 0
-        rule.setContent {
-            KnitToolsTheme { YarnEstimatorScreen(onBack = {}, onSavedYarns = { chosen++ }, homeViewModel = home) }
+    @Test fun choosingSavedYarnUpdatesPerSkeinValuesAndKeepsTotalNeeded() {
+        val name = "Estimator sample yarn"
+        val database = app.database.get()
+        val repository =
+            YarnCardRepository(
+                database.yarnCardDao(),
+                database.counterProjectDao(),
+                app,
+                RoomDatabaseTransactionRunner(database),
+                Dispatchers.IO,
+            )
+        val card = YarnCard(yarnName = name, lengthMeters = "251", weightGrams = "100")
+        val cardId = checkNotNull(runBlocking { repository.saveCard(card) })
+        val estimator = YarnEstimatorViewModel(repository)
+        rule.runOnUiThread { store.put("estimator", estimator) }
+        try {
+            rule.setContent {
+                KnitToolsTheme { YarnEstimatorScreen(onBack = {}, homeViewModel = home, viewModel = estimator) }
+            }
+            input(0, "501")
+            input(1, "200")
+            input(2, "50")
+            val originalWeight = rule.activity.getString(R.string.total_weight, "150")
+            rule.onNodeWithText(originalWeight).performScrollTo().assertIsDisplayed()
+            rule.onNodeWithText(rule.activity.getString(R.string.choose_from_my_yarn)).performScrollTo().performClick()
+            rule.onNodeWithText(name).assertIsDisplayed().performClick()
+            val selectedWeight = rule.activity.getString(R.string.total_weight, "200")
+            rule.onNodeWithText(selectedWeight).performScrollTo().assertIsDisplayed()
+            input(1, "0")
+            rule.onNodeWithText(selectedWeight).assertDoesNotExist()
+        } finally {
+            runBlocking { repository.deleteCard(cardId) }
         }
-        input(0, "501")
-        input(1, "200")
-        input(2, "50")
-        val grams =
-            rule.activity
-                .getString(
-                    R.string.total_weight,
-                    "150",
-                )
-        rule.onNodeWithText(grams).performScrollTo().assertIsDisplayed()
-        rule.onNodeWithText(rule.activity.getString(R.string.choose_from_my_yarn)).performScrollTo().performClick()
-        assertEquals(1, chosen)
-        rule.onNodeWithText(grams).performScrollTo().assertIsDisplayed()
-        input(1, "0")
-        rule.onNodeWithText(grams).assertDoesNotExist()
     }
 
     @Test fun everySizeCategoryDisplaysItsOwnHeaderAndFirstRow() {
@@ -130,10 +147,20 @@ class AuditPart14ToolsRuntimeTest {
                 Triple(R.string.category_head, R.string.size_col_circumference, R.string.size_row_preemie),
                 Triple(R.string.category_hand, R.string.size_col_circumference, R.string.size_row_child_s),
             )
-        for ((category, header, firstRow) in cases) {
-            rule.onNodeWithText(rule.activity.getString(category)).performClick()
-            rule.onNodeWithText(rule.activity.getString(header)).assertIsDisplayed()
-            rule.onNodeWithText(rule.activity.getString(firstRow)).assertIsDisplayed()
+        val context = rule.activity
+        for (unit in listOf(R.string.unit_cm, R.string.measurement_unit_inch_short)) {
+            runBlocking { app.preferencesManager.get().setUseImperial(unit != R.string.unit_cm) }
+            for ((category, header, firstRow) in cases) {
+                rule.onNodeWithText(context.getString(category)).performClick()
+                val measurementHeader =
+                    context.getString(
+                        R.string.size_chart_header_with_unit,
+                        context.getString(header),
+                        context.getString(unit),
+                    )
+                rule.onNodeWithText(measurementHeader).assertIsDisplayed()
+                rule.onNodeWithText(context.getString(firstRow)).assertIsDisplayed()
+            }
         }
     }
 

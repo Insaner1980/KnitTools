@@ -27,6 +27,12 @@ data class DurationDisplay(
 
 /** Yksi totuuden lähde kestojen näyttömuodolle. */
 object DurationDisplayFormatter {
+    /** Returns null for a work session shorter than one full minute. */
+    fun fromWorkSessionSeconds(seconds: Long): DurationDisplay? {
+        val minutes = seconds / 60L
+        return if (minutes < 1L) null else fromMinutes(minutes.coerceAtMost(Int.MAX_VALUE.toLong()).toInt())
+    }
+
     /** Muodostaa näyttömallin kokonaisista minuuteista. Negatiivinen syöte tulkitaan nollaksi. */
     fun fromMinutes(totalMinutes: Int): DurationDisplay {
         val safeMinutes = totalMinutes.coerceAtLeast(0)

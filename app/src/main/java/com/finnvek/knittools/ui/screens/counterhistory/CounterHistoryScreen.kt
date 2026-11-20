@@ -50,7 +50,7 @@ fun CounterHistoryScreen(
                 locale,
                 zone,
                 localizedDateTimePattern(locale, "yMMMd"),
-                localizedDateTimePattern(locale, if (use24Hour) "Hms" else "hms"),
+                localizedDateTimePattern(locale, if (use24Hour) "Hm" else "hm"),
             )
         }
     LaunchedEffect(viewModel, format) { viewModel.setFormat(format) }
@@ -145,7 +145,9 @@ private fun CounterHistoryEvent(row: CounterHistoryRow) {
         verticalArrangement = Arrangement.spacedBy(CounterDimens.WorkspaceSectionActionIconSpacing),
     ) {
         Text(row.time, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Text(action, style = MaterialTheme.typography.labelLarge)
+        if (row.event.action != CounterHistoryAction.CHANGED) {
+            Text(action, style = MaterialTheme.typography.labelLarge)
+        }
         Text(
             stringResource(R.string.counter_history_transition, row.previousValue, row.newValue),
             style = MaterialTheme.typography.titleMedium,

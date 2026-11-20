@@ -2,9 +2,11 @@ package com.finnvek.knittools.ui.screens.project
 
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertHasNoClickAction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -14,9 +16,16 @@ import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.calculator.CounterState
 import com.finnvek.knittools.domain.calculator.ProjectSetupItem
 import com.finnvek.knittools.domain.model.ProjectDocument
+import com.finnvek.knittools.domain.model.ProjectYarnNote
+import com.finnvek.knittools.domain.model.ProjectYarnUsage
+import com.finnvek.knittools.domain.model.ProjectYarnUsageItem
+import com.finnvek.knittools.domain.model.YarnUsageAmounts
+import com.finnvek.knittools.domain.model.YarnUsageSource
+import com.finnvek.knittools.domain.model.YarnUsageUnit
 import com.finnvek.knittools.repository.MemoryOnboardingPreferences
 import com.finnvek.knittools.repository.OnboardingStateRepository
 import com.finnvek.knittools.ui.screens.counter.CounterUiState
+import com.finnvek.knittools.ui.screens.counter.LinkedYarnSummary
 import com.finnvek.knittools.ui.theme.KnitToolsTheme
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -58,6 +67,39 @@ class ProjectSetupListTest {
 
     @After
     fun tearDown() = runBlocking { scopeJob.cancelAndJoin() }
+
+    @Test
+    fun overviewShowsBothLinkedColorwaysAndSharedUsageOnce() {
+        val note = ProjectYarnNote(id = 3L, projectId = 7L, name = "Contrast yarn", savedYarnCardId = 1L)
+        val source = YarnUsageSource(yarnCardId = 1L, projectYarnNoteId = note.id)
+        val usage = ProjectYarnUsage(5L, 7L, source, note.name, YarnUsageAmounts(allocatedMeters = 250.0), 1L, 2L)
+        compose.setContent {
+            KnitToolsTheme {
+                ProjectOverviewYarn(
+                    items =
+                        listOf(
+                            ProjectYarnUsageItem(source, note.name, usage),
+                            ProjectYarnUsageItem(YarnUsageSource(2L), "Willow DK"),
+                        ),
+                    unit = YarnUsageUnit.METERS,
+                    cards = emptyList(),
+                    notes = listOf(note),
+                    linkedYarns =
+                        listOf(
+                            LinkedYarnSummary(1L, "Willow DK", "Berry #14"),
+                            LinkedYarnSummary(2L, "Willow DK", "Ocean #23"),
+                        ),
+                    onEdit = {},
+                )
+            }
+        }
+
+        compose.onAllNodesWithText("Willow DK").assertCountEquals(2)
+        compose.onNodeWithText("Berry #14").assertIsDisplayed()
+        compose.onNodeWithText("Ocean #23").assertIsDisplayed()
+        compose.onNodeWithText(note.name).assertIsDisplayed()
+        compose.onAllNodesWithText(context.getString(R.string.project_overview_yarn_allocated)).assertCountEquals(1)
+    }
 
     @Test
     fun onlyReadyActiveStarterProjectShowsSetup() {
@@ -208,7 +250,7 @@ class ProjectSetupListTest {
             targetRows = 120,
             projectDocuments = listOf(document()),
             projectDocumentAvailability = mapOf(1L to true),
-            linkedYarns = listOf(11L to "Project yarn"),
+            linkedYarns = listOf(LinkedYarnSummary(11L, "Project yarn")),
         )
 
     private fun document() =

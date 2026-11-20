@@ -29,6 +29,8 @@ val TertiaryContainer = Color(0xFF3A3520)
 val TextPrimary = Color(0xFFE8E4D0) // Pääteksti — lämmin kerma
 val TextSecondary = Color(0xFFB8B4A0) // Kuvaukset, toissijainen info
 val TextMuted = Color(0xFFA8A491) // Hiljennetty teksti, chevronit, aikaleimat
+internal val DarkSurfaceDialogTrack = Color(0xFF55553F)
+internal val DarkSliderInactiveTrack = Color(0xFF4E4E3C)
 
 // === Aksentti ===
 val DustyRose = Color(0xFFB8908F) // Pro trial -teksti, yarn card
@@ -83,6 +85,7 @@ val LightTertiaryContainer = Color(0xFFE8DFB5)
 val LightTextPrimary = Color(0xFF2E2A1E) // Tumma lämmin ruskea
 val LightTextSecondary = Color(0xFF4C4634) // Keskiväri ruskea
 val LightTextMuted = Color(0xFF4A473C) // Hiljennetty ruskea
+internal val LightSliderInactiveTrack = Color(0xFFB0A78A)
 
 // === Light-teeman aksentti ===
 val LightDustyRose = Color(0xFF9E706E) // Syvempi dusty rose

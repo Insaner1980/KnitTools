@@ -22,7 +22,7 @@ import androidx.compose.ui.semantics.Role
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.model.StandardYarnWeight
 import com.finnvek.knittools.ui.components.DropdownIndicator
-import com.finnvek.knittools.ui.components.ProjectYarnTextField
+import com.finnvek.knittools.ui.components.LabeledTextField
 import com.finnvek.knittools.ui.theme.knitToolsColors
 
 /**
@@ -41,7 +41,7 @@ internal fun YarnWeightField(
     // Valikko on kentän levyinen kuten Gaugen valitsimissa: sisällön levyisenä se jäi irralliseksi kaistaleeksi.
     BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
         val menuWidth = maxWidth
-        ProjectYarnTextField(
+        LabeledTextField(
             value = value,
             onValueChange = { if (customMode) onValueChange(it) },
             label = label,

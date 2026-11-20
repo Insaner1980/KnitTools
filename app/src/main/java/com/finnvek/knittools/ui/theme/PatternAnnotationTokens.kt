@@ -42,6 +42,7 @@ internal object PatternAnnotationTokens {
     val TOOLBAR_HORIZONTAL_PADDING = 12.dp
     val TOOLBAR_VERTICAL_PADDING = 8.dp
     val TOOLBAR_ITEM_SPACING = 8.dp
+    val HIGHLIGHTER_TOOLBAR_SPACING = 4.dp
 }
 
 @Composable

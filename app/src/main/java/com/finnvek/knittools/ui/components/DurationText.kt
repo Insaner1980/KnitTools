@@ -13,11 +13,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalResources
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.sp
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.calculator.DurationDisplay
+import com.finnvek.knittools.domain.calculator.DurationDisplayFormatter
 import com.finnvek.knittools.domain.calculator.DurationShape
 import com.finnvek.knittools.ui.screens.counter.counterMainNumberFittedFontSize
 import com.finnvek.knittools.ui.theme.InsightsDimens
@@ -35,6 +37,12 @@ fun durationText(display: DurationDisplay): String {
     val locale = rememberCurrentLocale()
     val format = durationFormat(display)
     return String.format(locale, format, *durationArguments(display).toTypedArray())
+}
+
+@Composable
+internal fun workSessionDurationText(seconds: Long): String {
+    val display = DurationDisplayFormatter.fromWorkSessionSeconds(seconds)
+    return if (display == null) stringResource(R.string.work_session_under_minute) else durationText(display)
 }
 
 /**

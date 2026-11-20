@@ -16,9 +16,10 @@ class WebPatternLocalizationArchitectureContractTest {
         assertEquals(12, localeDirectories.size)
         val defaultStrings = localizedStrings("values")
         assertEquals("Saved patterns from websites and PDFs", defaultStrings["desc_saved_patterns"])
+        assertEquals("No saved patterns yet", defaultStrings["empty_saved_patterns_title"])
         assertEquals(
-            "No saved patterns yet.\\nAdd a web pattern or import a PDF.",
-            defaultStrings["empty_saved_patterns"],
+            "Save a link to a pattern website here. PDFs you attach to projects or open with KnitTools appear here too.",
+            defaultStrings["empty_saved_patterns_body"],
         )
 
         localeDirectories.forEach { directory ->
@@ -79,7 +80,10 @@ class WebPatternLocalizationArchitectureContractTest {
             ProjectSourceFiles.read(
                 "app/schemas/com.finnvek.knittools.data.local.KnitToolsDatabase/$KNITTOOLS_DATABASE_VERSION.json",
             )
-        assertEquals(savedPatternCreateSql, roomCreateSql(currentSchema, "saved_patterns"))
+        assertEquals(
+            savedPatternCreateSql.replace("`designerName` TEXT NOT NULL", "`designerName` TEXT"),
+            roomCreateSql(currentSchema, "saved_patterns"),
+        )
         assertEquals(projectDocumentCreateSql, roomCreateSql(currentSchema, "project_documents"))
         assertTrue(schema.contains("\"version\": 24"))
         assertTrue(schema.contains("\"identityHash\": \"f9a2845195abd670d0bf330708bdcd75\""))
@@ -170,18 +174,11 @@ class WebPatternLocalizationArchitectureContractTest {
         assertFalse(backendText.contains("webPattern"))
     }
 
-    private fun localizedStrings(directory: String): Map<String, String> {
-        val document =
-            DocumentBuilderFactory
-                .newInstance()
-                .newDocumentBuilder()
-                .parse(ProjectSourceFiles.file("app/src/main/res/$directory/strings.xml").toFile())
-        val nodes = document.getElementsByTagName("string")
-        return (0 until nodes.length).associate { index ->
-            val element = nodes.item(index) as Element
-            element.getAttribute("name") to element.textContent
-        }
-    }
+    private fun localizedStrings(directory: String): Map<String, String> =
+        ProjectSourceFiles
+            .textResources(directory)
+            .filterValues { it.tagName == "string" }
+            .mapValues { (_, resource) -> resource.textContent }
 
     private fun placeholders(value: String): List<String> = placeholderRegex.findAll(value).map { it.value }.toList()
 
@@ -333,14 +330,11 @@ class WebPatternLocalizationArchitectureContractTest {
                 "web_pattern_delete_confirm_title",
                 "web_pattern_delete_confirm_message",
                 "web_pattern_attach",
-                "web_pattern_unlink",
                 "web_pattern_replace_confirm_title",
                 "web_pattern_replace_confirm_message",
                 "web_pattern_open_website",
                 "web_pattern_open_website_description",
-                "web_pattern_edit_description",
                 "web_pattern_attach_description",
-                "web_pattern_unlink_description",
                 "web_pattern_shared_link",
                 "web_pattern_confirm_details",
                 "web_pattern_error_title_required",
@@ -355,16 +349,18 @@ class WebPatternLocalizationArchitectureContractTest {
                 "web_pattern_delete_failed",
                 "web_pattern_open_failed",
                 "web_pattern_no_browser",
-                "web_pattern_source_controlled",
-                "web_pattern_not_offline",
-                "web_pattern_opens_original",
+                "web_pattern_offline_note",
+                "web_pattern_unlink_title",
+                "web_pattern_unlink_body",
+                "web_pattern_unlink_confirm",
                 "web_pattern_keep_current_draft",
                 "web_pattern_use_shared_link",
                 "web_pattern_discard_current_draft",
                 "web_pattern_share_ambiguous",
                 "web_pattern_project_unavailable",
             )
-        private val sourceNeutralSavedPatternStringNames = setOf("desc_saved_patterns", "empty_saved_patterns")
+        private val sourceNeutralSavedPatternStringNames =
+            setOf("desc_saved_patterns", "empty_saved_patterns_title", "empty_saved_patterns_body")
         private val localizedContractStringNames = webPatternStringNames + sourceNeutralSavedPatternStringNames
 
         private val savedPatternEntityFields =

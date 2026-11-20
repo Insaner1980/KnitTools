@@ -42,7 +42,6 @@ class ReferenceResourceLocalizationTest {
         ProjectSourceFiles.configuredResourceDirectories().forEach { directory ->
             val resources = defaults + ProjectSourceFiles.textResources(directory)
             defaults.forEach { (name, original) ->
-                val expected = formatArguments(resourceText(original, defaults))
                 val localized = resources.getValue(name)
                 val variants =
                     if (localized.tagName == "plurals") {
@@ -52,6 +51,26 @@ class ReferenceResourceLocalizationTest {
                         listOf(localized)
                     }
                 variants.forEach { variant ->
+                    val quantity =
+                        variant.getAttribute("quantity").let {
+                            if (it == "one" &&
+                                ProjectSourceFiles.reminderIntervalUsesQuantityInSingular(name, directory)
+                            ) {
+                                "other"
+                            } else {
+                                it
+                            }
+                        }
+                    val baseVariant =
+                        if (original.tagName == "plurals" && quantity.isNotEmpty()) {
+                            val items = original.getElementsByTagName("item")
+                            (0 until items.length)
+                                .map { items.item(it) as Element }
+                                .firstOrNull { it.getAttribute("quantity") == quantity }
+                        } else {
+                            null
+                        }
+                    val expected = formatArguments(resourceText(baseVariant ?: original, defaults))
                     assertEquals(
                         "$directory $name ${variant.getAttribute("quantity")}",
                         expected,

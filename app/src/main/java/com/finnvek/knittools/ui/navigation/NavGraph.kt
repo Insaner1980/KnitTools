@@ -742,9 +742,10 @@ private fun NavGraphBuilder.toolsGraph(navController: NavHostController) {
         composable(Screen.Yarn.route) {
             YarnEstimatorScreen(
                 onBack = { navController.popBackStack() },
-                onSavedYarns = { navController.navigateSingleTopTo(Screen.MyYarn.route) },
+                onAddYarn = { navController.navigateSingleTopTo(Screen.MyYarnFromEstimator.route) },
             )
         }
+        libraryMyYarnRoute(navController, TopLevelDestination.Tools)
     }
 }
 
@@ -1012,16 +1013,21 @@ private fun NavGraphBuilder.libraryPatternViewerRoute(navController: NavHostCont
     }
 }
 
-private fun NavGraphBuilder.libraryMyYarnRoute(navController: NavHostController) {
-    composable(Screen.MyYarn.route) { backStackEntry ->
+private fun NavGraphBuilder.libraryMyYarnRoute(
+    navController: NavHostController,
+    parent: TopLevelDestination = TopLevelDestination.Library,
+) {
+    val openAddOnEntry = parent == TopLevelDestination.Tools
+    val route = if (openAddOnEntry) Screen.MyYarnFromEstimator.route else Screen.MyYarn.route
+    composable(route) { backStackEntry ->
         val parentEntry =
             remember(backStackEntry) {
-                navController.getBackStackEntry(TopLevelDestination.Library.route)
+                navController.getBackStackEntry(parent.route)
             }
         val libraryViewModel: LibraryViewModel = hiltViewModel(parentEntry)
         ClearSelectionWhenLeavingRoute(
             navControllerProvider = { navController },
-            route = Screen.MyYarn.route,
+            route = route,
             clearSelection = libraryViewModel::exitYarnSelectMode,
         )
         val cards by libraryViewModel.yarnCards.collectAsStateWithLifecycle(initialValue = emptyList())
@@ -1039,6 +1045,7 @@ private fun NavGraphBuilder.libraryMyYarnRoute(navController: NavHostController)
         val proAccessReady by libraryViewModel.proAccessReady.collectAsStateWithLifecycle()
 
         MyYarnScreen(
+            openAddOnEntry = openAddOnEntry,
             state =
                 MyYarnState(
                     cards = cards,

@@ -681,6 +681,7 @@ class CounterRepository
             patternName: String,
             currentPatternPage: Int,
             patternRowMapping: String?,
+            makeLabelUnique: Boolean = false,
         ): ProjectDocumentMutationResult {
             val result =
                 fileReferenceCoordinator.withReferenceLock {
@@ -693,6 +694,7 @@ class CounterRepository
                                     id,
                                     patternUri,
                                     patternName,
+                                    makeLabelUnique = makeLabelUnique,
                                 )
                             if (added is ProjectDocumentMutationResult.Added) {
                                 linkPrimaryDocumentPatternInTransaction(id, project?.linkedPatternId, added)

@@ -255,9 +255,14 @@ try {
             param($fixture)
             Set-FileText (Join-Path $fixture "app/src/main/java/DatabaseNote.kt") '/** The application uses @Database for persistence. */'
         }
-        Test-Mutation -Name "room-greedy-dead-end" -ExpectedStatus "FAIL" -ExpectedCheck "room-schema" -ExpectedDetail "migration path from 25 to 28 is incomplete" -PassMessage "Room selects the highest eligible upgrade edge without backtracking" -Mutate {
+        $databaseRelativePath = "app/src/main/java/com/finnvek/knittools/data/local/KnitToolsDatabase.kt"
+        $databaseSource = Get-Content -Raw -LiteralPath (Join-Path $RepoRoot $databaseRelativePath)
+        $databaseVersion = [regex]::Match($databaseSource, '(?m)^const val KNITTOOLS_DATABASE_VERSION\s*=\s*(\d+)\s*$')
+        if (-not $databaseVersion.Success) { throw "KnitTools database version not found" }
+        $migrationDetail = "migration path from 25 to $($databaseVersion.Groups[1].Value) is incomplete"
+        Test-Mutation -Name "room-greedy-dead-end" -ExpectedStatus "FAIL" -ExpectedCheck "room-schema" -ExpectedDetail $migrationDetail -PassMessage "Room selects the highest eligible upgrade edge without backtracking" -Mutate {
             param($fixture)
-            $path = Join-Path $fixture "app/src/main/java/com/finnvek/knittools/data/local/KnitToolsDatabase.kt"
+            $path = Join-Path $fixture $databaseRelativePath
             $text = Get-Content -Raw -LiteralPath $path
             $text = $text.Replace("MIGRATION_25_26,", "MIGRATION_25_26,`n                    MIGRATION_25_27,").
                 Replace("MIGRATION_26_27,", "MIGRATION_26_28,").Replace("MIGRATION_27_28,", "")

@@ -53,4 +53,24 @@ class PatternDisplayNamesTest {
         assertEquals("My sweater_notes", PatternDisplayNames.forDisplay("My sweater_notes"))
         assertEquals("Step By Step Sweater V3", PatternDisplayNames.forDisplay("STEP_BY_STEP_SWEATER_V3.pdf"))
     }
+
+    @Test
+    fun `legacy photo labels use the translated fallback without changing similar user labels`() {
+        val fallback = "Ohjeen kuvat"
+        assertEquals(fallback, PatternDisplayNames.forDisplay("pattern-images-1795083818707.pdf", fallback))
+        assertEquals(fallback, PatternDisplayNames.forDisplay("Pattern-images-1795083818707-2", fallback))
+        assertEquals("Pattern-images-my-photo", PatternDisplayNames.forDisplay("Pattern-images-my-photo", fallback))
+    }
+
+    @Test
+    fun `photo labels reserve room for the next available suffix`() {
+        val prefix = "Project " + "A".repeat(39)
+        val label = "$prefix\uD83E\uDDF6x"
+        assertEquals(50, label.length)
+        assertEquals(label, PatternDisplayNames.uniqueDocumentLabel(label, emptySet()))
+        assertEquals(
+            "$prefix 3",
+            PatternDisplayNames.uniqueDocumentLabel(label, setOf(label, "$prefix 2")),
+        )
+    }
 }

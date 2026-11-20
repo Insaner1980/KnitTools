@@ -1,4 +1,5 @@
 <resources>
+    <string name="pattern_annotation_page_limit">Denne siden har for mange eller for komplekse markeringer til å vises trygt. Markeringene dine er bevart.</string>
     <string name="notes_save_failed">Kunne ikke lagre notatene. Endringene dine er fortsatt her. Prøv igjen.</string>
     <string name="notes_discard_title">Forkaste ulagrede notater?</string>
     <string name="notes_discard_message">Endringene dine kunne ikke lagres. Hvis du forlater siden nå, forkastes ulagrede endringer.</string>
@@ -19,7 +20,6 @@
 
     <!-- Units -->
     <string name="unit_cm">cm</string>
-    <string name="measurement_with_unit_format">%1$s %2$s</string>
     <string name="unit_inches">tommer</string>
     <string name="unit_st">m</string>
     <string name="unit_g">g</string>
@@ -47,7 +47,11 @@
     <string name="tools_title">Verktøy</string>
     <string name="library_title">Bibliotek</string>
     <string name="saved_patterns_title">Lagrede oppskrifter</string>
+    <string name="empty_saved_patterns_title">Ingen lagrede oppskrifter ennå</string>
+    <string name="empty_saved_patterns_body">Lagre en lenke til en oppskrift her. PDF-er du legger til i prosjekter eller åpner med KnitTools, vises også her.</string>
     <string name="my_yarn_title">Mitt garn</string>
+    <string name="empty_my_yarn_title">Ingen lagrede garn ennå</string>
+    <string name="empty_my_yarn_body">Lagre garn med farge og innfargingsparti, og knytt det så til et prosjekt.</string>
     <string name="all_photos_title">Fremdriftsbilder</string>
 
     <!-- Hub hero text -->
@@ -83,7 +87,9 @@
     </plurals>
     <string name="main_counter_custom_count_format">%1$d %2$s</string>
     <string name="current_round_short">Runde %1$d</string>
+    <string name="current_round_inline">omgang %d</string>
     <string name="current_repeat_short">Repetisjon %1$d</string>
+    <string name="current_repeat_inline">repetisjon %d</string>
     <string name="counter_round_value_of_target_format">Runde %1$d / %2$d</string>
     <string name="counter_repeat_value_of_target_format">Repetisjon %1$d / %2$d</string>
     <string name="main_counter_custom_current_format">%1$s %2$d</string>
@@ -98,10 +104,12 @@
     <string name="no_active_projects">Ingen aktive prosjekter</string>
     <string name="no_completed_projects">Ingen fullførte prosjekter ennå</string>
     <string name="delete_project">Slett</string>
-    <string name="delete_project_message">Slette %s? Dette kan ikke angres.</string>
+    <string name="delete_project_message">%s og alle prosjektdata, inkludert tellere, notater, bilder og økthistorikk, blir slettet. Dette kan ikke angres.</string>
+    <string name="delete_project_title">Slette prosjektet?</string>
     <string name="complete_project">Fullfør</string>
     <string name="reactivate_project">Aktiver på nytt</string>
-    <string name="complete_project_message">Fullføre %s? Prosjektet flyttes til fullførte prosjekter.</string>
+    <string name="complete_project_message">%s flyttes til fullførte prosjekter.</string>
+    <string name="complete_project_title">Fullføre prosjektet?</string>
     <string name="more_options">Flere valg</string>
 
     <!-- Project List overflow -->
@@ -117,21 +125,29 @@
     <string name="select_all">Velg alle</string>
     <string name="select_photo">Velg bilde</string>
     <plurals name="complete_n_projects">
-        <item quantity="one">Fullføre %d prosjekt? Det flyttes til fullførte prosjekter.</item>
-        <item quantity="other">Fullføre %d prosjekter? De flyttes til fullførte prosjekter.</item>
+        <item quantity="one">%d prosjekt flyttes til fullførte prosjekter.</item>
+        <item quantity="other">%d prosjekter flyttes til fullførte prosjekter.</item>
     </plurals>
+    <string name="complete_projects_title">Fullføre prosjektene?</string>
     <plurals name="delete_n_projects">
-        <item quantity="one">Slette %d prosjekt? Dette kan ikke angres.</item>
-        <item quantity="other">Slette %d prosjekter? Dette kan ikke angres.</item>
+        <item quantity="one">%d prosjekt blir slettet. Dette kan ikke angres.</item>
+        <item quantity="other">%d prosjekter blir slettet. Dette kan ikke angres.</item>
     </plurals>
+    <string name="delete_projects_title">Slette prosjektene?</string>
     <plurals name="rows_format">
         <item quantity="one">%1$d rad</item>
         <item quantity="other">%1$d rader</item>
     </plurals>
+    <string name="counter_unit_rows">rader</string>
+    <string name="counter_unit_rounds">omganger</string>
+    <string name="counter_unit_repeats">repetisjoner</string>
     <string name="just_now">akkurat nå</string>
 
     <!-- Counter Screen -->
     <string name="stitches_per_row">Masker per rad</string>
+    <string name="stitches_in_row_label">Masker på én rad</string>
+    <string name="stitches_in_round_label">Masker på én omgang</string>
+    <string name="stitches_per_row_remove">Fjern</string>
     <string name="track_stitches">Spor masker</string>
     <string name="stitch_counter_compact_format">%1$d/%2$d</string>
     <string name="attach_pattern">Legg til oppskrift</string>
@@ -146,14 +162,22 @@
     <string name="pattern_clear_row_mark">Fjern tellermarkør</string>
     <string name="pattern_clear_page_marks">Fjern sidemarkører</string>
     <string name="pattern_calibrate_rows">Kalibrer tellerposisjoner</string>
-    <string name="pattern_calibration_first_row">Første verdi</string>
-    <string name="pattern_calibration_last_row">Siste verdi</string>
-    <string name="pattern_calibration_save_first">Lagre første</string>
-    <string name="pattern_calibration_save_last">Lagre siste</string>
+    <string name="pattern_calibration_first_row">Radnummer nå</string>
+    <string name="pattern_calibration_last_row">Radnummer her</string>
+    <string name="pattern_calibration_first_round">Omgangsnummer nå</string>
+    <string name="pattern_calibration_last_round">Omgangsnummer her</string>
+    <string name="pattern_calibration_first_repeat">Gjentakelsesnummer nå</string>
+    <string name="pattern_calibration_last_repeat">Gjentakelsesnummer her</string>
+    <string name="pattern_calibration_first_custom">Nummer nå (%1$s)</string>
+    <string name="pattern_calibration_last_custom">Nummer her (%1$s)</string>
     <string name="pattern_calibration_invalid_row">Bruk to ulike tellerverdier</string>
+    <string name="pattern_calibration_step_first">Trinn 1 av 2: Flytt linjen til raden du er på, sjekk nummeret og lagre.</string>
+    <string name="pattern_calibration_step_last">Trinn 2 av 2: Flytt linjen til en senere rad, skriv inn nummeret og lagre.</string>
     <string name="pattern_page_jump">Gå til side</string>
+    <string name="pattern_page_jump_go">Gå</string>
     <string name="pattern_page_number">Sidenummer</string>
     <string name="pattern_page_indicator">Side %1$d av %2$d</string>
+    <string name="pattern_page_indicator_compact">%1$d / %2$d</string>
     <string name="pattern_previous_page">Forrige side</string>
     <string name="pattern_next_page">Neste side</string>
     <string name="pattern_picker_saved_patterns">Lagrede oppskrifter</string>
@@ -164,7 +188,8 @@
     <string name="pattern_picker_choose_images">Velg bilder</string>
     <string name="pattern_image_import_title">Se gjennom oppskriftssidene</string>
     <plurals name="pattern_images_selected"><item quantity="one">%1$d bilde valgt</item><item quantity="other">%1$d bilder valgt</item></plurals>
-    <string name="pattern_image_page_position">Side %1$d av %2$d</string>
+    <string name="pattern_images_document_label">%1$s, oppskriftsbilder</string>
+    <string name="pattern_images_document_fallback">Oppskriftsbilder</string>
     <string name="pattern_image_add_more">Legg til flere</string>
     <string name="pattern_image_move_earlier">Flytt side %1$d tidligere</string>
     <string name="pattern_image_move_later">Flytt side %1$d senere</string>
@@ -188,8 +213,8 @@
     <string name="pattern_image_error_conversion">Oppskrifts-PDF-en kunne ikke opprettes. Se gjennom sidene og prøv igjen.</string>
     <string name="pattern_image_error_attachment">PDF-en kunne ikke legges ved. Gjeldende oppskrift ble beholdt.</string>
     <string name="pattern_picker_continue_without_pattern">Fortsett uten oppskrift</string>
-    <string name="imported_pattern_designer">Importert PDF</string>
     <string name="current_row_short">Rad %1$d</string>
+    <string name="current_row_inline">rad %d</string>
     <string name="unlink_yarn">Koble fra garn</string>
     <string name="select_yarn_card">Velg garnkort</string>
     <string name="linked_yarn_title">Koblet garn</string>
@@ -223,7 +248,9 @@
     <string name="yarn_card_project_format">Prosjekt: %1$s</string>
     <string name="yarn_details_title">Detaljer</string>
     <string name="yarn_details_empty_body">Merke, tykkelse, farge og innfargingsparti er valgfritt. Legg bare til det som hjelper dette prosjektet.</string>
-    <string name="delete_yarn_card_message">Slette dette garnkortet? Dette kan ikke angres.</string>
+    <string name="delete_yarn_card_message">Dette kan ikke angres. Prosjekter som bruker dette garnet, beholder sine egne garnnotater.</string>
+    <string name="delete_yarn_card_title">Slette garnkortet?</string>
+    <string name="delete_yarn_cards_title">Slette garnkortene?</string>
     <plurals name="skein_count">
         <item quantity="one">%1$d nøste</item>
         <item quantity="other">%1$d nøster</item>
@@ -235,13 +262,14 @@
     <string name="session_row_range">Teller: %1$d → %2$d</string>
     <string name="session_row_single">Verdi %1$d</string>
     <string name="delete_session_title">Slette økt?</string>
-    <string name="delete_session_message">Slette denne økten fra historikken? Dette kan ikke angres.</string>
+    <string name="delete_session_message">Denne økten blir slettet fra historikken. Dette kan ikke angres.</string>
 
     <!-- Settings -->
     <!-- Row Counter -->
     <string name="default_project_name">Mitt prosjekt</string>
     <string name="reset_counter">Tilbakestill teller</string>
-    <string name="reset_counter_message">Tilbakestille telleren til 0?</string>
+    <string name="reset_counter_message">Telleren blir satt til 0.</string>
+    <string name="reset_counter_title">Nullstille telleren?</string>
     <string name="notes">Notater</string>
     <string name="add_note">Legg til notat…</string>
     <string name="write_your_notes_here">Skriv notatene dine her…</string>
@@ -264,10 +292,6 @@
     <string name="counter_target_past_format">%1$s over målet</string>
     <string name="project_content_add_pattern">Legg til oppskrift</string>
     <string name="stitch_tracker_label">Masker</string>
-    <plurals name="reminder_repeat_occurrence_format">
-        <item quantity="one">Repetisjon #%1$d, intervall %2$d</item>
-        <item quantity="other">Repetisjon #%1$d, intervall %2$d</item>
-    </plurals>
 
     <!-- Increase / Decrease -->
     <string name="mode_increase">Øk</string>
@@ -277,12 +301,16 @@
     <string name="current_stitches">Nåværende maskeantall</string>
     <string name="increase_by">Øk med</string>
     <string name="decrease_by">Fell med</string>
-    <string name="increase_result_placeholder">Fyll inn begge feltene for å se hvor du skal øke</string>
-    <string name="decrease_result_placeholder">Fyll inn begge feltene for å se hvor du skal felle</string>
-    <string name="cast_on_result_placeholder">Fyll inn bredde og strikkefasthet for å se hvor mange masker du skal legge opp</string>
+    <string name="increase_result_placeholder">Skriv inn masketallene for å se hvor du skal øke</string>
+    <string name="decrease_result_placeholder">Skriv inn masketallene for å se hvor du skal felle</string>
+    <string name="cast_on_result_placeholder">Oppgi bredde og strikkefasthet for å beregne opplegg</string>
     <string name="yarn_result_placeholder">Fyll inn feltene for å se hvor mange nøster du trenger</string>
+    <string name="yarn_estimator_card_missing_values">Garnet har ennå ingen lengde eller vekt per nøste.</string>
+    <string name="yarn_picker_empty_action">Legg til garn i Mitt garn</string>
+    <string name="estimated_skeins">Nøyaktig behov: %s nøster</string>
     <string name="tool_result_placeholder">Fyll inn feltene for å se resultatet</string>
     <string name="invalid_input">Ugyldig input</string>
+    <string name="field_example_format">f.eks. %1$s</string>
     <string name="easy_to_remember">Lett å huske</string>
     <string name="balanced">Balansert</string>
     <string name="total_stitches_format">Totalt: %1$d %2$s</string>
@@ -304,7 +332,6 @@
     <string name="stitch_gauge">Maskefasthet</string>
     <string name="pattern_repeat_optional">Mønsterrapport (valgfritt)</string>
     <string name="edge_stitches_optional">Kantmasker totalt</string>
-    <string name="edge_stitches_total_format">Kantmasker totalt: %1$d</string>
     <plurals name="stitches_result">
         <item quantity="one">%d maske</item>
         <item quantity="other">%d masker</item>
@@ -318,7 +345,6 @@
     <string name="length_per_skein">Lengde per nøste</string>
     <string name="weight_per_skein">Vekt per nøste</string>
     <string name="total_weight">Vekt av hele nøster: %s g</string>
-    <string name="estimated_skeins">Anslag: ca. %s nøster</string>
     <string name="extra_skein_note">Kjøp ekstra garn ved behov — sjekk at innfargingspartiene er like</string>
 
     <!-- Needle Sizes -->
@@ -338,6 +364,8 @@
     <string name="settings_section_pro">PRO</string>
     <string name="settings_section_data">DATA</string>
     <string name="settings_section_info">INFO</string>
+    <string name="help_and_guide">Netthjelp</string>
+    <string name="external_link_description">åpnes i nettleseren</string>
     <string name="settings_language">Appspråk</string>
     <string name="settings_language_change_hint">Endringen gjelder umiddelbart</string>
     <string name="settings_language_system">Følg systemet</string>
@@ -446,8 +474,6 @@
     <string name="desc_saved_patterns">Lagrede oppskrifter fra nettsteder og PDF-filer</string>
     <string name="desc_my_yarn">Garnnotater, mengder og lenkede prosjekter</string>
     <string name="desc_all_photos">Fremdriftsbilder fra alle prosjektene dine</string>
-    <string name="empty_saved_patterns">Ingen lagrede oppskrifter ennå.\nLegg til en nettoppskrift eller importer en PDF.</string>
-    <string name="empty_my_yarn">Ingen garnnotater lagret ennå.</string>
     <string name="empty_all_photos">Bilder du tar i prosjektene dine samles her.</string>
 
     <!-- Insights -->
@@ -498,6 +524,7 @@
     <string name="insights_project_fabric_previous_active_day">Forrige aktive dag</string>
     <string name="insights_project_fabric_next_active_day">Neste aktive dag</string>
     <string name="insights_last_worked_format">Sist jobbet %1$s</string>
+    <string name="insights_project_sub_format">%1$s, %2$s</string>
     <plurals name="insights_days_meta_format">
         <item quantity="one">Aktiv %1$d av %2$d dag</item>
         <item quantity="other">Aktiv %1$d av %2$d dager</item>
@@ -508,12 +535,14 @@
     <string name="insights_chart_a11y_monthly">Månedlig tid til %1$s, %2$s, %3$s, lengst %4$s</string>
     <string name="insights_chart_a11y_next">Neste stolpe</string>
     <string name="insights_chart_a11y_previous">Forrige stolpe</string>
-    <string name="insights_project_sub_format">%1$s, %2$s</string>
     <string name="insights_empty_title">Ingen arbeidsøkter ennå.</string>
     <string name="insights_empty_body">Åpne et prosjekt og start en arbeidsøkt for å registrere tiden din her.</string>
     <string name="insights_nothing_yet_week">Ingenting ennå denne uken.</string>
+    <string name="insights_no_sessions_week">Ingen arbeidsøkter denne uken.</string>
     <string name="insights_nothing_yet_month">Ingenting ennå denne måneden.</string>
+    <string name="insights_no_sessions_month">Ingen arbeidsøkter denne måneden.</string>
     <string name="insights_nothing_yet_all_time">Ingenting ennå.</string>
+    <string name="insights_no_sessions_all_time">Ingen arbeidsøkter ennå.</string>
     <string name="insights_pro_chart_title">Se aktiviteten din over tid</string>
     <string name="insights_pro_chart_body">Pro grupperer registrert tid i daglige, ukentlige eller månedlige diagrammer og legger til aktivitetsrekken din.</string>
     <string name="all_projects">Alle prosjekter</string>
@@ -530,7 +559,6 @@
     </plurals>
 
     <!-- Settings -->
-    <string name="help_and_guide">Hjelp og veiledning</string>
 
     <!-- Gauge Calculator — swatch section -->
     <string name="your_gauge_section">Din fasthet</string>
@@ -543,6 +571,9 @@
 
     <!-- Size Charts -->
     <string name="size_charts_title">Størrelsestabeller</string>
+    <string name="size_chart_header_with_unit">%1$s (%2$s)</string>
+    <string name="size_col_sleeve">Erme</string>
+    <string name="size_chart_sleeve_note">Erme: fra håndledd til armhule.</string>
     <string name="category_baby">Baby (0–24 måneder)</string>
     <string name="category_child_youth">Barn og ungdom (2–16)</string>
     <string name="category_women">Dame</string>
@@ -573,14 +604,30 @@
     <string name="edit_reminder">Rediger påminnelse</string>
     <string name="no_reminders">Ingen påminnelser ennå</string>
     <string name="delete_reminder_title">Slette påminnelse?</string>
-    <string name="delete_reminder_confirm">Slette påminnelsen \"%1$s\"?</string>
-    <string name="row_number">Tellerverdi</string>
+    <string name="delete_reminder_confirm">Påminnelsen «%1$s» blir slettet.</string>
     <string name="reminder_message">Melding</string>
+    <string name="reminder_at_row">Påminn ved rad</string>
+    <string name="reminder_at_round">Påminn ved omgang</string>
+    <string name="reminder_at_repeat">Påminn ved gjentakelse</string>
+    <string name="reminder_at_custom">Påminn ved %1$s</string>
     <string name="reminder_message_hint">f.eks. Bytt til hælflapp</string>
     <string name="one_time">Én gang</string>
     <string name="repeating">Gjenta</string>
     <string name="repeat_every">Gjenta hver</string>
-    <string name="repeat_every_rows">tellersteg</string>
+    <string name="reminder_interval_custom">deretter hver %1$d. (%2$s)</string>
+    <string name="reminder_next_format">neste: %1$s</string>
+    <plurals name="reminder_interval_rows">
+        <item quantity="one">deretter hver rad</item>
+        <item quantity="other">deretter hver %d. rad</item>
+    </plurals>
+    <plurals name="reminder_interval_rounds">
+        <item quantity="one">deretter hver omgang</item>
+        <item quantity="other">deretter hver %d. omgang</item>
+    </plurals>
+    <plurals name="reminder_interval_repeats">
+        <item quantity="one">deretter hver repetisjon</item>
+        <item quantity="other">deretter hver %d. repetisjon</item>
+    </plurals>
     <string name="dismiss">Avvis</string>
 
     <!-- Multiple Counters -->
@@ -603,6 +650,7 @@
     <string name="repeat_section_progress_format">Repetisjon %1$d/%2$d, verdi %3$d/%4$d</string>
     <string name="repeat_section_complete">Fullført</string>
     <string name="rename_counter">Gi nytt navn</string>
+    <string name="rename_counter_title">Gi telleren nytt navn</string>
     <string name="reset_counter_name">Tilbakestill</string>
     <string name="delete_counter">Slett</string>
     <string name="delete_counter_title">Slett teller?</string>
@@ -612,29 +660,32 @@
     <string name="take_photo">Ta bilde</string>
     <string name="progress_photos">Fremdriftsbilder</string>
     <string name="counters_list_empty">Ingen ekstra tellere</string>
-    <string name="row_label_format">Verdi %d</string>
+    <string name="photo_count_label_format">Verdi %d</string>
     <string name="share_photo">Del</string>
     <string name="photo_share_failed">Bildet kunne ikke deles.</string>
     <string name="delete_photo">Slett bilde</string>
-    <string name="delete_photo_confirm">Slette dette bildet?</string>
+    <string name="delete_photo_confirm">Dette kan ikke angres.</string>
+    <string name="delete_photo_title">Slette bildet?</string>
     <plurals name="delete_photos_confirm">
-        <item quantity="one">Slette %1$d bilde?</item>
-        <item quantity="other">Slette %1$d bilder?</item>
+        <item quantity="one">%1$d bilde blir slettet. Dette kan ikke angres.</item>
+        <item quantity="other">%1$d bilder blir slettet. Dette kan ikke angres.</item>
     </plurals>
+    <string name="delete_photos_title">Slette bildene?</string>
     <plurals name="delete_patterns_confirm">
-        <item quantity="one">Slette %1$d oppskrift fra biblioteket?\n\nEventuelle PDF-merknader som er laget i biblioteket for denne oppskriften, slettes også og vises ikke lenger i prosjekter. PDF-er som allerede er vedlagt prosjekter, og PDF-merknader som er laget i prosjektene, beholdes.</item>
-        <item quantity="other">Slette %1$d oppskrifter fra biblioteket?\n\nEventuelle PDF-merknader som er laget i biblioteket for de valgte oppskriftene, slettes også og vises ikke lenger i prosjekter. PDF-er som allerede er vedlagt prosjekter, og PDF-merknader som er laget i prosjektene, beholdes.</item>
+        <item quantity="one">%1$d oppskrift blir fjernet fra biblioteket.\n\nEventuelle PDF-merknader som er laget i biblioteket for denne oppskriften, slettes også og vises ikke lenger i prosjekter. PDF-er som allerede er vedlagt prosjekter, og PDF-merknader som er laget i prosjektene, beholdes.</item>
+        <item quantity="other">%1$d oppskrifter blir fjernet fra biblioteket.\n\nEventuelle PDF-merknader som er laget i biblioteket for de valgte oppskriftene, slettes også og vises ikke lenger i prosjekter. PDF-er som allerede er vedlagt prosjekter, og PDF-merknader som er laget i prosjektene, beholdes.</item>
     </plurals>
     <string name="delete_pattern">Slett oppskrift</string>
     <plurals name="delete_yarn_cards_confirm">
-        <item quantity="one">Slette %d garnkort?</item>
-        <item quantity="other">Slette %d garnkort?</item>
+        <item quantity="one">%d garnkort blir slettet. Dette kan ikke angres.</item>
+        <item quantity="other">%d garnkort blir slettet. Dette kan ikke angres.</item>
     </plurals>
     <string name="delete_yarn_card">Slett garnkort</string>
     <string name="no_photos">Ingen fremdriftsbilder ennå</string>
     <string name="photo_gallery_empty_body">Bilder du tar av dette prosjektet vises her.</string>
     <string name="rename_photo">Gi nytt navn til bilde</string>
     <string name="photo_name_hint">f.eks. Ermet ferdig</string>
+    <string name="photo_name_label">Bildenavn</string>
 
     <!-- Ravelry -->
     <string name="tool_ravelry">Ravelry</string>
@@ -648,7 +699,7 @@
     <string name="saved_pattern_detail_no_pdf_explanation">Opplysningene om oppskriften er lagret. Ingen PDF er vedlagt for lesing uten nett.</string>
     <string name="saved_pattern_detail_open_pattern">Åpne oppskrift</string>
     <string name="saved_pattern_detail_attach_to_project">Knytt til prosjekt</string>
-    <string name="saved_pattern_detail_remove_confirm">Fjerne denne lagrede oppskriften fra biblioteket?\n\nEventuelle PDF-merknader som er laget i biblioteket for denne oppskriften, slettes også og vises ikke lenger i prosjekter. PDF-er som allerede er vedlagt prosjekter, og PDF-merknader som er laget i prosjektene, beholdes.</string>
+    <string name="saved_pattern_detail_remove_confirm">Denne lagrede oppskriften blir fjernet fra biblioteket.\n\nEventuelle PDF-merknader som er laget i biblioteket for denne oppskriften, slettes også og vises ikke lenger i prosjekter. PDF-er som allerede er vedlagt prosjekter, og PDF-merknader som er laget i prosjektene, beholdes.</string>
     <string name="free">Gratis</string>
     <string name="paid">Betalt</string>
     <string name="availability_unknown">Tilgjengelighet ukjent</string>
@@ -708,9 +759,92 @@
     <string name="project_completed_format">Fullført %1$s</string>
     <string name="project_section_count_format">%1$s %2$d</string>
     <string name="project_continue_content_description">Fortsett med %1$s</string>
+    <string name="pattern_annotations_layers">Merknadslag</string>
+    <string name="pattern_annotations_master">Oppskriftsnotater</string>
+    <string name="pattern_annotations_project">Prosjektnotater</string>
+    <string name="pattern_annotations_read_only">Skrivebeskyttet</string>
+    <string name="pattern_annotations_count">%1$s (%2$d)</string>
+    <string name="pattern_annotation_tool_pen">Penn</string>
+    <string name="pattern_annotation_tool_highlighter">Markeringstusj</string>
+    <string name="pattern_annotation_tool_eraser">Viskelær</string>
+    <string name="pattern_annotation_color_option">Merknadsfarge: %1$s</string>
+    <string name="pattern_annotation_color_black">Svart</string>
+    <string name="pattern_annotation_color_red">Rød</string>
+    <string name="pattern_annotation_color_blue">Blå</string>
+    <string name="pattern_annotation_color_green">Grønn</string>
+    <string name="pattern_annotation_color_yellow">Gul</string>
+    <string name="pattern_annotation_color_custom">Egendefinert</string>
+    <string name="pattern_annotation_stroke_width">Bredde: %1$.1f</string>
+    <string name="pattern_annotation_pressure">Trykkfølsom penn</string>
+    <string name="pattern_annotation_axis_free">Fri</string>
+    <string name="pattern_annotation_axis_horizontal">Vannrett</string>
+    <string name="pattern_annotation_axis_vertical">Loddrett</string>
+    <string name="pattern_annotation_axis_auto">Automatisk</string>
+    <string name="pattern_annotation_tool_select">Velg</string>
+    <string name="pattern_annotation_tool_line">Linje</string>
+    <string name="pattern_annotation_tool_arrow">Pil</string>
+    <string name="pattern_annotation_tool_rectangle">Rektangel</string>
+    <string name="pattern_annotation_tool_ellipse">Ellipse</string>
+    <string name="pattern_annotation_tool_text">Tekst</string>
+    <string name="pattern_annotation_tool_callout">Notat</string>
+    <string name="pattern_annotation_undo">Angre</string>
+    <string name="pattern_annotation_redo">Gjør om</string>
+    <string name="pattern_annotation_clear_page">Tøm side</string>
+    <string name="pattern_annotation_clear_page_title">Tømme denne siden?</string>
+    <string name="pattern_annotation_clear_page_body">Alle merkene dine på denne siden blir fjernet. Du kan angre dette.</string>
+    <string name="pattern_annotation_move_left">Venstre</string>
+    <string name="pattern_annotation_move_right">Høyre</string>
+    <string name="pattern_annotation_move_up">Opp</string>
+    <string name="pattern_annotation_move_down">Ned</string>
+    <string name="pattern_annotation_smaller">Mindre</string>
+    <string name="pattern_annotation_larger">Større</string>
+    <string name="pattern_annotation_duplicate">Dupliser</string>
+    <string name="pattern_annotation_bring_forward">Flytt fremover</string>
+    <string name="pattern_annotation_send_backward">Flytt bakover</string>
+    <string name="pattern_annotation_delete">Slett</string>
+    <string name="pattern_annotation_text_editor_title">Legg til tekst</string>
+    <string name="pattern_annotation_text_label">Tekst</string>
+    <string name="pattern_annotation_callout_editor_title">Legg til notat</string>
+    <string name="pattern_annotation_callout_title_label">Tittel</string>
+    <string name="pattern_annotation_callout_description_label">Beskrivelse</string>
+    <string name="pattern_annotation_tool_chart">Diagramområde</string>
+    <string name="pattern_annotation_link_chart">Koble valgt diagram til en teller</string>
+    <string name="pattern_annotation_chart_setup_title">Diagramsporing</string>
+    <string name="pattern_annotation_chart_rows">Rader</string>
+    <string name="pattern_annotation_chart_columns">Kolonner</string>
+    <string name="pattern_annotation_chart_bottom_to_top">Nedenfra og opp</string>
+    <string name="pattern_annotation_chart_top_to_bottom">Ovenfra og ned</string>
+    <string name="pattern_annotation_chart_left_to_right">Fra venstre mot høyre</string>
+    <string name="pattern_annotation_chart_right_to_left">Fra høyre mot venstre</string>
+    <string name="pattern_annotation_chart_alternating">Annenhver</string>
+    <string name="pattern_annotation_chart_active_row">Aktiv rad</string>
+    <string name="pattern_annotation_chart_active_column">Aktiv kolonne</string>
+    <string name="pattern_annotation_chart_crosshair">Trådkors</string>
+    <string name="pattern_annotation_chart_completed">Fullførte ruter</string>
+    <string name="pattern_annotation_chart_c2c">C2C-diagonal</string>
+    <string name="pattern_annotation_chart_grid_start">Indeks for startrute</string>
+    <string name="pattern_annotation_chart_wrap">Fortsett fra starten ved diagramslutt</string>
+    <string name="pattern_annotation_chart_top_left">Øverst til venstre</string>
+    <string name="pattern_annotation_chart_top_right">Øverst til høyre</string>
+    <string name="pattern_annotation_chart_bottom_left">Nederst til venstre</string>
+    <string name="pattern_annotation_chart_bottom_right">Nederst til høyre</string>
+    <string name="pattern_annotation_export_pdf">Eksporter PDF med merknader</string>
+    <string name="pattern_annotation_export_progress">Eksporterer %1$d/%2$d</string>
+    <string name="pattern_annotation_export_failed">PDF-eksporten mislyktes. Den opprinnelige PDF-en ble ikke endret.</string>
+    <string name="pattern_annotation_export_default_name">oppskrift</string>
+    <string name="pattern_annotation_export_filename">%1$s-med-merknader.pdf</string>
+    <string name="pattern_annotation_edit_text">Rediger tekst</string>
+    <string name="pattern_annotation_write_failed">Teksten kunne ikke lagres. Merknaden kan ha blitt endret. Lukk redigeringen og prøv igjen.</string>
+    <string name="pattern_annotation_command_failed">En endring av en merknad ble ikke lagret. Lukk meldingen, og prøv handlingen igjen med markeringsverktøyene.</string>
+
     <string name="work_session_start">Start arbeidsøkt</string>
     <string name="work_session_stop">Stopp arbeidsøkt</string>
+    <string name="work_session_stop_short">Stopp</string>
     <string name="work_session_active">Arbeidsøkt aktiv</string>
+    <string name="work_session_active_short">Økt</string>
+    <string name="work_session_under_minute">Under 1 min</string>
+    <string name="work_session_hero_duration_format">Økt %1$s</string>
+    <string name="work_session_hero_under_minute">Økt under 1 min</string>
     <string name="work_session_recovery_needed">Økttiden må gjennomgås</string>
     <string name="work_session_resolve">Løs</string>
     <string name="work_session_recovery_title">Gjennomgå økttid</string>
@@ -745,6 +879,7 @@
     <string name="work_session_reason_clock_unavailable">KnitTools kunne ikke bekrefte om enheten startet på nytt.</string>
     <string name="work_session_reason_clock_changed">KnitTools kunne ikke bekrefte det siste tidsintervallet.</string>
     <string name="work_session_stop_summary_title">Stoppe arbeidsøkten?</string>
+    <string name="work_session_keep_running">La økten fortsette</string>
     <string name="work_session_save">Lagre økt</string>
     <string name="work_session_discard">Forkast økt</string>
     <string name="work_session_active_description">Arbeidsøkt for %1$s, %2$s har gått</string>
@@ -756,9 +891,18 @@
     <string name="work_session_retry">Prøv igjen</string>
     <string name="project_documents_title">Dokumenter</string>
     <string name="project_documents_add">Legg til</string>
+    <string name="project_content_add_document">Legg til dokument</string>
+    <string name="project_documents_manage">Administrer dokumenter</string>
+    <string name="project_documents_pdf_section">PDF-dokumenter</string>
+    <plurals name="project_documents_count">
+        <item quantity="one">%d PDF</item>
+        <item quantity="other">%d PDF-filer</item>
+    </plurals>
     <string name="project_documents_actions">Handlinger for %1$s</string>
     <string name="project_documents_primary">Hovedoppskrift</string>
-    <string name="project_documents_open">Gjeldende dokument</string>
+    <string name="project_documents_index">%1$d av %2$d</string>
+    <string name="project_documents_page">side %1$d</string>
+    <string name="project_documents_page_standalone">Side %1$d</string>
     <string name="project_documents_unavailable">PDF er ikke tilgjengelig</string>
     <string name="project_documents_rename">Gi nytt navn</string>
     <string name="project_documents_make_primary">Angi som hoveddokument</string>
@@ -767,23 +911,22 @@
     <string name="project_documents_move_later">Flytt senere</string>
     <string name="project_documents_rename_title">Gi dokumentet nytt navn</string>
     <string name="project_documents_label">Dokumentnavn</string>
+    <string name="project_documents_label_limit">Maksimal navnelengde: %1$d</string>
     <string name="project_documents_remove_title">Fjerne dokumentet?</string>
-    <string name="project_documents_remove_message">Fjerne %1$s fra dette prosjektet?</string>
+    <string name="project_documents_remove_message">%1$s blir fjernet fra dette prosjektet.</string>
     <string name="project_documents_error_invalid_label">Skriv inn et navn på 1–50 tegn.</string>
     <string name="project_documents_error_duplicate">Denne PDF-en er allerede knyttet til prosjektet.</string>
     <string name="project_documents_error_unavailable">Denne PDF-en er ikke lenger tilgjengelig. Fjern den, eller legg til filen på nytt.</string>
     <string name="project_documents_error_stale">Dokumentlisten ble endret. Prøv igjen.</string>
     <string name="project_documents_error_generic">Dokumentendringen kunne ikke lagres.</string>
-    <string name="project_documents_secondary">Sekundært dokument</string>
-    <string name="project_documents_available">PDF er tilgjengelig</string>
-    <string name="project_documents_position">Plassering %1$d av %2$d</string>
     <string name="project_documents_open_action">Åpne dokument</string>
+    <string name="project_documents_open_now">Åpen nå</string>
     <string name="project_documents_remove_from_project">Fjern fra prosjektet</string>
     <string name="project_documents_empty">Ingen dokumenter</string>
     <string name="project_documents_metadata_only">Bare metadata</string>
     <string name="project_documents_pattern_information">Oppskriftsinformasjon</string>
-    <string name="project_documents_remove_primary_message">Fjerne %1$s? Et annet dokument blir hoveddokument.</string>
-    <string name="project_documents_remove_last_message">Fjerne %1$s? Prosjektet vil ikke lenger ha en lesbar oppskrift.</string>
+    <string name="project_documents_remove_primary_message">%1$s blir fjernet. Et annet dokument blir hoveddokument.</string>
+    <string name="project_documents_remove_last_message">%1$s blir fjernet. Prosjektet vil ikke lenger ha en PDF-oppskrift å lese.</string>
     <string name="folder_sheet_title">Mapper</string>
     <string name="folder_loading">Laster mapper</string>
     <string name="folder_unfiled">Uten mappe</string>
@@ -804,7 +947,7 @@
     <string name="folder_deleted">Mappe slettet. Prosjektene ble beholdt.</string>
     <string name="folder_project_moved">Prosjekt flyttet.</string>
     <string name="folder_project_missing">Et valgt prosjekt finnes ikke lenger.</string>
-    <string name="folder_project_creation_destination">Mål for nytt prosjekt: %1$s</string>
+    <string name="folder_project_creation_destination">Lagret i %1$s</string>
     <string name="folder_missing">Denne mappen finnes ikke lenger.</string>
     <string name="folder_load_error">Kunne ikke laste mapper.</string>
     <string name="folder_reorder_error">Kunne ikke endre rekkefølgen på mappene.</string>
@@ -818,7 +961,8 @@
     <string name="folder_name_duplicate">Mappenavnet er allerede i bruk.</string>
     <string name="folder_name_invalid">Mappenavn kan ikke inneholde kontrolltegn.</string>
     <string name="folder_delete_title">Slette mappe?</string>
-    <string name="folder_delete_message">Slette %1$s?</string>
+    <string name="folder_delete_message">%1$s blir slettet.</string>
+    <string name="folder_delete_empty_message">Denne mappen er tom.</string>
     <string name="folder_selected_description">%1$s Valgt.</string>
     <string name="folder_all_projects_description">Alle prosjekter. Virtuell visning av alle prosjekter.</string>
     <string name="folder_unfiled_description">Prosjekter uten mappe.</string>
@@ -915,8 +1059,10 @@
     <string name="yarn_usage_title">Garnforbruk</string>
     <string name="yarn_usage_scope">Sporer garnmengder for dette prosjektet. Mengdene i Mitt garn endres ikke.</string>
     <string name="yarn_usage_unit">Mengdeenhet</string>
+    <string name="segmented_option_pending_state">Krever opplysninger om nøstet</string>
     <string name="yarn_usage_grams">Gram</string>
     <string name="yarn_usage_skeins">Hesper</string>
+    <string name="yarn_usage_skeins_suffix">hesper</string>
     <string name="yarn_usage_planned">Planlagt</string>
     <string name="yarn_usage_allocated">Satt av til dette prosjektet</string>
     <string name="yarn_usage_used">Brukt</string>
@@ -965,7 +1111,7 @@
     <string name="web_pattern_edit_title">Rediger nettmønster</string>
     <string name="web_pattern_delete">Slett nettmønster</string>
     <string name="web_pattern_delete_confirm_title">Slette nettmønsteret?</string>
-    <string name="web_pattern_delete_confirm_message">Slette %1$s fra Lagrede oppskrifter i biblioteket?\n\nEventuelle PDF-merknader som er laget i biblioteket for denne oppskriften, slettes også og vises ikke lenger i prosjekter. PDF-er som allerede er vedlagt prosjekter, og PDF-merknader som er laget i prosjektene, beholdes.</string>
+    <string name="web_pattern_delete_confirm_message">%1$s blir fjernet fra lagrede oppskrifter i biblioteket.\n\nEventuelle PDF-merknader som er laget i biblioteket for denne oppskriften, slettes også og vises ikke lenger i prosjekter. PDF-er som allerede er vedlagt prosjekter, og PDF-merknader som er laget i prosjektene, beholdes.</string>
     <string name="web_pattern_attach">Koble til prosjekt</string>
     <string name="pattern_mark_up">Merk</string>
     <string name="pattern_mark_up_done">Ferdig</string>
@@ -979,14 +1125,15 @@
     <string name="ravelry_purchase_in_browser">Betalingen åpnes i nettleseren. Etter kjøpet laster du ned oppskriften her fra Ravelry-biblioteket ditt.</string>
     <string name="incoming_pdf_downloading">Laster ned mønsteret…</string>
     <string name="incoming_pdf_not_pdf">Bare PDF-mønstre kan lagres</string>
-    <string name="web_pattern_unlink">Koble fra mønsterinformasjonen</string>
+    <string name="web_pattern_unlink_title">Koble fra oppskriften?</string>
+    <string name="web_pattern_unlink_body">Fjerne oppskriftsopplysningene for %1$s fra prosjektet? Den lagrede oppskriften og prosjektets PDF-filer beholdes.</string>
+    <string name="web_pattern_unlink_confirm">Koble fra</string>
     <string name="web_pattern_replace_confirm_title">Erstatte mønsterinformasjonen?</string>
-    <string name="web_pattern_replace_confirm_message">Erstatte gjeldende mønsterinformasjon med %1$s?</string>
+    <string name="web_pattern_replace_confirm_message">De nåværende oppskriftsopplysningene erstattes med opplysningene for %1$s.</string>
     <string name="web_pattern_open_website">Åpne nettsted</string>
+    <string name="web_pattern_offline_note">Åpnes på det opprinnelige nettstedet. Lagres ikke for bruk uten nett.</string>
     <string name="web_pattern_open_website_description">Åpne nettstedet for %1$s på %2$s</string>
-    <string name="web_pattern_edit_description">Rediger nettmønsteret %1$s</string>
     <string name="web_pattern_attach_description">Koble til nettmønsteret %1$s</string>
-    <string name="web_pattern_unlink_description">Koble fra mønsterinformasjonen for %1$s</string>
     <string name="web_pattern_shared_link">Delt lenke</string>
     <string name="web_pattern_confirm_details">Bekreft mønsterdetaljer</string>
     <string name="web_pattern_error_title_required">Mønsternavn er påkrevd</string>
@@ -1002,9 +1149,6 @@
     <string name="web_pattern_delete_failed">Kunne ikke slette nettmønsteret</string>
     <string name="web_pattern_open_failed">Kunne ikke åpne nettstedet</string>
     <string name="web_pattern_no_browser">Ingen nettleser er tilgjengelig</string>
-    <string name="web_pattern_source_controlled">Kilden styrer om mønsteret er tilgjengelig</string>
-    <string name="web_pattern_not_offline">Siden er ikke lagret for bruk uten nett</string>
-    <string name="web_pattern_opens_original">Denne lenken åpner det opprinnelige nettstedet</string>
     <string name="web_pattern_keep_current_draft">Behold gjeldende utkast</string>
     <string name="web_pattern_use_shared_link">Bruk delt lenke</string>
     <string name="web_pattern_discard_current_draft">Forkast gjeldende utkast</string>
@@ -1070,7 +1214,7 @@
     <string name="project_overview_yarn_empty">Ikke noe garn lagt til ennå</string>
     <string name="project_overview_pattern_empty">Ingen oppskrift lagt til ennå</string>
     <string name="project_overview_notes_empty">Ingen notater ennå</string>
-    <string name="project_overview_pdf_page_format">PDF-oppskrift, side %1$d</string>
+    <string name="project_overview_pdf_page_format">PDF, side %1$d</string>
     <string name="project_card_open_overview_action">Åpne prosjekt</string>
     <string name="project_overview_edit_details">Rediger detaljer</string>
     <string name="project_overview_open_photos">Åpne bilder</string>

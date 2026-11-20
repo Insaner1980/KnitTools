@@ -1,4 +1,5 @@
 <resources>
+    <string name="pattern_annotation_page_limit">Tämän sivun merkintöjä on liikaa tai ne ovat liian monimutkaisia näytettäviksi turvallisesti. Merkintäsi on säilytetty.</string>
     <string name="notes_save_failed">Muistiinpanoja ei voitu tallentaa. Muutoksesi ovat yhä tässä. Yritä uudelleen.</string>
     <string name="notes_discard_title">Hylätäänkö tallentamattomat muistiinpanot?</string>
     <string name="notes_discard_message">Muutoksiasi ei voitu tallentaa. Jos poistut nyt, tallentamattomat muutokset hylätään.</string>
@@ -19,7 +20,6 @@
 
     <!-- Yksiköt -->
     <string name="unit_cm">cm</string>
-    <string name="measurement_with_unit_format">%1$s %2$s</string>
     <string name="unit_inches">in</string>
     <string name="unit_st">s</string>
     <string name="unit_g">g</string>
@@ -47,7 +47,11 @@
     <string name="tools_title">Työkalut</string>
     <string name="library_title">Kirjasto</string>
     <string name="saved_patterns_title">Tallennetut ohjeet</string>
+    <string name="empty_saved_patterns_title">Ei vielä tallennettuja ohjeita</string>
+    <string name="empty_saved_patterns_body">Tallenna tänne ohjeen verkkolinkki. Myös projekteihin liittämäsi ja KnitToolsilla avaamasi PDF-ohjeet näkyvät täällä.</string>
     <string name="my_yarn_title">Omat langat</string>
+    <string name="empty_my_yarn_title">Ei vielä tallennettuja lankoja</string>
+    <string name="empty_my_yarn_body">Tallenna langan väri ja värjäyserä kerran. Voit sitten liittää langan mihin tahansa projektiin.</string>
     <string name="all_photos_title">Edistymiskuvat</string>
 
     <!-- Viiteosion hero-teksti -->
@@ -83,7 +87,9 @@
     </plurals>
     <string name="main_counter_custom_count_format">%2$s: %1$d</string>
     <string name="current_round_short">Kierros %1$d</string>
+    <string name="current_round_inline">kierros %d</string>
     <string name="current_repeat_short">Toisto %1$d</string>
+    <string name="current_repeat_inline">toisto %d</string>
     <string name="counter_round_value_of_target_format">Kierros %1$d / %2$d</string>
     <string name="counter_repeat_value_of_target_format">Toisto %1$d / %2$d</string>
     <string name="main_counter_custom_current_format">%1$s %2$d</string>
@@ -98,10 +104,12 @@
     <string name="no_active_projects">Ei aktiivisia projekteja</string>
     <string name="no_completed_projects">Ei valmiita projekteja vielä</string>
     <string name="delete_project">Poista</string>
-    <string name="delete_project_message">Poistetaanko %s? Tätä ei voi kumota.</string>
+    <string name="delete_project_message">%s ja kaikki sen tiedot, mukaan lukien laskurit, muistiinpanot, kuvat ja työskentelyistuntojen historia, poistetaan. Tätä ei voi kumota.</string>
+    <string name="delete_project_title">Poistetaanko projekti?</string>
     <string name="complete_project">Merkitse valmistuneeksi</string>
     <string name="reactivate_project">Aktivoi uudelleen</string>
-    <string name="complete_project_message">Merkitäänkö %s valmistuneeksi? Projekti siirretään valmiisiin projekteihin.</string>
+    <string name="complete_project_message">%s siirtyy valmistuneisiin projekteihisi.</string>
+    <string name="complete_project_title">Merkitäänkö projekti valmiiksi?</string>
     <string name="more_options">Lisää vaihtoehtoja</string>
 
     <!-- Projektilistan valikko -->
@@ -117,24 +125,32 @@
     <string name="select_all">Valitse kaikki</string>
     <string name="select_photo">Valitse kuva</string>
     <plurals name="complete_n_projects">
-        <item quantity="one">Merkitäänkö %d projekti valmistuneeksi? Se siirretään valmiisiin projekteihin.</item>
-        <item quantity="other">Merkitäänkö %d projektia valmistuneiksi? Ne siirretään valmiisiin projekteihin.</item>
+        <item quantity="one">%d projekti siirtyy valmistuneisiin projekteihisi.</item>
+        <item quantity="other">%d projektia siirtyy valmistuneisiin projekteihisi.</item>
     </plurals>
+    <string name="complete_projects_title">Merkitäänkö projektit valmiiksi?</string>
     <plurals name="delete_n_projects">
-        <item quantity="one">Poistetaanko %d projekti? Tätä ei voi kumota.</item>
-        <item quantity="other">Poistetaanko %d projektia? Tätä ei voi kumota.</item>
+        <item quantity="one">%d projekti poistetaan. Tätä ei voi kumota.</item>
+        <item quantity="other">%d projektia poistetaan. Tätä ei voi kumota.</item>
     </plurals>
+    <string name="delete_projects_title">Poistetaanko projektit?</string>
     <plurals name="rows_format">
         <item quantity="one">%1$d kerros</item>
         <item quantity="other">%1$d kerrosta</item>
     </plurals>
+    <string name="counter_unit_rows">kerrosta</string>
+    <string name="counter_unit_rounds">kierrosta</string>
+    <string name="counter_unit_repeats">toistoa</string>
     <string name="just_now">juuri nyt</string>
 
     <!-- Laskurinäkymä -->
     <string name="stitches_per_row">Silmukkaa per kerros</string>
+    <string name="stitches_in_row_label">Silmukoita yhdessä kerroksessa</string>
+    <string name="stitches_in_round_label">Silmukoita yhdessä kierroksessa</string>
+    <string name="stitches_per_row_remove">Poista</string>
     <string name="track_stitches">Seuraa silmukoita</string>
     <string name="stitch_counter_compact_format">%1$d/%2$d</string>
-    <string name="attach_pattern">Liitä ohje</string>
+    <string name="attach_pattern">Lisää ohje</string>
     <string name="remove_pattern">Poista ohje</string>
     <string name="no_pattern_attached">Ohjetta ei ole liitetty</string>
     <string name="pattern_viewer_title">Ohjeen lukija</string>
@@ -146,14 +162,22 @@
     <string name="pattern_clear_row_mark">Poista laskurimerkki</string>
     <string name="pattern_clear_page_marks">Poista sivun laskurimerkit</string>
     <string name="pattern_calibrate_rows">Kalibroi laskurin sijainnit</string>
-    <string name="pattern_calibration_first_row">Ensimmäinen lukema</string>
-    <string name="pattern_calibration_last_row">Viimeinen lukema</string>
-    <string name="pattern_calibration_save_first">Tallenna ensimmäinen</string>
-    <string name="pattern_calibration_save_last">Tallenna viimeinen</string>
+    <string name="pattern_calibration_first_row">Kerroksen numero nyt</string>
+    <string name="pattern_calibration_last_row">Kerroksen numero tässä</string>
+    <string name="pattern_calibration_first_round">Kierroksen numero nyt</string>
+    <string name="pattern_calibration_last_round">Kierroksen numero tässä</string>
+    <string name="pattern_calibration_first_repeat">Toiston numero nyt</string>
+    <string name="pattern_calibration_last_repeat">Toiston numero tässä</string>
+    <string name="pattern_calibration_first_custom">Nykyinen lukema (%1$s)</string>
+    <string name="pattern_calibration_last_custom">Lukema tässä (%1$s)</string>
     <string name="pattern_calibration_invalid_row">Käytä kahta eri laskurin lukemaa</string>
+    <string name="pattern_calibration_step_first">Vaihe 1 kahdesta: siirrä viiva nykyiselle kerrokselle, tarkista kerroksen numero ja tallenna.</string>
+    <string name="pattern_calibration_step_last">Vaihe 2 kahdesta: siirrä viiva myöhemmälle kerrokselle, syötä kerroksen numero ja tallenna.</string>
     <string name="pattern_page_jump">Siirry sivulle</string>
+    <string name="pattern_page_jump_go">Siirry</string>
     <string name="pattern_page_number">Sivunumero</string>
     <string name="pattern_page_indicator">Sivu %1$d / %2$d</string>
+    <string name="pattern_page_indicator_compact">%1$d / %2$d</string>
     <string name="pattern_previous_page">Edellinen sivu</string>
     <string name="pattern_next_page">Seuraava sivu</string>
     <string name="pattern_picker_saved_patterns">Tallennetut ohjeet</string>
@@ -164,7 +188,8 @@
     <string name="pattern_picker_choose_images">Valitse kuvia</string>
     <string name="pattern_image_import_title">Tarkista ohjeen sivut</string>
     <plurals name="pattern_images_selected"><item quantity="one">%1$d kuva valittu</item><item quantity="other">%1$d kuvaa valittu</item></plurals>
-    <string name="pattern_image_page_position">Sivu %1$d/%2$d</string>
+    <string name="pattern_images_document_label">%1$s, ohjeen kuvat</string>
+    <string name="pattern_images_document_fallback">Ohjeen kuvat</string>
     <string name="pattern_image_add_more">Lisää kuvia</string>
     <string name="pattern_image_move_earlier">Siirrä sivua %1$d aiemmaksi</string>
     <string name="pattern_image_move_later">Siirrä sivua %1$d myöhemmäksi</string>
@@ -188,8 +213,8 @@
     <string name="pattern_image_error_conversion">Ohje-PDF:ää ei voitu luoda. Tarkista sivut ja yritä uudelleen.</string>
     <string name="pattern_image_error_attachment">PDF:ää ei voitu liittää. Nykyinen ohje säilytettiin.</string>
     <string name="pattern_picker_continue_without_pattern">Jatka ilman ohjetta</string>
-    <string name="imported_pattern_designer">Tuotu PDF</string>
     <string name="current_row_short">Kerros %1$d</string>
+    <string name="current_row_inline">kerros %d</string>
     <string name="unlink_yarn">Poista lankalinkki</string>
     <string name="select_yarn_card">Valitse lankakortti</string>
     <string name="linked_yarn_title">Liitetty lanka</string>
@@ -223,7 +248,9 @@
     <string name="yarn_card_project_format">Projekti: %1$s</string>
     <string name="yarn_details_title">Tiedot</string>
     <string name="yarn_details_empty_body">Merkki, vahvuus, väri ja värjäyserä ovat valinnaisia. Lisää vain se, mikä auttaa tätä projektia.</string>
-    <string name="delete_yarn_card_message">Poistetaanko tämä lankakortti? Tätä ei voi kumota.</string>
+    <string name="delete_yarn_card_message">Tätä ei voi kumota. Tätä lankaa käyttävien projektien omat lankamuistiinpanot säilyvät.</string>
+    <string name="delete_yarn_card_title">Poistetaanko lankakortti?</string>
+    <string name="delete_yarn_cards_title">Poistetaanko lankakortit?</string>
     <plurals name="skein_count">
         <item quantity="one">%1$d kerä</item>
         <item quantity="other">%1$d kerää</item>
@@ -235,13 +262,14 @@
     <string name="session_row_range">Laskuri: %1$d → %2$d</string>
     <string name="session_row_single">Lukema %1$d</string>
     <string name="delete_session_title">Poistetaanko istunto?</string>
-    <string name="delete_session_message">Poistetaanko tämä istunto historiasta? Tätä ei voi kumota.</string>
+    <string name="delete_session_message">Tämä työskentelyistunto poistetaan historiasta. Tätä ei voi kumota.</string>
 
     <!-- Asetukset -->
     <!-- Kerroslaskuri -->
     <string name="default_project_name">Oma projekti</string>
     <string name="reset_counter">Nollaa laskuri</string>
-    <string name="reset_counter_message">Nollataanko laskuri arvoon 0?</string>
+    <string name="reset_counter_message">Laskuri nollataan.</string>
+    <string name="reset_counter_title">Nollataanko laskuri?</string>
     <string name="notes">Muistiinpanot</string>
     <string name="add_note">Lisää muistiinpano…</string>
     <string name="write_your_notes_here">Kirjoita muistiinpanosi tähän…</string>
@@ -264,10 +292,6 @@
     <string name="counter_target_past_format">%1$s yli tavoitteen</string>
     <string name="project_content_add_pattern">Lisää ohje</string>
     <string name="stitch_tracker_label">Silmukat</string>
-    <plurals name="reminder_repeat_occurrence_format">
-        <item quantity="one">Toisto #%1$d, väli %2$d</item>
-        <item quantity="other">Toisto #%1$d, väli %2$d</item>
-    </plurals>
 
     <!-- Lisäykset / kavennukset -->
     <string name="mode_increase">Lisäys</string>
@@ -277,12 +301,16 @@
     <string name="current_stitches">Nykyinen silmukkamäärä</string>
     <string name="increase_by">Lisättävät silmukat</string>
     <string name="decrease_by">Kavennettavat silmukat</string>
-    <string name="increase_result_placeholder">Syötä kelvolliset silmukkamäärät, niin näet, mihin lisäykset tehdään</string>
-    <string name="decrease_result_placeholder">Syötä kelvolliset silmukkamäärät, niin näet, mihin kavennukset tehdään</string>
-    <string name="cast_on_result_placeholder">Täytä leveys ja neuletiheys, niin näet, montako silmukkaa luodaan</string>
+    <string name="increase_result_placeholder">Syötä silmukkamäärät, niin näet, mihin lisäykset tehdään</string>
+    <string name="decrease_result_placeholder">Syötä silmukkamäärät, niin näet, mihin kavennukset tehdään</string>
+    <string name="cast_on_result_placeholder">Syötä leveys ja neuletiheys, niin saat aloitussilmukat</string>
     <string name="yarn_result_placeholder">Täytä kentät, niin näet, montako kerää tarvitset</string>
+    <string name="yarn_estimator_card_missing_values">Langalle ei ole vielä tallennettu kerän pituutta tai painoa.</string>
+    <string name="yarn_picker_empty_action">Lisää lanka Omiin lankoihin</string>
+    <string name="estimated_skeins">Tarkka menekki: %s kerää</string>
     <string name="tool_result_placeholder">Syötä kelvolliset arvot, niin näet tuloksen</string>
     <string name="invalid_input">Virheellinen syöte</string>
+    <string name="field_example_format">esim. %1$s</string>
     <string name="easy_to_remember">Helppo muistaa</string>
     <string name="balanced">Tasainen</string>
     <string name="total_stitches_format">Yhteensä: %1$d %2$s</string>
@@ -304,7 +332,6 @@
     <string name="stitch_gauge">Silmukkatiheys</string>
     <string name="pattern_repeat_optional">Mallikerta (valinnainen)</string>
     <string name="edge_stitches_optional">Reunasilmukat yhteensä</string>
-    <string name="edge_stitches_total_format">Reunasilmukoita yhteensä: %1$d</string>
     <plurals name="stitches_result">
         <item quantity="one">%d silmukka</item>
         <item quantity="other">%d silmukkaa</item>
@@ -318,7 +345,6 @@
     <string name="length_per_skein">Pituus / kerä</string>
     <string name="weight_per_skein">Paino / kerä</string>
     <string name="total_weight">Kokonaisten kerien paino: %s g</string>
-    <string name="estimated_skeins">Arvio: noin %s kerää</string>
     <string name="extra_skein_note">Harkitse ylimääräistä kerää — värjäyserät voivat vaihdella</string>
 
     <!-- Puikkokoot -->
@@ -338,6 +364,8 @@
     <string name="settings_section_pro">PRO</string>
     <string name="settings_section_data">TIEDOT</string>
     <string name="settings_section_info">TIETOA</string>
+    <string name="help_and_guide">Tuki verkossa</string>
+    <string name="external_link_description">avautuu selaimessa</string>
     <string name="settings_language">Sovelluksen kieli</string>
     <string name="settings_language_change_hint">Kieli vaihtuu heti</string>
     <string name="settings_language_system">Seuraa järjestelmää</string>
@@ -448,8 +476,6 @@
     <string name="desc_saved_patterns">Verkkosivuilta ja PDF-tiedostoista tallennetut ohjeet</string>
     <string name="desc_my_yarn">Lankamuistiinpanot, määrät ja linkitetyt projektit</string>
     <string name="desc_all_photos">Kaikkien projektiesi edistymiskuvat</string>
-    <string name="empty_saved_patterns">Ei vielä tallennettuja ohjeita.\nLisää verkko-ohje tai tuo PDF-tiedosto.</string>
-    <string name="empty_my_yarn">Lankamuistiinpanoja ei ole vielä tallennettu.</string>
     <string name="empty_all_photos">Projekteissa ottamasi kuvat kootaan tänne.</string>
 
     <!-- Tilastot -->
@@ -500,6 +526,7 @@
     <string name="insights_project_fabric_previous_active_day">Edellinen aktiivinen päivä</string>
     <string name="insights_project_fabric_next_active_day">Seuraava aktiivinen päivä</string>
     <string name="insights_last_worked_format">Viimeksi %1$s</string>
+    <string name="insights_project_sub_format">%1$s, %2$s</string>
     <plurals name="insights_days_meta_format">
         <item quantity="one">Aktiivisia päiviä %1$d / %2$d</item>
         <item quantity="other">Aktiivisia päiviä %1$d / %2$d</item>
@@ -510,12 +537,14 @@
     <string name="insights_chart_a11y_monthly">Kuukausittainen aika: %1$s, %2$s, %3$s, pisin %4$s</string>
     <string name="insights_chart_a11y_next">Seuraava pylväs</string>
     <string name="insights_chart_a11y_previous">Edellinen pylväs</string>
-    <string name="insights_project_sub_format">%1$s, %2$s</string>
     <string name="insights_empty_title">Työskentelyaikaa ei ole vielä tallennettu.</string>
     <string name="insights_empty_body">Avaa projekti ja aloita työskentelyistunto, jotta aikasi tallentuu tänne.</string>
     <string name="insights_nothing_yet_week">Ei vielä mitään tällä viikolla.</string>
+    <string name="insights_no_sessions_week">Ei työskentelyistuntoja tällä viikolla.</string>
     <string name="insights_nothing_yet_month">Ei vielä mitään tässä kuussa.</string>
+    <string name="insights_no_sessions_month">Ei työskentelyistuntoja tässä kuussa.</string>
     <string name="insights_nothing_yet_all_time">Ei vielä mitään.</string>
+    <string name="insights_no_sessions_all_time">Ei vielä työskentelyistuntoja.</string>
     <string name="insights_pro_chart_title">Näe aktiivisuutesi ajan mittaan</string>
     <string name="insights_pro_chart_body">Pro ryhmittelee tallennetun ajan päivä-, viikko- tai kuukausikaavioihin ja lisää aktiivisuusputkesi.</string>
     <string name="all_projects">Kaikki projektit</string>
@@ -532,7 +561,6 @@
     </plurals>
 
     <!-- Asetukset -->
-    <string name="help_and_guide">Ohjeet ja opas</string>
 
     <!-- Tiheyslaskuri — mallitilkkiosio -->
     <string name="your_gauge_section">Sinun tiheytesi</string>
@@ -545,6 +573,9 @@
 
     <!-- Kokotaulukot -->
     <string name="size_charts_title">Kokotaulukot</string>
+    <string name="size_chart_header_with_unit">%1$s (%2$s)</string>
+    <string name="size_col_sleeve">Hiha</string>
+    <string name="size_chart_sleeve_note">Hiha: ranteesta kainaloon.</string>
     <string name="category_baby">Vauva (0–24 kk)</string>
     <string name="category_child_youth">Lapset ja nuoret (2–16)</string>
     <string name="category_women">Naiset</string>
@@ -826,14 +857,30 @@
     <string name="edit_reminder">Muokkaa muistutusta</string>
     <string name="no_reminders">Ei muistutuksia vielä</string>
     <string name="delete_reminder_title">Poistetaanko muistutus?</string>
-    <string name="delete_reminder_confirm">Poistetaanko muistutus \"%1$s\"?</string>
-    <string name="row_number">Laskurin lukema</string>
+    <string name="delete_reminder_confirm">Muistutus ”%1$s” poistetaan.</string>
     <string name="reminder_message">Viesti</string>
+    <string name="reminder_at_row">Muistuta kerroksella</string>
+    <string name="reminder_at_round">Muistuta kierroksella</string>
+    <string name="reminder_at_repeat">Muistuta toistolla</string>
+    <string name="reminder_at_custom">Muistuta kohdassa %1$s</string>
     <string name="reminder_message_hint">esim. Siirry kantatilkkuun</string>
     <string name="one_time">Kertaluonteinen</string>
     <string name="repeating">Toistuva</string>
     <string name="repeat_every">Toistoväli</string>
-    <string name="repeat_every_rows">lukeman välein</string>
+    <string name="reminder_interval_custom">sitten %1$d välein (%2$s)</string>
+    <string name="reminder_next_format">seuraava: %1$s</string>
+    <plurals name="reminder_interval_rows">
+        <item quantity="one">sitten joka kerroksella</item>
+        <item quantity="other">sitten %d kerroksen välein</item>
+    </plurals>
+    <plurals name="reminder_interval_rounds">
+        <item quantity="one">sitten joka kierroksella</item>
+        <item quantity="other">sitten %d kierroksen välein</item>
+    </plurals>
+    <plurals name="reminder_interval_repeats">
+        <item quantity="one">sitten joka toistolla</item>
+        <item quantity="other">sitten %d toiston välein</item>
+    </plurals>
     <string name="dismiss">Kuittaa</string>
 
     <!-- Useita laskureita -->
@@ -856,6 +903,7 @@
     <string name="repeat_section_progress_format">Toisto %1$d/%2$d, lukema %3$d/%4$d</string>
     <string name="repeat_section_complete">Valmis</string>
     <string name="rename_counter">Nimeä uudelleen</string>
+    <string name="rename_counter_title">Nimeä laskuri uudelleen</string>
     <string name="reset_counter_name">Nollaa</string>
     <string name="delete_counter">Poista</string>
     <string name="delete_counter_title">Poistetaanko laskuri?</string>
@@ -865,29 +913,32 @@
     <string name="take_photo">Ota kuva</string>
     <string name="progress_photos">Edistymiskuvat</string>
     <string name="counters_list_empty">Lisälaskureita ei ole</string>
-    <string name="row_label_format">Lukema %d</string>
+    <string name="photo_count_label_format">Lukema %d</string>
     <string name="share_photo">Jaa</string>
     <string name="photo_share_failed">Kuvan jakaminen epäonnistui.</string>
     <string name="delete_photo">Poista kuva</string>
-    <string name="delete_photo_confirm">Poistetaanko tämä kuva?</string>
+    <string name="delete_photo_confirm">Tätä ei voi kumota.</string>
+    <string name="delete_photo_title">Poistetaanko kuva?</string>
     <plurals name="delete_photos_confirm">
-        <item quantity="one">Poistetaanko %1$d kuva?</item>
-        <item quantity="other">Poistetaanko %1$d kuvaa?</item>
+        <item quantity="one">%1$d kuva poistetaan. Tätä ei voi kumota.</item>
+        <item quantity="other">%1$d kuvaa poistetaan. Tätä ei voi kumota.</item>
     </plurals>
+    <string name="delete_photos_title">Poistetaanko kuvat?</string>
     <plurals name="delete_patterns_confirm">
-        <item quantity="one">Poistetaanko %1$d ohje kirjastosta?\n\nMyös tähän ohjeeseen kirjastossa mahdollisesti tehdyt PDF-merkinnät poistetaan, eivätkä ne enää näy projekteissa. Projekteihin jo liitetyt PDF:t ja projekteissa tehdyt PDF-merkinnät säilyvät.</item>
-        <item quantity="other">Poistetaanko %1$d ohjetta kirjastosta?\n\nMyös valittuihin ohjeisiin kirjastossa mahdollisesti tehdyt PDF-merkinnät poistetaan, eivätkä ne enää näy projekteissa. Projekteihin jo liitetyt PDF:t ja projekteissa tehdyt PDF-merkinnät säilyvät.</item>
+        <item quantity="one">%1$d ohje poistetaan kirjastosta.\n\nMyös tähän ohjeeseen kirjastossa mahdollisesti tehdyt PDF-merkinnät poistetaan, eivätkä ne enää näy projekteissa. Projekteihin jo liitetyt PDF:t ja projekteissa tehdyt PDF-merkinnät säilyvät.</item>
+        <item quantity="other">%1$d ohjetta poistetaan kirjastosta.\n\nMyös valittuihin ohjeisiin kirjastossa mahdollisesti tehdyt PDF-merkinnät poistetaan, eivätkä ne enää näy projekteissa. Projekteihin jo liitetyt PDF:t ja projekteissa tehdyt PDF-merkinnät säilyvät.</item>
     </plurals>
     <string name="delete_pattern">Poista ohje</string>
     <plurals name="delete_yarn_cards_confirm">
-        <item quantity="one">Poistetaanko %d lankakortti?</item>
-        <item quantity="other">Poistetaanko %d lankakorttia?</item>
+        <item quantity="one">%d lankakortti poistetaan. Tätä ei voi kumota.</item>
+        <item quantity="other">%d lankakorttia poistetaan. Tätä ei voi kumota.</item>
     </plurals>
     <string name="delete_yarn_card">Poista lankakortti</string>
     <string name="no_photos">Edistymiskuvia ei ole vielä</string>
     <string name="photo_gallery_empty_body">Tästä projektista ottamasi kuvat näkyvät täällä.</string>
     <string name="rename_photo">Nimeä kuva uudelleen</string>
     <string name="photo_name_hint">esim. Hiha valmis</string>
+    <string name="photo_name_label">Kuvan nimi</string>
 
     <!-- Ravelry -->
     <string name="tool_ravelry">Ravelry</string>
@@ -901,7 +952,7 @@
     <string name="saved_pattern_detail_no_pdf_explanation">Ohjeen tiedot on tallennettu. PDF-tiedostoa ei ole liitetty offline-lukemista varten.</string>
     <string name="saved_pattern_detail_open_pattern">Avaa ohje</string>
     <string name="saved_pattern_detail_attach_to_project">Liitä projektiin</string>
-    <string name="saved_pattern_detail_remove_confirm">Poistetaanko tämä tallennettu ohje kirjastosta?\n\nMyös tähän ohjeeseen kirjastossa mahdollisesti tehdyt PDF-merkinnät poistetaan, eivätkä ne enää näy projekteissa. Projekteihin jo liitetyt PDF:t ja projekteissa tehdyt PDF-merkinnät säilyvät.</string>
+    <string name="saved_pattern_detail_remove_confirm">Tämä tallennettu ohje poistetaan kirjastosta.\n\nMyös tähän ohjeeseen kirjastossa mahdollisesti tehdyt PDF-merkinnät poistetaan, eivätkä ne enää näy projekteissa. Projekteihin jo liitetyt PDF:t ja projekteissa tehdyt PDF-merkinnät säilyvät.</string>
     <string name="free">Ilmainen</string>
     <string name="paid">Maksullinen</string>
     <string name="availability_unknown">Saatavuus tuntematon</string>
@@ -992,9 +1043,92 @@
     <string name="project_completed_format">Valmistui %1$s</string>
     <string name="project_section_count_format">%1$s %2$d</string>
     <string name="project_continue_content_description">Jatka: %1$s</string>
+    <string name="pattern_annotations_layers">Merkintätasot</string>
+    <string name="pattern_annotations_master">Ohjeen merkinnät</string>
+    <string name="pattern_annotations_project">Projektin merkinnät</string>
+    <string name="pattern_annotations_read_only">Vain luku</string>
+    <string name="pattern_annotations_count">%1$s (%2$d)</string>
+    <string name="pattern_annotation_tool_pen">Kynä</string>
+    <string name="pattern_annotation_tool_highlighter">Korostuskynä</string>
+    <string name="pattern_annotation_tool_eraser">Pyyhekumi</string>
+    <string name="pattern_annotation_color_option">Merkinnän väri: %1$s</string>
+    <string name="pattern_annotation_color_black">Musta</string>
+    <string name="pattern_annotation_color_red">Punainen</string>
+    <string name="pattern_annotation_color_blue">Sininen</string>
+    <string name="pattern_annotation_color_green">Vihreä</string>
+    <string name="pattern_annotation_color_yellow">Keltainen</string>
+    <string name="pattern_annotation_color_custom">Mukautettu</string>
+    <string name="pattern_annotation_stroke_width">Leveys: %1$.1f</string>
+    <string name="pattern_annotation_pressure">Paineentunnistava kynä</string>
+    <string name="pattern_annotation_axis_free">Vapaa</string>
+    <string name="pattern_annotation_axis_horizontal">Vaakasuora</string>
+    <string name="pattern_annotation_axis_vertical">Pystysuora</string>
+    <string name="pattern_annotation_axis_auto">Automaattinen</string>
+    <string name="pattern_annotation_tool_select">Valitse</string>
+    <string name="pattern_annotation_tool_line">Viiva</string>
+    <string name="pattern_annotation_tool_arrow">Nuoli</string>
+    <string name="pattern_annotation_tool_rectangle">Suorakulmio</string>
+    <string name="pattern_annotation_tool_ellipse">Ellipsi</string>
+    <string name="pattern_annotation_tool_text">Teksti</string>
+    <string name="pattern_annotation_tool_callout">Muistilappu</string>
+    <string name="pattern_annotation_undo">Kumoa</string>
+    <string name="pattern_annotation_redo">Tee uudelleen</string>
+    <string name="pattern_annotation_clear_page">Tyhjennä sivu</string>
+    <string name="pattern_annotation_clear_page_title">Tyhjennetäänkö tämä sivu?</string>
+    <string name="pattern_annotation_clear_page_body">Kaikki merkintäsi tällä sivulla poistetaan. Voit kumota tämän.</string>
+    <string name="pattern_annotation_move_left">Vasemmalle</string>
+    <string name="pattern_annotation_move_right">Oikealle</string>
+    <string name="pattern_annotation_move_up">Ylös</string>
+    <string name="pattern_annotation_move_down">Alas</string>
+    <string name="pattern_annotation_smaller">Pienennä</string>
+    <string name="pattern_annotation_larger">Suurenna</string>
+    <string name="pattern_annotation_duplicate">Monista</string>
+    <string name="pattern_annotation_bring_forward">Tuo eteenpäin</string>
+    <string name="pattern_annotation_send_backward">Vie taaksepäin</string>
+    <string name="pattern_annotation_delete">Poista</string>
+    <string name="pattern_annotation_text_editor_title">Lisää teksti</string>
+    <string name="pattern_annotation_text_label">Teksti</string>
+    <string name="pattern_annotation_callout_editor_title">Lisää muistilappu</string>
+    <string name="pattern_annotation_callout_title_label">Otsikko</string>
+    <string name="pattern_annotation_callout_description_label">Kuvaus</string>
+    <string name="pattern_annotation_tool_chart">Kaavioalue</string>
+    <string name="pattern_annotation_link_chart">Yhdistä valittu kaavio laskuriin</string>
+    <string name="pattern_annotation_chart_setup_title">Kaavion seuranta</string>
+    <string name="pattern_annotation_chart_rows">Rivit</string>
+    <string name="pattern_annotation_chart_columns">Sarakkeet</string>
+    <string name="pattern_annotation_chart_bottom_to_top">Alhaalta ylös</string>
+    <string name="pattern_annotation_chart_top_to_bottom">Ylhäältä alas</string>
+    <string name="pattern_annotation_chart_left_to_right">Vasemmalta oikealle</string>
+    <string name="pattern_annotation_chart_right_to_left">Oikealta vasemmalle</string>
+    <string name="pattern_annotation_chart_alternating">Vuorotellen</string>
+    <string name="pattern_annotation_chart_active_row">Aktiivinen rivi</string>
+    <string name="pattern_annotation_chart_active_column">Aktiivinen sarake</string>
+    <string name="pattern_annotation_chart_crosshair">Ristikkäisosoitin</string>
+    <string name="pattern_annotation_chart_completed">Valmiit ruudut</string>
+    <string name="pattern_annotation_chart_c2c">C2C-vinorivi</string>
+    <string name="pattern_annotation_chart_grid_start">Aloitusruudun indeksi</string>
+    <string name="pattern_annotation_chart_wrap">Jatka kaavion lopusta alkuun</string>
+    <string name="pattern_annotation_chart_top_left">Ylävasen</string>
+    <string name="pattern_annotation_chart_top_right">Yläoikea</string>
+    <string name="pattern_annotation_chart_bottom_left">Alavasen</string>
+    <string name="pattern_annotation_chart_bottom_right">Alaoikea</string>
+    <string name="pattern_annotation_export_pdf">Vie merkitty PDF</string>
+    <string name="pattern_annotation_export_progress">Viedään %1$d/%2$d</string>
+    <string name="pattern_annotation_export_failed">PDF-vienti epäonnistui. Alkuperäistä PDF-tiedostoa ei muutettu.</string>
+    <string name="pattern_annotation_export_default_name">ohje</string>
+    <string name="pattern_annotation_export_filename">%1$s-merkinnöillä.pdf</string>
+    <string name="pattern_annotation_edit_text">Muokkaa tekstiä</string>
+    <string name="pattern_annotation_write_failed">Tekstiä ei voitu tallentaa. Merkintä on saattanut muuttua. Sulje muokkain ja yritä uudelleen.</string>
+    <string name="pattern_annotation_command_failed">Merkinnän muutosta ei tallennettu. Sulje tämä ilmoitus ja yritä toimintoa uudelleen merkintätyökaluilla.</string>
+
     <string name="work_session_start">Aloita työskentelyistunto</string>
     <string name="work_session_stop">Lopeta työskentelyistunto</string>
+    <string name="work_session_stop_short">Lopeta</string>
     <string name="work_session_active">Työskentelyistunto käynnissä</string>
+    <string name="work_session_active_short">Istunto</string>
+    <string name="work_session_under_minute">Alle 1 min</string>
+    <string name="work_session_hero_duration_format">Istunto %1$s</string>
+    <string name="work_session_hero_under_minute">Istunto alle 1 min</string>
     <string name="work_session_recovery_needed">Istunnon aika on tarkistettava</string>
     <string name="work_session_resolve">Ratkaise</string>
     <string name="work_session_recovery_title">Tarkista istunnon aika</string>
@@ -1029,6 +1163,7 @@
     <string name="work_session_reason_clock_unavailable">KnitTools ei voinut varmistaa, käynnistyikö laite uudelleen.</string>
     <string name="work_session_reason_clock_changed">KnitTools ei voinut varmistaa viimeisintä aikajaksoa.</string>
     <string name="work_session_stop_summary_title">Lopetetaanko työskentelyistunto?</string>
+    <string name="work_session_keep_running">Pidä käynnissä</string>
     <string name="work_session_save">Tallenna istunto</string>
     <string name="work_session_discard">Hylkää istunto</string>
     <string name="work_session_active_description">Projektin %1$s työskentelyistunto, kulunut %2$s</string>
@@ -1038,36 +1173,44 @@
     <string name="work_session_could_not_discard">Istuntoa ei voitu hylätä</string>
     <string name="work_session_recovery_already_handled">Tämä istunnon tarkistus on jo käsitelty.</string>
     <string name="work_session_retry">Yritä uudelleen</string>
-    <string name="project_documents_title">Asiakirjat</string>
+    <string name="project_documents_title">Dokumentit</string>
     <string name="project_documents_add">Lisää</string>
-    <string name="project_documents_actions">Asiakirjan %1$s toiminnot</string>
-    <string name="project_documents_primary">Ensisijainen ohje</string>
-    <string name="project_documents_open">Nykyinen asiakirja</string>
+    <string name="project_content_add_document">Lisää dokumentti</string>
+    <string name="project_documents_manage">Hallitse dokumentteja</string>
+    <string name="project_documents_pdf_section">PDF-dokumentit</string>
+    <plurals name="project_documents_count">
+        <item quantity="one">%d PDF</item>
+        <item quantity="other">%d PDF-tiedostoa</item>
+    </plurals>
+    <string name="project_documents_actions">Dokumentin %1$s toiminnot</string>
+    <string name="project_documents_primary">Pääohje</string>
+    <string name="project_documents_index">%1$d/%2$d</string>
+    <string name="project_documents_page">sivu %1$d</string>
+    <string name="project_documents_page_standalone">Sivu %1$d</string>
     <string name="project_documents_unavailable">PDF ei ole saatavilla</string>
     <string name="project_documents_rename">Nimeä uudelleen</string>
     <string name="project_documents_make_primary">Aseta ensisijaiseksi</string>
     <string name="project_documents_remove_action">Poista</string>
     <string name="project_documents_move_earlier">Siirrä aiemmaksi</string>
     <string name="project_documents_move_later">Siirrä myöhemmäksi</string>
-    <string name="project_documents_rename_title">Nimeä asiakirja uudelleen</string>
-    <string name="project_documents_label">Asiakirjan nimi</string>
-    <string name="project_documents_remove_title">Poistetaanko asiakirja?</string>
-    <string name="project_documents_remove_message">Poistetaanko %1$s tästä projektista?</string>
+    <string name="project_documents_rename_title">Nimeä dokumentti uudelleen</string>
+    <string name="project_documents_label">Dokumentin nimi</string>
+    <string name="project_documents_label_limit">Nimen enimmäispituus: %1$d</string>
+    <string name="project_documents_remove_title">Poistetaanko dokumentti?</string>
+    <string name="project_documents_remove_message">%1$s poistetaan tästä projektista.</string>
     <string name="project_documents_error_invalid_label">Anna 1–50 merkin nimi.</string>
     <string name="project_documents_error_duplicate">Tämä PDF on jo liitetty projektiin.</string>
     <string name="project_documents_error_unavailable">Tämä PDF ei ole enää saatavilla. Poista se tai lisää tiedosto uudelleen.</string>
-    <string name="project_documents_error_stale">Asiakirjaluettelo muuttui. Yritä uudelleen.</string>
-    <string name="project_documents_error_generic">Asiakirjan muutosta ei voitu tallentaa.</string>
-    <string name="project_documents_secondary">Toissijainen asiakirja</string>
-    <string name="project_documents_available">PDF on saatavilla</string>
-    <string name="project_documents_position">Sijainti %1$d/%2$d</string>
-    <string name="project_documents_open_action">Avaa asiakirja</string>
+    <string name="project_documents_error_stale">Dokumenttiluettelo muuttui. Yritä uudelleen.</string>
+    <string name="project_documents_error_generic">Dokumentin muutosta ei voitu tallentaa.</string>
+    <string name="project_documents_open_action">Avaa dokumentti</string>
+    <string name="project_documents_open_now">Nyt auki</string>
     <string name="project_documents_remove_from_project">Poista projektista</string>
-    <string name="project_documents_empty">Ei asiakirjoja</string>
+    <string name="project_documents_empty">Ei dokumentteja</string>
     <string name="project_documents_metadata_only">Vain metatiedot</string>
     <string name="project_documents_pattern_information">Ohjeen tiedot</string>
-    <string name="project_documents_remove_primary_message">Poistetaanko %1$s? Toinen asiakirja asetetaan ensisijaiseksi.</string>
-    <string name="project_documents_remove_last_message">Poistetaanko %1$s? Projektiin ei jää luettavaa ohjetta.</string>
+    <string name="project_documents_remove_primary_message">%1$s poistetaan. Toinen dokumentti asetetaan ensisijaiseksi.</string>
+    <string name="project_documents_remove_last_message">%1$s poistetaan. Projektissa ei tämän jälkeen ole avattavaa PDF-ohjetta.</string>
     <string name="folder_sheet_title">Kansiot</string>
     <string name="folder_loading">Ladataan kansioita</string>
     <string name="folder_unfiled">Kansiottomat</string>
@@ -1088,7 +1231,7 @@
     <string name="folder_deleted">Kansio poistettiin. Projektit säilytettiin.</string>
     <string name="folder_project_moved">Projekti siirrettiin.</string>
     <string name="folder_project_missing">Valittua projektia ei enää ole.</string>
-    <string name="folder_project_creation_destination">Uuden projektin kohde: %1$s</string>
+    <string name="folder_project_creation_destination">Tallennuspaikka on %1$s</string>
     <string name="folder_missing">Kansiota ei enää ole.</string>
     <string name="folder_load_error">Kansioita ei voitu ladata.</string>
     <string name="folder_reorder_error">Kansioiden järjestystä ei voitu muuttaa.</string>
@@ -1102,7 +1245,8 @@
     <string name="folder_name_duplicate">Kansion nimi on jo käytössä.</string>
     <string name="folder_name_invalid">Kansion nimessä ei voi olla ohjausmerkkejä.</string>
     <string name="folder_delete_title">Poistetaanko kansio?</string>
-    <string name="folder_delete_message">Poistetaanko %1$s?</string>
+    <string name="folder_delete_message">%1$s poistetaan.</string>
+    <string name="folder_delete_empty_message">Tämä kansio on tyhjä.</string>
     <string name="folder_selected_description">%1$s Valittu.</string>
     <string name="folder_all_projects_description">Kaikki projektit. Kaikkien projektien virtuaalinäkymä.</string>
     <string name="folder_unfiled_description">Projektit ilman kansiota.</string>
@@ -1197,18 +1341,20 @@
         <item quantity="other">%1$d kerrosta</item>
     </plurals>
     <string name="yarn_usage_title">Langan käyttö</string>
-    <string name="yarn_usage_scope">Seuranta koskee vain tämän projektin lankaa. Omat langat -määrät eivät muutu.</string>
+    <string name="yarn_usage_scope">Seuranta koskee vain tätä projektia. Omien lankojen määrät eivät muutu.</string>
     <string name="yarn_usage_unit">Määrän yksikkö</string>
+    <string name="segmented_option_pending_state">Tarvitsee kerän tiedot</string>
     <string name="yarn_usage_grams">Grammat</string>
-    <string name="yarn_usage_skeins">Vyyhdit</string>
+    <string name="yarn_usage_skeins">Kerät</string>
+    <string name="yarn_usage_skeins_suffix">kerää</string>
     <string name="yarn_usage_planned">Suunniteltu</string>
     <string name="yarn_usage_allocated">Varattu tähän projektiin</string>
     <string name="yarn_usage_used">Käytetty</string>
-    <string name="yarn_usage_length">Pituus vyyhtiä kohti</string>
-    <string name="yarn_usage_weight">Paino vyyhtiä kohti</string>
-    <string name="yarn_usage_add_conversion">Lisää vyyhtimuunnos</string>
-    <string name="yarn_usage_remove_conversion">Poista vyyhtimuunnos</string>
-    <string name="yarn_usage_conversion_required">Syötä vyyhdin pituus ja paino positiivisina lukuina, jotta voit käyttää grammoja tai vyyhtejä.</string>
+    <string name="yarn_usage_length">Kerän pituus</string>
+    <string name="yarn_usage_weight">Kerän paino</string>
+    <string name="yarn_usage_add_conversion">Lisää kerämuunnos</string>
+    <string name="yarn_usage_remove_conversion">Poista kerämuunnos</string>
+    <string name="yarn_usage_conversion_required">Syötä kerän pituus ja paino positiivisina lukuina, jotta voit käyttää grammoja tai keriä.</string>
     <string name="yarn_usage_fix_before_switch">Korjaa määräkentät ennen yksikön vaihtamista.</string>
     <string name="yarn_usage_remaining_unknown">Jäljellä oleva määrä ei ole tiedossa</string>
     <string name="yarn_usage_remaining_format">Jäljellä: %1$s</string>
@@ -1235,8 +1381,8 @@
     <string name="yarn_usage_unlinked">Lankaa ei enää ole liitetty tähän projektiin</string>
     <string name="yarn_usage_unavailable">Langan lähdetiedot eivät ole saatavilla</string>
     <plurals name="yarn_usage_skeins_format">
-        <item quantity="one">%1$s vyyhti</item>
-        <item quantity="other">%1$s vyyhtiä</item>
+        <item quantity="one">%1$s kerä</item>
+        <item quantity="other">%1$s kerää</item>
     </plurals>
     <string name="web_pattern_add">Lisää verkko-ohje</string>
     <string name="web_pattern_label">Verkko-ohje</string>
@@ -1249,7 +1395,7 @@
     <string name="web_pattern_edit_title">Muokkaa verkko-ohjetta</string>
     <string name="web_pattern_delete">Poista verkko-ohje</string>
     <string name="web_pattern_delete_confirm_title">Poistetaanko verkko-ohje?</string>
-    <string name="web_pattern_delete_confirm_message">Poistetaanko %1$s kirjaston tallennetuista ohjeista?\n\nMyös tähän ohjeeseen kirjastossa mahdollisesti tehdyt PDF-merkinnät poistetaan, eivätkä ne enää näy projekteissa. Projekteihin jo liitetyt PDF:t ja projekteissa tehdyt PDF-merkinnät säilyvät.</string>
+    <string name="web_pattern_delete_confirm_message">%1$s poistetaan Kirjaston Tallennetuista ohjeista.\n\nMyös tähän ohjeeseen kirjastossa mahdollisesti tehdyt PDF-merkinnät poistetaan, eivätkä ne enää näy projekteissa. Projekteihin jo liitetyt PDF:t ja projekteissa tehdyt PDF-merkinnät säilyvät.</string>
     <string name="web_pattern_attach">Liitä projektiin</string>
     <string name="pattern_mark_up">Merkitse</string>
     <string name="pattern_mark_up_done">Valmis</string>
@@ -1263,14 +1409,15 @@
     <string name="ravelry_purchase_in_browser">Kassa avautuu selaimessa. Oston jälkeen lataa ohje täällä Ravelry-kirjastostasi.</string>
     <string name="incoming_pdf_downloading">Ladataan ohjetta…</string>
     <string name="incoming_pdf_not_pdf">Vain PDF-ohjeet voi tallentaa</string>
-    <string name="web_pattern_unlink">Irrota ohjeen tiedot</string>
+    <string name="web_pattern_unlink_title">Irrotetaanko ohje?</string>
+    <string name="web_pattern_unlink_body">Poistetaanko ohjeen %1$s tiedot tästä projektista? Tallennettu ohje ja projektin PDF-tiedostot säilyvät.</string>
+    <string name="web_pattern_unlink_confirm">Irrota</string>
     <string name="web_pattern_replace_confirm_title">Korvataanko ohjeen tiedot?</string>
-    <string name="web_pattern_replace_confirm_message">Korvataanko nykyiset ohjeen tiedot ohjeella %1$s?</string>
+    <string name="web_pattern_replace_confirm_message">Nykyiset ohjetiedot korvataan ohjeen %1$s tiedoilla.</string>
     <string name="web_pattern_open_website">Avaa verkkosivu</string>
+    <string name="web_pattern_offline_note">Avautuu alkuperäisellä verkkosivustolla. Sivua ei tallenneta verkkoyhteydetöntä käyttöä varten.</string>
     <string name="web_pattern_open_website_description">Avaa ohjeen %1$s verkkosivu osoitteessa %2$s</string>
-    <string name="web_pattern_edit_description">Muokkaa verkko-ohjetta %1$s</string>
     <string name="web_pattern_attach_description">Liitä verkko-ohje %1$s</string>
-    <string name="web_pattern_unlink_description">Irrota ohjeen %1$s tiedot</string>
     <string name="web_pattern_shared_link">Jaettu linkki</string>
     <string name="web_pattern_confirm_details">Vahvista ohjeen tiedot</string>
     <string name="web_pattern_error_title_required">Ohjeen nimi vaaditaan</string>
@@ -1286,9 +1433,6 @@
     <string name="web_pattern_delete_failed">Verkko-ohjeen poistaminen epäonnistui</string>
     <string name="web_pattern_open_failed">Verkkosivun avaaminen epäonnistui</string>
     <string name="web_pattern_no_browser">Selainta ei ole saatavilla</string>
-    <string name="web_pattern_source_controlled">Lähdesivusto vastaa ohjeen saatavuudesta</string>
-    <string name="web_pattern_not_offline">Sivua ei ole tallennettu offline-käyttöä varten</string>
-    <string name="web_pattern_opens_original">Tämä linkki avaa alkuperäisen verkkosivun</string>
     <string name="web_pattern_keep_current_draft">Säilytä nykyinen luonnos</string>
     <string name="web_pattern_use_shared_link">Käytä jaettua linkkiä</string>
     <string name="web_pattern_discard_current_draft">Hylkää nykyinen luonnos</string>
@@ -1354,7 +1498,7 @@
     <string name="project_overview_yarn_empty">Lankaa ei ole vielä lisätty</string>
     <string name="project_overview_pattern_empty">Ohjetta ei ole vielä lisätty</string>
     <string name="project_overview_notes_empty">Ei vielä muistiinpanoja</string>
-    <string name="project_overview_pdf_page_format">PDF-ohje, sivu %1$d</string>
+    <string name="project_overview_pdf_page_format">PDF, sivu %1$d</string>
     <string name="project_card_open_overview_action">Avaa projekti</string>
     <string name="project_overview_edit_details">Muokkaa tietoja</string>
     <string name="project_overview_open_photos">Avaa kuvat</string>

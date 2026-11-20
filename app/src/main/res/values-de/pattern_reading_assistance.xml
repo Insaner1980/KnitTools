@@ -7,12 +7,11 @@
     <string name="pattern_bookmark_rename">Lesezeichen umbenennen</string>
     <string name="pattern_bookmark_rename_title">Lesezeichen umbenennen</string>
     <string name="pattern_bookmark_delete_title">Lesezeichen löschen?</string>
-    <string name="pattern_bookmark_delete_message">„%1$s“ löschen?</string>
+    <string name="pattern_bookmark_delete_message">„%1$s“ wird gelöscht.</string>
     <string name="pattern_bookmark_empty">Noch keine Lesezeichen.</string>
     <string name="pattern_bookmark_loading">Lesezeichen werden geladen…</string>
     <string name="pattern_bookmark_previous">Vorheriges Lesezeichen</string>
     <string name="pattern_bookmark_next">Nächstes Lesezeichen</string>
-    <string name="pattern_bookmark_selected">Ausgewähltes Lesezeichen</string>
     <string name="pattern_bookmark_accessibility_description">Zum Lesezeichen %1$s auf Seite %2$d springen</string>
     <string name="pattern_bookmark_action_accessibility_description">%1$s: %2$s</string>
     <string name="pattern_bookmark_name_required">Ein Name für das Lesezeichen ist erforderlich.</string>
@@ -30,11 +29,11 @@
     <string name="pattern_center_vertical_guide">Senkrechte Führung zentrieren</string>
     <string name="pattern_vertical_guide_description">Senkrechte Führung</string>
     <string name="pattern_follow_current_row_on">Hauptzähler folgen</string>
-    <string name="pattern_follow_current_row_off">Folgen beenden</string>
+    <string name="pattern_follow_current_row_off">Zähler nicht mehr folgen</string>
     <string name="pattern_return_to_current_row">Zum aktuellen Zählerstand zurück</string>
     <string name="pattern_follow_resumed">Folgen beim aktuellen Zählerstand fortgesetzt.</string>
     <string name="pattern_follow_resumed_uncalibrated">Zählerposition nicht kalibriert. Folgen ab der aktuellen Position fortgesetzt.</string>
-    <string name="pattern_set_row_marker_here">Markierung hier für Zählerstand %1$d setzen</string>
+    <string name="pattern_set_row_marker_here">Hier %1$s markieren</string>
     <string name="pattern_follow_page_announcement">Zählerstand %1$d verschob die Leselinie auf Seite %2$d von %3$d.</string>
     <string name="pattern_bookmark_jump_announcement">%1$s, Seite %2$d von %3$d. Zählerverfolgung pausiert.</string>
     <string name="pattern_reading_line_move_up">Leselinie nach oben verschieben</string>

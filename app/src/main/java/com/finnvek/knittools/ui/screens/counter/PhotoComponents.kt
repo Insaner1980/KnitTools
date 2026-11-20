@@ -55,7 +55,7 @@ fun PhotoViewer(
 
     if (showDeleteConfirm) {
         ConfirmationDialog(
-            title = stringResource(R.string.delete_photo),
+            title = stringResource(R.string.delete_photo_title),
             message = stringResource(R.string.delete_photo_confirm),
             confirmText = stringResource(R.string.delete),
             isDestructive = true,
@@ -145,7 +145,7 @@ fun PhotoViewer(
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Text(
-                    text = stringResource(R.string.row_label_format, photo.rowNumber),
+                    text = stringResource(R.string.photo_count_label_format, photo.rowNumber),
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.knitToolsColors.onPhotoScrim,
                 )

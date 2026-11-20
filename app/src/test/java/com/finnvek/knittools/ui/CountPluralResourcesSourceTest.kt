@@ -28,7 +28,6 @@ class CountPluralResourcesSourceTest {
         // progress label has no quantity-dependent noun. Keep actual row plurals elsewhere.
         listOf(
             "counter/CounterScreen.kt",
-            "counter/CounterWorkspaceSections.kt",
             "insights/InsightsSections.kt",
         ).forEach {
             val source = ProjectSourceFiles.read("app/src/main/java/com/finnvek/knittools/ui/screens/$it")

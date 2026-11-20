@@ -628,7 +628,8 @@ class ProjectFoldersScreenTest {
         composeRule.onNodeWithContentDescription("Actions for Empty folder").assertIsDisplayed().performClick()
         composeRule.onNodeWithContentDescription("Delete folder Empty folder").performClick()
         composeRule.onNodeWithText("Delete folder?").assertIsDisplayed()
-        composeRule.onNodeWithText("Delete folder").performClick()
+        composeRule.onNodeWithText("This folder is empty.", substring = true).assertIsDisplayed()
+        composeRule.onNodeWithText("Delete").performClick()
         composeRule.waitUntil(timeoutMillis = 5_000) {
             folderNames() == listOf("Renamed folder") &&
                 composeRule.onAllNodes(hasText("Delete folder?")).fetchSemanticsNodes().isEmpty()

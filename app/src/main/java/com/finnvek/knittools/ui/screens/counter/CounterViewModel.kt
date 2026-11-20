@@ -126,6 +126,12 @@ private data class PendingProjectReactivation(
     val completedAt: Long?,
 )
 
+data class LinkedYarnSummary(
+    val id: Long,
+    val name: String,
+    val colorLine: String? = null,
+)
+
 data class CounterUiState(
     val projectName: String = "",
     val counter: CounterState = CounterState(),
@@ -180,7 +186,7 @@ data class CounterUiState(
     val stitchCount: Int? = null,
     val stitchTrackingEnabled: Boolean = false,
     val currentStitch: Int = 0,
-    val linkedYarns: List<Pair<Long, String>> = emptyList(),
+    val linkedYarns: List<LinkedYarnSummary> = emptyList(),
     val projectYarnNotes: List<ProjectYarnNote> = emptyList(),
     val totalSessionMinutes: Int = 0,
     val hasSessions: Boolean = false,
@@ -412,6 +418,9 @@ class CounterViewModel
 
         private val projectContentErrorsChannel = Channel<Unit>(Channel.BUFFERED)
         val projectContentErrors = projectContentErrorsChannel.receiveAsFlow()
+        private val projectYarnSavedChannel = Channel<Long>(Channel.BUFFERED)
+        val projectYarnSaved = projectYarnSavedChannel.receiveAsFlow()
+        private val savingProjectYarnNoteIds = mutableSetOf<Long>()
         private var projectDeletionJob: Job? = null
         private var pendingReminderDraft: PendingReminderDraft? = null
         private var pendingProjectYarnNoteId: Long? = null
@@ -645,7 +654,7 @@ class CounterViewModel
             }
             if (linkedYarnIdsCache != project.yarnCardIds) {
                 linkedYarnIdsCache = project.yarnCardIds
-                loadLinkedYarnNames(project.id, project.yarnCardIds)
+                loadLinkedYarns(project.id, project.yarnCardIds)
             }
             if (previousObservedProject != null && previousObservedProject.count != project.count) {
                 syncWidget(project.id, project.name, project.count)
@@ -702,7 +711,7 @@ class CounterViewModel
             }
         }
 
-        private suspend fun loadLinkedYarnNames(
+        private suspend fun loadLinkedYarns(
             projectId: Long,
             yarnCardIds: String,
         ) {
@@ -717,7 +726,14 @@ class CounterViewModel
             val yarns =
                 ids.mapNotNull { id ->
                     cardsById[id]?.let { card ->
-                        id to card.displayName(::fallbackYarnCardName)
+                        val colorLine =
+                            listOfNotNull(
+                                card.colorName.takeIf { it.isNotBlank() },
+                                card.colorNumber.takeIf { it.isNotBlank() }?.let {
+                                    context.getString(R.string.yarn_color_number_short, it)
+                                },
+                            ).joinToString(" ").ifBlank { null }
+                        LinkedYarnSummary(id, card.displayName(::fallbackYarnCardName), colorLine)
                     }
                 }
             _uiState.update { state ->
@@ -826,8 +842,19 @@ class CounterViewModel
         private fun savePendingProjectYarnNoteToMyYarn() {
             val noteId = pendingProjectYarnNoteId ?: return
             pendingProjectYarnNoteId = null
+            val projectId = _uiState.value.projectId ?: return
+            if (!savingProjectYarnNoteIds.add(noteId)) return
+            val selectionVersion = projectSelectionVersion
             launchProjectContentMutation {
-                projectYarnNoteRepository.saveToMyYarn(noteId) != null
+                try {
+                    val saved = projectYarnNoteRepository.saveToMyYarn(noteId) != null
+                    if (saved && selectionVersion == projectSelectionVersion) {
+                        projectYarnSavedChannel.send(projectId)
+                    }
+                    saved
+                } finally {
+                    savingProjectYarnNoteIds.remove(noteId)
+                }
             }
         }
 
@@ -875,7 +902,7 @@ class CounterViewModel
             observeProjectYarnNotes(project.id)
             observeProjectDocuments(project.id)
             syncWidget()
-            loadLinkedYarnNames(project.id, project.yarnCardIds)
+            loadLinkedYarns(project.id, project.yarnCardIds)
             attachPendingSavedPatternIfReady()
             loadTotalSessionMinutes(project.id)
         }

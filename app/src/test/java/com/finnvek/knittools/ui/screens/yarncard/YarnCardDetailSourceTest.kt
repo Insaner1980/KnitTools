@@ -73,7 +73,9 @@ class YarnCardDetailSourceTest {
         val source = ProjectSourceFiles.read(YARN_CARD_DETAIL_SCREEN)
 
         assertTrue(source.contains("actions = { YarnDetailMenu(onDelete = { showDeleteDialog = true }) }"))
-        assertTrue(source.contains("text = { Text(stringResource(R.string.delete_yarn_card)) }"))
+        assertTrue(
+            source.contains("Text(stringResource(R.string.delete_yarn_card), color = MaterialTheme.colorScheme.error)"),
+        )
         assertFalse(source.contains("text = stringResource(R.string.delete),"))
     }
 

@@ -12,7 +12,8 @@ import androidx.compose.ui.unit.sp
  */
 object InsightsDimens {
     val CompletionPlotHeight = 48.dp
-    val CompletionBucketWidth = 112.dp
+    val CompletionBucketWidth = 96.dp
+    val CompletionTimelineEndPadding = 16.dp
     val CompletionBarWidth = 20.dp
 
     // Sama vaakapehmuste kuin Libraryssa ja Toolsissa.

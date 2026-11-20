@@ -547,7 +547,7 @@ private fun PatternPickerSheetContent(
             text =
                 stringResource(
                     if (mode == PatternPickerMode.ADD_READABLE_PROJECT_DOCUMENT) {
-                        R.string.project_content_add_pattern
+                        R.string.project_content_add_document
                     } else {
                         R.string.attach_pattern
                     },
@@ -638,9 +638,9 @@ private fun PatternPickerSavedPatterns(
                         color = MaterialTheme.colorScheme.onSurface,
                     )
                 }
-                if (pattern.designerName.isNotBlank()) {
+                pattern.designerName?.takeIf(String::isNotBlank)?.let { designer ->
                     Text(
-                        text = pattern.designerName,
+                        text = designer,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )

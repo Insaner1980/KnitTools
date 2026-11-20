@@ -139,7 +139,7 @@ fun YarnCardDetailScreen(
 
     if (showDeleteDialog) {
         ConfirmationDialog(
-            title = stringResource(R.string.delete_yarn_card),
+            title = stringResource(R.string.delete_yarn_card_title),
             message = stringResource(R.string.delete_yarn_card_message),
             confirmText = stringResource(R.string.delete),
             isDestructive = true,
@@ -227,7 +227,7 @@ private fun YarnDetailMenu(onDelete: () -> Unit) {
     MoreOptionsIconButton(onClick = { expanded = true })
     DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
         DropdownMenuItem(
-            text = { Text(stringResource(R.string.delete_yarn_card)) },
+            text = { Text(stringResource(R.string.delete_yarn_card), color = MaterialTheme.colorScheme.error) },
             onClick = {
                 expanded = false
                 onDelete()

@@ -4,6 +4,7 @@ import android.text.format.DateUtils
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import com.finnvek.knittools.R
+import com.finnvek.knittools.domain.calculator.DurationDisplayFormatter
 import com.finnvek.knittools.domain.calculator.formatIntegerForDisplay
 
 @Composable
@@ -64,7 +65,7 @@ internal fun projectTimestampText(
     )
 }
 
-/** Aktiivisen työskentelyistunnon kompakti tilarivi projektikortissa ja jatka-kortissa. */
+/** Aktiivisen työskentelyistunnon kompakti tilarivi projektikortissa. */
 @Composable
 internal fun workSessionStatusText(
     hasActiveSession: Boolean,
@@ -75,3 +76,19 @@ internal fun workSessionStatusText(
     } else {
         null
     }
+
+@Composable
+internal fun workSessionHeroStatusText(
+    hasActiveSession: Boolean,
+    needsReview: Boolean,
+    durationSeconds: Long,
+): String? {
+    if (!hasActiveSession) return null
+    if (needsReview) return stringResource(R.string.work_session_recovery_needed)
+    val duration = DurationDisplayFormatter.fromWorkSessionSeconds(durationSeconds)
+    return if (duration == null) {
+        stringResource(R.string.work_session_hero_under_minute)
+    } else {
+        stringResource(R.string.work_session_hero_duration_format, durationText(duration))
+    }
+}

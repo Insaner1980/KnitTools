@@ -167,7 +167,7 @@
     <!-- Oppaan kohdan selitys: PDF:n liittäminen tai verkko-ohjeen linkin tallentaminen; pattern on ohje. -->
     <string name="guide_pattern_attach_body">Lisää PDF puhelimesta tai pilvitallennustilasta tai tallenna linkki verkko-ohjeeseen.</string>
     <!-- Oppaan kohdan otsikko: projektin useat PDF-tiedostot ja kunkin oma sivu. -->
-    <string name="guide_pattern_documents_title">Useita asiakirjoja</string>
+    <string name="guide_pattern_documents_title">Useita dokumentteja</string>
     <!-- Oppaan kohdan selitys: projektin useat PDF-tiedostot ja kunkin oma sivu. -->
     <string name="guide_pattern_documents_body">Projektissa voi olla useita PDF-tiedostoja. Kukin muistaa oman sivunsa.</string>
     <!-- Oppaan kohdan otsikko: lukutilan ja merkintätilan ero; markup tarkoittaa PDF-merkintöjä. -->

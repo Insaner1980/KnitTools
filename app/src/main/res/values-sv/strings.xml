@@ -1,4 +1,5 @@
 <resources>
+    <string name="pattern_annotation_page_limit">Den här sidan har för många eller för komplexa markeringar för att visas säkert. Dina markeringar har bevarats.</string>
     <string name="notes_save_failed">Det gick inte att spara anteckningarna. Dina ändringar finns kvar. Försök igen.</string>
     <string name="notes_discard_title">Kasta osparade anteckningar?</string>
     <string name="notes_discard_message">Dina ändringar kunde inte sparas. Om du lämnar nu förloras de osparade ändringarna.</string>
@@ -19,7 +20,6 @@
 
     <!-- Units -->
     <string name="unit_cm">cm</string>
-    <string name="measurement_with_unit_format">%1$s %2$s</string>
     <string name="unit_inches">tum</string>
     <string name="unit_st">m</string>
     <string name="unit_g">g</string>
@@ -47,7 +47,11 @@
     <string name="tools_title">Verktyg</string>
     <string name="library_title">Bibliotek</string>
     <string name="saved_patterns_title">Sparade mönster</string>
+    <string name="empty_saved_patterns_title">Inga sparade mönster än</string>
+    <string name="empty_saved_patterns_body">Spara en länk till ett mönster här. PDF-filer som du bifogar till projekt eller öppnar med KnitTools visas också här.</string>
     <string name="my_yarn_title">Mitt garn</string>
+    <string name="empty_my_yarn_title">Inget garn sparat än</string>
+    <string name="empty_my_yarn_body">Spara garnet med färg och färgbad och koppla det sedan till valfritt projekt.</string>
     <string name="all_photos_title">Framstegsbilder</string>
 
     <!-- Hub hero text -->
@@ -83,7 +87,9 @@
     </plurals>
     <string name="main_counter_custom_count_format">%1$d %2$s</string>
     <string name="current_round_short">Omgång %1$d</string>
+    <string name="current_round_inline">runda %d</string>
     <string name="current_repeat_short">Upprepning %1$d</string>
+    <string name="current_repeat_inline">upprepning %d</string>
     <string name="counter_round_value_of_target_format">Omgång %1$d / %2$d</string>
     <string name="counter_repeat_value_of_target_format">Upprepning %1$d / %2$d</string>
     <string name="main_counter_custom_current_format">%1$s %2$d</string>
@@ -98,10 +104,12 @@
     <string name="no_active_projects">Inga aktiva projekt</string>
     <string name="no_completed_projects">Inga färdiga projekt ännu</string>
     <string name="delete_project">Ta bort</string>
-    <string name="delete_project_message">Ta bort %s? Detta kan inte ångras.</string>
+    <string name="delete_project_message">%s och all projektdata, inklusive räknare, anteckningar, foton och passhistorik, tas bort. Det går inte att ångra.</string>
+    <string name="delete_project_title">Ta bort projektet?</string>
     <string name="complete_project">Slutför</string>
     <string name="reactivate_project">Återaktivera</string>
-    <string name="complete_project_message">Slutföra %s? Projektet flyttas till dina färdiga projekt.</string>
+    <string name="complete_project_message">%s flyttas till dina slutförda projekt.</string>
+    <string name="complete_project_title">Slutföra projektet?</string>
     <string name="more_options">Fler alternativ</string>
 
     <!-- Project List overflow -->
@@ -117,24 +125,32 @@
     <string name="select_all">Välj alla</string>
     <string name="select_photo">Välj foto</string>
     <plurals name="complete_n_projects">
-        <item quantity="one">Slutföra %d projekt? Det flyttas till dina färdiga projekt.</item>
-        <item quantity="other">Slutföra %d projekt? De flyttas till dina färdiga projekt.</item>
+        <item quantity="one">%d projekt flyttas till dina slutförda projekt.</item>
+        <item quantity="other">%d projekt flyttas till dina slutförda projekt.</item>
     </plurals>
+    <string name="complete_projects_title">Slutföra projekten?</string>
     <plurals name="delete_n_projects">
-        <item quantity="one">Ta bort %d projekt? Detta kan inte ångras.</item>
-        <item quantity="other">Ta bort %d projekt? Detta kan inte ångras.</item>
+        <item quantity="one">%d projekt tas bort. Det går inte att ångra.</item>
+        <item quantity="other">%d projekt tas bort. Det går inte att ångra.</item>
     </plurals>
+    <string name="delete_projects_title">Ta bort projekten?</string>
     <plurals name="rows_format">
         <item quantity="one">%1$d varv</item>
         <item quantity="other">%1$d varv</item>
     </plurals>
+    <string name="counter_unit_rows">varv</string>
+    <string name="counter_unit_rounds">rundor</string>
+    <string name="counter_unit_repeats">upprepningar</string>
     <string name="just_now">just nu</string>
 
     <!-- Counter Screen -->
     <string name="stitches_per_row">Maskor per varv</string>
+    <string name="stitches_in_row_label">Maskor på en rad</string>
+    <string name="stitches_in_round_label">Maskor på ett varv</string>
+    <string name="stitches_per_row_remove">Ta bort</string>
     <string name="track_stitches">Följ maskor</string>
     <string name="stitch_counter_compact_format">%1$d/%2$d</string>
-    <string name="attach_pattern">Bifoga mönster</string>
+    <string name="attach_pattern">Lägg till mönster</string>
     <string name="remove_pattern">Ta bort mönster</string>
     <string name="no_pattern_attached">Inget mönster bifogat</string>
     <string name="pattern_viewer_title">Mönstervisare</string>
@@ -146,14 +162,22 @@
     <string name="pattern_clear_row_mark">Ta bort räknarmarkering</string>
     <string name="pattern_clear_page_marks">Ta bort sidans markeringar</string>
     <string name="pattern_calibrate_rows">Kalibrera räknarpositioner</string>
-    <string name="pattern_calibration_first_row">Första värdet</string>
-    <string name="pattern_calibration_last_row">Sista värdet</string>
-    <string name="pattern_calibration_save_first">Spara första</string>
-    <string name="pattern_calibration_save_last">Spara sista</string>
+    <string name="pattern_calibration_first_row">Radnummer nu</string>
+    <string name="pattern_calibration_last_row">Radnummer här</string>
+    <string name="pattern_calibration_first_round">Varvnummer nu</string>
+    <string name="pattern_calibration_last_round">Varvnummer här</string>
+    <string name="pattern_calibration_first_repeat">Upprepningsnummer nu</string>
+    <string name="pattern_calibration_last_repeat">Upprepningsnummer här</string>
+    <string name="pattern_calibration_first_custom">Nummer nu (%1$s)</string>
+    <string name="pattern_calibration_last_custom">Nummer här (%1$s)</string>
     <string name="pattern_calibration_invalid_row">Använd två olika räknarvärden</string>
+    <string name="pattern_calibration_step_first">Steg 1 av 2: flytta linjen till det aktuella varvet, kontrollera numret och spara.</string>
+    <string name="pattern_calibration_step_last">Steg 2 av 2: flytta linjen till ett senare varv, ange numret och spara.</string>
     <string name="pattern_page_jump">Hoppa till sida</string>
+    <string name="pattern_page_jump_go">Gå</string>
     <string name="pattern_page_number">Sidnummer</string>
     <string name="pattern_page_indicator">Sida %1$d av %2$d</string>
+    <string name="pattern_page_indicator_compact">%1$d / %2$d</string>
     <string name="pattern_previous_page">Föregående sida</string>
     <string name="pattern_next_page">Nästa sida</string>
     <string name="pattern_picker_saved_patterns">Sparade mönster</string>
@@ -164,7 +188,8 @@
     <string name="pattern_picker_choose_images">Välj bilder</string>
     <string name="pattern_image_import_title">Granska mönstersidor</string>
     <plurals name="pattern_images_selected"><item quantity="one">%1$d bild vald</item><item quantity="other">%1$d bilder valda</item></plurals>
-    <string name="pattern_image_page_position">Sida %1$d av %2$d</string>
+    <string name="pattern_images_document_label">%1$s, mönsterbilder</string>
+    <string name="pattern_images_document_fallback">Mönsterbilder</string>
     <string name="pattern_image_add_more">Lägg till fler</string>
     <string name="pattern_image_move_earlier">Flytta sida %1$d bakåt</string>
     <string name="pattern_image_move_later">Flytta sida %1$d framåt</string>
@@ -188,8 +213,8 @@
     <string name="pattern_image_error_conversion">Mönster-PDF:en kunde inte skapas. Granska sidorna och försök igen.</string>
     <string name="pattern_image_error_attachment">PDF-filen kunde inte bifogas. Det aktuella mönstret behölls.</string>
     <string name="pattern_picker_continue_without_pattern">Fortsätt utan mönster</string>
-    <string name="imported_pattern_designer">Importerad PDF</string>
     <string name="current_row_short">Varv %1$d</string>
+    <string name="current_row_inline">varv %d</string>
     <string name="unlink_yarn">Ta bort garnlänk</string>
     <string name="select_yarn_card">Välj garnkort</string>
     <string name="linked_yarn_title">Länkat garn</string>
@@ -223,7 +248,9 @@
     <string name="yarn_card_project_format">Projekt: %1$s</string>
     <string name="yarn_details_title">Detaljer</string>
     <string name="yarn_details_empty_body">Märke, grovlek, färg och färgbad är valfria. Lägg bara till det som hjälper projektet.</string>
-    <string name="delete_yarn_card_message">Ta bort detta garnkort? Detta kan inte ångras.</string>
+    <string name="delete_yarn_card_message">Det går inte att ångra. Projekt som använder garnet behåller sina egna garnanteckningar.</string>
+    <string name="delete_yarn_card_title">Ta bort garnkortet?</string>
+    <string name="delete_yarn_cards_title">Ta bort garnkorten?</string>
     <plurals name="skein_count">
         <item quantity="one">%1$d nystan</item>
         <item quantity="other">%1$d nystan</item>
@@ -235,13 +262,14 @@
     <string name="session_row_range">Räknare: %1$d → %2$d</string>
     <string name="session_row_single">Värde %1$d</string>
     <string name="delete_session_title">Ta bort pass?</string>
-    <string name="delete_session_message">Ta bort det här passet från historiken? Detta kan inte ångras.</string>
+    <string name="delete_session_message">Det här passet tas bort från historiken. Det går inte att ångra.</string>
 
     <!-- Settings -->
     <!-- Row Counter -->
     <string name="default_project_name">Mitt projekt</string>
     <string name="reset_counter">Nollställ räknaren</string>
-    <string name="reset_counter_message">Nollställa räknaren till 0?</string>
+    <string name="reset_counter_message">Räknaren nollställs.</string>
+    <string name="reset_counter_title">Nollställa räknaren?</string>
     <string name="notes">Anteckningar</string>
     <string name="add_note">Lägg till anteckning…</string>
     <string name="write_your_notes_here">Skriv dina anteckningar här…</string>
@@ -264,10 +292,6 @@
     <string name="counter_target_past_format">%1$s över målet</string>
     <string name="project_content_add_pattern">Lägg till mönster</string>
     <string name="stitch_tracker_label">Maskor</string>
-    <plurals name="reminder_repeat_occurrence_format">
-        <item quantity="one">Upprepning #%1$d, intervall %2$d</item>
-        <item quantity="other">Upprepning #%1$d, intervall %2$d</item>
-    </plurals>
 
     <!-- Increase / Decrease -->
     <string name="mode_increase">Öka</string>
@@ -277,12 +301,16 @@
     <string name="current_stitches">Nuvarande maskantal</string>
     <string name="increase_by">Öka med</string>
     <string name="decrease_by">Minska med</string>
-    <string name="increase_result_placeholder">Fyll i båda fälten för att se var du ska öka</string>
-    <string name="decrease_result_placeholder">Fyll i båda fälten för att se var du ska minska</string>
-    <string name="cast_on_result_placeholder">Fyll i bredd och masktäthet för att se hur många maskor du ska lägga upp</string>
+    <string name="increase_result_placeholder">Ange dina maskantal för att se var du ska öka</string>
+    <string name="decrease_result_placeholder">Ange dina maskantal för att se var du ska minska</string>
+    <string name="cast_on_result_placeholder">Ange bredd och masktäthet för att beräkna uppläggningen</string>
     <string name="yarn_result_placeholder">Fyll i fälten för att se hur många nystan du behöver</string>
+    <string name="yarn_estimator_card_missing_values">Garnet har ännu ingen längd eller vikt per nystan.</string>
+    <string name="yarn_picker_empty_action">Lägg till garn i Mitt garn</string>
+    <string name="estimated_skeins">Exakt behov: %s nystan</string>
     <string name="tool_result_placeholder">Fyll i fälten för att se resultatet</string>
     <string name="invalid_input">Ogiltig inmatning</string>
+    <string name="field_example_format">t.ex. %1$s</string>
     <string name="easy_to_remember">Lätt att komma ihåg</string>
     <string name="balanced">Jämn</string>
     <string name="total_stitches_format">Totalt: %1$d %2$s</string>
@@ -304,7 +332,6 @@
     <string name="stitch_gauge">Masktäthet</string>
     <string name="pattern_repeat_optional">Mönsterrapport (valfritt)</string>
     <string name="edge_stitches_optional">Kantmaskor totalt</string>
-    <string name="edge_stitches_total_format">Kantmaskor totalt: %1$d</string>
     <plurals name="stitches_result">
         <item quantity="one">%d maska</item>
         <item quantity="other">%d maskor</item>
@@ -318,7 +345,6 @@
     <string name="length_per_skein">Längd per nystan</string>
     <string name="weight_per_skein">Vikt per nystan</string>
     <string name="total_weight">Vikt för hela nystan: %s g</string>
-    <string name="estimated_skeins">Uppskattat: cirka %s nystan</string>
     <string name="extra_skein_note">Överväg ett extra nystan — färgbad kan variera</string>
 
     <!-- Needle Sizes -->
@@ -338,6 +364,8 @@
     <string name="settings_section_pro">PRO</string>
     <string name="settings_section_data">DATA</string>
     <string name="settings_section_info">INFO</string>
+    <string name="help_and_guide">Webbhjälp</string>
+    <string name="external_link_description">öppnas i webbläsaren</string>
     <string name="settings_language">Appspråk</string>
     <string name="settings_language_change_hint">Ändringen gäller direkt</string>
     <string name="settings_language_system">Följ systemet</string>
@@ -446,8 +474,6 @@
     <string name="desc_saved_patterns">Sparade mönster från webbplatser och PDF-filer</string>
     <string name="desc_my_yarn">Garnanteckningar, mängder och länkade projekt</string>
     <string name="desc_all_photos">Framstegsbilder från alla dina projekt</string>
-    <string name="empty_saved_patterns">Inga sparade mönster ännu.\nLägg till ett webbmönster eller importera en PDF.</string>
-    <string name="empty_my_yarn">Inga garnanteckningar sparade ännu.</string>
     <string name="empty_all_photos">Bilder du tar i dina projekt samlas här.</string>
 
     <!-- Insights -->
@@ -498,6 +524,7 @@
     <string name="insights_project_fabric_previous_active_day">Föregående aktiva dag</string>
     <string name="insights_project_fabric_next_active_day">Nästa aktiva dag</string>
     <string name="insights_last_worked_format">Senast %1$s</string>
+    <string name="insights_project_sub_format">%1$s, %2$s</string>
     <plurals name="insights_days_meta_format">
         <item quantity="one">Aktiv %1$d av %2$d dag</item>
         <item quantity="other">Aktiv %1$d av %2$d dagar</item>
@@ -508,12 +535,14 @@
     <string name="insights_chart_a11y_monthly">Månatlig tid för %1$s, %2$s, %3$s, längst %4$s</string>
     <string name="insights_chart_a11y_next">Nästa stapel</string>
     <string name="insights_chart_a11y_previous">Föregående stapel</string>
-    <string name="insights_project_sub_format">%1$s, %2$s</string>
     <string name="insights_empty_title">Ingen registrerad tid än.</string>
     <string name="insights_empty_body">Öppna ett projekt och starta en arbetssession för att registrera din tid här.</string>
     <string name="insights_nothing_yet_week">Inget än den här veckan.</string>
+    <string name="insights_no_sessions_week">Inga arbetspass den här veckan.</string>
     <string name="insights_nothing_yet_month">Inget än den här månaden.</string>
+    <string name="insights_no_sessions_month">Inga arbetspass den här månaden.</string>
     <string name="insights_nothing_yet_all_time">Inget än.</string>
+    <string name="insights_no_sessions_all_time">Inga arbetspass än.</string>
     <string name="insights_pro_chart_title">Se din aktivitet över tid</string>
     <string name="insights_pro_chart_body">Pro grupperar din registrerade tid i dagliga, veckovisa eller månatliga diagram och lägger till din aktivitetssvit.</string>
     <string name="all_projects">Alla projekt</string>
@@ -530,7 +559,6 @@
     </plurals>
 
     <!-- Settings -->
-    <string name="help_and_guide">Hjälp och guide</string>
 
     <!-- Gauge Calculator — swatch section -->
     <string name="your_gauge_section">Din stickfasthet</string>
@@ -543,6 +571,9 @@
 
     <!-- Size Charts -->
     <string name="size_charts_title">Storlekstabeller</string>
+    <string name="size_chart_header_with_unit">%1$s (%2$s)</string>
+    <string name="size_col_sleeve">Ärm</string>
+    <string name="size_chart_sleeve_note">Ärm: från handleden till armhålan.</string>
     <string name="category_baby">Baby (0–24 månader)</string>
     <string name="category_child_youth">Barn och ungdom (2–16)</string>
     <string name="category_women">Damer</string>
@@ -573,14 +604,30 @@
     <string name="edit_reminder">Redigera påminnelse</string>
     <string name="no_reminders">Inga påminnelser ännu</string>
     <string name="delete_reminder_title">Ta bort påminnelse?</string>
-    <string name="delete_reminder_confirm">Ta bort påminnelsen \"%1$s\"?</string>
-    <string name="row_number">Räknarvärde</string>
+    <string name="delete_reminder_confirm">Påminnelsen ”%1$s” tas bort.</string>
     <string name="reminder_message">Meddelande</string>
+    <string name="reminder_at_row">Påminn vid rad</string>
+    <string name="reminder_at_round">Påminn vid varv</string>
+    <string name="reminder_at_repeat">Påminn vid upprepning</string>
+    <string name="reminder_at_custom">Påminn vid %1$s</string>
     <string name="reminder_message_hint">t.ex. Byt till hällapp</string>
     <string name="one_time">Engångs</string>
     <string name="repeating">Återkommande</string>
     <string name="repeat_every">Upprepa var</string>
-    <string name="repeat_every_rows">räknarsteg</string>
+    <string name="reminder_interval_custom">därefter var %1$d:e (%2$s)</string>
+    <string name="reminder_next_format">nästa: %1$s</string>
+    <plurals name="reminder_interval_rows">
+        <item quantity="one">därefter varje varv</item>
+        <item quantity="other">därefter vart %d:e varv</item>
+    </plurals>
+    <plurals name="reminder_interval_rounds">
+        <item quantity="one">därefter varje runda</item>
+        <item quantity="other">därefter var %d:e runda</item>
+    </plurals>
+    <plurals name="reminder_interval_repeats">
+        <item quantity="one">därefter varje upprepning</item>
+        <item quantity="other">därefter var %d:e upprepning</item>
+    </plurals>
     <string name="dismiss">Avfärda</string>
 
     <!-- Multiple Counters -->
@@ -603,6 +650,7 @@
     <string name="repeat_section_progress_format">Upprepning %1$d/%2$d, värde %3$d/%4$d</string>
     <string name="repeat_section_complete">Klar</string>
     <string name="rename_counter">Byt namn</string>
+    <string name="rename_counter_title">Byt namn på räknaren</string>
     <string name="reset_counter_name">Nollställ</string>
     <string name="delete_counter">Ta bort</string>
     <string name="delete_counter_title">Ta bort räknare?</string>
@@ -612,29 +660,32 @@
     <string name="take_photo">Ta foto</string>
     <string name="progress_photos">Framstegsbilder</string>
     <string name="counters_list_empty">Inga extra räknare</string>
-    <string name="row_label_format">Värde %d</string>
+    <string name="photo_count_label_format">Värde %d</string>
     <string name="share_photo">Dela</string>
     <string name="photo_share_failed">Det gick inte att dela fotot.</string>
     <string name="delete_photo">Ta bort foto</string>
-    <string name="delete_photo_confirm">Ta bort det här fotot?</string>
+    <string name="delete_photo_confirm">Det går inte att ångra.</string>
+    <string name="delete_photo_title">Ta bort fotot?</string>
     <plurals name="delete_photos_confirm">
-        <item quantity="one">Ta bort %1$d bild?</item>
-        <item quantity="other">Ta bort %1$d bilder?</item>
+        <item quantity="one">%1$d foto tas bort. Det går inte att ångra.</item>
+        <item quantity="other">%1$d foton tas bort. Det går inte att ångra.</item>
     </plurals>
+    <string name="delete_photos_title">Ta bort fotona?</string>
     <plurals name="delete_patterns_confirm">
-        <item quantity="one">Ta bort %1$d mönster från biblioteket?\n\nEventuella PDF-anteckningar som gjorts i biblioteket för det här mönstret tas också bort och visas inte längre i projekt. PDF-filer som redan är bifogade till projekt och PDF-anteckningar som gjorts i projekten behålls.</item>
-        <item quantity="other">Ta bort %1$d mönster från biblioteket?\n\nEventuella PDF-anteckningar som gjorts i biblioteket för de valda mönstren tas också bort och visas inte längre i projekt. PDF-filer som redan är bifogade till projekt och PDF-anteckningar som gjorts i projekten behålls.</item>
+        <item quantity="one">%1$d mönster tas bort från biblioteket.\n\nEventuella PDF-anteckningar som gjorts i biblioteket för det här mönstret tas också bort och visas inte längre i projekt. PDF-filer som redan är bifogade till projekt och PDF-anteckningar som gjorts i projekten behålls.</item>
+        <item quantity="other">%1$d mönster tas bort från biblioteket.\n\nEventuella PDF-anteckningar som gjorts i biblioteket för de valda mönstren tas också bort och visas inte längre i projekt. PDF-filer som redan är bifogade till projekt och PDF-anteckningar som gjorts i projekten behålls.</item>
     </plurals>
     <string name="delete_pattern">Ta bort mönster</string>
     <plurals name="delete_yarn_cards_confirm">
-        <item quantity="one">Ta bort %d garnkort?</item>
-        <item quantity="other">Ta bort %d garnkort?</item>
+        <item quantity="one">%d garnkort tas bort. Det går inte att ångra.</item>
+        <item quantity="other">%d garnkort tas bort. Det går inte att ångra.</item>
     </plurals>
     <string name="delete_yarn_card">Ta bort garnkort</string>
     <string name="no_photos">Inga framstegsbilder ännu</string>
     <string name="photo_gallery_empty_body">Bilder du tar av det här projektet visas här.</string>
     <string name="rename_photo">Byt namn på foto</string>
     <string name="photo_name_hint">t.ex. Ärm klar</string>
+    <string name="photo_name_label">Fotots namn</string>
 
     <!-- Ravelry -->
     <string name="tool_ravelry">Ravelry</string>
@@ -648,7 +699,7 @@
     <string name="saved_pattern_detail_no_pdf_explanation">Mönstrets uppgifter är sparade. Ingen PDF är bifogad för läsning offline.</string>
     <string name="saved_pattern_detail_open_pattern">Öppna mönster</string>
     <string name="saved_pattern_detail_attach_to_project">Koppla till projekt</string>
-    <string name="saved_pattern_detail_remove_confirm">Ta bort det här sparade mönstret från biblioteket?\n\nEventuella PDF-anteckningar som gjorts i biblioteket för det här mönstret tas också bort och visas inte längre i projekt. PDF-filer som redan är bifogade till projekt och PDF-anteckningar som gjorts i projekten behålls.</string>
+    <string name="saved_pattern_detail_remove_confirm">Det här sparade mönstret tas bort från biblioteket.\n\nEventuella PDF-anteckningar som gjorts i biblioteket för det här mönstret tas också bort och visas inte längre i projekt. PDF-filer som redan är bifogade till projekt och PDF-anteckningar som gjorts i projekten behålls.</string>
     <string name="free">Gratis</string>
     <string name="paid">Kostnadsbelagt</string>
     <string name="availability_unknown">Tillgänglighet okänd</string>
@@ -725,9 +776,92 @@
     <string name="project_completed_format">Avslutat %1$s</string>
     <string name="project_section_count_format">%1$s %2$d</string>
     <string name="project_continue_content_description">Fortsätt med %1$s</string>
+    <string name="pattern_annotations_layers">Anteckningslager</string>
+    <string name="pattern_annotations_master">Mönsteranteckningar</string>
+    <string name="pattern_annotations_project">Projektanteckningar</string>
+    <string name="pattern_annotations_read_only">Skrivskyddad</string>
+    <string name="pattern_annotations_count">%1$s (%2$d)</string>
+    <string name="pattern_annotation_tool_pen">Penna</string>
+    <string name="pattern_annotation_tool_highlighter">Överstrykningspenna</string>
+    <string name="pattern_annotation_tool_eraser">Suddgummi</string>
+    <string name="pattern_annotation_color_option">Anteckningsfärg: %1$s</string>
+    <string name="pattern_annotation_color_black">Svart</string>
+    <string name="pattern_annotation_color_red">Röd</string>
+    <string name="pattern_annotation_color_blue">Blå</string>
+    <string name="pattern_annotation_color_green">Grön</string>
+    <string name="pattern_annotation_color_yellow">Gul</string>
+    <string name="pattern_annotation_color_custom">Anpassad</string>
+    <string name="pattern_annotation_stroke_width">Bredd: %1$.1f</string>
+    <string name="pattern_annotation_pressure">Tryckkänslig penna</string>
+    <string name="pattern_annotation_axis_free">Fri</string>
+    <string name="pattern_annotation_axis_horizontal">Vågrät</string>
+    <string name="pattern_annotation_axis_vertical">Lodrät</string>
+    <string name="pattern_annotation_axis_auto">Automatiskt</string>
+    <string name="pattern_annotation_tool_select">Välj</string>
+    <string name="pattern_annotation_tool_line">Linje</string>
+    <string name="pattern_annotation_tool_arrow">Pil</string>
+    <string name="pattern_annotation_tool_rectangle">Rektangel</string>
+    <string name="pattern_annotation_tool_ellipse">Ellips</string>
+    <string name="pattern_annotation_tool_text">Text</string>
+    <string name="pattern_annotation_tool_callout">Anteckning</string>
+    <string name="pattern_annotation_undo">Ångra</string>
+    <string name="pattern_annotation_redo">Gör om</string>
+    <string name="pattern_annotation_clear_page">Rensa sida</string>
+    <string name="pattern_annotation_clear_page_title">Rensa den här sidan?</string>
+    <string name="pattern_annotation_clear_page_body">Alla dina markeringar på den här sidan tas bort. Du kan ångra detta.</string>
+    <string name="pattern_annotation_move_left">Vänster</string>
+    <string name="pattern_annotation_move_right">Höger</string>
+    <string name="pattern_annotation_move_up">Upp</string>
+    <string name="pattern_annotation_move_down">Ned</string>
+    <string name="pattern_annotation_smaller">Mindre</string>
+    <string name="pattern_annotation_larger">Större</string>
+    <string name="pattern_annotation_duplicate">Duplicera</string>
+    <string name="pattern_annotation_bring_forward">Flytta framåt</string>
+    <string name="pattern_annotation_send_backward">Flytta bakåt</string>
+    <string name="pattern_annotation_delete">Ta bort</string>
+    <string name="pattern_annotation_text_editor_title">Lägg till text</string>
+    <string name="pattern_annotation_text_label">Text</string>
+    <string name="pattern_annotation_callout_editor_title">Lägg till anteckning</string>
+    <string name="pattern_annotation_callout_title_label">Titel</string>
+    <string name="pattern_annotation_callout_description_label">Beskrivning</string>
+    <string name="pattern_annotation_tool_chart">Diagramområde</string>
+    <string name="pattern_annotation_link_chart">Koppla valt diagram till en räknare</string>
+    <string name="pattern_annotation_chart_setup_title">Diagramspårning</string>
+    <string name="pattern_annotation_chart_rows">Rader</string>
+    <string name="pattern_annotation_chart_columns">Kolumner</string>
+    <string name="pattern_annotation_chart_bottom_to_top">Nedifrån och upp</string>
+    <string name="pattern_annotation_chart_top_to_bottom">Uppifrån och ned</string>
+    <string name="pattern_annotation_chart_left_to_right">Från vänster till höger</string>
+    <string name="pattern_annotation_chart_right_to_left">Från höger till vänster</string>
+    <string name="pattern_annotation_chart_alternating">Växelvis</string>
+    <string name="pattern_annotation_chart_active_row">Aktiv rad</string>
+    <string name="pattern_annotation_chart_active_column">Aktiv kolumn</string>
+    <string name="pattern_annotation_chart_crosshair">Korsmarkör</string>
+    <string name="pattern_annotation_chart_completed">Färdiga rutor</string>
+    <string name="pattern_annotation_chart_c2c">C2C-diagonal</string>
+    <string name="pattern_annotation_chart_grid_start">Startcellens index</string>
+    <string name="pattern_annotation_chart_wrap">Börja om vid diagrammets slut</string>
+    <string name="pattern_annotation_chart_top_left">Övre vänster</string>
+    <string name="pattern_annotation_chart_top_right">Övre höger</string>
+    <string name="pattern_annotation_chart_bottom_left">Nedre vänster</string>
+    <string name="pattern_annotation_chart_bottom_right">Nedre höger</string>
+    <string name="pattern_annotation_export_pdf">Exportera PDF med anteckningar</string>
+    <string name="pattern_annotation_export_progress">Exporterar %1$d/%2$d</string>
+    <string name="pattern_annotation_export_failed">PDF-exporten misslyckades. Den ursprungliga PDF-filen ändrades inte.</string>
+    <string name="pattern_annotation_export_default_name">mönster</string>
+    <string name="pattern_annotation_export_filename">%1$s-med-anteckningar.pdf</string>
+    <string name="pattern_annotation_edit_text">Redigera text</string>
+    <string name="pattern_annotation_write_failed">Texten kunde inte sparas. Anteckningen kan ha ändrats. Stäng redigeraren och försök igen.</string>
+    <string name="pattern_annotation_command_failed">En ändring av en anteckning sparades inte. Stäng meddelandet och försök igen med markeringsverktygen.</string>
+
     <string name="work_session_start">Starta arbetspass</string>
     <string name="work_session_stop">Stoppa arbetspass</string>
+    <string name="work_session_stop_short">Stoppa</string>
     <string name="work_session_active">Arbetspass aktivt</string>
+    <string name="work_session_active_short">Pass</string>
+    <string name="work_session_under_minute">Under 1 min</string>
+    <string name="work_session_hero_duration_format">Pass %1$s</string>
+    <string name="work_session_hero_under_minute">Pass under 1 min</string>
     <string name="work_session_recovery_needed">Passtiden måste granskas</string>
     <string name="work_session_resolve">Lös</string>
     <string name="work_session_recovery_title">Granska passtid</string>
@@ -762,6 +896,7 @@
     <string name="work_session_reason_clock_unavailable">KnitTools kunde inte bekräfta om enheten startades om.</string>
     <string name="work_session_reason_clock_changed">KnitTools kunde inte verifiera det senaste tidsintervallet.</string>
     <string name="work_session_stop_summary_title">Avsluta arbetspasset?</string>
+    <string name="work_session_keep_running">Låt fortsätta</string>
     <string name="work_session_save">Spara pass</string>
     <string name="work_session_discard">Kassera pass</string>
     <string name="work_session_active_description">Arbetspass för %1$s, %2$s har gått</string>
@@ -773,34 +908,42 @@
     <string name="work_session_retry">Försök igen</string>
     <string name="project_documents_title">Dokument</string>
     <string name="project_documents_add">Lägg till</string>
+    <string name="project_content_add_document">Lägg till dokument</string>
+    <string name="project_documents_manage">Hantera dokument</string>
+    <string name="project_documents_pdf_section">PDF-dokument</string>
+    <plurals name="project_documents_count">
+        <item quantity="one">%d PDF</item>
+        <item quantity="other">%d PDF-filer</item>
+    </plurals>
     <string name="project_documents_actions">Åtgärder för %1$s</string>
     <string name="project_documents_primary">Huvudmönster</string>
-    <string name="project_documents_open">Aktuellt dokument</string>
+    <string name="project_documents_index">%1$d av %2$d</string>
+    <string name="project_documents_page">sida %1$d</string>
+    <string name="project_documents_page_standalone">Sida %1$d</string>
     <string name="project_documents_unavailable">PDF-filen är inte tillgänglig</string>
     <string name="project_documents_rename">Byt namn</string>
-    <string name="project_documents_make_primary">Ange som huvudmönster</string>
+    <string name="project_documents_make_primary">Ange som huvuddokument</string>
     <string name="project_documents_remove_action">Ta bort</string>
     <string name="project_documents_move_earlier">Flytta tidigare</string>
     <string name="project_documents_move_later">Flytta senare</string>
     <string name="project_documents_rename_title">Byt namn på dokumentet</string>
     <string name="project_documents_label">Dokumentnamn</string>
+    <string name="project_documents_label_limit">Maximal namnlängd: %1$d</string>
     <string name="project_documents_remove_title">Ta bort dokumentet?</string>
-    <string name="project_documents_remove_message">Ta bort %1$s från det här projektet?</string>
+    <string name="project_documents_remove_message">%1$s tas bort från det här projektet.</string>
     <string name="project_documents_error_invalid_label">Ange ett namn med 1–50 tecken.</string>
     <string name="project_documents_error_duplicate">Den här PDF-filen är redan kopplad till projektet.</string>
     <string name="project_documents_error_unavailable">Den här PDF-filen är inte längre tillgänglig. Ta bort den eller lägg till filen igen.</string>
     <string name="project_documents_error_stale">Dokumentlistan har ändrats. Försök igen.</string>
     <string name="project_documents_error_generic">Dokumentändringen kunde inte sparas.</string>
-    <string name="project_documents_secondary">Sekundärt dokument</string>
-    <string name="project_documents_available">PDF-filen är tillgänglig</string>
-    <string name="project_documents_position">Position %1$d av %2$d</string>
     <string name="project_documents_open_action">Öppna dokument</string>
+    <string name="project_documents_open_now">Öppet nu</string>
     <string name="project_documents_remove_from_project">Ta bort från projektet</string>
     <string name="project_documents_empty">Inga dokument</string>
     <string name="project_documents_metadata_only">Endast metadata</string>
     <string name="project_documents_pattern_information">Mönsterinformation</string>
-    <string name="project_documents_remove_primary_message">Ta bort %1$s? Ett annat dokument blir huvudmönster.</string>
-    <string name="project_documents_remove_last_message">Ta bort %1$s? Projektet kommer inte längre att ha ett läsbart mönster.</string>
+    <string name="project_documents_remove_primary_message">%1$s tas bort. Ett annat dokument blir huvuddokument.</string>
+    <string name="project_documents_remove_last_message">%1$s tas bort. Projektet har därefter inget PDF-mönster att läsa.</string>
     <string name="folder_sheet_title">Mappar</string>
     <string name="folder_loading">Läser in mappar</string>
     <string name="folder_unfiled">Utan mapp</string>
@@ -821,7 +964,7 @@
     <string name="folder_deleted">Mappen togs bort. Projekten behölls.</string>
     <string name="folder_project_moved">Projektet flyttades.</string>
     <string name="folder_project_missing">Ett valt projekt finns inte längre.</string>
-    <string name="folder_project_creation_destination">Nytt projekts mål: %1$s</string>
+    <string name="folder_project_creation_destination">Sparas i %1$s</string>
     <string name="folder_missing">Den här mappen finns inte längre.</string>
     <string name="folder_load_error">Det gick inte att läsa in mappar.</string>
     <string name="folder_reorder_error">Det gick inte att ordna om mappar.</string>
@@ -835,7 +978,8 @@
     <string name="folder_name_duplicate">Mappnamnet används redan.</string>
     <string name="folder_name_invalid">Mappnamn får inte innehålla styrtecken.</string>
     <string name="folder_delete_title">Ta bort mapp?</string>
-    <string name="folder_delete_message">Ta bort %1$s?</string>
+    <string name="folder_delete_message">%1$s tas bort.</string>
+    <string name="folder_delete_empty_message">Den här mappen är tom.</string>
     <string name="folder_selected_description">%1$s Vald.</string>
     <string name="folder_all_projects_description">Alla projekt. Virtuell vy över varje projekt.</string>
     <string name="folder_unfiled_description">Projekt utan mapp.</string>
@@ -932,8 +1076,10 @@
     <string name="yarn_usage_title">Garnåtgång</string>
     <string name="yarn_usage_scope">Spårar garnmängder för det här projektet. Mängderna i Mitt garn ändras inte.</string>
     <string name="yarn_usage_unit">Mängdenhet</string>
+    <string name="segmented_option_pending_state">Kräver uppgifter om nystanet</string>
     <string name="yarn_usage_grams">Gram</string>
     <string name="yarn_usage_skeins">Härvor</string>
+    <string name="yarn_usage_skeins_suffix">härvor</string>
     <string name="yarn_usage_planned">Planerat</string>
     <string name="yarn_usage_allocated">Avsatt för det här projektet</string>
     <string name="yarn_usage_used">Använt</string>
@@ -982,7 +1128,7 @@
     <string name="web_pattern_edit_title">Redigera webbmönster</string>
     <string name="web_pattern_delete">Ta bort webbmönster</string>
     <string name="web_pattern_delete_confirm_title">Ta bort webbmönstret?</string>
-    <string name="web_pattern_delete_confirm_message">Ta bort %1$s från Sparade mönster i biblioteket?\n\nEventuella PDF-anteckningar som gjorts i biblioteket för det här mönstret tas också bort och visas inte längre i projekt. PDF-filer som redan är bifogade till projekt och PDF-anteckningar som gjorts i projekten behålls.</string>
+    <string name="web_pattern_delete_confirm_message">%1$s tas bort från sparade mönster i biblioteket.\n\nEventuella PDF-anteckningar som gjorts i biblioteket för det här mönstret tas också bort och visas inte längre i projekt. PDF-filer som redan är bifogade till projekt och PDF-anteckningar som gjorts i projekten behålls.</string>
     <string name="web_pattern_attach">Koppla till projekt</string>
     <string name="pattern_mark_up">Markera</string>
     <string name="pattern_mark_up_done">Klar</string>
@@ -996,14 +1142,15 @@
     <string name="ravelry_purchase_in_browser">Kassan öppnas i webbläsaren. Ladda ner mönstret här från ditt Ravelry-bibliotek efter köpet.</string>
     <string name="incoming_pdf_downloading">Hämtar mönstret…</string>
     <string name="incoming_pdf_not_pdf">Bara PDF-mönster kan sparas</string>
-    <string name="web_pattern_unlink">Koppla bort mönsterinformation</string>
+    <string name="web_pattern_unlink_title">Koppla bort mönstret?</string>
+    <string name="web_pattern_unlink_body">Ta bort mönsterinformationen för %1$s från projektet? Det sparade mönstret och projektets PDF-filer behålls.</string>
+    <string name="web_pattern_unlink_confirm">Koppla bort</string>
     <string name="web_pattern_replace_confirm_title">Ersätta mönsterinformationen?</string>
-    <string name="web_pattern_replace_confirm_message">Ersätta den aktuella mönsterinformationen med %1$s?</string>
+    <string name="web_pattern_replace_confirm_message">Den aktuella mönsterinformationen ersätts med uppgifterna för %1$s.</string>
     <string name="web_pattern_open_website">Öppna webbplats</string>
+    <string name="web_pattern_offline_note">Öppnas på den ursprungliga webbplatsen. Sparas inte för användning offline.</string>
     <string name="web_pattern_open_website_description">Öppna webbplatsen för %1$s på %2$s</string>
-    <string name="web_pattern_edit_description">Redigera webbmönstret %1$s</string>
     <string name="web_pattern_attach_description">Koppla webbmönstret %1$s</string>
-    <string name="web_pattern_unlink_description">Koppla bort mönsterinformationen för %1$s</string>
     <string name="web_pattern_shared_link">Delad länk</string>
     <string name="web_pattern_confirm_details">Bekräfta mönsteruppgifter</string>
     <string name="web_pattern_error_title_required">Mönstrets namn krävs</string>
@@ -1019,9 +1166,6 @@
     <string name="web_pattern_delete_failed">Det gick inte att ta bort webbmönstret</string>
     <string name="web_pattern_open_failed">Det gick inte att öppna webbplatsen</string>
     <string name="web_pattern_no_browser">Ingen webbläsare är tillgänglig</string>
-    <string name="web_pattern_source_controlled">Källan styr om mönstret är tillgängligt</string>
-    <string name="web_pattern_not_offline">Sidan har inte sparats för offlineanvändning</string>
-    <string name="web_pattern_opens_original">Den här länken öppnar den ursprungliga webbplatsen</string>
     <string name="web_pattern_keep_current_draft">Behåll aktuellt utkast</string>
     <string name="web_pattern_use_shared_link">Använd delad länk</string>
     <string name="web_pattern_discard_current_draft">Kassera aktuellt utkast</string>
@@ -1087,7 +1231,7 @@
     <string name="project_overview_yarn_empty">Inget garn har lagts till än</string>
     <string name="project_overview_pattern_empty">Inget mönster har lagts till än</string>
     <string name="project_overview_notes_empty">Inga anteckningar än</string>
-    <string name="project_overview_pdf_page_format">PDF-mönster, sida %1$d</string>
+    <string name="project_overview_pdf_page_format">PDF, sida %1$d</string>
     <string name="project_card_open_overview_action">Öppna projekt</string>
     <string name="project_overview_edit_details">Redigera detaljer</string>
     <string name="project_overview_open_photos">Öppna foton</string>

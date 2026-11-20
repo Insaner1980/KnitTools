@@ -7,12 +7,11 @@
     <string name="pattern_bookmark_rename">Nimeä kirjanmerkki uudelleen</string>
     <string name="pattern_bookmark_rename_title">Nimeä kirjanmerkki uudelleen</string>
     <string name="pattern_bookmark_delete_title">Poistetaanko kirjanmerkki?</string>
-    <string name="pattern_bookmark_delete_message">Poistetaanko ”%1$s”?</string>
+    <string name="pattern_bookmark_delete_message">”%1$s” poistetaan.</string>
     <string name="pattern_bookmark_empty">Ei vielä kirjanmerkkejä.</string>
     <string name="pattern_bookmark_loading">Ladataan kirjanmerkkejä…</string>
     <string name="pattern_bookmark_previous">Edellinen kirjanmerkki</string>
     <string name="pattern_bookmark_next">Seuraava kirjanmerkki</string>
-    <string name="pattern_bookmark_selected">Valittu kirjanmerkki</string>
     <string name="pattern_bookmark_accessibility_description">Siirry kirjanmerkkiin %1$s, sivu %2$d</string>
     <string name="pattern_bookmark_action_accessibility_description">%1$s: %2$s</string>
     <string name="pattern_bookmark_name_required">Kirjanmerkille tarvitaan nimi.</string>
@@ -30,11 +29,11 @@
     <string name="pattern_center_vertical_guide">Keskitä pystyohjain</string>
     <string name="pattern_vertical_guide_description">Pystyohjain</string>
     <string name="pattern_follow_current_row_on">Seuraa päälaskuria</string>
-    <string name="pattern_follow_current_row_off">Lopeta seuraaminen</string>
+    <string name="pattern_follow_current_row_off">Lopeta laskurin seuraaminen</string>
     <string name="pattern_return_to_current_row">Palaa nykyiseen lukemaan</string>
     <string name="pattern_follow_resumed">Seuranta jatkuu nykyisestä lukemasta.</string>
     <string name="pattern_follow_resumed_uncalibrated">Laskurin sijaintia ei ole kalibroitu. Seuranta jatkuu nykyisestä sijainnista.</string>
-    <string name="pattern_set_row_marker_here">Aseta merkki tähän lukemalle %1$d</string>
+    <string name="pattern_set_row_marker_here">Merkitse tähän %1$s</string>
     <string name="pattern_follow_page_announcement">Lukema %1$d siirsi lukuviivan sivulle %2$d/%3$d.</string>
     <string name="pattern_bookmark_jump_announcement">%1$s, sivu %2$d/%3$d. Laskurin seuranta keskeytetty.</string>
     <string name="pattern_reading_line_move_up">Siirrä lukuriviä ylöspäin</string>

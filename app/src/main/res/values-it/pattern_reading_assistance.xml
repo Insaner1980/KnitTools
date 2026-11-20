@@ -7,12 +7,11 @@
     <string name="pattern_bookmark_rename">Rinomina segnalibro</string>
     <string name="pattern_bookmark_rename_title">Rinomina segnalibro</string>
     <string name="pattern_bookmark_delete_title">Eliminare il segnalibro?</string>
-    <string name="pattern_bookmark_delete_message">Eliminare “%1$s”?</string>
+    <string name="pattern_bookmark_delete_message">Il segnalibro «%1$s» verrà eliminato.</string>
     <string name="pattern_bookmark_empty">Non ci sono ancora segnalibri.</string>
     <string name="pattern_bookmark_loading">Caricamento dei segnalibri…</string>
     <string name="pattern_bookmark_previous">Segnalibro precedente</string>
     <string name="pattern_bookmark_next">Segnalibro successivo</string>
-    <string name="pattern_bookmark_selected">Segnalibro selezionato</string>
     <string name="pattern_bookmark_accessibility_description">Vai al segnalibro %1$s, pagina %2$d</string>
     <string name="pattern_bookmark_action_accessibility_description">%1$s: %2$s</string>
     <string name="pattern_bookmark_name_required">È necessario un nome per il segnalibro.</string>
@@ -34,7 +33,7 @@
     <string name="pattern_return_to_current_row">Torna al valore attuale</string>
     <string name="pattern_follow_resumed">Monitoraggio ripreso dal valore attuale.</string>
     <string name="pattern_follow_resumed_uncalibrated">La posizione del contatore non è calibrata. Monitoraggio ripreso dalla posizione attuale.</string>
-    <string name="pattern_set_row_marker_here">Imposta qui un segno per il valore %1$d</string>
+    <string name="pattern_set_row_marker_here">Segna %1$s qui</string>
     <string name="pattern_follow_page_announcement">Il valore %1$d ha spostato la linea di lettura alla pagina %2$d di %3$d.</string>
     <string name="pattern_bookmark_jump_announcement">%1$s, pagina %2$d di %3$d. Monitoraggio del contatore in pausa.</string>
     <string name="pattern_reading_line_move_up">Sposta in alto la linea di lettura</string>

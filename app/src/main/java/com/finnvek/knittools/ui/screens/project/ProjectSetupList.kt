@@ -123,7 +123,10 @@ private fun ProjectSetupList(
             title = R.string.project_setup_title,
             trailingContent = {
                 RowOverflowMenu(
-                    actions = listOf(RowMenuAction(stringResource(R.string.project_setup_hide), actions.onHide)),
+                    actions =
+                        listOf(
+                            RowMenuAction(stringResource(R.string.project_setup_hide), onClick = actions.onHide),
+                        ),
                     onExpandedChange = onBlockingSurfaceChanged,
                 )
             },

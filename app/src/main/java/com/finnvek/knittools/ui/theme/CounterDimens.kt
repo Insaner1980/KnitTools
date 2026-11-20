@@ -50,6 +50,7 @@ object CounterDimens {
     val LargeHeroScale = 1.4f
     val CounterMainNumberFontSize = 115.sp
     val CounterMainNumberMinimumFontSize = 48.sp
+    val MainNumberMinHeight = 48.dp
 
     @Suppress("MayBeConstant")
     val CounterMainNumberFitIterations = 8
@@ -109,17 +110,14 @@ object CounterDimens {
     val StitchTrackerHorizontalPadding = 16.dp
     val StitchTrackerVerticalPadding = 6.dp
     val StitchTrackerContentSpacing = 12.dp
+    val CompactTopBarHeight = 48.dp
     val TopBarTitleEndPadding = 8.dp
     val ProjectActionsHorizontalPadding = 22.dp
     val ProjectActionsRowVerticalPadding = 12.dp
     val ProjectActionsSectionTopPadding = 14.dp
     val ProjectActionsSectionBottomPadding = 8.dp
     val ProjectActionsDividerVerticalPadding = 4.dp
-    val WorkSessionStartPadding = 16.dp
-    val WorkSessionEndPadding = 8.dp
-    val WorkSessionVerticalPadding = 8.dp
     val WorkSessionStackBreakpoint = 360.dp
-    val WorkSessionActionMinHeight = 48.dp
-    val WorkSessionStackedSpacing = 4.dp
-    val WorkSessionInlineSpacing = 12.dp
+    val WorkSessionStripMinHeight = 48.dp
+    val WorkSessionStripInlineSpacing = 8.dp
 }

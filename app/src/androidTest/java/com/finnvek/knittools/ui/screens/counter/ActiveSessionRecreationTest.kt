@@ -108,7 +108,7 @@ class ActiveSessionRecreationTest {
         assertNotNull(started.bootCount)
         incrementTo(11)
         incrementTo(12)
-        assertUi(12, 2)
+        assertUi(12)
         val before = requireNotNull(active())
         val projectBefore = project()
         val historyBefore = history()
@@ -135,7 +135,7 @@ class ActiveSessionRecreationTest {
         assertTrue(oldActivity.isDestroyed)
         assertEquals(pidBefore, Process.myPid())
         assertEquals(Lifecycle.State.RESUMED, currentScenario.state)
-        assertUi(12, 2)
+        assertUi(12)
         val after = requireNotNull(active())
         assertEquals(projectBefore, project())
         assertEquals(historyBefore, history())
@@ -163,12 +163,13 @@ class ActiveSessionRecreationTest {
         )
 
         incrementTo(13)
-        assertUi(13, 3)
+        assertUi(13)
         assertEquals(started.sessionToken, active()?.sessionToken)
         assertEquals(3, active()?.trustedRowsWorked)
         val stopEarliest = SystemClock.elapsedRealtime()
-        node(text(R.string.work_session_stop)).performScrollTo().performClick()
+        node(text(R.string.work_session_stop_short)).performScrollTo().performClick()
         rule.onNodeWithText(text(R.string.work_session_stop_summary_title)).assertIsDisplayed()
+        rule.onNodeWithText(text(R.string.counter_progress_format, 3)).assertIsDisplayed()
         val stopLatest = SystemClock.elapsedRealtime()
         assertEquals(completedBefore, completedCount())
         assertEquals(started.sessionToken, active()?.sessionToken)
@@ -197,13 +198,9 @@ class ActiveSessionRecreationTest {
         )
     }
 
-    private fun assertUi(
-        count: Int,
-        progress: Int,
-    ) {
+    private fun assertUi(count: Int) {
         node(text(R.string.current_row_short, count)).performScrollTo().assertIsDisplayed()
         node(text(R.string.work_session_active)).performScrollTo().assertIsDisplayed()
-        node(text(R.string.counter_progress_format, progress)).performScrollTo().assertIsDisplayed()
         rule.onNodeWithText(text(R.string.work_session_recovery_title)).assertDoesNotExist()
         rule.onNodeWithText(text(R.string.work_session_recovery_needed)).assertDoesNotExist()
     }

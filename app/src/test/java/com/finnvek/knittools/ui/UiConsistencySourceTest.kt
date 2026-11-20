@@ -34,7 +34,7 @@ class UiConsistencySourceTest {
         assertOnlyAllowed(
             Regex("""colorScheme\.(surfaceVariant|surfaceContainer\w*|secondaryContainer)\b"""),
             mapOf(
-                "counter/CounterWorkspaceSections.kt" to 3,
+                "counter/CounterWorkspaceSections.kt" to 2,
                 "counter/MultiCounterComponents.kt" to 1,
             ),
             "Käytä knitToolsColors.cardContainer / cardContainerColor(selected) / tableHeaderContainer",
@@ -128,16 +128,66 @@ class UiConsistencySourceTest {
 
     @Test
     fun `simple confirmations use ConfirmationDialog`() {
-        // Sallitut: lomakedialogit (nimeäminen, laskurin lisäys, tavoite, silmukat, sivulle siirto, kansio),
-        // monen vaihtoehdon istuntodialogit sekä verkko-ohjeen korvaus- ja jakovalinnat tilakytkimineen.
         assertOnlyAllowed(
             Regex("""(?<![\w.])AlertDialog\("""),
-            mapOf(
-                "library/WebPatternEditorScreen.kt" to 2,
-                "project/ProjectFolderComponents.kt" to 2,
-            ),
+            emptyMap(),
             "Käytä ConfirmationDialogia tavallisiin vahvistuksiin (isDestructive poistoille)",
         )
+    }
+
+    @Test
+    fun `screens use shared text fields`() {
+        // The notes screen and its in-counter editor use a continuous writing surface.
+        assertOnlyAllowed(
+            Regex("""\b(?:TextField|OutlinedTextField)\s*\("""),
+            mapOf(
+                "counter/CounterScreen.kt" to 1,
+                "notes/NotesEditorScreen.kt" to 1,
+            ),
+            "Use LabeledTextField, NumberInputField, or SearchTextField",
+            sources = screenSources().mapValues { (_, text) -> text.codeOnly() },
+        )
+    }
+
+    @Test
+    fun `form labels are outside text fields including shared PDF import`() {
+        val sources = screenSources().mapValues { (_, source) -> source.codeOnly() }
+        val fields = Regex("""\b(?:TextField|OutlinedTextField)\s*\(""")
+        val inlineLabel = Regex("""\blabel\s*=\s*\{""")
+        val violations =
+            sources
+                .filterValues { source ->
+                    fields.findAll(source).any { field ->
+                        inlineLabel.containsMatchIn(callArguments(source, field.range.last))
+                    }
+                }.keys
+        assertEquals(emptySet<String>(), violations)
+        assertTrue(sources.getValue("library/IncomingPdfSheet.kt").contains("LabeledTextField("))
+    }
+
+    @Test
+    fun `delete and remove menu actions use the destructive color`() {
+        val menuCalls = Regex("""\b(DropdownMenuItem|RowMenuAction|FolderMenuItem)\s*\(""")
+        val destructiveLabel = Regex("""\bR\.string\.(?:delete\w*|remove\w*|\w+_(?:delete|remove)(?:_action)?)\b""")
+        val sources = (screenSources() + componentSources()).mapValues { (_, source) -> source.codeOnly() }
+        val violations =
+            sources
+                .mapValues { (_, source) ->
+                    menuCalls
+                        .findAll(source)
+                        .mapNotNull { menu ->
+                            val arguments = callArguments(source, menu.range.last)
+                            val label = destructiveLabel.find(arguments)?.value ?: return@mapNotNull null
+                            val destructive =
+                                if (menu.groupValues[1] == "DropdownMenuItem") {
+                                    "MaterialTheme.colorScheme.error" in arguments
+                                } else {
+                                    "isDestructive = true" in arguments
+                                }
+                            label.takeUnless { destructive }
+                        }.toList()
+                }.filterValues { it.isNotEmpty() }
+        assertEquals(emptyMap<String, List<String>>(), violations)
     }
 
     @Test
@@ -146,7 +196,7 @@ class UiConsistencySourceTest {
         assertOnlyAllowed(
             Regex("""\b(Outlined)?TextFieldDefaults\.colors\("""),
             mapOf("notes/NotesEditorScreen.kt" to 1),
-            "Käytä highContainerTextFieldColors(), dialogTextFieldColors() tai cardTextFieldColors()",
+            "Use the shared text field components",
         )
     }
 

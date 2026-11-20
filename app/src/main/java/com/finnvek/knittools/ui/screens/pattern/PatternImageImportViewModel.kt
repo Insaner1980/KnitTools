@@ -5,6 +5,7 @@ import android.net.Uri
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.finnvek.knittools.R
 import com.finnvek.knittools.analytics.UsageAnalytics
 import com.finnvek.knittools.analytics.UsageDetail
 import com.finnvek.knittools.analytics.UsageEvent
@@ -15,6 +16,7 @@ import com.finnvek.knittools.data.storage.PatternImageStageFailure
 import com.finnvek.knittools.data.storage.PatternImageValidationException
 import com.finnvek.knittools.di.ApplicationScope
 import com.finnvek.knittools.di.IoDispatcher
+import com.finnvek.knittools.domain.model.PatternDisplayNames
 import com.finnvek.knittools.pro.ProManager
 import com.finnvek.knittools.pro.ProStatus
 import com.finnvek.knittools.repository.CounterRepository
@@ -495,12 +497,20 @@ internal class PatternImageImportViewModel
         ): Boolean? {
             val attachment =
                 runCatching {
+                    val project = withContext(ioDispatcher) { repository.getProject(projectId) }
+                    val label =
+                        if (project != null) {
+                            context.getString(R.string.pattern_images_document_label, project.name)
+                        } else {
+                            context.getString(R.string.pattern_images_document_fallback)
+                        }
                     repository.attachPattern(
                         id = projectId,
                         patternUri = output.first,
-                        patternName = output.second,
+                        patternName = PatternDisplayNames.documentLabel(label),
                         currentPatternPage = 0,
                         patternRowMapping = null,
+                        makeLabelUnique = true,
                     )
                 }
             when (attachment.getOrNull()) {

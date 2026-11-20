@@ -13,6 +13,9 @@ class LocaleSensitiveFormattingSourceTest {
         assertTrue(helper.contains("DateFormat.getBestDateTimePattern"))
         assertTrue(helper.contains("DateFormat.is24HourFormat"))
 
+        val history = ProjectSourceFiles.read(COUNTER_HISTORY_SCREEN)
+        assertTrue(history.contains("localizedDateTimePattern(locale, if (use24Hour) \"Hm\" else \"hm\")"))
+
         DATE_DISPLAY_FILES.forEach { path ->
             val source = ProjectSourceFiles.read(path)
             assertFalse("$path contains a fixed date pattern", FIXED_DATE_PATTERNS.any(source::contains))
@@ -25,9 +28,10 @@ class LocaleSensitiveFormattingSourceTest {
         val insightsSections = ProjectSourceFiles.read(INSIGHTS_SECTIONS)
         val projectList = ProjectSourceFiles.read(PROJECT_LIST_SCREEN)
 
-        assertTrue(castOn.contains("R.string.edge_stitches_total_format"))
+        assertFalse(castOn.contains("R.string.edge_stitches_total_format"))
         assertFalse(castOn.contains("stringResource(R.string.edge_stitches_optional) +"))
-        assertTrue(insightsSections.contains("R.string.insights_project_sub_format"))
+        assertTrue(insightsSections.contains("R.string.counter_progress_format"))
+        assertTrue(insightsSections.contains("R.string.insights_last_worked_format"))
         assertFalse(insightsSections.contains("\"\$rowsText, \$lastActiveText\""))
         assertFalse(projectList.contains("rowContext + \", \" +"))
         assertFalse(projectList.contains(".joinToString(\", \")"))
@@ -54,6 +58,8 @@ class LocaleSensitiveFormattingSourceTest {
     private companion object {
         private const val LOCALE_DATE_FORMAT =
             "app/src/main/java/com/finnvek/knittools/ui/components/LocaleDateFormat.kt"
+        private const val COUNTER_HISTORY_SCREEN =
+            "app/src/main/java/com/finnvek/knittools/ui/screens/counterhistory/CounterHistoryScreen.kt"
         private const val CAST_ON_SCREEN =
             "app/src/main/java/com/finnvek/knittools/ui/screens/caston/CastOnScreen.kt"
         private const val INSIGHTS_SECTIONS =
@@ -76,9 +82,8 @@ class LocaleSensitiveFormattingSourceTest {
         private val FIXED_DATE_PATTERNS = listOf("\"MMM d\"", "\"d MMM\"", "\"d.M.\"")
         private val REQUIRED_STRING_NAMES =
             listOf(
-                "insights_project_sub_format",
-                "edge_stitches_total_format",
-                "measurement_with_unit_format",
+                "insights_last_worked_format",
+                "size_chart_header_with_unit",
             )
     }
 }

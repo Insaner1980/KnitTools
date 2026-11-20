@@ -68,6 +68,7 @@ fun ProjectDetailsSheet(
     var craftType by rememberSaveable { mutableStateOf(initialValues.craftType) }
     var labelType by rememberSaveable { mutableStateOf(initialValues.mainCounterLabelType) }
     var customLabel by rememberSaveable { mutableStateOf(initialValues.mainCounterCustomLabel.orEmpty()) }
+    var customLabelTouched by rememberSaveable { mutableStateOf(false) }
     var startText by rememberSaveable {
         mutableStateOf(
             initialValues.initialCount
@@ -204,6 +205,7 @@ fun ProjectDetailsSheet(
                 isTargetInvalid = target == TargetInput.Invalid,
                 customLabelFocus = customLabelFocus,
                 targetFocus = targetFocus,
+                onInvalidCustomLabel = { customLabelTouched = true },
                 onToggle = { moreOptionsExpanded = !moreOptionsExpanded },
             )
         }
@@ -213,8 +215,12 @@ fun ProjectDetailsSheet(
             if (labelType == MainCounterLabelType.CUSTOM) {
                 CustomMainCounterLabelField(
                     value = customLabel,
-                    sanitizedValue = sanitizedCustomLabel,
-                    onValueChange = { customLabel = it },
+                    showError = customLabelTouched && !hasValidCustomLabel,
+                    onValueChange = {
+                        customLabel = it
+                        customLabelTouched = true
+                    },
+                    onFocusLost = { customLabelTouched = true },
                     modifier = Modifier.focusRequester(customLabelFocus),
                     onNext = if (isCreate) ({ targetFocus.requestFocus() }) else null,
                 )
@@ -260,7 +266,13 @@ private fun ProjectStartingCountField(
             value = value,
             onValueChange = onValueChange,
             label = projectStartCountLabel(labelType),
-            options = NumberInputOptions(placeholder = "0", isLast = !moreOptionsExpanded, preserveRawInput = true),
+            options =
+                NumberInputOptions(
+                    placeholder = "0",
+                    placeholderIsExample = false,
+                    isLast = !moreOptionsExpanded,
+                    preserveRawInput = true,
+                ),
             errorMessage =
                 if (startCount == null) {
                     stringResource(
@@ -290,13 +302,19 @@ private fun ProjectMoreOptionsButton(
     isTargetInvalid: Boolean,
     customLabelFocus: FocusRequester,
     targetFocus: FocusRequester,
+    onInvalidCustomLabel: () -> Unit,
     onToggle: () -> Unit,
 ) {
     val focusManager = LocalFocusManager.current
     TextButton(
         onClick = {
             if (expanded && (!hasValidCustomLabel || isTargetInvalid)) {
-                if (!hasValidCustomLabel) customLabelFocus.requestFocus() else targetFocus.requestFocus()
+                if (!hasValidCustomLabel) {
+                    onInvalidCustomLabel()
+                    customLabelFocus.requestFocus()
+                } else {
+                    targetFocus.requestFocus()
+                }
             } else {
                 focusManager.clearFocus()
                 onToggle()
@@ -429,8 +447,9 @@ private fun updatedLabelTypeForCraftChange(
 @Composable
 private fun CustomMainCounterLabelField(
     value: String,
-    sanitizedValue: String?,
+    showError: Boolean,
     onValueChange: (String) -> Unit,
+    onFocusLost: () -> Unit,
     modifier: Modifier = Modifier,
     onNext: (() -> Unit)? = null,
 ) {
@@ -438,12 +457,13 @@ private fun CustomMainCounterLabelField(
     LabeledTextField(
         value = value,
         onValueChange = onValueChange,
+        onFocusLost = onFocusLost,
         inputModifier = modifier,
         label = stringResource(R.string.main_counter_custom_label),
         keyboardOptions = KeyboardOptions(imeAction = if (onNext == null) ImeAction.Done else ImeAction.Next),
         keyboardActions = KeyboardActions(onNext = { onNext?.invoke() }, onDone = { focusManager.clearFocus() }),
         errorMessage =
-            if (sanitizedValue == null) {
+            if (showError) {
                 stringResource(R.string.main_counter_custom_label_error)
             } else {
                 null

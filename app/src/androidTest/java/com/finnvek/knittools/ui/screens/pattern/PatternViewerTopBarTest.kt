@@ -162,23 +162,60 @@ class PatternViewerTopBarTest {
     }
 
     @Test
-    fun readingLineButtonIsHiddenForLibraryAndMarkup() {
+    fun libraryKeepsGuideOptionsAndMarkupUsesHistoryActions() {
         val state = mutableStateOf(topBarState("Library chart").copy(currentRow = null))
-        val label =
-            InstrumentationRegistry.getInstrumentation().targetContext.getString(
-                R.string.pattern_horizontal_reading_line,
-            )
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val readingLine = context.getString(R.string.pattern_horizontal_reading_line)
+        val undo = context.getString(R.string.pattern_annotation_undo)
+        val redo = context.getString(R.string.pattern_annotation_redo)
+        val clear = context.getString(R.string.pattern_annotation_clear_page)
+        val clearTitle = context.getString(R.string.pattern_annotation_clear_page_title)
+        var undoCount = 0
+        var cleared = 0
         composeRule.setContent {
             MaterialTheme {
-                PatternViewerTopBar(state = state.value, actions = topBarActions {})
+                PatternViewerTopBar(
+                    state = state.value,
+                    actions =
+                        topBarActions {}.copy(
+                            onUndoAnnotation = { undoCount++ },
+                            onClearAnnotationPage = { cleared++ },
+                        ),
+                )
             }
         }
 
-        composeRule.onNodeWithContentDescription(label).assertDoesNotExist()
+        composeRule.onNodeWithContentDescription(readingLine).assertIsDisplayed()
+        composeRule.onNodeWithContentDescription(context.getString(R.string.more_options)).performClick()
+        composeRule.onNodeWithText(context.getString(R.string.pattern_page_jump)).assertIsDisplayed()
+        composeRule.onNodeWithText(context.getString(R.string.pattern_show_reading_line)).assertDoesNotExist()
+        composeRule.onNodeWithText(context.getString(R.string.pattern_page_jump)).performClick()
+        composeRule.onNodeWithText(context.getString(R.string.cancel)).performClick()
         composeRule.runOnIdle {
-            state.value = topBarState("Chart").copy(canAnnotate = true, annotationMode = true)
+            state.value =
+                state.value.copy(
+                    canAnnotate = true,
+                    annotationMode = true,
+                    canUndoAnnotation = true,
+                    canClearAnnotationPage = true,
+                )
         }
-        composeRule.onNodeWithContentDescription(label).assertDoesNotExist()
+        composeRule.onNodeWithContentDescription(readingLine).assertDoesNotExist()
+        composeRule.onNodeWithText(context.getString(R.string.pattern_mark_up)).assertIsDisplayed()
+        composeRule.onNodeWithText("Library chart").assertDoesNotExist()
+        composeRule.onNodeWithContentDescription(undo).assertIsDisplayed().performClick()
+        composeRule.onNodeWithContentDescription(redo).assertIsDisplayed()
+        composeRule.onNodeWithContentDescription(context.getString(R.string.more_options)).performClick()
+        composeRule.onNodeWithText(clear).performClick()
+        composeRule.onNodeWithText(clearTitle).assertIsDisplayed()
+        composeRule.runOnIdle { assertEquals(0, cleared) }
+        composeRule.onNodeWithText(clear).performClick()
+        composeRule.runOnIdle {
+            assertEquals(1, undoCount)
+            assertEquals(1, cleared)
+            state.value = state.value.copy(annotationMode = false)
+        }
+        composeRule.onNodeWithText("Library chart").assertIsDisplayed()
     }
 
     private fun topBarActions(onOpenDocuments: () -> Unit) =

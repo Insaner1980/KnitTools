@@ -6,12 +6,18 @@ import android.content.res.Configuration
 import android.view.accessibility.AccessibilityManager
 import android.view.accessibility.AccessibilityNodeInfo
 import androidx.activity.ComponentActivity
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalResources
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
@@ -19,11 +25,13 @@ import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isDialog
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
@@ -31,6 +39,8 @@ import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTextReplacement
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextLayoutResult
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.dp
 import androidx.test.platform.app.InstrumentationRegistry
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.model.NormalizedPatternPoint
@@ -132,10 +142,10 @@ class PatternAnnotationTextUiTest(
         click(R.string.save)
         runBlocking { fixture.awaitState { !it.isSaving && it.canUndo && it.textEdit == null } }
         assertEquals(edited, runBlocking { (fixture.annotation().payload as TextBoxPayload).text })
-        click(R.string.pattern_annotation_undo)
+        runBlocking { main { fixture.vm.undo() } }
         runBlocking { fixture.awaitState { !it.isSaving && it.canRedo } }
         assertEquals("Original text", runBlocking { (fixture.annotation().payload as TextBoxPayload).text })
-        click(R.string.pattern_annotation_redo)
+        runBlocking { main { fixture.vm.redo() } }
         runBlocking { fixture.awaitState { !it.isSaving && !it.canRedo } }
         click(R.string.pattern_annotation_edit_text)
         input.assert(SemanticsMatcher.expectValue(SemanticsProperties.EditableText, AnnotatedString(edited)))
@@ -272,5 +282,66 @@ class PatternAnnotationTextUiTest(
         @JvmStatic
         @Parameterized.Parameters(name = "{0}-dark={1}")
         fun parameters(): List<Array<Any>> = localeThemeCases()
+    }
+}
+
+@RunWith(Parameterized::class)
+class PatternHighlighterPaletteTest(
+    private val language: String,
+    private val fontScale: Float,
+) {
+    @get:Rule val compose = createAndroidComposeRule<ComponentActivity>()
+    private val fixture = AnnotationTextTestFixture()
+
+    @Before fun setUp() = runBlocking { fixture.start() }
+
+    @After fun tearDown() = runBlocking { fixture.close() }
+
+    @Test fun everyDirectionFitsWithoutScrolling() {
+        val base = compose.activity
+        val configuration =
+            Configuration(
+                base.resources.configuration,
+            ).apply { setLocale(Locale.forLanguageTag(language)) }
+        val localized = base.createConfigurationContext(configuration)
+        compose.setContent {
+            CompositionLocalProvider(
+                LocalContext provides localized,
+                LocalResources provides localized.resources,
+                LocalConfiguration provides configuration,
+                LocalDensity provides Density(LocalDensity.current.density, fontScale),
+            ) {
+                KnitToolsTheme {
+                    val state by fixture.vm.uiState.collectAsState()
+                    Box(Modifier.width(360.dp).heightIn(max = 280.dp).testTag("highlighter-palette")) {
+                        PatternAnnotationToolbar(
+                            state.copy(activeTool = PatternAnnotationTool.HIGHLIGHTER),
+                            fixture.vm.patternToolbarActions(),
+                        )
+                    }
+                }
+            }
+        }
+        val palette = compose.onNodeWithTag("highlighter-palette").getUnclippedBoundsInRoot()
+        for (resource in listOf(
+            R.string.pattern_annotation_axis_free,
+            R.string.pattern_annotation_axis_horizontal,
+            R.string.pattern_annotation_axis_vertical,
+            R.string.pattern_annotation_axis_auto,
+        )) {
+            val option = compose.onNodeWithText(localized.getString(resource)).assertIsDisplayed()
+            val bounds = option.getUnclippedBoundsInRoot()
+            assertTrue("$bounds fits inside $palette", bounds.top >= palette.top && bounds.bottom <= palette.bottom)
+            assertTrue("$bounds fits inside $palette", bounds.left >= palette.left && bounds.right <= palette.right)
+        }
+    }
+
+    companion object {
+        @JvmStatic
+        @Parameterized.Parameters(name = "{0} font {1}")
+        fun cases(): List<Array<Any>> =
+            listOf("en", "fi", "de").flatMap { language ->
+                listOf(1f, 1.3f).map { scale -> arrayOf<Any>(language, scale) }
+            }
     }
 }

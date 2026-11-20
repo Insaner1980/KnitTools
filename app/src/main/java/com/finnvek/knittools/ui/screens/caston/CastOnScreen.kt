@@ -32,7 +32,6 @@ import com.finnvek.knittools.domain.calculator.formatDecimalForDisplay
 import com.finnvek.knittools.domain.model.CastOnResult
 import com.finnvek.knittools.ui.TrackCalculatorResult
 import com.finnvek.knittools.ui.components.AnimatedResultNumber
-import com.finnvek.knittools.ui.components.InfoNote
 import com.finnvek.knittools.ui.components.InfoTipText
 import com.finnvek.knittools.ui.components.NumberInputField
 import com.finnvek.knittools.ui.components.NumberInputOptions
@@ -166,13 +165,7 @@ fun CastOnScreen(
             }
 
             result?.let { r ->
-                val edgeCount =
-                    MeasurementNumberParser
-                        .parse(edgeStitches, locale, integer = true, allowZero = true)
-                        .value
-                        ?.toInt()
-                        ?: 0
-                CastOnResultSection(r, unit, edgeCount)
+                CastOnResultSection(r, unit)
             }
             val dimensionsValid =
                 MeasurementNumberParser.parse(width, locale).value != null &&
@@ -196,38 +189,27 @@ fun CastOnScreen(
 private fun CastOnResultSection(
     result: CastOnResult,
     unit: String,
-    edgeCount: Int,
 ) {
     val locale = rememberCurrentLocale()
     val actualWidth = formatDecimalForDisplay(result.actualWidth, locale, 1, 1)
     ResultCard(title = stringResource(R.string.result)) {
         AnimatedResultNumber(
             targetValue = pluralStringResource(R.plurals.stitches_result, result.stitches, result.stitches),
-        ) { value ->
-            Text(
-                text = value,
-                style = MaterialTheme.typography.displayMedium,
-                color = MaterialTheme.colorScheme.primary,
-            )
-        }
+        )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
             text = stringResource(R.string.actual_width, actualWidth, unit),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        result.adjustedDown?.let { down ->
+        result.adjustedDown?.takeIf { it != result.stitches }?.let { down ->
             val adjustedWidth = result.adjustedDownWidth ?: return@let
             AdjustedWidthText(R.string.adjusted_down, down, adjustedWidth, unit, locale)
         }
-        result.adjustedUp?.let { up ->
+        result.adjustedUp?.takeIf { it != result.stitches }?.let { up ->
             val adjustedWidth = result.adjustedUpWidth ?: return@let
             AdjustedWidthText(R.string.adjusted_up, up, adjustedWidth, unit, locale)
         }
-    }
-    if (edgeCount > 0) {
-        Spacer(modifier = Modifier.height(8.dp))
-        InfoNote(text = stringResource(R.string.edge_stitches_total_format, edgeCount))
     }
 }
 

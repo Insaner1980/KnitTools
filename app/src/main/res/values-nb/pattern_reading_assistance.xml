@@ -7,12 +7,11 @@
     <string name="pattern_bookmark_rename">Gi bokmerket nytt navn</string>
     <string name="pattern_bookmark_rename_title">Gi bokmerket nytt navn</string>
     <string name="pattern_bookmark_delete_title">Slette bokmerket?</string>
-    <string name="pattern_bookmark_delete_message">Slette «%1$s»?</string>
+    <string name="pattern_bookmark_delete_message">«%1$s» blir slettet.</string>
     <string name="pattern_bookmark_empty">Ingen bokmerker ennå.</string>
     <string name="pattern_bookmark_loading">Laster bokmerker…</string>
     <string name="pattern_bookmark_previous">Forrige bokmerke</string>
     <string name="pattern_bookmark_next">Neste bokmerke</string>
-    <string name="pattern_bookmark_selected">Valgt bokmerke</string>
     <string name="pattern_bookmark_accessibility_description">Gå til bokmerket %1$s, side %2$d</string>
     <string name="pattern_bookmark_action_accessibility_description">%1$s: %2$s</string>
     <string name="pattern_bookmark_name_required">Bokmerket må ha et navn.</string>
@@ -30,11 +29,11 @@
     <string name="pattern_center_vertical_guide">Sentrer loddrett guide</string>
     <string name="pattern_vertical_guide_description">Loddrett guide</string>
     <string name="pattern_follow_current_row_on">Følg hovedtelleren</string>
-    <string name="pattern_follow_current_row_off">Stopp følging</string>
+    <string name="pattern_follow_current_row_off">Slutt å følge telleren</string>
     <string name="pattern_return_to_current_row">Gå tilbake til gjeldende verdi</string>
     <string name="pattern_follow_resumed">Følgingen fortsatte ved gjeldende verdi.</string>
     <string name="pattern_follow_resumed_uncalibrated">Tellerposisjonen er ikke kalibrert. Følgingen fortsatte fra gjeldende posisjon.</string>
-    <string name="pattern_set_row_marker_here">Sett markør her for verdi %1$d</string>
+    <string name="pattern_set_row_marker_here">Merk %1$s her</string>
     <string name="pattern_follow_page_announcement">Verdi %1$d flyttet leselinjen til side %2$d av %3$d.</string>
     <string name="pattern_bookmark_jump_announcement">%1$s, side %2$d av %3$d. Tellerfølging satt på pause.</string>
     <string name="pattern_reading_line_move_up">Flytt leselinjen opp</string>

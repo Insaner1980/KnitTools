@@ -33,7 +33,7 @@ import com.finnvek.knittools.ui.theme.knitToolsColors
 
 data class PatternCardState(
     val name: String,
-    val designerName: String,
+    val designerName: String?,
     val thumbnailUrl: String?,
     val difficulty: Float?,
     val availability: PatternAvailability,
@@ -102,7 +102,7 @@ private fun PatternCardActionSlot(actionContent: (@Composable () -> Unit)?) {
 @Composable
 private fun PatternDetails(
     name: String,
-    designerName: String,
+    designerName: String?,
     difficulty: Float?,
     availability: PatternAvailability,
     sourceLabel: String?,
@@ -113,12 +113,14 @@ private fun PatternDetails(
             text = name,
             style = MaterialTheme.typography.titleMedium,
         )
-        Spacer(modifier = Modifier.height(2.dp))
-        Text(
-            text = designerName,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+        designerName?.takeIf(String::isNotBlank)?.let { designer ->
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                text = designer,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
         Spacer(modifier = Modifier.height(4.dp))
         PatternBadgeRow(difficulty = difficulty, availability = availability, sourceLabel = sourceLabel)
     }

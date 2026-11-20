@@ -32,6 +32,7 @@ class WorkSessionArchitectureSourceTest {
         val files = ProjectSourceFiles.localizedStringFiles()
         val defaultFile = files.single { it.parent.fileName.toString() == "values" }
         val defaultKeys = workSessionKeys(ProjectSourceFiles.read(defaultFile))
+        val stripKeys = setOf("work_session_stop_short", "work_session_under_minute", "work_session_keep_running")
 
         assertEquals(12, files.size)
         assertTrue(defaultKeys.contains("work_session_edit_duration"))
@@ -39,6 +40,7 @@ class WorkSessionArchitectureSourceTest {
         files.forEach { file ->
             val source = ProjectSourceFiles.read(file)
             assertEquals(file.toString(), defaultKeys, workSessionKeys(source))
+            assertTrue(file.toString(), workSessionKeys(source).containsAll(stripKeys))
             source.lineSequence().filter { "work_session_" in it }.forEach { line ->
                 assertFalse(file.toString(), line.contains('\u00b7'))
             }

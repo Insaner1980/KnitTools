@@ -34,13 +34,16 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.finnvek.knittools.R
-import com.finnvek.knittools.domain.calculator.CounterValueFormatter
+import com.finnvek.knittools.domain.calculator.MainCounterCountSlot
+import com.finnvek.knittools.domain.calculator.MainCounterLabelSlot
 import com.finnvek.knittools.domain.calculator.MeasurementNumberParser
 import com.finnvek.knittools.domain.calculator.ReminderLogic
+import com.finnvek.knittools.domain.model.MainCounterLabelType
 import com.finnvek.knittools.domain.model.RowReminder
 import com.finnvek.knittools.pro.ProActionAccess
 import com.finnvek.knittools.pro.ProFeature
@@ -57,7 +60,11 @@ import com.finnvek.knittools.ui.components.RowMenuAction
 import com.finnvek.knittools.ui.components.RowOverflowMenu
 import com.finnvek.knittools.ui.components.ScrollableFormDialog
 import com.finnvek.knittools.ui.components.SegmentedToggle
+import com.finnvek.knittools.ui.components.SegmentedToggleSurface
 import com.finnvek.knittools.ui.components.SheetTitle
+import com.finnvek.knittools.ui.components.mainCounterCountText
+import com.finnvek.knittools.ui.components.mainCounterCountTextInline
+import com.finnvek.knittools.ui.components.mainCounterLabelText
 import com.finnvek.knittools.ui.layout.ContentWidthPolicy
 import com.finnvek.knittools.ui.theme.ComponentDimens
 import com.finnvek.knittools.ui.theme.knitToolsColors
@@ -74,6 +81,7 @@ fun RemindersSheet(
     onEdit: (RowReminder) -> Unit,
     onDelete: (Long) -> Unit,
     onDismiss: () -> Unit,
+    label: MainCounterLabelSlot = MainCounterLabelSlot(MainCounterLabelType.ROWS),
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val reminderAccess = proActionAccess(proState, proAccessReady, ProFeature.ROW_REMINDERS)
@@ -115,6 +123,7 @@ fun RemindersSheet(
                 ReminderList(
                     reminders = reminders,
                     currentRow = currentRow,
+                    label = label,
                     onEdit = onEdit,
                     onDelete = onDelete,
                 )
@@ -129,6 +138,7 @@ fun ReminderAlertCard(
     currentRow: Int,
     onDismiss: (Long) -> Unit,
     modifier: Modifier = Modifier,
+    label: MainCounterLabelSlot = MainCounterLabelSlot(MainCounterLabelType.ROWS),
 ) {
     Row(
         modifier =
@@ -153,9 +163,9 @@ fun ReminderAlertCard(
                 fontWeight = FontWeight.Medium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            CounterValueFormatter.forReminderRepeat(reminder, currentRow)?.let { repeatDisplay ->
+            if (reminder.repeatInterval != null) {
                 Text(
-                    text = repeatDisplay.asText(),
+                    text = reminderDetailText(reminder, currentRow, label),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -177,6 +187,7 @@ fun ReminderList(
     onEdit: (RowReminder) -> Unit,
     onDelete: (Long) -> Unit,
     modifier: Modifier = Modifier,
+    label: MainCounterLabelSlot = MainCounterLabelSlot(MainCounterLabelType.ROWS),
 ) {
     var deleteTarget by rememberSaveable { mutableStateOf<Long?>(null) }
 
@@ -185,6 +196,7 @@ fun ReminderList(
             ReminderListItem(
                 reminder = reminder,
                 currentRow = currentRow,
+                label = label,
                 onClick = { onEdit(reminder) },
                 onDeleteClick = { deleteTarget = reminder.id },
             )
@@ -220,17 +232,14 @@ fun ReminderList(
 private fun ReminderListItem(
     reminder: RowReminder,
     currentRow: Int,
+    label: MainCounterLabelSlot,
     modifier: Modifier = Modifier,
     onClick: () -> Unit = {},
     onDeleteClick: () -> Unit = {},
 ) {
     // Lähestyvä muistutus erottuu tekstin värillä eikä erillisellä pisteellä.
     val isUpcoming = ReminderLogic.isUpcoming(reminder, currentRow, UPCOMING_ROW_WINDOW)
-    val detail =
-        listOfNotNull(
-            stringResource(R.string.row_label_format, reminder.targetRow),
-            CounterValueFormatter.forReminderRepeat(reminder, currentRow)?.asText(),
-        ).joinToString(", ")
+    val detail = reminderDetailText(reminder, currentRow, label)
 
     Column(modifier = modifier.fillMaxWidth()) {
         Row(
@@ -257,13 +266,50 @@ private fun ReminderListItem(
             }
             RowOverflowMenu(
                 listOf(
-                    RowMenuAction(stringResource(R.string.edit_reminder), onClick),
-                    RowMenuAction(stringResource(R.string.delete), onDeleteClick),
+                    RowMenuAction(stringResource(R.string.edit_reminder), onClick = onClick),
+                    RowMenuAction(stringResource(R.string.delete), isDestructive = true, onClick = onDeleteClick),
                 ),
             )
         }
         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
     }
+}
+
+@Composable
+internal fun reminderDetailText(
+    reminder: RowReminder,
+    currentRow: Int,
+    label: MainCounterLabelSlot,
+): String {
+    val target = MainCounterCountSlot(reminder.targetRow, label.labelType, label.customLabel)
+    val count = mainCounterCountText(target)
+    val interval = reminder.repeatInterval?.takeIf { it > 0 } ?: return count
+    val intervalText =
+        when (label.labelType) {
+            MainCounterLabelType.ROWS -> pluralStringResource(R.plurals.reminder_interval_rows, interval, interval)
+            MainCounterLabelType.ROUNDS -> pluralStringResource(R.plurals.reminder_interval_rounds, interval, interval)
+            MainCounterLabelType.REPEATS ->
+                pluralStringResource(
+                    R.plurals.reminder_interval_repeats,
+                    interval,
+                    interval,
+                )
+            MainCounterLabelType.CUSTOM ->
+                stringResource(
+                    R.string.reminder_interval_custom,
+                    interval,
+                    mainCounterLabelText(label.labelType, label.customLabel),
+                )
+        }
+    val next =
+        if (currentRow >= reminder.targetRow) {
+            ReminderLogic.nextOccurrence(reminder, currentRow)?.let {
+                stringResource(R.string.reminder_next_format, mainCounterCountTextInline(target.copy(count = it)))
+            }
+        } else {
+            null
+        }
+    return listOfNotNull(count, intervalText, next).joinToString(", ")
 }
 
 private const val UPCOMING_ROW_WINDOW = 5
@@ -273,6 +319,7 @@ fun AddReminderDialog(
     reminder: RowReminder? = null,
     onSave: (targetRow: Int, repeatInterval: Int?, message: String) -> Unit,
     onDismiss: () -> Unit,
+    label: MainCounterLabelSlot = MainCounterLabelSlot(MainCounterLabelType.ROWS),
 ) {
     var rowText by rememberSaveable(reminder?.id) {
         mutableStateOf(reminder?.targetRow?.toString().orEmpty())
@@ -300,6 +347,7 @@ fun AddReminderDialog(
         text = {
             ReminderDialogFields(
                 form = form,
+                label = label,
                 onRowTextChange = { rowText = it },
                 onSelectedTypeChange = { selectedType = it },
                 onIntervalTextChange = { intervalText = it },
@@ -359,16 +407,32 @@ private fun ReminderDialogTitle(reminder: RowReminder?) {
 @Composable
 private fun ReminderDialogFields(
     form: ReminderDialogForm,
+    label: MainCounterLabelSlot,
     onRowTextChange: (String) -> Unit,
     onSelectedTypeChange: (Int) -> Unit,
     onIntervalTextChange: (String) -> Unit,
     onMessageChange: (String) -> Unit,
 ) {
+    val unit =
+        when (label.labelType) {
+            MainCounterLabelType.ROWS -> stringResource(R.string.counter_unit_rows)
+            MainCounterLabelType.ROUNDS -> stringResource(R.string.counter_unit_rounds)
+            MainCounterLabelType.REPEATS -> stringResource(R.string.counter_unit_repeats)
+            MainCounterLabelType.CUSTOM -> mainCounterLabelText(label.labelType, label.customLabel)
+        }
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         NumberInputField(
             value = form.rowText,
             onValueChange = onRowTextChange,
-            label = stringResource(R.string.row_number),
+            label =
+                mainCounterLabelText(
+                    labelType = label.labelType,
+                    customLabel = label.customLabel,
+                    rows = R.string.reminder_at_row,
+                    rounds = R.string.reminder_at_round,
+                    repeats = R.string.reminder_at_repeat,
+                    custom = R.string.reminder_at_custom,
+                ),
         )
         SegmentedToggle(
             options =
@@ -378,13 +442,14 @@ private fun ReminderDialogFields(
                 ),
             selectedIndex = form.selectedType,
             onSelect = onSelectedTypeChange,
+            surface = SegmentedToggleSurface.Dialog,
         )
         if (form.isRepeating) {
             NumberInputField(
                 value = form.intervalText,
                 onValueChange = onIntervalTextChange,
                 label = stringResource(R.string.repeat_every),
-                options = NumberInputOptions(suffix = stringResource(R.string.repeat_every_rows)),
+                options = NumberInputOptions(suffix = unit),
             )
         }
         // Sama kehys kuin kerrosnumerolla: tumma dialogikenttä ja kentän sisäinen nimike näyttivät eri lomakkeelta.

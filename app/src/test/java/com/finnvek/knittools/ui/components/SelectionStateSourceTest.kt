@@ -11,7 +11,8 @@ class SelectionStateSourceTest {
     fun `selected segment is flat primary like other orange buttons`() {
         val toggle = ProjectSourceFiles.read(SEGMENTED_TOGGLE)
 
-        assertTrue(toggle.contains("Modifier.background(MaterialTheme.colorScheme.primary)"))
+        assertTrue(toggle.contains("val primary = MaterialTheme.colorScheme.primary"))
+        assertTrue(toggle.contains("isSelected -> Modifier.background(primary)"))
         assertFalse(toggle.contains("Brush.linearGradient("))
     }
 

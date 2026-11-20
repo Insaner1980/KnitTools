@@ -3,7 +3,10 @@ package com.finnvek.knittools.ui.screens.insights
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -29,7 +32,9 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextOverflow
 import com.finnvek.knittools.R
+import com.finnvek.knittools.domain.calculator.formatIntegerForDisplay
 import com.finnvek.knittools.ui.components.SheetTitle
 import com.finnvek.knittools.ui.components.localizedDateTimePattern
 import com.finnvek.knittools.ui.components.rememberCurrentLocale
@@ -49,13 +54,15 @@ internal fun LazyListScope.completionSection(state: InsightsUiState) {
             Text(completionCount(state.completions.events.size), style = MaterialTheme.typography.titleMedium)
         }
     }
-    if (state.completions.buckets.isNotEmpty()) {
-        insightsItem("completion_timeline", ContentWidthPolicy.Chart) { CompletionTimeline(state.completions.buckets) }
+    val nonEmptyBuckets = state.completions.buckets.filter { it.count > 0 }
+    if (nonEmptyBuckets.size >= MINIMUM_CHART_BARS) {
+        insightsItem("completion_timeline", ContentWidthPolicy.Chart) { CompletionTimeline(nonEmptyBuckets) }
     }
     insightsItem("completion_events", ContentWidthPolicy.ListDetail) { CompletionHistory(state) }
 }
 
 private const val COMPLETION_PREVIEW_LIMIT = 3
+private const val MINIMUM_CHART_BARS = 2
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -113,40 +120,60 @@ private fun CompletionEventRow(
 @Composable
 private fun CompletionTimeline(buckets: List<InsightsCompletionBucket>) {
     val maximum = remember(buckets) { buckets.maxOf { it.count }.coerceAtLeast(1) }
-    LazyRow(
-        modifier = Modifier.padding(vertical = InsightsDimens.FilterChipSpacing),
-        horizontalArrangement = Arrangement.spacedBy(InsightsDimens.FilterChipSpacing),
-    ) {
-        items(buckets, key = { it.start.toEpochDay() }) { bucket ->
-            Column(
-                Modifier.width(InsightsDimens.CompletionBucketWidth).semantics(mergeDescendants = true) {},
-                horizontalAlignment = Alignment.CenterHorizontally,
+    val gap = InsightsDimens.FilterChipSpacing
+    BoxWithConstraints(Modifier.fillMaxWidth().padding(vertical = gap)) {
+        if (InsightsDimens.CompletionBucketWidth * buckets.size + gap * (buckets.size - 1) <= maxWidth) {
+            Row(horizontalArrangement = Arrangement.spacedBy(gap)) {
+                buckets.forEach { CompletionTimelineBucket(it, maximum, Modifier.weight(1f)) }
+            }
+        } else {
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(gap),
+                contentPadding = PaddingValues(end = InsightsDimens.CompletionTimelineEndPadding),
             ) {
-                Box(
-                    Modifier.height(InsightsDimens.CompletionPlotHeight).fillMaxWidth(),
-                    contentAlignment = Alignment.BottomCenter,
-                ) {
-                    Box(
-                        Modifier
-                            .width(InsightsDimens.CompletionBarWidth)
-                            .height(InsightsDimens.CompletionPlotHeight * (bucket.count.toFloat() / maximum))
-                            .background(MaterialTheme.colorScheme.primary),
-                    )
+                items(buckets, key = { it.start.toEpochDay() }) {
+                    CompletionTimelineBucket(it, maximum, Modifier.width(InsightsDimens.CompletionBucketWidth))
                 }
-                Text(completionCount(bucket.count), style = MaterialTheme.typography.labelMedium)
-                val periodLabel =
-                    if (bucket.start == bucket.end) {
-                        completionDate(bucket.start)
-                    } else {
-                        stringResource(
-                            R.string.insights_completions_period,
-                            completionDate(bucket.start),
-                            completionDate(bucket.end),
-                        )
-                    }
-                Text(periodLabel, style = MaterialTheme.typography.labelSmall)
             }
         }
+    }
+}
+
+@Composable
+private fun CompletionTimelineBucket(
+    bucket: InsightsCompletionBucket,
+    maximum: Int,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier.semantics(mergeDescendants = true) {},
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Box(
+            Modifier.height(InsightsDimens.CompletionPlotHeight).fillMaxWidth(),
+            contentAlignment = Alignment.BottomCenter,
+        ) {
+            Box(
+                Modifier
+                    .width(InsightsDimens.CompletionBarWidth)
+                    .height(InsightsDimens.CompletionPlotHeight * (bucket.count.toFloat() / maximum))
+                    .background(MaterialTheme.colorScheme.primary),
+            )
+        }
+        Text(
+            formatIntegerForDisplay(bucket.count.toLong(), rememberCurrentLocale()),
+            style = MaterialTheme.typography.labelMedium,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+        val start = completionDate(bucket.start, skeleton = "Md")
+        val periodLabel =
+            if (bucket.start == bucket.end) {
+                start
+            } else {
+                stringResource(R.string.insights_completions_period, start, completionDate(bucket.end, skeleton = "Md"))
+            }
+        Text(periodLabel, style = MaterialTheme.typography.labelSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }
 
@@ -155,8 +182,14 @@ private fun completionCount(count: Int): String =
     pluralStringResource(R.plurals.insights_completion_count, count, count)
 
 @Composable
-private fun completionDate(date: LocalDate): String {
+private fun completionDate(
+    date: LocalDate,
+    skeleton: String = "yMMMd",
+): String {
     val locale = rememberCurrentLocale()
-    val formatter = remember(locale) { DateTimeFormatter.ofPattern(localizedDateTimePattern(locale, "yMMMd"), locale) }
+    val formatter =
+        remember(locale, skeleton) {
+            DateTimeFormatter.ofPattern(localizedDateTimePattern(locale, skeleton), locale)
+        }
     return date.format(formatter)
 }

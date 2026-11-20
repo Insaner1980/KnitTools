@@ -4,6 +4,7 @@ import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModelStore
+import com.finnvek.knittools.R
 import com.finnvek.knittools.data.storage.PatternDocumentStorage
 import com.finnvek.knittools.data.storage.PatternImageInfo
 import com.finnvek.knittools.data.storage.PatternImageStageBatch
@@ -70,7 +71,9 @@ class PatternImageImportOwnershipTest {
         coEvery { storage.convertImagesToPdf(any(), any(), any(), any(), any()) } coAnswers {
             output(arg(1))
         }
-        coEvery { repository.attachPattern(any(), any(), any(), any(), any()) } returns
+        coEvery { repository.getProject(any()) } returns null
+        every { context.getString(R.string.pattern_images_document_fallback) } returns "Pattern photos"
+        coEvery { repository.attachPattern(any(), any(), any(), any(), any(), true) } returns
             ProjectDocumentMutationResult.AlreadyAttached
     }
 
@@ -141,8 +144,8 @@ class PatternImageImportOwnershipTest {
             assertEquals(draftA, model(7).uiState.value)
             assertEquals(listOf("second", "first"), draftA.selection.pages.map { it.sourceUri })
             assertEquals(1, draftA.duplicatesIgnored)
-            coVerify(exactly = 1) { repository.attachPattern(8, output(8).first, any(), 0, null) }
-            coVerify(exactly = 0) { repository.attachPattern(7, any(), any(), any(), any()) }
+            coVerify(exactly = 1) { repository.attachPattern(8, output(8).first, any(), 0, null, true) }
+            coVerify(exactly = 0) { repository.attachPattern(7, any(), any(), any(), any(), true) }
             verify(exactly = 0) { storage.deleteImportSession(any(), 7, any()) }
         }
 
@@ -305,8 +308,8 @@ class PatternImageImportOwnershipTest {
             assertNotEquals(oldSession, newA.sessionId)
             assertEquals(newA, a.uiState.value)
             assertEquals(draftB, b.uiState.value)
-            coVerify(exactly = 1) { repository.attachPattern(7, output(7).first, any(), 0, null) }
-            coVerify(exactly = 0) { repository.attachPattern(8, any(), any(), any(), any()) }
+            coVerify(exactly = 1) { repository.attachPattern(7, output(7).first, any(), 0, null, true) }
+            coVerify(exactly = 0) { repository.attachPattern(8, any(), any(), any(), any(), true) }
         }
 
     @Test
@@ -377,7 +380,7 @@ class PatternImageImportOwnershipTest {
             assertEquals(nextState.sessionId, a.uiState.value.sessionId)
             assertEquals(draftB, b.uiState.value)
             verify(exactly = 1) { storage.deleteImportSession(context, 7, requireNotNull(oldSession)) }
-            coVerify(exactly = 0) { repository.attachPattern(any(), any(), any(), any(), any()) }
+            coVerify(exactly = 0) { repository.attachPattern(any(), any(), any(), any(), any(), true) }
         }
 
     @Test
@@ -396,14 +399,14 @@ class PatternImageImportOwnershipTest {
 
             assertEquals(PatternImageImportPhase.CANCELLED, vm.uiState.value.phase)
             verify(exactly = 1) { storage.deleteGeneratedPdf(context, output(7).first) }
-            coVerify(exactly = 0) { repository.attachPattern(any(), any(), any(), any(), any()) }
+            coVerify(exactly = 0) { repository.attachPattern(any(), any(), any(), any(), any(), true) }
         }
 
     @Test
     fun `cancelled delayed attachment with unknown readback preserves drafts and output`() =
         runTest {
             val attachment = CompletableDeferred<ProjectDocumentMutationResult>()
-            coEvery { repository.attachPattern(7, any(), any(), any(), any()) } coAnswers { attachment.await() }
+            coEvery { repository.attachPattern(7, any(), any(), any(), any(), true) } coAnswers { attachment.await() }
             coEvery { repository.isPatternDocumentAttached(7, output(7).first) } throws
                 IOException("readback unavailable")
             val a = model(7)
@@ -434,7 +437,7 @@ class PatternImageImportOwnershipTest {
     fun `late attachment success clears only its initiating session and leaves B open`() =
         runTest {
             val attachment = CompletableDeferred<ProjectDocumentMutationResult>()
-            coEvery { repository.attachPattern(7, any(), any(), any(), any()) } coAnswers { attachment.await() }
+            coEvery { repository.attachPattern(7, any(), any(), any(), any(), true) } coAnswers { attachment.await() }
             val a = model(7)
             import(a, 7, "a")
             advanceUntilIdle()
@@ -460,7 +463,7 @@ class PatternImageImportOwnershipTest {
     @Test
     fun `attachment cancellation after confirmed commit completes without deleting output`() =
         runTest {
-            coEvery { repository.attachPattern(7, any(), any(), any(), any()) } throws
+            coEvery { repository.attachPattern(7, any(), any(), any(), any(), true) } throws
                 CancellationException("late cancellation")
             coEvery { repository.isPatternDocumentAttached(7, output(7).first) } returns true
             val a = model(7)

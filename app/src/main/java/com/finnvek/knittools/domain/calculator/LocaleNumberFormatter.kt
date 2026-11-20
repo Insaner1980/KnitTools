@@ -13,10 +13,12 @@ fun formatDecimalForDisplay(
     locale: Locale,
     minimumFractionDigits: Int,
     maximumFractionDigits: Int,
+    useGrouping: Boolean = true,
 ): String =
     NumberFormat.getNumberInstance(locale).run {
         this.minimumFractionDigits = minimumFractionDigits
         this.maximumFractionDigits = maximumFractionDigits
+        isGroupingUsed = useGrouping
         format(value)
     }
 

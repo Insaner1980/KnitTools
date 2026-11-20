@@ -210,7 +210,7 @@ private fun PatternImagePageRow(
                 modifier = Modifier.size(72.dp),
             )
             Text(
-                text = stringResource(R.string.pattern_image_page_position, index + 1, totalPages),
+                text = stringResource(R.string.pattern_page_indicator, index + 1, totalPages),
                 style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.weight(1f),
             )

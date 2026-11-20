@@ -1,5 +1,6 @@
 package com.finnvek.knittools.ui.screens.pattern
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,6 +13,7 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -22,7 +24,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TextField
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -33,7 +34,9 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
@@ -44,12 +47,14 @@ import com.finnvek.knittools.domain.model.PATTERN_BOOKMARK_NAME_MAX_LENGTH
 import com.finnvek.knittools.domain.model.PatternBookmark
 import com.finnvek.knittools.ui.components.CancelButton
 import com.finnvek.knittools.ui.components.ConfirmationDialog
+import com.finnvek.knittools.ui.components.LabeledTextField
 import com.finnvek.knittools.ui.components.OverviewTextAction
 import com.finnvek.knittools.ui.components.ScrollableFormDialog
 import com.finnvek.knittools.ui.components.SheetTitle
 import com.finnvek.knittools.ui.layout.AdaptiveDropdownMenu
 import com.finnvek.knittools.ui.layout.AdaptiveModalWindow
 import com.finnvek.knittools.ui.layout.ContentWidthPolicy
+import com.finnvek.knittools.ui.theme.ProjectOverviewDimens
 
 internal data class PatternBookmarkSheetActions(
     val onDismiss: () -> Unit,
@@ -143,31 +148,9 @@ internal fun PatternBookmarkSheet(
                     }
                 }
             }
-            HorizontalDivider()
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                TextButton(
-                    onClick = actions.onPrevious,
-                    shape = MaterialTheme.shapes.small,
-                    enabled = state.canGoPrevious && !state.isMutating,
-                    modifier = Modifier.weight(1f).heightIn(min = 48.dp),
-                ) {
-                    Text(
-                        text = stringResource(R.string.pattern_bookmark_previous),
-                    )
-                }
-                TextButton(
-                    onClick = actions.onNext,
-                    shape = MaterialTheme.shapes.small,
-                    enabled = state.canGoNext && !state.isMutating,
-                    modifier = Modifier.weight(1f).heightIn(min = 48.dp),
-                ) {
-                    Text(
-                        text = stringResource(R.string.pattern_bookmark_next),
-                    )
-                }
+            if (state.bookmarks.size >= 2) {
+                HorizontalDivider()
+                PatternBookmarkNavigation(state, actions)
             }
         }
     }
@@ -214,6 +197,34 @@ internal fun PatternBookmarkSheet(
 }
 
 @Composable
+private fun PatternBookmarkNavigation(
+    state: PatternBookmarkUiState,
+    actions: PatternBookmarkSheetActions,
+) {
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        TextButton(
+            onClick = actions.onPrevious,
+            shape = MaterialTheme.shapes.small,
+            enabled = state.canGoPrevious && !state.isMutating,
+            modifier = Modifier.weight(1f).heightIn(min = 48.dp),
+        ) {
+            Text(stringResource(R.string.pattern_bookmark_previous))
+        }
+        TextButton(
+            onClick = actions.onNext,
+            shape = MaterialTheme.shapes.small,
+            enabled = state.canGoNext && !state.isMutating,
+            modifier = Modifier.weight(1f).heightIn(min = 48.dp),
+        ) {
+            Text(stringResource(R.string.pattern_bookmark_next))
+        }
+    }
+}
+
+@Composable
 private fun PatternBookmarkRow(
     bookmark: PatternBookmark,
     totalPages: Int,
@@ -247,22 +258,25 @@ private fun PatternBookmarkRow(
             stringResource(R.string.delete),
             bookmark.name,
         )
-    Column(modifier = Modifier.fillMaxWidth()) {
-        TextButton(
-            onClick = onJump,
-            shape = MaterialTheme.shapes.small,
+    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
             modifier =
                 Modifier
-                    .fillMaxWidth()
-                    .heightIn(min = 48.dp)
+                    .weight(1f)
+                    .heightIn(min = ProjectOverviewDimens.ActionTouchSize)
+                    .clip(MaterialTheme.shapes.small)
+                    .clickable(role = Role.Button, onClick = onJump)
                     .semantics {
                         contentDescription = description
                         this.selected = selected
                     },
         ) {
-            Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp)) {
+            Column(modifier = Modifier.fillMaxWidth()) {
                 Text(
                     text = bookmark.name,
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.onSurface,
                 )
                 Text(
                     text =
@@ -272,14 +286,12 @@ private fun PatternBookmarkRow(
                             totalPages.coerceAtLeast(bookmark.pageIndex + 1),
                         ),
                     style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                if (selected) {
-                    Text(
-                        text = stringResource(R.string.pattern_bookmark_selected),
-                        style = MaterialTheme.typography.labelSmall,
-                    )
-                }
             }
+        }
+        if (selected) {
+            Icon(Icons.Default.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
         }
         Box {
             IconButton(onClick = { menuExpanded = true }) {
@@ -301,7 +313,7 @@ private fun PatternBookmarkRow(
                     },
                 )
                 DropdownMenuItem(
-                    text = { Text(stringResource(R.string.delete)) },
+                    text = { Text(stringResource(R.string.delete), color = MaterialTheme.colorScheme.error) },
                     modifier = Modifier.semantics { contentDescription = deleteDescription },
                     onClick = {
                         menuExpanded = false
@@ -310,8 +322,8 @@ private fun PatternBookmarkRow(
                 )
             }
         }
-        HorizontalDivider()
     }
+    HorizontalDivider()
 }
 
 @Composable
@@ -324,46 +336,41 @@ private fun PatternBookmarkNameDialog(
     onConfirm: (String) -> Unit,
 ) {
     var name by rememberSaveable(initialName) { mutableStateOf(initialName) }
+    var touched by rememberSaveable(initialName) { mutableStateOf(false) }
     val trimmedName = name.trim()
     val empty = trimmedName.isEmpty()
     val tooLong = trimmedName.length > PATTERN_BOOKMARK_NAME_MAX_LENGTH
     val valid = !empty && !tooLong
     val canSave = valid && !isSaving
+    val errorMessage =
+        when {
+            touched && empty -> stringResource(R.string.pattern_bookmark_name_required)
+            touched && tooLong -> stringResource(R.string.pattern_bookmark_name_too_long)
+            else -> failure
+        }
     ScrollableFormDialog(
         onDismissRequest = { if (!isSaving) onDismiss() },
         title = { Text(title) },
         text = {
-            TextField(
+            LabeledTextField(
                 value = name,
-                onValueChange = { name = it },
-                singleLine = true,
-                isError = !valid || failure != null,
+                onValueChange = {
+                    name = it
+                    touched = true
+                },
+                onFocusLost = { touched = true },
+                errorMessage = errorMessage,
                 enabled = !isSaving,
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                keyboardActions = KeyboardActions(onDone = { if (canSave) onConfirm(trimmedName) }),
-                label = { Text(stringResource(R.string.pattern_bookmark_name)) },
-                supportingText = {
-                    Text(
-                        when {
-                            empty -> {
-                                stringResource(R.string.pattern_bookmark_name_required)
-                            }
-
-                            tooLong -> {
-                                stringResource(R.string.pattern_bookmark_name_too_long)
-                            }
-
-                            failure != null -> failure
-
-                            else -> {
-                                stringResource(
-                                    R.string.pattern_bookmark_name_limit,
-                                    PATTERN_BOOKMARK_NAME_MAX_LENGTH,
-                                )
-                            }
+                keyboardActions =
+                    KeyboardActions(
+                        onDone = {
+                            touched = true
+                            if (canSave) onConfirm(trimmedName)
                         },
-                    )
-                },
+                    ),
+                label = stringResource(R.string.pattern_bookmark_name),
+                supportingText = stringResource(R.string.pattern_bookmark_name_limit, PATTERN_BOOKMARK_NAME_MAX_LENGTH),
             )
         },
         confirmButton = {

@@ -3,6 +3,7 @@ package com.finnvek.knittools.ui.screens.pattern
 import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.SavedStateHandle
+import com.finnvek.knittools.R
 import com.finnvek.knittools.analytics.UsageAnalytics
 import com.finnvek.knittools.analytics.UsageDetail
 import com.finnvek.knittools.analytics.UsageEvent
@@ -11,6 +12,7 @@ import com.finnvek.knittools.data.storage.PatternImageInfo
 import com.finnvek.knittools.data.storage.PatternImageStageBatch
 import com.finnvek.knittools.data.storage.PatternImageStageException
 import com.finnvek.knittools.data.storage.PatternImageStageFailure
+import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.pro.ProManager
 import com.finnvek.knittools.pro.ProState
 import com.finnvek.knittools.pro.ProStatus
@@ -62,9 +64,11 @@ class PatternImageImportViewModelTest {
         storage = mockk(relaxed = true)
         every { storage.restoreStagedSelection(any(), any(), any(), any()) } answers { arg(3) }
         repository = mockk(relaxed = true)
-        coEvery { repository.attachPattern(any(), any(), any(), any(), any()) } returns
+        coEvery { repository.attachPattern(any(), any(), any(), any(), any(), true) } returns
             ProjectDocumentMutationResult.AlreadyAttached
+        coEvery { repository.getProject(7L) } returns CounterProject(name = "Forest Cardigan")
         context = mockk()
+        every { context.getString(R.string.pattern_images_document_label, "Forest Cardigan") } returns PHOTO_LABEL
         every { context.filesDir } returns File("build/test-pattern-import")
         savedStateHandle = SavedStateHandle()
     }
@@ -283,7 +287,7 @@ class PatternImageImportViewModelTest {
                 arg<(Int, Int) -> Unit>(4).invoke(1, 1)
                 "file:///pattern_pdfs/7/generated.pdf" to "generated.pdf"
             }
-            coEvery { repository.attachPattern(7L, any(), "generated.pdf", 0, null) } returns
+            coEvery { repository.attachPattern(7L, any(), PHOTO_LABEL, 0, null, true) } returns
                 ProjectDocumentMutationResult.AlreadyAttached
 
             viewModel.createPatternPdf()
@@ -293,7 +297,7 @@ class PatternImageImportViewModelTest {
             assertEquals(null, viewModel.uiState.value.error)
             assertEquals(PatternImageImportPhase.SUCCESS, viewModel.uiState.value.phase)
             assertTrue(viewModel.uiState.value.closeReady)
-            coVerify(exactly = 1) { repository.attachPattern(7L, any(), "generated.pdf", 0, null) }
+            coVerify(exactly = 1) { repository.attachPattern(7L, any(), PHOTO_LABEL, 0, null, true) }
             verify(exactly = 1) { storage.deleteImportSession(context, 7L, "session-a") }
 
             viewModel.consumeCloseRequest()
@@ -321,7 +325,7 @@ class PatternImageImportViewModelTest {
             coEvery { storage.convertImagesToPdf(any(), 7L, listOf(page), any(), any()) } coAnswers {
                 conversion.await()
             }
-            coEvery { repository.attachPattern(7L, outputUri, "generated.pdf", 0, null) } coAnswers {
+            coEvery { repository.attachPattern(7L, outputUri, PHOTO_LABEL, 0, null, true) } coAnswers {
                 attachment.await()
             }
 
@@ -361,7 +365,7 @@ class PatternImageImportViewModelTest {
             every { storage.hasCreationSpace(context, page.byteCount) } returns true
             coEvery { storage.convertImagesToPdf(any(), 7L, listOf(page), any(), any()) } returns
                 ("file:///pattern_pdfs/7/generated.pdf" to "generated.pdf")
-            coEvery { repository.attachPattern(7L, any(), "generated.pdf", 0, null) } throws java.io.IOException("db")
+            coEvery { repository.attachPattern(7L, any(), PHOTO_LABEL, 0, null, true) } throws java.io.IOException("db")
             coEvery { repository.isPatternDocumentAttached(7L, "file:///pattern_pdfs/7/generated.pdf") } returns false
 
             viewModel.createPatternPdf()
@@ -390,7 +394,7 @@ class PatternImageImportViewModelTest {
             every { storage.hasCreationSpace(context, page.byteCount) } returns true
             coEvery { storage.convertImagesToPdf(any(), 7L, listOf(page), any(), any()) } returns
                 (outputUri to "generated.pdf")
-            coEvery { repository.attachPattern(7L, outputUri, "generated.pdf", 0, null) } throws
+            coEvery { repository.attachPattern(7L, outputUri, PHOTO_LABEL, 0, null, true) } throws
                 java.io.IOException("late acknowledgement")
             coEvery { repository.isPatternDocumentAttached(7L, outputUri) } returns true
 
@@ -419,7 +423,7 @@ class PatternImageImportViewModelTest {
             every { storage.hasCreationSpace(context, page.byteCount) } returns true
             coEvery { storage.convertImagesToPdf(any(), 7L, listOf(page), any(), any()) } returns
                 (outputUri to "generated.pdf")
-            coEvery { repository.attachPattern(7L, outputUri, "generated.pdf", 0, null) } throws
+            coEvery { repository.attachPattern(7L, outputUri, PHOTO_LABEL, 0, null, true) } throws
                 java.io.IOException("late acknowledgement")
             coEvery { repository.isPatternDocumentAttached(7L, outputUri) } throws
                 java.io.IOException("read unavailable")
@@ -434,14 +438,14 @@ class PatternImageImportViewModelTest {
             verify(exactly = 0) { storage.deleteGeneratedPdf(context, outputUri) }
             verify(exactly = 0) { storage.deleteImportSession(any(), any(), any()) }
 
-            coEvery { repository.attachPattern(7L, outputUri, "generated.pdf", 0, null) } returns
+            coEvery { repository.attachPattern(7L, outputUri, PHOTO_LABEL, 0, null, true) } returns
                 ProjectDocumentMutationResult.DuplicateUri
             viewModel.createPatternPdf()
             advanceUntilIdle()
 
             assertEquals(PatternImageImportPhase.SUCCESS, viewModel.uiState.value.phase)
             coVerify(exactly = 1) { storage.convertImagesToPdf(any(), 7L, any(), any(), any()) }
-            coVerify(exactly = 2) { repository.attachPattern(7L, outputUri, "generated.pdf", 0, null) }
+            coVerify(exactly = 2) { repository.attachPattern(7L, outputUri, PHOTO_LABEL, 0, null, true) }
         }
 
     @Test
@@ -566,7 +570,7 @@ class PatternImageImportViewModelTest {
 
             coVerify(exactly = 1) { storage.convertImagesToPdf(context, 7L, pages, any(), any()) }
             coVerify(exactly = 1) {
-                repository.attachPattern(7L, "file:///pattern_pdfs/7/valid.pdf", "valid.pdf", 0, null)
+                repository.attachPattern(7L, "file:///pattern_pdfs/7/valid.pdf", PHOTO_LABEL, 0, null, true)
             }
             assertEquals(PatternImageImportPhase.SUCCESS, vm.uiState.value.phase)
         }
@@ -594,7 +598,8 @@ class PatternImageImportViewModelTest {
             every { proManager.initialStateReady } returns MutableStateFlow(true)
             every { proManager.proState } returns
                 MutableStateFlow(ProState(ProStatus.TRIAL_ACTIVE, trialStartTimestamp = 100L))
-            coEvery { repository.attachPattern(any(), any(), any(), any(), any()) } throws java.io.IOException("attach")
+            coEvery { repository.attachPattern(any(), any(), any(), any(), any(), true) } throws
+                java.io.IOException("attach")
             coEvery { repository.isPatternDocumentAttached(any(), any()) } returns false
             val vm = readyTrialImport(PatternImageImportOrigin.CAMERA)
 
@@ -608,7 +613,7 @@ class PatternImageImportViewModelTest {
     @Test
     fun `typed attachment failure never counts as successful pdf import`() =
         runTest {
-            coEvery { repository.attachPattern(any(), any(), any(), any(), any()) } returns
+            coEvery { repository.attachPattern(any(), any(), any(), any(), any(), true) } returns
                 ProjectDocumentMutationResult.PersistenceFailure
             coEvery { repository.isPatternDocumentAttached(any(), any()) } returns false
             val vm = readyTrialImport(PatternImageImportOrigin.CAMERA)
@@ -701,3 +706,5 @@ class PatternImageImportViewModelTest {
 
     private fun uri(value: String): Uri = mockk<Uri>().also { uri -> every { uri.toString() } returns value }
 }
+
+private const val PHOTO_LABEL = "Forest Cardigan pattern photos"

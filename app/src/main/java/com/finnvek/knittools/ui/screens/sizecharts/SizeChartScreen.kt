@@ -1,9 +1,9 @@
 package com.finnvek.knittools.ui.screens.sizecharts
 
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -26,18 +26,22 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.calculator.SizeChartData
-import com.finnvek.knittools.domain.model.SizeChartEntry
 import com.finnvek.knittools.ui.components.SegmentedToggle
 import com.finnvek.knittools.ui.components.ToolScreenScaffold
 import com.finnvek.knittools.ui.components.rememberCurrentLocale
 import com.finnvek.knittools.ui.layout.ContentWidthPolicy
 import com.finnvek.knittools.ui.screens.home.HomeViewModel
+import com.finnvek.knittools.ui.theme.SizeChartDimens
 import com.finnvek.knittools.ui.theme.knitToolsColors
 
 @Composable
@@ -66,11 +70,82 @@ fun SizeChartScreen(
         title = stringResource(R.string.size_charts_title),
         onBack = onBack,
     ) { padding ->
-        BoxWithConstraints(Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp)) {
-            val tableWidth = maxOf(maxWidth, 112.dp * LocalDensity.current.fontScale * headers.size)
+        BoxWithConstraints(
+            Modifier.fillMaxSize().padding(padding).padding(horizontal = SizeChartDimens.ScreenPadding),
+        ) {
+            val density = LocalDensity.current
+            val viewportWidth = maxWidth
+            val tableScroll = rememberScrollState()
+            val unit = stringResource(if (useImperial) R.string.measurement_unit_inch_short else R.string.unit_cm)
+            val context = LocalContext.current
+            val locale = rememberCurrentLocale()
+            val headerCells =
+                headers.mapIndexed { index, label ->
+                    val visibleLabel = if (label == R.string.size_col_arm) R.string.size_col_sleeve else label
+                    val name = stringResource(visibleLabel)
+                    if (index == 0) name else stringResource(R.string.size_chart_header_with_unit, name, unit)
+                }
+            val sleeveDescription =
+                stringResource(R.string.size_chart_header_with_unit, stringResource(R.string.size_col_arm), unit)
+            val bodyCells =
+                remember(entries, context, locale, useImperial) {
+                    entries.map { entry ->
+                        listOf(entry.sizeLabel.resolve(context)) +
+                            entry.measurements.map {
+                                SizeChartData.formatMeasurementValue(it, useImperial, locale)
+                            }
+                    }
+                }
+            val headerStyle = MaterialTheme.typography.labelMedium
+            val bodyStyle = MaterialTheme.typography.bodyMedium
+            val measurer = rememberTextMeasurer()
+            val columnWidths =
+                remember(headerCells, bodyCells, headerStyle, bodyStyle, measurer, density, viewportWidth) {
+                    with(density) {
+                        val minimums =
+                            headerCells
+                                .mapIndexed { index, header ->
+                                    val headerWidth =
+                                        measurer
+                                            .measure(
+                                                header,
+                                                headerStyle,
+                                                softWrap = false,
+                                                maxLines = 1,
+                                            ).size.width
+                                    val bodyWidth =
+                                        bodyCells.maxOf { row ->
+                                            measurer
+                                                .measure(
+                                                    row[index],
+                                                    bodyStyle,
+                                                    softWrap = false,
+                                                    maxLines = 1,
+                                                ).size.width
+                                        }
+                                    maxOf(headerWidth, bodyWidth) + 2 * SizeChartDimens.CellPadding.roundToPx()
+                                }.toMutableList()
+                        val viewportPixels = viewportWidth.roundToPx()
+                        // Keep measurement columns reachable when a large size label fills the viewport.
+                        minimums[0] = minimums[0].coerceAtMost(viewportPixels / 2)
+                        val extraPixels = (viewportPixels - minimums.sum()).coerceAtLeast(0)
+                        minimums.mapIndexed { index, width ->
+                            (
+                                width + extraPixels / minimums.size +
+                                    if (index <
+                                        extraPixels % minimums.size
+                                    ) {
+                                        1
+                                    } else {
+                                        0
+                                    }
+                            ).toDp()
+                        }
+                    }
+                }
             LazyColumn(
                 Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(SizeChartDimens.RowSpacing),
             ) {
                 item(key = "categories") {
                     val categories = SizeChartData.Category.entries
@@ -78,20 +153,36 @@ fun SizeChartScreen(
                         options = categories.map { categoryLabels.getValue(it) },
                         selectedIndex = categories.indexOf(selectedCategory),
                         onSelect = { selectedCategory = categories[it] },
-                        modifier = Modifier.padding(vertical = 8.dp),
+                        modifier = Modifier.padding(vertical = SizeChartDimens.RowSpacing),
                     )
                 }
                 item(key = "table") {
-                    Box(Modifier.horizontalScroll(rememberScrollState())) {
-                        Column(
-                            Modifier.width(tableWidth),
-                            verticalArrangement = Arrangement.spacedBy(8.dp),
-                        ) {
-                            SizeChartHeaderRow(headers)
-                            entries.forEach { entry ->
-                                SizeChartDataRow(entry, useImperial)
-                                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                            }
+                    Column(verticalArrangement = Arrangement.spacedBy(SizeChartDimens.RowSpacing)) {
+                        SizeChartRow(
+                            cells = headerCells,
+                            columnWidths = columnWidths,
+                            scroll = tableScroll,
+                            header = true,
+                            sleeveDescription =
+                                sleeveDescription.takeIf {
+                                    selectedCategory ==
+                                        SizeChartData.Category.CHILD_YOUTH
+                                },
+                        )
+                        bodyCells.forEach { cells ->
+                            SizeChartRow(
+                                cells = cells,
+                                columnWidths = columnWidths,
+                                scroll = tableScroll,
+                            )
+                            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                        }
+                        if (selectedCategory == SizeChartData.Category.CHILD_YOUTH) {
+                            Text(
+                                text = stringResource(R.string.size_chart_sleeve_note),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
                         }
                     }
                 }
@@ -101,60 +192,47 @@ fun SizeChartScreen(
 }
 
 @Composable
-private fun SizeChartHeaderRow(headerResIds: List<Int>) {
-    Row(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .background(MaterialTheme.knitToolsColors.tableHeaderContainer)
-                .padding(vertical = 8.dp),
-    ) {
-        headerResIds.forEach { resId ->
-            Text(
-                text = stringResource(resId),
-                modifier = Modifier.weight(1f).padding(horizontal = 8.dp),
-                style = MaterialTheme.typography.labelMedium,
-                textAlign = TextAlign.Center,
-            )
-        }
-    }
-}
-
-@Composable
-private fun SizeChartDataRow(
-    entry: SizeChartEntry,
-    useImperial: Boolean,
+private fun SizeChartRow(
+    cells: List<String>,
+    columnWidths: List<Dp>,
+    scroll: ScrollState,
+    header: Boolean = false,
+    sleeveDescription: String? = null,
 ) {
-    val context = LocalContext.current
-    val cmUnit = stringResource(R.string.unit_cm)
-    val inchUnit = stringResource(R.string.unit_inches)
-    val locale = rememberCurrentLocale()
-
+    val background =
+        if (header) Modifier.background(MaterialTheme.knitToolsColors.tableHeaderContainer) else Modifier
+    val style = if (header) MaterialTheme.typography.labelMedium else MaterialTheme.typography.bodyMedium
     Row(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+        modifier = Modifier.fillMaxWidth().then(background).padding(vertical = SizeChartDimens.RowSpacing),
     ) {
-        // Ensimmäinen sarake = koon nimi
         Text(
-            text = entry.sizeLabel.resolve(context),
-            modifier = Modifier.weight(1f).padding(horizontal = 8.dp),
-            style = MaterialTheme.typography.bodyMedium,
+            text = cells.first(),
+            modifier = Modifier.width(columnWidths.first()).padding(horizontal = SizeChartDimens.CellPadding),
+            style = style,
             textAlign = TextAlign.Center,
+            maxLines = if (header) 1 else Int.MAX_VALUE,
+            overflow = TextOverflow.Ellipsis,
         )
-        // Loput sarakkeet = mitat
-        entry.measurements.forEach { measurement ->
-            val measurementValue =
-                SizeChartData.formatMeasurementValue(
-                    measurement = measurement,
-                    useImperial = useImperial,
-                    locale = locale,
+        Row(modifier = Modifier.weight(1f).horizontalScroll(scroll)) {
+            for (index in 1..cells.lastIndex) {
+                val description = sleeveDescription.takeIf { index == cells.lastIndex }
+                Text(
+                    text = cells[index],
+                    modifier =
+                        Modifier.width(columnWidths[index]).padding(horizontal = SizeChartDimens.CellPadding).then(
+                            if (description ==
+                                null
+                            ) {
+                                Modifier
+                            } else {
+                                Modifier.clearAndSetSemantics { contentDescription = description }
+                            },
+                        ),
+                    style = style,
+                    textAlign = TextAlign.Center,
+                    maxLines = 1,
                 )
-            val unit = if (useImperial) inchUnit else cmUnit
-            Text(
-                text = stringResource(R.string.measurement_with_unit_format, measurementValue, unit),
-                modifier = Modifier.weight(1f).padding(horizontal = 8.dp),
-                style = MaterialTheme.typography.bodyMedium,
-                textAlign = TextAlign.Center,
-            )
+            }
         }
     }
 }

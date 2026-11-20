@@ -55,6 +55,17 @@ class ReminderLogicTest {
         assertFalse(ReminderLogic.isUpcoming(repeating(1, Int.MAX_VALUE), Int.MAX_VALUE, 5))
     }
 
+    @Test
+    fun `next repeating occurrence advances past the current count without wrapping`() {
+        val reminder = repeating(88, 8)
+        assertEquals(88, ReminderLogic.nextOccurrence(reminder, 87))
+        assertEquals(96, ReminderLogic.nextOccurrence(reminder, 88))
+        assertEquals(104, ReminderLogic.nextOccurrence(reminder, 101))
+        assertEquals(null, ReminderLogic.nextOccurrence(reminder, Int.MAX_VALUE))
+        assertEquals(null, ReminderLogic.nextOccurrence(repeating(88, 0), 88))
+        assertEquals(null, ReminderLogic.nextOccurrence(reminder.copy(isCompleted = true), 88))
+    }
+
     // Kertaluonteiset
     @Test
     fun `one-time triggers at exact target row`() {
@@ -130,31 +141,6 @@ class ReminderLogicTest {
     }
 
     // repeatCount
-    @Test
-    fun `repeatCount is 1 at target row`() {
-        assertEquals(1, ReminderLogic.repeatCount(repeating(8, 8), 8))
-    }
-
-    @Test
-    fun `repeatCount is 2 at first repeat`() {
-        assertEquals(2, ReminderLogic.repeatCount(repeating(8, 8), 16))
-    }
-
-    @Test
-    fun `repeatCount is 3 at second repeat`() {
-        assertEquals(3, ReminderLogic.repeatCount(repeating(8, 8), 24))
-    }
-
-    @Test
-    fun `repeatCount is 0 for one-time reminder`() {
-        assertEquals(0, ReminderLogic.repeatCount(oneTime(12), 12))
-    }
-
-    @Test
-    fun `repeatCount is 0 before target row`() {
-        assertEquals(0, ReminderLogic.repeatCount(repeating(8, 8), 4))
-    }
-
     // activeReminders
     @Test
     fun `activeReminders filters matching reminders`() {

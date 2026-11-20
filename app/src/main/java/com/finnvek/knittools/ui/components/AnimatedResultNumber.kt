@@ -9,6 +9,8 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Box
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
@@ -19,7 +21,13 @@ import com.finnvek.knittools.ui.theme.ComponentDimens
 fun AnimatedResultNumber(
     targetValue: String,
     modifier: Modifier = Modifier,
-    content: @Composable (String) -> Unit,
+    content: @Composable (String) -> Unit = { value ->
+        Text(
+            text = value,
+            style = MaterialTheme.typography.displayMedium,
+            color = MaterialTheme.colorScheme.primary,
+        )
+    },
 ) {
     val density = LocalDensity.current
     val offsetPx = with(density) { ComponentDimens.AnimatedResultOffset.roundToPx() }

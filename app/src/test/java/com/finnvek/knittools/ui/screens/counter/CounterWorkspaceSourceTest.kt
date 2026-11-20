@@ -28,7 +28,9 @@ class CounterWorkspaceSourceTest {
         assertTrue(workspace.contains(".padding(scaffoldPadding)"))
         assertFalse(workspace.contains("""key = "project-header""""))
         assertTrue(workspace.contains("""key = "counter-hero""""))
-        assertTrue(workspace.contains("modifier = Modifier.heightIn(min = heroLayout.minimumHeight)"))
+        assertTrue(workspace.contains("layout = heroLayout"))
+        assertTrue(workspace.contains(".heightIn(min = layout.minimumBodyHeight)"))
+        assertFalse(workspace.contains("""key = "active-work-session""""))
         assertFalse(workspace.contains("fillParentMaxHeight()"))
         assertTrue(workspace.indexOf("""key = "counter-hero"""") in 0 until workspace.indexOf("ProjectContentCards("))
         assertTrue(
@@ -128,7 +130,7 @@ class CounterWorkspaceSourceTest {
         val shortHero =
             workspace
                 .substringAfter("private fun ShortCounterHero(")
-                .substringBefore("private fun ShortCounterSupportingControls(")
+                .substringBefore("private fun CounterSupportingControls(")
         val feedback = shortHero.indexOf("CounterStepFeedback(")
 
         assertTrue(feedback in 0 until shortHero.indexOf("CounterMainNumber("))
@@ -381,8 +383,9 @@ class CounterWorkspaceSourceTest {
         assertTrue(source.workspace.contains("onClick = onUndo"))
         assertTrue(source.workspace.contains("metrics.controlsMaxWidth"))
         assertTrue(
-            source.workspace.contains(".height(if (undoBetween) metrics.primaryTouchSize else metrics.controlsHeight)"),
+            source.workspace.contains(".height(if (undoBetween) primaryHeight else metrics.controlsHeight)"),
         )
+        assertTrue(source.workspace.contains("Modifier.align(Alignment.BottomCenter).size(metrics.undoSize)"))
         assertTrue(source.workspace.contains(".align(Alignment.TopStart)"))
         assertTrue(source.workspace.contains(".align(Alignment.TopEnd)"))
         val controls = source.workspace.substringAfter("private fun CounterButtons(")

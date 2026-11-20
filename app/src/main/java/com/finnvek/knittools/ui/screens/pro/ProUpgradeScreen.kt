@@ -141,6 +141,7 @@ fun ProUpgradeScreen(
                 },
                 onRestore = viewModel::restorePurchases,
                 onRetry = viewModel::retryProductDetails,
+                onRetryPurchaseState = viewModel::retryPurchaseState,
                 onStartTrial = viewModel::startTrial,
             )
             statusMessageRes?.let { ProStatusMessage(messageRes = it) }
@@ -200,6 +201,7 @@ private fun ProPurchaseSection(
     proStateReady: Boolean,
     controlsReady: Boolean,
     purchaseQueryFailed: Boolean,
+    onRetryPurchaseState: () -> Unit,
     offer: SelectedOneTimeOffer?,
     productStatusProvider: @Composable () -> BillingProductStatus,
     purchaseFlowInFlight: Boolean,
@@ -218,6 +220,7 @@ private fun ProPurchaseSection(
         if (!proStateReady) {
             if (purchaseQueryFailed) {
                 ProStatusMessage(messageRes = R.string.generic_error_unknown)
+                TextButton(onClick = onRetryPurchaseState) { Text(stringResource(R.string.retry)) }
                 ProRestoreButton(isRestoring = isRestoring, onRestore = onRestore)
             } else {
                 CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)

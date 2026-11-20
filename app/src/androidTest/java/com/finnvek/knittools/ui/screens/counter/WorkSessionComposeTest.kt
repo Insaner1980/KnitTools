@@ -6,6 +6,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.assertHeightIsAtLeast
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
@@ -22,7 +24,9 @@ import androidx.compose.ui.unit.dp
 import androidx.test.platform.app.InstrumentationRegistry
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.model.ActiveSessionRecoveryReason
+import com.finnvek.knittools.ui.components.workSessionDurationText
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -48,13 +52,14 @@ class WorkSessionComposeTest {
         }
 
         composeRule.onNodeWithText(text(R.string.work_session_stop_summary_title)).assertIsDisplayed()
-        composeRule.onNodeWithText(text(R.string.work_session_duration_format, "1:01:01")).assertIsDisplayed()
+        val duration = text(R.string.insights_duration_hours_minutes, 1, 1)
+        composeRule.onNodeWithText(text(R.string.work_session_duration_format, duration)).assertIsDisplayed()
         composeRule.onNodeWithText(text(R.string.counter_progress_format, 12)).assertIsDisplayed()
         composeRule.onNodeWithText(text(R.string.work_session_save)).assertHeightIsAtLeast(48.dp).performClick()
         assertEquals("save", action)
         composeRule.onNodeWithText(text(R.string.work_session_discard)).assertHeightIsAtLeast(48.dp).performClick()
         assertEquals("discard", action)
-        composeRule.onNodeWithText(text(R.string.cancel)).assertHeightIsAtLeast(48.dp).performClick()
+        composeRule.onNodeWithText(text(R.string.work_session_keep_running)).assertHeightIsAtLeast(48.dp).performClick()
         assertEquals("cancel", action)
     }
 
@@ -78,7 +83,7 @@ class WorkSessionComposeTest {
         assertButtonsDoNotOverlap(
             text(R.string.work_session_save),
             text(R.string.work_session_discard),
-            text(R.string.cancel),
+            text(R.string.work_session_keep_running),
         )
     }
 
@@ -91,7 +96,7 @@ class WorkSessionComposeTest {
                     projectName = "Cardigan",
                     recoveryReason = ActiveSessionRecoveryReason.REBOOTED,
                     recoveryIntervalToken = "interval-one",
-                    trustedDurationSeconds = 60L,
+                    trustedDurationSeconds = 59L,
                     suggestedDurationSeconds = 120L,
                     pendingRowsWorked = 2,
                     onAdd = { addedSeconds = it },
@@ -107,6 +112,9 @@ class WorkSessionComposeTest {
             .assertIsDisplayed()
             .assertIsFocused()
         composeRule
+            .onNodeWithText(text(R.string.work_session_confirmed_time_format, text(R.string.work_session_under_minute)))
+            .assertIsDisplayed()
+        composeRule
             .onNodeWithText(text(R.string.work_session_add_and_continue))
             .assertIsEnabled()
             .assertHeightIsAtLeast(48.dp)
@@ -114,14 +122,14 @@ class WorkSessionComposeTest {
         assertEquals(120L, addedSeconds)
 
         composeRule.onNodeWithText(text(R.string.work_session_edit_duration)).performClick()
-        composeRule.onNodeWithText(text(R.string.work_session_minutes)).performTextReplacement("60")
+        composeRule.onNodeWithContentDescription(text(R.string.work_session_minutes)).performTextReplacement("60")
         composeRule
             .onNodeWithText(
                 text(R.string.work_session_invalid_duration),
             ).performScrollTo()
             .assertIsDisplayed()
         composeRule.onNodeWithText(text(R.string.work_session_save_edited_and_stop)).assertIsNotEnabled()
-        composeRule.onNodeWithText(text(R.string.work_session_minutes)).performTextReplacement("-5")
+        composeRule.onNodeWithContentDescription(text(R.string.work_session_minutes)).performTextReplacement("-5")
         composeRule.onNodeWithText(text(R.string.work_session_save_edited_and_stop)).assertIsNotEnabled()
         composeRule.onNodeWithText(text(R.string.work_session_discard_pending)).assertHeightIsAtLeast(48.dp)
     }
@@ -156,29 +164,48 @@ class WorkSessionComposeTest {
     }
 
     @Test
-    fun compactSessionRowStacksAtNarrowWidthAndLargeFontWithoutLiveAnnouncements() {
+    fun compactSessionStripStacksTextWhileItsActionRemainsBesideIt() {
+        val projectName = "A very long cardigan project name"
         composeRule.setContent {
             CompositionLocalProvider(LocalDensity provides Density(density = 1f, fontScale = 2f)) {
                 MaterialTheme {
                     Box(modifier = Modifier.width(320.dp)) {
-                        ActiveWorkSessionRow(
-                            projectName = "A very long cardigan project name",
-                            durationSeconds = 90L,
-                            rowsWorked = 3,
-                            needsRecoveryReview = false,
-                            onStop = {},
-                            onResolve = {},
+                        val duration = workSessionDurationText(59L)
+                        WorkSessionStrip(
+                            label = text(R.string.work_session_active),
+                            durationText = duration,
+                            actionLabel = text(R.string.work_session_stop_short),
+                            onAction = {},
+                            contentDescription = text(R.string.work_session_active_description, projectName, duration),
                         )
                     }
                 }
             }
         }
 
-        composeRule
-            .onNodeWithContentDescription(
-                text(R.string.work_session_active_description, "A very long cardigan project name", "0:01:30"),
-            ).assertIsDisplayed()
-        composeRule.onNodeWithText(text(R.string.work_session_stop)).assertIsDisplayed().assertHeightIsAtLeast(48.dp)
+        val duration = text(R.string.work_session_under_minute)
+        val status =
+            composeRule
+                .onNodeWithContentDescription(text(R.string.work_session_active_description, projectName, duration))
+                .assertIsDisplayed()
+                .fetchSemanticsNode()
+        val stop =
+            composeRule
+                .onNodeWithText(text(R.string.work_session_stop_short))
+                .assertIsDisplayed()
+                .assertHeightIsAtLeast(48.dp)
+                .fetchSemanticsNode()
+        val labelBounds =
+            composeRule
+                .onNodeWithText(
+                    text(R.string.work_session_active),
+                ).fetchSemanticsNode()
+                .boundsInRoot
+        val durationBounds = composeRule.onNodeWithText(duration).fetchSemanticsNode().boundsInRoot
+        assertTrue(labelBounds.bottom <= durationBounds.top)
+        assertTrue(stop.boundsInRoot.left >= status.boundsInRoot.right)
+        assertTrue(stop.boundsInRoot.top < status.boundsInRoot.bottom)
+        assertNull(status.config.getOrNull(SemanticsProperties.LiveRegion))
     }
 
     @Test

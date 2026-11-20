@@ -25,6 +25,7 @@ import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasScrollToIndexAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isDialog
+import androidx.compose.ui.test.isDisplayed
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithText
@@ -36,6 +37,7 @@ import androidx.compose.ui.test.performScrollToIndex
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.test.platform.app.InstrumentationRegistry
+import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.model.ProjectDocument
 import com.finnvek.knittools.domain.model.SavedPattern
 import com.finnvek.knittools.domain.model.SavedPatternSource
@@ -55,14 +57,12 @@ class ProjectDocumentsSheetTest {
     @Test
     fun webPatternInformationKeepsWebsiteActionsSeparateFromDocuments() {
         var opened = 0
-        var edited = 0
         composeRule.setContent {
             MaterialTheme {
                 ProjectDocumentsSheet(
                     state = state(),
                     metadataPattern = webPattern(),
                     onOpenPatternWebsite = { opened += 1 },
-                    onEditPatternInformation = { edited += 1 },
                     onUnlinkPatternInformation = {},
                     onDismiss = {},
                     onSelect = {},
@@ -80,12 +80,11 @@ class ProjectDocumentsSheetTest {
         composeRule.onNodeWithText("Web cardigan").assertIsDisplayed()
         composeRule.onNodeWithText("Pattern designer").assertIsDisplayed()
         composeRule.onNodeWithText("example.com").assertIsDisplayed()
+        composeRule.onNodeWithText("Edit web pattern").assertDoesNotExist()
         composeRule.onNodeWithText("Open website").performClick()
-        composeRule.onNodeWithText("Edit web pattern").performClick()
-        composeRule.waitUntil(timeoutMillis = 5_000) { edited == 1 }
+        composeRule.waitUntil(timeoutMillis = 5_000) { opened == 1 }
         composeRule.runOnIdle {
             assertEquals(1, opened)
-            assertEquals(1, edited)
         }
     }
 
@@ -112,15 +111,21 @@ class ProjectDocumentsSheetTest {
             }
         }
 
+        awaitDocumentsSheet()
         composeRule.onNodeWithText("Set as primary").assertDoesNotExist()
         composeRule.onNodeWithText("Open PDF").assertDoesNotExist()
-        composeRule.onNodeWithText("Unlink pattern information").performClick()
-        val confirmationText = "Unlink pattern information for Web cardigan"
+        val moreOptions = InstrumentationRegistry.getInstrumentation().targetContext.getString(R.string.more_options)
+        composeRule.onNodeWithContentDescription(moreOptions).performScrollTo().performClick()
+        composeRule.onNodeWithText("Edit web pattern").assertIsDisplayed()
+        composeRule.onNodeWithText("Unlink").performClick()
+        val confirmationText =
+            "Remove the pattern details for Web cardigan from this project? " +
+                "The saved pattern and this project\u0027s PDFs are kept."
         composeRule.runOnIdle { metadata = metadata.copy(id = 10L, name = "Replacement pattern") }
         composeRule.onNodeWithText(confirmationText).assertIsDisplayed()
         composeRule
             .onNode(
-                hasText("Unlink pattern information") and
+                hasText("Unlink") and
                     hasClickAction() and
                     hasAnyAncestor(isDialog() and hasAnyDescendant(hasText(confirmationText))) and
                     hasContentDescription(confirmationText).not(),
@@ -284,6 +289,7 @@ class ProjectDocumentsSheetTest {
                             availability = mapOf(1L to true),
                             isLoading = false,
                         ),
+                    showCurrentDocument = true,
                     onDismiss = {},
                     onSelect = {},
                     onRename = { _, _ -> },
@@ -297,11 +303,15 @@ class ProjectDocumentsSheetTest {
             }
         }
 
+        awaitDocumentsSheet()
+        composeRule.onNodeWithText("Open now").performScrollTo().assertIsDisplayed()
         captureScreenshot("one-document-light")
-        composeRule.onNodeWithContentDescription("Actions for Chart A").performClick()
+        composeRule.onNodeWithContentDescription("Actions for Chart A").performScrollTo().performClick()
+        composeRule.onNodeWithText("Move earlier").assertDoesNotExist()
+        composeRule.onNodeWithText("Move later").assertDoesNotExist()
         composeRule.onNodeWithText("Remove").performClick()
         composeRule
-            .onNodeWithText("Remove Chart A? This project will no longer have an attached readable pattern.")
+            .onNodeWithText("Chart A will be removed. This project will no longer have a pattern PDF to read.")
             .assertIsDisplayed()
         captureScreenshot("final-document-removal")
     }
@@ -353,7 +363,7 @@ class ProjectDocumentsSheetTest {
         composeRule.onNodeWithContentDescription("Actions for Chart A").performClick()
         composeRule.onNodeWithText("Remove").performClick()
         composeRule
-            .onNodeWithText("Remove Chart A? Another document will become primary.")
+            .onNodeWithText("Chart A will be removed. Another document will become primary.")
             .assertIsDisplayed()
         captureScreenshot("primary-document-removal")
     }
@@ -394,6 +404,10 @@ class ProjectDocumentsSheetTest {
     // CPD-ON
 
     // CPD-OFF: Kuvakaappaus- ja testidata-apurit pidetaan testiluokan yhteydessa.
+    private fun awaitDocumentsSheet() {
+        composeRule.waitUntil(timeoutMillis = 5_000) { composeRule.onNodeWithText("Documents").isDisplayed() }
+    }
+
     private fun captureScreenshot(name: String) {
         composeRule.waitForIdle()
         val instrumentation = InstrumentationRegistry.getInstrumentation()

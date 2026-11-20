@@ -192,6 +192,8 @@ sealed class Screen(
 
     data object MyYarn : Screen("my_yarn")
 
+    data object MyYarnFromEstimator : Screen("my_yarn_from_estimator")
+
     data object AllPhotos : Screen("all_photos")
 
     // Insights-tab

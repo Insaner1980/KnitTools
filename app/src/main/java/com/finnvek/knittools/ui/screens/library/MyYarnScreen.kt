@@ -48,7 +48,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.model.YarnCard
@@ -58,14 +57,16 @@ import com.finnvek.knittools.pro.ProFeature
 import com.finnvek.knittools.pro.ProState
 import com.finnvek.knittools.pro.proActionAccess
 import com.finnvek.knittools.ui.components.ConfirmationDialog
+import com.finnvek.knittools.ui.components.CrossStitchEmptyState
+import com.finnvek.knittools.ui.components.CrossStitchGlyph
 import com.finnvek.knittools.ui.components.FormSheet
 import com.finnvek.knittools.ui.components.FormSheetConfirm
 import com.finnvek.knittools.ui.components.LabeledCounterImageButton
+import com.finnvek.knittools.ui.components.LabeledTextField
 import com.finnvek.knittools.ui.components.ProMarker
 import com.finnvek.knittools.ui.components.ProPromptRequest
 import com.finnvek.knittools.ui.components.ProPromptSheet
 import com.finnvek.knittools.ui.components.ProPromptSource
-import com.finnvek.knittools.ui.components.ProjectYarnTextField
 import com.finnvek.knittools.ui.components.YarnThumbnail
 import com.finnvek.knittools.ui.components.cardContainerColor
 import com.finnvek.knittools.ui.components.proMarkerDescription
@@ -120,10 +121,12 @@ private enum class PendingYarnProAction {
 fun MyYarnScreen(
     state: MyYarnState,
     actions: MyYarnActions,
+    openAddOnEntry: Boolean = false,
 ) {
     val listState = rememberLazyListState()
     var showDeleteConfirmDialog by rememberSaveable { mutableStateOf(false) }
     var showManualYarnSheet by rememberSaveable { mutableStateOf(false) }
+    var openAddPending by rememberSaveable { mutableStateOf(openAddOnEntry) }
     var pendingProAction by rememberSaveable { mutableStateOf<PendingYarnProAction?>(null) }
     var actionAwaitingEntitlement by rememberSaveable { mutableStateOf<PendingYarnProAction?>(null) }
     var lastHandledDeleteErrorId by rememberSaveable { mutableLongStateOf(state.deleteErrorId) }
@@ -136,6 +139,13 @@ fun MyYarnScreen(
             showManualYarnSheet = true
         } else {
             pendingProAction = PendingYarnProAction.OpenCreation
+        }
+    }
+
+    LaunchedEffect(state.proAccessReady, state.canCreateYarnCard, openAddPending) {
+        if (openAddPending && (state.proAccessReady || state.canCreateYarnCard)) {
+            openAddPending = false
+            requestAddYarn()
         }
     }
 
@@ -308,14 +318,14 @@ internal fun ManualYarnCardSheet(
                 },
             ),
     ) {
-        ProjectYarnTextField(
+        LabeledTextField(
             readOnly = saving,
             value = yarnName,
             onValueChange = { yarnName = it },
             label = stringResource(R.string.project_yarn_name),
             singleLine = true,
         )
-        ProjectYarnTextField(
+        LabeledTextField(
             readOnly = saving,
             value = brand,
             onValueChange = { brand = it },
@@ -324,7 +334,7 @@ internal fun ManualYarnCardSheet(
             singleLine = true,
         )
         if (showQuantity) {
-            ProjectYarnTextField(
+            LabeledTextField(
                 readOnly = saving,
                 value = quantity,
                 onValueChange = { quantity = it.filter(Char::isDigit) },
@@ -335,21 +345,21 @@ internal fun ManualYarnCardSheet(
         }
         // CPD-ON
         YarnWeightField(value = weightCategory, onValueChange = { if (!saving) weightCategory = it })
-        ProjectYarnTextField(
+        LabeledTextField(
             readOnly = saving,
             value = colorName,
             onValueChange = { colorName = it },
             label = stringResource(R.string.color_name),
             singleLine = true,
         )
-        ProjectYarnTextField(
+        LabeledTextField(
             readOnly = saving,
             value = colorNumber,
             onValueChange = { colorNumber = it },
             label = stringResource(R.string.color_number),
             singleLine = true,
         )
-        ProjectYarnTextField(
+        LabeledTextField(
             readOnly = saving,
             value = dyeLot,
             onValueChange = { dyeLot = it },
@@ -366,8 +376,22 @@ private fun MyYarnDeleteDialog(
     onDismiss: () -> Unit,
 ) {
     ConfirmationDialog(
-        title = stringResource(R.string.delete_yarn_card),
-        message = pluralStringResource(R.plurals.delete_yarn_cards_confirm, selectedCount, selectedCount),
+        title =
+            stringResource(
+                if (selectedCount ==
+                    1
+                ) {
+                    R.string.delete_yarn_card_title
+                } else {
+                    R.string.delete_yarn_cards_title
+                },
+            ),
+        message =
+            if (selectedCount == 1) {
+                stringResource(R.string.delete_yarn_card_message)
+            } else {
+                pluralStringResource(R.plurals.delete_yarn_cards_confirm, selectedCount, selectedCount)
+            },
         confirmText = stringResource(R.string.delete),
         isDestructive = true,
         onConfirm = onConfirm,
@@ -399,25 +423,13 @@ private fun MyYarnEmptyState(
     proAccessReady: Boolean,
     onAddYarn: () -> Unit,
 ) {
-    Column(
-        modifier =
-            Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .verticalScroll(rememberScrollState())
-                .padding(32.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
-    ) {
-        Text(
-            text = stringResource(R.string.empty_my_yarn),
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-        AddYarnButton(proState, proAccessReady, onAddYarn)
-    }
+    CrossStitchEmptyState(
+        glyph = CrossStitchGlyph.YARN,
+        title = stringResource(R.string.empty_my_yarn_title),
+        message = stringResource(R.string.empty_my_yarn_body),
+        modifier = Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()),
+        action = { AddYarnButton(proState, proAccessReady, onAddYarn) },
+    )
 }
 
 @Composable

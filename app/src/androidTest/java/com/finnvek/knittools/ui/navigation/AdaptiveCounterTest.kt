@@ -24,6 +24,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performScrollToIndex
 import androidx.compose.ui.test.performScrollToKey
+import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performTextReplacement
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.unit.dp
@@ -216,6 +217,122 @@ class AdaptiveCounterTest : AdaptiveRouteTestFixture() {
             text(projectName).performClick()
             assertUntouched()
         }
+    }
+
+    @Test
+    fun activeWorkSessionKeepsRepeatAndTargetInPlaceAtDefaultFontScale() {
+        resize(411, 780)
+        assertEquals(1f, rule.activity.resources.configuration.fontScale, 0.01f)
+        openCounter()
+        val remainingRows = rule.activity.resources.getQuantityString(R.plurals.rows_format, 80, 80)
+        val labels =
+            listOf(
+                label(R.string.counter_repeat_label).uppercase(),
+                label(R.string.main_counter_rows),
+                label(R.string.counter_target_of_format, 100),
+                label(R.string.counter_target_remaining_format, remainingRows),
+            )
+
+        fun positions() =
+            labels.map { value ->
+                val bounds =
+                    rule
+                        .onNode(hasText(value), useUnmergedTree = true)
+                        .assertIsDisplayed()
+                        .getUnclippedBoundsInRoot()
+                val viewport = list().getUnclippedBoundsInRoot()
+                assertTrue(
+                    "$value $bounds is fully visible within $viewport",
+                    viewport.top <= bounds.top && bounds.bottom <= viewport.bottom,
+                )
+                bounds.top
+            }
+
+        val before = positions()
+        assertTrue(before[0] < before[1])
+        menu()
+        scrollTo(label(R.string.work_session_start)).performClick()
+        rule.waitUntil(10_000) { activeSession() != null }
+        rule.waitUntil(10_000) {
+            rule.onAllNodesWithText(label(R.string.work_session_stop_short)).fetchSemanticsNodes().isNotEmpty()
+        }
+        assertSessionControlsVisible()
+        assertEquals(before, positions())
+
+        val tracker = rule.onNodeWithTag("counter-stitch-tracker", useUnmergedTree = true)
+
+        fun assertTrackerBounds(allowBelowViewport: Boolean) {
+            val viewport = list().getUnclippedBoundsInRoot()
+            val bounds = tracker.getUnclippedBoundsInRoot()
+            val fits = viewport.top <= bounds.top && bounds.bottom <= viewport.bottom
+            assertTrue(
+                "Stitch tracker $bounds must fit within $viewport or start below it when allowed",
+                fits || (allowBelowViewport && bounds.top >= viewport.bottom),
+            )
+        }
+
+        if (rule
+                .onAllNodes(
+                    hasTestTag("counter-stitch-tracker"),
+                    useUnmergedTree = true,
+                ).fetchSemanticsNodes()
+                .isNotEmpty()
+        ) {
+            assertTrackerBounds(allowBelowViewport = true)
+        }
+        list().performScrollToNode(hasTestTag("counter-stitch-tracker"))
+        tracker.assertIsDisplayed()
+
+        resize(411, 900)
+        list().performScrollToIndex(0)
+        assertTrackerBounds(allowBelowViewport = false)
+    }
+
+    @Test
+    fun activeWorkSessionKeepsStopAndUndoInFirstViewport() {
+        openCounter()
+        menu()
+        scrollTo(label(R.string.work_session_start)).performClick()
+        rule.waitUntil(10_000) { activeSession() != null }
+
+        resize(360, 640)
+        assertSessionControlsVisible()
+        resize(640, 360)
+        assertSessionControlsVisible()
+
+        val previousFontScale = shell("settings get system font_scale").trim()
+        try {
+            resize(360, 640)
+            shell("settings put system font_scale 2.0")
+            rule.waitUntil(15_000) { rule.activity.resources.configuration.fontScale == 2f }
+            assertSessionControlsVisible()
+            val number = rule.onNodeWithTag("main-counter-value", useUnmergedTree = true)
+            val numberBounds = number.assertIsDisplayed().getUnclippedBoundsInRoot()
+            val captionBounds = text(R.string.main_counter_rows).assertIsDisplayed().getUnclippedBoundsInRoot()
+            val numberHeight = numberBounds.bottom - numberBounds.top
+            assertTrue("Main number height $numberHeight", numberHeight >= CounterDimens.MainNumberMinHeight)
+            assertTrue(
+                "Main number remains about twice the caption height: $numberBounds vs $captionBounds",
+                numberHeight >= (captionBounds.bottom - captionBounds.top) * 1.9f,
+            )
+            screenshot("active-work-session-font-200")
+        } finally {
+            if (previousFontScale == "null" || previousFontScale.isBlank()) {
+                shell("settings delete system font_scale")
+            } else {
+                shell("settings put system font_scale $previousFontScale")
+            }
+        }
+    }
+
+    private fun assertSessionControlsVisible() {
+        val viewport = list().getUnclippedBoundsInRoot()
+        val stop = text(R.string.work_session_stop_short).assertIsDisplayed().getUnclippedBoundsInRoot()
+        val undo = text(R.string.counter_undo_last_change).assertIsDisplayed().getUnclippedBoundsInRoot()
+        assertTrue(
+            "Stop $stop and Undo $undo fit in order within $viewport",
+            viewport.top <= stop.top && stop.bottom <= undo.top && undo.bottom <= viewport.bottom,
+        )
     }
 
     @Test
@@ -413,7 +530,7 @@ class AdaptiveCounterTest : AdaptiveRouteTestFixture() {
         assertEquals(6, runBlocking { db.projectCounterDao().getCounter(1) }?.count)
         val history = runBlocking { db.counterProjectDao().observeCounterHistory(1).first() }
         // Anchor at the start of a row, rather than merely bringing a bottom-edge row into view.
-        list().performScrollToIndex(6)
+        list().performScrollToKey(2L)
         text("Extra 2").assertIsDisplayed()
         for ((width, height) in listOf(
             599 to 900,
@@ -484,15 +601,15 @@ class AdaptiveCounterTest : AdaptiveRouteTestFixture() {
         assertEquals(1, runBlocking { db.projectCounterDao().getCounter(1) }?.count)
         assertEquals(started.sessionToken, activeSession()?.sessionToken)
         resize(800, 400)
-        scrollTo(label(R.string.work_session_stop)).performClick()
+        scrollTo(label(R.string.work_session_stop_short)).performClick()
         scrollTo(label(R.string.work_session_save))
         rule.activityRule.scenario.recreate()
         rule.waitForIdle()
         assertNotNull(activeSession())
         assertEquals(1L, runBlocking { db.sessionDao().countCompletedSessions() })
-        scrollTo(label(R.string.cancel)).performClick()
+        scrollTo(label(R.string.work_session_keep_running)).performClick()
         assertNotNull(activeSession())
-        scrollTo(label(R.string.work_session_stop)).performClick()
+        scrollTo(label(R.string.work_session_stop_short)).performClick()
         scrollTo(label(R.string.work_session_save)).performClick()
         rule.waitUntil(10_000) { activeSession() == null }
         assertEquals(2L, runBlocking { db.sessionDao().countCompletedSessions() })

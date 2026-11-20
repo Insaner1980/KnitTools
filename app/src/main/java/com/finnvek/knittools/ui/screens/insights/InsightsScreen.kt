@@ -302,6 +302,9 @@ private fun LazyListScope.insightsContent(
         onSelectFabricDate = onSelectFabricDate,
     )
 
+    if (uiState.totalMinutes == 0 && uiState.completions.events.isNotEmpty()) {
+        insightsItem("range-empty") { InsightsRangeEmptyNote(uiState.timeRange, hasCompletions = true) }
+    }
     completionSection(uiState)
 
     projectBreakdownSection(uiState = uiState, onLaunchCounter = onLaunchCounter)
@@ -334,7 +337,9 @@ private fun LazyListScope.projectBreakdownSection(
     // yksivärinen 100 %:n lankapalkki ja yksi rivi. Tyhjärivi näytetään silti.
     val showsProjectMix = uiState.selectedProjectId == null
     if (uiState.timePerProject.isEmpty()) {
-        insightsItem("range-empty") { InsightsRangeEmptyNote(timeRange = uiState.timeRange) }
+        if (uiState.completions.events.isEmpty()) {
+            insightsItem("range-empty") { InsightsRangeEmptyNote(timeRange = uiState.timeRange) }
+        }
     } else if (!showsProjectMix) {
         // Suodatettuna listaosio jää pois, mutta "viimeksi" on ainoa tieto jota
         // hero, tilastot tai kaavio eivät kerro.

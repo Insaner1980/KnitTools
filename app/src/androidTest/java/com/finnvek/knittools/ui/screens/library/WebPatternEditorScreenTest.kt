@@ -374,7 +374,7 @@ class WebPatternEditorScreenTest {
         composeRule.onNodeWithText("Cable cardigan").assertIsDisplayed()
         composeRule.onNodeWithText("example.com").assertIsDisplayed()
         composeRule.onNodeWithText(context.getString(R.string.web_pattern_http_warning)).assertIsDisplayed()
-        composeRule.onNodeWithText(context.getString(R.string.web_pattern_source_controlled)).assertIsDisplayed()
+        composeRule.onNodeWithText(context.getString(R.string.web_pattern_offline_note)).assertIsDisplayed()
         composeRule.onNodeWithText(context.getString(R.string.save)).performClick()
 
         composeRule.runOnIdle { assertEquals(1, saves) }

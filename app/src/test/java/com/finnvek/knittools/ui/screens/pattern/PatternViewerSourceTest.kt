@@ -59,7 +59,7 @@ class PatternViewerSourceTest {
     }
 
     @Test
-    fun `reading line is toggled from pattern viewer overflow and drawn in transformed pdf layer`() {
+    fun `reading line is toggled from its reader menu and drawn in transformed pdf layer`() {
         val source = ProjectSourceFiles.read(PATTERN_VIEWER_SCREEN)
         val viewport = ProjectSourceFiles.read(PATTERN_DOCUMENT_VIEWPORT)
 
@@ -101,11 +101,11 @@ class PatternViewerSourceTest {
                 "// Tilan ja toimintojen ryhmittely PatternViewerBottomBarille",
             )
 
-        assertTrue(documentBlock.contains("currentRow = state.currentRow"))
+        assertTrue(documentBlock.contains("currentRow = state.countSlot?.count"))
         assertTrue(overlayBlock.contains("currentRow: Int?"))
         assertTrue(overlayBlock.contains("currentRow?.let { currentRow ->"))
         assertTrue(overlayBlock.contains("ReadingLineRowLabel("))
-        assertTrue(overlayBlock.contains("stringResource(R.string.row_label_format, currentRow)"))
+        assertTrue(overlayBlock.contains("mainCounterCountText(countSlot)"))
         assertFalse(overlayBlock.contains("R.string.current_row_short"))
         assertTrue(overlayBlock.contains("MaterialTheme.colorScheme.primaryContainer"))
         assertTrue(overlayBlock.contains("MaterialTheme.colorScheme.onPrimaryContainer"))
@@ -123,7 +123,7 @@ class PatternViewerSourceTest {
         assertFalse(overlayBlock.contains("\"Row "))
         assertFalse(overlayBlock.contains("\"Kerros "))
         assertFalse(overlayBlock.contains("Text(\""))
-        assertTrue(overlayBlock.contains("stringResource(R.string.row_label_format, currentRow)"))
+        assertTrue(overlayBlock.contains("mainCounterCountText(countSlot)"))
     }
 
     // CPD-OFF: Testin skenaariokohtainen asetelma pidetaan paikallisena ja luettavana.
@@ -324,7 +324,7 @@ class PatternViewerSourceTest {
 
     // CPD-OFF: Lahdekooditesti toistaa tarkoituksella saman projektin ja kirjaston rajauksen.
     @Test
-    fun `project pattern viewer exposes row marker controls only from project overflow`() {
+    fun `project pattern viewer exposes row marker controls with an open document`() {
         val source = ProjectSourceFiles.read(PATTERN_VIEWER_SCREEN)
         val projectViewer =
             source.blockBetween(
@@ -337,7 +337,7 @@ class PatternViewerSourceTest {
                 "@Composable\ninternal fun rememberPatternRenderState",
             )
 
-        assertTrue(projectViewer.contains("currentRow = counterState.counter.count"))
+        assertTrue(projectViewer.contains("currentRow = counterSlot.count.takeIf { patternUri != null }"))
         assertTrue(projectViewer.contains("onSaveReadingLineAsCurrentRow = {"))
         assertTrue(projectViewer.contains("counterViewModel.upsertPatternRowMarker("))
         assertTrue(projectViewer.contains("onClearReadingLineRowMarker = {"))
@@ -399,25 +399,27 @@ class PatternViewerSourceTest {
     @Test
     fun `pattern viewer top bar renders row marker menu items from string resources`() {
         val source = ProjectSourceFiles.read(PATTERN_VIEWER_SCREEN)
-        val overflowMenu =
+        val guideMenu =
             source.blockBetween(
-                "private fun PatternViewerOverflowMenu(",
+                "private fun PatternReadingOptionsMenu(",
                 "@Composable\nprivate fun PatternPageJumpDialog",
             )
 
-        assertTrue(overflowMenu.contains("R.string.pattern_set_row_marker_here"))
-        assertTrue(overflowMenu.contains("R.string.pattern_clear_row_mark"))
-        assertTrue(overflowMenu.contains("R.string.pattern_clear_page_marks"))
-        assertTrue(overflowMenu.contains("R.string.pattern_calibrate_rows"))
-        assertTrue(overflowMenu.contains("val currentRow = state.currentRow ?: return"))
-        assertTrue(overflowMenu.contains("actions.onSaveReadingLineAsCurrentRow()"))
-        assertTrue(overflowMenu.contains("actions.onClearReadingLineRowMarker()"))
-        assertTrue(overflowMenu.contains("actions.onClearReadingLinePageMarkers()"))
-        assertTrue(overflowMenu.contains("actions.onStartRowCalibration()"))
+        assertTrue(guideMenu.contains("R.string.pattern_set_row_marker_here"))
+        assertTrue(guideMenu.contains("R.string.pattern_clear_row_mark"))
+        assertTrue(guideMenu.contains("R.string.pattern_clear_page_marks"))
+        assertTrue(guideMenu.contains("R.string.pattern_calibrate_rows"))
+        assertTrue(guideMenu.contains("val currentRow = state.currentRow ?: return"))
+        assertTrue(guideMenu.contains("mainCounterCountTextInline(MainCounterCountSlot("))
+        assertFalse(guideMenu.contains("R.string.pattern_annotation_export_pdf"))
+        assertTrue(guideMenu.contains("actions.onSaveReadingLineAsCurrentRow()"))
+        assertTrue(guideMenu.contains("actions.onClearReadingLineRowMarker()"))
+        assertTrue(guideMenu.contains("actions.onClearReadingLinePageMarkers()"))
+        assertTrue(guideMenu.contains("actions.onStartRowCalibration()"))
     }
 
     @Test
-    fun `project pattern viewer guards row marker overflow when no pdf is attached`() {
+    fun `project pattern viewer guards row marker options when no pdf is attached`() {
         val source = ProjectSourceFiles.read(PATTERN_VIEWER_SCREEN)
         val projectViewer =
             source.blockBetween(
@@ -426,12 +428,12 @@ class PatternViewerSourceTest {
             )
         val overflowMenu =
             source.blockBetween(
-                "private fun PatternViewerOverflowMenu(",
+                "private fun PatternReadingOptionsMenu(",
                 "@Composable\nprivate fun PatternPageJumpDialog",
             )
 
         assertTrue(projectViewer.contains("val rowMarkers = remember(selectedDocument?.rowMapping)"))
-        assertTrue(projectViewer.contains("currentRow = counterState.counter.count.takeIf { patternUri != null }"))
+        assertTrue(projectViewer.contains("currentRow = counterSlot.count.takeIf { patternUri != null }"))
         assertTrue(projectViewer.contains("hasCurrentRowMarker ="))
         assertTrue(projectViewer.contains("hasPageRowMarkers ="))
         assertTrue(overflowMenu.contains("if (state.hasCurrentRowMarker)"))
@@ -532,8 +534,6 @@ class PatternViewerSourceTest {
                 "pattern_calibrate_rows",
                 "pattern_calibration_first_row",
                 "pattern_calibration_last_row",
-                "pattern_calibration_save_first",
-                "pattern_calibration_save_last",
                 "pattern_calibration_invalid_row",
             ).forEach { key ->
                 assertTrue("Missing $key in $stringsFile", strings.hasStringResource(key))
@@ -615,10 +615,20 @@ class PatternViewerSourceTest {
         assertTrue(preflightIndex >= 0)
         assertTrue(destinationRequestIndex > preflightIndex)
         assertTrue(request.contains("}.onSuccess {"))
-        // Vienti käynnistyy lukijan valikosta; kohde avataan vasta esitarkistuksen jälkeen.
+        // Both viewers connect the menu action to the shared export preflight.
         assertEquals(
             2,
-            Regex("exportContext\\?\\.let\\(annotationViewModel::requestAnnotatedPdfExport\\)").findAll(viewer).count(),
+            Regex("\\.withAnnotations\\(annotationMode, annotationViewModel, exportContext\\)").findAll(viewer).count(),
+        )
+        val topBarActions =
+            viewer.blockBetween(
+                "private fun TopBarActions.withAnnotations(",
+                "@OptIn(ExperimentalMaterial3Api::class)",
+            )
+        assertTrue(
+            topBarActions.contains(
+                "onExportAnnotations = { exportContext?.let(annotationViewModel::requestAnnotatedPdfExport) }",
+            ),
         )
         assertTrue(viewer.contains("CollectWithLifecycleEffect({ exportRequests }) { requestId ->"))
         assertTrue(viewer.contains("annotationActions.onLaunchExportDestination(requestId, state.exportContext)"))

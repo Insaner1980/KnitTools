@@ -38,17 +38,31 @@ class BrazilianPortugueseLocaleContractTest {
         base.filterValues { it.getAttribute("translatable") != "false" }.forEach { (name, original) ->
             if (name !in brazilian && name in deferred) return@forEach
             val localized = brazilian.getValue(name)
-            val expectedText =
-                if (original.tagName == "plurals") {
-                    items(original).first { it.getAttribute("quantity") == "other" }.textContent
-                } else {
-                    original.textContent
-                }
             val variants = if (localized.tagName == "plurals") items(localized) else listOf(localized)
             if (localized.tagName == "plurals") {
                 assertEquals(name, setOf("one", "many", "other"), variants.map { it.getAttribute("quantity") }.toSet())
             }
             variants.forEach { variant ->
+                val expectedText =
+                    if (original.tagName == "plurals") {
+                        val originalVariants = items(original)
+                        val quantity =
+                            variant.getAttribute("quantity").let {
+                                if (it == "one" &&
+                                    ProjectSourceFiles.reminderIntervalUsesQuantityInSingular(name, "values-pt-rBR")
+                                ) {
+                                    "other"
+                                } else {
+                                    it
+                                }
+                            }
+                        (
+                            originalVariants.firstOrNull { it.getAttribute("quantity") == quantity }
+                                ?: originalVariants.first { it.getAttribute("quantity") == "other" }
+                        ).textContent
+                    } else {
+                        original.textContent
+                    }
                 assertEquals(name, placeholders(expectedText), placeholders(variant.textContent))
             }
         }

@@ -2,6 +2,7 @@ package com.finnvek.knittools.ui.screens.counter
 
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.SheetValue
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -29,11 +30,12 @@ data class YarnUsageOpenRequest(
 @Composable
 fun ProjectYarnUsageFlow(
     projectId: Long,
-    linkedYarns: List<Pair<Long, String>>,
+    linkedYarns: List<LinkedYarnSummary>,
     projectYarnNotes: List<ProjectYarnNote>,
     proState: ProState,
     proAccessReady: Boolean,
     actions: YarnManagementSheetActions,
+    snackbarHostState: SnackbarHostState? = null,
     viewModelProvider: @Composable () -> ProjectYarnUsageViewModel = { hiltViewModel() },
 ) {
     val model = viewModelProvider()
@@ -80,6 +82,7 @@ fun ProjectYarnUsageFlow(
             proState = proState,
             proAccessReady = proAccessReady,
             actions = actions,
+            snackbarHostState = snackbarHostState,
             sheetState = managementSheet,
             usageItems = items.orEmpty(),
             focusKey = returnKey,

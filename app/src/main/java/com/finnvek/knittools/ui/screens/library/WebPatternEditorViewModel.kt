@@ -392,7 +392,7 @@ class WebPatternEditorViewModel
             mutableUiState.update {
                 it.copy(
                     title = pattern.name,
-                    designer = pattern.designerName,
+                    designer = pattern.designerName.orEmpty(),
                     url = pattern.webPatternUrlOrNull?.originalUrl.orEmpty(),
                     expectedUpdatedAt = pattern.updatedAt,
                     isLoading = false,

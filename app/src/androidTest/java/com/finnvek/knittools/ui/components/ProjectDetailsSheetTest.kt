@@ -117,7 +117,7 @@ class ProjectDetailsSheetTest {
             }
         }
         val targetField = compose.onNode(hasSetTextAction())
-        val confirm = compose.onNodeWithText(label(android.R.string.ok))
+        val confirm = compose.onNodeWithText(label(R.string.save))
         for (invalid in listOf("100000", "1.5")) {
             targetField.performTextReplacement(invalid)
             confirm.assertIsNotEnabled()
@@ -167,13 +167,17 @@ class ProjectDetailsSheetTest {
     }
 
     @Test
-    fun emptyCustomLabelExplainsWhyCreateIsDisabled() {
+    fun emptyCustomLabelStaysNeutralUntilTheUserTriesToCollapse() {
         showSheet(
             ProjectDetailsMode.Create,
             initialValues = ProjectDetailsValues("Scarf", CraftType.KNITTING, MainCounterLabelType.CUSTOM, null),
         )
-        compose.onNodeWithText(label(R.string.main_counter_custom_label_error)).assertExists()
+        val error = compose.onNodeWithText(label(R.string.main_counter_custom_label_error))
+        error.assertDoesNotExist()
         compose.onNodeWithText(label(R.string.create_project)).performScrollTo().assertIsNotEnabled()
+        compose.onNodeWithText(label(R.string.project_create_fewer_options)).performScrollTo().performClick()
+        error.assertExists()
+        compose.onNodeWithContentDescription(label(R.string.main_counter_custom_label)).assertIsFocused()
     }
 
     @Test

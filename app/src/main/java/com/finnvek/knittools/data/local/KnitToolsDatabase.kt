@@ -6,7 +6,7 @@ import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 
-const val KNITTOOLS_DATABASE_VERSION = 29
+const val KNITTOOLS_DATABASE_VERSION = 30
 
 @Database(
     entities = [
@@ -782,6 +782,8 @@ abstract class KnitToolsDatabase : RoomDatabase() {
                 }
             }
 
+        val MIGRATION_29_30: Migration = SavedPatternMigration30.migration
+
         private fun replaceSavedPatternsTable(db: SupportSQLiteDatabase) {
             // A deleted pattern ID can still appear in a legacy project's soft link.
             db.execSQL(
@@ -824,6 +826,7 @@ abstract class KnitToolsDatabase : RoomDatabase() {
                     MIGRATION_26_27,
                     MIGRATION_27_28,
                     MIGRATION_28_29,
+                    MIGRATION_29_30,
                 )
     }
 }

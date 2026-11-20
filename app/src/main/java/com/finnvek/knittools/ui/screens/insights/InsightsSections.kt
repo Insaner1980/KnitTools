@@ -428,10 +428,17 @@ internal fun InsightsProjectRow(
                 overflow = TextOverflow.Ellipsis,
             )
             Text(
+                text = stringResource(R.string.counter_progress_format, project.totalRows),
+                style = MaterialTheme.typography.insightsProjectSub,
+                color = MaterialTheme.knitToolsColors.onSurfaceMuted,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.padding(top = InsightsDimens.ProjectSubTopMargin),
+            )
+            Text(
                 text =
                     stringResource(
-                        R.string.insights_project_sub_format,
-                        stringResource(R.string.counter_progress_format, project.totalRows),
+                        R.string.insights_last_worked_format,
                         relativeDayText(project.lastSessionAt, today),
                     ),
                 style = MaterialTheme.typography.insightsProjectSub,
@@ -603,8 +610,20 @@ internal fun InsightsEmptyState() {
  * keskenjääneeltä, ei tarkoitukselliselta.
  */
 @Composable
-internal fun InsightsRangeEmptyNote(timeRange: TimeRange) {
+internal fun InsightsRangeEmptyNote(
+    timeRange: TimeRange,
+    hasCompletions: Boolean = false,
+) {
 // CPD-ON
+    val titleRes =
+        when (timeRange) {
+            TimeRange.THIS_WEEK ->
+                if (hasCompletions) R.string.insights_no_sessions_week else R.string.insights_nothing_yet_week
+            TimeRange.THIS_MONTH ->
+                if (hasCompletions) R.string.insights_no_sessions_month else R.string.insights_nothing_yet_month
+            TimeRange.ALL_TIME ->
+                if (hasCompletions) R.string.insights_no_sessions_all_time else R.string.insights_nothing_yet_all_time
+        }
     Column(
         modifier =
             Modifier
@@ -612,14 +631,7 @@ internal fun InsightsRangeEmptyNote(timeRange: TimeRange) {
                 .padding(vertical = InsightsDimens.EmptyRangeNoteVerticalPadding),
     ) {
         Text(
-            text =
-                stringResource(
-                    when (timeRange) {
-                        TimeRange.THIS_WEEK -> R.string.insights_nothing_yet_week
-                        TimeRange.THIS_MONTH -> R.string.insights_nothing_yet_month
-                        TimeRange.ALL_TIME -> R.string.insights_nothing_yet_all_time
-                    },
-                ),
+            text = stringResource(titleRes),
             style = MaterialTheme.typography.insightsEmptyRangeTitle,
             color = MaterialTheme.colorScheme.onSurface,
         )

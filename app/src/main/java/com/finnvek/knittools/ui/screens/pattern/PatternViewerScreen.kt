@@ -32,13 +32,14 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.automirrored.filled.OpenInNew
+import androidx.compose.material.icons.automirrored.filled.Redo
+import androidx.compose.material.icons.automirrored.filled.Undo
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.HorizontalRule
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.outlined.BookmarkBorder
@@ -47,7 +48,6 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
@@ -55,7 +55,6 @@ import androidx.compose.material3.Snackbar
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TextField
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.minimumInteractiveComponentSize
@@ -81,6 +80,7 @@ import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.AbsoluteAlignment
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.geometry.Offset
@@ -88,21 +88,25 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.FirstBaseline
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalAccessibilityManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalResources
+import androidx.compose.ui.platform.LocalWindowInfo
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntSize
@@ -113,18 +117,18 @@ import com.finnvek.knittools.R
 import com.finnvek.knittools.data.storage.PatternAnnotationRenderStyle
 import com.finnvek.knittools.data.storage.PdfPageRenderer
 import com.finnvek.knittools.di.AppDispatchers
+import com.finnvek.knittools.domain.calculator.MainCounterCountSlot
 import com.finnvek.knittools.domain.calculator.RowMarker
 import com.finnvek.knittools.domain.calculator.createCalibrationRowMarkers
 import com.finnvek.knittools.domain.calculator.parseMapping
 import com.finnvek.knittools.domain.model.DEFAULT_READING_GUIDE_FRACTION
 import com.finnvek.knittools.domain.model.DEFAULT_READING_LINE_Y_FRACTION
+import com.finnvek.knittools.domain.model.MainCounterLabelType
 import com.finnvek.knittools.domain.model.PROJECT_DOCUMENT_LABEL_MAX_LENGTH
 import com.finnvek.knittools.domain.model.PatternAnnotationOwner
-import com.finnvek.knittools.domain.model.PatternDisplayNames
 import com.finnvek.knittools.domain.model.ProjectDocument
 import com.finnvek.knittools.domain.model.READING_LINE_MAX_Y_FRACTION
 import com.finnvek.knittools.domain.model.READING_LINE_MIN_Y_FRACTION
-import com.finnvek.knittools.domain.model.READING_LINE_ROW_STEP_FRACTION
 import com.finnvek.knittools.domain.model.SavedPattern
 import com.finnvek.knittools.domain.model.isWebPatternCompatible
 import com.finnvek.knittools.domain.model.sanitizeReadingGuideFraction
@@ -137,17 +141,26 @@ import com.finnvek.knittools.domain.tips.TipScreen
 import com.finnvek.knittools.repository.ProjectDocumentMutationResult
 import com.finnvek.knittools.repository.SavedPatternMetadataMutationResult
 import com.finnvek.knittools.ui.components.BackIconButton
+import com.finnvek.knittools.ui.components.BadgePill
 import com.finnvek.knittools.ui.components.CancelButton
 import com.finnvek.knittools.ui.components.CollectWithLifecycleEffect
 import com.finnvek.knittools.ui.components.ConfirmationDialog
+import com.finnvek.knittools.ui.components.LabeledTextField
+import com.finnvek.knittools.ui.components.NumberInputField
+import com.finnvek.knittools.ui.components.NumberInputOptions
 import com.finnvek.knittools.ui.components.OverviewEmptyText
 import com.finnvek.knittools.ui.components.OverviewLinkRow
 import com.finnvek.knittools.ui.components.OverviewTextAction
+import com.finnvek.knittools.ui.components.RowMenuAction
+import com.finnvek.knittools.ui.components.RowOverflowMenu
 import com.finnvek.knittools.ui.components.ScrollableFormDialog
 import com.finnvek.knittools.ui.components.SectionLabel
 import com.finnvek.knittools.ui.components.SheetTitle
-import com.finnvek.knittools.ui.components.cardTextFieldColors
-import com.finnvek.knittools.ui.components.dialogTextFieldColors
+import com.finnvek.knittools.ui.components.WebPatternMetadata
+import com.finnvek.knittools.ui.components.mainCounterCountText
+import com.finnvek.knittools.ui.components.mainCounterCountTextInline
+import com.finnvek.knittools.ui.components.mainCounterLabelText
+import com.finnvek.knittools.ui.components.projectDocumentDisplayName
 import com.finnvek.knittools.ui.layout.AdaptiveDropdownMenu
 import com.finnvek.knittools.ui.layout.AdaptiveModalWindow
 import com.finnvek.knittools.ui.layout.ContentWidthPolicy
@@ -368,6 +381,12 @@ fun PatternViewerScreen(
                     contentErrorVisible,
                 ).any { it },
         )
+    val counterSlot =
+        MainCounterCountSlot(
+            counterState.counter.count,
+            counterState.mainCounterLabelType,
+            counterState.mainCounterCustomLabel,
+        )
     TipHost(context = tipContext, onAction = {}, modifier = Modifier.fillMaxSize()) {
         Scaffold(
             containerColor = MaterialTheme.colorScheme.background,
@@ -379,7 +398,9 @@ fun PatternViewerScreen(
                             patternName = selectedDocument?.label,
                             totalPages = renderState.renderer?.pageCount ?: 0,
                             currentPage = currentPage,
-                            currentRow = counterState.counter.count.takeIf { patternUri != null },
+                            currentRow = counterSlot.count.takeIf { patternUri != null },
+                            countLabelType = counterSlot.labelType,
+                            countCustomLabel = counterSlot.customLabel,
                             canManageDocuments = true,
                             readingLineEnabled = selectedDocument?.readingLineEnabled == true,
                             readingLineFollowCurrentRow = selectedDocument?.readingLineFollowCurrentRow == true,
@@ -387,9 +408,10 @@ fun PatternViewerScreen(
                             canManageBookmarks = true,
                             hasCurrentRowMarker = hasCurrentRowMarker,
                             hasPageRowMarkers = hasPageRowMarkers,
-                            canAnnotate = patternUri != null && renderState.canAnnotate,
-                            annotationMode = annotationMode.active,
-                            annotationExportEnabled = !annotationState.isExporting,
+                        ).withAnnotations(
+                            patternUri != null && renderState.canAnnotate,
+                            annotationMode,
+                            annotationState,
                         ),
                     actions =
                         TopBarActions(
@@ -445,19 +467,14 @@ fun PatternViewerScreen(
                                         expectedMapping = selectedDocument?.rowMapping,
                                     )
                             },
-                            onToggleAnnotationMode = annotationMode.toggle,
-                            onOpenAnnotationLayers = annotationMode.openLayers,
-                            onExportAnnotations = {
-                                exportContext?.let(annotationViewModel::requestAnnotatedPdfExport)
-                            },
-                        ),
+                        ).withAnnotations(annotationMode, annotationViewModel, exportContext),
                 )
             },
             bottomBar = {
                 PatternViewerBottomBar(
                     state =
                         BottomBarState(
-                            currentRow = counterState.counter.count,
+                            countSlot = counterSlot,
                             currentPage = currentPage,
                             totalPages = renderState.renderer?.pageCount ?: 0,
                         ),
@@ -505,6 +522,7 @@ fun PatternViewerScreen(
                 rowCalibrationState?.let { calibrationState ->
                     RowCalibrationPanel(
                         state = calibrationState,
+                        countSlot = counterSlot,
                         onRowInputChange = { input ->
                             rowCalibrationState =
                                 calibrationState.copy(
@@ -564,7 +582,7 @@ fun PatternViewerScreen(
                             rendererError = renderState.rendererError ?: unavailableDocumentError,
                             renderedBitmap = renderState.renderedBitmap,
                             patternName = selectedDocument?.label,
-                            currentRow = counterState.counter.count,
+                            countSlot = counterSlot,
                             readingLineEnabled = selectedDocument?.readingLineEnabled == true,
                             readingLineYFraction = readingLinePreviewYFraction,
                             readingLineFollowCurrentRow = selectedDocument?.readingLineFollowCurrentRow,
@@ -687,6 +705,7 @@ fun PatternViewerScreen(
     if (showDocumentSheet) {
         ProjectDocumentsSheet(
             state = documentState,
+            showCurrentDocument = true,
             metadataPattern =
                 counterState.linkedPattern
                     ?.takeIf { pattern ->
@@ -783,6 +802,7 @@ internal fun ProjectDocumentsSheet(
     state: ProjectDocumentUiState,
     metadataPattern: SavedPattern? = null,
     metadataPatternName: String? = null,
+    showCurrentDocument: Boolean = false,
     onOpenPatternInformation: () -> Unit = {},
     onOpenPatternWebsite: () -> Unit = {},
     onEditPatternInformation: () -> Unit = {},
@@ -855,42 +875,60 @@ internal fun ProjectDocumentsSheet(
             }
             val patternName = metadataPattern?.name ?: metadataPatternName
             patternName?.let {
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Column {
                     SectionLabel(text = stringResource(R.string.project_documents_pattern_information))
-                    Text(it, style = MaterialTheme.typography.bodyLarge)
+                    Spacer(Modifier.height(PatternViewerDimens.DocumentInfoLineSpacing))
                     val webPattern = metadataPattern?.takeIf(SavedPattern::isWebPatternCompatible)
+                    val webUrl = webPattern?.webPatternUrlOrNull
+                    Row {
+                        Column(
+                            modifier = Modifier.weight(1f).alignBy(FirstBaseline),
+                            verticalArrangement = Arrangement.spacedBy(PatternViewerDimens.DocumentInfoLineSpacing),
+                        ) {
+                            Text(it, style = MaterialTheme.typography.titleSmall)
+                            if (webPattern != null) {
+                                WebPatternMetadata(webPattern.designerName, webUrl?.host, uppercaseBadge = false)
+                            } else {
+                                Text(
+                                    text = stringResource(R.string.project_documents_metadata_only),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
+                        if (webPattern != null) {
+                            RowOverflowMenu(
+                                modifier = Modifier.alignBy { it.measuredHeight / 2 },
+                                actions =
+                                    listOf(
+                                        RowMenuAction(stringResource(R.string.web_pattern_edit)) {
+                                            coroutineScope.launch {
+                                                sheetState.hide()
+                                                onEditPatternInformation()
+                                                onDismiss()
+                                            }
+                                        },
+                                        RowMenuAction(
+                                            stringResource(R.string.web_pattern_unlink_confirm),
+                                            isDestructive = true,
+                                        ) {
+                                            pendingUnlinkPatternId = webPattern.id
+                                            pendingUnlinkPatternName = webPattern.name
+                                        },
+                                    ),
+                            )
+                        }
+                    }
                     if (webPattern != null) {
-                        val webUrl = webPattern.webPatternUrlOrNull
-                        webPattern.designerName.takeIf(String::isNotBlank)?.let { designer ->
-                            Text(
-                                text = designer,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                        Text(
-                            text = stringResource(R.string.web_pattern_label),
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        webUrl?.host?.let { host ->
-                            Text(
-                                text = host,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
                         val openDescription =
                             stringResource(
                                 R.string.web_pattern_open_website_description,
                                 webPattern.name,
                                 webUrl?.host.orEmpty(),
                             )
-                        val editDescription = stringResource(R.string.web_pattern_edit_description, webPattern.name)
-                        val unlinkDescription = stringResource(R.string.web_pattern_unlink_description, webPattern.name)
-                        // Linkkirivit kuten projektinäkymässä; pinotut tekstipainikkeet lukivat irrallisina.
                         OverviewLinkRow(
                             title = stringResource(R.string.web_pattern_open_website),
+                            trailingIcon = Icons.AutoMirrored.Filled.OpenInNew,
                             subtitle = null,
                             glyph = null,
                             onClick = {
@@ -901,39 +939,11 @@ internal fun ProjectDocumentsSheet(
                                 }
                             },
                             modifier =
-                                Modifier.semantics(mergeDescendants = true) { contentDescription = openDescription },
-                        )
-                        OverviewLinkRow(
-                            title = stringResource(R.string.web_pattern_edit),
-                            subtitle = null,
-                            glyph = null,
-                            onClick = {
-                                coroutineScope.launch {
-                                    sheetState.hide()
-                                    onEditPatternInformation()
-                                    onDismiss()
-                                }
-                            },
-                            modifier =
-                                Modifier.semantics(mergeDescendants = true) { contentDescription = editDescription },
-                        )
-                        OverviewLinkRow(
-                            title = stringResource(R.string.web_pattern_unlink),
-                            subtitle = null,
-                            glyph = null,
-                            onClick = {
-                                pendingUnlinkPatternId = webPattern.id
-                                pendingUnlinkPatternName = webPattern.name
-                            },
-                            modifier =
-                                Modifier.semantics(mergeDescendants = true) { contentDescription = unlinkDescription },
+                                Modifier
+                                    .padding(top = PatternViewerDimens.DocumentWebsiteGap)
+                                    .semantics(mergeDescendants = true) { contentDescription = openDescription },
                         )
                     } else {
-                        Text(
-                            text = stringResource(R.string.project_documents_metadata_only),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
                         TextButton(
                             onClick = {
                                 coroutineScope.launch {
@@ -947,6 +957,7 @@ internal fun ProjectDocumentsSheet(
                     }
                 }
             }
+            SectionLabel(text = stringResource(R.string.project_documents_pdf_section))
             when {
                 state.isLoading -> {
                     CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
@@ -962,17 +973,18 @@ internal fun ProjectDocumentsSheet(
                         verticalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
                         itemsIndexed(state.documents, key = { _, document -> document.id }) { index, document ->
+                            val label = projectDocumentDisplayName(document.label)
                             ProjectDocumentRow(
                                 document = document,
                                 index = index,
                                 documentCount = state.documents.size,
-                                isSelected = state.selectedDocumentId == document.id,
+                                isSelected = showCurrentDocument && state.selectedDocumentId == document.id,
                                 isAvailable = state.isAvailable(document.id),
                                 enabled = !state.isMutating,
                                 onSelect = { onSelect(document.id) },
                                 onRename = {
                                     renameDocumentId = document.id
-                                    renameText = document.label
+                                    renameText = label
                                 },
                                 onMoveEarlier = { onMoveEarlier(document.id) },
                                 onMoveLater = { onMoveLater(document.id) },
@@ -988,26 +1000,18 @@ internal fun ProjectDocumentsSheet(
     }
 
     pendingUnlinkPatternId?.let { expectedPatternId ->
-        ScrollableFormDialog(
-            onDismissRequest = { pendingUnlinkPatternId = null },
-            title = { Text(stringResource(R.string.web_pattern_unlink)) },
-            text = { Text(stringResource(R.string.web_pattern_unlink_description, pendingUnlinkPatternName)) },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        pendingUnlinkPatternId = null
-                        coroutineScope.launch {
-                            sheetState.hide()
-                            onUnlinkPatternInformation(expectedPatternId)
-                            onDismiss()
-                        }
-                    },
-                ) {
-                    Text(stringResource(R.string.web_pattern_unlink))
+        ConfirmationDialog(
+            title = stringResource(R.string.web_pattern_unlink_title),
+            message = stringResource(R.string.web_pattern_unlink_body, pendingUnlinkPatternName),
+            confirmText = stringResource(R.string.web_pattern_unlink_confirm),
+            onDismiss = { pendingUnlinkPatternId = null },
+            onConfirm = {
+                pendingUnlinkPatternId = null
+                coroutineScope.launch {
+                    sheetState.hide()
+                    onUnlinkPatternInformation(expectedPatternId)
+                    onDismiss()
                 }
-            },
-            dismissButton = {
-                CancelButton(onClick = { pendingUnlinkPatternId = null })
             },
         )
     }
@@ -1017,14 +1021,17 @@ internal fun ProjectDocumentsSheet(
             onDismissRequest = { renameDocumentId = null },
             title = { Text(stringResource(R.string.project_documents_rename_title)) },
             text = {
-                TextField(
+                LabeledTextField(
                     value = renameText,
                     onValueChange = {
                         renameText = it.takeWithoutSplittingSurrogatePair(PROJECT_DOCUMENT_LABEL_MAX_LENGTH)
                     },
-                    singleLine = true,
-                    colors = dialogTextFieldColors(),
-                    label = { Text(stringResource(R.string.project_documents_label)) },
+                    label = stringResource(R.string.project_documents_label),
+                    supportingText =
+                        stringResource(
+                            R.string.project_documents_label_limit,
+                            PROJECT_DOCUMENT_LABEL_MAX_LENGTH,
+                        ),
                 )
             },
             confirmButton = {
@@ -1054,7 +1061,7 @@ internal fun ProjectDocumentsSheet(
                         document.isPrimary -> R.string.project_documents_remove_primary_message
                         else -> R.string.project_documents_remove_message
                     },
-                    document.label,
+                    projectDocumentDisplayName(document.label),
                 ),
             confirmText = stringResource(R.string.project_documents_remove_action),
             isDestructive = true,
@@ -1090,7 +1097,29 @@ private fun ProjectDocumentRow(
     val moveLaterLabel = stringResource(R.string.project_documents_move_later)
     val makePrimaryLabel = stringResource(R.string.project_documents_make_primary)
     val removeLabel = stringResource(R.string.project_documents_remove_from_project)
-    val actionsDescription = stringResource(R.string.project_documents_actions, document.label)
+    val label = projectDocumentDisplayName(document.label)
+    val actionsDescription = stringResource(R.string.project_documents_actions, label)
+    val primary = if (document.isPrimary) stringResource(R.string.project_documents_primary) else null
+    val page =
+        if (isSelected || document.currentPage > 0) {
+            stringResource(R.string.project_documents_page, document.currentPage.toLong() + 1L)
+        } else {
+            null
+        }
+    val position = stringResource(R.string.project_documents_index, index + 1, documentCount)
+    val status =
+        when {
+            primary != null -> listOfNotNull(primary, page).joinToString(", ")
+            page != null ->
+                stringResource(
+                    R.string.project_documents_page_standalone,
+                    document.currentPage.toLong() + 1L,
+                )
+            else -> ""
+        }
+    val openNow = if (isSelected) stringResource(R.string.project_documents_open_now) else null
+    val unavailable = if (!isAvailable) stringResource(R.string.project_documents_unavailable) else null
+    val documentDescription = listOfNotNull(label, primary, position, page, openNow, unavailable).joinToString(", ")
     val accessibilityActions =
         buildList {
             if (isAvailable) {
@@ -1138,54 +1167,64 @@ private fun ProjectDocumentRow(
                 },
             )
         }
-    ListItem(
-        headlineContent = {
-            Text(document.label)
-        },
-        supportingContent = {
-            Column {
-                Text(
-                    stringResource(
-                        if (document.isPrimary) {
-                            R.string.project_documents_primary
-                        } else {
-                            R.string.project_documents_secondary
-                        },
-                    ),
-                )
-                Text(stringResource(R.string.project_documents_position, index + 1, documentCount))
-                if (isSelected) Text(stringResource(R.string.project_documents_open))
-                if (isAvailable) {
-                    Text(stringResource(R.string.project_documents_available))
-                } else {
-                    Text(
-                        text = stringResource(R.string.project_documents_unavailable),
-                        color = MaterialTheme.colorScheme.error,
-                    )
+    Row(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clickable(
+                    enabled = enabled && isAvailable,
+                    onClickLabel = openLabel,
+                    onClick = onSelect,
+                ).semantics {
+                    contentDescription = documentDescription
+                    customActions = if (enabled) accessibilityActions else emptyList()
+                },
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(label, style = MaterialTheme.typography.titleSmall)
+            if (status.isNotEmpty() || openNow != null) {
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(PatternViewerDimens.DocumentStatusGap),
+                    itemVerticalAlignment = Alignment.CenterVertically,
+                ) {
+                    if (status.isNotEmpty()) {
+                        Text(
+                            text = status,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                    if (openNow != null) BadgePill(text = openNow, uppercase = false)
                 }
             }
-        },
-        trailingContent = {
-            Box {
-                IconButton(
-                    onClick = { showActions = true },
-                    enabled = enabled,
-                    modifier =
-                        Modifier
-                            .size(48.dp)
-                            .semantics { contentDescription = actionsDescription },
-                ) {
-                    Icon(
-                        Icons.Default.MoreVert,
-                        contentDescription = null,
-                    )
-                }
-                AdaptiveDropdownMenu(
-                    expanded = showActions,
-                    onDismissRequest = { showActions = false },
-                ) {
+            if (unavailable != null) {
+                Text(unavailable, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+            }
+        }
+        Box {
+            IconButton(
+                onClick = { showActions = true },
+                enabled = enabled,
+                modifier =
+                    Modifier
+                        .size(48.dp)
+                        .semantics { contentDescription = actionsDescription },
+            ) {
+                Icon(
+                    Icons.Default.MoreVert,
+                    contentDescription = null,
+                )
+            }
+            AdaptiveDropdownMenu(
+                expanded = showActions,
+                onDismissRequest = { showActions = false },
+            ) {
+                if (documentCount > 1) {
                     DropdownMenuItem(
-                        text = { Text(stringResource(R.string.project_documents_move_earlier)) },
+                        text = { Text(moveEarlierLabel) },
                         enabled = index > 0,
                         onClick = {
                             showActions = false
@@ -1193,47 +1232,45 @@ private fun ProjectDocumentRow(
                         },
                     )
                     DropdownMenuItem(
-                        text = { Text(stringResource(R.string.project_documents_move_later)) },
+                        text = { Text(moveLaterLabel) },
                         enabled = index < documentCount - 1,
                         onClick = {
                             showActions = false
                             onMoveLater()
                         },
                     )
+                }
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.project_documents_rename)) },
+                    onClick = {
+                        showActions = false
+                        onRename()
+                    },
+                )
+                if (!document.isPrimary) {
                     DropdownMenuItem(
-                        text = { Text(stringResource(R.string.project_documents_rename)) },
+                        text = { Text(stringResource(R.string.project_documents_make_primary)) },
                         onClick = {
                             showActions = false
-                            onRename()
-                        },
-                    )
-                    if (!document.isPrimary) {
-                        DropdownMenuItem(
-                            text = { Text(stringResource(R.string.project_documents_make_primary)) },
-                            onClick = {
-                                showActions = false
-                                onSetPrimary()
-                            },
-                        )
-                    }
-                    DropdownMenuItem(
-                        text = { Text(stringResource(R.string.project_documents_remove_action)) },
-                        onClick = {
-                            showActions = false
-                            onRemove()
+                            onSetPrimary()
                         },
                     )
                 }
+                DropdownMenuItem(
+                    text = {
+                        Text(
+                            stringResource(R.string.project_documents_remove_action),
+                            color = MaterialTheme.colorScheme.error,
+                        )
+                    },
+                    onClick = {
+                        showActions = false
+                        onRemove()
+                    },
+                )
             }
-        },
-        modifier =
-            Modifier
-                .clickable(
-                    enabled = enabled && isAvailable,
-                    onClickLabel = openLabel,
-                    onClick = onSelect,
-                ).semantics { customActions = if (enabled) accessibilityActions else emptyList() },
-    )
+        }
+    }
 }
 
 private fun ProjectDocumentError.messageRes(): Int =
@@ -1294,18 +1331,26 @@ private data class RowCalibrationState(
 private val RowCalibrationState.isSecondStep: Boolean
     get() = firstMarker != null
 
-private fun RowCalibrationState.rowLabelRes(): Int =
+@Composable
+private fun RowCalibrationState.rowLabel(slot: MainCounterCountSlot): String =
     if (isSecondStep) {
-        R.string.pattern_calibration_last_row
+        mainCounterLabelText(
+            labelType = slot.labelType,
+            customLabel = slot.customLabel,
+            rows = R.string.pattern_calibration_last_row,
+            rounds = R.string.pattern_calibration_last_round,
+            repeats = R.string.pattern_calibration_last_repeat,
+            custom = R.string.pattern_calibration_last_custom,
+        )
     } else {
-        R.string.pattern_calibration_first_row
-    }
-
-private fun RowCalibrationState.saveButtonLabelRes(): Int =
-    if (isSecondStep) {
-        R.string.pattern_calibration_save_last
-    } else {
-        R.string.pattern_calibration_save_first
+        mainCounterLabelText(
+            labelType = slot.labelType,
+            customLabel = slot.customLabel,
+            rows = R.string.pattern_calibration_first_row,
+            rounds = R.string.pattern_calibration_first_round,
+            repeats = R.string.pattern_calibration_first_repeat,
+            custom = R.string.pattern_calibration_first_custom,
+        )
     }
 
 private fun RowCalibrationState.saveAction(
@@ -1335,6 +1380,7 @@ private fun RowCalibrationState.toCalibrationMarkers(
 @Composable
 private fun RowCalibrationPanel(
     state: RowCalibrationState,
+    countSlot: MainCounterCountSlot,
     onRowInputChange: (String) -> Unit,
     onSaveFirst: () -> Unit,
     onSaveLast: () -> Unit,
@@ -1342,65 +1388,65 @@ private fun RowCalibrationPanel(
 ) {
     Surface(
         color = MaterialTheme.knitToolsColors.cardContainer,
-        tonalElevation = 2.dp,
+        tonalElevation = PatternViewerDimens.CalibrationPanelElevation,
     ) {
         Column(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 10.dp),
+                    .padding(
+                        horizontal = PatternViewerDimens.BottomBarHorizontalPadding,
+                        vertical = PatternViewerDimens.BottomBarVerticalPadding,
+                    ),
         ) {
             Text(
                 text = stringResource(R.string.pattern_calibrate_rows),
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.SemiBold,
+                style = MaterialTheme.typography.titleSmall,
             )
-            TextField(
+            Text(
+                text =
+                    stringResource(
+                        if (state.isSecondStep) {
+                            R.string.pattern_calibration_step_last
+                        } else {
+                            R.string.pattern_calibration_step_first
+                        },
+                    ),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = PatternViewerDimens.CalibrationInstructionGap),
+            )
+            NumberInputField(
                 value = state.rowInput,
                 onValueChange = onRowInputChange,
-                singleLine = true,
-                isError = state.showInvalidRowError,
-                label = {
-                    Text(stringResource(state.rowLabelRes()))
-                },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                supportingText = rowCalibrationSupportingText(state.showInvalidRowError),
-                shape = MaterialTheme.shapes.medium,
-                colors = cardTextFieldColors(),
-                modifier = Modifier.fillMaxWidth(),
+                label = state.rowLabel(countSlot),
+                options = NumberInputOptions(isLast = true, preserveRawInput = true),
+                errorMessage =
+                    if (state.showInvalidRowError) {
+                        stringResource(
+                            R.string.pattern_calibration_invalid_row,
+                        )
+                    } else {
+                        null
+                    },
+                modifier = Modifier.fillMaxWidth().padding(top = PatternViewerDimens.CalibrationFieldGap),
             )
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.fillMaxWidth().padding(top = PatternViewerDimens.CalibrationActionGap),
+                horizontalArrangement = Arrangement.spacedBy(PatternViewerDimens.CalibrationActionGap, Alignment.End),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
+                CancelButton(onClick = onCancel)
                 TextButton(
                     onClick = state.saveAction(onSaveFirst, onSaveLast),
                     enabled = state.rowInput.toIntOrNull() != null,
-                    modifier = Modifier.weight(1f),
                 ) {
                     Text(
-                        text = stringResource(state.saveButtonLabelRes()),
-                    )
-                }
-                TextButton(
-                    onClick = onCancel,
-                    modifier = Modifier.weight(1f),
-                ) {
-                    Text(
-                        text = stringResource(R.string.cancel),
+                        text = stringResource(R.string.save),
                     )
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun rowCalibrationSupportingText(showInvalidRowError: Boolean): (@Composable () -> Unit)? {
-    if (!showInvalidRowError) return null
-    return {
-        Text(stringResource(R.string.pattern_calibration_invalid_row))
     }
 }
 
@@ -1451,9 +1497,10 @@ fun LibraryPatternViewerScreen(
                         canManageBookmarks = false,
                         hasCurrentRowMarker = false,
                         hasPageRowMarkers = false,
-                        canAnnotate = patternUri != null && renderState.canAnnotate,
-                        annotationMode = annotationMode.active,
-                        annotationExportEnabled = !annotationState.isExporting,
+                    ).withAnnotations(
+                        patternUri != null && renderState.canAnnotate,
+                        annotationMode,
+                        annotationState,
                     ),
                 actions =
                     TopBarActions(
@@ -1471,12 +1518,7 @@ fun LibraryPatternViewerScreen(
                         onClearReadingLineRowMarker = {},
                         onClearReadingLinePageMarkers = {},
                         onStartRowCalibration = {},
-                        onToggleAnnotationMode = annotationMode.toggle,
-                        onOpenAnnotationLayers = annotationMode.openLayers,
-                        onExportAnnotations = {
-                            exportContext?.let(annotationViewModel::requestAnnotatedPdfExport)
-                        },
-                    ),
+                    ).withAnnotations(annotationMode, annotationViewModel, exportContext),
             )
         },
         bottomBar = {
@@ -1498,7 +1540,7 @@ fun LibraryPatternViewerScreen(
                     rendererError = renderState.rendererError,
                     renderedBitmap = renderState.renderedBitmap,
                     patternName = patternName,
-                    currentRow = null,
+                    countSlot = null,
                     readingLineEnabled = readingLineEnabled,
                     readingLineYFraction = readingLineYFraction,
                     readingLineFollowCurrentRow = null,
@@ -1651,6 +1693,11 @@ internal data class TopBarState(
     val canAnnotate: Boolean = false,
     val annotationMode: Boolean = false,
     val annotationExportEnabled: Boolean = true,
+    val countLabelType: MainCounterLabelType = MainCounterLabelType.ROWS,
+    val countCustomLabel: String? = null,
+    val canUndoAnnotation: Boolean = false,
+    val canRedoAnnotation: Boolean = false,
+    val canClearAnnotationPage: Boolean = false,
 )
 
 internal data class TopBarActions(
@@ -1670,7 +1717,38 @@ internal data class TopBarActions(
     val onToggleAnnotationMode: () -> Unit = {},
     val onOpenAnnotationLayers: () -> Unit = {},
     val onExportAnnotations: () -> Unit = {},
+    val onUndoAnnotation: () -> Unit = {},
+    val onRedoAnnotation: () -> Unit = {},
+    val onClearAnnotationPage: () -> Unit = {},
 )
+
+private fun TopBarState.withAnnotations(
+    canAnnotate: Boolean,
+    annotationMode: AnnotationModeControls,
+    annotationState: PatternAnnotationUiState,
+): TopBarState =
+    copy(
+        canAnnotate = canAnnotate,
+        annotationMode = annotationMode.active,
+        annotationExportEnabled = !annotationState.isExporting,
+        canUndoAnnotation = annotationState.canUndo,
+        canRedoAnnotation = annotationState.canRedo,
+        canClearAnnotationPage = annotationState.editableLayerVisible && !annotationState.isSaving,
+    )
+
+private fun TopBarActions.withAnnotations(
+    annotationMode: AnnotationModeControls,
+    annotationViewModel: PatternAnnotationViewModel,
+    exportContext: PatternPdfExportContext?,
+): TopBarActions =
+    copy(
+        onToggleAnnotationMode = annotationMode.toggle,
+        onOpenAnnotationLayers = annotationMode.openLayers,
+        onUndoAnnotation = annotationViewModel::undo,
+        onRedoAnnotation = annotationViewModel::redo,
+        onClearAnnotationPage = annotationViewModel::clearEditablePage,
+        onExportAnnotations = { exportContext?.let(annotationViewModel::requestAnnotatedPdfExport) },
+    )
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -1680,8 +1758,10 @@ internal fun PatternViewerTopBar(
     onBlockingChanged: (Boolean) -> Unit = {},
 ) {
     var showOverflowMenu by rememberSaveable { mutableStateOf(false) }
+    var showReadingLineMenu by rememberSaveable { mutableStateOf(false) }
     var showPageJumpDialog by rememberSaveable { mutableStateOf(false) }
-    val blocksTips = showOverflowMenu || showPageJumpDialog
+    var showClearPageDialog by rememberSaveable(state.currentPage, state.patternName) { mutableStateOf(false) }
+    val blocksTips = showOverflowMenu || showReadingLineMenu || showPageJumpDialog || showClearPageDialog
     SideEffect { onBlockingChanged(blocksTips) }
     val titleFocusRequester = remember { FocusRequester() }
     LaunchedEffect(state.patternName) {
@@ -1702,8 +1782,11 @@ internal fun PatternViewerTopBar(
         title = {
             Text(
                 text =
-                    state.patternName?.let(PatternDisplayNames::forDisplay)
-                        ?: stringResource(R.string.pattern_viewer_title),
+                    when {
+                        state.annotationMode -> stringResource(R.string.pattern_mark_up)
+                        state.patternName != null -> projectDocumentDisplayName(state.patternName)
+                        else -> stringResource(R.string.pattern_viewer_title)
+                    },
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.focusRequester(titleFocusRequester).focusable(),
@@ -1713,16 +1796,33 @@ internal fun PatternViewerTopBar(
             BackIconButton(onClick = actions.onBack)
         },
         actions = {
-            if (state.currentRow != null && !state.annotationMode && state.totalPages > 0) {
-                IconButton(
-                    onClick = { showOverflowMenu = true },
-                    modifier = Modifier.tipAnchor(TipId.READING_LINE),
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.HorizontalRule,
-                        contentDescription = stringResource(R.string.pattern_horizontal_reading_line),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            if (!state.annotationMode && state.totalPages > 0) {
+                Box {
+                    IconButton(
+                        onClick = { showReadingLineMenu = true },
+                        modifier =
+                            if (state.currentRow != null) Modifier.tipAnchor(TipId.READING_LINE) else Modifier,
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_reading_line),
+                            contentDescription = stringResource(R.string.pattern_horizontal_reading_line),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    PatternReadingOptionsMenu(
+                        expanded = showReadingLineMenu,
+                        close = { showReadingLineMenu = false },
+                        state = state,
+                        actions = actions,
                     )
+                }
+            }
+            if (state.annotationMode) {
+                IconButton(onClick = actions.onUndoAnnotation, enabled = state.canUndoAnnotation) {
+                    Icon(Icons.AutoMirrored.Filled.Undo, stringResource(R.string.pattern_annotation_undo))
+                }
+                IconButton(onClick = actions.onRedoAnnotation, enabled = state.canRedoAnnotation) {
+                    Icon(Icons.AutoMirrored.Filled.Redo, stringResource(R.string.pattern_annotation_redo))
                 }
             }
             if (state.canAnnotate) {
@@ -1749,6 +1849,7 @@ internal fun PatternViewerTopBar(
                     state = state,
                     actions = actions,
                     onPageJumpClick = { showPageJumpDialog = true },
+                    onClearPageClick = { showClearPageDialog = true },
                     closeOverflowMenu = { showOverflowMenu = false },
                 )
             }
@@ -1760,6 +1861,20 @@ internal fun PatternViewerTopBar(
             ),
     )
 
+    if (showClearPageDialog && state.annotationMode) {
+        ConfirmationDialog(
+            title = stringResource(R.string.pattern_annotation_clear_page_title),
+            message = stringResource(R.string.pattern_annotation_clear_page_body),
+            confirmText = stringResource(R.string.pattern_annotation_clear_page),
+            isDestructive = true,
+            confirmEnabled = state.canClearAnnotationPage,
+            onDismiss = { showClearPageDialog = false },
+            onConfirm = {
+                showClearPageDialog = false
+                actions.onClearAnnotationPage()
+            },
+        )
+    }
     if (showPageJumpDialog) {
         PatternPageJumpDialog(
             currentPage = state.currentPage,
@@ -1781,91 +1896,29 @@ private fun PatternViewerOverflowMenu(
     state: TopBarState,
     actions: TopBarActions,
     onPageJumpClick: () -> Unit,
+    onClearPageClick: () -> Unit,
     closeOverflowMenu: () -> Unit,
 ) {
-    val enabledState = stringResource(R.string.pattern_guide_enabled_state)
-    val disabledState = stringResource(R.string.pattern_guide_disabled_state)
-    val followingState = stringResource(R.string.pattern_row_following_active)
-    val pausedState = stringResource(R.string.pattern_row_following_paused)
-    AdaptiveDropdownMenu(
-        expanded = expanded,
-        onDismissRequest = onDismissRequest,
-    ) {
-        DropdownMenuItem(
-            text = { Text(stringResource(R.string.pattern_page_jump)) },
-            onClick = {
-                closeOverflowMenu()
-                onPageJumpClick()
-            },
-        )
-        PatternReadingLineMenuItem(
-            readingLineEnabled = state.readingLineEnabled,
-            onClick = {
-                closeOverflowMenu()
-                actions.onReadingLineToggle(!state.readingLineEnabled)
-            },
-        )
-        if (state.currentRow != null) {
+    AdaptiveDropdownMenu(expanded = expanded, onDismissRequest = onDismissRequest) {
+        if (state.totalPages > 0) {
             DropdownMenuItem(
-                modifier =
-                    Modifier.semantics {
-                        stateDescription = if (state.readingLineFollowCurrentRow) followingState else pausedState
-                    },
-                text = {
-                    Text(
-                        stringResource(
-                            if (state.readingLineFollowCurrentRow) {
-                                R.string.pattern_follow_current_row_off
-                            } else {
-                                R.string.pattern_follow_current_row_on
-                            },
-                        ),
-                    )
-                },
+                text = { Text(stringResource(R.string.pattern_page_jump)) },
                 onClick = {
                     closeOverflowMenu()
-                    actions.onReadingLineFollowToggle(!state.readingLineFollowCurrentRow)
+                    onPageJumpClick()
                 },
             )
-            if (!state.readingLineFollowCurrentRow) {
-                DropdownMenuItem(
-                    text = { Text(stringResource(R.string.pattern_return_to_current_row)) },
-                    onClick = {
-                        closeOverflowMenu()
-                        actions.onReturnToCurrentRow()
-                    },
-                )
-            }
         }
-        DropdownMenuItem(
-            modifier =
-                Modifier.semantics {
-                    stateDescription = if (state.verticalReadingGuideEnabled) enabledState else disabledState
+        if (state.annotationMode) {
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.pattern_annotation_clear_page)) },
+                enabled = state.canClearAnnotationPage,
+                onClick = {
+                    closeOverflowMenu()
+                    onClearPageClick()
                 },
-            text = {
-                Text(
-                    stringResource(
-                        if (state.verticalReadingGuideEnabled) {
-                            R.string.pattern_hide_vertical_guide
-                        } else {
-                            R.string.pattern_show_vertical_guide
-                        },
-                    ),
-                )
-            },
-            onClick = {
-                closeOverflowMenu()
-                actions.onVerticalReadingGuideToggle(!state.verticalReadingGuideEnabled)
-            },
-        )
-        DropdownMenuItem(
-            text = { Text(stringResource(R.string.pattern_center_vertical_guide)) },
-            enabled = state.verticalReadingGuideEnabled,
-            onClick = {
-                closeOverflowMenu()
-                actions.onCenterVerticalReadingGuide()
-            },
-        )
+            )
+        }
         if (state.canAnnotate) {
             DropdownMenuItem(
                 text = { Text(stringResource(R.string.pattern_annotations_layers)) },
@@ -1901,11 +1954,91 @@ private fun PatternViewerOverflowMenu(
                 },
             )
         }
-        PatternRowMarkerMenuItems(
-            state = state,
-            actions = actions,
-            closeOverflowMenu = closeOverflowMenu,
+    }
+}
+
+@Composable
+private fun PatternReadingOptionsMenu(
+    expanded: Boolean,
+    close: () -> Unit,
+    state: TopBarState,
+    actions: TopBarActions,
+) {
+    val enabledState = stringResource(R.string.pattern_guide_enabled_state)
+    val disabledState = stringResource(R.string.pattern_guide_disabled_state)
+    val followingState = stringResource(R.string.pattern_row_following_active)
+    val pausedState = stringResource(R.string.pattern_row_following_paused)
+    AdaptiveDropdownMenu(expanded = expanded, onDismissRequest = close) {
+        PatternReadingLineMenuItem(
+            readingLineEnabled = state.readingLineEnabled,
+            onClick = {
+                close()
+                actions.onReadingLineToggle(!state.readingLineEnabled)
+            },
         )
+        if (state.currentRow != null) {
+            DropdownMenuItem(
+                modifier =
+                    Modifier.semantics {
+                        stateDescription = if (state.readingLineFollowCurrentRow) followingState else pausedState
+                    },
+                text = {
+                    Text(
+                        stringResource(
+                            if (state.readingLineFollowCurrentRow) {
+                                R.string.pattern_follow_current_row_off
+                            } else {
+                                R.string.pattern_follow_current_row_on
+                            },
+                        ),
+                    )
+                },
+                onClick = {
+                    close()
+                    actions.onReadingLineFollowToggle(!state.readingLineFollowCurrentRow)
+                },
+            )
+            if (!state.readingLineFollowCurrentRow) {
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.pattern_return_to_current_row)) },
+                    onClick = {
+                        close()
+                        actions.onReturnToCurrentRow()
+                    },
+                )
+            }
+        }
+        DropdownMenuItem(
+            modifier =
+                Modifier.semantics {
+                    stateDescription = if (state.verticalReadingGuideEnabled) enabledState else disabledState
+                },
+            text = {
+                Text(
+                    stringResource(
+                        if (state.verticalReadingGuideEnabled) {
+                            R.string.pattern_hide_vertical_guide
+                        } else {
+                            R.string.pattern_show_vertical_guide
+                        },
+                    ),
+                )
+            },
+            onClick = {
+                close()
+                actions.onVerticalReadingGuideToggle(!state.verticalReadingGuideEnabled)
+            },
+        )
+        if (state.verticalReadingGuideEnabled) {
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.pattern_center_vertical_guide)) },
+                onClick = {
+                    close()
+                    actions.onCenterVerticalReadingGuide()
+                },
+            )
+        }
+        PatternRowMarkerMenuItems(state = state, actions = actions, closeOverflowMenu = close)
     }
 }
 
@@ -1942,8 +2075,10 @@ private fun PatternRowMarkerMenuItems(
     closeOverflowMenu: () -> Unit,
 ) {
     val currentRow = state.currentRow ?: return
+    val countText =
+        mainCounterCountTextInline(MainCounterCountSlot(currentRow, state.countLabelType, state.countCustomLabel))
     DropdownMenuItem(
-        text = { Text(stringResource(R.string.pattern_set_row_marker_here, currentRow)) },
+        text = { Text(stringResource(R.string.pattern_set_row_marker_here, countText)) },
         onClick = {
             closeOverflowMenu()
             actions.onSaveReadingLineAsCurrentRow()
@@ -1991,26 +2126,17 @@ private fun PatternPageJumpDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.pattern_page_jump)) },
         text = {
-            TextField(
+            NumberInputField(
                 value = pageInput,
-                onValueChange = { value ->
-                    pageInput = value.filter(Char::isDigit)
-                },
-                singleLine = true,
-                label = { Text(stringResource(R.string.pattern_page_number)) },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                supportingText = {
-                    Text(
-                        text =
-                            stringResource(
-                                R.string.pattern_page_indicator,
-                                currentPage + 1,
-                                totalPages.coerceAtLeast(1),
-                            ),
-                    )
-                },
-                shape = MaterialTheme.shapes.medium,
-                colors = dialogTextFieldColors(),
+                onValueChange = { value -> pageInput = value.filter(Char::isDigit) },
+                label = stringResource(R.string.pattern_page_number),
+                options = NumberInputOptions(isLast = true, preserveRawInput = true),
+                supportingText =
+                    stringResource(
+                        R.string.pattern_page_indicator,
+                        currentPage + 1,
+                        totalPages.coerceAtLeast(1),
+                    ),
             )
         },
         confirmButton = {
@@ -2018,7 +2144,7 @@ private fun PatternPageJumpDialog(
                 onClick = { onConfirm((parsedPage ?: 1) - 1) },
                 enabled = isValidPage,
             ) {
-                Text(stringResource(R.string.confirm))
+                Text(stringResource(R.string.pattern_page_jump_go))
             }
         },
         dismissButton = {
@@ -2149,7 +2275,17 @@ private fun PatternViewerContent(
     val viewportFocusRequester = remember { FocusRequester() }
     val viewportStates = rememberSaveableStateHolder()
     BoxWithConstraints(modifier = modifier) {
-        val toolsMaxHeight = maxHeight / 2
+        val toolsMaxHeight =
+            if (state.annotationState.activeTool == PatternAnnotationTool.HIGHLIGHTER) {
+                val windowHeight =
+                    with(LocalDensity.current) {
+                        LocalWindowInfo.current.containerSize.height
+                            .toDp()
+                    }
+                windowHeight * PatternViewerDimens.HIGHLIGHTER_PALETTE_WINDOW_FRACTION
+            } else {
+                maxHeight / 2
+            }
         Column(modifier = Modifier.fillMaxSize()) {
             // Lukutilassa ohje täyttää näytön; työkalut näkyvät vain merkintätilassa.
             if (state.patternUri != null && state.annotationMode) {
@@ -2253,7 +2389,9 @@ private fun PatternViewerContent(
                                 if (state.readingLineEnabled) {
                                     ReadingLineOverlay(
                                         yFraction = state.readingLineYFraction,
-                                        currentRow = state.currentRow,
+                                        currentRow = state.countSlot?.count,
+                                        countLabelType = state.countSlot?.labelType ?: MainCounterLabelType.ROWS,
+                                        countCustomLabel = state.countSlot?.customLabel,
                                         followingCurrentRow = state.readingLineFollowCurrentRow,
                                         scale = viewport.state.scale,
                                         actions =
@@ -2310,7 +2448,7 @@ private data class PatternViewerContentState(
     val rendererError: String?,
     val renderedBitmap: Bitmap?,
     val patternName: String?,
-    val currentRow: Int?,
+    val countSlot: MainCounterCountSlot?,
     val readingLineEnabled: Boolean,
     val readingLineYFraction: Float,
     val readingLineFollowCurrentRow: Boolean?,
@@ -2397,9 +2535,6 @@ internal fun PatternAnnotationViewModel.patternToolbarActions() =
             ->
             addCallout(title, description, symbol, draftId = draftId)
         },
-        onUndo = ::undo,
-        onRedo = ::redo,
-        onClearPage = ::clearEditablePage,
         onAddChartTracker = ::addChartTrackerFromSelected,
         onEditText = ::editSelectedText,
         onCancelTextEdit = ::cancelTextEdit,
@@ -2421,6 +2556,8 @@ internal fun ReadingLineOverlay(
     scale: Float,
     actions: ReadingLineOverlayActions,
     modifier: Modifier = Modifier,
+    countLabelType: MainCounterLabelType = MainCounterLabelType.ROWS,
+    countCustomLabel: String? = null,
 ) {
     val sanitizedYFraction = sanitizeReadingLineYFraction(yFraction)
     val currentYFraction by rememberUpdatedState(sanitizedYFraction)
@@ -2441,16 +2578,19 @@ internal fun ReadingLineOverlay(
     BoxWithConstraints(modifier = modifier) {
         val density = LocalDensity.current
         val containerHeightPx = with(density) { maxHeight.toPx() }
-        val handleSize = 48.dp
+        val handleSize = PatternViewerDimens.ReadingLineHandleSize
+        val bandHeight =
+            (maxHeight * READING_LINE_BAND_HEIGHT_FRACTION)
+                .coerceAtLeast(PatternViewerDimens.ReadingLineMinimumBandHeight)
         val maxHandleOffset = (maxHeight - handleSize).coerceAtLeast(0.dp)
         val handleOffset = (maxHeight * sanitizedYFraction - (handleSize / 2f)).coerceIn(0.dp, maxHandleOffset)
         Canvas(modifier = Modifier.fillMaxSize()) {
             val centerY = size.height * sanitizedYFraction
-            val bandHeight = (size.height * READING_LINE_BAND_HEIGHT_FRACTION).coerceAtLeast(24.dp.toPx())
+            val bandHeightPx = bandHeight.toPx()
             drawRect(
                 color = bandColor,
-                topLeft = Offset(0f, centerY - (bandHeight / 2f)),
-                size = Size(size.width, bandHeight),
+                topLeft = Offset(0f, centerY - (bandHeightPx / 2f)),
+                size = Size(size.width, bandHeightPx),
             )
             drawLine(
                 color = lineColor,
@@ -2515,14 +2655,15 @@ internal fun ReadingLineOverlay(
                         )
                     },
         ) {
-            drawCircle(color = lineColor, radius = 6.dp.toPx(), center = center)
+            drawCircle(color = lineColor, radius = PatternViewerDimens.ReadingLineHandleRadius.toPx(), center = center)
         }
         currentRow?.let { currentRow ->
             ReadingLineRowLabel(
-                currentRow = currentRow,
-                yFraction = sanitizedYFraction,
+                countSlot = MainCounterCountSlot(currentRow, countLabelType, countCustomLabel),
+                bandCenter = maxHeight * sanitizedYFraction,
+                bandHeight = bandHeight,
                 containerHeight = maxHeight,
-                modifier = Modifier.align(Alignment.TopStart),
+                modifier = Modifier.align(Alignment.TopEnd),
             )
         }
     }
@@ -2634,38 +2775,26 @@ internal fun VerticalReadingGuideOverlay(
     }
 }
 
-internal fun horizontalReadingLineAccessibilityStep(
-    currentFraction: Float,
-    forward: Boolean,
-): Float =
-    sanitizeReadingLineYFraction(
-        currentFraction + if (forward) READING_LINE_ROW_STEP_FRACTION else -READING_LINE_ROW_STEP_FRACTION,
-    )
-
-internal fun verticalReadingGuideAccessibilityStep(
-    currentFraction: Float,
-    forward: Boolean,
-): Float =
-    sanitizeReadingGuideFraction(
-        currentFraction + if (forward) READING_LINE_ROW_STEP_FRACTION else -READING_LINE_ROW_STEP_FRACTION,
-    )
-
 @Composable
 private fun ReadingLineRowLabel(
-    currentRow: Int,
-    yFraction: Float,
+    countSlot: MainCounterCountSlot,
+    bandCenter: Dp,
+    bandHeight: Dp,
     containerHeight: Dp,
     modifier: Modifier = Modifier,
 ) {
-    val verticalMargin = 4.dp
+    val gap = PatternViewerDimens.ReadingLineLabelGap
     val density = LocalDensity.current
     var measuredLabelHeight by remember { mutableIntStateOf(0) }
     val labelHeight = with(density) { measuredLabelHeight.toDp() }
-    val maxOffset = containerHeight - labelHeight - verticalMargin
-    val boundedMaxOffset = if (maxOffset > verticalMargin) maxOffset else verticalMargin
+    val above = bandCenter - bandHeight / 2f - gap - labelHeight
+    val below = bandCenter + bandHeight / 2f + gap
     val labelOffset =
-        (containerHeight * yFraction - (labelHeight / 2f))
-            .coerceIn(verticalMargin, boundedMaxOffset)
+        when {
+            above >= 0.dp -> above
+            below + labelHeight <= containerHeight -> below
+            else -> null
+        }
 
     Surface(
         color = MaterialTheme.colorScheme.primaryContainer,
@@ -2674,12 +2803,16 @@ private fun ReadingLineRowLabel(
         tonalElevation = 2.dp,
         modifier =
             modifier
-                .padding(start = 8.dp)
-                .offset(y = labelOffset)
+                .padding(
+                    end =
+                        PatternViewerDimens.ReadingLineHandleSize / 2f +
+                            PatternViewerDimens.ReadingLineHandleRadius + gap,
+                ).offset(y = labelOffset ?: 0.dp)
+                .alpha(if (measuredLabelHeight > 0 && labelOffset != null) 1f else 0f)
                 .onSizeChanged { measuredLabelHeight = it.height },
     ) {
         Text(
-            text = stringResource(R.string.row_label_format, currentRow),
+            text = mainCounterCountText(countSlot),
             style = MaterialTheme.typography.labelSmall,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
@@ -2690,7 +2823,7 @@ private fun ReadingLineRowLabel(
 
 // Tilan ja toimintojen ryhmittely PatternViewerBottomBarille (S107)
 private data class BottomBarState(
-    val currentRow: Int,
+    val countSlot: MainCounterCountSlot,
     val currentPage: Int,
     val totalPages: Int,
 )
@@ -2712,7 +2845,7 @@ private fun PatternViewerBottomBar(
         tonalElevation = 3.dp,
         color = MaterialTheme.colorScheme.surface,
     ) {
-        Column(
+        BoxWithConstraints(
             modifier =
                 Modifier
                     .fillMaxWidth()
@@ -2725,74 +2858,117 @@ private fun PatternViewerBottomBar(
                             ),
                     ),
         ) {
-            BottomBarNavigationRow(state = state, actions = actions)
+            val textMeasurer = rememberTextMeasurer()
+            val style = MaterialTheme.typography.bodyMedium
+            val countSample = mainCounterCountText(state.countSlot.copy(count = 99_999))
+            val pageSample = stringResource(R.string.pattern_page_indicator_compact, 999, 999)
+            val labelWidth =
+                with(LocalDensity.current) {
+                    (
+                        textMeasurer.measure(countSample, style, maxLines = 1).size.width +
+                            textMeasurer.measure(pageSample, style, maxLines = 1).size.width
+                    ).toDp()
+                }
+            val minimumWidth =
+                labelWidth + PatternViewerDimens.BottomBarButtonSize * 5 + PatternViewerDimens.BottomBarCountSpacing
+            if (maxWidth >= minimumWidth) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    BottomBarCountControls(state = state, actions = actions, modifier = Modifier.weight(1f))
+                    BottomBarPageControls(state = state, actions = actions)
+                }
+            } else {
+                Column(verticalArrangement = Arrangement.spacedBy(PatternViewerDimens.BottomBarRowSpacing)) {
+                    BottomBarCountControls(state = state, actions = actions)
+                    BottomBarPageControls(state = state, actions = actions)
+                }
+            }
         }
     }
 }
 
 @Composable
-private fun BottomBarNavigationRow(
+private fun BottomBarCountControls(
+    state: BottomBarState,
+    actions: BottomBarActions,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = mainCounterCountText(state.countSlot),
+            style = MaterialTheme.typography.bodyMedium,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f, fill = false),
+        )
+        Spacer(modifier = Modifier.width(PatternViewerDimens.BottomBarCountSpacing))
+        IconButton(
+            onClick = actions.onPreviousRow,
+            modifier = Modifier.size(PatternViewerDimens.BottomBarButtonSize),
+        ) {
+            Icon(
+                imageVector = Icons.Default.Remove,
+                contentDescription = stringResource(R.string.counter_decrease),
+            )
+        }
+        IconButton(
+            onClick = actions.onNextRow,
+            modifier = Modifier.size(PatternViewerDimens.BottomBarButtonSize),
+        ) {
+            Icon(
+                imageVector = Icons.Default.Add,
+                contentDescription = stringResource(R.string.counter_increase),
+            )
+        }
+    }
+}
+
+@Composable
+private fun BottomBarPageControls(
     state: BottomBarState,
     actions: BottomBarActions,
 ) {
-    FlowRow(
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalArrangement = Arrangement.spacedBy(4.dp),
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                text = stringResource(R.string.row_label_format, state.currentRow),
-                style = MaterialTheme.typography.bodyMedium,
+    val page = state.currentPage + 1
+    val total = state.totalPages.coerceAtLeast(1)
+    val pageDescription = stringResource(R.string.pattern_page_indicator, page, total)
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        IconButton(
+            onClick = actions.onPreviousPage,
+            modifier = Modifier.size(PatternViewerDimens.BottomBarButtonSize),
+            enabled = state.currentPage > 0,
+        ) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                contentDescription = stringResource(R.string.pattern_previous_page),
             )
-            Spacer(modifier = Modifier.width(8.dp))
-            IconButton(onClick = actions.onPreviousRow) {
-                Icon(
-                    imageVector = Icons.Default.Remove,
-                    contentDescription = stringResource(R.string.counter_decrease),
-                )
-            }
-            IconButton(onClick = actions.onNextRow) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = stringResource(R.string.counter_increase),
-                )
-            }
         }
-        IconButton(onClick = actions.onOpenBookmarks) {
+        Text(
+            text = stringResource(R.string.pattern_page_indicator_compact, page, total),
+            style = MaterialTheme.typography.bodyMedium,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f, fill = false).clearAndSetSemantics { contentDescription = pageDescription },
+        )
+        IconButton(
+            onClick = actions.onNextPage,
+            modifier = Modifier.size(PatternViewerDimens.BottomBarButtonSize),
+            enabled = state.currentPage < state.totalPages - 1,
+        ) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                contentDescription = stringResource(R.string.pattern_next_page),
+            )
+        }
+        IconButton(
+            onClick = actions.onOpenBookmarks,
+            modifier = Modifier.size(PatternViewerDimens.BottomBarButtonSize),
+        ) {
             Icon(
                 imageVector = Icons.Outlined.BookmarkBorder,
                 contentDescription = stringResource(R.string.pattern_bookmarks),
             )
-        }
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            IconButton(
-                onClick = actions.onPreviousPage,
-                enabled = state.currentPage > 0,
-            ) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = stringResource(R.string.pattern_previous_page),
-                )
-            }
-            Text(
-                text =
-                    stringResource(
-                        R.string.pattern_page_indicator,
-                        state.currentPage + 1,
-                        state.totalPages.coerceAtLeast(1),
-                    ),
-                style = MaterialTheme.typography.bodyMedium,
-            )
-            IconButton(
-                onClick = actions.onNextPage,
-                enabled = state.currentPage < state.totalPages - 1,
-            ) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-                    contentDescription = stringResource(R.string.pattern_next_page),
-                )
-            }
         }
     }
 }

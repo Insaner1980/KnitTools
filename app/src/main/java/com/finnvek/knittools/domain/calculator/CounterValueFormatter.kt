@@ -5,7 +5,6 @@ import com.finnvek.knittools.domain.model.CraftType
 import com.finnvek.knittools.domain.model.MainCounterLabelType
 import com.finnvek.knittools.domain.model.ProjectCounter
 import com.finnvek.knittools.domain.model.ProjectCounterType
-import com.finnvek.knittools.domain.model.RowReminder
 import com.finnvek.knittools.domain.model.resolvedMainCounterLabelType
 import com.finnvek.knittools.domain.model.sanitizeMainCounterCustomLabel
 
@@ -36,12 +35,6 @@ sealed interface CounterValueDisplay {
 
     /** Toistojakso suoritettu loppuun. */
     data object SectionComplete : CounterValueDisplay
-
-    /** Toistuva muistutus: monesko esiintymä ja toistoväli riveinä. */
-    data class ReminderRepeat(
-        val occurrence: Int,
-        val intervalRows: Int,
-    ) : CounterValueDisplay
 }
 
 data class MainCounterValueDisplay(
@@ -187,21 +180,6 @@ object CounterValueFormatter {
             totalRepeats = totalRepeats,
             rowInRepeat = RepeatSectionLogic.currentRowInRepeat(counter, mainRowCount),
             rowsInRepeat = endRow - startRow + 1,
-        )
-    }
-
-    /**
-     * Näyttömalli toistuvalle muistutukselle: monesko esiintymä ja toistoväli.
-     * Palauttaa null, jos muistutus ei ole toistuva.
-     */
-    fun forReminderRepeat(
-        reminder: RowReminder,
-        currentRow: Int,
-    ): CounterValueDisplay.ReminderRepeat? {
-        val interval = reminder.repeatInterval?.takeIf { it > 0 } ?: return null
-        return CounterValueDisplay.ReminderRepeat(
-            occurrence = ReminderLogic.repeatCount(reminder, currentRow),
-            intervalRows = interval,
         )
     }
 }

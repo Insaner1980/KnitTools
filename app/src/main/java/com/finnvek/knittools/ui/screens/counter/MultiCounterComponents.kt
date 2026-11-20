@@ -24,7 +24,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
@@ -36,7 +35,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -68,7 +66,6 @@ import com.finnvek.knittools.ui.components.NumberInputOptions
 import com.finnvek.knittools.ui.components.ProMarker
 import com.finnvek.knittools.ui.components.ScrollableFormDialog
 import com.finnvek.knittools.ui.components.SegmentedToggle
-import com.finnvek.knittools.ui.components.dialogTextFieldColors
 import com.finnvek.knittools.ui.components.rememberCurrentLocale
 import com.finnvek.knittools.ui.theme.CounterDimens
 import com.finnvek.knittools.ui.theme.counterExtraName
@@ -206,7 +203,7 @@ fun CounterListItem(
 
     if (showResetDialog) {
         ConfirmationDialog(
-            title = stringResource(R.string.reset_counter),
+            title = stringResource(R.string.reset_counter_title),
             message = stringResource(R.string.reset_counter_message),
             confirmText = stringResource(R.string.reset_counter_name),
             isDestructive = true,
@@ -266,15 +263,6 @@ internal fun CounterValueDisplay.asText(): String =
 
         CounterValueDisplay.SectionComplete -> {
             stringResource(R.string.repeat_section_complete)
-        }
-
-        is CounterValueDisplay.ReminderRepeat -> {
-            pluralStringResource(
-                R.plurals.reminder_repeat_occurrence_format,
-                intervalRows,
-                occurrence,
-                intervalRows,
-            )
         }
     }
 
@@ -347,14 +335,13 @@ private fun RenameCounterDialog(
 
     ScrollableFormDialog(
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.rename_counter)) },
+        title = { Text(stringResource(R.string.rename_counter_title)) },
         text = {
-            TextField(
+            LabeledTextField(
                 value = name,
                 onValueChange = { if (it.length <= ProjectCounterLogic.MAX_NAME_LENGTH) name = it },
-                singleLine = true,
+                label = stringResource(R.string.counter_name),
                 modifier = Modifier.fillMaxWidth(),
-                colors = dialogTextFieldColors(),
             )
         },
         confirmButton = {
@@ -362,7 +349,7 @@ private fun RenameCounterDialog(
                 onClick = { onConfirm(name.trim()) },
                 enabled = name.isNotBlank(),
             ) {
-                Text(stringResource(R.string.confirm))
+                Text(stringResource(R.string.save))
             }
         },
         dismissButton = {

@@ -7,12 +7,11 @@
     <string name="pattern_bookmark_rename">Mudar o nome do marcador</string>
     <string name="pattern_bookmark_rename_title">Mudar o nome do marcador</string>
     <string name="pattern_bookmark_delete_title">Eliminar marcador?</string>
-    <string name="pattern_bookmark_delete_message">Eliminar «%1$s»?</string>
+    <string name="pattern_bookmark_delete_message">O marcador «%1$s» será eliminado.</string>
     <string name="pattern_bookmark_empty">Ainda não existem marcadores.</string>
     <string name="pattern_bookmark_loading">A carregar marcadores…</string>
     <string name="pattern_bookmark_previous">Marcador anterior</string>
     <string name="pattern_bookmark_next">Marcador seguinte</string>
-    <string name="pattern_bookmark_selected">Marcador selecionado</string>
     <string name="pattern_bookmark_accessibility_description">Ir para o marcador %1$s, página %2$d</string>
     <string name="pattern_bookmark_action_accessibility_description">%1$s: %2$s</string>
     <string name="pattern_bookmark_name_required">É necessário indicar um nome para o marcador.</string>
@@ -30,11 +29,11 @@
     <string name="pattern_center_vertical_guide">Centrar guia vertical</string>
     <string name="pattern_vertical_guide_description">Guia vertical</string>
     <string name="pattern_follow_current_row_on">Seguir o contador principal</string>
-    <string name="pattern_follow_current_row_off">Parar de seguir</string>
+    <string name="pattern_follow_current_row_off">Deixar de seguir o contador</string>
     <string name="pattern_return_to_current_row">Voltar ao valor atual</string>
     <string name="pattern_follow_resumed">Seguimento retomado no valor atual.</string>
     <string name="pattern_follow_resumed_uncalibrated">A posição do contador não está calibrada. Seguimento retomado a partir da posição atual.</string>
-    <string name="pattern_set_row_marker_here">Colocar aqui um marcador para o valor %1$d</string>
+    <string name="pattern_set_row_marker_here">Marcar %1$s aqui</string>
     <string name="pattern_follow_page_announcement">O valor %1$d moveu a linha de leitura para a página %2$d de %3$d.</string>
     <string name="pattern_bookmark_jump_announcement">%1$s, página %2$d de %3$d. Seguimento do contador em pausa.</string>
     <string name="pattern_reading_line_move_up">Mover a linha de leitura para cima</string>

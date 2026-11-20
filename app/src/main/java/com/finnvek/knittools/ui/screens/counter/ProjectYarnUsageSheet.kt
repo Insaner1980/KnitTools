@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -69,6 +71,8 @@ fun ProjectYarnUsageSheet(
     val draft = state.draft ?: return
     var confirmDelete by rememberSaveable(draft.usageId) { mutableStateOf(initiallyConfirmDelete) }
     val headingFocus = remember { FocusRequester() }
+    val conversionFocus = remember { FocusRequester() }
+    val conversionBringIntoView = remember { BringIntoViewRequester() }
     ModalBottomSheet(
         onDismissRequest = { if (!state.busy) actions.onDismiss() },
         sheetState = sheetState,
@@ -76,7 +80,7 @@ fun ProjectYarnUsageSheet(
         sheetMaxWidth = ContentWidthPolicy.Form.maxWidth,
     ) {
         LaunchedEffect(Unit) {
-            headingFocus.requestFocus()
+            if (draft.pendingUnit == null) headingFocus.requestFocus()
         }
         Column(
             modifier =
@@ -108,6 +112,7 @@ fun ProjectYarnUsageSheet(
             SegmentedToggle(
                 options = units.map { stringResource(it.titleResource()) },
                 selectedIndex = units.indexOf(draft.unit),
+                pendingIndex = draft.pendingUnit?.let { units.indexOf(it) },
                 onSelect = { actions.onUnit(units[it]) },
                 modifier = Modifier.testTag("yarn_usage_unit"),
                 itemTestTagPrefix = "yarn_usage_unit",
@@ -118,15 +123,31 @@ fun ProjectYarnUsageSheet(
                     style = MaterialTheme.typography.bodySmall,
                 )
             }
-            if (draft.pendingUnit != null) {
-                Text(
-                    stringResource(R.string.yarn_usage_conversion_required),
-                    style = MaterialTheme.typography.bodyMedium,
+            if (draft.conversionEnabled) {
+                if (!draft.conversionValid) {
+                    Text(
+                        stringResource(R.string.yarn_usage_conversion_required),
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
+                UsageField(
+                    draft,
+                    YarnUsageField.LENGTH,
+                    actions.onEdit,
+                    isLast = false,
+                    modifier = Modifier.focusRequester(conversionFocus).bringIntoViewRequester(conversionBringIntoView),
                 )
+                UsageField(draft, YarnUsageField.WEIGHT, actions.onEdit, isLast = false)
+                LaunchedEffect(draft.pendingUnit) {
+                    if (draft.pendingUnit != null) {
+                        conversionFocus.requestFocus()
+                        conversionBringIntoView.bringIntoView()
+                    }
+                }
             }
             UsageField(draft, YarnUsageField.PLANNED, actions.onEdit, isLast = false)
             UsageField(draft, YarnUsageField.ALLOCATED, actions.onEdit, isLast = false)
-            UsageField(draft, YarnUsageField.USED, actions.onEdit, isLast = !draft.conversionEnabled)
+            UsageField(draft, YarnUsageField.USED, actions.onEdit, isLast = true)
             TextButton(
                 onClick = { actions.onConversion(!draft.conversionEnabled) },
                 enabled = !state.busy,
@@ -141,16 +162,6 @@ fun ProjectYarnUsageSheet(
                         },
                     ),
                 )
-            }
-            if (draft.conversionEnabled) {
-                UsageField(draft, YarnUsageField.LENGTH, actions.onEdit, isLast = false)
-                UsageField(draft, YarnUsageField.WEIGHT, actions.onEdit, isLast = true)
-                if (!draft.conversionValid) {
-                    Text(
-                        stringResource(R.string.yarn_usage_conversion_required),
-                        style = MaterialTheme.typography.bodySmall,
-                    )
-                }
             }
             UsageDerivedSummary(draft)
             state.error?.let { error ->
@@ -213,6 +224,7 @@ private fun UsageField(
     field: YarnUsageField,
     onEdit: (YarnUsageField, String, Locale) -> Unit,
     isLast: Boolean,
+    modifier: Modifier = Modifier,
 ) {
     val input = draft.input(field)
     val locale = rememberCurrentLocale()
@@ -233,6 +245,15 @@ private fun UsageField(
             ratio -> YarnUsageUnit.GRAMS
             else -> draft.unit
         }
+    val suffix =
+        stringResource(
+            when (unit) {
+                YarnUsageUnit.METERS -> R.string.measurement_unit_meter_short
+                YarnUsageUnit.YARDS -> R.string.measurement_unit_yard_short
+                YarnUsageUnit.GRAMS -> R.string.unit_g
+                YarnUsageUnit.SKEINS -> R.string.yarn_usage_skeins_suffix
+            },
+        )
     val error =
         when (input.error) {
             MeasurementNumberError.MUST_BE_POSITIVE -> {
@@ -250,16 +271,17 @@ private fun UsageField(
     NumberInputField(
         value = input.text,
         onValueChange = { onEdit(field, it, locale) },
-        label = stringResource(R.string.measurement_field_with_unit, label, stringResource(unit.titleResource())),
+        label = label,
         options =
             NumberInputOptions(
                 isDecimal = true,
+                suffix = suffix,
                 preserveRawInput = true,
                 allowZero = !ratio,
                 isLast = isLast,
             ),
         errorMessage = error?.let { stringResource(it) },
-        inputModifier = Modifier.testTag("yarn_usage_input_${field.name}"),
+        inputModifier = modifier.testTag("yarn_usage_input_${field.name}"),
     )
 }
 

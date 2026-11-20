@@ -2,7 +2,6 @@ package com.finnvek.knittools.repository
 
 import android.content.Context
 import android.net.Uri
-import com.finnvek.knittools.R
 import com.finnvek.knittools.data.local.CounterProjectEntity
 import com.finnvek.knittools.data.local.ImmediateDatabaseTransactionRunner
 import com.finnvek.knittools.data.local.PatternAnnotationDao
@@ -46,7 +45,6 @@ class SavedPatternRepositoryDomainApiTest {
     @Before
     fun setup() {
         context = mockk(relaxed = true)
-        every { context.getString(R.string.imported_pattern_designer) } returns "Imported"
     }
 
     @Test
@@ -180,7 +178,7 @@ class SavedPatternRepositoryDomainApiTest {
 
                     assertEquals(99L, importedId)
                     assertNull(ignoredId)
-                    assertEquals("Imported", dao.lastInserted?.designerName)
+                    assertNull(dao.lastInserted?.designerName)
                 }
             } finally {
                 pdf.delete()

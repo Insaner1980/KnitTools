@@ -15,12 +15,15 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -33,10 +36,10 @@ import com.finnvek.knittools.analytics.UsageDetail
 import com.finnvek.knittools.domain.calculator.MeasurementNumberParser
 import com.finnvek.knittools.domain.calculator.YarnEstimator
 import com.finnvek.knittools.domain.calculator.formatDecimalForDisplay
+import com.finnvek.knittools.domain.model.YarnCard
 import com.finnvek.knittools.domain.model.YarnEstimate
 import com.finnvek.knittools.ui.TrackCalculatorResult
 import com.finnvek.knittools.ui.components.AnimatedResultNumber
-import com.finnvek.knittools.ui.components.BadgePill
 import com.finnvek.knittools.ui.components.InfoNote
 import com.finnvek.knittools.ui.components.NumberInputField
 import com.finnvek.knittools.ui.components.NumberInputOptions
@@ -45,28 +48,38 @@ import com.finnvek.knittools.ui.components.ResultCard
 import com.finnvek.knittools.ui.components.ResultPlaceholder
 import com.finnvek.knittools.ui.components.ToolInputCard
 import com.finnvek.knittools.ui.components.ToolScreenScaffold
+import com.finnvek.knittools.ui.components.YarnCardPickerSheet
 import com.finnvek.knittools.ui.components.rememberCurrentLocale
 import com.finnvek.knittools.ui.components.skeinCountText
 import com.finnvek.knittools.ui.screens.home.HomeViewModel
+import kotlinx.coroutines.launch
+import java.math.RoundingMode
 import java.util.Locale
-import kotlin.math.ceil
+import kotlin.math.abs
+import kotlin.math.round
 
 @Composable
 fun YarnEstimatorScreen(
     onBack: () -> Unit,
-    onSavedYarns: () -> Unit = {},
     homeViewModel: HomeViewModel = hiltViewModel(),
+    viewModel: YarnEstimatorViewModel = hiltViewModel(),
+    onAddYarn: (() -> Unit)? = null,
 ) {
     val useImperial by homeViewModel.useImperial.collectAsStateWithLifecycle()
+    val cards by viewModel.yarnCards.collectAsStateWithLifecycle(initialValue = emptyList())
+    val snackbar = remember { SnackbarHostState() }
 
     ToolScreenScaffold(
         title = stringResource(R.string.tool_yarn_estimator),
         onBack = onBack,
+        snackbarHost = { SnackbarHost(snackbar) },
     ) { padding ->
         Box(modifier = Modifier.fillMaxSize().padding(padding)) {
             YarnEstimatorContent(
-                onSavedYarns = onSavedYarns,
+                cards = cards,
+                snackbar = snackbar,
                 useImperial = useImperial,
+                onAddYarn = onAddYarn,
             )
         }
     }
@@ -74,9 +87,13 @@ fun YarnEstimatorScreen(
 
 @Composable
 private fun YarnEstimatorContent(
-    onSavedYarns: () -> Unit,
+    cards: List<YarnCard>,
+    snackbar: SnackbarHostState,
     useImperial: Boolean,
+    onAddYarn: (() -> Unit)?,
 ) {
+    var showPicker by rememberSaveable { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
     var totalYarn by rememberSaveable { mutableStateOf("") }
     var yarnPerSkein by rememberSaveable { mutableStateOf("") }
     var weightPerSkein by rememberSaveable { mutableStateOf("") }
@@ -88,6 +105,31 @@ private fun YarnEstimatorContent(
 
     TrackCalculatorResult(UsageDetail.TOOL_YARN, result != null)
 
+    if (showPicker) {
+        val missingValues = stringResource(R.string.yarn_estimator_card_missing_values)
+        YarnCardPickerSheet(
+            savedYarnCards = cards,
+            onDismiss = { showPicker = false },
+            onAddYarn =
+                onAddYarn?.let { navigate ->
+                    {
+                        showPicker = false
+                        navigate()
+                    }
+                },
+            onSelect = { card ->
+                val fields = savedYarnSkeinFields(card, useImperial, locale)
+                showPicker = false
+                if (fields == null) {
+                    scope.launch { snackbar.showSnackbar(missingValues) }
+                } else {
+                    yarnPerSkein = fields.length
+                    weightPerSkein = fields.weight
+                }
+            },
+        )
+    }
+
     Column(
         modifier =
             Modifier
@@ -97,7 +139,7 @@ private fun YarnEstimatorContent(
                 .verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        SavedYarnActionBar(onSavedYarns = onSavedYarns)
+        SavedYarnActionBar(onSavedYarns = { showPicker = true })
 
         ToolInputCard {
             YarnInputFields(
@@ -188,34 +230,29 @@ private const val EXAMPLE_GRAMS_PER_SKEIN = "50"
 private fun YarnResultCard(result: YarnEstimate) {
     val locale = rememberCurrentLocale()
     ResultCard(title = stringResource(R.string.result)) {
-        AnimatedResultNumber(
-            targetValue = skeinCountText(result.skeinsNeeded),
-        ) { value ->
-            Text(
-                text = value,
-                style = MaterialTheme.typography.displayMedium,
-                color = MaterialTheme.colorScheme.primary,
-            )
-        }
+        AnimatedResultNumber(targetValue = skeinCountText(result.skeinsNeeded))
         Spacer(modifier = Modifier.height(8.dp))
-        BadgePill(
-            uppercase = false,
+        Text(
             text =
                 stringResource(
                     R.string.total_weight,
                     formatDecimalForDisplay(result.totalWeight, locale, 0, 0),
                 ),
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text =
-                stringResource(
-                    R.string.estimated_skeins,
-                    formatSkeinsEstimateForDisplay(result.exactSkeins, locale),
-                ),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+        exactSkeinsText(result.exactSkeins, locale)?.let { exactNeed ->
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text =
+                    stringResource(
+                        R.string.estimated_skeins,
+                        exactNeed,
+                    ),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
     }
     Spacer(modifier = Modifier.height(8.dp))
     InfoNote(text = stringResource(R.string.extra_skein_note))
@@ -233,12 +270,50 @@ private fun calculateYarnEstimate(
     return YarnEstimator.estimate(total, perSkein, weight)
 }
 
-private fun formatSkeinsEstimateForDisplay(
+internal fun exactSkeinsText(
     exactSkeins: Double,
     locale: Locale,
-): String {
-    val roundedUp = ceil(exactSkeins * 100.0 - DISPLAY_ROUNDING_EPSILON) / 100.0
-    return formatDecimalForDisplay(roundedUp, locale, minimumFractionDigits = 2, maximumFractionDigits = 2)
+): String? =
+    if (abs(exactSkeins - round(exactSkeins)) > DISPLAY_ROUNDING_EPSILON) {
+        formatDecimalForDisplay(exactSkeins, locale, 0, 1)
+    } else {
+        null
+    }
+
+internal data class YarnEstimatorSkeinFields(
+    val length: String,
+    val weight: String,
+)
+
+internal fun savedYarnSkeinFields(
+    card: YarnCard,
+    useImperial: Boolean,
+    locale: Locale,
+): YarnEstimatorSkeinFields? {
+    val meters = MeasurementNumberParser.parse(card.lengthMeters.replace(',', '.'), Locale.ROOT).value
+    val grams = MeasurementNumberParser.parse(card.weightGrams.replace(',', '.'), Locale.ROOT).value
+    val length = meters?.let { if (useImperial) it / METERS_PER_YARD else it }?.takeIf { it.isFinite() }
+    if (length == null && grams == null) return null
+    return YarnEstimatorSkeinFields(
+        length =
+            length
+                ?.let {
+                    val rounded = it.toBigDecimal().setScale(0, RoundingMode.HALF_UP).toDouble()
+                    formatDecimalForDisplay(rounded, locale, 0, 0, useGrouping = false)
+                }.orEmpty(),
+        weight =
+            grams
+                ?.let {
+                    formatDecimalForDisplay(
+                        it,
+                        locale,
+                        0,
+                        it.toBigDecimal().scale().coerceAtLeast(0),
+                        useGrouping = false,
+                    )
+                }.orEmpty(),
+    )
 }
 
 private const val DISPLAY_ROUNDING_EPSILON = 1e-9
+private const val METERS_PER_YARD = 0.9144

@@ -311,7 +311,7 @@ fun SavedPatternDetailScreen(
                     OverviewEmptyText(R.string.pattern_open_failed)
                 } else {
                     SavedPatternProjectSection(
-                        label = stringResource(R.string.saved_pattern_detail_attach_to_project),
+                        label = stringResource(R.string.web_pattern_attach),
                         description = null,
                         onAttach = { showProjectPicker = true },
                     )
@@ -340,7 +340,7 @@ private fun SavedPatternDetailMenu(
             )
         }
         DropdownMenuItem(
-            text = { Text(deleteLabel) },
+            text = { Text(deleteLabel, color = MaterialTheme.colorScheme.error) },
             onClick = {
                 expanded = false
                 onDelete()
@@ -373,7 +373,7 @@ private fun SavedPatternDetailHeader(
             style = MaterialTheme.typography.headlineMedium,
             color = MaterialTheme.colorScheme.onBackground,
         )
-        pattern.designerName.takeIf { it.isNotBlank() }?.let { designer ->
+        pattern.designerName?.takeIf(String::isNotBlank)?.let { designer ->
             Text(
                 text = designer,
                 style = MaterialTheme.typography.bodyLarge,
@@ -422,11 +422,7 @@ private fun WebPatternSourceSection(url: WebPatternUrl) {
                 color = MaterialTheme.colorScheme.error,
             )
         }
-        listOf(
-            R.string.web_pattern_opens_original,
-            R.string.web_pattern_not_offline,
-            R.string.web_pattern_source_controlled,
-        ).forEach { OverviewEmptyText(it) }
+        OverviewEmptyText(R.string.web_pattern_offline_note)
     }
 }
 

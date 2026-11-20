@@ -163,8 +163,12 @@ class CounterContentMutationsTest : CounterViewModelFixture() {
             coEvery { notes.saveToMyYarn(19L) } returns null
             val viewModel = viewModel(yarnNoteRepositoryOverride = notes, proManagerOverride = purchasedPro())
             val errors = mutableListOf<Unit>()
+            val savedProjects = mutableListOf<Long>()
             backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
                 viewModel.projectContentErrors.collect { errors.add(it) }
+            }
+            backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+                viewModel.projectYarnSaved.collect { savedProjects.add(it) }
             }
             advanceUntilIdle()
             viewModel.saveProjectYarnNote("Wool", "", 1, "")
@@ -173,10 +177,18 @@ class CounterContentMutationsTest : CounterViewModelFixture() {
             advanceUntilIdle()
 
             assertEquals(3, errors.size)
-            coEvery { notes.saveToMyYarn(19L) } returns 29L
+            assertTrue(savedProjects.isEmpty())
+            val persistedCard = CompletableDeferred<Long>()
+            coEvery { notes.saveToMyYarn(19L) } coAnswers { persistedCard.await() }
+            assertTrue(viewModel.saveProjectYarnNoteToMyYarn(19L))
             assertTrue(viewModel.saveProjectYarnNoteToMyYarn(19L))
             advanceUntilIdle()
+            assertTrue(savedProjects.isEmpty())
+
+            persistedCard.complete(29L)
+            advanceUntilIdle()
             assertEquals(3, errors.size)
+            assertEquals(listOf(7L), savedProjects)
             coVerify(exactly = 2) { notes.saveToMyYarn(19L) }
         }
 

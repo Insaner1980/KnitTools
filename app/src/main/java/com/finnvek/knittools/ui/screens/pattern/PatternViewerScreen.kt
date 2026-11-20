@@ -129,7 +129,6 @@ import com.finnvek.knittools.domain.model.PatternAnnotationOwner
 import com.finnvek.knittools.domain.model.ProjectDocument
 import com.finnvek.knittools.domain.model.READING_LINE_MAX_Y_FRACTION
 import com.finnvek.knittools.domain.model.READING_LINE_MIN_Y_FRACTION
-import com.finnvek.knittools.domain.model.READING_LINE_ROW_STEP_FRACTION
 import com.finnvek.knittools.domain.model.SavedPattern
 import com.finnvek.knittools.domain.model.isWebPatternCompatible
 import com.finnvek.knittools.domain.model.sanitizeReadingGuideFraction
@@ -2775,22 +2774,6 @@ internal fun VerticalReadingGuideOverlay(
         }
     }
 }
-
-internal fun horizontalReadingLineAccessibilityStep(
-    currentFraction: Float,
-    forward: Boolean,
-): Float =
-    sanitizeReadingLineYFraction(
-        currentFraction + if (forward) READING_LINE_ROW_STEP_FRACTION else -READING_LINE_ROW_STEP_FRACTION,
-    )
-
-internal fun verticalReadingGuideAccessibilityStep(
-    currentFraction: Float,
-    forward: Boolean,
-): Float =
-    sanitizeReadingGuideFraction(
-        currentFraction + if (forward) READING_LINE_ROW_STEP_FRACTION else -READING_LINE_ROW_STEP_FRACTION,
-    )
 
 @Composable
 private fun ReadingLineRowLabel(

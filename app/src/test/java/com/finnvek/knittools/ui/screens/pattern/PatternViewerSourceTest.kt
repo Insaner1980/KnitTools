@@ -626,7 +626,9 @@ class PatternViewerSourceTest {
                 "@OptIn(ExperimentalMaterial3Api::class)",
             )
         assertTrue(
-            topBarActions.contains("onExportAnnotations = { exportContext?.let(annotationViewModel::requestAnnotatedPdfExport) }"),
+            topBarActions.contains(
+                "onExportAnnotations = { exportContext?.let(annotationViewModel::requestAnnotatedPdfExport) }",
+            ),
         )
         assertTrue(viewer.contains("CollectWithLifecycleEffect({ exportRequests }) { requestId ->"))
         assertTrue(viewer.contains("annotationActions.onLaunchExportDestination(requestId, state.exportContext)"))

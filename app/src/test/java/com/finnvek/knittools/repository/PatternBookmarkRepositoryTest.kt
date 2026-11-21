@@ -166,9 +166,10 @@ class PatternBookmarkRepositoryTest {
             val bookmarkDao = mockk<PatternBookmarkDao>()
             val repository = repository(bookmarkDao, activeLayerDao())
             coEvery { bookmarkDao.getById(8L) } returns null
-            coEvery { bookmarkDao.getById(9L) } returns bookmark(id = 9, name = "Old", page = 3, y = 0.8f).copy(
-                documentKey = "saved:other:v1",
-            )
+            coEvery { bookmarkDao.getById(9L) } returns
+                bookmark(id = 9, name = "Old", page = 3, y = 0.8f).copy(
+                    documentKey = "saved:other:v1",
+                )
 
             assertEquals(PatternBookmarkMutationResult.StaleDocument, repository.jumpTo(7L, "saved:other:v1", 8L))
             assertEquals(PatternBookmarkMutationResult.NotFound, repository.jumpTo(7L, DOCUMENT_KEY, 8L))

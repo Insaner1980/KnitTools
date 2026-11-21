@@ -23,10 +23,10 @@ class ReadingLineLocationResolverTest {
     }
 
     @Test
-    fun `ambiguous exact markers use current-page row fallback`() {
+    fun `ambiguous exact markers use row fallback even with a current-page bracket`() {
         val result =
             resolve(
-                markers = listOf(marker(8, 1, 0.2f), marker(8, 2, 0.8f)),
+                markers = listOf(marker(6, 0, 0.2f), marker(10, 0, 0.6f), marker(8, 1, 0.2f), marker(8, 2, 0.8f)),
                 previousRow = 7,
                 newRow = 8,
             )

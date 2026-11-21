@@ -15,7 +15,6 @@ import com.finnvek.knittools.domain.model.PatternDisplayNames
 import com.finnvek.knittools.domain.model.ProjectDocument
 import com.finnvek.knittools.domain.model.ProjectDocumentLabelValidation
 import com.finnvek.knittools.domain.model.inDocumentOrder
-import com.finnvek.knittools.domain.model.primaryFallback
 import com.finnvek.knittools.domain.model.sanitizeReadingGuideFraction
 import com.finnvek.knittools.domain.model.sanitizeReadingLineYFraction
 import com.finnvek.knittools.domain.model.takeWithoutSplittingSurrogatePair
@@ -493,15 +492,11 @@ class ProjectDocumentRepository
             if (documentDao.getByDocumentKey(projectId, normalizedKey) != null) {
                 return ProjectDocumentMutationResult.DuplicateDocumentKey
             }
-            val existing =
-                documentDao
-                    .getForProject(
-                        projectId,
-                    ).map(ProjectDocumentEntity::toDomain)
-                    .inDocumentOrder()
+            val highestSortOrder = documentDao.getHighestSortOrder(projectId)
+            val isFirstDocument = highestSortOrder == null
             val nextSortOrder =
-                (documentDao.getHighestSortOrder(projectId).toLong() + 1L)
-                    .coerceAtMost(Int.MAX_VALUE.toLong())
+                ((highestSortOrder ?: -1).toLong() + 1L)
+                    .coerceIn(0L, Int.MAX_VALUE.toLong())
                     .toInt()
             val now = System.currentTimeMillis()
             val entity =
@@ -511,8 +506,8 @@ class ProjectDocumentRepository
                     documentKey = normalizedKey,
                     label = validated.label,
                     localPdfUri = normalizedUri,
-                    sortOrder = nextSortOrder.coerceAtLeast(0),
-                    isPrimary = existing.isEmpty(),
+                    sortOrder = nextSortOrder,
+                    isPrimary = isFirstDocument,
                     currentPage = 0,
                     rowMapping = null,
                     readingLineEnabled = false,
@@ -524,7 +519,7 @@ class ProjectDocumentRepository
                     updatedAt = now,
                 )
             val id = documentDao.insert(entity)
-            if (existing.isEmpty()) {
+            if (isFirstDocument) {
                 layerRepository.activateProjectLayerInTransaction(projectId, normalizedKey)
             }
             return ProjectDocumentMutationResult.Added(entity.copy(id = id).toDomain())
@@ -592,7 +587,7 @@ class ProjectDocumentRepository
                         .filterNot { it.id == documentId }
                         .map(ProjectDocumentEntity::toDomain)
                         .inDocumentOrder()
-                val fallback = remaining.primaryFallback()
+                val fallback = remaining.firstOrNull()
                 val now = System.currentTimeMillis()
                 updatePrimary(target, fallback, now)
                 updateActiveLayer(target, fallback)

@@ -45,7 +45,7 @@ class ProjectDocumentRepositoryTest {
         coEvery { documentDao.getByUri(any(), any()) } returns null
         coEvery { documentDao.getByDocumentKey(any(), any()) } returns null
         coEvery { documentDao.insert(any()) } returns 41L
-        coEvery { documentDao.getHighestSortOrder(PROJECT_ID) } returns -1
+        coEvery { documentDao.getHighestSortOrder(PROJECT_ID) } returns null
         coEvery { documentDao.updateLabel(any(), any(), any(), any()) } returns 1
         coEvery { documentDao.updateSortOrder(any(), any(), any(), any()) } returns 1
         coEvery { documentDao.clearPrimary(any(), any()) } returns 1
@@ -77,13 +77,13 @@ class ProjectDocumentRepositoryTest {
             assertEquals(true, inserted.captured.isPrimary)
             assertEquals(0, inserted.captured.sortOrder)
             assertEquals("Main chart", inserted.captured.label)
+            coVerify(exactly = 0) { documentDao.getForProject(PROJECT_ID) }
             coVerify { layerRepository.activateProjectLayerInTransaction(PROJECT_ID, "local:a") }
         }
 
     @Test
     fun `secondary addition appends without changing the primary`() =
         runTest {
-            coEvery { documentDao.getForProject(PROJECT_ID) } returns listOf(document(id = 10, primary = true))
             coEvery { documentDao.getHighestSortOrder(PROJECT_ID) } returns 0
             val inserted = slot<ProjectDocumentEntity>()
             coEvery { documentDao.insert(capture(inserted)) } returns 42L
@@ -97,10 +97,23 @@ class ProjectDocumentRepositoryTest {
         }
 
     @Test
+    fun `legacy negative order still belongs to an existing document`() =
+        runTest {
+            coEvery { documentDao.getHighestSortOrder(PROJECT_ID) } returns -1
+            val inserted = slot<ProjectDocumentEntity>()
+            coEvery { documentDao.insert(capture(inserted)) } returns 42L
+
+            val result = repository.addImportedPdf(PROJECT_ID, URI_B, "Chart", "local:b")
+
+            assertTrue(result is ProjectDocumentMutationResult.Added)
+            assertEquals(0, inserted.captured.sortOrder)
+            assertEquals(false, inserted.captured.isPrimary)
+            coVerify(exactly = 0) { layerRepository.activateProjectLayerInTransaction(any(), any()) }
+        }
+
+    @Test
     fun `append after restored maximum order keeps existing documents first`() =
         runTest {
-            val existing = document(id = 10, order = Int.MAX_VALUE, primary = true)
-            coEvery { documentDao.getForProject(PROJECT_ID) } returns listOf(existing)
             coEvery { documentDao.getHighestSortOrder(PROJECT_ID) } returns Int.MAX_VALUE
             val inserted = slot<ProjectDocumentEntity>()
             coEvery { documentDao.insert(capture(inserted)) } returns 42L
@@ -208,8 +221,9 @@ class ProjectDocumentRepositoryTest {
         runTest {
             val removed = document(id = 10, order = 0, primary = true, uri = URI_A, key = "local:a")
             val fallback = document(id = 8, order = 2, uri = URI_B, key = "local:b")
+            val tied = document(id = 9, order = 2, uri = "file:///patterns/tied.pdf", key = "local:tied")
             coEvery { documentDao.getById(10L) } returns removed
-            coEvery { documentDao.getForProject(PROJECT_ID) } returns listOf(removed, fallback)
+            coEvery { documentDao.getForProject(PROJECT_ID) } returns listOf(removed, tied, fallback)
 
             val result = repository.remove(PROJECT_ID, 10L)
 

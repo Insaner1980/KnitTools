@@ -55,8 +55,6 @@ data class ProjectDocument(
 fun List<ProjectDocument>.inDocumentOrder(): List<ProjectDocument> =
     sortedWith(compareBy(ProjectDocument::sortOrder, ProjectDocument::id))
 
-fun List<ProjectDocument>.primaryFallback(): ProjectDocument? = inDocumentOrder().firstOrNull()
-
 private fun sanitizedProjectDocumentLabel(value: String): String =
     value
         .trim()

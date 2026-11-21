@@ -63,7 +63,7 @@ class ProjectDocumentTest {
     }
 
     @Test
-    fun `ordering and primary fallback use sort order then stable id`() {
+    fun `ordering uses sort order then stable id`() {
         val documents =
             listOf(
                 projectDocument(id = 9, sortOrder = 1),
@@ -72,7 +72,6 @@ class ProjectDocumentTest {
             )
 
         assertEquals(listOf(11L, 7L, 9L), documents.inDocumentOrder().map { it.id })
-        assertEquals(11L, documents.primaryFallback()?.id)
     }
 
     private fun projectDocument(

@@ -59,8 +59,8 @@ interface ProjectDocumentQueries {
     @Query("SELECT COUNT(*) FROM project_documents WHERE projectId = :projectId")
     suspend fun countForProject(projectId: Long): Int
 
-    @Query("SELECT COALESCE(MAX(sortOrder), -1) FROM project_documents WHERE projectId = :projectId")
-    suspend fun getHighestSortOrder(projectId: Long): Int
+    @Query("SELECT MAX(sortOrder) FROM project_documents WHERE projectId = :projectId")
+    suspend fun getHighestSortOrder(projectId: Long): Int?
 
     @Query("SELECT DISTINCT localPdfUri FROM project_documents WHERE projectId = :projectId")
     suspend fun getDistinctUris(projectId: Long): List<String>

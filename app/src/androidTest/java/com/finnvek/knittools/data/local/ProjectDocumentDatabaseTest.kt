@@ -143,6 +143,7 @@ class ProjectDocumentDatabaseTest {
             val secondProject = database.counterProjectDao().insert(CounterProjectEntity(name = "Second"))
             val firstId = dao.insert(document(firstProject, order = 0, key = "first", uri = "file:///first.pdf"))
             val tiedId = dao.insert(document(firstProject, order = 0, key = "tied", uri = "file:///tied.pdf"))
+            assertNull(dao.getHighestSortOrder(secondProject))
             val secondId =
                 dao.insert(
                     document(

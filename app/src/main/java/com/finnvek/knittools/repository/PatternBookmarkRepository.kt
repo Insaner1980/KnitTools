@@ -134,14 +134,15 @@ class PatternBookmarkRepository
         ): PatternBookmarkMutationResult =
             withContext(ioDispatcher) {
                 transactionRunner.run {
-                    val bookmark =
-                        validatedBookmark(projectId, expectedDocumentKey, bookmarkId)
-                            ?: return@run bookmarkFailure(projectId, expectedDocumentKey, bookmarkId)
                     val document =
                         projectDocumentRepository
                             .getActiveDocument(projectId)
                             ?.takeIf { it.documentKey == expectedDocumentKey }
                             ?: return@run PatternBookmarkMutationResult.StaleDocument
+                    val bookmark = bookmarkDao.getById(bookmarkId) ?: return@run PatternBookmarkMutationResult.NotFound
+                    if (bookmark.projectId != projectId || bookmark.documentKey != expectedDocumentKey) {
+                        return@run PatternBookmarkMutationResult.StaleDocument
+                    }
                     val updated =
                         projectDocumentRepository.updateViewerStateInTransaction(
                             document.copy(

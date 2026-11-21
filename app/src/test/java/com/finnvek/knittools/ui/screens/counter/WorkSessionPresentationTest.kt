@@ -15,10 +15,4 @@ class WorkSessionPresentationTest {
         assertNull(parseRecoveryDurationSeconds("-0", "15"))
         assertNull(parseRecoveryDurationSeconds(Long.MAX_VALUE.toString(), "0"))
     }
-
-    @Test
-    fun `recovery summary addition is overflow safe`() {
-        assertEquals(Long.MAX_VALUE, safeDurationSum(Long.MAX_VALUE - 1L, 2L))
-        assertEquals(0L, safeDurationSum(-1L, 2L))
-    }
 }

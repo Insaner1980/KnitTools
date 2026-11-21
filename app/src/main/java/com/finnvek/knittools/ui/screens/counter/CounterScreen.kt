@@ -74,6 +74,7 @@ import com.finnvek.knittools.data.widget.CounterWidgetPinHost
 import com.finnvek.knittools.data.widget.requestCounterWidgetPin
 import com.finnvek.knittools.domain.calculator.MainCounterLabelSlot
 import com.finnvek.knittools.domain.calculator.ProjectSetupItem
+import com.finnvek.knittools.domain.calculator.saturatingAdd
 import com.finnvek.knittools.domain.model.ActiveSessionRecoveryReason
 import com.finnvek.knittools.domain.model.MainCounterLabelType
 import com.finnvek.knittools.domain.model.ProjectCounter
@@ -1393,7 +1394,7 @@ internal fun SessionRecoveryDialog(
     onEdit: (Long) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    val suggestedTotal = safeDurationSum(trustedDurationSeconds, suggestedDurationSeconds ?: 0L)
+    val suggestedTotal = saturatingAdd(trustedDurationSeconds, suggestedDurationSeconds ?: 0L)
     val initialHours = (suggestedTotal / 3_600L).toString()
     val initialMinutes = ((suggestedTotal % 3_600L) / 60L).toString()
     var editing by rememberSaveable(recoveryIntervalToken) { mutableStateOf(false) }
@@ -1695,16 +1696,6 @@ private fun recoveryReasonText(reason: ActiveSessionRecoveryReason?): String =
             -> R.string.work_session_reason_clock_changed
         },
     )
-
-internal fun safeDurationSum(
-    first: Long,
-    second: Long,
-): Long =
-    when {
-        first < 0L || second < 0L -> 0L
-        Long.MAX_VALUE - first < second -> Long.MAX_VALUE
-        else -> first + second
-    }
 
 internal fun parseRecoveryDurationSeconds(
     hoursText: String,

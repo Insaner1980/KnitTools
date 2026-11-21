@@ -116,11 +116,12 @@ fun resolveReadingLineLocation(
         )
     }
 
-    val interpolationCandidates = validMarkers.interpolationCandidates(newRow)
+    val interpolationCandidates =
+        if (exactMatch.ambiguous) emptyList() else validMarkers.interpolationCandidates(newRow)
     val interpolation =
         interpolationCandidates.firstOrNull { it.page == safeCurrentPage }
             ?: interpolationCandidates.singleOrNull()
-    if (!exactMatch.ambiguous && interpolation != null) {
+    if (interpolation != null) {
         return resolvedLocation(
             page = interpolation.page,
             yFraction = interpolation.yFraction,

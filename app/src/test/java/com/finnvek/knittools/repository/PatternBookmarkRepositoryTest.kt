@@ -127,8 +127,10 @@ class PatternBookmarkRepositoryTest {
             coEvery { bookmarkDao.getById(8L) } returns entity
             val repository = repository(bookmarkDao, layerDao, documentRepository)
 
-            val renamed = repository.rename(7L, DOCUMENT_KEY, 8L, " New name ")
             val jumped = repository.jumpTo(7L, DOCUMENT_KEY, 8L)
+            coVerify(exactly = 1) { documentDao.getByDocumentKey(7L, DOCUMENT_KEY) }
+
+            val renamed = repository.rename(7L, DOCUMENT_KEY, 8L, " New name ")
             val deleted = repository.delete(7L, DOCUMENT_KEY, 8L)
 
             assertEquals("New name", (renamed as PatternBookmarkMutationResult.Success).bookmark.name)
@@ -157,6 +159,23 @@ class PatternBookmarkRepositoryTest {
         }
 
     // CPD-ON
+
+    @Test
+    fun `jump distinguishes stale document and missing bookmark without repeating lookups`() =
+        runTest {
+            val bookmarkDao = mockk<PatternBookmarkDao>()
+            val repository = repository(bookmarkDao, activeLayerDao())
+            coEvery { bookmarkDao.getById(8L) } returns null
+            coEvery { bookmarkDao.getById(9L) } returns bookmark(id = 9, name = "Old", page = 3, y = 0.8f).copy(
+                documentKey = "saved:other:v1",
+            )
+
+            assertEquals(PatternBookmarkMutationResult.StaleDocument, repository.jumpTo(7L, "saved:other:v1", 8L))
+            assertEquals(PatternBookmarkMutationResult.NotFound, repository.jumpTo(7L, DOCUMENT_KEY, 8L))
+            assertEquals(PatternBookmarkMutationResult.StaleDocument, repository.jumpTo(7L, DOCUMENT_KEY, 9L))
+            coVerify(exactly = 1) { bookmarkDao.getById(8L) }
+            coVerify(exactly = 1) { bookmarkDao.getById(9L) }
+        }
 
     @Test
     fun `cancellation from transaction runner propagates`() =

@@ -54,10 +54,13 @@ class WebPdfDownloader
                                     url = URL(URL(url), location).toString()
                                 }
 
-                                in HttpURLConnection.HTTP_OK until HttpURLConnection.HTTP_MULT_CHOICE ->
+                                in HttpURLConnection.HTTP_OK until HttpURLConnection.HTTP_MULT_CHOICE -> {
                                     return@withContext writeToTempFile(connection).also(completedDownload::set)
+                                }
 
-                                else -> return@withContext null
+                                else -> {
+                                    return@withContext null
+                                }
                             }
                         } finally {
                             connection.disconnect()

@@ -46,7 +46,6 @@ import com.finnvek.knittools.domain.model.CraftType
 import com.finnvek.knittools.domain.model.ProjectYarnUsageItem
 import com.finnvek.knittools.domain.model.YarnCard
 import com.finnvek.knittools.domain.model.YarnUsageUnit
-import com.finnvek.knittools.domain.tips.TipId
 import com.finnvek.knittools.pro.ProActionAccess
 import com.finnvek.knittools.pro.ProFeature
 import com.finnvek.knittools.pro.proActionAccess
@@ -69,7 +68,6 @@ import com.finnvek.knittools.ui.screens.counter.ProjectYarnUsageViewModel
 import com.finnvek.knittools.ui.theme.ProjectOverviewDimens
 import com.finnvek.knittools.ui.theme.knitToolsColors
 import com.finnvek.knittools.ui.theme.yarnColorForId
-import com.finnvek.knittools.ui.tips.tipAnchor
 
 data class ProjectOverviewContentActions(
     val onEditDetails: () -> Unit,
@@ -365,6 +363,6 @@ private fun ProjectOverviewProgress(
         onClickLabel = stringResource(R.string.project_continue_content_description, state.projectName),
         onOpenCounter = onOpenCounter.takeUnless { state.isCompleted },
         showName = false,
-        modifier = Modifier.padding(top = ProjectOverviewDimens.HeaderTopGap).tipAnchor(TipId.OVERVIEW_INTRO),
+        modifier = Modifier.padding(top = ProjectOverviewDimens.HeaderTopGap),
     )
 }

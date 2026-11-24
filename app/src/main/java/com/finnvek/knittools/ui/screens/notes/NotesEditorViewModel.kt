@@ -18,7 +18,6 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -32,7 +31,6 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import kotlinx.coroutines.withContext
 import java.util.UUID
 import javax.inject.Inject
 
@@ -130,7 +128,7 @@ class NotesEditorViewModel
                     if (shouldAdoptNotes) {
                         persistedNotes =
                             if (hasRestoredDraft) {
-                                restored?.baseNotes ?: project.notes
+                                restored.baseNotes ?: project.notes
                             } else {
                                 project.notes
                             }
@@ -171,8 +169,9 @@ class NotesEditorViewModel
             hasLocalEdits = text != persistedNotes
             saveJob?.cancel()
             if (!hasLocalEdits) {
+                persistedNotes = latestStoredNotes
                 clearSavedDraft()
-                _uiState.update { it.copy(saveFailed = false) }
+                _uiState.update { it.copy(notes = persistedNotes, saveFailed = false) }
                 return
             }
             saveDraft(text, persistedNotes)
@@ -233,15 +232,20 @@ class NotesEditorViewModel
                 )
             val savedProject =
                 when (result) {
-                    is ProjectNotesSaveResult.Saved -> result.project
+                    is ProjectNotesSaveResult.Saved -> {
+                        result.project
+                    }
+
                     ProjectNotesSaveResult.ProjectUnavailable -> {
                         _uiState.update { it.copy(isMissingProject = true) }
                         return false
                     }
+
                     ProjectNotesSaveResult.FeatureUnavailable -> {
                         _uiState.update { it.copy(canEditNotes = false) }
                         return false
                     }
+
                     ProjectNotesSaveResult.PersistenceFailure -> {
                         _uiState.update { it.copy(saveFailed = true) }
                         return false
@@ -320,34 +324,26 @@ class NotesEditorViewModel
                 savedStateHandle[NOTES_DRAFT_BASE_KEY] = baseNotes
                 return
             }
-            val existingFileId = draftFileId()
-            val fileId = existingFileId ?: UUID.randomUUID()
+            val fileId = draftFileId() ?: UUID.randomUUID()
+            savedStateHandle[NOTES_DRAFT_FILE_ID_KEY] = fileId.toString()
             draftWriteJob?.cancel()
             draftWriteJob =
                 viewModelScope.launch {
                     draftFileMutex.withLock {
-                        var published = false
-                        try {
-                            if (draftStorage.write(loadedProjectId, fileId, NotesDraft(notes, baseNotes))) {
-                                ensureActive()
-                                savedStateHandle[NOTES_DRAFT_FILE_ID_KEY] = fileId.toString()
-                                savedStateHandle.remove<String>(NOTES_DRAFT_KEY)
-                                savedStateHandle.remove<String>(NOTES_DRAFT_BASE_KEY)
-                                published = true
-                            }
-                        } finally {
-                            if (!published && existingFileId == null) {
-                                withContext(NonCancellable) { draftStorage.delete(loadedProjectId, fileId) }
-                            }
+                        if (draftStorage.write(loadedProjectId, fileId, NotesDraft(notes, baseNotes))) {
+                            ensureActive()
+                            savedStateHandle.remove<String>(NOTES_DRAFT_KEY)
+                            savedStateHandle.remove<String>(NOTES_DRAFT_BASE_KEY)
                         }
                     }
                 }
         }
 
         private suspend fun restoreDraft(loadedProjectId: Long): NotesDraft? {
-            val inlineDraft = savedStateHandle.get<String>(NOTES_DRAFT_KEY)
-            if (inlineDraft != null) return NotesDraft(inlineDraft, savedStateHandle[NOTES_DRAFT_BASE_KEY])
-            return draftFileId()?.let { draftStorage.read(loadedProjectId, it) }
+            val diskDraft = draftFileId()?.let { draftStorage.read(loadedProjectId, it) }
+            return diskDraft ?: savedStateHandle.get<String>(NOTES_DRAFT_KEY)?.let {
+                NotesDraft(it, savedStateHandle[NOTES_DRAFT_BASE_KEY])
+            }
         }
 
         private fun draftFileId(): UUID? =

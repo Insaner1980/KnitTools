@@ -146,6 +146,14 @@ val LightActionContainer = Color(0xFFC4D9D0)
 val LightPrimaryReadable = Color(0xFF9A3F00)
 val PrimaryReadable = Color(0xFFE8823A)
 
+internal val DarkPrimaryTitle = Color(0xFFF18C43)
+internal val DarkRoseTitle = Color(0xFFC49B9A)
+internal val DarkTealTitle = Color(0xFF80AAAB)
+internal val LightPrimaryTitle = Color(0xFF963C00)
+internal val LightTertiaryTitle = Color(0xFF6A5510)
+internal val LightRoseTitle = Color(0xFF754C4A)
+internal val LightTealTitle = Color(0xFF385D5E)
+
 // Neutraali lankatilkku, kun langasta ei ole kuvaa: langan oikeaa väriä ei tiedetä, joten sävy on teeman oma.
 val LightYarnSwatchNeutral = Color(0xFFBDB69A)
 val YarnSwatchNeutral = Color(0xFF4A4A38)

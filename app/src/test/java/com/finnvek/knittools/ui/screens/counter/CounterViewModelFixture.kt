@@ -10,7 +10,6 @@ import com.finnvek.knittools.data.local.ProjectDocumentEntity
 import com.finnvek.knittools.data.storage.PatternDocumentStorage
 import com.finnvek.knittools.domain.calculator.RowMarker
 import com.finnvek.knittools.domain.calculator.serializeMapping
-import com.finnvek.knittools.domain.model.CommittedMainCounterChange
 import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.domain.model.MainCounterChange
 import com.finnvek.knittools.domain.model.PatternAnnotationLayer
@@ -31,7 +30,6 @@ import com.finnvek.knittools.repository.ProjectYarnNoteRepository
 import com.finnvek.knittools.repository.ReminderRepository
 import com.finnvek.knittools.repository.SavedPatternRepository
 import com.finnvek.knittools.repository.YarnCardRepository
-import com.finnvek.knittools.ui.tips.TipSession
 import com.finnvek.knittools.widget.CounterWidgetState
 import com.finnvek.knittools.widget.WidgetData
 import io.mockk.coEvery
@@ -65,7 +63,6 @@ abstract class CounterViewModelFixture {
     protected val photoRepository = mockk<ProgressPhotoRepository>()
     protected val layers = MutableStateFlow(listOf(layer(41L, active = true), layer(42L, active = false)))
     protected val observedProject = MutableStateFlow(CounterProject(id = 7L, name = "Project"))
-    protected val tipSession = mockk<TipSession>()
     protected val onboardingStateRepository = mockk<OnboardingStateRepository>()
     protected val onboardingState = MutableStateFlow(OnboardingState(initializedVersion = 1, starterProjectId = 7L))
 
@@ -80,7 +77,6 @@ abstract class CounterViewModelFixture {
         every { repository.observeActiveSession() } returns flowOf(null)
         every { repository.observeCanUndo(any()) } returns flowOf(false)
         coEvery { repository.refreshActiveSession() } returns null
-        every { tipSession.onSignal(any()) } returns Unit
         every { onboardingStateRepository.state } returns onboardingState
     }
 
@@ -96,9 +92,9 @@ abstract class CounterViewModelFixture {
         return published
     }
 
-    protected fun pendingIncrement(count: Int): CompletableDeferred<CommittedMainCounterChange?> {
-        val result = CompletableDeferred<CommittedMainCounterChange?>()
-        coEvery { repository.applyMainCounterChangeWithResult(7L, MainCounterChange.Increment) } coAnswers {
+    protected fun pendingIncrement(count: Int): CompletableDeferred<Boolean> {
+        val result = CompletableDeferred<Boolean>()
+        coEvery { repository.applyMainCounterChange(7L, MainCounterChange.Increment) } coAnswers {
             result.await()
         }
         coEvery { repository.getProject(7L) } returns observedProject.value.copy(count = count)
@@ -182,7 +178,6 @@ abstract class CounterViewModelFixture {
             context = contextOverride ?: mockk<Context>(relaxed = true),
             ioDispatcher = dispatcher,
             applicationScope = backgroundScope,
-            tipSession = tipSession,
             onboardingStateRepository = onboardingStateRepository,
         )
     }

@@ -404,7 +404,9 @@ private fun WebPatternCard(
 private fun savedPatternSourceLabel(source: SavedPatternSource): String? =
     when (source) {
         SavedPatternSource.Ravelry -> stringResource(R.string.tool_ravelry)
+
         SavedPatternSource.LocalFile -> stringResource(R.string.pattern_source_pdf)
+
         SavedPatternSource.WebLink,
         SavedPatternSource.Other,
         SavedPatternSource.Unknown,

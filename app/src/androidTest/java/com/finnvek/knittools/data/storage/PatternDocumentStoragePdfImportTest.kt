@@ -1,12 +1,9 @@
 package com.finnvek.knittools.data.storage
 
-import android.content.ContentProvider
 import android.content.ContentResolver
-import android.content.ContentValues
 import android.content.Context
 import android.content.ContextWrapper
 import android.content.res.AssetFileDescriptor
-import android.database.Cursor
 import android.net.Uri
 import android.os.ParcelFileDescriptor
 import androidx.core.net.toUri
@@ -18,15 +15,15 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.test.runTest
-import org.junit.After
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
-import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.TemporaryFolder
 import org.junit.runner.RunWith
 import java.io.File
 import java.io.IOException
@@ -36,23 +33,15 @@ import kotlin.coroutines.CoroutineContext
 
 @RunWith(AndroidJUnit4::class)
 class PatternDocumentStoragePdfImportTest {
-    private val context = ApplicationProvider.getApplicationContext<Context>()
+    @get:Rule val fixture = TemporaryFolder(ApplicationProvider.getApplicationContext<Context>().cacheDir)
+
+    private val context =
+        object : ContextWrapper(ApplicationProvider.getApplicationContext<Context>()) {
+            override fun getFilesDir(): File = File(fixture.root, "files").apply { mkdirs() }
+        }
     private val storage = PatternDocumentStorage(Dispatchers.IO)
-    private val sourceDirectory = File(context.cacheDir, "pattern-pdf-import-test")
-    private val targetDirectory = File(context.filesDir, "pattern_pdfs/$PROJECT_ID")
-
-    @Before
-    fun setUp() {
-        sourceDirectory.deleteRecursively()
-        targetDirectory.deleteRecursively()
-        sourceDirectory.mkdirs()
-    }
-
-    @After
-    fun tearDown() {
-        sourceDirectory.deleteRecursively()
-        targetDirectory.deleteRecursively()
-    }
+    private val sourceDirectory get() = fixture.root
+    private val targetDirectory get() = File(context.filesDir, "pattern_pdfs/$PROJECT_ID")
 
     @Test
     fun validPdfIsPublishedOnlyAfterItCanBeOpened() =
@@ -107,9 +96,7 @@ class PatternDocumentStoragePdfImportTest {
             writeOnePagePdf(source)
             val resolver =
                 ContentResolver.wrap(
-                    object : ContentProvider() {
-                        override fun onCreate() = true
-
+                    object : PdfTestContentProvider() {
                         override fun openAssetFile(
                             uri: Uri,
                             mode: String,
@@ -127,34 +114,6 @@ class PatternDocumentStoragePdfImportTest {
                                         }
                                     }
                             }
-
-                        override fun getType(uri: Uri) = "application/pdf"
-
-                        override fun query(
-                            uri: Uri,
-                            projection: Array<out String>?,
-                            selection: String?,
-                            selectionArgs: Array<out String>?,
-                            sortOrder: String?,
-                        ): Cursor? = null
-
-                        override fun insert(
-                            uri: Uri,
-                            values: ContentValues?,
-                        ): Uri? = null
-
-                        override fun update(
-                            uri: Uri,
-                            values: ContentValues?,
-                            selection: String?,
-                            selectionArgs: Array<out String>?,
-                        ) = 0
-
-                        override fun delete(
-                            uri: Uri,
-                            selection: String?,
-                            selectionArgs: Array<out String>?,
-                        ) = 0
                     },
                 )
             val sourceContext =

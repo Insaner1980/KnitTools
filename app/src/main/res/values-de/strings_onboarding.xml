@@ -62,52 +62,10 @@
     <string name="project_target_error">Gib eine Zahl von 1 bis %1$s ein.</string>
     <!-- Kääntäjälle: projektin luontilomake. Aloitusmäärä tarkoittaa jo tehtyä työtä; tavoite on vapaaehtoinen. Säilytä paikkamerkit %1$s muuttumattomina. -->
     <string name="project_create_preview_a11y">Vorschau: %1$s</string>
-    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
-    <string name="tip_got_it">Verstanden</string>
-    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
-    <string name="tip_first_row_rows">Tippe auf +, wenn du eine Reihe fertig hast. Du kannst auch auf die große Zahl tippen.</string>
-    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
-    <string name="tip_first_row_rounds">Tippe auf +, wenn du eine Runde fertig hast. Du kannst auch auf die große Zahl tippen.</string>
-    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
-    <string name="tip_first_row_repeats">Tippe auf +, wenn du eine Wiederholung fertig hast. Du kannst auch auf die große Zahl tippen.</string>
-    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
-    <string name="tip_first_row_custom">Tippe jedes Mal auf +, wenn du eine Einheit fertig hast. Du kannst auch auf die große Zahl tippen.</string>
-    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
-    <string name="tip_undo">Gespeichert. Versehentlich getippt? Rückgängig nimmt die letzte Änderung zurück.</string>
-    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
-    <string name="tip_step_size">Zählst du mehr als eins auf einmal? Hier änderst du, wie viel jeder Tipp hinzufügt oder abzieht.</string>
-    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
-    <string name="tip_work_session">Möchtest du wissen, wie lange dieses Projekt dauert? Starte eine Arbeitssitzung über dieses Menü. Die Zeiterfassung startet nie von selbst.</string>
-    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
-    <string name="tip_overview_intro">Hier findest du dein ganzes Projekt: Anleitung, Garn, Notizen und Fotos. Weiter bringt dich zurück zum Zähler.</string>
-    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
-    <string name="tip_pattern_tile">Füge deine Anleitung hinzu, damit du sie bei diesem Projekt hast.</string>
-    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
-    <string name="tip_reading_line">Aktiviere Hauptzähler folgen, damit sich die Leselinie beim Zählen mitbewegt.</string>
-    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
-    <string name="tip_keep_screen_on">Wird der Bildschirm beim Arbeiten dunkel? Lass ihn beim Zählen eingeschaltet.</string>
-    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
-    <string name="tip_keep_screen_on_action">Bildschirm eingeschaltet lassen</string>
-    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
-    <string name="tip_target_reached">Ziel erreicht. Zähle weiter oder markiere das Projekt im Menü der Projektseite als fertig.</string>
-    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
-    <string name="tip_first_session_saved">Deine erste Arbeitssitzung ist gespeichert. Hier steht die Gesamtzeit für dieses Projekt.</string>
-    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
-    <string name="tip_backup">Deine Projekte sind nur auf diesem Smartphone gespeichert. Erstelle eine Sicherung, damit sie beim Wechsel auf ein anderes Smartphone erhalten bleiben.</string>
-    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
-    <string name="tip_backup_action">Sicherung erstellen</string>
-    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
-    <string name="tip_folders">Viele Projekte? Ordne sie über den Titel in Ordner ein.</string>
-    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
-    <string name="tip_widget">Zähle vom Startbildschirm aus, ohne die App zu öffnen.</string>
-    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
-    <string name="tip_widget_action">Widget hinzufügen</string>
-    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
-    <string name="tip_tools_intro">Die Rechner funktionieren offline. Beispielwerte zeigen dir, was du eingeben kannst.</string>
-    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
-    <string name="settings_show_tips_again">Tipps erneut anzeigen</string>
-    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
-    <string name="settings_tips_reset_done">Tipps werden wieder angezeigt.</string>
+    <!-- Kokeilun päättymismuistutuksen kuittaava painike. -->
+    <string name="trial_notice_acknowledge">Verstanden</string>
+    <!-- Avaa varmuuskopioinnin ilmoitusriviltä. -->
+    <string name="projects_backup_notice_action">Sicherung erstellen</string>
     <!-- Kääntäjälle: projektin neljän kohdan aloituslista tai sen valmistumisilmoitus. -->
     <string name="project_setup_pattern">Füge deine Anleitung hinzu</string>
     <!-- Kääntäjälle: projektin neljän kohdan aloituslista tai sen valmistumisilmoitus. -->
@@ -249,7 +207,7 @@
     <!-- Kääntäjälle: paikallinen käyttöopas. Toimintojen ja välilehtien nimet vastaavat muuta käyttöliittymää. -->
     <string name="guide_tools_folders_title">Ordner</string>
     <!-- Kääntäjälle: paikallinen käyttöopas. Toimintojen ja välilehtien nimet vastaavat muuta käyttöliittymää. -->
-    <string name="guide_tools_folders_body">Gruppiere Projekte über den Titel Projekte in Ordnern. Ein laufendes Projekt ist kostenlos, und fertige Projekte zählen nicht mit.</string>
+    <string name="guide_tools_folders_body">Gruppiere Projekte über den Titel Projekte in Ordnern.</string>
     <!-- Kääntäjälle: paikallinen käyttöopas. Toimintojen ja välilehtien nimet vastaavat muuta käyttöliittymää. -->
     <string name="guide_tools_backup_title">Sicherung</string>
     <!-- Kääntäjälle: paikallinen käyttöopas. Toimintojen ja välilehtien nimet vastaavat muuta käyttöliittymää. -->
@@ -661,8 +619,16 @@
     <string name="journey_pdf_failed">Die PDF konnte nicht importiert werden. Der bisherige Anhang bleibt erhalten.</string>
     <!-- Aloituspolku: Luo ensimmäinen projekti -->
     <string name="journey_first_project">Dein erstes Projekt erstellen</string>
-    <!-- Aloituspolun jälkeen: ohjelaattaan ankkuroitu vihje vain luodulle projektille, johon käyttäjä liitti PDF-ohjeen. -->
-    <string name="journey_open_pattern_tip">Hier öffnest du die Anleitung, die du diesem Projekt hinzugefügt hast.</string>
     <!-- Vahvistetun Pro-oston jälkeen näytettävä kuittaus sovellukseen siirryttäessä. -->
     <string name="journey_pro_active">Pro ist jetzt freigeschaltet.</string>
+    <!-- Projektien paikallisesta tallennuksesta kertova ilmoitus. -->
+    <string name="projects_backup_notice">Deine Projekte sind nur auf diesem Smartphone gespeichert.</string>
+    <!-- PDF-lukijan ilmoitus laskuria seuraavasta lukulinjasta. -->
+    <string name="reading_line_notice">Die Leselinie kann dem Zähler folgen.</string>
+    <!-- Ohittaa ilmoituksen pysyvästi. -->
+    <string name="contextual_notice_skip">Überspringen</string>
+    <!-- Ottaa käyttöön laskuria seuraavan lukulinjan. -->
+    <string name="reading_line_notice_enable">Aktivieren</string>
+    <!-- Avaa valmistumisvahvistuksen tavoitteen täyttäneelle projektille. -->
+    <string name="counter_mark_complete">Als fertig markieren</string>
 </resources>

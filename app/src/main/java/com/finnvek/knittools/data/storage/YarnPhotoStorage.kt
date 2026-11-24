@@ -131,10 +131,17 @@ internal fun copyYarnPhotoWithLimit(
         }
         val failure =
             when {
-                read > maxBytes - copied -> "Yarn photo exceeds size limit"
-                usableSpace() - read < YarnPhotoStorage.YARN_PHOTO_FREE_SPACE_RESERVE_BYTES ->
+                read > maxBytes - copied -> {
+                    "Yarn photo exceeds size limit"
+                }
+
+                usableSpace() - read < YarnPhotoStorage.YARN_PHOTO_FREE_SPACE_RESERVE_BYTES -> {
                     "Not enough storage for yarn photo"
-                else -> null
+                }
+
+                else -> {
+                    null
+                }
             }
         if (failure != null) throw IOException(failure)
         output.write(buffer, 0, read)

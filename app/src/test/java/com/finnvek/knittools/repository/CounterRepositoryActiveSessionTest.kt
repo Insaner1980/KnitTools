@@ -16,6 +16,7 @@ import com.finnvek.knittools.data.storage.ProgressPhotoStorage
 import com.finnvek.knittools.data.time.SessionTimeSource
 import com.finnvek.knittools.domain.calculator.ACTIVE_SESSION_REVIEW_THRESHOLD_SECONDS
 import com.finnvek.knittools.domain.model.ActiveSessionRecoveryReason
+import com.finnvek.knittools.domain.model.MainCounterChange
 import com.finnvek.knittools.domain.model.SessionTimeSnapshot
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -40,7 +41,7 @@ class CounterRepositoryActiveSessionTest : CounterRepositoryActiveSessionFixture
 
             val stopped = stopReviewedSession(started.session.sessionToken)
 
-            assertEquals(StopSessionResult.Saved(1L, wasFirstCompletedSession = true), stopped)
+            assertEquals(StopSessionResult.Saved(1L), stopped)
             assertEquals(null, active)
             assertEquals(65L, completed.single().durationSeconds)
             assertEquals(1_000L, completed.single().startedAt)
@@ -521,6 +522,11 @@ class CounterRepositoryActiveSessionTest : CounterRepositoryActiveSessionFixture
             assertEquals(intervalToken, active?.recoveryIntervalToken)
         }
 
+    // CPD-ON
+}
+
+class CounterRepositorySessionRowChangeTest : CounterRepositoryActiveSessionFixture() {
+    // CPD-OFF: Rivimuutosten skenaariokohtainen asetelma pidetään testien yhteydessä.
     @Test
     fun `counter changes checkpoint trusted duration and net row progress atomically`() =
         runTest {
@@ -601,7 +607,7 @@ class CounterRepositoryActiveSessionTest : CounterRepositoryActiveSessionFixture
                     reviewedEndRow = reviewed.trustedLastObservedRow,
                 )
 
-            assertEquals(StopSessionResult.Saved(1L, wasFirstCompletedSession = true), stopped)
+            assertEquals(StopSessionResult.Saved(1L), stopped)
             assertEquals(10L, completed.single().durationSeconds)
             assertEquals(11_000L, completed.single().endedAt)
         }
@@ -667,6 +673,36 @@ class CounterRepositoryActiveSessionTest : CounterRepositoryActiveSessionFixture
             assertEquals(2, active?.trustedRowsWorked)
             assertEquals(2, active?.unreviewedRowsWorked)
             assertEquals(14, active?.lastObservedRow)
+        }
+
+    @Test
+    fun `undoing a reset that predates the session does not add worked rows`() =
+        runTest {
+            var project = CounterProjectEntity(id = 7L, name = "Cardigan", count = 0)
+            coEvery { projectDao.getProject(7L) } answers { project }
+            coEvery { projectDao.updateCount(7L, any(), any()) } answers {
+                project = project.copy(count = secondArg())
+            }
+            coEvery { projectDao.getLatestHistory(7L) } returns
+                CounterHistoryEntity(
+                    id = 1L,
+                    projectId = 7L,
+                    action = "reset",
+                    previousValue = 100,
+                    newValue = 0,
+                    timestamp = 999L,
+                )
+            repository = buildRepository(repositoryProjectCounterDao())
+            repository.startSession(7L)
+            timeSource.advance(seconds = 15L)
+
+            assertTrue(repository.applyMainCounterChange(7L, MainCounterChange.Undo))
+
+            assertEquals(100, project.count)
+            assertEquals(100, active?.lastObservedRow)
+            assertEquals(100, active?.trustedLastObservedRow)
+            assertEquals(0, active?.trustedRowsWorked)
+            assertEquals(0, active?.unreviewedRowsWorked)
         }
 
     @Test

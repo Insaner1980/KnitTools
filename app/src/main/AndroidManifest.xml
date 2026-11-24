@@ -52,6 +52,11 @@
             </intent-filter>
         </activity>
 
+        <activity
+            android:name=".widget.WidgetCounterLaunchActivity"
+            android:exported="false"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+
         <receiver
             android:name=".widget.CounterWidgetReceiver"
             android:exported="true"

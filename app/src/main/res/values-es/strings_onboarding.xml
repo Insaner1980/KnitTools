@@ -62,52 +62,10 @@
     <string name="project_target_error">Introduce un número entre 1 y %1$s.</string>
     <!-- Uuden projektin esikatselun saavutettava kuvaus; %1$s sisältää laskuriarvon nimikkeineen. -->
     <string name="project_create_preview_a11y">Vista previa: %1$s</string>
-    <!-- Tilannekohtainen vihje nykyisessä näkymässä; toimintojen nimet vastaavat sovelluksen nykyisiä nimiä. -->
-    <string name="tip_got_it">Entendido</string>
-    <!-- Tilannekohtainen vihje nykyisessä näkymässä; toimintojen nimet vastaavat sovelluksen nykyisiä nimiä. -->
-    <string name="tip_first_row_rows">Cuando termines una vuelta, toca +. También puedes tocar el número grande.</string>
-    <!-- Tilannekohtainen vihje nykyisessä näkymässä; toimintojen nimet vastaavat sovelluksen nykyisiä nimiä. -->
-    <string name="tip_first_row_rounds">Cuando termines una ronda, toca +. También puedes tocar el número grande.</string>
-    <!-- Tilannekohtainen vihje nykyisessä näkymässä; toimintojen nimet vastaavat sovelluksen nykyisiä nimiä. -->
-    <string name="tip_first_row_repeats">Cuando termines una repetición, toca +. También puedes tocar el número grande.</string>
-    <!-- Tilannekohtainen vihje nykyisessä näkymässä; toimintojen nimet vastaavat sovelluksen nykyisiä nimiä. -->
-    <string name="tip_first_row_custom">Toca + cada vez que termines una unidad. También puedes tocar el número grande.</string>
-    <!-- Tilannekohtainen vihje nykyisessä näkymässä; toimintojen nimet vastaavat sovelluksen nykyisiä nimiä. -->
-    <string name="tip_undo">Guardado. ¿Has tocado por error? Deshacer revierte el último cambio.</string>
-    <!-- Tilannekohtainen vihje nykyisessä näkymässä; toimintojen nimet vastaavat sovelluksen nykyisiä nimiä. -->
-    <string name="tip_step_size">¿Cuentas de varias en varias? Cambia aquí cuánto suma o resta cada toque.</string>
-    <!-- Työajan seuranta käynnistetään itse; ajastin ei käynnisty automaattisesti. -->
-    <string name="tip_work_session">¿Quieres saber cuánto tiempo te lleva este proyecto? Inicia una sesión de trabajo desde este menú. El tiempo nunca empieza a contarse solo.</string>
-    <!-- Tilannekohtainen vihje nykyisessä näkymässä; toimintojen nimet vastaavat sovelluksen nykyisiä nimiä. -->
-    <string name="tip_overview_intro">Este es tu proyecto completo: patrón, hilo, notas y fotos. Continuar te lleva de nuevo al contador.</string>
-    <!-- Tilannekohtainen vihje nykyisessä näkymässä; toimintojen nimet vastaavat sovelluksen nykyisiä nimiä. -->
-    <string name="tip_pattern_tile">Adjunta tu patrón para tenerlo con este proyecto.</string>
-    <!-- PDF-lukijan vihje; seuraa päälaskuria -asetuksen nimen on vastattava nykyistä käyttöliittymää. -->
-    <string name="tip_reading_line">Activa Seguir el contador principal y la línea de lectura se moverá mientras cuentas.</string>
-    <!-- Tilannekohtainen vihje nykyisessä näkymässä; toimintojen nimet vastaavat sovelluksen nykyisiä nimiä. -->
-    <string name="tip_keep_screen_on">¿Se apaga la pantalla mientras trabajas? Mantenla encendida mientras cuentas.</string>
-    <!-- Tilannekohtainen vihje nykyisessä näkymässä; toimintojen nimet vastaavat sovelluksen nykyisiä nimiä. -->
-    <string name="tip_keep_screen_on_action">Mantener la pantalla encendida</string>
-    <!-- Tilannekohtainen vihje nykyisessä näkymässä; toimintojen nimet vastaavat sovelluksen nykyisiä nimiä. -->
-    <string name="tip_target_reached">Objetivo alcanzado. Sigue contando o marca el proyecto como terminado desde el menú de la página del proyecto.</string>
-    <!-- Tilannekohtainen vihje nykyisessä näkymässä; toimintojen nimet vastaavat sovelluksen nykyisiä nimiä. -->
-    <string name="tip_first_session_saved">Tu primera sesión de trabajo está guardada. Aquí está el tiempo total de este proyecto.</string>
-    <!-- Tilannekohtainen vihje nykyisessä näkymässä; toimintojen nimet vastaavat sovelluksen nykyisiä nimiä. -->
-    <string name="tip_backup">Tus proyectos solo están en este teléfono. Haz una copia de seguridad para conservarlos si cambias de teléfono.</string>
-    <!-- Tilannekohtainen vihje nykyisessä näkymässä; toimintojen nimet vastaavat sovelluksen nykyisiä nimiä. -->
-    <string name="tip_backup_action">Hacer copia de seguridad</string>
-    <!-- Tilannekohtainen vihje nykyisessä näkymässä; toimintojen nimet vastaavat sovelluksen nykyisiä nimiä. -->
-    <string name="tip_folders">¿Tienes muchos proyectos? Organízalos en carpetas desde el título.</string>
-    <!-- Tilannekohtainen vihje nykyisessä näkymässä; toimintojen nimet vastaavat sovelluksen nykyisiä nimiä. -->
-    <string name="tip_widget">Cuenta desde la pantalla de inicio sin abrir la aplicación.</string>
-    <!-- Tilannekohtainen vihje nykyisessä näkymässä; toimintojen nimet vastaavat sovelluksen nykyisiä nimiä. -->
-    <string name="tip_widget_action">Añadir widget</string>
-    <!-- Tilannekohtainen vihje nykyisessä näkymässä; toimintojen nimet vastaavat sovelluksen nykyisiä nimiä. -->
-    <string name="tip_tools_intro">Las calculadoras funcionan sin conexión. Los valores de ejemplo muestran qué introducir.</string>
-    <!-- Asetusten toiminto tai kuittaus aiemmin nähtyjen vihjeiden näyttämiseen uudelleen. -->
-    <string name="settings_show_tips_again">Volver a mostrar consejos</string>
-    <!-- Asetusten toiminto tai kuittaus aiemmin nähtyjen vihjeiden näyttämiseen uudelleen. -->
-    <string name="settings_tips_reset_done">Los consejos volverán a aparecer.</string>
+    <!-- Kokeilun päättymismuistutuksen kuittaava painike. -->
+    <string name="trial_notice_acknowledge">Entendido</string>
+    <!-- Avaa varmuuskopioinnin ilmoitusriviltä. -->
+    <string name="projects_backup_notice_action">Hacer copia de seguridad</string>
     <!-- Ensimmäisen projektin valmistelulista; valmis vaihe kuvaa jo tallennettua tietoa. -->
     <string name="project_setup_pattern">Adjunta tu patrón</string>
     <!-- Ensimmäisen projektin valmistelulista; valmis vaihe kuvaa jo tallennettua tietoa. -->
@@ -249,7 +207,7 @@
     <!-- Oppaan työkalut, työaika ja varmuuskopiointi; osioiden nimet vastaavat nykyisiä välilehtiä. -->
     <string name="guide_tools_folders_title">Carpetas</string>
     <!-- Oppaan työkalut, työaika ja varmuuskopiointi; osioiden nimet vastaavat nykyisiä välilehtiä. -->
-    <string name="guide_tools_folders_body">Agrupa proyectos en carpetas desde el título Proyectos. Tener un proyecto en curso a la vez es gratis y los terminados no cuentan.</string>
+    <string name="guide_tools_folders_body">Agrupa proyectos en carpetas desde el título Proyectos.</string>
     <!-- Oppaan työkalut, työaika ja varmuuskopiointi; osioiden nimet vastaavat nykyisiä välilehtiä. -->
     <string name="guide_tools_backup_title">Copia de seguridad</string>
     <!-- Palauttaminen korvaa puhelimen nykyiset tiedot; älä lupaa yhdistämistä tai synkronointia. -->
@@ -666,8 +624,16 @@
     <string name="journey_pdf_failed">No se ha podido importar el PDF. Se ha conservado el archivo adjunto anterior.</string>
     <!-- Aloituspolku: Luo ensimmäinen projekti -->
     <string name="journey_first_project">Crear tu primer proyecto</string>
-    <!-- Aloituspolun jälkeen: ohjelaattaan ankkuroitu vihje vain luodulle projektille, johon käyttäjä liitti PDF-ohjeen. -->
-    <string name="journey_open_pattern_tip">Abre aquí el patrón que has añadido a este proyecto.</string>
     <!-- Vahvistetun Pro-oston jälkeen näytettävä kuittaus sovellukseen siirryttäessä. -->
     <string name="journey_pro_active">Pro está activado.</string>
+    <!-- Projektien paikallisesta tallennuksesta kertova ilmoitus. -->
+    <string name="projects_backup_notice">Tus proyectos solo están en este teléfono.</string>
+    <!-- PDF-lukijan ilmoitus laskuria seuraavasta lukulinjasta. -->
+    <string name="reading_line_notice">La línea de lectura puede seguir el contador.</string>
+    <!-- Ohittaa ilmoituksen pysyvästi. -->
+    <string name="contextual_notice_skip">Omitir</string>
+    <!-- Ottaa käyttöön laskuria seuraavan lukulinjan. -->
+    <string name="reading_line_notice_enable">Activar</string>
+    <!-- Avaa valmistumisvahvistuksen tavoitteen täyttäneelle projektille. -->
+    <string name="counter_mark_complete">Marcar como terminado</string>
 </resources>

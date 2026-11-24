@@ -26,6 +26,8 @@ RW-07A remains historical evidence of the previous capture-only contract. The in
 
 ## Event contract
 
+After consent, the Android SDK includes the app's display language as `$app_language` when it can resolve it (for example, `fi`). PostHog Android 4.0.3 can read it on Android 13 and later. The field may be absent while the SDK first reads the language.
+
 | Events | Meaning |
 | --- | --- |
 | `app opened`, `app backgrounded` | Foreground use after consent; background event includes `duration_seconds` |

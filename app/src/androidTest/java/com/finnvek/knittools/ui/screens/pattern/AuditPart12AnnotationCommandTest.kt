@@ -31,13 +31,18 @@ class AuditPart12AnnotationCommandTest {
                     main {
                         fixture.vm.setActiveTool(tool)
                         when (tool) {
-                            PatternAnnotationTool.TEXT -> fixture.vm.addTextBox("Literal äö 日本語")
-                            PatternAnnotationTool.CALLOUT ->
+                            PatternAnnotationTool.TEXT -> {
+                                fixture.vm.addTextBox("Literal äö 日本語")
+                            }
+
+                            PatternAnnotationTool.CALLOUT -> {
                                 fixture.vm.addCallout(
                                     "Title",
                                     "Description",
                                     PatternCalloutSymbol.NOTE,
                                 )
+                            }
+
                             else -> {
                                 fixture.vm.beginStroke(NormalizedPatternPoint(0.2f, 0.3f))
                                 fixture.vm.appendStrokePoint(NormalizedPatternPoint(0.7f, 0.8f))

@@ -85,6 +85,7 @@ fun ProjectDetailsSheet(
     val customLabelFocus = remember { FocusRequester() }
     val focusManager = LocalFocusManager.current
     val isCreate = mode == ProjectDetailsMode.Create
+    val showCreationPreview = isCreate && showPreview
     val startCount = parseProjectStartCount(startText)
     val target = parseTargetRows(targetText)
     val placeholder =
@@ -102,9 +103,7 @@ fun ProjectDetailsSheet(
         labelType != craftType.defaultMainCounterLabelType() || customLabel.isNotBlank() || targetText.isNotBlank()
     var moreOptionsExpanded by rememberSaveable { mutableStateOf(hasMoreOptions) }
     LaunchedEffect(isCreate) {
-        if (isCreate && hasMoreOptions) {
-            moreOptionsExpanded = true
-        }
+        moreOptionsExpanded = moreOptionsExpanded || (isCreate && hasMoreOptions)
     }
     LaunchedEffect(isCreate, hasValidCustomLabel, target) {
         if (isCreate && (!hasValidCustomLabel || target == TargetInput.Invalid)) moreOptionsExpanded = true
@@ -134,8 +133,8 @@ fun ProjectDetailsSheet(
                 },
             ),
     ) {
-        LaunchedEffect(isCreate, showPreview) {
-            if (isCreate && showPreview && !initialFocusRequested) {
+        LaunchedEffect(showCreationPreview) {
+            if (showCreationPreview && !initialFocusRequested) {
                 withFrameNanos { }
                 nameFocus.requestFocus()
                 initialFocusRequested = true
@@ -148,7 +147,7 @@ fun ProjectDetailsSheet(
                 modifier = Modifier.semantics { liveRegion = LiveRegionMode.Assertive },
             )
         }
-        if (isCreate && showPreview) {
+        if (showCreationPreview) {
             ProjectDetailsPreview(
                 CounterProject(
                     name = name.trim().ifBlank { placeholder },
@@ -247,7 +246,7 @@ private fun canConfirmProjectDetails(
 ): Boolean =
     name.trim().isNotEmpty() &&
         hasValidCustomLabel &&
-        (!isCreate || startCount != null && target != TargetInput.Invalid)
+        (!isCreate || (startCount != null && target != TargetInput.Invalid))
 
 @Composable
 private fun ProjectStartingCountField(

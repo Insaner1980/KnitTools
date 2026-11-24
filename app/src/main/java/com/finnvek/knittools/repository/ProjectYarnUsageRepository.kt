@@ -157,11 +157,13 @@ class ProjectYarnUsageRepository
         private fun validate(amounts: YarnUsageAmounts): YarnUsageResult? =
             when {
                 !YarnUsageCalculator.validAmounts(amounts) -> YarnUsageResult.InvalidAmounts
+
                 (amounts.metersPerSkein != null || amounts.gramsPerSkein != null) &&
                     !YarnUsageCalculator.validConversion(
                         amounts.metersPerSkein,
                         amounts.gramsPerSkein,
                     ) -> YarnUsageResult.InvalidConversion
+
                 else -> null
             }
 

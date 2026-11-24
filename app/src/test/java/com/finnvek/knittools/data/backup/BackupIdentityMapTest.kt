@@ -65,9 +65,15 @@ class BackupIdentityMapTest {
             every { query(any<String>()) } answers {
                 val query = firstArg<String>()
                 when {
-                    query.startsWith("SELECT COALESCE") -> backupCursor(listOf(listOf(maximum)))
-                    query.startsWith("SELECT id") -> backupCursor(listOf(listOf(1L), listOf(2L)))
-                    else ->
+                    query.startsWith("SELECT COALESCE") -> {
+                        backupCursor(listOf(listOf(maximum)))
+                    }
+
+                    query.startsWith("SELECT id") -> {
+                        backupCursor(listOf(listOf(1L), listOf(2L)))
+                    }
+
+                    else -> {
                         backupCursor(
                             listOf(
                                 listOf("""{"extraCounterId":7}"""),
@@ -76,6 +82,7 @@ class BackupIdentityMapTest {
                                 listOf("""{"extraCounterId":null}"""),
                             ),
                         )
+                    }
                 }
             }
             every { query(any<String>(), any<Array<Any?>>()) } answers { backupCursor(listOf(listOf(50L))) }
@@ -161,7 +168,12 @@ class BackupIdentityMapTest {
             identities.apply("project_documents", row)
             assertEquals(JsonPrimitive(expected), row["documentKey"])
         }
-        for (key in listOf("saved:999:v1", "legacy-project:999")) {
+        for (key in listOf(
+            "saved:999:v1",
+            "legacy-project:999",
+            "saved:9223372036854775808:v1",
+            "legacy-project:9223372036854775808",
+        )) {
             val first = mutableMapOf<String, JsonElement>("documentKey" to JsonPrimitive(key))
             val second = first.toMutableMap()
             identities.apply("pattern_bookmarks", first)

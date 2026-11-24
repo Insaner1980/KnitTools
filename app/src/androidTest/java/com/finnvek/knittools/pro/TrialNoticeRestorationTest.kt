@@ -351,7 +351,7 @@ class TrialNoticeRestorationTest {
         seedActiveTrial(daysRemaining = 3)
         launch()
         waitText(R.string.trial_three_days_left)
-        click(R.string.tip_got_it)
+        click(R.string.trial_notice_acknowledge)
         waitRootReady()
         recreate()
         waitRootReady()

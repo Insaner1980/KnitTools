@@ -8,8 +8,11 @@ import androidx.compose.ui.unit.dp
  */
 @Suppress("MayBeConstant")
 object CrossStitchDimens {
-    // Kuvakkeen sivu jaetaan näin moneen ruutuun; 9 ruudun kuvio jättää kapean reunan.
+    // Kuvakkeen sivu jaetaan vähintään näin moneen ruutuun; 9 ruudun kuvio jättää kapean reunan.
     val GridCells = 9.5f
+
+    // Yli 9 ruudun kuvio (lankakerä) mitoitetaan omasta koostaan tällä reunalla.
+    val GridMargin = 0.5f
 
     // Ristin kärjet ruudun sisällä: alku ja pituus ruudun osuutena.
     val StitchInset = 0.18f

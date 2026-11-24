@@ -196,17 +196,25 @@ class GuideNavigationTest {
                         composable(tab.startRoute) { Text(tab.route) }
                         // CPD-ON
                         when (tab) {
-                            TopLevelDestination.Projects, TopLevelDestination.Settings ->
+                            TopLevelDestination.Projects, TopLevelDestination.Settings -> {
                                 guideDestinations(nav, counterLaunches::add) { topic, _ ->
                                     visibleTopic = topic
                                     Text(topic?.key ?: "Guide")
                                 }
+                            }
+
                             TopLevelDestination.Library -> {
                                 composable(Screen.MyYarn.route) { Text("Yarn") }
                                 composable(Screen.SavedPatterns.route) { Text("Patterns") }
                             }
-                            TopLevelDestination.Tools -> composable(Screen.Gauge.route) { Text("Gauge") }
-                            TopLevelDestination.Insights -> Unit
+
+                            TopLevelDestination.Tools -> {
+                                composable(Screen.Gauge.route) { Text("Gauge") }
+                            }
+
+                            TopLevelDestination.Insights -> {
+                                Unit
+                            }
                         }
                         // CPD-OFF: Projektisivun reitti on yhteinen navigointitestien välilehtirungoille.
                         if (tab == TopLevelDestination.Projects) {

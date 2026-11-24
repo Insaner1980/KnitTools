@@ -71,7 +71,6 @@ import com.finnvek.knittools.domain.model.CraftType
 import com.finnvek.knittools.domain.model.MainCounterLabelType
 import com.finnvek.knittools.domain.model.ProjectCounter
 import com.finnvek.knittools.domain.model.ProjectCounterType
-import com.finnvek.knittools.domain.tips.TipId
 import com.finnvek.knittools.pro.ProActionAccess
 import com.finnvek.knittools.pro.ProFeature
 import com.finnvek.knittools.pro.ProState
@@ -104,8 +103,6 @@ import com.finnvek.knittools.ui.layout.LocalAdaptiveContentSize
 import com.finnvek.knittools.ui.layout.contentWidth
 import com.finnvek.knittools.ui.theme.CounterDimens
 import com.finnvek.knittools.ui.theme.knitToolsColors
-import com.finnvek.knittools.ui.tips.tipAnchor
-import com.finnvek.knittools.ui.tips.tipProtected
 
 data class ProjectCountersSectionActions(
     val onAddCounter: () -> Unit,
@@ -139,6 +136,7 @@ data class CounterWorkspaceActions(
     val onStopSession: () -> Unit,
     val onResolveSessionRecovery: () -> Unit,
     val onShowStepSize: () -> Unit = {},
+    val onMarkComplete: () -> Unit = {},
 )
 
 internal data class CounterHeroState(
@@ -153,6 +151,7 @@ internal data class CounterHeroState(
     val currentStitch: Int,
     val canUndo: Boolean = false,
     val activeSession: CounterHeroSessionState? = null,
+    val isCompleted: Boolean = false,
 )
 
 internal data class CounterHeroSessionState(
@@ -173,6 +172,7 @@ internal fun CounterUiState.toCounterHeroState(): CounterHeroState =
         visibleStitchTotal = stitchCount?.takeIf { stitchTrackingEnabled && it > 0 },
         currentStitch = currentStitch,
         canUndo = canUndo,
+        isCompleted = isCompleted,
         activeSession =
             activeSession?.takeIf { it.projectId == projectId }?.let {
                 CounterHeroSessionState(sessionSeconds, it.needsRecoveryReview, projectName)
@@ -230,14 +230,21 @@ fun CounterWorkspace(
                     item(key = "counter-hero-reveal-gap") {
                         Column(verticalArrangement = Arrangement.spacedBy(CounterDimens.WorkspaceSectionSpacing)) {
                             when (heroLayout.supportingControlsPlacement) {
-                                SupportingControlsPlacement.InHero -> Unit
-                                SupportingControlsPlacement.StitchTrackerBelowHero ->
+                                SupportingControlsPlacement.InHero -> {
+                                    Unit
+                                }
+
+                                SupportingControlsPlacement.StitchTrackerBelowHero -> {
                                     CounterStitchTracker(
                                         heroState,
                                         actions,
                                         modifier = Modifier.widthIn(max = heroLayout.metrics.controlsMaxWidth),
                                     )
-                                SupportingControlsPlacement.BelowHero -> CounterSupportingControls(heroState, actions)
+                                }
+
+                                SupportingControlsPlacement.BelowHero -> {
+                                    CounterSupportingControls(heroState, actions)
+                                }
                             }
                             Spacer(
                                 modifier =
@@ -537,7 +544,7 @@ private fun CounterSupportingControls(
             )
         }
         CounterValueFormatter.forMainCounter(state.toMainCounterProject()).targetLine?.let {
-            CounterTargetProgress(it, actions.onShowTargetDialog)
+            CounterTargetProgress(it, state.isCompleted, actions)
         }
         CounterStitchTracker(state, actions)
     }
@@ -605,7 +612,7 @@ private fun CounterHero(
             if (showRepeatAndTarget) {
                 val display = CounterValueFormatter.forMainCounter(state.toMainCounterProject())
                 display.targetLine?.let { targetLine ->
-                    CounterTargetProgress(targetLine = targetLine, onShowTargetDialog = actions.onShowTargetDialog)
+                    CounterTargetProgress(targetLine, state.isCompleted, actions)
                 }
             }
             Spacer(modifier = Modifier.height(heroButtonSpacing))
@@ -716,7 +723,7 @@ private fun CounterMainNumber(
             count = state.counter.count,
             textStyle = baseTextStyle.copy(fontSize = fittedFontSize),
             contentDescription = counterDescription,
-            modifier = Modifier.testTag("main-counter-value").tipAnchor(TipId.TARGET_REACHED),
+            modifier = Modifier.testTag("main-counter-value"),
         )
         if (stepDelta != null && state.counter.stepSize > 1 && inlineStepFeedback) {
             CounterStepFeedback(stepDelta, Modifier.align(Alignment.CenterEnd))
@@ -804,36 +811,50 @@ internal fun counterMainNumberFittedFontSize(
 @Composable
 private fun CounterTargetProgress(
     targetLine: MainCounterTargetSlot,
-    onShowTargetDialog: () -> Unit,
+    isCompleted: Boolean,
+    actions: CounterWorkspaceActions,
 ) {
     val fraction = mainCounterTargetFraction(targetLine) ?: return
-    val statusText = mainCounterTargetStatus(targetLine)?.let { counterTargetStatusText(it) } ?: return
+    val status = mainCounterTargetStatus(targetLine) ?: return
+    val showCompletion = !isCompleted && status !is MainCounterTargetStatus.Remaining
+    val (leading, trailing) = counterTargetLabels(targetLine, status, showCompletion)
     Column(
         modifier =
             Modifier
                 .padding(top = CounterDimens.CounterTargetHelperSpacing)
                 .widthIn(max = LocalCounterHeroMetrics.current.controlsMaxWidth)
-                .clickable(onClick = onShowTargetDialog),
+                .clickable(onClick = actions.onShowTargetDialog),
     ) {
         ProjectProgressBar(fraction)
-        // Tila saa jäljelle jäävän leveyden ja rivittyy siinä: kapeassa rivissä suomenkielinen "Tavoite
-        // saavutettu" painui tavoitteen päälle.
         Row(
             modifier = Modifier.fillMaxWidth().padding(top = CounterDimens.CounterTargetHelperSpacing),
             horizontalArrangement = Arrangement.spacedBy(CounterDimens.CounterTargetHelperSpacing),
         ) {
             Text(
-                text = stringResource(R.string.counter_target_of_format, targetLine.target),
+                text = leading,
                 style = counterCaptionStyle(),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
+                maxLines = if (showCompletion) Int.MAX_VALUE else 1,
+                modifier = if (showCompletion) Modifier.weight(1f) else Modifier,
             )
             Text(
-                text = statusText,
+                text = trailing,
                 style = counterCaptionStyle(),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color =
+                    if (showCompletion) {
+                        MaterialTheme.knitToolsColors.primaryReadable
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    },
                 textAlign = TextAlign.End,
-                modifier = Modifier.weight(1f),
+                modifier =
+                    Modifier.weight(1f).then(
+                        if (showCompletion) {
+                            Modifier.clickable(role = Role.Button, onClick = actions.onMarkComplete)
+                        } else {
+                            Modifier
+                        },
+                    ),
             )
         }
     }
@@ -944,8 +965,7 @@ private fun CounterButtons(
                 Modifier
                     .width(buttonWidth)
                     .size(metrics.minusTouchSize)
-                    .align(Alignment.TopStart)
-                    .tipProtected(),
+                    .align(Alignment.TopStart),
         )
         CounterImageButton(
             imageRes = R.drawable.counter_plus_button,
@@ -960,9 +980,7 @@ private fun CounterButtons(
                 Modifier
                     .width(buttonWidth)
                     .size(metrics.primaryTouchSize)
-                    .align(Alignment.TopEnd)
-                    .tipAnchor(TipId.FIRST_ROW)
-                    .tipProtected(),
+                    .align(Alignment.TopEnd),
         )
         MainCounterStepButton(
             stepSize = state.counter.stepSize,
@@ -979,19 +997,25 @@ private fun CounterButtons(
         )
         val undoModifier =
             when {
-                inlineUndo ->
+                inlineUndo -> {
                     Modifier
                         .align(
                             Alignment.Center,
                         ).offset(x = (ringSize + undoGap) / 2)
                         .size(betweenUndoSize)
-                undoBetween ->
+                }
+
+                undoBetween -> {
                     Modifier
                         .align(
                             Alignment.TopCenter,
                         ).padding(top = centerTop + ringSize + undoGap)
                         .size(betweenUndoSize)
-                else -> Modifier.align(Alignment.BottomCenter).size(metrics.undoSize)
+                }
+
+                else -> {
+                    Modifier.align(Alignment.BottomCenter).size(metrics.undoSize)
+                }
             }
         CounterImageButton(
             imageRes = R.drawable.counter_undo_button,
@@ -999,7 +1023,7 @@ private fun CounterButtons(
             visualSize = if (undoBetween) betweenUndoSize else metrics.undoSize,
             onClick = onUndo,
             enabled = state.canUndo,
-            modifier = (if (state.canUndo) undoModifier.tipAnchor(TipId.UNDO) else undoModifier).tipProtected(),
+            modifier = undoModifier,
         )
     }
 }
@@ -1021,8 +1045,6 @@ private fun MainCounterStepButton(
             modifier
                 .size(size)
                 .testTag("main-counter-step")
-                .tipAnchor(TipId.STEP_SIZE)
-                .tipProtected()
                 .clickable(interactionSource = null, indication = null, role = Role.Button, onClick = onClick)
                 .semantics { contentDescription = description },
         contentAlignment = Alignment.Center,

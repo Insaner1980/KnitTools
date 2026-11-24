@@ -91,22 +91,37 @@ private fun PatternAnnotation.mapGeometry(
     copy(
         payload =
             when (val annotationPayload = payload) {
-                is FreehandPayload -> annotationPayload.copy(points = annotationPayload.points.map(transform))
-                is ShapePayload ->
+                is FreehandPayload -> {
+                    annotationPayload.copy(points = annotationPayload.points.map(transform))
+                }
+
+                is ShapePayload -> {
                     annotationPayload.copy(
                         start = transform(annotationPayload.start),
                         end = transform(annotationPayload.end),
                     )
-                is TextBoxPayload -> annotationPayload.copy(bounds = annotationPayload.bounds.map(transform))
-                is CalloutPayload -> annotationPayload.copy(bounds = annotationPayload.bounds.map(transform))
-                is ChartRegionPayload -> annotationPayload.copy(bounds = annotationPayload.bounds.map(transform))
-                is ChartTrackerPayload ->
+                }
+
+                is TextBoxPayload -> {
+                    annotationPayload.copy(bounds = annotationPayload.bounds.map(transform))
+                }
+
+                is CalloutPayload -> {
+                    annotationPayload.copy(bounds = annotationPayload.bounds.map(transform))
+                }
+
+                is ChartRegionPayload -> {
+                    annotationPayload.copy(bounds = annotationPayload.bounds.map(transform))
+                }
+
+                is ChartTrackerPayload -> {
                     annotationPayload.copy(
                         region =
                             annotationPayload.region.copy(
                                 bounds = annotationPayload.region.bounds.map(transform),
                             ),
                     )
+                }
             },
         updatedAt = System.currentTimeMillis(),
     )

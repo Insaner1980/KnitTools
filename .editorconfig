@@ -15,6 +15,7 @@ ij_kotlin_name_count_to_use_star_import = 999
 ij_kotlin_name_count_to_use_star_import_for_members = 999
 max_line_length = 120
 ktlint_function_naming_ignore_when_annotated_with = Composable
+ktlint_standard_no-unused-imports = enabled
 # Compose-rules ajetaan erillisella cr-tarkistuksella detektin konfiguraatiota ja baselinea vasten.
 ktlint_compose = disabled
 

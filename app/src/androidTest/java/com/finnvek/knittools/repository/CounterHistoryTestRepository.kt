@@ -1,7 +1,6 @@
 package com.finnvek.knittools.repository
 
 import androidx.lifecycle.SavedStateHandle
-import com.finnvek.knittools.analytics.UsageAnalytics
 import com.finnvek.knittools.data.datastore.PreferencesManager
 import com.finnvek.knittools.data.local.DatabaseTransactionRunner
 import com.finnvek.knittools.data.local.KnitToolsDatabase
@@ -11,7 +10,6 @@ import com.finnvek.knittools.data.storage.ProgressPhotoStorage
 import com.finnvek.knittools.pro.InAppReviewManager
 import com.finnvek.knittools.pro.ProManager
 import com.finnvek.knittools.ui.screens.counter.CounterViewModel
-import com.finnvek.knittools.ui.tips.TipSession
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 
@@ -126,12 +124,6 @@ internal class RoomCounterTestFixture(
             projectDocumentRepository = projectDocumentRepository,
             patternDocumentStorage = PatternDocumentStorage(Dispatchers.IO),
             inAppReviewManager = InAppReviewManager(context),
-            tipSession =
-                TipSession(
-                    onboardingStateRepository,
-                    UsageAnalytics.NONE,
-                    applicationScope,
-                ),
             onboardingStateRepository = onboardingStateRepository,
             savedStateHandle = SavedStateHandle(),
             context = context,

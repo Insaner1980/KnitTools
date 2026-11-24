@@ -62,52 +62,10 @@
     <string name="project_target_error">Skriv inn et tall fra 1 til %1$s.</string>
     <!-- Kääntäjälle: projektin luontilomake. Aloitusmäärä tarkoittaa jo tehtyä työtä; tavoite on vapaaehtoinen. Säilytä paikkamerkit %1$s muuttumattomina. -->
     <string name="project_create_preview_a11y">Forhåndsvisning: %1$s</string>
-    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
-    <string name="tip_got_it">Skjønner</string>
-    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
-    <string name="tip_first_row_rows">Trykk på + når du er ferdig med en rad. Du kan også trykke på det store tallet.</string>
-    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
-    <string name="tip_first_row_rounds">Trykk på + når du er ferdig med en runde. Du kan også trykke på det store tallet.</string>
-    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
-    <string name="tip_first_row_repeats">Trykk på + når du er ferdig med en repetisjon. Du kan også trykke på det store tallet.</string>
-    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
-    <string name="tip_first_row_custom">Trykk på + hver gang du er ferdig med én. Du kan også trykke på det store tallet.</string>
-    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
-    <string name="tip_undo">Lagret. Trykket du feil? Angre opphever den siste endringen.</string>
-    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
-    <string name="tip_step_size">Teller du mer enn én om gangen? Her endrer du hvor mye hvert trykk legger til eller trekker fra.</string>
-    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
-    <string name="tip_work_session">Vil du vite hvor lang tid prosjektet tar? Start en arbeidsøkt fra denne menyen. Tiden starter aldri av seg selv.</string>
-    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
-    <string name="tip_overview_intro">Her er hele prosjektet ditt: oppskrift, garn, notater og bilder. Fortsett tar deg tilbake til telleren.</string>
-    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
-    <string name="tip_pattern_tile">Legg ved oppskriften, så har du den sammen med prosjektet.</string>
-    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
-    <string name="tip_reading_line">Slå på Følg hovedtelleren, så flytter leselinjen seg mens du teller.</string>
-    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
-    <string name="tip_keep_screen_on">Blir skjermen mørk mens du jobber? Hold den på mens du teller.</string>
-    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
-    <string name="tip_keep_screen_on_action">Hold skjermen på</string>
-    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
-    <string name="tip_target_reached">Målet er nådd. Fortsett å telle, eller marker prosjektet som ferdig fra menyen på prosjektsiden.</string>
-    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
-    <string name="tip_first_session_saved">Den første arbeidsøkten din er lagret. Her ser du den samlede tiden for prosjektet.</string>
-    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
-    <string name="tip_backup">Prosjektene dine finnes bare på denne telefonen. Lag en sikkerhetskopi, så du har dem hvis du bytter telefon.</string>
-    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
-    <string name="tip_backup_action">Sikkerhetskopier</string>
-    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
-    <string name="tip_folders">Mange prosjekter? Sorter dem i mapper via tittelen.</string>
-    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
-    <string name="tip_widget">Tell fra startskjermen uten å åpne appen.</string>
-    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
-    <string name="tip_widget_action">Legg til widget</string>
-    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
-    <string name="tip_tools_intro">Kalkulatorene fungerer uten nett. Eksempelverdiene viser hva du skal fylle inn.</string>
-    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
-    <string name="settings_show_tips_again">Vis tips igjen</string>
-    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
-    <string name="settings_tips_reset_done">Tips vises igjen.</string>
+    <!-- Kokeilun päättymismuistutuksen kuittaava painike. -->
+    <string name="trial_notice_acknowledge">Skjønner</string>
+    <!-- Avaa varmuuskopioinnin ilmoitusriviltä. -->
+    <string name="projects_backup_notice_action">Sikkerhetskopier</string>
     <!-- Kääntäjälle: projektin neljän kohdan aloituslista tai sen valmistumisilmoitus. -->
     <string name="project_setup_pattern">Legg ved oppskriften</string>
     <!-- Kääntäjälle: projektin neljän kohdan aloituslista tai sen valmistumisilmoitus. -->
@@ -249,7 +207,7 @@
     <!-- Kääntäjälle: paikallinen käyttöopas. Toimintojen ja välilehtien nimet vastaavat muuta käyttöliittymää. -->
     <string name="guide_tools_folders_title">Mapper</string>
     <!-- Kääntäjälle: paikallinen käyttöopas. Toimintojen ja välilehtien nimet vastaavat muuta käyttöliittymää. -->
-    <string name="guide_tools_folders_body">Grupper prosjekter i mapper via tittelen Prosjekter. Ett pågående prosjekt om gangen er gratis, og ferdige prosjekter teller ikke med.</string>
+    <string name="guide_tools_folders_body">Grupper prosjekter i mapper via tittelen Prosjekter.</string>
     <!-- Kääntäjälle: paikallinen käyttöopas. Toimintojen ja välilehtien nimet vastaavat muuta käyttöliittymää. -->
     <string name="guide_tools_backup_title">Sikkerhetskopiering</string>
     <!-- Kääntäjälle: paikallinen käyttöopas. Toimintojen ja välilehtien nimet vastaavat muuta käyttöliittymää. -->
@@ -393,7 +351,7 @@
     <!-- Kääntäjälle: käyttäjän käynnistämä 14 päivän Pro-kokeilu tai sen suora kokeilutoiminto. -->
     <string name="trial_started_screen_title">Pro-prøveperioden din har startet</string>
     <!-- Kääntäjälle: käyttäjän käynnistämä 14 päivän Pro-kokeilu tai sen suora kokeilutoiminto. -->
-    <string name="trial_ended_screen_title">Pro-prøveperioden din er over</string>
+    <string name="trial_ended_screen_title">Pro-prøven er over</string>
     <!-- Kääntäjälle: käyttäjän käynnistämä 14 päivän Pro-kokeilu tai sen suora kokeilutoiminto. -->
     <string name="trial_journey_title">Pro-prøveperioden din</string>
     <!-- Kokeilun aloitussheetin johdanto otsikon alla; perässä lista ehdotettuja toimintoja. -->
@@ -661,8 +619,16 @@
     <string name="journey_pdf_failed">PDF-oppskriften kunne ikke importeres. Det tidligere vedlegget er beholdt.</string>
     <!-- Aloituspolku: Luo ensimmäinen projekti -->
     <string name="journey_first_project">Opprett ditt første prosjekt</string>
-    <!-- Aloituspolun jälkeen: ohjelaattaan ankkuroitu vihje vain luodulle projektille, johon käyttäjä liitti PDF-ohjeen. -->
-    <string name="journey_open_pattern_tip">Åpne oppskriften du har lagt til i prosjektet, her.</string>
     <!-- Vahvistetun Pro-oston jälkeen näytettävä kuittaus sovellukseen siirryttäessä. -->
     <string name="journey_pro_active">Pro er aktivert.</string>
+    <!-- Projektien paikallisesta tallennuksesta kertova ilmoitus. -->
+    <string name="projects_backup_notice">Prosjektene dine finnes bare på denne telefonen.</string>
+    <!-- PDF-lukijan ilmoitus laskuria seuraavasta lukulinjasta. -->
+    <string name="reading_line_notice">Leselinjen kan følge telleren.</string>
+    <!-- Ohittaa ilmoituksen pysyvästi. -->
+    <string name="contextual_notice_skip">Hopp over</string>
+    <!-- Ottaa käyttöön laskuria seuraavan lukulinjan. -->
+    <string name="reading_line_notice_enable">Slå på</string>
+    <!-- Avaa valmistumisvahvistuksen tavoitteen täyttäneelle projektille. -->
+    <string name="counter_mark_complete">Merk som ferdig</string>
 </resources>

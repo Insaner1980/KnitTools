@@ -276,7 +276,7 @@ class AuditPart10LayoutTest(
         var saved: Triple<Int, Int?, String>? = null
         compose.setContent {
             Frame {
-                AddReminderDialog(
+                ReminderFormSheet(
                     reminder =
                         RowReminder(
                             projectId = 1,

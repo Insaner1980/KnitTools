@@ -28,14 +28,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import com.finnvek.knittools.R
-import com.finnvek.knittools.domain.tips.TipId
 import com.finnvek.knittools.ui.components.CrossStitchGlyph
 import com.finnvek.knittools.ui.components.CrossStitchIcon
 import com.finnvek.knittools.ui.components.SectionLabel
 import com.finnvek.knittools.ui.theme.CounterDimens
 import com.finnvek.knittools.ui.theme.FontScaleThresholds
 import com.finnvek.knittools.ui.theme.knitToolsColors
-import com.finnvek.knittools.ui.tips.tipAnchor
 
 enum class ProjectContentCardKind(
     val glyph: CrossStitchGlyph,
@@ -112,14 +110,7 @@ fun ProjectContentCards(
                                 ProjectContentCardView(
                                     card = card,
                                     onClick = { onCardClick(card.kind) },
-                                    modifier =
-                                        Modifier.width(tileWidth).then(
-                                            if (card.kind == ProjectContentCardKind.PATTERN) {
-                                                Modifier.tipAnchor(TipId.PATTERN_TILE)
-                                            } else {
-                                                Modifier
-                                            },
-                                        ),
+                                    modifier = Modifier.width(tileWidth),
                                 )
                             }
                         }

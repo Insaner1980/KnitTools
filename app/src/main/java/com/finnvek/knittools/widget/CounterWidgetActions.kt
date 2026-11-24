@@ -12,6 +12,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
+import java.io.IOException
 
 class CounterWidgetActions : BroadcastReceiver() {
     override fun onReceive(
@@ -63,7 +64,11 @@ class CounterWidgetActions : BroadcastReceiver() {
                 repository.applyWidgetCountChange(renderedProjectId, widgetAction.increments)
         val latestShared = CounterWidgetState.load(context)
         val resolved = repository.resolveWidgetDisplayData(context, listOf(latestShared))
-        CounterWidgetState.replaceIfCurrent(context, latestShared, resolved)
+        try {
+            CounterWidgetState.replaceIfCurrent(context, latestShared, resolved)
+        } catch (_: IOException) {
+            // Refresh can render the committed count directly from the repository.
+        }
         CounterWidgetState.refreshAll(context)
         if (changed) entryPoint.analytics().trackFromWidget(UsageEvent.WIDGET_COUNTER_CHANGED)
     }

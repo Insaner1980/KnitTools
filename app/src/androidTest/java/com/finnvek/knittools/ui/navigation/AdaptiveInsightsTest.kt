@@ -113,10 +113,17 @@ class AdaptiveInsightsTest : AdaptiveRouteTestFixture() {
             chooseRange(range)
             val start =
                 when (range) {
-                    R.string.insights_this_week ->
+                    R.string.insights_this_week -> {
                         today.with(TemporalAdjusters.previousOrSame(currentInsightsFirstDayOfWeek()))
-                    R.string.insights_this_month -> today.withDayOfMonth(1)
-                    else -> sessionDates.last()
+                    }
+
+                    R.string.insights_this_month -> {
+                        today.withDayOfMonth(1)
+                    }
+
+                    else -> {
+                        sessionDates.last()
+                    }
                 }
             val expectedDays = sessionDates.count { !it.isBefore(start) }
             for ((width, height) in matrix) {

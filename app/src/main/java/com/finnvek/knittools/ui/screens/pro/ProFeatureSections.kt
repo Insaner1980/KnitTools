@@ -100,10 +100,15 @@ internal fun ProAddsSection(
 
 private fun ProAddsGroup.texts(): Pair<Int, Int> =
     when (this) {
-        ProAddsGroup.Projects ->
+        ProAddsGroup.Projects -> {
             R.string.onboarding_pro_group_projects_title to R.string.onboarding_pro_group_projects_body
-        ProAddsGroup.Workflow ->
+        }
+
+        ProAddsGroup.Workflow -> {
             R.string.onboarding_pro_group_workflow_title to R.string.onboarding_pro_group_workflow_body
-        ProAddsGroup.Insights ->
+        }
+
+        ProAddsGroup.Insights -> {
             R.string.onboarding_pro_group_insights_title to R.string.onboarding_pro_group_insights_body
+        }
     }

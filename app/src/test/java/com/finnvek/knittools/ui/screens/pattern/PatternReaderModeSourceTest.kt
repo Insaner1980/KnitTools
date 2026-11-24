@@ -27,7 +27,7 @@ class PatternReaderModeSourceTest {
         val viewer = ProjectSourceFiles.read(PATTERN_VIEWER)
 
         // Lukutilassa ohje täyttää näytön; tasot ja vienti ovat valikossa.
-        assertTrue(viewer.contains("if (state.patternUri != null && state.annotationMode)"))
+        assertTrue(viewer.contains("if (state.patternUri != null && state.annotationMode && annotationPageMatches)"))
         assertTrue(viewer.contains("R.string.pattern_mark_up"))
         assertTrue(viewer.contains("PatternAnnotationLayersSheet("))
         val contentMarker = "private fun PatternViewerContent("
@@ -38,12 +38,14 @@ class PatternReaderModeSourceTest {
     @Test
     fun `bookmarks live in the bottom bar instead of the overflow menu`() {
         val viewer = ProjectSourceFiles.read(PATTERN_VIEWER)
+        val bottomBar = ProjectSourceFiles.read(PATTERN_VIEWER_BOTTOM_BAR)
         val overflowMenu =
             viewer
                 .blockBetween("private fun PatternViewerOverflowMenu(", "private fun PatternReadingLineMenuItem(")
 
         assertFalse(overflowMenu.contains("R.string.pattern_bookmarks"))
-        assertTrue(viewer.contains("onClick = actions.onOpenBookmarks"))
+        assertTrue(viewer.contains("onOpenBookmarks = {"))
+        assertTrue(bottomBar.contains("onClick = actions.onOpenBookmarks"))
     }
 
     @Test
@@ -58,5 +60,7 @@ class PatternReaderModeSourceTest {
         const val MANIFEST = "app/src/main/AndroidManifest.xml"
         const val PATTERN_VIEWER =
             "app/src/main/java/com/finnvek/knittools/ui/screens/pattern/PatternViewerScreen.kt"
+        const val PATTERN_VIEWER_BOTTOM_BAR =
+            "app/src/main/java/com/finnvek/knittools/ui/screens/pattern/PatternViewerBottomBar.kt"
     }
 }

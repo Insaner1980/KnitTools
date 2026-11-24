@@ -10,6 +10,23 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 
+internal enum class TitleAccent {
+    Primary,
+    Secondary,
+    Tertiary,
+    Rose,
+    Teal,
+}
+
+@Immutable
+data class TitleAccentColors(
+    val primary: Color = Color.Unspecified,
+    val secondary: Color = Color.Unspecified,
+    val tertiary: Color = Color.Unspecified,
+    val rose: Color = Color.Unspecified,
+    val teal: Color = Color.Unspecified,
+)
+
 @Immutable
 data class KnitToolsExtendedColors(
     val onPhotoScrim: Color = TextPrimary,
@@ -58,7 +75,17 @@ data class KnitToolsExtendedColors(
     val transparentIndicator: Color,
     val activityRamp: List<Color>,
     val yarnPalette: List<Color>,
-)
+    val titleAccentColors: TitleAccentColors = TitleAccentColors(),
+) {
+    internal fun titleAccent(role: TitleAccent): Color =
+        when (role) {
+            TitleAccent.Primary -> titleAccentColors.primary
+            TitleAccent.Secondary -> titleAccentColors.secondary
+            TitleAccent.Tertiary -> titleAccentColors.tertiary
+            TitleAccent.Rose -> titleAccentColors.rose
+            TitleAccent.Teal -> titleAccentColors.teal
+        }
+}
 
 val LocalKnitToolsColors =
     staticCompositionLocalOf {
@@ -137,7 +164,7 @@ private val KnitToolsDarkColorScheme =
         outlineVariant = Divider,
     )
 
-private val DarkExtendedColors =
+internal val DarkExtendedColors =
     KnitToolsExtendedColors(
         surfaceTint = SurfaceHighest,
         secondaryOutline = Divider,
@@ -148,6 +175,14 @@ private val DarkExtendedColors =
         navBarContainer = NavBackground,
         navBarIndicator = NavActiveBg,
         cardContainer = SurfaceHigh,
+        titleAccentColors =
+            TitleAccentColors(
+                primary = DarkPrimaryTitle,
+                secondary = Secondary,
+                tertiary = Tertiary,
+                rose = DarkRoseTitle,
+                teal = DarkTealTitle,
+            ),
         selectedCardContainer = Primary.copy(alpha = SELECTED_CARD_ALPHA),
         actionContainer = ActionContainer,
         sectionLabel = DustyRose,
@@ -212,7 +247,7 @@ private val KnitToolsLightColorScheme =
         outlineVariant = LightDivider,
     )
 
-private val LightExtendedColors =
+internal val LightExtendedColors =
     KnitToolsExtendedColors(
         surfaceTint = LightSurfaceHighest,
         secondaryOutline = LightDivider,
@@ -223,6 +258,14 @@ private val LightExtendedColors =
         navBarContainer = LightNavBackground,
         navBarIndicator = LightNavActiveBg,
         cardContainer = LightCardContainer,
+        titleAccentColors =
+            TitleAccentColors(
+                primary = LightPrimaryTitle,
+                secondary = LightSecondary,
+                tertiary = LightTertiaryTitle,
+                rose = LightRoseTitle,
+                teal = LightTealTitle,
+            ),
         selectedCardContainer = Primary.copy(alpha = SELECTED_CARD_ALPHA),
         actionContainer = LightActionContainer,
         sectionLabel = LightSectionLabel,

@@ -80,8 +80,14 @@ internal fun CounterHistoryContent(
             verticalArrangement = Arrangement.spacedBy(CounterDimens.WorkspaceGroupSpacing),
         ) {
             when {
-                state.loading -> item { CircularProgressIndicator() }
-                state.projectMissing -> Unit
+                state.loading -> {
+                    item { CircularProgressIndicator() }
+                }
+
+                state.projectMissing -> {
+                    Unit
+                }
+
                 else -> {
                     // Projektin nimi samana osiomerkkinä kuin istuntohistoriassa, ei omana roosana otsikkona.
                     item(key = "project") {

@@ -24,14 +24,18 @@ jobs:
           fetch-depth: 0
 
       - name: Set up JDK 17
-        uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
+        uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6.3.0
         with:
           java-version: '17'
+          check-latest: true
           distribution: 'temurin'
           verify-signature: true
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
+
+      - name: Install Android compile platform
+        run: '"$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-37.2" "build-tools;37.0.0"'
 
       - name: Build debug APK
         run: ./gradlew assembleDebug
@@ -40,7 +44,7 @@ jobs:
         run: ./gradlew :app:testDebugUnitTest
 
       - name: Run ktlint
-        run: ./gradlew :app:ktlintCheck :baselineprofile:ktlintCheck
+        run: ./gradlew :ktlintCheck :app:ktlintCheck :baselineprofile:ktlintCheck
 
       - name: Run detekt
         run: ./gradlew :app:detekt
@@ -76,14 +80,18 @@ jobs:
           persist-credentials: false
 
       - name: Set up JDK 17
-        uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
+        uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6.3.0
         with:
           java-version: '17'
+          check-latest: true
           distribution: 'temurin'
           verify-signature: true
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
+
+      - name: Install Android compile platform
+        run: '"$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-37.2" "build-tools;37.0.0"'
 
       # No signing or production service secrets are passed to this PR job.
       - name: Build optimized test target and external driver
@@ -130,6 +138,7 @@ jobs:
             baselineprofile/build/outputs/apk/benchmarkRelease/output-metadata.json
 
   functions:
+    # Keep the check name required by the main branch ruleset.
     name: Functions (Node 22)
     runs-on: ubuntu-latest
 
@@ -138,15 +147,10 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Set up Node.js 22
-        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        with:
-          node-version: '22'
-          cache: npm
-          cache-dependency-path: functions/package-lock.json
-
-      - name: Install Functions dependencies
-        run: npm --prefix functions ci --ignore-scripts
-
-      - name: Build and test Functions
-        run: npm --prefix functions test
+      - name: Check that the retired Ravelry backend is absent
+        run: |
+          backend_files=$(git ls-files -- functions/ .firebaserc firebase.json firestore.rules firestore.indexes.json)
+          if [ -n "$backend_files" ]; then
+            printf 'Retired Ravelry backend files are still tracked:\n%s\n' "$backend_files"
+            exit 1
+          fi

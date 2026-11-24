@@ -284,27 +284,55 @@ private fun ProPromptRequest.title(): String =
 private fun ProPromptRequest.body(status: ProStatus): String =
     stringResource(
         when (source) {
-            ProPromptSource.Projects ->
+            ProPromptSource.Projects -> {
                 if (status == ProStatus.TRIAL_NOT_STARTED) {
                     R.string.onboarding_pro_projects_trial_body
                 } else {
                     R.string.onboarding_pro_projects_body
                 }
-            ProPromptSource.ProjectReactivation -> R.string.onboarding_pro_reactivation_body
-            ProPromptSource.ProgressPhotos -> R.string.onboarding_pro_photos_body
-            ProPromptSource.Notes -> R.string.onboarding_pro_notes_body
+            }
+
+            ProPromptSource.ProjectReactivation -> {
+                R.string.onboarding_pro_reactivation_body
+            }
+
+            ProPromptSource.ProgressPhotos -> {
+                R.string.onboarding_pro_photos_body
+            }
+
+            ProPromptSource.Notes -> {
+                R.string.onboarding_pro_notes_body
+            }
+
             ProPromptSource.YarnCards,
             ProPromptSource.SaveToMyYarn,
-            -> R.string.onboarding_pro_yarn_body
-            ProPromptSource.Counters -> R.string.onboarding_pro_counters_body
-            ProPromptSource.Reminders -> R.string.onboarding_pro_reminders_body
+            -> {
+                R.string.onboarding_pro_yarn_body
+            }
+
+            ProPromptSource.Counters -> {
+                R.string.onboarding_pro_counters_body
+            }
+
+            ProPromptSource.Reminders -> {
+                R.string.onboarding_pro_reminders_body
+            }
+
             ProPromptSource.PatternCamera,
             ProPromptSource.PatternGallery,
-            -> R.string.onboarding_pro_pattern_pdf_body
+            -> {
+                R.string.onboarding_pro_pattern_pdf_body
+            }
+
             ProPromptSource.Widget,
             ProPromptSource.WidgetPin,
-            -> R.string.onboarding_pro_widget_body
-            ProPromptSource.InstructionPaste -> R.string.pro_prompt_instruction_paste_body
+            -> {
+                R.string.onboarding_pro_widget_body
+            }
+
+            ProPromptSource.InstructionPaste -> {
+                R.string.pro_prompt_instruction_paste_body
+            }
         },
     )
 
@@ -315,18 +343,27 @@ private fun ProPromptRequest.retention(): String =
             ProPromptSource.Projects,
             ProPromptSource.ProjectReactivation,
             -> R.string.onboarding_pro_retention_projects
+
             ProPromptSource.ProgressPhotos -> R.string.onboarding_pro_retention_photos
+
             ProPromptSource.Notes -> R.string.onboarding_pro_retention_notes
+
             ProPromptSource.YarnCards -> R.string.onboarding_pro_retention_yarn
+
             ProPromptSource.SaveToMyYarn -> R.string.onboarding_pro_retention_project_yarn
+
             ProPromptSource.Counters -> R.string.onboarding_pro_retention_counters
+
             ProPromptSource.Reminders -> R.string.onboarding_pro_retention_reminders
+
             ProPromptSource.PatternCamera,
             ProPromptSource.PatternGallery,
             -> R.string.onboarding_pro_retention_pattern_pdf
+
             ProPromptSource.Widget,
             ProPromptSource.WidgetPin,
             -> R.string.onboarding_pro_retention_widget
+
             ProPromptSource.InstructionPaste -> R.string.onboarding_pro_retention_paste
         },
     )

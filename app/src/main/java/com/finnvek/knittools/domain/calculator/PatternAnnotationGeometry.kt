@@ -66,7 +66,9 @@ fun isPointNearShape(
         -> pointSegmentDistance(point, shape.start, shape.end) <= tolerance
 
         PatternAnnotationKind.RECTANGLE -> isPointNearRectangle(point, shape, tolerance)
+
         PatternAnnotationKind.ELLIPSE -> isPointNearEllipse(point, shape, tolerance)
+
         else -> false
     }
 

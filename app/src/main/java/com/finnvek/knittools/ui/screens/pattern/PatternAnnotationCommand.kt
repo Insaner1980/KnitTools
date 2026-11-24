@@ -69,10 +69,9 @@ sealed interface PatternAnnotationCommand {
     data class ClearPage(
         val layerId: Long,
         val page: Int,
-        val removed: List<PatternAnnotation>,
     ) : PatternAnnotationCommand {
         override suspend fun apply(repository: PatternAnnotationRepository): PatternAnnotationCommand {
-            repository.clearPage(layerId, page)
+            val removed = repository.clearPage(layerId, page)
             return RestorePage(layerId, page, removed)
         }
     }
@@ -84,7 +83,7 @@ sealed interface PatternAnnotationCommand {
     ) : PatternAnnotationCommand {
         override suspend fun apply(repository: PatternAnnotationRepository): PatternAnnotationCommand {
             repository.restoreBatch(annotations)
-            return ClearPage(layerId, page, annotations)
+            return ClearPage(layerId, page)
         }
     }
 }

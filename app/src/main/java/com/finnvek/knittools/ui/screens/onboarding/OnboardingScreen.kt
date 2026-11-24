@@ -248,8 +248,10 @@ fun OnboardingScreen(
         if (!busy) {
             when (draft.step) {
                 OnboardingStep.Price -> actions.finish()
+
                 // Luotu projekti ei palaa lomakkeeseen: takaisin-ele jatkaa hintavaiheeseen.
                 OnboardingStep.Ready -> actions.next()
+
                 else -> actions.previous()
             }
         }
@@ -497,12 +499,19 @@ internal fun JourneyPrimaryButton(
 private fun nextLabel(step: OnboardingStep): Int =
     when (step) {
         OnboardingStep.Welcome -> R.string.journey_begin
+
         // Craft etenee laatan napautuksella, eikä sillä ole alapalkin painiketta.
         OnboardingStep.Craft -> R.string.journey_continue
+
         OnboardingStep.Needs -> R.string.journey_try_counter
+
         OnboardingStep.Counter -> R.string.journey_continue
+
         OnboardingStep.Toolbox -> R.string.journey_start_project
+
         OnboardingStep.Project -> R.string.journey_create_project
+
         OnboardingStep.Ready -> R.string.journey_continue
+
         OnboardingStep.Price -> R.string.journey_start_trial
     }

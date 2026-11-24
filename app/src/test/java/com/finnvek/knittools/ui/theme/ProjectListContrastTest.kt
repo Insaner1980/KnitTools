@@ -31,6 +31,17 @@ class ProjectListContrastTest {
         }
     }
 
+    @Test
+    fun `hub title accents meet the standard text contrast on both card colors`() {
+        // titleLarge uses 22 sp semibold, so apply the standard text threshold.
+        listOf(LightExtendedColors, DarkExtendedColors).forEach { colors ->
+            TitleAccent.entries.forEach { role ->
+                val ratio = contrastRatio(colors.titleAccent(role), colors.cardContainer)
+                assertTrue("$role title contrast is $ratio on ${colors.cardContainer}", ratio >= 4.5)
+            }
+        }
+    }
+
     private companion object {
         const val MINIMUM_GRAPHICAL_CONTRAST = 3.0
     }

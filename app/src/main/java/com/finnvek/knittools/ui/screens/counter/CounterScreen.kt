@@ -33,7 +33,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -86,9 +85,6 @@ import com.finnvek.knittools.domain.model.SavedPattern
 import com.finnvek.knittools.domain.model.YarnCard
 import com.finnvek.knittools.domain.model.isWebPatternCompatible
 import com.finnvek.knittools.domain.model.webPatternUrlOrNull
-import com.finnvek.knittools.domain.tips.TipContext
-import com.finnvek.knittools.domain.tips.TipId
-import com.finnvek.knittools.domain.tips.TipScreen
 import com.finnvek.knittools.pro.ProActionAccess
 import com.finnvek.knittools.pro.ProFeature
 import com.finnvek.knittools.pro.ProState
@@ -112,6 +108,7 @@ import com.finnvek.knittools.ui.components.SheetTitle
 import com.finnvek.knittools.ui.components.YarnCardPickerSheet
 import com.finnvek.knittools.ui.components.cardTextFieldColors
 import com.finnvek.knittools.ui.components.mainCounterLabelText
+import com.finnvek.knittools.ui.components.rememberExpandedModalSheetState
 import com.finnvek.knittools.ui.components.workSessionDurationText
 import com.finnvek.knittools.ui.findActivity
 import com.finnvek.knittools.ui.layout.ContentWidthPolicy
@@ -129,9 +126,6 @@ import com.finnvek.knittools.ui.screens.project.ProjectOverviewContentActions
 import com.finnvek.knittools.ui.screens.project.ProjectOverviewRouteContent
 import com.finnvek.knittools.ui.screens.project.ProjectSetupRoute
 import com.finnvek.knittools.ui.theme.CounterDimens
-import com.finnvek.knittools.ui.tips.TipEnvironment
-import com.finnvek.knittools.ui.tips.TipHost
-import com.finnvek.knittools.ui.tips.tipAnchor
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -148,7 +142,7 @@ private enum class PendingCounterProAction {
     DecrementSecondary,
 }
 
-private const val CONTENT_ERROR_TIP_BLOCK_MILLIS = 3_500L
+private const val CONTENT_ERROR_BLOCK_MILLIS = 3_500L
 
 private fun ProjectDocumentMutationResult.toProjectDocumentError(): ProjectDocumentError? =
     when (this) {
@@ -196,7 +190,7 @@ data class CounterScreenActions(
     val onNotesEditor: (Long) -> Unit = {},
     val onMeasurements: (Long) -> Unit = {},
     val onUpgradeToPro: () -> Unit = {},
-    val onOpenCounterWithWorkSessionTip: (Long) -> Unit = {},
+    val onOpenCounterWithWorkSessionActions: (Long) -> Unit = {},
     val onGuide: () -> Unit = {},
 )
 
@@ -209,6 +203,9 @@ fun ProjectContentHost(
     overview: Boolean,
     journeyRequest: CounterLaunchRequest? = null,
     onJourneyRequestHandled: (String) -> Unit = {},
+    setupVisitGeneration: Long? = null,
+    openWorkSessionActions: Boolean = false,
+    onWorkSessionActionsOpened: () -> Unit = {},
 ) {
     val viewModel = viewModelProvider()
     val onBack = actions.onBack
@@ -229,17 +226,10 @@ fun ProjectContentHost(
     val context = LocalContext.current
     val contentErrorTimeoutMillis =
         LocalAccessibilityManager.current?.calculateRecommendedTimeoutMillis(
-            CONTENT_ERROR_TIP_BLOCK_MILLIS,
+            CONTENT_ERROR_BLOCK_MILLIS,
             containsText = true,
-        ) ?: CONTENT_ERROR_TIP_BLOCK_MILLIS
+        ) ?: CONTENT_ERROR_BLOCK_MILLIS
     val widgetPinHost = remember(context) { CounterWidgetPinHost(context) }
-    var widgetPinSupported by remember(widgetPinHost) { mutableStateOf(false) }
-    val widgetLifecycleOwner = LocalLifecycleOwner.current
-    LaunchedEffect(widgetPinHost, widgetLifecycleOwner) {
-        widgetLifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
-            widgetPinSupported = widgetPinHost.isSupported()
-        }
-    }
     val widgetAccess = proActionAccess(state.proState, state.proAccessReady, ProFeature.WIDGET)
     val counterAccess = proActionAccess(state.proState, state.proAccessReady, ProFeature.MULTIPLE_COUNTERS)
     val notesAccess =
@@ -275,6 +265,7 @@ fun ProjectContentHost(
 
     var showResetDialog by rememberSaveable { mutableStateOf(false) }
     var showProjectActionsSheet by rememberSaveable { mutableStateOf(false) }
+    var focusWorkSession by rememberSaveable { mutableStateOf(false) }
     var showMoveFolderSheet by rememberSaveable { mutableStateOf(false) }
     var showCountersListSheet by rememberSaveable { mutableStateOf(false) }
     var showCompleteDialog by rememberSaveable { mutableStateOf(false) }
@@ -378,6 +369,17 @@ fun ProjectContentHost(
             hideProjectScopedOverlays()
         }
         previousOverlayProjectId = state.projectId
+    }
+
+    LaunchedEffect(openWorkSessionActions, state.projectId, state.startupReady) {
+        if (openWorkSessionActions && state.startupReady) {
+            if (!state.isCompleted) {
+                projectActionTargetId = state.projectId
+                focusWorkSession = true
+                showProjectActionsSheet = true
+            }
+            onWorkSessionActionsOpened()
+        }
     }
 
     val requestPhotoGallery = {
@@ -537,6 +539,7 @@ fun ProjectContentHost(
             onShowProjectActions = {
                 state.projectId?.let { projectId ->
                     projectActionTargetId = projectId
+                    focusWorkSession = false
                     showProjectActionsSheet = true
                 }
             },
@@ -544,6 +547,13 @@ fun ProjectContentHost(
         )
     val dialogActions = rememberCounterDialogActions(dialogActionDependencies, viewModelProvider)
     val topBarActions = rememberCounterTopBarActions(topBarActionDependencies)
+    val requestProjectCompletion: () -> Unit = {
+        val project = viewModel.uiState.value
+        if (project.projectId != null && project.projectId == state.projectId && !project.isCompleted) {
+            projectActionTargetId = project.projectId
+            showCompleteDialog = true
+        }
+    }
     val mainContentActions =
         remember(
             viewModel,
@@ -558,6 +568,7 @@ fun ProjectContentHost(
             requestPhotoGallery,
             requestRowReminders,
             requestAddCounter,
+            requestProjectCompletion,
         ) {
             CounterWorkspaceActions(
                 onSurfaceIncrement = {
@@ -615,6 +626,7 @@ fun ProjectContentHost(
                     viewModel.incrementStitch()
                 },
                 onShowTargetDialog = { targetDialogProjectId = state.projectId },
+                onMarkComplete = requestProjectCompletion,
                 onShowStepSize = { showStepSizeSheet = true },
                 onDismissReminder = viewModel::dismissReminder,
                 onStopSession = viewModel::stopWorkSession,
@@ -840,6 +852,8 @@ fun ProjectContentHost(
                 photoUri = state.latestPhotos.firstOrNull()?.photoUri,
                 projectCounterCount = state.projectCounters.size,
                 stitchTrackingEnabled = state.stitchTrackingEnabled,
+                keepScreenAwake = state.keepScreenAwake,
+                focusWorkSession = focusWorkSession,
                 stitchCount = state.stitchCount,
                 proState = state.proState,
                 proAccessReady = state.proAccessReady,
@@ -882,6 +896,7 @@ fun ProjectContentHost(
                     enableStitchTrackingOnConfirm = false
                     showStitchDialog = true
                 },
+                onToggleKeepScreenAwake = viewModel::setKeepScreenAwake,
                 onToggleStitchTracking = { enabled ->
                     handleStitchTrackingToggle(
                         enabled = enabled,
@@ -1002,6 +1017,7 @@ fun ProjectContentHost(
                 -> ProPromptRequest(source = ProPromptSource.Reminders)
 
                 PendingCounterProAction.SaveToMyYarn -> ProPromptRequest(source = ProPromptSource.SaveToMyYarn)
+
                 PendingCounterProAction.PinWidget -> ProPromptRequest(source = ProPromptSource.WidgetPin)
 
                 else -> ProPromptRequest(source = ProPromptSource.Counters)
@@ -1040,8 +1056,14 @@ fun ProjectContentHost(
                         viewModel.retrySaveProjectYarnNoteToMyYarn()
                     }
 
-                    PendingCounterProAction.OpenSecondary -> Unit
-                    PendingCounterProAction.PinWidget -> pinWidget()
+                    PendingCounterProAction.OpenSecondary -> {
+                        Unit
+                    }
+
+                    PendingCounterProAction.PinWidget -> {
+                        pinWidget()
+                    }
+
                     PendingCounterProAction.IncrementSecondary -> {
                         if (secondaryProjectId != null && secondaryProjectId == viewModel.uiState.value.projectId) {
                             performHaptic()
@@ -1133,7 +1155,7 @@ fun ProjectContentHost(
         )
     }
 
-    val tipsBlocked =
+    val journeyActionBlocked =
         listOf(
             showResetDialog,
             showProjectActionsSheet,
@@ -1163,162 +1185,146 @@ fun ProjectContentHost(
             blockingCounterIds.isNotEmpty(),
             contentErrorAt != null,
             snackbarHostState.currentSnackbarData != null,
-            state.blocksAutomaticTips(),
+            state.blocksJourneyAction(),
         ).any { it }
     CounterJourneyRequestEffect(
         request = journeyRequest,
         state = state,
-        blocked = tipsBlocked,
+        blocked = journeyActionBlocked,
         overview = overview,
         onHandled = onJourneyRequestHandled,
         onAction = { action ->
             when (action) {
-                TrialJourneyAction.Widget -> requestWidgetPin()
+                TrialJourneyAction.Widget -> {
+                    requestWidgetPin()
+                }
+
                 TrialJourneyAction.RepeatCounter -> {
                     requestAddCounter()
                     addCounterInitialType = ProjectCounterType.REPEATING
                 }
+
                 TrialJourneyAction.PatternCamera -> {
                     initialCameraRequestId = journeyRequest?.requestId
                     patternPickerMode = PatternPickerMode.ADD_READABLE_PROJECT_DOCUMENT
                     showPatternPicker = true
                 }
-                else -> Unit
+
+                else -> {
+                    Unit
+                }
             }
         },
     )
-    TipEnvironment(blocked = tipsBlocked) {
-        TipHost(
-            context =
-                TipContext(
-                    screen = if (overview) TipScreen.OVERVIEW else TipScreen.COUNTER,
-                    projectId = state.projectId,
-                    count = state.counter.count,
-                    target = state.targetRows,
-                    stepSize = state.counter.stepSize,
-                    mainCounterLabelType = state.mainCounterLabelType,
-                    hasDocuments = state.projectDocuments.isNotEmpty(),
-                    hasWebPattern = state.linkedPattern?.isWebPatternCompatible == true,
-                    hasSessions = state.hasSessions,
-                    hasActiveSession = state.activeSession != null,
-                    isCompleted = state.isCompleted,
-                    projectCount = state.projects.size,
-                    keepScreenAwake = state.keepScreenAwake,
-                    widgetPinSupported = state.proAccessReady && widgetPinSupported,
-                    screenReady = state.startupReady,
-                ),
-            onAction = {
-                when (it) {
-                    TipId.KEEP_SCREEN_ON -> viewModel.enableKeepScreenAwake()
-                    TipId.WIDGET -> requestWidgetPin()
-                    else -> Unit
-                }
-            },
-        ) {
-            if (overview) {
-                fun openProjectContent(open: () -> Unit) {
-                    if (state.projectId == viewModel.uiState.value.projectId) {
-                        projectActionTargetId = state.projectId
-                        open()
-                    }
-                }
-                ProjectOverviewRouteContent(
+    if (overview) {
+        fun openProjectContent(open: () -> Unit) {
+            if (state.projectId == viewModel.uiState.value.projectId) {
+                projectActionTargetId = state.projectId
+                open()
+            }
+        }
+        ProjectOverviewRouteContent(
+            state = state,
+            yarnCards = savedYarnCards,
+            actions = actions,
+            snackbarHostState = snackbarHostState,
+            onBlockingSurfaceChanged = { overviewMenuOpen = it },
+            projectSetup = {
+                ProjectSetupRoute(
                     state = state,
-                    yarnCards = savedYarnCards,
-                    actions = actions,
-                    snackbarHostState = snackbarHostState,
-                    onBlockingSurfaceChanged = { overviewMenuOpen = it },
-                    projectSetup = {
-                        ProjectSetupRoute(
-                            state = state,
-                            viewModel = viewModel,
-                            onBlockingSurfaceChanged = { setupMenuOpen = it },
-                            onItemClick = { item ->
-                                openProjectContent {
-                                    when (item) {
-                                        ProjectSetupItem.TARGET -> targetDialogProjectId = state.projectId
-                                        ProjectSetupItem.PATTERN -> {
-                                            patternPickerMode = PatternPickerMode.INITIAL_PROJECT_PATTERN
-                                            showPatternPicker = true
-                                        }
-                                        ProjectSetupItem.YARN -> showYarnManagementSheet = true
-                                        ProjectSetupItem.WORK_TIME ->
-                                            state.projectId?.let(
-                                                actions.onOpenCounterWithWorkSessionTip,
-                                            )
-                                    }
+                    viewModel = viewModel,
+                    routeEntryGeneration = setupVisitGeneration,
+                    onBlockingSurfaceChanged = { setupMenuOpen = it },
+                    onItemClick = { item ->
+                        openProjectContent {
+                            when (item) {
+                                ProjectSetupItem.TARGET -> {
+                                    targetDialogProjectId = state.projectId
                                 }
-                            },
-                        )
-                    },
-                    contentActions =
-                        ProjectOverviewContentActions(
-                            onEditDetails = { openProjectContent { showProjectDetailsSheet = true } },
-                            onMoveToFolder = { openProjectContent { showMoveFolderSheet = true } },
-                            onComplete = { openProjectContent { showCompleteDialog = true } },
-                            onReactivate = {
-                                openProjectContent {
-                                    viewModel.reactivateProject(
-                                        projectActionTargetId,
-                                        state.completedAt,
-                                    )
-                                }
-                            },
-                            onDelete = { openProjectContent { showDeleteDialog = true } },
-                            onYarn = { openProjectContent { showYarnManagementSheet = true } },
-                            onDocuments = { openProjectContent { showDocumentsSheet = true } },
-                            onAddPattern = {
-                                openProjectContent {
-                                    patternPickerMode =
-                                        if (state.projectDocuments.isEmpty()) {
-                                            PatternPickerMode.INITIAL_PROJECT_PATTERN
-                                        } else {
-                                            PatternPickerMode.ADD_READABLE_PROJECT_DOCUMENT
-                                        }
+
+                                ProjectSetupItem.PATTERN -> {
+                                    patternPickerMode = PatternPickerMode.INITIAL_PROJECT_PATTERN
                                     showPatternPicker = true
                                 }
-                            },
-                            onReminders = { openProjectContent { showRemindersSheet = true } },
-                            onAddReminder = {
-                                openProjectContent {
-                                    editingReminderId = null
-                                    if (state.canUseRowReminders) {
-                                        showAddReminder = true
-                                    } else {
-                                        pendingProAction = PendingCounterProAction.OpenReminder
-                                    }
+
+                                ProjectSetupItem.YARN -> {
+                                    showYarnManagementSheet = true
                                 }
-                            },
-                        ),
-                )
-            } else {
-                Scaffold(
-                    containerColor = MaterialTheme.colorScheme.background,
-                    snackbarHost = { SnackbarHost(snackbarHostState) },
-                    topBar = {
-                        CounterTopBar(
-                            state = state,
-                            actions = topBarActions,
-                        )
+
+                                ProjectSetupItem.WORK_TIME -> {
+                                    state.projectId?.let(actions.onOpenCounterWithWorkSessionActions)
+                                }
+                            }
+                        }
                     },
-                ) { scaffoldPadding ->
-                    CounterWorkspace(
-                        scaffoldPadding = scaffoldPadding,
-                        state = state,
-                        projectCountersActions = projectCountersActions,
-                        actions = mainContentActions,
-                        stepDelta = stepDelta,
-                        onBlockingCounterChanged = { id, blocked ->
-                            blockingCounterIds = if (blocked) blockingCounterIds + id else blockingCounterIds - id
-                        },
-                    )
-                }
-            }
+                )
+            },
+            contentActions =
+                ProjectOverviewContentActions(
+                    onEditDetails = { openProjectContent { showProjectDetailsSheet = true } },
+                    onMoveToFolder = { openProjectContent { showMoveFolderSheet = true } },
+                    onComplete = requestProjectCompletion,
+                    onReactivate = {
+                        openProjectContent {
+                            viewModel.reactivateProject(
+                                projectActionTargetId,
+                                state.completedAt,
+                            )
+                        }
+                    },
+                    onDelete = { openProjectContent { showDeleteDialog = true } },
+                    onYarn = { openProjectContent { showYarnManagementSheet = true } },
+                    onDocuments = { openProjectContent { showDocumentsSheet = true } },
+                    onAddPattern = {
+                        openProjectContent {
+                            patternPickerMode =
+                                if (state.projectDocuments.isEmpty()) {
+                                    PatternPickerMode.INITIAL_PROJECT_PATTERN
+                                } else {
+                                    PatternPickerMode.ADD_READABLE_PROJECT_DOCUMENT
+                                }
+                            showPatternPicker = true
+                        }
+                    },
+                    onReminders = { openProjectContent { showRemindersSheet = true } },
+                    onAddReminder = {
+                        openProjectContent {
+                            editingReminderId = null
+                            if (state.canUseRowReminders) {
+                                showAddReminder = true
+                            } else {
+                                pendingProAction = PendingCounterProAction.OpenReminder
+                            }
+                        }
+                    },
+                ),
+        )
+    } else {
+        Scaffold(
+            containerColor = MaterialTheme.colorScheme.background,
+            snackbarHost = { SnackbarHost(snackbarHostState) },
+            topBar = {
+                CounterTopBar(
+                    state = state,
+                    actions = topBarActions,
+                )
+            },
+        ) { scaffoldPadding ->
+            CounterWorkspace(
+                scaffoldPadding = scaffoldPadding,
+                state = state,
+                projectCountersActions = projectCountersActions,
+                actions = mainContentActions,
+                stepDelta = stepDelta,
+                onBlockingCounterChanged = { id, blocked ->
+                    blockingCounterIds = if (blocked) blockingCounterIds + id else blockingCounterIds - id
+                },
+            )
         }
     }
 }
 
-internal fun CounterUiState.blocksAutomaticTips(): Boolean =
+internal fun CounterUiState.blocksJourneyAction(): Boolean =
     isRestoringProject ||
         reactivationPromptCount != null ||
         showSessionRecoveryPrompt ||
@@ -1779,7 +1785,7 @@ private fun CounterScreenDialogs(
     onCounterTypeProRequired: () -> Unit,
 ) {
     if (state.showAddReminder) {
-        AddReminderDialog(
+        ReminderFormSheet(
             reminder = state.editingReminder,
             label = state.reminderLabel,
             onSave = actions.onAddReminderSave,
@@ -2033,14 +2039,7 @@ private fun CounterTopBar(
             }
         },
         actions = {
-            IconButton(
-                onClick = actions.onShowProjectActions,
-                modifier =
-                    Modifier
-                        .tipAnchor(TipId.WORK_SESSION)
-                        .tipAnchor(TipId.KEEP_SCREEN_ON)
-                        .tipAnchor(TipId.WIDGET),
-            ) {
+            IconButton(onClick = actions.onShowProjectActions) {
                 Icon(
                     imageVector = Icons.Default.MoreVert,
                     contentDescription = stringResource(R.string.project_actions_title),
@@ -2115,7 +2114,7 @@ private fun CountersListSheet(
     actions: ProjectCountersSectionActions,
     onDismiss: () -> Unit,
 ) {
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val sheetState = rememberExpandedModalSheetState()
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
@@ -2163,7 +2162,7 @@ private fun NotesSheet(
 ) {
     ModalBottomSheet(
         onDismissRequest = onDismiss,
-        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        sheetState = rememberExpandedModalSheetState(),
         containerColor = MaterialTheme.colorScheme.surface,
         sheetMaxWidth = ContentWidthPolicy.Form.maxWidth,
     ) {

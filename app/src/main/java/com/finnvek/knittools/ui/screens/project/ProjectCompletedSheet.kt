@@ -9,7 +9,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -25,6 +24,7 @@ import com.finnvek.knittools.ui.components.ProjectThumbnail
 import com.finnvek.knittools.ui.components.SheetTitle
 import com.finnvek.knittools.ui.components.durationText
 import com.finnvek.knittools.ui.components.mainCounterProjectCardCountText
+import com.finnvek.knittools.ui.components.rememberExpandedModalSheetState
 import com.finnvek.knittools.ui.components.rememberLocaleDateFormat
 import com.finnvek.knittools.ui.layout.ContentWidthPolicy
 import com.finnvek.knittools.ui.theme.ComponentDimens
@@ -43,7 +43,7 @@ fun ProjectCompletedSheet(
     val completionDateFormat = rememberLocaleDateFormat("yMMMd", eventZoneId = celebration.snapshot.completionZoneId)
     ModalBottomSheet(
         onDismissRequest = onClose,
-        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        sheetState = rememberExpandedModalSheetState(),
         containerColor = MaterialTheme.colorScheme.surface,
         sheetMaxWidth = ContentWidthPolicy.Form.maxWidth,
     ) {

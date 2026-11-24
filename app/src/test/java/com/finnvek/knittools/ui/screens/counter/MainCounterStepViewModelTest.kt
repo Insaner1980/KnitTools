@@ -1,6 +1,5 @@
 package com.finnvek.knittools.ui.screens.counter
 
-import com.finnvek.knittools.domain.model.CommittedMainCounterChange
 import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.domain.model.MainCounterChange
 import io.mockk.coEvery
@@ -41,8 +40,7 @@ class MainCounterStepViewModelTest : CounterViewModelFixture() {
                     true
                 }
             }
-            coEvery { repository.applyMainCounterChangeWithResult(7L, any()) } returns
-                CommittedMainCounterChange(0, 1, null, MainCounterChange.Increment)
+            coEvery { repository.applyMainCounterChange(7L, any()) } returns true
             val model = viewModel()
             advanceUntilIdle()
             val preset = async { model.awaitStepSize(5) }
@@ -57,7 +55,7 @@ class MainCounterStepViewModelTest : CounterViewModelFixture() {
             model.increment()
             runCurrent()
             coVerify(exactly = 2) {
-                repository.applyMainCounterChangeWithResult(7L, MainCounterChange.Increment)
+                repository.applyMainCounterChange(7L, MainCounterChange.Increment)
             }
             release.complete(true)
             assertTrue(preset.await())
@@ -104,6 +102,24 @@ class MainCounterStepViewModelTest : CounterViewModelFixture() {
             runCurrent()
             model.increment()
             assertEquals(1, feedback.size)
+        }
+
+    @Test
+    fun `failed counts and failed readbacks restore the last observed count`() =
+        runTest {
+            observedProject.value = observedProject.value.copy(count = 10)
+            val model = viewModel()
+            advanceUntilIdle()
+            coEvery { repository.applyMainCounterChange(7L, any()) } throws
+                IllegalStateException("write failed")
+            coEvery { repository.getProject(7L) } throws IllegalStateException("read failed")
+
+            model.increment()
+            model.increment()
+            assertEquals(12, model.uiState.value.counter.count)
+            runCurrent()
+
+            assertEquals(10, model.uiState.value.counter.count)
         }
 
     @Test

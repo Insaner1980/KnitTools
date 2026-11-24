@@ -97,43 +97,53 @@ private fun JourneyPricePrimaryAction(
     actions: OnboardingActions,
 ) {
     when (price.mode) {
-        // Ostopainike on hintalapun sisällä; kokeilu on alapalkissa reunustettuna, jotta lappu ei kilpaile
-        // toisen täytetyn oranssin painikkeen kanssa.
-        OnboardingPriceMode.Trial ->
-            OutlinedButton(
-                onClick = actions.startTrial,
-                enabled = !busy,
-                shape = MaterialTheme.shapes.medium,
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.onSurface),
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .heightIn(min = ComponentDimens.FormSheetActionMinHeight)
-                        .testTag("onboarding_start_trial"),
-            ) {
-                Text(stringResource(R.string.journey_start_trial), style = MaterialTheme.typography.titleMedium)
+        OnboardingPriceMode.Trial -> {
+            val label = stringResource(R.string.journey_start_trial)
+            val modifier = Modifier.testTag("onboarding_start_trial")
+            if (price.confirmedOffer == null) {
+                JourneyPrimaryButton(label, !busy, actions.startTrial, modifier)
+            } else {
+                OutlinedButton(
+                    onClick = actions.startTrial,
+                    enabled = !busy,
+                    shape = MaterialTheme.shapes.medium,
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.onSurface),
+                    modifier = modifier.fillMaxWidth().heightIn(min = ComponentDimens.FormSheetActionMinHeight),
+                ) {
+                    Text(label, style = MaterialTheme.typography.titleMedium)
+                }
             }
-        OnboardingPriceMode.Purchase ->
+        }
+
+        OnboardingPriceMode.Purchase -> {
             JourneyPrimaryButton(
                 stringResource(R.string.journey_buy_price, price.confirmedOffer?.formattedPrice.orEmpty()),
                 !busy && !price.purchaseBusy && !price.pending,
                 actions.purchase,
                 Modifier.testTag("onboarding_buy_primary"),
             )
-        OnboardingPriceMode.Continue ->
+        }
+
+        OnboardingPriceMode.Continue -> {
             JourneyPrimaryButton(
                 stringResource(R.string.journey_continue_app),
                 !busy,
                 actions.finish,
             )
-        OnboardingPriceMode.Loading ->
+        }
+
+        OnboardingPriceMode.Loading -> {
             JourneyPrimaryButton(
                 stringResource(R.string.journey_loading),
                 false,
                 {},
                 Modifier.testTag("onboarding_loading_action"),
             )
-        OnboardingPriceMode.Skip -> Unit
+        }
+
+        OnboardingPriceMode.Skip -> {
+            Unit
+        }
     }
 }
 

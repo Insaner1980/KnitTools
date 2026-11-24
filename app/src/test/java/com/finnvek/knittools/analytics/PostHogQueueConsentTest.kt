@@ -383,7 +383,8 @@ class PostHogQueueConsentTest {
                 }.addInterceptor { chain ->
                     val request = chain.request()
                     val status =
-                        if (request.url.encodedPath == "/batch") {
+                        if (request.url.encodedPath == CAPTURE_PATH) {
+                            assertEquals("Bearer $TOKEN", request.header("Authorization"))
                             val buffer = Buffer()
                             requireNotNull(request.body).writeTo(buffer)
                             val events = JSONObject(buffer.readUtf8()).getJSONArray("batch")
@@ -391,6 +392,7 @@ class PostHogQueueConsentTest {
                                 (0 until events.length()).map { index ->
                                     val event = events.getJSONObject(index)
                                     assertTrue(event.getJSONObject("properties").getBoolean("\$geoip_disable"))
+                                    assertFalse(event.getJSONObject("options").getBoolean("process_person_profile"))
                                     event.getString("event")
                                 },
                             )
@@ -406,7 +408,7 @@ class PostHogQueueConsentTest {
                         .protocol(Protocol.HTTP_1_1)
                         .code(status)
                         .message("RW-07B terminal recorder")
-                        .body("{}".toResponseBody())
+                        .body("""{"results":{}}""".toResponseBody())
                         .build()
                 }.build()
 
@@ -426,7 +428,7 @@ class PostHogQueueConsentTest {
                                 interceptors().add(
                                     0,
                                     Interceptor { chain ->
-                                        if (chain.request().url.encodedPath == "/batch") beforeGate?.invoke()
+                                        if (chain.request().url.encodedPath == CAPTURE_PATH) beforeGate?.invoke()
                                         chain.proceed(chain.request())
                                     },
                                 )
@@ -482,6 +484,7 @@ class PostHogQueueConsentTest {
     }
 
     private companion object {
+        const val CAPTURE_PATH = "/i/v1/analytics/events"
         const val TOKEN = "phc_rw07bSyntheticOnly"
         const val BEFORE = "pdf import succeeded"
         const val DISABLED = "pdf import failed"

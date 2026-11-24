@@ -62,52 +62,10 @@
     <string name="project_target_error">Enter a number from 1 to %1$s.</string>
     <!-- Projektin luontiesikatselun saavutettavuuskuvaus. %1$s on laskurin koko näyttöteksti. -->
     <string name="project_create_preview_a11y">Preview: %1$s</string>
-    <!-- Vihjeen kuittaava neutraali tekstipainike. -->
-    <string name="tip_got_it">Got it</string>
-    <!-- Kerroslaskurin ensimmäinen vihje; + ja suuri numero ovat lisäystoimintoja. -->
-    <string name="tip_first_row_rows">When you finish a row, tap +. Tapping the big number works too.</string>
-    <!-- Kierroslaskurin ensimmäinen vihje; + ja suuri numero ovat lisäystoimintoja. -->
-    <string name="tip_first_row_rounds">When you finish a round, tap +. Tapping the big number works too.</string>
-    <!-- Toistolaskurin ensimmäinen vihje; + ja suuri numero ovat lisäystoimintoja. -->
-    <string name="tip_first_row_repeats">When you finish a repeat, tap +. Tapping the big number works too.</string>
-    <!-- Mukautetun laskurin ensimmäinen vihje; älä oleta kerroksia tai kierroksia. -->
-    <string name="tip_first_row_custom">Tap + each time you finish one. Tapping the big number works too.</string>
-    <!-- Tallennetun laskurimuutoksen vihje. Undo on sovelluksen Kumoa-toiminto. -->
-    <string name="tip_undo">Saved. Tapped by mistake? Undo takes back the last change.</string>
-    <!-- Askelkoon vihje: yhden napautuksen lisäysmäärä on muokattavissa. -->
-    <string name="tip_step_size">Counting more than one at a time? Change how much each tap adds or subtracts here.</string>
-    <!-- Työskentelyistunto käynnistyy käyttäjän toimesta valikosta, ei automaattisesti. -->
-    <string name="tip_work_session">Want to know how long this project takes? Start a work session from this menu. Time never starts on its own.</string>
-    <!-- Projektisivun vihje; Continue tarkoittaa nykyistä Jatka-toimintoa. -->
-    <string name="tip_overview_intro">This is your whole project: pattern, yarn, notes and photos. Continue takes you back to the counter.</string>
-    <!-- Ohjeruudun vihje; pattern tarkoittaa käsityöohjetta, suomeksi ohje. -->
-    <string name="tip_pattern_tile">Attach your pattern to keep it with this project.</string>
-    <!-- PDF-vihje; Follow main counter käännetään samalla nimellä kuin lukijan asetus. -->
-    <string name="tip_reading_line">Turn on Follow main counter and the reading line moves as you count.</string>
-    <!-- Vihje laskurin näytön päällä pitämisestä. -->
-    <string name="tip_keep_screen_on">Screen going dark while you work? Keep it on while you count.</string>
-    <!-- Vihjeen painike ottaa näytön päällä pitämisen käyttöön. -->
-    <string name="tip_keep_screen_on_action">Keep screen on</string>
-    <!-- Tavoitteen saavuttaminen ei päätä projektia automaattisesti. -->
-    <string name="tip_target_reached">Target reached. Keep counting, or mark the project finished from the project page menu.</string>
-    <!-- Ensimmäisen tallennetun työskentelyistunnon vihje näyttää projektin kokonaisajan paikan. -->
-    <string name="tip_first_session_saved">Your first work session is saved. The total time for this project is here.</string>
-    <!-- Paikallisen tiedon varmuuskopiointivihje; älä lupaa automaattista pilvisynkronointia. -->
-    <string name="tip_backup">Your projects are only on this phone. Make a backup so they\'re safe if you switch phones.</string>
+    <!-- Kokeilun päättymismuistutuksen kuittaava painike. -->
+    <string name="trial_notice_acknowledge">Got it</string>
     <!-- Vihjeen toiminto avaa varmuuskopioinnin. -->
-    <string name="tip_backup_action">Back up</string>
-    <!-- Kansiovihje; otsikon painaminen avaa projektien kansiovalinnan. -->
-    <string name="tip_folders">Lots of projects? Sort them into folders from the title.</string>
-    <!-- Widget on Androidin aloitusnäytön laskuripienoisohjelma. -->
-    <string name="tip_widget">Count from your home screen without opening the app.</string>
-    <!-- Vihjeen toiminto avaa saman widgetin lisäyksen kuin laskurin valikko. -->
-    <string name="tip_widget_action">Add widget</string>
-    <!-- Työkalujen aloitusvihje; laskurit toimivat ilman verkkoyhteyttä. -->
-    <string name="tip_tools_intro">The calculators work offline. Example values show what to enter.</string>
-    <!-- Asetusten toiminto nollaa nähtyjen vihjeiden tilan. -->
-    <string name="settings_show_tips_again">Show tips again</string>
-    <!-- Vihjeiden onnistuneen nollauksen palaute. -->
-    <string name="settings_tips_reset_done">Tips will show again.</string>
+    <string name="projects_backup_notice_action">Back up</string>
     <!-- Valmistelulistan ohjeen liittämistoiminto; pattern on ohje. -->
     <string name="project_setup_pattern">Attach your pattern</string>
     <!-- Valmistelulistan ohje on liitetty. -->
@@ -249,7 +207,7 @@
     <!-- Oppaan kohdan otsikko: projektikansiot ja yksi maksuton työn alla oleva projekti; valmistuneita ei lasketa rajaan. -->
     <string name="guide_tools_folders_title">Folders</string>
     <!-- Oppaan kohdan selitys: projektikansiot ja yksi maksuton työn alla oleva projekti; valmistuneita ei lasketa rajaan. -->
-    <string name="guide_tools_folders_body">Group projects into folders from the Projects title. One project in progress at a time is free, and finished projects don\'t count.</string>
+    <string name="guide_tools_folders_body">Group projects into folders from the Projects title.</string>
     <!-- Oppaan kohdan otsikko: varmuuskopiotiedosto; palautus korvaa tämän laitteen tiedot. -->
     <string name="guide_tools_backup_title">Backup</string>
     <!-- Oppaan kohdan selitys: varmuuskopiotiedosto; palautus korvaa tämän laitteen tiedot. -->
@@ -661,8 +619,16 @@
     <string name="journey_pdf_failed">Couldn\'t import the PDF. Your previous attachment is unchanged.</string>
     <!-- Aloituspolku: Luo ensimmäinen projekti -->
     <string name="journey_first_project">Create your first project</string>
-    <!-- Aloituspolun jälkeen: ohjelaattaan ankkuroitu vihje vain luodulle projektille, johon käyttäjä liitti PDF-ohjeen. -->
-    <string name="journey_open_pattern_tip">Open the pattern you attached to this project here.</string>
     <!-- Vahvistetun Pro-oston jälkeen näytettävä kuittaus sovellukseen siirryttäessä. -->
     <string name="journey_pro_active">Pro is ready to use.</string>
+    <!-- Projects-listan paikallisesta tallennuksesta kertova ilmoitus. -->
+    <string name="projects_backup_notice">Your projects are only on this phone.</string>
+    <!-- PDF-lukijan ilmoitus laskuria seuraavasta lukulinjasta. -->
+    <string name="reading_line_notice">The reading line can move with the counter.</string>
+    <!-- Ohittaa ilmoituksen pysyvästi. -->
+    <string name="contextual_notice_skip">Skip</string>
+    <!-- Ottaa käyttöön laskuria seuraavan lukulinjan. -->
+    <string name="reading_line_notice_enable">Enable</string>
+    <!-- Avaa valmistumisvahvistuksen tavoitteen täyttäneelle projektille. -->
+    <string name="counter_mark_complete">Mark complete</string>
 </resources>

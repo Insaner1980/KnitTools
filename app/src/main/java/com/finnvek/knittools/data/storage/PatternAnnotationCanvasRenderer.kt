@@ -142,9 +142,15 @@ object PatternAnnotationCanvasRenderer {
         }
         val stroke = strokePaint(payload.strokeArgb, scaledStrokeWidth(payload.strokeWidth, width, height, style))
         when (kind) {
-            PatternAnnotationKind.LINE -> canvas.drawLine(startX, startY, endX, endY, stroke)
-            PatternAnnotationKind.ARROW -> drawArrow(canvas, startX, startY, endX, endY, stroke, style)
-            PatternAnnotationKind.RECTANGLE ->
+            PatternAnnotationKind.LINE -> {
+                canvas.drawLine(startX, startY, endX, endY, stroke)
+            }
+
+            PatternAnnotationKind.ARROW -> {
+                drawArrow(canvas, startX, startY, endX, endY, stroke, style)
+            }
+
+            PatternAnnotationKind.RECTANGLE -> {
                 canvas.drawRect(
                     minOf(startX, endX),
                     minOf(startY, endY),
@@ -152,12 +158,18 @@ object PatternAnnotationCanvasRenderer {
                     maxOf(startY, endY),
                     stroke,
                 )
-            PatternAnnotationKind.ELLIPSE ->
+            }
+
+            PatternAnnotationKind.ELLIPSE -> {
                 canvas.drawOval(
                     RectF(minOf(startX, endX), minOf(startY, endY), maxOf(startX, endX), maxOf(startY, endY)),
                     stroke,
                 )
-            else -> Unit
+            }
+
+            else -> {
+                Unit
+            }
         }
     }
 

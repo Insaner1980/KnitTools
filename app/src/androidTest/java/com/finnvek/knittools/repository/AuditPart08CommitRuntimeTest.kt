@@ -162,10 +162,22 @@ class AuditPart08CommitRuntimeTest(
                     assertEquals(listOf(original.name), directory.listFiles()!!.map { it.name })
                 } else {
                     when (operation) {
-                        "usage-update" -> assertEquals(9.0, usages.getById(usageId)!!.usedMeters)
-                        "usage-delete" -> assertEquals(null, usages.getById(usageId))
-                        "photo-note" -> assertEquals("After", photos.getByIds(listOf(photoId)).single().note)
-                        "photo-delete" -> assertTrue(photos.getByIds(listOf(photoId)).isEmpty())
+                        "usage-update" -> {
+                            assertEquals(9.0, usages.getById(usageId)!!.usedMeters)
+                        }
+
+                        "usage-delete" -> {
+                            assertEquals(null, usages.getById(usageId))
+                        }
+
+                        "photo-note" -> {
+                            assertEquals("After", photos.getByIds(listOf(photoId)).single().note)
+                        }
+
+                        "photo-delete" -> {
+                            assertTrue(photos.getByIds(listOf(photoId)).isEmpty())
+                        }
+
                         "photo-save" -> {
                             val saved = photos.getAllPhotosOnce().single { it.id != photoId }
                             assertTrue(File(Uri.parse(saved.photoUri).path!!).isFile)

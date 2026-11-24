@@ -164,8 +164,6 @@ class PostHogAnalyticsTest {
                 "welcome tools chosen",
                 "welcome dismissed",
                 "guide opened",
-                "tip acted",
-                "tip dismissed",
             )
         val onboardingEvents = UsageEvent.entries.filter { it.eventName in events }
         assertEquals(events, onboardingEvents.map { it.eventName }.toSet())
@@ -244,6 +242,7 @@ class PostHogAnalyticsTest {
         assertFalse(config.captureApplicationLifecycleEvents)
         assertFalse(config.captureScreenViews)
         assertFalse(config.captureDeepLinks)
+        assertTrue(config.detectAppLanguage)
         assertFalse(config.capturePushNotificationSubscriptions)
         assertFalse(config.capturePushNotificationOpened)
         assertFalse(config.preloadFeatureFlags)

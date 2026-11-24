@@ -1,6 +1,5 @@
 package com.finnvek.knittools.ui.screens.counter
 
-import com.finnvek.knittools.domain.model.CommittedMainCounterChange
 import com.finnvek.knittools.domain.model.MainCounterChange
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -28,8 +27,7 @@ class CounterCountOrderingTest : CounterViewModelFixture() {
             val read = CompletableDeferred<Unit>()
             val release = CompletableDeferred<Unit>()
             val published = captureWidgetUpdates()
-            coEvery { repository.applyMainCounterChangeWithResult(7L, MainCounterChange.Increment) } returns
-                CommittedMainCounterChange(0, 1, null, MainCounterChange.Increment)
+            coEvery { repository.applyMainCounterChange(7L, MainCounterChange.Increment) } returns true
             coEvery { repository.applyMainCounterChange(7L, MainCounterChange.Undo) } returns true
             coEvery { repository.getProject(7L) } coAnswers {
                 val old = observedProject.value.copy(count = 1)
@@ -60,8 +58,7 @@ class CounterCountOrderingTest : CounterViewModelFixture() {
             advanceUntilIdle()
             val release = CompletableDeferred<Unit>()
             var reads = 0
-            coEvery { repository.applyMainCounterChangeWithResult(7L, MainCounterChange.Increment) } returns
-                CommittedMainCounterChange(0, 1, null, MainCounterChange.Increment)
+            coEvery { repository.applyMainCounterChange(7L, MainCounterChange.Increment) } returns true
             coEvery { repository.getProject(7L) } coAnswers {
                 val count = ++reads
                 if (count == 1) release.await()
@@ -86,10 +83,10 @@ class CounterCountOrderingTest : CounterViewModelFixture() {
             val first = CompletableDeferred<Unit>()
             val second = CompletableDeferred<Unit>()
             var writes = 0
-            coEvery { repository.applyMainCounterChangeWithResult(7L, MainCounterChange.Increment) } coAnswers {
+            coEvery { repository.applyMainCounterChange(7L, MainCounterChange.Increment) } coAnswers {
                 val count = ++writes
                 if (count == 1) first.await() else second.await()
-                CommittedMainCounterChange(count - 1, count, null, MainCounterChange.Increment)
+                true
             }
             coEvery { repository.getProject(7L) } returns observedProject.value.copy(count = 1)
             model.increment()

@@ -207,12 +207,18 @@ private fun SegmentedToggleItem(
     val primary = MaterialTheme.colorScheme.primary
     val selectionAppearance =
         when {
-            isSelected -> Modifier.background(primary)
+            isSelected -> {
+                Modifier.background(primary)
+            }
+
             isPending -> {
                 val description = stringResource(R.string.segmented_option_pending_state)
                 Modifier.border(1.5.dp, primary, shape).semantics { stateDescription = description }
             }
-            else -> Modifier
+
+            else -> {
+                Modifier
+            }
         }
     val itemModifier =
         modifier

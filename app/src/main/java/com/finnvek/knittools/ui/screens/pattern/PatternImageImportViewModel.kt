@@ -497,7 +497,7 @@ internal class PatternImageImportViewModel
         ): Boolean? {
             val attachment =
                 runCatching {
-                    val project = withContext(ioDispatcher) { repository.getProject(projectId) }
+                    val project = repository.getProject(projectId)
                     val label =
                         if (project != null) {
                             context.getString(R.string.pattern_images_document_label, project.name)
@@ -519,6 +519,7 @@ internal class PatternImageImportViewModel
                 ProjectDocumentMutationResult.DuplicateUri,
                 ProjectDocumentMutationResult.DuplicateDocumentKey,
                 -> return true
+
                 else -> Unit
             }
             val failure = attachment.exceptionOrNull()
@@ -756,8 +757,11 @@ private fun PatternImageImportError.analyticsDetail(): UsageDetail =
         PatternImageImportError.TOTAL_TOO_LARGE,
         PatternImageImportError.LOW_STORAGE,
         -> UsageDetail.ERROR_TOO_LARGE
+
         PatternImageImportError.UNREADABLE -> UsageDetail.ERROR_READ
+
         PatternImageImportError.UNSUPPORTED, PatternImageImportError.ANIMATED -> UsageDetail.ERROR_INVALID
+
         else -> UsageDetail.ERROR_WRITE
     }
 

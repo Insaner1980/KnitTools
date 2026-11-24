@@ -28,7 +28,6 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
@@ -39,10 +38,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.automirrored.filled.Redo
 import androidx.compose.material.icons.automirrored.filled.Undo
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.Remove
-import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -58,7 +54,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.minimumInteractiveComponentSize
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -99,14 +94,12 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.LiveRegionMode
-import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntSize
@@ -135,9 +128,6 @@ import com.finnvek.knittools.domain.model.sanitizeReadingGuideFraction
 import com.finnvek.knittools.domain.model.sanitizeReadingLineYFraction
 import com.finnvek.knittools.domain.model.takeWithoutSplittingSurrogatePair
 import com.finnvek.knittools.domain.model.webPatternUrlOrNull
-import com.finnvek.knittools.domain.tips.TipContext
-import com.finnvek.knittools.domain.tips.TipId
-import com.finnvek.knittools.domain.tips.TipScreen
 import com.finnvek.knittools.repository.ProjectDocumentMutationResult
 import com.finnvek.knittools.repository.SavedPatternMetadataMutationResult
 import com.finnvek.knittools.ui.components.BackIconButton
@@ -161,6 +151,7 @@ import com.finnvek.knittools.ui.components.mainCounterCountText
 import com.finnvek.knittools.ui.components.mainCounterCountTextInline
 import com.finnvek.knittools.ui.components.mainCounterLabelText
 import com.finnvek.knittools.ui.components.projectDocumentDisplayName
+import com.finnvek.knittools.ui.components.rememberExpandedModalSheetState
 import com.finnvek.knittools.ui.layout.AdaptiveDropdownMenu
 import com.finnvek.knittools.ui.layout.AdaptiveModalWindow
 import com.finnvek.knittools.ui.layout.ContentWidthPolicy
@@ -172,8 +163,8 @@ import com.finnvek.knittools.ui.screens.counter.CounterViewerEvent
 import com.finnvek.knittools.ui.theme.PatternViewerDimens
 import com.finnvek.knittools.ui.theme.knitToolsColors
 import com.finnvek.knittools.ui.theme.rememberPatternAnnotationRenderStyle
-import com.finnvek.knittools.ui.tips.TipHost
-import com.finnvek.knittools.ui.tips.tipAnchor
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
@@ -244,10 +235,17 @@ fun PatternViewerScreen(
     val documentError = documentState.error
     val unavailableDocumentError =
         when {
-            selectedDocument != null && documentState.availability[selectedDocument.id] == false ->
+            selectedDocument != null && documentState.availability[selectedDocument.id] == false -> {
                 stringResource(R.string.project_documents_error_unavailable)
-            selectedDocument == null && documentError != null -> stringResource(documentError.messageRes())
-            else -> null
+            }
+
+            selectedDocument == null && documentError != null -> {
+                stringResource(documentError.messageRes())
+            }
+
+            else -> {
+                null
+            }
         }
     val exportContext =
         selectedDocument?.takeIf { selectedDocumentAvailable }?.let { document ->
@@ -354,132 +352,133 @@ fun PatternViewerScreen(
         }
     }
 
-    val tipContext =
-        TipContext(
-            screen = TipScreen.PROJECT_READER,
-            projectId = selectedDocument?.projectId,
-            hasDocuments = selectedDocument != null,
-            screenReady =
-                !documentState.isLoading &&
-                    selectedDocumentAvailable &&
-                    renderState.canAnnotate &&
-                    selectedDocument.projectId == counterState.projectId,
-            blocked =
-                listOf(
-                    topBarBlocking,
-                    showBookmarkSheet,
-                    showDocumentSheet,
-                    showDocumentPicker,
-                    rowCalibrationState != null,
-                    annotationMode.active,
-                    annotationMode.showLayers,
-                    annotationState.isExporting,
-                    annotationState.loadError != PatternAnnotationLoadError.NONE,
-                    annotationState.writeError != PatternAnnotationWriteError.NONE,
-                    counterState.activeSession?.needsRecoveryReview == true,
-                    patternImportInProgress,
-                    contentErrorVisible,
-                ).any { it },
-        )
+    val readerNoticeBlocked =
+        listOf(
+            topBarBlocking,
+            showBookmarkSheet,
+            showDocumentSheet,
+            showDocumentPicker,
+            rowCalibrationState != null,
+            annotationMode.active,
+            annotationMode.showLayers,
+            annotationState.isExporting,
+            annotationState.loadError != PatternAnnotationLoadError.NONE,
+            annotationState.writeError != PatternAnnotationWriteError.NONE,
+            counterState.activeSession?.needsRecoveryReview == true,
+            patternImportInProgress,
+            contentErrorVisible,
+        ).any { it }
+    val noticeDocument =
+        selectedDocument?.takeIf {
+            !documentState.isLoading &&
+                selectedDocumentAvailable &&
+                renderState.canAnnotate &&
+                it.projectId == counterState.projectId
+        }
     val counterSlot =
         MainCounterCountSlot(
             counterState.counter.count,
             counterState.mainCounterLabelType,
             counterState.mainCounterCustomLabel,
         )
-    TipHost(context = tipContext, onAction = {}, modifier = Modifier.fillMaxSize()) {
-        Scaffold(
-            containerColor = MaterialTheme.colorScheme.background,
-            topBar = {
-                PatternViewerTopBar(
-                    onBlockingChanged = { topBarBlocking = it },
-                    state =
-                        TopBarState(
-                            patternName = selectedDocument?.label,
-                            totalPages = renderState.renderer?.pageCount ?: 0,
-                            currentPage = currentPage,
-                            currentRow = counterSlot.count.takeIf { patternUri != null },
-                            countLabelType = counterSlot.labelType,
-                            countCustomLabel = counterSlot.customLabel,
-                            canManageDocuments = true,
-                            readingLineEnabled = selectedDocument?.readingLineEnabled == true,
-                            readingLineFollowCurrentRow = selectedDocument?.readingLineFollowCurrentRow == true,
-                            verticalReadingGuideEnabled = selectedDocument?.verticalReadingGuideEnabled == true,
-                            canManageBookmarks = true,
-                            hasCurrentRowMarker = hasCurrentRowMarker,
-                            hasPageRowMarkers = hasPageRowMarkers,
-                        ).withAnnotations(
-                            patternUri != null && renderState.canAnnotate,
-                            annotationMode,
-                            annotationState,
-                        ),
-                    actions =
-                        TopBarActions(
-                            onBack = onBack,
-                            onJumpToPage = { page -> counterViewModel.updatePatternPage(page, selectedDocument?.id) },
-                            onReadingLineToggle = { enabled ->
-                                counterViewModel.setReadingLineEnabled(enabled, selectedDocument?.id)
-                            },
-                            onReadingLineFollowToggle = { enabled ->
-                                counterViewModel.setReadingLineFollowCurrentRow(enabled, selectedDocument?.id)
-                            },
-                            onReturnToCurrentRow = {
-                                counterViewModel.returnReadingLineToCurrentRow(selectedDocument?.id)
-                            },
-                            onVerticalReadingGuideToggle = { enabled ->
-                                counterViewModel.setVerticalReadingGuideEnabled(enabled, selectedDocument?.id)
-                            },
-                            onCenterVerticalReadingGuide = {
-                                counterViewModel.centerVerticalReadingGuide(selectedDocument?.id)
-                            },
-                            onOpenDocuments = { showDocumentSheet = true },
-                            onOpenProjectNotes = onOpenProjectNotes.takeIf { selectedDocument != null },
-                            onSaveReadingLineAsCurrentRow = {
-                                counterViewModel.upsertPatternRowMarker(
-                                    row = counterState.counter.count,
-                                    page = currentPage,
-                                    yPosition =
-                                        selectedDocument?.readingLineYFraction ?: DEFAULT_READING_LINE_Y_FRACTION,
-                                    documentId = selectedDocument?.id,
-                                    documentRowMapping = selectedDocument?.rowMapping,
+    Scaffold(
+        containerColor = MaterialTheme.colorScheme.background,
+        topBar = {
+            PatternViewerTopBar(
+                onBlockingChanged = { topBarBlocking = it },
+                state =
+                    TopBarState(
+                        patternName = selectedDocument?.label,
+                        totalPages = renderState.renderer?.pageCount ?: 0,
+                        currentPage = currentPage,
+                        currentRow = counterSlot.count.takeIf { patternUri != null },
+                        countLabelType = counterSlot.labelType,
+                        countCustomLabel = counterSlot.customLabel,
+                        canManageDocuments = true,
+                        readingLineEnabled = selectedDocument?.readingLineEnabled == true,
+                        readingLineFollowCurrentRow = selectedDocument?.readingLineFollowCurrentRow == true,
+                        verticalReadingGuideEnabled = selectedDocument?.verticalReadingGuideEnabled == true,
+                        canManageBookmarks = true,
+                        hasCurrentRowMarker = hasCurrentRowMarker,
+                        hasPageRowMarkers = hasPageRowMarkers,
+                    ).withAnnotations(
+                        renderState.canAnnotate && annotationState.matchesDisplayedPage(exportContext, currentPage),
+                        annotationMode,
+                        annotationState,
+                    ),
+                actions =
+                    TopBarActions(
+                        onBack = onBack,
+                        onJumpToPage = { page -> counterViewModel.updatePatternPage(page, selectedDocument?.id) },
+                        onReadingLineToggle = { enabled ->
+                            counterViewModel.setReadingLineEnabled(enabled, selectedDocument?.id)
+                        },
+                        onReadingLineFollowToggle = { enabled ->
+                            counterViewModel.setReadingLineFollowCurrentRow(enabled, selectedDocument?.id)
+                        },
+                        onReturnToCurrentRow = {
+                            counterViewModel.returnReadingLineToCurrentRow(selectedDocument?.id)
+                        },
+                        onVerticalReadingGuideToggle = { enabled ->
+                            counterViewModel.setVerticalReadingGuideEnabled(enabled, selectedDocument?.id)
+                        },
+                        onCenterVerticalReadingGuide = {
+                            counterViewModel.centerVerticalReadingGuide(selectedDocument?.id)
+                        },
+                        onOpenDocuments = { showDocumentSheet = true },
+                        onOpenProjectNotes = onOpenProjectNotes.takeIf { selectedDocument != null },
+                        onSaveReadingLineAsCurrentRow = {
+                            counterViewModel.upsertPatternRowMarker(
+                                row = counterState.counter.count,
+                                page = currentPage,
+                                yPosition =
+                                    selectedDocument?.readingLineYFraction ?: DEFAULT_READING_LINE_Y_FRACTION,
+                                documentId = selectedDocument?.id,
+                                documentRowMapping = selectedDocument?.rowMapping,
+                            )
+                        },
+                        onClearReadingLineRowMarker = {
+                            counterViewModel.removePatternRowMarker(
+                                row = counterState.counter.count,
+                                page = currentPage,
+                                documentId = selectedDocument?.id,
+                                documentRowMapping = selectedDocument?.rowMapping,
+                            )
+                        },
+                        onClearReadingLinePageMarkers = {
+                            counterViewModel.removePatternRowMarkersForPage(
+                                page = currentPage,
+                                documentId = selectedDocument?.id,
+                                documentRowMapping = selectedDocument?.rowMapping,
+                            )
+                        },
+                        onStartRowCalibration = {
+                            counterViewModel.setReadingLineEnabled(true, selectedDocument?.id)
+                            rowCalibrationState =
+                                RowCalibrationState(
+                                    rowInput = counterState.counter.count.toString(),
+                                    expectedMapping = selectedDocument?.rowMapping,
                                 )
-                            },
-                            onClearReadingLineRowMarker = {
-                                counterViewModel.removePatternRowMarker(
-                                    row = counterState.counter.count,
-                                    page = currentPage,
-                                    documentId = selectedDocument?.id,
-                                    documentRowMapping = selectedDocument?.rowMapping,
-                                )
-                            },
-                            onClearReadingLinePageMarkers = {
-                                counterViewModel.removePatternRowMarkersForPage(
-                                    page = currentPage,
-                                    documentId = selectedDocument?.id,
-                                    documentRowMapping = selectedDocument?.rowMapping,
-                                )
-                            },
-                            onStartRowCalibration = {
-                                counterViewModel.setReadingLineEnabled(true, selectedDocument?.id)
-                                rowCalibrationState =
-                                    RowCalibrationState(
-                                        rowInput = counterState.counter.count.toString(),
-                                        expectedMapping = selectedDocument?.rowMapping,
-                                    )
-                            },
-                        ).withAnnotations(annotationMode, annotationViewModel, exportContext),
+                        },
+                    ).withAnnotations(annotationMode, annotationViewModel, exportContext),
+            )
+        },
+        bottomBar = {
+            Column {
+                ProjectReadingLineNotice(
+                    document = noticeDocument,
+                    blocked = readerNoticeBlocked,
+                    counterViewModel = counterViewModel,
                 )
-            },
-            bottomBar = {
                 PatternViewerBottomBar(
                     state =
-                        BottomBarState(
+                        PatternViewerBottomBarState(
                             countSlot = counterSlot,
                             currentPage = currentPage,
                             totalPages = renderState.renderer?.pageCount ?: 0,
                         ),
                     actions =
-                        BottomBarActions(
+                        PatternViewerBottomBarActions(
                             onPreviousRow = counterViewModel::decrement,
                             onNextRow = counterViewModel::increment,
                             onPreviousPage = {
@@ -499,159 +498,159 @@ fun PatternViewerScreen(
                             },
                         ),
                 )
-            },
-        ) { scaffoldPadding ->
-            Column(
-                modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .padding(scaffoldPadding),
-            ) {
-                accessibilityAnnouncement?.let { announcement ->
-                    Spacer(
-                        modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .height(1.dp)
-                                .semantics {
-                                    liveRegion = LiveRegionMode.Polite
-                                    contentDescription = announcement
-                                },
-                    )
-                }
-                rowCalibrationState?.let { calibrationState ->
-                    RowCalibrationPanel(
-                        state = calibrationState,
-                        countSlot = counterSlot,
-                        onRowInputChange = { input ->
-                            rowCalibrationState =
-                                calibrationState.copy(
-                                    rowInput = input.filter(Char::isDigit),
-                                    showInvalidRowError = false,
-                                )
-                        },
-                        onSaveFirst = {
-                            val firstRow = calibrationState.rowInput.toIntOrNull()
-                            rowCalibrationState =
-                                if (firstRow == null) {
-                                    calibrationState.copy(showInvalidRowError = true)
-                                } else {
-                                    calibrationState.copy(
-                                        firstMarker =
-                                            RowMarker(
-                                                row = firstRow,
-                                                page = currentPage,
-                                                yPosition =
-                                                    sanitizeReadingLineYFraction(
-                                                        selectedDocument?.readingLineYFraction
-                                                            ?: DEFAULT_READING_LINE_Y_FRACTION,
-                                                    ),
-                                            ),
-                                        rowInput = counterState.counter.count.toString(),
-                                        showInvalidRowError = false,
-                                    )
-                                }
-                        },
-                        onSaveLast = {
-                            val markers =
-                                calibrationState.toCalibrationMarkers(
-                                    currentPage = currentPage,
-                                    currentYFraction =
-                                        selectedDocument?.readingLineYFraction ?: DEFAULT_READING_LINE_Y_FRACTION,
-                                )
-                            if (markers == null) {
-                                rowCalibrationState = calibrationState.copy(showInvalidRowError = true)
-                            } else {
-                                counterViewModel.mergePatternRowMarkers(
-                                    markersToMerge = markers,
-                                    documentId = selectedDocument?.id,
-                                    documentRowMapping = calibrationState.expectedMapping,
-                                )
-                                rowCalibrationState = null
-                            }
-                        },
-                        onCancel = {
-                            rowCalibrationState = null
-                        },
-                    )
-                }
-                PatternViewerContent(
-                    stateProvider = {
-                        PatternViewerContentState(
-                            patternUri = patternUri,
-                            rendererError = renderState.rendererError ?: unavailableDocumentError,
-                            renderedBitmap = renderState.renderedBitmap,
-                            patternName = selectedDocument?.label,
-                            countSlot = counterSlot,
-                            readingLineEnabled = selectedDocument?.readingLineEnabled == true,
-                            readingLineYFraction = readingLinePreviewYFraction,
-                            readingLineFollowCurrentRow = selectedDocument?.readingLineFollowCurrentRow,
-                            verticalReadingGuideEnabled = selectedDocument?.verticalReadingGuideEnabled == true,
-                            verticalReadingGuideXFraction = verticalGuidePreviewXFraction,
-                            currentPage = currentPage,
-                            viewportFocusRequest = viewportFocusRequest,
-                            annotationState = annotationState,
-                            exportContext = exportContext,
-                            annotationMode = annotationMode.active,
-                        )
-                    },
-                    actions =
-                        PatternViewerContentActions(
-                            onReadingLineDragStart = {
-                                isReadingLineDragging = true
-                            },
-                            onReadingLineYFractionChange = { yFraction ->
-                                isReadingLineDragging = true
-                                readingLinePreviewYFraction = sanitizeReadingLineYFraction(yFraction)
-                            },
-                            onReadingLineYFractionCommit = { yFraction ->
-                                val sanitizedYFraction = sanitizeReadingLineYFraction(yFraction)
-                                isReadingLineDragging = false
-                                readingLinePreviewYFraction = sanitizedYFraction
-                                counterViewModel.commitManualReadingLinePosition(
-                                    sanitizedYFraction,
-                                    selectedDocument?.id,
-                                )
-                            },
-                            onReadingLineDragCancel = {
-                                isReadingLineDragging = false
-                                readingLinePreviewYFraction =
-                                    selectedDocument?.readingLineYFraction ?: DEFAULT_READING_LINE_Y_FRACTION
-                            },
-                            onVerticalGuideDragStart = {
-                                isVerticalGuideDragging = true
-                            },
-                            onVerticalGuideXFractionChange = { xFraction ->
-                                isVerticalGuideDragging = true
-                                verticalGuidePreviewXFraction = sanitizeReadingGuideFraction(xFraction)
-                            },
-                            onVerticalGuideXFractionCommit = { xFraction ->
-                                val sanitizedXFraction = sanitizeReadingGuideFraction(xFraction)
-                                isVerticalGuideDragging = false
-                                verticalGuidePreviewXFraction = sanitizedXFraction
-                                counterViewModel.updateVerticalReadingGuideXFraction(
-                                    xFraction = sanitizedXFraction,
-                                    documentId = selectedDocument?.id,
-                                )
-                            },
-                            onVerticalGuideDragCancel = {
-                                isVerticalGuideDragging = false
-                                verticalGuidePreviewXFraction =
-                                    selectedDocument?.verticalReadingGuideXFraction ?: DEFAULT_READING_GUIDE_FRACTION
-                            },
-                            onViewportFocusRequestConsumed = { requestId ->
-                                if (viewportFocusRequest?.requestId == requestId) {
-                                    viewportFocusRequest = null
-                                }
-                            },
-                            annotationActions = annotationViewModel.patternContentAnnotationActions(),
-                        ),
+            }
+        },
+    ) { scaffoldPadding ->
+        Column(
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(scaffoldPadding),
+        ) {
+            accessibilityAnnouncement?.let { announcement ->
+                Spacer(
                     modifier =
                         Modifier
                             .fillMaxWidth()
-                            .weight(1f),
+                            .height(1.dp)
+                            .semantics {
+                                liveRegion = LiveRegionMode.Polite
+                                contentDescription = announcement
+                            },
                 )
             }
+            rowCalibrationState?.let { calibrationState ->
+                RowCalibrationPanel(
+                    state = calibrationState,
+                    countSlot = counterSlot,
+                    onRowInputChange = { input ->
+                        rowCalibrationState =
+                            calibrationState.copy(
+                                rowInput = input.filter(Char::isDigit),
+                                showInvalidRowError = false,
+                            )
+                    },
+                    onSaveFirst = {
+                        val firstRow = calibrationState.rowInput.toIntOrNull()
+                        rowCalibrationState =
+                            if (firstRow == null) {
+                                calibrationState.copy(showInvalidRowError = true)
+                            } else {
+                                calibrationState.copy(
+                                    firstMarker =
+                                        RowMarker(
+                                            row = firstRow,
+                                            page = currentPage,
+                                            yPosition =
+                                                sanitizeReadingLineYFraction(
+                                                    selectedDocument?.readingLineYFraction
+                                                        ?: DEFAULT_READING_LINE_Y_FRACTION,
+                                                ),
+                                        ),
+                                    rowInput = counterState.counter.count.toString(),
+                                    showInvalidRowError = false,
+                                )
+                            }
+                    },
+                    onSaveLast = {
+                        val markers =
+                            calibrationState.toCalibrationMarkers(
+                                currentPage = currentPage,
+                                currentYFraction =
+                                    selectedDocument?.readingLineYFraction ?: DEFAULT_READING_LINE_Y_FRACTION,
+                            )
+                        if (markers == null) {
+                            rowCalibrationState = calibrationState.copy(showInvalidRowError = true)
+                        } else {
+                            counterViewModel.mergePatternRowMarkers(
+                                markersToMerge = markers,
+                                documentId = selectedDocument?.id,
+                                documentRowMapping = calibrationState.expectedMapping,
+                            )
+                            rowCalibrationState = null
+                        }
+                    },
+                    onCancel = {
+                        rowCalibrationState = null
+                    },
+                )
+            }
+            PatternViewerContent(
+                stateProvider = {
+                    PatternViewerContentState(
+                        patternUri = patternUri,
+                        rendererError = renderState.rendererError ?: unavailableDocumentError,
+                        renderedBitmap = renderState.renderedBitmap,
+                        patternName = selectedDocument?.label,
+                        countSlot = counterSlot,
+                        readingLineEnabled = selectedDocument?.readingLineEnabled == true,
+                        readingLineYFraction = readingLinePreviewYFraction,
+                        readingLineFollowCurrentRow = selectedDocument?.readingLineFollowCurrentRow,
+                        verticalReadingGuideEnabled = selectedDocument?.verticalReadingGuideEnabled == true,
+                        verticalReadingGuideXFraction = verticalGuidePreviewXFraction,
+                        currentPage = currentPage,
+                        viewportFocusRequest = viewportFocusRequest,
+                        annotationState = annotationState,
+                        exportContext = exportContext,
+                        annotationMode = annotationMode.active,
+                    )
+                },
+                actions =
+                    PatternViewerContentActions(
+                        onReadingLineDragStart = {
+                            isReadingLineDragging = true
+                        },
+                        onReadingLineYFractionChange = { yFraction ->
+                            isReadingLineDragging = true
+                            readingLinePreviewYFraction = sanitizeReadingLineYFraction(yFraction)
+                        },
+                        onReadingLineYFractionCommit = { yFraction ->
+                            val sanitizedYFraction = sanitizeReadingLineYFraction(yFraction)
+                            isReadingLineDragging = false
+                            readingLinePreviewYFraction = sanitizedYFraction
+                            counterViewModel.commitManualReadingLinePosition(
+                                sanitizedYFraction,
+                                selectedDocument?.id,
+                            )
+                        },
+                        onReadingLineDragCancel = {
+                            isReadingLineDragging = false
+                            readingLinePreviewYFraction =
+                                selectedDocument?.readingLineYFraction ?: DEFAULT_READING_LINE_Y_FRACTION
+                        },
+                        onVerticalGuideDragStart = {
+                            isVerticalGuideDragging = true
+                        },
+                        onVerticalGuideXFractionChange = { xFraction ->
+                            isVerticalGuideDragging = true
+                            verticalGuidePreviewXFraction = sanitizeReadingGuideFraction(xFraction)
+                        },
+                        onVerticalGuideXFractionCommit = { xFraction ->
+                            val sanitizedXFraction = sanitizeReadingGuideFraction(xFraction)
+                            isVerticalGuideDragging = false
+                            verticalGuidePreviewXFraction = sanitizedXFraction
+                            counterViewModel.updateVerticalReadingGuideXFraction(
+                                xFraction = sanitizedXFraction,
+                                documentId = selectedDocument?.id,
+                            )
+                        },
+                        onVerticalGuideDragCancel = {
+                            isVerticalGuideDragging = false
+                            verticalGuidePreviewXFraction =
+                                selectedDocument?.verticalReadingGuideXFraction ?: DEFAULT_READING_GUIDE_FRACTION
+                        },
+                        onViewportFocusRequestConsumed = { requestId ->
+                            if (viewportFocusRequest?.requestId == requestId) {
+                                viewportFocusRequest = null
+                            }
+                        },
+                        annotationActions = annotationViewModel.patternContentAnnotationActions(),
+                    ),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
+            )
         }
     }
 
@@ -824,7 +823,7 @@ internal fun ProjectDocumentsSheet(
     val removeDocument = state.documents.firstOrNull { it.id == removeDocumentId }
     var pendingUnlinkPatternId by rememberSaveable { mutableStateOf<Long?>(null) }
     var pendingUnlinkPatternName by rememberSaveable { mutableStateOf("") }
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val sheetState = rememberExpandedModalSheetState()
     val coroutineScope = rememberCoroutineScope()
 
     ModalBottomSheet(
@@ -1109,13 +1108,20 @@ private fun ProjectDocumentRow(
     val position = stringResource(R.string.project_documents_index, index + 1, documentCount)
     val status =
         when {
-            primary != null -> listOfNotNull(primary, page).joinToString(", ")
-            page != null ->
+            primary != null -> {
+                listOfNotNull(primary, page).joinToString(", ")
+            }
+
+            page != null -> {
                 stringResource(
                     R.string.project_documents_page_standalone,
                     document.currentPage.toLong() + 1L,
                 )
-            else -> ""
+            }
+
+            else -> {
+                ""
+            }
         }
     val openNow = if (isSelected) stringResource(R.string.project_documents_open_now) else null
     val unavailable = if (!isAvailable) stringResource(R.string.project_documents_unavailable) else null
@@ -1498,7 +1504,7 @@ fun LibraryPatternViewerScreen(
                         hasCurrentRowMarker = false,
                         hasPageRowMarkers = false,
                     ).withAnnotations(
-                        patternUri != null && renderState.canAnnotate,
+                        renderState.canAnnotate && annotationState.matchesDisplayedPage(exportContext, currentPage),
                         annotationMode,
                         annotationState,
                     ),
@@ -1599,31 +1605,23 @@ internal fun rememberPatternRenderState(
     var rendererError by remember(patternUri) { mutableStateOf<String?>(null) }
 
     LaunchedEffect(patternUri) {
-        renderer?.close()
-        renderer = null
-        rendererError = null
         if (patternUri == null) return@LaunchedEffect
-        var pendingRenderer: PdfPageRenderer? = null
+        var ownedRenderer: PdfPageRenderer? = null
         try {
             val createdRenderer =
                 withContext(AppDispatchers.IO) {
                     runCatching { PdfPageRenderer(context, patternUri.toUri()) }
-                        .also { pendingRenderer = it.getOrNull() }
+                        .getOrNull()
+                        .also { ownedRenderer = it }
                 }
-            pendingRenderer = null
-            createdRenderer
-                .onSuccess { pdfRenderer ->
-                    if (pdfRenderer.pageCount > 0) {
-                        renderer = pdfRenderer
-                    } else {
-                        pdfRenderer.close()
-                        rendererError = patternOpenFailed
-                    }
-                }.onFailure {
-                    rendererError = patternOpenFailed
-                }
+            if (createdRenderer == null || createdRenderer.pageCount == 0) {
+                rendererError = patternOpenFailed
+                return@LaunchedEffect
+            }
+            renderer = createdRenderer
+            awaitCancellation()
         } finally {
-            pendingRenderer?.close()
+            withContext(NonCancellable + AppDispatchers.IO) { ownedRenderer?.close() }
         }
     }
 
@@ -1632,13 +1630,6 @@ internal fun rememberPatternRenderState(
     val latestOnPageClamped by rememberUpdatedState(onPageClamped)
     LaunchedEffect(renderer, currentPage) {
         if (pageCount > 0 && !validPage) latestOnPageClamped(clampPatternPage(currentPage, pageCount))
-    }
-
-    DisposableEffect(patternUri) {
-        onDispose {
-            renderer?.close()
-            renderer = null
-        }
     }
 
     var pageRenderFailed by remember(renderer, currentPage) { mutableStateOf(false) }
@@ -1731,9 +1722,9 @@ private fun TopBarState.withAnnotations(
         canAnnotate = canAnnotate,
         annotationMode = annotationMode.active,
         annotationExportEnabled = !annotationState.isExporting,
-        canUndoAnnotation = annotationState.canUndo,
-        canRedoAnnotation = annotationState.canRedo,
-        canClearAnnotationPage = annotationState.editableLayerVisible && !annotationState.isSaving,
+        canUndoAnnotation = canAnnotate && annotationState.canUndo,
+        canRedoAnnotation = canAnnotate && annotationState.canRedo,
+        canClearAnnotationPage = canAnnotate && annotationState.editableLayerVisible && !annotationState.isSaving,
     )
 
 private fun TopBarActions.withAnnotations(
@@ -1761,8 +1752,8 @@ internal fun PatternViewerTopBar(
     var showReadingLineMenu by rememberSaveable { mutableStateOf(false) }
     var showPageJumpDialog by rememberSaveable { mutableStateOf(false) }
     var showClearPageDialog by rememberSaveable(state.currentPage, state.patternName) { mutableStateOf(false) }
-    val blocksTips = showOverflowMenu || showReadingLineMenu || showPageJumpDialog || showClearPageDialog
-    SideEffect { onBlockingChanged(blocksTips) }
+    val menuOrDialogOpen = showOverflowMenu || showReadingLineMenu || showPageJumpDialog || showClearPageDialog
+    SideEffect { onBlockingChanged(menuOrDialogOpen) }
     val titleFocusRequester = remember { FocusRequester() }
     LaunchedEffect(state.patternName) {
         if (state.patternName != null) {
@@ -1800,8 +1791,6 @@ internal fun PatternViewerTopBar(
                 Box {
                     IconButton(
                         onClick = { showReadingLineMenu = true },
-                        modifier =
-                            if (state.currentRow != null) Modifier.tipAnchor(TipId.READING_LINE) else Modifier,
                     ) {
                         Icon(
                             painter = painterResource(R.drawable.ic_reading_line),
@@ -2228,11 +2217,8 @@ private fun PatternViewerContent(
         }
     }
     var pendingExportRequestId by rememberSaveable { mutableStateOf<String?>(null) }
-    val editableLayerVisible =
-        when (state.annotationState.owner) {
-            is PatternAnnotationOwner.Project -> state.annotationState.projectLayerVisible
-            is PatternAnnotationOwner.SavedPattern -> state.annotationState.masterLayerVisible
-        }
+    val annotationPageMatches = state.annotationState.matchesDisplayedPage(state.exportContext, state.currentPage)
+    val editableLayerVisible = annotationPageMatches && state.annotationState.editableLayerVisible
     val fallbackPatternName = stringResource(R.string.pattern_annotation_export_default_name)
     val exportBaseName = state.patternName?.substringBeforeLast('.')?.ifBlank { null } ?: fallbackPatternName
     val exportFilename = stringResource(R.string.pattern_annotation_export_filename, exportBaseName)
@@ -2288,7 +2274,7 @@ private fun PatternViewerContent(
             }
         Column(modifier = Modifier.fillMaxSize()) {
             // Lukutilassa ohje täyttää näytön; työkalut näkyvät vain merkintätilassa.
-            if (state.patternUri != null && state.annotationMode) {
+            if (state.patternUri != null && state.annotationMode && annotationPageMatches) {
                 Column(
                     modifier = Modifier.heightIn(max = toolsMaxHeight).verticalScroll(rememberScrollState()),
                 ) {
@@ -2310,8 +2296,18 @@ private fun PatternViewerContent(
             ) {
                 Snackbar(
                     action = {
-                        TextButton(onClick = annotationActions.onDismissWriteError) {
-                            Text(stringResource(R.string.dismiss))
+                        Row {
+                            if (state.annotationState.canRetryStroke) {
+                                TextButton(
+                                    onClick = annotationActions.onRetryStroke,
+                                    enabled = editableLayerVisible && !state.annotationState.isSaving,
+                                ) {
+                                    Text(stringResource(R.string.retry))
+                                }
+                            }
+                            TextButton(onClick = annotationActions.onDismissWriteError) {
+                                Text(stringResource(R.string.dismiss))
+                            }
                         }
                     },
                     actionOnNewLine = true,
@@ -2375,8 +2371,8 @@ private fun PatternViewerContent(
                                 PatternAnnotationOverlay(
                                     masterAnnotations = state.annotationState.masterAnnotations,
                                     projectAnnotations = state.annotationState.projectAnnotations,
-                                    masterVisible = state.annotationState.masterLayerVisible,
-                                    projectVisible = state.annotationState.projectLayerVisible,
+                                    masterVisible = annotationPageMatches && state.annotationState.masterLayerVisible,
+                                    projectVisible = annotationPageMatches && state.annotationState.projectLayerVisible,
                                     inProgressAnnotation = state.annotationState.inProgressAnnotation,
                                     inProgressVisible = editableLayerVisible,
                                     selectedAnnotationId = state.annotationState.selectedAnnotationId,
@@ -2423,6 +2419,7 @@ private fun PatternViewerContent(
                                 // Piirto vain merkintätilassa, vaikka edellinen työkalu olisi vielä valittuna.
                                 if (state.annotationMode &&
                                     editableLayerVisible &&
+                                    state.annotationState.editableLayerId != null &&
                                     state.annotationState.activeTool != PatternAnnotationTool.BROWSE
                                 ) {
                                     PatternAnnotationInputOverlay(
@@ -2442,6 +2439,12 @@ private fun PatternViewerContent(
         }
     }
 }
+
+internal fun PatternAnnotationUiState.matchesDisplayedPage(
+    context: PatternPdfExportContext?,
+    page: Int,
+): Boolean =
+    context != null && owner == context.owner && projectDocumentId == context.projectDocumentId && currentPage == page
 
 private data class PatternViewerContentState(
     val patternUri: String?,
@@ -2476,6 +2479,7 @@ private data class PatternViewerContentActions(
 
 private data class PatternViewerAnnotationActions(
     val onDismissWriteError: () -> Unit,
+    val onRetryStroke: () -> Unit,
     val onMasterLayerVisibilityChange: (Boolean) -> Unit,
     val onProjectLayerVisibilityChange: (Boolean) -> Unit,
     val onPageSizeChanged: (IntSize) -> Unit,
@@ -2490,6 +2494,7 @@ private data class PatternViewerAnnotationActions(
 private fun PatternAnnotationViewModel.patternContentAnnotationActions() =
     PatternViewerAnnotationActions(
         onDismissWriteError = ::dismissWriteError,
+        onRetryStroke = ::retryFailedStroke,
         onMasterLayerVisibilityChange = ::setMasterLayerVisible,
         onProjectLayerVisibilityChange = ::setProjectLayerVisible,
         onPageSizeChanged = ::setAnnotationPageSize,
@@ -2818,158 +2823,6 @@ private fun ReadingLineRowLabel(
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
         )
-    }
-}
-
-// Tilan ja toimintojen ryhmittely PatternViewerBottomBarille (S107)
-private data class BottomBarState(
-    val countSlot: MainCounterCountSlot,
-    val currentPage: Int,
-    val totalPages: Int,
-)
-
-private data class BottomBarActions(
-    val onPreviousRow: () -> Unit,
-    val onNextRow: () -> Unit,
-    val onPreviousPage: () -> Unit,
-    val onNextPage: () -> Unit,
-    val onOpenBookmarks: () -> Unit,
-)
-
-@Composable
-private fun PatternViewerBottomBar(
-    state: BottomBarState,
-    actions: BottomBarActions,
-) {
-    Surface(
-        tonalElevation = 3.dp,
-        color = MaterialTheme.colorScheme.surface,
-    ) {
-        BoxWithConstraints(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(
-                        horizontal = PatternViewerDimens.BottomBarHorizontalPadding,
-                        vertical =
-                            PatternViewerDimens.bottomBarVerticalPadding(
-                                LocalAdaptiveContentSize.current.isCompactHeight,
-                                library = false,
-                            ),
-                    ),
-        ) {
-            val textMeasurer = rememberTextMeasurer()
-            val style = MaterialTheme.typography.bodyMedium
-            val countSample = mainCounterCountText(state.countSlot.copy(count = 99_999))
-            val pageSample = stringResource(R.string.pattern_page_indicator_compact, 999, 999)
-            val labelWidth =
-                with(LocalDensity.current) {
-                    (
-                        textMeasurer.measure(countSample, style, maxLines = 1).size.width +
-                            textMeasurer.measure(pageSample, style, maxLines = 1).size.width
-                    ).toDp()
-                }
-            val minimumWidth =
-                labelWidth + PatternViewerDimens.BottomBarButtonSize * 5 + PatternViewerDimens.BottomBarCountSpacing
-            if (maxWidth >= minimumWidth) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    BottomBarCountControls(state = state, actions = actions, modifier = Modifier.weight(1f))
-                    BottomBarPageControls(state = state, actions = actions)
-                }
-            } else {
-                Column(verticalArrangement = Arrangement.spacedBy(PatternViewerDimens.BottomBarRowSpacing)) {
-                    BottomBarCountControls(state = state, actions = actions)
-                    BottomBarPageControls(state = state, actions = actions)
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun BottomBarCountControls(
-    state: BottomBarState,
-    actions: BottomBarActions,
-    modifier: Modifier = Modifier,
-) {
-    Row(
-        modifier = modifier,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(
-            text = mainCounterCountText(state.countSlot),
-            style = MaterialTheme.typography.bodyMedium,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.weight(1f, fill = false),
-        )
-        Spacer(modifier = Modifier.width(PatternViewerDimens.BottomBarCountSpacing))
-        IconButton(
-            onClick = actions.onPreviousRow,
-            modifier = Modifier.size(PatternViewerDimens.BottomBarButtonSize),
-        ) {
-            Icon(
-                imageVector = Icons.Default.Remove,
-                contentDescription = stringResource(R.string.counter_decrease),
-            )
-        }
-        IconButton(
-            onClick = actions.onNextRow,
-            modifier = Modifier.size(PatternViewerDimens.BottomBarButtonSize),
-        ) {
-            Icon(
-                imageVector = Icons.Default.Add,
-                contentDescription = stringResource(R.string.counter_increase),
-            )
-        }
-    }
-}
-
-@Composable
-private fun BottomBarPageControls(
-    state: BottomBarState,
-    actions: BottomBarActions,
-) {
-    val page = state.currentPage + 1
-    val total = state.totalPages.coerceAtLeast(1)
-    val pageDescription = stringResource(R.string.pattern_page_indicator, page, total)
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        IconButton(
-            onClick = actions.onPreviousPage,
-            modifier = Modifier.size(PatternViewerDimens.BottomBarButtonSize),
-            enabled = state.currentPage > 0,
-        ) {
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                contentDescription = stringResource(R.string.pattern_previous_page),
-            )
-        }
-        Text(
-            text = stringResource(R.string.pattern_page_indicator_compact, page, total),
-            style = MaterialTheme.typography.bodyMedium,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.weight(1f, fill = false).clearAndSetSemantics { contentDescription = pageDescription },
-        )
-        IconButton(
-            onClick = actions.onNextPage,
-            modifier = Modifier.size(PatternViewerDimens.BottomBarButtonSize),
-            enabled = state.currentPage < state.totalPages - 1,
-        ) {
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-                contentDescription = stringResource(R.string.pattern_next_page),
-            )
-        }
-        IconButton(
-            onClick = actions.onOpenBookmarks,
-            modifier = Modifier.size(PatternViewerDimens.BottomBarButtonSize),
-        ) {
-            Icon(
-                imageVector = Icons.Outlined.BookmarkBorder,
-                contentDescription = stringResource(R.string.pattern_bookmarks),
-            )
-        }
     }
 }
 

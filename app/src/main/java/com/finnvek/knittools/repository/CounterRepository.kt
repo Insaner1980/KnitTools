@@ -43,7 +43,6 @@ import com.finnvek.knittools.domain.model.ActiveSessionRecoveryReason
 import com.finnvek.knittools.domain.model.ActiveSessionTimeEvaluation
 import com.finnvek.knittools.domain.model.ActiveSessionTimingAnchors
 import com.finnvek.knittools.domain.model.ActiveWorkSession
-import com.finnvek.knittools.domain.model.CommittedMainCounterChange
 import com.finnvek.knittools.domain.model.CounterHistory
 import com.finnvek.knittools.domain.model.CounterHistoryAction
 import com.finnvek.knittools.domain.model.CounterProject
@@ -399,8 +398,10 @@ class CounterRepository
             if (!canAddActiveProject(canCreateAdditionalProjects)) return ProjectCreationResult.LimitReached
             val (initialCount, targetRows) = startValues
             if (initialCount !in 0..MAX_PROJECT_START_COUNT ||
-                targetRows != null &&
-                targetRows !in 1..MAX_TARGET_ROWS
+                (
+                    targetRows != null &&
+                        targetRows !in 1..MAX_TARGET_ROWS
+                )
             ) {
                 return ProjectCreationResult.InvalidProject
             }
@@ -492,15 +493,10 @@ class CounterRepository
         suspend fun applyMainCounterChange(
             id: Long,
             change: MainCounterChange,
-        ): Boolean = applyMainCounterChangeWithResult(id, change) != null
-
-        suspend fun applyMainCounterChangeWithResult(
-            id: Long,
-            change: MainCounterChange,
-        ): CommittedMainCounterChange? =
+        ): Boolean =
             transactionRunner.run {
-                val project = dao.getProject(id)?.toDomain() ?: return@run null
-                if (project.isCompleted) return@run null
+                val project = dao.getProject(id)?.toDomain() ?: return@run false
+                if (project.isCompleted) return@run false
 
                 val undoHistory =
                     if (change == MainCounterChange.Undo) dao.getLatestHistory(id) else null
@@ -509,7 +505,7 @@ class CounterRepository
                         MainCounterChange.Undo -> undoMainCounterChange(id, project, undoHistory)
                         else -> applyHistoryTrackedMainCounterChange(id, project, change)
                     }
-                if (!changed) return@run null
+                if (!changed) return@run false
                 val updated = checkNotNull(dao.getProject(id))
                 checkpointActiveSessionForRowChange(
                     projectId = id,
@@ -517,7 +513,7 @@ class CounterRepository
                     undoneReset = undoHistory?.action == MainCounterChange.Reset.historyAction,
                     undoHistory = undoHistory,
                 )
-                CommittedMainCounterChange(project.count, updated.count, project.targetRows, change)
+                true
             }
 
         suspend fun applyWidgetCountChange(
@@ -761,9 +757,11 @@ class CounterRepository
             pattern: SavedPattern,
         ): ProjectDocumentMutationResult? =
             when (preparation) {
-                SavedPatternDocumentPreparation.MetadataOnlyPattern ->
+                SavedPatternDocumentPreparation.MetadataOnlyPattern -> {
                     attachMetadataOnlySavedPattern(projectId, linkedPatternId, pattern)
-                SavedPatternDocumentPreparation.AlreadyAttached ->
+                }
+
+                SavedPatternDocumentPreparation.AlreadyAttached -> {
                     if (
                         projectDocumentRepository.hasSavedPatternDocumentInCurrentTransaction(
                             projectId,
@@ -774,7 +772,9 @@ class CounterRepository
                     } else {
                         null
                     }
-                is SavedPatternDocumentPreparation.Ready ->
+                }
+
+                is SavedPatternDocumentPreparation.Ready -> {
                     attachSavedPatternDocument(
                         projectId = projectId,
                         savedPatternId = savedPatternId,
@@ -782,9 +782,13 @@ class CounterRepository
                         linkedPatternId = linkedPatternId,
                         pattern = pattern,
                     )
+                }
+
                 SavedPatternDocumentPreparation.MissingSavedPattern,
                 SavedPatternDocumentPreparation.PdfUnavailable,
-                -> null
+                -> {
+                    null
+                }
             }
 
         private suspend fun attachMetadataOnlySavedPattern(
@@ -1039,6 +1043,7 @@ class CounterRepository
             id: Long,
             enabled: Boolean,
             documentId: Long? = null,
+            showReadingLine: Boolean = false,
         ): ReadingLineLocationResolution? =
             transactionRunner.run {
                 val project = dao.getProject(id)?.toDomain() ?: return@run null
@@ -1052,7 +1057,11 @@ class CounterRepository
                     return@run null
                 }
                 applyReadingLineFollow(
-                    document = document.copy(readingLineFollowCurrentRow = true),
+                    document =
+                        document.copy(
+                            readingLineFollowCurrentRow = true,
+                            readingLineEnabled = document.readingLineEnabled || showReadingLine,
+                        ),
                     previousRow = project.count,
                     newRow = project.count,
                 )
@@ -1383,12 +1392,16 @@ class CounterRepository
         suspend fun activeSessionDurationSeconds(session: ActiveWorkSession): Long =
             withContext(ioDispatcher) {
                 when (val evaluation = evaluateActiveSessionTime(session.timingAnchors, sessionTimeSource.snapshot())) {
-                    is ActiveSessionTimeEvaluation.Trusted -> evaluation.totalDurationSeconds
-                    is ActiveSessionTimeEvaluation.NeedsReview ->
+                    is ActiveSessionTimeEvaluation.Trusted -> {
+                        evaluation.totalDurationSeconds
+                    }
+
+                    is ActiveSessionTimeEvaluation.NeedsReview -> {
                         saturatingAdd(
                             session.timingAnchors.checkpointedDurationSeconds,
                             session.recoverySuggestedDurationSeconds ?: 0L,
                         )
+                    }
                 }
             }
 
@@ -1474,7 +1487,6 @@ class CounterRepository
                 ) {
                     return@runSessionMutation StopSessionResult.StaleAction
                 }
-                val previousSessionCount = sessionDao.countCompletedSessions()
                 val completedSessionId =
                     insertCompletedSession(
                         active = active,
@@ -1483,10 +1495,7 @@ class CounterRepository
                         endRow = reviewedEndRow,
                     )
                 sessionDao.deleteActiveSession(active.sessionToken)
-                StopSessionResult.Saved(
-                    completedSessionId,
-                    wasFirstCompletedSession = completedSessionId != null && previousSessionCount == 0L,
-                )
+                StopSessionResult.Saved(completedSessionId)
             }
 
         suspend fun discardActiveSession(sessionToken: String): StopSessionResult =
@@ -1819,23 +1828,31 @@ class CounterRepository
                             currentCoroutineContext().ensureActive()
                             val batch =
                                 when {
-                                    projectId == null && start == null -> sessionDao.getInsightSessionBatch(afterId)
-                                    projectId == null && start != null ->
+                                    projectId == null && start == null -> {
+                                        sessionDao.getInsightSessionBatch(afterId)
+                                    }
+
+                                    projectId == null && start != null -> {
                                         sessionDao.getInsightSessionBatchSince(
                                             afterId,
                                             start,
                                         )
-                                    projectId != null && start == null ->
+                                    }
+
+                                    projectId != null && start == null -> {
                                         sessionDao.getProjectInsightSessionBatch(
                                             projectId,
                                             afterId,
                                         )
-                                    else ->
+                                    }
+
+                                    else -> {
                                         sessionDao.getProjectInsightSessionBatchSince(
                                             requireNotNull(projectId),
                                             afterId,
                                             requireNotNull(start),
                                         )
+                                    }
                                 }
                             if (batch.isEmpty()) break
                             accumulate(result, batch.map { it.toDomain() })
@@ -1897,20 +1914,9 @@ class CounterRepository
 
         private suspend fun synchronizeActiveSession(now: SessionTimeSnapshot): ActiveSessionEntity? {
             val active = sessionDao.getActiveSession() ?: return null
-            if (active.recoveryReason != null) {
-                if (active.recoveryIntervalToken != null) return active
-                val repaired =
-                    active.copy(
-                        recoveryReason = ActiveSessionRecoveryReason.INVALID_ANCHORS.name,
-                        recoveryIntervalToken = UUID.randomUUID().toString(),
-                        recoverySuggestedDurationSeconds = null,
-                        recoveryPromptShown = false,
-                        updatedAtWallMillis = now.wallClockMillis,
-                    )
-                sessionDao.updateActiveSession(repaired)
-                return repaired
-            }
+            if (active.recoveryReason != null && active.recoveryIntervalToken != null) return active
             if (
+                active.recoveryReason != null ||
                 active.sessionToken.isBlank() ||
                 active.projectId <= 0L ||
                 runCatching { ZoneId.of(active.startZoneId) }.isFailure
@@ -1927,7 +1933,10 @@ class CounterRepository
                 return malformed
             }
             return when (val evaluation = evaluateActiveSessionTime(active.timingAnchors(), now)) {
-                is ActiveSessionTimeEvaluation.Trusted -> active
+                is ActiveSessionTimeEvaluation.Trusted -> {
+                    active
+                }
+
                 is ActiveSessionTimeEvaluation.NeedsReview -> {
                     val recoveryBase =
                         if (evaluation.reason == ActiveSessionRecoveryReason.LONG_RUNNING) {
@@ -1962,8 +1971,10 @@ class CounterRepository
         ): ActiveSessionEntity {
             if (active.recoveryReason != null) return active
             return when (val evaluation = evaluateActiveSessionTime(active.timingAnchors(), now)) {
-                is ActiveSessionTimeEvaluation.NeedsReview ->
+                is ActiveSessionTimeEvaluation.NeedsReview -> {
                     synchronizeActiveSession(now) ?: active
+                }
+
                 is ActiveSessionTimeEvaluation.Trusted -> {
                     val remainingMillis =
                         (now.elapsedRealtimeMillis - active.segmentStartedElapsedRealtimeMillis) % 1_000L
@@ -1992,16 +2003,8 @@ class CounterRepository
             if (synchronized.projectId != projectId) return
             if (undoHistory == null) {
                 dao.updateLatestHistorySessionUndo(projectId, CounterSessionUndo.capture(synchronized).encode())
-            } else {
-                val snapshot = undoHistory.sessionUndoJson?.let(CounterSessionUndo::decodeOrNull)
-                val checkpointed = checkpointTrustedSession(synchronized, now)
-                val restored = snapshot?.restoreRows(checkpointed)
-                if (restored != null) {
-                    sessionDao.updateActiveSession(
-                        restored.copy(lastObservedRow = newRow, updatedAtWallMillis = now.wallClockMillis),
-                    )
-                    return
-                }
+            } else if (restoreSessionRowsForUndo(synchronized, now, newRow, undoneReset, undoHistory)) {
+                return
             }
             val delta = newRow.toLong() - synchronized.lastObservedRow.toLong()
             if (synchronized.recoveryReason != null) {
@@ -2042,6 +2045,49 @@ class CounterRepository
                     updatedAtWallMillis = now.wallClockMillis,
                 ),
             )
+        }
+
+        private suspend fun restoreSessionRowsForUndo(
+            active: ActiveSessionEntity,
+            now: SessionTimeSnapshot,
+            newRow: Int,
+            undoneReset: Boolean,
+            undoHistory: CounterHistoryEntity,
+        ): Boolean {
+            val snapshot = undoHistory.sessionUndoJson?.let(CounterSessionUndo::decodeOrNull)
+            val checkpointed = checkpointTrustedSession(active, now)
+            val restored = snapshot?.restoreRows(checkpointed)
+            val resetBeforeSession =
+                when {
+                    !undoneReset -> false
+                    snapshot != null -> snapshot.sessionToken != active.sessionToken
+                    else -> undoHistory.timestamp < active.startedAtWallMillis
+                }
+            val updated =
+                when {
+                    restored != null -> {
+                        restored
+                    }
+
+                    resetBeforeSession -> {
+                        checkpointed.copy(
+                            trustedLastObservedRow =
+                                if (checkpointed.recoveryReason == null) {
+                                    newRow
+                                } else {
+                                    checkpointed.trustedLastObservedRow
+                                },
+                        )
+                    }
+
+                    else -> {
+                        return false
+                    }
+                }
+            sessionDao.updateActiveSession(
+                updated.copy(lastObservedRow = newRow, updatedAtWallMillis = now.wallClockMillis),
+            )
+            return true
         }
 
         private suspend fun saveAndDeleteActiveSession(

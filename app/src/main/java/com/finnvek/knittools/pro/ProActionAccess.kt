@@ -16,9 +16,19 @@ fun proActionAccess(
     alreadyUnlocked: Boolean = false,
 ): ProActionAccess =
     when {
-        !ready -> ProActionAccess.Unknown
-        !needsEntitlement || alreadyUnlocked -> ProActionAccess.Allowed
-        proState.hasFeature(feature) ->
+        !ready -> {
+            ProActionAccess.Unknown
+        }
+
+        !needsEntitlement || alreadyUnlocked -> {
+            ProActionAccess.Allowed
+        }
+
+        proState.hasFeature(feature) -> {
             if (proState.status == ProStatus.TRIAL_ACTIVE) ProActionAccess.Trial else ProActionAccess.Allowed
-        else -> ProActionAccess.Locked
+        }
+
+        else -> {
+            ProActionAccess.Locked
+        }
     }

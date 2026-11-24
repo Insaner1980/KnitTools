@@ -282,13 +282,16 @@ private fun PatternImageProgress(state: PatternImageImportUiState) {
             }
         }
 
-        PatternImageImportPhase.ATTACHING ->
+        PatternImageImportPhase.ATTACHING -> {
             Text(
                 text = stringResource(R.string.pattern_image_attaching),
                 modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
             )
+        }
 
-        else -> Unit
+        else -> {
+            Unit
+        }
     }
 }
 

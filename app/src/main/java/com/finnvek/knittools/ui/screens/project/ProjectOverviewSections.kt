@@ -37,7 +37,6 @@ import com.finnvek.knittools.domain.model.YarnCard
 import com.finnvek.knittools.domain.model.YarnUsageAmounts
 import com.finnvek.knittools.domain.model.YarnUsageUnit
 import com.finnvek.knittools.domain.model.isWebPatternCompatible
-import com.finnvek.knittools.domain.tips.TipId
 import com.finnvek.knittools.pro.ProActionAccess
 import com.finnvek.knittools.pro.ProFeature
 import com.finnvek.knittools.pro.proActionAccess
@@ -57,7 +56,6 @@ import com.finnvek.knittools.ui.screens.counter.reminderDetailText
 import com.finnvek.knittools.ui.screens.counter.yarnUsageAmount
 import com.finnvek.knittools.ui.theme.ProjectListDimens
 import com.finnvek.knittools.ui.theme.ProjectOverviewDimens
-import com.finnvek.knittools.ui.tips.tipAnchor
 
 @Composable
 internal fun ProjectOverviewYarn(
@@ -376,7 +374,7 @@ internal fun ProjectOverviewSessions(
     // Historia-linkki on arvon rinnalla eikä otsikkorivillä: pitkä linkki painoi otsikkoa enemmän.
     // Kokonaisaika on titleLarge, jottei se kilpaile laskurin lukeman kanssa.
     OverviewSectionHeader(R.string.project_overview_section_sessions)
-    Row(modifier = Modifier.tipAnchor(TipId.FIRST_SESSION_SAVED), verticalAlignment = Alignment.Bottom) {
+    Row(verticalAlignment = Alignment.Bottom) {
         // Nollakestoisilla istunnoilla ei näytetä "0 min" -kokonaisaikaa, vain historian linkki.
         Column(Modifier.weight(1f)) {
             if (state.totalSessionMinutes > 0) {

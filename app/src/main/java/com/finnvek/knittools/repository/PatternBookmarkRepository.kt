@@ -162,12 +162,19 @@ class PatternBookmarkRepository
             mutation: suspend (String) -> PatternBookmarkMutationResult,
         ): PatternBookmarkMutationResult =
             when (val validation = validatePatternBookmarkName(name)) {
-                PatternBookmarkNameValidation.Empty -> PatternBookmarkMutationResult.EmptyName
-                PatternBookmarkNameValidation.TooLong -> PatternBookmarkMutationResult.NameTooLong
-                is PatternBookmarkNameValidation.Valid ->
+                PatternBookmarkNameValidation.Empty -> {
+                    PatternBookmarkMutationResult.EmptyName
+                }
+
+                PatternBookmarkNameValidation.TooLong -> {
+                    PatternBookmarkMutationResult.NameTooLong
+                }
+
+                is PatternBookmarkNameValidation.Valid -> {
                     withContext(ioDispatcher) {
                         transactionRunner.run { mutation(validation.name) }
                     }
+                }
             }
 
         private suspend fun activeDocumentKey(projectId: Long): String? =

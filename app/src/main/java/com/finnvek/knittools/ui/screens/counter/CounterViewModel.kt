@@ -55,7 +55,6 @@ import com.finnvek.knittools.domain.model.isWebPatternCompatible
 import com.finnvek.knittools.domain.model.parseYarnCardIds
 import com.finnvek.knittools.domain.model.sanitizeReadingGuideFraction
 import com.finnvek.knittools.domain.model.sanitizeReadingLineYFraction
-import com.finnvek.knittools.domain.tips.TipSignal
 import com.finnvek.knittools.pro.InAppReviewManager
 import com.finnvek.knittools.pro.ProFeature
 import com.finnvek.knittools.pro.ProManager
@@ -85,7 +84,6 @@ import com.finnvek.knittools.repository.StopSessionResult
 import com.finnvek.knittools.repository.YarnCardRepository
 import com.finnvek.knittools.ui.screens.project.ProjectCompletionCelebration
 import com.finnvek.knittools.ui.screens.project.ProjectSetupVisit
-import com.finnvek.knittools.ui.tips.TipSession
 import com.finnvek.knittools.widget.CounterWidgetState
 import com.finnvek.knittools.widget.WidgetData
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -317,7 +315,6 @@ class CounterViewModel
         @param:ApplicationContext private val context: Context,
         @param:IoDispatcher private val ioDispatcher: CoroutineDispatcher,
         @param:ApplicationScope private val applicationScope: CoroutineScope,
-        private val tipSession: TipSession,
         private val onboardingStateRepository: OnboardingStateRepository,
         private val analytics: UsageAnalytics = UsageAnalytics.NONE,
     ) : ViewModel() {
@@ -342,6 +339,7 @@ class CounterViewModel
         private var projectSelectionVersion = 0L
         private var counterStateVersion = 0L
         private var counterActionVersion = 0L
+        private var lastConfirmedCounterProject: CounterProject? = null
         private var sessionTotalRequestVersion = 0L
         private var pendingNotesBase: PendingNotesSave? = null
         private val notesSaveMutex = Mutex()
@@ -632,6 +630,7 @@ class CounterViewModel
             }
             val previousState = _uiState.value
             val countChanged = previousState.counter.count != project.count
+            lastConfirmedCounterProject = project
             counterStateVersion++
             _uiState.update { state ->
                 val observed = state.withObservedProject(project).copy(linkedPattern = linkedPattern)
@@ -894,6 +893,7 @@ class CounterViewModel
 
             saveSelectedProject(project.id)
 
+            lastConfirmedCounterProject = project
             _uiState.update { it.withStartedProject(project) }
             observeSelectedProject(project.id)
             observeReminders(project.id)
@@ -1014,6 +1014,7 @@ class CounterViewModel
 
         private fun clearSelectedProject() {
             projectSelectionVersion++
+            lastConfirmedCounterProject = null
             invalidateProjectCompletion()
             dismissPendingReactivation()
             savedStateHandle.remove<Long>(KEY_SELECTED_PROJECT_ID)
@@ -1072,9 +1073,11 @@ class CounterViewModel
             session?.needsRecoveryReview == true &&
                 (
                     !session.recoveryPromptShown ||
-                        showSessionRecoveryPrompt &&
-                        activeSession?.sessionToken == session.sessionToken &&
-                        activeSession.recoveryIntervalToken == session.recoveryIntervalToken
+                        (
+                            showSessionRecoveryPrompt &&
+                                activeSession?.sessionToken == session.sessionToken &&
+                                activeSession.recoveryIntervalToken == session.recoveryIntervalToken
+                        )
                 )
 
         fun refreshSessionPresentationTime() {
@@ -1107,23 +1110,32 @@ class CounterViewModel
                     return@launchWorkSessionAction
                 }
                 when (result) {
-                    is StartSessionResult.ProjectConflict ->
+                    is StartSessionResult.ProjectConflict -> {
                         _uiState.update {
                             it.copy(
                                 sessionStartConflict =
                                     SessionStartConflict(result.activeSession, result.requestedProjectId),
                             )
                         }
+                    }
+
                     is StartSessionResult.AlreadyActive,
                     is StartSessionResult.Started,
                     StartSessionResult.ProjectCompleted,
                     StartSessionResult.ProjectMissing,
-                    -> Unit
-                    StartSessionResult.PersistenceFailure ->
+                    -> {
+                        Unit
+                    }
+
+                    StartSessionResult.PersistenceFailure -> {
                         showWorkSessionError(R.string.work_session_could_not_start) {
                             if (selectionVersion == projectSelectionVersion) startWorkSession()
                         }
-                    StartSessionResult.HistoryLimitReached -> showWorkSessionError(R.string.work_session_history_full)
+                    }
+
+                    StartSessionResult.HistoryLimitReached -> {
+                        showWorkSessionError(R.string.work_session_history_full)
+                    }
                 }
             }
         }
@@ -1156,7 +1168,7 @@ class CounterViewModel
                     return@launchWorkSessionAction
                 }
                 when {
-                    result == StartSessionResult.PersistenceFailure ->
+                    result == StartSessionResult.PersistenceFailure -> {
                         showWorkSessionError(R.string.work_session_could_not_start) {
                             if (selectionVersion == projectSelectionVersion &&
                                 _uiState.value.sessionStartConflict == conflict
@@ -1164,17 +1176,24 @@ class CounterViewModel
                                 resolveSessionStartConflict(saveCurrent)
                             }
                         }
-                    result == StartSessionResult.HistoryLimitReached ->
+                    }
+
+                    result == StartSessionResult.HistoryLimitReached -> {
                         showWorkSessionError(R.string.work_session_history_full)
-                    result is StartSessionResult.ProjectConflict ->
+                    }
+
+                    result is StartSessionResult.ProjectConflict -> {
                         _uiState.update {
                             it.copy(
                                 sessionStartConflict =
                                     SessionStartConflict(result.activeSession, result.requestedProjectId),
                             )
                         }
-                    else ->
+                    }
+
+                    else -> {
                         _uiState.update { it.copy(sessionStartConflict = null) }
+                    }
                 }
             }
         }
@@ -1249,24 +1268,36 @@ class CounterViewModel
                         )
                 ) {
                     is StopSessionResult.Saved -> {
-                        if (result.completedSessionId != null) {
-                            tipSession.onSignal(TipSignal.SessionSaved(result.wasFirstCompletedSession))
-                        }
                         analytics.track(UsageEvent.WORK_SESSION_SAVED)
                         loadTotalSessionMinutes(projectId)
                         clearSessionStopSummary(summary.sessionToken)
                     }
-                    is StopSessionResult.NeedsRecoveryReview ->
+
+                    is StopSessionResult.NeedsRecoveryReview -> {
                         handleStopRecoveryReview(summary, active, result.session)
-                    StopSessionResult.NoActiveSession -> clearSessionStopSummary(summary.sessionToken)
-                    StopSessionResult.StaleAction ->
+                    }
+
+                    StopSessionResult.NoActiveSession -> {
+                        clearSessionStopSummary(summary.sessionToken)
+                    }
+
+                    StopSessionResult.StaleAction -> {
                         _uiState.update {
                             if (it.sessionStopSummary === summary) it.copy(sessionStopSummary = null) else it
                         }
-                    StopSessionResult.Discarded -> Unit
-                    StopSessionResult.PersistenceFailure ->
+                    }
+
+                    StopSessionResult.Discarded -> {
+                        Unit
+                    }
+
+                    StopSessionResult.PersistenceFailure -> {
                         showWorkSessionError(R.string.work_session_could_not_save, ::saveStoppedWorkSession)
-                    StopSessionResult.HistoryLimitReached -> showWorkSessionError(R.string.work_session_history_full)
+                    }
+
+                    StopSessionResult.HistoryLimitReached -> {
+                        showWorkSessionError(R.string.work_session_history_full)
+                    }
                 }
             }
         }
@@ -1284,7 +1315,7 @@ class CounterViewModel
                     StopSessionResult.Discarded,
                     StopSessionResult.NoActiveSession,
                     StopSessionResult.StaleAction,
-                    ->
+                    -> {
                         _uiState.update {
                             if (it.sessionStopSummary?.sessionToken == summary.sessionToken) {
                                 it.copy(sessionStopSummary = null)
@@ -1292,12 +1323,21 @@ class CounterViewModel
                                 it
                             }
                         }
+                    }
+
                     is StopSessionResult.NeedsRecoveryReview,
                     is StopSessionResult.Saved,
-                    -> Unit
-                    StopSessionResult.PersistenceFailure ->
+                    -> {
+                        Unit
+                    }
+
+                    StopSessionResult.PersistenceFailure -> {
                         showWorkSessionError(R.string.work_session_could_not_discard, ::discardStoppedWorkSession)
-                    StopSessionResult.HistoryLimitReached -> Unit
+                    }
+
+                    StopSessionResult.HistoryLimitReached -> {
+                        Unit
+                    }
                 }
             }
         }
@@ -1324,8 +1364,10 @@ class CounterViewModel
                     sessionStopSummary = null,
                     showSessionRecoveryPrompt =
                         state.showSessionRecoveryPrompt ||
-                            currentSession?.sessionToken == recovery.sessionToken &&
-                            currentSession.recoveryIntervalToken == recovery.recoveryIntervalToken,
+                            (
+                                currentSession?.sessionToken == recovery.sessionToken &&
+                                    currentSession.recoveryIntervalToken == recovery.recoveryIntervalToken
+                            ),
                 )
             }
         }
@@ -1394,30 +1436,45 @@ class CounterViewModel
                         durationSeconds = durationSeconds,
                     )
                 ) {
-                    is RecoveryResolutionResult.Continued ->
+                    is RecoveryResolutionResult.Continued -> {
                         _uiState.update {
                             if (
                                 it.activeSession == null ||
-                                it.activeSession.sessionToken == active.sessionToken &&
-                                it.activeSession.recoveryIntervalToken == intervalToken
+                                (
+                                    it.activeSession.sessionToken == active.sessionToken &&
+                                        it.activeSession.recoveryIntervalToken == intervalToken
+                                )
                             ) {
                                 it.copy(showSessionRecoveryPrompt = false)
                             } else {
                                 it
                             }
                         }
-                    RecoveryResolutionResult.InvalidDuration ->
+                    }
+
+                    RecoveryResolutionResult.InvalidDuration -> {
                         showWorkSessionError(R.string.work_session_invalid_duration)
-                    RecoveryResolutionResult.StaleAction ->
+                    }
+
+                    RecoveryResolutionResult.StaleAction -> {
                         showWorkSessionError(R.string.work_session_recovery_already_handled)
-                    RecoveryResolutionResult.PersistenceFailure ->
+                    }
+
+                    RecoveryResolutionResult.PersistenceFailure -> {
                         showWorkSessionError(R.string.work_session_could_not_save) {
                             addRecoveryInterval(active, intervalToken, durationSeconds)
                         }
-                    RecoveryResolutionResult.HistoryLimitReached -> Unit
+                    }
+
+                    RecoveryResolutionResult.HistoryLimitReached -> {
+                        Unit
+                    }
+
                     is RecoveryResolutionResult.DiscardedAndStopped,
                     is RecoveryResolutionResult.EditedAndStopped,
-                    -> Unit
+                    -> {
+                        Unit
+                    }
                 }
             }
         }
@@ -1441,18 +1498,27 @@ class CounterViewModel
                     is RecoveryResolutionResult.DiscardedAndStopped -> {
                         finishRecoveryResolution(active, intervalToken)
                     }
-                    RecoveryResolutionResult.StaleAction ->
+
+                    RecoveryResolutionResult.StaleAction -> {
                         showWorkSessionError(R.string.work_session_recovery_already_handled)
-                    RecoveryResolutionResult.PersistenceFailure ->
+                    }
+
+                    RecoveryResolutionResult.PersistenceFailure -> {
                         showWorkSessionError(R.string.work_session_could_not_discard) {
                             discardRecoveryInterval(active, intervalToken)
                         }
-                    RecoveryResolutionResult.HistoryLimitReached ->
+                    }
+
+                    RecoveryResolutionResult.HistoryLimitReached -> {
                         showWorkSessionError(R.string.work_session_history_full)
+                    }
+
                     is RecoveryResolutionResult.Continued,
                     is RecoveryResolutionResult.EditedAndStopped,
                     RecoveryResolutionResult.InvalidDuration,
-                    -> Unit
+                    -> {
+                        Unit
+                    }
                 }
             }
         }
@@ -1465,8 +1531,10 @@ class CounterViewModel
             _uiState.update {
                 if (
                     it.activeSession == null ||
-                    it.activeSession.sessionToken == active.sessionToken &&
-                    it.activeSession.recoveryIntervalToken == intervalToken
+                    (
+                        it.activeSession.sessionToken == active.sessionToken &&
+                            it.activeSession.recoveryIntervalToken == intervalToken
+                    )
                 ) {
                     it.copy(showSessionRecoveryPrompt = false)
                 } else {
@@ -1499,19 +1567,30 @@ class CounterViewModel
                     is RecoveryResolutionResult.EditedAndStopped -> {
                         finishRecoveryResolution(active, intervalToken)
                     }
-                    RecoveryResolutionResult.InvalidDuration ->
+
+                    RecoveryResolutionResult.InvalidDuration -> {
                         showWorkSessionError(R.string.work_session_invalid_duration)
-                    RecoveryResolutionResult.StaleAction ->
+                    }
+
+                    RecoveryResolutionResult.StaleAction -> {
                         showWorkSessionError(R.string.work_session_recovery_already_handled)
-                    RecoveryResolutionResult.PersistenceFailure ->
+                    }
+
+                    RecoveryResolutionResult.PersistenceFailure -> {
                         showWorkSessionError(R.string.work_session_could_not_save) {
                             editRecoveryDurationAndStop(active, intervalToken, totalDurationSeconds)
                         }
-                    RecoveryResolutionResult.HistoryLimitReached ->
+                    }
+
+                    RecoveryResolutionResult.HistoryLimitReached -> {
                         showWorkSessionError(R.string.work_session_history_full)
+                    }
+
                     is RecoveryResolutionResult.Continued,
                     is RecoveryResolutionResult.DiscardedAndStopped,
-                    -> Unit
+                    -> {
+                        Unit
+                    }
                 }
             }
         }
@@ -1594,31 +1673,31 @@ class CounterViewModel
                                     ?.photoUri,
                             )
                     }
-                    _uiState.update { state ->
-                        when {
-                            state.projectId == projectId ->
-                                state.copy(
-                                    projectId = null,
-                                    pendingProjectCompletionSession = null,
-                                )
-                            state.pendingProjectCompletionSession?.projectId == projectId ->
-                                state.copy(pendingProjectCompletionSession = null)
-                            else -> state
-                        }
-                    }
+                    clearCompletedProjectState(projectId)
                     closeSelectedProject(selectionVersion)
                 }
-                is ProjectCompletionResult.NeedsActiveSessionChoice ->
+
+                is ProjectCompletionResult.NeedsActiveSessionChoice -> {
                     _uiState.update { it.copy(pendingProjectCompletionSession = result.session) }
-                is ProjectCompletionResult.NeedsRecoveryReview ->
+                }
+
+                is ProjectCompletionResult.NeedsRecoveryReview -> {
                     _uiState.update {
                         it.copy(
                             pendingProjectCompletionSession = null,
                             showSessionRecoveryPrompt = true,
                         )
                     }
-                ProjectCompletionResult.ProjectUnavailable -> Unit
-                ProjectCompletionResult.HistoryLimitReached -> showWorkSessionError(R.string.work_session_history_full)
+                }
+
+                ProjectCompletionResult.ProjectUnavailable -> {
+                    Unit
+                }
+
+                ProjectCompletionResult.HistoryLimitReached -> {
+                    showWorkSessionError(R.string.work_session_history_full)
+                }
+
                 ProjectCompletionResult.PersistenceFailure -> {
                     showWorkSessionError(R.string.work_session_could_not_save) {
                         if (_uiState.value.projectId == projectId) {
@@ -1626,6 +1705,27 @@ class CounterViewModel
                         }
                     }
                     hasProjectCompletionRetry = true
+                }
+            }
+        }
+
+        private fun clearCompletedProjectState(projectId: Long) {
+            _uiState.update { state ->
+                when {
+                    state.projectId == projectId -> {
+                        state.copy(
+                            projectId = null,
+                            pendingProjectCompletionSession = null,
+                        )
+                    }
+
+                    state.pendingProjectCompletionSession?.projectId == projectId -> {
+                        state.copy(pendingProjectCompletionSession = null)
+                    }
+
+                    else -> {
+                        state
+                    }
                 }
             }
         }
@@ -1641,7 +1741,7 @@ class CounterViewModel
             expectedProjectId: Long? = _uiState.value.projectId,
         ) {
             val projectId = _uiState.value.projectId ?: return
-            if (projectId != expectedProjectId || target != null && target !in 1..MAX_TARGET_ROWS) return
+            if (projectId != expectedProjectId || (target != null && target !in 1..MAX_TARGET_ROWS)) return
             val selectionVersion = projectSelectionVersion
             _uiState.update { it.copy(targetRows = target) }
             launchProjectContentMutation {
@@ -1772,9 +1872,13 @@ class CounterViewModel
                     _uiState.update { it.copy(reactivationPromptCount = activeCount) }
                     return true
                 }
+
                 ProjectReactivationResult.Reactivated,
                 ProjectReactivationResult.ProjectUnavailable,
-                -> clearPendingReactivation()
+                -> {
+                    clearPendingReactivation()
+                }
+
                 ProjectReactivationResult.PersistenceFailure -> {
                     clearPendingReactivation()
                     reactivationErrorsChannel.send(Unit)
@@ -1811,14 +1915,20 @@ class CounterViewModel
                         closeSelectedProject(selectionVersion)
                     }
                 }
+
                 is ProjectDeletionResult.NeedsActiveSessionDiscard -> {
                     if (_uiState.value.projectId == id) {
                         _uiState.update { it.copy(pendingProjectDeletionSession = result.session) }
                     }
                 }
-                ProjectDeletionResult.ProjectUnavailable -> Unit
-                ProjectDeletionResult.PersistenceFailure ->
+
+                ProjectDeletionResult.ProjectUnavailable -> {
+                    Unit
+                }
+
+                ProjectDeletionResult.PersistenceFailure -> {
                     showWorkSessionError(R.string.work_session_could_not_discard) { deleteProject(id) }
+                }
             }
         }
 
@@ -1861,7 +1971,6 @@ class CounterViewModel
             val updatedCounter = CounterLogic.increment(state.counter)
             analytics.track(UsageEvent.COUNTER_INCREMENTED)
             if (updatedCounter.count == state.counter.count) return
-            val incrementTimestampMillis = System.nanoTime() / 1_000_000
             if (state.counter.stepSize > 1) {
                 _stepFeedback.tryEmit(
                     MainCounterStepFeedback(
@@ -1878,12 +1987,15 @@ class CounterViewModel
                 // CPD-ON
                 previousValue = state.counter.count,
                 newValue = updatedCounter.count,
-                incrementTimestampMillis = incrementTimestampMillis,
             )
         }
 
-        fun enableKeepScreenAwake() {
-            viewModelScope.launch { preferencesManager.setKeepScreenAwake(true) }
+        fun dismissReadingLineNotice() {
+            viewModelScope.launch { onboardingStateRepository.dismissReadingLineNotice() }
+        }
+
+        fun setKeepScreenAwake(enabled: Boolean) {
+            viewModelScope.launch { preferencesManager.setKeepScreenAwake(enabled) }
         }
 
         fun hideProjectSetup(projectId: Long) {
@@ -1974,6 +2086,7 @@ class CounterViewModel
                     return@launchProjectContentMutation true
                 }
                 counterStateVersion++
+                lastConfirmedCounterProject = updatedProject
 
                 val updatedCounter =
                     CounterState(
@@ -2902,6 +3015,7 @@ class CounterViewModel
                     is ProjectDocumentMutationResult.Removed,
                     ProjectDocumentMutationResult.MissingDocument,
                     -> true
+
                     else -> false
                 }
             }
@@ -2980,11 +3094,20 @@ class CounterViewModel
         fun setReadingLineFollowCurrentRow(
             enabled: Boolean,
             documentId: Long? = null,
+            fromNotice: Boolean = false,
         ) {
             val projectId = _uiState.value.projectId ?: return
             _uiState.update { it.copy(readingLineFollowCurrentRow = enabled) }
             launchProjectContentMutation {
-                val resolution = repository.setReadingLineFollowCurrentRow(projectId, enabled, documentId)
+                val resolution =
+                    repository
+                        .setReadingLineFollowCurrentRow(
+                            projectId,
+                            enabled,
+                            documentId,
+                            showReadingLine = fromNotice,
+                        )
+                if (fromNotice && resolution != null) onboardingStateRepository.dismissReadingLineNotice()
                 analytics.track(
                     UsageEvent.READING_AID_CHANGED,
                     UsageDetail.FOLLOW_ROW,
@@ -3127,7 +3250,6 @@ class CounterViewModel
             change: MainCounterChange,
             previousValue: Int,
             newValue: Int,
-            incrementTimestampMillis: Long? = null,
         ) {
             if (newValue == previousValue) return
             val actionVersion = ++counterActionVersion
@@ -3135,10 +3257,10 @@ class CounterViewModel
             val projectId = state.projectId ?: return
             val selectionVersion = projectSelectionVersion
             viewModelScope.launch {
-                val changed = applyCountChangeAndRecordSignals(projectId, change, incrementTimestampMillis)
+                val changed = applyCountChange(projectId, change)
                 if (changed) inAppReviewManager.recordAction()
                 val readVersion = counterStateVersion
-                val persisted = loadProjectAfterCountChange(projectId, changed) ?: return@launch
+                val persisted = loadProjectAfterCountChange(projectId, changed)
                 if (selectionVersion != projectSelectionVersion ||
                     _uiState.value.projectId != projectId ||
                     readVersion != counterStateVersion ||
@@ -3146,42 +3268,45 @@ class CounterViewModel
                 ) {
                     return@launch
                 }
+                val confirmed =
+                    persisted
+                        ?: lastConfirmedCounterProject?.takeIf { !changed && it.id == projectId }
+                        ?: return@launch
+                lastConfirmedCounterProject = confirmed
                 counterStateVersion++
                 _uiState.update {
                     it
                         .withCounterChange(
-                            CounterState(count = persisted.count, stepSize = persisted.stepSize),
+                            CounterState(
+                                count = confirmed.count,
+                                stepSize = persisted?.stepSize ?: it.counter.stepSize,
+                            ),
                             resetStitch = false,
-                        ).copy(currentStitch = persisted.currentStitch)
+                        ).copy(currentStitch = confirmed.currentStitch)
                 }
-                syncRepeatSectionCounters(persisted.count, _uiState.value.projectCounters, persist = false)
-                if (selectionVersion == projectSelectionVersion && _uiState.value.projectId == projectId) {
+                syncRepeatSectionCounters(confirmed.count, _uiState.value.projectCounters, persist = false)
+                if (persisted != null &&
+                    selectionVersion == projectSelectionVersion &&
+                    _uiState.value.projectId == projectId
+                ) {
                     syncWidget(projectId, persisted.name, persisted.count)
                 }
             }
         }
 
-        private suspend fun applyCountChangeAndRecordSignals(
+        private suspend fun applyCountChange(
             projectId: Long,
             change: MainCounterChange,
-            incrementTimestampMillis: Long?,
         ): Boolean {
-            val committed =
+            val changed =
                 try {
-                    repository.applyMainCounterChangeWithResult(projectId, change)
+                    repository.applyMainCounterChange(projectId, change)
                 } catch (cancelled: CancellationException) {
                     throw cancelled
                 } catch (_: Exception) {
-                    null
+                    false
                 }
-            val changed = committed != null
             if (!changed) projectContentErrorsChannel.send(Unit)
-            if (changed && incrementTimestampMillis != null) {
-                tipSession.onSignal(TipSignal.Increment(projectId, incrementTimestampMillis))
-            }
-            if (committed?.crossedTarget == true) {
-                tipSession.onSignal(TipSignal.TargetReached(projectId))
-            }
             return changed
         }
 

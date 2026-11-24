@@ -100,8 +100,14 @@ internal fun BackupContent(
         title = stringResource(R.string.backup_title),
         onBack = {
             when {
-                state.phase == BackupPhase.RESTORED -> onRestored()
-                state.busy -> onCancel()
+                state.phase == BackupPhase.RESTORED -> {
+                    onRestored()
+                }
+
+                state.busy -> {
+                    onCancel()
+                }
+
                 else -> {
                     onCancel()
                     onBack()

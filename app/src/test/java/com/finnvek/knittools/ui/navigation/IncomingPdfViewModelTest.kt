@@ -127,6 +127,7 @@ class IncomingPdfViewModelTest : IncomingPdfTestFixture() {
 
             coEvery { storage.copyPdfToInternal(context, 0L, uri, "Interrupted.pdf") } returns NEW_PDF_URI
             val restored = viewModel(restoredState)
+            restored.pdfIntentConsumed = true
             assertTrue(restored.restoreInterruptedReceive(intent = null, context.contentResolver))
             advanceUntilIdle()
 

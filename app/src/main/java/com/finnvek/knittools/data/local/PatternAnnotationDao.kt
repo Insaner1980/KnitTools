@@ -231,9 +231,11 @@ abstract class PatternAnnotationDao {
     open suspend fun deleteForPage(
         layerId: Long,
         page: Int,
-    ) {
+    ): List<PatternAnnotationEntity> {
         requireEditableLayer(layerId)
+        val annotations = getPageBounded(layerId, page)
         deleteForPageUnchecked(layerId, page)
+        return annotations
     }
 
     @Transaction

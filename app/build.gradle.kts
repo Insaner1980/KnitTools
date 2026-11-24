@@ -1,6 +1,8 @@
 import com.android.build.api.variant.BuildConfigField
 import com.google.firebase.crashlytics.buildtools.gradle.CrashlyticsExtension
 import com.google.gms.googleservices.GoogleServicesTask
+import groovy.json.JsonException
+import groovy.json.JsonSlurper
 import org.gradle.api.GradleException
 import org.gradle.testing.jacoco.tasks.JacocoReport
 import java.io.File
@@ -17,6 +19,7 @@ plugins {
     alias(libs.plugins.owasp.dependency.check)
     alias(libs.plugins.baselineprofile)
     alias(libs.plugins.ktlint)
+    alias(libs.plugins.dependency.analysis)
     alias(libs.plugins.detekt)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.stability.analyzer)
@@ -62,14 +65,27 @@ val isolatedTestProfile: String? =
     providers.gradleProperty("knittools.isolatedTest").orNull ?: "activepolicy".takeIf { runsConnectedDebugTests }
 val isolatedTestPackageSuffix: String? =
     when (isolatedTestProfile) {
-        null -> null
-        "activepolicy" -> ".activepolicytest"
-        "notes" -> ".notestest"
-        "onboarding" -> ".onboardingpreview"
-        else ->
+        null -> {
+            null
+        }
+
+        "activepolicy" -> {
+            ".activepolicytest"
+        }
+
+        "notes" -> {
+            ".notestest"
+        }
+
+        "onboarding" -> {
+            ".onboardingpreview"
+        }
+
+        else -> {
             error(
                 "Tuntematon knittools.isolatedTest=$isolatedTestProfile (sallitut: activepolicy, notes, onboarding)",
             )
+        }
     }
 val isolatedTestManifest = layout.projectDirectory.file("src/isolatedTest/AndroidManifest.xml")
 if (isolatedTestProfile == "onboarding") {
@@ -135,6 +151,7 @@ object GoogleServicesJsonTaskActions {
         targetFile: File,
         envName: String,
         encodedConfig: String?,
+        applicationId: String,
     ) {
         if (targetFile.isFile) {
             return
@@ -151,6 +168,36 @@ object GoogleServicesJsonTaskActions {
                 )
             }
 
+        val config = decodedConfig.toString(Charsets.UTF_8)
+        val json =
+            try {
+                JsonSlurper().parseText(config) as? Map<*, *>
+            } catch (_: JsonException) {
+                null
+            }
+        val projectInfo = json?.get("project_info") as? Map<*, *>
+        val matchingClient =
+            (json?.get("client") as? List<*>)
+                ?.filterIsInstance<Map<*, *>>()
+                ?.firstOrNull { client ->
+                    val clientInfo = client["client_info"] as? Map<*, *>
+                    val androidClientInfo = clientInfo?.get("android_client_info") as? Map<*, *>
+                    androidClientInfo?.get("package_name") == applicationId
+                }
+        val clientInfo = matchingClient?.get("client_info") as? Map<*, *>
+        val apiKeys = matchingClient?.get("api_key") as? List<*>
+        val hasApiKey =
+            apiKeys?.any { ((it as? Map<*, *>)?.get("current_key") as? String).orEmpty().isNotBlank() } == true
+        if (projectInfo?.get("project_number") == null ||
+            (projectInfo["project_id"] as? String).isNullOrBlank() ||
+            (clientInfo?.get("mobilesdk_app_id") as? String).isNullOrBlank() ||
+            !hasApiKey ||
+            config.contains(PLACEHOLDER_API_KEY)
+        ) {
+            throw GradleException(
+                "$envName ei sisällä kelvollista Firebase-konfiguraatiota sovellukselle $applicationId.",
+            )
+        }
         targetFile.parentFile.mkdirs()
         targetFile.writeBytes(decodedConfig)
     }
@@ -239,10 +286,20 @@ fun debugBuildConfigField(
 
 android {
     namespace = "com.finnvek.knittools"
-    compileSdk =
-        libs.versions.androidCompileSdk
-            .get()
-            .toInt()
+    buildToolsVersion = libs.versions.androidBuildTools.get()
+    compileSdk {
+        version =
+            release(
+                libs.versions.androidCompileSdk
+                    .get()
+                    .toInt(),
+            ) {
+                minorApiLevel =
+                    libs.versions.androidCompileMinorSdk
+                        .get()
+                        .toInt()
+            }
+    }
 
     defaultConfig {
         applicationId = baseApplicationId
@@ -361,6 +418,10 @@ android {
 }
 
 androidComponents {
+    onVariants(selector().withBuildType("release")) { variant ->
+        // The stability plugin adds its tracing runtime to implementation even when tracing is off.
+        variant.runtimeConfiguration.exclude(group = "com.github.skydoves", module = "compose-stability-runtime")
+    }
     onVariants { variant ->
         val compileTaskName = "compile${variant.name.replaceFirstChar { it.uppercaseChar() }}Kotlin"
         // Analyzer 0.15.0 realizes unrelated AGP Preview tasks through tasks.matching.
@@ -619,14 +680,16 @@ val writeGoogleServicesJsonFromEnv =
         val targetFile = googleServicesJsonConfigFile.asFile
         val envName = googleServicesJsonBase64EnvVar
         val encodedConfig = googleServicesJsonBase64Env.orNull
+        val applicationId = baseApplicationId
 
         inputs.property("base64EnvName", envName)
         inputs.property("encodedConfigPresent", !encodedConfig.isNullOrBlank())
+        inputs.property("applicationId", applicationId)
         outputs.file(targetFile)
         outputs.upToDateWhen { targetFile.isFile }
 
         doLast {
-            GoogleServicesJsonTaskActions.writeFromEnv(targetFile, envName, encodedConfig)
+            GoogleServicesJsonTaskActions.writeFromEnv(targetFile, envName, encodedConfig, applicationId)
         }
     }
 
@@ -770,7 +833,12 @@ hilt {
     enableAggregatingTask = true
 }
 
+jacoco {
+    toolVersion = libs.versions.jacoco.get()
+}
+
 ktlint {
+    version.set(libs.versions.ktlintEngine)
     android.set(true)
     coloredOutput.set(false)
     ignoreFailures.set(false)

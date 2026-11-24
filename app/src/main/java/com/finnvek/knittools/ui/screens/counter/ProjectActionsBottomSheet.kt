@@ -23,8 +23,9 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -42,11 +43,13 @@ import com.finnvek.knittools.ui.components.ProMarker
 import com.finnvek.knittools.ui.components.ProjectThumbnail
 import com.finnvek.knittools.ui.components.SectionLabel
 import com.finnvek.knittools.ui.components.rememberCurrentLocale
+import com.finnvek.knittools.ui.components.rememberExpandedModalSheetState
 import com.finnvek.knittools.ui.layout.AdaptiveModalWindow
 import com.finnvek.knittools.ui.layout.ContentWidthPolicy
 import com.finnvek.knittools.ui.theme.CounterDimens
 import com.finnvek.knittools.ui.theme.ProjectOverviewDimens
 import com.finnvek.knittools.ui.theme.knitToolsColors
+import kotlinx.coroutines.flow.first
 
 data class ProjectActionsSheetCallbacks(
     val onDismiss: () -> Unit,
@@ -62,6 +65,7 @@ data class ProjectActionsSheetCallbacks(
     val onOpenCounterHistory: () -> Unit = {},
     val onOpenSecondary: () -> Unit = {},
     val onPinWidget: () -> Unit = {},
+    val onToggleKeepScreenAwake: (Boolean) -> Unit = {},
 )
 
 data class ProjectActionsSheetState(
@@ -77,6 +81,8 @@ data class ProjectActionsSheetState(
     val secondaryCounterUsed: Boolean,
     val isWorkSessionActiveForProject: Boolean,
     val isCompleted: Boolean,
+    val keepScreenAwake: Boolean = false,
+    val focusWorkSession: Boolean = false,
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -85,7 +91,7 @@ fun ProjectActionsBottomSheet(
     state: ProjectActionsSheetState,
     callbacks: ProjectActionsSheetCallbacks,
 ) {
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val sheetState = rememberExpandedModalSheetState()
     ModalBottomSheet(
         onDismissRequest = callbacks.onDismiss,
         sheetState = sheetState,
@@ -95,7 +101,14 @@ fun ProjectActionsBottomSheet(
         containerColor = MaterialTheme.colorScheme.surface,
     ) {
         AdaptiveModalWindow()
-        Column(modifier = Modifier.verticalScroll(rememberScrollState()).padding(bottom = 18.dp)) {
+        val scrollState = rememberScrollState()
+        LaunchedEffect(state.focusWorkSession) {
+            if (state.focusWorkSession) {
+                val end = snapshotFlow { scrollState.maxValue }.first { it != Int.MAX_VALUE }
+                scrollState.scrollTo(end)
+            }
+        }
+        Column(modifier = Modifier.verticalScroll(scrollState).padding(bottom = 18.dp)) {
             ProjectOverviewLink(state, callbacks)
             CounterToolActions(state, callbacks)
             SectionDivider()
@@ -202,6 +215,11 @@ private fun CounterToolActions(
                 onCheckedChange = callbacks.onToggleStitchTracking,
             )
         }
+        SwitchRow(
+            label = stringResource(R.string.keep_screen_awake),
+            checked = state.keepScreenAwake,
+            onCheckedChange = callbacks.onToggleKeepScreenAwake,
+        )
         ActionRow(
             label = stringResource(R.string.measurement_title),
             onClick = callbacks.onMeasurements,

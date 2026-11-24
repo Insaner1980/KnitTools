@@ -195,7 +195,7 @@ fun CounterStepSymbolIcon(
             cap = StrokeCap.Round,
         )
         when (symbol) {
-            CounterStepSymbol.Plus ->
+            CounterStepSymbol.Plus -> {
                 drawLine(
                     color = tint,
                     start = Offset(center.x, center.y - halfLength),
@@ -203,8 +203,11 @@ fun CounterStepSymbolIcon(
                     strokeWidth = strokeWidth,
                     cap = StrokeCap.Round,
                 )
+            }
 
-            CounterStepSymbol.Minus -> Unit
+            CounterStepSymbol.Minus -> {
+                Unit
+            }
         }
     }
 }

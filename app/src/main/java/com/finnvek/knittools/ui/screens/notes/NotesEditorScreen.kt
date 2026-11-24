@@ -13,6 +13,8 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.input.OutputTransformation
+import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -37,19 +39,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.ParagraphStyle
 import androidx.compose.ui.text.TextRange
-import androidx.compose.ui.text.input.OffsetMapping
-import androidx.compose.ui.text.input.TextFieldValue
-import androidx.compose.ui.text.input.TransformedText
-import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -69,6 +67,7 @@ import com.finnvek.knittools.ui.components.ProPromptSource
 import com.finnvek.knittools.ui.components.ProjectNameLabel
 import com.finnvek.knittools.ui.layout.ContentWidthPolicy
 import com.finnvek.knittools.ui.layout.contentWidth
+import kotlinx.coroutines.flow.combine
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -92,13 +91,46 @@ fun NotesEditorScreen(
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     var selectionStart by rememberSaveable { mutableIntStateOf(0) }
     var selectionEnd by rememberSaveable { mutableIntStateOf(0) }
-    var editorValue by remember {
-        mutableStateOf(TextFieldValue(state.notes, TextRange(selectionStart, selectionEnd)))
+    val editorState =
+        remember {
+            TextFieldState(
+                initialText = state.notes,
+                initialSelection =
+                    TextRange(
+                        selectionStart.coerceAtMost(state.notes.length),
+                        selectionEnd.coerceAtMost(state.notes.length),
+                    ),
+            )
+        }
+    var synchronizedNotes by remember { mutableStateOf(state.notes) }
+    val publishEditorEdit: () -> Boolean = {
+        val notes = editorState.text.toString()
+        val changed = notes != synchronizedNotes && viewModel.uiState.value.canEditNotes
+        if (changed) {
+            synchronizedNotes = notes
+            viewModel.onNotesChanged(notes)
+        }
+        changed
     }
-    if (state.isLoaded && editorValue.text != state.notes) {
-        editorValue = editorValue.copy(text = state.notes, selection = TextRange(selectionStart, selectionEnd))
-        selectionStart = editorValue.selection.start
-        selectionEnd = editorValue.selection.end
+    LaunchedEffect(viewModel, editorState, lifecycle) {
+        val fieldChanges = snapshotFlow { editorState.text to editorState.selection }
+        combine(viewModel.uiState, fieldChanges) { _, _ -> Unit }.collect {
+            val latest = viewModel.uiState.value
+            if (!latest.isLoaded) return@collect
+            val edited = publishEditorEdit()
+            if (!edited && latest.notes != editorState.text.toString()) {
+                synchronizedNotes = latest.notes
+                editorState.edit {
+                    replace(0, length, latest.notes)
+                    selection = TextRange(selectionStart.coerceAtMost(length), selectionEnd.coerceAtMost(length))
+                }
+            }
+            // Preserve the last active selection if focus teardown moves the cursor.
+            if (edited || lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) {
+                selectionStart = editorState.selection.start
+                selectionEnd = editorState.selection.end
+            }
+        }
     }
     var showProPrompt by rememberSaveable { mutableStateOf(false) }
     var showDiscardConfirmation by rememberSaveable { mutableStateOf(false) }
@@ -106,6 +138,7 @@ fun NotesEditorScreen(
         if (state.saveFailed) {
             showDiscardConfirmation = true
         } else {
+            publishEditorEdit()
             viewModel.cancelFirstNotesCreation()
             viewModel.saveImmediately(exitAfterSave = true)
         }
@@ -175,20 +208,9 @@ fun NotesEditorScreen(
                         }
                     }
                     TextField(
-                        value = editorValue,
-                        onValueChange = {
-                            // Focus teardown must not replace the selection saved for recreation.
-                            if (it.text != editorValue.text ||
-                                lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)
-                            ) {
-                                editorValue = it
-                                selectionStart = it.selection.start
-                                selectionEnd = it.selection.end
-                            }
-                            if (it.text != state.notes) viewModel.onNotesChanged(it.text)
-                        },
+                        state = editorState,
                         enabled = state.canEditNotes,
-                        visualTransformation = NotesVisualTransformation,
+                        outputTransformation = NotesOutputTransformation,
                         modifier =
                             Modifier
                                 .fillMaxSize()
@@ -228,11 +250,18 @@ fun NotesEditorScreen(
                     Button(
                         onClick = {
                             when (notesAccess) {
-                                ProActionAccess.Allowed, ProActionAccess.Trial ->
+                                ProActionAccess.Allowed, ProActionAccess.Trial -> {
                                     viewModel
                                         .authorizeFirstNotesCreation()
-                                ProActionAccess.Locked -> showProPrompt = true
-                                ProActionAccess.Unknown -> Unit
+                                }
+
+                                ProActionAccess.Locked -> {
+                                    showProPrompt = true
+                                }
+
+                                ProActionAccess.Unknown -> {
+                                    Unit
+                                }
                             }
                         },
                         modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
@@ -290,17 +319,14 @@ fun NotesEditorScreen(
 
 private const val MAX_LAYOUT_PARAGRAPH_LENGTH = 2048
 
-private val NotesVisualTransformation =
-    VisualTransformation { text ->
-        if (text.length <= MAX_LAYOUT_PARAGRAPH_LENGTH) {
-            return@VisualTransformation TransformedText(text, OffsetMapping.Identity)
-        }
-
-        val layout = AnnotatedString.Builder(text)
-        val characters = BreakIterator.getCharacterInstance().apply { setText(text.text) }
+private val NotesOutputTransformation =
+    OutputTransformation {
+        if (length <= MAX_LAYOUT_PARAGRAPH_LENGTH) return@OutputTransformation
+        val text = asCharSequence().toString()
+        val characters = BreakIterator.getCharacterInstance().apply { setText(text) }
         var lineStart = 0
         while (lineStart < text.length) {
-            val lineEnd = text.text.indexOf('\n', lineStart).takeIf { it >= 0 } ?: text.length
+            val lineEnd = text.indexOf('\n', lineStart).takeIf { it >= 0 } ?: text.length
             var paragraphStart = lineStart
             while (lineEnd - paragraphStart > MAX_LAYOUT_PARAGRAPH_LENGTH) {
                 val limit = paragraphStart + MAX_LAYOUT_PARAGRAPH_LENGTH
@@ -312,12 +338,11 @@ private val NotesVisualTransformation =
                         ?: characters.preceding(limit + 1).takeIf { it > paragraphStart }
                         ?: characters.following(paragraphStart)
                 // Bound Android's native layout work for long unbroken text while preserving edit offsets.
-                layout.addStyle(ParagraphStyle(), paragraphStart, end)
+                addStyle(ParagraphStyle(), paragraphStart, end)
                 paragraphStart = end
             }
             lineStart = lineEnd + 1
         }
-        TransformedText(layout.toAnnotatedString(), OffsetMapping.Identity)
     }
 
 @Composable

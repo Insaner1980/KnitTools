@@ -52,18 +52,24 @@ enum class CrossStitchGlyph(
         ),
     ),
 
-    // Kerrattu lanka leveänä vinona säikeenä, ei kerää: keräpiirrokset on rajattu pois.
+    // Lankakerä leveine kaarevine kierroksineen ja alareunassa aaltoilevine irtopäineen. Pelkkä
+    // rengas ja vino viiva luki kieltomerkkinä ja vino säie matona, joten kerä tarvitsee
+    // tiheämmän ruudukon kuin muut kuvakkeet. Irtopää pysyy lyhyenä, jotta kerä täyttää ruudun
+    // kuten muut kuvakkeet; vino häntä luki suurennuslasina.
     YARN(
         listOf(
-            "Xo.......",
-            "oXo......",
-            ".oXo.....",
-            "..oXo....",
-            "...oXo...",
-            "....oXo..",
-            ".....oXo.",
-            "......oXo",
-            ".......oX",
+            "....XXX......",
+            "..XXXXXXX....",
+            ".X..XXXX.X...",
+            ".XXX..XXXX...",
+            "X.XXX..XXXX..",
+            "XX..XXX.XXX..",
+            "XXX..XX..XX..",
+            ".XXX..XX.X...",
+            ".XXXX..XXX...",
+            "..XXXX.XX....",
+            "....XXX.X..X.",
+            ".........XX.X",
         ),
     ),
     NOTES(
@@ -187,8 +193,11 @@ fun CrossStitchIcon(
 ) {
     Spacer(
         modifier.drawWithCache {
-            val cell = size.minDimension / CrossStitchDimens.GridCells
             val columns = glyph.rows.maxOf { it.length }
+            // Tiheämpi kuvio (kerä) saa pienemmät pistot, jotta se mahtuu samaan ruutuun.
+            val gridCells =
+                maxOf(CrossStitchDimens.GridCells, maxOf(columns, glyph.rows.size) + CrossStitchDimens.GridMargin)
+            val cell = size.minDimension / gridCells
             val originX = (size.width - columns * cell) / 2f
             val originY = (size.height - glyph.rows.size * cell) / 2f
             val span = cell * CrossStitchDimens.StitchSpan

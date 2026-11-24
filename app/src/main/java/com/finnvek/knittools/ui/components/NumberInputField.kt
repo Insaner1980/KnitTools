@@ -28,18 +28,13 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.error
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.OffsetMapping
-import androidx.compose.ui.text.input.TransformedText
-import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.calculator.MeasurementNumberError
 import com.finnvek.knittools.domain.calculator.MeasurementNumberParser
 import com.finnvek.knittools.ui.theme.knitToolsColors
-import com.finnvek.knittools.ui.tips.tipBlockWhenFocused
 import java.text.DecimalFormatSymbols
 import java.util.Locale
 
@@ -109,20 +104,18 @@ fun NumberInputField(
                 },
             )
         }
-    val visualTransformation =
-        remember(options.isDecimal, locale) {
-            if (options.isDecimal && !options.preserveRawInput) {
-                localizedDecimalVisualTransformation(locale)
-            } else {
-                VisualTransformation.None
-            }
+    val displayedValue =
+        if (options.isDecimal && !options.preserveRawInput) {
+            localizeDecimalSeparatorForDisplay(value, locale)
+        } else {
+            value
         }
 
     Column(modifier = modifier) {
         LabelWithInfo(label = label, info = info)
         Spacer(modifier = Modifier.height(8.dp))
         TextField(
-            value = value,
+            value = displayedValue,
             enabled = enabled,
             readOnly = options.readOnly,
             onValueChange = { newValue ->
@@ -141,7 +134,6 @@ fun NumberInputField(
             },
             modifier =
                 inputModifier
-                    .tipBlockWhenFocused()
                     .fillMaxWidth()
                     .heightIn(min = 48.dp)
                     .then(
@@ -189,7 +181,6 @@ fun NumberInputField(
                     onDone = { focusManager.clearFocus() },
                 ),
             singleLine = true,
-            visualTransformation = visualTransformation,
             suffix =
                 options.suffix?.let {
                     {
@@ -246,7 +237,6 @@ fun LabeledTextField(
             trailingIcon = trailingIcon,
             modifier =
                 inputModifier
-                    .tipBlockWhenFocused()
                     .fillMaxWidth()
                     .heightIn(min = 48.dp)
                     .inputFieldBorder(isFocused, errorMessage != null)
@@ -316,14 +306,6 @@ internal fun localizeDecimalSeparatorForDisplay(
     value: String,
     locale: Locale,
 ): String = value.replace('.', DecimalFormatSymbols.getInstance(locale).decimalSeparator)
-
-private fun localizedDecimalVisualTransformation(locale: Locale): VisualTransformation =
-    VisualTransformation { text ->
-        TransformedText(
-            text = AnnotatedString(localizeDecimalSeparatorForDisplay(text.text, locale)),
-            offsetMapping = OffsetMapping.Identity,
-        )
-    }
 
 private fun numericKeyboardType(
     isDecimal: Boolean,

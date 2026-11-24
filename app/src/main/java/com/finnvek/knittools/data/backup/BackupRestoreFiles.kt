@@ -1,6 +1,8 @@
 package com.finnvek.knittools.data.backup
 
 import android.content.Context
+import android.system.Os
+import android.system.OsConstants
 import androidx.core.net.toUri
 import com.finnvek.knittools.data.storage.AppFileStorage
 import kotlinx.serialization.decodeFromString
@@ -17,6 +19,7 @@ internal class BackupRestoreFiles(
     private val context: Context,
     private val directory: File,
     private val budget: BackupBudget = BackupBudget(),
+    private val dataVersion: Int = 1,
 ) {
     private val token = UUID.randomUUID().toString()
     private val copies = linkedMapOf<File, File>()
@@ -29,21 +32,38 @@ internal class BackupRestoreFiles(
         row: MutableMap<String, JsonElement>,
     ) {
         val column = BackupFiles.columns[table] ?: return
-        val path =
+        val reference =
             row[column]
                 ?.takeUnless { it == JsonNull }
                 ?.jsonPrimitive
                 ?.content
                 .orEmpty()
-        if (path.isBlank()) return
+        if (reference.isBlank()) return
+        val path = reference.substringBefore('#')
         BackupFormat.requireValid(path.startsWith("files/") && BackupFormat.allowedPath(path))
-        val name = path.substringAfter('/').substringBefore('.')
+        val hash = path.substringAfter('/').substringBefore('.')
+        val name =
+            if (reference == path) {
+                hash
+            } else {
+                BackupFormat.requireValid(dataVersion == 2 && column != "photoUri")
+                val suffix = reference.substringAfter('#')
+                val copyNumber = suffix.toLongOrNull()
+                BackupFormat.requireValid(
+                    copyNumber != null &&
+                        copyNumber in 2..BackupLimits.MAX_DURABLE_FILE_COUNT &&
+                        suffix == copyNumber.toString(),
+                )
+                "$hash-$copyNumber"
+            }
         val target =
             when (table) {
                 "progress_photos" -> "progress_photos/${row.getValue(
                     "projectId",
                 ).jsonPrimitive.content}/restore-$token-${row.getValue("id").jsonPrimitive.content}-$name.jpg"
+
                 "yarn_cards" -> "yarn_photos/${row.getValue("id").jsonPrimitive.content}/restore-$token-$name.jpg"
+
                 else -> "pattern_pdfs/0/restore-$token-$name.pdf"
             }
         val file = File(context.filesDir, target)
@@ -69,6 +89,7 @@ internal class BackupRestoreFiles(
             output.fd.sync()
         }
         BackupFormat.requireValid(temporary.renameTo(journal), BackupError.RESTORE)
+        syncDirectories(listOf(directory), context.noBackupFilesDir)
         return journal
     }
 
@@ -83,6 +104,32 @@ internal class BackupRestoreFiles(
                 output.fd.sync()
             }
             BackupFormat.requireValid(BackupFormat.digest(target, check) == BackupFormat.digest(source, check))
+        }
+        syncDirectories(copies.keys.mapNotNull(File::getParentFile), context.filesDir, check)
+    }
+
+    private fun syncDirectories(
+        directories: List<File>,
+        root: File,
+        check: () -> Unit = {},
+    ) {
+        val boundary = root.canonicalFile
+        val parentDirectories = mutableSetOf<File>()
+        directories.forEach { directory ->
+            var current = directory.canonicalFile
+            BackupFormat.requireValid(current.path.startsWith(boundary.path + File.separator), BackupError.RESTORE)
+            while (parentDirectories.add(current) && current != boundary) {
+                current = checkNotNull(current.parentFile)
+            }
+        }
+        parentDirectories.forEach { directory ->
+            check()
+            val fd = Os.open(directory.path, OsConstants.O_RDONLY, 0)
+            try {
+                Os.fsync(fd)
+            } finally {
+                Os.close(fd)
+            }
         }
     }
 

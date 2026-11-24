@@ -88,6 +88,7 @@ import com.finnvek.knittools.ui.navigation.IncomingPdfViewModel
 import com.finnvek.knittools.ui.navigation.KnitToolsNavActions
 import com.finnvek.knittools.ui.navigation.KnitToolsNavHost
 import com.finnvek.knittools.ui.navigation.KnitToolsNavRequests
+import com.finnvek.knittools.ui.navigation.LocalEntryActionsBlocked
 import com.finnvek.knittools.ui.navigation.PatternShareCoordinatorViewModel
 import com.finnvek.knittools.ui.navigation.PatternShareOfferResult
 import com.finnvek.knittools.ui.navigation.TopLevelDestination
@@ -101,9 +102,6 @@ import com.finnvek.knittools.ui.screens.pro.toMessageRes
 import com.finnvek.knittools.ui.screens.pro.trialSummaryText
 import com.finnvek.knittools.ui.theme.ComponentDimens
 import com.finnvek.knittools.ui.theme.KnitToolsTheme
-import com.finnvek.knittools.ui.tips.LocalTipBlocked
-import com.finnvek.knittools.ui.tips.LocalTipSession
-import com.finnvek.knittools.ui.tips.TipSession
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Job
@@ -137,9 +135,6 @@ class MainActivity : AppCompatActivity() {
 
     @Inject
     lateinit var trialJourneyCoordinator: TrialJourneyCoordinator
-
-    @Inject
-    lateinit var tipSession: TipSession
 
     @Inject
     @IoDispatcher
@@ -314,7 +309,7 @@ class MainActivity : AppCompatActivity() {
             inAppUpdateManager.downloadedUpdatePromptId.collectAsStateWithLifecycle()
         DownloadedUpdatePromptEffect(downloadedUpdatePromptId, snackbarHostState, inAppUpdateManager::completeUpdate)
 
-        val tipsBlocked =
+        val entryActionsBlocked =
             listOf(
                 onboardingVisible,
                 !launchRequestsReady,
@@ -335,9 +330,8 @@ class MainActivity : AppCompatActivity() {
             CompositionLocalProvider(
                 LocalAdaptiveModalWindow provides true,
                 LocalWindowFolds provides rememberWindowFolds(),
-                LocalTipSession provides tipSession,
                 LocalUsageAnalytics provides analytics,
-                LocalTipBlocked provides tipsBlocked,
+                LocalEntryActionsBlocked provides entryActionsBlocked,
             ) {
                 KnitToolsTheme(isDarkTheme = isDarkTheme) {
                     val noticeDataReady = proStateReady && currentTrialFacts != null
@@ -386,12 +380,16 @@ class MainActivity : AppCompatActivity() {
                                             showTrialEndedNotice = true
                                         }
                                     }
+
                                     ProStatus.TRIAL_ACTIVE -> {
                                         if (!showTrialThreeDayNotice && trialManager.claimTrialThreeDayNotice()) {
                                             showTrialThreeDayNotice = true
                                         }
                                     }
-                                    else -> Unit
+
+                                    else -> {
+                                        Unit
+                                    }
                                 }
                             }
                         }
@@ -583,6 +581,11 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    override fun onPause() {
+        billingManager.onPurchaseHostPaused()
+        super.onPause()
+    }
+
     override fun onSaveInstanceState(outState: Bundle) {
         outState.putBoolean(STATE_TRIAL_ENDED_NOTICE_PENDING, showTrialEndedNotice)
         outState.putBoolean(STATE_TRIAL_THREE_DAY_NOTICE_PENDING, showTrialThreeDayNotice)
@@ -655,7 +658,9 @@ class MainActivity : AppCompatActivity() {
         when (patternShareCoordinator.offer(payload)) {
             is PatternShareOfferResult.Accepted,
             is PatternShareOfferResult.Queued,
-            -> clearPatternShareIntent(intent)
+            -> {
+                clearPatternShareIntent(intent)
+            }
 
             PatternShareOfferResult.Busy -> {
                 Toast.makeText(this, R.string.ravelry_import_could_not_import, Toast.LENGTH_SHORT).show()
@@ -743,9 +748,11 @@ class MainActivity : AppCompatActivity() {
             projectId: Long?,
         ): Intent =
             Intent(context, MainActivity::class.java).apply {
-                putExtra(EXTRA_OPEN_COUNTER, true)
-                projectId?.let { putExtra(EXTRA_PROJECT_ID, it) }
-                putExtra(EXTRA_COUNTER_LAUNCH_ID, CounterLaunchTokenStore.issueLaunchId(context))
+                CounterLaunchTokenStore.issueLaunchId(context)?.let { launchId ->
+                    putExtra(EXTRA_OPEN_COUNTER, true)
+                    projectId?.let { putExtra(EXTRA_PROJECT_ID, it) }
+                    putExtra(EXTRA_COUNTER_LAUNCH_ID, launchId)
+                }
                 addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
             }
 
@@ -847,7 +854,7 @@ internal fun TrialEndedDialog(
         },
         dismissButton = {
             TextButton(onClick = onContinueFree) {
-                Text(stringResource(if (endingSoon) R.string.tip_got_it else R.string.pro_continue_free))
+                Text(stringResource(if (endingSoon) R.string.trial_notice_acknowledge else R.string.pro_continue_free))
             }
         },
     )

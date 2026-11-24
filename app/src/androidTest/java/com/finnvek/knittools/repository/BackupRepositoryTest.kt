@@ -10,6 +10,10 @@ import android.net.Uri
 import android.os.ParcelFileDescriptor
 import android.system.Os
 import androidx.core.net.toUri
+import androidx.datastore.preferences.core.PreferenceDataStoreFactory
+import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.room.Room
 import androidx.room.withTransaction
 import androidx.sqlite.db.SupportSQLiteDatabase
@@ -30,7 +34,6 @@ import com.finnvek.knittools.data.backup.BackupProviderIo
 import com.finnvek.knittools.data.backup.BackupRestoreFiles
 import com.finnvek.knittools.data.backup.BackupTables
 import com.finnvek.knittools.data.backup.ContentResolverBackupProviderIo
-import com.finnvek.knittools.data.datastore.PreferencesManager
 import com.finnvek.knittools.data.datastore.ThemeMode
 import com.finnvek.knittools.data.local.ActiveSessionSchemaConstraints
 import com.finnvek.knittools.data.local.CounterHistoryEntity
@@ -73,6 +76,7 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.long
 import org.junit.After
+import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -198,6 +202,39 @@ class BackupRepositoryTest {
                 override val writableDatabase get() = wrap(helper.writableDatabase)
 
                 override val readableDatabase get() = wrap(helper.readableDatabase)
+            }
+        }
+
+    @Test fun separatelyImportedIdenticalPdfsKeepTheirDocumentAndLibraryLinksAfterRestore() =
+        runBlocking {
+            seed()
+            val first = File(context.filesDir, "patterns/legacy.pdf")
+            val second = File(context.filesDir, "pattern_pdfs/1/second.pdf")
+            first.copyTo(second, overwrite = true)
+            val digest = BackupFormat.digest(first)
+
+            restoreAndReopenDatabase("identical-pdfs.knittools-backup")
+
+            java.util.zip.ZipFile(File(directory, "identical-pdfs.knittools-backup")).use { archive ->
+                assertEquals(3, archive.entries().asSequence().count { it.name.startsWith("files/") })
+            }
+            assertEquals(2L, number("SELECT COUNT(DISTINCT localPdfUri) FROM project_documents"))
+            assertEquals(
+                text("SELECT localPdfUri FROM project_documents WHERE isPrimary = 1"),
+                text("SELECT patternUri FROM counter_projects"),
+            )
+            assertEquals(
+                2L,
+                number(
+                    "SELECT COUNT(*) FROM project_documents d JOIN saved_patterns s " +
+                        "ON d.savedPatternId = s.id AND d.localPdfUri = s.localPdfUri",
+                ),
+            )
+            db.openHelper.readableDatabase.query("SELECT localPdfUri FROM project_documents").use { cursor ->
+                while (cursor.moveToNext()) {
+                    val restored = File(checkNotNull(cursor.getString(0).toUri().path))
+                    assertEquals(digest, BackupFormat.digest(restored))
+                }
             }
         }
 
@@ -915,6 +952,7 @@ class BackupRepositoryTest {
                         BackupFormat.digest(file) {}
                     }.sorted()
             assertEquals(File(directory, "file-hashes.txt").readText(), hashes.joinToString("\n"))
+            if (phase == "precommit") checkNotNull(processProbe).verifyPreCommitFiles(context)
             assertTrue(File(context.noBackupFilesDir, "manual-backup").listFiles().orEmpty().isEmpty())
             val app = ApplicationProvider.getApplicationContext<Context>()
             val processRun = InstrumentationRegistry.getArguments().getString("backupCrashRun").orEmpty()
@@ -1779,10 +1817,8 @@ class BackupRepositoryTest {
 
     @Test fun orphanTempAndInstallationStateAreNeverArchivedOrReplaced() =
         runBlocking {
-            val preferences = PreferencesManager(context)
-            preferences.setThemeMode(ThemeMode.DARK)
-            preferences.setUseImperial(true)
-            val before = preferences.preferences.first()
+            val preferencesFile = seedInstallationPreferences()
+            val before = preferencesFile.readBytes()
             seed()
             val sentinel =
                 File(context.filesDir, "datastore/trial_state.preferences_pb").apply {
@@ -1810,8 +1846,28 @@ class BackupRepositoryTest {
             repository.restore(selectionId)
             assertEquals("trial sentinel", sentinel.readText())
             assertEquals("orphan", orphan.readText())
-            assertEquals(before, preferences.preferences.first())
+            assertArrayEquals(before, preferencesFile.readBytes())
         }
+
+    private suspend fun seedInstallationPreferences(): File {
+        val file = File(context.filesDir, "datastore/knittools_preferences.preferences_pb")
+        val job = SupervisorJob()
+        val preferences = PreferenceDataStoreFactory.create(scope = CoroutineScope(job + Dispatchers.IO)) { file }
+        val theme = intPreferencesKey("theme_mode")
+        val imperial = booleanPreferencesKey("use_imperial")
+        try {
+            preferences.edit {
+                it[theme] = ThemeMode.DARK.value
+                it[imperial] = true
+            }
+            val seeded = preferences.data.first()
+            assertEquals(ThemeMode.DARK.value, seeded[theme])
+            assertEquals(true, seeded[imperial])
+        } finally {
+            job.cancelAndJoin()
+        }
+        return file
+    }
 
     private suspend fun seed() {
         val pdf = File(context.filesDir, "patterns/legacy.pdf").apply { checkNotNull(parentFile).mkdirs() }
@@ -1831,7 +1887,7 @@ class BackupRepositoryTest {
             BackupFormat.tables.forEach { table ->
                 val changes: Map<String, Any?> =
                     when (table) {
-                        "counter_projects" ->
+                        "counter_projects" -> {
                             mapOf(
                                 "name" to "Cardigan",
                                 "notes" to "Private notes",
@@ -1841,48 +1897,74 @@ class BackupRepositoryTest {
                                     "content://${AppFileStorage.fileProviderAuthority(context)}/patterns/legacy.pdf",
                                 "linkedPatternId" to 1,
                             )
-                        "saved_patterns" ->
+                        }
+
+                        "saved_patterns" -> {
                             mapOf(
                                 "source" to "LOCAL_FILE",
                                 "name" to "Chart",
                                 "localPdfUri" to pdf.toUri().toString(),
                                 "availability" to "unknown",
                             )
-                        "yarn_cards" -> mapOf("photoUri" to yarn.toUri().toString(), "linkedProjectId" to 1)
-                        "project_folders" -> mapOf("name" to "Wool", "normalizedName" to "wool")
-                        "progress_photos" -> mapOf("photoUri" to photo.toUri().toString())
-                        "pattern_annotation_layers" ->
+                        }
+
+                        "yarn_cards" -> {
+                            mapOf("photoUri" to yarn.toUri().toString(), "linkedProjectId" to 1)
+                        }
+
+                        "project_folders" -> {
+                            mapOf("name" to "Wool", "normalizedName" to "wool")
+                        }
+
+                        "progress_photos" -> {
+                            mapOf("photoUri" to photo.toUri().toString())
+                        }
+
+                        "pattern_annotation_layers" -> {
                             mapOf(
                                 "savedPatternId" to null,
                                 "documentKey" to "saved:1:v1",
                                 "isActive" to 1,
                             )
-                        "pattern_bookmarks" -> mapOf("documentKey" to "saved:1:v1")
-                        "pattern_annotations" ->
+                        }
+
+                        "pattern_bookmarks" -> {
+                            mapOf("documentKey" to "saved:1:v1")
+                        }
+
+                        "pattern_annotations" -> {
                             mapOf(
                                 "kind" to "FREEHAND",
                                 "payloadVersion" to 1,
                                 "payloadJson" to annotationJson,
                             )
-                        "project_documents" ->
+                        }
+
+                        "project_documents" -> {
                             mapOf(
                                 "documentKey" to "saved:1:v1",
                                 "localPdfUri" to pdf.toUri().toString(),
                                 "isPrimary" to 1,
                             )
-                        "project_completions" ->
+                        }
+
+                        "project_completions" -> {
                             mapOf(
                                 "completedAt" to 1_700_000_000_000L,
                                 "zoneId" to "Europe/Helsinki",
                             )
-                        "counter_history" ->
+                        }
+
+                        "counter_history" -> {
                             mapOf(
                                 "action" to "increment",
                                 "previousValue" to 11,
                                 "newValue" to 12,
                                 "timestamp" to 1_700_000_000_000L,
                             )
-                        "active_sessions" ->
+                        }
+
+                        "active_sessions" -> {
                             mapOf(
                                 "singletonId" to 1,
                                 "sessionToken" to "old-session",
@@ -1890,7 +1972,11 @@ class BackupRepositoryTest {
                                 "checkpointedDurationSeconds" to 120,
                                 "startZoneId" to "Europe/Helsinki",
                             )
-                        else -> emptyMap()
+                        }
+
+                        else -> {
+                            emptyMap()
+                        }
                     }
                 insert(table, changes)
             }

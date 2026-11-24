@@ -259,7 +259,7 @@
     <!-- Session History -->
     <string name="session_history_title">Arbeitsverlauf</string>
     <string name="no_sessions">Noch keine Sitzungen aufgezeichnet. Öffne ein Projekt und starte eine Arbeitssitzung, um deine Zeit hier zu erfassen.</string>
-    <string name="session_row_range">Zähler: %1$d → %2$d</string>
+    <string name="session_row_range">Zähler %1$d → %2$d</string>
     <string name="session_row_single">Zählerstand %1$d</string>
     <string name="delete_session_title">Sitzung löschen?</string>
     <string name="delete_session_message">Diese Sitzung wird aus dem Verlauf gelöscht. Das kann nicht rückgängig gemacht werden.</string>
@@ -349,7 +349,7 @@
 
     <!-- Needle Sizes -->
     <string name="search_size">Größe suchen…</string>
-    <string name="needle_size_disclaimer">Die Größen sind ungefähre Entsprechungen. Japanische Größen verwenden eine eigene metrische Skala.</string>
+    <string name="needle_size_disclaimer">Die Größen sind ungefähre Entsprechungen. Die Nummerierung variiert je nach System und Hersteller. Vergleiche daher den Durchmesser in Millimetern und prüfe deine Maschenprobe.</string>
     <string name="header_mm">mm</string>
     <string name="header_us">US</string>
     <string name="header_uk">UK</string>
@@ -362,8 +362,8 @@
     <string name="settings_section_general">Allgemein</string>
     <string name="settings_theme">Erscheinungsbild</string>
     <string name="settings_section_pro">PRO</string>
-    <string name="settings_section_data">DATEN</string>
-    <string name="settings_section_info">INFO</string>
+    <string name="settings_section_data">Sicherung</string>
+    <string name="settings_section_info">Hilfe und Support</string>
     <string name="help_and_guide">Onlinehilfe</string>
     <string name="external_link_description">öffnet sich im Browser</string>
     <string name="settings_language">App-Sprache</string>
@@ -712,8 +712,6 @@
     <string name="tip_edge_stitches_desc">Randmaschen sind zusätzliche Maschen außerhalb des Rapports. Gib die Gesamtzahl der anzuschlagenden Randmaschen ein; der Rechner fügt sie nach der Berechnung der gewünschten Breite hinzu, z. B. 2 für eine Masche an jeder Seite.</string>
     <string name="tip_flat_vs_circular_title">Flach vs. rund</string>
     <string name="tip_flat_vs_circular_desc">Flach gestrickt: Du arbeitest hin und her auf geraden oder Rundnadeln und wendest am Ende jeder Reihe.\n\nRund gestrickt: Du arbeitest in einer fortlaufenden Runde. Zu- und Abnahmen werden gleichmäßig über die Runde verteilt.\n\nDie Ergebnisse verwenden englische Abkürzungen: K = rechts stricken, M1 = eine Masche aus dem Querfaden verschränkt zunehmen, K2tog = zwei Maschen rechts zusammenstricken. Die Zahl nach K gibt die Maschenzahl an, × die Anzahl der Wiederholungen.</string>
-    <string name="tip_needle_sizes_title">Systeme für Nadelstärken</string>
-    <string name="tip_needle_sizes_desc">Metrisch (mm) ist der universelle Standard. US-Größen verwenden ein nummeriertes System. UK/Kanada nutzen ein anderes Nummernsystem. Japanische Größen haben eine eigene Nummerierung. Prüfe sicherheitshalber immer die mm-Angabe.</string>
     <string name="tip_imperial_units_title">Imperiale Einheiten</string>
     <string name="tip_imperial_units_desc">Wenn aktiviert, werden Zoll statt Zentimeter und Yard statt Meter voreingestellt. Die Maschenprobe wird dann pro 4 Zoll statt pro 10 cm gemessen. Unter Maße und Maschenprobe kannst du die Einheiten separat wählen.</string>
     <string name="open_notes_editor">Notizen öffnen</string>
@@ -809,7 +807,7 @@
     <string name="pattern_annotation_callout_description_label">Beschreibung</string>
     <string name="pattern_annotation_tool_chart">Diagrammbereich</string>
     <string name="pattern_annotation_link_chart">Ausgewähltes Diagramm mit einem Zähler verknüpfen</string>
-    <string name="pattern_annotation_chart_setup_title">Diagrammverfolgung</string>
+    <string name="pattern_annotation_chart_setup_title">Diagramm verfolgen</string>
     <string name="pattern_annotation_chart_rows">Reihen</string>
     <string name="pattern_annotation_chart_columns">Spalten</string>
     <string name="pattern_annotation_chart_bottom_to_top">Von unten nach oben</string>
@@ -940,7 +938,7 @@
     <string name="folder_remove_from">Aus Ordner entfernen</string>
     <string name="selection_action_move">Verschieben</string>
     <string name="selection_action_complete">Fertig</string>
-    <string name="folder_no_folders">Keine Ordner</string>
+    <string name="folder_empty_notice">Du hast noch keine Ordner erstellt.</string>
     <string name="folder_empty">%1$s enthält keine Projekte.</string>
     <string name="folder_no_unfiled">Keine Projekte ohne Ordner</string>
     <string name="folder_hidden_completed">Dieser Ordner enthält ausgeblendete abgeschlossene Projekte.</string>
@@ -977,7 +975,7 @@
     <item quantity="one">%d Projekt verschoben.</item>
     <item quantity="other">%d Projekte verschoben.</item>
     </plurals>
-    <string name="folder_move_project_to">%1$s in Ordner verschieben</string>
+    <string name="folder_move_sheet_title">In Ordner verschieben</string>
     <string name="folder_rename_description">Ordner %1$s umbenennen</string>
     <string name="folder_move_earlier_description">Ordner %1$s nach oben verschieben</string>
     <string name="folder_move_later_description">Ordner %1$s nach unten verschieben</string>
@@ -1041,7 +1039,6 @@
     <string name="measurement_project_context">Projekt: %1$s</string>
     <string name="measurement_estimate">Schätzung auf Grundlage der eingegebenen Maschenprobe.</string>
     <string name="measurement_adjust_warning">Mathematische Schätzung auf Grundlage der eingegebenen Maschenprobe. Formgebung und Konstruktion werden nicht umgeschrieben. Bewegungszugabe, Musterrapporte, Ränder, Armausschnitte, Halsausschnitte und Ärmel müssen eventuell separat angepasst werden. Miss eine gewaschene oder gespannte Maschenprobe für eine aussagekräftigere Schätzung.</string>
-    <string name="measurement_adjust_warning_short">Eine Schätzung aus deiner Maschenprobe. Formgebung muss eventuell separat angepasst werden.</string>
     <string name="measurement_swatch_hint">Miss die Maschenprobe nach dem Waschen oder Spannen für eine aussagekräftigere Schätzung.</string>
     <string name="measurement_result">Ergebnis</string>
     <string name="measurement_value_unit_format">%1$s %2$s</string>
@@ -1079,9 +1076,9 @@
     <string name="yarn_usage_meters_format">%1$s m</string>
     <string name="yarn_usage_yards_format">%1$s yd</string>
     <string name="yarn_usage_grams_format">%1$s g</string>
-    <string name="yarn_usage_delete">Verbrauchserfassung löschen</string>
+    <string name="yarn_usage_delete">Verbrauch löschen</string>
     <string name="yarn_usage_delete_named">Verbrauchserfassung für %1$s löschen</string>
-    <string name="yarn_usage_delete_title">Verbrauchserfassung löschen?</string>
+    <string name="yarn_usage_delete_title">Verbrauch löschen?</string>
     <string name="yarn_usage_delete_body">Nur die Verbrauchserfassung für %1$s wird entfernt. Die Garnkarte, die Garnnotiz des Projekts und andere Projektdaten bleiben erhalten.</string>
     <string name="yarn_usage_invalid_amount">Gib eine gültige Menge ein.</string>
     <string name="yarn_usage_nonnegative">Die Menge darf nicht negativ sein.</string>
@@ -1128,7 +1125,7 @@
     <string name="web_pattern_unlink_title">Anleitung trennen?</string>
     <string name="web_pattern_unlink_body">Anleitungsdaten für %1$s aus diesem Projekt entfernen? Die gespeicherte Anleitung und die PDFs des Projekts bleiben erhalten.</string>
     <string name="web_pattern_unlink_confirm">Trennen</string>
-    <string name="web_pattern_replace_confirm_title">Musterinformationen ersetzen?</string>
+    <string name="web_pattern_replace_confirm_title">Anleitungsdaten ersetzen?</string>
     <string name="web_pattern_replace_confirm_message">Die bisherigen Anleitungsdaten werden durch die Daten zu %1$s ersetzt.</string>
     <string name="web_pattern_open_website">Website öffnen</string>
     <string name="web_pattern_offline_note">Öffnet die ursprüngliche Website. Wird nicht für die Offline-Nutzung gespeichert.</string>
@@ -1240,5 +1237,5 @@
     <string name="project_yarn_edit_missing">Diese Garnnotiz gehört nicht mehr zu diesem Projekt. Schließe den Editor.</string>
     <string name="project_yarn_edit_invalid">Gib einen Garnnamen ein.</string>
     <string name="project_yarn_edit_failed">Die Änderungen konnten nicht gespeichert werden. Dein Entwurf bleibt erhalten. Versuche es erneut.</string>
-    <string name="counter_progress_format">Zählerfortschritt: %1$d</string>
+    <string name="counter_progress_format">Zähler %1$+d</string>
 </resources>

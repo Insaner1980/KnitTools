@@ -138,9 +138,9 @@ class CounterStringResourcesSourceTest {
 
         assertTrue(
             "ROWS project-card count must use the rows_format plural",
-            displayTextSource.contains(
-                "MainCounterLabelType.ROWS -> pluralStringResource(R.plurals.rows_format, slot.count, slot.count)",
-            ),
+            Regex(
+                """MainCounterLabelType\.ROWS -> \{\s*pluralStringResource\(R\.plurals\.rows_format, slot\.count, slot\.count\)\s*}""",
+            ).containsMatchIn(displayTextSource),
         )
 
         ProjectSourceFiles.localizedStringFiles().forEach { stringsFile ->

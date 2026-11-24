@@ -421,7 +421,7 @@ private fun WidgetCard(
             if (openProUpgrade) {
                 MainActivity.createWidgetProPromptLaunchIntent(context)
             } else {
-                MainActivity.createCounterLaunchIntent(context = context, projectId = projectId)
+                WidgetCounterLaunchActivity.createIntent(context, projectId)
             },
         )
     Box(

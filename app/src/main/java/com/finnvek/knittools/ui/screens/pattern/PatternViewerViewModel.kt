@@ -178,11 +178,12 @@ class PatternViewerViewModel
         val events =
             eventChannel.receiveAsFlow().filter { event ->
                 when (event) {
-                    is PatternViewerEvent.BookmarkJumped ->
+                    is PatternViewerEvent.BookmarkJumped -> {
                         event.documentSelectionVersion == bookmarkDocumentSelectionVersion &&
                             documents.value?.any {
                                 it.id == selectedDocumentId.value && it.documentKey == event.bookmark.documentKey
                             } == true
+                    }
                 }
             }
         private var nextRequestId = 1L
@@ -249,15 +250,29 @@ class PatternViewerViewModel
 
         fun handleDocumentAddResult(result: ProjectDocumentMutationResult) {
             when (result) {
-                is ProjectDocumentMutationResult.Added -> Unit
+                is ProjectDocumentMutationResult.Added -> {
+                    Unit
+                }
+
                 ProjectDocumentMutationResult.AlreadyAttached,
                 ProjectDocumentMutationResult.DuplicateUri,
                 ProjectDocumentMutationResult.DuplicateDocumentKey,
-                -> setDocumentError(ProjectDocumentError.DUPLICATE)
-                ProjectDocumentMutationResult.InvalidLabel -> setDocumentError(ProjectDocumentError.INVALID_LABEL)
-                ProjectDocumentMutationResult.PdfUnavailable -> setDocumentError(ProjectDocumentError.UNAVAILABLE)
-                ProjectDocumentMutationResult.PersistenceFailure ->
+                -> {
+                    setDocumentError(ProjectDocumentError.DUPLICATE)
+                }
+
+                ProjectDocumentMutationResult.InvalidLabel -> {
+                    setDocumentError(ProjectDocumentError.INVALID_LABEL)
+                }
+
+                ProjectDocumentMutationResult.PdfUnavailable -> {
+                    setDocumentError(ProjectDocumentError.UNAVAILABLE)
+                }
+
+                ProjectDocumentMutationResult.PersistenceFailure -> {
                     setDocumentError(ProjectDocumentError.MUTATION_FAILURE)
+                }
+
                 ProjectDocumentMutationResult.MissingProject,
                 ProjectDocumentMutationResult.MissingDocument,
                 ProjectDocumentMutationResult.MissingSavedPattern,
@@ -269,7 +284,9 @@ class PatternViewerViewModel
                 is ProjectDocumentMutationResult.Removed,
                 ProjectDocumentMutationResult.ViewerStateUpdated,
                 ProjectDocumentMutationResult.StaleAction,
-                -> setDocumentError(ProjectDocumentError.STALE_ACTION)
+                -> {
+                    setDocumentError(ProjectDocumentError.STALE_ACTION)
+                }
             }
         }
 
@@ -512,21 +529,37 @@ class PatternViewerViewModel
                 ProjectDocumentMutationResult.Selected,
                 is ProjectDocumentMutationResult.Removed,
                 ProjectDocumentMutationResult.ViewerStateUpdated,
-                -> onSuccess(result)
-                ProjectDocumentMutationResult.InvalidLabel -> setDocumentError(ProjectDocumentError.INVALID_LABEL)
+                -> {
+                    onSuccess(result)
+                }
+
+                ProjectDocumentMutationResult.InvalidLabel -> {
+                    setDocumentError(ProjectDocumentError.INVALID_LABEL)
+                }
+
                 ProjectDocumentMutationResult.AlreadyAttached,
                 ProjectDocumentMutationResult.DuplicateUri,
                 ProjectDocumentMutationResult.DuplicateDocumentKey,
-                -> setDocumentError(ProjectDocumentError.DUPLICATE)
-                ProjectDocumentMutationResult.PdfUnavailable -> setDocumentError(ProjectDocumentError.UNAVAILABLE)
+                -> {
+                    setDocumentError(ProjectDocumentError.DUPLICATE)
+                }
+
+                ProjectDocumentMutationResult.PdfUnavailable -> {
+                    setDocumentError(ProjectDocumentError.UNAVAILABLE)
+                }
+
                 ProjectDocumentMutationResult.MissingDocument,
                 ProjectDocumentMutationResult.MissingProject,
                 ProjectDocumentMutationResult.MissingSavedPattern,
                 ProjectDocumentMutationResult.MetadataOnlyPattern,
                 ProjectDocumentMutationResult.StaleAction,
-                -> setDocumentError(ProjectDocumentError.STALE_ACTION)
-                ProjectDocumentMutationResult.PersistenceFailure ->
+                -> {
+                    setDocumentError(ProjectDocumentError.STALE_ACTION)
+                }
+
+                ProjectDocumentMutationResult.PersistenceFailure -> {
                     setDocumentError(ProjectDocumentError.MUTATION_FAILURE)
+                }
             }
         }
 

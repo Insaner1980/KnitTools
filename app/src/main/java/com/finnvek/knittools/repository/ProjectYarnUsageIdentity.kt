@@ -28,7 +28,7 @@ internal fun ProjectYarnUsageRelations.items(): List<ProjectYarnUsageItem> {
         }
     cards.filterNot { it.id in pairedCards }.sortedByDescending { it.createdAt }.forEach { card ->
         val source = YarnUsageSource(yarnCardId = card.id)
-        val usage = usages.firstOrNull { it.usage.matches(source) }?.usage?.toDomain()
+        val usage = usages.firstOrNull { it.usage.id !in matchedUsages && it.usage.matches(source) }?.usage?.toDomain()
         usage?.let { matchedUsages.add(it.id) }
         result.add(ProjectYarnUsageItem(source, card.usageName(), usage))
     }

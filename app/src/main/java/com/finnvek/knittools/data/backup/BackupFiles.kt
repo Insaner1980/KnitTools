@@ -20,6 +20,8 @@ internal class BackupFiles(
     private val budget: BackupBudget = BackupBudget(),
 ) {
     private val exported = mutableMapOf<String, String>()
+    private val pdfSourcesByPath = mutableMapOf<String, MutableMap<String, String>>()
+    val dataVersion: Int get() = if (pdfSourcesByPath.values.any { it.size > 1 }) 2 else 1
 
     fun export(
         table: String,
@@ -40,10 +42,10 @@ internal class BackupFiles(
                 BackupError.WRITE,
             )
         }
+        val parsed = uri.toUri()
+        val local = AppFileStorage.resolveAppOwnedFile(context, parsed)
         val path =
             exported.getOrPut(uri) {
-                val parsed = uri.toUri()
-                val local = AppFileStorage.resolveAppOwnedFile(context, parsed)
                 if (local != null) requireDurable(local)
                 BackupFormat.requireValid(local != null || parsed.scheme == "content", BackupError.READ)
                 val sourceFile = local ?: externalFiles[uri]
@@ -75,13 +77,18 @@ internal class BackupFiles(
             File(directory, path).length() <= BackupFormat.durableFileLimit(table),
             BackupError.WRITE,
         )
-        val copyKey =
-            when (table) {
-                "progress_photos", "yarn_cards" -> "$table:${row["id"]?.jsonPrimitive?.content}"
-                else -> "pdf:$path"
-            }
+        val reference = if (column == "photoUri") path else pdfReference(path, local?.canonicalPath ?: uri)
+        val copyKey = if (column == "photoUri") "$table:${row["id"]?.jsonPrimitive?.content}" else "pdf:$reference"
         budget.addDurableCopy(copyKey, File(directory, path).length())
-        row[column] = JsonPrimitive(path)
+        row[column] = JsonPrimitive(reference)
+    }
+
+    private fun pdfReference(
+        path: String,
+        source: String,
+    ): String {
+        val sources = pdfSourcesByPath.getOrPut(path) { mutableMapOf() }
+        return sources.getOrPut(source) { if (sources.isEmpty()) path else "$path#${sources.size + 1}" }
     }
 
     fun requireDurable(file: File) {

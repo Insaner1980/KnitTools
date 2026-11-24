@@ -265,7 +265,7 @@
     <!-- Session History -->
     <string name="session_history_title">Histórico de sessões</string>
     <string name="no_sessions">Ainda não há sessões registadas. Abra um projeto e inicie uma sessão de trabalho para registar o seu tempo aqui.</string>
-    <string name="session_row_range">Contador: %1$d → %2$d</string>
+    <string name="session_row_range">Contador %1$d → %2$d</string>
     <string name="session_row_single">Valor %1$d</string>
     <string name="delete_session_title">Eliminar sessão?</string>
     <string name="delete_session_message">Esta sessão será eliminada do histórico. Esta ação não pode ser anulada.</string>
@@ -356,7 +356,7 @@
 
     <!-- Needle Sizes -->
     <string name="search_size">Procurar tamanho…</string>
-    <string name="needle_size_disclaimer">Os tamanhos são equivalências aproximadas. Os tamanhos japoneses usam uma escala métrica diferente.</string>
+    <string name="needle_size_disclaimer">As equivalências entre tamanhos são aproximadas. A numeração varia conforme o sistema e o fabricante, por isso compara o diâmetro em milímetros e verifica a tensão.</string>
     <string name="header_mm">mm</string>
     <string name="header_us">US</string>
     <string name="header_uk">UK</string>
@@ -369,8 +369,8 @@
     <string name="settings_section_general">Geral</string>
     <string name="settings_theme">Tema</string>
     <string name="settings_section_pro">PRO</string>
-    <string name="settings_section_data">DADOS</string>
-    <string name="settings_section_info">INFO</string>
+    <string name="settings_section_data">Cópia de segurança</string>
+    <string name="settings_section_info">Ajuda e suporte</string>
     <string name="help_and_guide">Ajuda online</string>
     <string name="external_link_description">abre no navegador</string>
     <string name="settings_language">Idioma da app</string>
@@ -732,8 +732,6 @@
     <string name="tip_edge_stitches_desc">Os pontos de ourela são pontos extra fora da repetição do motivo. Introduza o total de pontos de ourela a montar; a calculadora adiciona-os depois de calcular a largura pretendida, por exemplo 2 para um ponto em cada lado.</string>
     <string name="tip_flat_vs_circular_title">Plano vs. circular</string>
     <string name="tip_flat_vs_circular_desc">Tricô plano: trabalha de ida e volta em agulhas direitas ou circulares, virando no fim de cada carreira.\n\nTricô circular: trabalha numa volta contínua. Os aumentos/diminuições distribuem-se uniformemente ao longo da volta.\n\nNos resultados, K = tricotar em meia, M1 = aumentar uma malha entre pontos e K2tog = tricotar duas malhas juntas em meia. × indica o número de repetições.</string>
-    <string name="tip_needle_sizes_title">Sistemas de tamanhos de agulhas</string>
-    <string name="tip_needle_sizes_desc">O sistema métrico (mm) é o padrão universal. Os tamanhos US usam um sistema numerado. UK/Canadá usam outro sistema numerado. Os tamanhos japoneses têm a sua própria numeração. Verifique sempre o tamanho em mm para ter a certeza.</string>
     <string name="tip_imperial_units_title">Unidades imperiais</string>
     <string name="tip_imperial_units_desc">Usa polegadas em vez de centímetros e jardas em vez de metros como unidades predefinidas. A tensão é indicada por 4 polegadas em vez de por 10 cm. Em Medidas e tensão, pode escolher outras unidades.</string>
     <string name="open_notes_editor">Abrir editor de notas</string>
@@ -961,7 +959,7 @@
     <string name="folder_remove_from">Remover da pasta</string>
     <string name="selection_action_move">Mover</string>
     <string name="selection_action_complete">Concluir</string>
-    <string name="folder_no_folders">Sem pastas</string>
+    <string name="folder_empty_notice">Ainda não criaste nenhuma pasta.</string>
     <string name="folder_empty">%1$s não tem projetos.</string>
     <string name="folder_no_unfiled">Sem projetos sem pasta</string>
     <string name="folder_hidden_completed">Esta pasta contém projetos concluídos ocultos.</string>
@@ -1000,7 +998,7 @@
     <item quantity="other">%d projetos movidos.</item>
     <item quantity="many">%d projetos movidos.</item>
     </plurals>
-    <string name="folder_move_project_to">Mover %1$s para pasta</string>
+    <string name="folder_move_sheet_title">Mover para pasta</string>
     <string name="folder_rename_description">Mudar nome da pasta %1$s</string>
     <string name="folder_move_earlier_description">Mover a pasta %1$s para antes</string>
     <string name="folder_move_later_description">Mover a pasta %1$s para depois</string>
@@ -1066,7 +1064,6 @@
     <string name="measurement_project_context">Projeto: %1$s</string>
     <string name="measurement_estimate">Estimativa baseada na tensão introduzida.</string>
     <string name="measurement_adjust_warning">Estimativa matemática baseada na tensão introduzida. A modelagem e a construção não são reescritas. A folga, as repetições do motivo, as bordas, as cavas, os decotes e as mangas podem precisar de ajustes separados. Meça uma amostra lavada ou bloqueada para uma estimativa mais útil.</string>
-    <string name="measurement_adjust_warning_short">Uma estimativa com base na sua amostra. Os aumentos e as diminuições podem precisar de ajustes à parte.</string>
     <string name="measurement_swatch_hint">Para uma estimativa mais útil, meça a amostra depois de a lavar ou bloquear.</string>
     <string name="measurement_result">Resultado</string>
     <string name="measurement_value_unit_format">%1$s %2$s</string>
@@ -1156,8 +1153,8 @@
     <string name="web_pattern_unlink_title">Desassociar padrão?</string>
     <string name="web_pattern_unlink_body">Remover deste projeto os detalhes do padrão %1$s? O padrão guardado e os PDF deste projeto são mantidos.</string>
     <string name="web_pattern_unlink_confirm">Desassociar</string>
-    <string name="web_pattern_replace_confirm_title">Substituir as informações do modelo?</string>
-    <string name="web_pattern_replace_confirm_message">As informações do modelo atual serão substituídas pelas de %1$s.</string>
+    <string name="web_pattern_replace_confirm_title">Substituir as informações do padrão?</string>
+    <string name="web_pattern_replace_confirm_message">As informações do padrão atual serão substituídas pelas de %1$s.</string>
     <string name="web_pattern_open_website">Abrir site</string>
     <string name="web_pattern_offline_note">Abre no site original. Não é guardado para utilização offline.</string>
     <string name="web_pattern_open_website_description">Abrir o site de %1$s em %2$s</string>
@@ -1269,5 +1266,5 @@
     <string name="project_yarn_edit_missing">Esta nota de fio já não pertence a este projeto. Feche o editor.</string>
     <string name="project_yarn_edit_invalid">Introduza um nome para o fio.</string>
     <string name="project_yarn_edit_failed">Não foi possível guardar as alterações. O rascunho continua aqui. Tente novamente.</string>
-    <string name="counter_progress_format">Progresso do contador: %1$d</string>
+    <string name="counter_progress_format">Contador %1$+d</string>
 </resources>

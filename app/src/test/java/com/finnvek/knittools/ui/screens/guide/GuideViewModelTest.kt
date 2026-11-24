@@ -1,7 +1,6 @@
 package com.finnvek.knittools.ui.screens.guide
 
 import androidx.lifecycle.ViewModelStore
-import com.finnvek.knittools.R
 import com.finnvek.knittools.analytics.UsageAnalytics
 import com.finnvek.knittools.analytics.UsageEvent
 import com.finnvek.knittools.domain.model.CounterProject
@@ -9,14 +8,11 @@ import com.finnvek.knittools.pro.ProManager
 import com.finnvek.knittools.pro.ProState
 import com.finnvek.knittools.pro.ProStatus
 import com.finnvek.knittools.repository.CounterRepository
-import com.finnvek.knittools.ui.tips.TipSession
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
-import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
@@ -39,7 +35,6 @@ class GuideViewModelTest {
     private val dispatcher = UnconfinedTestDispatcher()
     private val repository = mockk<CounterRepository>()
     private val proManager = mockk<ProManager>()
-    private val tipSession = mockk<TipSession>()
     private val analytics = mockk<UsageAnalytics>(relaxed = true)
     private val ready = MutableStateFlow(false)
     private val state = MutableStateFlow(ProState())
@@ -120,29 +115,6 @@ class GuideViewModelTest {
         }
 
     @Test
-    fun `reset success is emitted only after persistence completes`() =
-        runTest {
-            val persisted = CompletableDeferred<Boolean>()
-            every { tipSession.resetTips() } returns persisted
-            val vm = createViewModel()
-            val message = async { vm.messages.first() }
-            vm.showTipsAgain()
-            runCurrent()
-            assertFalse(message.isCompleted)
-            persisted.complete(true)
-            assertEquals(R.string.settings_tips_reset_done, message.await())
-        }
-
-    @Test
-    fun `failed reset reports the existing error message`() =
-        runTest {
-            every { tipSession.resetTips() } returns CompletableDeferred(false)
-            val vm = createViewModel()
-            vm.showTipsAgain()
-            assertEquals(R.string.generic_error_unknown, vm.messages.first())
-        }
-
-    @Test
     fun `guide opened is recorded once for the retained entry`() {
         val vm = createViewModel()
         vm.onOpened()
@@ -150,5 +122,5 @@ class GuideViewModelTest {
         verify(exactly = 1) { analytics.track(UsageEvent.GUIDE_OPENED) }
     }
 
-    private fun createViewModel() = GuideViewModel(repository, proManager, tipSession, analytics, dispatcher)
+    private fun createViewModel() = GuideViewModel(repository, proManager, analytics, dispatcher)
 }

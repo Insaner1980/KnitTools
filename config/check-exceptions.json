@@ -150,23 +150,6 @@
       ]
     },
     {
-      "id": "knittools-mobsf-project-list-backup-tip-key",
-      "tool": "mobsfscan",
-      "rule": "android_kotlin_hardcoded",
-      "scope": "Compose backup-tip item identity in ProjectListScreen.kt",
-      "reason": "The exact match identifies the backup guidance item in the project list layouts, not a credential or secret.",
-      "owner": "project-maintainers",
-      "added": "2026-10-30",
-      "expires": "2027-01-18",
-      "tracking": "local-review:android-check-20261030T110235782-96976225",
-      "sourcePath": "app/src/main/java/com/finnvek/knittools/ui/screens/project/ProjectListScreen.kt",
-      "selector": "fullWidthItem(key = \"backup-tip\")",
-      "findingPath": "app/src/main/java/com/finnvek/knittools/ui/screens/project/ProjectListScreen.kt",
-      "findingSelectors": [
-        "key = \"backup-tip\""
-      ]
-    },
-    {
       "id": "knittools-mobsf-project-creation-test-state-key",
       "tool": "mobsfscan",
       "rule": "android_kotlin_hardcoded",
@@ -281,7 +264,7 @@
       "tool": "mobsfscan",
       "rule": "android_kotlin_hardcoded",
       "scope": "Compose list item identities in SizeChartScreen.kt",
-      "reason": "The exact matches identify the category selector and size table in a LazyColumn, not credentials or secrets.",
+      "reason": "The exact matches identify the category selector, size table, header, and sleeve note in a LazyColumn.",
       "owner": "project-maintainers",
       "added": "2026-10-26",
       "expires": "2026-11-30",
@@ -291,8 +274,40 @@
       "findingPath": "app/src/main/java/com/finnvek/knittools/ui/screens/sizecharts/SizeChartScreen.kt",
       "findingSelectors": [
         "key = \"categories\"",
-        "key = \"table\""
+        "key = \"table\"",
+        "key = \"size-table-header\"",
+        "key = \"sleeve-note\""
       ]
+    },
+    {
+      "id": "knittools-mobsf-needle-table-header-key",
+      "tool": "mobsfscan",
+      "rule": "android_kotlin_hardcoded",
+      "scope": "Sticky header identity in NeedleSizeScreen.kt",
+      "reason": "The literal identifies a sticky header in the needle size list.",
+      "owner": "project-maintainers",
+      "added": "2026-11-24",
+      "expires": "2027-02-24",
+      "tracking": "local-review:android-check-20261124T063938139-9889a639",
+      "sourcePath": "app/src/main/java/com/finnvek/knittools/ui/screens/needles/NeedleSizeScreen.kt",
+      "selector": "stickyHeader(key = \"needle-table-header\")",
+      "findingPath": "app/src/main/java/com/finnvek/knittools/ui/screens/needles/NeedleSizeScreen.kt",
+      "findingSelectors": ["key = \"needle-table-header\""]
+    },
+    {
+      "id": "knittools-mobsf-project-backup-notice-key",
+      "tool": "mobsfscan",
+      "rule": "android_kotlin_hardcoded",
+      "scope": "Backup notice item identity in ProjectListScreen.kt",
+      "reason": "The literal identifies the backup notice in the empty and populated project grids.",
+      "owner": "project-maintainers",
+      "added": "2026-11-24",
+      "expires": "2027-02-24",
+      "tracking": "local-review:android-check-20261124T063938139-9889a639",
+      "sourcePath": "app/src/main/java/com/finnvek/knittools/ui/screens/project/ProjectListScreen.kt",
+      "selector": "fullWidthItem(key = \"backup-notice\")",
+      "findingPath": "app/src/main/java/com/finnvek/knittools/ui/screens/project/ProjectListScreen.kt",
+      "findingSelectors": ["key = \"backup-notice\""]
     },
     {
       "id": "knittools-mobsf-isolated-test-inherited-backup",
@@ -987,8 +1002,24 @@
       "findingPath": "app/src/test/java/com/finnvek/knittools/repository/ProjectDocumentRepositoryTest.kt",
       "findingSelectors": [
         "key = \"local:a\"",
-        "key = \"local:b\""
+        "key = \"local:b\"",
+        "key = \"local:tied\""
       ]
+    },
+    {
+      "id": "knittools-mobsf-annotation-view-model-document-fixture",
+      "tool": "mobsfscan",
+      "rule": "android_kotlin_hardcoded",
+      "scope": "Document identity fixture in PatternAnnotationViewModelTest.kt",
+      "reason": "The test uses this document identity to verify a mismatch with the displayed page.",
+      "owner": "project-maintainers",
+      "added": "2026-11-24",
+      "expires": "2027-02-24",
+      "tracking": "local-review:android-check-20261124T063938139-9889a639",
+      "sourcePath": "app/src/test/java/com/finnvek/knittools/ui/screens/pattern/PatternAnnotationViewModelTest.kt",
+      "selector": "documentKey = \"other-document\"",
+      "findingPath": "app/src/test/java/com/finnvek/knittools/ui/screens/pattern/PatternAnnotationViewModelTest.kt",
+      "findingSelectors": ["key = \"other-document\""]
     },
     {
       "id": "knittools-mobsf-hardcoded-repository-transaction-test",

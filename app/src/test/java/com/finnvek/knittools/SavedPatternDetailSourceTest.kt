@@ -199,8 +199,14 @@ class SavedPatternDetailSourceTest {
         (0 until resources.length).forEach resourceLoop@{ index ->
             val resource = resources.item(index) as? Element ?: return@resourceLoop
             when (resource.getAttribute("name")) {
-                "saved_pattern_detail_remove_confirm" -> messages.add(resource.textContent to emptyList())
-                "web_pattern_delete_confirm_message" -> messages.add(resource.textContent to listOf("%1\$s"))
+                "saved_pattern_detail_remove_confirm" -> {
+                    messages.add(resource.textContent to emptyList())
+                }
+
+                "web_pattern_delete_confirm_message" -> {
+                    messages.add(resource.textContent to listOf("%1\$s"))
+                }
+
                 "delete_patterns_confirm" -> {
                     val items = resource.getElementsByTagName("item")
                     (0 until items.length).forEach { itemIndex ->

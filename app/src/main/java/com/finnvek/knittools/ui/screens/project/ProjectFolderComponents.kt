@@ -29,7 +29,6 @@ import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -69,6 +68,7 @@ import com.finnvek.knittools.ui.components.LabeledTextField
 import com.finnvek.knittools.ui.components.ScreenTitleSelector
 import com.finnvek.knittools.ui.components.ScrollableFormDialog
 import com.finnvek.knittools.ui.components.SheetTitle
+import com.finnvek.knittools.ui.components.rememberExpandedModalSheetState
 import com.finnvek.knittools.ui.layout.ContentWidthPolicy
 import com.finnvek.knittools.ui.theme.ProjectListDimens
 
@@ -125,7 +125,7 @@ fun ProjectFoldersSheet(
     focusFolderId: Long? = null,
     focusCreateFolder: Boolean = false,
 ) {
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val sheetState = rememberExpandedModalSheetState()
     val createFocusRequester = remember { FocusRequester() }
     val folderFocusRequesters = remember { mutableStateMapOf<Long, FocusRequester>() }
 
@@ -175,7 +175,7 @@ fun ProjectFoldersSheet(
                 }
 
                 folders.isEmpty() -> {
-                    Text(stringResource(R.string.folder_no_folders))
+                    FolderEmptyNotice()
                 }
 
                 else -> {
@@ -208,7 +208,9 @@ fun ProjectFoldersSheet(
             errorMessage?.let { message ->
                 FolderError(message = message, onRetry = onRetry, enabled = !isMutating)
             }
-            HorizontalDivider()
+            if (isLoading || folders.isNotEmpty()) {
+                HorizontalDivider()
+            }
             TextButton(
                 onClick = onCreateFolder,
                 enabled = !isMutating,
@@ -337,7 +339,7 @@ fun MoveToFolderSheet(
     fallbackFocusRequester: FocusRequester? = null,
     projectName: String? = null,
 ) {
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val sheetState = rememberExpandedModalSheetState()
     LaunchedEffect(isLoading, folders, sheetState) {
         if (!isLoading) {
             // Kohdista ladatun sisällön uusi ankkuri myös ilman järjestelmäanimaatioita.
@@ -346,22 +348,10 @@ fun MoveToFolderSheet(
         }
     }
     val title =
-        when {
-            projectCount == 1 && projectName != null -> {
-                stringResource(R.string.folder_move_project_to, projectName)
-            }
-
-            projectCount == 1 -> {
-                stringResource(R.string.folder_move_to)
-            }
-
-            else -> {
-                pluralStringResource(
-                    R.plurals.folder_move_selected_projects_count,
-                    projectCount,
-                    projectCount,
-                )
-            }
+        if (projectCount == 1) {
+            stringResource(R.string.folder_move_sheet_title)
+        } else {
+            pluralStringResource(R.plurals.folder_move_selected_projects_count, projectCount, projectCount)
         }
     // CPD-OFF: Siirtolomakkeen Compose-rakenne pidetaan toiminnon yhteydessa.
     ModalBottomSheet(
@@ -385,6 +375,13 @@ fun MoveToFolderSheet(
                 modifier =
                     fallbackFocusRequester?.let { Modifier.focusRequester(it).focusable() } ?: Modifier,
             )
+            if (projectCount == 1 && projectName != null) {
+                Text(
+                    text = projectName,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
             DestinationRow(
                 label = stringResource(R.string.folder_unfiled),
                 description = stringResource(R.string.folder_unfiled_description),
@@ -399,7 +396,7 @@ fun MoveToFolderSheet(
                 }
 
                 folders.isEmpty() -> {
-                    Text(stringResource(R.string.folder_no_folders))
+                    FolderEmptyNotice()
                 }
 
                 else -> {
@@ -420,6 +417,15 @@ fun MoveToFolderSheet(
         }
     }
     // CPD-ON
+}
+
+@Composable
+private fun FolderEmptyNotice() {
+    Text(
+        text = stringResource(R.string.folder_empty_notice),
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
 }
 
 @Composable

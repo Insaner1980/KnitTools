@@ -37,7 +37,7 @@ class ReminderUiSourceTest {
         row: String,
         interval: String,
     ): Boolean {
-        val formClass = Class.forName("com.finnvek.knittools.ui.screens.counter.ReminderDialogForm")
+        val formClass = Class.forName("com.finnvek.knittools.ui.screens.counter.ReminderForm")
         val constructor =
             formClass
                 .getDeclaredConstructor(

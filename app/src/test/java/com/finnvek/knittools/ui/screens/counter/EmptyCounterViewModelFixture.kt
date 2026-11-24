@@ -67,7 +67,6 @@ internal fun TestScope.emptyCounterViewModel(
         context = mockk<Context>(relaxed = true),
         ioDispatcher = dispatcher,
         applicationScope = backgroundScope,
-        tipSession = mockk(relaxed = true),
         onboardingStateRepository = emptyOnboardingState(),
     )
 }

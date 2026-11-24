@@ -265,7 +265,7 @@
     <!-- Session History -->
     <string name="session_history_title">Cronologia delle sessioni</string>
     <string name="no_sessions">Nessuna sessione registrata per ora. Apri un progetto e avvia una sessione di lavoro per registrare qui il tuo tempo.</string>
-    <string name="session_row_range">Contatore: %1$d → %2$d</string>
+    <string name="session_row_range">Contatore %1$d → %2$d</string>
     <string name="session_row_single">Valore %1$d</string>
     <string name="delete_session_title">Eliminare la sessione?</string>
     <string name="delete_session_message">Questa sessione verrà eliminata dalla cronologia. Questa azione non può essere annullata.</string>
@@ -356,7 +356,7 @@
 
     <!-- Needle Sizes -->
     <string name="search_size">Cerca misura…</string>
-    <string name="needle_size_disclaimer">Le misure sono equivalenze approssimative. Le misure giapponesi usano una scala metrica separata.</string>
+    <string name="needle_size_disclaimer">Le corrispondenze tra le misure sono approssimative. La numerazione varia in base al sistema e al produttore, quindi confronta il diametro in millimetri e controlla il campione.</string>
     <string name="header_mm">mm</string>
     <string name="header_us">US</string>
     <string name="header_uk">UK</string>
@@ -369,8 +369,8 @@
     <string name="settings_section_general">Generali</string>
     <string name="settings_theme">Tema</string>
     <string name="settings_section_pro">PRO</string>
-    <string name="settings_section_data">DATI</string>
-    <string name="settings_section_info">INFO</string>
+    <string name="settings_section_data">Backup</string>
+    <string name="settings_section_info">Aiuto e supporto</string>
     <string name="help_and_guide">Guida online</string>
     <string name="external_link_description">si apre nel browser</string>
     <string name="settings_language">Lingua dell’app</string>
@@ -732,8 +732,6 @@
     <string name="tip_edge_stitches_desc">Le maglie di vivagno sono maglie extra fuori dalla ripetizione del motivo. Inserisci il totale delle maglie di vivagno da avviare; il calcolatore le aggiunge dopo aver calcolato la larghezza desiderata, ad esempio 2 per una maglia su ciascun lato.</string>
     <string name="tip_flat_vs_circular_title">In piano vs. in tondo</string>
     <string name="tip_flat_vs_circular_desc">Nel lavoro in piano lavori avanti e indietro su ferri dritti o circolari, girando alla fine di ogni ferro.\n\nNel lavoro in tondo lavori in modo continuo. Aumenti e diminuzioni sono distribuiti uniformemente lungo il giro.</string>
-    <string name="tip_needle_sizes_title">Sistemi di misure dei ferri</string>
-    <string name="tip_needle_sizes_desc">Il diametro in millimetri (mm) è il riferimento più preciso. Le misure US usano un sistema numerato. Le misure UK/Canada usano un altro sistema numerato. Le misure giapponesi hanno una numerazione propria. Controlla sempre la misura in mm: la numerazione può variare secondo il produttore.</string>
     <string name="tip_imperial_units_title">Unità imperiali</string>
     <string name="tip_imperial_units_desc">Imposta pollici e yard come unità predefinite dei calcolatori. Il campione è indicato per 4 pollici invece che per 10 cm. Puoi cambiare unità in Misure e campione.</string>
     <string name="open_notes_editor">Apri editor note</string>
@@ -961,7 +959,7 @@
     <string name="folder_remove_from">Rimuovi dalla cartella</string>
     <string name="selection_action_move">Sposta</string>
     <string name="selection_action_complete">Completa</string>
-    <string name="folder_no_folders">Nessuna cartella</string>
+    <string name="folder_empty_notice">Non hai ancora creato cartelle.</string>
     <string name="folder_empty">%1$s non contiene progetti.</string>
     <string name="folder_no_unfiled">Nessun progetto senza cartella</string>
     <string name="folder_hidden_completed">Questa cartella contiene progetti completati nascosti.</string>
@@ -1000,7 +998,7 @@
     <item quantity="other">%d progetti spostati.</item>
     <item quantity="many">%d progetti spostati.</item>
     </plurals>
-    <string name="folder_move_project_to">Sposta %1$s nella cartella</string>
+    <string name="folder_move_sheet_title">Sposta nella cartella</string>
     <string name="folder_rename_description">Rinomina la cartella %1$s</string>
     <string name="folder_move_earlier_description">Sposta prima la cartella %1$s</string>
     <string name="folder_move_later_description">Sposta dopo la cartella %1$s</string>
@@ -1066,7 +1064,6 @@
     <string name="measurement_project_context">Progetto: %1$s</string>
     <string name="measurement_estimate">Stima basata sulla tensione inserita.</string>
     <string name="measurement_adjust_warning">Stima matematica basata sulla tensione inserita. La sagomatura e la costruzione non vengono riscritte. Agio, ripetizioni del motivo, bordi, giromanica, scolli e maniche possono richiedere adattamenti separati. Misura un campione lavato o bloccato per una stima più utile.</string>
-    <string name="measurement_adjust_warning_short">Una stima basata sul tuo campione. Le sagomature potrebbero richiedere un adattamento separato.</string>
     <string name="measurement_swatch_hint">Per una stima più utile, misura il campione dopo averlo lavato o bloccato.</string>
     <string name="measurement_result">Risultato</string>
     <string name="measurement_value_unit_format">%1$s %2$s</string>
@@ -1156,8 +1153,8 @@
     <string name="web_pattern_unlink_title">Scollegare lo schema?</string>
     <string name="web_pattern_unlink_body">Rimuovere i dettagli dello schema %1$s da questo progetto? Lo schema salvato e i PDF del progetto resteranno disponibili.</string>
     <string name="web_pattern_unlink_confirm">Scollega</string>
-    <string name="web_pattern_replace_confirm_title">Sostituire le informazioni del modello?</string>
-    <string name="web_pattern_replace_confirm_message">Le informazioni attuali del modello verranno sostituite con quelle di %1$s.</string>
+    <string name="web_pattern_replace_confirm_title">Sostituire le informazioni dello schema?</string>
+    <string name="web_pattern_replace_confirm_message">Le informazioni attuali dello schema verranno sostituite con quelle di %1$s.</string>
     <string name="web_pattern_open_website">Apri sito web</string>
     <string name="web_pattern_offline_note">Si apre sul sito originale. Non viene salvato per l’uso offline.</string>
     <string name="web_pattern_open_website_description">Apri il sito web di %1$s su %2$s</string>
@@ -1269,5 +1266,5 @@
     <string name="project_yarn_edit_missing">Questa nota sul filato non appartiene più al progetto. Chiudi la modifica.</string>
     <string name="project_yarn_edit_invalid">Inserisci un nome per il filato.</string>
     <string name="project_yarn_edit_failed">Impossibile salvare le modifiche. La bozza è ancora qui. Riprova.</string>
-    <string name="counter_progress_format">Avanzamento del contatore: %1$d</string>
+    <string name="counter_progress_format">Contatore %1$+d</string>
 </resources>

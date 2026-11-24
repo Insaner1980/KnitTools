@@ -65,7 +65,7 @@ class BackupViewModelTest {
 
     @Test fun validationCancellationWaitsForCleanupBeforeReturningToIdle() = cancellation(BackupPhase.VALIDATING)
 
-    @Test fun completedExportSuppressesBackupTip() =
+    @Test fun completedExportSuppressesBackupNotice() =
         runTest(dispatcher) {
             val viewModel = BackupViewModel(repository, onboarding)
             store.put("backup", viewModel)
@@ -73,7 +73,6 @@ class BackupViewModelTest {
             runCurrent()
             assertEquals(BackupPhase.EXPORTED, viewModel.state.value.phase)
             coVerify(exactly = 1) { onboarding.markBackupCreated() }
-            coVerify(exactly = 0) { onboarding.markBasicTipsSeen() }
         }
 
     @Test fun analyticsReportsCommittedSuccessOrBoundedFailureWithoutBackupContent() =
@@ -355,7 +354,6 @@ class BackupViewModelTest {
             finished.complete(Unit)
             runCurrent()
             assertEquals(BackupPhase.RESTORED, viewModel.state.value.phase)
-            coVerify(exactly = 1) { onboarding.markBasicTipsSeen() }
             coVerify(exactly = 0) { onboarding.markBackupCreated() }
         }
 }

@@ -103,7 +103,11 @@ class WebPatternLocalizationArchitectureContractTest {
             exportedComponentNames(manifest, exported = "true"),
         )
         assertEquals(
-            setOf(".widget.CounterWidgetActions", "androidx.core.content.FileProvider"),
+            setOf(
+                ".widget.CounterWidgetActions",
+                ".widget.WidgetCounterLaunchActivity",
+                "androidx.core.content.FileProvider",
+            ),
             exportedComponentNames(manifest, exported = "false"),
         )
         // Kaksi jakokohdetta: verkko-ohjeen linkki (text/plain) ja ladattu PDF-ohje (application/pdf).
@@ -168,10 +172,11 @@ class WebPatternLocalizationArchitectureContractTest {
             assertFalse("Web pattern V1 must not introduce $token", dependencyAndProductionText.contains(token))
         }
 
-        val backendText = sourceFilesUnder("functions/src").joinToString("\n")
-        assertFalse(backendText.contains("WEB_LINK"))
-        assertFalse(backendText.contains("WebPattern"))
-        assertFalse(backendText.contains("webPattern"))
+        val backendDirectory = "functions/src"
+        assertTrue(
+            "The retired Functions backend must have no sources",
+            Files.notExists(ProjectSourceFiles.file(backendDirectory)) || sourceFilesUnder(backendDirectory).isEmpty(),
+        )
     }
 
     private fun localizedStrings(directory: String): Map<String, String> =
@@ -222,7 +227,10 @@ class WebPatternLocalizationArchitectureContractTest {
         var depth = 0
         for (index in start until source.length) {
             when (source[index]) {
-                opening -> depth += 1
+                opening -> {
+                    depth += 1
+                }
+
                 closing -> {
                     depth -= 1
                     if (depth == 0) return source.substring(start + 1, index)

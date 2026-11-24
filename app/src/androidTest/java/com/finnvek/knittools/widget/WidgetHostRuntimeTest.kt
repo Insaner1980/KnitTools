@@ -104,8 +104,12 @@ class WidgetHostRuntimeTest {
                         await {
                             var found = false
                             scenario.onActivity {
+                                // RemoteViews can populate text before the first layout of the host.
+                                if (!view.isLaidOut || view.width <= 0 || view.height <= 0) return@onActivity
                                 found =
-                                    descendants(view).filterIsInstance<TextView>().any { it.text.toString() == "0" }
+                                    descendants(view).filterIsInstance<TextView>().any {
+                                        it.isLaidOut && it.text.toString() == "0"
+                                    }
                             }
                             found
                         }

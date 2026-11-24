@@ -2,7 +2,6 @@ package com.finnvek.knittools.ui.screens.counter
 
 import com.finnvek.knittools.domain.model.ActiveSessionRecoveryReason
 import com.finnvek.knittools.domain.model.ActiveWorkSession
-import com.finnvek.knittools.domain.model.CommittedMainCounterChange
 import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.domain.model.MainCounterChange
 import com.finnvek.knittools.repository.RecoveryResolutionResult
@@ -334,7 +333,7 @@ class CounterMainWriteResultTest : CounterViewModelFixture() {
     fun `rejected count restores authoritative row instead of publishing optimistic value`() =
         runTest {
             val published = captureWidgetUpdates()
-            coEvery { repository.applyMainCounterChangeWithResult(7L, MainCounterChange.Increment) } returns null
+            coEvery { repository.applyMainCounterChange(7L, MainCounterChange.Increment) } returns false
             coEvery { repository.getProject(7L) } returns observedProject.value
             val viewModel = viewModel()
             val errors = incrementAndCollectErrors(viewModel)
@@ -347,7 +346,7 @@ class CounterMainWriteResultTest : CounterViewModelFixture() {
     @Test
     fun `count persistence exception restores visible count and reports failure`() =
         runTest {
-            coEvery { repository.applyMainCounterChangeWithResult(7L, MainCounterChange.Increment) } throws
+            coEvery { repository.applyMainCounterChange(7L, MainCounterChange.Increment) } throws
                 IOException("synthetic write failure")
             coEvery { repository.getProject(7L) } returns observedProject.value
             val viewModel = viewModel()
@@ -361,8 +360,7 @@ class CounterMainWriteResultTest : CounterViewModelFixture() {
     fun `successful count publishes the committed count after a competing writer`() =
         runTest {
             val published = captureWidgetUpdates()
-            coEvery { repository.applyMainCounterChangeWithResult(7L, MainCounterChange.Increment) } returns
-                CommittedMainCounterChange(0, 1, null, MainCounterChange.Increment)
+            coEvery { repository.applyMainCounterChange(7L, MainCounterChange.Increment) } returns true
             coEvery { repository.getProject(7L) } returns observedProject.value.copy(count = 6)
             val viewModel = viewModel()
             advanceUntilIdle()
@@ -379,8 +377,7 @@ class CounterMainWriteResultTest : CounterViewModelFixture() {
         runTest {
             val viewModel = viewModel()
             advanceUntilIdle()
-            coEvery { repository.applyMainCounterChangeWithResult(7L, MainCounterChange.Increment) } returns
-                CommittedMainCounterChange(0, 1, null, MainCounterChange.Increment)
+            coEvery { repository.applyMainCounterChange(7L, MainCounterChange.Increment) } returns true
             coEvery { repository.getProject(7L) } returns observedProject.value.copy(count = 1)
             coEvery { CounterWidgetState.syncAll(any(), any()) } throws IOException("synthetic widget failure")
             val errors = collectErrors(viewModel.projectContentErrors)
@@ -390,7 +387,7 @@ class CounterMainWriteResultTest : CounterViewModelFixture() {
 
             assertEquals(1, viewModel.uiState.value.counter.count)
             assertTrue(errors.isEmpty())
-            coVerify(exactly = 1) { repository.applyMainCounterChangeWithResult(7L, MainCounterChange.Increment) }
+            coVerify(exactly = 1) { repository.applyMainCounterChange(7L, MainCounterChange.Increment) }
         }
 
     @Test
@@ -408,7 +405,7 @@ class CounterMainWriteResultTest : CounterViewModelFixture() {
             viewModel.selectProject(other)
             advanceUntilIdle()
             val beforeCompletion = published.size
-            result.complete(CommittedMainCounterChange(0, 1, null, MainCounterChange.Increment))
+            result.complete(true)
             advanceUntilIdle()
 
             assertEquals(8L, viewModel.uiState.value.projectId)

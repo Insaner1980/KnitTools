@@ -112,14 +112,20 @@ private fun String.dropUnmatchedClosingSuffix(wrapperIndex: Int? = null): String
     while (index >= 0 && trimming) {
         val delimiterIndex = SHARED_CLOSING_DELIMITERS.indexOf(this[index])
         when {
-            this[index] in SHARED_SENTENCE_PUNCTUATION -> index -= 1
+            this[index] in SHARED_SENTENCE_PUNCTUATION -> {
+                index -= 1
+            }
+
             delimiterIndex >= 0 && delimiterBalances[delimiterIndex] > 0 -> {
                 if (wrapperIndex != null) return if (delimiterIndex == wrapperIndex) substring(0, index) else this
                 delimiterBalances[delimiterIndex] -= 1
                 trimmedEnd = index
                 index -= 1
             }
-            else -> trimming = false
+
+            else -> {
+                trimming = false
+            }
         }
     }
     return if (trimmedEnd == length) this else substring(0, trimmedEnd)

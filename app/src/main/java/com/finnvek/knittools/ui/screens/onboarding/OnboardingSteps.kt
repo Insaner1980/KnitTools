@@ -668,10 +668,23 @@ private fun OnboardingCraft.label(): Int =
 
 private fun OnboardingNeed.label(craft: CraftType): Int =
     when (this) {
-        OnboardingNeed.Counting ->
+        OnboardingNeed.Counting -> {
             if (craft == CraftType.CROCHET) R.string.journey_need_counting_crochet else R.string.journey_need_counting
-        OnboardingNeed.Pattern -> R.string.journey_need_pattern
-        OnboardingNeed.Returning -> R.string.journey_need_returning
-        OnboardingNeed.Yarn -> R.string.journey_need_yarn
-        OnboardingNeed.Projects -> R.string.journey_need_projects
+        }
+
+        OnboardingNeed.Pattern -> {
+            R.string.journey_need_pattern
+        }
+
+        OnboardingNeed.Returning -> {
+            R.string.journey_need_returning
+        }
+
+        OnboardingNeed.Yarn -> {
+            R.string.journey_need_yarn
+        }
+
+        OnboardingNeed.Projects -> {
+            R.string.journey_need_projects
+        }
     }

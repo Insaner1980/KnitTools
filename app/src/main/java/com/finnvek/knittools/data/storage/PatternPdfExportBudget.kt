@@ -225,7 +225,7 @@ internal fun addWithinLimit(
 
 private fun PatternAnnotation.renderWork(): Long =
     when (val annotationPayload = payload) {
-        is FreehandPayload ->
+        is FreehandPayload -> {
             if (annotationPayload.points.isNotEmpty()) {
                 annotationPayload.points.size.toLong()
             } else {
@@ -234,11 +234,27 @@ private fun PatternAnnotation.renderWork(): Long =
                     .length
                     .toLong()
             }
-        is ShapePayload -> 1L
-        is TextBoxPayload -> annotationPayload.text.length.toLong()
-        is CalloutPayload -> annotationPayload.title.length.toLong() + annotationPayload.description.length.toLong()
-        is ChartRegionPayload -> annotationPayload.rows.toLong() + annotationPayload.columns.toLong()
-        is ChartTrackerPayload -> annotationPayload.region.rows.toLong() + annotationPayload.region.columns.toLong()
+        }
+
+        is ShapePayload -> {
+            1L
+        }
+
+        is TextBoxPayload -> {
+            annotationPayload.text.length.toLong()
+        }
+
+        is CalloutPayload -> {
+            annotationPayload.title.length.toLong() + annotationPayload.description.length.toLong()
+        }
+
+        is ChartRegionPayload -> {
+            annotationPayload.rows.toLong() + annotationPayload.columns.toLong()
+        }
+
+        is ChartTrackerPayload -> {
+            annotationPayload.region.rows.toLong() + annotationPayload.region.columns.toLong()
+        }
     }.coerceAtLeast(1L)
 
 private fun fail(reason: PatternPdfExportLimitReason): Nothing = throw PatternPdfExportLimitException(reason)

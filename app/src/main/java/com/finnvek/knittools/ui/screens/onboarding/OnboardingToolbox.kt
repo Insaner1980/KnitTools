@@ -103,8 +103,11 @@ internal fun OnboardingNeed.tool(): JourneyTool =
     when (this) {
         // Paluun hoitaa laskuri ja sen jatka-kortti, jotka käyttäjä juuri näki demossa.
         OnboardingNeed.Counting, OnboardingNeed.Returning -> JourneyTool.Counter
+
         OnboardingNeed.Pattern -> JourneyTool.Pattern
+
         OnboardingNeed.Yarn -> JourneyTool.Yarn
+
         OnboardingNeed.Projects -> JourneyTool.Insights
     }
 
@@ -287,8 +290,11 @@ private fun ToolboxGlyph(
     ) {
         val glyphModifier = Modifier.size(OnboardingDimens.ToolboxGlyphSize)
         when (tool.detail) {
-            ToolDetail.None -> CrossStitchIcon(tool.glyph, glyphModifier)
-            ToolDetail.Press ->
+            ToolDetail.None -> {
+                CrossStitchIcon(tool.glyph, glyphModifier)
+            }
+
+            ToolDetail.Press -> {
                 CrossStitchIcon(
                     tool.glyph,
                     glyphModifier.graphicsLayer {
@@ -299,6 +305,8 @@ private fun ToolboxGlyph(
                         scaleY = scale
                     },
                 )
+            }
+
             ToolDetail.ReadingLine -> {
                 val lineColor = MaterialTheme.colorScheme.primary
                 Box(glyphModifier) {
@@ -325,7 +333,8 @@ private fun ToolboxGlyph(
                     }
                 }
             }
-            ToolDetail.RisingBars ->
+
+            ToolDetail.RisingBars -> {
                 // Pylväät kasvavat perusviivalta ylös: piirto rajataan alhaalta nousevaan alueeseen.
                 CrossStitchIcon(
                     tool.glyph,
@@ -334,6 +343,7 @@ private fun ToolboxGlyph(
                         clipRect(top = size.height * (1f - shown)) { this@drawWithContent.drawContent() }
                     },
                 )
+            }
         }
     }
 }

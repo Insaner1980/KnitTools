@@ -12,6 +12,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -102,10 +103,6 @@ import com.finnvek.knittools.ui.screens.yarn.YarnEstimatorScreen
 import com.finnvek.knittools.ui.screens.yarncard.YarnCardDetailActions
 import com.finnvek.knittools.ui.screens.yarncard.YarnCardDetailScreen
 import com.finnvek.knittools.ui.screens.yarncard.YarnCardViewModel
-import com.finnvek.knittools.ui.tips.LocalTipBlocked
-import com.finnvek.knittools.ui.tips.LocalTipSession
-import com.finnvek.knittools.ui.tips.TipEnvironment
-import com.finnvek.knittools.ui.tips.TipSession
 import kotlinx.coroutines.flow.first
 
 private const val ARG_PROJECT_ID = "projectId"
@@ -245,7 +242,7 @@ fun KnitToolsNavHost(
                     destinationLifecycle == Lifecycle.State.RESUMED,
                     LocalWindowInfo.current.isWindowFocused,
                     WindowInsets.ime.getBottom(LocalDensity.current) == 0,
-                    !LocalTipBlocked.current,
+                    !LocalEntryActionsBlocked.current,
                     !showWidgetProPrompt,
                     effectiveCounterLaunch == null,
                 ).all { it },
@@ -284,10 +281,7 @@ fun KnitToolsNavHost(
         )
     }
     LaunchedEffect(currentRoute) { onScreenViewed(currentRoute) }
-    val tipSession = LocalTipSession.current
-    LaunchedEffect(tipSession, navBackStackEntry?.id) {
-        tipSession?.onRouteChanged(navBackStackEntry?.id)
-    }
+    val setupVisitGeneration = rememberProjectSetupVisitGeneration(navController)
     val showBottomBar = showsTopLevelNavigation(currentRoute)
 
     LaunchedEffect(effectiveCounterLaunch?.requestId) {
@@ -328,16 +322,15 @@ fun KnitToolsNavHost(
         }
     }
 
-    TipEnvironment(
-        routeKey = navBackStackEntry?.id.orEmpty(),
-        blocked =
+    val entryActionsBlocked =
+        LocalEntryActionsBlocked.current ||
             showTrialJourney ||
-                showWidgetProPrompt ||
-                effectiveCounterLaunch != null ||
-                requests.openProUpgrade ||
-                requests.openWidgetProPrompt ||
-                requests.patternShareImport != null,
-    ) {
+            showWidgetProPrompt ||
+            effectiveCounterLaunch != null ||
+            requests.openProUpgrade ||
+            requests.openWidgetProPrompt ||
+            requests.patternShareImport != null
+    CompositionLocalProvider(LocalEntryActionsBlocked provides entryActionsBlocked) {
         KnitToolsNavigationScaffold(
             navControllerProvider = { navController },
             showNavigation = showBottomBar,
@@ -353,27 +346,30 @@ fun KnitToolsNavHost(
                 popExitTransition = { fadeOut(tween(150)) },
             ) {
                 projectsGraph(
-                    navController,
-                    effectiveCounterLaunch,
+                    navController = navController,
+                    counterLaunchRequest = effectiveCounterLaunch,
                     isCurrentCounterLaunch = { requestId ->
                         effectiveCounterLaunch?.requestId == requestId &&
                             (requests.counterLaunch == null || actions.isCurrentExternalCounterLaunch(requestId))
                     },
                     onCounterLaunchHandled = { requestId ->
                         when {
-                            requests.counterLaunch?.requestId == requestId -> actions.onCounterLaunchHandled(requestId)
-                            internalCounterLaunch?.requestId == requestId -> internalCounterLaunch = null
+                            requests.counterLaunch?.requestId == requestId -> {
+                                actions.onCounterLaunchHandled(requestId)
+                            }
+
+                            internalCounterLaunch?.requestId == requestId -> {
+                                internalCounterLaunch = null
+                            }
+
                             onboardingLaunch?.requestId == requestId -> {
                                 handledOnboardingLaunchId = onboardingLaunch.requestId
                                 onboardingViewModel.acknowledgeExit(onboardingLaunch.requestId)
                             }
                         }
                     },
-                    // Tuo Ravelrysta avaa Ravelryn sovelluksen sisällä, jotta PDF tallentuu suoraan.
-                    onImportFromRavelry = {
-                        navController.navigateSingleTopTo(Screen.RavelryBrowser.route)
-                    },
                     onStartupReady = destinationReady,
+                    setupVisitGeneration = setupVisitGeneration,
                     onLaunchCounter = { projectId ->
                         internalCounterLaunch = CounterLaunchRequest(projectId = projectId)
                     },
@@ -476,7 +472,9 @@ fun KnitToolsNavHost(
 
     incomingPdfHost { outcome ->
         when (outcome) {
-            is IncomingPdfOutcome.OpenProject -> navController.openProjectOverview(outcome.projectId)
+            is IncomingPdfOutcome.OpenProject -> {
+                navController.openProjectOverview(outcome.projectId)
+            }
 
             is IncomingPdfOutcome.OpenSavedPattern -> {
                 navController.navigateToTopLevel(TopLevelDestination.Library)
@@ -487,7 +485,9 @@ fun KnitToolsNavHost(
             IncomingPdfOutcome.SaveFailed,
             IncomingPdfOutcome.Downloading,
             IncomingPdfOutcome.NotPdf,
-            -> Unit
+            -> {
+                Unit
+            }
         }
     }
 
@@ -520,14 +520,15 @@ fun KnitToolsNavHost(
     "kotlin:S3776",
 ) // Projects-graafi kokoaa välilehden reitit ja argumenttivarmistukset yhteen paikkaan.
 private fun NavGraphBuilder.projectsGraph(
+    setupVisitGeneration: State<Long>,
     navController: NavHostController,
     counterLaunchRequest: CounterLaunchRequest?,
     isCurrentCounterLaunch: (String) -> Boolean,
     onCounterLaunchHandled: (String) -> Unit,
-    onImportFromRavelry: () -> Unit,
     onStartupReady: (NavBackStackEntry, Boolean) -> Unit,
     onLaunchCounter: (Long) -> Unit,
 ) {
+    val onImportFromRavelry = { navController.navigateSingleTopTo(Screen.RavelryBrowser.route) }
     navigation(
         startDestination = Screen.ProjectList.route,
         route = TopLevelDestination.Projects.route,
@@ -583,19 +584,20 @@ private fun NavGraphBuilder.projectsGraph(
                 return@projectDestination
             }
             CompositionLocalProvider(LocalAdaptiveModalWindow provides true) {
-                TipEnvironment(routeKey = backStackEntry.id) {
-                    ProjectContentHost(
-                        overview = true,
-                        actions =
-                            projectWorkspaceActions(
-                                navController,
-                                onImportFromRavelry,
-                                backStackEntry.id,
-                                LocalTipSession.current,
-                            ),
-                        viewModelProvider = { counterViewModel },
-                    )
-                }
+                ProjectContentHost(
+                    overview = true,
+                    setupVisitGeneration =
+                        setupVisitGeneration.value.takeIf {
+                            navController.currentBackStackEntry?.id == backStackEntry.id
+                        },
+                    actions =
+                        projectWorkspaceActions(
+                            navController,
+                            onImportFromRavelry,
+                            backStackEntry.id,
+                        ),
+                    viewModelProvider = { counterViewModel },
+                )
             }
             val state by counterViewModel.uiState.collectAsStateWithLifecycle()
             SideEffect { onStartupReady(backStackEntry, state.startupReady) }
@@ -1400,15 +1402,14 @@ internal fun projectWorkspaceActions(
     navController: NavHostController,
     onImportFromRavelry: () -> Unit,
     originBackStackEntryId: String? = navController.currentBackStackEntry?.id,
-    tipSession: TipSession? = null,
 ): CounterScreenActions =
     CounterScreenActions(
         onBack = { navController.popBackStack() },
         onProjectClosed = { navController.returnToProjectList() },
         onGuide = { navController.navigateSingleTopTo(Screen.Guide.route) },
         onOpenCounter = { navController.openCounterFromOverview() },
-        onOpenCounterWithWorkSessionTip = { projectId ->
-            navController.openCounterWithWorkSessionTip(projectId, originBackStackEntryId, tipSession)
+        onOpenCounterWithWorkSessionActions = { projectId ->
+            navController.openCounterWithWorkSessionActions(projectId, originBackStackEntryId)
         },
         onProjectOverview = { projectId ->
             val previous = navController.previousBackStackEntry

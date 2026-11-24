@@ -98,7 +98,7 @@ class PatternViewerSourceTest {
         val overlayBlock =
             source.blockBetween(
                 "internal fun ReadingLineOverlay(",
-                "// Tilan ja toimintojen ryhmittely PatternViewerBottomBarille",
+                "private fun PatternViewerMessage(",
             )
 
         assertTrue(documentBlock.contains("currentRow = state.countSlot?.count"))
@@ -117,7 +117,7 @@ class PatternViewerSourceTest {
         val overlayBlock =
             source.blockBetween(
                 "internal fun ReadingLineOverlay(",
-                "// Tilan ja toimintojen ryhmittely PatternViewerBottomBarille",
+                "private fun PatternViewerMessage(",
             )
 
         assertFalse(overlayBlock.contains("\"Row "))
@@ -198,7 +198,7 @@ class PatternViewerSourceTest {
         val overlayBlock =
             source.blockBetween(
                 "internal fun ReadingLineOverlay(",
-                "// Tilan ja toimintojen ryhmittely PatternViewerBottomBarille",
+                "private fun PatternViewerMessage(",
             )
 
         assertTrue(projectViewer.contains("onReadingLineDragCancel = {"))
@@ -214,7 +214,7 @@ class PatternViewerSourceTest {
         val overlayBlock =
             source.blockBetween(
                 "internal fun ReadingLineOverlay(",
-                "// Tilan ja toimintojen ryhmittely PatternViewerBottomBarille",
+                "private fun PatternViewerMessage(",
             )
 
         assertTrue(overlayBlock.contains("actions: ReadingLineOverlayActions"))
@@ -574,6 +574,7 @@ class PatternViewerSourceTest {
             normalizedGuard.contains(
                 // Lukutilassa ei piirretä, vaikka edellinen työkalu olisi vielä valittuna.
                 "if(state.annotationMode&&editableLayerVisible&&" +
+                    "state.annotationState.editableLayerId!=null&&" +
                     "state.annotationState.activeTool!=PatternAnnotationTool.BROWSE)",
             ),
         )

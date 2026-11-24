@@ -232,15 +232,18 @@ internal class ProjectCreationActions(
                 persistCreationPreferences(request, result.projectId, result.wasFirstProject)
                 if (shouldNavigate) onCreated(result.projectId)
             }
+
             ProjectCreationResult.LimitReached -> {
                 val activeCount = repository.getActiveProjectCount()
                 if (pendingProjectCreation == request) _projectCreationPromptCount.value = activeCount
                 return true
             }
+
             ProjectCreationResult.InvalidProject -> {
                 analytics.track(UsageEvent.PROJECT_CREATION_FAILED)
                 pendingProjectCreation = null
             }
+
             ProjectCreationResult.FolderMissing -> {
                 analytics.track(UsageEvent.PROJECT_CREATION_FAILED)
                 pendingProjectCreation = null

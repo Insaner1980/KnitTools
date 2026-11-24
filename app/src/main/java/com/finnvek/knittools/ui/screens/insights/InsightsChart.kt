@@ -538,8 +538,11 @@ internal fun ChartAxisLabels(
     val labels =
         buckets.mapIndexedNotNull { index, bucket ->
             when {
-                showsToday && index == lastIndex -> index to stringResource(R.string.insights_chart_axis_today)
-                index in labelled ->
+                showsToday && index == lastIndex -> {
+                    index to stringResource(R.string.insights_chart_axis_today)
+                }
+
+                index in labelled -> {
                     index to
                         axisLabel(
                             bucket.bucketStart,
@@ -547,7 +550,11 @@ internal fun ChartAxisLabels(
                             timeRange,
                             spansYears = buckets.first().bucketStart.year != buckets.last().bucketStart.year,
                         )
-                else -> null
+                }
+
+                else -> {
+                    null
+                }
             }
         }
     Layout(

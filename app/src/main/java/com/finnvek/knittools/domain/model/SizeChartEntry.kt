@@ -18,9 +18,10 @@ sealed class SizeLabel {
 
     fun resolve(context: Context): String =
         when (this) {
-            is Resource ->
+            is Resource -> {
                 groupResId?.let { context.getString(it) + ": " + context.getString(resId) }
                     ?: context.getString(resId)
+            }
         }
 }
 

@@ -3,6 +3,7 @@ package com.finnvek.knittools.data.storage
 import android.content.Context
 import android.graphics.pdf.PdfDocument
 import android.net.Uri
+import android.provider.DocumentsContract
 import com.finnvek.knittools.di.IoDispatcher
 import com.finnvek.knittools.domain.calculator.ChartTrackerHighlight
 import com.finnvek.knittools.domain.model.PatternAnnotation
@@ -206,18 +207,46 @@ class PatternPdfExporter private constructor(
         tempFile: File,
         destinationUri: Uri,
     ) {
+        val resolver = context.contentResolver
         val output =
-            context.contentResolver.openOutputStream(destinationUri, "wt")
+            resolver.openOutputStream(destinationUri, "wt")
                 ?: throw IOException("Pattern PDF destination is unavailable")
-        output.buffered().use { target ->
-            tempFile.inputStream().buffered().use { input ->
-                val buffer = ByteArray(COPY_BUFFER_SIZE)
-                while (true) {
-                    coroutineContext.ensureActive()
-                    val count = input.read(buffer)
-                    if (count < 0) break
-                    target.write(buffer, 0, count)
+        var copied = false
+        // use säilyttää alkuperäisen virheen tai peruutuksen siivousvirheen rinnalla.
+        AutoCloseable {
+            if (!copied) removeIncompleteDestination(destinationUri)
+        }.use {
+            output.buffered().use { target ->
+                tempFile.inputStream().buffered().use { input ->
+                    val buffer = ByteArray(COPY_BUFFER_SIZE)
+                    while (true) {
+                        coroutineContext.ensureActive()
+                        val count = input.read(buffer)
+                        if (count < 0) break
+                        target.write(buffer, 0, count)
+                    }
                 }
+            }
+            copied = true
+        }
+    }
+
+    private fun removeIncompleteDestination(destination: Uri) {
+        val resolver = context.contentResolver
+        when {
+            destination.scheme == "file" -> {
+                val partialFile = destination.path?.let(::File) ?: return
+                if (!partialFile.delete() && partialFile.exists()) {
+                    throw IOException("Could not remove incomplete pattern PDF")
+                }
+            }
+
+            DocumentsContract.isDocumentUri(context, destination) -> {
+                DocumentsContract.deleteDocument(resolver, destination)
+            }
+
+            else -> {
+                resolver.delete(destination, null, null)
             }
         }
     }

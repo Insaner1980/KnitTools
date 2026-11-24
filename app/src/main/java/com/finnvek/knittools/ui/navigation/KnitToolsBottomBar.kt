@@ -184,7 +184,7 @@ private fun KnitToolsShortNavigationBar(
                 colors =
                     ShortNavigationBarItemDefaults.colors(
                         selectedIconColor = MaterialTheme.colorScheme.primary,
-                        selectedTextColor = MaterialTheme.knitToolsColors.primaryReadable,
+                        selectedTextColorStartIconPosition = MaterialTheme.knitToolsColors.primaryReadable,
                         selectedIndicatorColor = MaterialTheme.knitToolsColors.navBarContainer,
                         unselectedIconColor = MaterialTheme.knitToolsColors.inactiveContent,
                         unselectedTextColor = MaterialTheme.knitToolsColors.inactiveContent,

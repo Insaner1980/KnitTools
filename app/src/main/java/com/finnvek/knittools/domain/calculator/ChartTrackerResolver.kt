@@ -38,22 +38,32 @@ fun resolveChartTrackerHighlight(
     val activeCell = tracker.cellAt(index)
     val cells =
         when (tracker.trackingMode) {
-            ChartTrackingMode.ACTIVE_ROW ->
+            ChartTrackingMode.ACTIVE_ROW -> {
                 (0 until tracker.region.columns).mapTo(linkedSetOf()) { column ->
                     ChartCell(activeCell.row, column)
                 }
-            ChartTrackingMode.ACTIVE_COLUMN ->
+            }
+
+            ChartTrackingMode.ACTIVE_COLUMN -> {
                 (0 until tracker.region.rows).mapTo(linkedSetOf()) { row ->
                     ChartCell(row, activeCell.column)
                 }
-            ChartTrackingMode.CROSSHAIR ->
+            }
+
+            ChartTrackingMode.CROSSHAIR -> {
                 buildSet {
                     repeat(tracker.region.columns) { column -> add(ChartCell(activeCell.row, column)) }
                     repeat(tracker.region.rows) { row -> add(ChartCell(row, activeCell.column)) }
                 }
-            ChartTrackingMode.COMPLETED_CELLS ->
+            }
+
+            ChartTrackingMode.COMPLETED_CELLS -> {
                 (0..index).mapTo(linkedSetOf()) { completedIndex -> tracker.cellAt(completedIndex) }
-            ChartTrackingMode.C2C_DIAGONAL -> setOf(activeCell)
+            }
+
+            ChartTrackingMode.C2C_DIAGONAL -> {
+                setOf(activeCell)
+            }
         }
     return ChartTrackerHighlight(cells, activeCell, counterAvailable = true)
 }
@@ -101,10 +111,17 @@ private fun ChartTrackerPayload.toVisualColumn(
     logicalRow: Int,
 ): Int =
     when (region.columnDirection) {
-        ChartColumnDirection.LEFT_TO_RIGHT -> logicalColumn
-        ChartColumnDirection.RIGHT_TO_LEFT -> region.columns - 1 - logicalColumn
-        ChartColumnDirection.ALTERNATING ->
+        ChartColumnDirection.LEFT_TO_RIGHT -> {
+            logicalColumn
+        }
+
+        ChartColumnDirection.RIGHT_TO_LEFT -> {
+            region.columns - 1 - logicalColumn
+        }
+
+        ChartColumnDirection.ALTERNATING -> {
             if (logicalRow % 2 == 0) logicalColumn else region.columns - 1 - logicalColumn
+        }
     }
 
 private val ChartCorner.isBottom: Boolean

@@ -104,12 +104,12 @@ class PatternAnnotationPageBudgetTest {
             assertEquals(256, repository.observePage(layerId, 0).first().size)
             rejected { repository.restoreBatch(listOf(shape(0L).copy(page = 2), shape(0L))) }
             assertEquals(0, repository.observePage(layerId, 2).first().size)
-            val otherLayer = layers.activateProjectLayer(1L, "other").id
+            db.counterProjectDao().insert(CounterProjectEntity(id = 2L, name = "Other project"))
+            val otherLayer = layers.activateProjectLayer(2L, "other").id
             val other = shape(400L).copy(layerId = otherLayer)
             repository.insertAnnotation(other)
-            layers.activateProjectLayer(1L, "document")
             rejected { dao.update(other.copy(layerId = layerId).toEntity()) }
-            assertEquals(1, repository.observePage(otherLayer, 0).first().size)
+            assertEquals(listOf(other), repository.observePage(otherLayer, 0).first())
         }
 
     @Test fun concurrentInsertsSerializeTheBudgetCheck() =
@@ -215,6 +215,20 @@ class PatternAnnotationPageBudgetTest {
             val updated = original.copy(zIndex = 2L)
             repository.updateAnnotation(updated)
             assertEquals(listOf(updated), repository.getForLayers(listOf(layerId)))
+        }
+
+    @Test fun clearPageUndoRestoresAllRowsAlreadyCommittedToRoom() =
+        runBlocking {
+            val existing = shape(1L)
+            val recent = shape(2L)
+            val otherPage = shape(3L).copy(page = 1)
+            repository.restoreBatch(listOf(existing, recent, otherPage))
+
+            val undo = PatternAnnotationCommand.ClearPage(layerId, 0).apply(repository)
+            assertEquals(listOf(otherPage), repository.getForLayers(listOf(layerId)))
+
+            undo.apply(repository)
+            assertEquals(listOf(existing, recent, otherPage), repository.getForLayers(listOf(layerId)))
         }
 
     private fun shape(id: Long) =

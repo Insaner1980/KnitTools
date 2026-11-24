@@ -1,5 +1,6 @@
 package com.finnvek.knittools.ui.screens.needles
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
@@ -19,7 +20,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
@@ -30,7 +30,7 @@ import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.calculator.NeedleSizeData
 import com.finnvek.knittools.domain.calculator.formatDecimalForDisplay
 import com.finnvek.knittools.domain.model.NeedleSize
-import com.finnvek.knittools.ui.components.InfoTip
+import com.finnvek.knittools.ui.components.InfoNote
 import com.finnvek.knittools.ui.components.SearchTextField
 import com.finnvek.knittools.ui.components.ToolScreenScaffold
 import com.finnvek.knittools.ui.components.rememberCurrentLocale
@@ -39,6 +39,7 @@ import com.finnvek.knittools.ui.theme.knitToolsColors
 import java.text.DecimalFormatSymbols
 import java.util.Locale
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun NeedleSizeScreen(onBack: () -> Unit) {
     var query by rememberSaveable { mutableStateOf("") }
@@ -65,23 +66,9 @@ fun NeedleSizeScreen(onBack: () -> Unit) {
                 )
             }
             item {
-                Row(
-                    modifier = Modifier.padding(vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(
-                        text = stringResource(R.string.needle_size_disclaimer),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.weight(1f),
-                    )
-                    InfoTip(
-                        title = stringResource(R.string.tip_needle_sizes_title),
-                        description = stringResource(R.string.tip_needle_sizes_desc),
-                    )
-                }
+                InfoNote(text = stringResource(R.string.needle_size_disclaimer))
             }
-            item { HeaderRow() }
+            stickyHeader(key = "needle-table-header") { HeaderRow() }
             if (results.isEmpty()) {
                 item {
                     Text(

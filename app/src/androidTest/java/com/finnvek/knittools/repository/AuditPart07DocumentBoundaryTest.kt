@@ -261,8 +261,14 @@ class AuditPart07DocumentBoundaryTest(
             val pending = async(Dispatchers.IO) { mutate() }
             gate.reached.await()
             when (operation) {
-                1011 -> addSharedReference()
-                1015, 1023 -> assertEquals(ProjectDocumentMutationResult.Selected, documents.select(projectId, b.id))
+                1011 -> {
+                    addSharedReference()
+                }
+
+                1015, 1023 -> {
+                    assertEquals(ProjectDocumentMutationResult.Selected, documents.select(projectId, b.id))
+                }
+
                 1019 -> {
                     fixture.counterRepository().applyMainCounterChange(projectId, MainCounterChange.Increment)
                     fixture.counterRepository().updatePatternRowMapping(
@@ -271,9 +277,18 @@ class AuditPart07DocumentBoundaryTest(
                         a.id,
                     )
                 }
-                1027 -> assertTrue(documents.remove(projectId, a.id) is ProjectDocumentMutationResult.Removed)
-                1031 -> assertEquals(ProjectDocumentMutationResult.Selected, documents.select(projectId, b.id))
-                else -> error("No admission prompt for this operation")
+
+                1027 -> {
+                    assertTrue(documents.remove(projectId, a.id) is ProjectDocumentMutationResult.Removed)
+                }
+
+                1031 -> {
+                    assertEquals(ProjectDocumentMutationResult.Selected, documents.select(projectId, b.id))
+                }
+
+                else -> {
+                    error("No admission prompt for this operation")
+                }
             }
             val competingState = database.auditSnapshot()
             val untouchedB = documents.getDocument(b.id)
@@ -295,12 +310,14 @@ class AuditPart07DocumentBoundaryTest(
                     assertEquals(11, database.counterProjectDao().getProject(projectId)?.count)
                     assertUnrelated(competingState)
                 }
+
                 1027, 1031 -> {
                     assertEquals(PatternBookmarkMutationResult.StaleDocument, result)
                     assertEquals(competingState, database.auditSnapshot())
                     assertNotNull(database.patternBookmarkDao().getById(bookmarkId))
                     assertNotNull(database.patternBookmarkDao().getById(otherBookmarkId))
                 }
+
                 else -> {
                     assertSuccess(result)
                     assertMutationState()
@@ -352,14 +369,17 @@ class AuditPart07DocumentBoundaryTest(
                     assertEquals(a.id, documents.getActiveDocument(projectId)?.id)
                     assertEquals(1, documents.getDocuments(projectId).count { it.isPrimary })
                 }
+
                 1019, 1023 -> {
                     assertEquals("Old mapping generation cannot overwrite first delivery", false, next)
                     assertMutationState()
                 }
+
                 1031 -> {
                     assertEquals(PatternBookmarkMutationResult.NotFound, next)
                     assertMutationState()
                 }
+
                 else -> {
                     assertSuccess(next)
                     assertMutationState(repeated = operation == 1027)
@@ -397,6 +417,7 @@ class AuditPart07DocumentBoundaryTest(
                 assertEquals(a.id, documents.getActiveDocument(projectId)?.id)
                 assertEquals(1, documents.getDocuments(projectId).count { it.isPrimary })
             }
+
             1011 -> {
                 assertNull(current)
                 assertEquals(listOf(b.id, c.id), documents.getDocuments(projectId).map { it.id })
@@ -405,6 +426,7 @@ class AuditPart07DocumentBoundaryTest(
                 assertEquals(b.id, documents.getActiveDocument(projectId)?.id)
                 assertNotNull(database.patternBookmarkDao().getById(bookmarkId))
             }
+
             1015 -> {
                 assertEquals(0.65f, requireNotNull(current).readingLineYFraction)
                 assertFalse(current.readingLineFollowCurrentRow)
@@ -412,6 +434,7 @@ class AuditPart07DocumentBoundaryTest(
                 assertEquals(0, current.currentPage)
                 assertEquals(0.3f, current.verticalReadingGuideXFraction)
             }
+
             1019, 1023 -> {
                 assertEquals(parseMapping(requestedMapping), parseMapping(requireNotNull(current).rowMapping))
                 assertEquals(RowMarker(99, 2, 0.9f), parseMapping(current.rowMapping).single { it.page == 2 })
@@ -419,6 +442,7 @@ class AuditPart07DocumentBoundaryTest(
                 assertTrue(current.readingLineFollowCurrentRow)
                 assertEquals(0, current.currentPage)
             }
+
             1027 -> {
                 val rows = database.patternBookmarkDao().observeForProjectDocument(projectId, a.documentKey).first()
                 val added = rows.filter { it.id != bookmarkId }
@@ -431,6 +455,7 @@ class AuditPart07DocumentBoundaryTest(
                 }
                 assertEquals(added.size, added.map { it.id }.distinct().size)
             }
+
             1031 -> {
                 assertNull(database.patternBookmarkDao().getById(bookmarkId))
                 assertNotNull(database.patternBookmarkDao().getById(otherBookmarkId))

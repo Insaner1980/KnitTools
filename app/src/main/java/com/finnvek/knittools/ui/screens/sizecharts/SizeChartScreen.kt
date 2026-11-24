@@ -1,17 +1,18 @@
 package com.finnvek.knittools.ui.screens.sizecharts
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
@@ -44,6 +45,7 @@ import com.finnvek.knittools.ui.screens.home.HomeViewModel
 import com.finnvek.knittools.ui.theme.SizeChartDimens
 import com.finnvek.knittools.ui.theme.knitToolsColors
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun SizeChartScreen(
     onBack: () -> Unit,
@@ -156,34 +158,27 @@ fun SizeChartScreen(
                         modifier = Modifier.padding(vertical = SizeChartDimens.RowSpacing),
                     )
                 }
-                item(key = "table") {
-                    Column(verticalArrangement = Arrangement.spacedBy(SizeChartDimens.RowSpacing)) {
-                        SizeChartRow(
-                            cells = headerCells,
-                            columnWidths = columnWidths,
-                            scroll = tableScroll,
-                            header = true,
-                            sleeveDescription =
-                                sleeveDescription.takeIf {
-                                    selectedCategory ==
-                                        SizeChartData.Category.CHILD_YOUTH
-                                },
+                stickyHeader(key = "size-table-header") {
+                    SizeChartRow(
+                        cells = headerCells,
+                        columnWidths = columnWidths,
+                        scroll = tableScroll,
+                        header = true,
+                        sleeveDescription =
+                            sleeveDescription.takeIf { selectedCategory == SizeChartData.Category.CHILD_YOUTH },
+                    )
+                }
+                items(bodyCells) { cells ->
+                    SizeChartRow(cells = cells, columnWidths = columnWidths, scroll = tableScroll)
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                }
+                if (selectedCategory == SizeChartData.Category.CHILD_YOUTH) {
+                    item(key = "sleeve-note") {
+                        Text(
+                            text = stringResource(R.string.size_chart_sleeve_note),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
-                        bodyCells.forEach { cells ->
-                            SizeChartRow(
-                                cells = cells,
-                                columnWidths = columnWidths,
-                                scroll = tableScroll,
-                            )
-                            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                        }
-                        if (selectedCategory == SizeChartData.Category.CHILD_YOUTH) {
-                            Text(
-                                text = stringResource(R.string.size_chart_sleeve_note),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
                     }
                 }
             }

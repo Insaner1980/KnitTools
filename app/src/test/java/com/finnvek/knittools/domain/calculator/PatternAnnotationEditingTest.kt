@@ -1,9 +1,11 @@
 package com.finnvek.knittools.domain.calculator
 
+import com.finnvek.knittools.domain.model.NormalizedPatternBounds
 import com.finnvek.knittools.domain.model.NormalizedPatternPoint
 import com.finnvek.knittools.domain.model.PatternAnnotation
 import com.finnvek.knittools.domain.model.PatternAnnotationKind
 import com.finnvek.knittools.domain.model.ShapePayload
+import com.finnvek.knittools.domain.model.TextBoxPayload
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
@@ -44,6 +46,30 @@ class PatternAnnotationEditingTest {
         val scaledPayload = scaled.payload as ShapePayload
         assertEquals(0.1f, scaledPayload.start.x, 0.0001f)
         assertEquals(0.9f, scaledPayload.end.x, 0.0001f)
+    }
+
+    @Test
+    fun `dragging a text box to the page edge preserves its size text and colors`() {
+        val payload =
+            TextBoxPayload(
+                bounds = NormalizedPatternBounds(0.25f, 0.5f, 0.5f, 0.75f),
+                text = "Repeat rows 1–4",
+                textSizeSp = 18f,
+                textArgb = 0xFF123456.toInt(),
+                backgroundArgb = 0xFFFFDD00.toInt(),
+            )
+        val annotation =
+            PatternAnnotation(
+                layerId = 3,
+                page = 1,
+                kind = PatternAnnotationKind.TEXT_BOX,
+                payload = payload,
+                zIndex = 2,
+            )
+
+        val moved = translatePatternAnnotation(annotation, deltaX = 1f, deltaY = -1f)
+
+        assertEquals(payload.copy(bounds = NormalizedPatternBounds(0.75f, 0f, 1f, 0.25f)), moved.payload)
     }
 
     private fun shape(

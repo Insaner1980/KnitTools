@@ -171,13 +171,23 @@ class ProjectDocumentRepository
         ): ProjectDocumentMutationResult =
             fileReferenceCoordinator.withReferenceLock {
                 when (val preparation = prepareSavedPatternDocument(projectId, savedPatternId)) {
-                    SavedPatternDocumentPreparation.AlreadyAttached -> ProjectDocumentMutationResult.AlreadyAttached
-                    SavedPatternDocumentPreparation.MissingSavedPattern ->
+                    SavedPatternDocumentPreparation.AlreadyAttached -> {
+                        ProjectDocumentMutationResult.AlreadyAttached
+                    }
+
+                    SavedPatternDocumentPreparation.MissingSavedPattern -> {
                         ProjectDocumentMutationResult.MissingSavedPattern
-                    SavedPatternDocumentPreparation.MetadataOnlyPattern ->
+                    }
+
+                    SavedPatternDocumentPreparation.MetadataOnlyPattern -> {
                         ProjectDocumentMutationResult.MetadataOnlyPattern
-                    SavedPatternDocumentPreparation.PdfUnavailable -> ProjectDocumentMutationResult.PdfUnavailable
-                    is SavedPatternDocumentPreparation.Ready ->
+                    }
+
+                    SavedPatternDocumentPreparation.PdfUnavailable -> {
+                        ProjectDocumentMutationResult.PdfUnavailable
+                    }
+
+                    is SavedPatternDocumentPreparation.Ready -> {
                         mutation {
                             transactionRunner.run {
                                 addSavedPatternInCurrentTransaction(
@@ -187,6 +197,7 @@ class ProjectDocumentRepository
                                 )
                             }
                         }
+                    }
                 }
             }
 
@@ -281,7 +292,7 @@ class ProjectDocumentRepository
                     ?: return ProjectDocumentMutationResult.InvalidLabel
             val normalizedUri = localPdfUri.trim()
             val normalizedRequestedKey = documentKey?.trim()
-            if (normalizedUri.isEmpty() || documentKey != null && normalizedRequestedKey.isNullOrEmpty()) {
+            if (normalizedUri.isEmpty() || (documentKey != null && normalizedRequestedKey.isNullOrEmpty())) {
                 return ProjectDocumentMutationResult.InvalidLabel
             }
             if (projectDao.getProject(projectId) == null) return ProjectDocumentMutationResult.MissingProject

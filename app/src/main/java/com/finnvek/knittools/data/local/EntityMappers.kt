@@ -359,13 +359,20 @@ fun KnitSession.toEntity(): SessionEntity =
 fun PatternAnnotationLayerEntity.toDomain(): PatternAnnotationLayer? {
     val owner =
         when {
-            projectId != null && savedPatternId == null -> PatternAnnotationOwner.Project(projectId, documentKey)
-            projectId == null && savedPatternId != null ->
+            projectId != null && savedPatternId == null -> {
+                PatternAnnotationOwner.Project(projectId, documentKey)
+            }
+
+            projectId == null && savedPatternId != null -> {
                 PatternAnnotationOwner.SavedPattern(
                     savedPatternId,
                     documentKey,
                 )
-            else -> null
+            }
+
+            else -> {
+                null
+            }
         } ?: return null
     return PatternAnnotationLayer(
         id = id,

@@ -7,7 +7,6 @@ import java.time.DayOfWeek
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
-import java.time.ZoneOffset
 
 internal fun insightsPreviousStart(params: InsightsQueryParams): LocalDate? {
     val start =
@@ -23,10 +22,6 @@ internal fun insightsPreviousStart(params: InsightsQueryParams): LocalDate? {
     }
 }
 
-// Päivälaskenta käyttää tallennettua vyöhykettä, myös kelvollista +18:00-siirtymää.
-internal fun insightsQueryStart(params: InsightsQueryParams): Long? =
-    insightsPreviousStart(params)?.atStartOfDay(ZoneOffset.MAX)?.toInstant()?.toEpochMilli()
-
 /** Säilyttää vain koonnit, ei istuntorivejä eikä erälistaa. */
 internal class InsightsSessionAccumulator(
     private val params: InsightsQueryParams,
@@ -38,6 +33,9 @@ internal class InsightsSessionAccumulator(
     private val previousSeconds = mutableMapOf<LocalDate, Long>()
     private val projects = mutableMapOf<Long, SessionMetricSummary>()
     val activeDates = InsightsActivityDates()
+
+    /** Putki on aikavälistä riippumaton: peräkkäiset aktiiviset päivät koko historiasta tähän päivään. */
+    val streakDates = InsightsActivityDates()
     val firstDate: LocalDate? = facts.firstSessionDate
     var summary = SessionMetricSummary(0, 0, 0)
         private set
@@ -70,15 +68,16 @@ internal class InsightsSessionAccumulator(
         if (contribution.sessionCount > 0) {
             projects[session.projectId] = (projects[session.projectId] ?: SessionMetricSummary(0, 0, 0)) + contribution
         }
-        val daily = SessionMetrics.dailyActivitySeconds(one, previousStart ?: LocalDate.MIN, params.zone)
+        val daily = SessionMetrics.dailyActivitySeconds(one, LocalDate.MIN, params.zone)
         daily.forEach { (date, seconds) ->
+            if (!date.isAfter(params.currentDate)) streakDates.add(date)
             // Count dates in the displayed calendar range, even when a past instant has a later stored-zone date.
             if ((rangeDate == null || !date.isBefore(rangeDate)) &&
                 !date.isAfter(params.currentDate)
             ) {
                 activeDates.add(date)
             }
-            if (previousStart != null && date.isBefore(requireNotNull(rangeDate))) {
+            if (previousStart != null && !date.isBefore(previousStart) && date.isBefore(requireNotNull(rangeDate))) {
                 previousSeconds[date] = addSessionSeconds(previousSeconds[date] ?: 0L, seconds)
             }
         }

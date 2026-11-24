@@ -232,7 +232,8 @@ class InsightsViewModel
                         counterRepository
                             .observeSessionsForInsights(
                                 projectId = params.projectId,
-                                start = insightsQueryStart(params),
+                                // Koko historia: putki ei saa katketa valitun aikavälin alkuun.
+                                start = null,
                                 zone = params.zone,
                                 create = { facts -> InsightsSessionAccumulator(params, facts) },
                                 accumulate = { accumulator, batch ->
@@ -349,8 +350,8 @@ class InsightsViewModel
                 minutesPerRow = MinutesPerRowDisplay.Unavailable,
                 activeDays = sessions.activeDates.size,
                 daysInRange = daysInRange(params.timeRange, today, firstSessionDate, firstDayOfWeek),
-                currentStreak = if (featureGates.canUseStreak) currentStreak(sessions.activeDates, today) else 0,
-                bestStreak = if (featureGates.canUseStreak) sessions.activeDates.bestStreak() else 0,
+                currentStreak = if (featureGates.canUseStreak) currentStreak(sessions.streakDates, today) else 0,
+                bestStreak = if (featureGates.canUseStreak) sessions.streakDates.bestStreak() else 0,
                 trend = sessions.trend(),
                 projects = projectList,
                 selectedProjectId = params.projectId,

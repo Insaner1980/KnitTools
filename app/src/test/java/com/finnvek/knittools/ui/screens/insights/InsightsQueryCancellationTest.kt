@@ -71,9 +71,8 @@ class InsightsQueryCancellationTest {
                     flow {
                         requested += key
                         try {
-                            if (key.first == 7L &&
-                                key.second != null
-                            ) {
+                            // Insights hakee aina koko historian (putki), joten aikaväli ei näy aloitushetkessä.
+                            if (key.first == 7L) {
                                 emit(create(SessionInsightsFacts(true, emptyList())))
                             }
                             awaitCancellation()
@@ -99,8 +98,9 @@ class InsightsQueryCancellationTest {
             viewModel.selectProject(7)
             viewModel.selectTimeRange(TimeRange.THIS_MONTH)
             runCurrent()
-            assertTrue(cancelled.contains(null to null))
-            assertTrue(cancelled.any { it.first == null && it.second != null })
+            assertTrue(requested.all { it.second == null })
+            // Sekä All Time- että viikkokysely ilman projektia peruttiin ennen projektin valintaa.
+            assertEquals(2, cancelled.count { it.first == null })
             assertEquals(7L, requested.last().first)
             assertEquals(TimeRange.THIS_MONTH, viewModel.uiState.value.timeRange)
             assertTrue(viewModel.uiState.value.hasAnySessionData)

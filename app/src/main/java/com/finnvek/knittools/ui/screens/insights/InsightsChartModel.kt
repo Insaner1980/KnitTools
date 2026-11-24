@@ -124,8 +124,10 @@ private fun allTimeAxis(
 ): InsightsChartAxis {
     val currentMonth = today.withDayOfMonth(1)
     val firstMonth = firstSessionDate?.withDayOfMonth(1) ?: return dayAxis(currentMonth, today)
+    // Alle kuukauden historia näytetään päivinä myös kuukauden vaihteen yli: muuten kuuden päivän
+    // historia 28.11.–3.12. tiivistyisi kahdeksi viikkopylvääksi.
+    if (firstSessionDate.plusMonths(1).isAfter(today)) return dayAxis(firstSessionDate, today)
     val monthSpan = ChronoUnit.MONTHS.between(firstMonth, currentMonth) + 1
-    if (monthSpan < 2) return dayAxis(firstSessionDate, today)
     if (monthSpan <= ALL_TIME_WEEK_BUCKET_MONTHS) {
         return weekAxis(firstSessionDate, today, firstDayOfWeek)
     }

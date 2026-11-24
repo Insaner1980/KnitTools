@@ -29,6 +29,7 @@ jobs:
             build-mode: none
           - language: javascript-typescript
             build-mode: none
+            source-root: .deepsec
           - language: python
             build-mode: none
 
@@ -59,6 +60,7 @@ jobs:
         with:
           languages: ${{ matrix.language }}
           build-mode: ${{ matrix.build-mode }}
+          source-root: ${{ matrix.source-root || '.' }}
 
       - name: Build Android debug sources
         if: matrix.language == 'java-kotlin'

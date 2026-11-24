@@ -172,10 +172,11 @@ class WebPatternLocalizationArchitectureContractTest {
             assertFalse("Web pattern V1 must not introduce $token", dependencyAndProductionText.contains(token))
         }
 
-        val backendText = sourceFilesUnder("functions/src").joinToString("\n")
-        assertFalse(backendText.contains("WEB_LINK"))
-        assertFalse(backendText.contains("WebPattern"))
-        assertFalse(backendText.contains("webPattern"))
+        val backendDirectory = "functions/src"
+        assertTrue(
+            "The retired Functions backend must have no sources",
+            Files.notExists(ProjectSourceFiles.file(backendDirectory)) || sourceFilesUnder(backendDirectory).isEmpty(),
+        )
     }
 
     private fun localizedStrings(directory: String): Map<String, String> =

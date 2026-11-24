@@ -274,7 +274,9 @@ internal class SmokeDevice : TestWatcher() {
     fun startTrial() {
         // Exercise the real local trial action from the second-project gate.
         find(By.descStartsWith(string("new_project"))).click()
-        scrollTo(string("pro_start_free_trial")).click()
+        val startTrialLabel = string("pro_start_free_trial")
+        scrollTo(startTrialLabel)
+        tap(startTrialLabel)
         find(By.clazz("android.widget.EditText"))
         tapDesc("Close sheet")
         // This billing-disabled package cannot load the purchase state required by the journey sheet.

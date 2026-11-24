@@ -16,6 +16,14 @@ class PatternViewerSourceTest {
     }
 
     @Test
+    fun `page jump input is not reset when the reading line changes page`() {
+        val source = ProjectSourceFiles.read(PATTERN_VIEWER_SCREEN)
+
+        assertTrue(source.contains("var pageInput by rememberSaveable(totalPages) {"))
+        assertFalse(source.contains("rememberSaveable(totalPages, currentPage)"))
+    }
+
+    @Test
     fun `renderer errors are not displayed from raw exception messages`() {
         val source = ProjectSourceFiles.read(PATTERN_VIEWER_SCREEN)
 

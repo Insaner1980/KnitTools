@@ -274,6 +274,8 @@ internal class SmokeDevice : TestWatcher() {
     fun startTrial() {
         // Exercise the real local trial action from the second-project gate.
         find(By.descStartsWith(string("new_project"))).click()
+        // The offline price message moves the trial button when it replaces the loading row.
+        scrollTo(string("pro_price_unavailable_trial"))
         val startTrialLabel = string("pro_start_free_trial")
         scrollTo(startTrialLabel)
         tap(startTrialLabel)

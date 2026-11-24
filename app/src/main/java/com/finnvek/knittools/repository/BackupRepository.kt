@@ -2,6 +2,8 @@ package com.finnvek.knittools.repository
 
 import android.content.Context
 import android.net.Uri
+import android.provider.DocumentsContract
+import android.provider.OpenableColumns
 import androidx.core.net.toUri
 import androidx.room.Room
 import androidx.room.withTransaction
@@ -25,6 +27,7 @@ import com.finnvek.knittools.data.local.KnitToolsDatabase
 import com.finnvek.knittools.data.local.PatternAnnotationSchemaConstraints
 import com.finnvek.knittools.data.local.ProjectDocumentSchemaConstraints
 import com.finnvek.knittools.data.storage.AppFileStorage
+import com.finnvek.knittools.data.storage.NotesDraftStorage
 import com.finnvek.knittools.di.ApplicationScope
 import com.finnvek.knittools.di.IoDispatcher
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -33,6 +36,7 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -44,6 +48,8 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 private const val BACKUP_ARCHIVE_NAME = "backup.zip"
+private const val CLEANUP_RETRY_ATTEMPTS = 5
+private const val CLEANUP_RETRY_DELAY_MS = 2_000L
 
 @Singleton
 class BackupRepository
@@ -80,8 +86,18 @@ class BackupRepository
                                 buildLocalArchive(directory, externalFiles, check)
                             }
                         }
-                    operationResult(BackupError.WRITE) {
-                        providerIo.write(archive, destination, BackupFormat.MAX_TOTAL, check)
+                    val newlyCreatedDestination = isEmptyDocument(destination)
+                    try {
+                        operationResult(BackupError.WRITE) {
+                            providerIo.write(archive, destination, BackupFormat.MAX_TOTAL, check)
+                        }
+                    } catch (failure: Exception) {
+                        // Juuri tätä vientiä varten luotu tyhjä dokumentti poistetaan, jottei keskeneräinen
+                        // tiedosto näytä oikealta varmuuskopiolta. Valmiiksi olemassa olevaan ei kosketa.
+                        if (newlyCreatedDestination) {
+                            withContext(NonCancellable) { deleteIncompleteDocument(destination) }
+                        }
+                        throw failure
                     }
                 } finally {
                     withContext(NonCancellable) {
@@ -92,6 +108,24 @@ class BackupRepository
                     }
                 }
             }
+
+        private fun isEmptyDocument(destination: Uri): Boolean =
+            destination.scheme == "content" &&
+                runCatching {
+                    context.contentResolver
+                        .query(destination, arrayOf(OpenableColumns.SIZE), null, null, null)
+                        ?.use { cursor ->
+                            cursor.moveToFirst() && !cursor.isNull(0) && cursor.getLong(0) == 0L
+                        } == true
+                }.getOrDefault(false)
+
+        private fun deleteIncompleteDocument(destination: Uri) {
+            try {
+                DocumentsContract.deleteDocument(context.contentResolver, destination)
+            } catch (_: Exception) {
+                // Kaikki palveluntarjoajat eivät salli poistoa; virheviesti ohjaa poistamaan tiedoston itse.
+            }
+        }
 
         suspend fun prepare(
             source: Uri,
@@ -174,8 +208,13 @@ class BackupRepository
                         operationResult(BackupError.RESTORE) {
                             restoreValidated(directory)
                         }
+                        // Korvattujen projektien keskeneräiset muistiinpanot eivät kuulu palautettuun dataan.
+                        runCatching { NotesDraftStorage.deleteAllDrafts(context) }
                     } finally {
-                        withContext(NonCancellable) { cleanup(directory) }
+                        withContext(NonCancellable) {
+                            cleanup(directory)
+                            if (directory.exists()) scheduleCleanupRetry(directory)
+                        }
                     }
                     refreshWidgets()
                 }
@@ -289,6 +328,26 @@ class BackupRepository
                     }
                 }
             }
+
+        /**
+         * Avoimet tietokantahavainnoijat voivat pitää WAL-checkpointin kiireisenä heti palautuksen jälkeen.
+         * Vanhat tiedostot siivotaan silloin hetken päästä eikä vasta seuraavassa käynnistyksessä.
+         */
+        private fun scheduleCleanupRetry(directory: File) {
+            applicationScope.launch(ioDispatcher) {
+                repeat(CLEANUP_RETRY_ATTEMPTS) {
+                    delay(CLEANUP_RETRY_DELAY_MS)
+                    val done =
+                        operation.withLock {
+                            if (directory.exists() && directory != pending && directory !in activeDirectories) {
+                                cleanup(directory)
+                            }
+                            !directory.exists()
+                        }
+                    if (done) return@launch
+                }
+            }
+        }
 
         private fun refreshWidgets() {
             applicationScope.launch {

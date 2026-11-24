@@ -76,7 +76,9 @@ class NotesDraftStorage
         ): AtomicFile = AtomicFile(File(context.noBackupFilesDir, "${projectPrefix(projectId)}$id.json"))
 
         companion object {
-            private fun projectPrefix(projectId: Long): String = "notes-draft-$projectId-"
+            private const val DRAFT_PREFIX = "notes-draft-"
+
+            private fun projectPrefix(projectId: Long): String = "$DRAFT_PREFIX$projectId-"
 
             /**
              * Poistaa projektin kaikki luonnokset. Kutsutaan vasta projektin tietokantapoiston jälkeen;
@@ -85,8 +87,15 @@ class NotesDraftStorage
             fun deleteProjectDrafts(
                 context: Context,
                 projectId: Long,
+            ) = deleteDraftsWithPrefix(context, projectPrefix(projectId))
+
+            /** Palautus korvaa kaikki projektit, joten mikään aiempi luonnos ei enää kuulu niihin. */
+            fun deleteAllDrafts(context: Context) = deleteDraftsWithPrefix(context, DRAFT_PREFIX)
+
+            private fun deleteDraftsWithPrefix(
+                context: Context,
+                prefix: String,
             ) {
-                val prefix = projectPrefix(projectId)
                 context.noBackupFilesDir
                     .listFiles { file -> file.isFile && file.name.startsWith(prefix) }
                     ?.forEach(File::delete)

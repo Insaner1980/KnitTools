@@ -9,6 +9,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -56,9 +57,9 @@ class WidgetReadinessRuntimeTest {
             val manager = controlledManager()
             ProPolicyTestControl.setTrialState(TrialState(hasStarted = true))
             val start = SystemClock.elapsedRealtime()
-            assertFalse(manager.hasFeatureAfterInitialLoad(ProFeature.WIDGET))
+            assertEquals(ProActionAccess.Unknown, manager.featureAccessAfterInitialLoad(ProFeature.WIDGET))
             val elapsed = SystemClock.elapsedRealtime() - start
-            assertTrue(elapsed >= 3_800 && elapsed < 10_000)
+            assertTrue("Widget readiness took $elapsed ms", elapsed in 1_900L..3_999L)
             assertFalse(manager.initialStateReady.value)
             assertFalse(manager.proState.value.status == ProStatus.PRO_PURCHASED)
         }

@@ -12,6 +12,9 @@ $Passed = 0
 $Failed = 0
 $OriginalRavelryClientSecret = [Environment]::GetEnvironmentVariable("KNITTOOLS_RAVELRY_OAUTH2_CLIENT_SECRET", "Process")
 $OriginalRavelrySecondarySecret = [Environment]::GetEnvironmentVariable("RAVELRY_CLIENT_SECRET", "Process")
+$OriginalGitEnvironment = @{}
+$GitLocalVariableNames = @(git rev-parse --local-env-vars)
+if ($LASTEXITCODE -ne 0) { throw "Could not determine Git's repository-local environment variables." }
 
 function Add-SelfTestResult {
     param(
@@ -214,6 +217,10 @@ function Test-GitReadFailure {
 }
 
 try {
+    foreach ($name in $GitLocalVariableNames) {
+        $OriginalGitEnvironment[$name] = [Environment]::GetEnvironmentVariable($name, "Process")
+        Restore-ProcessEnvironmentVariable -Name $name -Value $null
+    }
     New-Item -ItemType Directory -Force -Path $TempRoot | Out-Null
 
     if (-not (Test-Path -LiteralPath $ScriptPath)) {
@@ -624,6 +631,9 @@ try {
             }
     }
 } finally {
+    foreach ($name in $OriginalGitEnvironment.Keys) {
+        Restore-ProcessEnvironmentVariable -Name $name -Value $OriginalGitEnvironment[$name]
+    }
     Restore-ProcessEnvironmentVariable -Name "RAVELRY_CLIENT_SECRET" -Value $OriginalRavelrySecondarySecret
     Restore-ProcessEnvironmentVariable `
         -Name "KNITTOOLS_RAVELRY_OAUTH2_CLIENT_SECRET" `

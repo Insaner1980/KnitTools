@@ -62,52 +62,10 @@
     <string name="project_target_error">Inserisci un numero da 1 a %1$s.</string>
     <!-- Uuden projektin esikatselun saavutettava kuvaus; %1$s sisältää laskuriarvon nimikkeineen. -->
     <string name="project_create_preview_a11y">Anteprima: %1$s</string>
-    <!-- Tilannekohtainen vihje nykyisessä näkymässä; toimintojen nimet vastaavat sovelluksen nykyisiä nimiä. -->
-    <string name="tip_got_it">Capito</string>
-    <!-- Tilannekohtainen vihje nykyisessä näkymässä; toimintojen nimet vastaavat sovelluksen nykyisiä nimiä. -->
-    <string name="tip_first_row_rows">Quando finisci una riga, tocca +. Puoi anche toccare il numero grande.</string>
-    <!-- Tilannekohtainen vihje nykyisessä näkymässä; toimintojen nimet vastaavat sovelluksen nykyisiä nimiä. -->
-    <string name="tip_first_row_rounds">Quando finisci un giro, tocca +. Puoi anche toccare il numero grande.</string>
-    <!-- Tilannekohtainen vihje nykyisessä näkymässä; toimintojen nimet vastaavat sovelluksen nykyisiä nimiä. -->
-    <string name="tip_first_row_repeats">Quando finisci una ripetizione, tocca +. Puoi anche toccare il numero grande.</string>
-    <!-- Tilannekohtainen vihje nykyisessä näkymässä; toimintojen nimet vastaavat sovelluksen nykyisiä nimiä. -->
-    <string name="tip_first_row_custom">Tocca + ogni volta che completi un’unità. Puoi anche toccare il numero grande.</string>
-    <!-- Tilannekohtainen vihje nykyisessä näkymässä; toimintojen nimet vastaavat sovelluksen nykyisiä nimiä. -->
-    <string name="tip_undo">Salvato. Hai toccato per sbaglio? Annulla torna indietro di una modifica.</string>
-    <!-- Tilannekohtainen vihje nykyisessä näkymässä; toimintojen nimet vastaavat sovelluksen nykyisiä nimiä. -->
-    <string name="tip_step_size">Conti più unità alla volta? Cambia qui quanto aggiunge o sottrae ogni tocco.</string>
-    <!-- Työajan seuranta käynnistetään itse; ajastin ei käynnisty automaattisesti. -->
-    <string name="tip_work_session">Vuoi sapere quanto tempo richiede questo progetto? Avvia una sessione di lavoro da questo menu. Il tempo non inizia mai a scorrere da solo.</string>
-    <!-- Tilannekohtainen vihje nykyisessä näkymässä; toimintojen nimet vastaavat sovelluksen nykyisiä nimiä. -->
-    <string name="tip_overview_intro">Questo è il tuo progetto completo: modello, filato, note e foto. Continua ti riporta al contatore.</string>
-    <!-- Tilannekohtainen vihje nykyisessä näkymässä; toimintojen nimet vastaavat sovelluksen nykyisiä nimiä. -->
-    <string name="tip_pattern_tile">Allega il modello per tenerlo insieme a questo progetto.</string>
-    <!-- PDF-lukijan vihje; seuraa päälaskuria -asetuksen nimen on vastattava nykyistä käyttöliittymää. -->
-    <string name="tip_reading_line">Attiva Segui il contatore principale e la linea di lettura si sposterà mentre conti.</string>
-    <!-- Tilannekohtainen vihje nykyisessä näkymässä; toimintojen nimet vastaavat sovelluksen nykyisiä nimiä. -->
-    <string name="tip_keep_screen_on">Lo schermo si spegne mentre lavori? Tienilo acceso mentre conti.</string>
-    <!-- Tilannekohtainen vihje nykyisessä näkymässä; toimintojen nimet vastaavat sovelluksen nykyisiä nimiä. -->
-    <string name="tip_keep_screen_on_action">Mantieni lo schermo acceso</string>
-    <!-- Tilannekohtainen vihje nykyisessä näkymässä; toimintojen nimet vastaavat sovelluksen nykyisiä nimiä. -->
-    <string name="tip_target_reached">Obiettivo raggiunto. Continua a contare o segna il progetto come terminato dal menu della sua pagina.</string>
-    <!-- Tilannekohtainen vihje nykyisessä näkymässä; toimintojen nimet vastaavat sovelluksen nykyisiä nimiä. -->
-    <string name="tip_first_session_saved">La tua prima sessione di lavoro è salvata. Qui trovi il tempo totale dedicato a questo progetto.</string>
-    <!-- Tilannekohtainen vihje nykyisessä näkymässä; toimintojen nimet vastaavat sovelluksen nykyisiä nimiä. -->
-    <string name="tip_backup">I tuoi progetti sono solo su questo telefono. Crea un backup per conservarli se cambi telefono.</string>
-    <!-- Tilannekohtainen vihje nykyisessä näkymässä; toimintojen nimet vastaavat sovelluksen nykyisiä nimiä. -->
-    <string name="tip_backup_action">Crea backup</string>
-    <!-- Tilannekohtainen vihje nykyisessä näkymässä; toimintojen nimet vastaavat sovelluksen nykyisiä nimiä. -->
-    <string name="tip_folders">Tanti progetti? Organizzali in cartelle dal titolo.</string>
-    <!-- Tilannekohtainen vihje nykyisessä näkymässä; toimintojen nimet vastaavat sovelluksen nykyisiä nimiä. -->
-    <string name="tip_widget">Conta dalla schermata Home senza aprire l’app.</string>
-    <!-- Tilannekohtainen vihje nykyisessä näkymässä; toimintojen nimet vastaavat sovelluksen nykyisiä nimiä. -->
-    <string name="tip_widget_action">Aggiungi widget</string>
-    <!-- Tilannekohtainen vihje nykyisessä näkymässä; toimintojen nimet vastaavat sovelluksen nykyisiä nimiä. -->
-    <string name="tip_tools_intro">Le calcolatrici funzionano offline. I valori di esempio mostrano cosa inserire.</string>
-    <!-- Asetusten toiminto tai kuittaus aiemmin nähtyjen vihjeiden näyttämiseen uudelleen. -->
-    <string name="settings_show_tips_again">Mostra di nuovo i suggerimenti</string>
-    <!-- Asetusten toiminto tai kuittaus aiemmin nähtyjen vihjeiden näyttämiseen uudelleen. -->
-    <string name="settings_tips_reset_done">I suggerimenti verranno mostrati di nuovo.</string>
+    <!-- Kokeilun päättymismuistutuksen kuittaava painike. -->
+    <string name="trial_notice_acknowledge">Capito</string>
+    <!-- Avaa varmuuskopioinnin ilmoitusriviltä. -->
+    <string name="projects_backup_notice_action">Crea backup</string>
     <!-- Ensimmäisen projektin valmistelulista; valmis vaihe kuvaa jo tallennettua tietoa. -->
     <string name="project_setup_pattern">Allega il modello</string>
     <!-- Ensimmäisen projektin valmistelulista; valmis vaihe kuvaa jo tallennettua tietoa. -->
@@ -249,7 +207,7 @@
     <!-- Oppaan työkalut, työaika ja varmuuskopiointi; osioiden nimet vastaavat nykyisiä välilehtiä. -->
     <string name="guide_tools_folders_title">Cartelle</string>
     <!-- Oppaan työkalut, työaika ja varmuuskopiointi; osioiden nimet vastaavat nykyisiä välilehtiä. -->
-    <string name="guide_tools_folders_body">Raggruppa i progetti in cartelle dal titolo Progetti. Un progetto in corso alla volta è gratuito e quelli terminati non contano.</string>
+    <string name="guide_tools_folders_body">Raggruppa i progetti in cartelle dal titolo Progetti.</string>
     <!-- Oppaan työkalut, työaika ja varmuuskopiointi; osioiden nimet vastaavat nykyisiä välilehtiä. -->
     <string name="guide_tools_backup_title">Backup</string>
     <!-- Palauttaminen korvaa puhelimen nykyiset tiedot; älä lupaa yhdistämistä tai synkronointia. -->
@@ -666,8 +624,16 @@
     <string name="journey_pdf_failed">Impossibile importare il PDF. L\'allegato precedente è stato conservato.</string>
     <!-- Aloituspolku: Luo ensimmäinen projekti -->
     <string name="journey_first_project">Crea il tuo primo progetto</string>
-    <!-- Aloituspolun jälkeen: ohjelaattaan ankkuroitu vihje vain luodulle projektille, johon käyttäjä liitti PDF-ohjeen. -->
-    <string name="journey_open_pattern_tip">Apri qui lo schema che hai aggiunto a questo progetto.</string>
     <!-- Vahvistetun Pro-oston jälkeen näytettävä kuittaus sovellukseen siirryttäessä. -->
     <string name="journey_pro_active">Pro è attivo.</string>
+    <!-- Projektien paikallisesta tallennuksesta kertova ilmoitus. -->
+    <string name="projects_backup_notice">I tuoi progetti sono solo su questo telefono.</string>
+    <!-- PDF-lukijan ilmoitus laskuria seuraavasta lukulinjasta. -->
+    <string name="reading_line_notice">La linea di lettura può seguire il contatore.</string>
+    <!-- Ohittaa ilmoituksen pysyvästi. -->
+    <string name="contextual_notice_skip">Salta</string>
+    <!-- Ottaa käyttöön laskuria seuraavan lukulinjan. -->
+    <string name="reading_line_notice_enable">Attiva</string>
+    <!-- Avaa valmistumisvahvistuksen tavoitteen täyttäneelle projektille. -->
+    <string name="counter_mark_complete">Segna come completato</string>
 </resources>

@@ -209,9 +209,11 @@ class CounterWorkspaceSourceTest {
             ),
         )
         // Tavoite samalla palkilla kuin jatka-kortissa, ei omaa palkkikomponenttia.
-        assertTrue(workspace.contains("CounterTargetProgress(targetLine = targetLine"))
+        assertTrue(workspace.contains("CounterTargetProgress(targetLine, state.isCompleted, actions)"))
         assertTrue(workspace.contains("ProjectProgressBar(fraction)"))
-        assertTrue(workspace.contains("R.string.counter_target_of_format"))
+        assertTrue(workspace.contains("counterTargetLabels(targetLine, status, showCompletion)"))
+        assertTrue(heroLayout.contains("R.string.counter_target_of_format"))
+        assertTrue(heroLayout.contains("R.string.counter_mark_complete"))
         assertFalse(workspace.contains("CounterTargetProgressBar("))
         assertFalse(workspace.contains("CounterProgressHeight"))
         assertFalse(workspace.contains("CounterProgressCornerRadius"))
@@ -309,7 +311,11 @@ class CounterWorkspaceSourceTest {
         )
         assertTrue(destination.contains("currentLaunchRequest?.requestId == requestId"))
         assertTrue(destination.contains("unavailableLaunchId = launchRequest.requestId.takeUnless { loaded }"))
-        assertTrue(destination.contains("unavailableLaunchId != null || counterState.shouldLeaveCounter"))
+        assertTrue(destination.contains("if (counterState.shouldLeaveCounter)"))
+        assertTrue(
+            destination.indexOf("if (entryProjectId != null && counterState.projectId != entryProjectId) return") in
+                0 until destination.indexOf("ProjectContentHost("),
+        )
         assertTrue(
             destination.indexOf("loadedLaunchId != counterLaunchRequest.requestId") in 0 until
                 destination.indexOf("ProjectContentHost("),

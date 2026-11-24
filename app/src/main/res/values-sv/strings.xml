@@ -259,7 +259,7 @@
     <!-- Session History -->
     <string name="session_history_title">Arbetspasshistorik</string>
     <string name="no_sessions">Inga sessioner registrerade ännu. Öppna ett projekt och starta en arbetssession för att registrera din tid här.</string>
-    <string name="session_row_range">Räknare: %1$d → %2$d</string>
+    <string name="session_row_range">Räknare %1$d → %2$d</string>
     <string name="session_row_single">Värde %1$d</string>
     <string name="delete_session_title">Ta bort pass?</string>
     <string name="delete_session_message">Det här passet tas bort från historiken. Det går inte att ångra.</string>
@@ -349,7 +349,7 @@
 
     <!-- Needle Sizes -->
     <string name="search_size">Sök storlek…</string>
-    <string name="needle_size_disclaimer">Storlekarna är ungefärliga motsvarigheter. Japanska storlekar använder en separat metrisk skala.</string>
+    <string name="needle_size_disclaimer">Storlekarna motsvarar ungefär varandra. Numreringen varierar mellan system och tillverkare. Jämför därför diametern i millimeter och kontrollera stickfastheten.</string>
     <string name="header_mm">mm</string>
     <string name="header_us">US</string>
     <string name="header_uk">UK</string>
@@ -362,8 +362,8 @@
     <string name="settings_section_general">Allmänt</string>
     <string name="settings_theme">Tema</string>
     <string name="settings_section_pro">PRO</string>
-    <string name="settings_section_data">DATA</string>
-    <string name="settings_section_info">INFO</string>
+    <string name="settings_section_data">Säkerhetskopiering</string>
+    <string name="settings_section_info">Hjälp och support</string>
     <string name="help_and_guide">Webbhjälp</string>
     <string name="external_link_description">öppnas i webbläsaren</string>
     <string name="settings_language">Appspråk</string>
@@ -712,8 +712,6 @@
     <string name="tip_edge_stitches_desc">Kantmaskor är extra maskor utanför mönsterrapporten. Ange det totala antalet kantmaskor som ska läggas upp; räknaren lägger till dem efter att önskad bredd har beräknats, till exempel 2 för en maska i varje sida.</string>
     <string name="tip_flat_vs_circular_title">Platt vs. runt</string>
     <string name="tip_flat_vs_circular_desc">Platt stickning: du stickar fram och tillbaka på raka stickor eller rundstickor och vänder i slutet av varje varv.\n\nRundstickning: du stickar i ett kontinuerligt varv. Ökningar/minskningar fördelas jämnt runt varvet.\n\nRäknarens beteckningar: K = sticka rätt, M1 = öka en maska genom att sticka tråden mellan maskorna vridet rätt, K2tog = sticka 2 maskor rätt tillsammans, × = upprepa.</string>
-    <string name="tip_needle_sizes_title">System för stickstorlekar</string>
-    <string name="tip_needle_sizes_desc">Metrisk storlek (mm) är en vanlig standard. US-storlekar använder ett numrerat system. UK/Kanada använder ett annat numrerat system. Japanska storlekar har en egen numrering. Kontrollera alltid mm-storleken för säkerhets skull.</string>
     <string name="tip_imperial_units_title">Brittiska/amerikanska mått</string>
     <string name="tip_imperial_units_desc">När detta är aktiverat är tum och yard standardenheter i längdberäkningar i stället för centimeter och meter. Stickfasthet anges som standard per 4 tum i stället för per 10 cm. I Mått och stickfasthet kan du byta enhet separat.</string>
     <string name="open_notes_editor">Öppna anteckningsredigeraren</string>
@@ -904,7 +902,7 @@
     <string name="work_session_could_not_save">Passet kunde inte sparas</string>
     <string name="work_session_history_full">Passhistoriken är full. Dina befintliga pass finns kvar.</string>
     <string name="work_session_could_not_discard">Passet kunde inte kasseras</string>
-    <string name="work_session_recovery_already_handled">Den här passgranskningen har redan hanterats.</string>
+    <string name="work_session_recovery_already_handled">Passet har redan granskats.</string>
     <string name="work_session_retry">Försök igen</string>
     <string name="project_documents_title">Dokument</string>
     <string name="project_documents_add">Lägg till</string>
@@ -957,7 +955,7 @@
     <string name="folder_remove_from">Ta bort från mapp</string>
     <string name="selection_action_move">Flytta</string>
     <string name="selection_action_complete">Klar</string>
-    <string name="folder_no_folders">Inga mappar</string>
+    <string name="folder_empty_notice">Du har inte skapat några mappar än.</string>
     <string name="folder_empty">%1$s har inga projekt.</string>
     <string name="folder_no_unfiled">Inga projekt utan mapp</string>
     <string name="folder_hidden_completed">Den här mappen innehåller dolda slutförda projekt.</string>
@@ -994,7 +992,7 @@
     <item quantity="one">%d projekt flyttades.</item>
     <item quantity="other">%d projekt flyttades.</item>
     </plurals>
-    <string name="folder_move_project_to">Flytta %1$s till mapp</string>
+    <string name="folder_move_sheet_title">Flytta till mapp</string>
     <string name="folder_rename_description">Byt namn på mappen %1$s</string>
     <string name="folder_move_earlier_description">Flytta mappen %1$s tidigare</string>
     <string name="folder_move_later_description">Flytta mappen %1$s senare</string>
@@ -1058,7 +1056,6 @@
     <string name="measurement_project_context">Projekt: %1$s</string>
     <string name="measurement_estimate">Uppskattning utifrån angiven stickfasthet.</string>
     <string name="measurement_adjust_warning">Matematisk uppskattning utifrån angiven stickfasthet. Formning och konstruktion skrivs inte om. Rörelsevidd, mönsterrapporter, kanter, ärmhål, halsringning och ärmar kan behöva anpassas separat. Mät en tvättad eller blockad provlapp för en mer användbar uppskattning.</string>
-    <string name="measurement_adjust_warning_short">En uppskattning utifrån din masktäthet. Formningar kan behöva justeras separat.</string>
     <string name="measurement_swatch_hint">Mät provlappen efter tvätt eller blockning för en mer användbar uppskattning.</string>
     <string name="measurement_result">Resultat</string>
     <string name="measurement_value_unit_format">%1$s %2$s</string>
@@ -1145,7 +1142,7 @@
     <string name="web_pattern_unlink_title">Koppla bort mönstret?</string>
     <string name="web_pattern_unlink_body">Ta bort mönsterinformationen för %1$s från projektet? Det sparade mönstret och projektets PDF-filer behålls.</string>
     <string name="web_pattern_unlink_confirm">Koppla bort</string>
-    <string name="web_pattern_replace_confirm_title">Ersätta mönsterinformationen?</string>
+    <string name="web_pattern_replace_confirm_title">Ersätta mönsterdata?</string>
     <string name="web_pattern_replace_confirm_message">Den aktuella mönsterinformationen ersätts med uppgifterna för %1$s.</string>
     <string name="web_pattern_open_website">Öppna webbplats</string>
     <string name="web_pattern_offline_note">Öppnas på den ursprungliga webbplatsen. Sparas inte för användning offline.</string>
@@ -1257,5 +1254,5 @@
     <string name="project_yarn_edit_missing">Garnanteckningen tillhör inte längre detta projekt. Stäng redigeraren.</string>
     <string name="project_yarn_edit_invalid">Ange ett garnnamn.</string>
     <string name="project_yarn_edit_failed">Det gick inte att spara ändringarna. Ditt utkast finns kvar. Försök igen.</string>
-    <string name="counter_progress_format">Räknarens framsteg: %1$d</string>
+    <string name="counter_progress_format">Räknare %1$+d</string>
 </resources>

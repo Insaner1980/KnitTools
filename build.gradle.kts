@@ -2,15 +2,15 @@ buildscript {
     configurations.configureEach {
         resolutionStrategy.force(
             "com.google.guava:guava:33.8.0-jre",
-            "com.fasterxml.jackson.core:jackson-core:2.22.4",
-            "com.fasterxml.jackson.core:jackson-databind:2.22.4",
+            "com.fasterxml.jackson.core:jackson-core:2.23.0",
+            "com.fasterxml.jackson.core:jackson-databind:2.23.0",
             "org.jsoup:jsoup:1.24.1",
             "org.bitbucket.b_c:jose4j:0.9.7",
             "org.jdom:jdom2:2.0.6.1",
             "org.json:json:20260814",
-            "org.bouncycastle:bcprov-jdk18on:1.86",
-            "org.bouncycastle:bcpkix-jdk18on:1.86",
-            "org.bouncycastle:bcutil-jdk18on:1.86",
+            "org.bouncycastle:bcprov-jdk18on:1.87",
+            "org.bouncycastle:bcpkix-jdk18on:1.87",
+            "org.bouncycastle:bcutil-jdk18on:1.87",
         )
     }
 }
@@ -24,8 +24,7 @@ plugins {
     alias(libs.plugins.hilt) apply false
     alias(libs.plugins.kotlin.serialization) apply false
     alias(libs.plugins.baselineprofile) apply false
-    // TODO: lisää takaisin kun dependency-analysis tukee AGP 9.x
-    // alias(libs.plugins.dependency.analysis)
+    alias(libs.plugins.dependency.analysis)
     alias(libs.plugins.ktlint)
     alias(libs.plugins.detekt) apply false
     alias(libs.plugins.owasp.dependency.check)
@@ -36,7 +35,10 @@ plugins {
 }
 
 val turvallinenWireRuntime = libs.wire.runtime.get()
-val safeGuavaVersion = libs.versions.guava.get().removeSuffix("-android")
+val safeGuavaVersion =
+    libs.versions.guava
+        .get()
+        .removeSuffix("-android")
 
 subprojects {
     configurations.configureEach {
@@ -77,6 +79,7 @@ val gradleManagedSonarProperties =
     )
 
 ktlint {
+    version.set(libs.versions.ktlintEngine)
     ignoreFailures.set(false)
 
     filter {

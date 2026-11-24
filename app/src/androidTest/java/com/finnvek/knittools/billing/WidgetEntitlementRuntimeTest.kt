@@ -33,7 +33,9 @@ import com.finnvek.knittools.ui.descendants
 import com.finnvek.knittools.widget.CounterWidgetActions
 import com.finnvek.knittools.widget.CounterWidgetReceiver
 import com.finnvek.knittools.widget.CounterWidgetState
+import com.finnvek.knittools.widget.WidgetEntryPoint
 import com.finnvek.knittools.widget.toWidgetData
+import dagger.hilt.android.EntryPointAccessors
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -173,7 +175,8 @@ class WidgetEntitlementRuntimeTest {
     ) {
         val billing = app.billingManager.get()
         val client = AuditPart15BillingClient()
-        private val repository = app.counterRepository.get()
+        private val repository =
+            EntryPointAccessors.fromApplication(app, WidgetEntryPoint::class.java).counterRepository()
         private val host = AppWidgetHost(app, 110014)
         private val instrumentation = InstrumentationRegistry.getInstrumentation()
         private var scenario: ActivityScenario<ComponentActivity>? = null

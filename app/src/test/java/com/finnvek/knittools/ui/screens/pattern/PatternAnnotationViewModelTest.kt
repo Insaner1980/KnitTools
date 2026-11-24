@@ -74,6 +74,19 @@ import java.io.IOException
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class PatternAnnotationPageLimitViewModelTest {
+    @Test
+    fun `annotation editor only matches the visible document and page`() {
+        val owner = PatternAnnotationOwner.Project(7L, "current-document")
+        val context = PatternPdfExportContext(mockk<Uri>(), owner, projectDocumentId = 15L)
+        val state = PatternAnnotationUiState(owner = owner, currentPage = 2, projectDocumentId = 15L)
+
+        assertTrue(state.matchesDisplayedPage(context, 2))
+        assertFalse(state.matchesDisplayedPage(context, 1))
+        assertFalse(state.matchesDisplayedPage(context.copy(projectDocumentId = 16L), 2))
+        assertFalse(state.matchesDisplayedPage(context.copy(owner = owner.copy(documentKey = "other-document")), 2))
+        assertFalse(state.matchesDisplayedPage(null, 2))
+    }
+
     @Before
     fun setUp() {
         Dispatchers.setMain(StandardTestDispatcher())
@@ -1727,6 +1740,38 @@ class PatternAnnotationWriteFeedbackTest {
         }
 
     @Test
+    fun `retry saves the failed stroke after a newer stroke has already been saved`() =
+        runTest {
+            val fixture = WriteFixture()
+            val gate = CompletableDeferred<Unit>()
+            advanceUntilIdle()
+            fixture.nextWrite = {
+                gate.await()
+                throw IOException("first stroke rejected")
+            }
+            fixture.stroke(endX = 0.4f)
+            runCurrent()
+            fixture.stroke(endX = 0.7f)
+            runCurrent()
+            gate.complete(Unit)
+            advanceUntilIdle()
+            assertEquals(1, fixture.rows.value.size)
+            assertTrue(fixture.vm.uiState.value.canRetryStroke)
+
+            fixture.vm.retryFailedStroke()
+            advanceUntilIdle()
+
+            assertEquals(3, fixture.writeAttempts)
+            assertEquals(
+                setOf(0.4f, 0.7f),
+                fixture.rows.value
+                    .map { (it.payload as FreehandPayload).points.last().x }
+                    .toSet(),
+            )
+            assertFalse(fixture.vm.uiState.value.canRetryStroke)
+        }
+
+    @Test
     fun `finishing the next gesture after a failure does not acknowledge the failed stroke`() =
         runTest {
             val fixture = WriteFixture()
@@ -2031,7 +2076,13 @@ class PatternAnnotationWriteFeedbackTest {
             }
             coEvery { repository.clearPage(any(), any()) } coAnswers {
                 beforeWrite()
-                rows.value = rows.value.filterNot { it.layerId == firstArg<Long>() && it.page == secondArg<Int>() }
+                val (removed, remaining) =
+                    rows.value.partition {
+                        it.layerId == firstArg<Long>() &&
+                            it.page == secondArg<Int>()
+                    }
+                rows.value = remaining
+                removed
             }
             coEvery { repository.restoreBatch(any()) } coAnswers {
                 beforeWrite()

@@ -1,11 +1,14 @@
 package com.finnvek.knittools.billing
 
+import android.app.Activity
 import android.content.Context
+import android.text.TextUtils
 import androidx.lifecycle.ViewModelStore
 import com.android.billingclient.api.AcknowledgePurchaseResponseListener
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingResult
+import com.android.billingclient.api.ProductDetails
 import com.android.billingclient.api.ProductDetailsResult
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchasesResult
@@ -34,6 +37,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -135,6 +139,85 @@ abstract class BillingRecoveryFixture {
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class BillingRecoveryTest : BillingRecoveryFixture() {
+    @Test
+    fun `disconnected checkout unlocks only after host return and ownership reconciliation`() =
+        runTest(dispatcher) {
+            mockkStatic(TextUtils::class)
+            every { TextUtils.isEmpty(any()) } answers { firstArg<CharSequence?>().isNullOrEmpty() }
+            val activity = mockk<Activity>()
+            val ok = result(BillingClient.BillingResponseCode.OK)
+            every { client.launchBillingFlow(activity, any()) } returns ok
+            val offer =
+                mockk<ProductDetails.OneTimePurchaseOfferDetails>(relaxed = true) {
+                    every { offerId } returns null
+                    every { formattedPrice } returns "EUR 9.99"
+                    every { priceAmountMicros } returns 9_990_000L
+                    every { priceCurrencyCode } returns "EUR"
+                    every { validTimeWindow } returns null
+                    every { limitedQuantityInfo } returns null
+                    every { fullPriceMicros } returns null
+                    every { rentalDetails } returns null
+                    every { preorderDetails } returns null
+                }
+            val product =
+                mockk<ProductDetails>(relaxed = true) {
+                    every { productId } returns BillingManager.PRODUCT_ID
+                    every { productType } returns BillingClient.ProductType.INAPP
+                    every { oneTimePurchaseOfferDetailsList } returns listOf(offer)
+                }
+            coEvery { client.queryPurchasesAsync(any()) } returns purchases(BillingClient.BillingResponseCode.OK)
+            coEvery { client.queryProductDetails(any()) } returns ProductDetailsResult(ok, listOf(product))
+            connection.onBillingSetupFinished(ok)
+            runCurrent()
+            billing.launchPurchaseFlow(activity, billing.selectedOffer.value)
+            assertTrue(billing.purchaseFlowInFlight.value)
+
+            billing.onPurchaseHostPaused()
+            connection.onBillingServiceDisconnected()
+            billing.restorePurchasesWithResult()
+            assertTrue(billing.purchaseFlowInFlight.value)
+
+            val resumedOwnership = CompletableDeferred<PurchasesResult>()
+            coEvery { client.queryPurchasesAsync(any()) } coAnswers { resumedOwnership.await() }
+            billing.refreshPurchasesOnResume()
+            runCurrent()
+            assertTrue(billing.purchaseFlowInFlight.value)
+            resumedOwnership.complete(purchases(BillingClient.BillingResponseCode.OK))
+            runCurrent()
+
+            assertFalse(billing.purchaseFlowInFlight.value)
+            billing.retryProductDetails()
+            runCurrent()
+            billing.launchPurchaseFlow(activity, billing.selectedOffer.value)
+            verify(exactly = 2) { client.launchBillingFlow(activity, any()) }
+        }
+
+    @Test
+    fun `cancelling the latest restore exposes recovery for unresolved initial ownership`() =
+        runTest(dispatcher) {
+            val initial = deferInitialQuery()
+            val restoreResponse = CompletableDeferred<PurchasesResult>()
+            coEvery { client.queryPurchasesAsync(any()) } coAnswers { restoreResponse.await() }
+            val restore = async { billing.restorePurchasesWithResult() }
+            runCurrent()
+            coVerify(exactly = 2) { client.queryPurchasesAsync(any()) }
+
+            restore.cancelAndJoin()
+            initial.complete(purchases(BillingClient.BillingResponseCode.OK))
+            runCurrent()
+
+            assertFalse(billing.purchaseStateReady.value)
+            assertTrue(viewModel.purchaseQueryFailed.value)
+            coEvery { client.queryPurchasesAsync(any()) } returns
+                purchases(BillingClient.BillingResponseCode.OK, listOf(purchased()))
+            billing.refreshPurchasesOnResume()
+            runCurrent()
+
+            assertTrue(billing.purchaseStateReady.value)
+            assertTrue(billing.isProPurchased.value)
+            assertFalse(viewModel.purchaseQueryFailed.value)
+        }
+
     @Test
     fun `late empty initial query cannot revoke a newer restored purchase`() =
         runTest(dispatcher) {
@@ -392,7 +475,7 @@ class BillingRecoveryTest : BillingRecoveryFixture() {
             connection.onBillingSetupFinished(result(BillingClient.BillingResponseCode.OK))
             val preferences = mockk<PreferencesManager>()
             every { preferences.preferences } returns MutableStateFlow(AppPreferences())
-            val settings = SettingsViewModel(preferences, billing, pro, tipSession = mockk())
+            val settings = SettingsViewModel(preferences, billing, pro)
             viewModels.put("settings", settings)
             coEvery { client.queryPurchasesAsync(any()) } returns
                 purchases(BillingClient.BillingResponseCode.OK, listOf(purchased()))
@@ -561,6 +644,27 @@ class BillingRecoveryTest : BillingRecoveryFixture() {
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class BillingAcknowledgementRecoveryTest : BillingRecoveryFixture() {
+    @Test
+    fun `acknowledgement retry waits for an explicit restore to finish`() =
+        runTest(dispatcher) {
+            val callbacks = startAcknowledgementLifecycle(client)
+            callbacks.single().onAcknowledgePurchaseResponse(result(BillingClient.BillingResponseCode.NETWORK_ERROR))
+            val restoreResponse = CompletableDeferred<PurchasesResult>()
+            coEvery { client.queryPurchasesAsync(any()) } coAnswers { restoreResponse.await() }
+            val restore = async { billing.restorePurchasesWithResult() }
+            runCurrent()
+
+            advanceTimeBy(5_001)
+            runCurrent()
+            coVerify(exactly = 2) { client.queryPurchasesAsync(any()) }
+
+            restoreResponse.complete(purchases(BillingClient.BillingResponseCode.OK, listOf(purchased())))
+            assertEquals(RestorePurchasesResult.RESTORED, restore.await())
+            advanceTimeBy(5_000)
+            runCurrent()
+            coVerify(exactly = 3) { client.queryPurchasesAsync(any()) }
+        }
+
     @Test
     fun `stale transient acknowledgement cannot retry or release current in flight purchase`() =
         runTest(dispatcher) {

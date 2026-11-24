@@ -42,7 +42,10 @@ class PatternAnnotationPageBudget {
                         payload.points.size.toLong()
                     }
                 }
-                else -> SIMPLE_WORK
+
+                else -> {
+                    SIMPLE_WORK
+                }
             }
     }
 }

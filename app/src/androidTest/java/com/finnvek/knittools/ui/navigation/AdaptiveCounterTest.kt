@@ -325,6 +325,37 @@ class AdaptiveCounterTest : AdaptiveRouteTestFixture() {
         }
     }
 
+    @Test
+    fun reachedAndPassedTargetKeepCompletionStopAndUndoVisible() {
+        resize(411, 900)
+        runBlocking(Dispatchers.IO) {
+            db.counterProjectDao().updateTargetRows(1L, 20, System.currentTimeMillis())
+        }
+        openCounter()
+        menu()
+        scrollTo(label(R.string.work_session_start)).performClick()
+        rule.waitUntil(10_000) { activeSession() != null }
+        text(R.string.counter_target_reached).assertIsDisplayed()
+        text(R.string.counter_mark_complete).assertIsDisplayed()
+        assertSessionControlsVisible()
+
+        val originalFontScale = shell("settings get system font_scale").trim()
+        try {
+            shell("settings put system font_scale 2.0")
+            rule.waitUntil(15_000) { rule.activity.resources.configuration.fontScale == 2f }
+            text(label(R.string.counter_step_increase, 5, label(R.string.main_counter_rows))).performClick()
+            assertSessionControlsVisible()
+            text(R.string.counter_mark_complete).assertIsDisplayed().performClick()
+            text(R.string.complete_project_title).assertIsDisplayed()
+        } finally {
+            if (originalFontScale == "null" || originalFontScale.isBlank()) {
+                shell("settings delete system font_scale")
+            } else {
+                shell("settings put system font_scale $originalFontScale")
+            }
+        }
+    }
+
     private fun assertSessionControlsVisible() {
         val viewport = list().getUnclippedBoundsInRoot()
         val stop = text(R.string.work_session_stop_short).assertIsDisplayed().getUnclippedBoundsInRoot()

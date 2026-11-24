@@ -56,37 +56,45 @@ object PatternAnnotationPayloadCodec {
                 when (kind) {
                     PatternAnnotationKind.FREEHAND,
                     PatternAnnotationKind.HIGHLIGHTER,
-                    -> payloadJson.decodeFromString(FreehandPayload.serializer(), json)
+                    -> {
+                        payloadJson.decodeFromString(FreehandPayload.serializer(), json)
+                    }
 
                     PatternAnnotationKind.LINE,
                     PatternAnnotationKind.ARROW,
                     PatternAnnotationKind.RECTANGLE,
                     PatternAnnotationKind.ELLIPSE,
-                    -> payloadJson.decodeFromString(ShapePayload.serializer(), json)
+                    -> {
+                        payloadJson.decodeFromString(ShapePayload.serializer(), json)
+                    }
 
-                    PatternAnnotationKind.TEXT_BOX ->
+                    PatternAnnotationKind.TEXT_BOX -> {
                         payloadJson.decodeFromString(
                             TextBoxPayload.serializer(),
                             json,
                         )
+                    }
 
-                    PatternAnnotationKind.CALLOUT ->
+                    PatternAnnotationKind.CALLOUT -> {
                         payloadJson.decodeFromString(
                             CalloutPayload.serializer(),
                             json,
                         )
+                    }
 
-                    PatternAnnotationKind.CHART_REGION ->
+                    PatternAnnotationKind.CHART_REGION -> {
                         payloadJson.decodeFromString(
                             ChartRegionPayload.serializer(),
                             json,
                         )
+                    }
 
-                    PatternAnnotationKind.CHART_TRACKER ->
+                    PatternAnnotationKind.CHART_TRACKER -> {
                         payloadJson.decodeFromString(
                             ChartTrackerPayload.serializer(),
                             json,
                         )
+                    }
                 }
             }.getOrNull() ?: return null
         return sanitizePayload(kind, decoded)
@@ -108,8 +116,11 @@ object PatternAnnotationPayloadCodec {
             -> encodeTyped(payload, ShapePayload.serializer())
 
             PatternAnnotationKind.TEXT_BOX -> encodeTyped(payload, TextBoxPayload.serializer())
+
             PatternAnnotationKind.CALLOUT -> encodeTyped(payload, CalloutPayload.serializer())
+
             PatternAnnotationKind.CHART_REGION -> encodeTyped(payload, ChartRegionPayload.serializer())
+
             PatternAnnotationKind.CHART_TRACKER -> encodeTyped(payload, ChartTrackerPayload.serializer())
         }
 
@@ -138,8 +149,11 @@ private fun sanitizePayload(
         -> (payload as? ShapePayload)?.sanitize(requireArea = true)
 
         PatternAnnotationKind.TEXT_BOX -> (payload as? TextBoxPayload)?.sanitize()
+
         PatternAnnotationKind.CALLOUT -> (payload as? CalloutPayload)?.sanitize()
+
         PatternAnnotationKind.CHART_REGION -> (payload as? ChartRegionPayload)?.sanitize()
+
         PatternAnnotationKind.CHART_TRACKER -> (payload as? ChartTrackerPayload)?.sanitize()
     }
 

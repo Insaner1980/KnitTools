@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -181,15 +182,25 @@ private fun ProIntroduction(personalLine: String?) {
 private fun ProStatusPill(proState: ProState) {
     val text =
         when (proState.status) {
-            ProStatus.TRIAL_NOT_STARTED -> return
-            ProStatus.TRIAL_ACTIVE ->
+            ProStatus.TRIAL_NOT_STARTED -> {
+                return
+            }
+
+            ProStatus.TRIAL_ACTIVE -> {
                 pluralStringResource(
                     R.plurals.pro_status_trial_days,
                     proState.trialDaysRemaining,
                     proState.trialDaysRemaining,
                 )
-            ProStatus.TRIAL_EXPIRED -> stringResource(R.string.pro_status_trial_ended)
-            ProStatus.PRO_PURCHASED -> stringResource(R.string.pro_page_purchased)
+            }
+
+            ProStatus.TRIAL_EXPIRED -> {
+                stringResource(R.string.pro_status_trial_ended)
+            }
+
+            ProStatus.PRO_PURCHASED -> {
+                stringResource(R.string.pro_page_purchased)
+            }
         }
     BadgePill(text = text, uppercase = false)
 }
@@ -213,6 +224,7 @@ private fun ProPurchaseSection(
     onStartTrial: () -> Unit,
 ) {
     val productStatus = productStatusProvider()
+    val availableOffer = offer?.takeIf { proStateReady && productStatus == BillingProductStatus.Available }
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         if (proStateReady || proState.status == ProStatus.TRIAL_ACTIVE) {
             ProStatusPill(proState)
@@ -229,7 +241,6 @@ private fun ProPurchaseSection(
         } else {
             if (proState.status == ProStatus.PRO_PURCHASED) return@Column
             // Voimassa oleva hinta näytetään ommeltuna hintalappuna ostopainikkeineen.
-            val availableOffer = offer?.takeIf { productStatus == BillingProductStatus.Available }
             if (availableOffer != null) {
                 LaunchPriceTag(
                     offer = availableOffer,
@@ -251,8 +262,15 @@ private fun ProPurchaseSection(
         }
         if ((proStateReady || controlsReady) && proState.status == ProStatus.TRIAL_NOT_STARTED) {
             Text(stringResource(R.string.onboarding_pro_trial_terms), style = MaterialTheme.typography.bodyMedium)
-            OutlinedButton(onClick = onStartTrial, modifier = Modifier.fillMaxWidth(), enabled = !isStartingTrial) {
-                Text(stringResource(R.string.pro_start_14_day_trial))
+            val label = stringResource(R.string.pro_start_14_day_trial)
+            if (availableOffer == null) {
+                Button(onClick = onStartTrial, modifier = Modifier.fillMaxWidth(), enabled = !isStartingTrial) {
+                    Text(label)
+                }
+            } else {
+                OutlinedButton(onClick = onStartTrial, modifier = Modifier.fillMaxWidth(), enabled = !isStartingTrial) {
+                    Text(label)
+                }
             }
         }
     }
@@ -294,6 +312,7 @@ private fun ProStatusMessage(messageRes: Int) {
 private fun Int.statusMessageType(): StatusMessageType =
     when (this) {
         R.string.pro_restored -> StatusMessageType.Success
+
         R.string.no_purchases_found,
         R.string.billing_price_refreshing,
         R.string.billing_purchase_cancelled,

@@ -150,7 +150,7 @@
     <string name="stitches_per_row_remove">Poista</string>
     <string name="track_stitches">Seuraa silmukoita</string>
     <string name="stitch_counter_compact_format">%1$d/%2$d</string>
-    <string name="attach_pattern">Lisää ohje</string>
+    <string name="attach_pattern">Liitä ohje</string>
     <string name="remove_pattern">Poista ohje</string>
     <string name="no_pattern_attached">Ohjetta ei ole liitetty</string>
     <string name="pattern_viewer_title">Ohjeen lukija</string>
@@ -259,7 +259,7 @@
     <!-- Istuntohistoria -->
     <string name="session_history_title">Työskentelyhistoria</string>
     <string name="no_sessions">Istuntoja ei ole vielä tallennettu. Avaa projekti ja aloita työskentelyistunto, jotta aikasi tallentuu tänne.</string>
-    <string name="session_row_range">Laskuri: %1$d → %2$d</string>
+    <string name="session_row_range">Laskuri %1$d → %2$d</string>
     <string name="session_row_single">Lukema %1$d</string>
     <string name="delete_session_title">Poistetaanko istunto?</string>
     <string name="delete_session_message">Tämä työskentelyistunto poistetaan historiasta. Tätä ei voi kumota.</string>
@@ -290,7 +290,7 @@
     <string name="counter_target_of_format">yhteensä %1$d</string>
     <string name="counter_target_reached">Tavoite saavutettu</string>
     <string name="counter_target_past_format">%1$s yli tavoitteen</string>
-    <string name="project_content_add_pattern">Lisää ohje</string>
+    <string name="project_content_add_pattern">Liitä ohje</string>
     <string name="stitch_tracker_label">Silmukat</string>
 
     <!-- Lisäykset / kavennukset -->
@@ -349,7 +349,7 @@
 
     <!-- Puikkokoot -->
     <string name="search_size">Etsi kokoa…</string>
-    <string name="needle_size_disclaimer">Koot ovat likimääräisiä vastaavuuksia. Japanilaisissa kooissa käytetään erillistä metristä asteikkoa.</string>
+    <string name="needle_size_disclaimer">Koot ovat likimääräisiä vastaavuuksia. Numerointi vaihtelee järjestelmän ja valmistajan mukaan, joten vertaa halkaisijaa millimetreinä ja tarkista neuletiheys.</string>
     <string name="header_mm">mm</string>
     <string name="header_us">US</string>
     <string name="header_uk">UK</string>
@@ -362,8 +362,8 @@
     <string name="settings_section_general">Yleiset</string>
     <string name="settings_theme">Teema</string>
     <string name="settings_section_pro">PRO</string>
-    <string name="settings_section_data">TIEDOT</string>
-    <string name="settings_section_info">TIETOA</string>
+    <string name="settings_section_data">Varmuuskopiot</string>
+    <string name="settings_section_info">Ohje ja tuki</string>
     <string name="help_and_guide">Tuki verkossa</string>
     <string name="external_link_description">avautuu selaimessa</string>
     <string name="settings_language">Sovelluksen kieli</string>
@@ -418,7 +418,7 @@
     <string name="no_saved_yarns">Lankakortteja ei ole vielä tallennettu</string>
 
     <!-- Instruction parser -->
-    <string name="paste_instruction">Liitä ohje</string>
+    <string name="paste_instruction">Liitä ohjeteksti</string>
     <string name="instruction_hint">Liitä neuleohje tähän</string>
     <string name="instruction_hint_increase">Vain englanninkieliset ohjeet, esim. \"Increase 12 stitches evenly across 96 stitches\"</string>
     <string name="instruction_hint_gauge">Vain englanninkieliset ohjeet, esim. \"22 stitches and 30 rows per 10cm\" tai \"width 30 cm, 22 stitches\"</string>
@@ -966,8 +966,6 @@
     <string name="tip_edge_stitches_desc">Reunasilmukat ovat mallikerran ulkopuolisia lisäsilmukoita. Syötä luotavien reunasilmukoiden kokonaismäärä; laskuri lisää ne halutun leveyden laskemisen jälkeen. Esimerkiksi 2 tarkoittaa yhtä silmukkaa kummassakin reunassa.</string>
     <string name="tip_flat_vs_circular_title">Tasoneule vs. pyöröneule</string>
     <string name="tip_flat_vs_circular_desc">Tasoneule: neulot edestakaisin suorilla tai pyöröpuikoilla ja käännät työn jokaisen kerroksen lopussa.\n\nPyöröneule: neulot jatkuvaa kierrosta. Lisäykset ja kavennukset jaetaan tasaisesti koko kierrokselle.\n\nLaskurin merkinnät: K = neulo oikein, M1 = lisää silmukoiden välisestä langasta kiertäen, K2tog = neulo 2 oikein yhteen, × = toista.</string>
-    <string name="tip_needle_sizes_title">Puikkokokojen järjestelmät</string>
-    <string name="tip_needle_sizes_desc">Metrinen koko (mm) on yleinen standardi. US-koot käyttävät numeroasteikkoa. UK- ja kanadalaiset koot käyttävät eri numerojärjestelmää. Japanilaisissa kooissa on oma numerointi. Varmista aina koko millimetreinä.</string>
     <string name="tip_imperial_units_title">Imperiaaliset yksiköt</string>
     <string name="tip_imperial_units_desc">Kun asetus on käytössä, pituuslaskureiden oletusyksikköinä ovat tuumat ja jaardit senttimetrien ja metrien sijaan. Tiheyden oletus on silloin 4 tuumaa kohti 10 cm:n sijaan. Mitat ja tiheys -työkalussa voit vaihtaa yksiköitä erikseen.</string>
 
@@ -1162,7 +1160,7 @@
     <string name="work_session_reason_long_running">Istunto on jatkunut pitkään. Vahvista viimeisin aikajakso.</string>
     <string name="work_session_reason_clock_unavailable">KnitTools ei voinut varmistaa, käynnistyikö laite uudelleen.</string>
     <string name="work_session_reason_clock_changed">KnitTools ei voinut varmistaa viimeisintä aikajaksoa.</string>
-    <string name="work_session_stop_summary_title">Lopetetaanko työskentelyistunto?</string>
+    <string name="work_session_stop_summary_title">Lopetetaanko istunto?</string>
     <string name="work_session_keep_running">Pidä käynnissä</string>
     <string name="work_session_save">Tallenna istunto</string>
     <string name="work_session_discard">Hylkää istunto</string>
@@ -1224,7 +1222,7 @@
     <string name="folder_remove_from">Poista kansiosta</string>
     <string name="selection_action_move">Siirrä</string>
     <string name="selection_action_complete">Valmis</string>
-    <string name="folder_no_folders">Ei kansioita</string>
+    <string name="folder_empty_notice">Et ole vielä luonut kansioita.</string>
     <string name="folder_empty">Kansiossa %1$s ei ole projekteja.</string>
     <string name="folder_no_unfiled">Ei kansiottomia projekteja</string>
     <string name="folder_hidden_completed">Tässä kansiossa on piilotettuja valmistuneita projekteja.</string>
@@ -1261,7 +1259,7 @@
     <item quantity="one">%d projekti siirrettiin.</item>
     <item quantity="other">%d projektia siirrettiin.</item>
     </plurals>
-    <string name="folder_move_project_to">Siirrä projekti %1$s kansioon</string>
+    <string name="folder_move_sheet_title">Siirrä kansioon</string>
     <string name="folder_rename_description">Nimeä kansio %1$s uudelleen</string>
     <string name="folder_move_earlier_description">Siirrä kansiota %1$s aiemmaksi</string>
     <string name="folder_move_later_description">Siirrä kansiota %1$s myöhemmäksi</string>
@@ -1325,7 +1323,6 @@
     <string name="measurement_project_context">Projekti: %1$s</string>
     <string name="measurement_estimate">Syötettyyn tiheyteen perustuva arvio.</string>
     <string name="measurement_adjust_warning">Syötetystä tiheydestä laskettu matemaattinen arvio. Muotoilua tai ohjeen rakennetta ei muuteta. Väljyys, mallikerrat, reunat, kädentiet, pääntie ja hihat voivat vaatia erillistä sovitusta. Mittaa pesty tai pingotettu mallitilkku, jotta arviosta on enemmän hyötyä.</string>
-    <string name="measurement_adjust_warning_short">Arvio neuletiheyden perusteella. Muotoilut voivat vaatia erillistä sovitusta.</string>
     <string name="measurement_swatch_hint">Arviosta on enemmän hyötyä, kun mittaat pestyn tai pingotetun mallitilkun.</string>
     <string name="measurement_result">Tulos</string>
     <string name="measurement_value_unit_format">%1$s %2$s</string>
@@ -1525,5 +1522,5 @@
     <string name="project_yarn_edit_invalid">Kirjoita langan nimi.</string>
     <string name="project_yarn_edit_failed">Muutoksia ei voitu tallentaa. Luonnoksesi on yhä tässä. Yritä uudelleen.</string>
     <string name="size_row_tween">Varhaisnuori</string>
-    <string name="counter_progress_format">Laskurin etenemä: %1$d</string>
+    <string name="counter_progress_format">Laskuri %1$+d</string>
 </resources>

@@ -1,0 +1,39 @@
+diff --git a/dist/cli.mjs b/dist/cli.mjs
+index 7550271f102433cb39871af0000e139d66f0665e..7879a5031172fb0b83a8a1eb0a40a8a301fdce0d 100644
+--- a/dist/cli.mjs
++++ b/dist/cli.mjs
+@@ -69027,6 +69027,17 @@
+   }
+ }
+ var CODEX_ENV_ALLOWLIST = /* @__PURE__ */ new Set([
++  ...(process.platform === "win32" ? [
++    "SYSTEMROOT",
++    "WINDIR",
++    "COMSPEC",
++    "PATHEXT",
++    "USERPROFILE",
++    "HOMEDRIVE",
++    "HOMEPATH",
++    "APPDATA",
++    "LOCALAPPDATA"
++  ] : []),
+   // Shell + locale
+   "PATH",
+   "HOME",
+@@ -69067,7 +69078,7 @@
+   const env3 = {};
+   for (const [k2, v2] of Object.entries(process.env)) {
+     if (typeof v2 !== "string") continue;
+-    if (CODEX_ENV_ALLOWLIST.has(k2) || CODEX_ENV_ALLOWLIST_PREFIXES.some((p2) => k2.startsWith(p2))) {
++    if (CODEX_ENV_ALLOWLIST.has(process.platform === "win32" ? k2.toUpperCase() : k2) || CODEX_ENV_ALLOWLIST_PREFIXES.some((p2) => k2.startsWith(p2))) {
+       env3[k2] = v2;
+     }
+   }
+@@ -69112,6 +69123,7 @@
+     if (!process.env.RUST_LOG) extras.RUST_LOG = "info";
+   }
+   const pluginLockdown = {
++    ...(process.platform === "win32" ? { windows: { sandbox: "mxc" } } : {}),
+     features: {
+       plugins: false,
+       remote_plugin: false

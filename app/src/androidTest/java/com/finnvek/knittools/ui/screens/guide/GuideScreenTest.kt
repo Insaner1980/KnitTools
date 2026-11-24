@@ -23,19 +23,16 @@ class GuideScreenTest {
     private val proState = mutableStateOf<ProState?>(null)
     private val selectedTopics = mutableListOf<GuideTopic>()
     private val actions = mutableListOf<GuideAction>()
-    private var resetRequests = 0
     private var backRequests = 0
 
     @Test
-    fun rootShowsEveryTopicAndInvokesTopicResetAndBackActions() {
+    fun rootShowsEveryTopicAndInvokesTopicAndBackActions() {
         render()
         compose.onNodeWithText(text(R.string.guide_intro)).assertIsDisplayed()
         GuideTopic.entries.forEach {
             compose.onNodeWithText(text(it.title)).performScrollTo().performClick()
         }
         assertEquals(GuideTopic.entries, selectedTopics)
-        compose.onNodeWithText(text(R.string.settings_show_tips_again)).performScrollTo().performClick()
-        assertEquals(1, resetRequests)
         compose.onNodeWithContentDescription(text(R.string.back)).performClick()
         assertEquals(1, backRequests)
     }
@@ -86,7 +83,6 @@ class GuideScreenTest {
                     onBack = { backRequests++ },
                     onTopicSelected = selectedTopics::add,
                     onAction = actions::add,
-                    onResetTips = { resetRequests++ },
                 )
             }
         }

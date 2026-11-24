@@ -36,7 +36,6 @@ fun GuideScreen(
     onBack: () -> Unit,
     onTopicSelected: (GuideTopic) -> Unit,
     onAction: (GuideAction) -> Unit,
-    onResetTips: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     ToolScreenScaffold(
@@ -56,7 +55,7 @@ fun GuideScreen(
                     ),
             ) {
                 if (topic == null) {
-                    GuideRootContent(onTopicSelected, onResetTips)
+                    GuideRootContent(onTopicSelected)
                 } else {
                     GuideTopicContent(topic, proState, onAction)
                 }
@@ -66,10 +65,7 @@ fun GuideScreen(
 }
 
 @Composable
-private fun GuideRootContent(
-    onTopicSelected: (GuideTopic) -> Unit,
-    onResetTips: () -> Unit,
-) {
+private fun GuideRootContent(onTopicSelected: (GuideTopic) -> Unit) {
     Text(
         stringResource(R.string.guide_intro),
         style = MaterialTheme.typography.bodyMedium,
@@ -86,12 +82,6 @@ private fun GuideRootContent(
         )
     }
     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-    Row(
-        Modifier.fillMaxWidth().padding(top = ProjectOverviewDimens.ContentGap),
-        horizontalArrangement = Arrangement.End,
-    ) {
-        OverviewTextAction(stringResource(R.string.settings_show_tips_again), onResetTips)
-    }
 }
 
 @Composable

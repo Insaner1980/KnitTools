@@ -235,7 +235,9 @@ class LibraryViewModel
                         }
                     when (result) {
                         SavedPatternDeleteResult.Deleted -> onDeleted()
+
                         SavedPatternDeleteResult.PersistenceFailure -> _patternDeleteErrorId.value += 1
+
                         SavedPatternDeleteResult.PatternMissing,
                         SavedPatternDeleteResult.NotWebPattern,
                         -> Unit

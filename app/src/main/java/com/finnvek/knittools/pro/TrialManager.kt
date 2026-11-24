@@ -409,20 +409,25 @@ class TrialManager
                 storedTiming: StoredTrialTiming,
             ): Long? =
                 when (storedTiming) {
-                    StoredTrialTiming.Legacy ->
+                    StoredTrialTiming.Legacy -> {
                         maxOf(
                             nonNegativeDifference(now.wallClockMillis, startTimestamp) ?: 0L,
                             nonNegativeDifference(lastKnownTimestamp, startTimestamp) ?: 0L,
                         )
+                    }
 
-                    StoredTrialTiming.Malformed -> null
-                    is StoredTrialTiming.Anchored ->
+                    StoredTrialTiming.Malformed -> {
+                        null
+                    }
+
+                    is StoredTrialTiming.Anchored -> {
                         advanceElapsedDuration(
                             storedTiming = storedTiming,
                             now = now,
                             startTimestamp = startTimestamp,
                             lastKnownTimestamp = lastKnownTimestamp,
                         )
+                    }
                 }
 
             private fun advanceElapsedDuration(
@@ -458,12 +463,16 @@ class TrialManager
                 currentBootCount: Long,
             ): Long? {
                 return when {
-                    currentBootCount < storedBootCount -> null
-                    currentBootCount == storedBootCount ->
+                    currentBootCount < storedBootCount -> {
+                        null
+                    }
+
+                    currentBootCount == storedBootCount -> {
                         nonNegativeDifference(
                             now.elapsedRealtimeMillis,
                             storedTiming.anchorElapsedRealtimeMillis,
                         )
+                    }
 
                     else -> {
                         val wallClockDelta =

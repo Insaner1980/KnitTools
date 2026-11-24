@@ -233,23 +233,29 @@ private fun IncreaseDecreaseMode.labelRes(): Int =
 @Composable
 private fun IncreaseDecreaseMessage.localizedMessage(): String =
     when (this) {
-        IncreaseDecreaseMessage.CurrentStitchesMustBePositive ->
+        IncreaseDecreaseMessage.CurrentStitchesMustBePositive -> {
             stringResource(R.string.increase_decrease_error_current_positive)
+        }
 
-        IncreaseDecreaseMessage.ChangeMustBePositive ->
+        IncreaseDecreaseMessage.ChangeMustBePositive -> {
             stringResource(R.string.increase_decrease_error_change_positive)
+        }
 
-        is IncreaseDecreaseMessage.CannotDecreaseBy ->
+        is IncreaseDecreaseMessage.CannotDecreaseBy -> {
             stringResource(R.string.increase_decrease_error_cannot_decrease, changeBy, currentStitches)
+        }
 
-        is IncreaseDecreaseMessage.NotEnoughStitchesForDecrease ->
+        is IncreaseDecreaseMessage.NotEnoughStitchesForDecrease -> {
             stringResource(R.string.increase_decrease_error_not_enough_decrease, requiredStitches, changeBy)
+        }
 
-        IncreaseDecreaseMessage.TotalStitchesOutOfRange ->
+        IncreaseDecreaseMessage.TotalStitchesOutOfRange -> {
             stringResource(R.string.increase_decrease_error_total_out_of_range)
+        }
 
-        IncreaseDecreaseMessage.NotEnoughBarsForIncrease ->
+        IncreaseDecreaseMessage.NotEnoughBarsForIncrease -> {
             stringResource(R.string.increase_decrease_error_not_enough_bars)
+        }
     }
 
 private fun IncreaseDecreaseMode.resultPlaceholderRes(): Int =

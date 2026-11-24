@@ -18,8 +18,6 @@ import com.finnvek.knittools.ui.layout.LocalAdaptiveModalWindow
 import com.finnvek.knittools.ui.screens.counter.CounterViewModel
 import com.finnvek.knittools.ui.screens.counter.ProjectContentHost
 import com.finnvek.knittools.ui.screens.counter.shouldLeaveCounter
-import com.finnvek.knittools.ui.tips.LocalTipSession
-import com.finnvek.knittools.ui.tips.TipEnvironment
 
 /** Laskurikohde valitsee pyydetyn projektin ennen sisällön ja kertaluonteisen toiminnon avaamista. */
 @Composable
@@ -40,6 +38,8 @@ internal fun CounterDestination(
     val counterState by counterViewModel.uiState.collectAsStateWithLifecycle()
     var unavailableLaunchId by remember { mutableStateOf<String?>(null) }
     var loadedLaunchId by remember { mutableStateOf<String?>(null) }
+    var unavailableEntryProjectId by remember(backStackEntry) { mutableStateOf<Long?>(null) }
+    val entryProjectId = backStackEntry.savedStateHandle.get<Long>(COUNTER_ENTRY_PROJECT_ID)
     val currentLaunchRequest by rememberUpdatedState(counterLaunchRequest)
     val isCurrentLaunch by rememberUpdatedState(isCurrentCounterLaunch)
     val currentEntry by navController.currentBackStackEntryAsState()
@@ -58,10 +58,24 @@ internal fun CounterDestination(
         }
         counterViewModel.selectProjectByIdForLaunch(projectId, canSelect = canSelect) { loaded ->
             if (canSelect()) {
+                if (loaded) {
+                    backStackEntry.savedStateHandle[COUNTER_ENTRY_PROJECT_ID] = projectId
+                    unavailableEntryProjectId = null
+                }
                 unavailableLaunchId = launchRequest.requestId.takeUnless { loaded }
                 loadedLaunchId = launchRequest.requestId.takeIf { loaded }
                 if (!loaded || launchRequest.journeyAction == null) onCounterLaunchHandled(launchRequest.requestId)
             }
+        }
+    }
+    LaunchedEffect(counterLaunchRequest?.requestId, entryProjectId, currentEntry?.id) {
+        val projectId = entryProjectId ?: return@LaunchedEffect
+        val canSelect = {
+            currentLaunchRequest == null && navController.currentBackStackEntry?.id == backStackEntry.id
+        }
+        if (!canSelect() || unavailableLaunchId != null || counterState.projectId == projectId) return@LaunchedEffect
+        counterViewModel.selectProjectByIdForLaunch(projectId, canSelect = canSelect) { loaded ->
+            if (canSelect()) unavailableEntryProjectId = projectId.takeUnless { loaded }
         }
     }
     if (counterLaunchRequest != null &&
@@ -69,34 +83,45 @@ internal fun CounterDestination(
     ) {
         return
     }
-    if (unavailableLaunchId != null || counterState.shouldLeaveCounter) {
+    if (unavailableLaunchId != null || (entryProjectId != null && unavailableEntryProjectId == entryProjectId)) {
+        RouteArgumentFallback({ navController }, TopLevelDestination.Projects)
+        return
+    }
+    if (entryProjectId != null && counterState.projectId != entryProjectId) return
+    if (counterState.shouldLeaveCounter) {
         RouteArgumentFallback({ navController }, TopLevelDestination.Projects)
         return
     }
     if (counterState.isRestoringProject || counterState.projectId == null) return
     SideEffect {
-        if (navController.currentBackStackEntry?.id == backStackEntry.id) {
+        if (entryProjectId == null && navController.currentBackStackEntry?.id == backStackEntry.id) {
             counterState.projectId?.let { backStackEntry.savedStateHandle[COUNTER_ENTRY_PROJECT_ID] = it }
         }
     }
+    val workSessionProjectId by backStackEntry.savedStateHandle
+        .getStateFlow<Long?>(COUNTER_WORK_SESSION_PROJECT_ID, null)
+        .collectAsStateWithLifecycle()
     CompositionLocalProvider(LocalAdaptiveModalWindow provides true) {
-        TipEnvironment(routeKey = backStackEntry.id) {
-            ProjectContentHost(
-                overview = false,
-                journeyRequest = counterLaunchRequest,
-                onJourneyRequestHandled = { requestId ->
-                    if (currentLaunchRequest?.requestId == requestId) onCounterLaunchHandled(requestId)
-                },
-                actions =
-                    projectWorkspaceActions(
-                        navController,
-                        onImportFromRavelry,
-                        backStackEntry.id,
-                        LocalTipSession.current,
-                    ),
-                viewModelProvider = { counterViewModel },
-            )
-        }
+        ProjectContentHost(
+            overview = false,
+            openWorkSessionActions =
+                workSessionProjectId == counterState.projectId &&
+                    currentEntry?.id == backStackEntry.id,
+            onWorkSessionActionsOpened = {
+                backStackEntry.savedStateHandle.set<Long?>(COUNTER_WORK_SESSION_PROJECT_ID, null)
+            },
+            journeyRequest = counterLaunchRequest,
+            onJourneyRequestHandled = { requestId ->
+                if (currentLaunchRequest?.requestId == requestId) onCounterLaunchHandled(requestId)
+            },
+            actions =
+                projectWorkspaceActions(
+                    navController,
+                    onImportFromRavelry,
+                    backStackEntry.id,
+                ),
+            viewModelProvider = { counterViewModel },
+        )
     }
     SideEffect { onStartupReady(counterState.startupReady) }
 }

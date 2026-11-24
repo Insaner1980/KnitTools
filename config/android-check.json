@@ -29,6 +29,7 @@
     "detektTasks": [":app:detekt"],
     "lintTasks": [":app:lintDebug"],
     "fullLintTasks": [":app:lintDebug", ":app:lintRelease"],
+    "pmdMinimumTokens": 100,
     "stabilityTasks": [":app:debugStabilityCheck"],
     "dependencyConfigurations": ["debugRuntimeClasspath", "releaseRuntimeClasspath"],
     "dependencyCheckTasks": [":app:dependencyCheckAggregate"],

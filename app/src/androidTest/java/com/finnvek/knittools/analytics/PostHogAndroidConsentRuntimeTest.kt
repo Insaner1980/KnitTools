@@ -1,10 +1,13 @@
 package com.finnvek.knittools.analytics
 
+import android.app.LocaleManager
 import android.content.Context
 import android.content.ContextWrapper
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
+import android.os.LocaleList
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.test.platform.app.InstrumentationRegistry
 import com.finnvek.knittools.data.datastore.USAGE_ANALYTICS_ENABLED
@@ -12,12 +15,14 @@ import com.finnvek.knittools.data.datastore.USAGE_ANALYTICS_GENERATION
 import com.finnvek.knittools.data.datastore.writeUsageAnalyticsConsent
 import com.posthog.PostHog
 import com.posthog.android.PostHogAndroid
+import com.posthog.internal.PostHogNetworkStatus
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -63,11 +68,21 @@ class PostHogAndroidConsentRuntimeTest {
             check(root.mkdirs())
             val harness = Harness(base, root)
             val owners = mutableListOf<ConsentOwner>()
+            val restoreLanguage =
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    val locales = requireNotNull(base.getSystemService(LocaleManager::class.java))
+                    val previous = locales.applicationLocales
+                    locales.applicationLocales = LocaleList.forLanguageTags("fi")
+                    AutoCloseable { locales.applicationLocales = previous }
+                } else {
+                    null
+                }
             val cleanup =
                 AutoCloseable {
                     cleanupPostHogTest(
                         *owners.map { owner -> { runBlocking { owner.close() } } }.toTypedArray(),
                         harness::close,
+                        { restoreLanguage?.close() },
                     )
                 }
             cleanup.use {
@@ -109,6 +124,13 @@ class PostHogAndroidConsentRuntimeTest {
                 assertEquals(generation, first.store.data.first()[USAGE_ANALYTICS_GENERATION])
                 val fresh = harness.latest()
                 assertNotEquals(old.directory, fresh.directory)
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    // The SDK reads the app locale on its own worker after initialization.
+                    val context = requireNotNull(fresh.config.context)
+                    withTimeout(15_000) {
+                        while (context.getDynamicContext()["\$app_language"] != "fi") delay(10)
+                    }
+                }
                 first.analytics.track(UsageEvent.PROJECT_CREATED)
                 fresh.drain()
                 fresh.sdk.flush()
@@ -228,7 +250,8 @@ class PostHogAndroidConsentRuntimeTest {
                     try {
                         val request = chain.request()
                         paths.add(request.url.encodedPath)
-                        if (request.url.encodedPath == "/batch") {
+                        if (request.url.encodedPath == "/i/v1/analytics/events") {
+                            assertEquals("Bearer $TOKEN", request.header("Authorization"))
                             val buffer = Buffer()
                             requireNotNull(request.body).writeTo(buffer)
                             val batch = JSONObject(buffer.readUtf8()).getJSONArray("batch")
@@ -237,6 +260,11 @@ class PostHogAndroidConsentRuntimeTest {
                                     val event = batch.getJSONObject(index)
                                     val properties = event.getJSONObject("properties")
                                     assertTrue(properties.getBoolean("\$geoip_disable"))
+                                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                        assertEquals("fi", properties.getString("\$app_language"))
+                                    } else {
+                                        assertFalse(properties.has("\$app_language"))
+                                    }
                                     assertFalse(properties.has("usage_analytics_generation"))
                                     event.getString("event")
                                 },
@@ -249,7 +277,7 @@ class PostHogAndroidConsentRuntimeTest {
                             .protocol(Protocol.HTTP_1_1)
                             .code(200)
                             .message("RW-07C terminal recorder")
-                            .body("{}".toResponseBody())
+                            .body("""{"results":{}}""".toResponseBody())
                             .build()
                     } finally {
                         inFlight.decrementAndGet()
@@ -277,7 +305,7 @@ class PostHogAndroidConsentRuntimeTest {
         fun controller(context: Context): PostHogAnalytics =
             PostHogAnalytics(
                 postHogClientFactory(
-                    token = "phc_rw07cSyntheticOnly",
+                    token = TOKEN,
                     storage = AnalyticsQueueStorage(File(root, "queues")),
                     transport = transport,
                 ) { config ->
@@ -286,6 +314,11 @@ class PostHogAndroidConsentRuntimeTest {
                     assertEquals(null, config.cachePreferences)
                     config.flushAt = 100
                     config.flushIntervalSeconds = 86_400
+                    // Keep the flush sequence controlled even if Android reports network availability.
+                    config.networkStatus =
+                        object : PostHogNetworkStatus {
+                            override fun isConnected() = true
+                        }
                     val sdk = PostHogAndroid.with(context, config) as PostHog
                     assertTrue(
                         requireNotNull(config.cachePreferences).javaClass.name.startsWith("com.posthog.android."),
@@ -307,7 +340,7 @@ class PostHogAndroidConsentRuntimeTest {
 
         fun latest(): PostHogTestInstance = instances.last()
 
-        fun persistPreferenceSentinel() {
+        suspend fun persistPreferenceSentinel() {
             assertTrue("Android SDK must open real SharedPreferences", preferenceNames.isNotEmpty())
             preferenceNames.forEach { name ->
                 assertTrue(
@@ -319,7 +352,11 @@ class PostHogAndroidConsentRuntimeTest {
                         .putString("rw07c_sentinel", "keep")
                         .commit(),
                 )
-                assertTrue(File(base.applicationInfo.dataDir, "shared_prefs/$name.xml").isFile)
+                // A concurrent SDK preferences write can temporarily rename the XML file to its backup.
+                val file = File(base.applicationInfo.dataDir, "shared_prefs/$name.xml")
+                withTimeout(5_000) {
+                    while (!file.isFile) delay(10)
+                }
             }
         }
 
@@ -392,6 +429,7 @@ class PostHogAndroidConsentRuntimeTest {
     }
 
     private companion object {
+        const val TOKEN = "phc_rw07cSyntheticOnly"
         const val A = "pdf import succeeded"
         const val C = "project created"
 

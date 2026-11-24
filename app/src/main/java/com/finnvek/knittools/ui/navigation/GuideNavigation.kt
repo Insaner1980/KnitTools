@@ -16,7 +16,6 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.finnvek.knittools.R
-import com.finnvek.knittools.ui.components.CollectWithLifecycleEffect
 import com.finnvek.knittools.ui.screens.guide.GuideAction
 import com.finnvek.knittools.ui.screens.guide.GuideScreen
 import com.finnvek.knittools.ui.screens.guide.GuideTopic
@@ -67,11 +66,6 @@ private fun GuideRoute(
     LaunchedEffect(viewModel) {
         if (topic == null) viewModel.onOpened()
     }
-    CollectWithLifecycleEffect({ viewModel.messages }) { message ->
-        if (navController.currentBackStackEntry?.id == entry.id) {
-            Toast.makeText(context, resources.getString(message), Toast.LENGTH_SHORT).show()
-        }
-    }
     GuideScreen(
         topic = topic,
         proState = proState,
@@ -100,7 +94,6 @@ private fun GuideRoute(
                 }
             }
         },
-        onResetTips = viewModel::showTipsAgain,
     )
 }
 
@@ -121,6 +114,7 @@ internal suspend fun NavHostController.navigateFromGuide(
                 onLaunchCounter(projectId)
             }
         }
+
         GuideAction.OpenLatestProjectPage -> {
             if (projectId == null) {
                 openGuideTopLevel(TopLevelDestination.Projects)
@@ -128,22 +122,37 @@ internal suspend fun NavHostController.navigateFromGuide(
                 openProjectOverview(projectId)
             }
         }
-        GuideAction.OpenTools -> openGuideTopLevel(TopLevelDestination.Tools)
-        GuideAction.OpenLibrary -> openGuideTopLevel(TopLevelDestination.Library)
+
+        GuideAction.OpenTools -> {
+            openGuideTopLevel(TopLevelDestination.Tools)
+        }
+
+        GuideAction.OpenLibrary -> {
+            openGuideTopLevel(TopLevelDestination.Library)
+        }
+
         GuideAction.OpenMyYarn -> {
             openGuideTopLevel(TopLevelDestination.Library)
             navigateSingleTopTo(Screen.MyYarn.route)
         }
+
         GuideAction.OpenSavedPatterns -> {
             openGuideTopLevel(TopLevelDestination.Library)
             navigateSingleTopTo(Screen.SavedPatterns.route)
         }
-        GuideAction.OpenInsights -> openGuideTopLevel(TopLevelDestination.Insights)
+
+        GuideAction.OpenInsights -> {
+            openGuideTopLevel(TopLevelDestination.Insights)
+        }
+
         GuideAction.OpenBackup -> {
             openGuideTopLevel(TopLevelDestination.Settings)
             navigateSingleTopTo(Screen.Backup.route)
         }
-        GuideAction.OpenRavelry -> navigateSingleTopTo(Screen.RavelryBrowser.route)
+
+        GuideAction.OpenRavelry -> {
+            navigateSingleTopTo(Screen.RavelryBrowser.route)
+        }
     }
 }
 

@@ -42,6 +42,7 @@ internal fun postHogConfig(token: String): PostHogAndroidConfig =
         captureApplicationLifecycleEvents = false
         captureScreenViews = false
         captureDeepLinks = false
+        detectAppLanguage = true
         capturePushNotificationSubscriptions = false
         capturePushNotificationOpened = false
         personProfiles = PersonProfiles.NEVER

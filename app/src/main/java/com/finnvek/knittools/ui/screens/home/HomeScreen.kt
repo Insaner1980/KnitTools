@@ -19,93 +19,85 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.finnvek.knittools.R
-import com.finnvek.knittools.domain.tips.TipContext
-import com.finnvek.knittools.domain.tips.TipId
-import com.finnvek.knittools.domain.tips.TipScreen
 import com.finnvek.knittools.ui.components.HubListItem
 import com.finnvek.knittools.ui.layout.ContentWidthPolicy
 import com.finnvek.knittools.ui.layout.contentWidth
 import com.finnvek.knittools.ui.navigation.Screen
+import com.finnvek.knittools.ui.theme.TitleAccent
 import com.finnvek.knittools.ui.theme.knitToolsColors
-import com.finnvek.knittools.ui.tips.TipHost
-import com.finnvek.knittools.ui.tips.tipAnchor
 
 // Historiallinen nimi: tämä composable on Tools-välilehden aloitusruutu,
 // ei sovelluksen globaali home-screen.
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(onNavigate: (Screen) -> Unit) {
-    TipHost(context = TipContext(screen = TipScreen.TOOLS), onAction = {}, modifier = Modifier.fillMaxSize()) {
-        // Otsikko kulkee samassa keskitetyssä palstassa kuin lista, kuten Projects-, Library- ja Settings-näkymissä.
-        Scaffold(
-            modifier = Modifier.fillMaxSize().wrapContentWidth().contentWidth(ContentWidthPolicy.Form),
-            containerColor = MaterialTheme.colorScheme.background,
-            topBar = {
-                TopAppBar(
-                    title = {
-                        Text(
-                            text = stringResource(R.string.tools_title),
-                            style = MaterialTheme.typography.headlineMedium,
-                        )
-                    },
-                    colors =
-                        TopAppBarDefaults.topAppBarColors(
-                            containerColor = Color.Transparent,
-                        ),
-                )
-            },
-        ) { padding ->
-            Box(
-                modifier = Modifier.fillMaxSize().padding(padding),
-                contentAlignment = Alignment.TopCenter,
+    // Otsikko kulkee samassa keskitetyssä palstassa kuin lista, kuten Projects-, Library- ja Settings-näkymissä.
+    Scaffold(
+        modifier = Modifier.fillMaxSize().wrapContentWidth().contentWidth(ContentWidthPolicy.Form),
+        containerColor = MaterialTheme.colorScheme.background,
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text(
+                        text = stringResource(R.string.tools_title),
+                        style = MaterialTheme.typography.headlineMedium,
+                    )
+                },
+                colors =
+                    TopAppBarDefaults.topAppBarColors(
+                        containerColor = Color.Transparent,
+                    ),
+            )
+        },
+    ) { padding ->
+        Box(
+            modifier = Modifier.fillMaxSize().padding(padding),
+            contentAlignment = Alignment.TopCenter,
+        ) {
+            LazyColumn(
+                modifier = Modifier.padding(horizontal = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                LazyColumn(
-                    modifier = Modifier.padding(horizontal = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    // Laskimet — suora lista
-                    item(key = "home-tool-gauge", contentType = HOME_TOOL_CONTENT_TYPE) {
-                        Box(Modifier.tipAnchor(TipId.TOOLS_INTRO)) {
-                            HubListItem(
-                                title = stringResource(R.string.tool_gauge_converter),
-                                description = stringResource(R.string.desc_gauge_calculator),
-                                onClick = { onNavigate(Screen.Gauge) },
-                                titleColor = MaterialTheme.colorScheme.primary,
-                            )
-                        }
-                    }
-                    item(key = "home-tool-increase-decrease", contentType = HOME_TOOL_CONTENT_TYPE) {
-                        HubListItem(
-                            title = stringResource(R.string.tool_increase_decrease),
-                            description = stringResource(R.string.desc_increase_decrease),
-                            onClick = { onNavigate(Screen.IncreaseDecrease) },
-                            titleColor = MaterialTheme.colorScheme.secondary,
-                        )
-                    }
-                    item(key = "home-tool-cast-on", contentType = HOME_TOOL_CONTENT_TYPE) {
-                        HubListItem(
-                            title = stringResource(R.string.tool_cast_on_calculator),
-                            description = stringResource(R.string.desc_cast_on),
-                            onClick = { onNavigate(Screen.CastOn) },
-                            titleColor = MaterialTheme.colorScheme.tertiary,
-                        )
-                    }
-                    item(key = "home-tool-yarn", contentType = HOME_TOOL_CONTENT_TYPE) {
-                        HubListItem(
-                            title = stringResource(R.string.tool_yarn_estimator),
-                            description = stringResource(R.string.desc_yarn_estimator_card),
-                            onClick = { onNavigate(Screen.Yarn) },
-                            titleColor = MaterialTheme.knitToolsColors.brandWine,
-                        )
-                    }
-                    item(key = "home-tool-ravelry", contentType = HOME_TOOL_CONTENT_TYPE) {
-                        HubListItem(
-                            title = stringResource(R.string.tool_ravelry),
-                            description = stringResource(R.string.desc_ravelry),
-                            onClick = { onNavigate(Screen.RavelryBrowser) },
-                            titleColor = MaterialTheme.knitToolsColors.tealAccent,
-                        )
-                    }
+                // Laskimet — suora lista
+                item(key = "home-tool-gauge", contentType = HOME_TOOL_CONTENT_TYPE) {
+                    HubListItem(
+                        title = stringResource(R.string.tool_gauge_converter),
+                        description = stringResource(R.string.desc_gauge_calculator),
+                        onClick = { onNavigate(Screen.Gauge) },
+                        titleColor = MaterialTheme.knitToolsColors.titleAccent(TitleAccent.Primary),
+                    )
+                }
+                item(key = "home-tool-increase-decrease", contentType = HOME_TOOL_CONTENT_TYPE) {
+                    HubListItem(
+                        title = stringResource(R.string.tool_increase_decrease),
+                        description = stringResource(R.string.desc_increase_decrease),
+                        onClick = { onNavigate(Screen.IncreaseDecrease) },
+                        titleColor = MaterialTheme.knitToolsColors.titleAccent(TitleAccent.Secondary),
+                    )
+                }
+                item(key = "home-tool-cast-on", contentType = HOME_TOOL_CONTENT_TYPE) {
+                    HubListItem(
+                        title = stringResource(R.string.tool_cast_on_calculator),
+                        description = stringResource(R.string.desc_cast_on),
+                        onClick = { onNavigate(Screen.CastOn) },
+                        titleColor = MaterialTheme.knitToolsColors.titleAccent(TitleAccent.Tertiary),
+                    )
+                }
+                item(key = "home-tool-yarn", contentType = HOME_TOOL_CONTENT_TYPE) {
+                    HubListItem(
+                        title = stringResource(R.string.tool_yarn_estimator),
+                        description = stringResource(R.string.desc_yarn_estimator_card),
+                        onClick = { onNavigate(Screen.Yarn) },
+                        titleColor = MaterialTheme.knitToolsColors.titleAccent(TitleAccent.Rose),
+                    )
+                }
+                item(key = "home-tool-ravelry", contentType = HOME_TOOL_CONTENT_TYPE) {
+                    HubListItem(
+                        title = stringResource(R.string.tool_ravelry),
+                        description = stringResource(R.string.desc_ravelry),
+                        onClick = { onNavigate(Screen.RavelryBrowser) },
+                        titleColor = MaterialTheme.knitToolsColors.titleAccent(TitleAccent.Teal),
+                    )
                 }
             }
         }

@@ -33,7 +33,6 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -65,6 +64,7 @@ import com.finnvek.knittools.ui.components.LabelWithInfo
 import com.finnvek.knittools.ui.components.SectionLabel
 import com.finnvek.knittools.ui.components.SegmentedToggle
 import com.finnvek.knittools.ui.components.SheetTitle
+import com.finnvek.knittools.ui.components.rememberExpandedModalSheetState
 import com.finnvek.knittools.ui.layout.ContentWidthPolicy
 import com.finnvek.knittools.ui.layout.contentWidth
 import com.finnvek.knittools.ui.platform.ExternalWebLinkOpenResult
@@ -216,11 +216,6 @@ fun SettingsScreen(
                         Toast.makeText(context, resources.getString(it), Toast.LENGTH_SHORT).show()
                     }
                 },
-            )
-
-            SettingsActionRow(
-                label = stringResource(R.string.settings_show_tips_again),
-                onClick = viewModel::showTipsAgain,
             )
 
             SettingsDivider()
@@ -473,7 +468,7 @@ private fun LanguagePickerBottomSheet(
     onDismiss: () -> Unit,
     onSelectLanguage: (AppLanguage) -> Unit,
 ) {
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val sheetState = rememberExpandedModalSheetState()
 
     ModalBottomSheet(
         sheetMaxWidth = ContentWidthPolicy.Form.maxWidth,

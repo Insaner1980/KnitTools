@@ -16,8 +16,8 @@ class FirebaseGradleIntegrationSourceTest {
             ProjectSourceFiles.file("app/src/debug/res/values/debug_firebase_options.xml")
         val buildWorkflow = ProjectSourceFiles.read(".github/workflows/build.yml")
 
-        assertTrue(versionCatalog.contains("firebaseBom = \"34.19.0\""))
-        assertTrue(versionCatalog.contains("googleServices = \"4.5.0\""))
+        assertTrue(versionCatalog.contains("firebaseBom = \"35.2.0\""))
+        assertTrue(versionCatalog.contains("googleServices = \"4.6.0\""))
         assertTrue(versionCatalog.contains("firebase-bom"))
         assertFalse(versionCatalog.contains("firebase-auth"))
         assertFalse(versionCatalog.contains("firebase-functions"))

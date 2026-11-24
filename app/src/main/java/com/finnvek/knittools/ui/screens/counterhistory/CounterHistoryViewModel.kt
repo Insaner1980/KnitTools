@@ -99,14 +99,21 @@ class CounterHistoryViewModel
                     currentFormat,
                     ->
                     when {
-                        project == null -> CounterHistoryUiState(loading = false, projectMissing = true)
-                        currentFormat == null -> CounterHistoryUiState()
-                        else ->
+                        project == null -> {
+                            CounterHistoryUiState(loading = false, projectMissing = true)
+                        }
+
+                        currentFormat == null -> {
+                            CounterHistoryUiState()
+                        }
+
+                        else -> {
                             CounterHistoryUiState(
                                 loading = false,
                                 projectName = project.name,
                                 days = presentCounterHistory(events, currentFormat),
                             )
+                        }
                     }
                 }.flowOn(ioDispatcher)
             }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), CounterHistoryUiState())

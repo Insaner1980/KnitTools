@@ -14,7 +14,9 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.calculator.CounterValueFormatter
+import com.finnvek.knittools.domain.calculator.MainCounterTargetSlot
 import com.finnvek.knittools.domain.calculator.formatIntegerForDisplay
+import com.finnvek.knittools.ui.components.MainCounterTargetStatus
 import com.finnvek.knittools.ui.components.mainCounterLabelText
 import com.finnvek.knittools.ui.components.mainCounterTargetStatus
 import com.finnvek.knittools.ui.components.rememberCurrentLocale
@@ -346,21 +348,23 @@ private fun stackedCounterHeroHeight(
     val target = display.targetLine
     val status = mainCounterTargetStatus(target)
     if (target != null && status != null) {
-        val targetText = stringResource(R.string.counter_target_of_format, target.target)
-        val statusText = counterTargetStatusText(status)
+        val showCompletion = !state.isCompleted && status !is MainCounterTargetStatus.Remaining
+        val (leading, trailing) = counterTargetLabels(target, status, showCompletion)
         val rowHeight =
             with(density) {
+                val spacing = CounterDimens.CounterTargetHelperSpacing.roundToPx()
+                val contentWidthPx = (widthPx - spacing).coerceAtLeast(0)
+                val leftWidth = if (showCompletion) contentWidthPx / 2 else widthPx
                 val left =
                     measurer.measure(
-                        targetText,
+                        leading,
                         captionStyle,
-                        maxLines = 1,
-                        constraints = Constraints(maxWidth = widthPx),
+                        maxLines = if (showCompletion) Int.MAX_VALUE else 1,
+                        constraints = Constraints(maxWidth = leftWidth),
                     )
-                val statusWidth =
-                    (widthPx - left.size.width - CounterDimens.CounterTargetHelperSpacing.roundToPx()).coerceAtLeast(0)
+                val rightWidth = (contentWidthPx - if (showCompletion) leftWidth else left.size.width).coerceAtLeast(0)
                 val right =
-                    measurer.measure(statusText, captionStyle, constraints = Constraints(maxWidth = statusWidth))
+                    measurer.measure(trailing, captionStyle, constraints = Constraints(maxWidth = rightWidth))
                 maxOf(left.size.height, right.size.height).toDp()
             }
         height += CounterDimens.CounterTargetHelperSpacing * 2 + ProjectListDimens.ProgressTrackHeight + rowHeight
@@ -417,4 +421,18 @@ private fun stackedCounterHeroHeight(
             }
     }
     return height
+}
+
+@Composable
+internal fun counterTargetLabels(
+    targetLine: MainCounterTargetSlot,
+    status: MainCounterTargetStatus,
+    showCompletion: Boolean,
+): Pair<String, String> {
+    val statusText = counterTargetStatusText(status)
+    return if (showCompletion) {
+        statusText to stringResource(R.string.counter_mark_complete)
+    } else {
+        stringResource(R.string.counter_target_of_format, targetLine.target) to statusText
+    }
 }

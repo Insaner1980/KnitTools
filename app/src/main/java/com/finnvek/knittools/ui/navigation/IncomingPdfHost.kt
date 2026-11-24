@@ -33,21 +33,27 @@ fun IncomingPdfHost(
 
     CollectWithLifecycleEffect({ viewModel.outcomes }) { outcome ->
         when (outcome) {
-            IncomingPdfOutcome.OpenFailed ->
+            IncomingPdfOutcome.OpenFailed -> {
                 Toast.makeText(context, R.string.incoming_pdf_open_failed, Toast.LENGTH_SHORT).show()
+            }
 
-            IncomingPdfOutcome.SaveFailed ->
+            IncomingPdfOutcome.SaveFailed -> {
                 Toast.makeText(context, R.string.incoming_pdf_save_failed, Toast.LENGTH_SHORT).show()
+            }
 
-            IncomingPdfOutcome.Downloading ->
+            IncomingPdfOutcome.Downloading -> {
                 Toast.makeText(context, R.string.incoming_pdf_downloading, Toast.LENGTH_SHORT).show()
+            }
 
-            IncomingPdfOutcome.NotPdf ->
+            IncomingPdfOutcome.NotPdf -> {
                 Toast.makeText(context, R.string.incoming_pdf_not_pdf, Toast.LENGTH_SHORT).show()
+            }
 
             is IncomingPdfOutcome.OpenProject,
             is IncomingPdfOutcome.OpenSavedPattern,
-            -> onNavigate(outcome)
+            -> {
+                onNavigate(outcome)
+            }
         }
     }
 

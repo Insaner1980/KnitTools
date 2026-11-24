@@ -91,12 +91,19 @@ class ProgressPhotoStorage
             val appOwnedFile = AppFileStorage.resolveAppOwnedFile(context, uri)
             if (appOwnedFile != null) return appOwnedFile.exists()
             return when (uri.scheme) {
-                "file" -> uri.path?.let(::File)?.exists() == true
-                "content" ->
+                "file" -> {
+                    uri.path?.let(::File)?.exists() == true
+                }
+
+                "content" -> {
                     runCatching {
                         context.contentResolver.openFileDescriptor(uri, "r")?.use { true } ?: false
                     }.getOrDefault(false)
-                else -> false
+                }
+
+                else -> {
+                    false
+                }
             }
         }
 

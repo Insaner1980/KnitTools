@@ -52,13 +52,25 @@ object MeasurementNumberParser {
         val value =
             signed.toDoubleOrNull() ?: return MeasurementNumberResult(error = MeasurementNumberError.INVALID_NUMBER)
         return when {
-            value == 0.0 && normalized.any { it in '1'..'9' } ->
+            value == 0.0 && normalized.any { it in '1'..'9' } -> {
                 MeasurementNumberResult(error = MeasurementNumberError.INVALID_NUMBER)
-            !value.isFinite() -> MeasurementNumberResult(error = MeasurementNumberError.TOO_LARGE)
-            value == 0.0 && !allowZero -> MeasurementNumberResult(error = MeasurementNumberError.MUST_BE_POSITIVE)
-            integer && (value < Int.MIN_VALUE.toDouble() || value > Int.MAX_VALUE.toDouble()) ->
+            }
+
+            !value.isFinite() -> {
                 MeasurementNumberResult(error = MeasurementNumberError.TOO_LARGE)
-            else -> MeasurementNumberResult(value = value)
+            }
+
+            value == 0.0 && !allowZero -> {
+                MeasurementNumberResult(error = MeasurementNumberError.MUST_BE_POSITIVE)
+            }
+
+            integer && (value < Int.MIN_VALUE.toDouble() || value > Int.MAX_VALUE.toDouble()) -> {
+                MeasurementNumberResult(error = MeasurementNumberError.TOO_LARGE)
+            }
+
+            else -> {
+                MeasurementNumberResult(value = value)
+            }
         }
     }
 }

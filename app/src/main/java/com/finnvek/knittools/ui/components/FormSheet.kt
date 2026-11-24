@@ -18,9 +18,10 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.SheetState
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
@@ -34,6 +35,15 @@ import androidx.compose.ui.window.DialogWindowProvider
 import com.finnvek.knittools.ui.layout.AdaptiveModalWindow
 import com.finnvek.knittools.ui.layout.ContentWidthPolicy
 import com.finnvek.knittools.ui.theme.ComponentDimens
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+internal fun rememberExpandedModalSheetState(confirmValueChange: (SheetValue) -> Boolean = { true }): SheetState =
+    rememberBottomSheetState(
+        initialValue = SheetValue.Hidden,
+        enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded),
+        confirmValueChange = confirmValueChange,
+    )
 
 /** Lomakesheetin vahvistus: teksti, käytettävyys ja tallennuksen aikainen latausilmaisin. */
 data class FormSheetConfirm(
@@ -63,8 +73,7 @@ fun FormSheet(
     ModalBottomSheet(
         onDismissRequest = { if (canDismiss) onDismiss() },
         sheetState =
-            rememberModalBottomSheetState(
-                skipPartiallyExpanded = true,
+            rememberExpandedModalSheetState(
                 confirmValueChange = { canDismiss || it != SheetValue.Hidden },
             ),
         containerColor = MaterialTheme.colorScheme.surface,

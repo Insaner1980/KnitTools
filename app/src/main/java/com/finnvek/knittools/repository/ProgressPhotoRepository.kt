@@ -97,14 +97,16 @@ class ProgressPhotoRepository
             note: String? = null,
         ): Long =
             withContext(ioDispatcher) {
-                val (file, _) = storage.createPhotoFile(context, projectId)
-                val targetUri = Uri.fromFile(file).toString()
-                val saved =
+                val (targetUri, saved) =
                     try {
-                        storage.compressAndSave(context, sourceUri, file)
-                    } catch (throwable: IOException) {
-                        runCatching { storage.deletePhoto(context, projectId, targetUri) }
-                        throw throwable
+                        val (file, _) = storage.createPhotoFile(context, projectId)
+                        val uri = Uri.fromFile(file).toString()
+                        try {
+                            uri to storage.compressAndSave(context, sourceUri, file)
+                        } catch (throwable: IOException) {
+                            runCatching { storage.deletePhoto(context, projectId, uri) }
+                            throw throwable
+                        }
                     } finally {
                         storage.deleteTemporarySource(context, sourceUri)
                     }

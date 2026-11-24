@@ -89,7 +89,7 @@ class BackupArchiveTest {
         val (source, manifest) = fixture()
         listOf(
             manifest.copy(formatVersion = 2),
-            manifest.copy(dataVersion = 2),
+            manifest.copy(dataVersion = 3),
             manifest.copy(schemaVersion = 24),
             manifest.copy(schemaVersion = KNITTOOLS_DATABASE_VERSION + 1),
         ).forEach {
@@ -243,17 +243,27 @@ class BackupArchiveTest {
             val buffer = ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN)
             val central = buffer.getInt(bytes.size - 22 + 16)
             when (mutation) {
-                0 -> buffer.putInt(central + 42, 30)
+                0 -> {
+                    buffer.putInt(central + 42, 30)
+                }
+
                 1 -> {
                     buffer.putShort(6, (buffer.getShort(6).toInt() or 1).toShort())
                     buffer.putShort(central + 8, (buffer.getShort(central + 8).toInt() or 1).toShort())
                 }
+
                 2 -> {
                     buffer.putShort(8, 99)
                     buffer.putShort(central + 10, 99)
                 }
-                3 -> buffer.putInt(central + 20, 1)
-                4 -> buffer.putInt(bytes.size - 22 + 12, 1)
+
+                3 -> {
+                    buffer.putInt(central + 20, 1)
+                }
+
+                4 -> {
+                    buffer.putInt(bytes.size - 22 + 12, 1)
+                }
             }
             archive.writeBytes(bytes)
             assertThrows(Exception::class.java) { BackupArchive.extract(archive, temporary.newFolder()) }

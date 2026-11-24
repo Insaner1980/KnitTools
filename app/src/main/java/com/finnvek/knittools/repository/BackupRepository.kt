@@ -97,9 +97,23 @@ class BackupRepository
             source: Uri,
             selectionId: UUID,
         ): BackupPreview =
+            try {
+                prepareOnIo(source, selectionId)
+            } catch (failure: CancellationException) {
+                withContext(NonCancellable) { cancelPreview(selectionId) }
+                throw failure
+            }
+
+        private suspend fun prepareOnIo(
+            source: Uri,
+            selectionId: UUID,
+        ): BackupPreview =
             withContext(ioDispatcher) {
+                val coroutine = currentCoroutineContext()
+                val check = { coroutine.ensureActive() }
                 val directory =
                     operation.withLock {
+                        check()
                         discardPending()
                         latestSelectionId = null
                         newDirectory(selectionId).also {
@@ -108,8 +122,6 @@ class BackupRepository
                         }
                     }
                 try {
-                    val coroutine = currentCoroutineContext()
-                    val check = { coroutine.ensureActive() }
                     val archive = File(directory, BACKUP_ARCHIVE_NAME)
                     operationResult(BackupError.READ) {
                         providerIo.read(source, archive, BackupFormat.MAX_TOTAL) {
@@ -187,7 +199,7 @@ class BackupRepository
                         )
                     }
                     database.withTransaction {
-                        replaceLiveData(directory, payload, source, check)
+                        replaceLiveData(directory, payload, source, manifest.dataVersion, check)
                         check()
                     }
                 }
@@ -198,12 +210,13 @@ class BackupRepository
             directory: File,
             payload: File,
             source: KnitToolsDatabase,
+            dataVersion: Int,
             check: () -> Unit,
         ) {
             val live = database.openHelper.writableDatabase
             val identities = BackupIdentityMap(source.openHelper.writableDatabase, live)
             val replacementBudget = BackupBudget(trackEmbeddedIdentities = false)
-            val files = BackupRestoreFiles(context, payload, replacementBudget)
+            val files = BackupRestoreFiles(context, payload, replacementBudget, dataVersion)
             val replacement = buildReplacement(directory, source, identities, files, replacementBudget, check)
             BackupFormat.space(context.filesDir, restoreSpace(payload, live.path.orEmpty(), files.requiredBytes))
             files.journal(BackupTables.references(live))
@@ -340,6 +353,7 @@ class BackupRepository
                     .toList()
             val manifest =
                 BackupManifest(
+                    dataVersion = files.dataVersion,
                     createdAt = System.currentTimeMillis(),
                     versionCode = BuildConfig.VERSION_CODE.toLong(),
                     versionName = BuildConfig.VERSION_NAME,
@@ -409,7 +423,7 @@ class BackupRepository
                 db.withTransaction {
                     val sql = db.openHelper.writableDatabase
                     val preflightBudget = BackupBudget()
-                    val preflightFiles = BackupRestoreFiles(context, payload, preflightBudget)
+                    val preflightFiles = BackupRestoreFiles(context, payload, preflightBudget, manifest.dataVersion)
                     BackupTables.preflight(sql, payload, manifest.schemaVersion, preflightBudget, check) { table, row ->
                         preflightFiles.rebase(table, row)
                     }
@@ -421,7 +435,7 @@ class BackupRepository
                         budget = BackupBudget(trackEmbeddedIdentities = false),
                         schemaVersion = manifest.schemaVersion,
                     )
-                    val references = BackupTables.references(sql)
+                    val references = BackupTables.references(sql).mapTo(mutableSetOf()) { it.substringBefore('#') }
                     BackupFormat.requireValid(references == entries, BackupError.VALIDATION)
                     val identities = BackupIdentityMap(sql, sql)
                     val remapBudget = BackupBudget(trackEmbeddedIdentities = false)
@@ -494,10 +508,20 @@ class BackupRepository
         private suspend fun cleanup(directory: File) {
             try {
                 withContentLocks {
+                    val payload = File(directory, "payload")
+                    if (File(payload, BackupRestoreFiles.JOURNAL).exists()) {
+                        // WAL NORMAL can lose a recent commit after a power loss.
+                        // Keep the journal and both file sets if SQLite cannot complete the checkpoint.
+                        val checkpointed =
+                            database.openHelper.writableDatabase.query("PRAGMA wal_checkpoint(FULL)").use {
+                                it.moveToFirst() && it.getInt(0) == 0 && it.getLong(1) == it.getLong(2)
+                            }
+                        if (!checkpointed) return@withContentLocks
+                    }
                     database.withTransaction {
                         if (BackupRestoreFiles.cleanup(
                                 context,
-                                File(directory, "payload"),
+                                payload,
                                 BackupTables.references(database.openHelper.writableDatabase),
                             )
                         ) {

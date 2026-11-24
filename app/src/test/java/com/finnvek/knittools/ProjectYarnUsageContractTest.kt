@@ -72,6 +72,36 @@ class ProjectYarnUsageContractTest {
     }
 
     @Test
+    fun `delete confirmation and button use the same noun in every locale`() {
+        val usageNouns =
+            mapOf(
+                "values" to "usage",
+                "values-da" to "forbrugsregistrering",
+                "values-de" to "Verbrauch",
+                "values-es" to "seguimiento",
+                "values-fi" to "seuranta",
+                "values-fr" to "suivi",
+                "values-it" to "monitoraggio",
+                "values-nb" to "forbrukssporing",
+                "values-nl" to "Verbruik",
+                "values-pt" to "acompanhamento",
+                "values-pt-rBR" to "acompanhamento",
+                "values-sv" to "spårning",
+            )
+        assertEquals(ProjectSourceFiles.configuredResourceDirectories(), usageNouns.keys)
+        usageNouns.forEach { (locale, noun) ->
+            val strings = ProjectSourceFiles.textResources(locale)
+            val word = Regex("(?<!\\p{L})${Regex.escape(noun)}(?!\\p{L})", RegexOption.IGNORE_CASE)
+            listOf("yarn_usage_delete_title", "yarn_usage_delete").forEach { key ->
+                assertTrue(
+                    "$locale $key must contain the word $noun",
+                    word.containsMatchIn(strings.getValue(key).textContent),
+                )
+            }
+        }
+    }
+
+    @Test
     fun `usage has no platform entitlement network inventory or file writer`() {
         val source = "app/src/main/java/com/finnvek/knittools/"
         listOf(

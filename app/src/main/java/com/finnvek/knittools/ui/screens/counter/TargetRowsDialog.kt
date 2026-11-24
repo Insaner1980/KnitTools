@@ -76,7 +76,7 @@ fun TargetRowsDialog(
                         TargetInput.Invalid -> Unit
                     }
                 },
-                enabled = parsed is TargetInput.Valid || parsed == TargetInput.NoTarget && currentTarget != null,
+                enabled = parsed is TargetInput.Valid || (parsed == TargetInput.NoTarget && currentTarget != null),
             ) {
                 Text(stringResource(R.string.save))
             }

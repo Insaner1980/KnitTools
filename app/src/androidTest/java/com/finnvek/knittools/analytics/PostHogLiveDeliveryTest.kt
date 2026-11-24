@@ -65,8 +65,9 @@ class PostHogLiveDeliveryTest {
                 .addInterceptor { chain ->
                     val request = chain.request()
                     assertEquals("eu.i.posthog.com", request.url.host)
-                    val names = mutableListOf<String>()
-                    if (request.url.encodedPath == "/batch") {
+                    val names = mutableMapOf<String, String>()
+                    if (request.url.encodedPath == "/i/v1/analytics/events") {
+                        assertTrue(request.header("Authorization") == "Bearer ${BuildConfig.POSTHOG_PROJECT_TOKEN}")
                         val buffer = Buffer()
                         requireNotNull(request.body).writeTo(buffer)
                         val batch = JSONObject(buffer.readUtf8()).getJSONArray("batch")
@@ -89,15 +90,19 @@ class PostHogLiveDeliveryTest {
                             ).forEach {
                                 assertFalse("Unexpected content property: $it", properties.has(it))
                             }
-                            names.add(event.getString("event"))
+                            names[event.getString("uuid")] = event.getString("event")
                         }
                     }
-                    attempted.addAll(names)
+                    attempted.addAll(names.values)
                     chain.proceed(request).also { response ->
-                        if (response.isSuccessful) {
-                            names.forEach {
-                                delivered.add(it)
-                                acknowledged.countDown()
+                        if (response.isSuccessful && names.isNotEmpty()) {
+                            val results = JSONObject(response.peekBody(64 * 1024L).string()).getJSONObject("results")
+                            names.forEach { (uuid, name) ->
+                                val result = results.optJSONObject(uuid)?.optString("result")
+                                if (result != "retry" && result != "drop") {
+                                    delivered.add(name)
+                                    acknowledged.countDown()
+                                }
                             }
                         }
                     }

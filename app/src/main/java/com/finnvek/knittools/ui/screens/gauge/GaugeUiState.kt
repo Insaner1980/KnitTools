@@ -148,41 +148,70 @@ data class GaugeUiState(
     val hasResult: Boolean
         get() =
             when (task) {
-                GaugeTask.CONVERT -> convertedLength != null
-                GaugeTask.MEASURE ->
+                GaugeTask.CONVERT -> {
+                    convertedLength != null
+                }
+
+                GaugeTask.MEASURE -> {
                     listOfNotNull(stitchSwatchDensity, rowSwatchDensity).any { density ->
                         MeasurementCalculator.gaugeForBasis(density, basis) != null
                     }
-                GaugeTask.CALCULATE ->
+                }
+
+                GaugeTask.CALCULATE -> {
                     when (operation) {
                         GaugeOperation.COUNT_FOR_SIZE -> countResult != null
                         GaugeOperation.SIZE_FROM_COUNT -> sizeResultMm != null
                     }
-                GaugeTask.ADJUST -> stitchAdjustment != null || rowAdjustment != null
+                }
+
+                GaugeTask.ADJUST -> {
+                    stitchAdjustment != null || rowAdjustment != null
+                }
             }
 
     val resultError: MeasurementNumberError?
         get() {
             val failed =
                 when (task) {
-                    GaugeTask.CONVERT -> value(GaugeField.CONVERSION) != null && convertedLength == null
-                    GaugeTask.MEASURE -> false
-                    GaugeTask.CALCULATE ->
+                    GaugeTask.CONVERT -> {
+                        value(GaugeField.CONVERSION) != null && convertedLength == null
+                    }
+
+                    GaugeTask.MEASURE -> {
+                        false
+                    }
+
+                    GaugeTask.CALCULATE -> {
                         selectedDensity != null &&
                             when (operation) {
                                 GaugeOperation.COUNT_FOR_SIZE -> selectedTarget != null && countResult == null
                                 GaugeOperation.SIZE_FROM_COUNT -> selectedCount != null && sizeResultMm == null
                             }
-                    GaugeTask.ADJUST -> failedAdjustment(GaugeAxis.STITCHES) || failedAdjustment(GaugeAxis.ROWS)
+                    }
+
+                    GaugeTask.ADJUST -> {
+                        failedAdjustment(GaugeAxis.STITCHES) || failedAdjustment(GaugeAxis.ROWS)
+                    }
                 }
             val swatchFailed =
                 when (task) {
-                    GaugeTask.CONVERT -> false
-                    GaugeTask.MEASURE ->
+                    GaugeTask.CONVERT -> {
+                        false
+                    }
+
+                    GaugeTask.MEASURE -> {
                         failedSwatch(GaugeField.SWATCH_STITCHES, GaugeField.SWATCH_WIDTH) ||
                             failedSwatch(GaugeField.SWATCH_ROWS, GaugeField.SWATCH_HEIGHT)
-                    GaugeTask.CALCULATE -> failedDerivedSwatch(axis)
-                    GaugeTask.ADJUST -> failedDerivedSwatch(GaugeAxis.STITCHES) || failedDerivedSwatch(GaugeAxis.ROWS)
+                    }
+
+                    GaugeTask.CALCULATE -> {
+                        failedDerivedSwatch(axis)
+                    }
+
+                    GaugeTask.ADJUST -> {
+                        failedDerivedSwatch(GaugeAxis.STITCHES) || failedDerivedSwatch(GaugeAxis.ROWS)
+                    }
                 }
             return if (failed || swatchFailed) MeasurementNumberError.TOO_LARGE else null
         }

@@ -62,52 +62,10 @@
     <string name="project_target_error">Anna luku väliltä 1–%1$s.</string>
     <!-- Projektin luontiesikatselun saavutettavuuskuvaus. %1$s on laskurin koko näyttöteksti. -->
     <string name="project_create_preview_a11y">Esikatselu: %1$s</string>
-    <!-- Vihjeen kuittaava neutraali tekstipainike. -->
-    <string name="tip_got_it">Selvä</string>
-    <!-- Kerroslaskurin ensimmäinen vihje; + ja suuri numero ovat lisäystoimintoja. -->
-    <string name="tip_first_row_rows">Napauta +, kun kerros on valmis. Voit myös napauttaa suurta numeroa.</string>
-    <!-- Kierroslaskurin ensimmäinen vihje; + ja suuri numero ovat lisäystoimintoja. -->
-    <string name="tip_first_row_rounds">Napauta +, kun kierros on valmis. Voit myös napauttaa suurta numeroa.</string>
-    <!-- Toistolaskurin ensimmäinen vihje; + ja suuri numero ovat lisäystoimintoja. -->
-    <string name="tip_first_row_repeats">Napauta +, kun toisto on valmis. Voit myös napauttaa suurta numeroa.</string>
-    <!-- Mukautetun laskurin ensimmäinen vihje; älä oleta kerroksia tai kierroksia. -->
-    <string name="tip_first_row_custom">Napauta + aina, kun yksi on valmis. Voit myös napauttaa suurta numeroa.</string>
-    <!-- Tallennetun laskurimuutoksen vihje. Undo on sovelluksen Kumoa-toiminto. -->
-    <string name="tip_undo">Tallennettu. Napautitko vahingossa? Kumoa peruu viimeisen muutoksen.</string>
-    <!-- Askelkoon vihje: yhden napautuksen lisäysmäärä on muokattavissa. -->
-    <string name="tip_step_size">Lasketko useamman kerrallaan? Muuta tästä, kuinka paljon yksi napautus lisää tai vähentää.</string>
-    <!-- Työskentelyistunto käynnistyy käyttäjän toimesta valikosta, ei automaattisesti. -->
-    <string name="tip_work_session">Haluatko tietää, kuinka kauan projektiin kuluu aikaa? Aloita työskentelyistunto tästä valikosta. Ajanotto ei koskaan käynnisty itsestään.</string>
-    <!-- Projektisivun vihje; Continue tarkoittaa nykyistä Jatka-toimintoa. -->
-    <string name="tip_overview_intro">Tässä on koko projektisi: ohje, langat, muistiinpanot ja kuvat. Jatka vie takaisin laskuriin.</string>
-    <!-- Ohjeruudun vihje; pattern tarkoittaa käsityöohjetta, suomeksi ohje. -->
-    <string name="tip_pattern_tile">Liitä ohje, niin se kulkee projektin mukana.</string>
-    <!-- PDF-vihje; Follow main counter käännetään samalla nimellä kuin lukijan asetus. -->
-    <string name="tip_reading_line">Ota Seuraa päälaskuria käyttöön, niin lukulinja liikkuu laskurin mukana.</string>
-    <!-- Vihje laskurin näytön päällä pitämisestä. -->
-    <string name="tip_keep_screen_on">Sammuuko näyttö työskennellessäsi? Pidä se päällä laskurin käytön ajan.</string>
-    <!-- Vihjeen painike ottaa näytön päällä pitämisen käyttöön. -->
-    <string name="tip_keep_screen_on_action">Pidä näyttö päällä</string>
-    <!-- Tavoitteen saavuttaminen ei päätä projektia automaattisesti. -->
-    <string name="tip_target_reached">Tavoite saavutettu. Jatka laskemista tai merkitse projekti valmiiksi projektisivun valikosta.</string>
-    <!-- Ensimmäisen tallennetun työskentelyistunnon vihje näyttää projektin kokonaisajan paikan. -->
-    <string name="tip_first_session_saved">Ensimmäinen työskentelyistuntosi on tallennettu. Projektin kokonaisaika näkyy tässä.</string>
-    <!-- Paikallisen tiedon varmuuskopiointivihje; älä lupaa automaattista pilvisynkronointia. -->
-    <string name="tip_backup">Projektisi ovat vain tässä puhelimessa. Tee varmuuskopio, jotta ne säilyvät myös puhelinta vaihtaessasi.</string>
-    <!-- Vihjeen toiminto avaa varmuuskopioinnin. -->
-    <string name="tip_backup_action">Tee varmuuskopio</string>
-    <!-- Kansiovihje; otsikon painaminen avaa projektien kansiovalinnan. -->
-    <string name="tip_folders">Paljon projekteja? Järjestä ne kansioihin otsikon kautta.</string>
-    <!-- Widget on Androidin aloitusnäytön laskuripienoisohjelma. -->
-    <string name="tip_widget">Laske aloitusnäytöltä avaamatta sovellusta.</string>
-    <!-- Vihjeen toiminto avaa saman widgetin lisäyksen kuin laskurin valikko. -->
-    <string name="tip_widget_action">Lisää pienoisohjelma</string>
-    <!-- Työkalujen aloitusvihje; laskurit toimivat ilman verkkoyhteyttä. -->
-    <string name="tip_tools_intro">Laskurit toimivat ilman verkkoyhteyttä. Esimerkkiarvot näyttävät, mitä kenttiin syötetään.</string>
-    <!-- Asetusten toiminto nollaa nähtyjen vihjeiden tilan. -->
-    <string name="settings_show_tips_again">Näytä vihjeet uudelleen</string>
-    <!-- Vihjeiden onnistuneen nollauksen palaute. -->
-    <string name="settings_tips_reset_done">Vihjeet näytetään uudelleen.</string>
+    <!-- Kokeilun päättymismuistutuksen kuittaava painike. -->
+    <string name="trial_notice_acknowledge">Selvä</string>
+    <!-- Avaa varmuuskopioinnin ilmoitusriviltä. -->
+    <string name="projects_backup_notice_action">Tee varmuuskopio</string>
     <!-- Valmistelulistan ohjeen liittämistoiminto; pattern on ohje. -->
     <string name="project_setup_pattern">Liitä ohje</string>
     <!-- Valmistelulistan ohje on liitetty. -->
@@ -249,7 +207,7 @@
     <!-- Oppaan kohdan otsikko: projektikansiot ja yksi maksuton työn alla oleva projekti; valmistuneita ei lasketa rajaan. -->
     <string name="guide_tools_folders_title">Kansiot</string>
     <!-- Oppaan kohdan selitys: projektikansiot ja yksi maksuton työn alla oleva projekti; valmistuneita ei lasketa rajaan. -->
-    <string name="guide_tools_folders_body">Ryhmittele projektit kansioihin Projektit-otsikon kautta. Yksi työn alla oleva projekti kerrallaan on maksuton, eikä valmistuneita lasketa mukaan.</string>
+    <string name="guide_tools_folders_body">Ryhmittele projektit kansioihin Projektit-otsikon kautta.</string>
     <!-- Oppaan kohdan otsikko: varmuuskopiotiedosto; palautus korvaa tämän laitteen tiedot. -->
     <string name="guide_tools_backup_title">Varmuuskopiointi</string>
     <!-- Oppaan kohdan selitys: varmuuskopiotiedosto; palautus korvaa tämän laitteen tiedot. -->
@@ -661,8 +619,16 @@
     <string name="journey_pdf_failed">PDF-ohjetta ei voitu tuoda. Aiempi liite säilyi.</string>
     <!-- Aloituspolku: Luo ensimmäinen projekti -->
     <string name="journey_first_project">Luo ensimmäinen projekti</string>
-    <!-- Aloituspolun jälkeen: ohjelaattaan ankkuroitu vihje vain luodulle projektille, johon käyttäjä liitti PDF-ohjeen. -->
-    <string name="journey_open_pattern_tip">Avaa tähän työhön liittämäsi ohje tästä.</string>
     <!-- Vahvistetun Pro-oston jälkeen näytettävä kuittaus sovellukseen siirryttäessä. -->
     <string name="journey_pro_active">Pro on käytössä.</string>
+    <!-- Projektien paikallisesta tallennuksesta kertova ilmoitus. -->
+    <string name="projects_backup_notice">Projektisi ovat vain tässä puhelimessa.</string>
+    <!-- PDF-lukijan ilmoitus laskuria seuraavasta lukulinjasta. -->
+    <string name="reading_line_notice">Lukulinja voi siirtyä laskurin mukana.</string>
+    <!-- Ohittaa ilmoituksen pysyvästi. -->
+    <string name="contextual_notice_skip">Ohita</string>
+    <!-- Ottaa käyttöön laskuria seuraavan lukulinjan. -->
+    <string name="reading_line_notice_enable">Ota käyttöön</string>
+    <!-- Avaa valmistumisvahvistuksen tavoitteen täyttäneelle projektille. -->
+    <string name="counter_mark_complete">Merkitse valmiiksi</string>
 </resources>

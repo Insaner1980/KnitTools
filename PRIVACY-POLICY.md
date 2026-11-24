@@ -32,7 +32,7 @@ Crash reports can include technical information such as stack traces and app/dev
 
 ## Optional Usage Analytics
 
-Usage analytics is **off by default**. You can enable or disable it in Settings. It operates in release builds through PostHog with the configured EU ingestion endpoint.
+Usage analytics is **off by default**. You can enable or disable it in Settings. It operates in release builds through PostHog with the configured EU ingestion endpoint. When you enable it, events can include the language KnitTools displays, such as Finnish.
 
 The app supplies predefined events for project creation, PDF import success/failure, counter increment/decrement and work-session actions. It also records app foreground/background and allowlisted screen visits/durations. Route parameters are removed before screen names are captured.
 

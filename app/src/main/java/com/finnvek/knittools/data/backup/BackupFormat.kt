@@ -128,11 +128,15 @@ internal object BackupFormat {
                 }
             } else {
                 when (character) {
-                    '"' -> quoted = true
+                    '"' -> {
+                        quoted = true
+                    }
+
                     '[', '{' -> {
                         depth++
                         requireValid(depth <= maximum)
                     }
+
                     ']', '}' -> {
                         depth--
                         requireValid(depth >= 0)

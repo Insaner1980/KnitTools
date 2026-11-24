@@ -32,11 +32,12 @@ fun FabricSwatch(
     Spacer(
         modifier.clipToBounds().drawWithCache {
             if (size.minDimension <= 0f) return@drawWithCache onDrawBehind { }
+            val stitchUnit = stitchScale?.toPx()?.takeIf { it.isFinite() && it > 0f }
             val fabric =
                 when (kind) {
-                    FabricKind.KNIT -> knitFabric(size, color, stitchScale?.toPx())
-                    FabricKind.CROCHET -> crochetFabric(size, color, stitchScale?.toPx())
-                    FabricKind.YARN -> yarnFabric(size, color, stitchScale?.toPx())
+                    FabricKind.KNIT -> knitFabric(size, color, stitchUnit)
+                    FabricKind.CROCHET -> crochetFabric(size, color, stitchUnit)
+                    FabricKind.YARN -> yarnFabric(size, color, stitchUnit)
                 }
             val vignette =
                 Brush.radialGradient(

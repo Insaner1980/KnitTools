@@ -23,7 +23,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -49,8 +48,9 @@ import com.finnvek.knittools.pro.ProActionAccess
 import com.finnvek.knittools.pro.ProFeature
 import com.finnvek.knittools.pro.ProState
 import com.finnvek.knittools.pro.proActionAccess
-import com.finnvek.knittools.ui.components.CancelButton
 import com.finnvek.knittools.ui.components.ConfirmationDialog
+import com.finnvek.knittools.ui.components.FormSheet
+import com.finnvek.knittools.ui.components.FormSheetConfirm
 import com.finnvek.knittools.ui.components.LabeledTextField
 import com.finnvek.knittools.ui.components.NumberInputField
 import com.finnvek.knittools.ui.components.NumberInputOptions
@@ -58,13 +58,13 @@ import com.finnvek.knittools.ui.components.OverviewTextAction
 import com.finnvek.knittools.ui.components.ProMarker
 import com.finnvek.knittools.ui.components.RowMenuAction
 import com.finnvek.knittools.ui.components.RowOverflowMenu
-import com.finnvek.knittools.ui.components.ScrollableFormDialog
 import com.finnvek.knittools.ui.components.SegmentedToggle
 import com.finnvek.knittools.ui.components.SegmentedToggleSurface
 import com.finnvek.knittools.ui.components.SheetTitle
 import com.finnvek.knittools.ui.components.mainCounterCountText
 import com.finnvek.knittools.ui.components.mainCounterCountTextInline
 import com.finnvek.knittools.ui.components.mainCounterLabelText
+import com.finnvek.knittools.ui.components.rememberExpandedModalSheetState
 import com.finnvek.knittools.ui.layout.ContentWidthPolicy
 import com.finnvek.knittools.ui.theme.ComponentDimens
 import com.finnvek.knittools.ui.theme.knitToolsColors
@@ -83,7 +83,7 @@ fun RemindersSheet(
     onDismiss: () -> Unit,
     label: MainCounterLabelSlot = MainCounterLabelSlot(MainCounterLabelType.ROWS),
 ) {
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val sheetState = rememberExpandedModalSheetState()
     val reminderAccess = proActionAccess(proState, proAccessReady, ProFeature.ROW_REMINDERS)
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -286,20 +286,29 @@ internal fun reminderDetailText(
     val interval = reminder.repeatInterval?.takeIf { it > 0 } ?: return count
     val intervalText =
         when (label.labelType) {
-            MainCounterLabelType.ROWS -> pluralStringResource(R.plurals.reminder_interval_rows, interval, interval)
-            MainCounterLabelType.ROUNDS -> pluralStringResource(R.plurals.reminder_interval_rounds, interval, interval)
-            MainCounterLabelType.REPEATS ->
+            MainCounterLabelType.ROWS -> {
+                pluralStringResource(R.plurals.reminder_interval_rows, interval, interval)
+            }
+
+            MainCounterLabelType.ROUNDS -> {
+                pluralStringResource(R.plurals.reminder_interval_rounds, interval, interval)
+            }
+
+            MainCounterLabelType.REPEATS -> {
                 pluralStringResource(
                     R.plurals.reminder_interval_repeats,
                     interval,
                     interval,
                 )
-            MainCounterLabelType.CUSTOM ->
+            }
+
+            MainCounterLabelType.CUSTOM -> {
                 stringResource(
                     R.string.reminder_interval_custom,
                     interval,
                     mainCounterLabelText(label.labelType, label.customLabel),
                 )
+            }
         }
     val next =
         if (currentRow >= reminder.targetRow) {
@@ -315,7 +324,7 @@ internal fun reminderDetailText(
 private const val UPCOMING_ROW_WINDOW = 5
 
 @Composable
-fun AddReminderDialog(
+fun ReminderFormSheet(
     reminder: RowReminder? = null,
     onSave: (targetRow: Int, repeatInterval: Int?, message: String) -> Unit,
     onDismiss: () -> Unit,
@@ -333,7 +342,7 @@ fun AddReminderDialog(
     var message by rememberSaveable(reminder?.id) { mutableStateOf(reminder?.message.orEmpty()) }
 
     val form =
-        ReminderDialogForm(
+        ReminderForm(
             rowText = rowText,
             selectedType = selectedType,
             intervalText = intervalText,
@@ -341,34 +350,32 @@ fun AddReminderDialog(
         )
     val validation = form.validation
 
-    ScrollableFormDialog(
-        onDismissRequest = onDismiss,
-        title = { ReminderDialogTitle(reminder = reminder) },
-        text = {
-            ReminderDialogFields(
-                form = form,
-                label = label,
-                onRowTextChange = { rowText = it },
-                onSelectedTypeChange = { selectedType = it },
-                onIntervalTextChange = { intervalText = it },
-                onMessageChange = { message = limitReminderMessage(message, it) },
-            )
-        },
-        confirmButton = {
-            ReminderDialogConfirmButton(
-                validation = validation,
-                isRepeating = form.isRepeating,
-                message = message,
-                onSave = onSave,
-            )
-        },
-        dismissButton = {
-            CancelButton(onClick = onDismiss)
-        },
-    )
+    FormSheet(
+        title = stringResource(if (reminder == null) R.string.add_reminder else R.string.edit_reminder),
+        confirm =
+            FormSheetConfirm(
+                text = stringResource(R.string.save),
+                enabled = validation.canSave,
+                onClick = {
+                    validation.rowNumber?.let { row ->
+                        onSave(row, if (form.isRepeating) validation.interval else null, message.trim())
+                    }
+                },
+            ),
+        onDismiss = onDismiss,
+    ) {
+        ReminderFormFields(
+            form = form,
+            label = label,
+            onRowTextChange = { rowText = it },
+            onSelectedTypeChange = { selectedType = it },
+            onIntervalTextChange = { intervalText = it },
+            onMessageChange = { message = limitReminderMessage(message, it) },
+        )
+    }
 }
 
-private data class ReminderDialogForm(
+private data class ReminderForm(
     val rowText: String,
     val selectedType: Int,
     val intervalText: String,
@@ -377,11 +384,11 @@ private data class ReminderDialogForm(
     val isRepeating: Boolean
         get() = selectedType == 1
 
-    val validation: ReminderDialogValidation
+    val validation: ReminderValidation
         get() {
             val rowNumber = MeasurementNumberParser.parse(rowText, Locale.ROOT, integer = true).value?.toInt()
             val interval = MeasurementNumberParser.parse(intervalText, Locale.ROOT, integer = true).value?.toInt()
-            return ReminderDialogValidation(
+            return ReminderValidation(
                 rowNumber = rowNumber,
                 interval = interval,
                 canSave =
@@ -393,20 +400,15 @@ private data class ReminderDialogForm(
         }
 }
 
-private data class ReminderDialogValidation(
+private data class ReminderValidation(
     val rowNumber: Int?,
     val interval: Int?,
     val canSave: Boolean,
 )
 
 @Composable
-private fun ReminderDialogTitle(reminder: RowReminder?) {
-    Text(stringResource(if (reminder == null) R.string.add_reminder else R.string.edit_reminder))
-}
-
-@Composable
-private fun ReminderDialogFields(
-    form: ReminderDialogForm,
+private fun ReminderFormFields(
+    form: ReminderForm,
     label: MainCounterLabelSlot,
     onRowTextChange: (String) -> Unit,
     onSelectedTypeChange: (Int) -> Unit,
@@ -420,7 +422,7 @@ private fun ReminderDialogFields(
             MainCounterLabelType.REPEATS -> stringResource(R.string.counter_unit_repeats)
             MainCounterLabelType.CUSTOM -> mainCounterLabelText(label.labelType, label.customLabel)
         }
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(ComponentDimens.FormSheetItemSpacing)) {
         NumberInputField(
             value = form.rowText,
             onValueChange = onRowTextChange,
@@ -459,25 +461,6 @@ private fun ReminderDialogFields(
             label = stringResource(R.string.reminder_message),
             placeholder = stringResource(R.string.reminder_message_hint),
         )
-    }
-}
-
-@Composable
-private fun ReminderDialogConfirmButton(
-    validation: ReminderDialogValidation,
-    isRepeating: Boolean,
-    message: String,
-    onSave: (targetRow: Int, repeatInterval: Int?, message: String) -> Unit,
-) {
-    TextButton(
-        onClick = {
-            validation.rowNumber?.let { row ->
-                onSave(row, if (isRepeating) validation.interval else null, message.trim())
-            }
-        },
-        enabled = validation.canSave,
-    ) {
-        Text(stringResource(R.string.save))
     }
 }
 

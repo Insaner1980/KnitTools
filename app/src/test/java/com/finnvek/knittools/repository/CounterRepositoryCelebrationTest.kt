@@ -51,63 +51,16 @@ class CounterRepositoryCelebrationTest : CounterRepositoryActiveSessionFixture()
     }
 
     @Test
-    fun `crossing uses committed before after and target with exact and overshooting steps`() =
-        runTest {
-            listOf(Triple(9, 10, 1), Triple(8, 10, 4), Triple(1, 50, 99)).forEach { (before, target, step) ->
-                project = project.copy(count = before, targetRows = target, stepSize = step)
-                val result =
-                    requireNotNull(repository.applyMainCounterChangeWithResult(7L, MainCounterChange.Increment))
-                assertEquals(before, result.beforeCount)
-                assertEquals(before + step, result.afterCount)
-                assertEquals(target, result.targetRows)
-                assertEquals(project.count, result.afterCount)
-                assertTrue(result.crossedTarget)
-            }
-            assertTrue(repository.applyWidgetCountChange(7L, increment = false))
-        }
-
-    @Test
-    fun `decrement can cross again but an undo that restores the target never celebrates`() =
-        runTest {
-            assertTrue(
-                requireNotNull(
-                    repository.applyMainCounterChangeWithResult(7L, MainCounterChange.Increment),
-                ).crossedTarget,
-            )
-            assertFalse(
-                requireNotNull(
-                    repository.applyMainCounterChangeWithResult(7L, MainCounterChange.Decrement),
-                ).crossedTarget,
-            )
-            val undo = requireNotNull(repository.applyMainCounterChangeWithResult(7L, MainCounterChange.Undo))
-            assertEquals(9, undo.beforeCount)
-            assertEquals(10, undo.afterCount)
-            assertFalse(undo.crossedTarget)
-            repository.applyMainCounterChange(7L, MainCounterChange.Decrement)
-            assertTrue(
-                requireNotNull(
-                    repository.applyMainCounterChangeWithResult(7L, MainCounterChange.Increment),
-                ).crossedTarget,
-            )
-            project = project.copy(targetRows = null)
-            assertFalse(
-                requireNotNull(
-                    repository.applyMainCounterChangeWithResult(7L, MainCounterChange.Increment),
-                ).crossedTarget,
-            )
-        }
-
-    @Test
     fun `missing completed unchanged and history free changes produce no committed result`() =
         runTest {
-            assertNull(repository.applyMainCounterChangeWithResult(99L, MainCounterChange.Increment))
-            assertNull(repository.applyMainCounterChangeWithResult(9L, MainCounterChange.Increment))
-            assertNull(repository.applyMainCounterChangeWithResult(7L, MainCounterChange.Undo))
+            assertFalse(repository.applyMainCounterChange(99L, MainCounterChange.Increment))
+            assertFalse(repository.applyMainCounterChange(9L, MainCounterChange.Increment))
+            assertFalse(repository.applyMainCounterChange(7L, MainCounterChange.Undo))
             project = project.copy(count = 0)
-            assertNull(repository.applyMainCounterChangeWithResult(7L, MainCounterChange.Decrement))
+            assertFalse(repository.applyMainCounterChange(7L, MainCounterChange.Decrement))
             assertFalse(repository.applyMainCounterChange(7L, MainCounterChange.Reset))
             project = project.copy(count = Int.MAX_VALUE)
-            assertNull(repository.applyMainCounterChangeWithResult(7L, MainCounterChange.Increment))
+            assertFalse(repository.applyMainCounterChange(7L, MainCounterChange.Increment))
             assertTrue(history.isEmpty())
         }
 
@@ -115,33 +68,24 @@ class CounterRepositoryCelebrationTest : CounterRepositoryActiveSessionFixture()
     fun `failed counter commit publishes no result and rolls back count and history`() =
         runTest {
             failCommit = true
-            val result = runCatching { repository.applyMainCounterChangeWithResult(7L, MainCounterChange.Increment) }
+            val result = runCatching { repository.applyMainCounterChange(7L, MainCounterChange.Increment) }
             assertTrue(result.isFailure)
             assertEquals(9, project.count)
             assertTrue(history.isEmpty())
         }
 
     @Test
-    fun `empty stop does not consume the first actual saved session`() =
+    fun `empty stop does not insert a completed session`() =
         runTest {
             val empty = repository.startSession(7L) as StartSessionResult.Started
-            assertEquals(StopSessionResult.Saved(null, false), stopReviewedSession(empty.session.sessionToken))
+            assertEquals(StopSessionResult.Saved(null), stopReviewedSession(empty.session.sessionToken))
             assertTrue(completed.isEmpty())
             val first = repository.startSession(7L) as StartSessionResult.Started
             timeSource.advance(60L)
-            assertEquals(StopSessionResult.Saved(1L, true), stopReviewedSession(first.session.sessionToken))
+            assertEquals(StopSessionResult.Saved(1L), stopReviewedSession(first.session.sessionToken))
             val second = repository.startSession(7L) as StartSessionResult.Started
             timeSource.advance(60L)
-            assertEquals(StopSessionResult.Saved(2L, false), stopReviewedSession(second.session.sessionToken))
-        }
-
-    @Test
-    fun `a saved session in another project prevents global firstness`() =
-        runTest {
-            completed += savedSession(projectId = 8L, minutes = 1)
-            val current = repository.startSession(7L) as StartSessionResult.Started
-            timeSource.advance(60L)
-            assertEquals(StopSessionResult.Saved(2L, false), stopReviewedSession(current.session.sessionToken))
+            assertEquals(StopSessionResult.Saved(2L), stopReviewedSession(second.session.sessionToken))
         }
 
     @Test

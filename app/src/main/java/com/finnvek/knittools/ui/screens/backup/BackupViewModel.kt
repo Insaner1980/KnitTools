@@ -124,14 +124,10 @@ class BackupViewModel
             }
         }
 
-        private suspend fun recordOnboardingProgress(restored: Boolean) =
+        private suspend fun recordBackupCreated() =
             withContext(NonCancellable) {
                 try {
-                    if (restored) {
-                        onboardingStateRepository.markBasicTipsSeen()
-                    } else {
-                        onboardingStateRepository.markBackupCreated()
-                    }
+                    onboardingStateRepository.markBackupCreated()
                 } catch (failure: CancellationException) {
                     throw failure
                 } catch (_: Exception) {
@@ -163,10 +159,12 @@ class BackupViewModel
             }
             cancelling = true
             val cancelledSelection = selectionId
-            job?.cancel()
+            val cancelledJob = job
+            cancelledJob?.cancel()
             job =
                 viewModelScope.launch {
                     try {
+                        if (phase == BackupPhase.VALIDATING) cancelledJob?.join()
                         repository.cancelPreview(cancelledSelection)
                         mutableState.value =
                             BackupUiState(error = if (phase == BackupPhase.EXPORTING) BackupError.WRITE else null)
@@ -191,17 +189,19 @@ class BackupViewModel
                         when (result.phase) {
                             BackupPhase.EXPORTED -> {
                                 analytics.track(UsageEvent.BACKUP_EXPORT_SUCCEEDED)
-                                recordOnboardingProgress(restored = false)
+                                recordBackupCreated()
                             }
+
                             BackupPhase.RESTORED -> {
                                 analytics.track(UsageEvent.BACKUP_RESTORE_SUCCEEDED)
-                                recordOnboardingProgress(restored = true)
                             }
-                            else -> Unit
+
+                            else -> {}
                         }
                     } catch (failure: CancellationException) {
                         throw failure
                     } catch (failure: BackupException) {
+                        currentCoroutineContext().ensureActive()
                         analytics.track(
                             if (phase ==
                                 BackupPhase.EXPORTING
@@ -212,7 +212,6 @@ class BackupViewModel
                             },
                             backupErrorDetail(failure.error),
                         )
-                        currentCoroutineContext().ensureActive()
                         mutableState.value = BackupUiState(error = failure.error)
                     }
                 }

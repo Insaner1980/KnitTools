@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import com.finnvek.knittools.R
 import com.finnvek.knittools.analytics.UsageAnalytics
 import com.finnvek.knittools.analytics.UsageEvent
+import com.finnvek.knittools.data.datastore.AppPreferences
 import com.finnvek.knittools.data.datastore.PreferencesManager
 import com.finnvek.knittools.domain.calculator.ProjectStartValues
 import com.finnvek.knittools.domain.model.ActiveWorkSession
@@ -21,6 +22,7 @@ import com.finnvek.knittools.pro.ProFeature
 import com.finnvek.knittools.pro.ProManager
 import com.finnvek.knittools.repository.ActiveSessionCompletionChoice
 import com.finnvek.knittools.repository.CounterRepository
+import com.finnvek.knittools.repository.OnboardingState
 import com.finnvek.knittools.repository.OnboardingStateRepository
 import com.finnvek.knittools.repository.ProgressPhotoRepository
 import com.finnvek.knittools.repository.ProjectCompletionResult
@@ -32,6 +34,7 @@ import com.finnvek.knittools.repository.ProjectReactivationResult
 import com.finnvek.knittools.repository.SavedPatternRepository
 import com.finnvek.knittools.repository.isSuccess
 import com.finnvek.knittools.repository.retryOnRepositoryReadFailure
+import com.finnvek.knittools.repository.shouldShowBackupNotice
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
@@ -56,6 +59,7 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.time.LocalDate
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
@@ -112,44 +116,27 @@ class ProjectListViewModel
         // === Preferences ===
 
         private val initialSessionRefreshFinished = MutableStateFlow(false)
+        private val backupNoticeDay = MutableStateFlow(LocalDate.now().toEpochDay())
         val proState get() = proManager.proState
         val proAccessReady get() = proManager.initialStateReady
 
         val content: StateFlow<ProjectListContent> =
-            preferencesManager.preferences
-                .flatMapLatest { prefs ->
-                    combine(
-                        repository.getActiveProjects(prefs.projectSortOrder),
-                        if (prefs.showCompletedProjects) {
-                            repository.getCompletedProjects(prefs.projectSortOrder)
-                        } else {
-                            flowOf(emptyList())
-                        },
-                        repository.observeActiveSession(),
-                        combine(folderState, selectedFolderFilter) { folders, filter -> folders to filter },
-                        combine(
-                            initialSessionRefreshFinished,
-                            repository.observeHasAnyProject(),
-                            onboardingStateRepository.state,
-                        ) { refreshed, hasAny, onboarding ->
-                            Triple(refreshed, hasAny, onboarding.welcomeDismissed)
-                        },
-                    ) { active, completed, session, organization, readiness ->
-                        val (folders, filter) = organization
-                        val (sessionRefreshed, hasAnyProject, welcomeDismissed) = readiness
-                        val waitingForFolders = folders.isLoading && filter != ProjectFolderFilter.AllProjects
-                        ProjectListContent(
-                            isLoading = waitingForFolders || !sessionRefreshed,
-                            hasAnyProject = hasAnyProject,
-                            activeProjectCount = active.size,
-                            welcomeDismissed = welcomeDismissed,
-                            preferences = prefs,
-                            active = filterProjects(active, folders, filter),
-                            completed = filterProjects(completed, folders, filter),
-                            activeSession = session,
-                        )
-                    }
-                }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), ProjectListContent())
+            observeProjectListContent(
+                preferences = preferencesManager.preferences,
+                repository = repository,
+                organization = combine(folderState, selectedFolderFilter, ::Pair),
+                initialSessionRefreshFinished = initialSessionRefreshFinished,
+                onboardingState = onboardingStateRepository.state,
+                backupNoticeDay = backupNoticeDay,
+            ).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), ProjectListContent())
+
+        internal fun refreshBackupNoticeDay(today: Long = LocalDate.now().toEpochDay()) {
+            backupNoticeDay.value = today
+        }
+
+        fun dismissBackupNotice() {
+            viewModelScope.launch { onboardingStateRepository.dismissBackupNotice() }
+        }
 
         val showCompleted: StateFlow<Boolean> =
             content
@@ -469,18 +456,29 @@ class ProjectListViewModel
                         _pendingCompletionSessionAction.value =
                             PendingProjectListSessionAction(result.session, setOf(id))
                     }
+
                     is ProjectCompletionResult.NeedsRecoveryReview -> {
                         _pendingCompletionSessionAction.value =
                             PendingProjectListSessionAction(result.session, setOf(id))
                     }
+
                     ProjectCompletionResult.Completed,
                     ProjectCompletionResult.ProjectUnavailable,
-                    -> Unit
-                    is ProjectCompletionResult.CompletedNow -> analytics.track(UsageEvent.PROJECT_COMPLETED)
-                    ProjectCompletionResult.PersistenceFailure ->
+                    -> {
+                        Unit
+                    }
+
+                    is ProjectCompletionResult.CompletedNow -> {
+                        analytics.track(UsageEvent.PROJECT_COMPLETED)
+                    }
+
+                    ProjectCompletionResult.PersistenceFailure -> {
                         sessionErrorChannel.trySend(R.string.generic_error_unknown)
-                    ProjectCompletionResult.HistoryLimitReached ->
+                    }
+
+                    ProjectCompletionResult.HistoryLimitReached -> {
                         sessionErrorChannel.trySend(R.string.work_session_history_full)
+                    }
                 }
             }
         }
@@ -488,12 +486,18 @@ class ProjectListViewModel
         fun deleteProject(id: Long) {
             viewModelScope.launch {
                 when (val result = repository.deleteProjectResolvingActiveSession(id, false)) {
-                    is ProjectDeletionResult.NeedsActiveSessionDiscard ->
+                    is ProjectDeletionResult.NeedsActiveSessionDiscard -> {
                         _pendingDeletionSessionAction.value =
                             PendingProjectListSessionAction(result.session, setOf(id))
-                    ProjectDeletionResult.Deleted, ProjectDeletionResult.ProjectUnavailable -> Unit
-                    ProjectDeletionResult.PersistenceFailure ->
+                    }
+
+                    ProjectDeletionResult.Deleted, ProjectDeletionResult.ProjectUnavailable -> {
+                        Unit
+                    }
+
+                    ProjectDeletionResult.PersistenceFailure -> {
                         sessionErrorChannel.trySend(R.string.generic_error_unknown)
+                    }
                 }
             }
         }
@@ -604,17 +608,27 @@ class ProjectListViewModel
             }
             val session =
                 when (result) {
-                    is ProjectCompletionResult.NeedsActiveSessionChoice -> result.session
-                    is ProjectCompletionResult.NeedsRecoveryReview -> result.session
+                    is ProjectCompletionResult.NeedsActiveSessionChoice -> {
+                        result.session
+                    }
+
+                    is ProjectCompletionResult.NeedsRecoveryReview -> {
+                        result.session
+                    }
+
                     ProjectCompletionResult.HistoryLimitReached -> {
                         sessionErrorChannel.trySend(R.string.work_session_history_full)
                         return
                     }
+
                     ProjectCompletionResult.PersistenceFailure -> {
                         sessionErrorChannel.trySend(R.string.generic_error_unknown)
                         return
                     }
-                    else -> return
+
+                    else -> {
+                        return
+                    }
                 }
             _pendingCompletionSessionAction.value =
                 PendingProjectListSessionAction(
@@ -829,16 +843,71 @@ private suspend fun resolveProjectPatternNames(
 
 private fun restoreFolderFilter(value: String?): ProjectFolderFilter =
     when {
-        value == "unfiled" -> ProjectFolderFilter.Unfiled
-        value?.startsWith("folder:") == true ->
+        value == "unfiled" -> {
+            ProjectFolderFilter.Unfiled
+        }
+
+        value?.startsWith("folder:") == true -> {
             value
                 .removePrefix("folder:")
                 .toLongOrNull()
                 ?.takeIf { it > 0 }
                 ?.let(ProjectFolderFilter::Folder)
                 ?: ProjectFolderFilter.AllProjects
-        else -> ProjectFolderFilter.AllProjects
+        }
+
+        else -> {
+            ProjectFolderFilter.AllProjects
+        }
     }
+
+@OptIn(ExperimentalCoroutinesApi::class)
+private fun observeProjectListContent(
+    preferences: Flow<AppPreferences>,
+    repository: CounterRepository,
+    organization: Flow<Pair<ProjectFoldersState, ProjectFolderFilter>>,
+    initialSessionRefreshFinished: Flow<Boolean>,
+    onboardingState: Flow<OnboardingState>,
+    backupNoticeDay: Flow<Long>,
+): Flow<ProjectListContent> =
+    preferences
+        .flatMapLatest { prefs ->
+            combine(
+                repository.getActiveProjects(prefs.projectSortOrder),
+                if (prefs.showCompletedProjects) {
+                    repository.getCompletedProjects(prefs.projectSortOrder)
+                } else {
+                    flowOf(emptyList())
+                },
+                repository.observeActiveSession(),
+                organization,
+                combine(
+                    initialSessionRefreshFinished,
+                    repository.observeHasAnyProject(),
+                    onboardingState,
+                    backupNoticeDay,
+                ) { refreshed, hasAny, onboarding, day ->
+                    val backupNotice = onboarding.shouldShowBackupNotice(hasAny, day)
+                    Triple(refreshed, hasAny, onboarding.welcomeDismissed to backupNotice)
+                },
+            ) { active, completed, session, organization, readiness ->
+                val (folders, filter) = organization
+                val (sessionRefreshed, hasAnyProject, onboarding) = readiness
+                val (welcomeDismissed, showBackupNotice) = onboarding
+                val waitingForFolders = folders.isLoading && filter != ProjectFolderFilter.AllProjects
+                ProjectListContent(
+                    isLoading = waitingForFolders || !sessionRefreshed,
+                    hasAnyProject = hasAnyProject,
+                    activeProjectCount = active.size,
+                    welcomeDismissed = welcomeDismissed,
+                    showBackupNotice = showBackupNotice,
+                    preferences = prefs,
+                    active = filterProjects(active, folders, filter),
+                    completed = filterProjects(completed, folders, filter),
+                    activeSession = session,
+                )
+            }
+        }
 
 private fun filterProjects(
     projects: List<CounterProject>,

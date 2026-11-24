@@ -24,7 +24,7 @@ class BackupCancellationFeedbackSourceTest {
     @Test fun busyBackCancelsInPlaceAndIdleBackNavigatesWhileRestoringHidesCancel() {
         assertTrue(screen.contains("BackHandler(state.busy || state.preview != null) { onCancel() }"))
         val toolbar = screen.substringAfter("onBack = {").substringBefore("wrapTitle = true")
-        assertTrue(toolbar.contains("state.busy -> onCancel()"))
+        assertTrue(Regex("""state\.busy -> \{\s*onCancel\(\)\s*}""").containsMatchIn(toolbar))
         assertTrue(Regex("else -> \\{\\s+onCancel\\(\\)\\s+onBack\\(\\)").containsMatchIn(toolbar))
         val progress = screen.substringAfter("private fun BackupProgress(").substringBefore("private fun phaseMessage")
         assertTrue(progress.contains("if (phase != BackupPhase.RESTORING)"))

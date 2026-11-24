@@ -2,12 +2,14 @@ package com.finnvek.knittools.ui.components
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import com.finnvek.knittools.R
@@ -49,10 +51,17 @@ internal fun ProPriceDetails(
                     if (trialAvailable) Text(stringResource(R.string.pro_trial_does_not_reserve_price))
                 }
             }
+
             productStatus == BillingProductStatus.Loading -> {
-                CircularProgressIndicator(modifier = Modifier.size(ComponentDimens.StandardIconSize))
-                Text(stringResource(R.string.loading_price))
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(ComponentDimens.StandardSpacing),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    CircularProgressIndicator(modifier = Modifier.size(ComponentDimens.StandardIconSize))
+                    Text(stringResource(R.string.loading_price))
+                }
             }
+
             else -> {
                 Text(
                     stringResource(

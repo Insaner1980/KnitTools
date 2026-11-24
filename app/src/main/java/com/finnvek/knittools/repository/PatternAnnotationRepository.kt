@@ -70,7 +70,7 @@ class PatternAnnotationRepository
         suspend fun clearPage(
             layerId: Long,
             page: Int,
-        ) = dao.deleteForPage(layerId, page)
+        ): List<PatternAnnotation> = dao.deleteForPage(layerId, page).mapNotNull { it.toDomain() }
 
         suspend fun deleteAnnotation(id: Long) = dao.deleteById(id)
 

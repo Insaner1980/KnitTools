@@ -51,7 +51,7 @@ Users sign in on Ravelry's own website in WebView. Website cookies/DOM storage r
 
 Selected PDF downloads use `WebPdfDownloader`: HTTPS on every hop, per-URL website cookies, up to five redirects and a 100 MiB byte ceiling. A temporary download is validated/copied into private storage and passed to Save Pattern. Once saved privately, reading it is local; an unfinished download or website page is not promised offline access.
 
-Android no longer calls Firebase Auth/Functions for Ravelry or handles native OAuth completion callbacks. API search/import/auth UI was removed. The retained `functions/` backend is separate code with no current Android consumer; its presence is not a user-facing network requirement.
+Ravelry uses the website for login, browsing, and selected PDF downloads. The retired Firebase Functions backend has been removed from the repository.
 
 ### Other Web Patterns And Thumbnails
 

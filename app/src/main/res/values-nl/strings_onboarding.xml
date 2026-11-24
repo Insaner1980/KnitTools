@@ -62,52 +62,10 @@
     <string name="project_target_error">Voer een getal in van 1 tot %1$s.</string>
     <!-- Kääntäjälle: projektin luontilomake. Aloitusmäärä tarkoittaa jo tehtyä työtä; tavoite on vapaaehtoinen. Säilytä paikkamerkit %1$s muuttumattomina. -->
     <string name="project_create_preview_a11y">Voorbeeld: %1$s</string>
-    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
-    <string name="tip_got_it">Begrepen</string>
-    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
-    <string name="tip_first_row_rows">Tik op + als je een toer af hebt. Je kunt ook op het grote getal tikken.</string>
-    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
-    <string name="tip_first_row_rounds">Tik op + als je een ronde af hebt. Je kunt ook op het grote getal tikken.</string>
-    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
-    <string name="tip_first_row_repeats">Tik op + als je een herhaling af hebt. Je kunt ook op het grote getal tikken.</string>
-    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
-    <string name="tip_first_row_custom">Tik op + telkens als je er één af hebt. Je kunt ook op het grote getal tikken.</string>
-    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
-    <string name="tip_undo">Opgeslagen. Verkeerd getikt? Ongedaan maken draait de laatste wijziging terug.</string>
-    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
-    <string name="tip_step_size">Tel je meer dan één tegelijk? Verander hier hoeveel elke tik optelt of aftrekt.</string>
-    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
-    <string name="tip_work_session">Wil je weten hoeveel tijd dit project kost? Start een werksessie vanuit dit menu. De tijd begint nooit vanzelf te lopen.</string>
-    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
-    <string name="tip_overview_intro">Dit is je hele project: patroon, garen, notities en foto\'s. Verder brengt je terug naar de teller.</string>
-    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
-    <string name="tip_pattern_tile">Voeg je patroon toe om het bij dit project te bewaren.</string>
-    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
-    <string name="tip_reading_line">Zet Volg hoofdteller aan en de leeslijn beweegt mee terwijl je telt.</string>
-    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
-    <string name="tip_keep_screen_on">Wordt het scherm donker terwijl je werkt? Houd het aan terwijl je telt.</string>
-    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
-    <string name="tip_keep_screen_on_action">Scherm aanhouden</string>
-    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
-    <string name="tip_target_reached">Doel bereikt. Tel verder of markeer het project als afgerond via het menu op de projectpagina.</string>
-    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
-    <string name="tip_first_session_saved">Je eerste werksessie is opgeslagen. Hier staat de totale tijd voor dit project.</string>
-    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
-    <string name="tip_backup">Je projecten staan alleen op deze telefoon. Maak een back-up, zodat ze veilig zijn als je van telefoon wisselt.</string>
-    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
-    <string name="tip_backup_action">Back-up maken</string>
-    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
-    <string name="tip_folders">Veel projecten? Verdeel ze over mappen via de titel.</string>
-    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
-    <string name="tip_widget">Tel vanaf je startscherm zonder de app te openen.</string>
-    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
-    <string name="tip_widget_action">Widget toevoegen</string>
-    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
-    <string name="tip_tools_intro">De rekenhulpen werken offline. Voorbeeldwaarden laten zien wat je kunt invullen.</string>
-    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
-    <string name="settings_show_tips_again">Tips opnieuw tonen</string>
-    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
-    <string name="settings_tips_reset_done">Tips worden weer getoond.</string>
+    <!-- Kokeilun päättymismuistutuksen kuittaava painike. -->
+    <string name="trial_notice_acknowledge">Begrepen</string>
+    <!-- Avaa varmuuskopioinnin ilmoitusriviltä. -->
+    <string name="projects_backup_notice_action">Back-up maken</string>
     <!-- Kääntäjälle: projektin neljän kohdan aloituslista tai sen valmistumisilmoitus. -->
     <string name="project_setup_pattern">Voeg je patroon toe</string>
     <!-- Kääntäjälle: projektin neljän kohdan aloituslista tai sen valmistumisilmoitus. -->
@@ -249,7 +207,7 @@
     <!-- Kääntäjälle: paikallinen käyttöopas. Toimintojen ja välilehtien nimet vastaavat muuta käyttöliittymää. -->
     <string name="guide_tools_folders_title">Mappen</string>
     <!-- Kääntäjälle: paikallinen käyttöopas. Toimintojen ja välilehtien nimet vastaavat muuta käyttöliittymää. -->
-    <string name="guide_tools_folders_body">Groepeer projecten in mappen via de titel Projecten. Eén lopend project tegelijk is gratis en afgeronde projecten tellen niet mee.</string>
+    <string name="guide_tools_folders_body">Groepeer projecten in mappen via de titel Projecten.</string>
     <!-- Kääntäjälle: paikallinen käyttöopas. Toimintojen ja välilehtien nimet vastaavat muuta käyttöliittymää. -->
     <string name="guide_tools_backup_title">Back-up</string>
     <!-- Kääntäjälle: paikallinen käyttöopas. Toimintojen ja välilehtien nimet vastaavat muuta käyttöliittymää. -->
@@ -661,8 +619,16 @@
     <string name="journey_pdf_failed">Het PDF-patroon kon niet worden geïmporteerd. Je vorige bijlage is behouden.</string>
     <!-- Aloituspolku: Luo ensimmäinen projekti -->
     <string name="journey_first_project">Maak je eerste project</string>
-    <!-- Aloituspolun jälkeen: ohjelaattaan ankkuroitu vihje vain luodulle projektille, johon käyttäjä liitti PDF-ohjeen. -->
-    <string name="journey_open_pattern_tip">Open hier het patroon dat je aan dit project hebt toegevoegd.</string>
     <!-- Vahvistetun Pro-oston jälkeen näytettävä kuittaus sovellukseen siirryttäessä. -->
     <string name="journey_pro_active">Pro is geactiveerd.</string>
+    <!-- Projektien paikallisesta tallennuksesta kertova ilmoitus. -->
+    <string name="projects_backup_notice">Je projecten staan alleen op deze telefoon.</string>
+    <!-- PDF-lukijan ilmoitus laskuria seuraavasta lukulinjasta. -->
+    <string name="reading_line_notice">De leeslijn kan de teller volgen.</string>
+    <!-- Ohittaa ilmoituksen pysyvästi. -->
+    <string name="contextual_notice_skip">Overslaan</string>
+    <!-- Ottaa käyttöön laskuria seuraavan lukulinjan. -->
+    <string name="reading_line_notice_enable">Inschakelen</string>
+    <!-- Avaa valmistumisvahvistuksen tavoitteen täyttäneelle projektille. -->
+    <string name="counter_mark_complete">Markeren als voltooid</string>
 </resources>

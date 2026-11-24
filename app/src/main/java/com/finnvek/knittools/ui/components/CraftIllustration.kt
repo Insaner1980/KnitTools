@@ -42,9 +42,13 @@ fun CraftIllustration(
             targetValue = 1f,
             animationSpec =
                 when (entrance) {
-                    IllustrationEntrance.Rise -> tween(IllustrationDimens.ENTER_MILLIS, easing = FastOutSlowInEasing)
-                    IllustrationEntrance.Bounce ->
+                    IllustrationEntrance.Rise -> {
+                        tween(IllustrationDimens.ENTER_MILLIS, easing = FastOutSlowInEasing)
+                    }
+
+                    IllustrationEntrance.Bounce -> {
                         spring(dampingRatio = IllustrationDimens.BOUNCE_DAMPING, stiffness = Spring.StiffnessLow)
+                    }
                 },
         )
     }

@@ -665,7 +665,7 @@ class ActiveProjectPolicyRuntimeTest {
             // Projektin nimi näkyy laskurissa ja projektinäkymässä kirjoitusasussaan.
             val heading = counterProject
             val projectNode = nodes.singleOrNull { it.text?.toString() == heading && it.isVisibleToUser }
-            val projectReady = heading == null || projectNode?.refresh() == true && projectNode.isVisibleToUser
+            val projectReady = heading == null || (projectNode?.refresh() == true && projectNode.isVisibleToUser)
             evidence.put("expectedHeading", heading).put("projectReady", projectReady)
             if (!projectReady) return@waitFor false
             val candidates = JSONArray()

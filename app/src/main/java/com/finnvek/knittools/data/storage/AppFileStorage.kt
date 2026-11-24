@@ -86,13 +86,19 @@ object AppFileStorage {
         uri: Uri,
     ): Boolean =
         when (uri.scheme) {
-            "content" -> uri.authority == fileProviderAuthority(context)
+            "content" -> {
+                uri.authority == fileProviderAuthority(context)
+            }
+
             "file" -> {
                 val path = uri.path.orEmpty()
                 val root = context.filesDir.absolutePath
                 path == root || path.startsWith(root + File.separator) || isAppOwnedUri(context, uri)
             }
-            else -> false
+
+            else -> {
+                false
+            }
         }
 
     internal fun deleteFileOrDirectory(

@@ -336,8 +336,13 @@ class SavedPatternRepository
                     SavedPatternDeleteResult.Deleted
                 }
 
-                SavedPatternDeleteTransactionResult.PatternMissing -> SavedPatternDeleteResult.PatternMissing
-                SavedPatternDeleteTransactionResult.NotWebPattern -> SavedPatternDeleteResult.NotWebPattern
+                SavedPatternDeleteTransactionResult.PatternMissing -> {
+                    SavedPatternDeleteResult.PatternMissing
+                }
+
+                SavedPatternDeleteTransactionResult.NotWebPattern -> {
+                    SavedPatternDeleteResult.NotWebPattern
+                }
             }
         }
 
@@ -387,11 +392,17 @@ class SavedPatternRepository
 
         private fun invalidWebPatternInputResult(input: WebPatternInput): WebPatternMutationResult =
             when {
-                validateWebPatternTitle(input.title) !is WebPatternTitleValidation.Valid ->
+                validateWebPatternTitle(input.title) !is WebPatternTitleValidation.Valid -> {
                     WebPatternMutationResult.InvalidTitle
-                validateWebPatternDesigner(input.designer) !is WebPatternDesignerValidation.Valid ->
+                }
+
+                validateWebPatternDesigner(input.designer) !is WebPatternDesignerValidation.Valid -> {
                     WebPatternMutationResult.InvalidDesigner
-                else -> WebPatternMutationResult.InvalidUrl
+                }
+
+                else -> {
+                    WebPatternMutationResult.InvalidUrl
+                }
             }
 
         private fun filesHaveSameContent(

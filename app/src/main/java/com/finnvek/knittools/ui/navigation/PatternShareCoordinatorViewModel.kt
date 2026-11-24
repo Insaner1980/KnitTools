@@ -197,14 +197,24 @@ private fun SavedStateHandle.restoreShareRequest(
     val title = restoredValue<String>(titleKey).orEmpty()
     val payload =
         when (kind) {
-            KIND_WEB -> PatternSharePayload.WebLink(url, title)
-            KIND_RAVELRY -> PatternSharePayload.Ravelry(url, title)
-            KIND_ERROR ->
+            KIND_WEB -> {
+                PatternSharePayload.WebLink(url, title)
+            }
+
+            KIND_RAVELRY -> {
+                PatternSharePayload.Ravelry(url, title)
+            }
+
+            KIND_ERROR -> {
                 restoredValue<String>(errorKey)
                     ?.let { runCatching { PatternShareError.valueOf(it) }.getOrNull() }
                     ?.let(PatternSharePayload::Error)
                     ?: return null
-            else -> return null
+            }
+
+            else -> {
+                return null
+            }
         }
     return PatternShareImportRequest(requestId, payload)
 }

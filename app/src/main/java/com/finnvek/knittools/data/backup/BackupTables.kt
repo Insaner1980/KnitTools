@@ -145,10 +145,12 @@ internal object BackupTables {
                                 BackupFormat.requireValid(!column.required, BackupError.VALIDATION)
                                 statement.bindNull(index + 1)
                             }
+
                             column.type == "TEXT" -> {
                                 BackupFormat.requireValid(value.jsonPrimitive.isString, BackupError.VALIDATION)
                                 statement.bindString(index + 1, value.jsonPrimitive.content)
                             }
+
                             column.type == "INTEGER" -> {
                                 BackupFormat.requireValid(!value.jsonPrimitive.isString, BackupError.VALIDATION)
                                 val number =
@@ -156,6 +158,7 @@ internal object BackupTables {
                                 validateInteger(column.name, number)
                                 statement.bindLong(index + 1, number)
                             }
+
                             column.type == "REAL" -> {
                                 BackupFormat.requireValid(!value.jsonPrimitive.isString, BackupError.VALIDATION)
                                 val number =
@@ -166,7 +169,10 @@ internal object BackupTables {
                                 )
                                 statement.bindDouble(index + 1, number)
                             }
-                            else -> throw BackupException(BackupError.VALIDATION)
+
+                            else -> {
+                                throw BackupException(BackupError.VALIDATION)
+                            }
                         }
                     }
                     statement.executeInsert()

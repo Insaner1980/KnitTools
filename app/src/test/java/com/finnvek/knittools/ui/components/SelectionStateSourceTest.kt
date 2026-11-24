@@ -12,7 +12,7 @@ class SelectionStateSourceTest {
         val toggle = ProjectSourceFiles.read(SEGMENTED_TOGGLE)
 
         assertTrue(toggle.contains("val primary = MaterialTheme.colorScheme.primary"))
-        assertTrue(toggle.contains("isSelected -> Modifier.background(primary)"))
+        assertTrue(Regex("""isSelected -> \{\s*Modifier\.background\(primary\)\s*}""").containsMatchIn(toggle))
         assertFalse(toggle.contains("Brush.linearGradient("))
     }
 

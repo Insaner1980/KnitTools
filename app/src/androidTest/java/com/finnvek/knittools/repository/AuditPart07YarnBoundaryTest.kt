@@ -225,23 +225,59 @@ class AuditPart07YarnBoundaryTest(
 
     private suspend fun competitor(): Any? =
         when (operation) {
-            1059 -> setTrial(false)
+            1059 -> {
+                setTrial(false)
+            }
+
             1063 -> {
                 assertTrue(yarn.changeQuantity(3, 2))
                 assertTrue(yarn.updateLinkedProjectId(3, 2))
                 setTrial(false)
             }
-            1067 -> usage.update(1, usageId, revision, amounts.copy(usedMeters = 700.0))
-            1071 -> yarn.updateLinkedProjectId(3, 2)
-            1075 -> counter.deleteProject(2)
-            1083 -> notes.saveToMyYarn(4)
-            1087 -> counter.deleteProject(1)
-            1091 -> notes.saveToMyYarn(4)
-            1095 -> notes.saveToMyYarn(4)
-            1099 -> notes.saveToMyYarn(4)
-            1103 -> usage.create(1, YarnUsageSource(projectYarnNoteId = 4), amounts.copy(usedMeters = 700.0), "Alias")
-            1107 -> usage.update(1, usageId, revision, amounts.copy(usedMeters = 700.0))
-            else -> error("No reachable owner")
+
+            1067 -> {
+                usage.update(1, usageId, revision, amounts.copy(usedMeters = 700.0))
+            }
+
+            1071 -> {
+                yarn.updateLinkedProjectId(3, 2)
+            }
+
+            1075 -> {
+                counter.deleteProject(2)
+            }
+
+            1083 -> {
+                notes.saveToMyYarn(4)
+            }
+
+            1087 -> {
+                counter.deleteProject(1)
+            }
+
+            1091 -> {
+                notes.saveToMyYarn(4)
+            }
+
+            1095 -> {
+                notes.saveToMyYarn(4)
+            }
+
+            1099 -> {
+                notes.saveToMyYarn(4)
+            }
+
+            1103 -> {
+                usage.create(1, YarnUsageSource(projectYarnNoteId = 4), amounts.copy(usedMeters = 700.0), "Alias")
+            }
+
+            1107 -> {
+                usage.update(1, usageId, revision, amounts.copy(usedMeters = 700.0))
+            }
+
+            else -> {
+                error("No reachable owner")
+            }
         }
 
     private suspend fun admission() =
@@ -259,6 +295,7 @@ class AuditPart07YarnBoundaryTest(
                     assertEquals(competing, database.auditSnapshot())
                     assertEquals(0, yarn.getCardCount().first())
                 }
+
                 1063 -> {
                     assertEquals(3L, result.getOrThrow())
                     assertEquals("Edited descriptive name", requireNotNull(yarn.getCard(3)).yarnName)
@@ -266,29 +303,35 @@ class AuditPart07YarnBoundaryTest(
                     assertEquals(2L, requireNotNull(yarn.getCard(3)).linkedProjectId)
                     assertFalse(pro.hasFeature(ProFeature.UNLIMITED_YARN))
                 }
+
                 1067 -> {
                     assertEquals(true, result.getOrThrow())
                     assertEquals(10, requireNotNull(yarn.getCard(3)).quantityInStash)
                     assertEquals(700.0, requireNotNull(usageRow()).usedMeters)
                 }
+
                 1071 -> {
                     assertEquals(true, result.getOrThrow())
                     assertEquals(YarnCardStatus.FINISHED, requireNotNull(yarn.observeCard(3).first()).status)
                     assertEquals(2L, requireNotNull(yarn.getCard(3)).linkedProjectId)
                 }
+
                 1075 -> {
                     assertEquals(false, result.getOrThrow())
                     assertEquals(competing, database.auditSnapshot())
                 }
+
                 1083 -> {
                     assertEquals(true, result.getOrThrow())
                     assertDeletedCard()
                 }
+
                 1087 -> {
                     assertTrue(result.isFailure)
                     assertEquals(competing, database.auditSnapshot())
                     assertNull(database.counterProjectDao().getProject(1))
                 }
+
                 1095 -> {
                     assertEquals(
                         requireNotNull(database.projectYarnNoteDao().getById(4)).savedYarnCardId,
@@ -297,22 +340,26 @@ class AuditPart07YarnBoundaryTest(
                     assertEquals(competing, database.auditSnapshot())
                     assertConverted()
                 }
+
                 1091 -> {
                     assertEquals(ProjectYarnNoteEditResult.Saved, result.getOrThrow())
                     assertEditedNote()
                     val cardId = requireNotNull(database.projectYarnNoteDao().getById(4)?.savedYarnCardId)
                     assertEquals("Note source", requireNotNull(yarn.getCard(cardId)).yarnName)
                 }
+
                 1099 -> {
                     result.getOrThrow()
                     assertDeletedNote()
                     assertNotNull(database.yarnCardDao().getCard(requireNotNull(requireNotNull(usageRow()).yarnCardId)))
                 }
+
                 1103 -> {
                     assertTrue(result.getOrThrow() is YarnUsageResult.AlreadyExists)
                     assertEquals(competing, database.auditSnapshot())
                     assertEquals(700.0, usageRows().single().usedMeters)
                 }
+
                 1107 -> {
                     assertEquals(YarnUsageResult.StaleAction, result.getOrThrow())
                     assertEquals(competing, database.auditSnapshot())
@@ -392,20 +439,24 @@ class AuditPart07YarnBoundaryTest(
                     assertEquals("Edited descriptive name", requireNotNull(yarn.getCard(3)).yarnName)
                     assertEquals(2L, requireNotNull(yarn.getCard(3)).linkedProjectId)
                 }
+
                 1067 -> {
                     assertTrue(other is YarnUsageResult.Updated)
                     assertEquals(700.0, requireNotNull(usageRow()).usedMeters)
                     assertEquals(10, requireNotNull(yarn.getCard(3)).quantityInStash)
                 }
+
                 1071 -> {
                     assertEquals(YarnCardStatus.FINISHED, requireNotNull(yarn.getCard(3)).status)
                     assertEquals(2L, requireNotNull(yarn.getCard(3)).linkedProjectId)
                     assertEquals(9, requireNotNull(yarn.getCard(3)).quantityInStash)
                 }
+
                 1075 -> {
                     assertNull(database.counterProjectDao().getProject(2))
                     assertNull(requireNotNull(yarn.getCard(3)).linkedProjectId)
                 }
+
                 1083 -> {
                     assertNotNull(other)
                     assertNull(yarn.getCard(3))
@@ -413,6 +464,7 @@ class AuditPart07YarnBoundaryTest(
                     assertEquals(other, requireNotNull(usageRow()).yarnCardId)
                     assertEquals(amounts, requireNotNull(usageRow()).toDomain().amounts)
                 }
+
                 1087 -> {
                     assertNull(database.counterProjectDao().getProject(1))
                     assertTrue(
@@ -423,10 +475,12 @@ class AuditPart07YarnBoundaryTest(
                             .isEmpty(),
                     )
                 }
+
                 1095 -> {
                     assertEquals(requireNotNull(database.projectYarnNoteDao().getById(4)).savedYarnCardId, other)
                     assertConverted()
                 }
+
                 1091 -> {
                     assertEditedNote()
                     assertEquals(other, database.projectYarnNoteDao().getById(4)?.savedYarnCardId)
@@ -435,10 +489,12 @@ class AuditPart07YarnBoundaryTest(
                         requireNotNull(yarn.getCard(requireNotNull(other as? Long))).yarnName,
                     )
                 }
+
                 1099 -> {
                     assertNull(other)
                     assertDeletedNote()
                 }
+
                 1103 -> {
                     assertTrue(other is YarnUsageResult.AlreadyExists)
                     assertEquals(amounts, usageRows().single().toDomain().amounts)
@@ -501,17 +557,29 @@ class AuditPart07YarnBoundaryTest(
                 assertEquals(2, card.quantityInStash)
                 assertEquals(1L, card.linkedProjectId)
             }
+
             1063 -> {
                 assertEquals("Edited descriptive name", requireNotNull(yarn.getCard(3)).yarnName)
                 assertEquals(Uri.fromFile(photo).toString(), requireNotNull(yarn.getCard(3)).photoUri)
             }
-            1067 -> assertEquals(10, requireNotNull(yarn.getCard(3)).quantityInStash)
+
+            1067 -> {
+                assertEquals(10, requireNotNull(yarn.getCard(3)).quantityInStash)
+            }
+
             1071 -> {
                 assertEquals(YarnCardStatus.FINISHED, requireNotNull(yarn.observeCard(3).first()).status)
                 assertEquals(9, requireNotNull(yarn.getCard(3)).quantityInStash)
             }
-            1075 -> assertEquals(2L, requireNotNull(yarn.getCard(3)).linkedProjectId)
-            1083 -> assertNull(yarn.getCard(3))
+
+            1075 -> {
+                assertEquals(2L, requireNotNull(yarn.getCard(3)).linkedProjectId)
+            }
+
+            1083 -> {
+                assertNull(yarn.getCard(3))
+            }
+
             1087 -> {
                 assertEquals(
                     "New project note",
@@ -525,9 +593,19 @@ class AuditPart07YarnBoundaryTest(
                 assertEquals(1, yarn.getCardCount().first())
                 assertTrue(usageRows().isEmpty())
             }
-            1095 -> assertConverted()
-            1091 -> assertEditedNote()
-            1099 -> assertDeletedNote()
+
+            1095 -> {
+                assertConverted()
+            }
+
+            1091 -> {
+                assertEditedNote()
+            }
+
+            1099 -> {
+                assertDeletedNote()
+            }
+
             1103 -> {
                 assertEquals(1, usageRows().size)
                 assertEquals(amounts, usageRows().single().toDomain().amounts)

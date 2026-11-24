@@ -77,6 +77,8 @@ fun proMarkerDescription(access: ProActionAccess): String? =
         ProActionAccess.Allowed,
         ProActionAccess.Unknown,
         -> null
+
         ProActionAccess.Locked -> stringResource(R.string.pro_badge_locked_description)
+
         ProActionAccess.Trial -> stringResource(R.string.pro_badge_trial_description)
     }

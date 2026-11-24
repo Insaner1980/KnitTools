@@ -27,17 +27,33 @@ internal fun ProjectFolderMutationResult.errorResource(
     @StringRes fallback: Int,
 ): Int =
     when (this) {
-        ProjectFolderMutationResult.DuplicateName -> R.string.folder_name_duplicate
-        is ProjectFolderMutationResult.InvalidName ->
+        ProjectFolderMutationResult.DuplicateName -> {
+            R.string.folder_name_duplicate
+        }
+
+        is ProjectFolderMutationResult.InvalidName -> {
             when (error) {
                 FolderNameValidationError.REQUIRED -> R.string.folder_name_required
                 FolderNameValidationError.TOO_LONG -> R.string.folder_name_max_length
                 FolderNameValidationError.CONTROL_CHARACTER -> R.string.folder_name_invalid
             }
-        ProjectFolderMutationResult.FolderMissing -> R.string.folder_missing
-        ProjectFolderMutationResult.ProjectMissing -> R.string.folder_project_missing
+        }
+
+        ProjectFolderMutationResult.FolderMissing -> {
+            R.string.folder_missing
+        }
+
+        ProjectFolderMutationResult.ProjectMissing -> {
+            R.string.folder_project_missing
+        }
+
         ProjectFolderMutationResult.StaleAction,
         ProjectFolderMutationResult.BoundaryMove,
-        -> R.string.folder_stale_action
-        else -> fallback
+        -> {
+            R.string.folder_stale_action
+        }
+
+        else -> {
+            fallback
+        }
     }

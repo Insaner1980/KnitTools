@@ -13,6 +13,7 @@ import com.finnvek.knittools.domain.model.ProjectSortOrder
 import com.finnvek.knittools.domain.model.SavedPattern
 import com.finnvek.knittools.domain.model.SavedPatternSource
 import com.finnvek.knittools.pro.ProFeature
+import com.finnvek.knittools.repository.OnboardingState
 import com.finnvek.knittools.repository.ProjectCompletionResult
 import com.finnvek.knittools.repository.ProjectCreationResult
 import com.finnvek.knittools.repository.ProjectDeletionResult
@@ -41,6 +42,23 @@ import java.io.IOException
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ProjectListViewModelTest : ProjectListViewModelFixture() {
+    @Test
+    fun `backup notice appears on the seventh day without a data change`() =
+        runTest {
+            every { repository.observeHasAnyProject() } returns flowOf(true)
+            every { onboardingStateRepository.state } returns
+                flowOf(OnboardingState(initializedVersion = 1, firstUseEpochDay = 42L))
+            val vm = createViewModel()
+            vm.refreshBackupNoticeDay(48L)
+            runCurrent()
+            assertTrue(vm.content.value.hasAnyProject)
+            assertFalse(vm.content.value.showBackupNotice)
+
+            vm.refreshBackupNoticeDay(49L)
+            runCurrent()
+            assertTrue(vm.content.value.showBackupNotice)
+        }
+
     @Test
     fun `completed history permits creation precheck while default numbering still uses total count`() =
         runTest {

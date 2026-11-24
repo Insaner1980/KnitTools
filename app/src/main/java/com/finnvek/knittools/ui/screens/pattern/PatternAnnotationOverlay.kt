@@ -162,7 +162,8 @@ private fun processAnnotationPointerEvent(
             if (gestureState.activePointerId != null) actions.onCancelStroke()
             gestureState.copy(finished = true)
         }
-        gestureState.activePointerId == null ->
+
+        gestureState.activePointerId == null -> {
             beginAnnotationPointerGesture(
                 event = event,
                 state = gestureState,
@@ -173,7 +174,9 @@ private fun processAnnotationPointerEvent(
                 annotationPointerCount = annotationPointers.size,
                 actions = actions,
             )
-        else ->
+        }
+
+        else -> {
             updateAnnotationPointerGesture(
                 event = event,
                 state = gestureState,
@@ -182,6 +185,7 @@ private fun processAnnotationPointerEvent(
                 simplificationTolerance = simplificationTolerance,
                 actions = actions,
             )
+        }
     }
 }
 

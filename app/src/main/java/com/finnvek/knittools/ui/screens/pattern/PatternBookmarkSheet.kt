@@ -24,7 +24,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -51,6 +50,7 @@ import com.finnvek.knittools.ui.components.LabeledTextField
 import com.finnvek.knittools.ui.components.OverviewTextAction
 import com.finnvek.knittools.ui.components.ScrollableFormDialog
 import com.finnvek.knittools.ui.components.SheetTitle
+import com.finnvek.knittools.ui.components.rememberExpandedModalSheetState
 import com.finnvek.knittools.ui.layout.AdaptiveDropdownMenu
 import com.finnvek.knittools.ui.layout.AdaptiveModalWindow
 import com.finnvek.knittools.ui.layout.ContentWidthPolicy
@@ -78,7 +78,7 @@ internal fun PatternBookmarkSheet(
     var showAddDialog by rememberSaveable { mutableStateOf(false) }
     var renameBookmarkId by rememberSaveable { mutableStateOf<Long?>(null) }
     var deleteBookmarkId by rememberSaveable { mutableStateOf<Long?>(null) }
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val sheetState = rememberExpandedModalSheetState()
     val errorDescription = state.error?.let { stringResource(it.messageRes()) }
     val renameBookmark = state.bookmarks.firstOrNull { it.id == renameBookmarkId }
     val deleteBookmark = state.bookmarks.firstOrNull { it.id == deleteBookmarkId }

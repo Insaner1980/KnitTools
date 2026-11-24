@@ -2,7 +2,10 @@ package com.finnvek.knittools.data.backup
 
 import android.content.Context
 import android.net.Uri
+import android.system.Os
+import io.mockk.Runs
 import io.mockk.every
+import io.mockk.just
 import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.unmockkStatic
@@ -21,6 +24,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import java.io.File
+import java.io.FileDescriptor
 import java.io.RandomAccessFile
 import java.net.URI
 
@@ -36,14 +40,20 @@ class BackupFilesTest {
         context =
             mockk {
                 every { filesDir } returns files
+                every { noBackupFilesDir } returns checkNotNull(payload.parentFile)
             }
         mockkStatic(Uri::class)
+        mockkStatic(Os::class)
         every { Uri.parse(any()) } answers { uri(firstArg()) }
         every { Uri.fromFile(any()) } answers { uri(firstArg<File>().toURI().toString()) }
+        every { Os.open(any(), any(), any()) } returns FileDescriptor()
+        every { Os.fsync(any()) } just Runs
+        every { Os.close(any()) } just Runs
     }
 
     @After fun tearDown() {
         unmockkStatic(Uri::class)
+        unmockkStatic(Os::class)
     }
 
     private fun uri(text: String): Uri {
@@ -207,6 +217,26 @@ class BackupFilesTest {
         restore.publish {}
         assertThrows(BackupException::class.java) { restore.publish {} }
         assertEquals("data", File(URI(row.getValue("photoUri").jsonPrimitive.content)).readText())
+    }
+
+    @Test fun onlyVersionTwoPdfReferencesAcceptBoundedCopyNumbers() {
+        val path = "files/${"a".repeat(64)}.bin"
+        File(payload, path).apply {
+            checkNotNull(parentFile).mkdirs()
+            writeText("file bytes")
+        }
+        val legacy = BackupRestoreFiles(context, payload)
+        val current = BackupRestoreFiles(context, payload, dataVersion = 2)
+
+        fun document(reference: String) = mutableMapOf<String, JsonElement>("localPdfUri" to JsonPrimitive(reference))
+
+        assertThrows(BackupException::class.java) { legacy.rebase("project_documents", document("$path#2")) }
+        for (suffix in listOf("", "1", "02", "2001", "2#3")) {
+            assertThrows(BackupException::class.java) { current.rebase("project_documents", document("$path#$suffix")) }
+        }
+        assertThrows(BackupException::class.java) {
+            current.rebase("yarn_cards", mutableMapOf("photoUri" to JsonPrimitive("$path#2")))
+        }
     }
 
     @Test fun restoredProgressPhotoRowsReceiveDistinctFilesForSharedArchiveContent() {

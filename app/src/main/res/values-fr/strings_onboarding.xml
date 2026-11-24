@@ -62,52 +62,10 @@
     <string name="project_target_error">Saisissez un nombre entre 1 et %1$s.</string>
     <!-- Uuden projektin esikatselun saavutettava kuvaus; %1$s sisältää laskuriarvon nimikkeineen. -->
     <string name="project_create_preview_a11y">Aperçu : %1$s</string>
-    <!-- Tilannekohtainen vihje nykyisessä näkymässä; toimintojen nimet vastaavat sovelluksen nykyisiä nimiä. -->
-    <string name="tip_got_it">Compris</string>
-    <!-- Tilannekohtainen vihje nykyisessä näkymässä; toimintojen nimet vastaavat sovelluksen nykyisiä nimiä. -->
-    <string name="tip_first_row_rows">Quand vous terminez un rang, touchez +. Toucher le grand nombre fonctionne aussi.</string>
-    <!-- Tilannekohtainen vihje nykyisessä näkymässä; toimintojen nimet vastaavat sovelluksen nykyisiä nimiä. -->
-    <string name="tip_first_row_rounds">Quand vous terminez un tour, touchez +. Toucher le grand nombre fonctionne aussi.</string>
-    <!-- Tilannekohtainen vihje nykyisessä näkymässä; toimintojen nimet vastaavat sovelluksen nykyisiä nimiä. -->
-    <string name="tip_first_row_repeats">Quand vous terminez une répétition, touchez +. Toucher le grand nombre fonctionne aussi.</string>
-    <!-- Tilannekohtainen vihje nykyisessä näkymässä; toimintojen nimet vastaavat sovelluksen nykyisiä nimiä. -->
-    <string name="tip_first_row_custom">Touchez + chaque fois que vous terminez une unité. Toucher le grand nombre fonctionne aussi.</string>
-    <!-- Tilannekohtainen vihje nykyisessä näkymässä; toimintojen nimet vastaavat sovelluksen nykyisiä nimiä. -->
-    <string name="tip_undo">Enregistré. Un appui par erreur ? Annuler revient sur la dernière modification.</string>
-    <!-- Tilannekohtainen vihje nykyisessä näkymässä; toimintojen nimet vastaavat sovelluksen nykyisiä nimiä. -->
-    <string name="tip_step_size">Vous comptez plusieurs unités à la fois ? Réglez ici la quantité ajoutée ou retirée à chaque appui.</string>
-    <!-- Työajan seuranta käynnistetään itse; ajastin ei käynnisty automaattisesti. -->
-    <string name="tip_work_session">Vous voulez savoir combien de temps ce projet vous prend ? Démarrez une session de travail depuis ce menu. Le suivi du temps ne démarre jamais tout seul.</string>
-    <!-- Tilannekohtainen vihje nykyisessä näkymässä; toimintojen nimet vastaavat sovelluksen nykyisiä nimiä. -->
-    <string name="tip_overview_intro">Voici tout votre projet : modèle, fil, notes et photos. Continuer vous ramène au compteur.</string>
-    <!-- Tilannekohtainen vihje nykyisessä näkymässä; toimintojen nimet vastaavat sovelluksen nykyisiä nimiä. -->
-    <string name="tip_pattern_tile">Joignez votre modèle pour le garder avec ce projet.</string>
-    <!-- PDF-lukijan vihje; seuraa päälaskuria -asetuksen nimen on vastattava nykyistä käyttöliittymää. -->
-    <string name="tip_reading_line">Activez Suivre le compteur principal et la ligne de lecture se déplacera pendant que vous comptez.</string>
-    <!-- Tilannekohtainen vihje nykyisessä näkymässä; toimintojen nimet vastaavat sovelluksen nykyisiä nimiä. -->
-    <string name="tip_keep_screen_on">L’écran s’éteint pendant votre travail ? Gardez-le allumé pendant que vous comptez.</string>
-    <!-- Tilannekohtainen vihje nykyisessä näkymässä; toimintojen nimet vastaavat sovelluksen nykyisiä nimiä. -->
-    <string name="tip_keep_screen_on_action">Garder l’écran allumé</string>
-    <!-- Tilannekohtainen vihje nykyisessä näkymässä; toimintojen nimet vastaavat sovelluksen nykyisiä nimiä. -->
-    <string name="tip_target_reached">Objectif atteint. Continuez à compter ou marquez le projet comme terminé depuis le menu de sa page.</string>
-    <!-- Tilannekohtainen vihje nykyisessä näkymässä; toimintojen nimet vastaavat sovelluksen nykyisiä nimiä. -->
-    <string name="tip_first_session_saved">Votre première session de travail est enregistrée. Le temps total consacré à ce projet se trouve ici.</string>
-    <!-- Tilannekohtainen vihje nykyisessä näkymässä; toimintojen nimet vastaavat sovelluksen nykyisiä nimiä. -->
-    <string name="tip_backup">Vos projets sont uniquement sur ce téléphone. Faites une sauvegarde pour les conserver si vous changez de téléphone.</string>
-    <!-- Tilannekohtainen vihje nykyisessä näkymässä; toimintojen nimet vastaavat sovelluksen nykyisiä nimiä. -->
-    <string name="tip_backup_action">Sauvegarder</string>
-    <!-- Tilannekohtainen vihje nykyisessä näkymässä; toimintojen nimet vastaavat sovelluksen nykyisiä nimiä. -->
-    <string name="tip_folders">Beaucoup de projets ? Classez-les dans des dossiers depuis le titre.</string>
-    <!-- Tilannekohtainen vihje nykyisessä näkymässä; toimintojen nimet vastaavat sovelluksen nykyisiä nimiä. -->
-    <string name="tip_widget">Comptez depuis votre écran d’accueil sans ouvrir l’application.</string>
-    <!-- Tilannekohtainen vihje nykyisessä näkymässä; toimintojen nimet vastaavat sovelluksen nykyisiä nimiä. -->
-    <string name="tip_widget_action">Ajouter un widget</string>
-    <!-- Tilannekohtainen vihje nykyisessä näkymässä; toimintojen nimet vastaavat sovelluksen nykyisiä nimiä. -->
-    <string name="tip_tools_intro">Les calculatrices fonctionnent hors ligne. Les valeurs d’exemple montrent quoi saisir.</string>
-    <!-- Asetusten toiminto tai kuittaus aiemmin nähtyjen vihjeiden näyttämiseen uudelleen. -->
-    <string name="settings_show_tips_again">Afficher à nouveau les conseils</string>
-    <!-- Asetusten toiminto tai kuittaus aiemmin nähtyjen vihjeiden näyttämiseen uudelleen. -->
-    <string name="settings_tips_reset_done">Les conseils s’afficheront à nouveau.</string>
+    <!-- Kokeilun päättymismuistutuksen kuittaava painike. -->
+    <string name="trial_notice_acknowledge">Compris</string>
+    <!-- Avaa varmuuskopioinnin ilmoitusriviltä. -->
+    <string name="projects_backup_notice_action">Sauvegarder</string>
     <!-- Ensimmäisen projektin valmistelulista; valmis vaihe kuvaa jo tallennettua tietoa. -->
     <string name="project_setup_pattern">Joignez votre modèle</string>
     <!-- Ensimmäisen projektin valmistelulista; valmis vaihe kuvaa jo tallennettua tietoa. -->
@@ -249,7 +207,7 @@
     <!-- Oppaan työkalut, työaika ja varmuuskopiointi; osioiden nimet vastaavat nykyisiä välilehtiä. -->
     <string name="guide_tools_folders_title">Dossiers</string>
     <!-- Oppaan työkalut, työaika ja varmuuskopiointi; osioiden nimet vastaavat nykyisiä välilehtiä. -->
-    <string name="guide_tools_folders_body">Regroupez les projets dans des dossiers depuis le titre Projets. Un projet en cours à la fois est gratuit et les projets terminés ne comptent pas.</string>
+    <string name="guide_tools_folders_body">Regroupez les projets dans des dossiers depuis le titre Projets.</string>
     <!-- Oppaan työkalut, työaika ja varmuuskopiointi; osioiden nimet vastaavat nykyisiä välilehtiä. -->
     <string name="guide_tools_backup_title">Sauvegarde</string>
     <!-- Palauttaminen korvaa puhelimen nykyiset tiedot; älä lupaa yhdistämistä tai synkronointia. -->
@@ -666,8 +624,16 @@
     <string name="journey_pdf_failed">L\'importation du PDF a échoué. La pièce jointe précédente est conservée.</string>
     <!-- Aloituspolku: Luo ensimmäinen projekti -->
     <string name="journey_first_project">Créer votre premier projet</string>
-    <!-- Aloituspolun jälkeen: ohjelaattaan ankkuroitu vihje vain luodulle projektille, johon käyttäjä liitti PDF-ohjeen. -->
-    <string name="journey_open_pattern_tip">Ouvrez ici le modèle que vous avez ajouté à ce projet.</string>
     <!-- Vahvistetun Pro-oston jälkeen näytettävä kuittaus sovellukseen siirryttäessä. -->
     <string name="journey_pro_active">Pro est activé.</string>
+    <!-- Projektien paikallisesta tallennuksesta kertova ilmoitus. -->
+    <string name="projects_backup_notice">Vos projets se trouvent uniquement sur ce téléphone.</string>
+    <!-- PDF-lukijan ilmoitus laskuria seuraavasta lukulinjasta. -->
+    <string name="reading_line_notice">La ligne de lecture peut suivre le compteur.</string>
+    <!-- Ohittaa ilmoituksen pysyvästi. -->
+    <string name="contextual_notice_skip">Ignorer</string>
+    <!-- Ottaa käyttöön laskuria seuraavan lukulinjan. -->
+    <string name="reading_line_notice_enable">Activer</string>
+    <!-- Avaa valmistumisvahvistuksen tavoitteen täyttäneelle projektille. -->
+    <string name="counter_mark_complete">Marquer comme terminé</string>
 </resources>

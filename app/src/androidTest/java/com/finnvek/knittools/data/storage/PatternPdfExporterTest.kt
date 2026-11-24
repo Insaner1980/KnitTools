@@ -1,8 +1,13 @@
 package com.finnvek.knittools.data.storage
 
+import android.content.ContentResolver
 import android.content.Context
+import android.content.ContextWrapper
+import android.content.res.AssetFileDescriptor
 import android.graphics.Color
 import android.graphics.pdf.PdfDocument
+import android.net.Uri
+import android.os.ParcelFileDescriptor
 import androidx.core.net.toUri
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -18,25 +23,31 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.TemporaryFolder
 import org.junit.runner.RunWith
 import java.io.File
+import java.io.IOException
 
 @RunWith(AndroidJUnit4::class)
 class PatternPdfExporterTest {
+    @get:Rule val fixture = TemporaryFolder(ApplicationProvider.getApplicationContext<Context>().cacheDir)
     private lateinit var context: Context
     private lateinit var exporter: PatternPdfExporter
 
     @Before
     fun setUp() {
-        context = ApplicationProvider.getApplicationContext()
+        context =
+            object : ContextWrapper(ApplicationProvider.getApplicationContext<Context>()) {
+                override fun getCacheDir(): File = fixture.root
+            }
         exporter =
             PatternPdfExporter.createForTest(
                 context = context,
                 ioDispatcher = Dispatchers.IO,
                 cacheSpaceProvider = { Long.MAX_VALUE },
             )
-        exportTempDirectory().deleteRecursively()
     }
 
     @Test
@@ -61,6 +72,19 @@ class PatternPdfExporterTest {
                     repeat(
                         rendered.pageCount,
                     ) { page -> assertEquals(original.pageSize(page), rendered.pageSize(page)) }
+                    val annotatedPage = rendered.renderPage(0, targetWidth = 300)
+                    try {
+                        assertTrue(
+                            (30..270).any { x ->
+                                (40..120).any { y ->
+                                    Color.red(annotatedPage.getPixel(x, y)) <
+                                        128
+                                }
+                            },
+                        )
+                    } finally {
+                        annotatedPage.recycle()
+                    }
                 }
             }
             assertEquals(PatternPdfExportProgress(2, 2), progress.last())
@@ -110,6 +134,37 @@ class PatternPdfExporterTest {
                 }.exceptionOrNull()
 
             assertTrue(failure != null)
+            assertTempDirectoryEmpty()
+        }
+
+    @Test
+    fun partialDestinationIsDeletedWhenProviderWriteFails() =
+        runBlocking {
+            val source = createPdf("source-copy-error.pdf", pageCount = 1)
+            val partial = fixture.newFile("partial.pdf")
+            val provider = FailingWriteProvider(source, partial)
+            val resolver = ContentResolver.wrap(provider)
+            val wrappedContext =
+                object : ContextWrapper(context) {
+                    override fun getContentResolver(): ContentResolver = resolver
+                }
+            val pdfExporter = PatternPdfExporter.createForTest(wrappedContext, Dispatchers.IO)
+
+            val failure =
+                runCatching {
+                    pdfExporter.export(
+                        sourceUri = "content://knittools.test/${source.name}".toUri(),
+                        destinationUri = "content://knittools.test/partial.pdf".toUri(),
+                        annotations = emptyList(),
+                        trackerHighlights = emptyMap(),
+                        style = renderStyle(),
+                        onProgress = {},
+                    )
+                }.exceptionOrNull()
+
+            assertEquals("Synthetic destination write failure", failure?.message)
+            assertTrue(provider.deletedAfterWrite)
+            assertFalse(partial.exists())
             assertTempDirectoryEmpty()
         }
 
@@ -264,11 +319,11 @@ class PatternPdfExporterTest {
     @Test
     fun exportCannotOverwriteSourceThroughFileProviderAlias() =
         runBlocking {
-            val source = File(context.filesDir, "pattern_captures/161992/source.pdf")
-            source.parentFile!!.mkdirs()
-            createPdf("alias-input.pdf", 1).copyTo(source, overwrite = true)
-            val before = source.readBytes()
+            val captures = File(context.filesDir, "pattern_captures").apply { mkdirs() }
+            val source = File.createTempFile("export-alias-", ".pdf", captures)
             try {
+                createPdf("alias-input.pdf", 1).copyTo(source, overwrite = true)
+                val before = source.readBytes()
                 val failure =
                     runCatching {
                         exporter.export(
@@ -287,6 +342,53 @@ class PatternPdfExporterTest {
                 source.delete()
             }
         }
+
+    private class FailingWriteProvider(
+        private val source: File,
+        private val partial: File,
+    ) : PdfTestContentProvider() {
+        var deletedAfterWrite = false
+            private set
+
+        override fun openFile(
+            uri: Uri,
+            mode: String,
+        ): ParcelFileDescriptor {
+            check(uri.lastPathSegment == source.name && mode == "r")
+            return ParcelFileDescriptor.open(source, ParcelFileDescriptor.MODE_READ_ONLY)
+        }
+
+        override fun openAssetFile(
+            uri: Uri,
+            mode: String,
+        ): AssetFileDescriptor =
+            object : AssetFileDescriptor(
+                ParcelFileDescriptor.open(partial, ParcelFileDescriptor.MODE_WRITE_ONLY),
+                0L,
+                UNKNOWN_LENGTH,
+            ) {
+                override fun createOutputStream() =
+                    object : ParcelFileDescriptor.AutoCloseOutputStream(parcelFileDescriptor) {
+                        override fun write(
+                            buffer: ByteArray,
+                            offset: Int,
+                            count: Int,
+                        ) {
+                            super.write(buffer, offset, 1)
+                            throw IOException("Synthetic destination write failure")
+                        }
+                    }
+            }
+
+        override fun delete(
+            uri: Uri,
+            selection: String?,
+            selectionArgs: Array<out String>?,
+        ): Int {
+            deletedAfterWrite = partial.length() > 0
+            return if (partial.delete()) 1 else 0
+        }
+    }
 
     private suspend fun exportEmptyPdfFailure(
         pdfExporter: PatternPdfExporter,

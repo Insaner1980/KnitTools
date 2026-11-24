@@ -52,8 +52,9 @@ class PatternAnnotationCommandTest {
         runTest {
             val repository = mockk<PatternAnnotationRepository>(relaxed = true)
             val removed = listOf(annotation(1L), annotation(2L))
+            coEvery { repository.clearPage(3L, 4) } returns removed
 
-            val undo = PatternAnnotationCommand.ClearPage(3L, 4, removed).apply(repository)
+            val undo = PatternAnnotationCommand.ClearPage(3L, 4).apply(repository)
             val redo = undo.apply(repository)
             val undoAgain = redo.apply(repository)
 

@@ -265,7 +265,7 @@
     <!-- Session History -->
     <string name="session_history_title">Historial de sesiones</string>
     <string name="no_sessions">Aún no hay sesiones registradas. Abre un proyecto e inicia una sesión de trabajo para registrar tu tiempo aquí.</string>
-    <string name="session_row_range">Contador: %1$d → %2$d</string>
+    <string name="session_row_range">Contador %1$d → %2$d</string>
     <string name="session_row_single">Valor %1$d</string>
     <string name="delete_session_title">¿Eliminar sesión?</string>
     <string name="delete_session_message">Se eliminará esta sesión del historial. Esto no se puede deshacer.</string>
@@ -356,7 +356,7 @@
 
     <!-- Needle Sizes -->
     <string name="search_size">Buscar talla…</string>
-    <string name="needle_size_disclaimer">Las tallas son equivalencias aproximadas. Las tallas japonesas usan una escala métrica distinta.</string>
+    <string name="needle_size_disclaimer">Las tallas son equivalencias aproximadas. La numeración varía según el sistema y el fabricante, así que compara el diámetro en milímetros y comprueba tu muestra.</string>
     <string name="header_mm">mm</string>
     <string name="header_us">US</string>
     <string name="header_uk">UK</string>
@@ -369,8 +369,8 @@
     <string name="settings_section_general">General</string>
     <string name="settings_theme">Tema</string>
     <string name="settings_section_pro">PRO</string>
-    <string name="settings_section_data">DATOS</string>
-    <string name="settings_section_info">INFO</string>
+    <string name="settings_section_data">Copia de seguridad</string>
+    <string name="settings_section_info">Ayuda y soporte</string>
     <string name="help_and_guide">Ayuda en línea</string>
     <string name="external_link_description">se abre en el navegador</string>
     <string name="settings_language">Idioma de la app</string>
@@ -732,8 +732,6 @@
     <string name="tip_edge_stitches_desc">Los puntos de borde son puntos extra fuera de la repetición del patrón. Introduce el total de puntos de borde que vas a montar; la calculadora los añade después de calcular el ancho deseado, por ejemplo 2 para un punto en cada lado.</string>
     <string name="tip_flat_vs_circular_title">Plano frente a circular</string>
     <string name="tip_flat_vs_circular_desc">Tejido plano: trabajas de ida y vuelta con agujas rectas o circulares, girando al final de cada vuelta.\n\nTejido circular: trabajas en una vuelta continua. Los aumentos y disminuciones se reparten uniformemente alrededor de la vuelta.</string>
-    <string name="tip_needle_sizes_title">Sistemas de tallas de agujas</string>
-    <string name="tip_needle_sizes_desc">El sistema métrico (mm) es el estándar universal. Las tallas US usan un sistema numerado. Las tallas UK/Canadá usan un sistema numerado diferente. Las tallas japonesas tienen su propia numeración. Comprueba siempre la medida en mm para asegurarte.</string>
     <string name="tip_imperial_units_title">Unidades imperiales</string>
     <string name="tip_imperial_units_desc">Cuando está activado, las calculadoras parten de pulgadas en lugar de centímetros y yardas en lugar de metros, con la muestra por 4 pulgadas en lugar de por 10 cm. En Medidas y muestra puedes elegir otras unidades.</string>
     <string name="open_notes_editor">Abrir editor de notas</string>
@@ -961,7 +959,7 @@
     <string name="folder_remove_from">Quitar de carpeta</string>
     <string name="selection_action_move">Mover</string>
     <string name="selection_action_complete">Completar</string>
-    <string name="folder_no_folders">No hay carpetas</string>
+    <string name="folder_empty_notice">Todavía no has creado ninguna carpeta.</string>
     <string name="folder_empty">%1$s no tiene proyectos.</string>
     <string name="folder_no_unfiled">No hay proyectos sin carpeta</string>
     <string name="folder_hidden_completed">Esta carpeta contiene proyectos terminados ocultos.</string>
@@ -1000,7 +998,7 @@
     <item quantity="other">Se movieron %d proyectos.</item>
     <item quantity="many">Se movieron %d proyectos.</item>
     </plurals>
-    <string name="folder_move_project_to">Mover %1$s a carpeta</string>
+    <string name="folder_move_sheet_title">Mover a carpeta</string>
     <string name="folder_rename_description">Cambiar nombre de la carpeta %1$s</string>
     <string name="folder_move_earlier_description">Mover la carpeta %1$s antes</string>
     <string name="folder_move_later_description">Mover la carpeta %1$s después</string>
@@ -1066,7 +1064,6 @@
     <string name="measurement_project_context">Proyecto: %1$s</string>
     <string name="measurement_estimate">Estimación basada en la tensión introducida.</string>
     <string name="measurement_adjust_warning">Estimación matemática basada en la tensión introducida. Las instrucciones de aumentos, disminuciones y construcción no se reescriben. La holgura, las repeticiones del motivo, los bordes, las sisas, los escotes y las mangas pueden necesitar ajustes por separado. Mide una muestra lavada o bloqueada para obtener una estimación más útil.</string>
-    <string name="measurement_adjust_warning_short">Una estimación según tu muestra. Los aumentos y las disminuciones pueden requerir ajustes aparte.</string>
     <string name="measurement_swatch_hint">Para una estimación más útil, mide la muestra después de lavarla o bloquearla.</string>
     <string name="measurement_result">Resultado</string>
     <string name="measurement_value_unit_format">%1$s %2$s</string>
@@ -1269,5 +1266,5 @@
     <string name="project_yarn_edit_missing">Esta nota de hilo ya no pertenece a este proyecto. Cierra el editor.</string>
     <string name="project_yarn_edit_invalid">Introduce un nombre de hilo.</string>
     <string name="project_yarn_edit_failed">No se pudieron guardar los cambios. Tu borrador sigue aquí. Inténtalo de nuevo.</string>
-    <string name="counter_progress_format">Avance del contador: %1$d</string>
+    <string name="counter_progress_format">Contador %1$+d</string>
 </resources>

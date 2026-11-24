@@ -6,6 +6,7 @@ import io.mockk.every
 import io.mockk.mockk
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -85,16 +86,26 @@ class CounterLaunchTokenStoreTest {
     }
 
     @Test
-    fun `launch is rejected when consumption cannot be persisted`() {
+    fun `issuance fails when launch ID cannot be persisted`() {
         val preferences = LaunchTokenPreferences(commitSucceeds = false)
+        assertNull(CounterLaunchTokenStore.issueLaunchId(preferences.context, NOW_MILLIS))
+    }
+
+    @Test
+    fun `failed consumption leaves the launch ID available for a retry`() {
+        val preferences = LaunchTokenPreferences()
         val launchId = CounterLaunchTokenStore.issueLaunchId(preferences.context, NOW_MILLIS)
 
+        preferences.commitSucceeds = false
+        assertFalse(CounterLaunchTokenStore.consumeLaunchId(preferences.context, launchId, NOW_MILLIS))
+        preferences.commitSucceeds = true
+        assertTrue(CounterLaunchTokenStore.consumeLaunchId(preferences.context, launchId, NOW_MILLIS))
         assertFalse(CounterLaunchTokenStore.consumeLaunchId(preferences.context, launchId, NOW_MILLIS))
     }
 
     private class LaunchTokenPreferences(
         storedValue: String? = null,
-        private val commitSucceeds: Boolean = true,
+        var commitSucceeds: Boolean = true,
     ) {
         val storedValues = mutableMapOf<String, String>()
         private val editor = mockk<SharedPreferences.Editor>()
@@ -113,7 +124,7 @@ class CounterLaunchTokenStoreTest {
                 storedValues[firstArg()] = secondArg()
                 editor
             }
-            every { editor.commit() } returns commitSucceeds
+            every { editor.commit() } answers { commitSucceeds }
         }
     }
 

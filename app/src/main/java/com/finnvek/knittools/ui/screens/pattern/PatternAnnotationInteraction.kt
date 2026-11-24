@@ -72,7 +72,9 @@ internal fun lockHighlighterPoints(
     return points.map { point ->
         when (resolvedLock) {
             PatternHighlighterAxisLock.HORIZONTAL -> point.copy(y = first.y)
+
             PatternHighlighterAxisLock.VERTICAL -> point.copy(x = first.x)
+
             PatternHighlighterAxisLock.FREE,
             PatternHighlighterAxisLock.DOMINANT_AXIS,
             -> point

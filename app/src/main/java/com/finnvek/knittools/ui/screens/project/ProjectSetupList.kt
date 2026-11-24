@@ -28,8 +28,6 @@ import com.finnvek.knittools.ui.components.RowOverflowMenu
 import com.finnvek.knittools.ui.screens.counter.CounterUiState
 import com.finnvek.knittools.ui.screens.counter.CounterViewModel
 import com.finnvek.knittools.ui.theme.ProjectOverviewDimens
-import com.finnvek.knittools.ui.tips.LocalTipRouteKey
-import com.finnvek.knittools.ui.tips.LocalTipSession
 
 data class ProjectSetupVisit(
     val projectId: Long,
@@ -46,20 +44,15 @@ internal data class ProjectSetupActions(
 internal fun ProjectSetupRoute(
     state: CounterUiState,
     viewModel: CounterViewModel,
+    routeEntryGeneration: Long?,
     onItemClick: (ProjectSetupItem) -> Unit,
     onBlockingSurfaceChanged: (Boolean) -> Unit,
 ) {
-    val session = LocalTipSession.current ?: return
-    val sessionState by session.state.collectAsStateWithLifecycle()
     val onboarding by viewModel.onboardingState.collectAsStateWithLifecycle(initialValue = null)
     val celebratedVisit by viewModel.projectSetupCelebration.collectAsStateWithLifecycle()
     val lifecycle by LocalLifecycleOwner.current.lifecycle.currentStateFlow
         .collectAsState()
-    val routeKey = LocalTipRouteKey.current
-    val visit =
-        state.projectId?.takeIf { sessionState.routeKey == routeKey }?.let {
-            ProjectSetupVisit(it, sessionState.routeEntryGeneration)
-        }
+    val visit = state.projectId?.let { id -> routeEntryGeneration?.let { ProjectSetupVisit(id, it) } }
     ProjectSetupSection(
         state = state,
         onboarding = onboarding,
@@ -152,11 +145,21 @@ private fun ProjectSetupList(
 
 private fun ProjectSetupItem.title(done: Boolean): Int =
     when (this) {
-        ProjectSetupItem.TARGET ->
+        ProjectSetupItem.TARGET -> {
             if (done) R.string.project_setup_target_done else R.string.project_setup_target
-        ProjectSetupItem.PATTERN -> if (done) R.string.project_setup_pattern_done else R.string.project_setup_pattern
-        ProjectSetupItem.YARN -> if (done) R.string.project_setup_yarn_done else R.string.project_setup_yarn
-        ProjectSetupItem.WORK_TIME -> if (done) R.string.project_setup_session_done else R.string.project_setup_session
+        }
+
+        ProjectSetupItem.PATTERN -> {
+            if (done) R.string.project_setup_pattern_done else R.string.project_setup_pattern
+        }
+
+        ProjectSetupItem.YARN -> {
+            if (done) R.string.project_setup_yarn_done else R.string.project_setup_yarn
+        }
+
+        ProjectSetupItem.WORK_TIME -> {
+            if (done) R.string.project_setup_session_done else R.string.project_setup_session
+        }
     }
 
 private fun ProjectSetupItem.glyph(): CrossStitchGlyph =

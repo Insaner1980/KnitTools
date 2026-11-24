@@ -149,9 +149,14 @@ class OnboardingViewModel
                             if (stored.step == OnboardingStep.Ready) OnboardingStep.Ready else OnboardingStep.Price
                         stored.copy(step = step, projectId = created).also { persist(it) }
                     }
-                    !stored.completed && (stored.projectId != null || projects.hasAnyProject()) ->
+
+                    !stored.completed && (stored.projectId != null || projects.hasAnyProject()) -> {
                         stored.copy(completed = true, exitPending = false, projectId = null).also { persist(it) }
-                    else -> stored
+                    }
+
+                    else -> {
+                        stored
+                    }
                 }
             }
 
@@ -221,13 +226,18 @@ class OnboardingViewModel
                             // The committed project and its durable receipt remain authoritative.
                         }
                     }
-                    ProjectCreationResult.LimitReached ->
+
+                    ProjectCreationResult.LimitReached -> {
                         _state.update {
                             it.copy(
                                 messageRes = R.string.journey_project_limit,
                             )
                         }
-                    else -> _state.update { it.copy(messageRes = R.string.journey_project_invalid) }
+                    }
+
+                    else -> {
+                        _state.update { it.copy(messageRes = R.string.journey_project_invalid) }
+                    }
                 }
             }
 
@@ -276,16 +286,26 @@ class OnboardingViewModel
                         journeyCoordinator.requestStartedJourney(fromOnboarding = true)
                         finishDraft(draft)
                     }
-                    TrialStartResult.AlreadyActive -> finishDraft(draft)
-                    TrialStartResult.AlreadyExpired ->
+
+                    TrialStartResult.AlreadyActive -> {
+                        finishDraft(draft)
+                    }
+
+                    TrialStartResult.AlreadyExpired -> {
                         _state.update {
                             it.copy(trialUnavailable = true, messageRes = R.string.journey_trial_used)
                         }
-                    TrialStartResult.AlreadyTampered ->
+                    }
+
+                    TrialStartResult.AlreadyTampered -> {
                         _state.update {
                             it.copy(trialUnavailable = true, messageRes = R.string.journey_trial_unavailable)
                         }
-                    TrialStartResult.Failed -> _state.update { it.copy(messageRes = R.string.pro_trial_start_failed) }
+                    }
+
+                    TrialStartResult.Failed -> {
+                        _state.update { it.copy(messageRes = R.string.pro_trial_start_failed) }
+                    }
                 }
             }
 

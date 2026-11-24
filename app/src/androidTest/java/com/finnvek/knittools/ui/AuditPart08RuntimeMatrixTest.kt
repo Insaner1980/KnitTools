@@ -1603,7 +1603,6 @@ class AuditPart08RuntimeMatrixTest {
         val counterName = "Sleeve increases"
         runBlocking(Dispatchers.IO) {
             db.projectCounterDao().insert(ProjectCounterEntity(projectId = projectId, name = counterName))
-            app.onboardingStateRepository.get().markBasicTipsSeen()
         }
         counter()
         tap("main_counter_rows")

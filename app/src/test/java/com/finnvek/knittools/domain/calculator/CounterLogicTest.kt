@@ -112,6 +112,12 @@ class CounterLogicTest {
     }
 
     @Test
+    fun `reset at zero keeps the earlier undo value`() {
+        val state = CounterState(count = 0, previousCount = 42)
+        assertEquals(state, CounterLogic.reset(state))
+    }
+
+    @Test
     fun `set step size minimum is 1`() {
         val state = CounterState(stepSize = 1)
         val result = CounterLogic.setStepSize(state, 0)

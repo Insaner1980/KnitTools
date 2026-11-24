@@ -50,16 +50,11 @@ class ProLocalizationSourceTest {
             files
                 .filter { file ->
                     val name = file.fileName.toString()
+                    val stringsFile = name.startsWith("strings") && name.endsWith(".xml")
                     file.parent.fileName
                         .toString()
                         .startsWith("values") &&
-                        (
-                            name.startsWith(
-                                "strings",
-                            ) &&
-                                name.endsWith(".xml") ||
-                                name == "pattern_reading_assistance.xml"
-                        )
+                        (stringsFile || name == "pattern_reading_assistance.xml")
                 }.forEach { file ->
                     val source = ProjectSourceFiles.read(file)
                     assertFalse("Literal middle dot found in $file", source.contains('\u00b7'))

@@ -52,35 +52,7 @@ class ProManager
                         ProPolicyTestControl.purchaseStateReady(billingManager.purchaseStateReady),
                         billingManager.purchaseQueryFailed,
                     ) { trial, isPurchased, purchaseStateReady, purchaseQueryFailed ->
-                        val state =
-                            when {
-                                isPurchased -> {
-                                    ProState(
-                                        status = ProStatus.PRO_PURCHASED,
-                                        trialDaysRemaining = 0,
-                                        trialStartTimestamp = trial.startTimestamp,
-                                        purchaseTimestamp = System.currentTimeMillis(),
-                                    )
-                                }
-
-                                trial.isActive -> {
-                                    ProState(
-                                        status = ProStatus.TRIAL_ACTIVE,
-                                        trialDaysRemaining = trial.daysRemaining,
-                                        trialStartTimestamp = trial.startTimestamp,
-                                    )
-                                }
-
-                                !trial.hasStarted -> ProState(status = ProStatus.TRIAL_NOT_STARTED)
-
-                                else -> {
-                                    ProState(
-                                        status = ProStatus.TRIAL_EXPIRED,
-                                        trialDaysRemaining = 0,
-                                        trialStartTimestamp = trial.startTimestamp,
-                                    )
-                                }
-                            }
+                        val state = resolveProState(trial, isPurchased)
                         val entitlementAvailable = trial.isAvailable || isPurchased
                         Triple(
                             state,
@@ -101,6 +73,41 @@ class ProManager
                 }
             }
         }
+
+        private fun resolveProState(
+            trial: TrialState,
+            isPurchased: Boolean,
+        ): ProState =
+            when {
+                isPurchased -> {
+                    ProState(
+                        status = ProStatus.PRO_PURCHASED,
+                        trialDaysRemaining = 0,
+                        trialStartTimestamp = trial.startTimestamp,
+                        purchaseTimestamp = System.currentTimeMillis(),
+                    )
+                }
+
+                trial.isActive -> {
+                    ProState(
+                        status = ProStatus.TRIAL_ACTIVE,
+                        trialDaysRemaining = trial.daysRemaining,
+                        trialStartTimestamp = trial.startTimestamp,
+                    )
+                }
+
+                !trial.hasStarted -> {
+                    ProState(status = ProStatus.TRIAL_NOT_STARTED)
+                }
+
+                else -> {
+                    ProState(
+                        status = ProStatus.TRIAL_EXPIRED,
+                        trialDaysRemaining = 0,
+                        trialStartTimestamp = trial.startTimestamp,
+                    )
+                }
+            }
 
         fun hasFeature(feature: ProFeature): Boolean = _proState.value.hasFeature(feature)
 

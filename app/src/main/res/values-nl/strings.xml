@@ -259,7 +259,7 @@
     <!-- Session History -->
     <string name="session_history_title">Sessiegeschiedenis</string>
     <string name="no_sessions">Nog geen sessies geregistreerd. Open een project en start een werksessie om je tijd hier vast te leggen.</string>
-    <string name="session_row_range">Teller: %1$d → %2$d</string>
+    <string name="session_row_range">Teller %1$d → %2$d</string>
     <string name="session_row_single">Stand %1$d</string>
     <string name="delete_session_title">Sessie verwijderen?</string>
     <string name="delete_session_message">Deze sessie wordt uit de geschiedenis verwijderd. Dit kan niet ongedaan worden gemaakt.</string>
@@ -349,7 +349,7 @@
 
     <!-- Needle Sizes -->
     <string name="search_size">Zoek maat…</string>
-    <string name="needle_size_disclaimer">Maten zijn benaderende equivalenten. Japanse maten gebruiken een aparte metrische schaal.</string>
+    <string name="needle_size_disclaimer">De maten komen bij benadering overeen. De nummering verschilt per systeem en fabrikant. Vergelijk daarom de diameter in millimeters en controleer je stekenproef.</string>
     <string name="header_mm">mm</string>
     <string name="header_us">US</string>
     <string name="header_uk">UK</string>
@@ -362,8 +362,8 @@
     <string name="settings_section_general">Algemeen</string>
     <string name="settings_theme">Thema</string>
     <string name="settings_section_pro">PRO</string>
-    <string name="settings_section_data">GEGEVENS</string>
-    <string name="settings_section_info">INFO</string>
+    <string name="settings_section_data">Back-up</string>
+    <string name="settings_section_info">Hulp en ondersteuning</string>
     <string name="help_and_guide">Online hulp</string>
     <string name="external_link_description">opent in de browser</string>
     <string name="settings_language">App-taal</string>
@@ -712,8 +712,6 @@
     <string name="tip_edge_stitches_desc">Kantsteken zijn extra steken buiten de patroonherhaling. Vul het totale aantal op te zetten kantsteken in; de calculator telt ze op nadat de gewenste breedte is berekend, bijvoorbeeld 2 voor één steek aan elke kant.</string>
     <string name="tip_flat_vs_circular_title">Heen en weer vs. in het rond</string>
     <string name="tip_flat_vs_circular_desc">Bij heen-en-weer breien werk je vooruit en terug op rechte of rondbreinaalden en keer je aan het einde van elke toer.\n\nBij rondbreien werk je in een doorlopende ronde. Meerderen en minderen worden gelijkmatig over de ronde verdeeld.</string>
-    <string name="tip_needle_sizes_title">Systemen voor naaldmaten</string>
-    <string name="tip_needle_sizes_desc">Metrische maten geven de diameter in mm aan. US-maten gebruiken een nummersysteem. UK/Canadese maten gebruiken een ander nummersysteem. Japanse maten hebben hun eigen nummering. Controleer altijd de maat in mm om zeker te zijn.</string>
     <string name="tip_imperial_units_title">Imperiale eenheden</string>
     <string name="tip_imperial_units_desc">Als dit is ingeschakeld, gebruiken de rekenhulpen standaard inch in plaats van centimeters en yard in plaats van meters. De stekenproef wordt dan gemeten per 4 inch in plaats van per 10 cm. Bij Maten en stekenproef kun je de eenheden zelf kiezen.</string>
     <string name="open_notes_editor">Notitie-editor openen</string>
@@ -885,7 +883,7 @@
     <string name="work_session_active_description">Werksessie voor %1$s, %2$s verstreken</string>
     <string name="work_session_could_not_start">Sessie kon niet worden gestart</string>
     <string name="work_session_could_not_save">Sessie kon niet worden opgeslagen</string>
-    <string name="work_session_history_full">De sessiegeschiedenis is vol. Je bestaande sessies blijven bewaard.</string>
+    <string name="work_session_history_full">Het sessielogboek is vol. Je sessies blijven bewaard.</string>
     <string name="work_session_could_not_discard">Sessie kon niet worden verwijderd</string>
     <string name="work_session_recovery_already_handled">Deze sessiecontrole is al afgehandeld.</string>
     <string name="work_session_retry">Opnieuw proberen</string>
@@ -940,7 +938,7 @@
     <string name="folder_remove_from">Uit map verwijderen</string>
     <string name="selection_action_move">Verplaatsen</string>
     <string name="selection_action_complete">Voltooien</string>
-    <string name="folder_no_folders">Geen mappen</string>
+    <string name="folder_empty_notice">Je hebt nog geen mappen aangemaakt.</string>
     <string name="folder_empty">%1$s heeft geen projecten.</string>
     <string name="folder_no_unfiled">Geen projecten zonder map</string>
     <string name="folder_hidden_completed">Deze map bevat verborgen voltooide projecten.</string>
@@ -977,7 +975,7 @@
     <item quantity="one">%d project verplaatst.</item>
     <item quantity="other">%d projecten verplaatst.</item>
     </plurals>
-    <string name="folder_move_project_to">Verplaats %1$s naar map</string>
+    <string name="folder_move_sheet_title">Verplaatsen naar map</string>
     <string name="folder_rename_description">Map %1$s hernoemen</string>
     <string name="folder_move_earlier_description">Map %1$s eerder verplaatsen</string>
     <string name="folder_move_later_description">Map %1$s later verplaatsen</string>
@@ -1041,7 +1039,6 @@
     <string name="measurement_project_context">Project: %1$s</string>
     <string name="measurement_estimate">Schatting op basis van de ingevoerde stekenproef.</string>
     <string name="measurement_adjust_warning">Wiskundige schatting op basis van de ingevoerde stekenproef. De vormgeving en constructie worden niet herschreven. Bewegingsruimte, patroonherhalingen, randen, armsgaten, halslijnen en mouwen moeten mogelijk apart worden aangepast. Meet een gewassen of geblokt proeflapje voor een bruikbaardere schatting.</string>
-    <string name="measurement_adjust_warning_short">Een schatting op basis van je stekenverhouding. Vormgeving moet mogelijk apart worden aangepast.</string>
     <string name="measurement_swatch_hint">Meet het proeflapje na het wassen of blokken voor een bruikbaardere schatting.</string>
     <string name="measurement_result">Resultaat</string>
     <string name="measurement_value_unit_format">%1$s %2$s</string>
@@ -1079,9 +1076,9 @@
     <string name="yarn_usage_meters_format">%1$s m</string>
     <string name="yarn_usage_yards_format">%1$s yd</string>
     <string name="yarn_usage_grams_format">%1$s g</string>
-    <string name="yarn_usage_delete">Verbruiksregistratie verwijderen</string>
+    <string name="yarn_usage_delete">Verbruik verwijderen</string>
     <string name="yarn_usage_delete_named">Verbruiksregistratie voor %1$s verwijderen</string>
-    <string name="yarn_usage_delete_title">Verbruiksregistratie verwijderen?</string>
+    <string name="yarn_usage_delete_title">Verbruik verwijderen?</string>
     <string name="yarn_usage_delete_body">Alleen de verbruiksregistratie voor %1$s wordt verwijderd. De garenkaart, de garennotitie van het project en andere projectgegevens blijven behouden.</string>
     <string name="yarn_usage_invalid_amount">Voer een geldige hoeveelheid in.</string>
     <string name="yarn_usage_nonnegative">De hoeveelheid mag niet negatief zijn.</string>
@@ -1240,5 +1237,5 @@
     <string name="project_yarn_edit_missing">Deze garennotitie hoort niet meer bij dit project. Sluit de editor.</string>
     <string name="project_yarn_edit_invalid">Voer een garennaam in.</string>
     <string name="project_yarn_edit_failed">De wijzigingen konden niet worden opgeslagen. Je concept blijft bewaard. Probeer het opnieuw.</string>
-    <string name="counter_progress_format">Tellervoortgang: %1$d</string>
+    <string name="counter_progress_format">Teller %1$+d</string>
 </resources>

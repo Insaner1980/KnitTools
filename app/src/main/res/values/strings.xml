@@ -268,7 +268,7 @@
     <!-- Session History -->
     <string name="session_history_title">Session History</string>
     <string name="no_sessions">No sessions recorded yet. Open a project and start a work session to record your time here.</string>
-    <string name="session_row_range">Counter: %1$d → %2$d</string>
+    <string name="session_row_range">Counter %1$d → %2$d</string>
     <string name="session_row_single">Count %1$d</string>
     <string name="delete_session_title">Delete session?</string>
     <string name="delete_session_message">This session will be deleted from history. This cannot be undone.</string>
@@ -359,7 +359,7 @@
 
     <!-- Needle Sizes -->
     <string name="search_size">Search size…</string>
-    <string name="needle_size_disclaimer">Sizes are approximate equivalents. Japanese sizes use a separate metric scale.</string>
+    <string name="needle_size_disclaimer">Sizes are approximate equivalents. Numbering varies by system and manufacturer, so compare the diameter in millimeters and check your gauge.</string>
     <string name="header_mm">mm</string>
     <string name="header_us">US</string>
     <string name="header_uk">UK</string>
@@ -372,8 +372,8 @@
     <string name="settings_section_general">General</string>
     <string name="settings_theme">Theme</string>
     <string name="settings_section_pro">PRO</string>
-    <string name="settings_section_data">DATA</string>
-    <string name="settings_section_info">INFO</string>
+    <string name="settings_section_data">Backup</string>
+    <string name="settings_section_info">Help and support</string>
     <string name="help_and_guide">Online help</string>
     <string name="external_link_description">opens in browser</string>
     <string name="settings_language">App language</string>
@@ -980,8 +980,6 @@
     <string name="tip_edge_stitches_desc">Edge stitches are extra stitches outside the pattern repeat. Enter the total edge stitches to cast on; the calculator adds them after calculating the desired width, for example 2 for one stitch on each side.</string>
     <string name="tip_flat_vs_circular_title">Flat vs. circular</string>
     <string name="tip_flat_vs_circular_desc">Flat knitting: you work back and forth on straight or circular needles, turning at the end of each row.\n\nCircular knitting: you work in a continuous round. Increases/decreases are evenly spaced around the round.</string>
-    <string name="tip_needle_sizes_title">Needle size systems</string>
-    <string name="tip_needle_sizes_desc">Needle numbering varies by system and manufacturer. Compare the diameter in millimeters (mm), and check your gauge.</string>
     <string name="tip_imperial_units_title">Imperial units</string>
     <string name="tip_imperial_units_desc">Sets inches and yards as the default calculator units. Gauge defaults to measurements per 4 inches instead of per 10 cm. You can change units in Measurements and Gauge.</string>
 
@@ -1096,7 +1094,7 @@
     <string name="work_session_stop_short">Stop</string>
     <string name="work_session_active">Work session active</string>
     <string name="work_session_active_short">Session</string>
-    <string name="work_session_under_minute">Under 1min</string>
+    <string name="work_session_under_minute">Under 1 min</string>
     <string name="work_session_hero_duration_format">Session %1$s</string>
     <string name="work_session_hero_under_minute">Session under 1min</string>
     <string name="work_session_recovery_needed">Session time needs review</string>
@@ -1194,7 +1192,7 @@
     <string name="folder_remove_from">Remove from folder</string>
     <string name="selection_action_move">Move</string>
     <string name="selection_action_complete">Complete</string>
-    <string name="folder_no_folders">No folders</string>
+    <string name="folder_empty_notice">You haven’t created any folders yet.</string>
     <string name="folder_empty">%1$s has no projects.</string>
     <string name="folder_no_unfiled">No Unfiled projects</string>
     <string name="folder_hidden_completed">This folder contains hidden completed projects.</string>
@@ -1223,7 +1221,7 @@
     <string name="folder_user_description">%1$s. Project organization folder.</string>
     <string name="folder_actions_description">Actions for %1$s</string>
     <string name="folder_current_destination">%1$s. Current destination.</string>
-    <string name="folder_move_project_to">Move %1$s to folder</string>
+    <string name="folder_move_sheet_title">Move to folder</string>
     <string name="folder_rename_description">Rename folder %1$s</string>
     <string name="folder_move_earlier_description">Move folder %1$s earlier</string>
     <string name="folder_move_later_description">Move folder %1$s later</string>
@@ -1295,7 +1293,6 @@
     <string name="measurement_project_context">Project: %1$s</string>
     <string name="measurement_estimate">Estimate based on the entered gauge.</string>
     <string name="measurement_adjust_warning">Mathematical estimate from the entered gauge. Shaping and construction are not rewritten. Ease, stitch repeats, borders, armholes, necklines and sleeves may need separate adjustment. Measure a washed or blocked swatch for a more useful estimate.</string>
-    <string name="measurement_adjust_warning_short">An estimate from your gauge. Shaping may need separate adjustment.</string>
     <string name="measurement_swatch_hint">For a more useful estimate, measure the swatch after washing or blocking.</string>
     <string name="measurement_result">Result</string>
     <string name="measurement_value_unit_format">%1$s %2$s</string>
@@ -1499,6 +1496,6 @@
     <string name="project_yarn_edit_invalid">Enter a yarn name.</string>
     <string name="project_yarn_edit_failed">Could not save your changes. Your draft is still here. Try again.</string>
     <string name="size_row_tween">Tween</string>
-    <string name="counter_progress_format">Counter progress: %1$d</string>
+    <string name="counter_progress_format">Counter %1$+d</string>
     <string name="pattern_annotation_command_failed">An annotation change was not saved. Dismiss this message, then try the action again with the markup tools.</string>
 </resources>

@@ -163,15 +163,23 @@ class WebPatternEditorViewModel
 
         init {
             when {
-                route == null ->
+                route == null -> {
                     mutableUiState.update {
                         it.copy(
                             isLoading = false,
                             error = WebPatternEditorError.PatternUnavailable,
                         )
                     }
-                savedStateHandle.get<Boolean>(KEY_INITIALIZED) == true -> Unit
-                route.origin == WebPatternEditorOrigin.Edit -> loadPatternForEdit(requireNotNull(route.patternId))
+                }
+
+                savedStateHandle.get<Boolean>(KEY_INITIALIZED) == true -> {
+                    Unit
+                }
+
+                route.origin == WebPatternEditorOrigin.Edit -> {
+                    loadPatternForEdit(requireNotNull(route.patternId))
+                }
+
                 else -> {
                     savedStateHandle[KEY_INITIALIZED] = true
                     persistState()
@@ -195,7 +203,10 @@ class WebPatternEditorViewModel
             if (existingPending != null) return WebPatternShareAcceptResult.Ignored
 
             return when (val payload = request.payload) {
-                is PatternSharePayload.Ravelry -> WebPatternShareAcceptResult.Ignored
+                is PatternSharePayload.Ravelry -> {
+                    WebPatternShareAcceptResult.Ignored
+                }
+
                 is PatternSharePayload.Error -> {
                     savedStateHandle[KEY_ACCEPTED_SHARE_REQUEST_ID] = request.requestId
                     mutableUiState.update { state ->
@@ -301,7 +312,9 @@ class WebPatternEditorViewModel
                     ) {
                         is SavedPatternMetadataMutationResult.Attached,
                         is SavedPatternMetadataMutationResult.AlreadyAttached,
-                        -> complete(WebPatternEditorCompletion.OpenProject(nextEventId(), pending.projectId))
+                        -> {
+                            complete(WebPatternEditorCompletion.OpenProject(nextEventId(), pending.projectId))
+                        }
 
                         is SavedPatternMetadataMutationResult.ReplacementRequired,
                         SavedPatternMetadataMutationResult.StaleAction,
@@ -315,19 +328,25 @@ class WebPatternEditorViewModel
                             persistState()
                         }
 
-                        SavedPatternMetadataMutationResult.ProjectMissing ->
+                        SavedPatternMetadataMutationResult.ProjectMissing -> {
                             setError(
                                 WebPatternEditorError.ProjectUnavailable,
                             )
-                        SavedPatternMetadataMutationResult.PatternMissing ->
+                        }
+
+                        SavedPatternMetadataMutationResult.PatternMissing -> {
                             setError(
                                 WebPatternEditorError.PatternUnavailable,
                             )
+                        }
+
                         SavedPatternMetadataMutationResult.NotWebPattern,
                         SavedPatternMetadataMutationResult.PersistenceFailure,
                         SavedPatternMetadataMutationResult.Unlinked,
                         SavedPatternMetadataMutationResult.AlreadyUnlinked,
-                        -> setError(WebPatternEditorError.SaveFailed)
+                        -> {
+                            setError(WebPatternEditorError.SaveFailed)
+                        }
                     }
                 } catch (cancellation: CancellationException) {
                     throw cancellation
@@ -410,7 +429,10 @@ class WebPatternEditorViewModel
                 analytics.track(UsageEvent.WEB_PATTERN_SAVED, UsageDetail.SOURCE_WEB)
             }
             when (result) {
-                is WebPatternMutationResult.Created -> finishCreatedOrDuplicate(result.patternId, currentRoute)
+                is WebPatternMutationResult.Created -> {
+                    finishCreatedOrDuplicate(result.patternId, currentRoute)
+                }
+
                 is WebPatternMutationResult.Duplicate -> {
                     if (currentRoute.origin == WebPatternEditorOrigin.Edit) {
                         setError(WebPatternEditorError.AlreadySaved)
@@ -418,22 +440,36 @@ class WebPatternEditorViewModel
                         finishCreatedOrDuplicate(result.existingPatternId, currentRoute)
                     }
                 }
-                is WebPatternMutationResult.Updated ->
+
+                is WebPatternMutationResult.Updated -> {
                     complete(
                         WebPatternEditorCompletion.OpenDetail(nextEventId(), result.patternId),
                     )
-                WebPatternMutationResult.RavelryOwnedUrl ->
+                }
+
+                WebPatternMutationResult.RavelryOwnedUrl -> {
                     complete(WebPatternEditorCompletion.OpenRavelry(nextEventId(), submittedUrl))
+                }
 
                 WebPatternMutationResult.InvalidTitle,
                 WebPatternMutationResult.InvalidDesigner,
                 WebPatternMutationResult.InvalidUrl,
                 WebPatternMutationResult.PersistenceFailure,
-                -> setMutationError(currentRoute, WebPatternEditorError.SaveFailed, WebPatternEditorError.UpdateFailed)
+                -> {
+                    setMutationError(currentRoute, WebPatternEditorError.SaveFailed, WebPatternEditorError.UpdateFailed)
+                }
 
-                WebPatternMutationResult.PatternMissing -> setError(WebPatternEditorError.PatternUnavailable)
-                WebPatternMutationResult.NotEditableAsWebPattern -> setError(WebPatternEditorError.NotEditable)
-                WebPatternMutationResult.StaleAction -> setError(WebPatternEditorError.StaleAction)
+                WebPatternMutationResult.PatternMissing -> {
+                    setError(WebPatternEditorError.PatternUnavailable)
+                }
+
+                WebPatternMutationResult.NotEditableAsWebPattern -> {
+                    setError(WebPatternEditorError.NotEditable)
+                }
+
+                WebPatternMutationResult.StaleAction -> {
+                    setError(WebPatternEditorError.StaleAction)
+                }
             }
         }
 
@@ -451,7 +487,9 @@ class WebPatternEditorViewModel
             when (val attachResult = counterRepository.attachSavedPatternMetadata(projectId, patternId)) {
                 is SavedPatternMetadataMutationResult.Attached,
                 is SavedPatternMetadataMutationResult.AlreadyAttached,
-                -> complete(WebPatternEditorCompletion.OpenProject(nextEventId(), projectId))
+                -> {
+                    complete(WebPatternEditorCompletion.OpenProject(nextEventId(), projectId))
+                }
 
                 is SavedPatternMetadataMutationResult.ReplacementRequired -> {
                     mutableUiState.update {
@@ -555,6 +593,7 @@ class WebPatternEditorViewModel
 private fun PatternShareError.toEditorError(): WebPatternEditorError =
     when (this) {
         PatternShareError.Ambiguous -> WebPatternEditorError.SharedLinkAmbiguous
+
         PatternShareError.Empty,
         PatternShareError.Invalid,
         PatternShareError.TooLong,
@@ -614,12 +653,35 @@ private fun SavedStateHandle.saveWebPatternEditorState(state: WebPatternEditorUi
     this[KEY_COMPLETION_TARGET_ID] =
         when (val completion = state.completion) {
             is WebPatternEditorCompletion.OpenDetail -> completion.patternId
+
             is WebPatternEditorCompletion.OpenProject -> completion.projectId
+
             is WebPatternEditorCompletion.OpenRavelry,
             null,
             -> null
         }
     this[KEY_COMPLETION_URL] = (state.completion as? WebPatternEditorCompletion.OpenRavelry)?.url
+}
+
+private fun SavedStateHandle.restoreCompletion(): WebPatternEditorCompletion? {
+    val eventId = get<Long>(KEY_COMPLETION_EVENT_ID) ?: return null
+    return when (get<String>(KEY_COMPLETION_KIND)) {
+        COMPLETION_DETAIL -> {
+            get<Long>(KEY_COMPLETION_TARGET_ID)?.let { WebPatternEditorCompletion.OpenDetail(eventId, it) }
+        }
+
+        COMPLETION_PROJECT -> {
+            get<Long>(KEY_COMPLETION_TARGET_ID)?.let { WebPatternEditorCompletion.OpenProject(eventId, it) }
+        }
+
+        COMPLETION_RAVELRY -> {
+            get<String>(KEY_COMPLETION_URL)?.let { WebPatternEditorCompletion.OpenRavelry(eventId, it) }
+        }
+
+        else -> {
+            null
+        }
+    }
 }
 
 @Suppress("CyclomaticComplexMethod") // Tallennetun editoritilan kentät palautetaan eksplisiittisesti ja fail-closed.
@@ -635,24 +697,6 @@ private fun SavedStateHandle.restoreWebPatternEditorState(route: WebPatternEdito
             )
         } else {
             null
-        }
-    val eventId = get<Long>(KEY_COMPLETION_EVENT_ID)
-    val completion =
-        if (eventId == null) {
-            null
-        } else {
-            when (get<String>(KEY_COMPLETION_KIND)) {
-                COMPLETION_DETAIL ->
-                    get<Long>(KEY_COMPLETION_TARGET_ID)?.let { WebPatternEditorCompletion.OpenDetail(eventId, it) }
-
-                COMPLETION_PROJECT ->
-                    get<Long>(KEY_COMPLETION_TARGET_ID)?.let { WebPatternEditorCompletion.OpenProject(eventId, it) }
-
-                COMPLETION_RAVELRY ->
-                    get<String>(KEY_COMPLETION_URL)?.let { WebPatternEditorCompletion.OpenRavelry(eventId, it) }
-
-                else -> null
-            }
         }
     val error = get<String>(KEY_ERROR)?.let { runCatching { WebPatternEditorError.valueOf(it) }.getOrNull() }
     val replacementProjectId = get<Long>(KEY_REPLACEMENT_PROJECT_ID)
@@ -680,7 +724,7 @@ private fun SavedStateHandle.restoreWebPatternEditorState(route: WebPatternEdito
         error = error,
         pendingIncomingShare = pending,
         pendingReplacement = pendingReplacement,
-        completion = completion,
+        completion = restoreCompletion(),
         expectedUpdatedAt = get<Long>(KEY_EXPECTED_UPDATED_AT),
     )
 }

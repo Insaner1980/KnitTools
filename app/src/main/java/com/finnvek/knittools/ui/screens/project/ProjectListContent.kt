@@ -10,6 +10,7 @@ data class ProjectListContent(
     val hasAnyProject: Boolean = false,
     val activeProjectCount: Int = 0,
     val welcomeDismissed: Boolean = false,
+    val showBackupNotice: Boolean = false,
     val preferences: AppPreferences = AppPreferences(),
     val active: List<CounterProject> = emptyList(),
     val completed: List<CounterProject> = emptyList(),

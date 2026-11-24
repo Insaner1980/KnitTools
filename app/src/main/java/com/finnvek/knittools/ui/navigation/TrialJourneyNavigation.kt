@@ -73,12 +73,17 @@ internal fun NavHostController.navigateFromTrialJourney(
     onLaunchCounter: (CounterLaunchRequest) -> Unit,
 ) {
     when (action) {
-        TrialJourneyAction.AnotherProject ->
+        TrialJourneyAction.AnotherProject -> {
             openTrialDestination(
                 TopLevelDestination.Projects,
                 TRIAL_CREATE_PROJECT_REQUEST,
             )
-        TrialJourneyAction.WeeklyChart -> openTrialDestination(TopLevelDestination.Insights, TRIAL_WEEKLY_CHART_REQUEST)
+        }
+
+        TrialJourneyAction.WeeklyChart -> {
+            openTrialDestination(TopLevelDestination.Insights, TRIAL_WEEKLY_CHART_REQUEST)
+        }
+
         TrialJourneyAction.Widget,
         TrialJourneyAction.RepeatCounter,
         TrialJourneyAction.PatternCamera,

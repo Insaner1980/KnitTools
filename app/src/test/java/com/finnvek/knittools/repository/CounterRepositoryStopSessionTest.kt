@@ -24,7 +24,7 @@ class CounterRepositoryStopSessionTest : CounterRepositoryActiveSessionFixture()
                     reviewedEndRow = reviewed.trustedLastObservedRow,
                 )
 
-            assertEquals(StopSessionResult.Saved(1L, wasFirstCompletedSession = true), stopped)
+            assertEquals(StopSessionResult.Saved(1L), stopped)
             assertEquals(10L, completed.single().durationSeconds)
             assertEquals(11_000L, completed.single().endedAt)
             assertEquals(null, active)
@@ -65,7 +65,7 @@ class CounterRepositoryStopSessionTest : CounterRepositoryActiveSessionFixture()
                 assertTrue(completed.isEmpty())
             }
             assertEquals(
-                StopSessionResult.Saved(1L, wasFirstCompletedSession = true),
+                StopSessionResult.Saved(1L),
                 repository.stopSession(started.session.sessionToken, 35L, 0, 12),
             )
             assertEquals(35L, completed.single().durationSeconds)

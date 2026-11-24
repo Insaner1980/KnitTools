@@ -13,12 +13,20 @@ class CrossStitchIconSourceTest {
     @Test
     fun `every glyph fits the stitch grid and uses only stitch characters`() {
         CrossStitchGlyph.entries.forEach { glyph ->
-            assertTrue(glyph.name, glyph.rows.size <= GRID_LIMIT)
+            val limit = if (glyph == CrossStitchGlyph.YARN) YARN_GRID_LIMIT else GRID_LIMIT
+            assertTrue(glyph.name, glyph.rows.size <= limit)
             glyph.rows.forEach { row ->
-                assertTrue(glyph.name, row.length <= GRID_LIMIT)
+                assertTrue(glyph.name, row.length <= limit)
                 assertTrue(glyph.name, row.all { it in "Xo." })
             }
         }
+    }
+
+    @Test
+    fun `denser glyphs scale their own grid instead of overflowing the icon`() {
+        val icon = ProjectSourceFiles.read("$COMPONENTS/CrossStitchIcon.kt")
+
+        assertTrue(icon.contains("maxOf(columns, glyph.rows.size) + CrossStitchDimens.GridMargin"))
     }
 
     @Test
@@ -62,6 +70,9 @@ class CrossStitchIconSourceTest {
 
     private companion object {
         const val GRID_LIMIT = 9
+
+        // Kerän kaarevat kierrokset eivät erotu 9 ruudun kuviossa; yli 13 ruudun kerä jäi muita pienemmäksi.
+        const val YARN_GRID_LIMIT = 13
         const val SCREENS = "app/src/main/java/com/finnvek/knittools/ui/screens"
         const val COMPONENTS = "app/src/main/java/com/finnvek/knittools/ui/components"
         const val CAMERA_DRAWABLE = "app/src/main/res/drawable-nodpi/camera_icon.webp"

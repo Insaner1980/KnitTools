@@ -569,10 +569,22 @@ internal fun relativeDayText(
         }
     val days = ChronoUnit.DAYS.between(sessionDate, today).toInt()
     return when {
-        days <= 0 -> stringResource(R.string.relative_time_today)
-        days == 1 -> stringResource(R.string.relative_time_yesterday)
-        days < 7 -> stringResource(R.string.relative_time_days_ago, days)
-        days < 30 -> stringResource(R.string.relative_time_weeks_ago, days / 7)
+        days <= 0 -> {
+            stringResource(R.string.relative_time_today)
+        }
+
+        days == 1 -> {
+            stringResource(R.string.relative_time_yesterday)
+        }
+
+        days < 7 -> {
+            stringResource(R.string.relative_time_days_ago, days)
+        }
+
+        days < 30 -> {
+            stringResource(R.string.relative_time_weeks_ago, days / 7)
+        }
+
         else -> {
             val months = days / 30
             pluralStringResource(R.plurals.relative_time_months_ago, months, months)
@@ -617,12 +629,17 @@ internal fun InsightsRangeEmptyNote(
 // CPD-ON
     val titleRes =
         when (timeRange) {
-            TimeRange.THIS_WEEK ->
+            TimeRange.THIS_WEEK -> {
                 if (hasCompletions) R.string.insights_no_sessions_week else R.string.insights_nothing_yet_week
-            TimeRange.THIS_MONTH ->
+            }
+
+            TimeRange.THIS_MONTH -> {
                 if (hasCompletions) R.string.insights_no_sessions_month else R.string.insights_nothing_yet_month
-            TimeRange.ALL_TIME ->
+            }
+
+            TimeRange.ALL_TIME -> {
                 if (hasCompletions) R.string.insights_no_sessions_all_time else R.string.insights_nothing_yet_all_time
+            }
         }
     Column(
         modifier =

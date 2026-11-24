@@ -22,6 +22,7 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
+import androidx.compose.material3.SliderState
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -31,6 +32,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -168,11 +170,15 @@ internal fun PatternAnnotationToolbar(
                             editorDraftId = UUID.randomUUID().toString()
                             showTextEditor = true
                         }
+
                         PatternAnnotationTool.CALLOUT -> {
                             editorDraftId = UUID.randomUUID().toString()
                             showCalloutEditor = true
                         }
-                        else -> actions.onToolSelected(item.tool)
+
+                        else -> {
+                            actions.onToolSelected(item.tool)
+                        }
                     }
                     hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
                 }
@@ -194,7 +200,7 @@ internal fun PatternAnnotationToolbar(
             }
         }
         when (state.activeTool) {
-            PatternAnnotationTool.PEN ->
+            PatternAnnotationTool.PEN -> {
                 PatternStrokeStyleControls(
                     selectedArgb = state.penArgb,
                     strokeWidth = state.penStrokeWidth,
@@ -203,6 +209,7 @@ internal fun PatternAnnotationToolbar(
                     onStrokeWidthChange = actions.onPenStrokeWidthChange,
                     onPressureEnabledChange = actions.onPressureEnabledChange,
                 )
+            }
 
             PatternAnnotationTool.HIGHLIGHTER -> {
                 PatternStrokeStyleControls(
@@ -220,7 +227,9 @@ internal fun PatternAnnotationToolbar(
                 )
             }
 
-            else -> Unit
+            else -> {
+                Unit
+            }
         }
         if (state.editableLayerVisible &&
             state.selectedAnnotationSupportsChartTracker &&
@@ -439,6 +448,7 @@ private fun PatternChartTrackerDialog(
             validColumns != null &&
             PatternAnnotationLimits.isValidChartDimensions(validRows, validColumns)
     val validGridStart = gridStartIndex.toIntOrNull()
+    val dimensionError = if (validDimensions) null else stringResource(R.string.measurement_invalid_number)
     ScrollableFormDialog(
         onDismissRequest = { if (!isSaving) onDismiss() },
         title = { Text(stringResource(R.string.pattern_annotation_chart_setup_title)) },
@@ -450,14 +460,7 @@ private fun PatternChartTrackerDialog(
                         enabled = !isSaving,
                         onValueChange = { rows = it },
                         label = stringResource(R.string.pattern_annotation_chart_rows),
-                        errorMessage =
-                            if (!validDimensions) {
-                                stringResource(
-                                    R.string.measurement_invalid_number,
-                                )
-                            } else {
-                                null
-                            },
+                        errorMessage = dimensionError,
                         options = NumberInputOptions(preserveRawInput = true),
                         modifier = Modifier.weight(1f),
                     )
@@ -466,14 +469,7 @@ private fun PatternChartTrackerDialog(
                         enabled = !isSaving,
                         onValueChange = { columns = it },
                         label = stringResource(R.string.pattern_annotation_chart_columns),
-                        errorMessage =
-                            if (!validDimensions) {
-                                stringResource(
-                                    R.string.measurement_invalid_number,
-                                )
-                            } else {
-                                null
-                            },
+                        errorMessage = dimensionError,
                         options = NumberInputOptions(preserveRawInput = true),
                         modifier = Modifier.weight(1f),
                     )
@@ -632,11 +628,18 @@ private fun PatternStrokeStyleControls(
         )
     }
     val slider: @Composable (Modifier) -> Unit = { modifier ->
+        val sliderState =
+            remember {
+                SliderState(
+                    value = strokeWidth,
+                    trackRange = PatternAnnotationLimits.MIN_STROKE_WIDTH..PatternAnnotationLimits.MAX_STROKE_WIDTH,
+                )
+            }
+        sliderState.value = strokeWidth
         Slider(
             modifier = modifier,
-            value = strokeWidth,
+            state = sliderState,
             onValueChange = onStrokeWidthChange,
-            valueRange = PatternAnnotationLimits.MIN_STROKE_WIDTH..PatternAnnotationLimits.MAX_STROKE_WIDTH,
             colors =
                 SliderDefaults.colors(
                     thumbColor = MaterialTheme.colorScheme.primary,

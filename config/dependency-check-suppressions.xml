@@ -81,24 +81,41 @@
         <cpe>cpe:/a:tasks:tasks</cpe>
     </suppress>
 
-    <suppress until="2026-11-30Z">
+    <suppress until="2027-02-24Z">
         <notes><![CDATA[
-        PostHog Android SDK ei ole CVE-2024-9710:n PostHog-palvelin. CVE koskee palvelimen
-        database_schema-metodia, jota tässä Android-artefaktissa ei ole.
+        CVE-2024-9710 affects the PostHog server's database_schema endpoint.
+        This artifact contains the Android client SDK.
         Reference: https://www.zerodayinitiative.com/advisories/ZDI-24-1383/
         ]]></notes>
-        <packageUrl regex="true">^pkg:maven/com\.posthog/posthog-android@3\.76\.1$</packageUrl>
+        <packageUrl regex="true">^pkg:maven/com\.posthog/posthog-android@4\.0\.3$</packageUrl>
         <cve>CVE-2024-9710</cve>
     </suppress>
 
-    <suppress until="2026-11-30Z">
+    <suppress until="2027-02-24Z">
         <notes><![CDATA[
-        PostHog JVM SDK:n ydinkirjasto ei ole CVE-2024-9710:n PostHog-palvelin. CVE koskee
-        palvelimen database_schema-metodia, jota tässä SDK-artefaktissa ei ole.
+        CVE-2024-9710 affects the PostHog server's database_schema endpoint.
+        This artifact contains the JVM client SDK.
         Reference: https://www.zerodayinitiative.com/advisories/ZDI-24-1383/
         ]]></notes>
-        <packageUrl regex="true">^pkg:maven/com\.posthog/posthog@6\.48\.0$</packageUrl>
+        <packageUrl regex="true">^pkg:maven/com\.posthog/posthog@7\.0\.2$</packageUrl>
         <cve>CVE-2024-9710</cve>
+    </suppress>
+
+    <suppress until="2027-02-24Z">
+        <notes><![CDATA[
+        Dependency-Check assigns the Firebase Crashlytics version to the Guava
+        CPE for its embedded scotty-minified.jar. The inspected JAR contains
+        neither AtomicDoubleArray nor the CompoundOrdering GWT serializer
+        affected by CVE-2018-10237. It also contains neither Files nor
+        FileBackedOutputStream, the classes affected by CVE-2020-8908 and
+        CVE-2023-2976.
+        Reference: https://github.com/google/guava/wiki/CVE-2018-10237
+        Reference: https://github.com/google/guava/releases/tag/v32.0.0
+        ]]></notes>
+        <packageUrl regex="true">^pkg:maven/com\.google\.firebase/firebase-crashlytics@21\.1\.0$</packageUrl>
+        <cve>CVE-2018-10237</cve>
+        <cve>CVE-2020-8908</cve>
+        <cve>CVE-2023-2976</cve>
     </suppress>
 
     <suppress until="2026-11-30Z">

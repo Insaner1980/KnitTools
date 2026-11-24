@@ -24,8 +24,8 @@ $components = @'
 $cases = @(
     @{ Name = 'allowed components'; Extra = ''; Expected = 'PASS' },
     @{ Name = 'private alias'; Extra = '<activity-alias android:name=".PrivateAlias" android:targetActivity=".MainActivity" android:exported="false" />'; Expected = 'PASS' },
-    @{ Name = 'public alias'; Extra = '<activity-alias android:name=".PublicAlias" android:targetActivity=".MainActivity" android:exported="true" />'; Expected = 'FAIL'; Match = "unexpected exported true component 'activity-alias|.PublicAlias'" },
-    @{ Name = 'alias named like allowed activity'; Extra = '<activity-alias android:name=".MainActivity" android:targetActivity=".MainActivity" android:exported="true" />'; Expected = 'FAIL'; Match = "unexpected exported true component 'activity-alias|.MainActivity'" }
+    @{ Name = 'public alias'; Extra = '<activity-alias android:name=".PublicAlias" android:targetActivity=".MainActivity" android:exported="true" />'; Expected = 'FAIL'; Match = "unexpected exported component 'activity-alias|com.finnvek.knittools.PublicAlias'" },
+    @{ Name = 'alias named like allowed activity'; Extra = '<activity-alias android:name=".MainActivity" android:targetActivity=".MainActivity" android:exported="true" />'; Expected = 'FAIL'; Match = "unexpected exported component 'activity-alias|com.finnvek.knittools.MainActivity'" }
 )
 try {
     New-Item -ItemType Directory -Path (Join-Path $fixture 'app/src/main') -Force | Out-Null

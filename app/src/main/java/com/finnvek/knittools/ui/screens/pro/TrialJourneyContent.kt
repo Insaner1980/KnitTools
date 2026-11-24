@@ -8,7 +8,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.ModalBottomSheetProperties
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -21,6 +20,7 @@ import com.finnvek.knittools.ui.components.FormSheetContentColumn
 import com.finnvek.knittools.ui.components.OverviewLinkRow
 import com.finnvek.knittools.ui.components.SectionLabel
 import com.finnvek.knittools.ui.components.SheetTitle
+import com.finnvek.knittools.ui.components.rememberExpandedModalSheetState
 import com.finnvek.knittools.ui.layout.ContentWidthPolicy
 import com.finnvek.knittools.ui.theme.ComponentDimens
 
@@ -78,7 +78,7 @@ fun TrialJourneySheet(
 ) {
     ModalBottomSheet(
         onDismissRequest = {},
-        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        sheetState = rememberExpandedModalSheetState(),
         sheetGesturesEnabled = false,
         dragHandle = null,
         properties =

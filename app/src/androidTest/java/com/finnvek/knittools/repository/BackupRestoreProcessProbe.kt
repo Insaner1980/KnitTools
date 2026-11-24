@@ -53,8 +53,22 @@ internal class BackupRestoreProcessProbe(
                 .map { BackupFormat.digest(it) {} }
                 .sorted()
         File(directory, "file-hashes.txt").writeText(hashes.joinToString("\n"))
+        if (phase == "precommit") File(directory, "precommit-owned-files.json").writeText(ownedFiles(context))
         armed = true
     }
+
+    fun verifyPreCommitFiles(context: Context) {
+        assertEquals(File(directory, "precommit-owned-files.json").readText(), ownedFiles(context))
+    }
+
+    private fun ownedFiles(context: Context): String =
+        fileSnapshot(
+            context.filesDir
+                .walkTopDown()
+                .filter(File::isFile)
+                .toList()
+                .sortedBy(File::getPath),
+        )
 
     val factory =
         interceptTestDatabase { database ->

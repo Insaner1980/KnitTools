@@ -216,16 +216,32 @@ class BackupTablesTest {
             every { compileStatement(any()) } returns statement
             every { query(any<String>()) } answers {
                 when {
-                    firstArg<String>().startsWith("PRAGMA table_info") -> backupCursor(columns)
-                    firstArg<String>() == "PRAGMA quick_check" -> backupCursor(listOf(listOf("ok")))
-                    firstArg<String>() == "SELECT * FROM `pattern_annotations`" -> backupCursor(emptyList())
-                    firstArg<String>().startsWith("SELECT *") ->
+                    firstArg<String>().startsWith("PRAGMA table_info") -> {
+                        backupCursor(columns)
+                    }
+
+                    firstArg<String>() == "PRAGMA quick_check" -> {
+                        backupCursor(listOf(listOf("ok")))
+                    }
+
+                    firstArg<String>() == "SELECT * FROM `pattern_annotations`" -> {
+                        backupCursor(emptyList())
+                    }
+
+                    firstArg<String>().startsWith("SELECT *") -> {
                         backupCursor(listOf(listOf(1L, "Wool", 2.5, null))).also {
                             every { it.getColumnIndexOrThrow(any()) } answers
                                 { columns.indexOfFirst { it[1] == firstArg<String>() } }
                         }
-                    firstArg<String>().startsWith("SELECT DISTINCT") -> backupCursor(listOf(listOf("files/shared.bin")))
-                    else -> backupCursor(emptyList())
+                    }
+
+                    firstArg<String>().startsWith("SELECT DISTINCT") -> {
+                        backupCursor(listOf(listOf("files/shared.bin")))
+                    }
+
+                    else -> {
+                        backupCursor(emptyList())
+                    }
                 }
             }
         }

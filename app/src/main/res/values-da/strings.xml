@@ -259,7 +259,7 @@
     <!-- Session History -->
     <string name="session_history_title">Arbejdshistorik</string>
     <string name="no_sessions">Ingen sessioner registreret endnu. Åbn et projekt, og start en arbejdssession for at registrere din tid her.</string>
-    <string name="session_row_range">Tæller: %1$d → %2$d</string>
+    <string name="session_row_range">Tæller %1$d → %2$d</string>
     <string name="session_row_single">Værdi %1$d</string>
     <string name="delete_session_title">Slette session?</string>
     <string name="delete_session_message">Denne session slettes fra historikken. Det kan ikke fortrydes.</string>
@@ -349,7 +349,7 @@
 
     <!-- Needle Sizes -->
     <string name="search_size">Søg efter størrelse…</string>
-    <string name="needle_size_disclaimer">Størrelserne er omtrentlige ækvivalenter. Japanske størrelser bruger en separat metrisk skala.</string>
+    <string name="needle_size_disclaimer">Størrelserne er omtrentlige ækvivalenter. Nummereringen varierer efter system og producent, så sammenlign diameteren i millimeter, og tjek strikkefastheden.</string>
     <string name="header_mm">mm</string>
     <string name="header_us">US</string>
     <string name="header_uk">UK</string>
@@ -362,8 +362,8 @@
     <string name="settings_section_general">Generelt</string>
     <string name="settings_theme">Tema</string>
     <string name="settings_section_pro">PRO</string>
-    <string name="settings_section_data">DATA</string>
-    <string name="settings_section_info">INFO</string>
+    <string name="settings_section_data">Sikkerhedskopiering</string>
+    <string name="settings_section_info">Hjælp og support</string>
     <string name="help_and_guide">Onlinehjælp</string>
     <string name="external_link_description">åbner i browseren</string>
     <string name="settings_language">App-sprog</string>
@@ -712,8 +712,6 @@
     <string name="tip_edge_stitches_desc">Kantmasker er ekstra masker uden for mønsterrapporten. Indtast det samlede antal kantmasker, der skal slås op; beregneren lægger dem til efter beregningen af den ønskede bredde, f.eks. 2 for én maske i hver side.</string>
     <string name="tip_flat_vs_circular_title">Fladstrik vs. rundstrik</string>
     <string name="tip_flat_vs_circular_desc">Ved fladstrik arbejder du frem og tilbage på lige eller rundpinde og vender ved slutningen af hver pind.\n\nVed rundstrik arbejder du i en sammenhængende omgang. Udtagninger og indtagninger fordeles jævnt rundt på omgangen.\n\nResultaterne bruger engelske forkortelser: K = ret, M1 = tag 1 maske ud i lænken mellem maskerne, K2tog = 2 ret sammen. Tallet efter K angiver antal retmasker; × angiver antal gentagelser.</string>
-    <string name="tip_needle_sizes_title">Systemer for pindestørrelser</string>
-    <string name="tip_needle_sizes_desc">Metriske størrelser angives i millimeter (mm). US-størrelser bruger et nummersystem. UK/Canada bruger et andet nummersystem. Japanske størrelser har deres egen nummerering. Tjek altid mm-størrelsen for at være sikker.</string>
     <string name="tip_imperial_units_title">Imperiale enheder</string>
     <string name="tip_imperial_units_desc">Når dette er slået til, bruger alle beregnere tommer i stedet for centimeter og yard i stedet for meter. Strikkefastheden måles da pr. 4 tommer i stedet for pr. 10 cm.</string>
     <string name="open_notes_editor">Åbn noteeditor</string>
@@ -940,7 +938,7 @@
     <string name="folder_remove_from">Fjern fra mappe</string>
     <string name="selection_action_move">Flyt</string>
     <string name="selection_action_complete">Færdig</string>
-    <string name="folder_no_folders">Ingen mapper</string>
+    <string name="folder_empty_notice">Du har ikke oprettet nogen mapper endnu.</string>
     <string name="folder_empty">%1$s har ingen projekter.</string>
     <string name="folder_no_unfiled">Ingen projekter uden mappe</string>
     <string name="folder_hidden_completed">Denne mappe indeholder skjulte afsluttede projekter.</string>
@@ -977,7 +975,7 @@
     <item quantity="one">%d projekt flyttet.</item>
     <item quantity="other">%d projekter flyttet.</item>
     </plurals>
-    <string name="folder_move_project_to">Flyt %1$s til mappe</string>
+    <string name="folder_move_sheet_title">Flyt til mappe</string>
     <string name="folder_rename_description">Omdøb mappen %1$s</string>
     <string name="folder_move_earlier_description">Flyt mappen %1$s tidligere</string>
     <string name="folder_move_later_description">Flyt mappen %1$s senere</string>
@@ -1041,7 +1039,6 @@
     <string name="measurement_project_context">Projekt: %1$s</string>
     <string name="measurement_estimate">Estimat baseret på den indtastede strikkefasthed.</string>
     <string name="measurement_adjust_warning">Matematisk estimat baseret på den indtastede strikkefasthed. Formgivning og konstruktion omskrives ikke. Bevægelsesvidde, mønsterrapporter, kanter, ærmegab, halsudskæringer og ærmer kan kræve særskilt tilpasning. Mål en vasket eller blokket strikkeprøve for et mere brugbart estimat.</string>
-    <string name="measurement_adjust_warning_short">Et skøn ud fra din strikkefasthed. Formgivning kan kræve separat tilpasning.</string>
     <string name="measurement_swatch_hint">Mål strikkeprøven efter vask eller blokning for et mere brugbart estimat.</string>
     <string name="measurement_result">Resultat</string>
     <string name="measurement_value_unit_format">%1$s %2$s</string>
@@ -1128,7 +1125,7 @@
     <string name="web_pattern_unlink_title">Fjern link til opskrift?</string>
     <string name="web_pattern_unlink_body">Fjern opskriftsoplysningerne for %1$s fra projektet? Den gemte opskrift og projektets PDF-filer bevares.</string>
     <string name="web_pattern_unlink_confirm">Fjern link</string>
-    <string name="web_pattern_replace_confirm_title">Erstat mønsteroplysningerne?</string>
+    <string name="web_pattern_replace_confirm_title">Erstat opskriftsdata?</string>
     <string name="web_pattern_replace_confirm_message">De nuværende opskriftsoplysninger erstattes med oplysningerne for %1$s.</string>
     <string name="web_pattern_open_website">Åbn websted</string>
     <string name="web_pattern_offline_note">Åbner på det oprindelige websted. Gemmes ikke til offlinebrug.</string>
@@ -1240,5 +1237,5 @@
     <string name="project_yarn_edit_missing">Garnnoten hører ikke længere til dette projekt. Luk editoren.</string>
     <string name="project_yarn_edit_invalid">Indtast et garnnavn.</string>
     <string name="project_yarn_edit_failed">Ændringerne kunne ikke gemmes. Din kladde er stadig her. Prøv igen.</string>
-    <string name="counter_progress_format">Tællerfremgang: %1$d</string>
+    <string name="counter_progress_format">Tæller %1$+d</string>
 </resources>

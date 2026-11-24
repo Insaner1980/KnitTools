@@ -29,6 +29,22 @@ class UiConsistencySourceTest {
     }
 
     @Test
+    fun `page-level notes use the shared InfoNote`() {
+        val pages = screenSources()
+        val notes =
+            mapOf(
+                "chartsymbols/ChartSymbolScreen.kt" to "R.string.chart_symbols_disclaimer",
+                "yarn/YarnEstimatorScreen.kt" to "R.string.extra_skein_note",
+                "needles/NeedleSizeScreen.kt" to "R.string.needle_size_disclaimer",
+                "gauge/GaugeScreen.kt" to "task.warningResource()",
+            )
+        notes.forEach { (page, body) ->
+            val source = pages.getValue(page)
+            assertTrue(page, source.contains(Regex("InfoNote\\(\\s*text = stringResource\\(" + Regex.escape(body))))
+        }
+    }
+
+    @Test
     fun `screens use card tokens instead of raw surface roles`() {
         // Laskurin omat ohjaimet (askelpainikkeet, toistolaskuri, edistymisraita) eivät ole kortteja.
         assertOnlyAllowed(
@@ -410,7 +426,9 @@ class UiConsistencySourceTest {
                         minOf(end + 1, length)
                     }
 
-                    startsWith("//", index) -> indexOf('\n', index).let { end -> if (end < 0) length else end }
+                    startsWith("//", index) -> {
+                        indexOf('\n', index).let { end -> if (end < 0) length else end }
+                    }
 
                     startsWith("/*", index) -> {
                         var depth = 0
@@ -428,7 +446,9 @@ class UiConsistencySourceTest {
                                     if (depth == 0) break
                                 }
 
-                                else -> end++
+                                else -> {
+                                    end++
+                                }
                             }
                         }
                         end

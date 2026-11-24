@@ -12,23 +12,23 @@ object CounterLaunchTokenStore {
     private const val TOKEN_SEPARATOR = '\t'
     internal const val TOKEN_TTL_MILLIS = 24L * 60L * 60L * 1000L
 
-    fun issueLaunchId(context: Context): String = issueLaunchId(context, System.currentTimeMillis())
+    fun issueLaunchId(context: Context): String? = issueLaunchId(context, System.currentTimeMillis())
 
     @Synchronized
     internal fun issueLaunchId(
         context: Context,
         nowMillis: Long,
-    ): String {
+    ): String? {
         val launchId = UUID.randomUUID().toString()
         val prefs =
             context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val previousTokens = prefs.readLaunchTokens()
         val launchTokens =
             (
-                prefs.readLaunchTokens().filter { it.isUsableAt(nowMillis) } +
+                previousTokens.filter { it.isUsableAt(nowMillis) } +
                     LaunchToken(launchId = launchId, issuedAtMillis = nowMillis)
             ).takeLast(MAX_LAUNCH_IDS)
-        prefs.writeLaunchTokens(launchTokens)
-        return launchId
+        return launchId.takeIf { prefs.replaceLaunchTokens(previousTokens, launchTokens) }
     }
 
     fun consumeLaunchId(
@@ -46,13 +46,22 @@ object CounterLaunchTokenStore {
         val prefs =
             context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         val launchTokens = prefs.readLaunchTokens()
-        val isUsable = launchTokens.any { it.launchId == launchId && it.isUsableAt(nowMillis) }
+        if (launchTokens.none { it.launchId == launchId && it.isUsableAt(nowMillis) }) return false
         val remainingTokens =
             launchTokens.filter { token ->
                 token.launchId != launchId && token.isUsableAt(nowMillis)
             }
-        val persisted = prefs.writeLaunchTokens(remainingTokens)
-        return isUsable && persisted
+        return prefs.replaceLaunchTokens(launchTokens, remainingTokens)
+    }
+
+    private fun SharedPreferences.replaceLaunchTokens(
+        previousTokens: List<LaunchToken>,
+        nextTokens: List<LaunchToken>,
+    ): Boolean {
+        if (writeLaunchTokens(nextTokens)) return true
+        // SharedPreferences updates its in-memory value even when commit fails.
+        writeLaunchTokens(previousTokens)
+        return false
     }
 
     private fun SharedPreferences.readLaunchTokens(): List<LaunchToken> =

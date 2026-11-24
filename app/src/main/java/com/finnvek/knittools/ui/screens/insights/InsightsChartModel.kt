@@ -70,12 +70,17 @@ internal fun insightsChartAxis(
     firstDayOfWeek: DayOfWeek,
 ): InsightsChartAxis =
     when (timeRange) {
-        TimeRange.THIS_WEEK ->
+        TimeRange.THIS_WEEK -> {
             dayAxis(today.with(TemporalAdjusters.previousOrSame(firstDayOfWeek)), today)
+        }
 
-        TimeRange.THIS_MONTH -> dayAxis(today.withDayOfMonth(1), today)
+        TimeRange.THIS_MONTH -> {
+            dayAxis(today.withDayOfMonth(1), today)
+        }
 
-        TimeRange.ALL_TIME -> allTimeAxis(today, firstSessionDate, firstDayOfWeek)
+        TimeRange.ALL_TIME -> {
+            allTimeAxis(today, firstSessionDate, firstDayOfWeek)
+        }
     }
 
 private fun dayAxis(

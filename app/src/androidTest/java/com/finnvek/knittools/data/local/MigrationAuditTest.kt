@@ -273,40 +273,110 @@ class MigrationAuditTest {
         if (table == "pattern_annotation_layers" && column == "projectId") return id
         if (!required && id == 42L) return null
         return when (column) {
-            "singletonId" -> 1L
+            "singletonId" -> {
+                1L
+            }
+
             "id", "projectId", "yarnCardId", "projectYarnNoteId", "linkedProjectId",
             "savedYarnCardId", "savedPatternId", "linkedPatternId", "folderId", "layerId",
-            -> id
-            "createdAt", "savedAt", "startedAt" -> 1000L + id
-            "updatedAt", "timestamp", "completedAt", "endedAt" -> 2000L + id
-            "isCompleted" -> if (id == 42L) 1L else 0L
+            -> {
+                id
+            }
+
+            "createdAt", "savedAt", "startedAt" -> {
+                1000L + id
+            }
+
+            "updatedAt", "timestamp", "completedAt", "endedAt" -> {
+                2000L + id
+            }
+
+            "isCompleted" -> {
+                if (id == 42L) 1L else 0L
+            }
+
             "isActive", "isPrimary", "isFree", "isAvailableOffline", "readingLineEnabled",
             "readingLineFollowCurrentRow",
             "verticalReadingGuideEnabled", "stitchTrackingEnabled", "linkedToMainCounter", "recoveryPromptShown",
-            -> 1L
-            "secondaryCounterUsed", "notesCreated" -> 0L
-            "payloadVersion" -> 1L
-            "craftType" -> "CROCHET"
-            "mainCounterLabelType" -> "ROUNDS"
-            "counterType" -> "COUNT_UP"
-            "status" -> "IN_STASH"
-            "source" -> "LOCAL_FILE"
-            "availability" -> "unknown"
-            "kind" -> "FREEHAND"
-            "color" -> "#FF0000"
-            "pathData" -> "M 0 0 L 1 1"
-            "payloadJson" -> "{\"legacyPathData\":\"M 0 0 L 1 1\"}"
-            "patternUri", "patternUrl", "localPdfUri" -> "content://audit/$id.pdf"
-            "yarnCardIds" -> id.toString()
-            "zoneId", "startZoneId" -> "Europe/Helsinki"
-            "documentKey" -> "doc:$id"
-            "readingLineYFraction", "verticalReadingGuideXFraction", "yFraction" -> 0.375
-            else ->
+            -> {
+                1L
+            }
+
+            "secondaryCounterUsed", "notesCreated" -> {
+                0L
+            }
+
+            "payloadVersion" -> {
+                1L
+            }
+
+            "craftType" -> {
+                "CROCHET"
+            }
+
+            "mainCounterLabelType" -> {
+                "ROUNDS"
+            }
+
+            "counterType" -> {
+                "COUNT_UP"
+            }
+
+            "status" -> {
+                "IN_STASH"
+            }
+
+            "source" -> {
+                "LOCAL_FILE"
+            }
+
+            "availability" -> {
+                "unknown"
+            }
+
+            "kind" -> {
+                "FREEHAND"
+            }
+
+            "color" -> {
+                "#FF0000"
+            }
+
+            "pathData" -> {
+                "M 0 0 L 1 1"
+            }
+
+            "payloadJson" -> {
+                "{\"legacyPathData\":\"M 0 0 L 1 1\"}"
+            }
+
+            "patternUri", "patternUrl", "localPdfUri" -> {
+                "content://audit/$id.pdf"
+            }
+
+            "yarnCardIds" -> {
+                id.toString()
+            }
+
+            "zoneId", "startZoneId" -> {
+                "Europe/Helsinki"
+            }
+
+            "documentKey" -> {
+                "doc:$id"
+            }
+
+            "readingLineYFraction", "verticalReadingGuideXFraction", "yFraction" -> {
+                0.375
+            }
+
+            else -> {
                 when (type) {
                     "TEXT" -> "Ä-$table-$column-$id\ntext"
                     "REAL" -> id + 0.125
                     else -> id
                 }
+            }
         }
     }
 

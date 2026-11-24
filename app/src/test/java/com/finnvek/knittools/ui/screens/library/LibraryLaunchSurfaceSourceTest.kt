@@ -27,6 +27,7 @@ class LibraryLaunchSurfaceSourceTest {
         assertFalse(homeViewModel.contains("currentTip"))
         assertFalse(homeViewModel.contains("knitting_tips"))
         assertFalse(settingsScreen.contains("show_knitting_tips"))
+        assertFalse(settingsScreen.contains("settings_show_tips_again"))
         assertFalse(settingsViewModel.contains("setShowKnittingTips"))
         assertFalse(preferencesManager.contains("showKnittingTips"))
         assertFalse(strings.contains("quick_tip_label"))

@@ -10,17 +10,23 @@ import com.finnvek.knittools.domain.calculator.formatIntegerForDisplay
 @Composable
 internal fun projectListTargetStatusText(status: MainCounterTargetStatus): String =
     when (status) {
-        is MainCounterTargetStatus.Remaining ->
+        is MainCounterTargetStatus.Remaining -> {
             stringResource(
                 R.string.counter_target_remaining_format,
                 formatIntegerForDisplay(status.countSlot.count.toLong(), rememberCurrentLocale()),
             )
-        MainCounterTargetStatus.Reached -> stringResource(R.string.counter_target_reached)
-        is MainCounterTargetStatus.Past ->
+        }
+
+        MainCounterTargetStatus.Reached -> {
+            stringResource(R.string.counter_target_reached)
+        }
+
+        is MainCounterTargetStatus.Past -> {
             stringResource(
                 R.string.counter_target_past_format,
                 formatIntegerForDisplay(status.countSlot.count.toLong(), rememberCurrentLocale()),
             )
+        }
     }
 
 internal fun projectListItemSecondaryLine(

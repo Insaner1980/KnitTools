@@ -1,5 +1,7 @@
 # Ravelry Firebase backend progress
 
+Historical record. The backend source and deployment configuration have been removed from this repository.
+
 ## 2026-06-11
 
 Branch: `codex/project-workspace-cards`

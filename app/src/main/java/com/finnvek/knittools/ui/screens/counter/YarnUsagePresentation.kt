@@ -33,15 +33,25 @@ internal fun yarnUsageAmount(
     val locale = rememberCurrentLocale()
     val formatted = MeasurementNumberFormatter.format(value, locale)
     return when (unit) {
-        YarnUsageUnit.METERS -> stringResource(R.string.yarn_usage_meters_format, formatted)
-        YarnUsageUnit.YARDS -> stringResource(R.string.yarn_usage_yards_format, formatted)
-        YarnUsageUnit.GRAMS -> stringResource(R.string.yarn_usage_grams_format, formatted)
-        YarnUsageUnit.SKEINS ->
+        YarnUsageUnit.METERS -> {
+            stringResource(R.string.yarn_usage_meters_format, formatted)
+        }
+
+        YarnUsageUnit.YARDS -> {
+            stringResource(R.string.yarn_usage_yards_format, formatted)
+        }
+
+        YarnUsageUnit.GRAMS -> {
+            stringResource(R.string.yarn_usage_grams_format, formatted)
+        }
+
+        YarnUsageUnit.SKEINS -> {
             pluralStringResource(
                 R.plurals.yarn_usage_skeins_format,
                 skeinPluralQuantity(formatted, locale),
                 formatted,
             )
+        }
     }
 }
 

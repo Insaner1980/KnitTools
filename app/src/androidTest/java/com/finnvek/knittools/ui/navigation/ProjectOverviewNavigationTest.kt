@@ -121,6 +121,7 @@ class ProjectOverviewNavigationTest {
         rule.waitForIdle()
         rule.runOnIdle {
             assertEquals(Screen.Counter.route, nav.currentDestination?.route)
+            assertEquals(7L, nav.currentBackStackEntry?.savedStateHandle?.get<Long>(COUNTER_ENTRY_PROJECT_ID))
             assertEquals(Screen.ProjectOverview.ROUTE, nav.previousBackStackEntry?.destination?.route)
             assertEquals(7L, nav.previousBackStackEntry?.arguments?.getLong("projectId"))
         }

@@ -224,7 +224,7 @@ function Get-RelativeFilesForRoots {
         }
     }
 
-    return @($files | Sort-Object -Unique)
+    return @($files | Sort-Object -CaseSensitive -Unique)
 }
 
 function Invoke-Git {
@@ -807,7 +807,7 @@ function Get-KnownRavelrySecretValues {
 
     $debugCredentialsPath = Join-RepoPath "debug.credentials.properties"
     if (Test-Path -LiteralPath $debugCredentialsPath) {
-        $rawLines = Get-Content -LiteralPath $debugCredentialsPath
+        $rawLines = Get-Content -LiteralPath $debugCredentialsPath -Encoding UTF8
         foreach ($line in $rawLines) {
             if ($line -notmatch '^\s*([^#!=:\s][^!=:]*)\s*[=:]\s*(.*)\s*$') {
                 continue
@@ -937,12 +937,7 @@ function Test-KnownRavelrySecrets {
             "app/build.gradle.kts",
             "baselineprofile/build.gradle.kts",
             "gradle/libs.versions.toml",
-            "gradle/verification-metadata.xml",
-            "functions/src",
-            "functions/lib",
-            "functions/package.json",
-            "firebase.json",
-            "firestore.rules"
+            "gradle/verification-metadata.xml"
         )
 
         $binaryFiles = Get-RelativeFilesForRoots @(

@@ -10,18 +10,12 @@ Android removal date: 2026-06-11
 Release-surface hardening date: 2026-06-12
 Android API client removal date: 2026-10-09
 
-KnitTools previously had no backend service for Ravelry access. That decision is superseded by `Ravelry Firebase Backend And Saved Patterns Plan.md`: the target architecture moves Ravelry secrets, token exchange, API calls, auth status, disconnect, search, and import to Firebase Auth plus Cloud Functions v2.
-
-The old Android client-only secret path has now been removed from Android. Android no longer defines Ravelry credential `BuildConfig` fields, no longer stores Ravelry access/refresh tokens in `EncryptedSharedPreferences`, and no longer uses the Basic Auth fallback for Ravelry API calls. Ravelry secrets and token exchange belong to Cloud Functions only.
-
-On 2026-10-09 Android stopped calling the Ravelry backend altogether. Ravelry opens in the in-app browser (see below) with Ravelry's own login, so the OAuth flow, `RavelryAuthManager`, `RavelryBackendClient`, the in-app search, detail, and import screens, the `knittools://ravelry-auth-complete` callback, and the Firebase Auth and Functions dependencies were removed from Android. The backend code under `functions/` is not called by the app.
+KnitTools historically used a Firebase Functions backend for Ravelry OAuth and metadata. The native OAuth flow, API client, and embedded credentials were removed from Android. On 2026-10-09 the app moved to Ravelry's own login in the in-app browser. The retired backend source and its deployment configuration have been removed from the repository. See the historical [backend plan](../Ravelry%20Firebase%20Backend%20And%20Saved%20Patterns%20Plan.md) for the earlier design.
 
 Mitigations:
 
 - Android Firebase integration is limited to Crashlytics. Release-capable `app/google-services.json` stays ignored and must be provided locally or generated in CI from `KNITTOOLS_GOOGLE_SERVICES_JSON_BASE64`; local debug builds may generate ignored `app/src/debug/google-services.json` placeholder config when no real Firebase project config is available.
 - New Ravelry work must not add fresh Android secret surfaces; secrets and token exchange belong server-side.
-- Phase 3 backend code owns OAuth2 start/callback/status/disconnect/current-user flow server-side. It stores PKCE state in `ravelryOAuthStates/{state}` and tokens in `ravelryTokens/{uid}`.
-- Phase 4 backend search/import is metadata-only. `ravelrySearchPatterns`, `ravelryImportPatternById`, and `ravelryImportPatternByUrl` sanitize API responses to Ravelry ID, title, designer, thumbnail, canonical URL, original URL, availability, and pagination; they do not download paid/private PDFs or return raw Ravelry response bodies.
 - Android has no Ravelry API client, OAuth callback, Ravelry access token, or refresh token. Reintroducing Ravelry API access requires a new explicit decision and must keep secrets and token exchange server-side.
 - Release-surface hardening allows only the Firebase BoM, Crashlytics, and the Google Services plugin/config path; Firebase Auth and Functions dependencies fail the check. `tools/release-surface.ps1` still forbids Firebase AI, ML Kit, Gemini/Google Generative AI, voice/speech dependencies, release-path Sentry, and broad FileProvider roots.
 - `app/google-services.json` and generated `app/src/debug/google-services.json` may exist only as ignored local or CI-generated files; tracking either one in git fails the release-surface check.

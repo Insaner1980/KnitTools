@@ -232,17 +232,21 @@ data class WebPatternEditorRoute(
             return when (origin) {
                 WebPatternEditorOrigin.Manual,
                 WebPatternEditorOrigin.Share,
-                -> if (positiveProjectId == null && positivePatternId == null) WebPatternEditorRoute(origin) else null
+                -> {
+                    if (positiveProjectId == null && positivePatternId == null) WebPatternEditorRoute(origin) else null
+                }
 
-                WebPatternEditorOrigin.Project ->
+                WebPatternEditorOrigin.Project -> {
                     positiveProjectId
                         ?.takeIf { positivePatternId == null }
                         ?.let { WebPatternEditorRoute(origin, projectId = it) }
+                }
 
-                WebPatternEditorOrigin.Edit ->
+                WebPatternEditorOrigin.Edit -> {
                     positivePatternId
                         ?.takeIf { positiveProjectId == null }
                         ?.let { WebPatternEditorRoute(origin, patternId = it) }
+                }
             }
         }
     }
@@ -276,6 +280,7 @@ internal fun isStartupDestinationReady(
         Screen.RavelryBrowser.ROUTE,
         Screen.WebPatternEditor.ROUTE,
         -> entryId == readyEntryId
+
         else -> lifecycle == Lifecycle.State.RESUMED
     }
 }

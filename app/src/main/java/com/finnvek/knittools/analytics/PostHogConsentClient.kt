@@ -32,7 +32,7 @@ class PostHogConsentClient internal constructor(
     internal fun blockDelivery() = gate.blockDelivery()
 
     fun retire() {
-        // close() flushes in core 6.47.1, so delivery must be retired first.
+        // close() can flush queued events, so retire delivery first.
         gate.retire()
         try {
             sdk.optOut()
@@ -126,8 +126,7 @@ internal class AnalyticsQueueStorage(
     }
 }
 
-// These configuration seams are PostHogInternal in Android 3.72.1 / core 6.47.1.
-// Keep the real-SDK consent/queue tests when changing either version.
+// These internal SDK settings are covered by the real-SDK consent and queue tests.
 internal fun postHogClientFactory(
     token: String,
     storage: AnalyticsQueueStorage,

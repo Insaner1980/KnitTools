@@ -288,13 +288,17 @@ class AuditPart07AnnotationBoundaryTest {
 
     private suspend fun prepare(operation: Operation) {
         when (operation) {
-            Operation.STROKE -> draft()
+            Operation.STROKE -> {
+                draft()
+            }
+
             Operation.ERASE, Operation.DUPLICATE -> {
                 if (rows().none { it.layerId == layer }) repository.insertAnnotation(shape(0, layer))
                 awaitState { it.projectAnnotations.isNotEmpty() }
                 main { vm.selectAnnotationAt(point) }
                 awaitState { it.selectedAnnotationIsEditable }
             }
+
             Operation.UNDO, Operation.REDO -> {
                 main { vm.addTextBox("History payload") }
                 awaitState { !it.isSaving && it.canUndo }

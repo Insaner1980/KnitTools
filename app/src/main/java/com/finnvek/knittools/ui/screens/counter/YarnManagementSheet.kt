@@ -24,11 +24,12 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetState
+import androidx.compose.material3.SheetValue
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -89,7 +90,7 @@ fun YarnManagementSheet(
     usageItems: List<ProjectYarnUsageItem> = emptyList(),
     onUsage: (YarnUsageOpenRequest) -> Unit = {},
     focusKey: String? = null,
-    sheetState: SheetState = rememberModalBottomSheetState(),
+    sheetState: SheetState = rememberBottomSheetState(initialValue = SheetValue.Hidden),
 ) {
     var pendingCreation by remember { mutableStateOf(actions.pendingProjectYarnNoteCreation()) }
     var createResult by remember { mutableStateOf<ProjectYarnNoteEditResult?>(null) }

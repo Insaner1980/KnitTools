@@ -197,14 +197,17 @@ private fun heroRunStyle(
 private fun durationFormat(display: DurationDisplay): String {
     val resources = LocalResources.current
     return when (display.shape) {
-        DurationShape.MINUTES_ONLY ->
+        DurationShape.MINUTES_ONLY -> {
             resources.getQuantityString(R.plurals.insights_duration_minutes, display.minutes ?: 0)
+        }
 
-        DurationShape.WHOLE_HOURS ->
+        DurationShape.WHOLE_HOURS -> {
             resources.getQuantityString(R.plurals.insights_duration_hours, display.hours ?: 0)
+        }
 
-        DurationShape.HOURS_AND_MINUTES ->
+        DurationShape.HOURS_AND_MINUTES -> {
             resources.getString(R.string.insights_duration_hours_minutes)
+        }
     }
 }
 

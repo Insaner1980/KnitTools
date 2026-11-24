@@ -265,7 +265,7 @@
     <!-- Session History -->
     <string name="session_history_title">Historique des séances</string>
     <string name="no_sessions">Aucune session enregistrée pour le moment. Ouvrez un projet et démarrez une session de travail pour enregistrer votre temps ici.</string>
-    <string name="session_row_range">Compteur : %1$d → %2$d</string>
+    <string name="session_row_range">Compteur %1$d → %2$d</string>
     <string name="session_row_single">Valeur %1$d</string>
     <string name="delete_session_title">Supprimer la session ?</string>
     <string name="delete_session_message">Cette session sera supprimée de l’historique. Cette action est irréversible.</string>
@@ -356,7 +356,7 @@
 
     <!-- Needle Sizes -->
     <string name="search_size">Rechercher une taille…</string>
-    <string name="needle_size_disclaimer">Les tailles sont approximatives. Les tailles japonaises utilisent une échelle métrique distincte.</string>
+    <string name="needle_size_disclaimer">Les correspondances de tailles sont approximatives. La numérotation varie selon le système et le fabricant. Comparez le diamètre en millimètres et vérifiez votre échantillon.</string>
     <string name="header_mm">mm</string>
     <string name="header_us">US</string>
     <string name="header_uk">UK</string>
@@ -369,8 +369,8 @@
     <string name="settings_section_general">Général</string>
     <string name="settings_theme">Thème</string>
     <string name="settings_section_pro">PRO</string>
-    <string name="settings_section_data">DONNÉES</string>
-    <string name="settings_section_info">INFO</string>
+    <string name="settings_section_data">Sauvegarde</string>
+    <string name="settings_section_info">Aide et assistance</string>
     <string name="help_and_guide">Aide en ligne</string>
     <string name="external_link_description">s’ouvre dans le navigateur</string>
     <string name="settings_language">Langue de l’app</string>
@@ -732,8 +732,6 @@
     <string name="tip_edge_stitches_desc">Les mailles lisière sont des mailles supplémentaires hors de la répétition du motif. Indiquez le total des mailles lisière à monter ; le calculateur les ajoute après avoir calculé la largeur souhaitée, par exemple 2 pour une maille de chaque côté.</string>
     <string name="tip_flat_vs_circular_title">À plat ou en rond</string>
     <string name="tip_flat_vs_circular_desc">Tricot à plat : vous travaillez en aller-retour sur des aiguilles droites ou circulaires en tournant à la fin de chaque rang.\n\nTricot en rond : vous travaillez en continu. Les augmentations/diminutions sont réparties uniformément tout autour du tour.\n\nNotation anglaise des résultats : K = tricoter à l’endroit, M1 = augmentation intercalaire, K2tog = tricoter 2 mailles ensemble à l’endroit ; × indique le nombre total de répétitions.</string>
-    <string name="tip_needle_sizes_title">Systèmes de tailles d’aiguilles</string>
-    <string name="tip_needle_sizes_desc">Le diamètre en millimètres est la référence la plus précise. Les tailles US utilisent un système numéroté (de 000 à 50 dans ce tableau). Les tailles UK/Canada utilisent un autre système numéroté. Les tailles japonaises ont leur propre numérotation. Vérifiez toujours la taille en mm pour être sûr.</string>
     <string name="tip_imperial_units_title">Unités impériales</string>
     <string name="tip_imperial_units_desc">Lorsque cette option est activée, les calculateurs utilisent par défaut les pouces au lieu des centimètres et les yards au lieu des mètres. L’échantillon est alors indiqué sur 4 pouces au lieu de 10 cm. Dans Mesures et échantillon, vous pouvez changer les unités et la base de l’échantillon.</string>
     <string name="open_notes_editor">Ouvrir l’éditeur de notes</string>
@@ -961,7 +959,7 @@
     <string name="folder_remove_from">Retirer du dossier</string>
     <string name="selection_action_move">Déplacer</string>
     <string name="selection_action_complete">Terminer</string>
-    <string name="folder_no_folders">Aucun dossier</string>
+    <string name="folder_empty_notice">Vous n’avez pas encore créé de dossier.</string>
     <string name="folder_empty">%1$s ne contient aucun projet.</string>
     <string name="folder_no_unfiled">Aucun projet sans dossier</string>
     <string name="folder_hidden_completed">Ce dossier contient des projets terminés masqués.</string>
@@ -1000,7 +998,7 @@
     <item quantity="other">%d projets déplacés.</item>
     <item quantity="many">%d projets déplacés.</item>
     </plurals>
-    <string name="folder_move_project_to">Déplacer %1$s vers un dossier</string>
+    <string name="folder_move_sheet_title">Déplacer vers un dossier</string>
     <string name="folder_rename_description">Renommer le dossier %1$s</string>
     <string name="folder_move_earlier_description">Déplacer le dossier %1$s plus haut</string>
     <string name="folder_move_later_description">Déplacer le dossier %1$s plus bas</string>
@@ -1066,7 +1064,6 @@
     <string name="measurement_project_context">Projet : %1$s</string>
     <string name="measurement_estimate">Estimation basée sur l’échantillon saisi.</string>
     <string name="measurement_adjust_warning">Estimation mathématique basée sur l’échantillon saisi. Le façonnage et la construction ne sont pas réécrits. Aisance, répétitions de motifs, bordures, emmanchures, encolures et manches peuvent nécessiter une adaptation séparée. Mesurez un échantillon lavé ou bloqué pour une estimation plus utile.</string>
-    <string name="measurement_adjust_warning_short">Une estimation d’après votre échantillon. Les mises en forme peuvent nécessiter un ajustement séparé.</string>
     <string name="measurement_swatch_hint">Pour une estimation plus utile, mesurez l’échantillon après lavage ou blocage.</string>
     <string name="measurement_result">Résultat</string>
     <string name="measurement_value_unit_format">%1$s %2$s</string>
@@ -1269,5 +1266,5 @@
     <string name="project_yarn_edit_missing">Cette note de fil ne fait plus partie de ce projet. Fermez cet écran.</string>
     <string name="project_yarn_edit_invalid">Saisissez un nom de fil.</string>
     <string name="project_yarn_edit_failed">Impossible d’enregistrer les modifications. Votre brouillon est conservé. Réessayez.</string>
-    <string name="counter_progress_format">Progression du compteur : %1$d</string>
+    <string name="counter_progress_format">Compteur %1$+d</string>
 </resources>

@@ -11,7 +11,6 @@ import com.finnvek.knittools.data.datastore.PreferencesManager
 import com.finnvek.knittools.data.datastore.ThemeMode
 import com.finnvek.knittools.pro.ProManager
 import com.finnvek.knittools.pro.ProState
-import com.finnvek.knittools.ui.tips.TipSession
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -30,7 +29,6 @@ class SettingsViewModel
         private val preferencesManager: PreferencesManager,
         private val billingManager: BillingManager,
         proManager: ProManager,
-        private val tipSession: TipSession,
     ) : ViewModel() {
         val preferences: StateFlow<AppPreferences> =
             preferencesManager.preferences.stateIn(
@@ -93,18 +91,6 @@ class SettingsViewModel
                 } finally {
                     _isRestoring.value = false
                 }
-            }
-        }
-
-        fun showTipsAgain() {
-            viewModelScope.launch {
-                val message =
-                    if (tipSession.resetTips().await()) {
-                        R.string.settings_tips_reset_done
-                    } else {
-                        R.string.generic_error_unknown
-                    }
-                messageChannel.send(message)
             }
         }
     }

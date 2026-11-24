@@ -77,19 +77,7 @@ class ChartTrackerResolverTest {
             listOf(ChartCell(0, 0), ChartCell(0, 1), ChartCell(0, 2), ChartCell(1, 0), ChartCell(1, 1), ChartCell(1, 2))
         val diagonal = listOf(linear[0], linear[1], linear[3], linear[2], linear[4], linear[5])
         for (mode in ChartTrackingMode.entries) {
-            val base =
-                tracker().copy(
-                    region =
-                        tracker().region.copy(
-                            rows = 2,
-                            columns = 3,
-                            rowDirection = ChartRowDirection.TOP_TO_BOTTOM,
-                        ),
-                    trackingMode = mode,
-                    counterStartValue = 5,
-                    gridStartIndex = 1,
-                    c2cOrigin = ChartCorner.TOP_LEFT,
-                )
+            val base = boundaryTracker(mode)
             val order = if (mode == ChartTrackingMode.C2C_DIAGONAL) diagonal else linear
             for (wrap in listOf(false, true)) {
                 val boundaries =
@@ -105,16 +93,29 @@ class ChartTrackerResolverTest {
                     val active = order[index]
                     val expected =
                         when (mode) {
-                            ChartTrackingMode.ACTIVE_ROW -> linear.filter { it.row == active.row }.toSet()
-                            ChartTrackingMode.ACTIVE_COLUMN -> linear.filter { it.column == active.column }.toSet()
-                            ChartTrackingMode.CROSSHAIR ->
+                            ChartTrackingMode.ACTIVE_ROW -> {
+                                linear.filter { it.row == active.row }.toSet()
+                            }
+
+                            ChartTrackingMode.ACTIVE_COLUMN -> {
+                                linear.filter { it.column == active.column }.toSet()
+                            }
+
+                            ChartTrackingMode.CROSSHAIR -> {
                                 linear
                                     .filter {
                                         it.row == active.row ||
                                             it.column == active.column
                                     }.toSet()
-                            ChartTrackingMode.COMPLETED_CELLS -> order.take(index + 1).toSet()
-                            ChartTrackingMode.C2C_DIAGONAL -> setOf(active)
+                            }
+
+                            ChartTrackingMode.COMPLETED_CELLS -> {
+                                order.take(index + 1).toSet()
+                            }
+
+                            ChartTrackingMode.C2C_DIAGONAL -> {
+                                setOf(active)
+                            }
                         }
                     assertEquals("$mode/$wrap/$value", active, result.activeCell)
                     assertEquals("$mode/$wrap/$value", expected, result.cells)
@@ -132,6 +133,20 @@ class ChartTrackerResolverTest {
             assertThinRegions(base)
         }
     }
+
+    private fun boundaryTracker(mode: ChartTrackingMode): ChartTrackerPayload =
+        tracker().copy(
+            region =
+                tracker().region.copy(
+                    rows = 2,
+                    columns = 3,
+                    rowDirection = ChartRowDirection.TOP_TO_BOTTOM,
+                ),
+            trackingMode = mode,
+            counterStartValue = 5,
+            gridStartIndex = 1,
+            c2cOrigin = ChartCorner.TOP_LEFT,
+        )
 
     private fun assertThinRegions(base: ChartTrackerPayload) {
         for ((rows, columns) in listOf(1 to 1, 1 to 3, 3 to 1)) {

@@ -52,7 +52,7 @@ class ProjectOverviewSourceTest {
             ProjectSourceFiles
                 .read(
                     "app/src/main/java/com/finnvek/knittools/ui/navigation/ProjectWorkspaceNavigation.kt",
-                ).substringBefore("internal fun NavHostController.openCounterWithWorkSessionTip")
+                ).substringBefore("internal fun NavHostController.openCounterWithWorkSessionActions")
         assertTrue(nav.contains("onOpenCounter = { navController.openCounterFromOverview() }"))
         assertTrue(counterNavigation.contains("previous?.destination?.route == Screen.Counter.route"))
         assertTrue(

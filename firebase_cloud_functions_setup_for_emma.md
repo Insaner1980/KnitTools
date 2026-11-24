@@ -1,6 +1,6 @@
 # Firebase Cloud Functions setup for the Ravelry integration
 
-Historical and superseded for Android: on 2026-10-09 the app's Ravelry API/OAuth integration and Firebase Auth/Functions dependencies were removed. Android now uses the Ravelry website in its in-app browser and app-owned PDF imports. The retained backend code is not called by Android. This older setup guide does not authorize restoring that integration; see [PROJECT.md](PROJECT.md) and [security decisions](config/security-decisions.md).
+Historical setup record. The Ravelry backend source and deployment configuration have been removed from this repository. Android uses Ravelry's website in the in-app browser. See [PROJECT.md](PROJECT.md) and [security decisions](config/security-decisions.md) for the current architecture.
 
 Current date: 2026-06-10
 

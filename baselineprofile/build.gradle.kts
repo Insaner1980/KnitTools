@@ -2,14 +2,29 @@ plugins {
     alias(libs.plugins.android.test)
     alias(libs.plugins.baselineprofile)
     alias(libs.plugins.ktlint)
+    alias(libs.plugins.dependency.analysis)
+}
+
+ktlint {
+    version.set(libs.versions.ktlintEngine)
 }
 
 android {
     namespace = "com.finnvek.knittools.baselineprofile"
-    compileSdk =
-        libs.versions.androidCompileSdk
-            .get()
-            .toInt()
+    buildToolsVersion = libs.versions.androidBuildTools.get()
+    compileSdk {
+        version =
+            release(
+                libs.versions.androidCompileSdk
+                    .get()
+                    .toInt(),
+            ) {
+                minorApiLevel =
+                    libs.versions.androidCompileMinorSdk
+                        .get()
+                        .toInt()
+            }
+    }
 
     defaultConfig {
         minSdk =

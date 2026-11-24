@@ -61,7 +61,7 @@ class ProjectSetupListTest {
     @Before
     fun setUp() =
         runBlocking {
-            repository.initializeIfNeeded(hasAnyProject = false, today = 1L)
+            repository.initializeIfNeeded(today = 1L)
             repository.setStarterProject(7L)
         }
 

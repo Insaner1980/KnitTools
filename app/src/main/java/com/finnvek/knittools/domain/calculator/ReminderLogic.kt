@@ -21,8 +21,14 @@ object ReminderLogic {
         if (currentRow <= 0 || reminder.targetRow <= 0 || reminder.isCompleted) return false
         val interval = reminder.repeatInterval
         return when {
-            interval == null -> currentRow == reminder.targetRow
-            interval <= 0 -> false
+            interval == null -> {
+                currentRow == reminder.targetRow
+            }
+
+            interval <= 0 -> {
+                false
+            }
+
             else -> {
                 // Toistuvat: laukeaa targetRow:ssa ja joka interval:n välein sen jälkeen
                 currentRow >= reminder.targetRow &&

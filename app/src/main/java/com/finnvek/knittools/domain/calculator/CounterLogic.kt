@@ -57,7 +57,8 @@ object CounterLogic {
             state
         }
 
-    fun reset(state: CounterState): CounterState = state.copy(count = 0, previousCount = state.count)
+    fun reset(state: CounterState): CounterState =
+        if (state.count == 0) state else state.copy(count = 0, previousCount = state.count)
 
     fun setStepSize(
         state: CounterState,

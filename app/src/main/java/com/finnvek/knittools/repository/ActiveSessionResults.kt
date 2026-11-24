@@ -29,7 +29,6 @@ sealed interface StartSessionResult {
 sealed interface StopSessionResult {
     data class Saved(
         val completedSessionId: Long?,
-        val wasFirstCompletedSession: Boolean = false,
     ) : StopSessionResult
 
     data object Discarded : StopSessionResult

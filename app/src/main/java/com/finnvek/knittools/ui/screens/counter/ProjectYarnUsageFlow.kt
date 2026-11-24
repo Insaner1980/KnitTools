@@ -3,7 +3,6 @@ package com.finnvek.knittools.ui.screens.counter
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -18,6 +17,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.finnvek.knittools.domain.model.ProjectYarnNote
 import com.finnvek.knittools.domain.model.ProjectYarnUsageItem
 import com.finnvek.knittools.pro.ProState
+import com.finnvek.knittools.ui.components.rememberExpandedModalSheetState
 import kotlinx.coroutines.launch
 
 data class YarnUsageOpenRequest(
@@ -41,10 +41,9 @@ fun ProjectYarnUsageFlow(
     val model = viewModelProvider()
     val items by model.items.collectAsStateWithLifecycle()
     val editor by model.editor.collectAsStateWithLifecycle()
-    val managementSheet = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val managementSheet = rememberExpandedModalSheetState()
     val usageSheet =
-        rememberModalBottomSheetState(
-            skipPartiallyExpanded = true,
+        rememberExpandedModalSheetState(
             confirmValueChange = { it != SheetValue.Hidden || !model.editor.value.busy },
         )
     val scope = rememberCoroutineScope()

@@ -31,20 +31,29 @@ object YarnUsageCalculator {
         if (!value.isFinite() || value < 0.0) return null
         val result =
             when (unit) {
-                YarnUsageUnit.METERS -> value
-                YarnUsageUnit.YARDS -> MeasurementCalculator.convert(value, MeasurementUnit.YARD, MeasurementUnit.METER)
-                YarnUsageUnit.GRAMS ->
+                YarnUsageUnit.METERS -> {
+                    value
+                }
+
+                YarnUsageUnit.YARDS -> {
+                    MeasurementCalculator.convert(value, MeasurementUnit.YARD, MeasurementUnit.METER)
+                }
+
+                YarnUsageUnit.GRAMS -> {
                     if (validConversion(metersPerSkein, gramsPerSkein)) {
                         value / requireNotNull(gramsPerSkein) * requireNotNull(metersPerSkein)
                     } else {
                         null
                     }
-                YarnUsageUnit.SKEINS ->
+                }
+
+                YarnUsageUnit.SKEINS -> {
                     if (validConversion(metersPerSkein, gramsPerSkein)) {
                         value * requireNotNull(metersPerSkein)
                     } else {
                         null
                     }
+                }
             }
         return result?.takeIf { it.isFinite() && (it > 0.0 || value == 0.0) }
     }
@@ -58,20 +67,29 @@ object YarnUsageCalculator {
         if (!value.isFinite() || value < 0.0) return null
         val result =
             when (unit) {
-                YarnUsageUnit.METERS -> value
-                YarnUsageUnit.YARDS -> MeasurementCalculator.convert(value, MeasurementUnit.METER, MeasurementUnit.YARD)
-                YarnUsageUnit.GRAMS ->
+                YarnUsageUnit.METERS -> {
+                    value
+                }
+
+                YarnUsageUnit.YARDS -> {
+                    MeasurementCalculator.convert(value, MeasurementUnit.METER, MeasurementUnit.YARD)
+                }
+
+                YarnUsageUnit.GRAMS -> {
                     if (validConversion(metersPerSkein, gramsPerSkein)) {
                         value / requireNotNull(metersPerSkein) * requireNotNull(gramsPerSkein)
                     } else {
                         null
                     }
-                YarnUsageUnit.SKEINS ->
+                }
+
+                YarnUsageUnit.SKEINS -> {
                     if (validConversion(metersPerSkein, gramsPerSkein)) {
                         value / requireNotNull(metersPerSkein)
                     } else {
                         null
                     }
+                }
             }
         return result?.takeIf { it.isFinite() && (it > 0.0 || value == 0.0) }
     }

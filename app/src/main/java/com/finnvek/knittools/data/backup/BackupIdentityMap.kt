@@ -118,13 +118,31 @@ internal class BackupIdentityMap(
             row["documentKey"] =
                 JsonPrimitive(
                     when {
-                        saved != null ->
-                            ids["saved_patterns"]?.get(saved.groupValues[1].toLong())?.let { "saved:$it:v1" }
+                        saved != null -> {
+                            saved.groupValues[1]
+                                .toLongOrNull()
+                                ?.let {
+                                    ids["saved_patterns"]?.get(
+                                        it,
+                                    )
+                                }?.let { "saved:$it:v1" }
                                 ?: "$archiveKeyPrefix$key"
-                        legacy != null ->
-                            ids["counter_projects"]?.get(legacy.groupValues[1].toLong())?.let { "legacy-project:$it" }
+                        }
+
+                        legacy != null -> {
+                            legacy.groupValues[1]
+                                .toLongOrNull()
+                                ?.let {
+                                    ids["counter_projects"]?.get(
+                                        it,
+                                    )
+                                }?.let { "legacy-project:$it" }
                                 ?: "$archiveKeyPrefix$key"
-                        else -> key
+                        }
+
+                        else -> {
+                            key
+                        }
                     },
                 )
         }

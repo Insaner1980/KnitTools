@@ -499,18 +499,17 @@ class NotesEditorViewModelTest {
             vm.onNotesChanged("Recoverable inline draft")
             vm.onNotesChanged(old)
             runCurrent()
-            assertNull(handle.get<String>("notesDraftFileId"))
+            assertEquals(requireNotNull(oldId).toString(), handle.get<String>("notesDraftFileId"))
             assertEquals("Recoverable inline draft", handle.get<String>("notesDraft"))
 
             vm.discardChanges()
             vm.onNotesChanged(newer)
             runCurrent()
-            assertNull(handle.get<String>("notesDraftFileId"))
+            val newId = UUID.fromString(handle.get<String>("notesDraftFileId"))
+            assertTrue(oldId != newId)
             requireNotNull(finishOldWrite).invoke()
             runCurrent()
 
-            val newId = UUID.fromString(handle.get<String>("notesDraftFileId"))
-            assertTrue(oldId != newId)
             assertEquals(mapOf(newId to NotesDraft(newer, "Base")), files)
             assertEquals(newId.toString(), handle.get<String>("notesDraftFileId"))
         }

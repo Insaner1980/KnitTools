@@ -62,52 +62,10 @@
     <string name="project_target_error">Angiv et tal fra 1 til %1$s.</string>
     <!-- Kääntäjälle: projektin luontilomake. Aloitusmäärä tarkoittaa jo tehtyä työtä; tavoite on vapaaehtoinen. Säilytä paikkamerkit %1$s muuttumattomina. -->
     <string name="project_create_preview_a11y">Forhåndsvisning: %1$s</string>
-    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
-    <string name="tip_got_it">Forstået</string>
-    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
-    <string name="tip_first_row_rows">Tryk på +, når du er færdig med en række. Du kan også trykke på det store tal.</string>
-    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
-    <string name="tip_first_row_rounds">Tryk på +, når du er færdig med en runde. Du kan også trykke på det store tal.</string>
-    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
-    <string name="tip_first_row_repeats">Tryk på +, når du er færdig med en gentagelse. Du kan også trykke på det store tal.</string>
-    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
-    <string name="tip_first_row_custom">Tryk på +, hver gang du er færdig med en. Du kan også trykke på det store tal.</string>
-    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
-    <string name="tip_undo">Gemt. Trykkede du forkert? Fortryd annullerer den seneste ændring.</string>
-    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
-    <string name="tip_step_size">Tæller du mere end én ad gangen? Her ændrer du, hvor meget hvert tryk lægger til eller trækker fra.</string>
-    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
-    <string name="tip_work_session">Vil du vide, hvor lang tid projektet tager? Start en arbejdssession fra denne menu. Tiden starter aldrig af sig selv.</string>
-    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
-    <string name="tip_overview_intro">Her er hele dit projekt: mønster, garn, noter og billeder. Fortsæt fører dig tilbage til tælleren.</string>
-    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
-    <string name="tip_pattern_tile">Vedhæft dit mønster, så du har det sammen med projektet.</string>
-    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
-    <string name="tip_reading_line">Slå Følg hovedtælleren til, så flytter læselinjen sig, når du tæller.</string>
-    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
-    <string name="tip_keep_screen_on">Bliver skærmen mørk, mens du arbejder? Hold den tændt, mens du tæller.</string>
-    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
-    <string name="tip_keep_screen_on_action">Hold skærmen tændt</string>
-    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
-    <string name="tip_target_reached">Målet er nået. Tæl videre, eller markér projektet som færdigt i menuen på projektsiden.</string>
-    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
-    <string name="tip_first_session_saved">Din første arbejdssession er gemt. Her er den samlede tid for projektet.</string>
-    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
-    <string name="tip_backup">Dine projekter findes kun på denne telefon. Lav en sikkerhedskopi, så du har dem, hvis du skifter telefon.</string>
-    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
-    <string name="tip_backup_action">Sikkerhedskopiér</string>
-    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
-    <string name="tip_folders">Mange projekter? Sortér dem i mapper via titlen.</string>
-    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
-    <string name="tip_widget">Tæl fra din startskærm uden at åbne appen.</string>
-    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
-    <string name="tip_widget_action">Tilføj widget</string>
-    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
-    <string name="tip_tools_intro">Beregnerne virker offline. Eksempelværdierne viser, hvad du skal indtaste.</string>
-    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
-    <string name="settings_show_tips_again">Vis tips igen</string>
-    <!-- Kääntäjälle: lyhyt ohjevihje tai sen toiminto. Käytä käyttöliittymän vakiintuneita painikenimiä. -->
-    <string name="settings_tips_reset_done">Tips bliver vist igen.</string>
+    <!-- Kokeilun päättymismuistutuksen kuittaava painike. -->
+    <string name="trial_notice_acknowledge">Forstået</string>
+    <!-- Avaa varmuuskopioinnin ilmoitusriviltä. -->
+    <string name="projects_backup_notice_action">Sikkerhedskopiér</string>
     <!-- Kääntäjälle: projektin neljän kohdan aloituslista tai sen valmistumisilmoitus. -->
     <string name="project_setup_pattern">Vedhæft dit mønster</string>
     <!-- Kääntäjälle: projektin neljän kohdan aloituslista tai sen valmistumisilmoitus. -->
@@ -249,7 +207,7 @@
     <!-- Kääntäjälle: paikallinen käyttöopas. Toimintojen ja välilehtien nimet vastaavat muuta käyttöliittymää. -->
     <string name="guide_tools_folders_title">Mapper</string>
     <!-- Kääntäjälle: paikallinen käyttöopas. Toimintojen ja välilehtien nimet vastaavat muuta käyttöliittymää. -->
-    <string name="guide_tools_folders_body">Gruppér projekter i mapper via titlen Projekter. Ét igangværende projekt ad gangen er gratis, og færdige projekter tæller ikke med.</string>
+    <string name="guide_tools_folders_body">Gruppér projekter i mapper via titlen Projekter.</string>
     <!-- Kääntäjälle: paikallinen käyttöopas. Toimintojen ja välilehtien nimet vastaavat muuta käyttöliittymää. -->
     <string name="guide_tools_backup_title">Sikkerhedskopiering</string>
     <!-- Kääntäjälle: paikallinen käyttöopas. Toimintojen ja välilehtien nimet vastaavat muuta käyttöliittymää. -->
@@ -661,8 +619,16 @@
     <string name="journey_pdf_failed">PDF-opskriften kunne ikke importeres. Den tidligere vedhæftning er bevaret.</string>
     <!-- Aloituspolku: Luo ensimmäinen projekti -->
     <string name="journey_first_project">Opret dit første projekt</string>
-    <!-- Aloituspolun jälkeen: ohjelaattaan ankkuroitu vihje vain luodulle projektille, johon käyttäjä liitti PDF-ohjeen. -->
-    <string name="journey_open_pattern_tip">Åbn opskriften, du har knyttet til projektet, her.</string>
     <!-- Vahvistetun Pro-oston jälkeen näytettävä kuittaus sovellukseen siirryttäessä. -->
     <string name="journey_pro_active">Pro er aktiveret.</string>
+    <!-- Projektien paikallisesta tallennuksesta kertova ilmoitus. -->
+    <string name="projects_backup_notice">Dine projekter findes kun på denne telefon.</string>
+    <!-- PDF-lukijan ilmoitus laskuria seuraavasta lukulinjasta. -->
+    <string name="reading_line_notice">Læselinjen kan følge tælleren.</string>
+    <!-- Ohittaa ilmoituksen pysyvästi. -->
+    <string name="contextual_notice_skip">Spring over</string>
+    <!-- Ottaa käyttöön laskuria seuraavan lukulinjan. -->
+    <string name="reading_line_notice_enable">Slå til</string>
+    <!-- Avaa valmistumisvahvistuksen tavoitteen täyttäneelle projektille. -->
+    <string name="counter_mark_complete">Markér som færdig</string>
 </resources>

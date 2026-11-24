@@ -113,6 +113,26 @@ class ProjectYarnUsageRepositoryTest {
     }
 
     @Test
+    fun `shared card usage without a note appears on only one note`() {
+        val sharedCard = card(id = 3, name = "Shared wool")
+        val cardUsage = usage(id = 100, cardId = 3)
+        val snapshot =
+            relations(
+                notes =
+                    listOf(
+                        resolvedNote(4, "First", 10, sharedCard),
+                        resolvedNote(5, "Second", 20, sharedCard),
+                    ),
+                cards = listOf(sharedCard),
+                usages = listOf(resolvedUsage(cardUsage, sharedCard)),
+            )
+
+        val items = snapshot.items()
+
+        assertEquals(1, items.count { it.usage?.id == 100L })
+    }
+
+    @Test
     fun `explicit note usage takes precedence over separately tracked card usage`() {
         val sharedCard = card(id = 3, name = "Wool")
         val noteUsage = usage(id = 100, noteId = 4)

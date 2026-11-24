@@ -49,6 +49,38 @@ class PatternAnnotationEditingTest {
     }
 
     @Test
+    fun `scaling near the page edge keeps the shape proportions and stays on the page`() {
+        val nearEdge =
+            shape(id = 5L, zIndex = 1L).copy(
+                payload =
+                    ShapePayload(
+                        start = NormalizedPatternPoint(0.7f, 0.4f),
+                        end = NormalizedPatternPoint(0.9f, 0.6f),
+                        strokeArgb = 0xFF000000.toInt(),
+                        strokeWidth = 2f,
+                    ),
+            )
+
+        val scaled = scalePatternAnnotation(nearEdge, scale = 2f).payload as ShapePayload
+
+        // 0,2 leveä neliö kasvaa 0,4:ään ja siirtyy kokonaan sivulle eikä litisty reunaa vasten.
+        assertEquals(0.4f, scaled.end.x - scaled.start.x, 0.0001f)
+        assertEquals(0.4f, scaled.end.y - scaled.start.y, 0.0001f)
+        assertEquals(1f, scaled.end.x, 0.0001f)
+        assertEquals(0.3f, scaled.start.y, 0.0001f)
+    }
+
+    @Test
+    fun `scaling larger than the page is limited to the page size`() {
+        val scaled = scalePatternAnnotation(shape(id = 6L, zIndex = 1L), scale = 10f).payload as ShapePayload
+
+        assertEquals(0f, scaled.start.x, 0.0001f)
+        assertEquals(1f, scaled.end.x, 0.0001f)
+        assertEquals(0f, scaled.start.y, 0.0001f)
+        assertEquals(1f, scaled.end.y, 0.0001f)
+    }
+
+    @Test
     fun `dragging a text box to the page edge preserves its size text and colors`() {
         val payload =
             TextBoxPayload(

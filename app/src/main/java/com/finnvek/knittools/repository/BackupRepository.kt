@@ -2,8 +2,6 @@ package com.finnvek.knittools.repository
 
 import android.content.Context
 import android.net.Uri
-import android.provider.DocumentsContract
-import android.provider.OpenableColumns
 import androidx.core.net.toUri
 import androidx.room.Room
 import androidx.room.withTransaction
@@ -27,6 +25,7 @@ import com.finnvek.knittools.data.local.KnitToolsDatabase
 import com.finnvek.knittools.data.local.PatternAnnotationSchemaConstraints
 import com.finnvek.knittools.data.local.ProjectDocumentSchemaConstraints
 import com.finnvek.knittools.data.storage.AppFileStorage
+import com.finnvek.knittools.data.storage.IncompleteDestination
 import com.finnvek.knittools.data.storage.NotesDraftStorage
 import com.finnvek.knittools.di.ApplicationScope
 import com.finnvek.knittools.di.IoDispatcher
@@ -86,7 +85,7 @@ class BackupRepository
                                 buildLocalArchive(directory, externalFiles, check)
                             }
                         }
-                    val newlyCreatedDestination = isEmptyDocument(destination)
+                    val newlyCreatedDestination = IncompleteDestination.isEmpty(context, destination)
                     try {
                         operationResult(BackupError.WRITE) {
                             providerIo.write(archive, destination, BackupFormat.MAX_TOTAL, check)
@@ -95,7 +94,7 @@ class BackupRepository
                         // Juuri tätä vientiä varten luotu tyhjä dokumentti poistetaan, jottei keskeneräinen
                         // tiedosto näytä oikealta varmuuskopiolta. Valmiiksi olemassa olevaan ei kosketa.
                         if (newlyCreatedDestination) {
-                            withContext(NonCancellable) { deleteIncompleteDocument(destination) }
+                            withContext(NonCancellable) { IncompleteDestination.deleteQuietly(context, destination) }
                         }
                         throw failure
                     }
@@ -108,24 +107,6 @@ class BackupRepository
                     }
                 }
             }
-
-        private fun isEmptyDocument(destination: Uri): Boolean =
-            destination.scheme == "content" &&
-                runCatching {
-                    context.contentResolver
-                        .query(destination, arrayOf(OpenableColumns.SIZE), null, null, null)
-                        ?.use { cursor ->
-                            cursor.moveToFirst() && !cursor.isNull(0) && cursor.getLong(0) == 0L
-                        } == true
-                }.getOrDefault(false)
-
-        private fun deleteIncompleteDocument(destination: Uri) {
-            try {
-                DocumentsContract.deleteDocument(context.contentResolver, destination)
-            } catch (_: Exception) {
-                // Kaikki palveluntarjoajat eivät salli poistoa; virheviesti ohjaa poistamaan tiedoston itse.
-            }
-        }
 
         suspend fun prepare(
             source: Uri,

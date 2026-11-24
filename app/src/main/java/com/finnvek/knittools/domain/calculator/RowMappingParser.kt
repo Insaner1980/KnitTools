@@ -21,9 +21,15 @@ data class RowMarker(
 enum class ReadingLineResolutionKind {
     EXACT_MARKER,
     SAME_PAGE_INTERPOLATION,
+    CROSS_PAGE_INTERPOLATION,
     ROW_DELTA_FALLBACK,
     UNCHANGED,
     AMBIGUOUS_FALLBACK,
+    ;
+
+    /** Sijainti tuli käyttäjän merkitsemistä riveistä eikä pelkästä rivimuutoksesta. */
+    val isCalibrated: Boolean
+        get() = this == EXACT_MARKER || this == SAME_PAGE_INTERPOLATION || this == CROSS_PAGE_INTERPOLATION
 }
 
 data class ReadingLineLocationResolution(
@@ -130,6 +136,21 @@ fun resolveReadingLineLocation(
         )
     }
 
+    val crossPage =
+        if (exactMatch.ambiguous || interpolationCandidates.isNotEmpty()) {
+            null
+        } else {
+            validMarkers.crossPageInterpolation(newRow)
+        }
+    if (crossPage != null) {
+        return resolvedLocation(
+            page = crossPage.page,
+            yFraction = crossPage.yFraction,
+            kind = ReadingLineResolutionKind.CROSS_PAGE_INTERPOLATION,
+            currentPage = currentPage,
+        )
+    }
+
     return fallbackLocation(
         previousRow = previousRow,
         newRow = newRow,
@@ -166,6 +187,26 @@ private fun List<RowMarker>.interpolationCandidates(targetRow: Int): List<Interp
     groupBy(RowMarker::page).mapNotNull { (page, pageMarkers) ->
         interpolationCandidate(page, pageMarkers, targetRow)
     }
+
+/**
+ * Kaavio voi jatkua sivulta seuraavalle, jolloin kalibroinnin ääripäät ovat eri sivuilla.
+ * Sivut käsitellään peräkkäisinä yhtä korkeina alueina (sivu + y), ja rivi sijoitetaan niiden väliin.
+ * Käytetään vain, kun lähimmät ala- ja yläreunan merkit ovat yksiselitteiset ja eteenpäin eteneviä.
+ */
+private fun List<RowMarker>.crossPageInterpolation(targetRow: Int): InterpolationCandidate? {
+    val lowerRow = filter { it.row < targetRow }.maxOfOrNull(RowMarker::row) ?: return null
+    val upperRow = filter { it.row > targetRow }.minOfOrNull(RowMarker::row) ?: return null
+    val lower = singleOrNull { it.row == lowerRow } ?: return null
+    val upper = singleOrNull { it.row == upperRow } ?: return null
+    if (upper.page <= lower.page) return null
+    val start = lower.page + lower.yPosition.toDouble()
+    val end = upper.page + upper.yPosition.toDouble()
+    if (end <= start) return null
+    val progress = (targetRow - lower.row).toDouble() / (upper.row - lower.row).toDouble()
+    val position = start + (end - start) * progress
+    val page = position.toInt().coerceIn(lower.page, upper.page)
+    return InterpolationCandidate(page = page, yFraction = (position - page).toFloat().coerceIn(0f, 1f))
+}
 
 private fun Int.coerceToPageCount(pageCount: Int?): Int = pageCount?.let { coerceIn(0, it - 1) } ?: coerceAtLeast(0)
 

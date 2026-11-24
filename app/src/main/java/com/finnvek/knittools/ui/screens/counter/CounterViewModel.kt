@@ -28,7 +28,6 @@ import com.finnvek.knittools.domain.calculator.CounterState
 import com.finnvek.knittools.domain.calculator.CounterValueFormatter
 import com.finnvek.knittools.domain.calculator.MAX_MAIN_COUNTER_STEP_SIZE
 import com.finnvek.knittools.domain.calculator.MAX_TARGET_ROWS
-import com.finnvek.knittools.domain.calculator.ReadingLineResolutionKind
 import com.finnvek.knittools.domain.calculator.RepeatSectionLogic
 import com.finnvek.knittools.domain.calculator.RowMarker
 import com.finnvek.knittools.domain.calculator.parseMapping
@@ -3116,9 +3115,7 @@ class CounterViewModel
                 if (enabled && resolution != null) {
                     _viewerEvents.emit(
                         CounterViewerEvent.ReadingLineFollowingResumed(
-                            calibrated =
-                                resolution.kind == ReadingLineResolutionKind.EXACT_MARKER ||
-                                    resolution.kind == ReadingLineResolutionKind.SAME_PAGE_INTERPOLATION,
+                            calibrated = resolution.kind.isCalibrated,
                         ),
                     )
                 }

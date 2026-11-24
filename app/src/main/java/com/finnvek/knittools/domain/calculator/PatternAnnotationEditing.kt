@@ -51,16 +51,38 @@ fun scalePatternAnnotation(
     scale: Float,
 ): PatternAnnotation {
     val bounds = patternAnnotationBounds(annotation) ?: return annotation
-    val safeScale = scale.takeIf { it.isFinite() }?.coerceIn(MIN_SCALE, MAX_SCALE) ?: 1f
+    val width = bounds.right - bounds.left
+    val height = bounds.bottom - bounds.top
+    // Koko merkintä skaalataan yhtenäisesti: kerroin rajataan niin, että se mahtuu sivulle,
+    // ja sivun yli menevä osa siirretään takaisin sen sijaan, että yksittäiset pisteet litistyisivät reunaan.
+    val fitScale =
+        minOf(
+            if (width > 0f) 1f / width else MAX_SCALE,
+            if (height > 0f) 1f / height else MAX_SCALE,
+        )
+    val safeScale =
+        (scale.takeIf { it.isFinite() }?.coerceIn(MIN_SCALE, MAX_SCALE) ?: 1f).coerceAtMost(fitScale)
     val centerX = (bounds.left + bounds.right) / 2f
     val centerY = (bounds.top + bounds.bottom) / 2f
+    val shiftX = pageFitShift(centerX - width * safeScale / 2f, centerX + width * safeScale / 2f)
+    val shiftY = pageFitShift(centerY - height * safeScale / 2f, centerY + height * safeScale / 2f)
     return annotation.mapGeometry { point ->
         point.copy(
-            x = (centerX + (point.x - centerX) * safeScale).coerceIn(0f, 1f),
-            y = (centerY + (point.y - centerY) * safeScale).coerceIn(0f, 1f),
+            x = (centerX + (point.x - centerX) * safeScale + shiftX).coerceIn(0f, 1f),
+            y = (centerY + (point.y - centerY) * safeScale + shiftY).coerceIn(0f, 1f),
         )
     }
 }
+
+private fun pageFitShift(
+    start: Float,
+    end: Float,
+): Float =
+    when {
+        start < 0f -> -start
+        end > 1f -> 1f - end
+        else -> 0f
+    }
 
 private fun PatternAnnotation.hitTest(
     point: NormalizedPatternPoint,

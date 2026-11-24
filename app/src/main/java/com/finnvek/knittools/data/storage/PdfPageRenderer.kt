@@ -63,8 +63,9 @@ class PdfPageRenderer(
         targetWidth: Int,
         maxBitmapDimension: Int = PDF_RENDER_MAX_BITMAP_DIMENSION,
     ): Bitmap {
-        val safeIndex = pageIndex.coerceIn(0, pageCount.coerceAtLeast(1) - 1)
-        renderer.openPage(safeIndex).use { page ->
+        // Sivua ei vaihdeta hiljaa: merkinnät ja rivimäppäys viittaavat pyydettyyn sivunumeroon.
+        require(pageIndex in 0 until pageCount) { "PDF page index is outside the document" }
+        renderer.openPage(pageIndex).use { page ->
             val (width, height) =
                 calculatePdfRenderBitmapSize(
                     pageWidth = page.width,

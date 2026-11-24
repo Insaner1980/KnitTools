@@ -182,10 +182,10 @@ class CounterUiStateReducersTest {
     }
 
     @Test
-    fun `observed external row change clears stale undo value`() {
+    fun `observed external row change replaces local counter state`() {
         val result =
             CounterUiState(
-                counter = CounterState(count = 10, previousCount = 8, stepSize = 2),
+                counter = CounterState(count = 10, stepSize = 2),
             ).withObservedProject(
                 CounterProject(id = 2L, name = "Sukat", count = 11, stepSize = 1),
             )
@@ -194,15 +194,15 @@ class CounterUiStateReducersTest {
     }
 
     @Test
-    fun `observed self echo keeps local undo value`() {
+    fun `observed self echo keeps local counter state`() {
         val result =
             CounterUiState(
-                counter = CounterState(count = 10, previousCount = 8, stepSize = 2),
+                counter = CounterState(count = 10, stepSize = 2),
             ).withObservedProject(
                 CounterProject(id = 2L, name = "Sukat", count = 10, stepSize = 2),
             )
 
-        assertEquals(8, result.counter.previousCount)
+        assertEquals(CounterState(count = 10, stepSize = 2), result.counter)
     }
 
     @Test
@@ -264,10 +264,10 @@ class CounterUiStateReducersTest {
         val staleReminder = RowReminder(projectId = 2L, targetRow = 5, message = "Marker")
         val result =
             CounterUiState(
-                counter = CounterState(count = 5, previousCount = 4),
+                counter = CounterState(count = 5),
                 reminders = listOf(staleReminder),
                 activeAlert = staleReminder,
-            ).withCounterChange(CounterState(count = 0, previousCount = 5), resetStitch = false)
+            ).withCounterChange(CounterState(count = 0), resetStitch = false)
 
         assertEquals(0, result.counter.count)
         assertNull(result.activeAlert)
@@ -302,7 +302,7 @@ class CounterUiStateReducersTest {
                 activeAlert = reminder,
             ).withDismissedReminder(7L)
 
-        val nextRepeat = dismissed.withCounterChange(CounterState(count = 16, previousCount = 8), resetStitch = false)
+        val nextRepeat = dismissed.withCounterChange(CounterState(count = 16), resetStitch = false)
 
         assertEquals(reminder, nextRepeat.activeAlert)
     }

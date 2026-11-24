@@ -539,6 +539,13 @@ class CounterRepository
             creationAuthorized: Boolean = false,
         ): ProjectNotesSaveResult =
             try {
+                // Oikeus ratkaistaan ennen transaktiota ja vain ensimmäiselle muistiinpanolle, jotta
+                // automaattinen tallennus ei odota Pro-tilaa turhaan.
+                val notesEntitled =
+                    creationAuthorized ||
+                        requestedNotes.isBlank() ||
+                        dao.getProject(id)?.let { it.notesCreated || it.notes.isNotBlank() } != false ||
+                        hasEntitlementAfterInitialLoad(ProFeature.NOTES)
                 transactionRunner.run {
                     val current =
                         dao.getProject(id)?.toDomain()
@@ -546,8 +553,7 @@ class CounterRepository
                     val canCreateNotes =
                         current.notesCreated ||
                             current.notes.isNotBlank() ||
-                            creationAuthorized ||
-                            proManager?.hasFeature(ProFeature.NOTES) == true
+                            notesEntitled
                     if (!canCreateNotes && requestedNotes.isNotBlank()) {
                         return@run ProjectNotesSaveResult.FeatureUnavailable
                     }
@@ -577,18 +583,20 @@ class CounterRepository
         suspend fun updateProjectSecondaryCount(
             id: Long,
             secondaryCount: Int,
-        ): Boolean =
-            transactionRunner.run {
+        ): Boolean {
+            val secondaryEntitled =
+                dao.getProject(id)?.secondaryCounterUsed != false ||
+                    hasEntitlementAfterInitialLoad(ProFeature.SECONDARY_COUNTER)
+            return transactionRunner.run {
                 val project = dao.getProject(id)?.toDomain() ?: return@run false
                 if (project.isCompleted || secondaryCount < 0) return@run false
-                val canUseSecondaryCounter =
-                    project.secondaryCounterUsed ||
-                        proManager?.hasFeature(ProFeature.SECONDARY_COUNTER) != false
+                val canUseSecondaryCounter = project.secondaryCounterUsed || secondaryEntitled
                 if (!canUseSecondaryCounter) return@run false
 
                 dao.updateSecondaryCount(id, secondaryCount, System.currentTimeMillis())
                 true
             }
+        }
 
         suspend fun updateProjectStitchCount(
             id: Long,
@@ -1178,8 +1186,12 @@ class CounterRepository
          */
         private suspend fun resolveAdditionalProjectAccess(callerAllowsAdditionalProjects: Boolean): Boolean {
             if (!callerAllowsAdditionalProjects) return false
-            return proManager?.hasFeatureAfterInitialLoad(ProFeature.UNLIMITED_PROJECTS) ?: true
+            return hasEntitlementAfterInitialLoad(ProFeature.UNLIMITED_PROJECTS)
         }
+
+        // Ilman ProManageria (testit, esikatselu) portit ovat auki kaikille ominaisuuksille samalla tavalla.
+        private suspend fun hasEntitlementAfterInitialLoad(feature: ProFeature): Boolean =
+            proManager?.hasFeatureAfterInitialLoad(feature) ?: true
 
         private suspend fun canAddActiveProject(allowsAdditionalProjects: Boolean): Boolean =
             allowsAdditionalProjects || dao.getActiveProjectCount() == 0
@@ -1402,18 +1414,18 @@ class CounterRepository
 
         suspend fun activeSessionDurationSeconds(session: ActiveWorkSession): Long =
             withContext(ioDispatcher) {
-                when (val evaluation = evaluateActiveSessionTime(session.timingAnchors, sessionTimeSource.snapshot())) {
-                    is ActiveSessionTimeEvaluation.Trusted -> {
-                        evaluation.totalDurationSeconds
+                // Tarkistettavan istunnon kesto on tarkistettava kesto, vaikka kello olisi taas luotettava.
+                val evaluation =
+                    if (session.needsRecoveryReview) {
+                        null
+                    } else {
+                        evaluateActiveSessionTime(session.timingAnchors, sessionTimeSource.snapshot())
                     }
-
-                    is ActiveSessionTimeEvaluation.NeedsReview -> {
-                        saturatingAdd(
-                            session.timingAnchors.checkpointedDurationSeconds,
-                            session.recoverySuggestedDurationSeconds ?: 0L,
-                        )
-                    }
-                }
+                (evaluation as? ActiveSessionTimeEvaluation.Trusted)?.totalDurationSeconds
+                    ?: saturatingAdd(
+                        session.timingAnchors.checkpointedDurationSeconds,
+                        session.recoverySuggestedDurationSeconds ?: 0L,
+                    )
             }
 
         suspend fun activeSessionNeedsRecovery(session: ActiveWorkSession): Boolean =

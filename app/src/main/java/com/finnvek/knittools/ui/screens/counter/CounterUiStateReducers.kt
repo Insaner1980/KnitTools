@@ -67,12 +67,7 @@ internal fun CounterUiState.withStartedProject(project: CounterProject): Counter
     )
 
 internal fun CounterUiState.withObservedProject(project: CounterProject): CounterUiState {
-    val observedCounter =
-        if (project.count == counter.count) {
-            counter.copy(count = project.count, stepSize = project.stepSize)
-        } else {
-            CounterState(count = project.count, stepSize = project.stepSize)
-        }
+    val observedCounter = CounterState(count = project.count, stepSize = project.stepSize)
     val projectReminders = reminders.filter { it.projectId == project.id }
     val dismissal = dismissedReminderTrigger?.takeIf { it.row == project.count }
     return copy(

@@ -9,9 +9,9 @@ fun parseMainCounterStepSize(text: String): Int? =
         ?.toIntOrNull()
         ?.takeIf { it in 1..MAX_MAIN_COUNTER_STEP_SIZE }
 
+// Kumoaminen kulkee tallennetun laskurihistorian kautta (CounterRepository), ei muistinvaraisen tilan.
 data class CounterState(
     val count: Int = 0,
-    val previousCount: Int? = null,
     val stepSize: Int = 1,
 )
 
@@ -23,42 +23,17 @@ object CounterLogic {
             (currentCount.toLong() + stepSize.toLong())
                 .coerceAtMost(Int.MAX_VALUE.toLong())
                 .toInt()
-        return applyCountChange(state, currentCount, newCount, stepSize)
+        return state.copy(count = newCount, stepSize = stepSize)
     }
 
     fun decrement(state: CounterState): CounterState {
         val currentCount = state.count.coerceAtLeast(0)
         val stepSize = state.stepSize.coerceAtLeast(1)
         val newCount = (currentCount.toLong() - stepSize.toLong()).coerceAtLeast(0L).toInt()
-        return applyCountChange(state, currentCount, newCount, stepSize)
+        return state.copy(count = newCount, stepSize = stepSize)
     }
 
-    /** Rajaan osunut muutos ei muuta arvoa, joten se ei myöskään korvaa kumottavaa edellistä arvoa. */
-    private fun applyCountChange(
-        state: CounterState,
-        currentCount: Int,
-        newCount: Int,
-        stepSize: Int,
-    ): CounterState =
-        if (newCount == currentCount) {
-            state.copy(count = currentCount, stepSize = stepSize)
-        } else {
-            state.copy(
-                count = newCount,
-                previousCount = currentCount,
-                stepSize = stepSize,
-            )
-        }
-
-    fun undo(state: CounterState): CounterState =
-        if (state.previousCount != null) {
-            state.copy(count = state.previousCount, previousCount = null)
-        } else {
-            state
-        }
-
-    fun reset(state: CounterState): CounterState =
-        if (state.count == 0) state else state.copy(count = 0, previousCount = state.count)
+    fun reset(state: CounterState): CounterState = state.copy(count = 0)
 
     fun setStepSize(
         state: CounterState,

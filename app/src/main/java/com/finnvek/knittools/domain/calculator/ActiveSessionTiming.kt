@@ -19,17 +19,20 @@ fun evaluateActiveSessionTime(
     }
     val storedBootCount = anchors.bootCount
     val currentBootCount = now.bootCount
-    val bootCountRecoveryReason = bootCountRecoveryReason(storedBootCount, currentBootCount)
-    if (bootCountRecoveryReason != null) {
+    if ((storedBootCount ?: 0L) < 0L || (currentBootCount ?: 0L) < 0L) {
         return ActiveSessionTimeEvaluation.NeedsReview(
-            reason = bootCountRecoveryReason,
+            reason = ActiveSessionRecoveryReason.INVALID_ANCHORS,
             suggestedPendingDurationSeconds = null,
         )
     }
 
-    checkNotNull(storedBootCount)
-    checkNotNull(currentBootCount)
-    if (storedBootCount != currentBootCount) {
+    val rebooted =
+        if (storedBootCount != null && currentBootCount != null) {
+            storedBootCount != currentBootCount
+        } else {
+            isLikelyRebootWithoutBootIdentity(anchors, now)
+        }
+    if (rebooted) {
         return ActiveSessionTimeEvaluation.NeedsReview(
             reason = ActiveSessionRecoveryReason.REBOOTED,
             suggestedPendingDurationSeconds =
@@ -71,15 +74,23 @@ private fun hasInvalidTimingAnchors(anchors: ActiveSessionTimingAnchors): Boolea
         anchors.reviewedDurationBaselineSeconds > anchors.checkpointedDurationSeconds,
     ).any { it }
 
-private fun bootCountRecoveryReason(
-    storedBootCount: Long?,
-    currentBootCount: Long?,
-): ActiveSessionRecoveryReason? =
-    when {
-        storedBootCount == null || currentBootCount == null -> ActiveSessionRecoveryReason.BOOT_IDENTITY_UNAVAILABLE
-        storedBootCount < 0L || currentBootCount < 0L -> ActiveSessionRecoveryReason.INVALID_ANCHORS
-        else -> null
-    }
+/**
+ * Kaikki laitteet eivät ylläpidä BOOT_COUNT-arvoa, ja luku voi epäonnistua hetkellisesti. Ilman sitä
+ * uudelleenkäynnistyksen tunnistaa nollautuneesta elapsedRealtimesta tai siitä, että seinäkello on
+ * edennyt selvästi käynnissäoloaikaa enemmän (laite oli välillä sammuksissa). Varovainen virhesuunta:
+ * saman käynnistyksen iso seinäkellon hyppy eteenpäin pyytää tarkistuksen ehdotetulla kestolla.
+ */
+private fun isLikelyRebootWithoutBootIdentity(
+    anchors: ActiveSessionTimingAnchors,
+    now: SessionTimeSnapshot,
+): Boolean {
+    if (now.elapsedRealtimeMillis < anchors.segmentStartedElapsedRealtimeMillis) return true
+    val elapsedDelta = now.elapsedRealtimeMillis - anchors.segmentStartedElapsedRealtimeMillis
+    val wallDelta = now.wallClockMillis - anchors.segmentStartedAtWallMillis
+    return wallDelta - elapsedDelta > WALL_CLOCK_REBOOT_TOLERANCE_MILLIS
+}
+
+private const val WALL_CLOCK_REBOOT_TOLERANCE_MILLIS = 5L * 60L * 1_000L
 
 private fun credibleWallClockDurationSeconds(
     startedAtMillis: Long,

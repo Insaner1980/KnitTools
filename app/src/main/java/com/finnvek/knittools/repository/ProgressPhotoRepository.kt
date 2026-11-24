@@ -7,6 +7,7 @@ import com.finnvek.knittools.data.local.ProgressPhotoDao
 import com.finnvek.knittools.data.local.ProgressPhotoEntity
 import com.finnvek.knittools.data.local.distinctSqliteQueryChunks
 import com.finnvek.knittools.data.local.toDomain
+import com.finnvek.knittools.data.storage.PhotoAvailability
 import com.finnvek.knittools.data.storage.ProgressPhotoStorage
 import com.finnvek.knittools.di.IoDispatcher
 import com.finnvek.knittools.domain.model.ProgressPhoto
@@ -199,9 +200,21 @@ class ProgressPhotoRepository
                 photos.forEach { photo -> photo.isAvailableOrDelete() }
             }
 
-        private suspend fun ProgressPhotoEntity.isAvailableOrDelete(): Boolean {
-            if (storage.isPhotoAvailable(context, photoUri)) return true
-            dao.delete(id)
-            return false
-        }
+        // Rivi poistetaan vain, kun sovelluksen oma tiedosto puuttuu varmasti. Ohimenevästi
+        // lukukelvoton ulkoinen kuva piilotetaan, jotta se palaa näkyviin luvan palattua.
+        private suspend fun ProgressPhotoEntity.isAvailableOrDelete(): Boolean =
+            when (storage.photoAvailability(context, photoUri)) {
+                PhotoAvailability.Available -> {
+                    true
+                }
+
+                PhotoAvailability.Unreachable -> {
+                    false
+                }
+
+                PhotoAvailability.Missing -> {
+                    dao.delete(id)
+                    false
+                }
+            }
     }

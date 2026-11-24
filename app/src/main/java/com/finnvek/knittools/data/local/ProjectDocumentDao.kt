@@ -76,6 +76,13 @@ interface ProjectDocumentMutations {
     @Insert
     suspend fun insert(document: ProjectDocumentEntity): Long
 
+    // Kirjanmerkit kuuluvat projektin dokumenttiin (projectId + documentKey), joten ne poistuvat dokumentin mukana.
+    @Query("DELETE FROM pattern_bookmarks WHERE projectId = :projectId AND documentKey = :documentKey")
+    suspend fun deleteDocumentBookmarks(
+        projectId: Long,
+        documentKey: String,
+    )
+
     @Query(
         "UPDATE project_documents SET label = :label, updatedAt = :updatedAt WHERE id = :documentId AND projectId = :projectId",
     )

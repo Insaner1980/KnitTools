@@ -6,6 +6,7 @@ import com.finnvek.knittools.data.local.ImmediateDatabaseTransactionRunner
 import com.finnvek.knittools.data.local.ProgressPhotoDao
 import com.finnvek.knittools.data.local.ProgressPhotoEntity
 import com.finnvek.knittools.data.local.ProjectPhotoCount
+import com.finnvek.knittools.data.storage.PhotoAvailability
 import com.finnvek.knittools.data.storage.ProgressPhotoStorage
 import com.finnvek.knittools.domain.model.ProgressPhoto
 import io.mockk.coVerify
@@ -78,8 +79,8 @@ class ProgressPhotoRepositoryDomainApiTest {
                     ),
                 )
             val storage = mockk<ProgressPhotoStorage>(relaxed = true)
-            every { storage.isPhotoAvailable(context, "file:///available.jpg") } returns true
-            every { storage.isPhotoAvailable(context, "file:///missing.jpg") } returns false
+            every { storage.photoAvailability(context, "file:///available.jpg") } returns PhotoAvailability.Available
+            every { storage.photoAvailability(context, "file:///missing.jpg") } returns PhotoAvailability.Missing
             val repository =
                 ProgressPhotoRepository(
                     dao,
@@ -110,7 +111,7 @@ class ProgressPhotoRepositoryDomainApiTest {
                         ),
                 )
             val storage = mockk<ProgressPhotoStorage>(relaxed = true)
-            every { storage.isPhotoAvailable(context, "file:///photo.jpg") } returns true
+            every { storage.photoAvailability(context, "file:///photo.jpg") } returns PhotoAvailability.Available
             val repository =
                 ProgressPhotoRepository(
                     dao,
@@ -151,6 +152,38 @@ class ProgressPhotoRepositoryDomainApiTest {
 
             assertEquals(1, count)
             assertEquals(listOf(3L), fixture.dao.deletedIds)
+        }
+
+    @Test
+    fun `unreachable external photo is hidden but its row is kept`() =
+        runTest {
+            val externalUri = "content://other.app/photo.jpg"
+            val availableUri = "file:///available.jpg"
+            val dao =
+                FakeProgressPhotoDao(
+                    progressPhotos =
+                        listOf(
+                            ProgressPhotoEntity(id = 3L, projectId = 7L, photoUri = externalUri, rowNumber = 12),
+                            ProgressPhotoEntity(id = 4L, projectId = 7L, photoUri = availableUri, rowNumber = 13),
+                        ),
+                )
+            val storage = mockk<ProgressPhotoStorage>(relaxed = true)
+            every { storage.photoAvailability(context, externalUri) } returns PhotoAvailability.Unreachable
+            every { storage.photoAvailability(context, availableUri) } returns PhotoAvailability.Available
+            val repository =
+                ProgressPhotoRepository(
+                    dao,
+                    storage,
+                    context,
+                    UnconfinedTestDispatcher(testScheduler),
+                    transactionRunner = ImmediateDatabaseTransactionRunner,
+                )
+
+            val photos = repository.getPhotosForProject(7L).first()
+            repository.getAllPhotoCount().first()
+
+            assertEquals(listOf(4L), photos.map { it.id })
+            assertEquals(emptyList<Long>(), dao.deletedIds)
         }
 
     @Test
@@ -332,8 +365,8 @@ class ProgressPhotoRepositoryDomainApiTest {
                     ),
             )
         val storage = mockk<ProgressPhotoStorage>(relaxed = true)
-        every { storage.isPhotoAvailable(context, unavailableUri) } returns false
-        every { storage.isPhotoAvailable(context, availableUri) } returns true
+        every { storage.photoAvailability(context, unavailableUri) } returns PhotoAvailability.Missing
+        every { storage.photoAvailability(context, availableUri) } returns PhotoAvailability.Available
         return ProgressPhotoPruningFixture(
             dao = dao,
             repository =

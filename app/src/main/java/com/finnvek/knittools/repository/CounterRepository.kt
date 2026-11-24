@@ -2,6 +2,7 @@ package com.finnvek.knittools.repository
 
 import android.content.Context
 import android.database.sqlite.SQLiteConstraintException
+import androidx.annotation.VisibleForTesting
 import com.finnvek.knittools.data.local.ActiveSessionEntity
 import com.finnvek.knittools.data.local.CounterHistoryEntity
 import com.finnvek.knittools.data.local.CounterProjectDao
@@ -19,6 +20,7 @@ import com.finnvek.knittools.data.local.SessionEntity
 import com.finnvek.knittools.data.local.SessionProjectActivity
 import com.finnvek.knittools.data.local.toDomain
 import com.finnvek.knittools.data.local.toEntity
+import com.finnvek.knittools.data.storage.NotesDraftStorage
 import com.finnvek.knittools.data.storage.PatternDocumentStorage
 import com.finnvek.knittools.data.storage.ProgressPhotoStorage
 import com.finnvek.knittools.data.time.SessionTimeSource
@@ -1137,16 +1139,13 @@ class CounterRepository
                 ProjectReactivationResult.PersistenceFailure
             }
 
-        suspend fun deleteProject(id: Long) {
-            val cleanup =
-                transactionRunner.run {
-                    if (sessionDao.getActiveSession()?.projectId == id) return@run null
-                    val capturedCleanup = captureProjectCleanup(id) ?: return@run null
-                    yarnCardRepository.clearLinkedProject(id)
-                    dao.delete(id)
-                    capturedCleanup
-                }
-            cleanup?.let { cleanupProjectFiles(it) }
+        /**
+         * Testien siivouspolku. Kulkee samaa poistopolkua kuin käyttöliittymä, mutta ei hylkää
+         * aktiivista istuntoa ja välittää tietokantavirheet kutsujalle tulosarvon sijaan.
+         */
+        @VisibleForTesting
+        internal suspend fun deleteProject(id: Long) {
+            deleteProjectResolvingActiveSessionInternal(id, discardActiveSession = false, expectedSession = null)
         }
 
         suspend fun getProjectCount(): Int = dao.getProjectCount()
@@ -1782,6 +1781,7 @@ class CounterRepository
                 withContext(ioDispatcher) {
                     runCatching { photoStorage.deleteProjectPhotos(context, cleanup.projectId) }
                     runCatching { patternDocumentStorage.deleteProjectCaptureImages(context, cleanup.projectId) }
+                    runCatching { NotesDraftStorage.deleteProjectDrafts(context, cleanup.projectId) }
                 }
                 cleanup.patternUris.forEach { patternUri ->
                     runCatching { savedPatternRepository.deleteLocalPatternFileIfUnused(patternUri) }

@@ -612,6 +612,9 @@ class CounterRepositoryDomainApiTest {
     @Test
     fun `deleteProject clears yarn card project links before deleting project`() =
         runTest {
+            coEvery { projectDao.getProject(7L) } returns CounterProjectEntity(id = 7L)
+            coEvery { sessionDao.getActiveSession() } returns null
+
             repository.deleteProject(7L)
 
             coVerifyOrder {

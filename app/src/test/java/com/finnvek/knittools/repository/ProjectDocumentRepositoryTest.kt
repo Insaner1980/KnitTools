@@ -233,6 +233,8 @@ class ProjectDocumentRepositoryTest {
                 documentDao.clearPrimary(PROJECT_ID, any())
                 documentDao.setPrimary(8L, PROJECT_ID, any())
                 documentDao.delete(10L, PROJECT_ID)
+                layerRepository.deleteProjectLayerInTransaction(PROJECT_ID, "local:a")
+                documentDao.deleteDocumentBookmarks(PROJECT_ID, "local:a")
                 savedPatternRepository.deleteLocalPatternFileIfUnused(URI_A)
             }
         }

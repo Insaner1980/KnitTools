@@ -606,6 +606,8 @@ class ProjectDocumentRepository
                 if (documentDao.delete(documentId, projectId) != 1) {
                     abortMutation(ProjectDocumentMutationResult.StaleAction)
                 }
+                layerRepository.deleteProjectLayerInTransaction(projectId, target.documentKey)
+                documentDao.deleteDocumentBookmarks(projectId, target.documentKey)
                 normalizeOrder(projectId, remaining, now)
                 val resultingPrimary =
                     if (target.isPrimary) fallback else remaining.firstOrNull(ProjectDocument::isPrimary)

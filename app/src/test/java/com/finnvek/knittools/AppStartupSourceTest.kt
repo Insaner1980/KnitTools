@@ -57,10 +57,12 @@ class AppStartupSourceTest {
                 "applicationScope.launch {\n" +
                     "            try {\n" +
                     "                backupRepository.get().recoverInterruptedOperations()\n" +
-                    "                yarnCardRepository.get().pruneUnreferencedPhotoFiles()\n" +
-                    "                savedPatternRepository.get().pruneUnreferencedStagedPdfs()",
+                    "                yarnCardRepository.get().pruneUnreferencedPhotoFiles()",
             ),
         )
+        // Jaettujen PDF-kopioiden siivous ei saa poistaa perehdytysluonnoksen PDF:ää.
+        assertTrue(app.contains("val onboardingPdf = onboardingStateRepository.get().draft.first()?.pdfUri"))
+        assertTrue(app.contains("pruneUnreferencedStagedPdfs(keepUris = setOfNotNull(onboardingPdf))"))
         assertTrue(app.contains("Lankakuvien best-effort-siivous ei saa kaataa sovellusta."))
     }
 

@@ -25,6 +25,7 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import java.time.LocalDate
@@ -101,7 +102,9 @@ class App : Application() {
             try {
                 backupRepository.get().recoverInterruptedOperations()
                 yarnCardRepository.get().pruneUnreferencedPhotoFiles()
-                savedPatternRepository.get().pruneUnreferencedStagedPdfs()
+                // Perehdytysluonnoksen PDF on DataStoressa eikä tietokannassa, joten se säilytetään erikseen.
+                val onboardingPdf = onboardingStateRepository.get().draft.first()?.pdfUri
+                savedPatternRepository.get().pruneUnreferencedStagedPdfs(keepUris = setOfNotNull(onboardingPdf))
             } catch (e: CancellationException) {
                 throw e
             } catch (_: Exception) {

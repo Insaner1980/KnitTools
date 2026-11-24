@@ -244,6 +244,7 @@ class CounterRepository
             canCreateAdditionalProjects: Boolean,
         ): ProjectCreationResult =
             withContext(ioDispatcher) {
+                val allowsAdditionalProjects = resolveAdditionalProjectAccess(canCreateAdditionalProjects)
                 fileReferenceCoordinator.withReferenceLock {
                     dao.findOnboardingProjectId(draft.id)?.let {
                         return@withReferenceLock ProjectCreationResult.Created(it)
@@ -268,7 +269,7 @@ class CounterRepository
                                 craftType = draft.projectCraftType,
                                 mainCounterLabelType = draft.projectCraftType.defaultMainCounterLabelType(),
                                 mainCounterCustomLabel = null,
-                                canCreateAdditionalProjects = canCreateAdditionalProjects,
+                                canCreateAdditionalProjects = allowsAdditionalProjects,
                                 targetFolderId = null,
                                 startValues = ProjectStartValues(count, (target as? TargetInput.Valid)?.value),
                             )
@@ -307,8 +308,9 @@ class CounterRepository
             canCreateAdditionalProjects: Boolean,
             targetFolderId: Long? = null,
             options: ProjectCreationOptions = ProjectCreationOptions(),
-        ): ProjectCreationResult =
-            try {
+        ): ProjectCreationResult {
+            val allowsAdditionalProjects = resolveAdditionalProjectAccess(canCreateAdditionalProjects)
+            return try {
                 transactionRunner.run {
                     val attemptId = options.attemptId
                     if (attemptId != null) findProjectCreationResult(attemptId)?.let { return@run it }
@@ -319,7 +321,7 @@ class CounterRepository
                             craftType = craftType,
                             mainCounterLabelType = mainCounterLabelType,
                             mainCounterCustomLabel = mainCounterCustomLabel,
-                            canCreateAdditionalProjects = canCreateAdditionalProjects,
+                            canCreateAdditionalProjects = allowsAdditionalProjects,
                             targetFolderId = targetFolderId,
                             startValues = options.startValues,
                         )
@@ -345,6 +347,7 @@ class CounterRepository
                     throw constraint
                 }
             }
+        }
 
         /**
          * Uusi projekti ja tuotu PDF samassa transaktiossa: epäonnistunut liitos peruu myös projektin,
@@ -355,8 +358,9 @@ class CounterRepository
             canCreateAdditionalProjects: Boolean,
             patternUri: String,
             patternName: String,
-        ): ProjectCreationResult =
-            fileReferenceCoordinator.withReferenceLock {
+        ): ProjectCreationResult {
+            val allowsAdditionalProjects = resolveAdditionalProjectAccess(canCreateAdditionalProjects)
+            return fileReferenceCoordinator.withReferenceLock {
                 if (projectDocumentRepository.preflightImportedPdf(patternUri, patternName) != null) {
                     return@withReferenceLock ProjectCreationResult.InvalidProject
                 }
@@ -371,7 +375,7 @@ class CounterRepository
                             craftType = CraftType.KNITTING,
                             mainCounterLabelType = CraftType.KNITTING.defaultMainCounterLabelType(),
                             mainCounterCustomLabel = null,
-                            canCreateAdditionalProjects = canCreateAdditionalProjects,
+                            canCreateAdditionalProjects = allowsAdditionalProjects,
                             targetFolderId = null,
                         )
                     if (created !is ProjectCreationResult.Created) return@run created
@@ -387,6 +391,7 @@ class CounterRepository
                     created
                 }
             }
+        }
 
         private suspend fun insertProjectInCurrentTransaction(
             name: String,
@@ -1122,12 +1127,13 @@ class CounterRepository
             canCreateAdditionalProjects: Boolean = true,
         ): ProjectReactivationResult =
             try {
+                val allowsAdditionalProjects = resolveAdditionalProjectAccess(canCreateAdditionalProjects)
                 transactionRunner.run {
                     val project = dao.getProject(id) ?: return@run ProjectReactivationResult.ProjectUnavailable
                     if (!project.isCompleted || project.completedAt != expectedCompletedAt) {
                         return@run ProjectReactivationResult.ProjectUnavailable
                     }
-                    if (!canAddActiveProject(canCreateAdditionalProjects)) {
+                    if (!canAddActiveProject(allowsAdditionalProjects)) {
                         return@run ProjectReactivationResult.LimitReached
                     }
                     dao.reactivateProject(id, System.currentTimeMillis())
@@ -1166,11 +1172,17 @@ class CounterRepository
             return ProjectNameRules.uniqueName(name, existingNames)
         }
 
-        private suspend fun canAddActiveProject(callerAllowsAdditionalProjects: Boolean): Boolean {
-            val activeCount = dao.getActiveProjectCount()
-            val hasCurrentAccess = proManager?.hasFeature(ProFeature.UNLIMITED_PROJECTS) ?: true
-            return activeCount == 0 || (callerAllowsAdditionalProjects && hasCurrentAccess)
+        /**
+         * Ratkaisee lisäprojektioikeuden ennen transaktiota. Odottaa Pro-tilan alkulatausta, jotta
+         * kylmäkäynnistyksen oletustila ei estä ostanutta tai kokeilevaa käyttäjää.
+         */
+        private suspend fun resolveAdditionalProjectAccess(callerAllowsAdditionalProjects: Boolean): Boolean {
+            if (!callerAllowsAdditionalProjects) return false
+            return proManager?.hasFeatureAfterInitialLoad(ProFeature.UNLIMITED_PROJECTS) ?: true
         }
+
+        private suspend fun canAddActiveProject(allowsAdditionalProjects: Boolean): Boolean =
+            allowsAdditionalProjects || dao.getActiveProjectCount() == 0
 
         private fun normalizeProjectDetails(project: CounterProject): CounterProject? {
             val labelType =

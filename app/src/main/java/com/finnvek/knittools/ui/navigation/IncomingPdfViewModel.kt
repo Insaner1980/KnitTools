@@ -279,7 +279,9 @@ class IncomingPdfViewModel
                 val result =
                     counterRepository.createProjectWithImportedPdf(
                         name = name.ifBlank { pdf.suggestedName },
-                        canCreateAdditionalProjects = proManager.hasFeature(ProFeature.UNLIMITED_PROJECTS),
+                        // Jaettu PDF voi käynnistää sovelluksen kylmänä: odota Pro-tilan alkulatausta.
+                        canCreateAdditionalProjects =
+                            proManager.hasFeatureAfterInitialLoad(ProFeature.UNLIMITED_PROJECTS),
                         patternUri = pdf.localUri,
                         patternName = documentLabel(pdf, name),
                     )

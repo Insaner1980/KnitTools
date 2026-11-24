@@ -30,6 +30,8 @@ class ProPromptViewModel
 
         fun retryProductDetails() = billingManager.retryProductDetails()
 
+        fun onPriceViewResumed() = billingManager.onPriceViewResumed()
+
         private val _trialStartResults = MutableSharedFlow<TrialStartResult>(extraBufferCapacity = 1)
         val trialStartResults = _trialStartResults.asSharedFlow()
         private val _isStartingTrial = MutableStateFlow(false)

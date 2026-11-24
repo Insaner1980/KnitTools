@@ -229,7 +229,7 @@ class TrialManagerTest {
     }
 
     @Test
-    fun `unavailable stored boot identity fails closed despite increasing elapsed time`() {
+    fun `unavailable boot identity on the same boot consumes monotonic elapsed time`() {
         val state =
             evaluate(
                 now =
@@ -241,22 +241,57 @@ class TrialManagerTest {
                 storedTiming = anchors(anchorBootCount = null),
             ).state
 
-        assertTrue(state.clockTampered)
-        assertFalse(state.isActive)
-        assertEquals(0L, state.elapsedDurationMillis)
+        assertFalse(state.clockTampered)
+        assertTrue(state.isActive)
+        assertEquals(2 * day, state.elapsedDurationMillis)
     }
 
     @Test
-    fun `unavailable current boot identity fails closed despite forward wall clock`() {
+    fun `unavailable boot identity on the same boot counts a forward wall clock jump`() {
+        val state =
+            evaluate(
+                now =
+                    snapshot(
+                        wallClockMillis = baseTime + 3 * day,
+                        elapsedRealtimeMillis = baseElapsed + hour,
+                        bootCount = null,
+                    ),
+                storedTiming = anchors(anchorBootCount = null),
+            ).state
+
+        assertFalse(state.clockTampered)
+        assertEquals(3 * day, state.elapsedDurationMillis)
+    }
+
+    @Test
+    fun `unavailable current boot identity treats uptime reset as one reboot`() {
         val state =
             evaluate(
                 now = snapshot(wallClockMillis = baseTime + 2 * day, elapsedRealtimeMillis = hour, bootCount = null),
                 storedTiming = anchors(anchorElapsedRealtimeMillis = 3 * day, anchorBootCount = 7L),
             ).state
 
+        assertFalse(state.clockTampered)
+        assertTrue(state.isActive)
+        assertEquals(2 * day + hour, state.elapsedDurationMillis)
+    }
+
+    @Test
+    fun `unavailable boot identity still fails closed on wall clock rollback across reboot`() {
+        val state =
+            evaluate(
+                now =
+                    snapshot(
+                        wallClockMillis = baseTime - TimeUnit.MINUTES.toMillis(30L),
+                        elapsedRealtimeMillis = 1L,
+                        bootCount = null,
+                    ),
+                storedTiming = anchors(elapsedDurationMillis = 2 * day, anchorBootCount = null),
+            ).state
+
         assertTrue(state.clockTampered)
         assertFalse(state.isActive)
-        assertEquals(0L, state.elapsedDurationMillis)
+        assertEquals(2 * day, state.elapsedDurationMillis)
     }
 
     @Test
@@ -384,7 +419,7 @@ class TrialManagerTest {
     }
 
     @Test
-    fun `large rollback keeps permanent tamper behavior after clock catches up`() {
+    fun `large wall clock correction on the same boot keeps consuming monotonic time`() {
         val first =
             evaluate(
                 now = snapshot(wallClockMillis = baseTime + 3 * day, elapsedRealtimeMillis = baseElapsed + 3 * day),
@@ -399,10 +434,12 @@ class TrialManagerTest {
                 clockTamperedAlready = first.state.clockTampered,
             ).state
 
-        assertTrue(first.state.clockTampered)
-        assertFalse(first.state.isActive)
-        assertTrue(caughtUp.clockTampered)
-        assertFalse(caughtUp.isActive)
+        assertFalse(first.state.clockTampered)
+        assertTrue(first.state.isActive)
+        assertEquals(3 * day, first.state.elapsedDurationMillis)
+        assertFalse(caughtUp.clockTampered)
+        assertEquals(4 * day, caughtUp.elapsedDurationMillis)
+        assertEquals(10, caughtUp.daysRemaining)
     }
 
     @Test

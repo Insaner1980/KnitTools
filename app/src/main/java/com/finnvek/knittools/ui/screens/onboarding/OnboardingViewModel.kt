@@ -369,7 +369,7 @@ class OnboardingViewModel
             }
         }
 
-        fun refreshPrice() = billing.retryProductDetails()
+        fun refreshPrice() = billing.onPriceViewResumed()
 
         private suspend fun persist(draft: OnboardingDraft) {
             check(stateRepository.saveDraft(draft)) { "Onboarding draft persistence failed" }

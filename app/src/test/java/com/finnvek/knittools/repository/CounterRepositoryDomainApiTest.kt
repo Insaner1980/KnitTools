@@ -58,6 +58,7 @@ class CounterRepositoryDomainApiTest {
         projectFolderDao = mockk(relaxed = true)
         proManager = mockk()
         every { proManager.hasFeature(any()) } returns true
+        coEvery { proManager.hasFeatureAfterInitialLoad(any()) } answers { proManager.hasFeature(firstArg()) }
         coEvery { projectDao.getAllProjectsOnce() } returns emptyList()
         repository = createRepository()
     }
@@ -421,7 +422,7 @@ class CounterRepositoryDomainApiTest {
         }
 
     @Test
-    fun `createProject rechecks additional project entitlement inside transaction`() =
+    fun `createProject rechecks additional project entitlement in the repository`() =
         runTest {
             every { proManager.hasFeature(ProFeature.UNLIMITED_PROJECTS) } returns false
             coEvery { projectDao.getActiveProjectCount() } returns 1

@@ -71,9 +71,11 @@ class TrialManagerDispatcherTest {
                 )
                 assertEquals(startedAt, manager.trialState.value.startTimestamp)
 
+                // Hetkellisesti puuttuva BOOT_COUNT ei lukitse kokeilua eikä tuo ilmoitusta uudelleen.
                 clock.now = clock.now.copy(bootCount = null)
                 assertFalse(runSnapshotOperation(ioScheduler, clock, 1) { manager.claimTrialThreeDayNotice() })
-                assertTrue(manager.trialState.value.clockTampered)
+                assertFalse(manager.trialState.value.clockTampered)
+                assertTrue(manager.trialState.value.isActive)
                 assertEquals(elapsed, manager.trialState.value.elapsedDurationMillis)
             } finally {
                 Dispatchers.resetMain()

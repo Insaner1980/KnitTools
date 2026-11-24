@@ -32,7 +32,6 @@ data class ProState(
     val status: ProStatus = ProStatus.TRIAL_NOT_STARTED,
     val trialDaysRemaining: Int = 0,
     val trialStartTimestamp: Long = 0L,
-    val purchaseTimestamp: Long = 0L,
 ) {
     val isPro: Boolean
         get() = status == ProStatus.PRO_PURCHASED || status == ProStatus.TRIAL_ACTIVE

@@ -84,7 +84,6 @@ class ProManager
                         status = ProStatus.PRO_PURCHASED,
                         trialDaysRemaining = 0,
                         trialStartTimestamp = trial.startTimestamp,
-                        purchaseTimestamp = System.currentTimeMillis(),
                     )
                 }
 

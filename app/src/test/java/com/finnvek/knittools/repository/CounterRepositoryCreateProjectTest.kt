@@ -142,6 +142,7 @@ class CounterRepositoryCreateProjectTest {
         coEvery { dao.getAllProjectsOnce() } returns emptyList()
         coEvery { dao.getActiveProjectCount() } returns 0
         every { proManager.hasFeature(ProFeature.UNLIMITED_PROJECTS) } returns false
+        coEvery { proManager.hasFeatureAfterInitialLoad(any()) } answers { proManager.hasFeature(firstArg()) }
     }
 
     @Test

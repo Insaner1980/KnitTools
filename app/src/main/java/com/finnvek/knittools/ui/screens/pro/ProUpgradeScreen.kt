@@ -90,7 +90,7 @@ fun ProUpgradeScreen(
     val previewOffer = remember(locale) { OnboardingPreview.offer(locale) }
     var previewPurchaseVisible by rememberSaveable { mutableStateOf(false) }
     LifecycleResumeEffect(viewModel) {
-        viewModel.retryProductDetails()
+        viewModel.onPriceViewResumed()
         onPauseOrDispose { }
     }
     SideEffect {

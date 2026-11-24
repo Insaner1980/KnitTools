@@ -86,6 +86,5 @@ class ProStateTest {
         }
         assertFalse(state.isPro)
         assertEquals(ProStatus.TRIAL_EXPIRED, state.status)
-        assertEquals(0L, state.purchaseTimestamp)
     }
 }

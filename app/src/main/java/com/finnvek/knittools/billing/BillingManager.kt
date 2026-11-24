@@ -43,6 +43,7 @@ class BillingManager
     constructor(
         @param:ApplicationContext private val context: Context,
         @ApplicationScope applicationScope: CoroutineScope,
+        private val ownershipCache: PurchaseOwnershipCache = PurchaseOwnershipCache.None,
     ) {
         private val scope =
             CoroutineScope(applicationScope.coroutineContext + SupervisorJob(applicationScope.coroutineContext[Job]))
@@ -132,8 +133,23 @@ class BillingManager
                         PendingPurchasesParams.newBuilder().enableOneTimeProducts().build(),
                     ).enableAutoServiceReconnection()
                     .build()
+            restoreCachedOwnership(checkNotNull(billingClient))
 
             startBillingConnection()
+        }
+
+        // Viimeisin vahvistettu omistus pitää Pron käytössä, kunnes Play-kysely onnistuu tai kumoaa sen.
+        private fun restoreCachedOwnership(client: BillingClient) {
+            scope.launch {
+                val cachedOwned = ownershipCache.read()
+                if (cachedOwned && billingClient === client && !_purchaseStateReady.value) {
+                    _isProPurchased.value = true
+                }
+            }
+        }
+
+        private fun persistOwnership(owned: Boolean) {
+            scope.launch { ownershipCache.write(owned) }
         }
 
         private fun startBillingConnection() {
@@ -164,7 +180,9 @@ class BillingManager
                     override fun onBillingServiceDisconnected() {
                         if (billingClient !== client) return
                         purchaseFlowDisconnected = _purchaseFlowInFlight.value
-                        applyProductUnavailable(BillingUserMessage.PURCHASE_NETWORK_ERROR)
+                        // Automaattinen uudelleenyhdistys ei kutsu onBillingSetupFinishediä uudelleen.
+                        // Tarjous säilyy, ja uusi haku yhdistää palvelun ja päivittää tai mitätöi sen.
+                        retryProductDetails()
                         if (returnedDisconnectedPurchaseFlow != null) refreshPurchaseOwnership()
                     }
                 },
@@ -269,6 +287,16 @@ class BillingManager
             }
         }
 
+        /**
+         * Hintanäkymä tuli näkyviin. Muutos, joka tapahtui näkymän ollessa poissa, ei vaadi
+         * vahvistusta, koska käyttäjä näkee nyt ajantasaisen hinnan. Haun aikana muuttuva hinta
+         * asettaa vahvistusvaatimuksen uudelleen.
+         */
+        fun onPriceViewResumed() {
+            priceNeedsReview = false
+            retryProductDetails()
+        }
+
         fun retryProductDetails() {
             if (productQueryJob?.isActive == true) return
             val client =
@@ -317,6 +345,7 @@ class BillingManager
                                     _isProPurchased.value = true
                                     _purchaseStateReady.value = true
                                     _purchaseQueryFailed.value = false
+                                    persistOwnership(true)
                                     acknowledgePurchase(purchase)
                                 }
 
@@ -445,6 +474,7 @@ class BillingManager
                         it.purchaseState == Purchase.PurchaseState.PURCHASED
                 }
             _isProPurchased.value = proPurchases.isNotEmpty()
+            persistOwnership(proPurchases.isNotEmpty())
             _purchasePending.value =
                 result.purchasesList.any {
                     PRODUCT_ID in it.products && it.purchaseState == Purchase.PurchaseState.PENDING

@@ -335,6 +335,9 @@ class CounterViewModel
         private val _stepFeedback = MutableSharedFlow<MainCounterStepFeedback>(extraBufferCapacity = 1)
         val stepFeedback: SharedFlow<MainCounterStepFeedback> = _stepFeedback.asSharedFlow()
         private val stepSizeSaveMutex = Mutex()
+
+        // Lisälaskuri tallennetaan absoluuttisena arvona, joten kirjoitukset ajetaan napautusjärjestyksessä.
+        private val secondaryCountSaveMutex = Mutex()
         private var projectSelectionVersion = 0L
         private var counterStateVersion = 0L
         private var counterActionVersion = 0L
@@ -2152,7 +2155,10 @@ class CounterViewModel
             val secondaryCount = state.secondaryCount
             val selectionVersion = projectSelectionVersion
             launchProjectContentMutation {
-                val saved = tryProjectWrite { repository.updateProjectSecondaryCount(projectId, secondaryCount) }
+                val saved =
+                    secondaryCountSaveMutex.withLock {
+                        tryProjectWrite { repository.updateProjectSecondaryCount(projectId, secondaryCount) }
+                    }
                 if (!saved) {
                     val persisted = repository.getProject(projectId) ?: return@launchProjectContentMutation false
                     _uiState.update { current ->

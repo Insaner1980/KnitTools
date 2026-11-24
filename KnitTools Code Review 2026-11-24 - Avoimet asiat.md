@@ -15,6 +15,14 @@ Katselmointi tehtiin `/code-review medium` -tasolla osa-alue kerrallaan haarassa
 | Ravelry ja PDF-vastaanotto | `36a38567` |
 | Lanka ja langankäyttö | `9846e21c` |
 | Insights-laskenta (putki, päiväakseli) | `0de67b57` |
+| Perehdytys ja kokeilupolku (korjattu oma regressio: perehdytyksen PDF siivouksessa) | `573b5adc` |
+| CounterViewModel (lisälaskurin tallennusjärjestys) | tämä committi |
+| PDF-lukijan käyttöliittymä | ei löydöksiä |
+| Widgetin piirto | ei löydöksiä |
+
+Jätetty tietoisesti korjaamatta: perehdytyksen projektin nimeen kirjoitetut merkit katoavat PDF:n
+kopioinnin ajan (`OnboardingViewModel.edit` palaa, kun `busy` on tosi). Korjaus vaatisi luonnoksen
+kirjoitusjärjestyksen muuttamista, ja kopiointi on yleensä lyhyt.
 
 ## 1. Ravelryn kassan tunnistus (vaatii Ravelry-tilin)
 
@@ -35,13 +43,7 @@ Tehtävä oikealla tilillä:
 
 Tämä kuuluu samaan Play-julkaisua edeltävään tarkistukseen kuin Ravelryn kirjallinen lupa.
 
-## 2. Rivinvaihtoerot
-
-- **Rivinvaihtoerot**: `BillingManager.kt`, `TrialThreeDayNoticeTest.kt`, `ActiveProjectPolicyTest.kt`
-  ja `CounterRepositoryCreateProjectTest.kt` näkyvät muutettuina vain CRLF/LF-eron takia. Sisältö on
-  sama kuin committoitu, eikä niitä tarvitse committaa.
-
-## 3. Laitetestit (ajamatta)
+## 2. Laitetestit (ajamatta)
 
 Useat korjaukset toimivat oikeasti vain laitteella. Nämä kannattaa ajaa liitetyllä Samsungilla:
 
@@ -52,10 +54,11 @@ Useat korjaukset toimivat oikeasti vain laitteella. Nämä kannattaa ajaa liitet
 | Kassaviesti ja WebView-navigaatio | `RavelryBrowserStateTest`, `RavelryBrowserNavigationTest` |
 | Projektin poisto delegoi tuotannon polkuun, dokumentin irrotus | `ProjectDocumentRuntimeIntegrationTest`, `AuditRoomContractsTest`, `CounterHistoryRoomTest` |
 | Aktiivisten projektien portti | `ActiveProjectPolicyRoomTest`, `ActiveProjectPolicyRuntimeTest` (profiili `-Pknittools.isolatedTest=activepolicy`) |
+| Hylättyjen jaettujen PDF:ien siivous, perehdytyksen PDF säilyy | ei omaa testiä; tarkista käsin tai lisää laitetesti |
 
 Lisäksi lint (`lc`) ei ole ajettu tämän päivän muutoksille.
 
-## 4. Suunnitelmapäätökset, jotka muuttuivat
+## 3. Suunnitelmapäätökset, jotka muuttuivat
 
 - **Kokeilun peukalointisuoja**: puuttuva `BOOT_COUNT` ei enää lukitse kokeilua, ja saman
   käynnistyksen aikainen seinäkellon oikaisu taaksepäin ei ole peukalointia. Käynnistysten yli
@@ -64,10 +67,10 @@ Lisäksi lint (`lc`) ei ole ajettu tämän päivän muutoksille.
   käynnissäoloajasta ja seinäkellosta viiden minuutin tarkkuudella. Päivitetty `PROJECT.md`:hen.
 - **Ostotilan välimuisti**: `PurchaseOwnershipCache` tallentaa viimeisimmän vahvistetun omistuksen
   DataStoreen (`billing_ownership`). Varmuuskopiosäännöt jättävät sen pois.
+- **Insightsin putki**: Insights hakee koko istuntohistorian kaikilla aikaväleillä, jotta putki ei katkea
+  viikon tai kuukauden alkuun. Päivitetty `PROJECT.md`:hen.
 
-## 5. Tarkistamatta olevat alueet
+## 4. Kattavuus
 
-- `CounterViewModel` (noin 3 100 riviä)
-- `PatternViewerScreen` ja `PatternAnnotationViewModel`
-- Onboarding ja kokeilupolku
-- Widgetin piirto (`CounterWidget`)
+Kaikki osa-alueet on käyty läpi medium-tasolla. `PatternViewerScreen`in (noin 2 800 riviä)
+Compose-koodia ei luettu rivi riviltä; sen tila kulkee tarkistettujen ViewModelien kautta.

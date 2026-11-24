@@ -57,7 +57,8 @@ class AppStartupSourceTest {
                 "applicationScope.launch {\n" +
                     "            try {\n" +
                     "                backupRepository.get().recoverInterruptedOperations()\n" +
-                    "                yarnCardRepository.get().pruneUnreferencedPhotoFiles()",
+                    "                yarnCardRepository.get().pruneUnreferencedPhotoFiles()\n" +
+                    "                savedPatternRepository.get().pruneUnreferencedStagedPdfs()",
             ),
         )
         assertTrue(app.contains("Lankakuvien best-effort-siivous ei saa kaataa sovellusta."))

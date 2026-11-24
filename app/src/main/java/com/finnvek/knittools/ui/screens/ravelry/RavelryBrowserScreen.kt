@@ -2,6 +2,7 @@ package com.finnvek.knittools.ui.screens.ravelry
 
 import android.annotation.SuppressLint
 import android.graphics.Bitmap
+import android.text.TextUtils
 import android.view.ViewGroup
 import android.webkit.CookieManager
 import android.webkit.RenderProcessGoneDetail
@@ -206,6 +207,20 @@ internal fun WebView.configureRavelryBrowser(
                 if (navigation == RavelryNavigation.InApp) return null
                 // POST requests bypass shouldOverrideUrlLoading. Block without replaying the body
                 // as a GET or touching Compose/WebView state from the request worker thread.
+                if (navigation == RavelryNavigation.Purchase) {
+                    // Lomakkeella avattu kassa ei saa jättää tyhjää sivua: kerrotaan, että osto jatkuu
+                    // selaimessa, ja avataan kassaosoite (ilman lomakkeen sisältöä) pääsäikeessä.
+                    val target = url.toString()
+                    view.post { if (browserState.webView === view) openOutside(target, purchaseMessage) }
+                    return WebResourceResponse(
+                        "text/html",
+                        "UTF-8",
+                        403,
+                        "Forbidden",
+                        emptyMap(),
+                        ByteArrayInputStream(purchaseNoticePage(purchaseMessage).toByteArray(Charsets.UTF_8)),
+                    )
+                }
                 return WebResourceResponse(
                     "text/plain",
                     "UTF-8",
@@ -257,3 +272,10 @@ internal fun WebView.configureRavelryBrowser(
 }
 
 private const val FULL_PROGRESS = 100
+
+internal fun purchaseNoticePage(message: String): String =
+    "<!doctype html><html><head><meta charset=\"utf-8\">" +
+        "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"></head>" +
+        "<body style=\"font-family:sans-serif;padding:24px;line-height:1.5\"><p>" +
+        TextUtils.htmlEncode(message) +
+        "</p></body></html>"

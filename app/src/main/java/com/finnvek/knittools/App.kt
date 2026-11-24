@@ -16,6 +16,7 @@ import com.finnvek.knittools.pro.ProManager
 import com.finnvek.knittools.repository.BackupRepository
 import com.finnvek.knittools.repository.OnboardingStateRepository
 import com.finnvek.knittools.repository.ProjectCounterRepository
+import com.finnvek.knittools.repository.SavedPatternRepository
 import com.finnvek.knittools.repository.YarnCardRepository
 import com.finnvek.knittools.widget.CounterWidgetState
 import dagger.hilt.android.HiltAndroidApp
@@ -48,6 +49,9 @@ class App : Application() {
 
     @Inject
     lateinit var backupRepository: dagger.Lazy<BackupRepository>
+
+    @Inject
+    lateinit var savedPatternRepository: dagger.Lazy<SavedPatternRepository>
 
     @Inject
     lateinit var onboardingStateRepository: dagger.Lazy<OnboardingStateRepository>
@@ -97,10 +101,12 @@ class App : Application() {
             try {
                 backupRepository.get().recoverInterruptedOperations()
                 yarnCardRepository.get().pruneUnreferencedPhotoFiles()
+                savedPatternRepository.get().pruneUnreferencedStagedPdfs()
             } catch (e: CancellationException) {
                 throw e
             } catch (_: Exception) {
                 // Lankakuvien best-effort-siivous ei saa kaataa sovellusta.
+                // Sama koskee hylättyjen jaettujen PDF-kopioiden siivousta.
             }
         }
         applicationScope.launch(ioDispatcher) {

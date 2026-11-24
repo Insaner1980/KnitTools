@@ -29,7 +29,10 @@ jobs:
             build-mode: none
           - language: javascript-typescript
             build-mode: none
-            source-root: .deepsec
+            # The JavaScript extractor skips hidden directories during the default root walk.
+            index-roots: |
+              .
+              .deepsec
           - language: python
             build-mode: none
 
@@ -60,7 +63,6 @@ jobs:
         with:
           languages: ${{ matrix.language }}
           build-mode: ${{ matrix.build-mode }}
-          source-root: ${{ matrix.source-root || '.' }}
 
       - name: Build Android debug sources
         if: matrix.language == 'java-kotlin'
@@ -69,5 +71,7 @@ jobs:
 
       - name: Analyze and publish results
         uses: github/codeql-action/analyze@1bd86f2fdb4b86187fa4059f16f31a3202acc9ea # v4.39.4
+        env:
+          LGTM_INDEX_INCLUDE: ${{ matrix.index-roots }}
         with:
           category: /language:${{ matrix.language }}

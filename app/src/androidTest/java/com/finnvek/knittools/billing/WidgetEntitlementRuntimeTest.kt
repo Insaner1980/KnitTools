@@ -23,6 +23,7 @@ import com.android.billingclient.api.Purchase
 import com.finnvek.knittools.App
 import com.finnvek.knittools.BuildConfig
 import com.finnvek.knittools.R
+import com.finnvek.knittools.data.local.CounterProjectEntity
 import com.finnvek.knittools.pro.ProFeature
 import com.finnvek.knittools.pro.ProPolicyTestControl
 import com.finnvek.knittools.pro.ProState
@@ -186,6 +187,7 @@ class WidgetEntitlementRuntimeTest {
 
         suspend fun start(initialFailure: Boolean) {
             withContext(Dispatchers.Main) {
+                ProPolicyTestControl.reset()
                 billing.destroy()
                 BillingManager::class.java
                     .getDeclaredField(
@@ -200,9 +202,8 @@ class WidgetEntitlementRuntimeTest {
                     .initialStateReady.value
             }
             if (initialFailure) query(code = BillingClient.BillingResponseCode.NETWORK_ERROR)
-            val created = repository.createProject("Entitlement test", canCreateAdditionalProjects = true)
-            check(created is ProjectCreationResult.Created)
-            projectId = created.projectId
+            val projects = app.database.get().counterProjectDao()
+            projectId = projects.insert(CounterProjectEntity(name = "Entitlement test"))
             CounterWidgetState.save(app, checkNotNull(repository.getProject(projectId)).toWidgetData())
             instrumentation.uiAutomation.adoptShellPermissionIdentity("android.permission.BIND_APPWIDGET")
             host.startListening()
@@ -357,7 +358,7 @@ class WidgetEntitlementRuntimeTest {
                 client.queryCode = BillingClient.BillingResponseCode.OK
                 client.purchases = emptyList()
                 billing.queryPurchases()
-                ProPolicyTestControl.setTrialState(TrialState(hasStarted = true))
+                ProPolicyTestControl.reset()
                 billing.destroy()
             }
         }

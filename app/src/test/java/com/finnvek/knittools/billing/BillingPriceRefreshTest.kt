@@ -53,6 +53,35 @@ class BillingPriceRefreshTest {
     @Test
     fun `changed refresh blocks stale checkout and requires another tap after price review`() = verifyRefresh(true)
 
+    @Test
+    fun `price change while no price view was visible needs no extra review after resume`() =
+        runTest {
+            val client = mockk<BillingClient>(relaxed = true)
+            val activity = mockk<Activity>(relaxed = true)
+            val ok = BillingResult.newBuilder().setResponseCode(BillingClient.BillingResponseCode.OK).build()
+            every { client.isReady } returns true
+            every { client.launchBillingFlow(activity, any()) } returns ok
+            coEvery { client.queryProductDetails(any()) } returns ProductDetailsResult(ok, listOf(product(14_990_000)))
+            val manager = BillingManager(mockk<Context>(relaxed = true), CoroutineScope(Dispatchers.Main.immediate))
+            BillingManager::class.java.getDeclaredField("billingClient").apply {
+                isAccessible = true
+                set(manager, client)
+            }
+            try {
+                manager.applyProductDetailsResult(ProductDetailsResult(ok, listOf(product(9_990_000))))
+                // Hinta muuttuu taustalla, kun yksikään hintanäkymä ei ole auki.
+                manager.applyProductDetailsResult(ProductDetailsResult(ok, listOf(product(14_990_000))))
+
+                manager.onPriceViewResumed()
+                runCurrent()
+                manager.launchPurchaseFlow(activity, manager.selectedOffer.value)
+
+                verify(exactly = 1) { client.launchBillingFlow(activity, any()) }
+            } finally {
+                manager.destroy()
+            }
+        }
+
     private fun verifyRefresh(changed: Boolean) =
         runTest {
             val client = mockk<BillingClient>(relaxed = true)

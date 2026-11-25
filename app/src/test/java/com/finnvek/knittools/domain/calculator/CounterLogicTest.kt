@@ -16,15 +16,12 @@ class CounterLogicTest {
     }
 
     @Test
-    fun `one undo restores the entire positive or negative step including a clamped step`() {
+    fun `step applies the entire positive or negative step including a clamped step`() {
         val original = CounterState(count = 12, stepSize = 5)
         assertEquals(17, CounterLogic.increment(original).count)
         assertEquals(7, CounterLogic.decrement(original).count)
-        assertEquals(12, CounterLogic.undo(CounterLogic.increment(original)).count)
-        assertEquals(12, CounterLogic.undo(CounterLogic.decrement(original)).count)
         val nearZero = CounterState(count = 2, stepSize = 5)
         assertEquals(0, CounterLogic.decrement(nearZero).count)
-        assertEquals(2, CounterLogic.undo(CounterLogic.decrement(nearZero)).count)
     }
 
     @Test
@@ -32,7 +29,6 @@ class CounterLogicTest {
         val state = CounterState(count = 5, stepSize = 1)
         val result = CounterLogic.increment(state)
         assertEquals(6, result.count)
-        assertEquals(5, result.previousCount)
     }
 
     @Test
@@ -49,7 +45,6 @@ class CounterLogicTest {
         val result = CounterLogic.increment(state)
 
         assertEquals(Int.MAX_VALUE, result.count)
-        assertEquals(Int.MAX_VALUE - 1, result.previousCount)
     }
 
     @Test
@@ -82,39 +77,17 @@ class CounterLogicTest {
     }
 
     @Test
-    fun `decrement at zero keeps undo state unchanged`() {
-        val state = CounterState(count = 0, previousCount = 5, stepSize = 3)
+    fun `decrement at zero keeps state unchanged`() {
+        val state = CounterState(count = 0, stepSize = 3)
         val result = CounterLogic.decrement(state)
         assertEquals(state, result)
     }
 
     @Test
-    fun `undo restores previous count`() {
-        val state = CounterState(count = 6, previousCount = 5)
-        val result = CounterLogic.undo(state)
-        assertEquals(5, result.count)
-        assertNull(result.previousCount)
-    }
-
-    @Test
-    fun `undo with no previous does nothing`() {
-        val state = CounterState(count = 5, previousCount = null)
-        val result = CounterLogic.undo(state)
-        assertEquals(5, result.count)
-    }
-
-    @Test
-    fun `reset sets count to zero`() {
-        val state = CounterState(count = 42, stepSize = 1)
+    fun `reset sets count to zero and keeps step size`() {
+        val state = CounterState(count = 42, stepSize = 3)
         val result = CounterLogic.reset(state)
-        assertEquals(0, result.count)
-        assertEquals(42, result.previousCount)
-    }
-
-    @Test
-    fun `reset at zero keeps the earlier undo value`() {
-        val state = CounterState(count = 0, previousCount = 42)
-        assertEquals(state, CounterLogic.reset(state))
+        assertEquals(CounterState(count = 0, stepSize = 3), result)
     }
 
     @Test
@@ -129,13 +102,5 @@ class CounterLogicTest {
         val state = CounterState(stepSize = 1)
         val result = CounterLogic.setStepSize(state, 5)
         assertEquals(5, result.stepSize)
-    }
-
-    @Test
-    fun `increment then undo returns original`() {
-        val original = CounterState(count = 10, stepSize = 1)
-        val incremented = CounterLogic.increment(original)
-        val undone = CounterLogic.undo(incremented)
-        assertEquals(original.count, undone.count)
     }
 }

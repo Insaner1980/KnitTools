@@ -82,29 +82,38 @@ class ProgressPhotoStorage
             }
         }
 
-        fun isPhotoAvailable(
+        /**
+         * Vain sovelluksen oman tiedoston puuttuminen on varma [PhotoAvailability.Missing].
+         * Ulkoisen URIn lukuvirhe voi olla ohimenevä (lupa, irrotettu tallennustila), joten se on
+         * [PhotoAvailability.Unreachable] eikä oikeuta tietokantarivin poistoa.
+         */
+        fun photoAvailability(
             context: Context,
             photoUri: String,
-        ): Boolean {
-            if (photoUri.isBlank()) return false
+        ): PhotoAvailability {
+            if (photoUri.isBlank()) return PhotoAvailability.Missing
             val uri = photoUri.toUri()
             val appOwnedFile = AppFileStorage.resolveAppOwnedFile(context, uri)
-            if (appOwnedFile != null) return appOwnedFile.exists()
-            return when (uri.scheme) {
-                "file" -> {
-                    uri.path?.let(::File)?.exists() == true
-                }
-
-                "content" -> {
-                    runCatching {
-                        context.contentResolver.openFileDescriptor(uri, "r")?.use { true } ?: false
-                    }.getOrDefault(false)
-                }
-
-                else -> {
-                    false
-                }
+            if (appOwnedFile != null) {
+                return if (appOwnedFile.exists()) PhotoAvailability.Available else PhotoAvailability.Missing
             }
+            val readable =
+                when (uri.scheme) {
+                    "file" -> {
+                        uri.path?.let(::File)?.exists() == true
+                    }
+
+                    "content" -> {
+                        runCatching {
+                            context.contentResolver.openFileDescriptor(uri, "r")?.use { true } ?: false
+                        }.getOrDefault(false)
+                    }
+
+                    else -> {
+                        false
+                    }
+                }
+            return if (readable) PhotoAvailability.Available else PhotoAvailability.Unreachable
         }
 
         fun deleteTemporarySource(
@@ -169,4 +178,14 @@ internal fun calculateBitmapInSampleSize(
         sampleSize *= 2
     }
     return sampleSize
+}
+
+enum class PhotoAvailability {
+    Available,
+
+    /** Sovelluksen oma tiedosto puuttuu varmasti; rivin voi poistaa. */
+    Missing,
+
+    /** Ulkoista kuvaa ei juuri nyt voi lukea; piilotetaan, mutta rivi säilyy. */
+    Unreachable,
 }

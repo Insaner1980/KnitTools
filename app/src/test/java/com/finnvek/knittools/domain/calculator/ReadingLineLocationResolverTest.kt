@@ -47,6 +47,27 @@ class ReadingLineLocationResolverTest {
     }
 
     @Test
+    fun `calibration spanning two pages interpolates across the page break`() {
+        val markers = listOf(marker(0, 3, 0.8f), marker(10, 4, 0.4f))
+
+        val beforeBreak = resolve(markers = markers, previousRow = 1, newRow = 2, currentPage = 3)
+        val afterBreak = resolve(markers = markers, previousRow = 4, newRow = 5, currentPage = 3)
+
+        assertLocation(beforeBreak, page = 3, y = 0.92f, kind = ReadingLineResolutionKind.CROSS_PAGE_INTERPOLATION)
+        assertLocation(afterBreak, page = 4, y = 0.1f, kind = ReadingLineResolutionKind.CROSS_PAGE_INTERPOLATION)
+        assertTrue(afterBreak.automaticPageChange)
+        assertTrue(afterBreak.kind.isCalibrated)
+    }
+
+    @Test
+    fun `backward page order across calibration is not interpolated`() {
+        val result =
+            resolve(markers = listOf(marker(0, 4, 0.2f), marker(10, 3, 0.8f)), previousRow = 4, newRow = 5)
+
+        assertEquals(ReadingLineResolutionKind.ROW_DELTA_FALLBACK, result.kind)
+    }
+
+    @Test
     fun `unique bracket on another page changes page`() {
         val result =
             resolve(

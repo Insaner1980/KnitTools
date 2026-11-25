@@ -99,7 +99,6 @@ import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntSize
@@ -119,6 +118,7 @@ import com.finnvek.knittools.domain.model.DEFAULT_READING_LINE_Y_FRACTION
 import com.finnvek.knittools.domain.model.MainCounterLabelType
 import com.finnvek.knittools.domain.model.PROJECT_DOCUMENT_LABEL_MAX_LENGTH
 import com.finnvek.knittools.domain.model.PatternAnnotationOwner
+import com.finnvek.knittools.domain.model.PatternDisplayNames
 import com.finnvek.knittools.domain.model.ProjectDocument
 import com.finnvek.knittools.domain.model.READING_LINE_MAX_Y_FRACTION
 import com.finnvek.knittools.domain.model.READING_LINE_MIN_Y_FRACTION
@@ -1016,6 +1016,7 @@ internal fun ProjectDocumentsSheet(
     }
 
     renameDocument?.let { document ->
+        val prefilledLabel = projectDocumentDisplayName(document.label)
         ScrollableFormDialog(
             onDismissRequest = { renameDocumentId = null },
             title = { Text(stringResource(R.string.project_documents_rename_title)) },
@@ -1036,7 +1037,10 @@ internal fun ProjectDocumentsSheet(
             confirmButton = {
                 TextButton(
                     onClick = {
-                        onRename(document.id, renameText)
+                        // Kenttään esitäytetään siistitty nimi; muuttamaton tallennus säilyttää alkuperäisen nimikkeen.
+                        if (isDocumentRenameChange(renameText, prefilledLabel)) {
+                            onRename(document.id, renameText)
+                        }
                         renameDocumentId = null
                     },
                     enabled = renameText.trim().isNotEmpty(),
@@ -2107,7 +2111,8 @@ private fun PatternPageJumpDialog(
     onDismiss: () -> Unit,
     onConfirm: (Int) -> Unit,
 ) {
-    var pageInput by rememberSaveable(totalPages, currentPage) { mutableStateOf((currentPage + 1).toString()) }
+    // Syöte alustetaan dialogin avautuessa; lukulinjan sivunvaihto ei saa nollata kirjoitettua numeroa.
+    var pageInput by rememberSaveable(totalPages) { mutableStateOf((currentPage + 1).toString()) }
     val parsedPage = pageInput.toIntOrNull()
     val isValidPage = parsedPage != null && parsedPage in 1..totalPages.coerceAtLeast(1)
 
@@ -2182,7 +2187,6 @@ private fun LibraryPatternViewerBottomBar(
                         totalPages.coerceAtLeast(1),
                     ),
                 style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.SemiBold,
             )
             IconButton(
                 onClick = onNextPage,
@@ -2220,7 +2224,12 @@ private fun PatternViewerContent(
     val annotationPageMatches = state.annotationState.matchesDisplayedPage(state.exportContext, state.currentPage)
     val editableLayerVisible = annotationPageMatches && state.annotationState.editableLayerVisible
     val fallbackPatternName = stringResource(R.string.pattern_annotation_export_default_name)
-    val exportBaseName = state.patternName?.substringBeforeLast('.')?.ifBlank { null } ?: fallbackPatternName
+    val exportBaseName =
+        annotatedPdfExportBaseName(
+            patternName = state.patternName,
+            photoFallback = stringResource(R.string.pattern_images_document_fallback),
+            defaultName = fallbackPatternName,
+        )
     val exportFilename = stringResource(R.string.pattern_annotation_export_filename, exportBaseName)
     val requestId = pendingExportRequestId
     key(requestId) {
@@ -2825,6 +2834,19 @@ private fun ReadingLineRowLabel(
         )
     }
 }
+
+/** Vientinimen pohja: vain .pdf-pääte poistetaan, joten "Huivi v1.2" ei lyhene muotoon "Huivi v1". */
+internal fun annotatedPdfExportBaseName(
+    patternName: String?,
+    photoFallback: String,
+    defaultName: String,
+): String = patternName?.let { PatternDisplayNames.forDisplay(it, photoFallback) }?.ifBlank { null } ?: defaultName
+
+/** Kenttään esitäytetään siistitty nimi; muuttamaton tallennus ei korvaa alkuperäistä nimikettä. */
+internal fun isDocumentRenameChange(
+    input: String,
+    prefilledLabel: String,
+): Boolean = input.trim() != prefilledLabel.trim()
 
 @Composable
 private fun PatternViewerMessage(message: String) {

@@ -10,7 +10,6 @@ import com.finnvek.knittools.pro.ProFeature
 import com.finnvek.knittools.pro.ProManager
 import io.mockk.coEvery
 import io.mockk.coVerify
-import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
@@ -134,7 +133,7 @@ class YarnCardRepositoryDomainApiTest {
             val existing = YarnCardEntity(id = 5L, yarnName = "Old")
             val yarnDao = FakeYarnCardDao(yarnCards = listOf(existing))
             val proManager = mockk<ProManager>()
-            every { proManager.hasFeature(ProFeature.UNLIMITED_YARN) } returns false
+            coEvery { proManager.hasFeatureAfterInitialLoad(ProFeature.UNLIMITED_YARN) } returns false
             val repository =
                 YarnCardRepository(
                     yarnDao,

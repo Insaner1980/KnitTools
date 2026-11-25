@@ -71,15 +71,32 @@ class YarnCardRepository
                 .flatMap { chunk -> dao.getCards(chunk) }
                 .map { it.toDomain() }
 
-        suspend fun saveCard(card: YarnCard): Long? =
-            transactionRunner.run {
-                saveCardInCurrentTransaction(card)
+        suspend fun saveCard(card: YarnCard): Long? {
+            val canCreateNewCard = card.id != 0L || canCreateNewCards()
+            return transactionRunner.run {
+                saveCardInCurrentTransaction(card, canCreateNewCard)
             }
+        }
 
-        internal suspend fun saveCardInCurrentTransaction(card: YarnCard): Long? {
+        /**
+         * Pro-tilan alkulataus odotetaan ennen transaktiota. Luontioikeus tarkistetaan uudelleen
+         * transaktiossa, koska kokeilu voi päättyä transaktiovuoroa odotettaessa.
+         */
+        internal suspend fun canCreateNewCards(): Boolean =
+            proManager?.hasFeatureAfterInitialLoad(ProFeature.UNLIMITED_YARN) ?: true
+
+        internal suspend fun saveCardInCurrentTransaction(
+            card: YarnCard,
+            canCreateNewCard: Boolean,
+        ): Long? {
             val existingCard = card.id.takeIf { it != 0L }?.let { dao.getCard(it) }
             if (card.id != 0L && existingCard == null) return null
-            if (existingCard == null && proManager?.hasFeature(ProFeature.UNLIMITED_YARN) == false) return null
+            if (
+                existingCard == null &&
+                (!canCreateNewCard || proManager?.hasCurrentFeature(ProFeature.UNLIMITED_YARN) == false)
+            ) {
+                return null
+            }
             if (card.quantityInStash < 0) return null
             val projects = counterProjectDao.getAllProjectsOnce()
             val cardWithPreservedDetails = card.preserveSameCardDetails(existingCard)

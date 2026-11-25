@@ -86,6 +86,7 @@ class ProjectYarnNoteRepository
             name == other.name && description == other.description && quantity == other.quantity && notes == other.notes
 
         suspend fun saveToMyYarn(noteId: Long): Long? {
+            val canCreateNewCard = yarnCardRepository.canCreateNewCards()
             return transactionRunner.run {
                 val note = dao.getById(noteId)?.toDomain()?.normalized() ?: return@run null
                 val existingCard = note.savedYarnCardId?.let { yarnCardRepository.getCard(it) }
@@ -107,6 +108,7 @@ class ProjectYarnNoteRepository
                             status = YarnCardStatus.IN_USE,
                             linkedProjectId = note.projectId,
                         ),
+                        canCreateNewCard,
                     ) ?: return@run null
                 dao.updateSavedYarnCardId(
                     id = note.id,

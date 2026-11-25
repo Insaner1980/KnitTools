@@ -60,6 +60,10 @@ class AppStartupSourceTest {
                     "                yarnCardRepository.get().pruneUnreferencedPhotoFiles()",
             ),
         )
+        // Jaettujen PDF-kopioiden siivous ei saa poistaa perehdytysluonnoksen PDF:ää.
+        val onboardingPdfAssignment = "val onboardingPdf = onboardingStateRepository.get().draft.first()?.pdfUri"
+        assertTrue(app.filterNot(Char::isWhitespace).contains(onboardingPdfAssignment.filterNot(Char::isWhitespace)))
+        assertTrue(app.contains("pruneUnreferencedStagedPdfs(keepUris = setOfNotNull(onboardingPdf))"))
         assertTrue(app.contains("Lankakuvien best-effort-siivous ei saa kaataa sovellusta."))
     }
 

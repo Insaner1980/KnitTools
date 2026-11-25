@@ -29,6 +29,8 @@ internal object ProPolicyTestControl {
     fun purchaseStateReady(source: Flow<Boolean>): Flow<Boolean> =
         combine(source, purchasedOverride) { real, override -> real || override != null }
 
+    fun currentTrialState(real: TrialState): TrialState = trialStateOverride.value ?: real
+
     fun currentPurchased(real: Boolean): Boolean = purchasedOverride.value ?: real
 
     fun currentPurchaseStateReady(real: Boolean): Boolean = real || purchasedOverride.value != null

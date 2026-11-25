@@ -33,12 +33,14 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.withTimeoutOrNull
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -47,6 +49,7 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import java.util.concurrent.atomic.AtomicBoolean
 
 /** Part 15 device boundaries: real Room, real repositories, synthetic entitlement inputs. */
 class AuditPart15RoomTest {
@@ -120,6 +123,67 @@ class AuditPart15RoomTest {
             }
             assertEquals(6, counters.getCountersForProject(id).first().size)
             assertEquals(2, yarn.getAllCards().first().size)
+        }
+
+    @Test fun rapidSecondaryCounterTapsKeepRoomWriteOrder() =
+        runBlocking<Unit> {
+            val projects = db.counterProjectDao()
+            val project = CounterProjectEntity(name = "Secondary counter", secondaryCounterUsed = true)
+            val projectId = projects.insert(project)
+            val firstWriteStarted = CompletableDeferred<Unit>()
+            val releaseFirstWrite = CompletableDeferred<Unit>()
+            val laterWriteStarted = CompletableDeferred<Unit>()
+            val savedCounts = Channel<Int>(capacity = 3)
+            val tapping = AtomicBoolean(false)
+            val transactions =
+                object : DatabaseTransactionRunner {
+                    override suspend fun <T> run(block: suspend () -> T): T {
+                        if (!tapping.get()) return fixture.transactionRunner.run(block)
+                        if (firstWriteStarted.complete(Unit)) {
+                            releaseFirstWrite.await()
+                        } else {
+                            laterWriteStarted.complete(Unit)
+                        }
+                        val (result, count) =
+                            fixture.transactionRunner.run {
+                                block() to requireNotNull(projects.getProject(projectId)).secondaryCount
+                            }
+                        savedCounts.send(count)
+                        return result
+                    }
+                }
+            val model =
+                withContext(Dispatchers.Main) {
+                    fixture.counterViewModel(pro, applicationScope, transactions = transactions).also {
+                        models.put("secondary", it)
+                    }
+                }
+            withTimeout(10_000) {
+                model.uiState.first {
+                    it.projectId == projectId && it.canUseSecondaryCounter && it.initialSessionRefreshFinished
+                }
+            }
+
+            try {
+                withContext(Dispatchers.Main) {
+                    tapping.set(true)
+                    model.incrementSecondary()
+                }
+                withTimeout(10_000) { firstWriteStarted.await() }
+                val renamed = "Renamed secondary counter"
+                projects.update(requireNotNull(projects.getProject(projectId)).copy(name = renamed))
+                withTimeout(10_000) { model.uiState.first { it.projectName == renamed } }
+                withContext(Dispatchers.Main) { repeat(2) { model.incrementSecondary() } }
+                val overtakingWrite = withTimeoutOrNull(1_000) { laterWriteStarted.await() }
+                assertNull("A later write reached Room before the first write was released", overtakingWrite)
+            } finally {
+                releaseFirstWrite.complete(Unit)
+            }
+
+            val writes = withTimeout(10_000) { List(3) { savedCounts.receive() } }
+            assertEquals(listOf(1, 2, 3), writes)
+            assertEquals(3, projects.getProject(projectId)?.secondaryCount)
+            withTimeout(10_000) { model.uiState.first { it.secondaryCount == 3 } }
         }
 
     @Test fun admittedCameraImageCreatesRealPdfAfterExpiryAndExistingPdfRemainsReadable() =

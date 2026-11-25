@@ -3,7 +3,6 @@ package com.finnvek.knittools.data.storage
 import android.content.Context
 import android.graphics.pdf.PdfDocument
 import android.net.Uri
-import android.provider.DocumentsContract
 import com.finnvek.knittools.di.IoDispatcher
 import com.finnvek.knittools.domain.calculator.ChartTrackerHighlight
 import com.finnvek.knittools.domain.model.PatternAnnotation
@@ -61,14 +60,16 @@ class PatternPdfExporter private constructor(
         onProgress: (PatternPdfExportProgress) -> Unit,
     ) = withContext(ioDispatcher) {
         requireDifferentDestination(sourceUri, destinationUri)
-        validateInputs(annotations, trackerHighlights)
-        PdfPageRenderer(context, sourceUri).use { renderer ->
-            val plan = planDocument(renderer)
+        IncompleteDestination.writeWithCleanup(context, destinationUri) {
+            validateInputs(annotations, trackerHighlights)
             val exportDirectory = File(context.cacheDir, EXPORT_TEMP_DIRECTORY).apply { mkdirs() }
             if (!exportDirectory.isDirectory) throw IOException("Pattern PDF export cache is unavailable")
             val tempFile = File.createTempFile(EXPORT_TEMP_PREFIX, EXPORT_TEMP_SUFFIX, exportDirectory)
             try {
-                renderToTempFile(renderer, plan, tempFile, annotations, trackerHighlights, style, onProgress)
+                PdfPageRenderer(context, sourceUri).use { renderer ->
+                    val plan = planDocument(renderer)
+                    renderToTempFile(renderer, plan, tempFile, annotations, trackerHighlights, style, onProgress)
+                }
                 coroutineContext.ensureActive()
                 copyToDestination(tempFile, destinationUri)
             } finally {
@@ -214,7 +215,7 @@ class PatternPdfExporter private constructor(
         var copied = false
         // use säilyttää alkuperäisen virheen tai peruutuksen siivousvirheen rinnalla.
         AutoCloseable {
-            if (!copied) removeIncompleteDestination(destinationUri)
+            if (!copied) IncompleteDestination.delete(context, destinationUri)
         }.use {
             output.buffered().use { target ->
                 tempFile.inputStream().buffered().use { input ->
@@ -228,26 +229,6 @@ class PatternPdfExporter private constructor(
                 }
             }
             copied = true
-        }
-    }
-
-    private fun removeIncompleteDestination(destination: Uri) {
-        val resolver = context.contentResolver
-        when {
-            destination.scheme == "file" -> {
-                val partialFile = destination.path?.let(::File) ?: return
-                if (!partialFile.delete() && partialFile.exists()) {
-                    throw IOException("Could not remove incomplete pattern PDF")
-                }
-            }
-
-            DocumentsContract.isDocumentUri(context, destination) -> {
-                DocumentsContract.deleteDocument(resolver, destination)
-            }
-
-            else -> {
-                resolver.delete(destination, null, null)
-            }
         }
     }
 

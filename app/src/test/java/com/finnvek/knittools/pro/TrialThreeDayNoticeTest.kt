@@ -165,6 +165,8 @@ class TrialThreeDayNoticeTest {
             val manager = TrialManager(store(), Dispatchers.IO, time)
             manager.startTrial()
             time.advanceDays(11L)
+            // Kellon siirto taaksepäin uudelleenkäynnistyksen yli on peukalointia.
+            time.reboot()
             time.wallMillis = START - TimeUnit.HOURS.toMillis(2L)
 
             assertFalse(manager.claimTrialThreeDayNotice())
@@ -235,6 +237,7 @@ class TrialThreeDayNoticeTest {
     private class TrialClock : SessionTimeSource {
         var wallMillis = START
         private var elapsedMillis = 10_000L
+        private var bootCount = 4L
 
         fun advanceDays(days: Long) {
             val millis = TimeUnit.DAYS.toMillis(days)
@@ -242,11 +245,16 @@ class TrialThreeDayNoticeTest {
             elapsedMillis += millis
         }
 
+        fun reboot() {
+            bootCount += 1L
+            elapsedMillis = 1_000L
+        }
+
         override fun snapshot(): SessionTimeSnapshot =
             SessionTimeSnapshot(
                 wallClockMillis = wallMillis,
                 elapsedRealtimeMillis = elapsedMillis,
-                bootCount = 4L,
+                bootCount = bootCount,
                 zoneId = "Europe/Helsinki",
             )
     }

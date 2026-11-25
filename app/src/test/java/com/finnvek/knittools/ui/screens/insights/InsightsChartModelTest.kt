@@ -142,6 +142,21 @@ class InsightsChartModelTest {
     }
 
     @Test
+    fun `all time short history across a month boundary stays in day buckets`() {
+        val axis =
+            insightsChartAxis(
+                timeRange = TimeRange.ALL_TIME,
+                today = LocalDate.of(2026, 12, 3),
+                firstSessionDate = LocalDate.of(2026, 11, 28),
+                firstDayOfWeek = monday,
+            )
+
+        assertEquals(PaceGroupingInterval.DAY, axis.interval)
+        assertEquals(6, axis.bucketStarts.size)
+        assertEquals(LocalDate.of(2026, 11, 28), axis.bucketStarts.first())
+    }
+
+    @Test
     fun `all time without sessions falls back to day buckets`() {
         val axis =
             insightsChartAxis(

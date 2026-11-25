@@ -28,7 +28,6 @@ import com.finnvek.knittools.domain.calculator.CounterState
 import com.finnvek.knittools.domain.calculator.CounterValueFormatter
 import com.finnvek.knittools.domain.calculator.MAX_MAIN_COUNTER_STEP_SIZE
 import com.finnvek.knittools.domain.calculator.MAX_TARGET_ROWS
-import com.finnvek.knittools.domain.calculator.ReadingLineResolutionKind
 import com.finnvek.knittools.domain.calculator.RepeatSectionLogic
 import com.finnvek.knittools.domain.calculator.RowMarker
 import com.finnvek.knittools.domain.calculator.parseMapping
@@ -336,6 +335,9 @@ class CounterViewModel
         private val _stepFeedback = MutableSharedFlow<MainCounterStepFeedback>(extraBufferCapacity = 1)
         val stepFeedback: SharedFlow<MainCounterStepFeedback> = _stepFeedback.asSharedFlow()
         private val stepSizeSaveMutex = Mutex()
+
+        // Rajat huomioivat askeleet ajetaan napautusjärjestyksessä.
+        private val secondaryCountSaveMutex = Mutex()
         private var projectSelectionVersion = 0L
         private var counterStateVersion = 0L
         private var counterActionVersion = 0L
@@ -2138,22 +2140,23 @@ class CounterViewModel
             _uiState.update {
                 it.copy(secondaryCount = (it.secondaryCount.toLong() + 1L).coerceAtMost(Int.MAX_VALUE.toLong()).toInt())
             }
-            persistSecondary()
+            persistSecondary(increment = true)
         }
 
         fun decrementSecondary() {
             if (!_uiState.value.canUseSecondaryCounter) return
             _uiState.update { it.copy(secondaryCount = maxOf(0, it.secondaryCount - 1)) }
-            persistSecondary()
+            persistSecondary(increment = false)
         }
 
-        private fun persistSecondary() {
-            val state = _uiState.value
-            val projectId = state.projectId ?: return
-            val secondaryCount = state.secondaryCount
+        private fun persistSecondary(increment: Boolean) {
+            val projectId = _uiState.value.projectId ?: return
             val selectionVersion = projectSelectionVersion
             launchProjectContentMutation {
-                val saved = tryProjectWrite { repository.updateProjectSecondaryCount(projectId, secondaryCount) }
+                val saved =
+                    secondaryCountSaveMutex.withLock {
+                        tryProjectWrite { repository.applySecondaryCounterStep(projectId, increment) }
+                    }
                 if (!saved) {
                     val persisted = repository.getProject(projectId) ?: return@launchProjectContentMutation false
                     _uiState.update { current ->
@@ -3116,9 +3119,7 @@ class CounterViewModel
                 if (enabled && resolution != null) {
                     _viewerEvents.emit(
                         CounterViewerEvent.ReadingLineFollowingResumed(
-                            calibrated =
-                                resolution.kind == ReadingLineResolutionKind.EXACT_MARKER ||
-                                    resolution.kind == ReadingLineResolutionKind.SAME_PAGE_INTERPOLATION,
+                            calibrated = resolution.kind.isCalibrated,
                         ),
                     )
                 }

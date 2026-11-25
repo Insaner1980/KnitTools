@@ -388,11 +388,12 @@ class TrialManager
                         elapsedDurationMillis = storedTiming.validElapsedDurationOrZero(),
                         lastKnownTimestamp = nextLastKnownTimestamp,
                     )
+                // Ankkuroitu kesto kasvaa monotonisesta kellosta, joten saman käynnistyksen aikainen
+                // seinäkellon oikaisu taaksepäin ei pidennä kokeilua eikä ole peukalointia. Käynnistysten
+                // välinen taaksepäin siirto hylätään jo kestolaskennassa.
                 val clockTampered =
                     clockTamperedAlready ||
-                        storedTiming == StoredTrialTiming.Legacy ||
-                        rollbackExceedsTolerance(now.wallClockMillis, lastKnownTimestamp) ||
-                        rollbackExceedsTolerance(now.wallClockMillis, startTimestamp)
+                        storedTiming == StoredTrialTiming.Legacy
                 return createTimingEvaluation(
                     now = now,
                     startTimestamp = startTimestamp,
@@ -451,9 +452,32 @@ class TrialManager
                 storedTiming: StoredTrialTiming.Anchored,
                 now: SessionTimeSnapshot,
             ): Long? {
-                val storedBootCount = storedTiming.anchorBootCount ?: return null
-                val currentBootCount = now.bootCount ?: return null
+                val storedBootCount = storedTiming.anchorBootCount
+                val currentBootCount = now.bootCount
+                if (storedBootCount == null || currentBootCount == null) {
+                    return calculateUnknownBootDelta(storedTiming, now)
+                }
                 return calculateKnownBootDelta(storedTiming, now, storedBootCount, currentBootCount)
+            }
+
+            // Kaikki laitteet eivät ylläpidä BOOT_COUNT-arvoa, ja sen luku voi epäonnistua hetkellisesti.
+            // Uudelleenkäynnistys tunnistetaan silloin elapsedRealtimen nollautumisesta. Saman käynnistyksen
+            // aikana kuluu suurempi kahdesta kellosta, jotta kumpikaan ei voi lyhentää kulunutta aikaa.
+            private fun calculateUnknownBootDelta(
+                storedTiming: StoredTrialTiming.Anchored,
+                now: SessionTimeSnapshot,
+            ): Long? {
+                val elapsedDelta =
+                    nonNegativeDifference(now.elapsedRealtimeMillis, storedTiming.anchorElapsedRealtimeMillis)
+                if (elapsedDelta != null) {
+                    val wallDelta = nonNegativeDifference(now.wallClockMillis, storedTiming.anchorWallClockMillis) ?: 0L
+                    return maxOf(elapsedDelta, wallDelta)
+                }
+                val wallClockDelta =
+                    nonNegativeDifference(now.wallClockMillis, storedTiming.anchorWallClockMillis) ?: return null
+                if (wallClockDelta > Long.MAX_VALUE - ROLLBACK_TOLERANCE_MILLIS) return null
+                val compensatedDelta = wallClockDelta + ROLLBACK_TOLERANCE_MILLIS
+                return compensatedDelta.takeIf { it >= now.elapsedRealtimeMillis }
             }
 
             private fun calculateKnownBootDelta(
@@ -579,7 +603,7 @@ class TrialManager
                 storedTiming.elapsedDurationMillis < 0L ||
                     storedTiming.anchorWallClockMillis <= 0L ||
                     storedTiming.anchorElapsedRealtimeMillis < 0L ||
-                    storedTiming.anchorBootCount?.let { it < 0L } != false
+                    storedTiming.anchorBootCount?.let { it < 0L } == true
 
             private fun hasInconsistentWallAnchors(
                 storedTiming: StoredTrialTiming.Anchored,
@@ -587,20 +611,12 @@ class TrialManager
                 lastKnownTimestamp: Long,
             ): Boolean =
                 lastKnownTimestamp < startTimestamp ||
-                    storedTiming.anchorWallClockMillis > lastKnownTimestamp ||
-                    rollbackExceedsTolerance(storedTiming.anchorWallClockMillis, startTimestamp)
+                    storedTiming.anchorWallClockMillis > lastKnownTimestamp
 
             private fun isValidTimeSnapshot(snapshot: SessionTimeSnapshot): Boolean =
                 snapshot.wallClockMillis > 0L &&
                     snapshot.elapsedRealtimeMillis >= 0L &&
-                    snapshot.bootCount?.let { it >= 0L } == true
-
-            private fun rollbackExceedsTolerance(
-                currentTimestamp: Long,
-                referenceTimestamp: Long,
-            ): Boolean =
-                referenceTimestamp > currentTimestamp &&
-                    referenceTimestamp - currentTimestamp > ROLLBACK_TOLERANCE_MILLIS
+                    snapshot.bootCount?.let { it >= 0L } != false
 
             private fun nonNegativeDifference(
                 later: Long,

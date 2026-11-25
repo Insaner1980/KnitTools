@@ -114,7 +114,7 @@ class ArchitectureSingleSourceSourceTest {
     fun `PROJECT document matches current architecture decisions`() {
         val project = ProjectSourceFiles.read(PROJECT_MD)
 
-        assertTrue(project.contains("| Room schema | $KNITTOOLS_DATABASE_VERSION |"))
+        assertTrue(project.contains("| Room | Version $KNITTOOLS_DATABASE_VERSION, "))
         listOf(
             "Pattern import uses SAF `OpenDocument(application/pdf)`",
             "New project plus PDF is one repository transaction",

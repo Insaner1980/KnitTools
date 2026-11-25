@@ -227,7 +227,7 @@ class CounterEditorWriteResultTest : CounterViewModelFixture() {
             val project = observedProject.value.copy(secondaryCount = 4, secondaryCounterUsed = true)
             observedProject.value = project
             every { repository.getActiveProjects() } returns flowOf(listOf(project))
-            coEvery { repository.updateProjectSecondaryCount(7L, 5) } throws IOException("synthetic failure")
+            coEvery { repository.applySecondaryCounterStep(7L, true) } throws IOException("synthetic failure")
             coEvery { repository.getProject(7L) } returns project
             val viewModel = viewModel()
             val errors = collectErrors(viewModel.projectContentErrors)

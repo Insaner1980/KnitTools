@@ -16,6 +16,7 @@ import com.finnvek.knittools.pro.ProManager
 import com.finnvek.knittools.repository.BackupRepository
 import com.finnvek.knittools.repository.OnboardingStateRepository
 import com.finnvek.knittools.repository.ProjectCounterRepository
+import com.finnvek.knittools.repository.SavedPatternRepository
 import com.finnvek.knittools.repository.YarnCardRepository
 import com.finnvek.knittools.widget.CounterWidgetState
 import dagger.hilt.android.HiltAndroidApp
@@ -24,6 +25,7 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import java.time.LocalDate
@@ -48,6 +50,9 @@ class App : Application() {
 
     @Inject
     lateinit var backupRepository: dagger.Lazy<BackupRepository>
+
+    @Inject
+    lateinit var savedPatternRepository: dagger.Lazy<SavedPatternRepository>
 
     @Inject
     lateinit var onboardingStateRepository: dagger.Lazy<OnboardingStateRepository>
@@ -97,10 +102,19 @@ class App : Application() {
             try {
                 backupRepository.get().recoverInterruptedOperations()
                 yarnCardRepository.get().pruneUnreferencedPhotoFiles()
+                // Perehdytysluonnoksen PDF on DataStoressa eikä tietokannassa, joten se säilytetään erikseen.
+                val onboardingPdf =
+                    onboardingStateRepository
+                        .get()
+                        .draft
+                        .first()
+                        ?.pdfUri
+                savedPatternRepository.get().pruneUnreferencedStagedPdfs(keepUris = setOfNotNull(onboardingPdf))
             } catch (e: CancellationException) {
                 throw e
             } catch (_: Exception) {
                 // Lankakuvien best-effort-siivous ei saa kaataa sovellusta.
+                // Sama koskee hylättyjen jaettujen PDF-kopioiden siivousta.
             }
         }
         applicationScope.launch(ioDispatcher) {

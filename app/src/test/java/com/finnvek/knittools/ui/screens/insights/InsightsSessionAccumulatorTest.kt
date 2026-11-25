@@ -17,25 +17,6 @@ class InsightsSessionAccumulatorTest {
     private val today = LocalDate.of(2026, 9, 22)
     private val firstDay = WeekFields.of(currentInsightsLocale()).firstDayOfWeek
 
-    @Test fun boundedRangesRequestThePreviousPeriodAndEveryValidStoredZone() {
-        for ((range, expected) in listOf(
-            TimeRange.THIS_WEEK to LocalDate.of(2026, 9, 14),
-            TimeRange.THIS_MONTH to LocalDate.of(2026, 8, 1),
-        )) {
-            val params = params(range)
-            val previous =
-                if (range ==
-                    TimeRange.THIS_WEEK
-                ) {
-                    requireNotNull(InsightsViewModel.rangeStartDate(range, today, firstDay)).minusWeeks(1)
-                } else {
-                    expected
-                }
-            assertEquals(previous.atStartOfDay(ZoneOffset.MAX).toInstant().toEpochMilli(), insightsQueryStart(params))
-        }
-        assertEquals(null, insightsQueryStart(params(TimeRange.ALL_TIME)))
-    }
-
     @Test fun streamingPreservesExactMetricsZonesStreaksChartsFabricAndProjectTimes() {
         val rows =
             listOf(
@@ -61,10 +42,11 @@ class InsightsSessionAccumulatorTest {
             assertEquals(summary, result.summary)
             val earliest = InsightsViewModel.rangeStartDate(range, today, firstDay) ?: LocalDate.MIN
             assertEquals(SessionMetrics.activityDates(rows, earliest, zone), result.activeDates)
-            assertEquals(InsightsViewModel.calculateStreak(rows, params.startMillis), result.activeDates.bestStreak())
+            // Putki lasketaan koko historiasta valitusta aikavälistä riippumatta.
+            assertEquals(InsightsViewModel.calculateStreak(rows), result.streakDates.bestStreak())
             assertEquals(
-                InsightsViewModel.calculateCurrentStreak(rows, params.startMillis, zone, today),
-                currentStreak(result.activeDates, today),
+                InsightsViewModel.calculateCurrentStreak(rows, null, zone, today),
+                currentStreak(result.streakDates, today),
             )
             assertEquals(InsightsViewModel.firstSessionDate(rows, zone), result.firstDate)
             val axis = insightsChartAxis(range, today, result.firstDate, firstDay)
@@ -91,6 +73,16 @@ class InsightsSessionAccumulatorTest {
                 assertEquals(12, axis.bucketStarts.size)
             }
             assertEquals(summary.totalRows, result.timePerProject(emptyList()).sumOf { it.totalRows })
+        }
+    }
+
+    @Test fun streakDoesNotRestartAtTheSelectedRangeStart() {
+        for (range in TimeRange.entries) {
+            val accumulator = InsightsSessionAccumulator(params(range), SessionInsightsFacts(true, emptyList()))
+            (0L until 23L).forEach { daysAgo -> accumulator.add(session(today.minusDays(daysAgo), 1, 60, 1)) }
+
+            assertEquals(23, currentStreak(accumulator.streakDates, today))
+            assertEquals(23, accumulator.streakDates.bestStreak())
         }
     }
 

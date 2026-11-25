@@ -99,7 +99,7 @@ fun ProPromptSheet(
     val offer by viewModel.selectedOffer.collectAsStateWithLifecycle()
     val productStatus by viewModel.productStatus.collectAsStateWithLifecycle()
     LifecycleResumeEffect(viewModel) {
-        viewModel.retryProductDetails()
+        viewModel.onPriceViewResumed()
         onPauseOrDispose { }
     }
     val isStartingTrial by viewModel.isStartingTrial.collectAsStateWithLifecycle()

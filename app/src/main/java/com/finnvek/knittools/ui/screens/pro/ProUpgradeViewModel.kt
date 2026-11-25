@@ -90,6 +90,10 @@ class ProUpgradeViewModel
         fun retryProductDetails() {
             billingManager.retryProductDetails()
         }
+
+        fun onPriceViewResumed() {
+            billingManager.onPriceViewResumed()
+        }
     }
 
 internal fun BillingUserMessage.toMessageRes(): Int =

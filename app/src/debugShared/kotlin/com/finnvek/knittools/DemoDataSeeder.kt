@@ -34,7 +34,7 @@ object DemoDataSeeder {
                 }
             },
             saveYarnCard = { card ->
-                yarnCardRepository.get().saveCardInCurrentTransaction(card)
+                yarnCardRepository.get().saveCardInCurrentTransaction(card, canCreateNewCard = true)
                     ?: error("Demolankakortin tallennus epäonnistui")
             },
         )

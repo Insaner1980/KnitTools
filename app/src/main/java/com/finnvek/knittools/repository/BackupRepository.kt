@@ -25,6 +25,8 @@ import com.finnvek.knittools.data.local.KnitToolsDatabase
 import com.finnvek.knittools.data.local.PatternAnnotationSchemaConstraints
 import com.finnvek.knittools.data.local.ProjectDocumentSchemaConstraints
 import com.finnvek.knittools.data.storage.AppFileStorage
+import com.finnvek.knittools.data.storage.IncompleteDestination
+import com.finnvek.knittools.data.storage.NotesDraftStorage
 import com.finnvek.knittools.di.ApplicationScope
 import com.finnvek.knittools.di.IoDispatcher
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -33,6 +35,7 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -44,6 +47,8 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 private const val BACKUP_ARCHIVE_NAME = "backup.zip"
+private const val CLEANUP_RETRY_ATTEMPTS = 5
+private const val CLEANUP_RETRY_DELAY_MS = 2_000L
 
 @Singleton
 class BackupRepository
@@ -68,26 +73,28 @@ class BackupRepository
             withContext(ioDispatcher) {
                 val coroutine = currentCoroutineContext()
                 val check = { coroutine.ensureActive() }
-                val directory =
-                    operation.withLock {
-                        newDirectory().also { activeDirectories += it }
-                    }
-                try {
-                    val externalFiles = operationResult(BackupError.WRITE) { stageExternalFiles(directory, check) }
-                    val archive =
+                IncompleteDestination.writeWithCleanup(context, destination) {
+                    val directory =
                         operation.withLock {
-                            operationResult(BackupError.WRITE) {
-                                buildLocalArchive(directory, externalFiles, check)
-                            }
+                            newDirectory().also { activeDirectories += it }
                         }
-                    operationResult(BackupError.WRITE) {
-                        providerIo.write(archive, destination, BackupFormat.MAX_TOTAL, check)
-                    }
-                } finally {
-                    withContext(NonCancellable) {
-                        operation.withLock {
-                            activeDirectories -= directory
-                            directory.deleteRecursively()
+                    try {
+                        val externalFiles = operationResult(BackupError.WRITE) { stageExternalFiles(directory, check) }
+                        val archive =
+                            operation.withLock {
+                                operationResult(BackupError.WRITE) {
+                                    buildLocalArchive(directory, externalFiles, check)
+                                }
+                            }
+                        operationResult(BackupError.WRITE) {
+                            providerIo.write(archive, destination, BackupFormat.MAX_TOTAL, check)
+                        }
+                    } finally {
+                        withContext(NonCancellable) {
+                            operation.withLock {
+                                activeDirectories -= directory
+                                directory.deleteRecursively()
+                            }
                         }
                     }
                 }
@@ -174,8 +181,13 @@ class BackupRepository
                         operationResult(BackupError.RESTORE) {
                             restoreValidated(directory)
                         }
+                        // Korvattujen projektien keskeneräiset muistiinpanot eivät kuulu palautettuun dataan.
+                        runCatching { NotesDraftStorage.deleteAllDrafts(context) }
                     } finally {
-                        withContext(NonCancellable) { cleanup(directory) }
+                        withContext(NonCancellable) {
+                            cleanup(directory)
+                            if (directory.exists()) scheduleCleanupRetry(directory)
+                        }
                     }
                     refreshWidgets()
                 }
@@ -289,6 +301,26 @@ class BackupRepository
                     }
                 }
             }
+
+        /**
+         * Avoimet tietokantahavainnoijat voivat pitää WAL-checkpointin kiireisenä heti palautuksen jälkeen.
+         * Vanhat tiedostot siivotaan silloin hetken päästä eikä vasta seuraavassa käynnistyksessä.
+         */
+        private fun scheduleCleanupRetry(directory: File) {
+            applicationScope.launch(ioDispatcher) {
+                repeat(CLEANUP_RETRY_ATTEMPTS) {
+                    delay(CLEANUP_RETRY_DELAY_MS)
+                    val done =
+                        operation.withLock {
+                            if (directory.exists() && directory != pending && directory !in activeDirectories) {
+                                cleanup(directory)
+                            }
+                            !directory.exists()
+                        }
+                    if (done) return@launch
+                }
+            }
+        }
 
         private fun refreshWidgets() {
             applicationScope.launch {
@@ -556,22 +588,22 @@ class BackupRepository
             pending?.deleteRecursively()
             pending = null
         }
-
-        private suspend fun <T> operationResult(
-            error: BackupError,
-            block: suspend () -> T,
-        ): T =
-            runCatching { block() }.getOrElse { failure ->
-                if (failure is Exception && failure !is CancellationException) throw classified(failure, error)
-                throw failure
-            }
-
-        private fun classified(
-            failure: Exception,
-            fallback: BackupError,
-        ): BackupException =
-            failure as? BackupException ?: BackupException(
-                if (failure is android.database.sqlite.SQLiteFullException) BackupError.SPACE else fallback,
-                failure,
-            )
     }
+
+private suspend fun <T> operationResult(
+    error: BackupError,
+    block: suspend () -> T,
+): T =
+    runCatching { block() }.getOrElse { failure ->
+        if (failure is Exception && failure !is CancellationException) throw classified(failure, error)
+        throw failure
+    }
+
+private fun classified(
+    failure: Exception,
+    fallback: BackupError,
+): BackupException =
+    failure as? BackupException ?: BackupException(
+        if (failure is android.database.sqlite.SQLiteFullException) BackupError.SPACE else fallback,
+        failure,
+    )

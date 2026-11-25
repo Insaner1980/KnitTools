@@ -21,7 +21,8 @@ internal fun ProjectYarnUsageRelations.items(): List<ProjectYarnUsageItem> {
             val usage =
                 (
                     usages.firstOrNull { it.usage.projectYarnNoteId == resolved.note.id }
-                        ?: usages.firstOrNull { it.usage.matches(source) }
+                        // Korttiin sidottu kirjaus näytetään vain yhdellä muistiinpanolla.
+                        ?: usages.firstOrNull { it.usage.id !in matchedUsages && it.usage.matches(source) }
                 )?.usage?.toDomain()
             usage?.let { matchedUsages.add(it.id) }
             result.add(ProjectYarnUsageItem(source, resolved.note.name, usage))

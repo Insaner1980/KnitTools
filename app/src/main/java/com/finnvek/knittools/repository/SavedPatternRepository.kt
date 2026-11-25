@@ -293,6 +293,33 @@ class SavedPatternRepository
             }
         }
 
+        /**
+         * Jaettu PDF kopioidaan projektiriippumattomaan pattern_pdfs/0-hakemistoon ennen kuin käyttäjä
+         * valitsee kohteen. Jos sovellus suljetaan siinä välissä, kopion ainoa viite (tallennettu tila)
+         * katoaa. Vuorokautta vanhemmat kopiot, joihin mikään ei viittaa, poistetaan käynnistyksessä.
+         * [keepUris] sisältää tietokannan ulkopuoliset pysyvät viitteet, kuten perehdytysluonnoksen PDF:n.
+         */
+        suspend fun pruneUnreferencedStagedPdfs(
+            keepUris: Set<String> = emptySet(),
+            nowMillis: Long = System.currentTimeMillis(),
+        ) {
+            val candidates =
+                withContext(ioDispatcher) {
+                    val keptFiles =
+                        keepUris.mapNotNullTo(mutableSetOf()) { uri ->
+                            AppFileStorage.resolveAppOwnedFile(context, uri.toUri())?.canonicalFile
+                        }
+                    File(context.filesDir, STAGED_PDF_DIRECTORY)
+                        .listFiles { file ->
+                            file.isFile &&
+                                nowMillis - file.lastModified() >= STAGED_PDF_MAX_AGE_MILLIS &&
+                                file.canonicalFile !in keptFiles
+                        }.orEmpty()
+                        .toList()
+                }
+            candidates.forEach { file -> deleteLocalPatternFileIfUnused(file.toUri().toString()) }
+        }
+
         private suspend fun deleteUnusedLocalPatternFiles(patterns: List<SavedPatternEntity>) {
             patterns
                 .map { it.patternUrl }
@@ -440,6 +467,11 @@ class SavedPatternRepository
             (0 until byteCount).all { index ->
                 first[index] == second[index]
             }
+
+        private companion object {
+            const val STAGED_PDF_DIRECTORY = "pattern_pdfs/0"
+            const val STAGED_PDF_MAX_AGE_MILLIS = 24L * 60L * 60L * 1_000L
+        }
     }
 
 private data class ValidatedWebPatternInput(

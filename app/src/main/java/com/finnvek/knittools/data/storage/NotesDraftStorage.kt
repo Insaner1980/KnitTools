@@ -73,5 +73,32 @@ class NotesDraftStorage
         private fun file(
             projectId: Long,
             id: UUID,
-        ): AtomicFile = AtomicFile(File(context.noBackupFilesDir, "notes-draft-$projectId-$id.json"))
+        ): AtomicFile = AtomicFile(File(context.noBackupFilesDir, "${projectPrefix(projectId)}$id.json"))
+
+        companion object {
+            private const val DRAFT_PREFIX = "notes-draft-"
+
+            private fun projectPrefix(projectId: Long): String = "$DRAFT_PREFIX$projectId-"
+
+            /**
+             * Poistaa projektin kaikki luonnokset. Kutsutaan vasta projektin tietokantapoiston jälkeen;
+             * AtomicFile voi jättää .new- tai .bak-tiedoston, joten etuliite kattaa ne myös.
+             */
+            fun deleteProjectDrafts(
+                context: Context,
+                projectId: Long,
+            ) = deleteDraftsWithPrefix(context, projectPrefix(projectId))
+
+            /** Palautus korvaa kaikki projektit, joten mikään aiempi luonnos ei enää kuulu niihin. */
+            fun deleteAllDrafts(context: Context) = deleteDraftsWithPrefix(context, DRAFT_PREFIX)
+
+            private fun deleteDraftsWithPrefix(
+                context: Context,
+                prefix: String,
+            ) {
+                context.noBackupFilesDir
+                    .listFiles { file -> file.isFile && file.name.startsWith(prefix) }
+                    ?.forEach(File::delete)
+            }
+        }
     }

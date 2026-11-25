@@ -84,7 +84,6 @@ class ProManager
                         status = ProStatus.PRO_PURCHASED,
                         trialDaysRemaining = 0,
                         trialStartTimestamp = trial.startTimestamp,
-                        purchaseTimestamp = System.currentTimeMillis(),
                     )
                 }
 
@@ -110,6 +109,12 @@ class ProManager
             }
 
         fun hasFeature(feature: ProFeature): Boolean = _proState.value.hasFeature(feature)
+
+        internal fun hasCurrentFeature(feature: ProFeature): Boolean =
+            resolveProState(
+                ProPolicyTestControl.currentTrialState(trialManager.trialState.value),
+                ProPolicyTestControl.currentPurchased(billingManager.isProPurchased.value),
+            ).hasFeature(feature)
 
         suspend fun startTrial(): TrialStartResult = ProPolicyTestControl.startTrial { trialManager.startTrial() }
 

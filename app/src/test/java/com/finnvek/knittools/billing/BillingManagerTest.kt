@@ -89,7 +89,7 @@ class BillingManagerTest {
     }
 
     @Test
-    fun `billing disconnect invalidates cached product details with a retryable state`() {
+    fun `billing disconnect keeps the quote and refreshes it through auto reconnection`() {
         val source =
             ProjectSourceFiles.read(
                 "app/src/main/java/com/finnvek/knittools/billing/BillingManager.kt",
@@ -97,13 +97,10 @@ class BillingManagerTest {
         val disconnectHandler =
             source
                 .substringAfter("override fun onBillingServiceDisconnected()")
-                .substringBefore("}", missingDelimiterValue = "")
+                .substringBefore("refreshPurchaseOwnership()", missingDelimiterValue = "")
 
-        assertTrue(
-            disconnectHandler.contains(
-                "applyProductUnavailable(BillingUserMessage.PURCHASE_NETWORK_ERROR)",
-            ),
-        )
+        assertTrue(disconnectHandler.contains("retryProductDetails()"))
+        assertFalse(disconnectHandler.contains("applyProductUnavailable"))
     }
 
     @Test

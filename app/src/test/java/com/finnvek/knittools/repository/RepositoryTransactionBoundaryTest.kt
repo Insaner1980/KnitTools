@@ -165,7 +165,8 @@ class RepositoryTransactionBoundaryTest {
             repository.deleteProject(7L)
 
             assertTrue(cleanupInputsReadInsideTransaction)
-            assertEquals(1, runner.runCount)
+            // Aktiivisen istunnon ennakkotarkistus ja varsinainen poisto ovat omat transaktionsa.
+            assertEquals(2, runner.runCount)
             assertEquals(
                 listOf(
                     "read-document-uris",
@@ -190,6 +191,8 @@ class RepositoryTransactionBoundaryTest {
             val yarnRepository = mockk<YarnCardRepository>(relaxed = true)
             val photoStorage = mockk<ProgressPhotoStorage>(relaxed = true)
             val context = mockk<Context>(relaxed = true)
+            coEvery { projectDao.getProject(7L) } returns CounterProjectEntity(id = 7L)
+            coEvery { sessionDao.getActiveSession() } returns null
             val repository =
                 CounterRepository(
                     dao = projectDao,
@@ -221,6 +224,8 @@ class RepositoryTransactionBoundaryTest {
             val photoStorage = mockk<ProgressPhotoStorage>(relaxed = true)
             val context = mockk<Context>(relaxed = true)
             every { photoStorage.deleteProjectPhotos(context, 7L) } throws IOException("delete failed")
+            coEvery { projectDao.getProject(7L) } returns CounterProjectEntity(id = 7L)
+            coEvery { sessionDao.getActiveSession() } returns null
             val repository =
                 CounterRepository(
                     dao = projectDao,

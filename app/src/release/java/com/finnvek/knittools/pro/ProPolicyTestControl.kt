@@ -12,6 +12,8 @@ internal object ProPolicyTestControl {
 
     fun purchaseStateReady(source: Flow<Boolean>): Flow<Boolean> = source
 
+    fun currentTrialState(real: TrialState): TrialState = real
+
     fun currentPurchased(real: Boolean): Boolean = real
 
     fun currentPurchaseStateReady(real: Boolean): Boolean = real

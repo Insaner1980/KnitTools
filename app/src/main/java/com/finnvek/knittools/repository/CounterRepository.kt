@@ -2,6 +2,7 @@ package com.finnvek.knittools.repository
 
 import android.content.Context
 import android.database.sqlite.SQLiteConstraintException
+import androidx.annotation.VisibleForTesting
 import com.finnvek.knittools.data.local.ActiveSessionEntity
 import com.finnvek.knittools.data.local.CounterHistoryEntity
 import com.finnvek.knittools.data.local.CounterProjectDao
@@ -19,6 +20,7 @@ import com.finnvek.knittools.data.local.SessionEntity
 import com.finnvek.knittools.data.local.SessionProjectActivity
 import com.finnvek.knittools.data.local.toDomain
 import com.finnvek.knittools.data.local.toEntity
+import com.finnvek.knittools.data.storage.NotesDraftStorage
 import com.finnvek.knittools.data.storage.PatternDocumentStorage
 import com.finnvek.knittools.data.storage.ProgressPhotoStorage
 import com.finnvek.knittools.data.time.SessionTimeSource
@@ -242,6 +244,7 @@ class CounterRepository
             canCreateAdditionalProjects: Boolean,
         ): ProjectCreationResult =
             withContext(ioDispatcher) {
+                val allowsAdditionalProjects = resolveAdditionalProjectAccess(canCreateAdditionalProjects)
                 fileReferenceCoordinator.withReferenceLock {
                     dao.findOnboardingProjectId(draft.id)?.let {
                         return@withReferenceLock ProjectCreationResult.Created(it)
@@ -266,7 +269,7 @@ class CounterRepository
                                 craftType = draft.projectCraftType,
                                 mainCounterLabelType = draft.projectCraftType.defaultMainCounterLabelType(),
                                 mainCounterCustomLabel = null,
-                                canCreateAdditionalProjects = canCreateAdditionalProjects,
+                                canCreateAdditionalProjects = allowsAdditionalProjects,
                                 targetFolderId = null,
                                 startValues = ProjectStartValues(count, (target as? TargetInput.Valid)?.value),
                             )
@@ -305,8 +308,9 @@ class CounterRepository
             canCreateAdditionalProjects: Boolean,
             targetFolderId: Long? = null,
             options: ProjectCreationOptions = ProjectCreationOptions(),
-        ): ProjectCreationResult =
-            try {
+        ): ProjectCreationResult {
+            val allowsAdditionalProjects = resolveAdditionalProjectAccess(canCreateAdditionalProjects)
+            return try {
                 transactionRunner.run {
                     val attemptId = options.attemptId
                     if (attemptId != null) findProjectCreationResult(attemptId)?.let { return@run it }
@@ -317,7 +321,7 @@ class CounterRepository
                             craftType = craftType,
                             mainCounterLabelType = mainCounterLabelType,
                             mainCounterCustomLabel = mainCounterCustomLabel,
-                            canCreateAdditionalProjects = canCreateAdditionalProjects,
+                            canCreateAdditionalProjects = allowsAdditionalProjects,
                             targetFolderId = targetFolderId,
                             startValues = options.startValues,
                         )
@@ -343,6 +347,7 @@ class CounterRepository
                     throw constraint
                 }
             }
+        }
 
         /**
          * Uusi projekti ja tuotu PDF samassa transaktiossa: epäonnistunut liitos peruu myös projektin,
@@ -353,8 +358,9 @@ class CounterRepository
             canCreateAdditionalProjects: Boolean,
             patternUri: String,
             patternName: String,
-        ): ProjectCreationResult =
-            fileReferenceCoordinator.withReferenceLock {
+        ): ProjectCreationResult {
+            val allowsAdditionalProjects = resolveAdditionalProjectAccess(canCreateAdditionalProjects)
+            return fileReferenceCoordinator.withReferenceLock {
                 if (projectDocumentRepository.preflightImportedPdf(patternUri, patternName) != null) {
                     return@withReferenceLock ProjectCreationResult.InvalidProject
                 }
@@ -369,7 +375,7 @@ class CounterRepository
                             craftType = CraftType.KNITTING,
                             mainCounterLabelType = CraftType.KNITTING.defaultMainCounterLabelType(),
                             mainCounterCustomLabel = null,
-                            canCreateAdditionalProjects = canCreateAdditionalProjects,
+                            canCreateAdditionalProjects = allowsAdditionalProjects,
                             targetFolderId = null,
                         )
                     if (created !is ProjectCreationResult.Created) return@run created
@@ -385,6 +391,7 @@ class CounterRepository
                     created
                 }
             }
+        }
 
         private suspend fun insertProjectInCurrentTransaction(
             name: String,
@@ -532,6 +539,7 @@ class CounterRepository
             creationAuthorized: Boolean = false,
         ): ProjectNotesSaveResult =
             try {
+                val notesEntitled = prepareNotesAccess(id, requestedNotes, creationAuthorized)
                 transactionRunner.run {
                     val current =
                         dao.getProject(id)?.toDomain()
@@ -540,7 +548,7 @@ class CounterRepository
                         current.notesCreated ||
                             current.notes.isNotBlank() ||
                             creationAuthorized ||
-                            proManager?.hasFeature(ProFeature.NOTES) == true
+                            (notesEntitled && proManager?.hasCurrentFeature(ProFeature.NOTES) != false)
                     if (!canCreateNotes && requestedNotes.isNotBlank()) {
                         return@run ProjectNotesSaveResult.FeatureUnavailable
                     }
@@ -567,21 +575,50 @@ class CounterRepository
                 ProjectNotesSaveResult.PersistenceFailure
             }
 
+        private suspend fun prepareNotesAccess(
+            id: Long,
+            requestedNotes: String,
+            creationAuthorized: Boolean,
+        ): Boolean =
+            creationAuthorized ||
+                requestedNotes.isBlank() ||
+                dao.getProject(id)?.let { it.notesCreated || it.notes.isNotBlank() } != false ||
+                hasEntitlementAfterInitialLoad(ProFeature.NOTES)
+
         suspend fun updateProjectSecondaryCount(
             id: Long,
             secondaryCount: Int,
+        ): Boolean = writeSecondaryCount(id) { secondaryCount }
+
+        suspend fun applySecondaryCounterStep(
+            id: Long,
+            increment: Boolean,
         ): Boolean =
-            transactionRunner.run {
+            writeSecondaryCount(id) { count ->
+                val counter = CounterState(count = count)
+                if (increment) CounterLogic.increment(counter).count else CounterLogic.decrement(counter).count
+            }
+
+        private suspend fun writeSecondaryCount(
+            id: Long,
+            nextCount: (Int) -> Int,
+        ): Boolean {
+            val secondaryEntitled =
+                dao.getProject(id)?.secondaryCounterUsed != false ||
+                    hasEntitlementAfterInitialLoad(ProFeature.SECONDARY_COUNTER)
+            return transactionRunner.run {
                 val project = dao.getProject(id)?.toDomain() ?: return@run false
+                val secondaryCount = nextCount(project.secondaryCount)
                 if (project.isCompleted || secondaryCount < 0) return@run false
                 val canUseSecondaryCounter =
                     project.secondaryCounterUsed ||
-                        proManager?.hasFeature(ProFeature.SECONDARY_COUNTER) != false
+                        (secondaryEntitled && proManager?.hasCurrentFeature(ProFeature.SECONDARY_COUNTER) != false)
                 if (!canUseSecondaryCounter) return@run false
 
                 dao.updateSecondaryCount(id, secondaryCount, System.currentTimeMillis())
                 true
             }
+        }
 
         suspend fun updateProjectStitchCount(
             id: Long,
@@ -1120,12 +1157,13 @@ class CounterRepository
             canCreateAdditionalProjects: Boolean = true,
         ): ProjectReactivationResult =
             try {
+                val allowsAdditionalProjects = resolveAdditionalProjectAccess(canCreateAdditionalProjects)
                 transactionRunner.run {
                     val project = dao.getProject(id) ?: return@run ProjectReactivationResult.ProjectUnavailable
                     if (!project.isCompleted || project.completedAt != expectedCompletedAt) {
                         return@run ProjectReactivationResult.ProjectUnavailable
                     }
-                    if (!canAddActiveProject(canCreateAdditionalProjects)) {
+                    if (!canAddActiveProject(allowsAdditionalProjects)) {
                         return@run ProjectReactivationResult.LimitReached
                     }
                     dao.reactivateProject(id, System.currentTimeMillis())
@@ -1137,16 +1175,13 @@ class CounterRepository
                 ProjectReactivationResult.PersistenceFailure
             }
 
-        suspend fun deleteProject(id: Long) {
-            val cleanup =
-                transactionRunner.run {
-                    if (sessionDao.getActiveSession()?.projectId == id) return@run null
-                    val capturedCleanup = captureProjectCleanup(id) ?: return@run null
-                    yarnCardRepository.clearLinkedProject(id)
-                    dao.delete(id)
-                    capturedCleanup
-                }
-            cleanup?.let { cleanupProjectFiles(it) }
+        /**
+         * Testien siivouspolku. Kulkee samaa poistopolkua kuin käyttöliittymä, mutta ei hylkää
+         * aktiivista istuntoa ja välittää tietokantavirheet kutsujalle tulosarvon sijaan.
+         */
+        @VisibleForTesting
+        internal suspend fun deleteProject(id: Long) {
+            deleteProjectResolvingActiveSessionInternal(id, discardActiveSession = false, expectedSession = null)
         }
 
         suspend fun getProjectCount(): Int = dao.getProjectCount()
@@ -1167,11 +1202,22 @@ class CounterRepository
             return ProjectNameRules.uniqueName(name, existingNames)
         }
 
-        private suspend fun canAddActiveProject(callerAllowsAdditionalProjects: Boolean): Boolean {
-            val activeCount = dao.getActiveProjectCount()
-            val hasCurrentAccess = proManager?.hasFeature(ProFeature.UNLIMITED_PROJECTS) ?: true
-            return activeCount == 0 || (callerAllowsAdditionalProjects && hasCurrentAccess)
+        /**
+         * Ratkaisee lisäprojektioikeuden ennen transaktiota. Odottaa Pro-tilan alkulatausta, jotta
+         * kylmäkäynnistyksen oletustila ei estä ostanutta tai kokeilevaa käyttäjää.
+         */
+        private suspend fun resolveAdditionalProjectAccess(callerAllowsAdditionalProjects: Boolean): Boolean {
+            if (!callerAllowsAdditionalProjects) return false
+            return hasEntitlementAfterInitialLoad(ProFeature.UNLIMITED_PROJECTS)
         }
+
+        // Ilman ProManageria (testit, esikatselu) portit ovat auki kaikille ominaisuuksille samalla tavalla.
+        private suspend fun hasEntitlementAfterInitialLoad(feature: ProFeature): Boolean =
+            proManager?.hasFeatureAfterInitialLoad(feature) ?: true
+
+        private suspend fun canAddActiveProject(allowsAdditionalProjects: Boolean): Boolean =
+            (allowsAdditionalProjects && proManager?.hasCurrentFeature(ProFeature.UNLIMITED_PROJECTS) != false) ||
+                dao.getActiveProjectCount() == 0
 
         private fun normalizeProjectDetails(project: CounterProject): CounterProject? {
             val labelType =
@@ -1391,18 +1437,18 @@ class CounterRepository
 
         suspend fun activeSessionDurationSeconds(session: ActiveWorkSession): Long =
             withContext(ioDispatcher) {
-                when (val evaluation = evaluateActiveSessionTime(session.timingAnchors, sessionTimeSource.snapshot())) {
-                    is ActiveSessionTimeEvaluation.Trusted -> {
-                        evaluation.totalDurationSeconds
+                // Tarkistettavan istunnon kesto on tarkistettava kesto, vaikka kello olisi taas luotettava.
+                val evaluation =
+                    if (session.needsRecoveryReview) {
+                        null
+                    } else {
+                        evaluateActiveSessionTime(session.timingAnchors, sessionTimeSource.snapshot())
                     }
-
-                    is ActiveSessionTimeEvaluation.NeedsReview -> {
-                        saturatingAdd(
-                            session.timingAnchors.checkpointedDurationSeconds,
-                            session.recoverySuggestedDurationSeconds ?: 0L,
-                        )
-                    }
-                }
+                (evaluation as? ActiveSessionTimeEvaluation.Trusted)?.totalDurationSeconds
+                    ?: saturatingAdd(
+                        session.timingAnchors.checkpointedDurationSeconds,
+                        session.recoverySuggestedDurationSeconds ?: 0L,
+                    )
             }
 
         suspend fun activeSessionNeedsRecovery(session: ActiveWorkSession): Boolean =
@@ -1782,6 +1828,7 @@ class CounterRepository
                 withContext(ioDispatcher) {
                     runCatching { photoStorage.deleteProjectPhotos(context, cleanup.projectId) }
                     runCatching { patternDocumentStorage.deleteProjectCaptureImages(context, cleanup.projectId) }
+                    runCatching { NotesDraftStorage.deleteProjectDrafts(context, cleanup.projectId) }
                 }
                 cleanup.patternUris.forEach { patternUri ->
                     runCatching { savedPatternRepository.deleteLocalPatternFileIfUnused(patternUri) }

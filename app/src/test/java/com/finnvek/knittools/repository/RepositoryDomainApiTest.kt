@@ -32,20 +32,67 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.TemporaryFolder
 import java.io.File
 import java.nio.file.Files
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class SavedPatternRepositoryDomainApiTest {
+    @get:Rule val temporary = TemporaryFolder()
+
     private lateinit var context: Context
 
     @Before
     fun setup() {
         context = mockk(relaxed = true)
     }
+
+    @Test
+    fun `pruning staged PDFs deletes only expired unreferenced files`() =
+        runTest {
+            val files = temporary.root
+            every { context.filesDir } returns files
+            val repository =
+                SavedPatternRepository(
+                    FakeSavedPatternDao(),
+                    context,
+                    RepositoryDomainFakeCounterProjectDao(),
+                    ImmediateDatabaseTransactionRunner,
+                    UnconfinedTestDispatcher(testScheduler),
+                )
+            repository.pruneUnreferencedStagedPdfs()
+            val staged = File(files, "pattern_pdfs/0")
+            assertTrue(staged.mkdirs())
+            val orphan = File(staged, "orphan.pdf")
+            val draft = File(staged, "draft.pdf")
+            val recent = File(staged, "recent.pdf")
+            val nested = File(staged, "nested")
+            val now = 2L * 86_400_000L
+            assertTrue(nested.mkdir())
+            for (file in listOf(orphan, draft, recent)) {
+                file.writeText("pdf")
+                assertTrue(file.setLastModified(if (file == recent) now - 1 else now - 86_400_000L))
+            }
+            val orphanUri = orphan.toURI().toString()
+            val draftUri = draft.toURI().toString()
+            withParsedFileUrisForDomainApi(orphanUri to orphan.path, draftUri to draft.path) {
+                val parsedOrphan = Uri.parse(orphanUri)
+                every { Uri.fromFile(orphan) } returns parsedOrphan
+                every { parsedOrphan.toString() } returns orphanUri
+
+                repository.pruneUnreferencedStagedPdfs(setOf(draftUri), now)
+            }
+            assertFalse(orphan.exists())
+            assertTrue(draft.isFile)
+            assertTrue(recent.isFile)
+            assertTrue(nested.isDirectory)
+        }
 
     @Test
     fun `saved pattern repository exposes domain models and writes entities`() =

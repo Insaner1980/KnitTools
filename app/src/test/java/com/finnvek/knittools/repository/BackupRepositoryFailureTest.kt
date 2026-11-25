@@ -35,6 +35,39 @@ import java.util.UUID
 class BackupRepositoryFailureTest {
     @get:Rule val temporary = TemporaryFolder()
 
+    @Test fun failedExportPreparationRemovesOnlyAnInitiallyEmptyDestination() =
+        runTest {
+            val root = temporary.newFolder()
+            val context = mockk<Context>(relaxed = true) { every { noBackupFilesDir } returns root }
+            val yarnCards = mockk<YarnCardRepository>()
+            coEvery { yarnCards.withPhotoStorageLock<Any?>(any()) } throws IOException("cannot stage references")
+            val repository =
+                BackupRepository(
+                    context,
+                    mockk(),
+                    PatternFileReferenceCoordinator(),
+                    yarnCards,
+                    StandardTestDispatcher(testScheduler),
+                    backgroundScope,
+                    FakeProviderIo(),
+                )
+            val file = temporary.newFile()
+            val destination =
+                mockk<Uri> {
+                    every { scheme } returns "file"
+                    every { path } returns file.path
+                }
+
+            for (contents in listOf("", "existing backup")) {
+                file.writeText(contents)
+                val failure = runCatching { repository.export(destination) }.exceptionOrNull()
+                assertEquals(BackupError.WRITE, (failure as BackupException).error)
+                assertEquals(contents.isNotEmpty(), file.exists())
+                if (file.exists()) assertEquals(contents, file.readText())
+                assertTrue(File(root, "manual-backup").listFiles().orEmpty().isEmpty())
+            }
+        }
+
     @Test fun failedReadsAndInvalidArchivesLeaveNoPreviewOrTemporaryFiles() =
         runTest {
             val root = temporary.newFolder()

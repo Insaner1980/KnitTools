@@ -71,6 +71,24 @@ class PatternAnnotationEditingTest {
     }
 
     @Test
+    fun `scaling a flat line at the left edge preserves extent and handles a nonfinite scale`() {
+        val template = shape(id = 8L, zIndex = 1L)
+        val line =
+            (template.payload as ShapePayload).copy(
+                start = NormalizedPatternPoint(0f, 0.5f),
+                end = NormalizedPatternPoint(0.25f, 0.5f),
+            )
+        val annotation = template.copy(payload = line)
+        val scaled = scalePatternAnnotation(annotation, 2f).payload as ShapePayload
+        assertEquals(NormalizedPatternPoint(0f, 0.5f), scaled.start)
+        assertEquals(NormalizedPatternPoint(0.5f, 0.5f), scaled.end)
+        assertEquals(line, scalePatternAnnotation(annotation, Float.NaN).payload)
+
+        val point = line.copy(end = line.start)
+        assertEquals(point, scalePatternAnnotation(template.copy(payload = point), 2f).payload)
+    }
+
+    @Test
     fun `scaling larger than the page is limited to the page size`() {
         val scaled = scalePatternAnnotation(shape(id = 6L, zIndex = 1L), scale = 10f).payload as ShapePayload
 

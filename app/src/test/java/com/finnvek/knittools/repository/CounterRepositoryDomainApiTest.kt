@@ -422,6 +422,26 @@ class CounterRepositoryDomainApiTest {
         }
 
     @Test
+    fun `imported PDF creation rejects an entitlement lost during preflight`() =
+        runTest {
+            val uri = "file:///staged.pdf"
+            var entitled = true
+            every { proManager.hasCurrentFeature(ProFeature.UNLIMITED_PROJECTS) } answers { entitled }
+            coEvery { projectDocumentRepository.preflightImportedPdf(uri, "Chart") } answers {
+                entitled = false
+                null
+            }
+            coEvery { projectDocumentRepository.getFirstProjectIdByUri(uri) } returns null
+            coEvery { projectDao.getActiveProjectCount() } returns 1
+
+            val result = repository.createProjectWithImportedPdf("New", true, uri, "Chart")
+
+            assertEquals(ProjectCreationResult.LimitReached, result)
+            coVerify(exactly = 0) { projectDao.insert(any()) }
+            coVerify(exactly = 0) { projectDocumentRepository.addImportedPdfInCurrentTransaction(any(), any(), any()) }
+        }
+
+    @Test
     fun `createProject rechecks additional project entitlement in the repository`() =
         runTest {
             coEvery { proManager.hasFeatureAfterInitialLoad(ProFeature.UNLIMITED_PROJECTS) } returns true
@@ -548,6 +568,19 @@ class CounterRepositoryDomainApiTest {
 
             assertFalse(repository.updateProjectSecondaryCount(7L, 1))
             coVerify(exactly = 0) { projectDao.updateSecondaryCount(any(), any(), any()) }
+        }
+
+    @Test
+    fun `secondary steps apply both directions to the stored count after entitlement lapses`() =
+        runTest {
+            every { proManager.hasCurrentFeature(ProFeature.SECONDARY_COUNTER) } returns false
+            coEvery { projectDao.getProject(7L) } returns
+                CounterProjectEntity(id = 7L, name = "Project", secondaryCount = 4, secondaryCounterUsed = true)
+
+            assertTrue(repository.applySecondaryCounterStep(7L, increment = true))
+            assertTrue(repository.applySecondaryCounterStep(7L, increment = false))
+            coVerify(exactly = 1) { projectDao.updateSecondaryCount(7L, 5, any()) }
+            coVerify(exactly = 1) { projectDao.updateSecondaryCount(7L, 3, any()) }
         }
 
     @Test

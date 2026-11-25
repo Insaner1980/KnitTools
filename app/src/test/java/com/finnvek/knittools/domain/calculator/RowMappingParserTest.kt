@@ -11,6 +11,35 @@ import org.junit.Test
 
 class RowMappingParserTest {
     @Test
+    fun `only exact and interpolated positions count as calibrated`() {
+        assertEquals(
+            setOf(
+                ReadingLineResolutionKind.EXACT_MARKER,
+                ReadingLineResolutionKind.SAME_PAGE_INTERPOLATION,
+                ReadingLineResolutionKind.CROSS_PAGE_INTERPOLATION,
+            ),
+            ReadingLineResolutionKind.entries.filter { it.isCalibrated }.toSet(),
+        )
+    }
+
+    @Test
+    fun `cross page tracking falls back for duplicate or coincident bracket endpoints`() {
+        val lower = RowMarker(1, 0, 1f)
+        val upper = RowMarker(5, 1, 0f)
+        val brackets =
+            listOf(
+                listOf(lower, upper),
+                listOf(lower, lower.copy(page = 1), upper.copy(page = 2)),
+                listOf(lower, upper, upper.copy(page = 2)),
+            )
+        for (markers in brackets) {
+            val result = resolveReadingLineLocation(markers, 2, 3, 0, 0.5f)
+            assertEquals(ReadingLineResolutionKind.ROW_DELTA_FALLBACK, result.kind)
+            assertEquals(0, result.targetPage)
+        }
+    }
+
+    @Test
     fun `parseMapping returns empty list for missing or invalid json`() {
         assertEquals(emptyList<RowMarker>(), parseMapping(null))
         assertEquals(emptyList<RowMarker>(), parseMapping("   "))

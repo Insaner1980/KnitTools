@@ -362,7 +362,7 @@ class CounterViewModelTest : CounterViewModelFixture() {
                 )
             observedProject.value = project
             every { repository.getActiveProjects() } returns flowOf(listOf(project))
-            coEvery { repository.updateProjectSecondaryCount(7L, any()) } returns true
+            coEvery { repository.applySecondaryCounterStep(7L, any()) } returns true
             val viewModel = viewModel()
             advanceUntilIdle()
 
@@ -371,7 +371,7 @@ class CounterViewModelTest : CounterViewModelFixture() {
                 advanceUntilIdle()
                 assertEquals(Int.MAX_VALUE, viewModel.uiState.value.secondaryCount)
             }
-            coVerify(exactly = 2) { repository.updateProjectSecondaryCount(7L, Int.MAX_VALUE) }
+            coVerify(exactly = 2) { repository.applySecondaryCounterStep(7L, true) }
             viewModel.decrementSecondary()
             advanceUntilIdle()
             assertEquals(Int.MAX_VALUE - 1, viewModel.uiState.value.secondaryCount)
@@ -381,7 +381,7 @@ class CounterViewModelTest : CounterViewModelFixture() {
             viewModel.decrementSecondary()
             advanceUntilIdle()
             assertEquals(0, viewModel.uiState.value.secondaryCount)
-            coVerify { repository.updateProjectSecondaryCount(7L, 0) }
+            coVerify(exactly = 2) { repository.applySecondaryCounterStep(7L, false) }
         }
 
     @Test
@@ -396,7 +396,7 @@ class CounterViewModelTest : CounterViewModelFixture() {
                 )
             observedProject.value = project
             every { repository.getActiveProjects() } returns flowOf(listOf(project))
-            coEvery { repository.updateProjectSecondaryCount(7L, 5) } returns false
+            coEvery { repository.applySecondaryCounterStep(7L, true) } returns false
             coEvery { repository.getProject(7L) } returns project
             val viewModel = viewModel()
             advanceUntilIdle()

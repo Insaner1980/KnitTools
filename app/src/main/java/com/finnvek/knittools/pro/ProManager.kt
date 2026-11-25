@@ -110,6 +110,12 @@ class ProManager
 
         fun hasFeature(feature: ProFeature): Boolean = _proState.value.hasFeature(feature)
 
+        internal fun hasCurrentFeature(feature: ProFeature): Boolean =
+            resolveProState(
+                ProPolicyTestControl.currentTrialState(trialManager.trialState.value),
+                ProPolicyTestControl.currentPurchased(billingManager.isProPurchased.value),
+            ).hasFeature(feature)
+
         suspend fun startTrial(): TrialStartResult = ProPolicyTestControl.startTrial { trialManager.startTrial() }
 
         suspend fun hasFeatureAfterInitialLoad(feature: ProFeature): Boolean =

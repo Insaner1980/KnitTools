@@ -2,7 +2,6 @@ package com.finnvek.knittools.ui.screens.ravelry
 
 import android.annotation.SuppressLint
 import android.graphics.Bitmap
-import android.text.TextUtils
 import android.view.ViewGroup
 import android.webkit.CookieManager
 import android.webkit.RenderProcessGoneDetail
@@ -33,6 +32,7 @@ import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.text.htmlEncode
 import com.finnvek.knittools.BuildConfig
 import com.finnvek.knittools.R
 import com.finnvek.knittools.data.remote.WebPdfDownload
@@ -277,5 +277,5 @@ internal fun purchaseNoticePage(message: String): String =
     "<!doctype html><html><head><meta charset=\"utf-8\">" +
         "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"></head>" +
         "<body style=\"font-family:sans-serif;padding:24px;line-height:1.5\"><p>" +
-        TextUtils.htmlEncode(message) +
+        message.htmlEncode() +
         "</p></body></html>"

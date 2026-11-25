@@ -103,7 +103,12 @@ class App : Application() {
                 backupRepository.get().recoverInterruptedOperations()
                 yarnCardRepository.get().pruneUnreferencedPhotoFiles()
                 // Perehdytysluonnoksen PDF on DataStoressa eikä tietokannassa, joten se säilytetään erikseen.
-                val onboardingPdf = onboardingStateRepository.get().draft.first()?.pdfUri
+                val onboardingPdf =
+                    onboardingStateRepository
+                        .get()
+                        .draft
+                        .first()
+                        ?.pdfUri
                 savedPatternRepository.get().pruneUnreferencedStagedPdfs(keepUris = setOfNotNull(onboardingPdf))
             } catch (e: CancellationException) {
                 throw e

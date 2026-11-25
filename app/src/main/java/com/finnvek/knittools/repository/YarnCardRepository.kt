@@ -79,8 +79,8 @@ class YarnCardRepository
         }
 
         /**
-         * Uuden kortin oikeus ratkaistaan ennen transaktiota. Odottaa Pro-tilan alkulatausta, jotta
-         * kylmäkäynnistyksen oletustila ei estä ostanutta tai kokeilevaa käyttäjää.
+         * Pro-tilan alkulataus odotetaan ennen transaktiota. Luontioikeus tarkistetaan uudelleen
+         * transaktiossa, koska kokeilu voi päättyä transaktiovuoroa odotettaessa.
          */
         internal suspend fun canCreateNewCards(): Boolean =
             proManager?.hasFeatureAfterInitialLoad(ProFeature.UNLIMITED_YARN) ?: true
@@ -91,7 +91,12 @@ class YarnCardRepository
         ): Long? {
             val existingCard = card.id.takeIf { it != 0L }?.let { dao.getCard(it) }
             if (card.id != 0L && existingCard == null) return null
-            if (existingCard == null && !canCreateNewCard) return null
+            if (
+                existingCard == null &&
+                (!canCreateNewCard || proManager?.hasCurrentFeature(ProFeature.UNLIMITED_YARN) == false)
+            ) {
+                return null
+            }
             if (card.quantityInStash < 0) return null
             val projects = counterProjectDao.getAllProjectsOnce()
             val cardWithPreservedDetails = card.preserveSameCardDetails(existingCard)

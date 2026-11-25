@@ -583,12 +583,27 @@ class CounterRepository
         suspend fun updateProjectSecondaryCount(
             id: Long,
             secondaryCount: Int,
+        ): Boolean = writeSecondaryCount(id) { secondaryCount }
+
+        suspend fun applySecondaryCounterStep(
+            id: Long,
+            increment: Boolean,
+        ): Boolean =
+            writeSecondaryCount(id) { count ->
+                val counter = CounterState(count = count)
+                if (increment) CounterLogic.increment(counter).count else CounterLogic.decrement(counter).count
+            }
+
+        private suspend fun writeSecondaryCount(
+            id: Long,
+            nextCount: (Int) -> Int,
         ): Boolean {
             val secondaryEntitled =
                 dao.getProject(id)?.secondaryCounterUsed != false ||
                     hasEntitlementAfterInitialLoad(ProFeature.SECONDARY_COUNTER)
             return transactionRunner.run {
                 val project = dao.getProject(id)?.toDomain() ?: return@run false
+                val secondaryCount = nextCount(project.secondaryCount)
                 if (project.isCompleted || secondaryCount < 0) return@run false
                 val canUseSecondaryCounter = project.secondaryCounterUsed || secondaryEntitled
                 if (!canUseSecondaryCounter) return@run false

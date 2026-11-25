@@ -8,7 +8,6 @@ import com.finnvek.knittools.domain.calculator.ChartTrackerHighlight
 import com.finnvek.knittools.domain.model.PatternAnnotation
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -61,23 +60,18 @@ class PatternPdfExporter private constructor(
         onProgress: (PatternPdfExportProgress) -> Unit,
     ) = withContext(ioDispatcher) {
         requireDifferentDestination(sourceUri, destinationUri)
-        validateInputs(annotations, trackerHighlights)
-        PdfPageRenderer(context, sourceUri).use { renderer ->
-            val plan = planDocument(renderer)
+        IncompleteDestination.writeWithCleanup(context, destinationUri) {
+            validateInputs(annotations, trackerHighlights)
             val exportDirectory = File(context.cacheDir, EXPORT_TEMP_DIRECTORY).apply { mkdirs() }
             if (!exportDirectory.isDirectory) throw IOException("Pattern PDF export cache is unavailable")
             val tempFile = File.createTempFile(EXPORT_TEMP_PREFIX, EXPORT_TEMP_SUFFIX, exportDirectory)
-            val newlyCreatedDestination = IncompleteDestination.isEmpty(context, destinationUri)
             try {
-                renderToTempFile(renderer, plan, tempFile, annotations, trackerHighlights, style, onProgress)
+                PdfPageRenderer(context, sourceUri).use { renderer ->
+                    val plan = planDocument(renderer)
+                    renderToTempFile(renderer, plan, tempFile, annotations, trackerHighlights, style, onProgress)
+                }
                 coroutineContext.ensureActive()
                 copyToDestination(tempFile, destinationUri)
-            } catch (failure: Exception) {
-                // Renderöinnin virhe tai peruutus ei saa jättää tyhjää PDF:ää käyttäjän kansioon.
-                if (newlyCreatedDestination) {
-                    withContext(NonCancellable) { IncompleteDestination.deleteQuietly(context, destinationUri) }
-                }
-                throw failure
             } finally {
                 if (tempFile.exists() && !tempFile.delete()) tempFile.deleteOnExit()
             }

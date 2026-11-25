@@ -336,7 +336,7 @@ class CounterViewModel
         val stepFeedback: SharedFlow<MainCounterStepFeedback> = _stepFeedback.asSharedFlow()
         private val stepSizeSaveMutex = Mutex()
 
-        // Lisälaskuri tallennetaan absoluuttisena arvona, joten kirjoitukset ajetaan napautusjärjestyksessä.
+        // Rajat huomioivat askeleet ajetaan napautusjärjestyksessä.
         private val secondaryCountSaveMutex = Mutex()
         private var projectSelectionVersion = 0L
         private var counterStateVersion = 0L
@@ -2140,24 +2140,22 @@ class CounterViewModel
             _uiState.update {
                 it.copy(secondaryCount = (it.secondaryCount.toLong() + 1L).coerceAtMost(Int.MAX_VALUE.toLong()).toInt())
             }
-            persistSecondary()
+            persistSecondary(increment = true)
         }
 
         fun decrementSecondary() {
             if (!_uiState.value.canUseSecondaryCounter) return
             _uiState.update { it.copy(secondaryCount = maxOf(0, it.secondaryCount - 1)) }
-            persistSecondary()
+            persistSecondary(increment = false)
         }
 
-        private fun persistSecondary() {
-            val state = _uiState.value
-            val projectId = state.projectId ?: return
-            val secondaryCount = state.secondaryCount
+        private fun persistSecondary(increment: Boolean) {
+            val projectId = _uiState.value.projectId ?: return
             val selectionVersion = projectSelectionVersion
             launchProjectContentMutation {
                 val saved =
                     secondaryCountSaveMutex.withLock {
-                        tryProjectWrite { repository.updateProjectSecondaryCount(projectId, secondaryCount) }
+                        tryProjectWrite { repository.applySecondaryCounterStep(projectId, increment) }
                     }
                 if (!saved) {
                     val persisted = repository.getProject(projectId) ?: return@launchProjectContentMutation false

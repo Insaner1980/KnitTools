@@ -125,7 +125,7 @@ class BillingManager
                     }
                 }
             purchaseUpdatesListener = listener
-            billingClient =
+            val client =
                 BillingClient
                     .newBuilder(context)
                     .setListener(listener)
@@ -133,23 +133,15 @@ class BillingManager
                         PendingPurchasesParams.newBuilder().enableOneTimeProducts().build(),
                     ).enableAutoServiceReconnection()
                     .build()
-            restoreCachedOwnership(checkNotNull(billingClient))
-
-            startBillingConnection()
-        }
-
-        // Viimeisin vahvistettu omistus pitää Pron käytössä, kunnes Play-kysely onnistuu tai kumoaa sen.
-        private fun restoreCachedOwnership(client: BillingClient) {
+            billingClient = client
             scope.launch {
                 val cachedOwned = ownershipCache.read()
                 if (cachedOwned && billingClient === client && !_purchaseStateReady.value) {
                     _isProPurchased.value = true
                 }
             }
-        }
 
-        private fun persistOwnership(owned: Boolean) {
-            scope.launch { ownershipCache.write(owned) }
+            startBillingConnection()
         }
 
         private fun startBillingConnection() {
@@ -207,11 +199,11 @@ class BillingManager
         ) {
             if (shouldIgnorePurchaseRequest) return
             if (_purchasePending.value) {
-                emitPurchaseMessage(BillingUserMessage.PURCHASE_PENDING)
+                _purchaseMessages.tryEmit(BillingUserMessage.PURCHASE_PENDING)
                 return
             }
             if (productQueryJob?.isActive == true) {
-                emitPurchaseMessage(BillingUserMessage.PRICE_REFRESHING)
+                _purchaseMessages.tryEmit(BillingUserMessage.PRICE_REFRESHING)
                 return
             }
             val launch = _selectedOffer.value?.launchDetails
@@ -224,12 +216,12 @@ class BillingManager
             val offer = _selectedOffer.value
             if (priceNeedsReview || (offer != null && offer != displayedOffer)) {
                 priceNeedsReview = false
-                emitPurchaseMessage(BillingUserMessage.PRICE_CHANGED_REVIEW)
+                _purchaseMessages.tryEmit(BillingUserMessage.PRICE_CHANGED_REVIEW)
                 return
             }
             val details = _productDetails.value
             if (details == null || offer == null) {
-                emitPurchaseMessage(_productStatus.value.unavailableMessage)
+                _purchaseMessages.tryEmit(_productStatus.value.unavailableMessage)
                 return
             }
 
@@ -255,7 +247,7 @@ class BillingManager
                 billingClient?.launchBillingFlow(activity, flowParams)
                     ?: run {
                         finishPurchaseFlow()
-                        emitPurchaseMessage(BillingUserMessage.PURCHASE_FAILED)
+                        _purchaseMessages.tryEmit(BillingUserMessage.PURCHASE_FAILED)
                         return
                     }
             applyPurchaseFlowResult(result)
@@ -345,7 +337,7 @@ class BillingManager
                                     _isProPurchased.value = true
                                     _purchaseStateReady.value = true
                                     _purchaseQueryFailed.value = false
-                                    persistOwnership(true)
+                                    scope.launch { ownershipCache.write(true) }
                                     acknowledgePurchase(purchase)
                                 }
 
@@ -355,12 +347,12 @@ class BillingManager
                                             inFlightPurchaseQueryGeneration == purchaseQueryGeneration
                                     purchaseQueryGeneration++
                                     _purchasePending.value = true
-                                    emitPurchaseMessage(BillingUserMessage.PURCHASE_PENDING)
+                                    _purchaseMessages.tryEmit(BillingUserMessage.PURCHASE_PENDING)
                                     if (interruptedInitialQuery) scope.launch { queryPurchases() }
                                 }
 
                                 else -> {
-                                    Unit
+                                    // Unspecified purchases do not change entitlement.
                                 }
                             }
                         }
@@ -372,7 +364,7 @@ class BillingManager
                 }
 
                 else -> {
-                    emitPurchaseMessage(result.toUserMessage())
+                    _purchaseMessages.tryEmit(result.toUserMessage())
                 }
             }
         }
@@ -428,7 +420,7 @@ class BillingManager
                 scope.launch(start = CoroutineStart.LAZY) {
                     val result = queryPurchasesInternal()
                     if (result !is PurchaseQueryResult.Success || result.proPurchases.isEmpty()) {
-                        emitPurchaseMessage(BillingUserMessage.ALREADY_OWNED_RESTORE_FAILED)
+                        _purchaseMessages.tryEmit(BillingUserMessage.ALREADY_OWNED_RESTORE_FAILED)
                     }
                 }
             alreadyOwnedRecoveryJob?.start()
@@ -473,8 +465,9 @@ class BillingManager
                     it.products.contains(PRODUCT_ID) &&
                         it.purchaseState == Purchase.PurchaseState.PURCHASED
                 }
-            _isProPurchased.value = proPurchases.isNotEmpty()
-            persistOwnership(proPurchases.isNotEmpty())
+            val owned = proPurchases.isNotEmpty()
+            _isProPurchased.value = owned
+            scope.launch { ownershipCache.write(owned) }
             _purchasePending.value =
                 result.purchasesList.any {
                     PRODUCT_ID in it.products && it.purchaseState == Purchase.PurchaseState.PENDING
@@ -646,7 +639,7 @@ class BillingManager
             if (result.responseCode == BillingClient.BillingResponseCode.ITEM_ALREADY_OWNED) {
                 restoreAlreadyOwnedPurchase()
             } else {
-                emitPurchaseMessage(result.toUserMessage())
+                _purchaseMessages.tryEmit(result.toUserMessage())
             }
         }
 
@@ -664,10 +657,6 @@ class BillingManager
             _productDetails.value = null
             _selectedOffer.value = null
             _productStatus.value = BillingProductStatus.Loading
-        }
-
-        private fun emitPurchaseMessage(message: BillingUserMessage) {
-            _purchaseMessages.tryEmit(message)
         }
 
         companion object {

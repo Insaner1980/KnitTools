@@ -4,6 +4,8 @@ import android.content.Context
 import android.net.Uri
 import android.provider.DocumentsContract
 import android.provider.OpenableColumns
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.IOException
 
@@ -13,6 +15,19 @@ import java.io.IOException
  * Valmiiksi sisältöä sisältävään kohteeseen ei kosketa ennen kuin kirjoitus on alkanut.
  */
 internal object IncompleteDestination {
+    suspend fun writeWithCleanup(
+        context: Context,
+        destination: Uri,
+        write: suspend () -> Unit,
+    ) {
+        val initiallyEmpty = isEmpty(context, destination)
+        val result = runCatching { write() }
+        if (initiallyEmpty && result.exceptionOrNull() is Exception) {
+            withContext(NonCancellable) { deleteQuietly(context, destination) }
+        }
+        result.getOrThrow()
+    }
+
     fun isEmpty(
         context: Context,
         destination: Uri,

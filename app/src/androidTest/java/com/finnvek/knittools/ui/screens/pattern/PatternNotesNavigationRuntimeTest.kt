@@ -276,7 +276,7 @@ class PatternNotesNavigationRuntimeTest {
         check(!isNarrowLayout) // Tämä regressio alkaa aina ensimmäiseltä sivulta.
         scenario = ActivityScenario.launch(Intent(app, MainActivity::class.java))
         openProjectDocument(firstName, secondaryLabel)
-        waitForText(text(R.string.pattern_page_indicator, 1, 4))
+        waitForPage(1)
         recordReaderLayout("project-first")
         physicalPageChange(next = true, expectedPage = 2)
         physicalPageChange(next = true, expectedPage = 3)
@@ -315,7 +315,7 @@ class PatternNotesNavigationRuntimeTest {
         clickText(secondaryLabel)
         scrollToText(text(R.string.saved_pattern_detail_open_pattern))
         clickText(text(R.string.saved_pattern_detail_open_pattern))
-        waitForText(text(R.string.pattern_page_indicator, 1, 4))
+        waitForPage(1)
         // CPD-ON
         recordReaderLayout("library-first")
         physicalPageChange(next = true, expectedPage = 2)
@@ -333,7 +333,7 @@ class PatternNotesNavigationRuntimeTest {
         expectedPage: Int,
     ) {
         physicalTapDescription(text(if (next) R.string.pattern_next_page else R.string.pattern_previous_page))
-        waitForText(text(R.string.pattern_page_indicator, expectedPage, 4))
+        waitForPage(expectedPage)
     }
 
     private fun physicalTapDescription(description: String) {
@@ -436,10 +436,10 @@ class PatternNotesNavigationRuntimeTest {
         scenario = ActivityScenario.launch(Intent(app, MainActivity::class.java))
         openProjectDocument(firstName, secondaryLabel)
         if (!isNarrowLayout) {
-            waitForText(text(R.string.pattern_page_indicator, 1, 4))
+            waitForPage(1)
             repeat(2) { index ->
                 clickDescription(text(R.string.pattern_next_page))
-                waitForText(text(R.string.pattern_page_indicator, index + 2, 4))
+                waitForPage(index + 2)
             }
         }
         assertSecondaryPage()
@@ -484,7 +484,7 @@ class PatternNotesNavigationRuntimeTest {
 
     private fun assertSecondaryPage() {
         waitForText(secondaryLabel)
-        waitForText(text(R.string.pattern_page_indicator, 3, 4))
+        waitForPage(3)
         assertNull(find { it.isEditable })
         assertEquals(2, runBlocking(Dispatchers.IO) { documents.getDocument(secondary.id)?.currentPage })
     }
@@ -597,6 +597,11 @@ class PatternNotesNavigationRuntimeTest {
             ?.any { it.equals(value, ignoreCase = true) } == true
 
     private fun waitForText(value: String) = waitFor { hasText(it, value) }
+
+    private fun waitForPage(page: Int) {
+        val label = text(R.string.pattern_page_indicator, page, 4)
+        waitFor { hasText(it, label) || it.contentDescription?.toString() == label }
+    }
 
     private fun clickText(value: String) = click { hasText(it, value) }
 

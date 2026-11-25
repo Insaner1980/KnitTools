@@ -85,18 +85,10 @@ class BackupRepository
                                 buildLocalArchive(directory, externalFiles, check)
                             }
                         }
-                    val newlyCreatedDestination = IncompleteDestination.isEmpty(context, destination)
-                    try {
+                    IncompleteDestination.writeWithCleanup(context, destination) {
                         operationResult(BackupError.WRITE) {
                             providerIo.write(archive, destination, BackupFormat.MAX_TOTAL, check)
                         }
-                    } catch (failure: Exception) {
-                        // Juuri tätä vientiä varten luotu tyhjä dokumentti poistetaan, jottei keskeneräinen
-                        // tiedosto näytä oikealta varmuuskopiolta. Valmiiksi olemassa olevaan ei kosketa.
-                        if (newlyCreatedDestination) {
-                            withContext(NonCancellable) { IncompleteDestination.deleteQuietly(context, destination) }
-                        }
-                        throw failure
                     }
                 } finally {
                     withContext(NonCancellable) {
@@ -596,22 +588,22 @@ class BackupRepository
             pending?.deleteRecursively()
             pending = null
         }
-
-        private suspend fun <T> operationResult(
-            error: BackupError,
-            block: suspend () -> T,
-        ): T =
-            runCatching { block() }.getOrElse { failure ->
-                if (failure is Exception && failure !is CancellationException) throw classified(failure, error)
-                throw failure
-            }
-
-        private fun classified(
-            failure: Exception,
-            fallback: BackupError,
-        ): BackupException =
-            failure as? BackupException ?: BackupException(
-                if (failure is android.database.sqlite.SQLiteFullException) BackupError.SPACE else fallback,
-                failure,
-            )
     }
+
+private suspend fun <T> operationResult(
+    error: BackupError,
+    block: suspend () -> T,
+): T =
+    runCatching { block() }.getOrElse { failure ->
+        if (failure is Exception && failure !is CancellationException) throw classified(failure, error)
+        throw failure
+    }
+
+private fun classified(
+    failure: Exception,
+    fallback: BackupError,
+): BackupException =
+    failure as? BackupException ?: BackupException(
+        if (failure is android.database.sqlite.SQLiteFullException) BackupError.SPACE else fallback,
+        failure,
+    )

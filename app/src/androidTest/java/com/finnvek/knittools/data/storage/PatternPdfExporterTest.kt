@@ -1,6 +1,7 @@
 package com.finnvek.knittools.data.storage
 
 import android.content.ContentResolver
+import android.content.ContentValues
 import android.content.Context
 import android.content.ContextWrapper
 import android.content.res.AssetFileDescriptor
@@ -8,6 +9,7 @@ import android.graphics.Color
 import android.graphics.pdf.PdfDocument
 import android.net.Uri
 import android.os.ParcelFileDescriptor
+import android.provider.MediaStore
 import androidx.core.net.toUri
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -29,6 +31,7 @@ import org.junit.rules.TemporaryFolder
 import org.junit.runner.RunWith
 import java.io.File
 import java.io.IOException
+import java.util.UUID
 
 @RunWith(AndroidJUnit4::class)
 class PatternPdfExporterTest {
@@ -113,6 +116,54 @@ class PatternPdfExporterTest {
 
             assertTrue(failure is CancellationException)
             assertFalse(destination.exists())
+            assertTempDirectoryEmpty()
+        }
+
+    @Test
+    fun failedExportDeletesOnlyEmptyMediaStoreDestination() =
+        runBlocking {
+            val source = createPdf("source-render-failure.pdf", pageCount = 1)
+            val resolver = context.contentResolver
+            for (input in listOf(source, File(context.cacheDir, "missing-source.pdf"))) {
+                for (original in listOf(byteArrayOf(), SENTINEL)) {
+                    val values =
+                        ContentValues().apply {
+                            put(MediaStore.Downloads.DISPLAY_NAME, "knittools-export-test-${UUID.randomUUID()}.pdf")
+                            put(MediaStore.Downloads.MIME_TYPE, "application/pdf")
+                            put(MediaStore.Downloads.IS_PENDING, 1)
+                        }
+                    val destination = requireNotNull(resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values))
+                    try {
+                        requireNotNull(resolver.openOutputStream(destination)).use { it.write(original) }
+                        val published = ContentValues().apply { put(MediaStore.Downloads.IS_PENDING, 0) }
+                        assertEquals(1, resolver.update(destination, published, null, null))
+                        assertEquals(original.isEmpty(), IncompleteDestination.isEmpty(context, destination))
+
+                        val failure =
+                            runCatching {
+                                exporter.export(
+                                    sourceUri = input.toUri(),
+                                    destinationUri = destination,
+                                    annotations = emptyList(),
+                                    trackerHighlights = emptyMap(),
+                                    style = renderStyle(),
+                                    onProgress = { throw IOException("Synthetic render failure") },
+                                )
+                            }.exceptionOrNull()
+
+                        assertTrue("Expected an export failure for ${input.name}", failure is IOException)
+                        val cursor = requireNotNull(resolver.query(destination, null, null, null, null))
+                        val exists = cursor.use { it.moveToFirst() }
+                        assertEquals("Destination after failure for ${input.name}", original.isNotEmpty(), exists)
+                        if (exists) {
+                            val actual = requireNotNull(resolver.openInputStream(destination)).use { it.readBytes() }
+                            assertArrayEquals(original, actual)
+                        }
+                    } finally {
+                        resolver.delete(destination, null, null)
+                    }
+                }
+            }
             assertTempDirectoryEmpty()
         }
 

@@ -86,7 +86,12 @@ class ActiveProjectPolicyRuntimeTest {
             database.clearAllTables()
             app.preferencesManager.get().setAppLanguage(AppLanguage.ENGLISH)
             // Exercise project limits after the separate onboarding flow has finished.
-            app.onboardingStateRepository.get().dismissWelcome()
+            val onboarding = app.onboardingStateRepository.get()
+            onboarding.dismissWelcome()
+            onboarding.draft
+                .first()
+                ?.takeIf { !it.completed || it.exitPending }
+                ?.let { check(onboarding.saveDraft(it.copy(completed = true, exitPending = false))) }
             InstrumentationRegistry.getArguments().getString("auditTheme")?.let { theme ->
                 app.preferencesManager.get().setThemeMode(ThemeMode.valueOf(theme))
             }
@@ -113,8 +118,12 @@ class ActiveProjectPolicyRuntimeTest {
 
     @After
     fun close() {
-        diagnostic("before-close")
-        scenario?.close()
+        try {
+            diagnostic("before-close")
+            scenario?.close()
+        } finally {
+            if (ProPolicyTestControl.isActive) ProPolicyTestControl.reset()
+        }
     }
 
     @Test

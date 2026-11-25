@@ -1,6 +1,7 @@
 package com.finnvek.knittools.repository
 
 import android.content.Context
+import android.content.ContextWrapper
 import android.database.sqlite.SQLiteConstraintException
 import android.graphics.Color
 import android.graphics.Paint
@@ -38,6 +39,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
 import java.io.FileOutputStream
+import java.util.concurrent.TimeUnit
 
 @RunWith(AndroidJUnit4::class)
 class ProjectDocumentRuntimeIntegrationTest {
@@ -241,6 +243,37 @@ class ProjectDocumentRuntimeIntegrationTest {
             assertTrue(repository.remove(secondProject, secondDocument.id) is ProjectDocumentMutationResult.Removed)
             assertTrue(repository.getDocuments(secondProject).isEmpty())
             assertNull(layerRepository.getActiveProjectLayer(secondProject))
+        }
+
+    @Test
+    fun stagedPdfPruningKeepsRecentFilesAndBothKindsOfReferences() =
+        runTest {
+            val storageContext =
+                object : ContextWrapper(context) {
+                    override fun getFilesDir(): File = this@ProjectDocumentRuntimeIntegrationTest.filesDir
+                }
+            val stagedPatterns = RoomCounterTestFixture(database, storageContext).savedPatternRepository
+            assertTrue(File(filesDir, "pattern_pdfs/0").mkdirs())
+            val orphan = createPdf("pattern_pdfs/0/orphan.pdf", Color.RED)
+            val recent = createPdf("pattern_pdfs/0/recent.pdf", Color.BLUE)
+            val saved = createPdf("pattern_pdfs/0/saved.pdf", Color.GREEN)
+            val draft = createPdf("pattern_pdfs/0/draft.pdf", Color.GRAY)
+            val now = System.currentTimeMillis()
+            for (oldFile in listOf(orphan, saved, draft)) {
+                assertTrue(oldFile.setLastModified(now - TimeUnit.HOURS.toMillis(25)))
+            }
+            assertTrue(recent.setLastModified(now - TimeUnit.HOURS.toMillis(23)))
+            requireNotNull(stagedPatterns.saveImportedPatternIfMissing(Uri.fromFile(saved).toString(), "Library PDF"))
+
+            stagedPatterns.pruneUnreferencedStagedPdfs(
+                keepUris = setOf(Uri.fromFile(draft).toString()),
+                nowMillis = now,
+            )
+
+            assertFalse(orphan.exists())
+            assertTrue(recent.isFile)
+            assertTrue(saved.isFile)
+            assertTrue(draft.isFile)
         }
 
     private fun openDatabase() {

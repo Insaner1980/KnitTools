@@ -35,7 +35,10 @@ class DataStorePurchaseOwnershipCache
     constructor(
         @param:ApplicationContext private val context: Context,
     ) : PurchaseOwnershipCache {
-        override suspend fun read(): Boolean = context.ownershipDataStore.readPreferencesOrNull()?.get(KEY_PRO_OWNED) == true
+        override suspend fun read(): Boolean {
+            val preferences = context.ownershipDataStore.readPreferencesOrNull()
+            return preferences?.get(KEY_PRO_OWNED) == true
+        }
 
         override suspend fun write(owned: Boolean) {
             context.ownershipDataStore.editPreferencesSafely { preferences -> preferences[KEY_PRO_OWNED] = owned }

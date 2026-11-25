@@ -79,10 +79,10 @@ class InsightsSessionAccumulatorTest {
     @Test fun streakDoesNotRestartAtTheSelectedRangeStart() {
         for (range in TimeRange.entries) {
             val accumulator = InsightsSessionAccumulator(params(range), SessionInsightsFacts(true, emptyList()))
-            (0L until 21L).forEach { daysAgo -> accumulator.add(session(today.minusDays(daysAgo), 1, 60, 1)) }
+            (0L until 23L).forEach { daysAgo -> accumulator.add(session(today.minusDays(daysAgo), 1, 60, 1)) }
 
-            assertEquals(21, currentStreak(accumulator.streakDates, today))
-            assertEquals(21, accumulator.streakDates.bestStreak())
+            assertEquals(23, currentStreak(accumulator.streakDates, today))
+            assertEquals(23, accumulator.streakDates.bestStreak())
         }
     }
 

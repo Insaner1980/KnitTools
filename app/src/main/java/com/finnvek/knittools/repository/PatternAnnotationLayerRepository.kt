@@ -86,17 +86,6 @@ class PatternAnnotationLayerRepository
             dao.deactivateProjectLayers(projectId, System.currentTimeMillis())
         }
 
-        // Projektista irrotetun dokumentin taso ja merkinnät poistetaan, jotta uudelleenliitos alkaa tyhjästä.
-        suspend fun deleteProjectLayerInTransaction(
-            projectId: Long,
-            documentKey: String,
-        ) {
-            require(projectId > 0L) { "Project id must be positive" }
-            require(documentKey.isNotBlank()) { "Document key must not be blank" }
-            dao.deleteProjectLayerAnnotations(projectId, documentKey)
-            dao.deleteProjectLayer(projectId, documentKey)
-        }
-
         suspend fun getActiveProjectLayer(projectId: Long): PatternAnnotationLayer? =
             dao.getActiveProjectLayer(projectId)?.toDomain()
 

@@ -29,9 +29,9 @@ class ActiveProjectPolicyTest {
 
     @Before
     fun setup() {
-        every { pro.hasFeature(any()) } answers
+        every { pro.hasCurrentFeature(any()) } answers
             { ProState(status).hasFeature(firstArg(), debugUnlockAllFeatures = false) }
-        coEvery { pro.hasFeatureAfterInitialLoad(any()) } answers { pro.hasFeature(firstArg()) }
+        coEvery { pro.hasFeatureAfterInitialLoad(any()) } answers { pro.hasCurrentFeature(firstArg()) }
         coEvery { dao.getProject(7L) } returns completed
         coEvery { dao.getAllProjectsOnce() } returns listOf(completed)
         coEvery { dao.insert(any()) } returns 8L

@@ -1345,6 +1345,7 @@ class BackupRepositoryTest {
                 arrayOf(oversized),
             )
             val archive = File(directory, "rejected-export")
+            assertTrue(archive.createNewFile())
 
             expectBackupFailure { repository.export(archive.toUri()) }
 

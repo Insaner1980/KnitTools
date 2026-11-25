@@ -54,8 +54,8 @@ class PatternAnnotationEditingTest {
             shape(id = 5L, zIndex = 1L).copy(
                 payload =
                     ShapePayload(
-                        start = NormalizedPatternPoint(0.7f, 0.4f),
-                        end = NormalizedPatternPoint(0.9f, 0.6f),
+                        start = NormalizedPatternPoint(0.8f, 0.4f),
+                        end = NormalizedPatternPoint(1f, 0.6f),
                         strokeArgb = 0xFF000000.toInt(),
                         strokeWidth = 2f,
                     ),

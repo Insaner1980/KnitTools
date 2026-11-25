@@ -5,6 +5,7 @@ import com.finnvek.knittools.domain.model.ActiveSessionTimeEvaluation
 import com.finnvek.knittools.domain.model.ActiveSessionTimingAnchors
 import com.finnvek.knittools.domain.model.SessionTimeSnapshot
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -79,62 +80,21 @@ class ActiveSessionTimingTest {
     }
 
     @Test
-    fun `missing boot identity on the same boot keeps monotonic timing trusted`() {
-        listOf(null to null, 4L to null, null to 4L).forEach { (stored, current) ->
-            val evaluation =
-                evaluateActiveSessionTime(
-                    anchors = anchors(bootCount = stored),
-                    now =
-                        SessionTimeSnapshot(
-                            wallClockMillis = 16_000L,
-                            elapsedRealtimeMillis = 16_000L,
-                            bootCount = current,
-                            zoneId = "Europe/Helsinki",
-                        ),
-                )
-
-            assertEquals(
-                ActiveSessionTimeEvaluation.Trusted(totalDurationSeconds = 126L, currentSegmentSeconds = 6L),
-                evaluation,
-            )
-        }
-    }
-
-    @Test
-    fun `missing boot identity treats an uptime reset as a reboot with credible wall duration`() {
+    fun `missing boot identity requires review without guessing`() {
         val evaluation =
             evaluateActiveSessionTime(
                 anchors = anchors(bootCount = null),
                 now =
                     SessionTimeSnapshot(
                         wallClockMillis = 70_000L,
-                        elapsedRealtimeMillis = 5_000L,
-                        bootCount = null,
-                        zoneId = "Europe/Helsinki",
-                    ),
-            ) as ActiveSessionTimeEvaluation.NeedsReview
-
-        assertEquals(ActiveSessionRecoveryReason.REBOOTED, evaluation.reason)
-        assertEquals(60L, evaluation.suggestedPendingDurationSeconds)
-    }
-
-    @Test
-    fun `missing boot identity treats wall time far beyond uptime as a reboot`() {
-        val tenMinutes = 10L * 60L * 1_000L
-        val evaluation =
-            evaluateActiveSessionTime(
-                anchors = anchors(bootCount = null),
-                now =
-                    SessionTimeSnapshot(
-                        wallClockMillis = 10_000L + tenMinutes,
                         elapsedRealtimeMillis = 16_000L,
                         bootCount = null,
                         zoneId = "Europe/Helsinki",
                     ),
             ) as ActiveSessionTimeEvaluation.NeedsReview
 
-        assertEquals(ActiveSessionRecoveryReason.REBOOTED, evaluation.reason)
-        assertEquals(tenMinutes / 1_000L, evaluation.suggestedPendingDurationSeconds)
+        assertEquals(ActiveSessionRecoveryReason.BOOT_IDENTITY_UNAVAILABLE, evaluation.reason)
+        assertNull(evaluation.suggestedPendingDurationSeconds)
     }
 
     @Test

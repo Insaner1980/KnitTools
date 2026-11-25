@@ -553,7 +553,8 @@ class CounterRepository
                     val canCreateNotes =
                         current.notesCreated ||
                             current.notes.isNotBlank() ||
-                            notesEntitled
+                            creationAuthorized ||
+                            (notesEntitled && proManager?.hasCurrentFeature(ProFeature.NOTES) != false)
                     if (!canCreateNotes && requestedNotes.isNotBlank()) {
                         return@run ProjectNotesSaveResult.FeatureUnavailable
                     }
@@ -605,7 +606,9 @@ class CounterRepository
                 val project = dao.getProject(id)?.toDomain() ?: return@run false
                 val secondaryCount = nextCount(project.secondaryCount)
                 if (project.isCompleted || secondaryCount < 0) return@run false
-                val canUseSecondaryCounter = project.secondaryCounterUsed || secondaryEntitled
+                val canUseSecondaryCounter =
+                    project.secondaryCounterUsed ||
+                        (secondaryEntitled && proManager?.hasCurrentFeature(ProFeature.SECONDARY_COUNTER) != false)
                 if (!canUseSecondaryCounter) return@run false
 
                 dao.updateSecondaryCount(id, secondaryCount, System.currentTimeMillis())
@@ -1209,7 +1212,8 @@ class CounterRepository
             proManager?.hasFeatureAfterInitialLoad(feature) ?: true
 
         private suspend fun canAddActiveProject(allowsAdditionalProjects: Boolean): Boolean =
-            allowsAdditionalProjects || dao.getActiveProjectCount() == 0
+            (allowsAdditionalProjects && proManager?.hasCurrentFeature(ProFeature.UNLIMITED_PROJECTS) != false) ||
+                dao.getActiveProjectCount() == 0
 
         private fun normalizeProjectDetails(project: CounterProject): CounterProject? {
             val labelType =

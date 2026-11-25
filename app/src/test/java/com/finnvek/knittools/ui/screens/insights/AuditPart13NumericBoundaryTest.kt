@@ -59,24 +59,13 @@ class AuditPart13NumericBoundaryTest {
         }
     }
 
-    @Test fun missingBootIdentityUsesUptimeWhileChangedAndInvalidBootClocksRequireReview() {
+    @Test fun missingDecreasingAndInvalidBootClocksRequireExplicitReview() {
         val anchors = ActiveSessionTimingAnchors(10_000, 10_000, 4, 120, 0)
         val now = SessionTimeSnapshot(70_000, 16_000, 4, "Europe/Helsinki")
-        val beyondUptime = 10_000L + 6_000L + 5L * 60L * 1_000L + 1L
         for ((stored, current) in listOf(4L to null, null to 4L, null to null)) {
             assertEquals(
-                ActiveSessionTimeEvaluation.Trusted(126, 6),
+                ActiveSessionTimeEvaluation.NeedsReview(ActiveSessionRecoveryReason.BOOT_IDENTITY_UNAVAILABLE, null),
                 evaluateActiveSessionTime(anchors.copy(bootCount = stored), now.copy(bootCount = current)),
-            )
-            assertEquals(
-                ActiveSessionTimeEvaluation.NeedsReview(
-                    ActiveSessionRecoveryReason.REBOOTED,
-                    (beyondUptime - 10_000L) / 1_000,
-                ),
-                evaluateActiveSessionTime(
-                    anchors.copy(bootCount = stored),
-                    now.copy(bootCount = current, wallClockMillis = beyondUptime),
-                ),
             )
         }
         for (wall in listOf(-1L, 9_999L, 10_000L, 70_000L, Long.MAX_VALUE)) {

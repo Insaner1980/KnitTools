@@ -33,24 +33,6 @@ interface PatternAnnotationLayerDao {
     @Insert
     suspend fun insert(layer: PatternAnnotationLayerEntity): Long
 
-    @Query(
-        """
-        DELETE FROM pattern_annotations WHERE layerId IN (
-            SELECT id FROM pattern_annotation_layers WHERE projectId = :projectId AND documentKey = :documentKey
-        )
-        """,
-    )
-    suspend fun deleteProjectLayerAnnotations(
-        projectId: Long,
-        documentKey: String,
-    )
-
-    @Query("DELETE FROM pattern_annotation_layers WHERE projectId = :projectId AND documentKey = :documentKey")
-    suspend fun deleteProjectLayer(
-        projectId: Long,
-        documentKey: String,
-    )
-
     @Query("UPDATE pattern_annotation_layers SET isActive = 0, updatedAt = :updatedAt WHERE projectId = :projectId")
     suspend fun deactivateProjectLayers(
         projectId: Long,

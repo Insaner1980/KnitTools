@@ -98,8 +98,7 @@ class CounterRepositorySessionPresentationTest : CounterRepositoryActiveSessionF
                 65L,
                 false,
             ),
-            // Puuttuva käynnistyslaskuri samassa käynnistyksessä ei vaadi tarkistusta.
-            Triple(initial.copy(bootCount = null), 0L, false),
+            Triple(initial.copy(bootCount = null), 0L, true),
             Triple(initial.copy(bootCount = 5L), 0L, true),
             Triple(initial.copy(elapsedRealtimeMillis = initial.elapsedRealtimeMillis - 1L), 0L, true),
             Triple(

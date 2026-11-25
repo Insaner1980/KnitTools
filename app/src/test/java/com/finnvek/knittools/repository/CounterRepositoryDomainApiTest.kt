@@ -57,8 +57,8 @@ class CounterRepositoryDomainApiTest {
         projectDocumentRepository = mockk(relaxed = true)
         projectFolderDao = mockk(relaxed = true)
         proManager = mockk()
-        every { proManager.hasFeature(any()) } returns true
-        coEvery { proManager.hasFeatureAfterInitialLoad(any()) } answers { proManager.hasFeature(firstArg()) }
+        every { proManager.hasCurrentFeature(any()) } returns true
+        coEvery { proManager.hasFeatureAfterInitialLoad(any()) } answers { proManager.hasCurrentFeature(firstArg()) }
         coEvery { projectDao.getAllProjectsOnce() } returns emptyList()
         repository = createRepository()
     }
@@ -424,7 +424,8 @@ class CounterRepositoryDomainApiTest {
     @Test
     fun `createProject rechecks additional project entitlement in the repository`() =
         runTest {
-            every { proManager.hasFeature(ProFeature.UNLIMITED_PROJECTS) } returns false
+            coEvery { proManager.hasFeatureAfterInitialLoad(ProFeature.UNLIMITED_PROJECTS) } returns true
+            every { proManager.hasCurrentFeature(ProFeature.UNLIMITED_PROJECTS) } returns false
             coEvery { projectDao.getActiveProjectCount() } returns 1
 
             val result =
@@ -440,7 +441,7 @@ class CounterRepositoryDomainApiTest {
     @Test
     fun `completed history does not consume the free active project slot`() =
         runTest {
-            every { proManager.hasFeature(any()) } returns false
+            every { proManager.hasCurrentFeature(any()) } returns false
             coEvery { projectDao.getActiveProjectCount() } returns 0
             coEvery { projectDao.getProjectCount() } returns 5
             coEvery { projectDao.hasAnyProject() } returns true
@@ -472,7 +473,8 @@ class CounterRepositoryDomainApiTest {
     @Test
     fun `saveProjectNotes enforces first-use entitlement at repository boundary`() =
         runTest {
-            every { proManager.hasFeature(ProFeature.NOTES) } returns false
+            coEvery { proManager.hasFeatureAfterInitialLoad(ProFeature.NOTES) } returns true
+            every { proManager.hasCurrentFeature(ProFeature.NOTES) } returns false
             coEvery { projectDao.getProject(7L) } returns
                 CounterProjectEntity(id = 7L, name = "Project", notesCreated = false)
 
@@ -485,7 +487,7 @@ class CounterRepositoryDomainApiTest {
     @Test
     fun `blank notes do not set the first-use flag`() =
         runTest {
-            every { proManager.hasFeature(ProFeature.NOTES) } returns false
+            every { proManager.hasCurrentFeature(ProFeature.NOTES) } returns false
             coEvery { projectDao.getProject(7L) } returns CounterProjectEntity(id = 7L)
 
             val saved = repository.saveProjectNotes(7L, "", "\n\t") as ProjectNotesSaveResult.Saved
@@ -497,7 +499,7 @@ class CounterRepositoryDomainApiTest {
     @Test
     fun `saveProjectNotes allows existing notes and preserves monotonic use flag when blanked`() =
         runTest {
-            every { proManager.hasFeature(ProFeature.NOTES) } returns false
+            every { proManager.hasCurrentFeature(ProFeature.NOTES) } returns false
             coEvery { projectDao.getProject(7L) } returns
                 CounterProjectEntity(
                     id = 7L,
@@ -539,7 +541,8 @@ class CounterRepositoryDomainApiTest {
     @Test
     fun `updateProjectSecondaryCount gates first use inside transaction`() =
         runTest {
-            every { proManager.hasFeature(ProFeature.SECONDARY_COUNTER) } returns false
+            coEvery { proManager.hasFeatureAfterInitialLoad(ProFeature.SECONDARY_COUNTER) } returns true
+            every { proManager.hasCurrentFeature(ProFeature.SECONDARY_COUNTER) } returns false
             coEvery { projectDao.getProject(7L) } returns
                 CounterProjectEntity(id = 7L, name = "Project", secondaryCounterUsed = false)
 
@@ -550,7 +553,7 @@ class CounterRepositoryDomainApiTest {
     @Test
     fun `updateProjectSecondaryCount keeps an existing secondary counter usable`() =
         runTest {
-            every { proManager.hasFeature(ProFeature.SECONDARY_COUNTER) } returns false
+            every { proManager.hasCurrentFeature(ProFeature.SECONDARY_COUNTER) } returns false
             coEvery { projectDao.getProject(7L) } returns
                 CounterProjectEntity(id = 7L, name = "Project", secondaryCounterUsed = true)
 

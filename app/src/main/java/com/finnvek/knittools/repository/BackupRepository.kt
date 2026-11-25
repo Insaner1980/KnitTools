@@ -73,28 +73,28 @@ class BackupRepository
             withContext(ioDispatcher) {
                 val coroutine = currentCoroutineContext()
                 val check = { coroutine.ensureActive() }
-                val directory =
-                    operation.withLock {
-                        newDirectory().also { activeDirectories += it }
-                    }
-                try {
-                    val externalFiles = operationResult(BackupError.WRITE) { stageExternalFiles(directory, check) }
-                    val archive =
+                IncompleteDestination.writeWithCleanup(context, destination) {
+                    val directory =
                         operation.withLock {
-                            operationResult(BackupError.WRITE) {
-                                buildLocalArchive(directory, externalFiles, check)
-                            }
+                            newDirectory().also { activeDirectories += it }
                         }
-                    IncompleteDestination.writeWithCleanup(context, destination) {
+                    try {
+                        val externalFiles = operationResult(BackupError.WRITE) { stageExternalFiles(directory, check) }
+                        val archive =
+                            operation.withLock {
+                                operationResult(BackupError.WRITE) {
+                                    buildLocalArchive(directory, externalFiles, check)
+                                }
+                            }
                         operationResult(BackupError.WRITE) {
                             providerIo.write(archive, destination, BackupFormat.MAX_TOTAL, check)
                         }
-                    }
-                } finally {
-                    withContext(NonCancellable) {
-                        operation.withLock {
-                            activeDirectories -= directory
-                            directory.deleteRecursively()
+                    } finally {
+                        withContext(NonCancellable) {
+                            operation.withLock {
+                                activeDirectories -= directory
+                                directory.deleteRecursively()
+                            }
                         }
                     }
                 }

@@ -539,13 +539,7 @@ class CounterRepository
             creationAuthorized: Boolean = false,
         ): ProjectNotesSaveResult =
             try {
-                // Oikeus ratkaistaan ennen transaktiota ja vain ensimmäiselle muistiinpanolle, jotta
-                // automaattinen tallennus ei odota Pro-tilaa turhaan.
-                val notesEntitled =
-                    creationAuthorized ||
-                        requestedNotes.isBlank() ||
-                        dao.getProject(id)?.let { it.notesCreated || it.notes.isNotBlank() } != false ||
-                        hasEntitlementAfterInitialLoad(ProFeature.NOTES)
+                val notesEntitled = prepareNotesAccess(id, requestedNotes, creationAuthorized)
                 transactionRunner.run {
                     val current =
                         dao.getProject(id)?.toDomain()
@@ -580,6 +574,16 @@ class CounterRepository
             } catch (_: Exception) {
                 ProjectNotesSaveResult.PersistenceFailure
             }
+
+        private suspend fun prepareNotesAccess(
+            id: Long,
+            requestedNotes: String,
+            creationAuthorized: Boolean,
+        ): Boolean =
+            creationAuthorized ||
+                requestedNotes.isBlank() ||
+                dao.getProject(id)?.let { it.notesCreated || it.notes.isNotBlank() } != false ||
+                hasEntitlementAfterInitialLoad(ProFeature.NOTES)
 
         suspend fun updateProjectSecondaryCount(
             id: Long,

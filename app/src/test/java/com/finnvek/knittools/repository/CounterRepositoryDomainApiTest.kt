@@ -574,13 +574,17 @@ class CounterRepositoryDomainApiTest {
     fun `secondary steps apply both directions to the stored count after entitlement lapses`() =
         runTest {
             every { proManager.hasCurrentFeature(ProFeature.SECONDARY_COUNTER) } returns false
-            coEvery { projectDao.getProject(7L) } returns
+            var stored =
                 CounterProjectEntity(id = 7L, name = "Project", secondaryCount = 4, secondaryCounterUsed = true)
+            coEvery { projectDao.getProject(7L) } answers { stored }
+            coEvery { projectDao.updateSecondaryCount(7L, any(), any()) } answers {
+                stored = stored.copy(secondaryCount = secondArg())
+            }
 
             assertTrue(repository.applySecondaryCounterStep(7L, increment = true))
+            assertEquals(5, stored.secondaryCount)
             assertTrue(repository.applySecondaryCounterStep(7L, increment = false))
-            coVerify(exactly = 1) { projectDao.updateSecondaryCount(7L, 5, any()) }
-            coVerify(exactly = 1) { projectDao.updateSecondaryCount(7L, 3, any()) }
+            assertEquals(4, stored.secondaryCount)
         }
 
     @Test
